@@ -40,6 +40,7 @@ import io.camunda.exporter.handlers.GroupCreatedUpdatedHandler;
 import io.camunda.exporter.handlers.GroupDeletedHandler;
 import io.camunda.exporter.handlers.GroupEntityAddedHandler;
 import io.camunda.exporter.handlers.GroupEntityRemovedHandler;
+import io.camunda.exporter.handlers.GroupMembershipChangedHandler;
 import io.camunda.exporter.handlers.HistoryDeletionDeletedHandler;
 import io.camunda.exporter.handlers.IncidentHandler;
 import io.camunda.exporter.handlers.JobBatchMetricsExportedHandler;
@@ -255,6 +256,8 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
             new GroupEntityAddedHandler(
                 indexDescriptors.get(GroupIndex.class).getFullQualifiedName()),
             new GroupEntityRemovedHandler(
+                indexDescriptors.get(GroupIndex.class).getFullQualifiedName()),
+            new GroupMembershipChangedHandler(
                 indexDescriptors.get(GroupIndex.class).getFullQualifiedName()),
             new GroupDeletedHandler(indexDescriptors.get(GroupIndex.class).getFullQualifiedName()),
             new DecisionHandler(

@@ -11,7 +11,13 @@ import io.camunda.util.ObjectBuilder;
 import java.util.function.Function;
 
 public record MappingRuleDbModel(
-    String mappingRuleId, Long mappingRuleKey, String claimName, String claimValue, String name)
+    String mappingRuleId,
+    Long mappingRuleKey,
+    String claimName,
+    String claimValue,
+    String name,
+    String type,
+    String origin)
     implements DbModel<MappingRuleDbModel> {
 
   @Override
@@ -25,7 +31,9 @@ public record MappingRuleDbModel(
                 .claimName(claimName)
                 .claimValue(claimValue)
                 .name(name)
-                .mappingRuleId(mappingRuleId))
+                .mappingRuleId(mappingRuleId)
+                .type(type)
+                .origin(origin))
         .build();
   }
 
@@ -36,6 +44,8 @@ public record MappingRuleDbModel(
     private String claimValue;
     private String name;
     private String mappingRuleId;
+    private String type;
+    private String origin;
 
     public MappingRuleDbModelBuilder() {}
 
@@ -64,9 +74,20 @@ public record MappingRuleDbModel(
       return this;
     }
 
+    public MappingRuleDbModelBuilder type(final String type) {
+      this.type = type;
+      return this;
+    }
+
+    public MappingRuleDbModelBuilder origin(final String origin) {
+      this.origin = origin;
+      return this;
+    }
+
     @Override
     public MappingRuleDbModel build() {
-      return new MappingRuleDbModel(mappingRuleId, mappingRuleKey, claimName, claimValue, name);
+      return new MappingRuleDbModel(
+          mappingRuleId, mappingRuleKey, claimName, claimValue, name, type, origin);
     }
   }
 }

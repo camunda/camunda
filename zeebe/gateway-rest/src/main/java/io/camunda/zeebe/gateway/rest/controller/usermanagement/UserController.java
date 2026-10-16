@@ -7,18 +7,11 @@
  */
 package io.camunda.zeebe.gateway.rest.controller.usermanagement;
 
-import static io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper.mapErrorToResponse;
-
 import io.camunda.gateway.mapping.http.ResponseMapper;
 import io.camunda.gateway.mapping.http.mapper.UserMapper;
-import io.camunda.gateway.mapping.http.search.SearchQueryRequestMapper;
-import io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper;
 import io.camunda.gateway.mapping.http.validator.UserRequestValidator;
 import io.camunda.gateway.protocol.model.UserRequest;
-import io.camunda.gateway.protocol.model.UserSearchQueryRequest;
-import io.camunda.gateway.protocol.model.UserSearchResult;
 import io.camunda.gateway.protocol.model.UserUpdateRequest;
-import io.camunda.search.query.UserQuery;
 import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.security.spring.annotation.ConditionalOnInternalUserManagement;
 import io.camunda.security.validation.IdentifierValidator;
@@ -26,11 +19,9 @@ import io.camunda.security.validation.UserValidator;
 import io.camunda.service.UserServices.UserDTO;
 import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaDeleteMapping;
-import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPutMapping;
 import io.camunda.zeebe.gateway.rest.annotation.PhysicalTenantId;
-import io.camunda.zeebe.gateway.rest.annotation.RequiresSecondaryStorage;
 import io.camunda.zeebe.gateway.rest.controller.CamundaRestController;
 import io.camunda.zeebe.gateway.rest.mapper.RequestExecutor;
 import io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper;
@@ -66,23 +57,6 @@ public class UserController {
         .fold(
             RestErrorMapper::mapProblemToCompletedResponse,
             request -> createUser(physicalTenantId, request));
-  }
-
-  @CamundaGetMapping(path = "/{username}")
-  @RequiresSecondaryStorage
-  public ResponseEntity<Object> getUser(
-      @PhysicalTenantId final String physicalTenantId, @PathVariable final String username) {
-    try {
-      final var authentication = authenticationProvider.getCamundaAuthentication();
-      return ResponseEntity.ok()
-          .body(
-              SearchQueryResponseMapper.toUser(
-                  serviceRegistry
-                      .userServices(physicalTenantId)
-                      .getUser(username, authentication)));
-    } catch (final Exception exception) {
-      return RestErrorMapper.mapErrorToResponse(exception);
-    }
   }
 
   @CamundaDeleteMapping(path = "/{username}")
@@ -123,26 +97,5 @@ public class UserController {
         () -> userServices.updateUser(request, authentication),
         ResponseMapper::toUserUpdateResponse,
         HttpStatus.OK);
-  }
-
-  @CamundaPostMapping(path = "/search")
-  @RequiresSecondaryStorage
-  public ResponseEntity<UserSearchResult> searchUsers(
-      @PhysicalTenantId final String physicalTenantId,
-      @RequestBody(required = false) final UserSearchQueryRequest query) {
-    return SearchQueryRequestMapper.toUserQuery(query)
-        .fold(RestErrorMapper::mapProblemToResponse, q -> search(physicalTenantId, q));
-  }
-
-  private ResponseEntity<UserSearchResult> search(
-      final String physicalTenantId, final UserQuery query) {
-    final var userServices = serviceRegistry.userServices(physicalTenantId);
-    try {
-      final var authentication = authenticationProvider.getCamundaAuthentication();
-      final var result = userServices.search(query, authentication);
-      return ResponseEntity.ok(SearchQueryResponseMapper.toUserSearchQueryResponse(result));
-    } catch (final Exception e) {
-      return mapErrorToResponse(e);
-    }
   }
 }

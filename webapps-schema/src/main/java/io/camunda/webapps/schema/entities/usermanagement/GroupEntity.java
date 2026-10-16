@@ -9,6 +9,8 @@ package io.camunda.webapps.schema.entities.usermanagement;
 
 import io.camunda.webapps.schema.entities.AbstractExporterEntity;
 import io.camunda.webapps.schema.entities.BeforeVersion880;
+import io.camunda.webapps.schema.entities.SinceVersion;
+import java.time.OffsetDateTime;
 
 public class GroupEntity extends AbstractExporterEntity<GroupEntity> {
 
@@ -16,6 +18,21 @@ public class GroupEntity extends AbstractExporterEntity<GroupEntity> {
   @BeforeVersion880 private String groupId;
   @BeforeVersion880 private String name;
   @BeforeVersion880 private String description;
+
+  @SinceVersion(value = "8.11.0", requireDefault = false)
+  private String externalId;
+
+  @SinceVersion(value = "8.11.0", requireDefault = false)
+  private String source;
+
+  @SinceVersion(value = "8.11.0", requireDefault = false)
+  private String attributes;
+
+  @SinceVersion(value = "8.11.0", requireDefault = false)
+  private OffsetDateTime createdAt;
+
+  @SinceVersion(value = "8.11.0", requireDefault = false)
+  private OffsetDateTime lastModifiedAt;
 
   @BeforeVersion880 private EntityJoinRelation join;
 
@@ -52,6 +69,52 @@ public class GroupEntity extends AbstractExporterEntity<GroupEntity> {
 
   public GroupEntity setDescription(final String description) {
     this.description = description;
+    return this;
+  }
+
+  public String getSource() {
+    return source;
+  }
+
+  public GroupEntity setSource(final String source) {
+    this.source = source;
+    return this;
+  }
+
+  public String getExternalId() {
+    return externalId;
+  }
+
+  public GroupEntity setExternalId(final String externalId) {
+    this.externalId = externalId;
+    return this;
+  }
+
+  /** JSON object serialized as a string; not indexed. */
+  public String getAttributes() {
+    return attributes;
+  }
+
+  public GroupEntity setAttributes(final String attributes) {
+    this.attributes = attributes;
+    return this;
+  }
+
+  public OffsetDateTime getCreatedAt() {
+    return createdAt;
+  }
+
+  public GroupEntity setCreatedAt(final OffsetDateTime createdAt) {
+    this.createdAt = createdAt;
+    return this;
+  }
+
+  public OffsetDateTime getLastModifiedAt() {
+    return lastModifiedAt;
+  }
+
+  public GroupEntity setLastModifiedAt(final OffsetDateTime lastModifiedAt) {
+    this.lastModifiedAt = lastModifiedAt;
     return this;
   }
 

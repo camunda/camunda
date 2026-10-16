@@ -23,6 +23,7 @@ import io.camunda.service.MappingRuleServices.MappingRuleDTO;
 import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRuleRecord;
+import io.camunda.zeebe.protocol.record.value.MappingRuleType;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.regex.Pattern;
@@ -440,6 +441,95 @@ public class MappingRuleControllerTest extends RestControllerTest {
             }"""
             .formatted(MAPPING_RULES_PATH + "/id"));
     verifyNoInteractions(mappingRuleServices);
+  }
+
+  @Test
+  void shouldPassOriginOnCreate() {
+    // given
+    final var dto =
+        new MappingRuleDTO(
+            "newClaimName",
+            "newClaimValue",
+            "mapName",
+            "mapRuleId",
+            MappingRuleType.TOKEN_CLAIM,
+            "scim-a");
+    final var mappingRecord =
+        new MappingRuleRecord()
+            .setMappingRuleKey(1L)
+            .setClaimName(dto.claimName())
+            .setClaimValue(dto.claimValue())
+            .setMappingRuleId(dto.mappingRuleId())
+            .setName(dto.name())
+            .setOrigin("scim-a");
+    when(mappingRuleServices.createMappingRule(eq(dto), any()))
+        .thenReturn(CompletableFuture.completedFuture(mappingRecord));
+
+    // when / then
+    webClient
+        .post()
+        .uri(MAPPING_RULES_PATH)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(
+            """
+            {
+              "mappingRuleId": "mapRuleId",
+              "claimName": "newClaimName",
+              "claimValue": "newClaimValue",
+              "name": "mapName",
+              "origin": "scim-a"
+            }""")
+        .exchange()
+        .expectStatus()
+        .isCreated()
+        .expectBody()
+        .jsonPath("$.origin")
+        .isEqualTo("scim-a");
+  }
+
+  @Test
+  void shouldPassOriginOnUpdate() {
+    // given
+    final var dto =
+        new MappingRuleDTO(
+            "newClaimName",
+            "newClaimValue",
+            "mapName",
+            "mapRuleId",
+            MappingRuleType.TOKEN_CLAIM,
+            "scim-b");
+    final var mappingRecord =
+        new MappingRuleRecord()
+            .setMappingRuleKey(1L)
+            .setClaimName(dto.claimName())
+            .setClaimValue(dto.claimValue())
+            .setMappingRuleId(dto.mappingRuleId())
+            .setName(dto.name())
+            .setOrigin("scim-b");
+    when(mappingRuleServices.updateMappingRule(eq(dto), any()))
+        .thenReturn(CompletableFuture.completedFuture(mappingRecord));
+
+    // when / then
+    webClient
+        .put()
+        .uri(MAPPING_RULES_PATH + "/mapRuleId")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(
+            """
+            {
+              "claimName": "newClaimName",
+              "claimValue": "newClaimValue",
+              "name": "mapName",
+              "origin": "scim-b"
+            }""")
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectBody()
+        .jsonPath("$.origin")
+        .isEqualTo("scim-b");
   }
 
   private MappingRuleDTO validCreateMappingRuleRuleDTO() {

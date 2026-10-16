@@ -9,11 +9,15 @@ package io.camunda.zeebe.engine.state.group;
 
 import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.msgpack.UnpackedObject;
+import io.camunda.zeebe.msgpack.property.DocumentProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
+import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord;
 import io.camunda.zeebe.util.ProjectionOf;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.util.Map;
+import org.agrona.concurrent.UnsafeBuffer;
 
 public class PersistedGroup extends UnpackedObject
     implements DbValue, ProjectionOf<GroupRecord, PersistedGroup> {
@@ -22,13 +26,19 @@ public class PersistedGroup extends UnpackedObject
   private final StringProperty groupIdProp = new StringProperty("groupId");
   private final StringProperty descriptionProp = new StringProperty("description");
   private final StringProperty nameProp = new StringProperty("name");
+  private final StringProperty externalIdProp = new StringProperty("externalId", "");
+  private final DocumentProperty attributesProp = new DocumentProperty("attributes");
+  private final StringProperty sourceProp = new StringProperty("source", "");
 
   public PersistedGroup() {
-    super(4);
+    super(7);
     declareProperty(groupKeyProp)
         .declareProperty(groupIdProp)
         .declareProperty(descriptionProp)
-        .declareProperty(nameProp);
+        .declareProperty(nameProp)
+        .declareProperty(externalIdProp)
+        .declareProperty(attributesProp)
+        .declareProperty(sourceProp);
   }
 
   @Override
@@ -37,6 +47,9 @@ public class PersistedGroup extends UnpackedObject
     groupIdProp.setValue(group.getGroupId());
     descriptionProp.setValue(group.getDescription());
     nameProp.setValue(group.getNameBuffer());
+    externalIdProp.setValue(group.getExternalIdBuffer());
+    attributesProp.setValue(group.getAttributesBuffer());
+    sourceProp.setValue(group.getSourceBuffer());
     return this;
   }
 
@@ -73,6 +86,37 @@ public class PersistedGroup extends UnpackedObject
 
   public PersistedGroup setName(final String name) {
     nameProp.setValue(name);
+    return this;
+  }
+
+  public String getExternalId() {
+    return BufferUtil.bufferAsString(externalIdProp.getValue());
+  }
+
+  public PersistedGroup setExternalId(final String externalId) {
+    externalIdProp.setValue(externalId);
+    return this;
+  }
+
+  public String getSource() {
+    return BufferUtil.bufferAsString(sourceProp.getValue());
+  }
+
+  public PersistedGroup setSource(final String source) {
+    sourceProp.setValue(source);
+    return this;
+  }
+
+  public Map<String, Object> getAttributes() {
+    return MsgPackConverter.convertToMap(attributesProp.getValue());
+  }
+
+  public PersistedGroup setAttributes(final Map<String, Object> attributes) {
+    if (attributes == null || attributes.isEmpty()) {
+      attributesProp.reset();
+    } else {
+      attributesProp.setValue(new UnsafeBuffer(MsgPackConverter.convertToMsgPack(attributes)));
+    }
     return this;
   }
 }

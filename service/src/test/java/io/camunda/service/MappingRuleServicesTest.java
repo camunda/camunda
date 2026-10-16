@@ -33,6 +33,7 @@ import io.camunda.zeebe.gateway.impl.broker.request.BrokerMappingRuleUpdateReque
 import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRuleRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.MappingRuleIntent;
+import io.camunda.zeebe.protocol.record.value.MappingRuleType;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -224,5 +225,208 @@ public class MappingRuleServicesTest {
     assertThat(query.filter().claimValue()).isNull();
     assertThat(query.filter().nameOperations()).isNull();
     assertThat(query.filter().claims()).isNull();
+  }
+
+  @Test
+  public void shouldMatchTokenRulesAgainstClaimsAndAttributeRulesAgainstAttributes() {
+    // given
+    final var tokenRule = new MappingRuleEntity("token", 1L, "$.team", "red", "token");
+    final var attributeRule =
+        new MappingRuleEntity(
+            "attribute", 2L, "$.department", "Finance", "attribute", "USER_ATTRIBUTE");
+    final var rules =
+        new SearchQueryResult<>(2, false, List.of(tokenRule, attributeRule), null, null);
+    when(client.searchMappingRules(any())).thenReturn(rules);
+
+    // when / then
+    assertThat(
+            services.getMatchingMappingRules(
+                Map.of("team", "red"), Map.of("department", "Finance"), authentication))
+        .extracting(MappingRuleEntity::mappingRuleId)
+        .containsExactlyInAnyOrder("token", "attribute");
+  }
+
+  @Test
+  public void shouldMatchGroupAttributeRulesAgainstAnyGroupAttributesOnly() {
+    // given
+    final var groupRule =
+        new MappingRuleEntity("group", 1L, "$.region", "EMEA", "group", "GROUP_ATTRIBUTE");
+    final var rules = new SearchQueryResult<>(1, false, List.of(groupRule), null, null);
+    when(client.searchMappingRules(any())).thenReturn(rules);
+    final Map<String, Object> region = Map.of("region", "EMEA");
+
+    // when / then
+    assertThat(
+            services.getMatchingMappingRules(
+                Map.of(), Map.of(), List.of(Map.of("region", "APAC"), region), authentication))
+        .extracting(MappingRuleEntity::mappingRuleId)
+        .containsExactly("group");
+    assertThat(
+            services.getMatchingMappingRules(
+                Map.of(), Map.of(), List.of(Map.of("region", "APAC")), authentication))
+        .isEmpty();
+    // token claims and user attributes never satisfy a group-attribute rule
+    assertThat(services.getMatchingMappingRules(region, region, List.of(), authentication))
+        .isEmpty();
+    assertThat(services.getMatchingMappingRules(region, region, authentication)).isEmpty();
+  }
+
+  @Test
+  public void shouldNotMatchAttributeRulesAgainstTokenClaims() {
+    // given
+    final var attributeRule =
+        new MappingRuleEntity(
+            "attribute", 2L, "$.department", "Finance", "attribute", "USER_ATTRIBUTE");
+    final var rules = new SearchQueryResult<>(1, false, List.of(attributeRule), null, null);
+    when(client.searchMappingRules(any())).thenReturn(rules);
+    final Map<String, Object> spoofedClaims = Map.of("department", "Finance");
+
+    // when / then
+    assertThat(services.getMatchingMappingRules(spoofedClaims, authentication)).isEmpty();
+    assertThat(services.getMatchingMappingRules(spoofedClaims, Map.of(), authentication)).isEmpty();
+    assertThat(
+            services.getMatchingMappingRules(
+                spoofedClaims, Map.of("department", "Sales"), authentication))
+        .isEmpty();
+  }
+
+  @Test
+  public void shouldNotMatchTokenRulesAgainstUserAttributes() {
+    // given
+    final var tokenRule = new MappingRuleEntity("token", 1L, "$.team", "red", "token");
+    final var rules = new SearchQueryResult<>(1, false, List.of(tokenRule), null, null);
+    when(client.searchMappingRules(any())).thenReturn(rules);
+
+    // when / then
+    assertThat(services.getMatchingMappingRules(Map.of(), Map.of("team", "red"), authentication))
+        .isEmpty();
+  }
+
+  @Test
+  public void shouldSendOriginOnCreateAndUpdate() {
+    // given
+    final var dto =
+        new MappingRuleDTO(
+            "$.department",
+            "Finance",
+            "name",
+            "mappingRuleId",
+            MappingRuleType.USER_ATTRIBUTE,
+            "entra");
+
+    // when
+    services.createMappingRule(dto, authentication);
+    services.updateMappingRule(dto, authentication);
+
+    // then
+    final var requests = stubbedBrokerClient.getBrokerRequests();
+    assertThat(requests)
+        .extracting(request -> ((MappingRuleRecord) request.getRequestWriter()).getOrigin())
+        .containsExactly("entra", "entra");
+  }
+
+  @Test
+  public void shouldOnlyMatchRulesWithoutOriginWhenNoSourcesAreGiven() {
+    // given
+    final var anyRule = new MappingRuleEntity("any", 1L, "$.team", "red", "any");
+    final var entraRule =
+        new MappingRuleEntity("entra", 2L, "$.team", "red", "entra", "TOKEN_CLAIM", "entra");
+    final var rules = new SearchQueryResult<>(2, false, List.of(anyRule, entraRule), null, null);
+    when(client.searchMappingRules(any())).thenReturn(rules);
+
+    // when / then
+    assertThat(services.getMatchingMappingRules(Map.of("team", "red"), authentication))
+        .extracting(MappingRuleEntity::mappingRuleId)
+        .containsExactly("any");
+  }
+
+  @Test
+  public void shouldMatchTokenRulesWithOriginOnlyForLoginOfThatSource() {
+    // given
+    final var anyRule = new MappingRuleEntity("any", 1L, "$.team", "red", "any");
+    final var entraRule =
+        new MappingRuleEntity("entra", 2L, "$.team", "red", "entra", "TOKEN_CLAIM", "entra");
+    final var rules = new SearchQueryResult<>(2, false, List.of(anyRule, entraRule), null, null);
+    when(client.searchMappingRules(any())).thenReturn(rules);
+    final Map<String, Object> claims = Map.of("team", "red");
+
+    // when / then
+    assertThat(services.getMatchingMappingRules(claims, null, null, "entra", null, authentication))
+        .extracting(MappingRuleEntity::mappingRuleId)
+        .containsExactlyInAnyOrder("any", "entra");
+    assertThat(
+            services.getMatchingMappingRules(claims, null, null, "keycloak", null, authentication))
+        .extracting(MappingRuleEntity::mappingRuleId)
+        .containsExactly("any");
+    assertThat(services.getMatchingMappingRules(claims, null, null, null, "entra", authentication))
+        .extracting(MappingRuleEntity::mappingRuleId)
+        .containsExactly("any");
+  }
+
+  @Test
+  public void shouldMatchAttributeRulesWithOriginOnlyForUserOfThatSource() {
+    // given
+    final var entraRule =
+        new MappingRuleEntity(
+            "entra", 1L, "$.department", "Finance", "entra", "USER_ATTRIBUTE", "entra");
+    final var rules = new SearchQueryResult<>(1, false, List.of(entraRule), null, null);
+    when(client.searchMappingRules(any())).thenReturn(rules);
+    final Map<String, Object> attributes = Map.of("department", "Finance");
+
+    // when / then
+    assertThat(
+            services.getMatchingMappingRules(
+                Map.of(), attributes, null, null, "entra", authentication))
+        .extracting(MappingRuleEntity::mappingRuleId)
+        .containsExactly("entra");
+    assertThat(
+            services.getMatchingMappingRules(
+                Map.of(), attributes, null, "entra", "keycloak", authentication))
+        .isEmpty();
+    assertThat(
+            services.getMatchingMappingRules(
+                Map.of(), attributes, null, "entra", "", authentication))
+        .isEmpty();
+  }
+
+  @Test
+  public void shouldOnlyConsiderGroupsOfTheUsersSourceForGroupAttributeRules() {
+    // given
+    final var anyRule =
+        new MappingRuleEntity("any", 1L, "$.region", "EMEA", "any", "GROUP_ATTRIBUTE");
+    final var rules = new SearchQueryResult<>(1, false, List.of(anyRule), null, null);
+    when(client.searchMappingRules(any())).thenReturn(rules);
+    final Map<String, Object> region = Map.of("region", "EMEA");
+
+    // when / then
+    assertThat(
+            services.getMatchingMappingRules(
+                Map.of(),
+                Map.of(),
+                List.of(new MappingRuleServices.SourcedAttributes("keycloak", region)),
+                null,
+                "entra",
+                authentication))
+        .isEmpty();
+    assertThat(
+            services.getMatchingMappingRules(
+                Map.of(),
+                Map.of(),
+                List.of(new MappingRuleServices.SourcedAttributes("entra", region)),
+                null,
+                "entra",
+                authentication))
+        .extracting(MappingRuleEntity::mappingRuleId)
+        .containsExactly("any");
+    assertThat(
+            services.getMatchingMappingRules(
+                Map.of(),
+                Map.of(),
+                List.of(new MappingRuleServices.SourcedAttributes("keycloak", region)),
+                null,
+                null,
+                authentication))
+        .extracting(MappingRuleEntity::mappingRuleId)
+        .containsExactly("any");
   }
 }

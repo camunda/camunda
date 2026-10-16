@@ -12,6 +12,7 @@ import static org.assertj.core.api.AssertionsForClassTypes.tuple;
 
 import io.camunda.zeebe.engine.state.distribution.DistributionQueue;
 import io.camunda.zeebe.engine.util.EngineRule;
+import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord.GroupAttribute;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -21,6 +22,8 @@ import io.camunda.zeebe.protocol.record.value.CommandDistributionRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.time.Duration;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import org.junit.Rule;
@@ -130,5 +133,72 @@ public class UpdateGroupMultiPartitionTest {
         .extracting(r -> r.getValue().getValueType(), r -> r.getValue().getIntent())
         .containsExactly(
             tuple(ValueType.GROUP, GroupIntent.CREATE), tuple(ValueType.GROUP, GroupIntent.UPDATE));
+  }
+
+  @Test
+  public void shouldDistributeMergedGroupOnMaskedUpdate() {
+    // given
+    final var groupId = UUID.randomUUID().toString();
+    engine
+        .group()
+        .newGroup(groupId)
+        .withName("Group Name")
+        .withDescription("Group Description")
+        .withExternalId("ext-1")
+        .create();
+
+    // when
+    engine
+        .group()
+        .updateGroup(groupId)
+        .withExternalId("ext-2")
+        .withChangedAttributes(GroupAttribute.EXTERNAL_ID)
+        .update();
+
+    // then
+    for (int partitionId = 2; partitionId <= PARTITION_COUNT; partitionId++) {
+      final var event =
+          RecordingExporter.groupRecords(GroupIntent.UPDATED)
+              .withGroupId(groupId)
+              .withPartitionId(partitionId)
+              .getFirst();
+      assertThat(event.getValue().getExternalId()).isEqualTo("ext-2");
+      assertThat(event.getValue().getName()).isEqualTo("Group Name");
+      assertThat(event.getValue().getDescription()).isEqualTo("Group Description");
+    }
+  }
+
+  @Test
+  public void shouldDistributeMergedAttributesOnMaskedMerge() {
+    // given
+    final var groupId = UUID.randomUUID().toString();
+    engine
+        .group()
+        .newGroup(groupId)
+        .withName("Group Name")
+        .withAttributes(Map.of("costCenter", "cc-1", "region", "emea"))
+        .create();
+    final var patch = new HashMap<String, Object>();
+    patch.put("region", null);
+    patch.put("owner", "alice");
+
+    // when
+    engine
+        .group()
+        .updateGroup(groupId)
+        .withAttributes(patch)
+        .withChangedAttributes(GroupAttribute.ATTRIBUTES_MERGE)
+        .update();
+
+    // then
+    for (int partitionId = 2; partitionId <= PARTITION_COUNT; partitionId++) {
+      final var event =
+          RecordingExporter.groupRecords(GroupIntent.UPDATED)
+              .withGroupId(groupId)
+              .withPartitionId(partitionId)
+              .getFirst();
+      assertThat(event.getValue().getAttributes())
+          .containsExactlyInAnyOrderEntriesOf(Map.of("costCenter", "cc-1", "owner", "alice"));
+    }
   }
 }

@@ -127,13 +127,17 @@ public class TenantQueryControllerTest extends RestControllerTest {
              "name": "%s",
              "claimName": "%s",
              "claimValue": "%s",
-             "mappingRuleId": %s
+             "mappingRuleId": %s,
+             "type": "TOKEN_CLAIM",
+             "origin": ""
            },
            {
              "name": "%s",
              "claimName": "%s",
              "claimValue": "%s",
-             "mappingRuleId": "%s"
+             "mappingRuleId": "%s",
+             "type": "TOKEN_CLAIM",
+             "origin": ""
            }
          ],
          "page": {

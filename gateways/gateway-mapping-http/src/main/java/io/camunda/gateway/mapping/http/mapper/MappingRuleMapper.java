@@ -10,8 +10,10 @@ package io.camunda.gateway.mapping.http.mapper;
 import io.camunda.gateway.mapping.http.RequestMapper;
 import io.camunda.gateway.mapping.http.validator.MappingRuleRequestValidator;
 import io.camunda.gateway.protocol.model.MappingRuleCreateRequest;
+import io.camunda.gateway.protocol.model.MappingRuleTypeEnum;
 import io.camunda.gateway.protocol.model.MappingRuleUpdateRequest;
 import io.camunda.service.MappingRuleServices.MappingRuleDTO;
+import io.camunda.zeebe.protocol.record.value.MappingRuleType;
 import io.camunda.zeebe.util.Either;
 import org.springframework.http.ProblemDetail;
 
@@ -32,7 +34,9 @@ public class MappingRuleMapper {
                 request.getClaimName(),
                 request.getClaimValue(),
                 request.getName(),
-                request.getMappingRuleId()));
+                request.getMappingRuleId(),
+                toType(request.getType()),
+                request.getOrigin() == null ? "" : request.getOrigin()));
   }
 
   public Either<ProblemDetail, MappingRuleDTO> toMappingRuleUpdateRequest(
@@ -41,6 +45,15 @@ public class MappingRuleMapper {
         mappingRuleRequestValidator.validateUpdateRequest(request),
         () ->
             new MappingRuleDTO(
-                request.getClaimName(), request.getClaimValue(), request.getName(), mappingRuleId));
+                request.getClaimName(),
+                request.getClaimValue(),
+                request.getName(),
+                mappingRuleId,
+                toType(request.getType()),
+                request.getOrigin() == null ? "" : request.getOrigin()));
+  }
+
+  private static MappingRuleType toType(final MappingRuleTypeEnum type) {
+    return type == null ? MappingRuleType.TOKEN_CLAIM : MappingRuleType.valueOf(type.getValue());
   }
 }

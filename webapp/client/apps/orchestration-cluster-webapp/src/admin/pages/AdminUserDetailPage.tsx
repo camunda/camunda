@@ -25,6 +25,7 @@ import {
 	Text,
 } from '@camunda/design-system';
 import type {User} from '@camunda/camunda-api-zod-schemas/8.11';
+import {UserStatusBadge} from '#/admin/modules/users/UserStatusBadge';
 import {EditUserModal} from '#/admin/modules/users/EditUserModal';
 import {DeleteUserModal} from '#/admin/modules/users/DeleteUserModal';
 
@@ -33,9 +34,10 @@ type ModalState = {type: 'edit'} | {type: 'delete'} | null;
 type AdminUserDetailPageProps = {
 	user: User;
 	onDeleted: () => void;
+	isReadOnly?: boolean;
 };
 
-const AdminUserDetailPage: React.FC<AdminUserDetailPageProps> = ({user, onDeleted}) => {
+const AdminUserDetailPage: React.FC<AdminUserDetailPageProps> = ({user, onDeleted, isReadOnly = false}) => {
 	const {t} = useTranslation();
 	const [modalState, setModalState] = useState<ModalState>(null);
 	const closeModal = () => setModalState(null);
@@ -59,16 +61,18 @@ const AdminUserDetailPage: React.FC<AdminUserDetailPageProps> = ({user, onDelete
 						</Breadcrumb>
 					}
 					actions={
-						<>
-							<Button type="button" variant="secondary" onClick={() => setModalState({type: 'edit'})}>
-								<Pencil aria-hidden />
-								{t('admin.users.editUser')}
-							</Button>
-							<Button type="button" variant="destructive" onClick={() => setModalState({type: 'delete'})}>
-								<Trash2 aria-hidden />
-								{t('admin.users.deleteUser')}
-							</Button>
-						</>
+						isReadOnly ? undefined : (
+							<>
+								<Button type="button" variant="secondary" onClick={() => setModalState({type: 'edit'})}>
+									<Pencil aria-hidden />
+									{t('admin.users.editUser')}
+								</Button>
+								<Button type="button" variant="destructive" onClick={() => setModalState({type: 'delete'})}>
+									<Trash2 aria-hidden />
+									{t('admin.users.deleteUser')}
+								</Button>
+							</>
+						)
 					}
 				/>
 
@@ -80,12 +84,22 @@ const AdminUserDetailPage: React.FC<AdminUserDetailPageProps> = ({user, onDelete
 						<Text as="p">{user.name || '-'}</Text>
 						<Label>{t('admin.users.email')}</Label>
 						<Text as="p">{user.email || '-'}</Text>
+						<Label>{t('admin.users.status')}</Label>
+						<div>
+							<UserStatusBadge isActive={user.active} />
+						</div>
+						{user.externalId && (
+							<>
+								<Label>{t('admin.users.externalId')}</Label>
+								<Text as="p">{user.externalId}</Text>
+							</>
+						)}
 					</CardContent>
 				</Card>
 			</div>
 
-			{modalState?.type === 'edit' && <EditUserModal isOpen user={user} onClose={closeModal} />}
-			{modalState?.type === 'delete' && (
+			{!isReadOnly && modalState?.type === 'edit' && <EditUserModal isOpen user={user} onClose={closeModal} />}
+			{!isReadOnly && modalState?.type === 'delete' && (
 				<DeleteUserModal isOpen username={user.username} onClose={closeModal} onDeleted={onDeleted} />
 			)}
 		</PageLayout>

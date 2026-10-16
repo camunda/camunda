@@ -9,6 +9,7 @@ package io.camunda.webapps.schema.entities.usermanagement;
 
 import io.camunda.webapps.schema.entities.AbstractExporterEntity;
 import io.camunda.webapps.schema.entities.BeforeVersion880;
+import io.camunda.webapps.schema.entities.SinceVersion;
 
 public class MappingRuleEntity extends AbstractExporterEntity<MappingRuleEntity> {
 
@@ -18,6 +19,12 @@ public class MappingRuleEntity extends AbstractExporterEntity<MappingRuleEntity>
   @BeforeVersion880 private String claimName;
   @BeforeVersion880 private String claimValue;
   @BeforeVersion880 private String name;
+
+  @SinceVersion(value = "8.11.0", requireDefault = false)
+  private String type;
+
+  @SinceVersion(value = "8.11.0", requireDefault = false)
+  private String origin;
 
   public MappingRuleEntity() {}
 
@@ -63,6 +70,24 @@ public class MappingRuleEntity extends AbstractExporterEntity<MappingRuleEntity>
 
   public MappingRuleEntity setName(final String name) {
     this.name = name;
+    return this;
+  }
+
+  public String getType() {
+    return type;
+  }
+
+  public MappingRuleEntity setType(final String type) {
+    this.type = type;
+    return this;
+  }
+
+  public String getOrigin() {
+    return origin;
+  }
+
+  public MappingRuleEntity setOrigin(final String origin) {
+    this.origin = origin;
     return this;
   }
 }

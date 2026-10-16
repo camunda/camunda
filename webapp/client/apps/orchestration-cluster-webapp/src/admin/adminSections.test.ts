@@ -14,12 +14,19 @@ const SELF_MANAGED: AdminSectionConfig = {
 	isSaas: false,
 	isTenantsApiEnabled: false,
 	isCamundaGroupsEnabled: false,
+	isUserProvisioningEnabled: false,
 };
 
 describe('admin section availability', () => {
 	it('should offer users only while Camunda owns them', () => {
 		expect(isAdminSectionAvailable('users', SELF_MANAGED)).toBe(true);
 		expect(isAdminSectionAvailable('users', {...SELF_MANAGED, isOidc: true})).toBe(false);
+	});
+
+	it('should offer users under OIDC when the identity provider provisions them', () => {
+		expect(isAdminSectionAvailable('users', {...SELF_MANAGED, isOidc: true, isUserProvisioningEnabled: true})).toBe(
+			true,
+		);
 	});
 
 	it('should offer mapping rules only where Camunda binds the IdP claims', () => {
@@ -44,6 +51,7 @@ describe('admin section availability', () => {
 			isSaas: true,
 			isTenantsApiEnabled: true,
 			isCamundaGroupsEnabled: true,
+			isUserProvisioningEnabled: true,
 		};
 
 		expect(isAdminSectionAvailable('roles', SELF_MANAGED)).toBe(true);

@@ -1,4 +1,12 @@
 {
   "logOut": "Log Out",
-  "beingLoggedOut": "You are being logged out..."
+  "beingLoggedOut": "You are being logged out...",
+  "signInDetails": "Sign-in details",
+  "signedInVia": "Signed in via",
+  "provisionedBy": "Provisioned by",
+  "notProvisioned": "Not provisioned",
+  "userGroups": "Groups",
+  "userRoles": "Roles",
+  "appliedMappingRules": "Applied mapping rules",
+  "none": "None"
 }

@@ -10,8 +10,10 @@ package io.camunda.zeebe.gateway.impl.broker.request.group;
 import io.camunda.zeebe.broker.client.api.dto.BrokerExecuteCommand;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord;
+import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord.GroupAttribute;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.GroupIntent;
+import java.util.Collection;
 import org.agrona.DirectBuffer;
 
 public class BrokerGroupDeleteRequest extends BrokerExecuteCommand<GroupRecord> {
@@ -22,6 +24,17 @@ public class BrokerGroupDeleteRequest extends BrokerExecuteCommand<GroupRecord> 
     super(ValueType.GROUP, GroupIntent.DELETE);
     setPartitionId(Protocol.DEPLOYMENT_PARTITION);
     requestDto.setGroupId(groupId);
+  }
+
+  public BrokerGroupDeleteRequest setSource(final String source) {
+    requestDto.setSource(source);
+    return this;
+  }
+
+  public BrokerGroupDeleteRequest setChangedAttributes(
+      final Collection<GroupAttribute> changedAttributes) {
+    requestDto.setChangedAttributes(changedAttributes);
+    return this;
   }
 
   @Override

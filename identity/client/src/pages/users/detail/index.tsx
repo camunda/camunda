@@ -10,11 +10,14 @@ import { FC } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import useTranslate from "src/utility/localization";
+import { isOIDC } from "src/configuration";
+import InlineNotification from "src/components/notifications/InlineNotification";
 import { userQueries } from "src/utility/api/users/queries";
 import NotFound from "src/pages/not-found";
 import { OverflowMenu, OverflowMenuItem, Section } from "@carbon/react";
 import { StackPage } from "src/components/layout/Page";
 import PageHeadline from "src/components/layout/PageHeadline";
+import SourceTag from "src/components/sourceTag";
 import UserDetails from "./UserDetailsTab";
 import Tabs from "src/components/tabs";
 import { DetailPageHeaderFallback } from "src/components/fallbacks";
@@ -47,23 +50,32 @@ const Details: FC = () => {
             {user && (
               <>
                 <PageHeadline>{user.username}</PageHeadline>
-                <OverflowMenu ariaLabel={t("openContextMenu")}>
-                  <OverflowMenuItem
-                    itemText={t("update")}
-                    onClick={() => {
-                      editUser(user);
-                    }}
-                  />
-                  <OverflowMenuItem
-                    itemText={t("delete")}
-                    onClick={() => {
-                      deleteUser(user);
-                    }}
-                  />
-                </OverflowMenu>
+                <SourceTag source={user.source} />
+                {!isOIDC && (
+                  <OverflowMenu ariaLabel={t("openContextMenu")}>
+                    <OverflowMenuItem
+                      itemText={t("update")}
+                      onClick={() => {
+                        editUser(user);
+                      }}
+                    />
+                    <OverflowMenuItem
+                      itemText={t("delete")}
+                      onClick={() => {
+                        deleteUser(user);
+                      }}
+                    />
+                  </OverflowMenu>
+                )}
               </>
             )}
           </Flex>
+        )}
+        {isOIDC && (
+          <InlineNotification
+            kind="info"
+            title={t("managedByIdentityProvider")}
+          />
         )}
         <Section>
           <Tabs

@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.processing.identity;
 
 import io.camunda.security.configuration.EngineSecurityConfig;
+import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.identity.adapter.MembershipStateAdapter;
 import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
@@ -24,6 +25,7 @@ import io.camunda.zeebe.engine.state.immutable.MembershipState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.UserState;
 import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord;
+import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord.GroupAttribute;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.GroupIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
@@ -31,6 +33,7 @@ import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
+import java.util.Optional;
 import org.jspecify.annotations.NullMarked;
 
 @NullMarked
@@ -99,6 +102,23 @@ public class GroupAddEntityProcessor implements DistributedTypedRecordProcessor<
       return;
     }
 
+    final var ownershipRejection =
+        record.getEntityType() == EntityType.USER || !record.getSource().isEmpty()
+            ? SourceOwnership.check(
+                "add an entity to",
+                "group",
+                groupId,
+                persistedRecord.get().getSource(),
+                record.getSource(),
+                record.getChangedAttributes().contains(GroupAttribute.SOURCE))
+            : Optional.<Rejection>empty();
+    if (ownershipRejection.isPresent()) {
+      final var rejection = ownershipRejection.get();
+      rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
+      responseWriter.writeRejectedResponseOnCommand(command, rejection.type(), rejection.reason());
+      return;
+    }
+
     final var groupKey = persistedRecord.get().getGroupKey();
     final var entityId = record.getEntityId();
     final var entityType = record.getEntityType();
@@ -111,6 +131,18 @@ public class GroupAddEntityProcessor implements DistributedTypedRecordProcessor<
       return;
     }
 
+    final var source = record.getSource();
+    if (!source.isEmpty() && entityType == EntityType.USER) {
+      final var member = userState.getUser(entityId);
+      if (member.isPresent() && !member.get().getUser().getSource().equals(source)) {
+        final var rejection = SourceOwnership.memberNotOwned("add", groupId, entityId, source);
+        rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
+        responseWriter.writeRejectedResponseOnCommand(
+            command, rejection.type(), rejection.reason());
+        return;
+      }
+    }
+
     if (isEntityAssigned(record)) {
       final var errorMessage =
           ENTITY_ALREADY_ASSIGNED_ERROR_MESSAGE.formatted(
@@ -121,6 +153,9 @@ public class GroupAddEntityProcessor implements DistributedTypedRecordProcessor<
       return;
     }
 
+    if (!source.isEmpty() && persistedRecord.get().getSource().isEmpty()) {
+      SourceOwnership.appendGroupAdoption(stateWriter, persistedRecord.get(), source);
+    }
     stateWriter.appendFollowUpEvent(groupKey, GroupIntent.ENTITY_ADDED, record);
     responseWriter.writeAcceptedResponseOnCommand(
         groupKey, GroupIntent.ENTITY_ADDED, record, command);
@@ -142,11 +177,23 @@ public class GroupAddEntityProcessor implements DistributedTypedRecordProcessor<
               record.getEntityId(), record.getGroupId());
       rejectionWriter.appendRejection(command, RejectionType.ALREADY_EXISTS, errorMessage);
     } else {
+      adoptGroupIfNeeded(record);
       stateWriter.appendFollowUpEvent(command.getKey(), GroupIntent.ENTITY_ADDED, record);
       invalidateMembershipCache();
     }
 
     commandDistributionBehavior.acknowledgeCommand(command);
+  }
+
+  private void adoptGroupIfNeeded(final GroupRecord record) {
+    final var source = record.getSource();
+    if (source.isEmpty()) {
+      return;
+    }
+    groupState
+        .get(record.getGroupId())
+        .filter(group -> group.getSource().isEmpty())
+        .ifPresent(group -> SourceOwnership.appendGroupAdoption(stateWriter, group, source));
   }
 
   /**

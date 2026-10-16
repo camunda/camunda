@@ -19,6 +19,12 @@
       },
       "name": {
         "type": "keyword"
+      },
+      "type": {
+        "type": "keyword"
+      },
+      "origin": {
+        "type": "keyword"
       }
     }
   }

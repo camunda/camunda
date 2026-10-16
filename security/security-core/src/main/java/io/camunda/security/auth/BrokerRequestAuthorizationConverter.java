@@ -10,6 +10,7 @@ package io.camunda.security.auth;
 import static io.camunda.zeebe.auth.Authorization.AUTHORIZED_ANONYMOUS_USER;
 import static io.camunda.zeebe.auth.Authorization.AUTHORIZED_CLIENT_ID;
 import static io.camunda.zeebe.auth.Authorization.AUTHORIZED_USERNAME;
+import static io.camunda.zeebe.auth.Authorization.LOGIN_SOURCE;
 import static io.camunda.zeebe.auth.Authorization.USER_GROUPS_CLAIMS;
 import static io.camunda.zeebe.auth.Authorization.USER_TOKEN_CLAIMS;
 
@@ -31,6 +32,12 @@ import java.util.Map;
  * {@link #shouldIncludeAuthorizationClaims()} to avoid computing these values when not needed.
  */
 public class BrokerRequestAuthorizationConverter {
+
+  /**
+   * Key under which the web layer places the SCIM login source in the claims map of an
+   * authentication. {@link #convert} moves it out of the token claims into {@code LOGIN_SOURCE}.
+   */
+  public static final String LOGIN_SOURCE_CLAIM = "camunda.login_source";
 
   private final boolean camundaGroupsEnabled;
   private final boolean groupsClaimConfigured;
@@ -95,7 +102,18 @@ public class BrokerRequestAuthorizationConverter {
       }
 
       if (tokenClaims != null && !tokenClaims.isEmpty()) {
-        claims.put(USER_TOKEN_CLAIMS, tokenClaims);
+        Map<String, Object> withoutSource = tokenClaims;
+        if (tokenClaims.containsKey(LOGIN_SOURCE_CLAIM)) {
+          if (tokenClaims.get(LOGIN_SOURCE_CLAIM) instanceof final String source
+              && !source.isBlank()) {
+            claims.put(LOGIN_SOURCE, source);
+          }
+          withoutSource = new HashMap<>(tokenClaims);
+          withoutSource.remove(LOGIN_SOURCE_CLAIM);
+        }
+        if (!withoutSource.isEmpty()) {
+          claims.put(USER_TOKEN_CLAIMS, withoutSource);
+        }
       }
     }
 

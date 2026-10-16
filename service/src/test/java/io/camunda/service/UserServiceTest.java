@@ -115,4 +115,21 @@ public class UserServiceTest {
     // then
     assertThat(searchQueryResult).isEqualTo(entity);
   }
+
+  @Test
+  public void shouldSendSourceAndAdoptionMaskOnDeleteForSource() {
+    // given
+    when(authentication.claims()).thenReturn(Map.of());
+    when(brokerClient.sendRequest(any()))
+        .thenReturn(CompletableFuture.completedFuture(new BrokerResponse<>(new UserRecord())));
+
+    // when
+    services.deleteUser("test", "entra", true, authentication);
+
+    // then
+    verify(brokerClient).sendRequest(userDeleteRequestArgumentCaptor.capture());
+    final var request = userDeleteRequestArgumentCaptor.getValue().getRequestWriter();
+    assertThat(request.getSource()).isEqualTo("entra");
+    assertThat(request.getChangedAttributes()).containsExactly(UserRecord.UserAttribute.SOURCE);
+  }
 }

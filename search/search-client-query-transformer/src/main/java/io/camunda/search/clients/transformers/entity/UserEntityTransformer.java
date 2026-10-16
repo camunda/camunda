@@ -22,6 +22,12 @@ public class UserEntityTransformer
         value.getUsername(),
         value.getName(),
         value.getEmail(),
-        value.getPassword());
+        value.getPassword(),
+        value.getExternalId(),
+        value.getActive(),
+        AttributesJson.parse(value.getAttributes()),
+        value.getCreatedAt(),
+        value.getLastModifiedAt(),
+        value.getSource());
   }
 }

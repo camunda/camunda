@@ -7,6 +7,7 @@
  */
 package io.camunda.authentication.config;
 
+import io.camunda.authentication.source.LoginSources;
 import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.core.authz.LazyTokenClaimsConverter;
 import io.camunda.security.spring.converter.AdditionalJwkSetUrisByRegistrationId;
@@ -31,6 +32,7 @@ final class ProviderAwareOidcUserAuthenticationConverter extends OidcUserAuthent
   private final Map<String, LazyTokenClaimsConverter> tokenClaimsConvertersByRegistrationId;
   private final Map<String, List<String>> identityClaimsByRegistrationId;
   private final PhysicalTenantOidcSettingsRegistry physicalTenantOidcSettings;
+  private final LoginSources loginSources;
 
   ProviderAwareOidcUserAuthenticationConverter(
       final OAuth2AuthorizedClientRepository authorizedClientRepository,
@@ -42,6 +44,30 @@ final class ProviderAwareOidcUserAuthenticationConverter extends OidcUserAuthent
       final Map<String, LazyTokenClaimsConverter> tokenClaimsConvertersByRegistrationId,
       final Map<String, List<String>> identityClaimsByRegistrationId,
       final PhysicalTenantOidcSettingsRegistry physicalTenantOidcSettings) {
+    this(
+        authorizedClientRepository,
+        accessTokenDecoderFactory,
+        defaultTokenClaimsConverter,
+        request,
+        additionalJwkSetUrisByRegistrationId,
+        preferIdTokenClaimsByRegistrationId,
+        tokenClaimsConvertersByRegistrationId,
+        identityClaimsByRegistrationId,
+        physicalTenantOidcSettings,
+        LoginSources.disabled());
+  }
+
+  ProviderAwareOidcUserAuthenticationConverter(
+      final OAuth2AuthorizedClientRepository authorizedClientRepository,
+      final OidcAccessTokenDecoderFactory accessTokenDecoderFactory,
+      final LazyTokenClaimsConverter defaultTokenClaimsConverter,
+      final HttpServletRequest request,
+      final AdditionalJwkSetUrisByRegistrationId additionalJwkSetUrisByRegistrationId,
+      final Map<String, Boolean> preferIdTokenClaimsByRegistrationId,
+      final Map<String, LazyTokenClaimsConverter> tokenClaimsConvertersByRegistrationId,
+      final Map<String, List<String>> identityClaimsByRegistrationId,
+      final PhysicalTenantOidcSettingsRegistry physicalTenantOidcSettings,
+      final LoginSources loginSources) {
     super(
         authorizedClientRepository,
         accessTokenDecoderFactory,
@@ -53,6 +79,7 @@ final class ProviderAwareOidcUserAuthenticationConverter extends OidcUserAuthent
     this.tokenClaimsConvertersByRegistrationId = Map.copyOf(tokenClaimsConvertersByRegistrationId);
     this.identityClaimsByRegistrationId = Map.copyOf(identityClaimsByRegistrationId);
     this.physicalTenantOidcSettings = physicalTenantOidcSettings;
+    this.loginSources = loginSources;
   }
 
   @Override
@@ -70,7 +97,9 @@ final class ProviderAwareOidcUserAuthenticationConverter extends OidcUserAuthent
       identityClaims
           .getOrDefault(registrationId, List.of())
           .forEach(claim -> normalizeUriClaim(claims, claim));
-      return tokenClaimsConverter.convert(claims);
+      // always set or removed, so the IdP cannot bring its own login source
+      return tokenClaimsConverter.convert(
+          LoginSources.withLoginSource(claims, loginSources.sourceOfRegistration(registrationId)));
     } catch (final IllegalArgumentException e) {
       throw new OAuth2AuthenticationException(
           new OAuth2Error(OAuth2ErrorCodes.INVALID_TOKEN, e.getMessage(), null), e);

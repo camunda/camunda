@@ -33,6 +33,17 @@ const List: FC = () => {
     refetch: reload,
   } = useQuery(mappingRuleQueries.search(pageParams));
 
+  const tableData = (mappingRuleSearchResults?.items ?? []).map((rule) => ({
+    ...rule,
+    typeLabel:
+      rule.type === "USER_ATTRIBUTE"
+        ? t("typeUserAttribute")
+        : rule.type === "GROUP_ATTRIBUTE"
+          ? t("typeGroupAttribute")
+          : t("typeTokenClaim"),
+    originLabel: rule.origin || t("originAnyShort"),
+  }));
+
   const [addMappingRule, addMappingRuleModal] = useModal(AddModal, noop);
   const [editMappingRule, editMappingRuleModal] = useEntityModal(
     EditModal,
@@ -73,9 +84,7 @@ const List: FC = () => {
     <Page>
       {pageHeader}
       <EntityList
-        data={
-          mappingRuleSearchResults == null ? [] : mappingRuleSearchResults.items
-        }
+        data={tableData}
         headers={[
           {
             header: t("mappingRuleId"),
@@ -83,6 +92,8 @@ const List: FC = () => {
             isSortable: true,
           },
           { header: t("mappingRuleName"), key: "name", isSortable: true },
+          { header: t("type"), key: "typeLabel" },
+          { header: t("origin"), key: "originLabel" },
           { header: t("claimName"), key: "claimName", isSortable: true },
           { header: t("claimValue"), key: "claimValue", isSortable: true },
         ]}

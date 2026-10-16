@@ -9,6 +9,8 @@ package io.camunda.webapps.schema.entities.usermanagement;
 
 import io.camunda.webapps.schema.entities.AbstractExporterEntity;
 import io.camunda.webapps.schema.entities.BeforeVersion880;
+import io.camunda.webapps.schema.entities.SinceVersion;
+import java.time.OffsetDateTime;
 
 public class UserEntity extends AbstractExporterEntity<UserEntity> {
 
@@ -18,6 +20,24 @@ public class UserEntity extends AbstractExporterEntity<UserEntity> {
   @BeforeVersion880 private String name;
   @BeforeVersion880 private String email;
   @BeforeVersion880 private String password;
+
+  @SinceVersion(value = "8.11.0", requireDefault = false)
+  private String externalId;
+
+  @SinceVersion(value = "8.11.0", requireDefault = false)
+  private String source;
+
+  @SinceVersion(value = "8.11.0", requireDefault = false)
+  private Boolean active;
+
+  @SinceVersion(value = "8.11.0", requireDefault = false)
+  private String attributes;
+
+  @SinceVersion(value = "8.11.0", requireDefault = false)
+  private OffsetDateTime createdAt;
+
+  @SinceVersion(value = "8.11.0", requireDefault = false)
+  private OffsetDateTime lastModifiedAt;
 
   public Long getKey() {
     return key;
@@ -61,6 +81,61 @@ public class UserEntity extends AbstractExporterEntity<UserEntity> {
 
   public UserEntity setPassword(final String password) {
     this.password = password;
+    return this;
+  }
+
+  public String getSource() {
+    return source;
+  }
+
+  public UserEntity setSource(final String source) {
+    this.source = source;
+    return this;
+  }
+
+  public String getExternalId() {
+    return externalId;
+  }
+
+  public UserEntity setExternalId(final String externalId) {
+    this.externalId = externalId;
+    return this;
+  }
+
+  public Boolean getActive() {
+    return active;
+  }
+
+  public UserEntity setActive(final Boolean active) {
+    this.active = active;
+    return this;
+  }
+
+  /** JSON object serialized as a string; not indexed. */
+  public String getAttributes() {
+    return attributes;
+  }
+
+  public UserEntity setAttributes(final String attributes) {
+    this.attributes = attributes;
+    return this;
+  }
+
+  public OffsetDateTime getCreatedAt() {
+    return createdAt;
+  }
+
+  public UserEntity setCreatedAt(final OffsetDateTime createdAt) {
+    this.createdAt = createdAt;
+    return this;
+  }
+
+  public OffsetDateTime getLastModifiedAt() {
+    return lastModifiedAt;
+  }
+
+  public UserEntity setLastModifiedAt(final OffsetDateTime lastModifiedAt) {
+    this.lastModifiedAt = lastModifiedAt;
     return this;
   }
 }

@@ -24,6 +24,9 @@ import io.camunda.zeebe.gateway.impl.broker.request.BrokerUserDeleteRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerUserUpdateRequest;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
 import io.camunda.zeebe.protocol.record.intent.UserIntent;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -71,7 +74,11 @@ public class UserServices extends SearchQueryService<UserServices, UserQuery, Us
             .setUsername(request.username())
             .setName(request.name())
             .setEmail(request.email())
-            .setPassword(encodedPassword),
+            .setPassword(encodedPassword)
+            .setExternalId(request.externalId())
+            .setActive(request.active())
+            .setAttributes(request.attributes())
+            .setSource(request.source()),
         authentication);
   }
 
@@ -111,10 +118,103 @@ public class UserServices extends SearchQueryService<UserServices, UserQuery, Us
         authentication);
   }
 
+  /**
+   * Updates only the given attributes of the user; all other attributes keep their current value.
+   */
+  public CompletableFuture<UserRecord> updateUser(
+      final UserDTO request,
+      final Set<UserAttribute> changedAttributes,
+      final CamundaAuthentication authentication) {
+    final String encodedPassword =
+        changedAttributes.contains(UserAttribute.PASSWORD) && !StringUtils.isEmpty(request.password)
+            ? passwordEncoder.encode(request.password())
+            : "";
+    return sendBrokerRequest(
+        new BrokerUserUpdateRequest()
+            .setUsername(request.username())
+            .setName(request.name())
+            .setEmail(request.email())
+            .setPassword(encodedPassword)
+            .setExternalId(request.externalId())
+            .setActive(request.active())
+            .setAttributes(request.attributes())
+            .setSource(request.source())
+            .setChangedAttributes(
+                changedAttributes.stream()
+                    .map(attribute -> UserRecord.UserAttribute.valueOf(attribute.name()))
+                    .toList()),
+        authentication);
+  }
+
   public CompletableFuture<UserRecord> deleteUser(
       final String username, final CamundaAuthentication authentication) {
     return sendBrokerRequest(new BrokerUserDeleteRequest().setUsername(username), authentication);
   }
 
-  public record UserDTO(String username, String name, String email, String password) {}
+  /**
+   * Deletes a user on behalf of a SCIM source: a user owned by another source does not exist for
+   * the source, and an unowned user is only deleted if {@code adoptUnowned} is set.
+   */
+  public CompletableFuture<UserRecord> deleteUser(
+      final String username,
+      final String source,
+      final boolean adoptUnowned,
+      final CamundaAuthentication authentication) {
+    return sendBrokerRequest(
+        new BrokerUserDeleteRequest()
+            .setUsername(username)
+            .setSource(source)
+            .setChangedAttributes(
+                adoptUnowned ? List.of(UserRecord.UserAttribute.SOURCE) : List.of()),
+        authentication);
+  }
+
+  public enum UserAttribute {
+    NAME,
+    EMAIL,
+    PASSWORD,
+    EXTERNAL_ID,
+    ACTIVE,
+    ATTRIBUTES,
+    ATTRIBUTES_MERGE,
+    /** Adopts an unowned user by setting the source of the request. */
+    SOURCE
+  }
+
+  public record UserDTO(
+      String username,
+      String name,
+      String email,
+      String password,
+      String externalId,
+      boolean active,
+      Map<String, Object> attributes,
+      String source) {
+
+    public UserDTO(
+        final String username,
+        final String name,
+        final String email,
+        final String password,
+        final String externalId,
+        final boolean active,
+        final Map<String, Object> attributes) {
+      this(username, name, email, password, externalId, active, attributes, "");
+    }
+
+    public UserDTO(
+        final String username,
+        final String name,
+        final String email,
+        final String password,
+        final String externalId,
+        final boolean active) {
+      this(username, name, email, password, externalId, active, Map.of(), "");
+    }
+
+    public UserDTO(
+        final String username, final String name, final String email, final String password) {
+      this(username, name, email, password, "", true, Map.of(), "");
+    }
+  }
 }

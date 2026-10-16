@@ -17,6 +17,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.net.URI;
 import java.util.List;
+import java.util.function.BiPredicate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
@@ -27,14 +28,28 @@ public class EndpointAccessErrorFilter extends HttpFilter {
   private final ObjectMapper objectMapper;
   private final String errorMessage;
   private final List<PathPattern> pathPatterns;
+  private final BiPredicate<String, PathContainer> exemption;
 
   public EndpointAccessErrorFilter(
       @Autowired final ObjectMapper objectMapper,
       final String errorMessage,
       final List<PathPattern> pathPatterns) {
+    this(objectMapper, errorMessage, pathPatterns, (method, path) -> false);
+  }
+
+  /**
+   * @param exemption tests the HTTP method and request path; requests for which it returns {@code
+   *     true} are let through even if they match one of the {@code pathPatterns}
+   */
+  public EndpointAccessErrorFilter(
+      final ObjectMapper objectMapper,
+      final String errorMessage,
+      final List<PathPattern> pathPatterns,
+      final BiPredicate<String, PathContainer> exemption) {
     this.objectMapper = objectMapper;
     this.errorMessage = errorMessage;
     this.pathPatterns = pathPatterns;
+    this.exemption = exemption;
   }
 
   @Override
@@ -43,7 +58,8 @@ public class EndpointAccessErrorFilter extends HttpFilter {
       throws IOException, ServletException {
     final var requestPath =
         PathContainer.parsePath(req.getRequestURI().substring(req.getContextPath().length()));
-    if (pathPatterns.stream().noneMatch(p -> p.matches(requestPath))) {
+    if (pathPatterns.stream().noneMatch(p -> p.matches(requestPath))
+        || exemption.test(req.getMethod(), requestPath)) {
       chain.doFilter(req, res);
       return;
     }

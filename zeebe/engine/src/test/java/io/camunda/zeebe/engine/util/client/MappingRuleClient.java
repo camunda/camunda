@@ -11,6 +11,7 @@ import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRuleReco
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.MappingRuleIntent;
 import io.camunda.zeebe.protocol.record.value.MappingRuleRecordValue;
+import io.camunda.zeebe.protocol.record.value.MappingRuleType;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.util.function.Function;
 
@@ -67,6 +68,16 @@ public class MappingRuleClient {
 
     public MappingRuleCreateClient withClaimValue(final String claimValue) {
       mappingRuleRecord.setClaimValue(claimValue);
+      return this;
+    }
+
+    public MappingRuleCreateClient withType(final MappingRuleType type) {
+      mappingRuleRecord.setType(type);
+      return this;
+    }
+
+    public MappingRuleCreateClient withOrigin(final String origin) {
+      mappingRuleRecord.setOrigin(origin);
       return this;
     }
 
@@ -182,6 +193,16 @@ public class MappingRuleClient {
 
     public MappingRuleUpdateClient withClaimValue(final String claimValue) {
       mappingRuleRecord.setClaimValue(claimValue);
+      return this;
+    }
+
+    public MappingRuleUpdateClient withType(final MappingRuleType type) {
+      mappingRuleRecord.setType(type);
+      return this;
+    }
+
+    public MappingRuleUpdateClient withOrigin(final String origin) {
+      mappingRuleRecord.setOrigin(origin);
       return this;
     }
 

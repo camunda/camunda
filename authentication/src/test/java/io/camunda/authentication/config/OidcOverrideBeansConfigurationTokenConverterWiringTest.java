@@ -12,6 +12,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import io.camunda.authentication.source.LoginSources;
 import io.camunda.security.api.context.MembershipResolutionContextPropagator;
 import io.camunda.security.api.context.OidcClaimsProvider;
 import io.camunda.security.api.model.CamundaAuthentication;
@@ -171,6 +172,46 @@ class OidcOverrideBeansConfigurationTokenConverterWiringTest {
     final var result = converter.convert(new JwtAuthenticationToken(jwt));
 
     // then behaviour is unchanged: the single default converter still runs
+    assertThat(result).isSameAs(expected);
+  }
+
+  @Test
+  void shouldPutLoginSourceOfTheIssuingProviderIntoTheClaims() {
+    // given SCIM with two sources bound to two registrations, and an issuer per registration
+    final var scimEnvironment =
+        new MockEnvironment()
+            .withProperty("camunda.scim.enabled", "true")
+            .withProperty("camunda.scim.sources[0].id", "entra-source")
+            .withProperty("camunda.scim.sources[0].oidc-registration", "entra")
+            .withProperty("camunda.scim.sources[1].id", "kc-source")
+            .withProperty("camunda.scim.sources[1].oidc-registration", "keycloak")
+            .withProperty(
+                "camunda.security.authentication.providers.oidc.entra.issuer-uri", ENTRA_ISSUER)
+            .withProperty(
+                "camunda.security.authentication.providers.oidc.keycloak.issuer-uri",
+                "https://kc.example.com");
+    final var converter =
+        configuration.oidcTokenAuthenticationConverter(
+            defaultConverter,
+            claimsProvider,
+            converterMapProvider(ENTRA_ISSUER, entraConverter),
+            membershipPort,
+            MembershipResolutionContextPropagator.identity(),
+            scopedOidcClaimsProviderFactory,
+            scimEnvironment);
+    final var jwt = jwtWithIssuer(ENTRA_ISSUER);
+    // the provider's claims already carry a login source, as a forging IdP would send
+    when(claimsProvider.claimsFor(jwt.getClaims(), jwt.getTokenValue()))
+        .thenReturn(Map.of("sub", "alice", LoginSources.LOGIN_SOURCE_CLAIM, "forged"));
+    final var expected = CamundaAuthentication.of(b -> b.user("alice"));
+    when(entraConverter.convert(
+            Map.of("sub", "alice", LoginSources.LOGIN_SOURCE_CLAIM, "entra-source")))
+        .thenReturn(expected);
+
+    // when
+    final var result = converter.convert(new JwtAuthenticationToken(jwt));
+
+    // then
     assertThat(result).isSameAs(expected);
   }
 

@@ -494,7 +494,8 @@ public class SystemControllerTest extends RestControllerTest {
               "authentication": {
                 "canLogout": true,
                 "isLoginDelegated": false,
-                "isCamundaGroupsEnabled": true
+                "isCamundaGroupsEnabled": true,
+                "isUserProvisioningEnabled": false
               },
               "cloud": {
                 "stage": null
@@ -581,6 +582,24 @@ public class SystemControllerTest extends RestControllerTest {
                 "isTenantsApiEnabled": true
               }
             }
+            """,
+            JsonCompareMode.LENIENT);
+  }
+
+  @Test
+  void shouldReturnUserProvisioningDisabledByDefault() {
+    // when/then
+    webClient
+        .get()
+        .uri(SYSTEM_CONFIGURATION_URL)
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectBody()
+        .json(
+            """
+            { "authentication": { "isUserProvisioningEnabled": false } }
             """,
             JsonCompareMode.LENIENT);
   }

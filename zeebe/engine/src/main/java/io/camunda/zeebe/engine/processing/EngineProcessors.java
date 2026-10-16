@@ -203,6 +203,8 @@ public final class EngineProcessors {
         new MembershipStateAdapter(
             processingState.getMappingRuleState(),
             processingState.getMembershipState(),
+            processingState.getUserState(),
+            processingState.getGroupState(),
             config,
             typedRecordProcessorContext.getMeterRegistry());
     final var authorizationScopeStateAdapter =

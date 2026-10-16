@@ -30,6 +30,7 @@ import io.camunda.zeebe.gateway.api.util.StubbedBrokerClient;
 import io.camunda.zeebe.gateway.impl.broker.request.group.BrokerGroupCreateRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.group.BrokerGroupDeleteRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.group.BrokerGroupMemberRequest;
+import io.camunda.zeebe.gateway.impl.broker.request.group.BrokerGroupSetEntitiesRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.group.BrokerGroupUpdateRequest;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord;
@@ -236,5 +237,32 @@ public class GroupServiceTest {
     assertThat(record).hasGroupId(groupId);
     assertThat(record).hasEntityId(username);
     assertThat(record).hasEntityType(io.camunda.zeebe.protocol.record.value.EntityType.USER);
+  }
+
+  @Test
+  public void shouldSendSourceAndAdoptionMaskOnAssignMemberForSource() {
+    // given
+    final var dto = new GroupMemberDTO("groupId", "username", EntityType.USER);
+
+    // when
+    services.assignMember(dto, "entra", true, authentication);
+
+    // then
+    final BrokerGroupMemberRequest request = stubbedBrokerClient.getSingleBrokerRequest();
+    final GroupRecord record = request.getRequestWriter();
+    assertThat(record.getSource()).isEqualTo("entra");
+    assertThat(record.getChangedAttributes()).containsExactly(GroupRecord.GroupAttribute.SOURCE);
+  }
+
+  @Test
+  public void shouldSendSourceOnSetMembersForSource() {
+    // when
+    services.setMembers("groupId", EntityType.USER, List.of("a"), "entra", false, authentication);
+
+    // then
+    final BrokerGroupSetEntitiesRequest request = stubbedBrokerClient.getSingleBrokerRequest();
+    final GroupRecord record = request.getRequestWriter();
+    assertThat(record.getSource()).isEqualTo("entra");
+    assertThat(record.getChangedAttributes()).isEmpty();
   }
 }

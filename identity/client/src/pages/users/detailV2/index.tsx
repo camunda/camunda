@@ -12,9 +12,12 @@ import { useQuery } from "@tanstack/react-query";
 import { Pencil, Trash2 } from "@camunda/design-system/icons";
 import { Button, PageHeader } from "@camunda/design-system";
 import useTranslate from "src/utility/localization";
+import { isOIDC } from "src/configuration";
+import InlineNotification from "src/components/notificationsV2/InlineNotification";
 import { userQueries } from "src/utility/api/users/queries";
 import NotFound from "src/pages/not-foundV2";
 import { Breadcrumbs, StackPage } from "src/components/layoutV2/Page";
+import SourceBadge from "src/components/sourceTagV2";
 import UserDetails from "./UserDetailsTab";
 import { Tabs, TabsHeaderList, TabsContent } from "src/components/tabsV2";
 import { DetailPageHeaderFallback } from "src/components/fallbacksV2";
@@ -64,31 +67,42 @@ const Details: FC = () => {
             <Tabs path={`../${id}`} tabs={tabs} selectedTabKey={tab}>
               <PageHeader
                 title={user.username}
+                tag={
+                  user.source ? <SourceBadge source={user.source} /> : undefined
+                }
                 breadcrumb={<Breadcrumbs items={breadcrumbs} />}
                 actions={
-                  <>
-                    <Button
-                      type="button"
-                      variant="secondary"
-                      size="sm"
-                      onClick={() => editUser(user)}
-                    >
-                      <Pencil aria-hidden="true" />
-                      {t("update")}
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="destructive"
-                      size="sm"
-                      onClick={() => deleteUser(user)}
-                    >
-                      <Trash2 aria-hidden="true" />
-                      {t("delete")}
-                    </Button>
-                  </>
+                  isOIDC ? undefined : (
+                    <>
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => editUser(user)}
+                      >
+                        <Pencil aria-hidden="true" />
+                        {t("update")}
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => deleteUser(user)}
+                      >
+                        <Trash2 aria-hidden="true" />
+                        {t("delete")}
+                      </Button>
+                    </>
+                  )
                 }
                 tabs={<TabsHeaderList />}
               />
+              {isOIDC && (
+                <InlineNotification
+                  kind="info"
+                  title={t("managedByIdentityProvider")}
+                />
+              )}
               <TabsContent />
             </Tabs>
           )

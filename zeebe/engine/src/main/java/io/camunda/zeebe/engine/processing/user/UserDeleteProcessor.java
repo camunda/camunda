@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.user;
 
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.identity.PermissionsBehavior;
+import io.camunda.zeebe.engine.processing.identity.SourceOwnership;
 import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -29,6 +30,7 @@ import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
 import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord;
 import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
+import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord.UserAttribute;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
 import io.camunda.zeebe.protocol.record.intent.GroupIntent;
@@ -101,6 +103,21 @@ public class UserDeleteProcessor implements DistributedTypedRecordProcessor<User
             command, AuthorizationResourceType.USER, PermissionType.DELETE, username);
     if (authResult.isLeft()) {
       final var rejection = authResult.getLeft();
+      rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
+      responseWriter.writeRejectedResponseOnCommand(command, rejection.type(), rejection.reason());
+      return;
+    }
+
+    final var ownership =
+        SourceOwnership.check(
+            "delete",
+            "user",
+            username,
+            user.getUser().getSource(),
+            record.getSource(),
+            record.getChangedAttributes().contains(UserAttribute.SOURCE));
+    if (ownership.isPresent()) {
+      final var rejection = ownership.get();
       rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
       responseWriter.writeRejectedResponseOnCommand(command, rejection.type(), rejection.reason());
       return;

@@ -9,7 +9,13 @@
 import type { CurrentUser } from "@camunda/camunda-api-zod-schemas/8.10";
 import { ApiDefinition, apiGet } from "src/utility/api/request.ts";
 
-export const getAuthentication: ApiDefinition<CurrentUser> = () =>
+export type CurrentUserWithSource = CurrentUser & {
+  loginSource?: string | null;
+  provisionedBy?: string | null;
+  mappingRules?: string[] | null;
+};
+
+export const getAuthentication: ApiDefinition<CurrentUserWithSource> = () =>
   apiGet("/authentication/me");
 
 export const getSaasUserToken: ApiDefinition<string> = () =>

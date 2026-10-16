@@ -62,17 +62,32 @@ public class GroupQueryControllerTest extends RestControllerTest {
           {
             "groupId":"%s",
             "name":"Group 1",
-            "description":"Description 1"
+            "description":"Description 1",
+            "source":null,
+            "externalId":null,
+            "attributes":null,
+            "createdAt":null,
+            "lastModifiedAt":null
           },
           {
             "groupId":"%s",
             "name":"Group 2",
-            "description":"Description 2"
+            "description":"Description 2",
+            "source":null,
+            "externalId":null,
+            "attributes":null,
+            "createdAt":null,
+            "lastModifiedAt":null
           },
           {
             "groupId":"%s",
             "name":"Group 3",
-            "description":"Description 3"
+            "description":"Description 3",
+            "source":null,
+            "externalId":null,
+            "attributes":null,
+            "createdAt":null,
+            "lastModifiedAt":null
           }
         ],
         "page":{
@@ -212,12 +227,16 @@ public class GroupQueryControllerTest extends RestControllerTest {
         "items":[
           {
             "name":"name",
+            "type":"TOKEN_CLAIM",
+            "origin":"",
             "mappingRuleId":"%s",
             "claimName":"claimName1",
             "claimValue":"claimValue1"
           },
           {
             "name":"name",
+            "type":"TOKEN_CLAIM",
+            "origin":"",
             "mappingRuleId":"%s",
             "claimName":"claimName2",
             "claimValue":"claimValue2"
@@ -277,13 +296,50 @@ public class GroupQueryControllerTest extends RestControllerTest {
             {
               "groupId": "%s",
               "name": "%s",
-              "description": "%s"
+              "description": "%s",
+              "source": null,
+              "externalId": null,
+              "attributes": null,
+              "createdAt": null,
+              "lastModifiedAt": null
             }"""
                 .formatted(groupId, groupName, groupDescription),
             JsonCompareMode.STRICT);
 
     // then
     verify(groupServices, times(1)).getGroup(eq(group.groupId()), any());
+  }
+
+  @Test
+  void shouldReturnExternalIdOnGetGroup() {
+    // given
+    final var groupId = Strings.newRandomValidIdentityId();
+    final var group = new GroupEntity(111L, groupId, "scim group", null, "ext-123");
+    when(groupServices.getGroup(eq(groupId), any())).thenReturn(group);
+
+    // when / then
+    webClient
+        .get()
+        .uri("%s/%s".formatted(GROUP_BASE_URL, groupId))
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectBody()
+        .json(
+            """
+            {
+              "groupId": "%s",
+              "name": "scim group",
+              "description": null,
+              "source": null,
+              "externalId": "ext-123",
+              "attributes": null,
+              "createdAt": null,
+              "lastModifiedAt": null
+            }"""
+                .formatted(groupId),
+            JsonCompareMode.STRICT);
   }
 
   @Test
@@ -370,17 +426,32 @@ public class GroupQueryControllerTest extends RestControllerTest {
                {
                  "groupId": "%s",
                  "name": "%s",
-                 "description": "%s"
+                 "description": "%s",
+                 "source": null,
+                 "externalId": null,
+                 "attributes": null,
+                 "createdAt": null,
+                 "lastModifiedAt": null
                },
                {
                  "groupId": "%s",
                  "name": "%s",
-                 "description": "%s"
+                 "description": "%s",
+                 "source": null,
+                 "externalId": null,
+                 "attributes": null,
+                 "createdAt": null,
+                 "lastModifiedAt": null
                },
                {
                  "groupId": "%s",
                  "name": "%s",
-                 "description": "%s"
+                 "description": "%s",
+                 "source": null,
+                 "externalId": null,
+                 "attributes": null,
+                 "createdAt": null,
+                 "lastModifiedAt": null
                }
              ],
              "page": {
@@ -458,7 +529,12 @@ public class GroupQueryControllerTest extends RestControllerTest {
                {
                  "groupId": "group-top",
                  "name": "Group Top",
-                 "description": "description 1"
+                 "description": "description 1",
+                 "source": null,
+                 "externalId": null,
+                 "attributes": null,
+                 "createdAt": null,
+                 "lastModifiedAt": null
                }
              ],
              "page": {
@@ -512,7 +588,12 @@ public class GroupQueryControllerTest extends RestControllerTest {
                {
                  "groupId": "group-top",
                  "name": "Group Top",
-                 "description": "description 1"
+                 "description": "description 1",
+                 "source": null,
+                 "externalId": null,
+                 "attributes": null,
+                 "createdAt": null,
+                 "lastModifiedAt": null
                }
              ],
              "page": {
@@ -587,17 +668,32 @@ public class GroupQueryControllerTest extends RestControllerTest {
                {
                  "groupId": "%s",
                  "name": "%s",
-                 "description": "%s"
+                 "description": "%s",
+                 "source": null,
+                 "externalId": null,
+                 "attributes": null,
+                 "createdAt": null,
+                 "lastModifiedAt": null
                },
                {
                  "groupId": "%s",
                  "name": "%s",
-                 "description": "%s"
+                 "description": "%s",
+                 "source": null,
+                 "externalId": null,
+                 "attributes": null,
+                 "createdAt": null,
+                 "lastModifiedAt": null
                },
                {
                  "groupId": "%s",
                  "name": "%s",
-                 "description": "%s"
+                 "description": "%s",
+                 "source": null,
+                 "externalId": null,
+                 "attributes": null,
+                 "createdAt": null,
+                 "lastModifiedAt": null
                }
              ],
              "page": {

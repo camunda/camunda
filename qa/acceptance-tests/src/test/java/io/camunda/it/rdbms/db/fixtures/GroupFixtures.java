@@ -26,7 +26,10 @@ public final class GroupFixtures extends CommonFixtures {
             .groupKey(groupKey)
             .groupId(groupId)
             .name("Group " + groupId)
-            .description("Description " + groupId);
+            .description("Description " + groupId)
+            .externalId("external-" + groupId)
+            .source("source-" + groupId)
+            .attributes("{\"costCenter\":\"cc-" + groupId + "\"}");
 
     return builderFunction.apply(builder).build();
   }

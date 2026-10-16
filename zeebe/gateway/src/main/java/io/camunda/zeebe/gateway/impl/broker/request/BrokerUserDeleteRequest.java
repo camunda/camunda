@@ -10,8 +10,10 @@ package io.camunda.zeebe.gateway.impl.broker.request;
 import io.camunda.zeebe.broker.client.api.dto.BrokerExecuteCommand;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
+import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord.UserAttribute;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.UserIntent;
+import java.util.Collection;
 import org.agrona.DirectBuffer;
 
 public class BrokerUserDeleteRequest extends BrokerExecuteCommand<UserRecord> {
@@ -24,6 +26,17 @@ public class BrokerUserDeleteRequest extends BrokerExecuteCommand<UserRecord> {
 
   public BrokerUserDeleteRequest setUsername(final String username) {
     requestDto.setUsername(username);
+    return this;
+  }
+
+  public BrokerUserDeleteRequest setSource(final String source) {
+    requestDto.setSource(source);
+    return this;
+  }
+
+  public BrokerUserDeleteRequest setChangedAttributes(
+      final Collection<UserAttribute> changedAttributes) {
+    requestDto.setChangedAttributes(changedAttributes);
     return this;
   }
 

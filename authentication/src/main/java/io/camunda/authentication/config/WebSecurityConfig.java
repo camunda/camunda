@@ -7,6 +7,7 @@
  */
 package io.camunda.authentication.config;
 
+import io.camunda.authentication.active.InactiveUserFilterConfiguration;
 import io.camunda.authentication.clusteradmin.ClusterAdminBasicSecurityConfiguration;
 import io.camunda.authentication.clusteradmin.ClusterAdminConverterConfiguration;
 import io.camunda.authentication.clusteradmin.ClusterAdminOidcSecurityConfiguration;
@@ -61,6 +62,7 @@ import org.springframework.security.web.firewall.StrictHttpFirewall;
 @ImportAutoConfiguration(CamundaSecurityAutoConfiguration.class)
 @Import({
   OidcOverrideBeansConfiguration.class,
+  InactiveUserFilterConfiguration.class,
   BasicAuthBeansConfiguration.class,
   MembershipResolutionContextPropagatorConfiguration.class,
   SaasCspModeCompatibility.class,

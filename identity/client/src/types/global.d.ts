@@ -13,11 +13,13 @@ export declare global {
     isTenantsApiEnabled?: string;
     isNewDesignSystemEnabled?: string;
     isAdditionalIdpConfigured?: string;
+    isUserProvisioningEnabled?: string;
     organizationId?: string;
     clusterId?: string;
     idPattern?: string;
     resourcePermissions?: Record<string, string[]>;
     defaultRoleIds?: string[];
+    scimSources?: string[];
   }
 
   interface Window {

@@ -11,6 +11,7 @@ import static io.camunda.security.api.model.config.AuthenticationMethod.OIDC;
 import static io.camunda.zeebe.auth.Authorization.AUTHORIZED_ANONYMOUS_USER;
 import static io.camunda.zeebe.auth.Authorization.AUTHORIZED_CLIENT_ID;
 import static io.camunda.zeebe.auth.Authorization.AUTHORIZED_USERNAME;
+import static io.camunda.zeebe.auth.Authorization.LOGIN_SOURCE;
 import static io.camunda.zeebe.auth.Authorization.USER_GROUPS_CLAIMS;
 import static io.camunda.zeebe.auth.Authorization.USER_TOKEN_CLAIMS;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -108,6 +109,24 @@ public class BrokerRequestAuthorizationConverterTest {
     // then
     assertThat(brokerRequestAuth).hasSize(1);
     assertThat(brokerRequestAuth).containsEntry(USER_TOKEN_CLAIMS, claims);
+  }
+
+  @Test
+  void shouldMoveLoginSourceOutOfTokenClaims() {
+    // given
+    final Map<String, Object> claims =
+        Map.of("sub", "foo", BrokerRequestAuthorizationConverter.LOGIN_SOURCE_CLAIM, "entra");
+    final var authentication = CamundaAuthentication.of(b -> b.claims(claims));
+    final var converter =
+        new BrokerRequestAuthorizationConverter(EngineSecurityConfigurations.defaultConfig());
+
+    // when
+    final var brokerRequestAuth = converter.convert(authentication);
+
+    // then
+    assertThat(brokerRequestAuth)
+        .containsEntry(LOGIN_SOURCE, "entra")
+        .containsEntry(USER_TOKEN_CLAIMS, Map.of("sub", "foo"));
   }
 
   @Test

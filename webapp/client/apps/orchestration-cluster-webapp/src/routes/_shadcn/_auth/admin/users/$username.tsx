@@ -10,7 +10,7 @@ import {useCallback} from 'react';
 import {createFileRoute, notFound, useNavigate, type ErrorComponentProps} from '@tanstack/react-router';
 import {useSuspenseQuery} from '@tanstack/react-query';
 import {PageLayout} from '@camunda/design-system';
-import {assertAdminSectionAvailable} from '#/admin/adminSections';
+import {assertAdminSectionAvailable, getAdminSectionConfig} from '#/admin/adminSections';
 import {AdminUserDetailPage} from '#/admin/pages/AdminUserDetailPage';
 import {ForbiddenError} from '#/shared/errors';
 import {queries} from '#/shared/http/queries';
@@ -55,12 +55,13 @@ export const Route = createFileRoute('/_shadcn/_auth/admin/users/$username')({
 	component: function AdminUserDetailRoute() {
 		const {username} = Route.useParams();
 		const navigate = useNavigate();
+		const {isOidc} = getAdminSectionConfig();
 		const {data: user} = useSuspenseQuery(queries.getUser(username));
 
 		const handleDeleted = useCallback(() => {
 			navigate({to: '/admin/users', replace: true});
 		}, [navigate]);
 
-		return <AdminUserDetailPage user={user} onDeleted={handleDeleted} />;
+		return <AdminUserDetailPage user={user} onDeleted={handleDeleted} isReadOnly={isOidc} />;
 	},
 });

@@ -18,15 +18,21 @@ import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.Loggers;
 import io.camunda.zeebe.engine.state.authorization.DbMembershipState.RelationType;
 import io.camunda.zeebe.engine.state.authorization.PersistedMappingRule;
+import io.camunda.zeebe.engine.state.immutable.GroupState;
 import io.camunda.zeebe.engine.state.immutable.MappingRuleState;
 import io.camunda.zeebe.engine.state.immutable.MembershipState;
+import io.camunda.zeebe.engine.state.immutable.UserState;
+import io.camunda.zeebe.engine.state.user.PersistedUser;
 import io.camunda.zeebe.protocol.record.value.EntityType;
+import io.camunda.zeebe.protocol.record.value.MappingRuleType;
 import io.camunda.zeebe.util.cache.CaffeineCacheStatsCounter;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Stream;
 import org.jspecify.annotations.NullMarked;
 import org.slf4j.Logger;
 
@@ -37,15 +43,21 @@ public final class MembershipStateAdapter implements MembershipPort {
 
   private final MappingRuleState mappingRuleState;
   private final MembershipState membershipState;
+  private final UserState userState;
+  private final GroupState groupState;
   private final LoadingCache<MembershipCacheKey, List<String>> membershipCache;
 
   public MembershipStateAdapter(
       final MappingRuleState mappingRuleState,
       final MembershipState membershipState,
+      final UserState userState,
+      final GroupState groupState,
       final EngineConfiguration config,
       final MeterRegistry meterRegistry) {
     this.mappingRuleState = mappingRuleState;
     this.membershipState = membershipState;
+    this.userState = userState;
+    this.groupState = groupState;
     final var statsCounter =
         new CaffeineCacheStatsCounter(
             AuthorizationCacheMetrics.NAMESPACE, "membership", meterRegistry);
@@ -62,7 +74,12 @@ public final class MembershipStateAdapter implements MembershipPort {
     membershipCache.invalidateAll();
   }
 
-  /** Returns mapping rule IDs whose conditions match the token claims in the query. */
+  /**
+   * Returns mapping rule IDs whose conditions match: {@link MappingRuleType#TOKEN_CLAIM} rules
+   * against the token claims, {@link MappingRuleType#USER_ATTRIBUTE} rules against the attributes
+   * stored with the user. Token claims are never matched by attribute rules, so a token cannot
+   * claim an attribute it does not have in the state.
+   */
   @Override
   public List<String> mappingRuleIds(final MembershipQuery query) {
     LOG.trace("Resolving mapping rule IDs for principal {}", query.principalId());
@@ -70,8 +87,78 @@ public final class MembershipStateAdapter implements MembershipPort {
     @SuppressWarnings("unchecked")
     final Map<String, Object> tokenClaims =
         rawClaims instanceof Map<?, ?> map ? (Map<String, Object>) map : Map.of();
-    return MappingRuleMatcher.matchingRules(mappingRuleState.getAll().stream(), tokenClaims)
+    final var user = persistedUser(query);
+    final var userSource = user.map(u -> u.getUser().getSource()).orElse("");
+    final var rawLoginSource = query.tokenClaims().get(Authorization.LOGIN_SOURCE);
+    final var loginSource = rawLoginSource instanceof String source ? source : "";
+    final var rules = mappingRuleState.getAll();
+    final var tokenRules =
+        rules.stream()
+            .filter(
+                r ->
+                    r.getType() != MappingRuleType.USER_ATTRIBUTE
+                        && r.getType() != MappingRuleType.GROUP_ATTRIBUTE)
+            .filter(r -> appliesToSource(r, loginSource));
+    final Map<String, Object> attributes =
+        user.map(u -> u.getUser().getAttributes()).orElse(Map.of());
+    final var attributeRules =
+        attributes.isEmpty()
+            ? Stream.<PersistedMappingRule>empty()
+            : rules.stream()
+                .filter(r -> r.getType() == MappingRuleType.USER_ATTRIBUTE)
+                .filter(r -> appliesToSource(r, userSource));
+    // Direct group memberships only: mapping rules are resolved before groups, so groups derived
+    // from mapping rules would be circular.
+    final var groupAttributes = groupAttributes(query, userSource);
+    final var groupRules =
+        groupAttributes.isEmpty()
+            ? List.<PersistedMappingRule>of()
+            : rules.stream()
+                .filter(r -> r.getType() == MappingRuleType.GROUP_ATTRIBUTE)
+                .filter(r -> appliesToSource(r, userSource))
+                .toList();
+    final var groupMatches =
+        groupAttributes.stream()
+            .flatMap(attrs -> MappingRuleMatcher.matchingRules(groupRules.stream(), attrs));
+    return Stream.of(
+            MappingRuleMatcher.matchingRules(tokenRules, tokenClaims),
+            MappingRuleMatcher.matchingRules(attributeRules, attributes),
+            groupMatches)
+        .flatMap(s -> s)
         .map(PersistedMappingRule::getMappingRuleId)
+        .distinct()
+        .toList();
+  }
+
+  /** A rule without origin applies to every source; otherwise the origin must equal the source. */
+  private static boolean appliesToSource(final PersistedMappingRule rule, final String source) {
+    final var origin = rule.getOrigin();
+    return origin.isEmpty() || origin.equals(source);
+  }
+
+  /** The stored user of the user principal; empty for clients and unknown users. */
+  private Optional<PersistedUser> persistedUser(final MembershipQuery query) {
+    if (query.principalType() != PrincipalType.USER) {
+      return Optional.empty();
+    }
+    return userState.getUser(query.principalId());
+  }
+
+  /**
+   * The non-empty attribute maps of the groups the user principal is a direct member of; empty for
+   * clients. A user owned by a source only considers the groups of the same source.
+   */
+  private List<Map<String, Object>> groupAttributes(
+      final MembershipQuery query, final String userSource) {
+    if (query.principalType() != PrincipalType.USER) {
+      return List.of();
+    }
+    return getMemberships(EntityType.USER, query.principalId(), RelationType.GROUP).stream()
+        .map(groupState::get)
+        .flatMap(Optional::stream)
+        .filter(group -> userSource.isEmpty() || group.getSource().equals(userSource))
+        .map(group -> group.getAttributes())
+        .filter(attrs -> !attrs.isEmpty())
         .toList();
   }
 

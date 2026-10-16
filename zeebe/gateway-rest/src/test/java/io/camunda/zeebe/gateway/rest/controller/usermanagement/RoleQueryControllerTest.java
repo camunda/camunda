@@ -497,18 +497,24 @@ public class RoleQueryControllerTest extends RestControllerTest {
           {
              "items": [
                {
+                 "type": "TOKEN_CLAIM",
+                 "origin": "",
                  "mappingRuleId": "mappingRule1",
                  "claimName": "claim1",
                  "claimValue": "value1",
                  "name": "Mapping 1"
                },
                 {
+                  "type": "TOKEN_CLAIM",
+                  "origin": "",
                   "mappingRuleId": "mappingRule2",
                   "claimName": "claim2",
                   "claimValue": "value2",
                   "name": "Mapping 2"
                 },
                 {
+                  "type": "TOKEN_CLAIM",
+                  "origin": "",
                   "mappingRuleId": "mappingRule3",
                   "claimName": "claim3",
                   "claimValue": "value3",

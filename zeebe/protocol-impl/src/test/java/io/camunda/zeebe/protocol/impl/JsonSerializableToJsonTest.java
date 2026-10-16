@@ -59,6 +59,7 @@ import io.camunda.zeebe.protocol.impl.record.value.expression.ExpressionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.globallistener.GlobalListenerBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.globallistener.GlobalListenerRecord;
 import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord;
+import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord.GroupAttribute;
 import io.camunda.zeebe.protocol.impl.record.value.history.HistoryDeletionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobBatchRecord;
@@ -101,6 +102,7 @@ import io.camunda.zeebe.protocol.impl.record.value.signal.SignalSubscriptionReco
 import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
 import io.camunda.zeebe.protocol.impl.record.value.timer.TimerRecord;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
+import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord.UserAttribute;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableDocumentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableMetadataRecord;
@@ -130,6 +132,7 @@ import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.protocol.record.value.GlobalListenerSource;
 import io.camunda.zeebe.protocol.record.value.HistoryDeletionType;
 import io.camunda.zeebe.protocol.record.value.JobResultType;
+import io.camunda.zeebe.protocol.record.value.MappingRuleType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.protocol.record.value.ProtectionMode;
 import io.camunda.zeebe.protocol.record.value.ResolutionState;
@@ -3544,14 +3547,23 @@ final class JsonSerializableToJsonTest {
                     .setUsername("foobar")
                     .setName("Foo Bar")
                     .setEmail("foo@bar")
-                    .setPassword("f00b4r"),
+                    .setPassword("f00b4r")
+                    .setExternalId("ext-1")
+                    .setActive(false)
+                    .setAttributes(Map.of("department", "sales"))
+                    .setSource("entra")
+                    .setChangedAttributes(Set.of(UserAttribute.ACTIVE)),
         """
                 {
                   "userKey": 1,
                   "username": "foobar",
                   "name": "Foo Bar",
                   "email": "foo@bar",
-                  "password": "f00b4r"
+                  "password": "f00b4r",
+                  "externalId": "ext-1",
+                  "active": false,
+                  "attributes": {"department": "sales"},
+                  "source": "entra"
                 }
                 """
       },
@@ -3569,7 +3581,11 @@ final class JsonSerializableToJsonTest {
                   "username": "foobar",
                   "name": "",
                   "email": "",
-                  "password": ""
+                  "password": "",
+                  "externalId": "",
+                  "active": true,
+                  "attributes": {},
+                  "source": ""
                 }
                 """
       },
@@ -3948,7 +3964,12 @@ final class JsonSerializableToJsonTest {
                     .setName("group")
                     .setDescription("description")
                     .setEntityId("entityId")
-                    .setEntityType(EntityType.USER),
+                    .setEntityType(EntityType.USER)
+                    .setExternalId("ext-1")
+                    .setEntityIds(List.of("user1", "user2"))
+                    .setAttributes(Map.of("costCenter", "cc-1"))
+                    .setSource("entra")
+                    .setChangedAttributes(Set.of(GroupAttribute.NAME)),
         """
                 {
                   "groupKey": 1,
@@ -3956,7 +3977,11 @@ final class JsonSerializableToJsonTest {
                   "name": "group",
                   "description": "description",
                   "entityId": "entityId",
-                  "entityType": "USER"
+                  "entityType": "USER",
+                  "externalId": "ext-1",
+                  "entityIds": ["user1", "user2"],
+                  "attributes": {"costCenter": "cc-1"},
+                  "source": "entra"
                 }
                 """
       },
@@ -3975,7 +4000,11 @@ final class JsonSerializableToJsonTest {
                   "name": "",
                   "description": "",
                   "entityId": "",
-                  "entityType": "UNSPECIFIED"
+                  "entityType": "UNSPECIFIED",
+                  "externalId": "",
+                  "entityIds": [],
+                  "attributes": {},
+                  "source": ""
                 }
                 """
       },
@@ -3993,14 +4022,18 @@ final class JsonSerializableToJsonTest {
                     .setClaimName("claimName")
                     .setClaimValue("claimValue")
                     .setMappingRuleId("id1")
-                    .setName("name"),
+                    .setName("name")
+                    .setType(MappingRuleType.USER_ATTRIBUTE)
+                    .setOrigin("entra"),
         """
                 {
                   "mappingRuleKey": 1,
                   "claimName": "claimName",
                   "claimValue": "claimValue",
                   "mappingRuleId": "id1",
-                  "name": "name"
+                  "name": "name",
+                  "type": "USER_ATTRIBUTE",
+                  "origin": "entra"
                 }
                 """
       },
@@ -4019,7 +4052,9 @@ final class JsonSerializableToJsonTest {
                   "mappingRuleId": "mappingRuleId",
                   "claimName": "",
                   "claimValue": "",
-                  "name": ""
+                  "name": "",
+                  "type": "TOKEN_CLAIM",
+                  "origin": ""
                 }
                 """
       },
@@ -4125,14 +4160,22 @@ final class JsonSerializableToJsonTest {
                       "username": "username",
                       "name": "name",
                       "email": "email",
-                      "password": "password"
+                      "password": "password",
+                      "externalId": "",
+                      "active": true,
+                      "attributes": {},
+                      "source": ""
                     },
                     {
                       "userKey": 4,
                       "username": "foo",
                       "name": "bar",
                       "email": "baz",
-                      "password": "qux"
+                      "password": "qux",
+                      "externalId": "",
+                      "active": true,
+                      "attributes": {},
+                      "source": ""
                     }
                   ],
                   "defaultTenant": {
@@ -4169,14 +4212,18 @@ final class JsonSerializableToJsonTest {
                       "mappingRuleId": "id1",
                       "claimName": "claim1",
                       "claimValue": "value1",
-                      "name": "Claim 1"
+                      "name": "Claim 1",
+                      "type": "TOKEN_CLAIM",
+                      "origin": ""
                     },
                     {
                       "mappingRuleKey": 7,
                       "mappingRuleId": "id2",
                       "claimName": "claim2",
                       "claimValue": "value2",
-                      "name": "Claim 2"
+                      "name": "Claim 2",
+                      "type": "TOKEN_CLAIM",
+                      "origin": ""
                     }
                   ],
                   "authorizations": [
@@ -4198,7 +4245,11 @@ final class JsonSerializableToJsonTest {
                       "name": "Group 1",
                       "description": "",
                       "entityId": "",
-                      "entityType": "UNSPECIFIED"
+                      "entityType": "UNSPECIFIED",
+                      "externalId": "",
+                      "entityIds": [],
+                      "attributes": {},
+                      "source": ""
                     }
                   ],
                   "groupMembers": [
@@ -4208,7 +4259,11 @@ final class JsonSerializableToJsonTest {
                       "name": "",
                       "description": "",
                       "entityId": "username",
-                      "entityType": "USER"
+                      "entityType": "USER",
+                      "externalId": "",
+                      "entityIds": [],
+                      "attributes": {},
+                      "source": ""
                     }
                   ]
                 }

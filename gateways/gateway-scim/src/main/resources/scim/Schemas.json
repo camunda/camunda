@@ -1,0 +1,263 @@
+{
+  "schemas": [
+    "urn:ietf:params:scim:api:messages:2.0:ListResponse"
+  ],
+  "totalResults": 2,
+  "startIndex": 1,
+  "itemsPerPage": 2,
+  "Resources": [
+    {
+      "schemas": [
+        "urn:ietf:params:scim:schemas:core:2.0:Schema"
+      ],
+      "id": "urn:ietf:params:scim:schemas:core:2.0:User",
+      "name": "User",
+      "description": "User Account",
+      "attributes": [
+        {
+          "name": "userName",
+          "type": "string",
+          "multiValued": false,
+          "description": "Unique identifier of the user, equal to the Camunda username. It cannot be changed after creation.",
+          "required": true,
+          "caseExact": true,
+          "mutability": "immutable",
+          "returned": "default",
+          "uniqueness": "server"
+        },
+        {
+          "name": "externalId",
+          "type": "string",
+          "multiValued": false,
+          "description": "Identifier of the user at the provisioning client.",
+          "required": false,
+          "caseExact": true,
+          "mutability": "readWrite",
+          "returned": "default",
+          "uniqueness": "none"
+        },
+        {
+          "name": "displayName",
+          "type": "string",
+          "multiValued": false,
+          "description": "Display name of the user, stored as the Camunda name.",
+          "required": false,
+          "caseExact": false,
+          "mutability": "readWrite",
+          "returned": "default",
+          "uniqueness": "none"
+        },
+        {
+          "name": "name",
+          "type": "complex",
+          "multiValued": false,
+          "description": "Name of the user. Only the formatted name is returned; the given and family name are accepted on input and stored as the Camunda name.",
+          "required": false,
+          "mutability": "readWrite",
+          "returned": "default",
+          "uniqueness": "none",
+          "subAttributes": [
+            {
+              "name": "formatted",
+              "type": "string",
+              "multiValued": false,
+              "description": "Full name.",
+              "required": false,
+              "caseExact": false,
+              "mutability": "readWrite",
+              "returned": "default",
+              "uniqueness": "none"
+            },
+            {
+              "name": "givenName",
+              "type": "string",
+              "multiValued": false,
+              "description": "Given name, input only.",
+              "required": false,
+              "caseExact": false,
+              "mutability": "writeOnly",
+              "returned": "never",
+              "uniqueness": "none"
+            },
+            {
+              "name": "familyName",
+              "type": "string",
+              "multiValued": false,
+              "description": "Family name, input only.",
+              "required": false,
+              "caseExact": false,
+              "mutability": "writeOnly",
+              "returned": "never",
+              "uniqueness": "none"
+            }
+          ]
+        },
+        {
+          "name": "emails",
+          "type": "complex",
+          "multiValued": true,
+          "description": "Email address of the user. Only the primary (else first) address is stored.",
+          "required": false,
+          "mutability": "readWrite",
+          "returned": "default",
+          "uniqueness": "none",
+          "subAttributes": [
+            {
+              "name": "value",
+              "type": "string",
+              "multiValued": false,
+              "description": "Email address.",
+              "required": false,
+              "caseExact": false,
+              "mutability": "readWrite",
+              "returned": "default",
+              "uniqueness": "none"
+            },
+            {
+              "name": "type",
+              "type": "string",
+              "multiValued": false,
+              "description": "Type of the email address, always work.",
+              "required": false,
+              "caseExact": false,
+              "canonicalValues": [
+                "work"
+              ],
+              "mutability": "readWrite",
+              "returned": "default",
+              "uniqueness": "none"
+            },
+            {
+              "name": "primary",
+              "type": "boolean",
+              "multiValued": false,
+              "description": "Whether this is the primary email address.",
+              "required": false,
+              "mutability": "readWrite",
+              "returned": "default"
+            }
+          ]
+        },
+        {
+          "name": "active",
+          "type": "boolean",
+          "multiValued": false,
+          "description": "Whether the user is allowed to access Camunda. Defaults to true.",
+          "required": false,
+          "mutability": "readWrite",
+          "returned": "default"
+        },
+        {
+          "name": "password",
+          "type": "string",
+          "multiValued": false,
+          "description": "Password of the user, only used if Camunda manages credentials.",
+          "required": false,
+          "caseExact": false,
+          "mutability": "writeOnly",
+          "returned": "never",
+          "uniqueness": "none"
+        }
+      ],
+      "meta": {
+        "resourceType": "Schema",
+        "location": "/scim/v2/Schemas/urn:ietf:params:scim:schemas:core:2.0:User"
+      }
+    },
+    {
+      "schemas": [
+        "urn:ietf:params:scim:schemas:core:2.0:Schema"
+      ],
+      "id": "urn:ietf:params:scim:schemas:core:2.0:Group",
+      "name": "Group",
+      "description": "Group",
+      "attributes": [
+        {
+          "name": "displayName",
+          "type": "string",
+          "multiValued": false,
+          "description": "Display name of the group, stored as the Camunda group name. The group id is derived from it at creation and does not change when the name does.",
+          "required": true,
+          "caseExact": false,
+          "mutability": "readWrite",
+          "returned": "default",
+          "uniqueness": "none"
+        },
+        {
+          "name": "externalId",
+          "type": "string",
+          "multiValued": false,
+          "description": "Identifier of the group at the provisioning client.",
+          "required": false,
+          "caseExact": true,
+          "mutability": "readWrite",
+          "returned": "default",
+          "uniqueness": "none"
+        },
+        {
+          "name": "members",
+          "type": "complex",
+          "multiValued": true,
+          "description": "Users that belong to the group. Groups cannot be members.",
+          "required": false,
+          "caseExact": false,
+          "mutability": "readWrite",
+          "returned": "default",
+          "uniqueness": "none",
+          "subAttributes": [
+            {
+              "name": "value",
+              "type": "string",
+              "multiValued": false,
+              "description": "Username of the member, which is also the SCIM id of the user.",
+              "required": false,
+              "caseExact": true,
+              "mutability": "immutable",
+              "returned": "default",
+              "uniqueness": "none"
+            },
+            {
+              "name": "$ref",
+              "type": "reference",
+              "multiValued": false,
+              "description": "URI of the member user.",
+              "required": false,
+              "caseExact": true,
+              "mutability": "immutable",
+              "returned": "default",
+              "uniqueness": "none",
+              "referenceTypes": [
+                "User"
+              ]
+            },
+            {
+              "name": "type",
+              "type": "string",
+              "multiValued": false,
+              "description": "Type of the member; only User is supported.",
+              "required": false,
+              "caseExact": false,
+              "mutability": "immutable",
+              "returned": "default",
+              "uniqueness": "none",
+              "canonicalValues": [
+                "User"
+              ]
+            },
+            {
+              "name": "display",
+              "type": "string",
+              "multiValued": false,
+              "description": "Display name of the member.",
+              "required": false,
+              "caseExact": false,
+              "mutability": "immutable",
+              "returned": "default",
+              "uniqueness": "none"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

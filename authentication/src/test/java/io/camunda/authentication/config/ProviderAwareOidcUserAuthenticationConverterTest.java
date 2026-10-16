@@ -13,6 +13,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import io.camunda.authentication.source.LoginSources;
 import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.core.authz.LazyTokenClaimsConverter;
 import io.camunda.security.spring.converter.AdditionalJwkSetUrisByRegistrationId;
@@ -70,9 +71,71 @@ class ProviderAwareOidcUserAuthenticationConverterTest {
     assertThat(result.authenticatedUsername()).isEqualTo("demo");
   }
 
+  @Test
+  void shouldPutLoginSourceOfTheRegistrationIntoTheClaimsAndIgnoreForgedOne() {
+    // given
+    final var providerConverter = mock(LazyTokenClaimsConverter.class);
+    final var authentication =
+        authentication(
+            "okta", Map.of("sub", "a", LoginSources.LOGIN_SOURCE_CLAIM, "forged-by-the-idp"));
+    when(providerConverter.convert(org.mockito.ArgumentMatchers.any()))
+        .thenReturn(CamundaAuthentication.of(builder -> builder.user("a")));
+    final var sources =
+        new LoginSources(
+            true,
+            List.of(
+                new LoginSources.Source("okta-source", "okta", null),
+                new LoginSources.Source("other", "other", null)),
+            Map.of());
+    final var converter =
+        converter(mock(LazyTokenClaimsConverter.class), Map.of("okta", providerConverter), sources);
+
+    // when
+    converter.convert(authentication);
+
+    // then
+    final ArgumentCaptor<Map<String, Object>> claims = ArgumentCaptor.forClass(Map.class);
+    verify(providerConverter).convert(claims.capture());
+    assertThat(claims.getValue()).containsEntry(LoginSources.LOGIN_SOURCE_CLAIM, "okta-source");
+  }
+
+  @Test
+  void shouldNotKeepAForgedLoginSourceWhenTheRegistrationHasNoSource() {
+    // given
+    final var providerConverter = mock(LazyTokenClaimsConverter.class);
+    final var authentication =
+        authentication("okta", Map.of("sub", "a", LoginSources.LOGIN_SOURCE_CLAIM, "forged"));
+    when(providerConverter.convert(org.mockito.ArgumentMatchers.any()))
+        .thenReturn(CamundaAuthentication.of(builder -> builder.user("a")));
+    final var sources =
+        new LoginSources(
+            true,
+            List.of(
+                new LoginSources.Source("one", "x", null),
+                new LoginSources.Source("two", "y", null)),
+            Map.of());
+    final var converter =
+        converter(mock(LazyTokenClaimsConverter.class), Map.of("okta", providerConverter), sources);
+
+    // when
+    converter.convert(authentication);
+
+    // then
+    final ArgumentCaptor<Map<String, Object>> claims = ArgumentCaptor.forClass(Map.class);
+    verify(providerConverter).convert(claims.capture());
+    assertThat(claims.getValue()).doesNotContainKey(LoginSources.LOGIN_SOURCE_CLAIM);
+  }
+
   private static ProviderAwareOidcUserAuthenticationConverter converter(
       final LazyTokenClaimsConverter defaultConverter,
       final Map<String, LazyTokenClaimsConverter> providerConverters) {
+    return converter(defaultConverter, providerConverters, LoginSources.disabled());
+  }
+
+  private static ProviderAwareOidcUserAuthenticationConverter converter(
+      final LazyTokenClaimsConverter defaultConverter,
+      final Map<String, LazyTokenClaimsConverter> providerConverters,
+      final LoginSources loginSources) {
     return new ProviderAwareOidcUserAuthenticationConverter(
         mock(OAuth2AuthorizedClientRepository.class),
         mock(OidcAccessTokenDecoderFactory.class),
@@ -82,7 +145,8 @@ class ProviderAwareOidcUserAuthenticationConverterTest {
         Map.of("okta", true),
         providerConverters,
         Map.of("okta", List.of("iss", "https://camunda.com/claims/client_id")),
-        new PhysicalTenantOidcSettingsRegistry(Map.of()));
+        new PhysicalTenantOidcSettingsRegistry(Map.of()),
+        loginSources);
   }
 
   private static OAuth2AuthenticationToken authentication(

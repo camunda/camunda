@@ -24,6 +24,7 @@ import type {User} from '@camunda/camunda-api-zod-schemas/8.11';
 import {CreateUserModal} from '#/admin/modules/users/CreateUserModal';
 import {EditUserModal} from '#/admin/modules/users/EditUserModal';
 import {DeleteUserModal} from '#/admin/modules/users/DeleteUserModal';
+import {UserStatusBadge} from '#/admin/modules/users/UserStatusBadge';
 import {DEFAULT_PAGE_SIZE, PAGE_SIZES, type UsersSearch} from '#/admin/modules/users/searchSchema';
 
 type SortingState = NonNullable<SortingConfig['sortState']>;
@@ -39,9 +40,17 @@ type AdminUsersPageProps = {
 	search: UsersSearch;
 	onSearchChange: (next: Partial<UsersSearch>) => void;
 	onOpenUser: (user: User) => void;
+	isReadOnly?: boolean;
 };
 
-const AdminUsersPage: React.FC<AdminUsersPageProps> = ({users, totalItems, search, onSearchChange, onOpenUser}) => {
+const AdminUsersPage: React.FC<AdminUsersPageProps> = ({
+	users,
+	totalItems,
+	search,
+	onSearchChange,
+	onOpenUser,
+	isReadOnly = false,
+}) => {
 	const {t} = useTranslation();
 	const appliedSearchTerm = search.search ?? '';
 	const [searchDraft, setSearchDraft] = useState(appliedSearchTerm);
@@ -72,29 +81,38 @@ const AdminUsersPage: React.FC<AdminUsersPageProps> = ({users, totalItems, searc
 			{accessorKey: 'username', header: t('admin.users.username')},
 			{accessorKey: 'name', header: t('admin.users.name')},
 			{accessorKey: 'email', header: t('admin.users.email')},
+			{
+				accessorKey: 'active',
+				header: t('admin.users.status'),
+				enableSorting: false,
+				cell: ({row}) => <UserStatusBadge isActive={row.original.active} />,
+			},
 		],
 		[t],
 	);
 
 	const rowActions = useMemo<DataTableRowAction<User>[]>(
-		() => [
-			{
-				id: 'edit',
-				label: t('admin.users.editUser'),
-				icon: <Pencil aria-hidden />,
-				iconOnly: true,
-				onClick: (user) => setModalState({type: 'edit', user}),
-			},
-			{
-				id: 'delete',
-				label: t('admin.users.deleteUser'),
-				icon: <Trash2 aria-hidden />,
-				iconOnly: true,
-				variant: 'destructive',
-				onClick: (user) => setModalState({type: 'delete', user}),
-			},
-		],
-		[t],
+		() =>
+			isReadOnly
+				? []
+				: [
+						{
+							id: 'edit',
+							label: t('admin.users.editUser'),
+							icon: <Pencil aria-hidden />,
+							iconOnly: true,
+							onClick: (user) => setModalState({type: 'edit', user}),
+						},
+						{
+							id: 'delete',
+							label: t('admin.users.deleteUser'),
+							icon: <Trash2 aria-hidden />,
+							iconOnly: true,
+							variant: 'destructive',
+							onClick: (user) => setModalState({type: 'delete', user}),
+						},
+					],
+		[t, isReadOnly],
 	);
 
 	const sortState = useMemo<SortingState>(
@@ -143,6 +161,9 @@ const AdminUsersPage: React.FC<AdminUsersPageProps> = ({users, totalItems, searc
 							</a>
 						</Button>
 					</p>
+					{isReadOnly && (
+						<p className="text-sm leading-5 text-muted-foreground">{t('admin.users.managedByIdentityProvider')}</p>
+					)}
 				</div>
 
 				<div className="flex flex-col gap-4">
@@ -160,9 +181,11 @@ const AdminUsersPage: React.FC<AdminUsersPageProps> = ({users, totalItems, searc
 								onClear={() => setSearchDraft('')}
 							/>
 						</div>
-						<Button type="button" onClick={() => setModalState({type: 'create'})}>
-							{t('admin.users.createUser')}
-						</Button>
+						{!isReadOnly && (
+							<Button type="button" onClick={() => setModalState({type: 'create'})}>
+								{t('admin.users.createUser')}
+							</Button>
+						)}
 					</div>
 					<DataTable
 						aria-label={title}
@@ -171,7 +194,7 @@ const AdminUsersPage: React.FC<AdminUsersPageProps> = ({users, totalItems, searc
 						data={users}
 						getRowId={(user) => user.username}
 						onRowClick={onOpenUser}
-						rowActions={rowActions}
+						rowActions={isReadOnly ? undefined : rowActions}
 						sorting={{manual: true, sortState, onSortingChange: handleSortingChange}}
 						pagination={{
 							manual: true,

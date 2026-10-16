@@ -56,7 +56,7 @@ public class UserControllerTest {
       Pattern.compile(CamundaSecurityLibraryProperties.DEFAULT_ID_REGEX);
 
   @Nested
-  @WebMvcTest(UserController.class)
+  @WebMvcTest({UserController.class, UserQueryController.class})
   @Import(ApiFiltersConfiguration.class)
   @TestPropertySource(properties = "camunda.security.authentication.method=basic")
   public class CamundaUsersEnabledTest extends RestControllerTest {
@@ -106,7 +106,7 @@ public class UserControllerTest {
           .uri(USER_BASE_URL)
           .accept(MediaType.APPLICATION_JSON)
           .contentType(MediaType.APPLICATION_JSON)
-          .bodyValue(dto)
+          .bodyValue(toRequestBody(dto))
           .exchange()
           .expectStatus()
           .isCreated()
@@ -151,7 +151,7 @@ public class UserControllerTest {
           .uri(USER_BASE_URL)
           .accept(MediaType.APPLICATION_JSON)
           .contentType(MediaType.APPLICATION_JSON)
-          .bodyValue(dto)
+          .bodyValue(toRequestBody(dto))
           .exchange()
           .expectStatus()
           .isEqualTo(HttpStatus.CONFLICT.value())
@@ -255,7 +255,7 @@ public class UserControllerTest {
           .uri(USER_BASE_URL)
           .accept(MediaType.APPLICATION_JSON)
           .contentType(MediaType.APPLICATION_JSON)
-          .bodyValue(dto)
+          .bodyValue(toRequestBody(dto))
           .exchange()
           .expectStatus()
           .isCreated()
@@ -402,16 +402,25 @@ public class UserControllerTest {
       return new UserDTO(username, "Foo Bar", "bar@baz.com", "zabraboof");
     }
 
+    private UserRequest toRequestBody(final UserDTO dto) {
+      return userRequestWith(dto.username(), dto.password(), dto.email(), dto.name());
+    }
+
     private UserRequest validUserWithPasswordRequest() {
       return userRequestWith("foo", "zabraboof", "bar@baz.com");
     }
 
     private UserRequest userRequestWith(
         final String username, final String password, final String email) {
+      return userRequestWith(username, password, email, "Foo Bar");
+    }
+
+    private UserRequest userRequestWith(
+        final String username, final String password, final String email, final String name) {
       return UserRequest.Builder.create()
           .username(username)
           .password(password)
-          .name("Foo Bar")
+          .name(name)
           .email(email)
           .build();
     }
@@ -449,7 +458,7 @@ public class UserControllerTest {
   }
 
   @Nested
-  @WebMvcTest(UserController.class)
+  @WebMvcTest({UserController.class, UserQueryController.class})
   @Import(ApiFiltersConfiguration.class)
   @TestPropertySource(properties = "camunda.security.authentication.method=oidc")
   public class CamundaUsersDisabledTest extends RestControllerTest {
@@ -581,6 +590,134 @@ public class UserControllerTest {
           .isForbidden()
           .expectBody()
           .json(FORBIDDEN_MESSAGE.formatted(uri, uri), JsonCompareMode.STRICT);
+    }
+  }
+
+  @Nested
+  @WebMvcTest({UserController.class, UserQueryController.class})
+  @Import(ApiFiltersConfiguration.class)
+  @TestPropertySource(
+      properties = {"camunda.security.authentication.method=oidc", "camunda.scim.enabled=true"})
+  public class CamundaUsersReadOnlyWithScimTest extends RestControllerTest {
+
+    @MockitoBean private UserServices userServices;
+    @MockitoBean private CamundaAuthenticationProvider authenticationProvider;
+    @MockitoBean private CamundaSecurityLibraryProperties cslProperties;
+    @MockitoBean private ServiceRegistry serviceRegistry;
+
+    @BeforeEach
+    void setup() {
+      when(serviceRegistry.userServices(any())).thenReturn(userServices);
+      when(authenticationProvider.getCamundaAuthentication())
+          .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
+    }
+
+    @Test
+    void shouldAllowSearch() {
+      // given
+      when(userServices.search(any(), any()))
+          .thenReturn(
+              io.camunda.search.query.SearchQueryResult.of(
+                  new io.camunda.search.entities.UserEntity(
+                      1L, "alice", "Alice", "a@b.c", null, "ext-1", null)));
+
+      // when/then
+      webClient
+          .post()
+          .uri(USER_BASE_URL + "/search")
+          .accept(MediaType.APPLICATION_JSON)
+          .contentType(MediaType.APPLICATION_JSON)
+          .bodyValue("{}")
+          .exchange()
+          .expectStatus()
+          .isOk()
+          .expectBody()
+          .jsonPath("$.items[0].externalId")
+          .isEqualTo("ext-1")
+          .jsonPath("$.items[0].active")
+          .isEqualTo(true);
+    }
+
+    @Test
+    void shouldAllowGet() {
+      // given
+      when(userServices.getUser(eq("alice"), any()))
+          .thenReturn(new io.camunda.search.entities.UserEntity(1L, "alice", "A", "a@b.c", null));
+
+      // when/then
+      webClient
+          .get()
+          .uri(USER_BASE_URL + "/alice")
+          .accept(MediaType.APPLICATION_JSON)
+          .exchange()
+          .expectStatus()
+          .isOk();
+    }
+
+    @Test
+    void shouldAllowSearchOnPhysicalTenantPrefixedPath() {
+      // when/then
+      webClient
+          .post()
+          .uri("/physical-tenants/acme/v2/users/search")
+          .accept(MediaType.APPLICATION_JSON)
+          .contentType(MediaType.APPLICATION_JSON)
+          .bodyValue("{}")
+          .exchange()
+          .expectStatus()
+          .value(status -> assertThat(status).isNotEqualTo(403));
+    }
+
+    @Test
+    void shouldBlockCreate() {
+      // when/then
+      webClient
+          .post()
+          .uri(USER_BASE_URL)
+          .accept(MediaType.APPLICATION_JSON)
+          .contentType(MediaType.APPLICATION_JSON)
+          .bodyValue("{}")
+          .exchange()
+          .expectStatus()
+          .isForbidden();
+    }
+
+    @Test
+    void shouldBlockUpdate() {
+      // when/then
+      webClient
+          .put()
+          .uri(USER_BASE_URL + "/alice")
+          .accept(MediaType.APPLICATION_JSON)
+          .contentType(MediaType.APPLICATION_JSON)
+          .bodyValue("{}")
+          .exchange()
+          .expectStatus()
+          .isForbidden();
+    }
+
+    @Test
+    void shouldBlockDelete() {
+      // when/then
+      webClient
+          .delete()
+          .uri(USER_BASE_URL + "/alice")
+          .accept(MediaType.APPLICATION_JSON)
+          .exchange()
+          .expectStatus()
+          .isForbidden();
+    }
+
+    @Test
+    void shouldBlockWritesOnPhysicalTenantPrefixedPath() {
+      // when/then
+      webClient
+          .delete()
+          .uri("/physical-tenants/acme/v2/users/alice")
+          .accept(MediaType.APPLICATION_JSON)
+          .exchange()
+          .expectStatus()
+          .isForbidden();
     }
   }
 }

@@ -33,7 +33,12 @@ test.beforeEach(({network}) => {
 			successResponse: HttpResponse.json(
 				createSystemConfiguration({
 					components: {active: ['admin']},
-					authentication: {canLogout: true, isLoginDelegated: true, isCamundaGroupsEnabled: true},
+					authentication: {
+						canLogout: true,
+						isLoginDelegated: true,
+						isCamundaGroupsEnabled: true,
+						isUserProvisioningEnabled: false,
+					},
 				}),
 			),
 		}),

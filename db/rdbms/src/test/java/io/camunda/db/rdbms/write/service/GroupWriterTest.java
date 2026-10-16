@@ -7,9 +7,11 @@
  */
 package io.camunda.db.rdbms.write.service;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -20,7 +22,10 @@ import io.camunda.db.rdbms.write.queue.ExecutionQueue;
 import io.camunda.db.rdbms.write.queue.QueueItem;
 import io.camunda.db.rdbms.write.queue.UpsertMerger;
 import io.camunda.db.rdbms.write.queue.WriteStatementType;
+import java.time.OffsetDateTime;
+import java.util.Map;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 
 class GroupWriterTest {
 
@@ -100,6 +105,81 @@ class GroupWriterTest {
                     member.groupId(),
                     "io.camunda.db.rdbms.sql.GroupMapper.deleteMember",
                     member)));
+  }
+
+  @Test
+  void shouldRunStandaloneLastModifiedAtUpdateWhenNoQueuedGroupToMergeInto() {
+    // given
+    when(executionQueue.tryMergeWithExistingQueueItem(any(UpsertMerger.class))).thenReturn(false);
+    final var lastModifiedAt = OffsetDateTime.parse("2026-10-03T08:15:00Z");
+
+    // when
+    writer.updateLastModifiedAt("group1", lastModifiedAt);
+
+    // then
+    // the standalone statement must not take a GroupDbModel: a later update() would merge its
+    // full-model fields into it and write nulls into EXTERNAL_ID and ATTRIBUTES
+    verify(executionQueue)
+        .executeInQueue(
+            eq(
+                new QueueItem(
+                    ContextType.GROUP,
+                    WriteStatementType.UPDATE,
+                    "group1",
+                    "io.camunda.db.rdbms.sql.GroupMapper.updateLastModifiedAt",
+                    Map.of("groupId", "group1", "lastModifiedAt", lastModifiedAt))));
+  }
+
+  @Test
+  void shouldMergeLastModifiedAtIntoQueuedGroupInsteadOfQueueingStatement() {
+    // given
+    final var captor = ArgumentCaptor.forClass(UpsertMerger.class);
+    when(executionQueue.tryMergeWithExistingQueueItem(captor.capture())).thenReturn(true);
+    final var lastModifiedAt = OffsetDateTime.parse("2026-10-03T08:15:00Z");
+
+    // when
+    writer.updateLastModifiedAt("group1", lastModifiedAt);
+
+    // then
+    verify(executionQueue, never()).executeInQueue(any());
+    final var queued =
+        new QueueItem(
+            ContextType.GROUP,
+            WriteStatementType.INSERT,
+            "group1",
+            "io.camunda.db.rdbms.sql.GroupMapper.insert",
+            new GroupDbModel.Builder().groupId("group1").build());
+    final var merged = (GroupDbModel) captor.getValue().merge(queued).parameter();
+    assertThat(merged.lastModifiedAt()).isEqualTo(lastModifiedAt);
+  }
+
+  @Test
+  void shouldMergeLastModifiedAtOnUpdateIntoQueuedGroup() {
+    // given
+    final var captor = ArgumentCaptor.forClass(UpsertMerger.class);
+    when(executionQueue.tryMergeWithExistingQueueItem(captor.capture())).thenReturn(true);
+    final var lastModifiedAt = OffsetDateTime.parse("2026-10-04T09:00:00Z");
+    final var model =
+        new GroupDbModel.Builder()
+            .groupId("group1")
+            .name("Updated Name")
+            .lastModifiedAt(lastModifiedAt)
+            .build();
+
+    // when
+    writer.update(model);
+
+    // then
+    final var queued =
+        new QueueItem(
+            ContextType.GROUP,
+            WriteStatementType.INSERT,
+            "group1",
+            "io.camunda.db.rdbms.sql.GroupMapper.insert",
+            new GroupDbModel.Builder().groupId("group1").build());
+    final var merged = (GroupDbModel) captor.getValue().merge(queued).parameter();
+    assertThat(merged.name()).isEqualTo("Updated Name");
+    assertThat(merged.lastModifiedAt()).isEqualTo(lastModifiedAt);
   }
 
   @Test

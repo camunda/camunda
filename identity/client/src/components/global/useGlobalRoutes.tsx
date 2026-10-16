@@ -23,6 +23,7 @@ import {
   isCamundaGroupsEnabled,
   isOIDC,
   isSaaS,
+  isUserProvisioningEnabled,
   isTenantsApiEnabled,
   defaultRoleIds,
   resourcePermissions,
@@ -40,18 +41,21 @@ export const useGlobalRoutes = () => {
     element: <MappingRules />,
   };
 
+  const usersRoute = {
+    path: `${Paths.users()}/*`,
+    key: Paths.users(),
+    label: t("users"),
+    element: <Users />,
+  };
+
+  // In OIDC mode the users page is read-only and only available when users
+  // are provisioned externally (e.g. via SCIM).
   const OIDCDependentRoutes = !isOIDC
-    ? [
-        {
-          path: `${Paths.users()}/*`,
-          key: Paths.users(),
-          label: t("users"),
-          element: <Users />,
-        },
-      ]
-    : !isSaaS
-      ? [mappingRulesRoute]
-      : [];
+    ? [usersRoute]
+    : [
+        ...(isUserProvisioningEnabled ? [usersRoute] : []),
+        ...(!isSaaS ? [mappingRulesRoute] : []),
+      ];
 
   // Kept out of OIDCDependentRoutes, whose first entry sets the index-route
   // redirect (GlobalRoutes.tsx), so it doesn't change the SaaS landing page.

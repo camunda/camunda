@@ -65,7 +65,9 @@ public class MappingRuleCreatedUpdatedHandler
         .setMappingRuleId(value.getMappingRuleId())
         .setClaimName(value.getClaimName())
         .setClaimValue(value.getClaimValue())
-        .setName(value.getName());
+        .setName(value.getName())
+        .setType(value.getType() == null ? null : value.getType().name())
+        .setOrigin(emptyToNull(value.getOrigin()));
   }
 
   @Override
@@ -78,5 +80,9 @@ public class MappingRuleCreatedUpdatedHandler
   @Override
   public String getIndexName() {
     return indexName;
+  }
+
+  private static String emptyToNull(final String value) {
+    return value == null || value.isEmpty() ? null : value;
   }
 }

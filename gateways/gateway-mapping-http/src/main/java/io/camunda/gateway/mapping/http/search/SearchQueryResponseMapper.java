@@ -116,6 +116,7 @@ import io.camunda.gateway.protocol.model.JobWorkerStatisticsItem;
 import io.camunda.gateway.protocol.model.JobWorkerStatisticsQueryResult;
 import io.camunda.gateway.protocol.model.MappingRuleResult;
 import io.camunda.gateway.protocol.model.MappingRuleSearchQueryResult;
+import io.camunda.gateway.protocol.model.MappingRuleTypeEnum;
 import io.camunda.gateway.protocol.model.MatchedDecisionRuleItem;
 import io.camunda.gateway.protocol.model.MessageSubscriptionResult;
 import io.camunda.gateway.protocol.model.MessageSubscriptionSearchQueryResult;
@@ -1101,6 +1102,11 @@ public final class SearchQueryResponseMapper {
         .name(groupEntity.name())
         .groupId(groupEntity.groupId())
         .description(groupEntity.description())
+        .source(groupEntity.source())
+        .externalId(groupEntity.externalId())
+        .attributes(groupEntity.attributes())
+        .createdAt(formatDateOrNull(groupEntity.createdAt()))
+        .lastModifiedAt(formatDateOrNull(groupEntity.lastModifiedAt()))
         .build();
   }
 
@@ -1192,6 +1198,8 @@ public final class SearchQueryResponseMapper {
         .claimValue(mappingRuleEntity.claimValue())
         .name(mappingRuleEntity.name())
         .mappingRuleId(mappingRuleEntity.mappingRuleId())
+        .type(MappingRuleTypeEnum.fromValue(mappingRuleEntity.type()))
+        .origin(mappingRuleEntity.origin())
         .build();
   }
 
@@ -1438,11 +1446,26 @@ public final class SearchQueryResponseMapper {
         .username(user.username())
         .name(user.name())
         .email(user.email())
+        .source(user.source())
+        .externalId(user.externalId())
+        .active(user.active() == null || user.active())
+        .attributes(user.attributes())
+        .createdAt(formatDateOrNull(user.createdAt()))
+        .lastModifiedAt(formatDateOrNull(user.lastModifiedAt()))
         .build();
   }
 
   public static CamundaUserResult toCamundaUser(
       final CamundaUserDTO camundaUser, final List<TenantEntity> tenants) {
+    return toCamundaUser(camundaUser, tenants, null, null, null);
+  }
+
+  public static CamundaUserResult toCamundaUser(
+      final CamundaUserDTO camundaUser,
+      final List<TenantEntity> tenants,
+      final @Nullable String loginSource,
+      final @Nullable String provisionedBy,
+      final @Nullable List<String> mappingRules) {
     return CamundaUserResult.Builder.create()
         .authorizedComponents(camundaUser.authorizedComponents())
         .tenants(toTenants(tenants))
@@ -1454,6 +1477,9 @@ public final class SearchQueryResponseMapper {
         .displayName(camundaUser.displayName())
         .email(camundaUser.email())
         .username(camundaUser.username())
+        .loginSource(loginSource)
+        .provisionedBy(provisionedBy)
+        .mappingRules(mappingRules)
         .build();
   }
 

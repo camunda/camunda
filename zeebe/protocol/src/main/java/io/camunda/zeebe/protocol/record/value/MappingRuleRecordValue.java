@@ -40,4 +40,12 @@ public interface MappingRuleRecordValue extends RecordValue {
 
   /** The unique identifier of the mapping for external usage. */
   String getMappingRuleId();
+
+  /** What kind of claim the rule matches on; {@link MappingRuleType#TOKEN_CLAIM} if not set. */
+  MappingRuleType getType();
+
+  /**
+   * The id of the SCIM source the rule is restricted to; empty if the rule applies to any source.
+   */
+  String getOrigin();
 }

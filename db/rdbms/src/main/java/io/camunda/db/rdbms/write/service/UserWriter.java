@@ -37,7 +37,11 @@ public class UserWriter implements RdbmsWriter {
     final boolean wasMerged =
         mergeToQueue(
             user.username(),
-            b -> b.name(user.name()).email(user.email()).password(user.password()));
+            b ->
+                b.name(user.name())
+                    .email(user.email())
+                    .password(user.password())
+                    .lastModifiedAt(user.lastModifiedAt()));
 
     if (!wasMerged) {
       executionQueue.executeInQueue(

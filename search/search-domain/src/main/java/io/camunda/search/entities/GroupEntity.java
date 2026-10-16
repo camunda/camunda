@@ -8,12 +8,70 @@
 package io.camunda.search.entities;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import java.time.OffsetDateTime;
+import java.util.Map;
 import java.util.Objects;
 import org.jspecify.annotations.Nullable;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record GroupEntity(
-    Long groupKey, String groupId, String name, @Nullable String description) {
+    Long groupKey,
+    String groupId,
+    String name,
+    @Nullable String description,
+    @Nullable String externalId,
+    @Nullable Map<String, Object> attributes,
+    @Nullable OffsetDateTime createdAt,
+    @Nullable OffsetDateTime lastModifiedAt,
+    @Nullable String source) {
+
+  public GroupEntity(
+      final Long groupKey,
+      final String groupId,
+      final String name,
+      final @Nullable String description,
+      final @Nullable String externalId,
+      final @Nullable Map<String, Object> attributes,
+      final @Nullable OffsetDateTime createdAt,
+      final @Nullable OffsetDateTime lastModifiedAt) {
+    this(
+        groupKey,
+        groupId,
+        name,
+        description,
+        externalId,
+        attributes,
+        createdAt,
+        lastModifiedAt,
+        null);
+  }
+
+  public GroupEntity(
+      final Long groupKey,
+      final String groupId,
+      final String name,
+      final @Nullable String description,
+      final @Nullable String externalId,
+      final @Nullable Map<String, Object> attributes) {
+    this(groupKey, groupId, name, description, externalId, attributes, null, null, null);
+  }
+
+  public GroupEntity(
+      final Long groupKey,
+      final String groupId,
+      final String name,
+      final @Nullable String description,
+      final @Nullable String externalId) {
+    this(groupKey, groupId, name, description, externalId, null, null, null, null);
+  }
+
+  public GroupEntity(
+      final Long groupKey,
+      final String groupId,
+      final String name,
+      final @Nullable String description) {
+    this(groupKey, groupId, name, description, null, null, null, null, null);
+  }
 
   public GroupEntity {
     Objects.requireNonNull(groupKey, "groupKey");

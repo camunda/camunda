@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.gateway.rest.controller.authentication;
 
+import static io.camunda.security.auth.BrokerRequestAuthorizationConverter.LOGIN_SOURCE_CLAIM;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -19,6 +20,7 @@ import io.camunda.gateway.protocol.model.OwnerTypeEnum;
 import io.camunda.gateway.protocol.model.ResourceTypeEnum;
 import io.camunda.search.entities.AuthorizationEntity;
 import io.camunda.search.entities.TenantEntity;
+import io.camunda.search.entities.UserEntity;
 import io.camunda.search.filter.AuthorizationFilter;
 import io.camunda.search.query.AuthorizationQuery;
 import io.camunda.search.query.SearchQueryResult;
@@ -32,6 +34,7 @@ import io.camunda.security.core.port.in.CamundaUserPort;
 import io.camunda.security.spring.CamundaSecurityLibraryProperties;
 import io.camunda.service.AuthorizationServices;
 import io.camunda.service.TenantServices;
+import io.camunda.service.UserServices;
 import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import java.util.List;
@@ -113,12 +116,64 @@ public class AuthenticationControllerTest extends RestControllerTest {
                   "roles": ["test role"],
                   "salesPlanType": null,
                   "c8Links": {},
-                  "canLogout": true
+                  "canLogout": true,
+                  "loginSource": null,
+                  "provisionedBy": null,
+                  "mappingRules": null
                 }""",
             JsonCompareMode.STRICT);
 
     // then
     verify(camundaUserPort, times(1)).getCurrentUser();
+  }
+
+  @Test
+  void getCurrentUserShouldReturnLoginSourceProvisionedByAndMappingRules() {
+    // given
+    final CamundaUserDTO camundaUserDTO =
+        new CamundaUserDTO(
+            "camunda user",
+            "camundaUSer",
+            "camunda.user@email.com",
+            List.of(),
+            List.of(),
+            List.of(),
+            List.of(),
+            null,
+            Map.of(),
+            true);
+    when(camundaUserPort.getCurrentUser()).thenReturn(camundaUserDTO);
+    when(authenticationProvider.getCamundaAuthentication())
+        .thenReturn(
+            CamundaAuthentication.of(
+                b ->
+                    b.user("camundaUSer")
+                        .claims(Map.of("sub", "x", LOGIN_SOURCE_CLAIM, "entra"))
+                        .mappingRules(List.of("rule-1", "rule-2"))));
+    final var userServices = Mockito.mock(UserServices.class);
+    when(serviceRegistry.userServices(any())).thenReturn(userServices);
+    when(userServices.getUser(eq("camundaUSer"), any()))
+        .thenReturn(
+            new UserEntity(
+                1L, "camundaUSer", "n", "e", null, "ext", true, Map.of(), null, null, "keycloak"));
+
+    // when / then
+    webClient
+        .get()
+        .uri("/v2/authentication/me")
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectBody()
+        .jsonPath("$.loginSource")
+        .isEqualTo("entra")
+        .jsonPath("$.provisionedBy")
+        .isEqualTo("keycloak")
+        .jsonPath("$.mappingRules[0]")
+        .isEqualTo("rule-1")
+        .jsonPath("$.mappingRules[1]")
+        .isEqualTo("rule-2");
   }
 
   @Test

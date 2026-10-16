@@ -23,9 +23,10 @@ import TabEmptyState from "src/components/layoutV2/TabEmptyState";
 type MembersProps = {
   groupId: string;
   isOIDC: boolean;
+  readOnly?: boolean;
 };
 
-const Members: FC<MembersProps> = ({ groupId, isOIDC }) => {
+const Members: FC<MembersProps> = ({ groupId, isOIDC, readOnly = false }) => {
   const { t } = useTranslate("groups");
 
   const { users, loading, success, reload, paginationProps } = useEnrichedUsers(
@@ -68,7 +69,7 @@ const Members: FC<MembersProps> = ({ groupId, isOIDC }) => {
       />
     );
 
-  if (success && isUsersListEmpty)
+  if (success && isUsersListEmpty && !readOnly)
     return (
       <>
         <TabEmptyState
@@ -101,17 +102,21 @@ const Members: FC<MembersProps> = ({ groupId, isOIDC }) => {
         data={users}
         headers={membersListHeaders}
         loading={loading}
-        addEntityLabel={t("assignUser")}
-        onAddEntity={openAssignModal}
+        addEntityLabel={readOnly ? undefined : t("assignUser")}
+        onAddEntity={readOnly ? undefined : openAssignModal}
         searchPlaceholder={t("searchByUsername")}
-        menuItems={[
-          {
-            label: t("remove"),
-            icon: Trash2,
-            isDangerous: true,
-            onClick: unassignMember,
-          },
-        ]}
+        menuItems={
+          readOnly
+            ? undefined
+            : [
+                {
+                  label: t("remove"),
+                  icon: Trash2,
+                  isDangerous: true,
+                  onClick: unassignMember,
+                },
+              ]
+        }
         {...paginationProps}
       />
       {assignUsersModal}

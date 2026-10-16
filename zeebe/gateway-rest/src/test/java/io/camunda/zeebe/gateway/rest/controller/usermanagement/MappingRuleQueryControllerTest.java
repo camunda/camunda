@@ -78,7 +78,9 @@ public class MappingRuleQueryControllerTest extends RestControllerTest {
                             "claimName": "Claim Name",
                             "claimValue": "Claim Value",
                             "name": "Map Name",
-                            "mappingRuleId": "id"
+                            "mappingRuleId": "id",
+                            "type": "TOKEN_CLAIM",
+                            "origin": ""
                           }""",
             JsonCompareMode.STRICT);
 
@@ -162,19 +164,25 @@ public class MappingRuleQueryControllerTest extends RestControllerTest {
                  "claimName": "Claim Name1",
                  "claimValue": "Claim Value1",
                  "name": "Map Name1",
-                 "mappingRuleId": "id1"
+                 "mappingRuleId": "id1",
+                 "type": "TOKEN_CLAIM",
+                 "origin": ""
                },
                {
                  "claimName": "Claim Name2",
                  "claimValue": "Claim Value2",
                  "name": "Map Name2",
-                 "mappingRuleId": "id2"
+                 "mappingRuleId": "id2",
+                 "type": "TOKEN_CLAIM",
+                 "origin": ""
                },
                {
                  "claimName": "Claim Name3",
                  "claimValue": "Claim Value3",
                  "name": "Map Name3",
-                 "mappingRuleId": "id3"
+                 "mappingRuleId": "id3",
+                 "type": "TOKEN_CLAIM",
+                 "origin": ""
                }
              ],
              "page": {
@@ -243,7 +251,9 @@ public class MappingRuleQueryControllerTest extends RestControllerTest {
                  "claimName": "Claim Name1",
                  "claimValue": "Claim Value1",
                  "name": "Map Name1",
-                 "mappingRuleId": "mapping-top"
+                 "mappingRuleId": "mapping-top",
+                 "type": "TOKEN_CLAIM",
+                 "origin": ""
                }
              ],
              "page": {
@@ -301,7 +311,9 @@ public class MappingRuleQueryControllerTest extends RestControllerTest {
                  "claimName": "Claim Name1",
                  "claimValue": "Claim Value1",
                  "name": "Map Name1",
-                 "mappingRuleId": "mapping-top"
+                 "mappingRuleId": "mapping-top",
+                 "type": "TOKEN_CLAIM",
+                 "origin": ""
                }
              ],
              "page": {

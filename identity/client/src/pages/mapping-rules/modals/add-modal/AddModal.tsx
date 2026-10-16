@@ -21,12 +21,17 @@ import {
 } from "../components";
 import { Stack } from "@carbon/react";
 import { isValidId, getIdPattern } from "src/utility/validate";
+import type { MappingRuleType } from "src/utility/api/mapping-rules";
+import MappingRuleOriginSelect from "../MappingRuleOriginSelect";
+import MappingRuleTypeSelect from "../MappingRuleTypeSelect";
 
 type FormData = {
   mappingRuleId: string;
   mappingRuleName: string;
   claimName: string;
   claimValue: string;
+  type: MappingRuleType;
+  origin: string;
 };
 
 export const AddMappingRuleModal: FC<UseModalProps> = ({
@@ -47,15 +52,20 @@ export const AddMappingRuleModal: FC<UseModalProps> = ({
     control,
     handleSubmit,
     formState: { errors },
+    watch,
   } = useForm<FormData>({
     defaultValues: {
       mappingRuleId: "",
       mappingRuleName: "",
       claimName: "",
       claimValue: "",
+      type: "TOKEN_CLAIM",
+      origin: "",
     },
     mode: "all",
   });
+
+  const isAttributeRule = watch("type") !== "TOKEN_CLAIM";
 
   const onSubmit = (data: FormData) => {
     mutate(
@@ -64,6 +74,8 @@ export const AddMappingRuleModal: FC<UseModalProps> = ({
         name: data.mappingRuleName,
         claimName: data.claimName,
         claimValue: data.claimValue,
+        type: data.type,
+        ...(data.origin ? { origin: data.origin } : {}),
       },
       {
         onSuccess: () => {
@@ -128,6 +140,26 @@ export const AddMappingRuleModal: FC<UseModalProps> = ({
           />
         )}
       />
+      <Controller
+        name="type"
+        control={control}
+        render={({ field }) => (
+          <MappingRuleTypeSelect
+            value={field.value}
+            onChange={field.onChange}
+          />
+        )}
+      />
+      <Controller
+        name="origin"
+        control={control}
+        render={({ field }) => (
+          <MappingRuleOriginSelect
+            value={field.value}
+            onChange={field.onChange}
+          />
+        )}
+      />
       <MappingRuleContainer>
         <Stack gap="5">
           <h3>{t("mappingRule")}</h3>
@@ -141,9 +173,17 @@ export const AddMappingRuleModal: FC<UseModalProps> = ({
               render={({ field }) => (
                 <TextField
                   {...field}
-                  label={t("claimName")}
-                  placeholder={t("enterClaimName")}
-                  helperText={t("customClaimName")}
+                  label={isAttributeRule ? t("attributePath") : t("claimName")}
+                  placeholder={
+                    isAttributeRule
+                      ? t("enterAttributePath")
+                      : t("enterClaimName")
+                  }
+                  helperText={
+                    isAttributeRule
+                      ? t("customAttributePath")
+                      : t("customClaimName")
+                  }
                   errors={errors.claimName?.message}
                 />
               )}

@@ -12,6 +12,7 @@ import static org.assertj.core.api.AssertionsForClassTypes.tuple;
 
 import io.camunda.zeebe.engine.state.distribution.DistributionQueue;
 import io.camunda.zeebe.engine.util.EngineRule;
+import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord.UserAttribute;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -20,6 +21,8 @@ import io.camunda.zeebe.protocol.record.intent.UserIntent;
 import io.camunda.zeebe.protocol.record.value.CommandDistributionRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import org.junit.ClassRule;
@@ -136,5 +139,74 @@ public class UpdateUserMultiPartitionTest {
                 .withIntent(CommandDistributionIntent.ENQUEUED))
         .extracting(r -> r.getValue().getQueueId())
         .containsOnly(DistributionQueue.IDENTITY.getQueueId());
+  }
+
+  @Test
+  public void shouldDistributeMergedUserOnMaskedUpdate() {
+    // given
+    final var username = UUID.randomUUID().toString();
+    ENGINE
+        .user()
+        .newUser(username)
+        .withName("Foo Bar")
+        .withEmail("foo@bar.com")
+        .withExternalId("ext-1")
+        .create();
+
+    // when
+    ENGINE
+        .user()
+        .updateUser()
+        .withUsername(username)
+        .withActive(false)
+        .withChangedAttributes(UserAttribute.ACTIVE)
+        .update();
+
+    // then
+    for (int partitionId = 2; partitionId <= PARTITION_COUNT; partitionId++) {
+      final var event =
+          RecordingExporter.userRecords(UserIntent.UPDATED)
+              .withUsername(username)
+              .withPartitionId(partitionId)
+              .getFirst();
+      assertThat(event.getValue().isActive()).isFalse();
+      assertThat(event.getValue().getName()).isEqualTo("Foo Bar");
+      assertThat(event.getValue().getEmail()).isEqualTo("foo@bar.com");
+      assertThat(event.getValue().getExternalId()).isEqualTo("ext-1");
+    }
+  }
+
+  @Test
+  public void shouldDistributeMergedAttributesOnMaskedMerge() {
+    // given
+    final var username = UUID.randomUUID().toString();
+    ENGINE
+        .user()
+        .newUser(username)
+        .withAttributes(Map.of("department", "sales", "title", "Engineer"))
+        .create();
+    final var patch = new HashMap<String, Object>();
+    patch.put("title", null);
+    patch.put("clearance", "high");
+
+    // when
+    ENGINE
+        .user()
+        .updateUser()
+        .withUsername(username)
+        .withAttributes(patch)
+        .withChangedAttributes(UserAttribute.ATTRIBUTES_MERGE)
+        .update();
+
+    // then
+    for (int partitionId = 2; partitionId <= PARTITION_COUNT; partitionId++) {
+      final var event =
+          RecordingExporter.userRecords(UserIntent.UPDATED)
+              .withUsername(username)
+              .withPartitionId(partitionId)
+              .getFirst();
+      assertThat(event.getValue().getAttributes())
+          .containsExactlyInAnyOrderEntriesOf(Map.of("department", "sales", "clearance", "high"));
+    }
   }
 }
