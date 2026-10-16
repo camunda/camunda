@@ -305,4 +305,17 @@ public class ListViewFlowNodeFromJobHandlerTest {
     assertThat(flowNodeInstanceForListViewEntity.getActivityId()).isNull();
     assertThat(flowNodeInstanceForListViewEntity.isJobFailedWithRetriesLeft()).isEqualTo(true);
   }
+
+  @Test
+  void shouldSetStorageOrdinalFromRecord() {
+    // given
+    final Record<JobRecordValue> record = factory.generateRecord(ValueType.JOB);
+    final FlowNodeInstanceForListViewEntity entity = new FlowNodeInstanceForListViewEntity();
+
+    // when
+    underTest.updateEntity(record, entity);
+
+    // then
+    assertThat(entity.getStorageOrdinal()).isEqualTo(record.getValue().getStorageOrdinal());
+  }
 }

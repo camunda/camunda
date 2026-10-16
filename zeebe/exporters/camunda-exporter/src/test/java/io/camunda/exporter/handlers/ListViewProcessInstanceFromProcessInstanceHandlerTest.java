@@ -669,4 +669,18 @@ public class ListViewProcessInstanceFromProcessInstanceHandlerTest {
             r -> r.withIntent(intent).withValue(processInstanceRecordValue));
     return processInstanceRecord;
   }
+
+  @Test
+  void shouldSetStorageOrdinalFromRecord() {
+    // given
+    final Record<ProcessInstanceRecordValue> record =
+        factory.generateRecord(ValueType.PROCESS_INSTANCE);
+    final ProcessInstanceForListViewEntity entity = new ProcessInstanceForListViewEntity();
+
+    // when
+    underTest.updateEntity(record, entity);
+
+    // then
+    assertThat(entity.getStorageOrdinal()).isEqualTo(record.getValue().getStorageOrdinal());
+  }
 }

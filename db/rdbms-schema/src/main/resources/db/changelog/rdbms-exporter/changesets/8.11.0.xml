@@ -22,4 +22,48 @@
     </addColumn>
   </changeSet>
 
+  <changeSet id="add_storage_ordinal_column_to_process_instance" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <columnExists tableName="${prefix}PROCESS_INSTANCE" columnName="STORAGE_ORDINAL"/>
+      </not>
+    </preConditions>
+    <addColumn tableName="${prefix}PROCESS_INSTANCE">
+      <column name="STORAGE_ORDINAL" type="INTEGER"/>
+    </addColumn>
+  </changeSet>
+
+  <changeSet id="add_storage_ordinal_column_to_incident" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <columnExists tableName="${prefix}INCIDENT" columnName="STORAGE_ORDINAL"/>
+      </not>
+    </preConditions>
+    <addColumn tableName="${prefix}INCIDENT">
+      <column name="STORAGE_ORDINAL" type="INT"/>
+    </addColumn>
+  </changeSet>
+
+  <changeSet id="add_storage_ordinal_to_decision_instance" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <columnExists tableName="${prefix}DECISION_INSTANCE" columnName="STORAGE_ORDINAL"/>
+      </not>
+    </preConditions>
+    <addColumn tableName="${prefix}DECISION_INSTANCE">
+      <column name="STORAGE_ORDINAL" type="INTEGER"/>
+    </addColumn>
+  </changeSet>
+
+  <changeSet id="add_storage_ordinal_to_job" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <columnExists tableName="${prefix}JOB" columnName="STORAGE_ORDINAL"/>
+      </not>
+    </preConditions>
+    <addColumn tableName="${prefix}JOB">
+      <column name="STORAGE_ORDINAL" type="INTEGER"/>
+    </addColumn>
+  </changeSet>
+
 </databaseChangeLog>

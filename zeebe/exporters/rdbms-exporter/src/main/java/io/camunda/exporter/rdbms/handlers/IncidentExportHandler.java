@@ -89,6 +89,7 @@ public class IncidentExportHandler implements RdbmsExportHandler<IncidentRecordV
         .jobKey(mapIfGreaterZero(value.getJobKey()))
         .treePath(buildTreePath(record))
         .tenantId(value.getTenantId())
+        .storageOrdinal(value.getStorageOrdinal())
         .build();
   }
 

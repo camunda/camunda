@@ -967,6 +967,7 @@ public final class SearchQueryResponseMapper {
         .errorMessage(job.errorMessage())
         .isDenied(job.isDenied())
         .lastUpdateTime(formatDate(job.lastUpdateTime()))
+        .storageOrdinal(job.storageOrdinal())
         .build();
   }
 
@@ -994,6 +995,7 @@ public final class SearchQueryResponseMapper {
         .rootProcessInstanceKey(keyToStringOrNull(p.rootProcessInstanceKey()))
         .tags(p.tags())
         .businessId(emptyToNull(p.businessId()))
+        .storageOrdinal(p.storageOrdinal())
         .build();
   }
 
@@ -1315,6 +1317,7 @@ public final class SearchQueryResponseMapper {
         .rootProcessInstanceKey(keyToStringOrNull(t.rootProcessInstanceKey()))
         .jobKey(keyToStringOrNull(t.jobKey()))
         .tenantId(t.tenantId())
+        .storageOrdinal(t.storageOrdinal())
         .build();
   }
 
@@ -1484,6 +1487,7 @@ public final class SearchQueryResponseMapper {
                 keyToStringOrNull(entity.rootDecisionDefinitionKey()), "rootDecisionDefinitionKey"))
         .rootProcessInstanceKey(keyToStringOrNull(entity.rootProcessInstanceKey()))
         .state(toDecisionInstanceStateEnum(entity.state()))
+        .storageOrdinal(entity.storageOrdinal())
         .tenantId(entity.tenantId())
         .build();
   }
@@ -1511,6 +1515,7 @@ public final class SearchQueryResponseMapper {
                 keyToStringOrNull(entity.rootDecisionDefinitionKey()), "rootDecisionDefinitionKey"))
         .rootProcessInstanceKey(keyToStringOrNull(entity.rootProcessInstanceKey()))
         .state(toDecisionInstanceStateEnum(entity.state()))
+        .storageOrdinal(entity.storageOrdinal())
         .tenantId(entity.tenantId())
         .evaluatedInputs(
             requireNonNull(toEvaluatedInputs(entity.evaluatedInputs()), "evaluatedInputs"))

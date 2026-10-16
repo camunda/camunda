@@ -84,6 +84,7 @@ import io.camunda.security.api.model.user.CamundaUserDTO;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
@@ -302,7 +303,8 @@ class SearchQueryResponseMapperTest {
             "tenant", // tenantId
             null, // treePath
             null, // businessId
-            suspendedDate); // suspendedDate
+            suspendedDate, // suspendedDate
+            null); // storageOrdinal
 
     // when
     final var response = SearchQueryResponseMapper.toProcessInstance(entity);
@@ -332,13 +334,78 @@ class SearchQueryResponseMapperTest {
             "tenant", // tenantId
             null, // treePath
             null, // businessId
-            null); // suspendedDate
+            null, // suspendedDate
+            null); // storageOrdinal
 
     // when
     final var response = SearchQueryResponseMapper.toProcessInstance(entity);
 
     // then
     assertThat(response.getSuspendedDate()).isNull();
+  }
+
+  @Test
+  void shouldMapStorageOrdinalForProcessInstance() {
+    // given
+    final var entity =
+        new ProcessInstanceEntity(
+            123L, // processInstanceKey
+            999L, // rootProcessInstanceKey
+            "demoProcess", // processDefinitionId
+            "Demo Process", // processDefinitionName
+            1, // processDefinitionVersion
+            null, // processDefinitionVersionTag
+            456L, // processDefinitionKey
+            null, // parentProcessInstanceKey
+            null, // parentFlowNodeInstanceKey
+            OffsetDateTime.now(), // startDate
+            null, // endDate
+            ProcessInstanceState.ACTIVE, // state
+            false, // hasIncident
+            "tenant", // tenantId
+            null, // treePath
+            Set.of(), // tags
+            null, // businessId
+            null, // suspendedDate
+            1001); // storageOrdinal
+
+    // when
+    final var response = SearchQueryResponseMapper.toProcessInstance(entity);
+
+    // then
+    assertThat(response.getStorageOrdinal()).isEqualTo(1001);
+  }
+
+  @Test
+  void shouldMapNullStorageOrdinalForProcessInstance() {
+    // given
+    final var entity =
+        new ProcessInstanceEntity(
+            123L, // processInstanceKey
+            999L, // rootProcessInstanceKey
+            "demoProcess", // processDefinitionId
+            "Demo Process", // processDefinitionName
+            1, // processDefinitionVersion
+            null, // processDefinitionVersionTag
+            456L, // processDefinitionKey
+            null, // parentProcessInstanceKey
+            null, // parentFlowNodeInstanceKey
+            OffsetDateTime.now(), // startDate
+            null, // endDate
+            ProcessInstanceState.ACTIVE, // state
+            false, // hasIncident
+            "tenant", // tenantId
+            null, // treePath
+            Set.of(), // tags
+            null, // businessId
+            null, // suspendedDate
+            null); // storageOrdinal
+
+    // when
+    final var response = SearchQueryResponseMapper.toProcessInstance(entity);
+
+    // then
+    assertThat(response.getStorageOrdinal()).isNull();
   }
 
   @Test
@@ -405,6 +472,60 @@ class SearchQueryResponseMapperTest {
 
     // then
     assertThat(response.getRootProcessInstanceKey()).isEqualTo("999");
+  }
+
+  @Test
+  void shouldMapStorageOrdinalForIncident() {
+    // given
+    final var entity =
+        new IncidentEntity(
+            123L, // incidentKey
+            456L, // processDefinitionKey
+            "processId", // processDefinitionId
+            789L, // processInstanceKey
+            999L, // rootProcessInstanceKey
+            ErrorType.JOB_NO_RETRIES, // errorType
+            "Error message", // errorMessage
+            "flowNodeId", // flowNodeId
+            111L, // flowNodeInstanceKey
+            OffsetDateTime.now(), // creationTime
+            IncidentState.ACTIVE, // state
+            222L, // jobKey
+            "tenant", // tenantId
+            1001); // storageOrdinal
+
+    // when
+    final var response = SearchQueryResponseMapper.toIncident(entity);
+
+    // then
+    assertThat(response.getStorageOrdinal()).isEqualTo(1001);
+  }
+
+  @Test
+  void shouldMapNullStorageOrdinalForIncident() {
+    // given
+    final var entity =
+        new IncidentEntity(
+            123L, // incidentKey
+            456L, // processDefinitionKey
+            "processId", // processDefinitionId
+            789L, // processInstanceKey
+            999L, // rootProcessInstanceKey
+            ErrorType.JOB_NO_RETRIES, // errorType
+            "Error message", // errorMessage
+            "flowNodeId", // flowNodeId
+            111L, // flowNodeInstanceKey
+            OffsetDateTime.now(), // creationTime
+            IncidentState.ACTIVE, // state
+            222L, // jobKey
+            "tenant", // tenantId
+            null); // storageOrdinal
+
+    // when
+    final var response = SearchQueryResponseMapper.toIncident(entity);
+
+    // then
+    assertThat(response.getStorageOrdinal()).isNull();
   }
 
   @Test
@@ -510,6 +631,7 @@ class SearchQueryResponseMapperTest {
             .result("result")
             .tenantId("tenant")
             .businessId("business-1")
+            .storageOrdinal(1001)
             .build();
 
     // when
@@ -518,6 +640,7 @@ class SearchQueryResponseMapperTest {
     // then
     assertThat(response.getRootProcessInstanceKey()).isEqualTo("999");
     assertThat(response.getBusinessId()).isEqualTo("business-1");
+    assertThat(response.getStorageOrdinal()).isEqualTo(1001);
   }
 
   @Test
@@ -629,6 +752,7 @@ class SearchQueryResponseMapperTest {
             .processInstanceKey(789L)
             .rootProcessInstanceKey(999L)
             .businessId("business-1")
+            .storageOrdinal(1001)
             .elementId("serviceTask1")
             .elementInstanceKey(111L)
             .tenantId("tenant")
@@ -643,6 +767,7 @@ class SearchQueryResponseMapperTest {
 
     // then
     assertThat(jobs.getItems().getFirst().getBusinessId()).isEqualTo("business-1");
+    assertThat(jobs.getItems().getFirst().getStorageOrdinal()).isEqualTo(1001);
   }
 
   @Test
@@ -677,6 +802,7 @@ class SearchQueryResponseMapperTest {
 
     // then
     assertThat(jobs.getItems().getFirst().getBusinessId()).isNull();
+    assertThat(jobs.getItems().getFirst().getStorageOrdinal()).isNull();
   }
 
   @Test
@@ -1194,6 +1320,7 @@ class SearchQueryResponseMapperTest {
     // then
     assertThat(response.getRootProcessInstanceKey()).isNull();
     assertThat(response.getBusinessId()).isNull();
+    assertThat(response.getStorageOrdinal()).isNull();
   }
 
   @Test

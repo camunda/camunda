@@ -111,7 +111,8 @@ public class JobHandler implements OrdinalIndexExportHandler<JobEntity, JobRecor
         .setErrorMessage(recordValue.getErrorMessage())
         .setErrorCode(recordValue.getErrorCode())
         .setCustomHeaders(recordValue.getCustomHeaders())
-        .setJobKind(recordValue.getJobKind().name());
+        .setJobKind(recordValue.getJobKind().name())
+        .setStorageOrdinal(recordValue.getStorageOrdinal());
 
     // Skip setting flowNodeId for intents that may contain NO_CATCH_EVENT_FOUND sentinel
     // to preserve the existing value in ES (partial update pattern)
