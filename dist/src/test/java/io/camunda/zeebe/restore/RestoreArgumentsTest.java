@@ -29,6 +29,95 @@ final class RestoreArgumentsTest {
   }
 
   @Nested
+  class LogArchive {
+
+    private RestoreArguments logArchive() {
+      final var arguments = arguments();
+      arguments.getLogArchive().setTimeline("t1");
+      return arguments;
+    }
+
+    @Test
+    void shouldNotSelectTheLogArchiveWithoutATimeline() {
+      // given / when / then
+      assertThat(arguments().logArchiveSelection()).isEmpty();
+    }
+
+    @Test
+    void shouldSelectTheLatestCheckpointByDefault() {
+      // given / when
+      final var selection = logArchive().logArchiveSelection().orElseThrow();
+
+      // then
+      assertThat(selection.timelineId()).isEqualTo("t1");
+      assertThat(selection.checkpointId()).isEmpty();
+    }
+
+    @Test
+    void shouldSelectAGivenCheckpoint() {
+      // given
+      final var arguments = logArchive();
+      arguments.getLogArchive().setCheckpointId(9L);
+
+      // when / then
+      assertThat(arguments.logArchiveSelection().orElseThrow().checkpointId()).contains(9L);
+    }
+
+    @Test
+    void shouldRejectACheckpointWithoutATimeline() {
+      // given
+      final var arguments = arguments();
+      arguments.getLogArchive().setCheckpointId(9L);
+
+      // when / then
+      assertThatThrownBy(arguments::logArchiveSelection)
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessageContaining("requires --logArchive.timeline");
+    }
+
+    @Test
+    void shouldRejectCombiningWithABackupId() {
+      // given
+      final var arguments = logArchive();
+      arguments.setBackupId(List.of(1L));
+
+      // when / then
+      assertThatThrownBy(arguments::logArchiveSelection)
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessageContaining("cannot be combined with --backupId");
+    }
+
+    @Test
+    void shouldRejectCombiningWithATimeRange() {
+      // given
+      final var arguments = logArchive();
+      arguments.setFrom(Instant.parse("2026-01-01T00:00:00Z"));
+
+      // when / then
+      assertThatThrownBy(arguments::logArchiveSelection)
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessageContaining("cannot be combined with --backupId");
+    }
+
+    @Test
+    void shouldRejectTenantOptions() {
+      // given
+      final var withTenant = logArchive();
+      withTenant.setTenantId("tenanta");
+      final var withAll = logArchive();
+      withAll.setAllTenants("true");
+
+      // when / then
+      assertThatThrownBy(withTenant::logArchiveSelection)
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessageContaining("default physical tenant");
+      assertThatThrownBy(withAll::logArchiveSelection)
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessageContaining("default physical tenant");
+    }
+  }
+
+  @Nested
   class TenantTargeting {
 
     @Test

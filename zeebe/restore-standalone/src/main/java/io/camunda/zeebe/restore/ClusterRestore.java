@@ -597,7 +597,7 @@ public final class ClusterRestore {
         .collect(Collectors.toMap(Map.Entry::getKey, entry -> entry.getValue().configuration()));
   }
 
-  private void verifyDirectoryIsEmpty(final Path directory, final List<String> ignoreFilesInTarget)
+  static void verifyDirectoryIsEmpty(final Path directory, final List<String> ignoreFilesInTarget)
       throws IOException {
     if (!directoryIsEmpty(directory, ignoreFilesInTarget)) {
       LOG.error(
@@ -607,7 +607,7 @@ public final class ClusterRestore {
     }
   }
 
-  private boolean directoryIsEmpty(final Path dir, final List<String> ignoreFilesInTarget)
+  private static boolean directoryIsEmpty(final Path dir, final List<String> ignoreFilesInTarget)
       throws IOException {
     if (!Files.exists(dir)) {
       return true;

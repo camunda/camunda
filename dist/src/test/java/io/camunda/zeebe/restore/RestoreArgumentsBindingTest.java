@@ -62,6 +62,28 @@ final class RestoreArgumentsBindingTest {
   }
 
   @Test
+  void shouldBindTheLogArchiveOptions() {
+    // given / when
+    final var selection =
+        bind("--logArchive.timeline=t1.r5", "--logArchive.checkpointId=7")
+            .logArchiveSelection()
+            .orElseThrow();
+
+    // then
+    assertThat(selection.timelineId()).isEqualTo("t1.r5");
+    assertThat(selection.checkpointId()).contains(7L);
+  }
+
+  @Test
+  void shouldLeaveTheCheckpointOpenWhenOnlyTheTimelineIsGiven() {
+    // given / when
+    final var selection = bind("--logArchive.timeline=t1").logArchiveSelection().orElseThrow();
+
+    // then
+    assertThat(selection.checkpointId()).isEmpty();
+  }
+
+  @Test
   void shouldBindPerTenantOverrides() {
     // given / when
     final var arguments = bind("--from=2026-01-01T10:00:00Z", "--override.tenanta.backupId=31,32");
