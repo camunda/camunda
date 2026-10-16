@@ -56,7 +56,7 @@ import org.springframework.util.unit.DataSize;
  * InProcessRdbmsRangeRestoreIT} (triggered over a running broker's REST endpoint while it is in
  * {@code RECOVERING} mode). The RDBMS-aware resolution of the restore point from a time range is
  * identical either way; only the execution of the resolved restore plan differs, so subclasses only
- * implement the three restore-execution hook methods below.
+ * implement the two restore-execution hook methods below.
  *
  * <p>Uses a filesystem backup store (no containers needed) and H2 in-memory database for RDBMS.
  */
@@ -64,6 +64,8 @@ import org.springframework.util.unit.DataSize;
 abstract class RdbmsRangeRestoreTestBase implements ClockSupport {
 
   protected static final int PARTITION_COUNT = 2;
+  private static final String PROCESS_ID = "process";
+  private static final String JOB_TYPE = "task";
   private static final Logger LOG = LoggerFactory.getLogger(RdbmsRangeRestoreTestBase.class);
 
   // H2 in-memory DB URL. DB_CLOSE_DELAY=-1 keeps the DB alive across a broker's stop/restart
@@ -108,12 +110,12 @@ abstract class RdbmsRangeRestoreTestBase implements ClockSupport {
   @Test
   void shouldNotRestoreIfMissingBackupAfterRestorePosition() throws Exception {
     // given - deploy a process and create instances, then take continuous backups.
-    final Interval interval;
+    final RestoreTarget timeRange;
     try (final var client = broker.newClientBuilder().build()) {
       final var processKey = deployTestProcess(client);
 
       // Create some process instances to have data to verify after restore
-      interval = createProcessInstancesAndTakeBackups(client, processKey);
+      timeRange = createProcessInstancesAndTakeBackups(client, processKey);
 
       takeAndAwaitBackup();
       progressClock(broker, 2000);
@@ -122,17 +124,17 @@ abstract class RdbmsRangeRestoreTestBase implements ClockSupport {
     }
 
     // when/then - restoring from a range that ends before the backup covering it exists must fail
-    assertRestoreFailsForMissingBackup(interval);
+    assertRestoreFails(timeRange, "No usable range found");
   }
 
   @Test
   void shouldRestoreFromATimeRange() throws Exception {
     // given - some process instances with backups between them
     final long processKey;
-    final Interval interval;
+    final RestoreTarget timeRange;
     try (final var client = broker.newClientBuilder().build()) {
       processKey = deployTestProcess(client);
-      interval = createProcessInstancesAndTakeBackups(client, processKey);
+      timeRange = createProcessInstancesAndTakeBackups(client, processKey);
     }
     takeAndAwaitBackup();
 
@@ -142,7 +144,7 @@ abstract class RdbmsRangeRestoreTestBase implements ClockSupport {
     awaitBackupCoversExportedPositionsOnEveryPartition();
 
     // when - restore from the recorded time range
-    restoreFromTimeRange(interval);
+    restore(timeRange);
 
     // then - jobs from process instances created before the restore window's end are still there,
     // proving the RDBMS-resolved restore point was applied correctly
@@ -164,27 +166,23 @@ abstract class RdbmsRangeRestoreTestBase implements ClockSupport {
     awaitBackupCoversExportedPositionsOnEveryPartition();
 
     // when - restore without specifying a time range (resolves the latest common checkpoint)
-    restoreWithoutArguments();
+    restore(RestoreTarget.latest());
 
     // then
     completeJobs(4);
   }
 
   /**
-   * Restores from the given time range and leaves the broker running and ready for verification
-   * (e.g. by restarting it, for the standalone path, or by completing an in-process restore change
-   * plan and waiting for the broker to return to {@code ACTIVE}).
+   * Restores to {@code target} and leaves the broker running and ready for verification (e.g. by
+   * restarting it, for the standalone path, or by completing an in-process restore change plan and
+   * waiting for the broker to return to {@code ACTIVE}).
    */
-  abstract void restoreFromTimeRange(Interval interval) throws Exception;
-
-  /** Same as {@link #restoreFromTimeRange(Interval)}, but without an explicit time range. */
-  abstract void restoreWithoutArguments() throws Exception;
+  abstract void restore(RestoreTarget target) throws Exception;
 
   /**
-   * Attempts a restore for a time range that ends before any backup exists to cover it, and asserts
-   * that the attempt fails with a message indicating no usable range was found.
+   * Attempts a restore to {@code target} and asserts that it fails with {@code expectedMessage}.
    */
-  abstract void assertRestoreFailsForMissingBackup(Interval interval) throws Exception;
+  abstract void assertRestoreFails(RestoreTarget target, String expectedMessage) throws Exception;
 
   /**
    * The backup store's base directory. Declared as a {@code static @TempDir} field on each concrete
@@ -234,7 +232,7 @@ abstract class RdbmsRangeRestoreTestBase implements ClockSupport {
         final var jobActivationResult =
             client
                 .newActivateJobsCommand()
-                .jobType("task")
+                .jobType(JOB_TYPE)
                 .maxJobsToActivate(remaining)
                 .send()
                 .join();
@@ -251,9 +249,9 @@ abstract class RdbmsRangeRestoreTestBase implements ClockSupport {
     return client
         .newDeployResourceCommand()
         .addProcessModel(
-            Bpmn.createExecutableProcess("process")
+            Bpmn.createExecutableProcess(PROCESS_ID)
                 .startEvent()
-                .serviceTask("task", t -> t.zeebeJobType("task"))
+                .serviceTask("task", t -> t.zeebeJobType(JOB_TYPE))
                 .endEvent()
                 .done(),
             "process.bpmn")
@@ -264,7 +262,7 @@ abstract class RdbmsRangeRestoreTestBase implements ClockSupport {
         .getProcessDefinitionKey();
   }
 
-  protected final Interval createProcessInstancesAndTakeBackups(
+  protected final RestoreTarget createProcessInstancesAndTakeBackups(
       final CamundaClient client, final long processKey) {
 
     // Create some process instances to have data to verify after restore
@@ -288,7 +286,7 @@ abstract class RdbmsRangeRestoreTestBase implements ClockSupport {
     // Record "to" after second backup
     final Instant to = currentTime(broker);
     LOG.info("Time range to = {}", to);
-    return new Interval(from, to);
+    return new RestoreTarget(from, to);
   }
 
   protected final BackupInfo takeAndAwaitBackup() {
@@ -337,5 +335,14 @@ abstract class RdbmsRangeRestoreTestBase implements ClockSupport {
     rdbms.setPassword("");
   }
 
-  protected record Interval(Instant start, Instant end) {}
+  /**
+   * The time range a restore is asked for. Either bound may be {@code null} to leave it out;
+   * without {@code to}, the restore resolves the latest common checkpoint.
+   */
+  protected record RestoreTarget(Instant from, Instant to) {
+
+    static RestoreTarget latest() {
+      return new RestoreTarget(null, null);
+    }
+  }
 }

@@ -14,6 +14,7 @@ import io.camunda.configuration.Filesystem;
 import io.camunda.configuration.PrimaryStorageBackup.BackupStoreType;
 import io.camunda.zeebe.qa.util.cluster.TestRestoreApp;
 import io.camunda.zeebe.util.FileUtil;
+import java.io.IOException;
 import java.nio.file.Path;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.io.TempDir;
@@ -40,37 +41,30 @@ final class RdbmsRangeRestoreIT extends RdbmsRangeRestoreTestBase {
   }
 
   @Override
-  void restoreFromTimeRange(final Interval interval) throws Exception {
-    broker.stop();
-    FileUtil.deleteFolder(workingDirectory);
-    FileUtil.ensureDirectoryExists(workingDirectory);
-    try (final var restore = testRestoreApp(interval)) {
-      restore.start();
+  void restore(final RestoreTarget target) throws Exception {
+    stopBrokerAndEmptyWorkingDirectory();
+    try (final var restoreApp = testRestoreApp(target)) {
+      restoreApp.start();
     }
     broker.start();
   }
 
   @Override
-  void restoreWithoutArguments() throws Exception {
-    broker.stop();
-    FileUtil.deleteFolder(workingDirectory);
-    FileUtil.ensureDirectoryExists(workingDirectory);
-    try (final var restore = testRestoreApp()) {
-      restore.start();
-    }
-    broker.start();
-  }
-
-  @Override
-  void assertRestoreFailsForMissingBackup(final Interval interval) throws Exception {
-    broker.stop();
-    FileUtil.deleteFolder(workingDirectory);
-    FileUtil.ensureDirectoryExists(workingDirectory);
-    try (final var restoreApp = testRestoreApp(interval)) {
+  void assertRestoreFails(final RestoreTarget target, final String expectedMessage)
+      throws Exception {
+    stopBrokerAndEmptyWorkingDirectory();
+    try (final var restoreApp = testRestoreApp(target)) {
       assertThatThrownBy(restoreApp::start)
           .isInstanceOf(IllegalStateException.class)
-          .hasMessageContaining("No usable range found");
+          .hasMessageContaining(expectedMessage);
     }
+  }
+
+  /** The restore app requires an empty data directory to restore into. */
+  private void stopBrokerAndEmptyWorkingDirectory() throws IOException {
+    broker.stop();
+    FileUtil.deleteFolder(workingDirectory);
+    FileUtil.ensureDirectoryExists(workingDirectory);
   }
 
   private void configureRestoreApp(final Camunda cfg) {
@@ -85,19 +79,11 @@ final class RdbmsRangeRestoreIT extends RdbmsRangeRestoreTestBase {
   }
 
   @SuppressWarnings("resource")
-  private TestRestoreApp testRestoreApp(final Interval interval) {
+  private TestRestoreApp testRestoreApp(final RestoreTarget target) {
     return new TestRestoreApp()
         .withProperty("camunda.data.secondary-storage.type", "rdbms")
         .withUnifiedConfig(this::configureRestoreApp)
         .withWorkingDirectory(workingDirectory)
-        .withTimeRange(interval.start(), interval.end());
-  }
-
-  @SuppressWarnings("resource")
-  private TestRestoreApp testRestoreApp() {
-    return new TestRestoreApp()
-        .withProperty("camunda.data.secondary-storage.type", "rdbms")
-        .withUnifiedConfig(this::configureRestoreApp)
-        .withWorkingDirectory(workingDirectory);
+        .withTimeRange(target.from(), target.to());
   }
 }
