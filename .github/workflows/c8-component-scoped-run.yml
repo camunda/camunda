@@ -24,8 +24,14 @@ name: C8 Component - Scoped Run
 # carbon ones exclude `**/shadcn.components/**` and load a different setup
 # file. Running a shadcn component test under `operate:carbon` selects nothing
 # and exits 0. `scripts/component-suite-run.mjs` in the cross-component
-# repository resolves the right one from the spec path; it reads this config
-# rather than carrying a copy.
+# repository resolves the right one from the spec path by reading
+# vite.config.ts, so it follows a rename on its own.
+#
+# The `instance` list below does NOT follow it: a choice input has to be
+# written out, so it is a copy that has to track that config by hand. The
+# failure is at least loud — an instance the list does not offer is refused by
+# the dispatch, naming the value — but a renamed instance blocks generation
+# for that area until the list is updated here.
 
 on:
   workflow_dispatch:
