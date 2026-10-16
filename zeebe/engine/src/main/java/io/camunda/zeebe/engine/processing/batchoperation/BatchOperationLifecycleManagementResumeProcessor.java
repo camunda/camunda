@@ -115,20 +115,23 @@ public final class BatchOperationLifecycleManagementResumeProcessor
     LOGGER.debug("Resuming batch operation with key {}", command.getValue().getBatchOperationKey());
 
     // validation
-    final var batchOperation = batchOperationState.get(batchOperationKey);
-    if (batchOperation.isEmpty()) {
+    final var oBatchOperation = batchOperationState.get(batchOperationKey);
+    if (oBatchOperation.isEmpty()) {
       rejectNotFound(command, batchOperationKey, recordValue);
       return;
     }
 
+    final var batchOperation = oBatchOperation.get();
+    recordValue.setStorageOrdinal(batchOperation.getStorageOrdinal());
+
     // check if the batch operation can be resumed
-    if (!batchOperation.get().canResume()) {
-      final var batchOperationStatus = batchOperation.get().getStatus().name();
+    if (!batchOperation.canResume()) {
+      final var batchOperationStatus = batchOperation.getStatus().name();
       rejectInvalidState(command, batchOperationKey, batchOperationStatus, recordValue);
       return;
     }
 
-    resumeBatchOperation(resumeKey, batchOperation.get(), command.getValue());
+    resumeBatchOperation(resumeKey, batchOperation, command.getValue());
     responseWriter.writeAcceptedResponseOnCommand(
         resumeKey, BatchOperationIntent.RESUMED, command.getValue(), command);
     commandDistributionBehavior
@@ -136,7 +139,7 @@ public final class BatchOperationLifecycleManagementResumeProcessor
         .inQueue(DistributionQueue.BATCH_OPERATION)
         .distribute(command);
 
-    metrics.recordResumed(batchOperation.get().getBatchOperationType());
+    metrics.recordResumed(batchOperation.getBatchOperationType());
   }
 
   @Override
@@ -147,6 +150,7 @@ public final class BatchOperationLifecycleManagementResumeProcessor
 
     // Validation
     final var batchOperation = batchOperationState.get(batchOperationKey);
+    batchOperation.ifPresent(bo -> recordValue.setStorageOrdinal(bo.getStorageOrdinal()));
     if (batchOperation.isPresent() && batchOperation.get().canResume()) {
       LOGGER.debug(
           "Processing distributed command to resume with key '{}': {}",
@@ -175,6 +179,7 @@ public final class BatchOperationLifecycleManagementResumeProcessor
 
     final var batchExecute = new BatchOperationExecutionRecord();
     batchExecute.setBatchOperationKey(batchOperation.getKey());
+    batchExecute.setStorageOrdinal(batchOperation.getStorageOrdinal());
     if (batchOperation.isInitialized()) {
       commandWriter.appendFollowUpCommand(
           batchOperation.getKey(),

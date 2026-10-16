@@ -29,6 +29,7 @@ class BatchOperationCommandsTest {
 
   private static final int PARTITION_ID = 1;
   private static final long BATCH_OPERATION_KEY = 123L;
+  private static final int STORAGE_ORDINAL = 1234;
 
   private BatchOperationCommands appender;
   private TaskResultBuilder mockBuilder;
@@ -46,7 +47,8 @@ class BatchOperationCommandsTest {
     final int pageSize = 50;
 
     // when
-    appender.appendInitializationCommand(mockBuilder, BATCH_OPERATION_KEY, cursor, pageSize);
+    appender.appendInitializationCommand(
+        mockBuilder, BATCH_OPERATION_KEY, STORAGE_ORDINAL, cursor, pageSize);
 
     // then
     final var commandCaptor = ArgumentCaptor.forClass(BatchOperationInitializationRecord.class);
@@ -59,6 +61,7 @@ class BatchOperationCommandsTest {
 
     final var command = commandCaptor.getValue();
     assertThat(command.getBatchOperationKey()).isEqualTo(BATCH_OPERATION_KEY);
+    assertThat(command.getStorageOrdinal()).isEqualTo(STORAGE_ORDINAL);
     assertThat(command.getSearchResultCursor()).isEqualTo(cursor);
     assertThat(command.getSearchQueryPageSize()).isEqualTo(pageSize);
   }
@@ -70,7 +73,8 @@ class BatchOperationCommandsTest {
     final int pageSize = 100;
 
     // when
-    appender.appendInitializationCommand(mockBuilder, BATCH_OPERATION_KEY, cursor, pageSize);
+    appender.appendInitializationCommand(
+        mockBuilder, BATCH_OPERATION_KEY, STORAGE_ORDINAL, cursor, pageSize);
 
     // then
     final var commandCaptor = ArgumentCaptor.forClass(BatchOperationInitializationRecord.class);
@@ -83,6 +87,7 @@ class BatchOperationCommandsTest {
 
     final var command = commandCaptor.getValue();
     assertThat(command.getBatchOperationKey()).isEqualTo(BATCH_OPERATION_KEY);
+    assertThat(command.getStorageOrdinal()).isEqualTo(STORAGE_ORDINAL);
     assertThat(command.getSearchResultCursor()).isEmpty(); // null converted to empty string
     assertThat(command.getSearchQueryPageSize()).isEqualTo(pageSize);
   }
@@ -90,7 +95,7 @@ class BatchOperationCommandsTest {
   @Test
   void shouldAppendFinishInitializationCommand() {
     // when
-    appender.appendFinishInitializationCommand(mockBuilder, BATCH_OPERATION_KEY);
+    appender.appendFinishInitializationCommand(mockBuilder, BATCH_OPERATION_KEY, STORAGE_ORDINAL);
 
     // then
     final var commandCaptor = ArgumentCaptor.forClass(BatchOperationInitializationRecord.class);
@@ -103,12 +108,13 @@ class BatchOperationCommandsTest {
 
     final var command = commandCaptor.getValue();
     assertThat(command.getBatchOperationKey()).isEqualTo(BATCH_OPERATION_KEY);
+    assertThat(command.getStorageOrdinal()).isEqualTo(STORAGE_ORDINAL);
   }
 
   @Test
   void shouldAppendExecutionCommand() {
     // when
-    appender.appendExecutionCommand(mockBuilder, BATCH_OPERATION_KEY);
+    appender.appendExecutionCommand(mockBuilder, BATCH_OPERATION_KEY, STORAGE_ORDINAL);
 
     // then
     final var commandCaptor = ArgumentCaptor.forClass(BatchOperationExecutionRecord.class);
@@ -121,6 +127,7 @@ class BatchOperationCommandsTest {
 
     final var command = commandCaptor.getValue();
     assertThat(command.getBatchOperationKey()).isEqualTo(BATCH_OPERATION_KEY);
+    assertThat(command.getStorageOrdinal()).isEqualTo(STORAGE_ORDINAL);
   }
 
   @Test
@@ -130,7 +137,8 @@ class BatchOperationCommandsTest {
     final BatchOperationErrorType errorType = BatchOperationErrorType.QUERY_FAILED;
 
     // when
-    appender.appendFailureCommand(mockBuilder, BATCH_OPERATION_KEY, errorMessage, errorType);
+    appender.appendFailureCommand(
+        mockBuilder, BATCH_OPERATION_KEY, STORAGE_ORDINAL, errorMessage, errorType);
 
     // then
     final var commandCaptor = ArgumentCaptor.forClass(BatchOperationPartitionLifecycleRecord.class);
@@ -144,6 +152,7 @@ class BatchOperationCommandsTest {
     final var command = commandCaptor.getValue();
     final var error = command.getError();
     assertThat(command.getBatchOperationKey()).isEqualTo(BATCH_OPERATION_KEY);
+    assertThat(command.getStorageOrdinal()).isEqualTo(STORAGE_ORDINAL);
     assertThat(error.getMessage()).isEqualTo(errorMessage);
     assertThat(error.getType()).isEqualTo(errorType);
     assertThat(error.getPartitionId()).isEqualTo(PARTITION_ID);
@@ -156,7 +165,8 @@ class BatchOperationCommandsTest {
     final BatchOperationErrorType errorType = BatchOperationErrorType.RESULT_BUFFER_SIZE_EXCEEDED;
 
     // when
-    appender.appendFailureCommand(mockBuilder, BATCH_OPERATION_KEY, errorMessage, errorType);
+    appender.appendFailureCommand(
+        mockBuilder, BATCH_OPERATION_KEY, STORAGE_ORDINAL, errorMessage, errorType);
 
     // then
     final var commandCaptor = ArgumentCaptor.forClass(BatchOperationPartitionLifecycleRecord.class);
@@ -183,7 +193,7 @@ class BatchOperationCommandsTest {
 
     // when
     differentAppender.appendFailureCommand(
-        mockBuilder, BATCH_OPERATION_KEY, errorMessage, errorType);
+        mockBuilder, BATCH_OPERATION_KEY, STORAGE_ORDINAL, errorMessage, errorType);
 
     // then
     final var commandCaptor = ArgumentCaptor.forClass(BatchOperationPartitionLifecycleRecord.class);

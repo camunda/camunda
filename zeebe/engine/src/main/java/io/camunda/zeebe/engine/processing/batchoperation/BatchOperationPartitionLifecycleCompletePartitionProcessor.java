@@ -126,6 +126,7 @@ public final class BatchOperationPartitionLifecycleCompletePartitionProcessor
 
     final var batchCompleted = new BatchOperationLifecycleManagementRecord();
     batchCompleted.setBatchOperationKey(batchOperationKey);
+    batchCompleted.setStorageOrdinal(bo.getStorageOrdinal());
     if (!bo.getErrors().isEmpty()) {
       LOGGER.debug(
           "Some partitions ({}) finished with errors, appending them to COMPLETED event for batch operation {}",
