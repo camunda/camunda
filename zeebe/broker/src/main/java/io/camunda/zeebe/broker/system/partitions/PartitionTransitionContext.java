@@ -13,6 +13,7 @@ import io.atomix.raft.RaftServer.Role;
 import io.camunda.security.configuration.EngineSecurityConfig;
 import io.camunda.zeebe.backup.api.BackupManager;
 import io.camunda.zeebe.backup.api.BackupStore;
+import io.camunda.zeebe.backup.logarchive.processing.LogArchiveRecordsProcessor;
 import io.camunda.zeebe.backup.processing.CheckpointRecordsProcessor;
 import io.camunda.zeebe.broker.PartitionListener;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
@@ -139,6 +140,11 @@ public interface PartitionTransitionContext extends PartitionContext {
   CheckpointRecordsProcessor getCheckpointProcessor();
 
   void setCheckpointProcessor(CheckpointRecordsProcessor checkpointRecordsProcessor);
+
+  /** The log archive processor, or null if the log archive is disabled. */
+  @Nullable LogArchiveRecordsProcessor getLogArchiveProcessor();
+
+  void setLogArchiveProcessor(@Nullable LogArchiveRecordsProcessor logArchiveProcessor);
 
   @Nullable BackupStore getBackupStore();
 

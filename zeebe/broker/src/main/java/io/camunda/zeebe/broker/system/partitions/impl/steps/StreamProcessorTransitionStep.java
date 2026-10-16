@@ -23,6 +23,7 @@ import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.stream.impl.SkipPositionsFilter;
 import io.camunda.zeebe.stream.impl.StreamProcessor;
 import io.camunda.zeebe.stream.impl.StreamProcessorMode;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.function.BiFunction;
 
@@ -138,8 +139,13 @@ public final class StreamProcessorTransitionStep implements PartitionTransitionS
     final var engine =
         new Engine(
             context.getTypedRecordProcessorFactory(), engineCfg, context.getSecurityConfig());
-    final List<RecordProcessor> recordProcessors =
-        List.of(engine, context.getCheckpointProcessor());
+    final List<RecordProcessor> recordProcessors = new ArrayList<>();
+    recordProcessors.add(engine);
+    recordProcessors.add(context.getCheckpointProcessor());
+    final var logArchiveProcessor = context.getLogArchiveProcessor();
+    if (logArchiveProcessor != null) {
+      recordProcessors.add(logArchiveProcessor);
+    }
 
     // Set the scaling progress supplier to prevent checkpointing during scaling
     context.getCheckpointProcessor().setScalingInProgressSupplier(engine::isScalingInProgress);

@@ -37,6 +37,7 @@ public class BackupCfg implements ConfigurationEntry {
   private long offset = 0L;
   private @Nullable Duration readTimeout;
   private @Nullable Duration writeTimeout;
+  private LogArchiveCfg logArchive = new LogArchiveCfg();
 
   public S3BackupStoreConfig getS3() {
     return s3;
@@ -113,6 +114,8 @@ public class BackupCfg implements ConfigurationEntry {
         .append(readTimeout)
         .append(", writeTimeout=")
         .append(writeTimeout)
+        .append(", logArchive=")
+        .append(logArchive)
         .append('}');
     return sb.toString();
   }
@@ -179,6 +182,19 @@ public class BackupCfg implements ConfigurationEntry {
 
   public void setWriteTimeout(final @Nullable Duration writeTimeout) {
     this.writeTimeout = writeTimeout;
+  }
+
+  public LogArchiveCfg getLogArchive() {
+    return logArchive;
+  }
+
+  public void setLogArchive(final LogArchiveCfg logArchive) {
+    this.logArchive = logArchive;
+  }
+
+  /** Whether checkpoint metadata must be tracked in the CHECKPOINTS column family. */
+  public boolean shouldTrackBackupMetadata() {
+    return continuous || logArchive.isEnabled();
   }
 
   public interface BackupStoreFactory {

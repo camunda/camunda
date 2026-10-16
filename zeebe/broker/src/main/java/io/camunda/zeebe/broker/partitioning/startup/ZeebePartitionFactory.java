@@ -43,6 +43,7 @@ import io.camunda.zeebe.broker.system.partitions.impl.steps.BackupServiceTransit
 import io.camunda.zeebe.broker.system.partitions.impl.steps.BackupStoreTransitionStep;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.ExporterDirectorPartitionTransitionStep;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.InterPartitionCommandServiceStep;
+import io.camunda.zeebe.broker.system.partitions.impl.steps.LogArchiveTransitionStep;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.LogStoragePartitionTransitionStep;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.LogStreamPartitionTransitionStep;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.MetricsStep;
@@ -230,6 +231,7 @@ public final class ZeebePartitionFactory {
         new QueryServicePartitionTransitionStep(),
         new BackupStoreTransitionStep(),
         new BackupServiceTransitionStep(),
+        new LogArchiveTransitionStep(),
         new InterPartitionCommandServiceStep(),
         new StreamProcessorTransitionStep(),
         new CommandApiServiceTransitionStep(),
@@ -249,13 +251,15 @@ public final class ZeebePartitionFactory {
     final Path runtimeDirectory =
         resolveRuntimeDirectory(brokerCfg, raftPartition.id(), raftPartition.dataDirectory());
 
-    final var continuousBackup = brokerCfg.getData().getBackup().isContinuous();
+    final var backupCfg = brokerCfg.getData().getBackup();
+    final var continuousBackup = backupCfg.isContinuous();
+    final var logArchiveEnabled = backupCfg.getLogArchive().isEnabled();
     return new StateControllerImpl(
         zeebeRocksDbFactory,
         snapshotStore,
         runtimeDirectory,
         new AtomixRecordEntrySupplierImpl(raftPartition.getServer()),
-        zeebeDb -> new DbPositionSupplier(zeebeDb, continuousBackup),
+        zeebeDb -> new DbPositionSupplier(zeebeDb, continuousBackup, logArchiveEnabled),
         concurrencyControl);
   }
 
