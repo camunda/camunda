@@ -16,6 +16,15 @@ import {relativizePath, Paths} from 'utils/relativizePath';
 // PR check on the latest feature branch (camunda/team-test-automation#188).
 // Revert before merge.
 
+// DEMO: deterministic failure in a changed spec, to confirm the changed-spec
+// gate blocks the merge (the E2E jobs that run this spec should go red while
+// the API jobs stay green). Revert before merge.
+test.describe('Gate block demo', () => {
+  test('a changed test that always fails should block the merge', () => {
+    expect(1).toBe(2);
+  });
+});
+
 test.describe.parallel('Login Tests', () => {
   test.beforeEach(async ({page}) => {
     await navigateToApp(page, 'operate');
