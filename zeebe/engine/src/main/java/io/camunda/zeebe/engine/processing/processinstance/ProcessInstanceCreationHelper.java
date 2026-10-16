@@ -108,39 +108,51 @@ public class ProcessInstanceCreationHelper {
       final ProcessInstanceCreationRecord record) {
     final DirectBuffer bpmnProcessId = record.getBpmnProcessIdBuffer();
 
-    final String versionTag = record.getVersionTag();
-
     final Either<Rejection, DeployedProcess> process;
     if (bpmnProcessId.capacity() > 0) {
-      if (!versionTag.isEmpty() && record.getVersion() >= 0) {
-        return Either.left(
-            new Rejection(
-                RejectionType.INVALID_ARGUMENT,
-                String.format(
-                    ERROR_MESSAGE_VERSION_AND_VERSION_TAG, record.getVersion(), versionTag)));
-      } else if (!versionTag.isEmpty()) {
-        process = getProcess(bpmnProcessId, versionTag, record.getTenantId());
-      } else if (record.getVersion() >= 0) {
-        process = getProcess(bpmnProcessId, record.getVersion(), record.getTenantId());
-      } else {
-        process = getProcess(bpmnProcessId, record.getTenantId());
-      }
+      process = findProcessById(bpmnProcessId, record);
     } else if (record.getProcessDefinitionKey() >= 0) {
-      if (!versionTag.isEmpty()) {
-        return Either.left(
-            new Rejection(
-                RejectionType.INVALID_ARGUMENT,
-                String.format(
-                    ERROR_MESSAGE_VERSION_TAG_WITH_KEY,
-                    record.getProcessDefinitionKey(),
-                    versionTag)));
-      }
-      process = getProcess(record.getProcessDefinitionKey(), record.getTenantId());
+      process = findProcessByKey(record);
     } else {
       return Either.left(
           new Rejection(RejectionType.INVALID_ARGUMENT, ERROR_MESSAGE_NO_IDENTIFIER_SPECIFIED));
     }
     return process.flatMap(this::rejectIfDraining);
+  }
+
+  private Either<Rejection, DeployedProcess> findProcessById(
+      final DirectBuffer bpmnProcessId, final ProcessInstanceCreationRecord record) {
+    final String versionTag = record.getVersionTag();
+    final int version = record.getVersion();
+    final String tenantId = record.getTenantId();
+
+    if (!versionTag.isEmpty() && version >= 0) {
+      return Either.left(
+          new Rejection(
+              RejectionType.INVALID_ARGUMENT,
+              String.format(ERROR_MESSAGE_VERSION_AND_VERSION_TAG, version, versionTag)));
+    }
+    if (!versionTag.isEmpty()) {
+      return getProcess(bpmnProcessId, versionTag, tenantId);
+    }
+    if (version >= 0) {
+      return getProcess(bpmnProcessId, version, tenantId);
+    }
+    return getProcess(bpmnProcessId, tenantId);
+  }
+
+  private Either<Rejection, DeployedProcess> findProcessByKey(
+      final ProcessInstanceCreationRecord record) {
+    final long processDefinitionKey = record.getProcessDefinitionKey();
+    final String versionTag = record.getVersionTag();
+
+    if (!versionTag.isEmpty()) {
+      return Either.left(
+          new Rejection(
+              RejectionType.INVALID_ARGUMENT,
+              String.format(ERROR_MESSAGE_VERSION_TAG_WITH_KEY, processDefinitionKey, versionTag)));
+    }
+    return getProcess(processDefinitionKey, record.getTenantId());
   }
 
   /**
