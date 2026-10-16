@@ -7,133 +7,84 @@
  */
 package io.camunda.zeebe.broker.system.partitions.impl.steps;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 
 import io.atomix.raft.RaftServer.Role;
 import io.camunda.cluster.PartitionId;
 import io.camunda.zeebe.broker.eventplane.EventPlaneRegistration;
-import io.camunda.zeebe.broker.partitioning.topology.ClusterConfigurationService;
-import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.partitions.TestPartitionTransitionContext;
-import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
-import io.camunda.zeebe.scheduler.Actor;
-import io.camunda.zeebe.scheduler.ActorScheduler;
-import io.camunda.zeebe.scheduler.ActorSchedulingService;
-import io.camunda.zeebe.scheduler.SchedulingHints;
-import io.camunda.zeebe.scheduler.future.ActorFuture;
-import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
-import java.net.URI;
-import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.EnumSource.Mode;
-import org.junit.jupiter.params.provider.ValueSource;
 
 final class EventPlaneRegistrationStepTest {
 
-  private final List<Actor> submitted = new CopyOnWriteArrayList<>();
-  private final BrokerCfg brokerCfg = new BrokerCfg();
-  private final EventPlaneRegistrationStep step = new EventPlaneRegistrationStep();
-  private ActorScheduler scheduler;
+  private final EventPlaneRegistration registration = mock(EventPlaneRegistration.class);
+  private final EventPlaneRegistrationStep step = new EventPlaneRegistrationStep(registration);
+  private final TestPartitionTransitionContext context =
+      new TestPartitionTransitionContext() {
+        @Override
+        public PartitionId partitionId() {
+          return new PartitionId("tenanta", 7);
+        }
+      };
 
-  @BeforeEach
-  void start() {
-    scheduler = ActorScheduler.newActorScheduler().build();
-    scheduler.start();
-    // Nothing listens there, and without a cluster id the registration only waits for one.
-    brokerCfg.getEventPlane().setEndpoint(URI.create("http://127.0.0.1:1"));
-  }
-
-  @AfterEach
-  void stop() throws Exception {
-    scheduler.close();
-  }
-
-  @ParameterizedTest
-  @ValueSource(ints = {1, 2, 7})
-  void registersWhileLeadingAnyPartition(final int partition) {
+  @Test
+  void leadsInTheRegistrationAsLeader() {
     // when
-    step.transitionTo(context(partition), 1, Role.LEADER).join();
+    step.transitionTo(context, 1, Role.LEADER).join();
 
     // then
-    assertThat(submitted).singleElement().isInstanceOf(EventPlaneRegistration.class);
+    verify(registration).lead(7);
   }
 
   @ParameterizedTest
   @EnumSource(value = Role.class, names = "LEADER", mode = Mode.EXCLUDE)
-  void registersOnlyAsLeader(final Role role) {
+  void leadsOnlyAsLeader(final Role role) {
     // when
-    step.transitionTo(context(1), 1, role).join();
+    step.transitionTo(context, 1, role).join();
 
     // then
-    assertThat(submitted).isEmpty();
-  }
-
-  @Test
-  void registersOnlyWithAnEndpoint() {
-    // given
-    brokerCfg.getEventPlane().setEndpoint(null);
-
-    // when
-    step.transitionTo(context(1), 1, Role.LEADER).join();
-
-    // then
-    assertThat(submitted).isEmpty();
+    verify(registration, never()).lead(anyInt());
   }
 
   @ParameterizedTest
   @EnumSource(Role.class)
-  void stopsRegisteringOnTheNextTransition(final Role role) {
+  void stopsLeadingOnTheNextTransition(final Role role) {
     // given
-    final var context = context(1);
     step.transitionTo(context, 1, Role.LEADER).join();
 
     // when
     step.prepareTransition(context, 2, role).join();
 
     // then
-    assertThat(submitted)
-        .singleElement()
-        .satisfies(actor -> assertThat(actor.isActorClosed()).isTrue());
+    verify(registration).stopLeading(7);
   }
 
-  private TestPartitionTransitionContext context(final int partition) {
-    final var context =
-        new TestPartitionTransitionContext() {
-          @Override
-          public PartitionId partitionId() {
-            return new PartitionId("tenanta", partition);
-          }
-        };
-    context.setBrokerCfg(brokerCfg);
-    context.setConcurrencyControl(new TestConcurrencyControl());
-    context.setActorSchedulingService(new Recording());
-    final var configurations = mock(ClusterConfigurationService.class);
-    when(configurations.getCurrentClusterConfiguration())
-        .thenReturn(CurrentClusterConfiguration.uninitialized());
-    context.setClusterConfigurationService(configurations);
-    return context;
+  @Test
+  void stopsLeadingOnlyAfterLeading() {
+    // when
+    step.prepareTransition(context, 1, Role.FOLLOWER).join();
+
+    // then
+    verifyNoInteractions(registration);
   }
 
-  /** Runs actors on the scheduler, and remembers them. */
-  private final class Recording implements ActorSchedulingService {
+  @Test
+  void doesNothingWithoutAnEventPlane() {
+    // given
+    final var withoutEventPlane = new EventPlaneRegistrationStep(null);
 
-    @Override
-    public ActorFuture<Void> submitActor(final Actor actor) {
-      submitted.add(actor);
-      return scheduler.submitActor(actor);
-    }
+    // when
+    withoutEventPlane.transitionTo(context, 1, Role.LEADER).join();
+    withoutEventPlane.prepareTransition(context, 2, Role.FOLLOWER).join();
 
-    @Override
-    public ActorFuture<Void> submitActor(final Actor actor, final SchedulingHints hints) {
-      submitted.add(actor);
-      return scheduler.submitActor(actor, hints);
-    }
+    // then
+    verifyNoInteractions(registration);
   }
 }

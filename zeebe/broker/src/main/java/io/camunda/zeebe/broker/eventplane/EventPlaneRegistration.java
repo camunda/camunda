@@ -8,10 +8,12 @@
 package io.camunda.zeebe.broker.eventplane;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.cluster.PartitionId;
 import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.system.configuration.EventPlaneCfg;
 import io.camunda.zeebe.scheduler.Actor;
+import io.camunda.zeebe.scheduler.ScheduledTimer;
+import io.camunda.zeebe.scheduler.future.ActorFuture;
+import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.util.ExponentialBackoffRetryDelay;
 import io.camunda.zeebe.util.RetryDelayStrategy;
 import io.camunda.zeebe.util.VisibleForTesting;
@@ -30,7 +32,10 @@ import java.time.InstantSource;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Base64;
+import java.util.HashSet;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
@@ -44,14 +49,16 @@ import org.slf4j.Logger;
  * creates and registers an environment it doesn't know, and leaves one it knows as it is, so this
  * never undoes a deregistration.
  *
- * <p>Best effort: it never holds up the partition, and retries with backoff until the Event Plane
- * answers. The requests run on the HTTP client's threads, and their outcome comes back to the
- * actor.
+ * <p>A broker has one per tenant, which the leaders of the tenant's partitions on the broker share:
+ * each says when it {@link #lead leads} and when it {@link #stopLeading stops}, and all wait for
+ * the same {@link #registered registration}. It registers once while any of them leads, and retries
+ * with backoff until the Event Plane answers, but only while one of them leads. Best effort: it
+ * never holds up a partition. The requests run on the HTTP client's threads, and their outcome
+ * comes back to the actor.
  *
- * <p>Every partition's leader registers its tenant, so it logs little: a failure at debug level
- * until attempts have failed for a minute, then a warning, again every hour while they keep
- * failing, and a line at info level once they succeed after a warning. Otherwise only a newly
- * registered environment is logged at info level.
+ * <p>It logs little: a failure at debug level until attempts have failed for a minute, then a
+ * warning, again every hour while they keep failing, and a line at info level once they succeed
+ * after a warning. Otherwise only a newly registered environment is logged at info level.
  */
 public final class EventPlaneRegistration extends Actor {
 
@@ -71,17 +78,21 @@ public final class EventPlaneRegistration extends Actor {
   private final HttpClient http;
   private final InstantSource clock;
   private final FailureEscalation failures = new FailureEscalation(WARN_AFTER, WARN_EVERY);
+  private final CompletableActorFuture<Void> registered = new CompletableActorFuture<>();
+  private final Set<Integer> leaders = new HashSet<>();
 
+  private boolean attempting;
+  private @Nullable ScheduledTimer nextAttempt;
   private @Nullable String token;
   private Instant tokenExpiresAt = Instant.EPOCH;
 
   public EventPlaneRegistration(
       final EventPlaneCfg cfg,
-      final PartitionId partitionId,
+      final String physicalTenantId,
       final Supplier<Optional<String>> clusterId) {
     this(
         cfg,
-        partitionId,
+        physicalTenantId,
         clusterId,
         new ExponentialBackoffRetryDelay(Duration.ofMinutes(5), Duration.ofSeconds(1)),
         InstantSource.system());
@@ -90,31 +101,65 @@ public final class EventPlaneRegistration extends Actor {
   @VisibleForTesting
   EventPlaneRegistration(
       final EventPlaneCfg cfg,
-      final PartitionId partitionId,
+      final String physicalTenantId,
       final Supplier<Optional<String>> clusterId,
       final RetryDelayStrategy retryDelay,
       final InstantSource clock) {
-    super("EventPlaneRegistration", partitionId);
+    super(
+        "EventPlaneRegistration-" + physicalTenantId,
+        null,
+        Map.of(ACTOR_PROP_PHYSICAL_TENANT, physicalTenantId));
     this.cfg = cfg;
     endpoint = requireEndpoint(cfg);
-    physicalTenantId = partitionId.group();
+    this.physicalTenantId = physicalTenantId;
     this.clusterId = clusterId;
     this.retryDelay = retryDelay;
     this.clock = clock;
     http = HttpClient.newBuilder().connectTimeout(REQUEST_TIMEOUT).build();
   }
 
-  @Override
-  protected void onActorStarted() {
-    register();
+  /**
+   * This broker leads the partition now: registers the tenant unless it is registered already, and
+   * returns the registration, which every leader waits for.
+   */
+  public ActorFuture<Void> lead(final int partition) {
+    actor.run(
+        () -> {
+          leaders.add(partition);
+          if (!registered.isDone() && !attempting && nextAttempt == null) {
+            register();
+          }
+        });
+    return registered;
+  }
+
+  /** This broker leads the partition no more. Without a leader, registering pauses. */
+  public void stopLeading(final int partition) {
+    actor.run(
+        () -> {
+          leaders.remove(partition);
+          if (leaders.isEmpty() && nextAttempt != null) {
+            pause();
+          }
+        });
+  }
+
+  /** Completes once the tenant is registered; fails if the broker stops before. */
+  public ActorFuture<Void> registered() {
+    return registered;
   }
 
   @Override
   protected void onActorClosing() {
     http.shutdownNow();
+    if (!registered.isDone()) {
+      registered.completeExceptionally(
+          new IllegalStateException("The broker stopped before the tenant was registered"));
+    }
   }
 
   private void register() {
+    attempting = true;
     final var id = clusterId.get();
     if (id.isEmpty()) {
       retry("the cluster id isn't known yet");
@@ -131,6 +176,7 @@ public final class EventPlaneRegistration extends Actor {
       final String clusterId,
       final @Nullable HttpResponse<String> response,
       final @Nullable Throwable error) {
+    attempting = false;
     if (error != null || response == null) {
       retry(error == null ? "no answer" : describe(error));
       return;
@@ -148,6 +194,7 @@ public final class EventPlaneRegistration extends Actor {
   }
 
   private void registered(final String clusterId, final boolean created) {
+    registered.complete(null);
     final var failedFor = failures.failingFor(clock.instant()).truncatedTo(ChronoUnit.SECONDS);
     if (failures.succeeded()) {
       LOG.info(
@@ -173,6 +220,11 @@ public final class EventPlaneRegistration extends Actor {
   }
 
   private void retry(final String reason) {
+    attempting = false;
+    if (leaders.isEmpty()) {
+      pause();
+      return;
+    }
     final var now = clock.instant();
     final var delay = retryDelay.nextDelay();
     if (failures.failed(now)) {
@@ -191,7 +243,28 @@ public final class EventPlaneRegistration extends Actor {
           delay,
           reason);
     }
-    actor.schedule(delay, this::register);
+    nextAttempt =
+        actor.schedule(
+            delay,
+            () -> {
+              nextAttempt = null;
+              register();
+            });
+  }
+
+  /** Stops retrying until a partition's leader asks again, and forgets the failures so far. */
+  private void pause() {
+    if (nextAttempt != null) {
+      nextAttempt.cancel();
+      nextAttempt = null;
+    }
+    retryDelay.reset();
+    failures.reset();
+    LOG.debug(
+        "Paused registering physical tenant {} in the Event Plane at {}: this broker leads none of"
+            + " its partitions",
+        physicalTenantId,
+        endpoint);
   }
 
   /**

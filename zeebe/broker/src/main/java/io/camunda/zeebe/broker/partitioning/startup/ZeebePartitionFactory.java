@@ -18,6 +18,7 @@ import io.camunda.zeebe.broker.PartitionListener;
 import io.camunda.zeebe.broker.PartitionRaftListener;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.clustering.ClusterServices;
+import io.camunda.zeebe.broker.eventplane.EventPlaneRegistration;
 import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
 import io.camunda.zeebe.broker.logstreams.state.DbPositionSupplier;
 import io.camunda.zeebe.broker.partitioning.topology.ClusterConfigurationService;
@@ -86,6 +87,7 @@ import java.io.UncheckedIOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -116,6 +118,7 @@ public final class ZeebePartitionFactory {
   // The tenant's secret store registry, shared across its partitions: the caches are read on job
   // activation to inject resolved secrets and populated by the background secret-resolution flow.
   private final SecretStoreRegistry secretStoreRegistry;
+  private final @Nullable EventPlaneRegistration eventPlaneRegistration;
 
   public ZeebePartitionFactory(
       final ActorSchedulingService actorSchedulingService,
@@ -136,7 +139,8 @@ public final class ZeebePartitionFactory {
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter,
       final ClusterConfigurationService clusterConfigurationService,
       final RocksDbResources rocksDbResources,
-      final SecretStoreRegistry secretStoreRegistry) {
+      final SecretStoreRegistry secretStoreRegistry,
+      final @Nullable EventPlaneRegistration eventPlaneRegistration) {
     this.actorSchedulingService = actorSchedulingService;
     this.brokerCfg = brokerCfg;
     this.localBroker = localBroker;
@@ -156,6 +160,7 @@ public final class ZeebePartitionFactory {
     this.clusterConfigurationService = clusterConfigurationService;
     this.rocksDbResources = rocksDbResources;
     this.secretStoreRegistry = secretStoreRegistry;
+    this.eventPlaneRegistration = eventPlaneRegistration;
   }
 
   public ZeebePartition constructPartition(
@@ -240,7 +245,7 @@ public final class ZeebePartitionFactory {
         new ExporterDirectorPartitionTransitionStep(),
         new BackupApiRequestHandlerStep(),
         new AdminApiRequestHandlerStep(),
-        new EventPlaneRegistrationStep());
+        new EventPlaneRegistrationStep(eventPlaneRegistration));
   }
 
   private StateController createStateController(

@@ -12,7 +12,6 @@ import static org.awaitility.Awaitility.await;
 
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
-import io.camunda.cluster.PartitionId;
 import io.camunda.zeebe.broker.system.configuration.EventPlaneCfg;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.util.RetryDelayStrategy;
@@ -23,13 +22,14 @@ import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.InstantSource;
-import java.util.ArrayDeque;
 import java.util.Base64;
 import java.util.List;
 import java.util.Optional;
 import java.util.Queue;
 import java.util.concurrent.CompletionException;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 import org.junit.jupiter.api.AfterEach;
@@ -38,7 +38,6 @@ import org.junit.jupiter.api.Test;
 
 final class EventPlaneRegistrationTest {
 
-  private static final PartitionId PARTITION = new PartitionId("tenanta", 1);
   private static final RetryDelayStrategy NO_DELAY =
       new RetryDelayStrategy() {
         @Override
@@ -51,8 +50,8 @@ final class EventPlaneRegistrationTest {
       };
 
   private final List<Request> requests = new CopyOnWriteArrayList<>();
-  private final Queue<Integer> statuses = new ArrayDeque<>();
-  private final Queue<String> tokens = new ArrayDeque<>();
+  private final Queue<Integer> statuses = new ConcurrentLinkedQueue<>();
+  private final Queue<String> tokens = new ConcurrentLinkedQueue<>();
   private HttpServer server;
   private ActorScheduler scheduler;
   private EventPlaneCfg cfg;
@@ -179,11 +178,17 @@ final class EventPlaneRegistrationTest {
     cfg.setTokenUrl(URI.create("http://127.0.0.1:" + server.getAddress().getPort() + "/token"));
   }
 
-  private void register(final Supplier<Optional<String>> clusterId) {
-    scheduler
-        .submitActor(
-            new EventPlaneRegistration(cfg, PARTITION, clusterId, NO_DELAY, InstantSource.system()))
-        .join();
+  private EventPlaneRegistration register(final Supplier<Optional<String>> clusterId) {
+    final var registration = start(clusterId);
+    registration.lead(1);
+    return registration;
+  }
+
+  private EventPlaneRegistration start(final Supplier<Optional<String>> clusterId) {
+    final var registration =
+        new EventPlaneRegistration(cfg, "tenanta", clusterId, NO_DELAY, InstantSource.system());
+    scheduler.submitActor(registration).join();
+    return registration;
   }
 
   private List<Request> awaitRequests(final int count) {
@@ -222,6 +227,57 @@ final class EventPlaneRegistrationTest {
     try (final var out = exchange.getResponseBody()) {
       out.write(bytes);
     }
+  }
+
+  @Test
+  void registersOnceForAllLeaders() {
+    // given
+    final var registration = start(() -> Optional.of("c"));
+
+    // when
+    final var first = registration.lead(1);
+    final var second = registration.lead(2);
+    first.join(10, TimeUnit.SECONDS);
+    final var later = registration.lead(3);
+
+    // then
+    assertThat(second).isSameAs(first);
+    assertThat(later).isSameAs(first);
+    awaitQuiet();
+    assertThat(requests).hasSize(1);
+  }
+
+  @Test
+  void waitsForALeaderBeforeRegistering() {
+    // when
+    start(() -> Optional.of("c"));
+
+    // then
+    awaitQuiet();
+    assertThat(requests).isEmpty();
+  }
+
+  @Test
+  void pausesWhileNoPartitionLeads() {
+    // given
+    for (int i = 0; i < 1000; i++) {
+      statuses.add(503);
+    }
+    final var registration = register(() -> Optional.of("c"));
+    awaitRequests(2);
+
+    // when
+    registration.stopLeading(1);
+    // An attempt under way when it stops may still reach the Event Plane.
+    await().pollDelay(Duration.ofMillis(200)).until(() -> true);
+    final var paused = requests.size();
+    awaitQuiet();
+
+    // then
+    assertThat(requests).hasSize(paused);
+    statuses.clear();
+    registration.lead(2).join(10, TimeUnit.SECONDS);
+    assertThat(requests).hasSizeGreaterThan(paused);
   }
 
   @Test

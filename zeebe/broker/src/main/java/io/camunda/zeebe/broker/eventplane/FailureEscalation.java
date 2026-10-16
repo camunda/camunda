@@ -49,6 +49,12 @@ final class FailureEscalation {
     return failingSince == null ? Duration.ZERO : Duration.between(failingSince, now);
   }
 
+  /** Forgets the failures so far, as when attempts stop for a while. */
+  void reset() {
+    failingSince = null;
+    lastWarned = null;
+  }
+
   /**
    * Records a successful attempt, and returns whether a warning was given about the failures before
    * it, which then deserves word that they ended.
