@@ -16,6 +16,7 @@ import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.security.configuration.EngineSecurityConfig;
 import io.camunda.zeebe.backup.api.BackupManager;
 import io.camunda.zeebe.backup.api.BackupStore;
+import io.camunda.zeebe.backup.logarchive.processing.LogArchiveRecordsProcessor;
 import io.camunda.zeebe.backup.processing.CheckpointRecordsProcessor;
 import io.camunda.zeebe.broker.PartitionListener;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
@@ -89,6 +90,7 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
   private BackupManager backupManager;
   private CheckpointRecordsProcessor checkpointRecordsProcessor;
   private BackupStore backupStore;
+  private LogArchiveRecordsProcessor logArchiveProcessor;
   private DynamicPartitionConfig partitionConfig;
   private ControllableStreamClock clock;
   private EngineSecurityConfig securityConfig;
@@ -365,6 +367,16 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
   @Override
   public void setCheckpointProcessor(final CheckpointRecordsProcessor checkpointRecordsProcessor) {
     this.checkpointRecordsProcessor = checkpointRecordsProcessor;
+  }
+
+  @Override
+  public LogArchiveRecordsProcessor getLogArchiveProcessor() {
+    return logArchiveProcessor;
+  }
+
+  @Override
+  public void setLogArchiveProcessor(final LogArchiveRecordsProcessor logArchiveProcessor) {
+    this.logArchiveProcessor = logArchiveProcessor;
   }
 
   @Override
