@@ -193,6 +193,36 @@ public final class FeelContextFunctionTest {
     assertResultContext(processInstanceKey);
   }
 
+  @Test
+  public void shouldConvertEntriesWithNestedContext() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(testName.getMethodName())
+                .startEvent()
+                .zeebeOutputExpression("{\"a\":1,\"b\":2}", "contextValue")
+                .zeebeOutputExpression(
+                    "[{\"key\":\"nested\",\"value\":contextValue}]", "contextList")
+                .zeebeOutputExpression("context(contextList)", "resultContext")
+                .endEvent()
+                .done())
+        .deploy();
+
+    // when
+    final var processInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId(testName.getMethodName()).create();
+
+    // then
+    Assertions.assertThat(
+            RecordingExporter.variableRecords(VariableIntent.CREATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withName("resultContext")
+                .getFirst()
+                .getValue())
+        .hasValue("{\"nested\":{\"a\":1,\"b\":2}}");
+  }
+
   private static void assertResultContext(final long processInstanceKey) {
     Assertions.assertThat(
             RecordingExporter.variableRecords(VariableIntent.CREATED)
