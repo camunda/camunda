@@ -132,6 +132,14 @@ public class ProcessInstanceCreationHelper {
               RejectionType.INVALID_ARGUMENT,
               String.format(ERROR_MESSAGE_VERSION_AND_VERSION_TAG, version, versionTag)));
     }
+    // gRPC sends key 0 when unset; real keys are always positive
+    final long processDefinitionKey = record.getProcessDefinitionKey();
+    if (!versionTag.isEmpty() && processDefinitionKey > 0) {
+      return Either.left(
+          new Rejection(
+              RejectionType.INVALID_ARGUMENT,
+              String.format(ERROR_MESSAGE_VERSION_TAG_WITH_KEY, processDefinitionKey, versionTag)));
+    }
     if (!versionTag.isEmpty()) {
       return getProcess(bpmnProcessId, versionTag, tenantId);
     }
