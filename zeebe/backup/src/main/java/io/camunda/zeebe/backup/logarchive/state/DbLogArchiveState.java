@@ -266,7 +266,9 @@ public final class DbLogArchiveState {
     clear(chunksColumnFamily);
     clear(snapshotsColumnFamily);
     clear(outboxColumnFamily);
-    clear(pendingCheckpointsColumnFamily);
+    // Pending checkpoints are kept: one created before the new timeline starts can still lie in
+    // its archived range and is then a valid restore point. Those below the first archived
+    // position are dropped when the range is archived.
   }
 
   private static <K extends DbKey, V extends DbValue> void clear(

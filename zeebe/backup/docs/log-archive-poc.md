@@ -172,7 +172,8 @@ into the event record. The applier also stores the commit entry JSON for that se
 ### `START_TIMELINE`
 
 - Valid when `timelineId` is non-empty and differs from `meta.timelineId`, and `startIndex > 0`.
-- Applier: clear all log archive column families, including `LOG_ARCHIVE_PENDING_CHECKPOINTS`, then
+- Applier: clear all log archive column families except `LOG_ARCHIVE_PENDING_CHECKPOINTS` (a checkpoint
+  created before the start can still lie in the archived range; older ones are dropped later), then
   set meta to the new timeline: `startIndex`, `archivedIndex = startIndex - 1`,
   `archivedPosition = -1`, `nextSeq = 1`, `lastPublishedSeq = 0`, `nextChunkNo = 1`,
   `firstArchivedPosition = -1`. Then take seq 1 for this event.

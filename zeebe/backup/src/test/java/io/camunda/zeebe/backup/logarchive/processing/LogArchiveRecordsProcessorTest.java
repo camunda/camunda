@@ -158,7 +158,10 @@ final class LogArchiveRecordsProcessorTest {
     assertThat(harness.state().openObjects()).isEmpty();
     assertThat(harness.state().snapshots()).isEmpty();
     assertThat(harness.state().chunks()).isEmpty();
-    assertThat(harness.state().pendingCheckpointsUpTo(Long.MAX_VALUE)).isEmpty();
+    // pending checkpoints survive: one may still lie in the new timeline's archived range
+    assertThat(harness.state().pendingCheckpointsUpTo(Long.MAX_VALUE))
+        .extracting("checkpointId")
+        .containsExactly(10L);
     assertThat(harness.state().outboxAfter(0)).extracting("seq").containsExactly(1L);
     assertThat(harness.events.getLast().value().getSeq()).isEqualTo(1);
   }
@@ -467,7 +470,7 @@ final class LogArchiveRecordsProcessorTest {
   }
 
   @Test
-  void shouldDropCheckpointsCreatedBeforeTheTimelineStarted() {
+  void shouldCoverCheckpointCreatedBeforeTheTimelineStartedWhenItsPositionIsArchived() {
     // given
     harness.createCheckpoint(10, 15, CheckpointType.MANUAL_BACKUP);
     harness.accept(LogArchiveIntent.START_TIMELINE, startTimeline(TIMELINE, 1));
@@ -477,7 +480,8 @@ final class LogArchiveRecordsProcessorTest {
         harness.accept(LogArchiveIntent.ARCHIVE_LOG, archiveLog(object(1, 10, 10, 20)));
 
     // then
-    assertThat(event.getCheckpoints()).isEmpty();
+    assertThat(event.getCheckpoints()).extracting("checkpointId").containsExactly(10L);
+    assertThat(harness.state().pendingCheckpointsUpTo(Long.MAX_VALUE)).isEmpty();
   }
 
   // ---- ARCHIVE_SNAPSHOT -------------------------------------------------------------------------
