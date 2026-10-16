@@ -158,7 +158,8 @@ public record UserTaskEntity(
         newProcessDefinitionVersion,
         customHeaders,
         priority,
-        tags);
+        tags,
+        isSuspended);
   }
 
   public boolean hasName() {
