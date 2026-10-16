@@ -51,6 +51,10 @@ public final class SqliteSnapshotCopy implements SnapshotCopy {
     try {
       Files.createDirectories(toPath);
       try (final var target = SqliteConnection.openWriter(toPath.resolve(SqliteDb.DB_FILE_NAME))) {
+        // The snapshot store checksums this file and persists the checksum with an fsync, but only
+        // flushes the directory of the file itself. The writer runs with synchronous=OFF, so make
+        // the copy durable the way VACUUM INTO does for a regular snapshot.
+        target.execute("PRAGMA synchronous=FULL");
         // mode=ro keeps the source from being modified, not even a journal is created next to it
         target.execute("ATTACH DATABASE '%s?mode=ro' AS %s".formatted(sqlUri(source), SOURCE));
         target.execute("BEGIN");
