@@ -17,6 +17,7 @@ import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.GlobalConfiguration;
 import io.camunda.zeebe.dynamic.config.state.Mode;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
+import io.camunda.zeebe.dynamic.config.state.PartitionRestore;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
@@ -26,7 +27,6 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.SortedSet;
 import java.util.concurrent.ExecutionException;
 import org.junit.jupiter.api.Test;
 
@@ -197,7 +197,7 @@ final class PartitionPreRestoreApplierTest {
     }
 
     @Override
-    public ActorFuture<Void> restore(final int partitionId, final SortedSet<Long> backupIds) {
+    public ActorFuture<Void> restore(final int partitionId, final PartitionRestore restore) {
       return CompletableActorFuture.completed(null);
     }
   }

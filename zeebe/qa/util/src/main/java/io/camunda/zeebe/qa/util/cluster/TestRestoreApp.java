@@ -64,8 +64,11 @@ public final class TestRestoreApp extends TestSpringApplication<TestRestoreApp> 
       args.add(
           "--backupId="
               + Arrays.stream(backupId).mapToObj(Long::toString).collect(Collectors.joining(",")));
-    } else if (from != null && to != null) {
+    }
+    if (from != null) {
       args.add("--from=" + from);
+    }
+    if (to != null) {
       args.add("--to=" + to);
     }
     if (allTenants) {
@@ -86,6 +89,10 @@ public final class TestRestoreApp extends TestSpringApplication<TestRestoreApp> 
     return this;
   }
 
+  /**
+   * Either bound may be {@code null} to leave out its {@code --from} or {@code --to} flag. The
+   * restore app rejects a time range combined with {@link #withBackupId(long...)}.
+   */
   public TestRestoreApp withTimeRange(final Instant from, final Instant to) {
     this.from = from;
     this.to = to;

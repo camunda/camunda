@@ -17,6 +17,7 @@ import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.GlobalConfiguration;
 import io.camunda.zeebe.dynamic.config.state.Mode;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
+import io.camunda.zeebe.dynamic.config.state.PartitionRestore;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
@@ -24,10 +25,7 @@ import io.camunda.zeebe.test.util.asserts.EitherAssert;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.SortedSet;
-import java.util.TreeSet;
 import java.util.concurrent.ExecutionException;
 import org.junit.jupiter.api.Test;
 
@@ -35,14 +33,14 @@ final class PartitionRestoreApplierTest {
 
   private static final MemberId MEMBER_ID = MemberId.from("1");
   private static final int PARTITION_ID = 1;
-  private static final SortedSet<Long> BACKUP_IDS = new TreeSet<>(List.of(1L, 2L));
+  private static final PartitionRestore RESTORE = PartitionRestore.ofBackups(1L, 2L);
 
   @Test
   void shouldFailInitWhenMemberNotActiveInCluster() {
     // given
     final var applier =
         new PartitionRestoreApplier(
-            MEMBER_ID, PARTITION_ID, BACKUP_IDS, new SucceedingRestoreChangeExecutor());
+            MEMBER_ID, PARTITION_ID, RESTORE, new SucceedingRestoreChangeExecutor());
 
     // when
     final var result =
@@ -58,7 +56,7 @@ final class PartitionRestoreApplierTest {
     // given
     final var applier =
         new PartitionRestoreApplier(
-            MEMBER_ID, PARTITION_ID, BACKUP_IDS, new SucceedingRestoreChangeExecutor());
+            MEMBER_ID, PARTITION_ID, RESTORE, new SucceedingRestoreChangeExecutor());
     final var globalConfig =
         GlobalConfiguration.init().addMember(MEMBER_ID, BrokerState.initializeAsActive());
 
@@ -77,7 +75,7 @@ final class PartitionRestoreApplierTest {
     // given
     final var applier =
         new PartitionRestoreApplier(
-            MEMBER_ID, PARTITION_ID, BACKUP_IDS, new SucceedingRestoreChangeExecutor());
+            MEMBER_ID, PARTITION_ID, RESTORE, new SucceedingRestoreChangeExecutor());
     final var globalConfig =
         GlobalConfiguration.init().addMember(MEMBER_ID, BrokerState.initializeAsActive());
     final var partitionState =
@@ -103,7 +101,7 @@ final class PartitionRestoreApplierTest {
     // given
     final var applier =
         new PartitionRestoreApplier(
-            MEMBER_ID, PARTITION_ID, BACKUP_IDS, new SucceedingRestoreChangeExecutor());
+            MEMBER_ID, PARTITION_ID, RESTORE, new SucceedingRestoreChangeExecutor());
     final var globalConfig =
         GlobalConfiguration.init().addMember(MEMBER_ID, BrokerState.initializeAsActive());
     final var groupConfig =
@@ -132,7 +130,7 @@ final class PartitionRestoreApplierTest {
     // given
     final var applier =
         new PartitionRestoreApplier(
-            MEMBER_ID, PARTITION_ID, BACKUP_IDS, new SucceedingRestoreChangeExecutor());
+            MEMBER_ID, PARTITION_ID, RESTORE, new SucceedingRestoreChangeExecutor());
     final var globalConfig =
         GlobalConfiguration.init().addMember(MEMBER_ID, BrokerState.initializeAsActive());
     final var partitionState =
@@ -155,14 +153,14 @@ final class PartitionRestoreApplierTest {
   void shouldDelegateToExecutorAndLeaveGroupConfigurationUnchanged() {
     // given
     final var executor = new SucceedingRestoreChangeExecutor();
-    final var applier = new PartitionRestoreApplier(MEMBER_ID, PARTITION_ID, BACKUP_IDS, executor);
+    final var applier = new PartitionRestoreApplier(MEMBER_ID, PARTITION_ID, RESTORE, executor);
 
     // when
     final var result = applier.apply();
 
     // then
     assertThat(result).succeedsWithin(Duration.ofMillis(100));
-    assertThat(executor.invokedRestores).containsExactly(Map.entry(PARTITION_ID, BACKUP_IDS));
+    assertThat(executor.invokedRestores).containsExactly(Map.entry(PARTITION_ID, RESTORE));
 
     final var groupConfiguration = PartitionGroupConfiguration.empty(1);
     assertThat(result.join().apply(groupConfiguration)).isSameAs(groupConfiguration);
@@ -175,7 +173,7 @@ final class PartitionRestoreApplierTest {
         new PartitionRestoreApplier(
             MEMBER_ID,
             PARTITION_ID,
-            BACKUP_IDS,
+            RESTORE,
             new RestoreChangeExecutor.DeniedRestoreChangeExecutor());
 
     // when
@@ -189,7 +187,7 @@ final class PartitionRestoreApplierTest {
   }
 
   private static final class SucceedingRestoreChangeExecutor implements RestoreChangeExecutor {
-    private final Map<Integer, SortedSet<Long>> invokedRestores = new HashMap<>();
+    private final Map<Integer, PartitionRestore> invokedRestores = new HashMap<>();
 
     @Override
     public ActorFuture<Void> preRestore(final int partitionId) {
@@ -202,8 +200,8 @@ final class PartitionRestoreApplierTest {
     }
 
     @Override
-    public ActorFuture<Void> restore(final int partitionId, final SortedSet<Long> backupIds) {
-      invokedRestores.put(partitionId, backupIds);
+    public ActorFuture<Void> restore(final int partitionId, final PartitionRestore restore) {
+      invokedRestores.put(partitionId, restore);
       return CompletableActorFuture.completed(null);
     }
   }

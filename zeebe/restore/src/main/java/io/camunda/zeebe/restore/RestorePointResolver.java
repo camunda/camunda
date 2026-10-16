@@ -7,8 +7,11 @@
  */
 package io.camunda.zeebe.restore;
 
+import static java.util.Objects.requireNonNull;
+
 import io.camunda.zeebe.backup.common.BackupMetadata;
 import io.camunda.zeebe.backup.common.BackupMetadata.CheckpointEntry;
+import io.camunda.zeebe.dynamic.config.state.PartitionRestore;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -16,7 +19,9 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.OptionalLong;
 import java.util.Queue;
+import java.util.TreeSet;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.stream.Collectors;
 import org.jspecify.annotations.NonNull;
@@ -73,7 +78,7 @@ public class RestorePointResolver {
         "Finding restorable backups with commonCheckpoint={}, partitionCount={}",
         commonCheckpoint,
         allRestorableCheckpoints.size());
-    final var backupsByPartitionId = new HashMap<Integer, List<CheckpointEntry>>();
+    final var partitions = new HashMap<Integer, PartitionBackups>();
     for (final var restorableCheckpoints : allRestorableCheckpoints) {
       final var partitionId = restorableCheckpoints.partitionId();
       final var backups = new ArrayList<CheckpointEntry>();
@@ -97,29 +102,36 @@ public class RestorePointResolver {
                 backups.getLast().checkpointId(), partitionId, commonCheckpoint));
       }
       discardUnnecessaryBackups(
-          backups, from, exportedPositions != null ? exportedPositions.get(partitionId) : null);
+          backups,
+          commonCheckpoint,
+          from,
+          exportedPositions != null ? exportedPositions.get(partitionId) : null);
       LOG.atDebug()
           .addKeyValue("partition", partitionId)
           .log("Found required backups: requiredBackups={}", backups.size());
-      backupsByPartitionId.put(partitionId, backups);
+      // non-null: findCommonCheckpoint only returns a checkpoint every partition has
+      final var restorePoint =
+          requireNonNull(findCheckpointInfo(restorableCheckpoints.checkpoints(), commonCheckpoint));
+      partitions.put(partitionId, new PartitionBackups(backups, restorePoint));
     }
-    return new RestorableBackups(commonCheckpoint, backupsByPartitionId);
+    return new RestorableBackups(commonCheckpoint, partitions);
   }
 
   /**
    * Discards backups that are not necessary for restoring. A backup is not necessary if it is from
-   * before the {@code from} timestamp or before the exported position. Retains at least one backup,
-   * even if it is unnecessary according to these rules. If both {@code from} and {@code
-   * exportedPosition} are provided, we only trim based on {@code from} because the user
-   * specifically requested it.
+   * before the {@code from} timestamp or before the exported position. Retains at least one backup
+   * at or before the common checkpoint, even if it is unnecessary according to these rules. If both
+   * {@code from} and {@code exportedPosition} are provided, we only trim based on {@code from}
+   * because the user specifically requested it.
    */
   private static void discardUnnecessaryBackups(
       final ArrayList<CheckpointEntry> backups,
+      final long commonCheckpoint,
       final @Nullable Instant from,
       final @Nullable Long exportedPosition) {
     // For 'from': remove all backups whose timestamp is before 'from'.
     if (from != null) {
-      discardUnnecessaryBackupsBeforeTimestamp(backups, from, exportedPosition);
+      discardUnnecessaryBackupsBeforeTimestamp(backups, commonCheckpoint, from, exportedPosition);
     }
 
     // For 'exportedPosition': keep the last backup whose position is below exportedPosition and
@@ -149,23 +161,20 @@ public class RestorePointResolver {
   }
 
   /**
-   * Removes all backups before the given timestamp. Throws if the exported position is not covered
-   * by the remaining backups.
+   * Removes all backups before the given timestamp, except the last one at or before the common
+   * checkpoint. The restore starts from the first remaining backup's snapshot, which must not be
+   * ahead of the common checkpoint, and so cannot be the one of a backup after a marker. Throws if
+   * the exported position is not covered by the remaining backups.
    */
   private static void discardUnnecessaryBackupsBeforeTimestamp(
       final ArrayList<CheckpointEntry> backups,
+      final long commonCheckpoint,
       final @NonNull Instant from,
       final @Nullable Long exportedPosition) {
-    final var iterator = backups.iterator();
-    while (iterator.hasNext()) {
-      final var checkpoint = iterator.next();
-      if (!checkpoint.checkpointTimestamp().isBefore(from)) {
-        break;
-      }
-      // Always retain at least one backup.
-      if (iterator.hasNext()) {
-        iterator.remove();
-      }
+    while (backups.size() > 1
+        && backups.getFirst().checkpointTimestamp().isBefore(from)
+        && backups.get(1).checkpointId() <= commonCheckpoint) {
+      backups.removeFirst();
     }
     if (exportedPosition != null && backups.getFirst().checkpointPosition() > exportedPosition) {
       throw new IllegalStateException(
@@ -266,6 +275,15 @@ public class RestorePointResolver {
           LOG.atTrace()
               .addKeyValue("partition", restorableCheckpoints.partitionId())
               .log("Candidate checkpoint {} not found", candidate.checkpointId());
+          missing = true;
+          break;
+        }
+        if (!restorableCheckpoints.hasBackupUpTo(candidate.checkpointId())) {
+          LOG.atTrace()
+              .addKeyValue("partition", restorableCheckpoints.partitionId())
+              .log(
+                  "Candidate checkpoint {} has no backup at or before it to restore from",
+                  candidate.checkpointId());
           missing = true;
           break;
         }
@@ -414,10 +432,54 @@ public class RestorePointResolver {
 
   public record RestorableRange(@NonNull CheckpointEntry start, @NonNull CheckpointEntry end) {}
 
-  public record RestorableCheckpoints(
-      int partitionId, @NonNull List<CheckpointEntry> checkpoints) {}
+  /**
+   * @param checkpoints the partition's checkpoints that can be restored, in ascending order
+   */
+  public record RestorableCheckpoints(int partitionId, @NonNull List<CheckpointEntry> checkpoints) {
 
+    /**
+     * Whether a backup at or before the given checkpoint can be restored from. A restore starts
+     * from a backup's snapshot, which can be ahead of a marker taken before that backup.
+     */
+    boolean hasBackupUpTo(final long checkpointId) {
+      return checkpoints.stream()
+          .filter(checkpoint -> checkpoint.checkpointType().shouldCreateBackup())
+          .findFirst()
+          .map(firstBackup -> firstBackup.checkpointId() <= checkpointId)
+          .orElse(false);
+    }
+  }
+
+  /**
+   * @param globalCheckpointId the checkpoint every partition is restored to, a backup or a marker
+   * @param partitions what each partition is restored from, by partition id
+   */
   public record RestorableBackups(
-      long globalCheckpointId,
-      @NonNull Map<Integer, @NonNull List<CheckpointEntry>> backupsByPartitionId) {}
+      long globalCheckpointId, @NonNull Map<Integer, @NonNull PartitionBackups> partitions) {}
+
+  /**
+   * @param backups the backups the partition is restored from, in ascending order. The last one is
+   *     the first backup at or after the global checkpoint.
+   * @param restorePoint the global checkpoint as this partition recorded it, a backup or a marker,
+   *     at whose position the partition's restored log ends
+   */
+  public record PartitionBackups(
+      @NonNull List<CheckpointEntry> backups, @NonNull CheckpointEntry restorePoint) {
+
+    public PartitionBackups {
+      backups = List.copyOf(backups);
+    }
+
+    public @NonNull CheckpointEntry lastBackup() {
+      return backups.getLast();
+    }
+
+    public @NonNull PartitionRestore toPartitionRestore() {
+      return new PartitionRestore(
+          backups.stream()
+              .map(CheckpointEntry::checkpointId)
+              .collect(Collectors.toCollection(TreeSet::new)),
+          OptionalLong.of(restorePoint.checkpointPosition()));
+    }
+  }
 }

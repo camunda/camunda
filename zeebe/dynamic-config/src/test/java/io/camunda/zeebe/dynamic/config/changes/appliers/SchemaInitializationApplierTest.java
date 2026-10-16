@@ -13,11 +13,11 @@ import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.changes.RestoreChangeExecutor;
 import io.camunda.zeebe.dynamic.config.state.GlobalConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
+import io.camunda.zeebe.dynamic.config.state.PartitionRestore;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.test.util.asserts.EitherAssert;
 import java.time.Duration;
-import java.util.SortedSet;
 import java.util.concurrent.ExecutionException;
 import org.junit.jupiter.api.Test;
 
@@ -89,7 +89,7 @@ final class SchemaInitializationApplierTest {
     }
 
     @Override
-    public ActorFuture<Void> restore(final int partitionId, final SortedSet<Long> backupIds) {
+    public ActorFuture<Void> restore(final int partitionId, final PartitionRestore restore) {
       return CompletableActorFuture.completed(null);
     }
   }
