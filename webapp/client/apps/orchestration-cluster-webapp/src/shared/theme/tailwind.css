@@ -25,6 +25,13 @@
 @source inline("[&_[data-slot=table-row]]:border-b-[var(--border)]");
 
 /*
+ * Same scanner limitation for the selected-row highlight in the DS SortableTable
+ * (nested `:has()` + attribute selector).
+ */
+@source inline("[&_tbody_tr:has([aria-checked=true])]:bg-[var(--accent-background-subtle)]");
+@source inline("[&_tr:has([data-skeleton-edge])_[role=checkbox]]:hidden");
+
+/*
  * Same scanner limitation for the compound arbitrary-variant candidates that
  * strip the DS DataTable's rounded border in Decisions' InstancesTable.tsx;
  * important is needed because the DS stylesheet's rounded-xl is unlayered.
@@ -53,13 +60,13 @@
 
 	.dmn-decision-table-container {
 		--decision-table-font-family: inherit !important;
-		--table-head-clause-color: var(--foreground) !important;
-		--table-head-variable-color: var(--foreground) !important;
+		--table-head-clause-color: var(--neutral-foreground-subtle) !important;
+		--table-head-variable-color: var(--neutral-foreground-subtle) !important;
 		--table-head-separator-color: var(--neutral-border-subtle) !important;
-		--table-color: var(--foreground) !important;
-		--table-cell-color: var(--foreground) !important;
-		--decision-table-color: var(--foreground) !important;
-		--decision-table-properties-color: var(--foreground) !important;
+		--table-color: var(--neutral-foreground-subtle) !important;
+		--table-cell-color: var(--neutral-foreground-subtle) !important;
+		--decision-table-color: var(--neutral-foreground-subtle) !important;
+		--decision-table-properties-color: var(--neutral-foreground-subtle) !important;
 		--table-head-border-color: var(--neutral-foreground-subtle) !important;
 		--table-cell-border-color: var(--neutral-foreground-subtle) !important;
 		--decision-table-background-color: var(--viewer-layer) !important;
@@ -79,9 +86,9 @@
 		--literal-expression-font-family: inherit !important;
 		--literal-expression-font-family-monospace: var(--font-mono) !important;
 		--decision-properties-border-color: var(--neutral-foreground-subtle) !important;
-		--decision-properties-color: var(--foreground) !important;
-		--textarea-color: var(--foreground) !important;
-		--literal-expression-properties-color: var(--foreground) !important;
+		--decision-properties-color: var(--neutral-foreground-subtle) !important;
+		--textarea-color: var(--neutral-foreground-subtle) !important;
+		--literal-expression-properties-color: var(--neutral-foreground-subtle) !important;
 
 		table {
 			border-collapse: unset;

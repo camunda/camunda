@@ -81,7 +81,7 @@ test('should have no accessibility violations with a selected row and the bulk d
 }) => {
 	await operatePreviewDecisionsPage.goto('?evaluated=true&failed=true');
 	await page.getByRole('checkbox', {name: 'Select row 1'}).click();
-	await expect(page.getByRole('status')).toHaveText('1 item selected');
+	await expect(page.getByRole('toolbar', {name: 'Bulk actions'})).toContainText('1 item selected');
 	await page.getByRole('button', {name: 'Delete', exact: true}).click();
 	await expect(page.getByRole('alertdialog')).toBeVisible();
 
@@ -131,6 +131,64 @@ test('should have no accessibility violations with a selected decision definitio
 	await expect(page.getByRole('heading', {name: 'Invoice Classification'})).toBeVisible();
 	await expect(operatePreviewDecisionsPage.decisionPanel.getByTestId('decision-viewer')).toBeVisible();
 	await expect(page.getByText('Invoice Amount')).toBeVisible();
+
+	const results = await makeAxeBuilder().analyze();
+	expect(results.violations).toEqual([]);
+});
+
+test('should have no accessibility violations with a selected decision and the delete dialog open', async ({
+	page,
+	network,
+	operatePreviewDecisionsPage,
+	makeAxeBuilder,
+}) => {
+	network.use(
+		mockGetDecisionDefinitionXmlEndpoint({successResponse: HttpResponse.text(DMN_XML)}),
+		mockQueryDecisionDefinitionsEndpoint({
+			successResponse: HttpResponse.json(
+				createQueryDecisionDefinitionsResponse({
+					items: [
+						createDecisionDefinition({
+							name: 'Invoice Classification',
+							decisionDefinitionId: 'invoiceClassification',
+							version: 1,
+						}),
+					],
+				}),
+			),
+		}),
+	);
+	await operatePreviewDecisionsPage.goto('?decisionDefinitionId=invoiceClassification&decisionDefinitionVersion=1');
+	await page.getByRole('button', {name: /Delete decision definition/}).click();
+	await expect(page.getByRole('dialog')).toBeVisible();
+
+	const results = await makeAxeBuilder().analyze();
+	expect(results.violations).toEqual([]);
+});
+
+test('should have no accessibility violations in the bulk action bar with a selected row', async ({
+	page,
+	operatePreviewDecisionsPage,
+	makeAxeBuilder,
+}) => {
+	await operatePreviewDecisionsPage.goto('?evaluated=true&failed=true');
+	await page.getByRole('checkbox', {name: 'Select row 1'}).click();
+	await expect(page.getByRole('toolbar', {name: 'Bulk actions'})).toContainText('1 item selected');
+
+	const results = await makeAxeBuilder().include('[data-slot="data-table-batch-actions"]').analyze();
+	expect(results.violations).toEqual([]);
+});
+
+test('should have no accessibility violations with the evaluation date picker open', async ({
+	page,
+	operatePreviewDecisionsPage,
+	makeAxeBuilder,
+}) => {
+	await page.goto(
+		`${operatePreviewDecisionsPage.decisionsUrl}?evaluated=true&failed=true&evaluationDateFrom=2024-01-01T00:00:00.000Z&evaluationDateTo=2024-01-02T00:00:00.000Z`,
+	);
+	await page.getByLabel('From', {exact: true}).click();
+	await expect(page.getByRole('grid')).toBeVisible();
 
 	const results = await makeAxeBuilder().analyze();
 	expect(results.violations).toEqual([]);

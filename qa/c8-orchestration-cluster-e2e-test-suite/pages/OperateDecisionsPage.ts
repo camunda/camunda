@@ -9,10 +9,10 @@
 import {Page, Locator, expect} from '@playwright/test';
 
 type OptionalFilter =
-  | 'Process Instance Key'
-  | 'Decision Instance Key(s)'
+  | 'Process instance key'
+  | 'Decision instance key(s)'
   | 'Business ID'
-  | 'Evaluation Date Range';
+  | 'Evaluation date range';
 
 export type AdvancedStringFilterOperator = 'equals' | 'contains' | 'is one of';
 
@@ -60,7 +60,7 @@ class OperateDecisionsPage {
     this.clearSelectedItemButton = page.getByRole('button', {
       name: 'Clear selected item',
     });
-    this.moreFiltersButton = page.getByRole('button', {name: 'More Filters'});
+    this.moreFiltersButton = page.getByRole('button', {name: 'More filters'});
     this.evaluatedCheckbox = page.getByRole('checkbox', {name: 'Evaluated'});
     this.failedCheckbox = page.getByRole('checkbox', {name: 'Failed'});
     this.decisionInstancesList = page.getByTestId('data-list');
@@ -136,7 +136,7 @@ class OperateDecisionsPage {
 
   async displayOptionalFilter(filterName: OptionalFilter): Promise<void> {
     const menuItem = this.page.getByRole('menuitem', {name: filterName});
-    // The "More Filters" click can be dropped under load, leaving the menu
+    // The "More filters" click can be dropped under load, leaving the menu
     // closed so the item never renders; reopen until it is present, but do not
     // re-click once the menu is already open (that would toggle it shut).
     await expect(async () => {

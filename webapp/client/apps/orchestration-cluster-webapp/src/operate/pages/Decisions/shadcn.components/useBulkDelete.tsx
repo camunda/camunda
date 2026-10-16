@@ -9,12 +9,10 @@
 import {useState} from 'react';
 import {useTranslation} from 'react-i18next';
 import {useNavigate} from '@tanstack/react-router';
-import {Trash2} from '@camunda/design-system/icons';
 import type {CreateDecisionInstancesDeletionBatchOperationResponseBody} from '@camunda/camunda-api-zod-schemas/8.11';
 import {request} from '#/shared/http/request';
 import {endpoints} from '#/shared/http/endpoints';
 import {notificationsStore} from '#/shared/notifications/notifications.store';
-import {BulkActionBar} from '#/operate/shared/BulkActionBar/shadcn.components/BulkActionBar';
 import {BulkActionConfirmDialog} from '#/operate/shared/BulkActionBar/shadcn.components/BulkActionConfirmDialog';
 import {formatOperationType} from '#/operate/shared/utils/formatOperationType';
 import {handleOperationError} from '#/operate/shared/utils/handleOperationError';
@@ -24,9 +22,8 @@ type Props = {
 	selectedCount: number;
 	includedIds: string[];
 	excludedIds: string[];
-	filter: DecisionInstancesFilter;
+	filter: DecisionInstancesFilter | undefined;
 	onDeleted: () => void;
-	onDiscard: () => void;
 };
 
 type KeyCriterion = {$eq?: string; $in?: string[]; $notIn?: string[]};
@@ -44,18 +41,17 @@ function mergeKeyCriteria(base: KeyCriterion | undefined, selection: KeyCriterio
 	return merged;
 }
 
-const Toolbar: React.FC<Props> = ({selectedCount, includedIds, excludedIds, filter, onDeleted, onDiscard}) => {
+function useBulkDelete({selectedCount, includedIds, excludedIds, filter, onDeleted}: Props) {
 	const {t} = useTranslation();
 	const navigate = useNavigate();
 	const [showDeleteModal, setShowDeleteModal] = useState(false);
 	const [isDeleting, setIsDeleting] = useState(false);
 
-	if (selectedCount === 0) {
-		return null;
-	}
-
 	const handleDelete = async () => {
 		setShowDeleteModal(false);
+		if (filter === undefined) {
+			return;
+		}
 		setIsDeleting(true);
 
 		const criterion = buildInstanceKeyCriterion(includedIds, excludedIds);
@@ -95,39 +91,35 @@ const Toolbar: React.FC<Props> = ({selectedCount, includedIds, excludedIds, filt
 		onDeleted();
 	};
 
-	return (
-		<>
-			<BulkActionBar
-				selectedLabel={
-					selectedCount === 1
-						? t('operate.decisions.toolbar.itemSelected', {count: selectedCount})
-						: t('operate.decisions.toolbar.itemsSelected', {count: selectedCount})
-				}
-				discardLabel={t('operate.decisions.toolbar.discard')}
-				actions={[
-					{
-						key: 'delete',
-						label: t('operate.decisions.toolbar.delete'),
-						icon: <Trash2 aria-hidden />,
-						loading: isDeleting,
-						variant: 'destructive',
-						onClick: () => setShowDeleteModal(true),
-					},
-				]}
-				onDiscard={onDiscard}
-			/>
-			<BulkActionConfirmDialog
-				open={showDeleteModal}
-				title={t('operate.decisions.toolbar.deleteModalHeading')}
-				description={t('operate.decisions.toolbar.deleteModalBody', {count: selectedCount})}
-				confirmLabel={t('operate.decisions.toolbar.delete')}
-				cancelLabel={t('operate.decisions.toolbar.deleteModalCancel')}
-				isDestructive
-				onOpenChange={setShowDeleteModal}
-				onConfirm={() => void handleDelete()}
-			/>
-		</>
-	);
-};
+	const batchActions = [
+		{
+			id: 'delete',
+			label: t('operate.decisions.toolbar.delete'),
+			variant: 'destructive' as const,
+			disabled: isDeleting,
+			onClick: () => setShowDeleteModal(true),
+		},
+	];
 
-export {Toolbar};
+	const selectionCountLabel =
+		selectedCount === 1
+			? t('operate.decisions.toolbar.itemSelected', {count: selectedCount})
+			: t('operate.decisions.toolbar.itemsSelected', {count: selectedCount});
+
+	const dialog = (
+		<BulkActionConfirmDialog
+			open={showDeleteModal}
+			title={t('operate.decisions.toolbar.deleteModalHeading')}
+			description={t('operate.decisions.toolbar.deleteModalBody', {count: selectedCount})}
+			confirmLabel={t('operate.decisions.toolbar.delete')}
+			cancelLabel={t('operate.decisions.toolbar.deleteModalCancel')}
+			isDestructive
+			onOpenChange={setShowDeleteModal}
+			onConfirm={() => void handleDelete()}
+		/>
+	);
+
+	return {batchActions, selectionCountLabel, dialog};
+}
+
+export {useBulkDelete};

@@ -24,7 +24,7 @@ type Props = React.ComponentProps<typeof CircleAlert> & {
 };
 
 const stateIconsMap: Record<Props['state'], {Icon: typeof TriangleAlert; className?: string}> = {
-	FAILED: {Icon: TriangleAlert, className: 'text-danger-foreground-subtle'},
+	FAILED: {Icon: CircleAlert, className: 'text-danger-foreground-subtle'},
 	INCIDENT: {Icon: CircleAlert, className: 'text-danger-foreground-subtle'},
 	ACTIVE: {Icon: CircleDot, className: 'text-success-foreground-subtle'},
 	COMPLETED: {Icon: CircleCheck, className: 'text-neutral-foreground-strong'},

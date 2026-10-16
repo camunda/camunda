@@ -89,7 +89,7 @@ const StructuredList: React.FC<Props> = ({
 						{headerColumns.map(({cellContent, width}, index) => (
 							<TableHead
 								key={index}
-								className={cn(headerSize === 'sm' && 'text-xs', isFlush && index === 0 && 'pl-0')}
+								className={cn(headerSize === 'sm' && 'text-xs', isFlush && index === 0 && 'pl-0!')}
 								style={{width}}
 							>
 								{cellContent}

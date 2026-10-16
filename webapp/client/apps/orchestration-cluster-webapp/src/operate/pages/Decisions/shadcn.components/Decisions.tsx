@@ -11,15 +11,19 @@ import {useTranslation} from 'react-i18next';
 import {useNavigate} from '@tanstack/react-router';
 import {Form} from 'react-final-form';
 import {Heading, PageLayout} from '@camunda/design-system';
-import {FiltersPanel} from '#/operate/shared/FiltersPanel/shadcn.components/FiltersPanel';
+import {FilterSidebar} from '#/operate/shared/FilterSidebar/shadcn.components/FilterSidebar';
 import {ResizablePanel, SplitDirection} from '#/operate/shared/ResizablePanel/shadcn.components/ResizablePanel';
 import {AutoSubmit} from '#/operate/shared/AutoSubmit/AutoSubmit';
 import type {DecisionsSearch} from '../decisionsFilter';
 import type {OptionalFilter, OptionalFilterValues} from '../optionalFilters';
 import {OptionalFiltersFormGroup} from './OptionalFiltersFormGroup';
+import {DecisionFilters} from './DecisionFilters';
 import {DecisionPanel} from './DecisionPanel';
 import {InstancesTable} from './InstancesTable';
+import {DecisionOperations} from '../DecisionOperations/shadcn.components/DecisionOperations';
 import {useDecisionDefinitionSelection} from './useDecisionDefinitionSelection';
+
+type FilterFormValues = OptionalFilterValues & {tenantId?: string};
 
 type Props = {
 	search: DecisionsSearch;
@@ -38,6 +42,10 @@ const Decisions: React.FC<Props> = ({search}) => {
 	const optionalFilterValues = useMemo<OptionalFilterValues>(
 		() => ({decisionEvaluationInstanceKey, processInstanceKey, businessId, evaluationDateFrom, evaluationDateTo}),
 		[decisionEvaluationInstanceKey, processInstanceKey, businessId, evaluationDateFrom, evaluationDateTo],
+	);
+	const filterFormValues = useMemo<FilterFormValues>(
+		() => ({tenantId: search.tenantId, ...optionalFilterValues}),
+		[search.tenantId, optionalFilterValues],
 	);
 	const isResetDisabled =
 		search.evaluated &&
@@ -62,12 +70,16 @@ const Decisions: React.FC<Props> = ({search}) => {
 				<Heading as="h1" className="sr-only">
 					{t('operate.decisions.title')}
 				</Heading>
-				<Form<OptionalFilterValues>
+				<Form<FilterFormValues>
 					onSubmit={(values) => {
 						void navigate({
 							to: '.',
 							search: (prev) => ({
 								...prev,
+								...((values.tenantId || undefined) !== prev.tenantId
+									? {decisionDefinitionId: undefined, decisionDefinitionVersion: undefined}
+									: {}),
+								tenantId: values.tenantId || undefined,
 								decisionEvaluationInstanceKey: values.decisionEvaluationInstanceKey || undefined,
 								processInstanceKey: values.processInstanceKey || undefined,
 								businessId: values.businessId || undefined,
@@ -76,12 +88,12 @@ const Decisions: React.FC<Props> = ({search}) => {
 							}),
 						});
 					}}
-					initialValues={optionalFilterValues}
+					initialValues={filterFormValues}
 				>
 					{({handleSubmit, form}) => (
 						<form onSubmit={handleSubmit} className="flex h-full min-h-0">
-							<AutoSubmit />
-							<FiltersPanel
+							<AutoSubmit fieldsToSkipTimeout={['tenantId']} />
+							<FilterSidebar
 								localStorageKey="isDecisionsFiltersCollapsed"
 								isResetButtonDisabled={isResetDisabled}
 								onResetClick={() => {
@@ -90,12 +102,21 @@ const Decisions: React.FC<Props> = ({search}) => {
 									void navigate({to: '.', search: {evaluated: true, failed: true}});
 								}}
 							>
-								<OptionalFiltersFormGroup
-									filters={optionalFilterValues}
-									visibleFilters={visibleFilters}
-									onVisibleFilterChange={setVisibleFilters}
-								/>
-							</FiltersPanel>
+								<div className="flex flex-col gap-8">
+									<DecisionFilters
+										decisionDefinitionId={search.decisionDefinitionId}
+										decisionDefinitionVersion={search.decisionDefinitionVersion}
+										tenantId={search.tenantId}
+										evaluated={search.evaluated}
+										failed={search.failed}
+									/>
+									<OptionalFiltersFormGroup
+										filters={optionalFilterValues}
+										visibleFilters={visibleFilters}
+										onVisibleFilterChange={setVisibleFilters}
+									/>
+								</div>
+							</FilterSidebar>
 						</form>
 					)}
 				</Form>
@@ -105,7 +126,17 @@ const Decisions: React.FC<Props> = ({search}) => {
 						direction={SplitDirection.Vertical}
 						minHeights={[panelMinHeight, panelMinHeight]}
 					>
-						<DecisionPanel {...selection} />
+						<DecisionPanel
+							{...selection}
+							headerActions={
+								selection.decisionDefinitionSelection.kind === 'single-version' ? (
+									<DecisionOperations
+										key={selection.decisionDefinitionSelection.definition.decisionDefinitionKey}
+										definition={selection.decisionDefinitionSelection.definition}
+									/>
+								) : undefined
+							}
+						/>
 						<div className="h-full overflow-hidden">
 							<InstancesTable search={search} />
 						</div>

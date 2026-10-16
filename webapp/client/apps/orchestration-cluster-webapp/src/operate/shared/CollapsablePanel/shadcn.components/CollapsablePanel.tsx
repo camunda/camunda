@@ -107,12 +107,18 @@ const CollapsablePanel = forwardRef<HTMLDivElement, Props>(
 							/>
 						)}
 					</header>
-					<div className={cn('flex min-h-0 grow flex-col', isCollapsed && 'invisible')} inert={isCollapsed}>
+					<div
+						className={cn(
+							'flex min-h-0 grow flex-col transition-[opacity,visibility] duration-150 ease-out motion-reduce:transition-none',
+							isCollapsed && 'invisible opacity-0',
+						)}
+						inert={isCollapsed}
+					>
 						<div ref={ref} className={cn('relative grow', scrollable ? 'overflow-auto' : 'overflow-hidden')}>
 							{children}
 						</div>
-						{footer !== undefined && <div className="border-t border-border p-2">{footer}</div>}
 					</div>
+					{footer !== undefined && <div className="border-t border-border px-3 py-2">{footer}</div>}
 				</div>
 			</section>
 		);

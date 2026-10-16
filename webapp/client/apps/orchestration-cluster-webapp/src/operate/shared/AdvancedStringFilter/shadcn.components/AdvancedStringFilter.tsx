@@ -83,7 +83,7 @@ const AdvancedStringFilterField: React.FC<FieldProps> = ({input, label, selectab
 	};
 
 	return (
-		<div className="grid grid-cols-[max-content_1fr] items-center gap-x-3">
+		<div className="grid grid-cols-[max-content_1fr] items-center gap-x-3 gap-y-1.5">
 			<Label htmlFor={input.name} className="col-span-2">
 				{label}
 			</Label>
