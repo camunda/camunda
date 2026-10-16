@@ -165,6 +165,33 @@ class PhysicalTenantOidcProviderOverlayTest {
   }
 
   @Test
+  void shouldApplyTenantOverlayOnCamelCaseRootProvider() {
+    // given a camel-case root provider whose client-id the tenant overrides
+    environment
+        .getPropertySources()
+        .addFirst(
+            new MapPropertySource(
+                "test",
+                Map.of(
+                    "camunda.security.authentication.providers.oidc.AzureAd.issuer-uri",
+                    "http://localhost:8082/realms/azure",
+                    "camunda.security.authentication.providers.oidc.AzureAd.client-id",
+                    "root-client",
+                    "camunda.physical-tenants.tenanta.security.authentication.providers.oidc.AzureAd.client-id",
+                    "pt-client")));
+
+    // when
+    final OidcProvidersConfiguration providers =
+        PhysicalTenantAuthenticationProviderConfigurations.forPhysicalTenant(
+            "tenanta", environment);
+
+    // then
+    final var provider = providers.getOidc().get("AzureAd");
+    assertThat(provider.getIssuerUri()).isEqualTo("http://localhost:8082/realms/azure");
+    assertThat(provider.getClientId()).isEqualTo("pt-client");
+  }
+
+  @Test
   void shouldAddTenantPrivateProviderNotInRoot() {
     // given root declares "sharedprovider"; tenant adds a new "privateprovider" not in root
     environment

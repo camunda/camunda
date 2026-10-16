@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 import io.camunda.configuration.UnifiedConfigurationException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.springframework.core.env.MapPropertySource;
@@ -56,6 +57,44 @@ class PhysicalTenantOidcClientSecretValidationTest {
         .isThrownBy(() -> PhysicalTenantOidcClientSecretValidation.validate(environment))
         .withMessageContaining("physical tenant 'tenanta', provider 'azure'")
         .withMessageContaining(TENANT + "providers.oidc.azure.client-secret");
+  }
+
+  @Test
+  void shouldRejectCamelCaseProviderWithOtherIssuerAndInheritedSecret() {
+    // given
+    final var environment =
+        environmentWith(
+            Map.of(
+                ROOT + "providers.oidc.AzureAd.issuer-uri", "https://root-idp",
+                ROOT + "providers.oidc.AzureAd.client-secret", "root-secret",
+                TENANT + "providers.oidc.AzureAd.issuer-uri", "https://tenant-idp",
+                TENANT + "providers.assigned[0]", "AzureAd"));
+
+    // when / then
+    assertThatExceptionOfType(UnifiedConfigurationException.class)
+        .isThrownBy(() -> PhysicalTenantOidcClientSecretValidation.validate(environment))
+        .withMessageContaining("physical tenant 'tenanta', provider 'AzureAd'")
+        .withMessageContaining(TENANT + "providers.oidc.AzureAd.client-secret");
+  }
+
+  @Test
+  void shouldRejectUnderscoreOrBracketDeclaredProviderWithOtherIssuerAndInheritedSecret() {
+    for (final String declared : List.of(".azure_ad", "[AzureAd]")) {
+      final String id = declared.replaceAll("[.\\[\\]]", "");
+      // given
+      final var environment =
+          environmentWith(
+              Map.of(
+                  ROOT + "providers.oidc" + declared + ".issuer-uri", "https://root-idp",
+                  ROOT + "providers.oidc" + declared + ".client-secret", "root-secret",
+                  TENANT + "providers.oidc" + declared + ".issuer-uri", "https://tenant-idp",
+                  TENANT + "providers.assigned[0]", id));
+
+      // when / then
+      assertThatExceptionOfType(UnifiedConfigurationException.class)
+          .isThrownBy(() -> PhysicalTenantOidcClientSecretValidation.validate(environment))
+          .withMessageContaining("physical tenant 'tenanta', provider '" + id + "'");
+    }
   }
 
   @Test

@@ -160,7 +160,7 @@ public final class PhysicalTenantAuthConfigurations {
 
     // method is cluster-wide, not per-tenant.
     config.setMethod(rootMethod != null ? rootMethod : AuthenticationMethod.BASIC);
-    mergeRootProviders(binder, ptPrefix, rootProviders, config);
+    mergeRootProviders(environment, binder, ptPrefix, rootProviders, config);
     narrowToAssigned(binder, ptPrefix, config);
     return config;
   }
@@ -248,6 +248,7 @@ public final class PhysicalTenantAuthConfigurations {
    * the snapshot of the root providers taken before the overlay was bound onto {@code config}.
    */
   private static void mergeRootProviders(
+      final Environment environment,
       final Binder binder,
       final String ptPrefix,
       final Map<String, OidcConfiguration> rootProviders,
@@ -261,7 +262,9 @@ public final class PhysicalTenantAuthConfigurations {
     }
     rootProviders.forEach(
         (id, rootProvider) -> {
-          binder.bind(ptPrefix + ".providers.oidc." + id, Bindable.ofInstance(rootProvider));
+          PhysicalTenantConfigUtil.mapEntryNames(
+                  environment, ptPrefix + ".providers.oidc", id, ROOT_PREFIX + ".providers.oidc")
+              .forEach(name -> binder.bind(name, Bindable.ofInstance(rootProvider)));
           union.put(id, rootProvider);
         });
     // getProviders() is null only when neither root nor overlay declared any providers, in which

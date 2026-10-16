@@ -17,6 +17,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
+import org.springframework.boot.context.properties.bind.Bindable;
+import org.springframework.boot.context.properties.bind.Binder;
+import org.springframework.boot.context.properties.source.ConfigurationPropertyName;
 import org.springframework.core.env.MapPropertySource;
 import org.springframework.mock.env.MockEnvironment;
 
@@ -192,5 +195,69 @@ class PhysicalTenantConfigUtilTest {
         .isThrownBy(
             () -> PhysicalTenantConfigUtil.forEachTenantProperty(environment, (id, relative) -> {}))
         .withMessageContaining("Invalid physical tenant id");
+  }
+
+  @Test
+  void shouldNameMapEntriesInTheFormTheyAreDeclared() {
+    // given entries declared dotted with an underscore and in brackets with capital letters or a
+    // dot; Spring keys the map by these spellings as written
+    final MockEnvironment environment = new MockEnvironment();
+    environment.setProperty("camunda.providers.azure_ad.client-id", "underscore");
+    environment.setProperty("camunda.providers[AzureAd].client-id", "camel-bracket");
+    environment.setProperty("camunda.providers[azure-ad].client-id", "dashed-bracket");
+    environment.setProperty("camunda.providers[a.b].client-id", "dotted-bracket");
+    final Binder binder = Binder.get(environment);
+
+    // when / then each key reads its own entry, never another spelling of a similar key
+    assertThat(bindClientIds(environment, binder, "azure_ad")).containsExactly("underscore");
+    assertThat(bindClientIds(environment, binder, "AzureAd")).containsExactly("camel-bracket");
+    assertThat(bindClientIds(environment, binder, "azure-ad")).containsExactly("dashed-bracket");
+    assertThat(bindClientIds(environment, binder, "a.b")).containsExactly("dotted-bracket");
+  }
+
+  @Test
+  void shouldNameMapEntryInTheFormsDeclaredUnderRelatedMap() {
+    // given an entry the cluster declares in brackets and a tenant overrides in the dotted form
+    final MockEnvironment environment = new MockEnvironment();
+    environment.setProperty("camunda.providers[AzureAd].client-id", "cluster");
+    environment.setProperty("camunda.tenant.providers.AzureAd.client-secret", "tenant");
+
+    // when
+    final List<ConfigurationPropertyName> names =
+        PhysicalTenantConfigUtil.mapEntryNames(
+            environment, "camunda.tenant.providers", "AzureAd", "camunda.providers");
+
+    // then the tenant entry is named in both forms, so the tenant's own declaration is found
+    assertThat(names)
+        .containsExactlyInAnyOrder(
+            ConfigurationPropertyName.adapt("camunda.tenant.providers.AzureAd", '.'),
+            ConfigurationPropertyName.of("camunda.tenant.providers").append("[AzureAd]"));
+    assertThat(
+            names.stream()
+                .map(
+                    name ->
+                        Binder.get(environment)
+                            .bind(name.append("client-secret"), Bindable.of(String.class))
+                            .orElse(null))
+                .filter(secret -> secret != null))
+        .containsExactly("tenant");
+  }
+
+  @Test
+  void shouldReturnNoNameForUndeclaredMapEntry() {
+    // given
+    final MockEnvironment environment = new MockEnvironment();
+    environment.setProperty("camunda.providers.other.client-id", "c");
+
+    // when / then
+    assertThat(PhysicalTenantConfigUtil.mapEntryNames(environment, "camunda.providers", "missing"))
+        .isEmpty();
+  }
+
+  private static List<String> bindClientIds(
+      final MockEnvironment environment, final Binder binder, final String key) {
+    return PhysicalTenantConfigUtil.mapEntryNames(environment, "camunda.providers", key).stream()
+        .map(name -> binder.bind(name.append("client-id"), Bindable.of(String.class)).orElse(null))
+        .toList();
   }
 }
