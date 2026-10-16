@@ -1160,8 +1160,7 @@
 			"decisions": {
 				"title": "Entscheidungen",
 				"scaffold": {
-					"filtersPanelPlaceholder": "Platzhalter für den Filterbereich",
-					"decisionPanelPlaceholder": "Platzhalter für den Entscheidungsbereich"
+					"filtersPanelPlaceholder": "Platzhalter für den Filterbereich"
 				},
 				"diagramHeader": {
 					"title": "Entscheidung",
@@ -1586,6 +1585,7 @@
 					"resultCountMore": "{{count}}+ Ergebnisse"
 				},
 				"diagramShell": {
+					"loading": "Diagramm wird geladen",
 					"forbiddenMessage": "Fehlende Berechtigungen zum Anzeigen der Definition",
 					"forbiddenAdditionalInfo": "Bitte wenden Sie sich an den Eigentümer oder Administrator Ihrer Organisation, um die erforderlichen Leseberechtigungen zu erhalten"
 				},

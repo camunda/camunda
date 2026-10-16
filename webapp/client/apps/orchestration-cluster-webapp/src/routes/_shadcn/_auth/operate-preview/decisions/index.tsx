@@ -6,12 +6,49 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {createFileRoute} from '@tanstack/react-router';
+import {t} from 'i18next';
+import {createFileRoute, redirect} from '@tanstack/react-router';
 import {Decisions} from '#/operate/pages/Decisions/shadcn.components/Decisions';
 import {validateDecisionsSearch} from '#/operate/pages/Decisions/decisionsSearch';
+import {loadDecisionsData} from '#/operate/pages/Decisions/loadDecisionsData';
+import {notificationsStore} from '#/shared/notifications/notifications.store';
 
 export const Route = createFileRoute('/_shadcn/_auth/operate-preview/decisions/')({
 	validateSearch: validateDecisionsSearch,
+	loaderDeps: ({search: {decisionDefinitionId, decisionDefinitionVersion, tenantId}}) => ({
+		decisionDefinitionId,
+		decisionDefinitionVersion,
+		tenantId,
+	}),
+	loader: async ({context: {queryClient}, deps: {decisionDefinitionId, decisionDefinitionVersion, tenantId}}) => {
+		const isSelectionValid = await loadDecisionsData({
+			queryClient,
+			decisionDefinitionId,
+			decisionDefinitionVersion,
+			tenantId,
+			prefetchDefinitions: false,
+		});
+		if (isSelectionValid) {
+			return;
+		}
+
+		notificationsStore.displayNotification({
+			kind: 'error',
+			title: t('operate.decisions.diagramPanel.decisionNotFoundTitle'),
+			isDismissable: true,
+		});
+		throw redirect({
+			to: '/operate-preview/decisions',
+			search: (prev) => ({
+				...prev,
+				evaluated: prev.evaluated ?? false,
+				failed: prev.failed ?? false,
+				decisionDefinitionId: undefined,
+				decisionDefinitionVersion: undefined,
+			}),
+			replace: true,
+		});
+	},
 	component: function DecisionsRoute() {
 		return <Decisions search={Route.useSearch()} />;
 	},
