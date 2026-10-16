@@ -119,6 +119,12 @@ public class ClientBasedAdapter implements OperateServicesAdapter {
     return cause != null && RETRY_STATUSES.contains(cause.getStatus().getCode());
   }
 
+  @Override
+  public boolean isOutcomeUnknown(final Throwable ex) {
+    final StatusRuntimeException cause = extractStatusRuntimeException(ex);
+    return cause != null && cause.getStatus().getCode() == Status.DEADLINE_EXCEEDED.getCode();
+  }
+
   private StatusRuntimeException extractStatusRuntimeException(final Throwable ex) {
     if (ex.getCause() != null) {
       if (ex.getCause() instanceof StatusRuntimeException) {

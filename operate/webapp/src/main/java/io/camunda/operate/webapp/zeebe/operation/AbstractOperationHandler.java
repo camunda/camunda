@@ -36,7 +36,7 @@ public abstract class AbstractOperationHandler implements OperationHandler {
     try {
       handleWithException(operation);
     } catch (final Exception ex) {
-      if (operationServicesAdapter.isExceptionRetriable(ex)) {
+      if (isRetriable(ex)) {
         // leave the operation locked -> when it expires, operation will be retried
         LOGGER.error(
             String.format(
@@ -45,8 +45,7 @@ public abstract class AbstractOperationHandler implements OperationHandler {
             ex);
       } else {
         try {
-          failOperation(
-              operation, String.format("Unable to process operation: %s", ex.getMessage()));
+          failOperation(operation, failureMessage(ex));
         } catch (final PersistenceException e) {
           // noop
         }
@@ -57,6 +56,14 @@ public abstract class AbstractOperationHandler implements OperationHandler {
             ex);
       }
     }
+  }
+
+  protected boolean isRetriable(final Exception ex) {
+    return operationServicesAdapter.isExceptionRetriable(ex);
+  }
+
+  protected String failureMessage(final Exception ex) {
+    return String.format("Unable to process operation: %s", ex.getMessage());
   }
 
   // Needed for tests
