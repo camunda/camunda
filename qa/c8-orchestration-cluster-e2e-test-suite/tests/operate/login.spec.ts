@@ -12,6 +12,10 @@ import {expect} from '@playwright/test';
 import {captureScreenshot, captureFailureVideo} from '@setup';
 import {relativizePath, Paths} from 'utils/relativizePath';
 
+// Throwaway no-op touch (second validation run) to exercise the automatic suite
+// PR check on the latest feature branch (camunda/team-test-automation#188).
+// Revert before merge.
+
 test.describe.parallel('Login Tests', () => {
   test.beforeEach(async ({page}) => {
     await navigateToApp(page, 'operate');
