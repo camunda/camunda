@@ -231,6 +231,24 @@ class ProcessInstanceExportHandlerTest {
     }
   }
 
+  @Test
+  void shouldMapStorageOrdinalOnCreate() {
+    // given
+    final var record = TestRecordFactory.rootProcess(ProcessInstanceIntent.ELEMENT_ACTIVATING);
+    when(record.getValue().getStorageOrdinal()).thenReturn(7);
+    try (final var mocked = Mockito.mockStatic(ProcessCacheUtil.class)) {
+      mocked
+          .when(() -> ProcessCacheUtil.getCallActivityIds(any(), any()))
+          .thenReturn(List.of(List.of(100L)));
+      // when
+      handler.export(record);
+      // then
+      final var captor = ArgumentCaptor.forClass(ProcessInstanceDbModel.class);
+      verify(processInstanceWriter).create(captor.capture());
+      assertThat(captor.getValue().storageOrdinal()).isEqualTo(7);
+    }
+  }
+
   // Helper factory for test records
   static class TestRecordFactory {
     static Record<ProcessInstanceRecordValue> simpleProcess() {

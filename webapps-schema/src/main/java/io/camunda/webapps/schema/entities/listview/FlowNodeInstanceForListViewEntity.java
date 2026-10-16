@@ -58,6 +58,10 @@ public class FlowNodeInstanceForListViewEntity
   @JsonInclude(JsonInclude.Include.NON_NULL)
   private Long rootProcessInstanceKey;
 
+  @SinceVersion(value = "8.11.0", requireDefault = false)
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  private Integer storageOrdinal;
+
   @Override
   public String getId() {
     return id;
@@ -247,6 +251,15 @@ public class FlowNodeInstanceForListViewEntity
     return this;
   }
 
+  public Integer getStorageOrdinal() {
+    return storageOrdinal;
+  }
+
+  public FlowNodeInstanceForListViewEntity setStorageOrdinal(final Integer storageOrdinal) {
+    this.storageOrdinal = storageOrdinal;
+    return this;
+  }
+
   @Override
   public int hashCode() {
     return Objects.hash(
@@ -265,7 +278,8 @@ public class FlowNodeInstanceForListViewEntity
         positionIncident,
         positionJob,
         joinRelation,
-        rootProcessInstanceKey);
+        rootProcessInstanceKey,
+        storageOrdinal);
   }
 
   @Override
@@ -292,6 +306,7 @@ public class FlowNodeInstanceForListViewEntity
         && Objects.equals(position, that.position)
         && Objects.equals(positionIncident, that.positionIncident)
         && Objects.equals(positionJob, that.positionJob)
-        && Objects.equals(joinRelation, that.joinRelation);
+        && Objects.equals(joinRelation, that.joinRelation)
+        && Objects.equals(storageOrdinal, that.storageOrdinal);
   }
 }

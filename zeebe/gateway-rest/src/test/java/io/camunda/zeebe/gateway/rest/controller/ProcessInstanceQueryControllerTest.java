@@ -93,7 +93,8 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
           "PI_123",
           Set.of("tag1", "tag2"),
           "biz-id",
-          null);
+          null,
+          1001);
   private static final String PROCESS_INSTANCE_ENTITY_JSON =
       """
             {
@@ -113,7 +114,8 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
             "hasIncident": false,
             "tenantId": "tenant",
             "tags": ["tag1", "tag2"],
-            "businessId": "biz-id"
+            "businessId": "biz-id",
+            "storageOrdinal": 1001
           }
           """;
   private static final String EXPECTED_SEARCH_RESPONSE =
@@ -137,7 +139,8 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
                   "hasIncident": false,
                   "tenantId": "tenant",
                   "tags": ["tag1", "tag2"],
-                  "businessId": "biz-id"
+                  "businessId": "biz-id",
+                  "storageOrdinal": 1001
                 }
               ],
               "page": {
@@ -772,6 +775,7 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
             "PI_456",
             null,
             null,
+            null,
             null);
     when(processInstanceServices.getByKey(eq(processInstanceKey), any(CamundaAuthentication.class)))
         .thenReturn(entityWithNullBusinessId);
@@ -795,7 +799,8 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
               "hasIncident": false,
               "tenantId": "tenant",
               "tags": [],
-              "businessId": null
+              "businessId": null,
+              "storageOrdinal": null
             }
             """;
 

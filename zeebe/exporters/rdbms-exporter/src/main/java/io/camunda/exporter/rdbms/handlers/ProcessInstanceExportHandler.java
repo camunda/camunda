@@ -115,6 +115,7 @@ public class ProcessInstanceExportHandler
         .treePath(createTreePath(record).toTruncatedString())
         .tags(value.getTags())
         .businessId(emptyToNull(value.getBusinessId()))
+        .storageOrdinal(value.getStorageOrdinal())
         .build();
   }
 

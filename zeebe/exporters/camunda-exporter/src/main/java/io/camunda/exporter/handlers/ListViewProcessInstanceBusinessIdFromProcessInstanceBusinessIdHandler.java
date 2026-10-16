@@ -76,7 +76,8 @@ public class ListViewProcessInstanceBusinessIdFromProcessInstanceBusinessIdHandl
         .setTenantId(tenantOrDefault(recordValue.getTenantId()))
         .setPartitionId(record.getPartitionId())
         .setPosition(record.getPosition())
-        .setBusinessId(emptyToNull(recordValue.getBusinessId()));
+        .setBusinessId(emptyToNull(recordValue.getBusinessId()))
+        .setStorageOrdinal(recordValue.getStorageOrdinal());
   }
 
   @Override
