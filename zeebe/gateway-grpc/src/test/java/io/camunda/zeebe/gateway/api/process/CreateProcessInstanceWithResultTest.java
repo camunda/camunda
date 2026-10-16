@@ -124,6 +124,32 @@ public final class CreateProcessInstanceWithResultTest extends GatewayTest {
   }
 
   @Test
+  public void shouldMapVersionTagToBrokerRequest() {
+    // given
+    final CreateProcessInstanceWithResultStub stub = new CreateProcessInstanceWithResultStub();
+    stub.registerWith(brokerClient);
+
+    final CreateProcessInstanceWithResultRequest request =
+        CreateProcessInstanceWithResultRequest.newBuilder()
+            .setRequest(
+                CreateProcessInstanceRequest.newBuilder()
+                    .setBpmnProcessId(stub.getProcessId())
+                    .setVersionTag("v1.2"))
+            .build();
+
+    // when
+    client.createProcessInstanceWithResult(request);
+
+    // then
+    final ProcessInstanceCreationRecord brokerRequestValue =
+        brokerClient
+            .<BrokerCreateProcessInstanceWithResultRequest>getSingleBrokerRequest()
+            .getRequestWriter();
+    assertThat(brokerRequestValue.getVersionTag()).isEqualTo("v1.2");
+    assertThat(brokerRequestValue.getVersion()).isEqualTo(-1);
+  }
+
+  @Test
   public void shouldMapDuplicateBusinessIdRejectionToAlreadyExists() {
     // given
     final var businessId = "order-12345";
