@@ -410,7 +410,6 @@ public final class ContainerElementVariablePropagationTest {
   }
 
   @Test
-  @Ignore("https://github.com/camunda/camunda/issues/35251")
   public void shouldNotLeakUntouchedLocalSiblingIntoParentScope() {
     // given: 'a' is set locally on the sub-process with an untouched sibling 'p' that is never
     // targeted by any output mapping
@@ -445,6 +444,47 @@ public final class ContainerElementVariablePropagationTest {
             .getValue()
             .getValue();
     assertThat(propagatedA).isEqualTo("{\"b\":1}");
+  }
+
+  @Test
+  public void shouldNotRemoveUntouchedParentSibling() {
+    // given: 'a' is set locally on the sub-process
+    final var processId = "processId";
+    final var process =
+        Bpmn.createExecutableProcess(processId)
+            .startEvent()
+            .subProcess(
+                "sp",
+                sp ->
+                    sp.zeebeInputExpression("{p:0}", "a")
+                        .zeebeOutputExpression("1", "a.b")
+                        .embeddedSubProcess()
+                        .startEvent()
+                        .endEvent())
+            .endEvent()
+            .done();
+
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    // when: create the process instance with a sibling 'c' of 'a' - it should remain untouched
+    final long processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(processId)
+            .withVariable("a", Map.of("c", 2))
+            .create();
+
+    // then
+    final var propagatedA =
+        RecordingExporter.records()
+            .limitToProcessInstance(processInstanceKey)
+            .variableRecords()
+            .withScopeKey(processInstanceKey)
+            .withName("a")
+            .getLast()
+            .getValue()
+            .getValue();
+    assertThat(propagatedA).isEqualTo("{\"b\":1,\"c\":2}");
   }
 
   @Test
