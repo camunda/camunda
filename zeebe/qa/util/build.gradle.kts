@@ -3,7 +3,7 @@ plugins { id("buildlogic.server-conventions") }
 dependencies {
   implementation(project(":configuration"))
   implementation(project(":camunda-cluster"))
-  api(project(":zeebe-cluster-config-api"))
+  implementation(project(":zeebe-cluster-config-api"))
   api(libs.co.elastic.clients.elasticsearch.java)
   implementation(project(":camunda-authentication"))
   implementation(project(":camunda-gateway-model"))

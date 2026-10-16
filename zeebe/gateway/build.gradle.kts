@@ -21,7 +21,7 @@ dependencies {
   implementation(libs.io.camunda.security.library.core)
   implementation(project(":zeebe-msgpack-value"))
   implementation(project(":zeebe-broker-client"))
-  api(project(":zeebe-cluster-config-api"))
+  implementation(project(":zeebe-cluster-config-api"))
   implementation(project(":camunda-search-domain"))
   api(libs.org.agrona.agrona)
   implementation(libs.org.slf4j.slf4j.api)
