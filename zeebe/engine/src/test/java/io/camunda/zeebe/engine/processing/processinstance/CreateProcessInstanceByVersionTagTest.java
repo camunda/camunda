@@ -203,6 +203,54 @@ public final class CreateProcessInstanceByVersionTagTest {
                 .formatted(deployed.getProcessDefinitionKey()));
   }
 
+  @Test
+  public void shouldRejectVersionTagCombinedWithProcessDefinitionKeyAndBpmnProcessId() {
+    // given
+    final var processId = helper.getBpmnProcessId();
+    final var deployed = deploy(processId, "v1", null);
+
+    // when
+    ENGINE
+        .processInstance()
+        .ofBpmnProcessId(processId)
+        .withProcessDefinitionKey(deployed.getProcessDefinitionKey())
+        .withVersionTag("v1")
+        .expectRejection()
+        .create();
+
+    // then
+    final var rejection =
+        RecordingExporter.processInstanceCreationRecords()
+            .onlyCommandRejections()
+            .withIntent(ProcessInstanceCreationIntent.CREATE)
+            .getFirst();
+    assertThat(rejection)
+        .hasRejectionType(RejectionType.INVALID_ARGUMENT)
+        .hasRejectionReason(
+            "Expected to create process instance by either process definition key or version tag, but both were provided: key '%d', version tag 'v1'"
+                .formatted(deployed.getProcessDefinitionKey()));
+  }
+
+  @Test
+  public void shouldTreatZeroProcessDefinitionKeyAsUnsetWhenCreatingByVersionTag() {
+    // given
+    final var processId = helper.getBpmnProcessId();
+    final var deployed = deploy(processId, "v1", null);
+
+    // when
+    final long processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(processId)
+            .withProcessDefinitionKey(0)
+            .withVersionTag("v1")
+            .create();
+
+    // then
+    assertThat(activatedProcess(processInstanceKey).getProcessDefinitionKey())
+        .isEqualTo(deployed.getProcessDefinitionKey());
+  }
+
   private ProcessMetadataValue deploy(
       final String processId, final String versionTag, final String startEventId) {
     final var builder = Bpmn.createExecutableProcess(processId).versionTag(versionTag);
