@@ -653,6 +653,11 @@ history gets one dividing line, the handover checkpoint H. Before H, the old con
 the source of truth; after H, the log archive. The handover is recorded on both sides and lets a
 restore cross from the old backups into the archive.
 
+**Rule: the old backups are never modified.** The handover adds files next to them but never
+changes, moves, rewrites or deletes anything of the old backups (manifests, contents, or
+`metadata.json`). Old backups keep their own retention. A restore to a point at or before H runs
+the unchanged old restore code on unchanged data.
+
 ### 18.1 Upgrade gate and activation (H1)
 
 - **Gate:** the log archive may write its first record only once every broker in the cluster
@@ -684,9 +689,13 @@ restore cross from the old backups into the archive.
   in the checkpoint state; `archivedPosition ≥ H.position`; no handover recorded yet (a repeat for
   the same H is rejected and harmless).
 - **Applier of `HANDOVER_COMPLETED`:** records `handoverCheckpointId` and `handoverPosition` in the log
-  archive meta and in the checkpoint state. Post-commit: sync `metadata.json`.
-- **`metadata.json` version 2:** optional `handover` object `{checkpointId, checkpointPosition,
-  logArchiveTimeline}`. Readers of version 1 keep working.
+  archive meta and in the checkpoint state. Post-commit: write the old side's handover file (below).
+- **Old side: `metadata/<partition>/handover.json`**, a new file next to `metadata.json`, written
+  once per partition: `{formatVersion, partitionId, checkpointId, checkpointPosition,
+  logArchiveTimeline}`. `metadata.json` itself keeps exactly today's format and content, so any
+  existing restore tool reads it as before. Writing `handover.json` is idempotent (same content for
+  the same H); a missing file means "no handover yet".
+- **New side:** the `HANDOVER` commit entry in the archive (above).
 - **Compaction pin release:** once a handover is recorded on the partition, `DbPositionSupplier`
   ignores the old backup position (treats it as `Long.MAX_VALUE`) and caps at F only.
 
@@ -717,8 +726,8 @@ scheduler moving to another broker.
 
 ### 18.5 Restore across the handover (H5)
 
-Per target checkpoint T and partition, using `metadata.json` (handover object) and the archive view
-(`HANDOVER` commit entry):
+Per target checkpoint T and partition, using `metadata/<partition>/handover.json` and the archive
+view (`HANDOVER` commit entry); the old side is read only through the existing old restore code:
 
 | Target | Path |
 |---|---|
@@ -759,7 +768,7 @@ point and tell me when it is safe" in tests and locally.
 | WS | Owns | Model | Depends on |
 |----|------|-------|-----------|
 | H1 gate + activation | scheduler gate, `ACTIVATE_LOG_ARCHIVE` request + handler, archiver waits for activation, version test hook | Opus | spec |
-| H2 handover state + query | `CheckpointType.HANDOVER`, `COMPLETE_HANDOVER`/`HANDOVER_COMPLETED` intents + applier + commit entry type, checkpoint state + meta fields, `metadata.json` v2, pin release, `logArchiveStates` query group | Sonnet | spec |
+| H2 handover state + query | `CheckpointType.HANDOVER`, `COMPLETE_HANDOVER`/`HANDOVER_COMPLETED` intents + applier + commit entry type, checkpoint state + meta fields, `handover.json` on the old side, pin release, `logArchiveStates` query group | Sonnet | spec |
 | H3 handover decision | scheduler steps 1–5, `COMPLETE_HANDOVER` request | Opus | H1, H2 |
 | H5 restore | planner paths, journal stitching, `restore-standalone` mode | Opus (planner + stitching), Sonnet (CLI) | H2 |
 | H6 backups after handover | skip old upload, status from F | Sonnet | H2 |
