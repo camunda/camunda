@@ -147,19 +147,22 @@ jobs:
 
           # Gating scope: added/modified/renamed spec files only (a removed spec
           # cannot fail), path relative to the suite root (matching the Playwright
-          # report), and restricted to the specs the PR matrix actually executes
-          # (the api-tests + chromium projects), so the gate never greens a
-          # changed spec it did not run: v2-stateless-tests (needs
-          # V2_STATELESS_TESTS=true, which swaps the whole project list),
-          # analytics-exporter (its own isolated project) and optimize (its own
-          # projects) are excluded here — they are covered by their dedicated
-          # nightly workflows, exactly as the on-demand run leaves them out.
+          # report), and restricted to the specs the PR matrix actually executes,
+          # so the gate never greens a changed spec it did not run:
+          # v2-stateless-tests (needs V2_STATELESS_TESTS=true, which swaps the
+          # whole project list), analytics-exporter (its own isolated project) and
+          # optimize-default-config are excluded here — they are covered by their
+          # dedicated nightly workflows, exactly as the on-demand run leaves them
+          # out. optimize-startup.spec.ts IS kept: the E2E job adds
+          # `--project=optimize-startup` whenever the branch's compose defines the
+          # Optimize service, so a change to it is validated by this check.
           changed_specs="$(printf '%s\n' "$files" \
             | awk -F'\t' '$1 != "removed" {print $2}' \
             | sed -n "s#^${SUITE_PREFIX}##p" \
             | grep -E '\.spec\.ts$' \
             | grep -E '^tests/' \
-            | grep -Ev '^tests/api/v2/(analytics-exporter|optimize)/' || true)"
+            | awk '!/^tests\/api\/v2\/analytics-exporter\// && (!/^tests\/api\/v2\/optimize\// || $0 == "tests/api/v2/optimize/optimize-startup.spec.ts")' \
+            || true)"
 
           echo "Spec files gating this PR:"
           printf '%s\n' "${changed_specs:-<none>}"
