@@ -10,6 +10,7 @@ package io.camunda.zeebe.dynamic.config.state;
 import com.google.common.collect.ImmutableSortedSet;
 import io.atomix.cluster.MemberId;
 import java.util.Optional;
+import java.util.OptionalLong;
 import java.util.Set;
 import java.util.SortedSet;
 
@@ -274,8 +275,14 @@ public sealed interface PartitionGroupOperation extends ClusterConfigurationChan
      * @param memberId the member id of the member that will apply this operation
      * @param partitionId id of the partition to restore
      * @param backupIds the ids of the backups to restore, in ascending order
+     * @param checkpointPosition where the partition's restored log ends; see {@link
+     *     PartitionRestore#checkpointPosition()}
      */
-    record PartitionRestoreOperation(MemberId memberId, int partitionId, SortedSet<Long> backupIds)
+    record PartitionRestoreOperation(
+        MemberId memberId,
+        int partitionId,
+        SortedSet<Long> backupIds,
+        OptionalLong checkpointPosition)
         implements PartitionChangeOperation {
       public PartitionRestoreOperation {
         backupIds = ImmutableSortedSet.copyOf(backupIds);
@@ -283,12 +290,12 @@ public sealed interface PartitionGroupOperation extends ClusterConfigurationChan
 
       public PartitionRestoreOperation(
           final MemberId memberId, final int partitionId, final PartitionRestore restore) {
-        this(memberId, partitionId, restore.backupIds());
+        this(memberId, partitionId, restore.backupIds(), restore.checkpointPosition());
       }
 
       /** What the partition is restored from. */
       public PartitionRestore restore() {
-        return new PartitionRestore(backupIds);
+        return new PartitionRestore(backupIds, checkpointPosition);
       }
     }
   }

@@ -407,6 +407,8 @@ message PartitionPreRestoreOperation {
 message PartitionRestoreOperation {
   int32 partitionId = 1;
   repeated int64 backupIds = 2;
+  // Where the restored log ends; absent to end it at the last backup's checkpoint
+  optional int64 checkpointPosition = 3;
 }
 
 message AwaitRedistributionCompletion {
