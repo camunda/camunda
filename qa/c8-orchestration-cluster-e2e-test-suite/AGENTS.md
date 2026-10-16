@@ -238,11 +238,11 @@ Always run `npm run lint` before committing. Fix all errors — do not commit wi
 
 ## CI Workflows
 
-|                        Workflow                              |                           Trigger                            |                                                       Link                                                       |
-|--------------------------------------------------------------|--------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------|
-| `c8-orchestration-cluster-nightly-<version>-<type>.yml`      | Nightly, per version and type (`e2e`, `api-es`, `api-rdbms`) | [Runbook](docs/nightly-runbook.md)                                                                               |
-| `ci-c8-orchestration-cluster-e2e-suite-reusable.yml`         | Automatic PR check (non-fork PRs touching the suite)         | Called by `ci.yml`; blocks only on the PR's own added/modified specs                                             |
-| `c8-orchestration-cluster-e2e-tests-on-demand.yml`           | Manual                                                       | [Actions](https://github.com/camunda/camunda/actions/workflows/c8-orchestration-cluster-e2e-tests-on-demand.yml) |
+|                        Workflow                         |                           Trigger                            |                                                       Link                                                       |
+|---------------------------------------------------------|--------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------|
+| `c8-orchestration-cluster-nightly-<version>-<type>.yml` | Nightly, per version and type (`e2e`, `api-es`, `api-rdbms`) | [Runbook](docs/nightly-runbook.md)                                                                               |
+| `ci-c8-orchestration-cluster-e2e-suite-reusable.yml`    | Automatic PR check (non-fork PRs touching the suite)         | Called by `ci.yml`; blocks only on the PR's own added/modified specs                                             |
+| `c8-orchestration-cluster-e2e-tests-on-demand.yml`      | Manual                                                       | [Actions](https://github.com/camunda/camunda/actions/workflows/c8-orchestration-cluster-e2e-tests-on-demand.yml) |
 
 Nightly results post to Slack `#c8-orchestration-cluster-e2e-test-results`. The schedule, test ownership
 and failure handling are in [`docs/nightly-runbook.md`](docs/nightly-runbook.md).
