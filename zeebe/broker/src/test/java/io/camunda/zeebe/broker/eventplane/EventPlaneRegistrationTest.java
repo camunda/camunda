@@ -147,7 +147,8 @@ final class EventPlaneRegistrationTest {
     final var sent = awaitRequests(2);
     assertThat(sent.getFirst().path()).isEqualTo("/token");
     assertThat(sent.getFirst().body())
-        .contains("grant_type=client_credentials", "client_id=my-client", "audience=event-plane");
+        .contains("grant_type=client_credentials", "client_id=my-client", "audience=event-plane")
+        .doesNotContain("scope=", "resource=");
     assertThat(sent.get(1).authorization()).isEqualTo("Bearer t1");
   }
 

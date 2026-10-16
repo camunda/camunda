@@ -7,8 +7,6 @@
  */
 package io.camunda.zeebe.broker.eventplane;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.system.configuration.EventPlaneCfg;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ScheduledTimer;
@@ -17,7 +15,6 @@ import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.util.ExponentialBackoffRetryDelay;
 import io.camunda.zeebe.util.RetryDelayStrategy;
 import io.camunda.zeebe.util.VisibleForTesting;
-import java.io.IOException;
 import java.net.URI;
 import java.net.URLEncoder;
 import java.net.http.HttpClient;
@@ -27,21 +24,19 @@ import java.net.http.HttpResponse;
 import java.net.http.HttpResponse.BodyHandlers;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
-import java.time.Instant;
 import java.time.InstantSource;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
-import java.util.Base64;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Supplier;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Registers a physical tenant in its Event Plane, with {@code PUT
@@ -62,10 +57,8 @@ import org.slf4j.Logger;
  */
 public final class EventPlaneRegistration extends Actor {
 
-  private static final Logger LOG = Loggers.SYSTEM_LOGGER;
-  private static final ObjectMapper JSON = new ObjectMapper();
+  private static final Logger LOG = LoggerFactory.getLogger(EventPlaneRegistration.class);
   private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(30);
-  private static final Duration TOKEN_EXPIRY_BUFFER = Duration.ofSeconds(30);
   private static final int MAX_LOGGED_BODY = 500;
   private static final Duration WARN_AFTER = Duration.ofMinutes(1);
   private static final Duration WARN_EVERY = Duration.ofHours(1);
@@ -77,14 +70,13 @@ public final class EventPlaneRegistration extends Actor {
   private final RetryDelayStrategy retryDelay;
   private final HttpClient http;
   private final InstantSource clock;
+  private final EventPlaneAuthentication authentication;
   private final FailureEscalation failures = new FailureEscalation(WARN_AFTER, WARN_EVERY);
   private final CompletableActorFuture<Void> registered = new CompletableActorFuture<>();
   private final Set<Integer> leaders = new HashSet<>();
 
   private boolean attempting;
   private @Nullable ScheduledTimer nextAttempt;
-  private @Nullable String token;
-  private Instant tokenExpiresAt = Instant.EPOCH;
 
   public EventPlaneRegistration(
       final EventPlaneCfg cfg,
@@ -116,6 +108,7 @@ public final class EventPlaneRegistration extends Actor {
     this.retryDelay = retryDelay;
     this.clock = clock;
     http = HttpClient.newBuilder().connectTimeout(REQUEST_TIMEOUT).build();
+    authentication = new EventPlaneAuthentication(cfg, http, clock);
   }
 
   /**
@@ -165,10 +158,18 @@ public final class EventPlaneRegistration extends Actor {
       retry("the cluster id isn't known yet");
       return;
     }
-    authorization()
+    authentication
+        .authorization()
         .thenCompose(
             authorization ->
-                http.sendAsync(request(id.get(), authorization), BodyHandlers.ofString()))
+                http.sendAsync(request(id.get(), authorization), BodyHandlers.ofString())
+                    .whenComplete(
+                        (response, error) -> {
+                          if (response != null && response.statusCode() == 401) {
+                            // An expired or revoked token: the next attempt gets a new one.
+                            authentication.refused(authorization);
+                          }
+                        }))
         .whenComplete((response, error) -> actor.run(() -> onAnswer(id.get(), response, error)));
   }
 
@@ -183,13 +184,7 @@ public final class EventPlaneRegistration extends Actor {
     }
     switch (response.statusCode()) {
       case 200, 201 -> registered(clusterId, response.statusCode() == 201);
-      default -> {
-        if (response.statusCode() == 401) {
-          // An expired or revoked token: the next attempt gets a new one.
-          token = null;
-        }
-        retry("HTTP " + response.statusCode() + ": " + truncated(response.body()));
-      }
+      default -> retry("HTTP " + response.statusCode() + ": " + truncated(response.body()));
     }
   }
 
@@ -210,7 +205,7 @@ public final class EventPlaneRegistration extends Actor {
           clusterId,
           endpoint);
     } else {
-      // Every partition's leader registers the tenant, so this is the usual answer.
+      // Another broker registered it, or this one before it restarted.
       LOG.debug(
           "The Event Plane at {} knows physical tenant {} of cluster {} already",
           endpoint,
@@ -306,92 +301,6 @@ public final class EventPlaneRegistration extends Actor {
         base + "/v1/environments/" + pathSegment(clusterId) + "/" + pathSegment(physicalTenantId));
   }
 
-  /** OAuth if a client id is set, basic if a username is, otherwise none. */
-  private CompletableFuture<Optional<String>> authorization() {
-    if (cfg.getClientId() != null) {
-      return bearerToken().thenApply(value -> Optional.of("Bearer " + value));
-    }
-    if (cfg.getUsername() != null) {
-      final var credentials = cfg.getUsername() + ":" + nullToEmpty(cfg.getPassword());
-      return CompletableFuture.completedFuture(
-          Optional.of(
-              "Basic "
-                  + Base64.getEncoder()
-                      .encodeToString(credentials.getBytes(StandardCharsets.UTF_8))));
-    }
-    return CompletableFuture.completedFuture(Optional.empty());
-  }
-
-  /** Runs on the actor, which alone reads and writes the cached token. */
-  private CompletableFuture<String> bearerToken() {
-    final var cached = token;
-    if (cached != null && Instant.now().isBefore(tokenExpiresAt)) {
-      return CompletableFuture.completedFuture(cached);
-    }
-    final var tokenUrl = cfg.getTokenUrl();
-    if (tokenUrl == null) {
-      return CompletableFuture.failedFuture(
-          new IllegalStateException("camunda.event-plane.token-url is not set"));
-    }
-    final var form =
-        new StringBuilder("grant_type=client_credentials")
-            .append("&client_id=")
-            .append(formValue(cfg.getClientId()))
-            .append("&client_secret=")
-            .append(formValue(cfg.getClientSecret()));
-    if (cfg.getAudience() != null) {
-      form.append("&audience=").append(formValue(cfg.getAudience()));
-    }
-    final var request =
-        HttpRequest.newBuilder()
-            .uri(tokenUrl)
-            .timeout(REQUEST_TIMEOUT)
-            .header("Content-Type", "application/x-www-form-urlencoded")
-            .POST(BodyPublishers.ofString(form.toString()))
-            .build();
-    final var requestedAt = Instant.now();
-    return http.sendAsync(request, BodyHandlers.ofString())
-        .thenApply(
-            response -> {
-              final var accessToken = accessToken(response);
-              final var expiresIn = expiresIn(response);
-              // The HTTP client's thread hands the token back; the actor caches it.
-              actor.run(
-                  () -> {
-                    token = accessToken;
-                    tokenExpiresAt = requestedAt.plus(expiresIn).minus(TOKEN_EXPIRY_BUFFER);
-                  });
-              return accessToken;
-            });
-  }
-
-  private static String accessToken(final HttpResponse<String> response) {
-    if (response.statusCode() != 200) {
-      throw new IllegalStateException(
-          "the token request failed with HTTP "
-              + response.statusCode()
-              + ": "
-              + truncated(response.body()));
-    }
-    try {
-      final var accessToken = JSON.readTree(response.body()).path("access_token");
-      if (!accessToken.isTextual()) {
-        throw new IllegalStateException("the token response has no access_token");
-      }
-      return accessToken.asText();
-    } catch (final IOException e) {
-      throw new IllegalStateException("the token response is not JSON", e);
-    }
-  }
-
-  private static Duration expiresIn(final HttpResponse<String> response) {
-    try {
-      return Duration.ofSeconds(JSON.readTree(response.body()).path("expires_in").asLong(60));
-    } catch (final IOException e) {
-      return Duration.ofSeconds(60);
-    }
-  }
-
   private static URI requireEndpoint(final EventPlaneCfg cfg) {
     final var endpoint = cfg.getEndpoint();
     if (endpoint == null) {
@@ -402,14 +311,6 @@ public final class EventPlaneRegistration extends Actor {
 
   private static String pathSegment(final String value) {
     return URLEncoder.encode(value, StandardCharsets.UTF_8).replace("+", "%20");
-  }
-
-  private static String formValue(final @Nullable String value) {
-    return URLEncoder.encode(nullToEmpty(value), StandardCharsets.UTF_8);
-  }
-
-  private static String nullToEmpty(final @Nullable String value) {
-    return value == null ? "" : value;
   }
 
   private static String truncated(final String body) {

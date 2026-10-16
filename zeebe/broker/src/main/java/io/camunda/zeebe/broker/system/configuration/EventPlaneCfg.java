@@ -24,6 +24,8 @@ public final class EventPlaneCfg {
   private @Nullable String clientSecret;
   private @Nullable URI tokenUrl;
   private @Nullable String audience;
+  private @Nullable String scope;
+  private @Nullable String resource;
 
   public @Nullable URI getEndpoint() {
     return endpoint;
@@ -84,6 +86,22 @@ public final class EventPlaneCfg {
     this.audience = audience;
   }
 
+  public @Nullable String getScope() {
+    return scope;
+  }
+
+  public void setScope(final @Nullable String scope) {
+    this.scope = scope;
+  }
+
+  public @Nullable String getResource() {
+    return resource;
+  }
+
+  public void setResource(final @Nullable String resource) {
+    this.resource = resource;
+  }
+
   @Override
   public String toString() {
     return "EventPlaneCfg{endpoint="
@@ -96,6 +114,10 @@ public final class EventPlaneCfg {
         + tokenUrl
         + ", audience="
         + audience
+        + ", scope="
+        + scope
+        + ", resource="
+        + resource
         + "}";
   }
 }

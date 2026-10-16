@@ -202,6 +202,8 @@ public class BrokerBasedPropertiesOverride {
     cfg.setClientSecret(eventPlane.getClientSecret());
     cfg.setTokenUrl(eventPlane.getTokenUrl());
     cfg.setAudience(eventPlane.getAudience());
+    cfg.setScope(eventPlane.getScope());
+    cfg.setResource(eventPlane.getResource());
   }
 
   private static void populateFromSecurity(

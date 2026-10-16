@@ -41,6 +41,15 @@ public class EventPlane {
   /** The audience the tokens are for, if the identity provider needs one. */
   private @Nullable String audience;
 
+  /**
+   * The scope to request, if the identity provider needs one, such as {@code
+   * api://event-plane/.default} for Microsoft Entra ID.
+   */
+  private @Nullable String scope;
+
+  /** The resource the tokens are for (RFC 8707), if the identity provider needs one. */
+  private @Nullable String resource;
+
   public @Nullable URI getEndpoint() {
     return endpoint;
   }
@@ -97,6 +106,22 @@ public class EventPlane {
     this.audience = audience;
   }
 
+  public @Nullable String getScope() {
+    return scope;
+  }
+
+  public void setScope(final @Nullable String scope) {
+    this.scope = scope;
+  }
+
+  public @Nullable String getResource() {
+    return resource;
+  }
+
+  public void setResource(final @Nullable String resource) {
+    this.resource = resource;
+  }
+
   @Override
   public String toString() {
     return "EventPlane{endpoint="
@@ -109,6 +134,10 @@ public class EventPlane {
         + tokenUrl
         + ", audience="
         + audience
+        + ", scope="
+        + scope
+        + ", resource="
+        + resource
         + "}";
   }
 }

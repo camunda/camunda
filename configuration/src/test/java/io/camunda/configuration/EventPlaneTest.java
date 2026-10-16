@@ -56,6 +56,8 @@ class EventPlaneTest {
         "camunda.event-plane.client-secret=my-secret",
         "camunda.event-plane.token-url=http://idp/token",
         "camunda.event-plane.audience=event-plane",
+        "camunda.event-plane.scope=api://event-plane/.default",
+        "camunda.event-plane.resource=https://event-plane.example.com",
       })
   class WithAllSet {
     final BrokerBasedProperties brokerCfg;
@@ -74,6 +76,8 @@ class EventPlaneTest {
       assertThat(eventPlane.getClientSecret()).isEqualTo("my-secret");
       assertThat(eventPlane.getTokenUrl()).isEqualTo(URI.create("http://idp/token"));
       assertThat(eventPlane.getAudience()).isEqualTo("event-plane");
+      assertThat(eventPlane.getScope()).isEqualTo("api://event-plane/.default");
+      assertThat(eventPlane.getResource()).isEqualTo("https://event-plane.example.com");
     }
 
     @Test

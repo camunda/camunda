@@ -374,6 +374,8 @@ event-plane.client-id
 event-plane.client-secret
 event-plane.endpoint
 event-plane.password
+event-plane.resource
+event-plane.scope
 event-plane.token-url
 event-plane.username
 expression.timeout
