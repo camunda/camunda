@@ -12,6 +12,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.instancio.Select.field;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import io.camunda.search.clients.FlowNodeInstanceSearchClient;
@@ -125,12 +127,67 @@ public final class ElementInstanceServiceTest {
                   entity.processDefinitionKey(),
                   "ProcessName",
                   entity.flowNodeId(),
-                  "cached name"));
+                  "cached name",
+                  1));
 
       final var searchQueryResult =
           services.search(FlowNodeInstanceQuery.of(q -> q), authentication);
 
       assertThat(searchQueryResult.items()).contains(entity.withFlowNodeName("cached name"));
+    }
+
+    @Test
+    void shouldNotLookUpCacheForElementInstanceWithoutProcessDefinitionKey() {
+      // given - element instances imported by Operate 8.1.7 and earlier have no definition key
+      final var legacy =
+          Instancio.of(FlowNodeInstanceEntity.class)
+              .set(field(FlowNodeInstanceEntity::flowNodeName), null)
+              .set(field(FlowNodeInstanceEntity::processDefinitionKey), null)
+              .create();
+      final var current =
+          Instancio.of(FlowNodeInstanceEntity.class)
+              .set(field(FlowNodeInstanceEntity::flowNodeName), null)
+              .create();
+      when(client.searchFlowNodeInstances(any())).thenReturn(SearchQueryResult.of(legacy, current));
+      when(processCache.getCacheItems(Set.of(current.processDefinitionKey())))
+          .thenReturn(
+              ProcessCacheResult.of(
+                  current.processDefinitionKey(),
+                  "ProcessName",
+                  current.flowNodeId(),
+                  "cached name",
+                  1));
+
+      // when
+      final var searchQueryResult =
+          services.search(FlowNodeInstanceQuery.of(q -> q), authentication);
+
+      // then
+      verify(processCache).getCacheItems(Set.of(current.processDefinitionKey()));
+      assertThat(searchQueryResult.items())
+          .containsExactly(
+              legacy.withFlowNodeName(legacy.flowNodeId()),
+              current.withFlowNodeName("cached name"));
+    }
+
+    @Test
+    void shouldReturnElementIdAsNameWhenNoElementInstanceHasProcessDefinitionKey() {
+      // given - a page of only element instances imported by Operate 8.1.7 and earlier
+      final var legacy =
+          Instancio.of(FlowNodeInstanceEntity.class)
+              .set(field(FlowNodeInstanceEntity::flowNodeName), null)
+              .set(field(FlowNodeInstanceEntity::processDefinitionKey), null)
+              .create();
+      when(client.searchFlowNodeInstances(any())).thenReturn(SearchQueryResult.of(legacy));
+
+      // when
+      final var searchQueryResult =
+          services.search(FlowNodeInstanceQuery.of(q -> q), authentication);
+
+      // then
+      assertThat(searchQueryResult.items())
+          .containsExactly(legacy.withFlowNodeName(legacy.flowNodeId()));
+      verifyNoInteractions(processCache);
     }
 
     @Test
@@ -198,7 +255,8 @@ public final class ElementInstanceServiceTest {
       when(client.getFlowNodeInstance(any(Long.class))).thenReturn(entity);
       when(processCache.getCacheItem(entity.processDefinitionKey()))
           .thenReturn(
-              new ProcessCacheItem("ProcessName", Map.of(entity.flowNodeId(), "cached name")));
+              new ProcessCacheItem(
+                  "ProcessName", Map.of(entity.flowNodeId(), "cached name"), null));
 
       // when
       final var foundEntity = services.getByKey(entity.flowNodeInstanceKey(), authentication);
@@ -217,13 +275,33 @@ public final class ElementInstanceServiceTest {
 
       when(client.getFlowNodeInstance(any(Long.class))).thenReturn(entity);
       when(processCache.getCacheItem(entity.processDefinitionKey()))
-          .thenReturn(new ProcessCacheItem("ProcessName", Map.of("unknown-id", "cached name")));
+          .thenReturn(
+              new ProcessCacheItem("ProcessName", Map.of("unknown-id", "cached name"), null));
 
       // when
       final var foundEntity = services.getByKey(entity.flowNodeInstanceKey(), authentication);
 
       // then
       assertThat(foundEntity.flowNodeName()).isEqualTo(entity.flowNodeId());
+    }
+
+    @Test
+    public void shouldReturnFlowNodeInstanceWithoutProcessDefinitionKey() {
+      // given - element instances imported by Operate 8.1.7 and earlier have no definition key
+      final var entity =
+          Instancio.of(FlowNodeInstanceEntity.class)
+              .set(field(FlowNodeInstanceEntity::flowNodeName), null)
+              .set(field(FlowNodeInstanceEntity::processDefinitionKey), null)
+              .create();
+
+      when(client.getFlowNodeInstance(any(Long.class))).thenReturn(entity);
+
+      // when
+      final var foundEntity = services.getByKey(entity.flowNodeInstanceKey(), authentication);
+
+      // then
+      assertThat(foundEntity.flowNodeName()).isEqualTo(entity.flowNodeId());
+      verifyNoInteractions(processCache);
     }
 
     @Nested
@@ -240,7 +318,8 @@ public final class ElementInstanceServiceTest {
 
         when(client.getFlowNodeInstance(any(Long.class))).thenReturn(elementInstance);
         when(processCache.getCacheItem(elementInstance.processDefinitionKey()))
-            .thenReturn(new ProcessCacheItem("ProcessName", Map.of("unknown-id", "cached name")));
+            .thenReturn(
+                new ProcessCacheItem("ProcessName", Map.of("unknown-id", "cached name"), null));
         final IncidentEntity incident =
             Instancio.of(IncidentEntity.class)
                 .set(field(IncidentEntity::flowNodeInstanceKey), elementInstanceKey)

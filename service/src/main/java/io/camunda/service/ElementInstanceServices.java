@@ -25,12 +25,14 @@ import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.core.auth.SecurityContext;
 import io.camunda.service.cache.ProcessCache;
 import io.camunda.service.cache.ProcessCacheItem;
+import io.camunda.service.cache.ProcessCacheResult;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerSetVariablesRequest;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableDocumentRecord;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
@@ -89,7 +91,10 @@ public final class ElementInstanceServices
                                 FlowNodeInstanceEntity::processDefinitionId)))
                     .getFlowNodeInstance(key));
 
-    final var cachedItem = processCache.getCacheItem(result.processDefinitionKey());
+    final var cachedItem =
+        result.processDefinitionKey() == null
+            ? ProcessCacheItem.EMPTY
+            : processCache.getCacheItem(result.processDefinitionKey());
     return toCacheEnrichedFlowNodeInstanceEntity(result, cachedItem);
   }
 
@@ -127,13 +132,17 @@ public final class ElementInstanceServices
         result.items().stream()
             .filter(u -> !u.hasFlowNodeName())
             .map(FlowNodeInstanceEntity::processDefinitionKey)
+            .filter(Objects::nonNull)
             .collect(Collectors.toSet());
 
-    if (processDefinitionKeys.isEmpty()) {
+    if (result.items().stream().allMatch(FlowNodeInstanceEntity::hasFlowNodeName)) {
       return result;
     }
 
-    final var cacheResult = processCache.getCacheItems(processDefinitionKeys);
+    final var cacheResult =
+        processDefinitionKeys.isEmpty()
+            ? ProcessCacheResult.EMPTY
+            : processCache.getCacheItems(processDefinitionKeys);
 
     return result.withItems(
         result.items().stream()

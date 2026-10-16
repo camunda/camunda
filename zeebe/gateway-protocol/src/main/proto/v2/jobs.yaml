@@ -956,13 +956,19 @@ components:
         listenerEventType:
           $ref: "#/components/schemas/JobListenerEventTypeEnum"
         processDefinitionId:
-          description: The process definition ID associated with the job.
+          description: |
+            The process definition ID associated with the job. This field is not present for
+            jobs imported by Operate 8.7 and earlier.
+          nullable: true
           allOf:
             - $ref: "identifiers.yaml#/components/schemas/ProcessDefinitionId"
         processDefinitionKey:
           allOf:
             - $ref: "keys.yaml#/components/schemas/ProcessDefinitionKey"
-          description: The process definition key associated with the job.
+          description: |
+            The process definition key associated with the job. This field is not present for
+            jobs imported by Operate 8.7 and earlier.
+          nullable: true
         processInstanceKey:
           allOf:
             - $ref: "keys.yaml#/components/schemas/ProcessInstanceKey"
