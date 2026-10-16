@@ -91,6 +91,9 @@ public final class BatchOperationCreationCreateProcessor
 
   @Override
   public void processNewCommand(final TypedRecord<BatchOperationCreationRecord> command) {
+    // Stamped before validation so a rejected CREATE carries the active storage ordinal too.
+    command.getValue().setStorageOrdinal(storageOrdinalProvider.getStorageOrdinal());
+
     if (isEmptyOrNullFilter(command)) {
       rejectionWriter.appendRejection(
           command, RejectionType.INVALID_ARGUMENT, MESSAGE_GIVEN_FILTER_IS_EMPTY);
@@ -131,7 +134,6 @@ public final class BatchOperationCreationCreateProcessor
     final var recordWithKey = new BatchOperationCreationRecord();
     recordWithKey.wrap(recordValue);
     recordWithKey.setBatchOperationKey(key);
-    recordWithKey.setStorageOrdinal(storageOrdinalProvider.getStorageOrdinal());
     // we remember the partition ids of the batch operation, so that we can count the number of
     // finished partitions in the end.
     recordWithKey.setPartitionIds(routingInfo.partitions());
