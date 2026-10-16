@@ -10,7 +10,9 @@ package io.camunda.zeebe.db.impl.rocksdb;
 import static java.util.Objects.requireNonNull;
 
 import io.camunda.zeebe.db.AccessMetricsConfiguration;
+import io.camunda.zeebe.db.CloseMode;
 import io.camunda.zeebe.db.ConsistencyChecksSettings;
+import io.camunda.zeebe.db.StorageCapabilities;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.ZeebeDbFactory;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDbResources.PerPartition;
@@ -83,11 +85,11 @@ public final class ZeebeRocksDbFactory<
 
   @Override
   public ZeebeTransactionDb<ColumnFamilyType> createDb(
-      final File pathName, final boolean avoidFlush) {
+      final File pathName, final CloseMode closeMode) {
     final List<AutoCloseable> closeables = Collections.synchronizedList(new ArrayList<>());
     try {
       return ZeebeTransactionDb.openTransactionalDb(
-          prepareOptions(closeables, avoidFlush),
+          prepareOptions(closeables, closeMode),
           pathName.getAbsolutePath(),
           closeables,
           rocksDbConfiguration,
@@ -102,13 +104,18 @@ public final class ZeebeRocksDbFactory<
 
   @Override
   public ZeebeTransactionDb<ColumnFamilyType> createDb(final File pathName) {
-    return createDb(pathName, true);
+    return createDb(pathName, CloseMode.FAST);
+  }
+
+  @Override
+  public StorageCapabilities capabilities() {
+    return new StorageCapabilities(true, true, true);
   }
 
   @Override
   public ZeebeDb<ColumnFamilyType> openSnapshotOnlyDb(final File pathName) {
     final List<AutoCloseable> managedResources = Collections.synchronizedList(new ArrayList<>());
-    final var options = prepareOptions(managedResources, true);
+    final var options = prepareOptions(managedResources, CloseMode.FAST);
     final var snapshotOnlyOptions =
         new Options(options.dbOptions(), options.cfOptions())
             // only open existing databases
@@ -128,11 +135,11 @@ public final class ZeebeRocksDbFactory<
   }
 
   private RocksDbOptions prepareOptions(
-      final List<AutoCloseable> managedResources, final boolean avoidFlush) {
+      final List<AutoCloseable> managedResources, final CloseMode closeMode) {
     // column family options have to be closed as last
     final var columnFamilyOptions = createColumnFamilyOptions(managedResources);
     managedResources.add(columnFamilyOptions);
-    final var dbOptions = createDefaultDbOptions(managedResources, avoidFlush);
+    final var dbOptions = createDefaultDbOptions(managedResources, closeMode);
     managedResources.add(dbOptions);
     // hands back a fresh Java wrapper around a new shared_ptr copy, so it has to be closed
     // independently of the statistics instance held by dbOptions. Null when statistics are off.
@@ -144,13 +151,14 @@ public final class ZeebeRocksDbFactory<
   }
 
   private DBOptions createDefaultDbOptions(
-      final List<AutoCloseable> closeables, final boolean avoidFlush) {
+      final List<AutoCloseable> closeables, final CloseMode closeMode) {
     final var props = new Properties();
     props.put("file_checksum_gen_factory", "FileChecksumGenCrc32cFactory");
     //    Enables full file checksum
 
     // No sense in flushing data that we will just discard anyway. We always recover from snapshot.
-    props.setProperty("avoid_flush_during_shutdown", avoidFlush ? "true" : "false");
+    props.setProperty(
+        "avoid_flush_during_shutdown", closeMode == CloseMode.FAST ? "true" : "false");
 
     final var dbOptions =
         DBOptions.getDBOptionsFromProps(props)

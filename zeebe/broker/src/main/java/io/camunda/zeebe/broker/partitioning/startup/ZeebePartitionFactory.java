@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.broker.partitioning.startup;
 
+import static java.util.Objects.requireNonNull;
+
 import io.atomix.cluster.BrokerMemberId;
 import io.atomix.raft.partition.RaftPartition;
 import io.camunda.cluster.PartitionId;
@@ -56,6 +58,7 @@ import io.camunda.zeebe.broker.system.partitions.impl.steps.ZeebeDbPartitionTran
 import io.camunda.zeebe.broker.transport.commandapi.CommandApiService;
 import io.camunda.zeebe.broker.transport.commandapi.CommandApiServiceTransitionStep;
 import io.camunda.zeebe.db.AccessMetricsConfiguration;
+import io.camunda.zeebe.db.StorageCapabilities;
 import io.camunda.zeebe.db.ZeebeDbFactory;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDBSnapshotCopy;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDbResources;
@@ -215,17 +218,25 @@ public final class ZeebePartitionFactory {
     context.setClusterConfigurationService(clusterConfigurationService);
 
     final PartitionTransition newTransitionBehavior =
-        new PartitionTransitionImpl(generateTransitionSteps());
+        new PartitionTransitionImpl(
+            generateTransitionSteps(
+                requireNonNull(
+                    zeebeFactory.capabilities(),
+                    () ->
+                        zeebeFactory.getClass().getName()
+                            + " must declare its StorageCapabilities, but capabilities() returned"
+                            + " null")));
 
     return new ZeebePartition(context, newTransitionBehavior, STARTUP_STEPS);
   }
 
-  private List<PartitionTransitionStep> generateTransitionSteps() {
+  private List<PartitionTransitionStep> generateTransitionSteps(
+      final StorageCapabilities storageCapabilities) {
     return List.of(
         new MetricsStep(),
         new LogStoragePartitionTransitionStep(),
         new LogStreamPartitionTransitionStep(),
-        new ZeebeDbPartitionTransitionStep(),
+        new ZeebeDbPartitionTransitionStep(storageCapabilities),
         new MigrationTransitionStep(),
         new QueryServicePartitionTransitionStep(),
         new BackupStoreTransitionStep(),
@@ -233,9 +244,9 @@ public final class ZeebePartitionFactory {
         new InterPartitionCommandServiceStep(),
         new StreamProcessorTransitionStep(),
         new CommandApiServiceTransitionStep(),
-        new SnapshotDirectorPartitionTransitionStep(),
+        new SnapshotDirectorPartitionTransitionStep(storageCapabilities),
         new SnapshotAfterMigrationTransitionStep(),
-        new SnapshotApiHandlerTransitionStep(),
+        new SnapshotApiHandlerTransitionStep(storageCapabilities),
         new ExporterDirectorPartitionTransitionStep(),
         new BackupApiRequestHandlerStep(),
         new AdminApiRequestHandlerStep());

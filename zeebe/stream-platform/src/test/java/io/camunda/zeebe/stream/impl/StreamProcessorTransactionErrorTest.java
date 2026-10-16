@@ -11,9 +11,11 @@ import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ACTI
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.spy;
 
+import io.camunda.zeebe.db.CloseMode;
 import io.camunda.zeebe.db.ColumnFamily;
 import io.camunda.zeebe.db.DbKey;
 import io.camunda.zeebe.db.DbValue;
+import io.camunda.zeebe.db.StorageCapabilities;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.TransactionOperation;
 import io.camunda.zeebe.db.ZeebeDb;
@@ -25,7 +27,6 @@ import io.camunda.zeebe.stream.util.RecordToWrite;
 import io.camunda.zeebe.stream.util.Records;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.io.File;
-import java.util.Optional;
 import org.assertj.core.api.Assertions;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
@@ -99,8 +100,8 @@ final class StreamProcessorTransactionErrorTest {
     }
 
     @Override
-    public ZeebeDb<ZbColumnFamilies> createDb(final File pathName, final boolean avoidFlush) {
-      return new ErrorProneZeebeDb(delegate.createDb(pathName), commitException);
+    public ZeebeDb<ZbColumnFamilies> createDb(final File pathName, final CloseMode closeMode) {
+      return new ErrorProneZeebeDb(delegate.createDb(pathName, closeMode), commitException);
     }
 
     @Override
@@ -111,6 +112,11 @@ final class StreamProcessorTransactionErrorTest {
     @Override
     public ZeebeDb<ZbColumnFamilies> openSnapshotOnlyDb(final File path) {
       return delegate.openSnapshotOnlyDb(path);
+    }
+
+    @Override
+    public StorageCapabilities capabilities() {
+      return delegate.capabilities();
     }
   }
 
@@ -138,11 +144,6 @@ final class StreamProcessorTransactionErrorTest {
     @Override
     public void createSnapshot(final File snapshotDir) {
       delegate.createSnapshot(snapshotDir);
-    }
-
-    @Override
-    public Optional<String> getProperty(final String propertyName) {
-      return delegate.getProperty(propertyName);
     }
 
     @Override

@@ -60,6 +60,16 @@ public class StateControllerImpl implements StateController {
     this.constructableSnapshotStore = requireNonNull(constructableSnapshotStore);
     this.runtimeDirectory = requireNonNull(runtimeDirectory);
     this.zeebeDbFactory = requireNonNull(zeebeDbFactory);
+    // snapshots are taken and recovered as directories, and the runtime directory is deleted and
+    // rebuilt from the latest snapshot on every recovery
+    final var capabilities =
+        requireNonNull(
+            zeebeDbFactory.capabilities(),
+            () ->
+                zeebeDbFactory.getClass().getName()
+                    + " must declare its StorageCapabilities, but capabilities() returned null");
+    capabilities.requireFileSnapshots("StateControllerImpl");
+    capabilities.requireEphemeralRuntime("StateControllerImpl");
     this.entrySupplier = requireNonNull(entrySupplier);
     this.positionSupplierFactory = requireNonNull(positionSupplierFactory);
     this.concurrencyControl = requireNonNull(concurrencyControl);

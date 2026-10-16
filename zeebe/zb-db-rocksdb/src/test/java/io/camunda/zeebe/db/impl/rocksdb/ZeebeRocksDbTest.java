@@ -9,6 +9,7 @@ package io.camunda.zeebe.db.impl.rocksdb;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.zeebe.db.CloseMode;
 import io.camunda.zeebe.db.ColumnFamily;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.ZeebeDbFactory;
@@ -56,7 +57,7 @@ final class ZeebeRocksDbTest {
   void shouldReopenDb(final @TempDir File pathName) throws Exception {
     // given
     final ZeebeDbFactory<DefaultColumnFamily> dbFactory = DefaultZeebeDbFactory.getDefaultFactory();
-    ZeebeDb<DefaultColumnFamily> db = dbFactory.createDb(pathName, false);
+    ZeebeDb<DefaultColumnFamily> db = dbFactory.createDb(pathName, CloseMode.FLUSH);
 
     final DbString key = new DbString();
     key.wrapString("foo");

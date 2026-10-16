@@ -11,6 +11,7 @@ import io.atomix.raft.RaftServer.Role;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionContext;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionStep;
 import io.camunda.zeebe.broker.transport.snapshotapi.SnapshotApiRequestHandler;
+import io.camunda.zeebe.db.StorageCapabilities;
 import io.camunda.zeebe.protocol.ColumnFamilyScope;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
@@ -23,6 +24,12 @@ import java.util.Set;
  * across partition groups (physical tenants) that share the same partition numbers.
  */
 public class SnapshotApiHandlerTransitionStep implements PartitionTransitionStep {
+
+  public SnapshotApiHandlerTransitionStep(final StorageCapabilities capabilities) {
+    // transfers serve persisted directory snapshots, scoped by copying them with SnapshotCopy
+    capabilities.requireFileSnapshots("SnapshotApiHandlerTransitionStep");
+    capabilities.requireScopedCopy("SnapshotApiHandlerTransitionStep");
+  }
 
   @Override
   public ActorFuture<Void> prepareTransition(

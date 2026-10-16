@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.db.impl.rocksdb;
 
+import io.camunda.zeebe.db.CloseMode;
 import io.camunda.zeebe.db.SnapshotCopy;
 import io.camunda.zeebe.protocol.ColumnFamilyScope;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
@@ -26,7 +27,7 @@ public class RocksDBSnapshotCopy implements SnapshotCopy {
       final Path fromPath, final Path toPath, final Set<ColumnFamilyScope> scopes) {
     try (final var fromDB =
             (SnapshotOnlyDb<ZbColumnFamilies>) factory.openSnapshotOnlyDb(fromPath.toFile());
-        final var toDB = factory.createDb(toPath.toFile(), false)) {
+        final var toDB = factory.createDb(toPath.toFile(), CloseMode.FLUSH)) {
       fromDB.copySnapshot(toDB, scopes);
     }
   }

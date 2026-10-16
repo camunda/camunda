@@ -13,7 +13,9 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.zeebe.db.AccessMetricsConfiguration;
 import io.camunda.zeebe.db.AccessMetricsConfiguration.Kind;
+import io.camunda.zeebe.db.CloseMode;
 import io.camunda.zeebe.db.ConsistencyChecksSettings;
+import io.camunda.zeebe.db.StorageCapabilities;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.TransactionOperation;
 import io.camunda.zeebe.db.ZeebeDb;
@@ -57,6 +59,18 @@ final class ZeebeRocksDbFactoryTest {
   @AfterEach
   void tearDown() {
     CloseHelper.closeAll(closeable);
+  }
+
+  @Test
+  void shouldDeclareFullLocalSnapshotCapabilities() {
+    // given
+    final ZeebeDbFactory<DefaultColumnFamily> dbFactory = DefaultZeebeDbFactory.getDefaultFactory();
+
+    // when
+    final var capabilities = dbFactory.capabilities();
+
+    // then
+    assertThat(capabilities).isEqualTo(new StorageCapabilities(true, true, true));
   }
 
   @Test
@@ -307,7 +321,7 @@ final class ZeebeRocksDbFactoryTest {
     key.wrapString("foo");
     value.wrapString("bar");
 
-    try (final var db = factory.createDb(path, false)) {
+    try (final var db = factory.createDb(path, CloseMode.FLUSH)) {
       final var column =
           db.createColumnFamily(
               DefaultColumnFamily.DEFAULT, db.createContext(), new DbString(), new DbString());
@@ -420,8 +434,8 @@ final class ZeebeRocksDbFactoryTest {
                     new DbByte(),
                     new DbByte())),
         Named.of(
-            "isEmpty", db -> db.isEmpty(DefaultColumnFamily.DEFAULT, new NoOpTransactionContext())),
-        Named.of("getProperty", db -> db.getProperty("foo")));
+            "isEmpty",
+            db -> db.isEmpty(DefaultColumnFamily.DEFAULT, new NoOpTransactionContext())));
   }
 
   private static final class NoOpTransactionContext implements TransactionContext {
