@@ -117,6 +117,7 @@
     <version.micrometer>1.17.1</version.micrometer>
     <version.rocksdbjni>10.10.1.1</version.rocksdbjni>
     <version.sbe>1.40.2</version.sbe>
+    <version.sqlite-jdbc>3.50.3.0</version.sqlite-jdbc>
     <version.scala>3.10.0</version.scala>
     <version.slf4j>2.0.20</version.slf4j>
     <version.snakeyaml>2.7</version.snakeyaml>
@@ -462,6 +463,12 @@
       <dependency>
         <groupId>io.camunda</groupId>
         <artifactId>zeebe-db-rocksdb</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.camunda</groupId>
+        <artifactId>zeebe-db-sqlite</artifactId>
         <version>${project.version}</version>
       </dependency>
 
@@ -1506,6 +1513,12 @@
         <groupId>org.rocksdb</groupId>
         <artifactId>rocksdbjni</artifactId>
         <version>${version.rocksdbjni}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.xerial</groupId>
+        <artifactId>sqlite-jdbc</artifactId>
+        <version>${version.sqlite-jdbc}</version>
       </dependency>
 
       <dependency>
