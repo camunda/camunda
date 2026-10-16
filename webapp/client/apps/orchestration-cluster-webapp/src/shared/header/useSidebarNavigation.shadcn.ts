@@ -307,4 +307,4 @@ function useSidebarNavigation(currentUser: CurrentUser): SidebarNavigation {
 	};
 }
 
-export {useSidebarNavigation};
+export {ADMIN_NAV_ITEMS, useSidebarNavigation};

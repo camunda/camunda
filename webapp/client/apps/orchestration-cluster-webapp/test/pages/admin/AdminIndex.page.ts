@@ -21,10 +21,6 @@ class AdminIndexPage extends BasePage {
 		return this.page.getByRole('link', {name: 'Camunda logo'});
 	}
 
-	get heading() {
-		return this.page.getByRole('heading', {name: 'Admin'});
-	}
-
 	navItem(name: string) {
 		return this.page.getByRole('link', {name, exact: true});
 	}
