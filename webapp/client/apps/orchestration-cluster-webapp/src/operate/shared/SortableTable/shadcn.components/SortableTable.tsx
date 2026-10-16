@@ -154,20 +154,25 @@ type BatchAction = {
 
 type Props<TRow> = BaseProps<TRow> & ({selectionType?: undefined} | SelectionProps);
 
-const FILL_HEIGHT_WHEN_EMPTY_CLASSES = [
-	'[&>div]:h-full [&_[data-slot=data-table]]:h-full [&_[data-slot=data-table]>div]:h-full',
-	'[&_[data-slot=table-container]]:h-full [&_[data-slot=table]]:h-full [&_[data-slot=table-header]_tr]:h-10',
-].join(' ');
-
-const SELECTION_SKELETON_CLASSES =
-	'[&_[data-slot=data-table-skeleton-row]_td:first-child>div]:w-4 [&_[data-slot=data-table-skeleton-row]_td:first-child>div]:rounded-sm';
-
-// The DS highlights `data-state=selected` rows with `--accent-background-subtle`. Selection here lives
-// outside the DS table, so the same token is applied to rows whose checkbox is checked.
-const SELECTED_ROW_CLASSES = '[&_tbody_tr:has([aria-checked=true])]:bg-[var(--accent-background-subtle)]';
-
-// The DS selection column renders a checkbox in every row, including the loading skeleton row
-const SKELETON_ROW_CHECKBOX_CLASSES = '[&_tr:has([data-skeleton-edge])_[role=checkbox]]:hidden';
+// Overrides that depend on DS DataTable internals (`data-slot` hooks). Remove once the DS exposes props.
+function getDataTableOverrides({isEmpty, hasSelectionColumn}: {isEmpty: boolean; hasSelectionColumn: boolean}) {
+	return cn(
+		// data-table, data-table > div, table-container, table: stretch the empty state to the panel height;
+		// table-header tr: keep the header row at 40px while stretched
+		isEmpty &&
+			'[&>div]:h-full [&_[data-slot=data-table]]:h-full [&_[data-slot=data-table]>div]:h-full [&_[data-slot=table-container]]:h-full [&_[data-slot=table]]:h-full [&_[data-slot=table-header]_tr]:h-10',
+		hasSelectionColumn &&
+			cn(
+				// data-table-skeleton-row: the DS draws the same wide bar in every column, including the checkbox one
+				'[&_[data-slot=data-table-skeleton-row]_td:first-child>div]:w-4 [&_[data-slot=data-table-skeleton-row]_td:first-child>div]:rounded-sm',
+				// tbody tr: selection lives outside the DS table, so rows with a checked checkbox get the token the DS
+				// uses for `data-state=selected`
+				'[&_tbody_tr:has([aria-checked=true])]:bg-[var(--accent-background-subtle)]',
+				// skeleton row: the DS selection column renders a checkbox in every row, including loading skeletons
+				'[&_tr:has([data-skeleton-edge])_[role=checkbox]]:hidden',
+			),
+	);
+}
 
 const DS_TABLE_SIZE: Record<TableSize, 'sm' | 'md' | 'lg'> = {
 	xs: 'sm',
@@ -796,11 +801,7 @@ function SortableTable<TRow>(props: Props<TRow>) {
 				// overshooting the scroll position. Disable it so our compensation is authoritative.
 				className={cn(
 					hasScrollHandlers && 'h-full overflow-y-auto [overflow-anchor:none]',
-					rows.length === 0 && FILL_HEIGHT_WHEN_EMPTY_CLASSES,
-					// The DS skeleton rows draw the same wide bar in every column, including the checkbox one
-					hasSelectionColumn && SELECTION_SKELETON_CLASSES,
-					hasSelectionColumn && SELECTED_ROW_CLASSES,
-					hasSelectionColumn && SKELETON_ROW_CHECKBOX_CLASSES,
+					getDataTableOverrides({isEmpty: rows.length === 0, hasSelectionColumn}),
 				)}
 				data-testid={dataTestId}
 			>
