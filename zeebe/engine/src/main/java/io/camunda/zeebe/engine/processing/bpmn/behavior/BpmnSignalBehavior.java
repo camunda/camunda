@@ -18,8 +18,11 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWr
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.VariableState;
 import io.camunda.zeebe.msgpack.value.DocumentValue;
+import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
+import io.camunda.zeebe.protocol.impl.encoding.AuthInfo.AuthDataFormat;
 import io.camunda.zeebe.protocol.impl.record.value.signal.SignalRecord;
 import io.camunda.zeebe.protocol.record.intent.SignalIntent;
+import io.camunda.zeebe.stream.api.FollowUpCommandMetadata;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.Either;
 import org.agrona.DirectBuffer;
@@ -80,6 +83,14 @@ public final class BpmnSignalBehavior {
     signalRecord.setSignalName(signalName).setVariables(variables).setTenantId(tenantId);
 
     final var key = keyGenerator.nextKey();
-    commandWriter.appendFollowUpCommand(key, SignalIntent.BROADCAST, signalRecord);
+    // A batch operation reference is propagated to every follow-up command, which would make this
+    // command look like a user command. The signal is a side effect of process execution, so mark
+    // it as pre-authorized to skip the user authorization check.
+    final var authInfo = new AuthInfo().setFormat(AuthDataFormat.PRE_AUTHORIZED);
+    commandWriter.appendFollowUpCommand(
+        key,
+        SignalIntent.BROADCAST,
+        signalRecord,
+        FollowUpCommandMetadata.of(b -> b.authInfo(authInfo)));
   }
 }
