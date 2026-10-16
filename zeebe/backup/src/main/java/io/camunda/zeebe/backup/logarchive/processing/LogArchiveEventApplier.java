@@ -106,7 +106,7 @@ final class LogArchiveEventApplier {
       meta.setArchivedPosition(Math.max(meta.getArchivedPosition(), object.getLastPosition()));
     }
 
-    final var covered = collectCoveredCheckpoints(meta);
+    final var covered = collectCoveredCheckpoints(meta, objects);
     final var attached = attach(objects, covered);
     for (int i = 0; i < objects.size(); i++) {
       state.insertOpenObject(objects.get(i), attached.get(i));
@@ -121,10 +121,13 @@ final class LogArchiveEventApplier {
 
   /**
    * Walks the checkpoints in id order past the last covered one, up to F. Checkpoints before the
-   * first archived position are skipped; either way the walk moves on past them. Advances {@code
-   * lastCoveredCheckpointId} in the given meta.
+   * first archived position, or whose position lies in none of this event's objects (they became
+   * visible only after their objects were archived), are skipped; either way the walk moves on past
+   * them. This keeps every listed checkpoint inside the position range of the chunk listing it.
+   * Advances {@code lastCoveredCheckpointId} in the given meta.
    */
-  private List<CoveredCheckpoint> collectCoveredCheckpoints(final LogArchiveMeta meta) {
+  private List<CoveredCheckpoint> collectCoveredCheckpoints(
+      final LogArchiveMeta meta, final List<LogObjectValue> objects) {
     final var covered = new ArrayList<CoveredCheckpoint>();
     final long archivedPosition = meta.getArchivedPosition();
     final long firstArchivedPosition = meta.getFirstArchivedPosition();
@@ -137,7 +140,8 @@ final class LogArchiveEventApplier {
             return false;
           }
           lastCovered[0] = checkpoint.checkpointId();
-          if (checkpoint.checkpointPosition() >= firstArchivedPosition) {
+          if (checkpoint.checkpointPosition() >= firstArchivedPosition
+              && isWithinAnObject(objects, checkpoint.checkpointPosition())) {
             covered.add(
                 new CoveredCheckpoint()
                     .setCheckpointId(checkpoint.checkpointId())
@@ -149,6 +153,15 @@ final class LogArchiveEventApplier {
 
     meta.setLastCoveredCheckpointId(lastCovered[0]);
     return covered;
+  }
+
+  private static boolean isWithinAnObject(final List<LogObjectValue> objects, final long position) {
+    return objects.stream()
+        .anyMatch(
+            object ->
+                object.getFirstPosition() >= 0
+                    && object.getFirstPosition() <= position
+                    && position <= object.getLastPosition());
   }
 
   /**

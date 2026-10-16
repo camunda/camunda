@@ -18,6 +18,7 @@ import static io.camunda.zeebe.backup.logarchive.processing.LogArchiveHarness.st
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.backup.logarchive.model.CommitEntry;
+import io.camunda.zeebe.backup.logarchive.model.IndexChunkFile;
 import io.camunda.zeebe.backup.logarchive.model.LogArchiveJson;
 import io.camunda.zeebe.backup.logarchive.model.LogArchiveKeys;
 import io.camunda.zeebe.backup.logarchive.model.RootFile;
@@ -25,7 +26,10 @@ import io.camunda.zeebe.protocol.impl.record.value.management.LogArchiveRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.management.LogArchiveIntent;
 import java.nio.file.Path;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
+import java.util.HexFormat;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -580,6 +584,49 @@ final class LogArchiveRecordsProcessorTest {
   }
 
   @Test
+  void shouldListInChunkExactlyTheCheckpointsInItsRangeAndMatchIdsAndSha() {
+    // given: 10 and 20 lie in the objects, 5 is before the first archived position
+    harness.checkpoints.addMarkerCheckpoint(5, 1, 0);
+    harness.accept(LogArchiveIntent.START_TIMELINE, startTimeline(TIMELINE, 1));
+    harness.accept(LogArchiveIntent.ARCHIVE_LOG, archiveLog(object(1, 1, 11, 11)));
+    harness.checkpoints.addMarkerCheckpoint(10, 12, 0);
+    harness.checkpoints.addMarkerCheckpoint(20, 31, 0);
+    harness.accept(
+        LogArchiveIntent.ARCHIVE_LOG, archiveLog(object(2, 2, 12, 13), object(3, 3, 30, 32)));
+
+    // when
+    final var seal = harness.published.getLast().seal();
+
+    // then
+    final var file = LogArchiveJson.read(seal.chunkJson(), IndexChunkFile.class);
+    assertThat(file.checkpoints()).extracting("checkpointId").containsExactly(10L, 20L);
+    assertThat(file.checkpoints())
+        .allSatisfy(
+            checkpoint ->
+                assertThat(checkpoint.checkpointPosition())
+                    .isBetween(seal.chunk().getFirstPosition(), seal.chunk().getLastPosition()));
+    assertThat(seal.chunk().getFirstCheckpointId()).isEqualTo(10);
+    assertThat(seal.chunk().getLastCheckpointId()).isEqualTo(20);
+    assertThat(seal.chunk().getSha256()).isEqualTo(sha256Hex(seal.chunkJson()));
+  }
+
+  @Test
+  void shouldSkipCheckpointsBecomingVisibleAfterTheirObjectsWereArchived() {
+    // given
+    harness.accept(LogArchiveIntent.START_TIMELINE, startTimeline(TIMELINE, 1));
+    harness.accept(LogArchiveIntent.ARCHIVE_LOG, archiveLog(object(1, 5, 10, 20)));
+    harness.checkpoints.addMarkerCheckpoint(8, 15, 0);
+
+    // when
+    final var event =
+        harness.accept(LogArchiveIntent.ARCHIVE_LOG, archiveLog(object(6, 9, 21, 30)));
+
+    // then
+    assertThat(event.getCheckpoints()).isEmpty();
+    assertThat(harness.state().meta().getLastCoveredCheckpointId()).isEqualTo(8);
+  }
+
+  @Test
   void shouldRejectSealIndexWithWrongChunkNo() {
     // given
     fillOpenChunk();
@@ -988,6 +1035,14 @@ final class LogArchiveRecordsProcessorTest {
     replica.checkpoints.addMarkerCheckpoint(10, 5, 0);
     replica.checkpoints.addMarkerCheckpoint(20, 15, 0);
     replica.checkpoints.addMarkerCheckpoint(30, 25, 0);
+  }
+
+  private static String sha256Hex(final byte[] content) {
+    try {
+      return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(content));
+    } catch (final NoSuchAlgorithmException e) {
+      throw new AssertionError(e);
+    }
   }
 
   private SealRequest firstSealRequest() {
