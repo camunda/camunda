@@ -63,7 +63,17 @@ public final class SqliteDbFactory<
     return SqliteSnapshotOnlyDb.open(path.toPath());
   }
 
-  /** Same as RocksDB, so that wiring which depends on the capabilities is unaffected. */
+  /**
+   * Every flag is true, and each is backed by an implementation:
+   *
+   * <ul>
+   *   <li>{@code fileSnapshots}: {@link SqliteDb#createSnapshot} takes a {@code VACUUM INTO}
+   *       snapshot and {@link #openSnapshotOnlyDb} opens it
+   *   <li>{@code ephemeralRuntime}: the runtime directory is recovered from the latest snapshot on
+   *       every start, nothing in it is the only copy of state
+   *   <li>{@code scopedCopy}: {@link SqliteSnapshotCopy} copies the column families of a scope
+   * </ul>
+   */
   @Override
   public StorageCapabilities capabilities() {
     return new StorageCapabilities(true, true, true);
