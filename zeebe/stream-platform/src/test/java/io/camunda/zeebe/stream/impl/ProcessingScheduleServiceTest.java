@@ -25,7 +25,7 @@ import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.testing.ControlledActorSchedulerExtension;
 import io.camunda.zeebe.stream.api.scheduling.ProcessingScheduleService;
 import io.camunda.zeebe.stream.api.scheduling.ScheduledCommandCache.NoopScheduledCommandCache;
-import io.camunda.zeebe.stream.api.scheduling.SimpleProcessingScheduleService;
+import io.camunda.zeebe.stream.api.scheduling.SimpleProcessingScheduleService.ScheduledTask;
 import io.camunda.zeebe.stream.api.scheduling.Task;
 import io.camunda.zeebe.stream.api.scheduling.TaskResult;
 import io.camunda.zeebe.stream.api.scheduling.TaskResultBuilder;
@@ -508,8 +508,7 @@ class ProcessingScheduleServiceTest {
    * <p>Note: This is an actor scheduler limitation, since the used way how we schedule timers are
    * not thread safe, so this need to happen on the same thread, meaning on the same actor.
    */
-  private static final class TestScheduleServiceActorDecorator extends Actor
-      implements SimpleProcessingScheduleService {
+  private static final class TestScheduleServiceActorDecorator extends Actor {
     private final ProcessingScheduleServiceImpl processingScheduleService;
 
     public TestScheduleServiceActorDecorator(
@@ -529,7 +528,6 @@ class ProcessingScheduleServiceTest {
           });
     }
 
-    @Override
     public ScheduledTask runDelayed(final Duration delay, final Runnable task) {
       final var futureScheduledTask =
           actor.call(() -> processingScheduleService.runDelayed(delay, task));
@@ -545,7 +543,6 @@ class ProcessingScheduleServiceTest {
                       }));
     }
 
-    @Override
     public ScheduledTask runDelayed(final Duration delay, final Task task) {
       final var futureScheduledTask =
           actor.call(() -> processingScheduleService.runDelayed(delay, task));
@@ -561,7 +558,6 @@ class ProcessingScheduleServiceTest {
                       }));
     }
 
-    @Override
     public ScheduledTask runAt(final long timestamp, final Task task) {
       final var futureScheduledTask =
           actor.call(() -> processingScheduleService.runAt(timestamp, task));
@@ -577,7 +573,6 @@ class ProcessingScheduleServiceTest {
                       }));
     }
 
-    @Override
     public ScheduledTask runAt(final long timestamp, final Runnable task) {
       final var futureScheduledTask =
           actor.call(() -> processingScheduleService.runAt(timestamp, task));
@@ -593,7 +588,6 @@ class ProcessingScheduleServiceTest {
                       }));
     }
 
-    @Override
     public void runAtFixedRate(final Duration delay, final Task task) {
       actor.submit(() -> processingScheduleService.runAtFixedRate(delay, task));
     }
