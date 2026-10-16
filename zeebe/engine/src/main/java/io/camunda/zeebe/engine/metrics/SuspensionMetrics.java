@@ -22,6 +22,12 @@ import java.util.HashMap;
 import java.util.concurrent.TimeUnit;
 
 public final class SuspensionMetrics implements StreamProcessorLifecycleAware {
+  /**
+   * Upper bound of in-flight suspend and resume measurements each. When full, new measurements are
+   * dropped, so the running ones still complete and get recorded; losing some data points is fine.
+   */
+  static final int MAX_IN_FLIGHT_DURATIONS = 1000;
+
   private final MeterRegistry registry;
 
   private final Counter suspendedCounter;
@@ -111,7 +117,9 @@ public final class SuspensionMetrics implements StreamProcessorLifecycleAware {
   }
 
   public void jobsSuspended(final int count) {
-    jobSuspendedCounter.increment(count);
+    if (count > 0) {
+      jobSuspendedCounter.increment(count);
+    }
   }
 
   public void jobResumed() {
@@ -143,8 +151,8 @@ public final class SuspensionMetrics implements StreamProcessorLifecycleAware {
    * command was processed. Taking it before processing includes the command's own work in the
    * duration, while a command that is rejected or fails never starts a measurement.
    */
-  public long suspendStartTime() {
-    return registry.config().clock().monotonicTime();
+  public long takeSuspendStartTime() {
+    return now();
   }
 
   /**
@@ -152,26 +160,23 @@ public final class SuspensionMetrics implements StreamProcessorLifecycleAware {
    * already running measurement is kept, so a restarted suspension is timed from its first start.
    */
   public void startSuspendDuration(final long processInstanceKey, final long startTime) {
+    if (suspendStartTimes.size() >= MAX_IN_FLIGHT_DURATIONS) {
+      return;
+    }
     suspendStartTimes.putIfAbsent(processInstanceKey, startTime);
   }
 
   public void stopSuspendDuration(final long processInstanceKey) {
     final Long startTime = suspendStartTimes.remove(processInstanceKey);
     if (startTime != null) {
-      suspendDurationTimer.record(suspendStartTime() - startTime, TimeUnit.NANOSECONDS);
+      suspendDurationTimer.record(now() - startTime, TimeUnit.NANOSECONDS);
     }
   }
 
-  /**
-   * Discards the in-flight suspend-duration measurement for the given key without recording it.
-   * Called when a suspending instance terminates or completes before the suspension finishes, so
-   * the entry does not leak.
-   */
-  public void cancelSuspendDuration(final long processInstanceKey) {
-    suspendStartTimes.remove(processInstanceKey);
-  }
-
   public void startResumeDuration(final long processInstanceKey) {
+    if (resumeDurationSamples.size() >= MAX_IN_FLIGHT_DURATIONS) {
+      return;
+    }
     resumeDurationSamples.computeIfAbsent(
         processInstanceKey,
         key -> Timer.resource(registry, SuspensionMetricsDoc.RESUME_DURATION.getName()));
@@ -185,10 +190,12 @@ public final class SuspensionMetrics implements StreamProcessorLifecycleAware {
   }
 
   /**
-   * Discards the in-flight resume-duration sample for the given key without recording it. Called
-   * when a resuming instance terminates before the resume completes, so the sample does not leak.
+   * Discards the in-flight suspend and resume measurements for the given key without recording
+   * them. Called when an instance completes or terminates before its suspension or resume finishes,
+   * so the entries do not leak.
    */
-  public void cancelResumeDuration(final long processInstanceKey) {
+  public void discardDurations(final long processInstanceKey) {
+    suspendStartTimes.remove(processInstanceKey);
     resumeDurationSamples.remove(processInstanceKey);
   }
 
@@ -196,6 +203,10 @@ public final class SuspensionMetrics implements StreamProcessorLifecycleAware {
   public void onRecovered(final ReadonlyStreamProcessorContext context) {
     resumeDurationSamples.clear();
     suspendStartTimes.clear();
+  }
+
+  private long now() {
+    return registry.config().clock().monotonicTime();
   }
 
   private static Counter registerCounter(

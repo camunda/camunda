@@ -113,8 +113,7 @@ public final class ProcessProcessor implements BpmnElementContainerProcessor<Exe
     // lifecycle-ending rejection) without ever reaching the normal resume finish line; discard the
     // sample so it doesn't stay in the map forever. The same goes for a SUSPENDING instance whose
     // walk never reached SUSPENDED.
-    suspensionMetrics.cancelResumeDuration(context.getElementInstanceKey());
-    suspensionMetrics.cancelSuspendDuration(context.getElementInstanceKey());
+    suspensionMetrics.discardDurations(context.getElementInstanceKey());
     return result;
   }
 
@@ -155,8 +154,7 @@ public final class ProcessProcessor implements BpmnElementContainerProcessor<Exe
     if (droppedCommands > 0) {
       suspensionMetrics.commandsDropped(droppedCommands);
     }
-    suspensionMetrics.cancelResumeDuration(piKey);
-    suspensionMetrics.cancelSuspendDuration(piKey);
+    suspensionMetrics.discardDurations(piKey);
   }
 
   private AsyncRequest getAsyncRequest(final BpmnElementContext context) {

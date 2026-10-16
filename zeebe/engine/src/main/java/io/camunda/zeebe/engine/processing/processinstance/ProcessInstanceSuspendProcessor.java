@@ -104,7 +104,7 @@ public final class ProcessInstanceSuspendProcessor
       return;
     }
 
-    final long suspendStartTime = suspensionMetrics.suspendStartTime();
+    final long suspendStartTime = suspensionMetrics.takeSuspendStartTime();
 
     final ProcessInstanceRecord value = processInstance.getValue();
     // restarting a SUSPENDING instance skips the event (the marker is already there) and runs the
@@ -120,9 +120,7 @@ public final class ProcessInstanceSuspendProcessor
     startSuspensionBatch(processInstance.getKey(), value);
     responseWriter.writeAcceptedResponseOnCommand(
         processInstance.getKey(), ProcessInstanceIntent.SUSPENDING, value, command);
-    if (suspendedJobCount > 0) {
-      suspensionMetrics.jobsSuspended(suspendedJobCount);
-    }
+    suspensionMetrics.jobsSuspended(suspendedJobCount);
     suspensionMetrics.startSuspendDuration(processInstance.getKey(), suspendStartTime);
   }
 
