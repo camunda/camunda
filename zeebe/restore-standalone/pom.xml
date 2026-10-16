@@ -55,7 +55,7 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>zeebe-db-rocksdb</artifactId>
+      <artifactId>zeebe-db</artifactId>
     </dependency>
 
     <dependency>

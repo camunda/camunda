@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.configuration.beanoverrides.BrokerBasedPropertiesOverride;
 import io.camunda.configuration.beans.BrokerBasedProperties;
+import io.camunda.zeebe.db.PrimaryStorageType;
 import java.time.Duration;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -27,6 +28,50 @@ import org.springframework.util.unit.DataSize;
 })
 @ActiveProfiles("broker")
 public class PrimaryStoragePropertiesTest {
+
+  @Nested
+  class WithoutStorageType {
+    final BrokerBasedProperties brokerCfg;
+
+    WithoutStorageType(@Autowired final BrokerBasedProperties brokerCfg) {
+      this.brokerCfg = brokerCfg;
+    }
+
+    @Test
+    void shouldDefaultToRocksDb() {
+      assertThat(brokerCfg.getData().getPrimaryStorageType()).isEqualTo(PrimaryStorageType.ROCKSDB);
+    }
+  }
+
+  @Nested
+  @TestPropertySource(properties = "camunda.data.primary-storage.type=sqlite")
+  class WithSqliteStorageType {
+    final BrokerBasedProperties brokerCfg;
+
+    WithSqliteStorageType(@Autowired final BrokerBasedProperties brokerCfg) {
+      this.brokerCfg = brokerCfg;
+    }
+
+    @Test
+    void shouldSelectSqlite() {
+      assertThat(brokerCfg.getData().getPrimaryStorageType()).isEqualTo(PrimaryStorageType.SQLITE);
+    }
+  }
+
+  @Nested
+  @TestPropertySource(properties = "camunda.data.primary-storage.type=rocksdb")
+  class WithRocksDbStorageType {
+    final BrokerBasedProperties brokerCfg;
+
+    WithRocksDbStorageType(@Autowired final BrokerBasedProperties brokerCfg) {
+      this.brokerCfg = brokerCfg;
+    }
+
+    @Test
+    void shouldSelectRocksDb() {
+      assertThat(brokerCfg.getData().getPrimaryStorageType()).isEqualTo(PrimaryStorageType.ROCKSDB);
+    }
+  }
 
   @Nested
   @TestPropertySource(

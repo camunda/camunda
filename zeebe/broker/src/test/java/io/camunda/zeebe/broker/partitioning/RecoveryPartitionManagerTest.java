@@ -8,6 +8,7 @@
 package io.camunda.zeebe.broker.partitioning;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.awaitility.Awaitility.await;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -27,6 +28,8 @@ import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.backup.BackupCfg.BackupStoreType;
 import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
 import io.camunda.zeebe.broker.system.monitoring.HealthTreeMetrics;
+import io.camunda.zeebe.db.PrimaryStorageType;
+import io.camunda.zeebe.db.impl.sqlite.SqliteDb;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.protocol.record.PartitionHealthStatus;
@@ -867,6 +870,34 @@ final class RecoveryPartitionManagerTest {
       await().atMost(Duration.ofSeconds(10)).until(() -> future.get() != null);
       assertThat(future.get()).failsWithin(Duration.ofSeconds(10));
       assertThat(partitionDir).isEmptyDirectory();
+    }
+  }
+
+  @Nested
+  class VerifyRestoredPartition {
+
+    @Test
+    void shouldReportSqliteSnapshotOnRocksDbBrokerAsMismatch(@TempDir final Path tempDir)
+        throws IOException {
+      // given a restored partition whose snapshot was written by the SQLite backend
+      final var brokerCfg = new BrokerCfg();
+      brokerCfg.getData().setDirectory(tempDir.toString());
+      brokerCfg.getData().setPrimaryStorageType(PrimaryStorageType.ROCKSDB);
+      partitionManager = buildManager(brokerCfg, actorScheduler);
+      final var partitionDir =
+          tempDir.resolve(GROUP).resolve("partitions").resolve(String.valueOf(PARTITION_ID));
+      final var snapshot =
+          Files.createDirectories(partitionDir.resolve("snapshots").resolve("1-1-1-1-0-abc"));
+      Files.createFile(snapshot.resolve(SqliteDb.DB_FILE_NAME));
+
+      // when
+      assertThatThrownBy(
+              () -> partitionManager.verifyRestoredPartition(localPartitionMetadata(PARTITION_ID)))
+          // then the message names both backends and the directory, instead of a RocksDB error
+          .isInstanceOf(IllegalStateException.class)
+          .hasMessageContaining(snapshot.toString())
+          .hasMessageContaining("hold rocksdb state")
+          .hasMessageContaining("holds sqlite state");
     }
   }
 }

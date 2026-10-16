@@ -114,6 +114,10 @@ final class PhysicalTenantOverridePolicyValidation {
               // cluster-configuration.
               "data.primary-storage.directory",
               "data.primary-storage.versioned-directory-retention-count",
+              // uniform-policy call, not a technical constraint: the backend is read from each
+              // tenant's config, but a broker running tenants on different backends is untested
+              // and would split the shared resources, backups and tooling by backend
+              "data.primary-storage.type",
               // #56648: DiskSpaceUsageMonitorActor is a single broker-wide actor built before any
               // per-tenant BrokerCfg exists, so every disk.* knob is silently ignored per tenant
               "data.primary-storage.disk",

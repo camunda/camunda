@@ -22,6 +22,7 @@ import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.clustering.ClusterServices;
 import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
 import io.camunda.zeebe.broker.logstreams.state.DbPositionSupplier;
+import io.camunda.zeebe.broker.partitioning.PrimaryStorageBackend;
 import io.camunda.zeebe.broker.partitioning.topology.ClusterConfigurationService;
 import io.camunda.zeebe.broker.partitioning.topology.TopologyManagerImpl;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
@@ -57,12 +58,9 @@ import io.camunda.zeebe.broker.system.partitions.impl.steps.StreamProcessorTrans
 import io.camunda.zeebe.broker.system.partitions.impl.steps.ZeebeDbPartitionTransitionStep;
 import io.camunda.zeebe.broker.transport.commandapi.CommandApiService;
 import io.camunda.zeebe.broker.transport.commandapi.CommandApiServiceTransitionStep;
-import io.camunda.zeebe.db.AccessMetricsConfiguration;
 import io.camunda.zeebe.db.StorageCapabilities;
 import io.camunda.zeebe.db.ZeebeDbFactory;
-import io.camunda.zeebe.db.impl.rocksdb.RocksDBSnapshotCopy;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDbResources;
-import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.engine.processing.EngineProcessors;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
@@ -172,22 +170,18 @@ public final class ZeebePartitionFactory {
     final var membershipService = clusterServices.getMembershipService();
     final var typedRecordProcessorsFactory = createFactory(localBroker, featureFlags);
 
-    final var databaseCfg = brokerCfg.getExperimental().getRocksdb();
-    final var consistencyChecks = brokerCfg.getExperimental().getConsistencyChecks();
     final var partitionId = raftPartition.id();
-    final var rocksDbConfiguration = databaseCfg.createRocksDbConfiguration();
 
-    final var zeebeFactory =
-        new ZeebeRocksDbFactory<ZbColumnFamilies>(
-            rocksDbConfiguration,
-            consistencyChecks.getSettings(),
-            new AccessMetricsConfiguration(databaseCfg.getAccessMetrics()),
+    final var storage =
+        PrimaryStorageBackend.forPartition(
+            brokerCfg,
             () -> MicrometerUtil.wrap(partitionMeterRegistry, PartitionKeyNames.tags(partitionId)),
             rocksDbResources);
+    final var zeebeFactory = storage.dbFactory();
     final StateController stateController =
         createStateController(raftPartition, zeebeFactory, snapshotStore, snapshotStore);
 
-    final var snapshotCopy = new RocksDBSnapshotCopy(zeebeFactory);
+    final var snapshotCopy = storage.snapshotCopy();
     final var context =
         new PartitionStartupAndTransitionContextImpl(
             BrokerMemberId.from(localBroker.getZone(), localBroker.getNodeId()),

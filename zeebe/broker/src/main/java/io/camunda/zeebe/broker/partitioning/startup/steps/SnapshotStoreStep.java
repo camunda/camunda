@@ -9,12 +9,13 @@ package io.camunda.zeebe.broker.partitioning.startup.steps;
 
 import static io.camunda.zeebe.scheduler.AsyncClosable.closeHelper;
 
+import io.camunda.zeebe.broker.partitioning.PrimaryStorageBackend;
 import io.camunda.zeebe.broker.partitioning.scaling.snapshot.SnapshotTransferServiceClient;
 import io.camunda.zeebe.broker.partitioning.startup.PartitionStartupContext;
 import io.camunda.zeebe.broker.partitioning.startup.SnapshotInitializationUtil;
-import io.camunda.zeebe.db.impl.rocksdb.RocksDBSnapshotFileInfoProvider;
 import io.camunda.zeebe.scheduler.SchedulingHints;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
+import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.scheduler.startup.StartupStep;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStore;
 import io.camunda.zeebe.snapshots.transfer.SnapshotTransferImpl;
@@ -34,12 +35,19 @@ public class SnapshotStoreStep implements StartupStep<PartitionStartupContext> {
 
   @Override
   public ActorFuture<PartitionStartupContext> startup(final PartitionStartupContext context) {
+    final var storageType = context.brokerConfig().getData().getPrimaryStorageType();
+    try {
+      PrimaryStorageBackend.requireSnapshotsOfBackend(storageType, context.partitionDirectory());
+    } catch (final RuntimeException e) {
+      return CompletableActorFuture.completedExceptionally(e);
+    }
+
     final var snapshotStore =
         new FileBasedSnapshotStore(
             context.brokerConfig().getCluster().getNodeId(),
             context.partitionMetadata().id(),
             context.partitionDirectory(),
-            new RocksDBSnapshotFileInfoProvider(),
+            PrimaryStorageBackend.snapshotFileInfoProvider(storageType),
             context.partitionMeterRegistry());
 
     var result =
