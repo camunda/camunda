@@ -17,7 +17,7 @@ package io.camunda.client.impl.http;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.awaitility.Awaitility.await;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.mock;
@@ -32,14 +32,14 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.client.protocol.rest.ProblemDetail;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.UncheckedIOException;
 import java.net.URI;
 import java.nio.ByteBuffer;
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import org.apache.hc.core5.concurrent.FutureCallback;
 import org.apache.hc.core5.http.ContentType;
 import org.apache.hc.core5.http.EntityDetails;
@@ -273,16 +273,14 @@ public class DocumentDataConsumerTest {
     final DocumentDataConsumer<InputStream> consumer = new DocumentDataConsumer<>(16, objectMapper);
     final Callback callback = new Callback();
     consumer.streamStart(octetStreamDetails(), callback);
-    final CompletableFuture<Integer> blockedRead =
-        CompletableFuture.supplyAsync(() -> read(callback.inputStream));
-    waitUntilReaderIsBlocked(blockedRead);
 
-    // when
-    consumer.releaseResources();
+    try (final BlockedReader reader = BlockedReader.start(callback.inputStream)) {
+      // when
+      consumer.releaseResources();
 
-    // then
-    assertThatThrownBy(() -> blockedRead.get(5, TimeUnit.SECONDS))
-        .hasRootCauseInstanceOf(IOException.class);
+      // then
+      assertThat(reader.awaitFailure()).isInstanceOf(IOException.class);
+    }
   }
 
   @Test
@@ -296,16 +294,14 @@ public class DocumentDataConsumerTest {
     final Callback callback = new Callback();
     responseConsumer.consumeResponse(
         new BasicHttpResponse(200), octetStreamDetails(), null, new ResponseCallback(callback));
-    final CompletableFuture<Integer> blockedRead =
-        CompletableFuture.supplyAsync(() -> read(callback.inputStream));
-    waitUntilReaderIsBlocked(blockedRead);
 
-    // when
-    responseConsumer.failed(new IOException("connection closed"));
+    try (final BlockedReader reader = BlockedReader.start(callback.inputStream)) {
+      // when
+      responseConsumer.failed(new IOException("connection closed"));
 
-    // then
-    assertThatThrownBy(() -> blockedRead.get(5, TimeUnit.SECONDS))
-        .hasRootCauseInstanceOf(IOException.class);
+      // then
+      assertThat(reader.awaitFailure()).isInstanceOf(IOException.class);
+    }
   }
 
   @Test
@@ -336,19 +332,62 @@ public class DocumentDataConsumerTest {
     return entityDetails;
   }
 
-  private static int read(final InputStream inputStream) {
-    try {
-      return inputStream.read();
-    } catch (final IOException e) {
-      throw new UncheckedIOException(e);
-    }
-  }
+  /**
+   * Reads from the stream on a dedicated thread and only returns from {@link #start} once that
+   * thread is parked inside the stream waiting for data, so a subsequent release or failure is
+   * guaranteed to notify an already waiting reader instead of being found by a later read.
+   */
+  private static final class BlockedReader implements AutoCloseable {
 
-  private static void waitUntilReaderIsBlocked(final CompletableFuture<Integer> read)
-      throws InterruptedException {
-    // nothing is written, so the read can only complete once the consumer signals the stream
-    Thread.sleep(200);
-    assertThat(read).isNotDone();
+    private final Thread thread;
+    private final AtomicReference<Throwable> outcome = new AtomicReference<>();
+
+    private BlockedReader(final InputStream inputStream) {
+      thread =
+          new Thread(
+              () -> {
+                try {
+                  outcome.set(new IllegalStateException("read returned " + inputStream.read()));
+                } catch (final Throwable t) {
+                  outcome.set(t);
+                }
+              },
+              "blocked-document-reader");
+      thread.setDaemon(true);
+    }
+
+    static BlockedReader start(final InputStream inputStream) {
+      final BlockedReader reader = new BlockedReader(inputStream);
+      reader.thread.start();
+      try {
+        await()
+            .atMost(Duration.ofSeconds(5))
+            .until(
+                () ->
+                    reader.thread.getState() == Thread.State.WAITING
+                        && Arrays.stream(reader.thread.getStackTrace())
+                            .anyMatch(f -> f.getMethodName().equals("canConsumeData")));
+      } catch (final Throwable t) {
+        reader.close();
+        throw t;
+      }
+      return reader;
+    }
+
+    Throwable awaitFailure() {
+      await().atMost(Duration.ofSeconds(5)).until(() -> outcome.get() != null);
+      return outcome.get();
+    }
+
+    @Override
+    public void close() {
+      thread.interrupt();
+      try {
+        thread.join(TimeUnit.SECONDS.toMillis(5));
+      } catch (final InterruptedException e) {
+        Thread.currentThread().interrupt();
+      }
+    }
   }
 
   static class ResponseCallback
