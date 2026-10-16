@@ -231,6 +231,14 @@ change to a shared page object, fixture or config that can break untouched tests
 changing any spec file), or for a pull request from a fork, which the automatic check
 skips.
 
+> **Product code + test in the same PR:** the ES API and E2E (browser) jobs run against the
+> published `camunda/camunda:SNAPSHOT` image, so they exercise your test changes against the
+> current product, not the product code in your PR (only the H2/RDBMS job builds from source).
+> A PR that adds backend or UI behaviour **and** a spec for it can see those jobs go red because
+> the published image lacks the change. Rely on the H2/RDBMS leg (which is source-built) and a
+> manual on-demand run against your branch to validate such a change; the ES/browser result is a
+> false negative in that case, not a regression in your code.
+
 ### Running the On-Demand Workflow
 
 - `c8-orchestration-cluster-e2e-tests-on-demand.yml`: Manually triggered for ad hoc testing
