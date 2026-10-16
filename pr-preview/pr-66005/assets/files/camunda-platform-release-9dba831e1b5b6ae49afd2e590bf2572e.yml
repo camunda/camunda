@@ -1007,6 +1007,7 @@ jobs:
           project-id: "custom+50756/camunda/camunda@single-app"
           attribution-release-group-id: "4904" # https://app.fossa.com/projects/group/4904
           sbom-release-group-id: "4905"        # https://app.fossa.com/projects/group/4905
+          fossa-api-key-vault-path: secret/data/products/camunda/ci/camunda
           release-number: ${{ env.RELEASE_VERSION }}
           revision-id: ${{ needs.release.outputs.releaseTagCommitSha }}
           dry-run: ${{ inputs.dryRun || inputs.releaseProcessDryRun }}
@@ -1046,8 +1047,9 @@ jobs:
         uses: ./.github/actions/fossa-release-project
         with:
           project-id: "custom+50756/camunda/camunda@optimize"
-          attribution-release-group-id: "4904" # https://app.fossa.com/projects/group/4904
-          sbom-release-group-id: "4905"        # https://app.fossa.com/projects/group/4905
+          attribution-release-group-id: "11294" # https://app.fossa.com/projects/group/11294
+          sbom-release-group-id: "11295"        # https://app.fossa.com/projects/group/11295
+          fossa-api-key-vault-path: secret/data/products/optimize/ci/fossa
           release-number: ${{ env.RELEASE_VERSION }}
           revision-id: ${{ needs.release.outputs.releaseTagCommitSha }}
           dry-run: ${{ inputs.dryRun || inputs.releaseProcessDryRun }}
