@@ -66,7 +66,8 @@ public class MicrometerMetricsRecorder implements MetricsRecorder {
   @Override
   public <T> T executeWithTimer(
       final TimerMetricsContext context, final Callable<T> methodToExecute) throws Exception {
-    final Timer timer = meterRegistry.timer(context.name(), fromEntries(context.tags()));
+    final Timer timer =
+        meterRegistry.timer(context.name(), asIterable(fromEntries(context.tags())));
     return timer.recordCallable(methodToExecute);
   }
 
@@ -74,12 +75,17 @@ public class MicrometerMetricsRecorder implements MetricsRecorder {
     final Tags tags = fromEntries(context.tags(), action.asString());
     final String key = getKey(context.name(), tags);
     final Counter counter =
-        counters.computeIfAbsent(
-            key,
-            k ->
-                meterRegistry.counter(
-                    context.name(), fromEntries(context.tags(), action.asString())));
+        counters.computeIfAbsent(key, k -> meterRegistry.counter(context.name(), asIterable(tags)));
     counter.increment(context.count());
+  }
+
+  /**
+   * Binds calls to the {@code Iterable<Tag>} overloads of {@link MeterRegistry}. Micrometer 1.16
+   * added overloads taking {@link Tags}, which javac prefers, but Spring Boot 3.5 ships Micrometer
+   * 1.15, where they fail with {@link NoSuchMethodError}.
+   */
+  private static Iterable<Tag> asIterable(final Tags tags) {
+    return tags;
   }
 
   private static Tags fromEntries(final Map<String, String> entries) {
