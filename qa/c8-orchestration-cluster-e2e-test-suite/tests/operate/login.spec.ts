@@ -12,6 +12,10 @@ import {expect} from '@playwright/test';
 import {captureScreenshot, captureFailureVideo} from '@setup';
 import {relativizePath, Paths} from 'utils/relativizePath';
 
+// Throwaway no-op touch to exercise the automatic suite PR check
+// (camunda/team-test-automation#188). This marks this spec as "changed" so the
+// new C8 E2E Test Suite / Tests check runs and gates on it. Revert before merge.
+
 test.describe.parallel('Login Tests', () => {
   test.beforeEach(async ({page}) => {
     await navigateToApp(page, 'operate');
