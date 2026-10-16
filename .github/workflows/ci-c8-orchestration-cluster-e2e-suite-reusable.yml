@@ -108,7 +108,9 @@ jobs:
                 unset CAMUNDA_MODE
                 echo "Starting with profiles SPRING_PROFILES_ACTIVE mode"
               fi
-              DATABASE=elasticsearch docker compose up -d camunda
+              # `|| return 1` so a failed camunda start always propagates out of
+              # the function, independent of any command that may follow.
+              DATABASE=elasticsearch docker compose up -d camunda || return 1
             fi
           }
 
@@ -547,11 +549,15 @@ jobs:
                 echo "Starting with profiles SPRING_PROFILES_ACTIVE mode"
               fi
 
+              # `|| return 1` so a failed camunda start propagates: the Optimize
+              # step below is the function's last command, and without this a
+              # successful Optimize start would mask a failed camunda start and
+              # make the retry loop treat the attempt as succeeded.
               if [[ ("$BASE_BRANCH" == "stable/8.8" || "$BASE_BRANCH" == "stable/8.9") && "$MATRIX_TASKLIST_MODE" == "v1" ]]; then
                 echo "Starting with Tasklist V1 mode enabled"
-                CAMUNDA_TASKLIST_V2_MODE_ENABLED=false DATABASE=elasticsearch docker compose up -d camunda
+                CAMUNDA_TASKLIST_V2_MODE_ENABLED=false DATABASE=elasticsearch docker compose up -d camunda || return 1
               else
-                DATABASE=elasticsearch docker compose up -d camunda
+                DATABASE=elasticsearch docker compose up -d camunda || return 1
               fi
 
               # Optimize is a separate application (reads exported data from
