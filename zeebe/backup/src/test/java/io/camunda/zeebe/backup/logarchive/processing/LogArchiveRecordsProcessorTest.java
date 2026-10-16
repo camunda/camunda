@@ -23,6 +23,7 @@ import io.camunda.zeebe.backup.logarchive.model.LogArchiveJson;
 import io.camunda.zeebe.backup.logarchive.model.LogArchiveKeys;
 import io.camunda.zeebe.backup.logarchive.model.RootFile;
 import io.camunda.zeebe.backup.logarchive.processing.LogArchiveHarness.RecordingListener;
+import io.camunda.zeebe.protocol.impl.record.value.management.IndexChunk;
 import io.camunda.zeebe.protocol.impl.record.value.management.LogArchiveRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.management.LogArchiveIntent;
@@ -570,6 +571,59 @@ final class LogArchiveRecordsProcessorTest {
     assertThat(root.seq()).isEqualTo(5);
     assertThat(root.chunks()).hasSize(1);
     assertThat(root.openObjects()).isEmpty();
+  }
+
+  @Test
+  void shouldRequestSealOnlyOnceWhileChunkStaysFull() {
+    // given
+    fillOpenChunk();
+    final int published = harness.published.size();
+
+    // when
+    harness.accept(LogArchiveIntent.ARCHIVE_LOG, archiveLog(object(4)));
+    harness.accept(LogArchiveIntent.ARCHIVE_LOG, archiveLog(object(5)));
+
+    // then
+    assertThat(harness.published.subList(0, published))
+        .filteredOn(request -> request.seal() != null)
+        .hasSize(1);
+    assertThat(harness.published.subList(published, harness.published.size()))
+        .allSatisfy(request -> assertThat(request.seal()).isNull());
+  }
+
+  @Test
+  void shouldRequestSealAgainAfterRejectedSealIndexIfStillFull() {
+    // given
+    fillOpenChunk();
+    final var chunk = firstSealRequest().chunk();
+    final int published = harness.published.size();
+
+    // when
+    harness.process(LogArchiveIntent.SEAL_INDEX, sealIndex(chunk.setChunkNo(2)));
+
+    // then
+    assertThat(harness.published).hasSize(published + 1);
+    final var retry = harness.published.getLast();
+    assertThat(retry.seq()).isEqualTo(-1);
+    assertThat(retry.commitEntryJson()).isNull();
+    assertThat(retry.rootJson()).isNull();
+    assertThat(retry.seal()).isNotNull();
+    assertThat(retry.seal().chunk().getChunkNo()).isEqualTo(1);
+  }
+
+  @Test
+  void shouldNotRequestSealAfterRejectedSealIndexIfChunkIsNotFull() {
+    // given
+    harness.accept(LogArchiveIntent.START_TIMELINE, startTimeline(TIMELINE, 1));
+    harness.accept(LogArchiveIntent.ARCHIVE_LOG, archiveLog(object(1)));
+    final int published = harness.published.size();
+    final var chunk = new IndexChunk().setChunkNo(1).setObjectCount(1);
+
+    // when
+    harness.process(LogArchiveIntent.SEAL_INDEX, sealIndex(chunk));
+
+    // then
+    assertThat(harness.published).hasSize(published);
   }
 
   @Test
@@ -1121,6 +1175,8 @@ final class LogArchiveRecordsProcessorTest {
     assertThat(harness.rejections.getLast().intent()).isEqualTo(intent);
     assertThat(harness.rejections.getLast().rejection()).isEqualTo(type);
     assertThat(harness.fingerprint()).as("state unchanged").isEqualTo(before);
-    assertThat(harness.published).as("nothing published").hasSize(published);
+    if (intent != LogArchiveIntent.SEAL_INDEX) {
+      assertThat(harness.published).as("nothing published").hasSize(published);
+    }
   }
 }
