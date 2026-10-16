@@ -20,6 +20,7 @@ import io.camunda.client.api.response.Process;
 import io.camunda.qa.util.compatibility.CompatibilityTest;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.collection.Maps;
 import java.util.Map;
 import java.util.Set;
@@ -245,6 +246,70 @@ public class ProcessInstanceCreateIT {
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("businessId")
         .hasMessageContaining("256");
+  }
+
+  @Test
+  void shouldCreateProcessInstanceByVersionTag() {
+    // given
+    final var processId = Strings.newRandomValidBpmnId();
+    final var v1 =
+        deployProcessAndWaitForIt(
+            camundaClient,
+            Bpmn.createExecutableProcess(processId).versionTag("v1").startEvent().endEvent().done(),
+            processId + ".bpmn");
+    final var v2 =
+        deployProcessAndWaitForIt(
+            camundaClient,
+            Bpmn.createExecutableProcess(processId)
+                .versionTag("v2")
+                .startEvent()
+                .manualTask("task")
+                .endEvent()
+                .done(),
+            processId + ".bpmn");
+    assertThat(v2.getVersion()).isEqualTo(2);
+
+    // when
+    var created =
+        camundaClient
+            .newCreateInstanceCommand()
+            .bpmnProcessId(processId)
+            .versionTag("v1")
+            .send()
+            .join();
+
+    // then
+    assertThat(created.getVersion()).isEqualTo(1);
+    assertThat(created.getProcessDefinitionKey()).isEqualTo(v1.getProcessDefinitionKey());
+
+    // when
+    created =
+        camundaClient
+            .newCreateInstanceCommand()
+            .bpmnProcessId(processId)
+            .versionTag("v2")
+            .send()
+            .join();
+
+    // then
+    assertThat(created.getVersion()).isEqualTo(2);
+    assertThat(created.getProcessDefinitionKey()).isEqualTo(v2.getProcessDefinitionKey());
+  }
+
+  @Test
+  void shouldRejectProcessInstanceCreationWithUnknownVersionTag() {
+    // when / then
+    assertThatThrownBy(
+            () ->
+                camundaClient
+                    .newCreateInstanceCommand()
+                    .bpmnProcessId("process")
+                    .versionTag("does-not-exist")
+                    .send()
+                    .join())
+        .isInstanceOf(ProblemException.class)
+        .hasMessageContaining("404")
+        .hasMessageContaining("does-not-exist");
   }
 
   @Test
