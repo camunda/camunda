@@ -17,6 +17,7 @@ metadata:
     {}
 data:
   warnings: |-
+    [camunda][warning] UNKNOWN VALUES KEY: postgresql. Helm ignores this key. Remove or correct it. A future chart version can reject unknown keys.
     [camunda][warning] SECURITY: inlineSecret is set in: [orchestration]. This stores secrets as plain-text in the Helm values and is NOT suitable for production use. For production environments, please use Kubernetes Secrets with 'secret.existingSecret' instead.
     [camunda][warning] DEPRECATION: The Helm values file key "orchestration.history.retention.enabled" is deprecated and will be removed in chart v16 (Camunda 8.11). Configure this via "orchestration.extraConfiguration" instead. https://docs.camunda.io/docs/self-managed/deployment/helm/upgrade/
     [camunda][warning] DEPRECATION: The Helm values file key "orchestration.history.retention.minimumAge" is deprecated and will be removed in chart v16 (Camunda 8.11). Configure this via "orchestration.extraConfiguration" instead. https://docs.camunda.io/docs/self-managed/deployment/helm/upgrade/

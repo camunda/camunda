@@ -44,7 +44,7 @@ spec:
 
       annotations:
 
-        checksum/config-identity-env: ba4060094dece8149e2eb0f683f45240840d9fbf7ee0e92f464f3ea1b3d00132
+        checksum/config-identity-env: 86935e273888480d798c5482b9d73f797bdb7f13e9ba849aff6ebfdde91c2754
     spec:
       imagePullSecrets:
         - name: harbor-registry
