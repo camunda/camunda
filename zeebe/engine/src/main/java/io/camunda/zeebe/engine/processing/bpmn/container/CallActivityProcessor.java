@@ -25,7 +25,6 @@ import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCallActivity;
 import io.camunda.zeebe.engine.processing.processinstance.BusinessIdValidator;
 import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
-import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeBindingType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.util.Either;
@@ -95,10 +94,7 @@ public final class CallActivityProcessor
   public Either<Failure, ?> finalizeActivation(
       final ExecutableCallActivity element, final BpmnElementContext context) {
     return evaluateProcessId(context, element)
-        .flatMap(
-            processId ->
-                getCalledProcess(
-                    processId, element.getBindingType(), element.getVersionTag(), context))
+        .flatMap(processId -> getCalledProcess(processId, element, context))
         .flatMap(this::rejectIfDraining)
         .flatMap(this::checkProcessHasNoneStartEvent)
         .flatMap(p -> eventSubscriptionBehavior.subscribeToEvents(element, context).map(ok -> p))
@@ -406,14 +402,19 @@ public final class CallActivityProcessor
 
   private Either<Failure, DeployedProcess> getCalledProcess(
       final DirectBuffer processId,
-      final ZeebeBindingType bindingType,
-      final String versionTag,
+      final ExecutableCallActivity element,
       final BpmnElementContext context) {
-    return switch (bindingType) {
+    return switch (element.getBindingType()) {
       case deployment -> getProcessVersionInSameDeployment(processId, context);
       case latest -> getLatestProcessVersion(processId, context.getTenantId());
       case versionTag ->
-          getLatestProcessVersionWithVersionTag(processId, versionTag, context.getTenantId());
+          expressionProcessor
+              .evaluateStringExpression(
+                  element.getVersionTag(), context.getElementInstanceKey(), context.getTenantId())
+              .flatMap(
+                  versionTag ->
+                      getLatestProcessVersionWithVersionTag(
+                          processId, versionTag, context.getTenantId()));
     };
   }
 

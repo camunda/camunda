@@ -63,7 +63,9 @@ public final class CallActivityTransformer implements ModelElementTransformer<Ca
     callActivity.setBindingType(bindingType);
 
     final var versionTag = calledElement.getVersionTag();
-    callActivity.setVersionTag(versionTag);
+    if (versionTag != null && !versionTag.isBlank()) {
+      callActivity.setVersionTag(expressionLanguage.parseExpression(versionTag));
+    }
   }
 
   private static void transformBusinessId(
