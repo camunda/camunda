@@ -81,6 +81,21 @@ final class LogArchiveJsonTest {
   }
 
   @Test
+  void shouldIgnoreUnknownPropertiesWhenReading() {
+    // given
+    final String json =
+        "{\"formatVersion\":1,\"timelineId\":\"tl-0\",\"partitionId\":1,\"rootSeq\":4100,"
+            + "\"addedInLaterVersion\":true}";
+
+    // when
+    final LatestHint hint =
+        LogArchiveJson.read(json.getBytes(StandardCharsets.UTF_8), LatestHint.class);
+
+    // then
+    assertThat(hint).isEqualTo(new LatestHint(1, "tl-0", 1, 4100));
+  }
+
+  @Test
   void shouldOmitOptionalPartsOfCommitEntryThatDoNotApply() {
     // given
     final CommitEntry timelineStarted = BucketJsonFixtures.commitTimelineStarted();

@@ -480,8 +480,9 @@ Integration tests (broker, filesystem store first, then MinIO):
 
 - Work only in the files and packages your workstream owns (section 17). Need a change elsewhere?
   Report it instead of making it.
-- Maven: use the worktree-local repository with the shared cache as a read-only tail, as set up in
-  your worktree's `.mvn/maven.config`. Never write to `~/.m2/repository`.
+- Maven: the repo's branch-scoped local repository extension installs into
+  `~/.m2/repository/installed/<branch>/`. Each worker branch gets a pre-seeded copy of the integration
+  branch's area. Build offline (`-o`) and never override `maven.repo.local`.
 - Before each commit: `./mvnw license:format spotless:apply -pl <your modules>`, then build and test
   your modules. Never use `-am` with `verify`.
 - Conventional Commits, no scope, a body explaining why, and the co-author line.

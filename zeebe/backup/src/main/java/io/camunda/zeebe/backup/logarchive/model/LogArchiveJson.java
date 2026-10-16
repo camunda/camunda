@@ -23,6 +23,9 @@ import java.io.UncheckedIOException;
  * optional parts are omitted (see each model record for its rules). Nothing in the output depends
  * on the wall clock or the environment. The output is UTF-8.
  *
+ * <p>Reading ignores unknown properties, so a reader keeps working when a later format version adds
+ * fields.
+ *
  * <p>The {@link ObjectMapper} is configured once and is thread-safe, so one instance is shared.
  */
 public final class LogArchiveJson {
@@ -33,7 +36,8 @@ public final class LogArchiveJson {
   private static final ObjectMapper MAPPER =
       new ObjectMapper()
           .disable(SerializationFeature.INDENT_OUTPUT)
-          .enable(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES);
+          .enable(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES)
+          .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
 
   private LogArchiveJson() {}
 
