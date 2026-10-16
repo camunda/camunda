@@ -970,6 +970,47 @@ final class RestorePointResolverTest {
         .containsExactly(cp3.checkpointId(), cp4.checkpointId());
   }
 
+  @Test
+  void shouldNotRestoreToAMarkerWithoutABackupBeforeIt() {
+    // given - a marker in the log of the first backup, whose snapshot can be ahead of the marker
+    final var t1 = Instant.parse("2025-01-01T00:00:00Z");
+    final var t2 = Instant.parse("2025-01-02T00:00:00Z");
+    final var t3 = Instant.parse("2025-01-03T00:00:00Z");
+    final var marker = entry(1, 50, t1, CheckpointType.MARKER, OptionalLong.empty());
+    final var backup2 = entry(2, 100, t2, CheckpointType.SCHEDULED_BACKUP, OptionalLong.of(1));
+    final var backup3 = entry(3, 200, t3, CheckpointType.SCHEDULED_BACKUP, OptionalLong.of(101));
+    final var meta = metadata(1, List.of(marker, backup2, backup3), List.of(new RangeEntry(2, 3)));
+
+    // when - restoring to the marker's time
+    final var result = RestorePointResolver.resolve(List.of(meta), null, t1, Map.of());
+
+    // then - the closest checkpoint that can be restored is the first backup
+    assertThat(result.globalCheckpointId()).isEqualTo(2);
+    assertThat(result.partitions().get(1).backupIds()).containsExactly(backup2.checkpointId());
+  }
+
+  @Test
+  void shouldKeepTheBackupBeforeTheMarkerWhenDiscardingBackupsBeforeFrom() {
+    // given - 'from' lies between the backup before a marker and the marker
+    final var t1 = Instant.parse("2025-01-01T00:00:00Z");
+    final var t2 = Instant.parse("2025-01-03T00:00:00Z");
+    final var t3 = Instant.parse("2025-01-05T00:00:00Z");
+    final var backup1 = entry(1, 100, t1, CheckpointType.SCHEDULED_BACKUP, OptionalLong.of(1));
+    final var marker = entry(2, 150, t2, CheckpointType.MARKER, OptionalLong.empty());
+    final var backup3 = entry(3, 200, t3, CheckpointType.SCHEDULED_BACKUP, OptionalLong.of(101));
+    final var meta = metadata(1, List.of(backup1, marker, backup3), List.of(new RangeEntry(1, 3)));
+    final var from = Instant.parse("2025-01-02T00:00:00Z");
+
+    // when
+    final var result = RestorePointResolver.resolve(List.of(meta), from, t2, null);
+
+    // then - the restore starts from the backup before the marker, as the snapshot of the backup
+    // after it is ahead of the marker
+    assertThat(result.globalCheckpointId()).isEqualTo(2);
+    assertThat(result.partitions().get(1).backupIds())
+        .containsExactly(backup1.checkpointId(), backup3.checkpointId());
+  }
+
   private static CheckpointEntry entry(
       final long id,
       final long position,
