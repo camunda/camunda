@@ -21,6 +21,7 @@ import io.camunda.search.entities.AuditLogEntity.AuditLogTenantScope;
 import io.camunda.search.entities.ValueTypeEnum;
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.Set;
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.Test;
 
@@ -55,7 +56,8 @@ class BatchInsertMergerTest {
             "tenant1",
             1,
             -1L,
-            null);
+            null,
+            Set.of());
 
     final var variable2 =
         new VariableDbModel(
@@ -74,7 +76,8 @@ class BatchInsertMergerTest {
             "tenant1",
             1,
             -1L,
-            null);
+            null,
+            Set.of());
 
     final var merger = new InsertVariableMerger(variable2, 50);
     final var parameter = new BatchInsertDto<>(List.of(variable1));
@@ -287,6 +290,7 @@ class BatchInsertMergerTest {
         "tenant1",
         1,
         -1L,
-        null);
+        null,
+        Set.of());
   }
 }

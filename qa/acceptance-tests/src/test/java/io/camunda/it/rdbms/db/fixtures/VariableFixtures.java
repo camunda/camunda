@@ -14,11 +14,13 @@ import io.camunda.db.rdbms.write.RdbmsWriters;
 import io.camunda.db.rdbms.write.domain.VariableDbModel;
 import io.camunda.db.rdbms.write.domain.VariableDbModel.VariableDbModelBuilder;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import javax.sql.DataSource;
 
 public final class VariableFixtures extends CommonFixtures {
 
@@ -134,6 +136,48 @@ public final class VariableFixtures extends CommonFixtures {
 
   public static void prepareRandomVariables(final CamundaRdbmsTestApplication testApplication) {
     VariableFixtures.createAndSaveRandomVariables(testApplication.getRdbmsService(), b -> b);
+  }
+
+  public static List<Integer> findProtectionModeCodes(
+      final CamundaRdbmsTestApplication testApplication, final long variableKey)
+      throws SQLException {
+    final var codes = new ArrayList<Integer>();
+    try (final var connection = testApplication.bean(DataSource.class).getConnection();
+        final var statement =
+            connection.prepareStatement(
+                "SELECT PROTECTION_MODE FROM VARIABLE_PROTECTION_MODES WHERE VAR_KEY = ?")) {
+      statement.setLong(1, variableKey);
+      try (final var resultSet = statement.executeQuery()) {
+        while (resultSet.next()) {
+          codes.add(resultSet.getInt(1));
+        }
+      }
+    }
+    return codes;
+  }
+
+  public static long countProtectionModes(
+      final CamundaRdbmsTestApplication testApplication, final long variableKey)
+      throws SQLException {
+    return queryLong(
+        testApplication,
+        "SELECT COUNT(*) FROM VARIABLE_PROTECTION_MODES WHERE VAR_KEY = ?",
+        variableKey);
+  }
+
+  private static long queryLong(
+      final CamundaRdbmsTestApplication testApplication, final String sql, final Object... params)
+      throws SQLException {
+    try (final var connection = testApplication.bean(DataSource.class).getConnection();
+        final var statement = connection.prepareStatement(sql)) {
+      for (int i = 0; i < params.length; i++) {
+        statement.setObject(i + 1, params[i]);
+      }
+      try (final var resultSet = statement.executeQuery()) {
+        resultSet.next();
+        return resultSet.getLong(1);
+      }
+    }
   }
 
   public static VariableDbModel prepareRandomVariablesAndReturnOne(

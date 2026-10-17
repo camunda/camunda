@@ -27,6 +27,9 @@ import java.util.Set;
 
 public class VariableWriter extends ProcessInstanceDependant implements RdbmsWriter {
 
+  // after the variable insert, which has the default order 0
+  private static final int PROTECTION_MODES_ORDER = 1;
+
   private final ExecutionQueue executionQueue;
   private final VariableMapper variableMapper;
   private final VendorDatabaseProperties vendorDatabaseProperties;
@@ -67,6 +70,7 @@ public class VariableWriter extends ProcessInstanceDependant implements RdbmsWri
     }
 
     maybeRecordVariableNameInLookup(variable);
+    insertProtectionModes(truncatedVariable);
   }
 
   public void update(final VariableDbModel variable) {
@@ -107,6 +111,34 @@ public class VariableWriter extends ProcessInstanceDependant implements RdbmsWri
               pdKey,
               "io.camunda.db.rdbms.sql.VariableMapper.insertLookupIfNotExists",
               new ProcessDefinitionVariableNameLookupDbModel(pdKey, variable.name())));
+    }
+  }
+
+  /**
+   * Queues one row per protection mode of a variable. Nothing is queued for a variable without
+   * protection modes.
+   *
+   * <p>The statements share the {@link ContextType#VARIABLE} context and the INSERT type with the
+   * batched variable insert, which has the default order. They use a higher order, so they are
+   * executed after the variable insert and satisfy the foreign key from the modes to the variable.
+   *
+   * @param variable the variable that was queued for insertion
+   */
+  private void insertProtectionModes(final VariableDbModel variable) {
+    final var protectionModes = variable.protectionModes();
+    if (protectionModes == null || protectionModes.isEmpty()) {
+      return;
+    }
+
+    for (final var mode : protectionModes) {
+      executionQueue.executeInQueue(
+          new QueueItem(
+              ContextType.VARIABLE,
+              WriteStatementType.INSERT,
+              variable.variableKey(),
+              "io.camunda.db.rdbms.sql.VariableMapper.insertProtectionModes",
+              new VariableMapper.ProtectionModeDto(variable.variableKey(), mode),
+              PROTECTION_MODES_ORDER));
     }
   }
 
