@@ -83,6 +83,10 @@ jobs:
       c8-e2e-suite-base: ${{ steps.c8-e2e-suite-scope.outputs.base }}
       c8-e2e-suite-run-tests: ${{ steps.c8-e2e-suite-scope.outputs.run-tests }}
       c8-e2e-suite-changed-specs: ${{ steps.c8-e2e-suite-scope.outputs.changed-specs }}
+      # True when the suite PR ALSO changes product code baked into the Camunda
+      # image (i.e. build-distball runs): the suite then tests against the image
+      # built from the PR branch instead of camunda/camunda:SNAPSHOT.
+      c8-e2e-suite-image-from-branch: ${{ steps.c8-e2e-suite-scope.outputs.image-from-branch }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -117,6 +121,11 @@ jobs:
           PR_NUMBER: ${{ github.event.pull_request.number }}
           BASE_REF: ${{ github.event.pull_request.base.ref }}
           SUITE_PREFIX: qa/c8-orchestration-cluster-e2e-test-suite/
+          # Whether build-distball will run for this PR (same union of filters
+          # that gates the build-distball job). When it does, the PR touches
+          # product code baked into the Camunda image, so the suite should test
+          # against the branch-built image rather than camunda/camunda:SNAPSHOT.
+          BUILD_DISTBALL_WILL_RUN: ${{ steps.filter.outputs.camunda-docker-tests == 'true' || steps.filter.outputs.java-code-changes == 'true' || steps.filter.outputs.frontend-changes == 'true' || steps.filter.outputs.rdbms-integration-tests == 'true' }}
         run: |
           set -euo pipefail
           echo "base=${BASE_REF}" >> "$GITHUB_OUTPUT"
@@ -136,14 +145,21 @@ jobs:
           suite_changed="$(printf '%s\n' "$files" | cut -f2- | grep -F "$SUITE_PREFIX" || true)"
           if [[ -z "$suite_changed" ]]; then
             echo "No files under ${SUITE_PREFIX} changed; suite tests will be skipped."
-            echo "run-tests=false" >> "$GITHUB_OUTPUT"
             {
+              echo "run-tests=false"
+              echo "image-from-branch=false"
               echo "changed-specs<<EOF"
               echo "EOF"
             } >> "$GITHUB_OUTPUT"
             exit 0
           fi
           echo "run-tests=true" >> "$GITHUB_OUTPUT"
+
+          # The suite changed. If the PR also changes product code (build-distball
+          # runs), test against the image built from the PR branch; otherwise keep
+          # the SNAPSHOT baseline for a suite-only change.
+          echo "image-from-branch=${BUILD_DISTBALL_WILL_RUN}" >> "$GITHUB_OUTPUT"
+          echo "Image source: $([[ "$BUILD_DISTBALL_WILL_RUN" == "true" ]] && echo 'PR-branch build' || echo 'camunda/camunda:SNAPSHOT')"
 
           # Gating scope: added/modified/renamed spec files only (a removed spec
           # cannot fail), path relative to the suite root (matching the Playwright
@@ -2606,10 +2622,18 @@ jobs:
   # See camunda/team-test-automation#188.
   c8-e2e-test-suite-tests:
     name: "C8 E2E Test Suite / Tests"
+    # build-distball is a needs so a product+suite PR can test against the image
+    # built from its branch; it is skipped for a suite-only PR, so the guard must
+    # tolerate that (!cancelled, and not a build-distball failure — a broken build
+    # must not be validated against). The merge is already blocked by the red
+    # build-distball in that case.
     if: >-
-      needs.detect-changes.outputs.c8-e2e-suite-run-tests == 'true'
+      !cancelled()
+      && needs.detect-changes.outputs.c8-e2e-suite-run-tests == 'true'
       && github.event.pull_request.head.repo.fork != true
-    needs: [ detect-changes ]
+      && needs.build-distball.result != 'failure'
+      && needs.build-distball.result != 'cancelled'
+    needs: [ detect-changes, build-distball ]
     uses: ./.github/workflows/ci-c8-orchestration-cluster-e2e-suite-reusable.yml
     secrets: inherit
     permissions:
@@ -2619,6 +2643,7 @@ jobs:
       test-ref: ${{ github.sha }}
       changed-specs: ${{ needs.detect-changes.outputs.c8-e2e-suite-changed-specs }}
       gating: changed
+      image-from-branch: ${{ needs.detect-changes.outputs.c8-e2e-suite-image-from-branch == 'true' }}
 
   protobuf-checks:
     name: "Protobuf Backwards Compatibility"
