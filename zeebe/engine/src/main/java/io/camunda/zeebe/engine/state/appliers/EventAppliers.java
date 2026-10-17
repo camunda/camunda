@@ -59,6 +59,7 @@ import io.camunda.zeebe.protocol.record.intent.MessageStartEventSubscriptionInte
 import io.camunda.zeebe.protocol.record.intent.MessageStartProcessInstanceRequestIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.MultiInstanceIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessDefinitionRestoreIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessEventIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceBusinessIdIntent;
@@ -179,6 +180,7 @@ public final class EventAppliers implements EventApplier {
     registerAgentHistoryBatchEventAppliers(state);
     registerAgentDefinitionEventAppliers(state);
     registerSecretReferenceEventAppliers(state);
+    registerProcessDefinitionRestoreAppliers(state);
     return this;
   }
 
@@ -199,6 +201,16 @@ public final class EventAppliers implements EventApplier {
     register(
         SecretReferenceIntent.BATCH_INCIDENTS_CREATED,
         new SecretReferenceBatchIncidentsCreatedApplier(state.getSecretReferenceState()));
+  }
+
+  private void registerProcessDefinitionRestoreAppliers(final MutableProcessingState state) {
+    register(
+        ProcessDefinitionRestoreIntent.STARTED,
+        new ProcessDefinitionRestoreStartedApplier(state.getProcessState()));
+    register(
+        ProcessDefinitionRestoreIntent.RESTORED,
+        new ProcessDefinitionRestoredApplier(state.getProcessState()));
+    register(ProcessDefinitionRestoreIntent.FINISHED, NOOP_EVENT_APPLIER);
   }
 
   private void registerAgentHistoryEventAppliers(final MutableProcessingState state) {
