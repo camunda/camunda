@@ -16,6 +16,7 @@ import io.camunda.zeebe.broker.partitioning.topology.PartitionDistribution;
 import io.camunda.zeebe.broker.partitioning.topology.StaticConfigurationGenerator;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.dynamic.config.PersistedCurrentClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationCoordinatorSupplier;
 import io.camunda.zeebe.dynamic.config.impl.serializer.ProtoBufSerializer;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
@@ -62,12 +63,10 @@ public final class ClusterRestore {
 
   private static final Logger LOG = LoggerFactory.getLogger(ClusterRestore.class);
 
-  /** The member that writes the topology file; see {@link #restoreTopologyFile}. */
-  private static final MemberId COORDINATOR_ID = MemberId.from("0");
-
   private final BrokerCfg configuration;
   private final Map<String, PhysicalTenantRestoreTarget> targets;
   private final MeterRegistry meterRegistry;
+  private final MemberId coordinatorId;
 
   /**
    * @param configuration the broker-wide configuration: data directory, node id and cluster
@@ -85,6 +84,14 @@ public final class ClusterRestore {
     this.configuration = configuration;
     this.targets = Map.copyOf(targets);
     this.meterRegistry = meterRegistry;
+    final var cluster = configuration.getCluster();
+    final var localMember = MemberId.from(cluster.getZone(), cluster.getNodeId());
+    final var staticConfig =
+        StaticConfigurationGenerator.getStaticConfiguration(
+            configuration, physicalTenantConfigurations(), localMember);
+    this.coordinatorId =
+        ClusterConfigurationCoordinatorSupplier.ofMembers(staticConfig.clusterMembers())
+            .getDefaultCoordinator();
   }
 
   /**
@@ -165,17 +172,19 @@ public final class ClusterRestore {
         LOG.info("Successfully restored physical tenant '{}'", physicalTenantId);
       }
 
+      final var cluster = configuration.getCluster();
+      final var localMember = MemberId.from(cluster.getZone(), cluster.getNodeId());
       if (!recreateTopology) {
         LOG.info("Topology file will be updated in place for {}", restoredPartitionCounts);
         updateTopologyFile(restoredPartitionCounts);
-      } else if (configuration.getCluster().getNodeId() == 0) {
+      } else if (localMember.equals(coordinatorId)) {
         LOG.info(
             "Topology file will be recreated with partition counts {}", restoredPartitionCounts);
         restoreTopologyFile(restoredPartitionCounts);
       } else {
         LOG.info(
             "Topology file will be left unchanged: it is recreated by node {} only",
-            COORDINATOR_ID.id());
+            coordinatorId.id());
       }
     } catch (final ExecutionException | InterruptedException | IOException | RuntimeException e) {
       LOG.error(
@@ -311,7 +320,7 @@ public final class ClusterRestore {
             .resolve(PersistedCurrentClusterConfiguration.TOPOLOGY_FILE_NAME);
     final var generated =
         StaticConfigurationGenerator.getStaticConfiguration(
-                configuration, physicalTenantConfigurations(), partitionCounts, COORDINATOR_ID)
+                configuration, physicalTenantConfigurations(), partitionCounts, coordinatorId)
             .generateCurrentClusterConfiguration();
     generated
         .partitionGroups()
@@ -480,7 +489,7 @@ public final class ClusterRestore {
             .collect(
                 Collectors.toMap(
                     groupId -> groupId,
-                    groupId -> List.of(new UpdateRoutingState(COORDINATOR_ID, Optional.empty()))));
+                    groupId -> List.of(new UpdateRoutingState(coordinatorId, Optional.empty()))));
     final List<Phase> phases = List.of(PartitionGroupPhase.sequential(operationsPerGroup));
     final var plan = PhasedChangePlan.initForRestore(phases, Instant.now());
     return new CurrentClusterConfiguration(
