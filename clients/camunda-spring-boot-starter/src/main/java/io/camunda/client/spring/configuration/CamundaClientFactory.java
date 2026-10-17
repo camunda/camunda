@@ -16,6 +16,7 @@
 package io.camunda.client.spring.configuration;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.CamundaClientBuilder;
 import io.camunda.client.CamundaClientConfiguration;
 import io.camunda.client.CredentialsProvider;
 import io.camunda.client.api.JsonMapper;
@@ -24,11 +25,13 @@ import io.camunda.client.jobhandling.CamundaClientExecutorService;
 import io.camunda.client.jobhandling.JobExceptionHandlerSupplier;
 import io.camunda.client.spring.properties.CamundaClientProperties;
 import io.grpc.ClientInterceptor;
+import java.util.Collections;
 import java.util.List;
 import org.apache.hc.client5.http.async.AsyncExecChainHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.beans.factory.annotation.Autowired;
 
 /**
  * Builds a stand-alone {@link CamundaClient} from a single resolved {@link CamundaClientProperties}
@@ -51,6 +54,9 @@ import org.springframework.beans.factory.ObjectProvider;
  * executor bean (so overrides like {@code VirtualThreadsAutoConfiguration} apply and it matches the
  * former single-client path); with several named clients, each gets its own owned executor sized by
  * its {@code execution-threads}, so one client's shutdown cannot stop another's.
+ *
+ * <p>Every {@link CamundaClientBuilderCustomizer} is applied last, e.g. to set the application's
+ * meter registry on the client.
  */
 public class CamundaClientFactory {
 
@@ -62,6 +68,7 @@ public class CamundaClientFactory {
   private final List<AsyncExecChainHandler> chainHandlers;
   private final ObjectProvider<CamundaClientExecutorService> executorService;
   private final ObjectProvider<JobExceptionHandlerSupplier> jobExceptionHandlerSupplier;
+  private List<CamundaClientBuilderCustomizer> builderCustomizers = Collections.emptyList();
 
   public CamundaClientFactory(
       final CredentialsProviderConfiguration credentialsProviderConfiguration,
@@ -76,6 +83,16 @@ public class CamundaClientFactory {
     this.chainHandlers = chainHandlers;
     this.executorService = executorService;
     this.jobExceptionHandlerSupplier = jobExceptionHandlerSupplier;
+  }
+
+  /**
+   * Sets the customizers applied to every client builder, in their {@link
+   * org.springframework.core.annotation.Order @Order}. Injected by Spring, so that the
+   * auto-configuration's bean method keeps its signature; none by default.
+   */
+  @Autowired(required = false)
+  public void setBuilderCustomizers(final List<CamundaClientBuilderCustomizer> builderCustomizers) {
+    this.builderCustomizers = builderCustomizers;
   }
 
   public CamundaClient createClient(
@@ -110,11 +127,13 @@ public class CamundaClientFactory {
             jobExceptionHandlerSupplier.getIfAvailable(
                 () -> context -> JobExceptionHandler.createDefault()));
 
-    return CamundaClient.newClientBuilder()
-        .withConfiguration(configuration)
-        // the resolved Spring properties are authoritative; don't let client-level environment
-        // variables override them (matching the single-client path)
-        .applyEnvironmentVariableOverrides(false)
-        .build();
+    final CamundaClientBuilder builder =
+        CamundaClient.newClientBuilder()
+            .withConfiguration(configuration)
+            // the resolved Spring properties are authoritative; don't let client-level environment
+            // variables override them (matching the single-client path)
+            .applyEnvironmentVariableOverrides(false);
+    builderCustomizers.forEach(customizer -> customizer.customize(builder));
+    return builder.build();
   }
 }

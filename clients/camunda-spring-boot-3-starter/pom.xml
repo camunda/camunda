@@ -44,6 +44,13 @@
           <groupId>org.springframework.boot</groupId>
           <artifactId>spring-boot-health</artifactId>
         </exclusion>
+        <!-- needs httpclient5 5.6+, while Spring Boot 3.5 manages 5.5: users opt into the HTTP
+             client metrics by adding it and overriding httpclient5.version to the same 5.6+
+             version; with a mismatch the client logs a warning and records no HTTP metrics -->
+        <exclusion>
+          <groupId>org.apache.httpcomponents.client5</groupId>
+          <artifactId>httpclient5-observation</artifactId>
+        </exclusion>
       </exclusions>
     </dependency>
 
@@ -150,6 +157,9 @@
                  Spring Boot 4.x-only package; Spring Boot 3.x has its own
                  CamundaClientHealthIndicator override under org.springframework.boot.actuate.health -->
             <exclude>io/camunda/client/spring/actuator/CamundaClientHealthIndicatorTest.java</exclude>
+            <!-- Exclude test of the HTTP client metrics, as this starter does not ship the
+                 httpclient5 observation module; see CamundaClientHttpMetricsSpringBoot3Test -->
+            <exclude>io/camunda/client/spring/configuration/CamundaClientHttpMetricsTest.java</exclude>
           </testExcludes>
         </configuration>
       </plugin>

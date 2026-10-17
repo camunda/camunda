@@ -37,6 +37,7 @@ import io.camunda.client.api.worker.JobClient;
 import io.camunda.client.api.worker.JobWorker;
 import io.camunda.client.api.worker.JobWorkerBuilderStep1.JobWorkerBuilderStep3;
 import io.camunda.client.impl.CamundaClientBuilderImpl;
+import io.camunda.client.impl.metrics.ClientMetrics;
 import java.io.Closeable;
 import java.io.IOException;
 import java.time.Duration;
@@ -84,7 +85,12 @@ class JobWorkerBuilderImplTest {
     closeables = new ArrayList<>();
     jobWorkerBuilder =
         new JobWorkerBuilderImpl(
-            zeebeClientConfig, jobClient, executorService, executorService, closeables);
+            zeebeClientConfig,
+            jobClient,
+            executorService,
+            executorService,
+            closeables,
+            ClientMetrics.noop());
 
     logCapture = new ListAppender("capture-" + JOB_WORKER_LOGGER_NAME);
     logCapture.start();
@@ -211,7 +217,8 @@ class JobWorkerBuilderImplTest {
             jobClient,
             new DeterministicScheduler(),
             mock(ExecutorService.class),
-            closeables);
+            closeables,
+            ClientMetrics.noop());
     return builder
         .jobType("type")
         .handler((c, j) -> {})

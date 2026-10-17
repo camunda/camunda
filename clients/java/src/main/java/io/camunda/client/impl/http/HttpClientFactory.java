@@ -20,6 +20,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.client.CamundaClientConfiguration;
 import io.camunda.client.CredentialsProvider;
 import io.camunda.client.impl.NoopCredentialsProvider;
+import io.camunda.client.impl.metrics.ClientMetrics;
 import io.camunda.client.impl.search.filter.StringFilterPropertyModule;
 import io.camunda.client.impl.util.AddressUtil;
 import io.camunda.client.impl.util.VersionUtil;
@@ -67,6 +68,7 @@ import org.apache.hc.core5.http.message.BasicHeader;
 import org.apache.hc.core5.http.nio.ssl.TlsStrategy;
 import org.apache.hc.core5.net.URIBuilder;
 import org.apache.hc.core5.pool.PoolConcurrencyPolicy;
+import org.apache.hc.core5.reactor.IOReactorConfig;
 import org.apache.hc.core5.ssl.SSLContexts;
 import org.apache.hc.core5.util.TimeValue;
 import org.apache.hc.core5.util.Timeout;
@@ -97,16 +99,30 @@ public class HttpClientFactory {
 
   private final CamundaClientConfiguration config;
   private final Duration responseDeadlineMargin;
+  private final ClientMetrics clientMetrics;
 
   public HttpClientFactory(final CamundaClientConfiguration config) {
-    this(config, ResponseDeadlineChainHandler.DEFAULT_MARGIN);
+    this(config, ClientMetrics.noop());
+  }
+
+  public HttpClientFactory(
+      final CamundaClientConfiguration config, final ClientMetrics clientMetrics) {
+    this(config, ResponseDeadlineChainHandler.DEFAULT_MARGIN, clientMetrics);
   }
 
   /** Lets tests shorten the margin of the response deadline. */
   HttpClientFactory(
       final CamundaClientConfiguration config, final Duration responseDeadlineMargin) {
+    this(config, responseDeadlineMargin, ClientMetrics.noop());
+  }
+
+  private HttpClientFactory(
+      final CamundaClientConfiguration config,
+      final Duration responseDeadlineMargin,
+      final ClientMetrics clientMetrics) {
     this.config = config;
     this.responseDeadlineMargin = responseDeadlineMargin;
+    this.clientMetrics = clientMetrics;
   }
 
   public HttpClient createClient() {
@@ -234,6 +250,12 @@ public class HttpClientFactory {
             .evictIdleConnections(TimeValue.ofSeconds(30))
             .useSystemProperties(); // allow users to customize via system properties
 
+    // the HttpClient default of one I/O thread per available processor, set explicitly so that it
+    // can be reported
+    final int ioThreadCount = IOReactorConfig.DEFAULT.getIoThreadCount();
+    builder.setIOReactorConfig(IOReactorConfig.custom().setIoThreadCount(ioThreadCount).build());
+    clientMetrics.ioThreadCount(ioThreadCount);
+
     // Register a request-level interceptor that injects the Authorization header at the
     // latest possible point — inside httpProcessor.process(), which runs AFTER connection
     // acquisition in AsyncMainClientExec.produceRequest(). This is critical under load:
@@ -260,6 +282,8 @@ public class HttpClientFactory {
         ChainElement.MAIN_TRANSPORT.name(),
         ResponseDeadlineChainHandler.NAME,
         new ResponseDeadlineChainHandler(responseDeadlineMargin));
+
+    clientMetrics.instrumentHttpClient(builder);
 
     return builder;
   }
