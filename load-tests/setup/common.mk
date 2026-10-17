@@ -74,7 +74,7 @@ additional_load_test_configuration ?=
 helm_chart_platform = charts/camunda-platform
 
 # Scenario: controls the workload profile for the load test.
-# Options: latency, realistic, typical, max, archiver
+# Options: latency, realistic, typical, max, archiver, dmn, dmn-large
 # Use named targets (make max) or pass directly: make install scenario=max
 scenario ?=
 
@@ -102,6 +102,57 @@ _scenario_platform_flags = --set-file '$(scenario_max_override_key)./camunda-pla
 else ifeq ($(scenario),archiver)
 _scenario_load_test_flags = --set load-tester.starter.rate=1 --set load-tester.starter.rateDuration=10m --set load-tester.starter.processId=multiInstanceElements --set load-tester.starter.bpmnXmlPath=bpmn/multiInstanceElements.bpmn --set load-tester.starter.payloadPath=bpmn/multiInstanceElementsPayload.json --set load-tester.workers.worker.replicas=0
 _scenario_platform_flags =
+else ifeq ($(scenario),dmn)
+# DMN decision evaluation throughput: only the k6 `dmn` test generates load, so evaluations do not
+# compete with process instances for the partitions (the BPMN load makes them fail with
+# RESOURCE_EXHAUSTED). The platform overlay trades durability for latency (see
+# camunda-platform-values-dmn.yaml), and the application-override.yml lifts the write rate limit.
+# The k6 runners are sized for the target rate of 6667 evaluations/s (400k/min); override it with
+# additional_load_test_setup_configuration="--set-string k6.tests.dmn.env.DMN_RATE=<rate>".
+ifeq ($(wildcard camunda-platform-values-dmn.yaml),)
+$(error scenario=dmn requires camunda-platform-values-dmn.yaml, only provided by the main setup)
+endif
+_scenario_load_test_flags = --set load-tester.enabled=false \
+	--set k6.tests.default.enabled=false \
+	--set k6.tests.data-read.enabled=false \
+	--set k6.tests.dmn.enabled=true \
+	--set k6.tests.dmn.parallelism=4 \
+	--set k6.tests.dmn.resources.requests.cpu=1500m \
+	--set k6.tests.dmn.resources.requests.memory=1Gi \
+	--set k6.tests.dmn.resources.limits.cpu=1500m \
+	--set k6.tests.dmn.resources.limits.memory=1Gi \
+	--set-string k6.tests.dmn.env.DMN_RATE=6667 \
+	--set-string k6.tests.dmn.env.DMN_RAMP_UP=10m \
+	--set-string k6.tests.dmn.env.DMN_PRE_ALLOCATED_VUS=200 \
+	--set-string k6.tests.dmn.env.DMN_MAX_VUS=2000
+_scenario_platform_flags = -f camunda-platform-values-dmn.yaml \
+	--set-file '$(scenario_max_override_key)./camunda-platform-dmn-override-values.yaml'
+else ifeq ($(scenario),dmn-large)
+# Large DMN evaluation: only the k6 `dmn-large` test generates load. It deploys a 48 MiB decision
+# graph and cycles through input vectors that hit every rule, checking the returned rate. Other
+# sizes and request mixes: k6.tests.dmn-large.generator.env.DMN_SIZE_MIB (e.g. 6, 12, 24) and
+# k6.tests.dmn-large.env.DMN_DEPTH_MIX / DMN_EXTRA_VARIABLES, see the chart README. The
+# platform keeps the durable default topology, with brokers sized for the parsed model and a
+# message size limit that fits its deployment (see camunda-platform-values-dmn-large.yaml). An
+# evaluation occupies a partition's processing thread for 0.5-3 s, so the cluster handles a few
+# evaluations per second: the rate ramps slowly to find that capacity; override it with
+# additional_load_test_setup_configuration="--set-string k6.tests.dmn-large.env.DMN_RATE=<rate>".
+ifeq ($(wildcard camunda-platform-values-dmn-large.yaml),)
+$(error scenario=dmn-large requires camunda-platform-values-dmn-large.yaml, only provided by the main setup)
+endif
+_scenario_load_test_flags = --set load-tester.enabled=false \
+	--set k6.tests.default.enabled=false \
+	--set k6.tests.data-read.enabled=false \
+	--set k6.tests.dmn-large.enabled=true \
+	--set k6.tests.dmn-large.resources.requests.cpu=1000m \
+	--set k6.tests.dmn-large.resources.requests.memory=2Gi \
+	--set k6.tests.dmn-large.resources.limits.cpu=1000m \
+	--set k6.tests.dmn-large.resources.limits.memory=2Gi \
+	--set-string k6.tests.dmn-large.env.DMN_RATE=6 \
+	--set-string k6.tests.dmn-large.env.DMN_RAMP_UP=30m \
+	--set-string k6.tests.dmn-large.env.DMN_PRE_ALLOCATED_VUS=10 \
+	--set-string k6.tests.dmn-large.env.DMN_MAX_VUS=100
+_scenario_platform_flags = -f camunda-platform-values-dmn-large.yaml
 else
 _scenario_load_test_flags =
 _scenario_platform_flags =
@@ -417,7 +468,7 @@ install-stable-chaos:
 
 # Workload scenario shortcuts — each runs 'make install' with the corresponding scenario profile.
 # For stable VMs, use: make install-stable scenario=<name>
-.PHONY: latency realistic typical max archiver
+.PHONY: latency realistic typical max archiver dmn dmn-large
 latency:
 	$(MAKE) install scenario=latency
 realistic:
@@ -428,6 +479,10 @@ max:
 	$(MAKE) install scenario=max
 archiver:
 	$(MAKE) install scenario=archiver
+dmn:
+	$(MAKE) install scenario=dmn
+dmn-large:
+	$(MAKE) install scenario=dmn-large
 
 .PHONY: clean
 clean:

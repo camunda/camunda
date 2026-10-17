@@ -1,0 +1,18 @@
+{{- /* Scripts of the k6 test data generators, only rendered when an enabled test uses one. */}}
+{{- $generatorUsed := false }}
+{{- range $testName, $test := .Values.k6.tests }}
+{{- if and $test.enabled $test.generator }}
+{{- $generatorUsed = true }}
+{{- end }}
+{{- end }}
+{{- if $generatorUsed }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: k6-generators
+  labels:
+    app.kubernetes.io/component: k6
+data:
+  {{- (.Files.Glob "k6/generators/*.py").AsConfig | nindent 2 }}
+{{- end }}
