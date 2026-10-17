@@ -67,6 +67,15 @@ tasks.named<ShadowJar>("shadowJar") {
 
 tasks.named<Jar>("jar") { enabled = false }
 
+// The disabled jar task leaves runtimeElements pointing at a jar that is never built. Expose the
+// shadow jar instead so project dependents get the classes with the relocated awaitility.
+configurations {
+  named("runtimeElements") {
+    outgoing.artifacts.clear()
+    outgoing.artifact(tasks.named("shadowJar"))
+  }
+}
+
 (publishing.publications["maven"] as MavenPublication).artifact(tasks.named("shadowJar"))
 
 dependencies {
