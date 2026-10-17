@@ -17,6 +17,7 @@ package io.camunda.client.impl.http;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.awaitility.Awaitility.await;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.mock;
@@ -33,13 +34,18 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 import java.nio.ByteBuffer;
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import org.apache.hc.core5.concurrent.FutureCallback;
 import org.apache.hc.core5.http.ContentType;
 import org.apache.hc.core5.http.EntityDetails;
+import org.apache.hc.core5.http.message.BasicHttpResponse;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 
 public class DocumentDataConsumerTest {
 
@@ -258,6 +264,151 @@ public class DocumentDataConsumerTest {
     assertThat(callback.inputStream.read()).isEqualTo(-1);
 
     verifyNoMoreInteractions(callback);
+  }
+
+  @Test
+  @Timeout(value = 10, unit = TimeUnit.SECONDS)
+  void shouldWakeBlockedReaderWhenResourcesAreReleasedBeforeStreamEnd() throws Exception {
+    // given
+    final DocumentDataConsumer<InputStream> consumer = new DocumentDataConsumer<>(16, objectMapper);
+    final Callback callback = new Callback();
+    consumer.streamStart(octetStreamDetails(), callback);
+
+    try (final BlockedReader reader = BlockedReader.start(callback.inputStream)) {
+      // when
+      consumer.releaseResources();
+
+      // then
+      assertThat(reader.awaitFailure()).isInstanceOf(IOException.class);
+    }
+  }
+
+  @Test
+  @Timeout(value = 10, unit = TimeUnit.SECONDS)
+  void shouldWakeBlockedReaderWhenResponseConsumerFailsWithoutReachingEntityConsumer()
+      throws Exception {
+    // given
+    // AbstractAsyncResponseConsumer#failed does not call AsyncEntityConsumer#failed
+    final ApiResponseConsumer<InputStream> responseConsumer =
+        new ApiResponseConsumer<>(new DocumentDataConsumer<>(16, objectMapper));
+    final Callback callback = new Callback();
+    responseConsumer.consumeResponse(
+        new BasicHttpResponse(200), octetStreamDetails(), null, new ResponseCallback(callback));
+
+    try (final BlockedReader reader = BlockedReader.start(callback.inputStream)) {
+      // when
+      responseConsumer.failed(new IOException("connection closed"));
+
+      // then
+      assertThat(reader.awaitFailure()).isInstanceOf(IOException.class);
+    }
+  }
+
+  @Test
+  void shouldNotSignalErrorWhenResourcesAreReleasedAfterStreamEnd() throws IOException {
+    // given
+    final byte[] data = "Test content".getBytes();
+    final DocumentDataConsumer<InputStream> consumer =
+        new DocumentDataConsumer<>(data.length, objectMapper);
+    final Callback callback = new Callback();
+    consumer.streamStart(octetStreamDetails(), callback);
+    consumer.consume(ByteBuffer.wrap(data));
+    consumer.streamEnd(Collections.emptyList());
+
+    // when
+    consumer.releaseResources();
+
+    // then
+    final byte[] content = new byte[data.length];
+    assertThat(callback.inputStream.read(content)).isEqualTo(data.length);
+    assertThat(content).isEqualTo(data);
+    assertThat(callback.inputStream.read()).isEqualTo(-1);
+  }
+
+  private static EntityDetails octetStreamDetails() {
+    final EntityDetails entityDetails = mock(EntityDetails.class);
+    when(entityDetails.getContentType())
+        .thenReturn(ContentType.APPLICATION_OCTET_STREAM.getMimeType());
+    return entityDetails;
+  }
+
+  /**
+   * Reads from the stream on a dedicated thread and only returns from {@link #start} once that
+   * thread is parked inside the stream waiting for data, so a subsequent release or failure is
+   * guaranteed to notify an already waiting reader instead of being found by a later read.
+   */
+  private static final class BlockedReader implements AutoCloseable {
+
+    private final Thread thread;
+    private final AtomicReference<Throwable> outcome = new AtomicReference<>();
+
+    private BlockedReader(final InputStream inputStream) {
+      thread =
+          new Thread(
+              () -> {
+                try {
+                  outcome.set(new IllegalStateException("read returned " + inputStream.read()));
+                } catch (final Throwable t) {
+                  outcome.set(t);
+                }
+              },
+              "blocked-document-reader");
+      thread.setDaemon(true);
+    }
+
+    static BlockedReader start(final InputStream inputStream) {
+      final BlockedReader reader = new BlockedReader(inputStream);
+      reader.thread.start();
+      try {
+        await()
+            .atMost(Duration.ofSeconds(5))
+            .until(
+                () ->
+                    reader.thread.getState() == Thread.State.WAITING
+                        && Arrays.stream(reader.thread.getStackTrace())
+                            .anyMatch(f -> f.getMethodName().equals("canConsumeData")));
+      } catch (final Throwable t) {
+        reader.close();
+        throw t;
+      }
+      return reader;
+    }
+
+    Throwable awaitFailure() {
+      await().atMost(Duration.ofSeconds(5)).until(() -> outcome.get() != null);
+      return outcome.get();
+    }
+
+    @Override
+    public void close() {
+      thread.interrupt();
+      try {
+        thread.join(TimeUnit.SECONDS.toMillis(5));
+      } catch (final InterruptedException e) {
+        Thread.currentThread().interrupt();
+      }
+    }
+  }
+
+  static class ResponseCallback
+      implements FutureCallback<ApiResponseConsumer.ApiResponse<InputStream>> {
+
+    private final Callback delegate;
+
+    ResponseCallback(final Callback delegate) {
+      this.delegate = delegate;
+    }
+
+    @Override
+    public void completed(final ApiResponseConsumer.ApiResponse<InputStream> result) {
+      delegate.completed(result.entity());
+    }
+
+    @Override
+    public void failed(final Exception ex) {}
+
+    @Override
+    public void cancelled() {}
   }
 
   static class Callback implements FutureCallback<ApiEntity<InputStream>> {
