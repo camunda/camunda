@@ -17,6 +17,10 @@ import static org.assertj.core.api.Assumptions.assumeThat;
 import io.atomix.cluster.MemberId;
 import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
+import io.camunda.zeebe.broker.system.configuration.PartitioningCfg;
+import io.camunda.zeebe.broker.system.configuration.partitioning.Scheme;
+import io.camunda.zeebe.broker.system.configuration.partitioning.ZoneAwareCfg;
+import io.camunda.zeebe.broker.system.configuration.partitioning.ZoneCfg;
 import io.camunda.zeebe.dynamic.config.ClusterConfigurationManagerService;
 import io.camunda.zeebe.dynamic.config.PersistedCurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.serializer.ProtoBufSerializer;
@@ -288,6 +292,108 @@ final class ClusterRestoreTest {
       assertThat(written.partitionGroups())
           .containsOnlyKeys(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
       assertThat(written.isAfterRestore()).isTrue();
+    }
+
+    @Test
+    void shouldTargetZoneQualifiedCoordinatorInZoneAwareCluster(@TempDir final Path dir)
+        throws IOException {
+      // given — 2 zones: us-east (2 brokers), us-west (1 broker)
+      final var zoneAwareCfg =
+          new ZoneAwareCfg(
+              List.of(new ZoneCfg("us-east", 2, 1, 1000), new ZoneCfg("us-west", 1, 1, 500)));
+      final var partitioningCfg = new PartitioningCfg();
+      partitioningCfg.setScheme(Scheme.ZONE_AWARE);
+      partitioningCfg.setZoneAware(zoneAwareCfg);
+
+      final var brokerCfg = brokerCfg(dir, 2);
+      brokerCfg.getCluster().setClusterSize(3);
+      brokerCfg.getCluster().setReplicationFactor(2);
+      brokerCfg.getCluster().setZone("us-east");
+      brokerCfg.getCluster().setNodeId(0);
+      brokerCfg.getExperimental().setPartitioning(partitioningCfg);
+
+      final var targets =
+          Map.of(
+              PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID,
+              new PhysicalTenantRestoreTarget(brokerCfg, TestRestorableBackupStore::new, null));
+      final var clusterRestore = new ClusterRestore(brokerCfg, targets, new SimpleMeterRegistry());
+
+      // when
+      clusterRestore.restoreTopologyFile();
+
+      // then — coordinator in us-east with node 0 is "us-east_0", not bare "0"
+      final var written = read(dir);
+      final var expectedCoordinator = MemberId.from("us-east", 0);
+      written
+          .partitionGroups()
+          .forEach(
+              (groupId, group) -> {
+                final var plannedOperation =
+                    group
+                        .pendingChanges()
+                        .orElseThrow()
+                        .operations()
+                        .values()
+                        .iterator()
+                        .next()
+                        .operation();
+                assertThat(plannedOperation).isInstanceOf(UpdateRoutingState.class);
+                final var updateRouting = (UpdateRoutingState) plannedOperation;
+                assertThat(updateRouting.memberId()).isEqualTo(expectedCoordinator);
+              });
+    }
+
+    @Test
+    void shouldOnlyRecreateTopologyFileOnSelectedCoordinatorInZoneAwareCluster(
+        @TempDir final Path eastDir, @TempDir final Path westDir)
+        throws IOException, ExecutionException, InterruptedException {
+      // given — 2 zones: us-east (2 brokers), us-west (1 broker).
+      // Both us-east_0 and us-west_0 have nodeId 0, but only us-east_0 is the coordinator.
+      final var zoneAwareCfg =
+          new ZoneAwareCfg(
+              List.of(new ZoneCfg("us-east", 2, 1, 1000), new ZoneCfg("us-west", 1, 1, 500)));
+      final var partitioningCfg = new PartitioningCfg();
+      partitioningCfg.setScheme(Scheme.ZONE_AWARE);
+      partitioningCfg.setZoneAware(zoneAwareCfg);
+
+      final var eastCfg = brokerCfg(eastDir, 2);
+      eastCfg.getCluster().setClusterSize(3);
+      eastCfg.getCluster().setReplicationFactor(2);
+      eastCfg.getCluster().setZone("us-east");
+      eastCfg.getCluster().setNodeId(0);
+      eastCfg.getExperimental().setPartitioning(partitioningCfg);
+
+      final var westCfg = brokerCfg(westDir, 2);
+      westCfg.getCluster().setClusterSize(3);
+      westCfg.getCluster().setReplicationFactor(2);
+      westCfg.getCluster().setZone("us-west");
+      westCfg.getCluster().setNodeId(0);
+      westCfg.getExperimental().setPartitioning(partitioningCfg);
+
+      final var eastTargets =
+          Map.of(
+              PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID,
+              new PhysicalTenantRestoreTarget(eastCfg, TestRestorableBackupStore::new, null));
+      final var westTargets =
+          Map.of(
+              PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID,
+              new PhysicalTenantRestoreTarget(westCfg, TestRestorableBackupStore::new, null));
+
+      final var eastRestore = new ClusterRestore(eastCfg, eastTargets, new SimpleMeterRegistry());
+      final var westRestore = new ClusterRestore(westCfg, westTargets, new SimpleMeterRegistry());
+
+      final Map<String, Map<Integer, long[]>> emptyBackupSelection =
+          Map.of(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, Map.of());
+
+      // when — whole-cluster restore with REQUIRE_EMPTY triggers recreateTopology on both nodes
+      eastRestore.restore(emptyBackupSelection, REQUIRE_EMPTY, false, List.of());
+      westRestore.restore(emptyBackupSelection, REQUIRE_EMPTY, false, List.of());
+
+      // then — only the selected coordinator (us-east_0) recreates the topology file;
+      // non-coordinator node 0 (us-west_0) must NOT write a conflicting topology file
+      assertThat(eastDir.resolve(ClusterConfigurationManagerService.TOPOLOGY_FILE_NAME)).exists();
+      assertThat(westDir.resolve(ClusterConfigurationManagerService.TOPOLOGY_FILE_NAME))
+          .doesNotExist();
     }
   }
 
