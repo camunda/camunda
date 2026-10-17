@@ -8,15 +8,18 @@
 package io.camunda.zeebe.gateway.rest.controller;
 
 import io.camunda.gateway.mapping.http.RequestMapper;
+import io.camunda.gateway.mapping.http.ResponseMapper;
 import io.camunda.gateway.protocol.model.ClockPinRequest;
 import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.service.registry.ServiceRegistry;
+import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPutMapping;
 import io.camunda.zeebe.gateway.rest.annotation.PhysicalTenantId;
 import io.camunda.zeebe.gateway.rest.mapper.RequestExecutor;
 import io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper;
 import java.util.concurrent.CompletableFuture;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -34,6 +37,16 @@ public class ClockController {
       final CamundaAuthenticationProvider authenticationProvider) {
     this.serviceRegistry = serviceRegistry;
     this.authenticationProvider = authenticationProvider;
+  }
+
+  @CamundaGetMapping
+  public CompletableFuture<ResponseEntity<Object>> getClock(
+      @PhysicalTenantId final String physicalTenantId) {
+    final var authentication = authenticationProvider.getCamundaAuthentication();
+    return RequestExecutor.executeServiceMethod(
+        () -> serviceRegistry.clockServices(physicalTenantId).getClock(authentication),
+        ResponseMapper::toClockResult,
+        HttpStatus.OK);
   }
 
   @CamundaPutMapping(consumes = MediaType.APPLICATION_JSON_VALUE)

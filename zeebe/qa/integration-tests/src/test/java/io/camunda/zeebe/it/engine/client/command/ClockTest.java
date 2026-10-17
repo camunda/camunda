@@ -96,6 +96,33 @@ class ClockTest {
     assertClockResetted(c -> assertThat(c).hasTime(0L));
   }
 
+  @Test
+  void shouldGetPinnedClockTime() {
+    // given
+    client.newPinClockCommand().time(FUTURE_FIXED_INSTANT).send().join();
+
+    // when
+    final var response = client.newClockGetRequest().send().join();
+
+    // then
+    assertThat(response.getTimestamp()).isEqualTo(FIXED_TIME);
+    assertThat(response.getInstant()).isEqualTo(FUTURE_FIXED_INSTANT);
+  }
+
+  @Test
+  void shouldGetCurrentClockTimeAfterReset() {
+    // given
+    client.newPinClockCommand().time(PAST_FIXED_INSTANT).send().join();
+    client.newResetClockCommand().send().join();
+
+    // when
+    final var response = client.newClockGetRequest().send().join();
+
+    // then
+    assertTimestampCloseToNow(
+        response.getTimestamp(), "Clock should return the current time after reset");
+  }
+
   static Stream<Instant> validInstances() {
     return Stream.of(
         Instant.EPOCH,

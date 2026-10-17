@@ -119,6 +119,7 @@ import io.camunda.client.api.fetch.AuditLogGetRequest;
 import io.camunda.client.api.fetch.AuthorizationGetRequest;
 import io.camunda.client.api.fetch.AuthorizationsSearchRequest;
 import io.camunda.client.api.fetch.BatchOperationGetRequest;
+import io.camunda.client.api.fetch.ClockGetRequest;
 import io.camunda.client.api.fetch.DecisionDefinitionGetRequest;
 import io.camunda.client.api.fetch.DecisionDefinitionGetXmlRequest;
 import io.camunda.client.api.fetch.DecisionInstanceGetRequest;
@@ -978,6 +979,28 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    */
   @ExperimentalApi("https://github.com/camunda/camunda/issues/21647")
   ResetClockCommandStep1 newResetClockCommand();
+
+  /**
+   * Request to get the current time of the Zeebe engine's internal clock.
+   *
+   * <p>If the clock is pinned, the response holds the pinned time. Otherwise, it holds the time
+   * that the engine currently uses. This is useful to check the effect of a <code>pin</code> or
+   * <code>reset</code> command.
+   *
+   * <pre>{@code
+   * final Instant engineTime = camundaClient
+   *  .newClockGetRequest()
+   *  .send()
+   *  .join()
+   *  .getInstant();
+   * }</pre>
+   *
+   * <p>A <code>pin</code> or <code>reset</code> command reaches all partitions shortly after it is
+   * accepted, so a request sent right after it may still return the previous time.
+   *
+   * @return a builder for the request
+   */
+  ClockGetRequest newClockGetRequest();
 
   /**
    * Gets a process definition by key.
