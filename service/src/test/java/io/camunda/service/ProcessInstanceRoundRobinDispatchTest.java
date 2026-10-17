@@ -190,6 +190,7 @@ final class ProcessInstanceRoundRobinDispatchTest {
         "process",
         -1,
         null,
+        null,
         "<default>",
         null,
         null,

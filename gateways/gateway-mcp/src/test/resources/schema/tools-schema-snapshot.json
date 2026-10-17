@@ -377,7 +377,7 @@
     {
       "name": "createProcessInstance",
       "title": "createProcessInstance",
-      "description": "Create a new process instance of the given process definition. Either a processDefinitionKey or\na processDefinitionId (with an optional processDefinitionVersion) need to be passed.\n\nWhen using the awaitCompletion flag, the tool will wait for the process instance to complete\nand return its result variables. When using awaitCompletion, always include a unique tag\n`mcp-tool:<uniqueId>` which can be used to search for the started process instance in case\nof timeouts. Processes with wait states, like service tasks, user tasks, or defined listeners,\nare more likely to time out. You can increase the timeout to wait for completion by defining\na longer requestTimeout.",
+      "description": "Create a new process instance of the given process definition. Either a processDefinitionKey or\na processDefinitionId (with an optional processDefinitionVersion or processDefinitionVersionTag)\nneed to be passed.\n\nWhen using the awaitCompletion flag, the tool will wait for the process instance to complete\nand return its result variables. When using awaitCompletion, always include a unique tag\n`mcp-tool:<uniqueId>` which can be used to search for the started process instance in case\nof timeouts. Processes with wait states, like service tasks, user tasks, or defined listeners,\nare more likely to time out. You can increase the timeout to wait for completion by defining\na longer requestTimeout.",
       "inputSchema": {
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "type": "object",
@@ -409,6 +409,10 @@
             "type": "integer",
             "format": "int32",
             "description": "The version of the process. If omitted, the latest active version is used. "
+          },
+          "processDefinitionVersionTag": {
+            "type": "string",
+            "description": "The version tag of the process definition to start an instance of. If several deployed versions carry the same tag, the most recently deployed one is used. "
           },
           "requestTimeout": {
             "type": "integer",

@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.gateway.protocol.model.ProcessInstanceCreationInstructionById;
 import io.camunda.gateway.protocol.model.ProcessInstanceCreationInstructionByKey;
+import io.camunda.gateway.protocol.model.ProcessInstanceCreationInstructionByVersionTag;
 import io.camunda.gateway.protocol.model.ProcessInstanceFilter;
 import io.camunda.gateway.protocol.model.ProcessInstanceMigrationBatchOperationPlan;
 import io.camunda.gateway.protocol.model.ProcessInstanceMigrationBatchOperationRequest;
@@ -278,6 +279,64 @@ class ProcessInstanceRequestValidatorTest {
     final ProblemDetail problem = result.get();
     assertThat(problem.getTitle()).isEqualTo("INVALID_ARGUMENT");
     assertThat(problem.getDetail()).contains("businessId").contains("256");
+  }
+
+  @Test
+  @DisplayName("Should accept valid creation by version tag")
+  void shouldAcceptCreationByVersionTag() {
+    // given
+    final var request =
+        ProcessInstanceCreationInstructionByVersionTag.Builder.create()
+            .processDefinitionId("process-id")
+            .processDefinitionVersionTag("release-1")
+            .build();
+
+    // when
+    final Optional<ProblemDetail> result =
+        ProcessInstanceRequestValidator.validateCreateProcessInstanceRequest(request);
+
+    // then
+    assertThat(result).isEmpty();
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {"", "  "})
+  @DisplayName("Should reject blank version tag when creating by version tag")
+  void shouldRejectBlankVersionTag(final String versionTag) {
+    // given
+    final var request =
+        ProcessInstanceCreationInstructionByVersionTag.Builder.create()
+            .processDefinitionId("process-id")
+            .processDefinitionVersionTag(versionTag)
+            .build();
+
+    // when
+    final Optional<ProblemDetail> result =
+        ProcessInstanceRequestValidator.validateCreateProcessInstanceRequest(request);
+
+    // then
+    assertThat(result).isPresent();
+    assertThat(result.get().getTitle()).isEqualTo("INVALID_ARGUMENT");
+    assertThat(result.get().getDetail()).contains("processDefinitionVersionTag");
+  }
+
+  @Test
+  @DisplayName("Should reject invalid processDefinitionId when creating by version tag")
+  void shouldRejectInvalidProcessDefinitionIdWhenCreatingByVersionTag() {
+    // given
+    final var request =
+        ProcessInstanceCreationInstructionByVersionTag.Builder.create()
+            .processDefinitionId("9invalid")
+            .processDefinitionVersionTag("release-1")
+            .build();
+
+    // when
+    final Optional<ProblemDetail> result =
+        ProcessInstanceRequestValidator.validateCreateProcessInstanceRequest(request);
+
+    // then
+    assertThat(result).isPresent();
+    assertThat(result.get().getDetail()).contains("processDefinitionId");
   }
 
   @Test
