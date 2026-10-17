@@ -190,7 +190,11 @@ public abstract class ReportEvaluationHandler {
                               .map(
                                   def ->
                                       toReportDataDefinitionDto(
-                                          def, scopedDef.getVersions(), scopedDef.getTenantIds())))
+                                          def, scopedDef.getVersions(), scopedDef.getTenantIds()))
+                              .map(
+                                  def ->
+                                      withNameFromResolvedTenants(
+                                          def, reportEvaluationInfo.getUserId())))
                   .toList();
           processReportData.setDefinitions(validatedDefs);
           // Heatmap tiles render on top of the BPMN diagram, so the frontend needs the definition
@@ -246,6 +250,30 @@ public abstract class ReportEvaluationHandler {
     return definitionService.getFullyImportedDefinitions(DefinitionType.PROCESS, userId).stream()
         .map(this::toReportDataDefinitionDto)
         .toList();
+  }
+
+  /**
+   * {@code getDefinitionWithAvailableTenants} picks the definition name across all tenants before
+   * authorization narrows the tenant list, so the name can come from a tenant the user cannot see.
+   * Re-resolve it within the definition's resolved tenants only; without a match the name is
+   * cleared and labels fall back to the process id.
+   */
+  private ReportDataDefinitionDto withNameFromResolvedTenants(
+      final ReportDataDefinitionDto definition, final String userId) {
+    final String name =
+        definitionService
+            .getFullyImportedDefinitions(
+                DefinitionType.PROCESS,
+                Set.of(definition.getKey()),
+                definition.getTenantIds(),
+                userId)
+            .stream()
+            .findFirst()
+            .map(io.camunda.optimize.dto.optimize.query.definition.DefinitionResponseDto::getName)
+            .orElse(null);
+    definition.setName(name);
+    definition.setDisplayName(name);
+    return definition;
   }
 
   private ReportDataDefinitionDto toReportDataDefinitionDto(
