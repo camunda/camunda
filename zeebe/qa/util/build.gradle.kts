@@ -4,6 +4,7 @@ dependencies {
   implementation(project(":configuration"))
   implementation(project(":camunda-cluster"))
   implementation(project(":zeebe-cluster-config-api"))
+  api(project(":zeebe-cluster-config-openapi"))
   api(libs.co.elastic.clients.elasticsearch.java)
   implementation(project(":camunda-authentication"))
   implementation(project(":camunda-gateway-model"))

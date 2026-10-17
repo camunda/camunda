@@ -705,6 +705,18 @@
 
       <dependency>
         <groupId>io.camunda</groupId>
+        <artifactId>zeebe-cluster-config-openapi</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.camunda</groupId>
+        <artifactId>zeebe-cluster-config-rest</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.camunda</groupId>
         <artifactId>zeebe-rebalance</artifactId>
         <version>${project.version}</version>
       </dependency>

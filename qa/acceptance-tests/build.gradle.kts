@@ -20,6 +20,7 @@ dependencies {
   testImplementation(project(":webapps-backup"))
   testImplementation(project(":zeebe-broker"))
   testImplementation(project(":zeebe-cluster-config-api"))
+  testImplementation(project(":zeebe-cluster-config-openapi"))
   testImplementation(project(":zeebe-broker-client"))
   testImplementation(project(":zeebe-protocol"))
   testImplementation(project(":zeebe-bpmn-model"))

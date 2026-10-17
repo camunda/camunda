@@ -21,6 +21,7 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest
 import io.camunda.zeebe.dynamic.config.api.DynamicConfigExportingStateController;
 import io.camunda.zeebe.dynamic.config.api.ExportingStateController;
 import io.camunda.zeebe.dynamic.config.gossip.ClusterConfigurationGossiperConfig;
+import io.camunda.zeebe.dynamic.config.serializer.ClusterConfigurationSerializer;
 import io.camunda.zeebe.dynamic.config.serializer.ProtoBufSerializer;
 import io.camunda.zeebe.rebalance.ProtoBufRebalanceSerializer;
 import io.camunda.zeebe.rebalance.RebalanceRequestSender;
@@ -101,6 +102,11 @@ public class DynamicClusterServices {
     brokerTopologyManager.initializeTopologyFromMembership();
     gatewayClusterConfigurationService.addUpdateListener(brokerTopologyManager);
     return brokerTopologyManager;
+  }
+
+  @Bean
+  public ClusterConfigurationSerializer clusterConfigurationSerializer() {
+    return new ProtoBufSerializer();
   }
 
   @Bean
