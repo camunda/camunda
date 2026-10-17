@@ -41,7 +41,7 @@ dependencies {
   api(libs.io.micrometer.micrometer.commons)
   api(libs.com.fasterxml.jackson.core.jackson.core)
   api(libs.com.fasterxml.jackson.core.jackson.databind)
-  implementation(project(":zeebe-cluster-config"))
+  testImplementation(project(":zeebe-cluster-config-api"))
   api(libs.io.netty.netty.handler)
   api(libs.org.springframework.boot.spring.boot)
   api(libs.org.springframework.spring.core)

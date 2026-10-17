@@ -14,7 +14,7 @@ dependencies {
   implementation(project(":zeebe-snapshots"))
   implementation(project(":zeebe-util"))
   implementation(project(":zeebe-journal"))
-  implementation(project(":zeebe-cluster-config"))
+  implementation(project(":zeebe-cluster-config-api"))
   implementation(project(":zeebe-scheduler"))
   implementation(project(":camunda-db-rdbms"))
   implementation(project(":zeebe-protocol"))

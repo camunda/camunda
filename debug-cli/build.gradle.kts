@@ -2,7 +2,8 @@ plugins { id("buildlogic.server-conventions") }
 
 dependencies {
   implementation(libs.info.picocli.picocli)
-  implementation(project(":zeebe-cluster-config")) {
+  implementation(project(":zeebe-cluster-config-api")) { exclude(group = "io.netty") }
+  implementation(project(":zeebe-cluster-config-impl")) {
     exclude(group = "org.springframework")
     exclude(group = "org.springframework.boot")
     exclude(group = "io.netty")

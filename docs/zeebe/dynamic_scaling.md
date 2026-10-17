@@ -80,7 +80,7 @@ The redistribution phase uses [Zeebe's command distribution](./generalized_distr
 
 ### Scaling steps
 
-1. A client sends a [ClusterConfigurationManagementRequest](../../zeebe/dynamic-config/src/main/java/io/camunda/zeebe/dynamic/config/api/ClusterConfigurationManagementApi.java) as a HTTP PATCH request at `/actuator/cluster/` on the management port.
+1. A client sends a [ClusterConfigurationManagementRequest](../../zeebe/dynamic-config/impl/src/main/java/io/camunda/zeebe/dynamic/config/api/ClusterConfigurationManagementApi.java) as a HTTP PATCH request at `/actuator/cluster/` on the management port.
 
    If new brokers need to be added, it can be done in the same command, by specifying the ids of the brokers to add:
    - with brokers:
@@ -118,7 +118,7 @@ The redistribution phase uses [Zeebe's command distribution](./generalized_distr
 
 The new partitions will be distributed using `RoundRobinPartitionDistributor`, so that they are evenly spread across all brokers.
 
-2. The [ClusterChangeCoordinator](../../zeebe/dynamic-config/src/main/java/io/camunda/zeebe/dynamic/config/changes/ConfigurationChangeCoordinator.java) generates the `ClusterChangeOperation` needed to reach the requested result.
+2. The [ClusterChangeCoordinator](../../zeebe/dynamic-config/impl/src/main/java/io/camunda/zeebe/dynamic/config/changes/ConfigurationChangeCoordinator.java) generates the `ClusterChangeOperation` needed to reach the requested result.
    For a pure scaling operation, the generated `ClusterChangeOperation` will be:
 
    - `StartPartitionScaleUp` to the coordinator broker, which will send a command to partition 1

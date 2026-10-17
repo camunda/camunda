@@ -17,7 +17,6 @@ import static org.assertj.core.api.Assumptions.assumeThat;
 import io.atomix.cluster.MemberId;
 import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
-import io.camunda.zeebe.dynamic.config.ClusterConfigurationManagerService;
 import io.camunda.zeebe.dynamic.config.PersistedCurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.serializer.ProtoBufSerializer;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
@@ -69,12 +68,12 @@ final class ClusterRestoreTest {
   }
 
   private static byte[] fileContent(final Path dir) throws IOException {
-    return Files.readAllBytes(dir.resolve(ClusterConfigurationManagerService.TOPOLOGY_FILE_NAME));
+    return Files.readAllBytes(dir.resolve(PersistedCurrentClusterConfiguration.TOPOLOGY_FILE_NAME));
   }
 
   private static CurrentClusterConfiguration read(final Path dir) {
     return PersistedCurrentClusterConfiguration.ofFile(
-            dir.resolve(ClusterConfigurationManagerService.TOPOLOGY_FILE_NAME),
+            dir.resolve(PersistedCurrentClusterConfiguration.TOPOLOGY_FILE_NAME),
             new ProtoBufSerializer())
         .getConfiguration();
   }
@@ -176,7 +175,7 @@ final class ClusterRestoreTest {
       // the check that the directory is empty passes.
       final var clusterRestore = clusterRestore(dir, Map.of("default", 1));
       clusterRestore.restoreTopologyFile();
-      final var topologyFile = dir.resolve(ClusterConfigurationManagerService.TOPOLOGY_FILE_NAME);
+      final var topologyFile = dir.resolve(PersistedCurrentClusterConfiguration.TOPOLOGY_FILE_NAME);
       assertThat(topologyFile.toFile().setReadOnly()).isTrue();
       // a user that can write to read-only files, such as root, cannot make this fail
       assumeThat(Files.isWritable(topologyFile)).isFalse();
@@ -189,7 +188,7 @@ final class ClusterRestoreTest {
                       Map.of("default", Map.<Integer, long[]>of()),
                       REQUIRE_EMPTY,
                       false,
-                      List.of(ClusterConfigurationManagerService.TOPOLOGY_FILE_NAME)))
+                      List.of(PersistedCurrentClusterConfiguration.TOPOLOGY_FILE_NAME)))
           .isInstanceOf(IOException.class);
 
       // then - the data of the run is deleted, as it is for any other failure of the restore
@@ -410,7 +409,8 @@ final class ClusterRestoreTest {
 
       // then — a partial run does not write one either; the brokers generate what they need on
       // boot, exactly as they do for a tenant that was never provisioned
-      assertThat(dir.resolve(ClusterConfigurationManagerService.TOPOLOGY_FILE_NAME)).doesNotExist();
+      assertThat(dir.resolve(PersistedCurrentClusterConfiguration.TOPOLOGY_FILE_NAME))
+          .doesNotExist();
     }
   }
 
@@ -477,7 +477,7 @@ final class ClusterRestoreTest {
       final var scaledUpRouting =
           new RoutingState(7, new AllPartitions(SCALED_UP), new HashMod(RESTORED));
       PersistedCurrentClusterConfiguration.ofFile(
-              dir.resolve(ClusterConfigurationManagerService.TOPOLOGY_FILE_NAME),
+              dir.resolve(PersistedCurrentClusterConfiguration.TOPOLOGY_FILE_NAME),
               new ProtoBufSerializer())
           .update(
               read(dir)
@@ -610,7 +610,8 @@ final class ClusterRestoreTest {
       clusterRestore.updateTopologyFile(Map.of("default", RESTORED));
 
       // then
-      assertThat(dir.resolve(ClusterConfigurationManagerService.TOPOLOGY_FILE_NAME)).doesNotExist();
+      assertThat(dir.resolve(PersistedCurrentClusterConfiguration.TOPOLOGY_FILE_NAME))
+          .doesNotExist();
     }
   }
 
@@ -706,7 +707,7 @@ final class ClusterRestoreTest {
       // never be satisfied and their data must survive.
       assertThat(tenantFile).doesNotExist();
       assertThat(defaultFile).exists();
-      assertThat(dir.resolve(ClusterConfigurationManagerService.TOPOLOGY_FILE_NAME)).exists();
+      assertThat(dir.resolve(PersistedCurrentClusterConfiguration.TOPOLOGY_FILE_NAME)).exists();
     }
   }
 }
