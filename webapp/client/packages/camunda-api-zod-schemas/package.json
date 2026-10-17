@@ -820,10 +820,10 @@
 	},
 	"packageManager": "npm@12.2.0",
 	"devDependencies": {
-		"@kubb/adapter-oas": "5.9.3",
+		"@kubb/adapter-oas": "5.9.4",
 		"@kubb/cli": "5.9.4",
-		"@kubb/core": "5.9.3",
-		"@kubb/parser-ts": "5.9.3",
+		"@kubb/core": "5.9.4",
+		"@kubb/parser-ts": "5.9.4",
 		"@kubb/plugin-ts": "5.0.11",
 		"@kubb/plugin-zod": "5.4.9",
 		"@types/node": "26.6.5",
