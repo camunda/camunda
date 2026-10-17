@@ -64,6 +64,18 @@ public interface CreateProcessInstanceCommandStep1
      * @return the builder for this command
      */
     CreateProcessInstanceCommandStep3 latestVersion();
+
+    /**
+     * Use the latest deployed version of the process that carries the given version tag to create
+     * an instance of. The version tag is set on the process definition at deployment time.
+     *
+     * <p>Requires Camunda 8.11 or later; older gateways and brokers ignore the version tag and
+     * start the latest version instead.
+     *
+     * @param versionTag the version tag of the process
+     * @return the builder for this command
+     */
+    CreateProcessInstanceCommandStep3 versionTag(String versionTag);
   }
 
   interface CreateProcessInstanceCommandStep3

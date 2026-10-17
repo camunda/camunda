@@ -196,6 +196,16 @@ public final class CreateProcessInstanceCommandImpl
   }
 
   @Override
+  public CreateProcessInstanceCommandStep3 versionTag(final String versionTag) {
+    ArgumentUtil.ensureNotNullNorEmpty("versionTag", versionTag);
+    grpcRequestObjectBuilder.setVersion(LATEST_VERSION);
+    grpcRequestObjectBuilder.setVersionTag(versionTag);
+    httpRequestObject.setProcessDefinitionVersion(null);
+    httpRequestObject.setProcessDefinitionVersionTag(versionTag);
+    return this;
+  }
+
+  @Override
   public FinalCommandStep<ProcessInstanceEvent> requestTimeout(final Duration requestTimeout) {
     this.requestTimeout = requestTimeout;
     httpRequestConfig.setResponseTimeout(requestTimeout.toMillis(), TimeUnit.MILLISECONDS);

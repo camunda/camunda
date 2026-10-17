@@ -404,6 +404,34 @@ public final class CreateProcessInstanceTest extends ClientTest {
     assertThat(request.getBusinessId()).isEqualTo(businessId);
   }
 
+  @Test
+  public void shouldCreateProcessInstanceByBpmnProcessIdAndVersionTag() {
+    // when
+    client.newCreateInstanceCommand().bpmnProcessId("testProcess").versionTag("v1").send().join();
+
+    // then
+    final CreateProcessInstanceRequest request = gatewayService.getLastRequest();
+    assertThat(request.getBpmnProcessId()).isEqualTo("testProcess");
+    assertThat(request.getVersionTag()).isEqualTo("v1");
+    assertThat(request.getVersion()).isEqualTo(LATEST_VERSION);
+  }
+
+  @Test
+  public void shouldRejectNullVersionTag() {
+    // when / then
+    assertThatThrownBy(
+            () -> client.newCreateInstanceCommand().bpmnProcessId("testProcess").versionTag(null))
+        .isInstanceOf(IllegalArgumentException.class);
+  }
+
+  @Test
+  public void shouldRejectEmptyVersionTag() {
+    // when / then
+    assertThatThrownBy(
+            () -> client.newCreateInstanceCommand().bpmnProcessId("testProcess").versionTag(""))
+        .isInstanceOf(IllegalArgumentException.class);
+  }
+
   public static class VariableDocument {
 
     VariableDocument() {}
