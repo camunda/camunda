@@ -295,8 +295,6 @@ registerProject(":zeebe-protocol-test-util", "zeebe/protocol-test-util")
 
 registerProject(":zeebe-broker", "zeebe/broker")
 
-registerProject(":camunda-security-validation", "security/security-validation")
-
 include(":webapps-backup")
 
 registerProject(":zeebe-feel-integration", "zeebe/feel")

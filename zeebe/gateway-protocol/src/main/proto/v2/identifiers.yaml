@@ -58,7 +58,7 @@ components:
       x-semantic-client-minted: true
       minLength: 1
       maxLength: 31
-      # Mirrors IdentifierValidator.TENANT_ID_MASK in security-validation
+      # Mirrors IdentifierValidator.TENANT_ID_MASK in camunda-security-library-validation
       # (^[\w\.-]{1,31}$), with the literal `<default>` admitted as the
       # default-tenant alias the runtime accepts.
       pattern: ^(<default>|[\w\.\-]{1,31})$

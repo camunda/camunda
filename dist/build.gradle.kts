@@ -362,7 +362,6 @@ dependencies {
   implementation(project(":camunda-gateway-mcp"))
   implementation(project(":zeebe-logstreams"))
   implementation(project(":camunda-security-protocol"))
-  implementation(project(":camunda-security-validation"))
   implementation(project(":camunda-exporter")) {
     exclude(group = "commons-logging", module = "commons-logging")
   }
@@ -420,6 +419,7 @@ dependencies {
   implementation(project(":camunda-security-services"))
   implementation(libs.io.camunda.security.library.api)
   implementation(libs.io.camunda.security.library.core)
+  implementation(libs.io.camunda.security.library.validation)
   implementation(libs.io.camunda.security.library.spring.boot.starter)
   implementation(project(":document-api"))
   implementation(project(":document-store"))

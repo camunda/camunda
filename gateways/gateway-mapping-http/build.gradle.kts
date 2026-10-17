@@ -6,7 +6,6 @@ dependencies {
   implementation(project(":camunda-cluster"))
   implementation(project(":camunda-authentication")) { isTransitive = false }
   implementation(project(":camunda-service"))
-  implementation(project(":camunda-security-validation"))
   implementation(project(":zeebe-protocol-impl"))
   implementation(project(":zeebe-gateway"))
   implementation(project(":zeebe-atomix-cluster"))
