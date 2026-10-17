@@ -86,7 +86,7 @@ fun ResolvedComponentResult.dependencyReportData(projectPath: String): Dependenc
 }
 
 fun ResolvedComponentResult.distributionReportArtifacts(
-  artifacts: Set<ResolvedArtifactResult>
+  artifacts: Set<ResolvedArtifactResult>,
 ): List<DistributionDependencyReportArtifact> {
   val summary = ResolutionSummary.of(this)
   return artifacts.map { artifact ->

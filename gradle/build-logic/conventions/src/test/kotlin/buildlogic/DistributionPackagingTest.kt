@@ -193,11 +193,11 @@ class DistributionPackagingTest {
     ZipFile(archive.toFile()).use { zip ->
       val entries = zip.entries()
       buildList {
-          while (entries.hasMoreElements()) {
-            val entry = entries.nextElement()
-            if (!entry.isDirectory) add(entry.name)
-          }
+        while (entries.hasMoreElements()) {
+          val entry = entries.nextElement()
+          if (!entry.isDirectory) add(entry.name)
         }
+      }
         .also { assertEquals(it.size, it.toSet().size, "duplicate ZIP entries") }
         .toSet()
     }

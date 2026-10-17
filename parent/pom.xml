@@ -279,6 +279,8 @@
 
     <!-- when updating this version, also change it in .idea/externalDependencies.xml -->
     <plugin.version.google-java-format>1.35.0</plugin.version.google-java-format>
+    <!-- also read by the Gradle spotless config (buildlogic.root-conventions) -->
+    <plugin.version.ktfmt>0.65</plugin.version.ktfmt>
 
     <!-- maven extensions -->
     <extension.version.os-maven-plugin>1.7.1</extension.version.os-maven-plugin>
