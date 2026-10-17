@@ -16,9 +16,13 @@
 package io.camunda.process.test.impl.containers;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import java.util.HashMap;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.testcontainers.utility.DockerImageName;
 
 class CamundaContainerTest {
@@ -45,5 +49,56 @@ class CamundaContainerTest {
             RDBMS_HISTORY_DEFAULT_HISTORY_TTL,
             RDBMS_HISTORY_MIN_HISTORY_CLEANUP_INTERVAL,
             RDBMS_HISTORY_MAX_HISTORY_CLEANUP_INTERVAL);
+  }
+
+  @Test
+  void shouldProvideClusterSecretsAsFilesInFileStore() {
+    // given
+    final CamundaContainer container =
+        new CamundaContainer(DockerImageName.parse("camunda/camunda:SNAPSHOT"));
+
+    // when
+    final Map<String, String> secrets = new HashMap<>();
+    secrets.put("MY_API_KEY", "test-key");
+    secrets.put("OTHER", "other-value");
+    container.withClusterSecrets(secrets);
+
+    // then
+    assertThat(container.getEnvMap())
+        .containsEntry("CAMUNDA_SECRETS_STORES_FILE_DEFAULT_PATH", "/tmp/camunda-cluster-secrets");
+    assertThat(container.getCopyToFileContainerPathMap().values())
+        .containsExactlyInAnyOrder(
+            "/tmp/camunda-cluster-secrets/MY_API_KEY", "/tmp/camunda-cluster-secrets/OTHER");
+  }
+
+  @ParameterizedTest
+  @ValueSource(
+      strings = {"../escape", "/tmp/escape", "dir/secret", "dir\\secret", ".hidden", "..", "", " "})
+  void shouldRejectClusterSecretNameThatIsNotASinglePathSegment(final String name) {
+    // given
+    final CamundaContainer container =
+        new CamundaContainer(DockerImageName.parse("camunda/camunda:SNAPSHOT"));
+    final Map<String, String> secrets = new HashMap<>();
+    secrets.put(name, "value");
+
+    // when / then
+    assertThatThrownBy(() -> container.withClusterSecrets(secrets))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining(name);
+    assertThat(container.getCopyToFileContainerPathMap()).isEmpty();
+  }
+
+  @Test
+  void shouldNotConfigureFileStoreWithoutClusterSecrets() {
+    // given
+    final CamundaContainer container =
+        new CamundaContainer(DockerImageName.parse("camunda/camunda:SNAPSHOT"));
+
+    // when
+    container.withClusterSecrets(new HashMap<>());
+
+    // then
+    assertThat(container.getEnvMap()).doesNotContainKey("CAMUNDA_SECRETS_STORES_FILE_DEFAULT_PATH");
+    assertThat(container.getCopyToFileContainerPathMap()).isEmpty();
   }
 }

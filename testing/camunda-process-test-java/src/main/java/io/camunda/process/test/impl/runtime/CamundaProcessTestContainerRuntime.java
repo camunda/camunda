@@ -167,6 +167,7 @@ public class CamundaProcessTestContainerRuntime
     }
 
     container.withEnv(builder.getCamundaEnvVars());
+    container.withClusterSecrets(builder.getClusterSecrets());
     builder.getCamundaExposedPorts().forEach(container::addExposedPort);
 
     return container;
