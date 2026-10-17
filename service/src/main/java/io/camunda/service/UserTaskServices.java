@@ -59,7 +59,7 @@ public final class UserTaskServices
     extends SearchQueryService<UserTaskServices, UserTaskQuery, UserTaskEntity> {
 
   private static final Predicate<UserTaskEntity> NEEDS_CACHE_ENRICHMENT =
-      u -> !u.hasName() || !u.hasProcessName();
+      u -> !u.hasName() || !u.hasProcessName() || u.processDefinitionVersion() == null;
 
   private static final AuthorizationCondition USER_TASK_AUTHORIZATIONS =
       AuthorizationConditions.anyOf(
@@ -181,6 +181,9 @@ public final class UserTaskServices
     }
     if (!item.hasProcessName()) {
       item = item.withProcessName(cachedItem.getProcessName());
+    }
+    if (item.processDefinitionVersion() == null) {
+      item = item.withProcessDefinitionVersion(cachedItem.getProcessDefinitionVersion());
     }
 
     return item;

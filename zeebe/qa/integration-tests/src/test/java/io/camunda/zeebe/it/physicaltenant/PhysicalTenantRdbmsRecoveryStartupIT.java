@@ -8,9 +8,8 @@
 package io.camunda.zeebe.it.physicaltenant;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import feign.FeignException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.client.CamundaClient;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
 import io.camunda.zeebe.it.cluster.backup.InProcessRestoreTestUtil;
@@ -24,6 +23,9 @@ import io.camunda.zeebe.qa.util.cluster.PhysicalTenantsITHelper.Storage;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
@@ -112,7 +114,7 @@ final class PhysicalTenantRdbmsRecoveryStartupIT {
   }
 
   @Test
-  void shouldReportNotReadyUntilATenantsSchemaIsInitialized() throws Exception {
+  void shouldReportDegradedReadinessUntilEveryTenantsSchemaIsInitialized() throws Exception {
     // given - both tenants' schemas are applied, then both tenants enter recovery
     Awaitility.await("both tenants' schemas are applied")
         .atMost(TRANSITION_TIMEOUT)
@@ -132,29 +134,55 @@ final class PhysicalTenantRdbmsRecoveryStartupIT {
     // when - the broker starts again with every tenant still recovering
     broker.start();
 
-    // then - the node comes up, since the restore has to reach it, but reports not ready: no tenant
-    // has a schema to serve from
+    // then - the node stays routable, but DEGRADED
     broker.healthActuator().live();
-    Awaitility.await("the node stays not ready while no tenant's schema is initialized")
-        .during(Duration.ofSeconds(3))
-        .atMost(Duration.ofSeconds(10))
+    Awaitility.await("the node reports DEGRADED readiness while every tenant is recovering")
+        .atMost(TRANSITION_TIMEOUT)
+        .ignoreExceptions()
         .untilAsserted(
-            () ->
-                assertThatThrownBy(() -> broker.healthActuator().ready())
-                    .isInstanceOf(FeignException.class));
+            () -> {
+              final var readiness = readiness();
+              assertThat(readiness.statusCode()).isEqualTo(200);
+              assertThat(readinessStatus(readiness)).isEqualTo("DEGRADED");
+            });
+    assertThat(deployedResourceTableExists(defaultTenantUrl)).isFalse();
+    assertThat(deployedResourceTableExists(recoveringTenantUrl)).isFalse();
 
     // when - one tenant leaves recovery without a restore
     try (final var client = tenants.newClientBuilder(broker, DEFAULT_TENANT).build()) {
       InProcessRestoreTestUtil.changeMode(client, DEFAULT_TENANT, "PROCESSING", false);
     }
 
-    // then - its schema is applied, and the node reports ready on that tenant alone
-    Awaitility.await("the node reports ready once a tenant's schema is initialized")
+    // then - its schema is applied, but the node stays DEGRADED
+    Awaitility.await("the tenant that left recovery has its schema applied")
+        .atMost(TRANSITION_TIMEOUT)
+        .untilAsserted(() -> assertThat(deployedResourceTableExists(defaultTenantUrl)).isTrue());
+    assertThat(readinessStatus(readiness())).isEqualTo("DEGRADED");
+    assertThat(deployedResourceTableExists(recoveringTenantUrl)).isFalse();
+
+    // when - the other tenant leaves recovery as well
+    try (final var client = tenants.newClientBuilder(broker, RECOVERING_TENANT).build()) {
+      InProcessRestoreTestUtil.changeMode(client, RECOVERING_TENANT, "PROCESSING", false);
+    }
+
+    // then
+    Awaitility.await("the node reports UP once every tenant's schema is initialized")
         .atMost(TRANSITION_TIMEOUT)
         .ignoreExceptions()
-        .untilAsserted(() -> broker.healthActuator().ready());
-    assertThat(deployedResourceTableExists(defaultTenantUrl)).isTrue();
-    assertThat(deployedResourceTableExists(recoveringTenantUrl)).isFalse();
+        .untilAsserted(() -> assertThat(readinessStatus(readiness())).isEqualTo("UP"));
+    assertThat(deployedResourceTableExists(recoveringTenantUrl)).isTrue();
+  }
+
+  private static String readinessStatus(final HttpResponse<String> readiness) throws Exception {
+    return new ObjectMapper().readTree(readiness.body()).path("status").asText();
+  }
+
+  private HttpResponse<String> readiness() throws Exception {
+    try (final var httpClient = HttpClient.newHttpClient()) {
+      return httpClient.send(
+          HttpRequest.newBuilder(broker.actuatorUri("health", "readiness")).GET().build(),
+          HttpResponse.BodyHandlers.ofString());
+    }
   }
 
   private void enterRecovery(final String physicalTenantId) {

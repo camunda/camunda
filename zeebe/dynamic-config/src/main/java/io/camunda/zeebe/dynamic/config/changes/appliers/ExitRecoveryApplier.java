@@ -25,13 +25,19 @@ import java.util.function.UnaryOperator;
  * legacy {@code ExitRecoveryApplier} in {@code changes/}, which this does not replace or modify.
  * See {@link EnterRecoveryApplier} for the cluster-lifecycle vs. per-group-mode split rationale.
  *
- * <p>Writes one field of one member: {@link #init} returns {@link UnaryOperator#identity()}, and
- * {@link #apply()} sets only {@code memberId}'s own mode to {@link Mode#PROCESSING}. {@code
- * RestoreRequestTransformer} relies on that scoping to give every broker its own mode change,
- * ordered after the restores of the partitions that broker holds and nothing else, so brokers leave
- * recovery concurrently rather than at a cluster-wide barrier. A write added here that reached
- * another member, or the group as a whole, would need dependency edges there ordering it against
- * the other brokers' mode changes.
+ * <p>Writes only {@code memberId}'s own entry. {@link #apply()} sets its mode to {@link
+ * Mode#PROCESSING}, and {@link #init} drops the partitions the group does not route over, which a
+ * restore from a backup with fewer partitions leaves behind: they hold no data and must not be
+ * started empty when the broker leaves recovery. That drop happens in {@link #init} rather than
+ * {@link #apply()} because {@code apply()} is what starts the partitions, from the configuration as
+ * it is by then. It only applies to a stable routing, {@code AllPartitions(n)}: while a scale up
+ * adds partitions the routing is unstable, and a broker leaving recovery without a restore holds
+ * exactly the partitions it routes over, so neither is affected.
+ *
+ * <p>{@code RestoreRequestTransformer} relies on that scoping to give every broker its own mode
+ * change, ordered after the routing state update and unordered against each other. A write added
+ * here that reached another member, or the group as a whole, would need dependency edges there
+ * ordering it against the other brokers' mode changes.
  */
 public final class ExitRecoveryApplier implements PartitionGroupConfigurationChangeApplier {
 
@@ -68,7 +74,9 @@ public final class ExitRecoveryApplier implements PartitionGroupConfigurationCha
     // Already PROCESSING: this can happen if the node restarted while applying this operation.
     // To ensure that the configuration change can make progress, we do not treat this as an
     // error.
-    return Either.right(UnaryOperator.identity());
+    // Read from the group when applied, not when planned, so that it sees the routing a restore
+    // has just written
+    return Either.right(group -> group.withoutUnroutedPartitions(memberId));
   }
 
   @Override

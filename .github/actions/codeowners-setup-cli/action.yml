@@ -7,9 +7,9 @@ description: Downloads and caches the codeowners-plus CLI binary for use in work
 
 inputs:
   version:
-    description: 'Version of codeowners-cli to install (e.g. v1.9.0)'
+    description: 'Version of codeowners-cli to install (e.g. v1.12.0)'
     required: false
-    default: 'v1.9.0'
+    default: 'v1.12.0'
 
 runs:
   using: composite

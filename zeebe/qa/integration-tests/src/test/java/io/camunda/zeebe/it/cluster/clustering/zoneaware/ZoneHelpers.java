@@ -10,9 +10,9 @@ package io.camunda.zeebe.it.cluster.clustering.zoneaware;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.cluster.MemberId;
-import io.camunda.configuration.Partitioning.Scheme;
-import io.camunda.configuration.Zone;
-import io.camunda.configuration.ZoneAware;
+import io.camunda.configuration.cluster.Partitioning.Scheme;
+import io.camunda.configuration.cluster.Zone;
+import io.camunda.configuration.cluster.partitioning.ZoneAware;
 import io.camunda.zeebe.management.cluster.BrokerId;
 import io.camunda.zeebe.management.cluster.PartitionState;
 import io.camunda.zeebe.qa.util.actuator.ClusterActuator;
@@ -331,6 +331,17 @@ public class ZoneHelpers {
     return cluster.brokers().keySet().stream()
         .filter(member -> member.isInZone(zone))
         .collect(Collectors.toSet());
+  }
+
+  /**
+   * The members assigned to each of {@code physicalTenantId}'s partitions, keyed by partition id,
+   * as reported by the physical-tenant-scoped cluster topology. Snapshot it before and after an
+   * operation to assert that the operation left the tenant's assignment untouched.
+   */
+  public static Map<Integer, Set<MemberId>> assignedMembersByPartition(
+      final ClusterActuator actuator, final String physicalTenantId) {
+    return replicasByPartition(actuator, physicalTenantId).entrySet().stream()
+        .collect(Collectors.toMap(Map.Entry::getKey, entry -> entry.getValue().keySet()));
   }
 
   /** The members holding each of {@code physicalTenantId}'s partitions, keyed by partition id. */

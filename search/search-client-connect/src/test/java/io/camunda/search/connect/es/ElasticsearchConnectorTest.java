@@ -10,7 +10,9 @@ package io.camunda.search.connect.es;
 import static io.camunda.search.connect.plugin.util.TestDatabaseCustomHeaderSupplierImpl.KEY_CUSTOM_HEADER;
 import static io.camunda.search.connect.plugin.util.TestDatabaseCustomHeaderSupplierImpl.VALUE_CUSTOM_HEADER;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 
 import co.elastic.clients.transport.rest_client.RestClientTransport;
@@ -165,6 +167,21 @@ class ElasticsearchConnectorTest {
     Mockito.verify(builder).setSocketTimeout(30_000);
     Mockito.verify(builder).setConnectTimeout(5_000);
     Mockito.verify(builder).setConnectionRequestTimeout(180_000);
+  }
+
+  @Test
+  void shouldApplyTimeoutsWhenCreatingClientWithoutConfiguredTimeouts() throws IOException {
+    // given
+    final var configuration = new ConnectConfiguration();
+    final var connector =
+        Mockito.spy(
+            new ElasticsearchConnector(configuration, new ObjectMapper(), new PluginRepository()));
+
+    // when
+    try (final var ignored = connector.createClient()) {
+      // then
+      Mockito.verify(connector).setTimeouts(any(Builder.class), eq(configuration));
+    }
   }
 
   @Test

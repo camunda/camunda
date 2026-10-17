@@ -39,6 +39,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 @Execution(ExecutionMode.CONCURRENT)
 final class ExporterContainerTest {
@@ -516,14 +518,19 @@ final class ExporterContainerTest {
       assertThat(runtime.getState().getPosition(EXPORTER_ID)).isEqualTo(2);
     }
 
-    @Test
-    void shouldNotUpdateExporterPositionIfSoftPaused() throws Exception {
-      // given
+    @ParameterizedTest
+    @EnumSource(
+        value = ExporterPhase.class,
+        names = {"SOFT_PAUSED", "PAUSED"})
+    void shouldNotUpdateExporterPositionIfPaused(final ExporterPhase phase) throws Exception {
+      // given - nothing guarantees an exporter won't call updateLastExportedRecordPosition from a
+      // background task while paused, so the guard must hold regardless of what the exporter
+      // itself does
       exporterContainer.configureExporter();
       runtime.getState().setPosition(EXPORTER_ID, 0);
       exporterContainer.initMetadata();
       exporterContainer.openExporter();
-      exporterContainer.softPauseExporter();
+      pause(phase);
 
       final var mockedRecord = mock(TypedRecord.class);
       when(mockedRecord.getPosition()).thenReturn(1L);
@@ -539,14 +546,17 @@ final class ExporterContainerTest {
       assertThat(exporterContainer.getPosition()).isEqualTo(-1L);
     }
 
-    @Test
-    void shouldUpdatePositionWhenResumedAfterSoftPaused() throws Exception {
+    @ParameterizedTest
+    @EnumSource(
+        value = ExporterPhase.class,
+        names = {"SOFT_PAUSED", "PAUSED"})
+    void shouldUpdatePositionWhenResumedAfterPause(final ExporterPhase phase) throws Exception {
       // given
       exporterContainer.configureExporter();
       runtime.getState().setPosition(EXPORTER_ID, 0);
       exporterContainer.initMetadata();
       exporterContainer.openExporter();
-      exporterContainer.softPauseExporter();
+      pause(phase);
 
       final var mockedRecord = mock(TypedRecord.class);
       when(mockedRecord.getPosition()).thenReturn(1L);
@@ -562,13 +572,21 @@ final class ExporterContainerTest {
       assertThat(exporterContainer.readMetadata()).isNotPresent();
 
       // when
-      exporterContainer.undoSoftPauseExporter();
+      exporterContainer.resumeExporter();
       awaitPreviousCall();
 
       // then
       assertThat(exporterContainer.getLastUnacknowledgedPosition()).isEqualTo(1);
       assertThat(exporterContainer.getPosition()).isEqualTo(1);
       assertThat(exporterContainer.readMetadata()).isPresent().hasValue(metadata);
+    }
+
+    private void pause(final ExporterPhase phase) {
+      if (phase == ExporterPhase.SOFT_PAUSED) {
+        exporterContainer.softPauseExporter();
+      } else {
+        exporterContainer.hardPauseExporter();
+      }
     }
 
     @Test
@@ -580,7 +598,7 @@ final class ExporterContainerTest {
       exporterContainer.softPauseExporter();
 
       // when
-      exporterContainer.undoSoftPauseExporter();
+      exporterContainer.resumeExporter();
       awaitPreviousCall();
 
       // then - position 0 must never be persisted, see #52257. Inspect the raw stored value

@@ -24,7 +24,7 @@ function useDecisionDefinitionVersions(decisionDefinitionId?: string, tenantId?:
 						const {response, error} = await request(
 							endpoints.queryDecisionDefinitions({
 								filter: {decisionDefinitionId, tenantId},
-								sort: [{field: 'version', order: 'desc'}],
+								sort: [{field: 'version', order: 'DESC'}],
 								page: {after: pageParam, limit: PAGE_LIMIT},
 							}),
 						);

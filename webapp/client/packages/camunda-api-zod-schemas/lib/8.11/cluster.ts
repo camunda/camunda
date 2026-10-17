@@ -6,41 +6,22 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {z} from 'zod';
 import {API_VERSION, type Endpoint} from './common';
+import {brokerInfoSchema} from './gen/zod/brokerInfoSchema';
+import {partitionSchema} from './gen/zod/partitionSchema';
+import {topologyResponseSchema} from './gen/zod/topologyResponseSchema';
+import type {BrokerInfo} from './gen/types/BrokerInfo';
+import type {Partition, PartitionHealthEnumKey, PartitionRoleEnumKey} from './gen/types/Partition';
+import type {TopologyResponse} from './gen/types/TopologyResponse';
 
-const partitionRoleSchema = z.enum(['leader', 'follower', 'inactive']);
-type PartitionRole = z.infer<typeof partitionRoleSchema>;
+const partitionRoleSchema = partitionSchema.shape.role;
+type PartitionRole = PartitionRoleEnumKey;
 
-const partitionHealthSchema = z.enum(['healthy', 'unhealthy', 'dead']);
-type PartitionHealth = z.infer<typeof partitionHealthSchema>;
+const partitionHealthSchema = partitionSchema.shape.health;
+type PartitionHealth = PartitionHealthEnumKey;
 
-const partitionSchema = z.object({
-	partitionId: z.number().int(),
-	role: partitionRoleSchema,
-	health: partitionHealthSchema,
-});
-type Partition = z.infer<typeof partitionSchema>;
-
-const brokerInfoSchema = z.object({
-	nodeId: z.number().int(),
-	host: z.string(),
-	port: z.number().int(),
-	partitions: z.array(partitionSchema),
-	version: z.string(),
-});
-type BrokerInfo = z.infer<typeof brokerInfoSchema>;
-
-const getTopologyResponseBodySchema = z.object({
-	brokers: z.array(brokerInfoSchema),
-	clusterId: z.string().nullable(),
-	clusterSize: z.number().int().nullable(),
-	partitionsCount: z.number().int().nullable(),
-	replicationFactor: z.number().int().nullable(),
-	gatewayVersion: z.string().nullable(),
-	lastCompletedChangeId: z.string().nullable(),
-});
-type GetTopologyResponseBody = z.infer<typeof getTopologyResponseBodySchema>;
+const getTopologyResponseBodySchema = topologyResponseSchema;
+type GetTopologyResponseBody = TopologyResponse;
 
 const getTopology = {
 	method: 'GET',

@@ -33,7 +33,7 @@ function drdDataQuery(decisionEvaluationKey?: string) {
 						const {response, error} = await request(
 							endpoints.queryDecisionInstances({
 								filter: {decisionEvaluationKey},
-								sort: [{field: 'decisionEvaluationInstanceKey', order: 'asc'}],
+								sort: [{field: 'decisionEvaluationInstanceKey', order: 'ASC'}],
 								page: {after, limit: PAGE_LIMIT},
 							}),
 						);

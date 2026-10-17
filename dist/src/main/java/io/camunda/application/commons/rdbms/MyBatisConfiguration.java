@@ -8,6 +8,7 @@
 package io.camunda.application.commons.rdbms;
 
 import io.camunda.application.commons.pt.PerTenantSchemaInitialization;
+import io.camunda.application.commons.pt.PhysicalTenantSchemaInitializationHealthIndicator;
 import io.camunda.application.commons.search.SchemaInitializationRecoveryCheck;
 import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
 import io.camunda.db.rdbms.PerTenantSchemaConfig;
@@ -29,15 +30,19 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.ibatis.session.SqlSessionFactory;
 import org.apache.ibatis.type.JdbcType;
 import org.apache.ibatis.type.OffsetDateTimeTypeHandler;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 import org.mybatis.spring.SqlSessionFactoryBean;
 import org.mybatis.spring.SqlSessionTemplate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.health.contributor.HealthIndicator;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Profile;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 
+@NullMarked
 public class MyBatisConfiguration {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(MyBatisConfiguration.class);
@@ -63,7 +68,7 @@ public class MyBatisConfiguration {
       final LazyInitializedRdbmsSchemaRegistry rdbmsSchemaManagerRegistry,
       // if present, then it will ensure that the broker is started first, so that the recovery
       // check reads the broker's own cluster configuration
-      @Autowired(required = false) final Broker broker) {
+      @Autowired(required = false) final @Nullable Broker broker) {
     // VersionUtil.getVersion() may not be a valid semantic version during local development;
     // the schema-version check is skipped in that case.
     final var initializer =
@@ -76,6 +81,17 @@ public class MyBatisConfiguration {
                 new SchemaInitializationRecoveryCheck(brokerTopologyManager)::shouldDefer));
     rdbmsSchemaManagerRegistry.bind(initializer);
     return initializer;
+  }
+
+  /**
+   * Reports each physical tenant's schema initialization for operators. Like the RDBMS status
+   * indicator, it is in no probe group.
+   */
+  @Bean
+  @Profile("!restore")
+  public HealthIndicator physicalTenantSchemaInitializationHealthIndicator(
+      final RdbmsSchemaInitializer rdbmsSchemaInitializer) {
+    return new PhysicalTenantSchemaInitializationHealthIndicator(rdbmsSchemaInitializer::statuses);
   }
 
   private static RetryConfiguration retryConfiguration(

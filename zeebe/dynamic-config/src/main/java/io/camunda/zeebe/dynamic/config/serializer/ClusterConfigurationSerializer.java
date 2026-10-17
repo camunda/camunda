@@ -17,8 +17,18 @@ public interface ClusterConfigurationSerializer {
 
   ClusterConfigurationGossipState decode(byte[] encodedState);
 
+  /**
+   * Encodes the legacy {@code ClusterTopology} proto. No longer gossiped; used only by tests that
+   * fabricate a pre-8.10 persisted configuration file for {@code
+   * PersistedCurrentClusterConfiguration}'s {@code VERSION_LEGACY} migration branch.
+   */
   byte[] encode(ClusterConfiguration clusterConfiguration);
 
+  /**
+   * Decodes the legacy {@code ClusterTopology} proto. Used only by {@code
+   * PersistedCurrentClusterConfiguration}'s {@code VERSION_LEGACY} migration branch, to read a
+   * configuration file persisted before 8.10.
+   */
   ClusterConfiguration decodeClusterTopology(
       byte[] encodedClusterTopology, final int offset, final int length);
 

@@ -10,7 +10,7 @@ package io.camunda.zeebe.it.cluster.clustering.zoneaware;
 import static io.camunda.zeebe.qa.util.cluster.util.ZoneFixtures.ZONE_A;
 import static io.camunda.zeebe.qa.util.cluster.util.ZoneFixtures.ZONE_B;
 
-import io.camunda.configuration.Zone;
+import io.camunda.configuration.cluster.Zone;
 import io.camunda.zeebe.qa.util.actuator.ClusterActuator;
 import io.camunda.zeebe.qa.util.cluster.PhysicalTenantsITHelper;
 import io.camunda.zeebe.qa.util.cluster.PhysicalTenantsITHelper.Storage;

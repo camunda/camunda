@@ -48,7 +48,7 @@ describe('<Header /> (V2)', () => {
 		);
 
 		await expect.element(screen.getByRole('banner')).toBeVisible();
-		await expect.element(screen.getByText('Non-Production License')).toBeVisible();
+		await expect.element(screen.getByText('Non-production license', {exact: true})).toBeVisible();
 		await expect.element(screen.getByText('Non-commercial license')).toBeVisible();
 		await expect.element(screen.getByRole('navigation', {name: 'Camunda context'})).toBeVisible();
 		await expect.element(screen.getByRole('link', {name: 'Tasklist'})).toHaveAttribute('href', '/tasklist');
@@ -209,5 +209,24 @@ describe('<Header /> (V2)', () => {
 
 		await expect.element(screen.getByRole('link', {name: 'Dashboard'})).toHaveAttribute('aria-current', 'page');
 		await expect.element(screen.getByRole('link', {name: 'Processes'})).not.toHaveAttribute('aria-current');
+	});
+
+	it('should mark Decisions as active on the Decisions preview route', async ({worker}) => {
+		worker.use(
+			mockCurrentUserEndpoint({successResponse: HttpResponse.json(createCurrentUser())}),
+			mockLicenseEndpoint({successResponse: HttpResponse.json(createLicense())}),
+		);
+
+		const screen = await renderWithRouter(
+			() => (
+				<Header currentApp="operate" initialSaasToken={null}>
+					Page content
+				</Header>
+			),
+			{path: '/operate-preview/decisions'},
+		);
+
+		await expect.element(screen.getByRole('link', {name: 'Decisions'})).toHaveAttribute('aria-current', 'page');
+		await expect.element(screen.getByRole('link', {name: 'Dashboard'})).not.toHaveAttribute('aria-current');
 	});
 });

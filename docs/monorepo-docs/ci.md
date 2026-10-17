@@ -84,7 +84,7 @@ Dealing with reported issues that are identified as urgent/**high severity**:
 
 The `Release-notes PR-gate` check verifies that a pull request can be attributed in the release notes: it must link a tracked **issue** (or explicitly opt out), and its title must be a conventional commit. Release notes are generated from those links, so an unlinked PR silently disappears from them.
 
-The check is currently **advisory** — it reports red on failure but is not a required status check, so it never blocks a merge. On failure it posts a single sticky comment naming the reason, and adds the `no-issue` label when the issue link is what failed.
+The check fails the job when the PR cannot be attributed. It is not (yet) a required status check in branch protection. On failure it posts a single sticky comment naming the reason, and adds the `no-issue` label when the issue link is what failed.
 
 ### Causes and fixes
 
@@ -93,7 +93,7 @@ The check is currently **advisory** — it reports red on failure but is not a r
 | No linked issue and no opt-out | The `## Related issues` section has no reference, or the section is missing/renamed — the reference and the checkbox must both be **inside** that section | Add `closes #1234` to the `## Related issues` section, or tick the opt-out checkbox in that same section |
 | The section links a pull request | A closing keyword points at a PR instead of an issue | Reference the tracked **issue**; a PR is never a valid attribution target |
 | The referenced issue does not exist | The number is wrong, or the issue was deleted | Correct the number |
-| Only a cross-repo reference | `owner/repo#N` refers to another repository, which this check cannot validate | Link an issue in this repository, or tick the opt-out |
+| Only a cross-repo reference | `owner/repo#N` refers to another repository, which this check cannot validate | Link an issue in this repository, or tick the opt-out (its label covers an issue tracked in another repository) |
 | `Backport of #N` cannot be followed | The marker points at an issue, at nothing, or at another repository | Fix the marker so it names the original **pull request** in this repository |
 | `Backport of #N`, but that PR is not linked either | The original PR was merged without an issue link | Add the issue link to the **original** PR; the backport inherits it |
 | `Backport of #N`, but that PR's section links a pull request | The original PR itself has the "links a pull request instead of an issue" problem | Fix the **original** PR's link; the backport inherits it |
@@ -236,6 +236,18 @@ Related resources:
 * entrypoint and main file for pipeline code of unified CI: [ci.yml](https://github.com/camunda/camunda/blob/main/.github/workflows/ci.yml)
 * see for example how [#19423 (actionlint)](https://github.com/camunda/camunda/pull/19423) and [#19436 (Java unit tests)](https://github.com/camunda/camunda/pull/19436) got added to unified CI
 
+### GitHub API job names vs. workflow job keys
+
+The GitHub API output of `/repos/<repo>/actions/runs/<run_id>/jobs` only contains the _display_ job
+names. It does not contain the `jobs.<job_key>` keys from the workflow YAML files. Do not write
+logic that maps one to the other, especially across called (reusable) workflows. Such a mapping is
+brittle (e.g. a parser that only reads `ci.yml` misses jobs of called workflows) and hard to
+maintain. If a job is only identifiable by its YAML key, find another way to get the information,
+e.g. pass it explicitly via job `outputs` or `needs`, or decide against the feature.
+
+See also [Third-Party Service Outage](./ci-runbooks.md#third-party-service-outage) for how far to
+take workarounds.
+
 ## CI Test Files
 
 ### Ownership
@@ -266,9 +278,9 @@ See [Metrics Collection](#metrics-collection) for the concrete `env:` snippet, i
 
 `TEST_OWNER` is a static, job-level label, so a job that runs tests belonging to several teams attributes all of its failures to a single owner. To route auto-created incidents to the team that actually owns the failing code, the `observe-build-status` action resolves the owner of the failing test classes from `.codeowners` when a job **fails**:
 
-1. It collects the distinct test classes that failed (from the `TEST-*.xml` reports), excluding skipped, passing and flaky-but-passed retries.
+1. It collects the distinct test classes that failed (from the `TEST-*.xml` reports, and from the Playwright JUnit report of the Orchestration Cluster E2E suite, whose test classes are spec paths), excluding skipped, passing and flaky-but-passed retries.
 2. Each failing class is mapped to its source file and then to its owning team via `codeowners-cli` (reusing the resolvers in `.ci/scripts/ci/setup-medic-lookup.sh`).
-3. A **strict** rule decides the submitted owner: the resolved code owner is used as `user_description` only when there is at least one failing test class **and** every failing class resolves to the **same** non-empty owner. If any failing class cannot be attributed (e.g. a compile/setup failure with no test class, or a test whose source file cannot be located) or the failing tests span **multiple** owners, it falls back to the job's `TEST_OWNER`.
+3. A **strict** rule decides the submitted owner: the resolved code owner is used as `user_description` only when there is at least one failing test class **and** every failing class resolves to the **same** non-empty owner. If any failing class cannot be attributed (e.g. a compile/setup failure with no test class, or a test whose source file cannot be located) or the failing tests span **multiple** owners, it falls back to the job's `TEST_OWNER` and lists the candidate owners in the job log. One exception: failing Playwright specs owned by the job's `TEST_OWNER` (the shared flows and the framework of the Orchestration Cluster E2E suite) do not count against a single other owner, because they fail together with the area whose change broke them. Java tests owned by `TEST_OWNER` still count.
 
 This keeps the job owner as a safe default — an ambiguous or unattributable failure is never confidently misrouted to the wrong team — while single-team failures are attributed to their real code owner. An explicitly provided `user_description` input still takes precedence over both. Resolution runs only on failed jobs, so the green path is unaffected.
 
@@ -611,6 +623,7 @@ golangci/golangci-lint-action@*,
 google-github-actions/auth@*,
 google-github-actions/get-gke-credentials@*,
 google-github-actions/setup-gcloud@*,
+gradle/actions/setup-gradle@*,
 hadolint/hadolint-action@*,
 hashicorp/setup-terraform@*,
 hashicorp/vault-action@*,

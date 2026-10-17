@@ -12,7 +12,7 @@ import {useTranslation} from 'react-i18next';
 import {getClientConfig} from '#/shared/config/getClientConfig';
 import {isSpecificTenant} from '#/operate/shared/utils/isSpecificTenant';
 import type {OperationsLogSearch} from './operationsLog.schema';
-import {resolvedDefinitionQuery, selectedDefinitionsQuery} from './definitions.queries';
+import {resolvedDefinitionQuery, selectedDefinitionsQuery} from '#/operate/shared/queries/processDefinitions.queries';
 import {Filters} from './Filters';
 import {InstancesTable} from './InstancesTable';
 import {PageContainer} from './styled';
@@ -52,10 +52,9 @@ const OperationsLog: React.FC<OperationsLogSearch> = (search) => {
 		search.version === undefined ? undefined : candidates?.find((definition) => definition.tenantId === tenantId);
 	const isResolved =
 		!needsLookup ||
-		(tenantId !== undefined &&
-			matches !== undefined &&
+		(matches !== undefined &&
 			matches.length > 0 &&
-			(search.version === undefined || selectedDefinition !== undefined));
+			(search.version === undefined || (tenantId !== undefined && selectedDefinition !== undefined)));
 
 	return (
 		<PageContainer>

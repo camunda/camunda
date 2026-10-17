@@ -48,11 +48,7 @@ const operationsLogSearchSchema = z
 			? {version: processDefinitionVersion}
 			: {}),
 		...(search.version === undefined && processDefinitionVersion === 'all' ? {allVersions: true} : {}),
-	}))
-	.refine(
-		(search) => (search.version === undefined && search.allVersions !== true) || Boolean(search.process),
-		'A process is required for a version filter',
-	);
+	}));
 
 type OperationsLogSearch = z.infer<typeof operationsLogSearchSchema>;
 

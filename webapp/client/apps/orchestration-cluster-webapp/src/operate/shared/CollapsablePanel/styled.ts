@@ -9,7 +9,7 @@
 import styled, {css} from 'styled-components';
 import {RowCollapse as BaseRowCollapse, RowExpand as BaseRowExpand} from '@carbon/react/icons';
 import {IconButton as BaseIconButton} from '@carbon/react';
-import {Header as BaseHeader} from '../PanelHeader/styled';
+import {Header as BaseHeader} from '#/operate/shared/PanelHeader/styled';
 
 type CollapsableProps = {
 	$isCollapsed: boolean;

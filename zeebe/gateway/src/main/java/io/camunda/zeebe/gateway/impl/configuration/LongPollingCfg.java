@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.gateway.impl.configuration;
 
+import java.time.Duration;
 import java.util.Objects;
 
 public final class LongPollingCfg {
@@ -16,6 +17,8 @@ public final class LongPollingCfg {
   private long probeTimeout = ConfigurationDefaults.DEFAULT_PROBE_TIMEOUT;
   private int minEmptyResponses =
       ConfigurationDefaults.DEFAULT_LONG_POLLING_EMPTY_RESPONSE_THRESHOLD;
+  private Duration notificationBatchWindow =
+      ConfigurationDefaults.DEFAULT_NOTIFICATION_BATCH_WINDOW;
 
   public long getTimeout() {
     return timeout;
@@ -41,6 +44,14 @@ public final class LongPollingCfg {
     this.minEmptyResponses = minEmptyResponses;
   }
 
+  public Duration getNotificationBatchWindow() {
+    return notificationBatchWindow;
+  }
+
+  public void setNotificationBatchWindow(final Duration notificationBatchWindow) {
+    this.notificationBatchWindow = notificationBatchWindow;
+  }
+
   public boolean isEnabled() {
     return enabled;
   }
@@ -52,7 +63,7 @@ public final class LongPollingCfg {
 
   @Override
   public int hashCode() {
-    return Objects.hash(enabled, timeout, probeTimeout, minEmptyResponses);
+    return Objects.hash(enabled, timeout, probeTimeout, minEmptyResponses, notificationBatchWindow);
   }
 
   @Override
@@ -67,7 +78,8 @@ public final class LongPollingCfg {
     return enabled == that.enabled
         && timeout == that.timeout
         && probeTimeout == that.probeTimeout
-        && minEmptyResponses == that.minEmptyResponses;
+        && minEmptyResponses == that.minEmptyResponses
+        && Objects.equals(notificationBatchWindow, that.notificationBatchWindow);
   }
 
   @Override
@@ -81,6 +93,8 @@ public final class LongPollingCfg {
         + probeTimeout
         + ", minEmptyResponses="
         + minEmptyResponses
+        + ", notificationBatchWindow="
+        + notificationBatchWindow
         + '}';
   }
 }

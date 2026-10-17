@@ -1,5 +1,25 @@
 # Changelog
 
+## v0.0.96
+
+### 🩹 Fixes
+
+- Mark the process definition id/key of jobs, element instances and sequence flows, the process definition key of correlated message subscriptions, and job `elementId` as nullable in the 8.10 response schemas, matching the spec for legacy documents ([#66159](https://github.com/camunda/camunda/issues/66159))
+
+### ❤️ Contributors
+
+- Houssain Barouni ([@houssain-barouni](https://github.com/houssain-barouni))
+
+## v0.0.95
+
+### 🩹 Fixes
+
+- Add `businessId` to the 8.9, 8.10 and 8.11 process definition statistics filter schemas, matching the spec ([#64678](https://github.com/camunda/camunda/pull/64678))
+
+### ❤️ Contributors
+
+- Francesco Esposito ([@phoinixi](https://github.com/phoinixi))
+
 ## v0.0.94
 
 ### 🚀 Enhancements

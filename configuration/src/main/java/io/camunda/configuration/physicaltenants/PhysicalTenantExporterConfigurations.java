@@ -8,10 +8,10 @@
 package io.camunda.configuration.physicaltenants;
 
 import io.camunda.configuration.Camunda;
-import io.camunda.configuration.Exporter;
 import io.camunda.configuration.ExporterArgsMergers;
 import io.camunda.configuration.UnifiedConfigurationException;
 import io.camunda.configuration.beanoverrides.BrokerBasedPropertiesOverride;
+import io.camunda.configuration.data.Exporter;
 import io.camunda.zeebe.exporter.api.ExporterConfigMerger;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;

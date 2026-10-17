@@ -10,6 +10,7 @@ package io.camunda.zeebe.scheduler;
 import io.camunda.cluster.PartitionId;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.util.Loggers;
+import java.time.Duration;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
@@ -197,6 +198,11 @@ public abstract class Actor implements AutoCloseable, AsyncClosable, Concurrency
   @Override
   public ScheduledTimer schedule(final long delayMs, final Runnable runnable) {
     return actor.schedule(delayMs, runnable);
+  }
+
+  @Override
+  public ScheduledTimer runAtFixedRate(final Duration delay, final Runnable runnable) {
+    return actor.runAtFixedRate(delay, runnable);
   }
 
   public static ActorBuilder newActor() {

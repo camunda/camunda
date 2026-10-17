@@ -8,6 +8,7 @@
 package io.camunda.it.rdbms.db.usertask;
 
 import static io.camunda.it.rdbms.db.fixtures.CommonFixtures.generateRandomString;
+import static io.camunda.it.rdbms.db.fixtures.CommonFixtures.nextKey;
 import static io.camunda.it.rdbms.db.fixtures.CommonFixtures.resourceAccessChecksFromResourceIds;
 import static io.camunda.it.rdbms.db.fixtures.CommonFixtures.resourceAccessChecksFromTenantIds;
 import static io.camunda.it.rdbms.db.fixtures.UserTaskFixtures.createAndSaveRandomUserTasks;
@@ -32,6 +33,7 @@ import io.camunda.search.filter.UntypedOperation;
 import io.camunda.search.filter.UserTaskFilter;
 import io.camunda.search.filter.VariableValueFilter;
 import io.camunda.search.page.SearchQueryPage;
+import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.UserTaskQuery;
 import io.camunda.search.sort.UserTaskSort;
 import io.camunda.security.api.model.CamundaAuthentication;
@@ -47,6 +49,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import javax.sql.DataSource;
 import org.assertj.core.data.TemporalUnitWithinOffset;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.TestTemplate;
@@ -95,6 +98,94 @@ public class UserTaskIT {
 
     final var instance = rdbmsService.getUserTaskReader().findOne(userTask.userTaskKey()).get();
     assertUserTaskEntity(instance, userTask);
+  }
+
+  @TestTemplate
+  public void shouldFindUserTaskWithoutSuspensionStateAsNotSuspended(
+      final CamundaRdbmsTestApplication testApplication) throws Exception {
+    // given
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final UserTaskDbModel userTask = UserTaskFixtures.createRandomized();
+    createAndSaveUserTask(rdbmsService, userTask);
+
+    // tasks written before the column existed, or by an older node during a rolling upgrade,
+    // hold NULL there
+    try (final var connection = testApplication.bean(DataSource.class).getConnection();
+        final var statement =
+            connection.prepareStatement(
+                "UPDATE USER_TASK SET IS_SUSPENDED = NULL WHERE USER_TASK_KEY = ?")) {
+      statement.setLong(1, userTask.userTaskKey());
+      statement.executeUpdate();
+    }
+
+    // when
+    final var instance = rdbmsService.getUserTaskReader().findOne(userTask.userTaskKey()).get();
+
+    // then
+    assertThat(instance.isSuspended()).isFalse();
+  }
+
+  @TestTemplate
+  public void shouldFindUserTaskByIsSuspendedTrue(final CamundaRdbmsTestApplication testApplication)
+      throws Exception {
+    // given
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final long processInstanceKey = nextKey();
+    final var suspended =
+        createUserTasksWithEachSuspensionState(testApplication, processInstanceKey);
+
+    // when
+    final var searchResult = searchUserTasksByIsSuspended(rdbmsService, processInstanceKey, true);
+
+    // then
+    assertThat(searchResult.items())
+        .extracting(UserTaskEntity::userTaskKey)
+        .containsExactly(suspended.userTaskKey());
+  }
+
+  @TestTemplate
+  public void shouldFindUserTaskByIsSuspendedFalseIncludingNull(
+      final CamundaRdbmsTestApplication testApplication) throws Exception {
+    // given
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final long processInstanceKey = nextKey();
+    final var suspended =
+        createUserTasksWithEachSuspensionState(testApplication, processInstanceKey);
+
+    // when
+    final var searchResult = searchUserTasksByIsSuspended(rdbmsService, processInstanceKey, false);
+
+    // then
+    assertThat(searchResult.items())
+        .hasSize(2)
+        .extracting(UserTaskEntity::userTaskKey)
+        .doesNotContain(suspended.userTaskKey());
+  }
+
+  @TestTemplate
+  public void shouldMarkAndClearUserTaskSuspension(
+      final CamundaRdbmsTestApplication testApplication) {
+    // given
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final UserTaskDbModel userTask = UserTaskFixtures.createRandomized();
+    createAndSaveUserTask(rdbmsService, userTask);
+    final RdbmsWriters writer = rdbmsService.createWriter(1L);
+
+    // when
+    writer.getUserTaskWriter().updateSuspended(userTask.userTaskKey(), true);
+    writer.flush();
+
+    // then
+    assertThat(rdbmsService.getUserTaskReader().findOne(userTask.userTaskKey()).get())
+        .satisfies(instance -> assertThat(instance.isSuspended()).isTrue());
+
+    // when
+    writer.getUserTaskWriter().updateSuspended(userTask.userTaskKey(), false);
+    writer.flush();
+
+    // then
+    assertThat(rdbmsService.getUserTaskReader().findOne(userTask.userTaskKey()).get())
+        .satisfies(instance -> assertThat(instance.isSuspended()).isFalse());
   }
 
   @TestTemplate
@@ -1743,6 +1834,50 @@ public class UserTaskIT {
             searchResult.items().subList(15, 20).stream()
                 .map(UserTaskEntity::userTaskKey)
                 .toList());
+  }
+
+  /**
+   * Creates a suspended, a not suspended and a NULL-suspension-state user task for the given
+   * process instance, and returns the suspended one.
+   */
+  private static UserTaskDbModel createUserTasksWithEachSuspensionState(
+      final CamundaRdbmsTestApplication testApplication, final long processInstanceKey)
+      throws Exception {
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final UserTaskDbModel suspended =
+        UserTaskFixtures.createRandomized(
+            b -> b.processInstanceKey(processInstanceKey).isSuspended(true));
+    final UserTaskDbModel notSuspended =
+        UserTaskFixtures.createRandomized(
+            b -> b.processInstanceKey(processInstanceKey).isSuspended(false));
+    final UserTaskDbModel withoutSuspensionState =
+        UserTaskFixtures.createRandomized(b -> b.processInstanceKey(processInstanceKey));
+    createAndSaveUserTask(rdbmsService, suspended);
+    createAndSaveUserTask(rdbmsService, notSuspended);
+    createAndSaveUserTask(rdbmsService, withoutSuspensionState);
+
+    try (final var connection = testApplication.bean(DataSource.class).getConnection();
+        final var statement =
+            connection.prepareStatement(
+                "UPDATE USER_TASK SET IS_SUSPENDED = NULL WHERE USER_TASK_KEY = ?")) {
+      statement.setLong(1, withoutSuspensionState.userTaskKey());
+      statement.executeUpdate();
+    }
+    return suspended;
+  }
+
+  private static SearchQueryResult<UserTaskEntity> searchUserTasksByIsSuspended(
+      final RdbmsService rdbmsService, final long processInstanceKey, final boolean isSuspended) {
+    return rdbmsService
+        .getUserTaskReader()
+        .search(
+            new UserTaskQuery(
+                new UserTaskFilter.Builder()
+                    .processInstanceKeys(processInstanceKey)
+                    .isSuspended(isSuspended)
+                    .build(),
+                UserTaskSort.of(b -> b),
+                SearchQueryPage.of(b -> b.from(0).size(10))));
   }
 
   private static void assertUserTaskEntity(

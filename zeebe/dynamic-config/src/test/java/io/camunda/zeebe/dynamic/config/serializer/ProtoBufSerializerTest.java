@@ -1076,18 +1076,19 @@ final class ProtoBufSerializerTest {
     // given
     final var partitionConfig = DynamicPartitionConfig.init();
     final var clusterConfiguration =
-        ClusterConfiguration.init()
-            .addMember(
-                MemberId.from("1"),
-                MemberState.initializeAsActive(
-                    Map.of(1, PartitionState.active(1, partitionConfig).toRecovering())));
+        CurrentClusterConfiguration.fromLegacy(
+            ClusterConfiguration.init()
+                .addMember(
+                    MemberId.from("1"),
+                    MemberState.initializeAsActive(
+                        Map.of(1, PartitionState.active(1, partitionConfig).toRecovering()))));
     final var gossipState = new ClusterConfigurationGossipState();
-    gossipState.setClusterConfiguration(clusterConfiguration);
+    gossipState.setCurrentClusterConfiguration(clusterConfiguration);
 
     // when
     final var decoded = protoBufSerializer.decode(protoBufSerializer.encode(gossipState));
 
     // then
-    assertThat(decoded.getClusterConfiguration()).isEqualTo(clusterConfiguration);
+    assertThat(decoded.getCurrentClusterConfiguration()).isEqualTo(clusterConfiguration);
   }
 }

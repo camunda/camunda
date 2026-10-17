@@ -66,6 +66,7 @@ import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch.core.BulkRequest;
 import org.opensearch.client.opensearch.core.BulkResponse;
 import org.opensearch.client.opensearch.core.CountRequest;
+import org.opensearch.client.opensearch.core.CountResponse;
 import org.opensearch.client.opensearch.core.DeleteByQueryRequest;
 import org.opensearch.client.opensearch.core.DeleteByQueryResponse;
 import org.opensearch.client.opensearch.core.DeleteRequest;
@@ -93,6 +94,7 @@ import org.opensearch.client.opensearch.core.bulk.UpdateOperation;
 import org.opensearch.client.opensearch.core.mget.MultiGetOperation;
 import org.opensearch.client.opensearch.core.search.Hit;
 import org.opensearch.client.opensearch.core.search.SourceConfig;
+import org.opensearch.client.opensearch.indices.AddBlockResponse;
 import org.opensearch.client.opensearch.indices.CreateIndexRequest;
 import org.opensearch.client.opensearch.indices.DeleteIndexRequest;
 import org.opensearch.client.opensearch.indices.DeleteIndexRequest.Builder;
@@ -102,8 +104,12 @@ import org.opensearch.client.opensearch.indices.GetAliasRequest;
 import org.opensearch.client.opensearch.indices.GetAliasResponse;
 import org.opensearch.client.opensearch.indices.GetMappingRequest;
 import org.opensearch.client.opensearch.indices.GetMappingResponse;
+import org.opensearch.client.opensearch.indices.IndexSettings;
+import org.opensearch.client.opensearch.indices.IndexState;
+import org.opensearch.client.opensearch.indices.RefreshResponse;
 import org.opensearch.client.opensearch.indices.RolloverRequest;
 import org.opensearch.client.opensearch.indices.RolloverResponse;
+import org.opensearch.client.opensearch.indices.add_block.IndicesBlockOptions;
 import org.opensearch.client.opensearch.indices.rollover.RolloverConditions;
 import org.opensearch.client.opensearch.snapshot.CreateSnapshotRequest;
 import org.opensearch.client.opensearch.snapshot.CreateSnapshotResponse;
@@ -313,7 +319,18 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
       final Query query,
       final Script script,
       final boolean failOnVersionConflicts) {
-    return richOpenSearchClient.doc().updateByQuery(index, query, script, failOnVersionConflicts);
+    return updateByQuery(index, query, script, failOnVersionConflicts, null);
+  }
+
+  public long updateByQuery(
+      final String index,
+      final Query query,
+      final Script script,
+      final boolean failOnVersionConflicts,
+      final Integer scrollSize) {
+    return richOpenSearchClient
+        .doc()
+        .updateByQuery(index, query, script, failOnVersionConflicts, scrollSize);
   }
 
   public final <T> IndexResponse index(final IndexRequest.Builder<T> indexRequest) {
@@ -391,14 +408,30 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
 
   @Override
   public long countWithoutPrefix(final String unprefixedIndex) {
-    final CountRequest.Builder builder = new CountRequest.Builder().index(unprefixedIndex);
-
+    final CountRequest request = new CountRequest.Builder().index(unprefixedIndex).build();
+    final int maxNumberOfRetries = 10;
+    final int waitIntervalMillis = 3000;
     try {
-      return getOpenSearchClient().count(builder.build()).count();
+      for (int attempt = 0; attempt < maxNumberOfRetries; attempt++) {
+        final CountResponse response = getOpenSearchClient().count(request);
+        if (response.shards().failures().isEmpty()) {
+          return response.count();
+        }
+        LOG.info(
+            "Not all shards returned successful for count response from index: {}",
+            unprefixedIndex);
+        Thread.sleep(waitIntervalMillis);
+      }
+    } catch (final InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new OptimizeRuntimeException(
+          String.format("Could not determine count from index: %s", unprefixedIndex), e);
     } catch (final Exception e) {
       throw new OptimizeRuntimeException(
-          String.format("Could not determine count from index: %s", unprefixedIndex));
+          String.format("Could not determine count from index: %s", unprefixedIndex), e);
     }
+    throw new OptimizeRuntimeException(
+        String.format("Could not determine count from index: %s", unprefixedIndex));
   }
 
   @Override
@@ -509,6 +542,71 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
   @Override
   public DatabaseType getDatabaseVendor() {
     return DatabaseType.OPENSEARCH;
+  }
+
+  @Override
+  public void addWriteBlock(final String rawIndexName) {
+    final AddBlockResponse response;
+    try {
+      response =
+          getOpenSearchClient()
+              .indices()
+              .addBlock(b -> b.index(rawIndexName).block(IndicesBlockOptions.Write));
+    } catch (final IOException e) {
+      throw new OptimizeRuntimeException("Could not add write block to index " + rawIndexName, e);
+    }
+    if (!response.acknowledged() || !response.shardsAcknowledged()) {
+      throw new OptimizeRuntimeException(
+          "The write block on index " + rawIndexName + " was not acknowledged by all shards");
+    }
+  }
+
+  @Override
+  public boolean hasWriteBlock(final String rawIndexName) {
+    try {
+      final IndexState index =
+          getOpenSearchClient()
+              .indices()
+              .getSettings(g -> g.index(rawIndexName).name("index.blocks.write"))
+              .result()
+              .get(rawIndexName);
+      return index != null && isWriteBlocked(index.settings());
+    } catch (final IOException e) {
+      throw new OptimizeRuntimeException("Could not read the settings of index " + rawIndexName, e);
+    }
+  }
+
+  @Override
+  public void refreshOrFail(final String rawIndexName) {
+    final RefreshResponse response;
+    try {
+      response = getOpenSearchClient().indices().refresh(r -> r.index(rawIndexName));
+    } catch (final IOException e) {
+      throw new OptimizeRuntimeException("Could not refresh index " + rawIndexName, e);
+    }
+    if (!response.shards().failures().isEmpty()) {
+      throw new OptimizeRuntimeException("Not all shards of index " + rawIndexName + " refreshed");
+    }
+  }
+
+  private static boolean isWriteBlocked(final IndexSettings settings) {
+    if (settings == null) {
+      return false;
+    }
+    final IndexSettings indexSettings = settings.index() != null ? settings.index() : settings;
+    return indexSettings.blocks() != null && Boolean.TRUE.equals(indexSettings.blocks().write());
+  }
+
+  @Override
+  public void removeWriteBlock(final String rawIndexName) {
+    try {
+      getOpenSearchClient()
+          .indices()
+          .putSettings(b -> b.index(rawIndexName).settings(st -> st.blocks(bl -> bl.write(false))));
+    } catch (final IOException e) {
+      throw new OptimizeRuntimeException(
+          "Could not remove write block from index " + rawIndexName, e);
+    }
   }
 
   @Override
@@ -704,6 +802,7 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
                                         Map.Entry::getKey,
                                         entry -> JsonData.of(entry.getValue())))))
                     .retryOnConflict(requestDto.getRetryNumberOnConflict())
+                    .requireAlias(requestDto.isRequireAlias())
                     .build())
             .build();
       }
@@ -778,6 +877,7 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
     if (bulkResponse.errors()) {
       final Set<String> failedOperationIds = getFailedOperationIds(bulkResponse);
       if (!failedOperationIds.isEmpty()) {
+        recordNestedLimitSkippedDocuments(itemName, failedOperationIds.size());
         LOG.warn(
             "There were failures while performing bulk on {} due to the nested document limit being reached."
                 + " Removing {} failed items and retrying",
@@ -793,7 +893,9 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
         }
       } else {
         throw new OptimizeRuntimeException(
-            String.format("There were failures while performing bulk on %s.", itemName));
+            String.format(
+                "There were failures while performing bulk on %s. Message: %s",
+                itemName, describeFailedItems(bulkResponse)));
       }
     }
   }
@@ -839,12 +941,22 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
                 .anyMatch(reason -> reason.contains(NESTED_DOC_LIMIT_MESSAGE));
         throw new OptimizeRuntimeException(
             String.format(
-                "There were %s failures while performing bulk on %s.%n%s",
-                failedOperationIds.size(), itemName, getHintForErrorMsg(isReachedNestedDocLimit)));
+                "There were %s failures while performing bulk on %s.%n%s Message: %s",
+                failedOperationIds.size(),
+                itemName,
+                getHintForErrorMsg(isReachedNestedDocLimit),
+                describeFailedItems(bulkResponse)));
       }
     } else {
       LOG.debug("Bulk request on {} not executed because it contains no actions.", itemName);
     }
+  }
+
+  static String describeFailedItems(final BulkResponse bulkResponse) {
+    return bulkResponse.items().stream()
+        .filter(item -> Objects.nonNull(item.error()))
+        .map(item -> item.operationType() + " " + item.error().type() + " " + item.error().reason())
+        .collect(Collectors.joining(" , "));
   }
 
   public BulkResponse bulk(final BulkRequest.Builder bulkRequest, final String errorMessage) {

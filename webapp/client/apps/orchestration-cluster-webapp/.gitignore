@@ -21,3 +21,6 @@ todos.json
 
 # Vitest browser mode
 /test-artifacts/
+
+# Vitest JUnit report
+TEST-*.xml

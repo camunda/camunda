@@ -497,6 +497,21 @@ class UserTaskSearchIT {
   }
 
   @Test
+  public void shouldRetrieveTaskByIsSuspendedFalse() {
+    final var result =
+        camundaClient.newUserTaskSearchRequest().filter(f -> f.isSuspended(false)).send().join();
+    assertThat(result.items()).isNotEmpty();
+    result.items().forEach(item -> assertThat(item.isSuspended()).isFalse());
+  }
+
+  @Test
+  public void shouldNotRetrieveAnyTaskByIsSuspendedTrue() {
+    final var result =
+        camundaClient.newUserTaskSearchRequest().filter(f -> f.isSuspended(true)).send().join();
+    assertThat(result.items()).isEmpty();
+  }
+
+  @Test
   public void shouldRetrieveTaskByTaskDefinitionId() {
     final var result =
         camundaClient.newUserTaskSearchRequest().filter(f -> f.elementId("test-2")).send().join();

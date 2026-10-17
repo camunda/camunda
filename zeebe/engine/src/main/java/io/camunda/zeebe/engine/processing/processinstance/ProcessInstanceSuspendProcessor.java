@@ -16,6 +16,7 @@ import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSen
 import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
@@ -26,9 +27,11 @@ import io.camunda.zeebe.engine.state.immutable.SuspensionState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.engine.state.message.TransientPendingSubscriptionState;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.SuspensionBatchRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.intent.SuspensionBatchIntent;
 import io.camunda.zeebe.protocol.record.mapper.AuthzModelMapper;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
@@ -47,10 +50,13 @@ public final class ProcessInstanceSuspendProcessor
       MESSAGE_PREFIX + "a cancel request is already in progress";
   private static final String PROCESS_ALREADY_SUSPENDED_MESSAGE =
       MESSAGE_PREFIX + "it is already suspended";
+  private static final String PROCESS_TERMINATING_MESSAGE =
+      MESSAGE_PREFIX + "it is already being terminated";
 
   private final ElementInstanceState elementInstanceState;
   private final TypedResponseWriter responseWriter;
   private final StateWriter stateWriter;
+  private final TypedCommandWriter commandWriter;
   private final TypedRejectionWriter rejectionWriter;
   private final CslAuthorizationCheck cslCheck;
   private final AsyncRequestState asyncRequestState;
@@ -70,6 +76,7 @@ public final class ProcessInstanceSuspendProcessor
     elementInstanceState = processingState.getElementInstanceState();
     responseWriter = writers.response();
     stateWriter = writers.state();
+    commandWriter = writers.command();
     rejectionWriter = writers.rejection();
     this.cslCheck = cslCheck;
     asyncRequestState = processingState.getAsyncRequestState();
@@ -91,22 +98,30 @@ public final class ProcessInstanceSuspendProcessor
 
   @Override
   public void processRecord(final TypedRecord<ProcessInstanceRecord> command) {
-    final var elementInstance = elementInstanceState.getInstance(command.getKey());
+    final var processInstance = elementInstanceState.getInstance(command.getKey());
 
-    if (!validateCommand(command, elementInstance)) {
+    if (!validateCommand(command, processInstance)) {
       return;
     }
 
-    final ProcessInstanceRecord value = elementInstance.getValue();
-    stateWriter.appendFollowUpEvent(command.getKey(), ProcessInstanceIntent.SUSPENDING, value);
-    final int suspendedJobCount = closeSubscriptionsAndSuspendJobs(command.getKey());
-    stateWriter.appendFollowUpEvent(command.getKey(), ProcessInstanceIntent.SUSPENDED, value);
-    responseWriter.writeAcceptedResponseOnCommand(
-        command.getKey(), ProcessInstanceIntent.SUSPENDED, value, command);
-    suspensionMetrics.instanceSuspended();
-    if (suspendedJobCount > 0) {
-      suspensionMetrics.jobsSuspended(suspendedJobCount);
+    final long suspendStartTime = suspensionMetrics.takeSuspendStartTime();
+
+    final ProcessInstanceRecord value = processInstance.getValue();
+    // restarting a SUSPENDING instance skips the event (the marker is already there) and runs the
+    // suspension steps again; they skip subscriptions and jobs that were already handled
+    final boolean isRestart =
+        suspensionState.getSuspensionState(processInstance.getKey())
+            == SuspensionState.State.SUSPENDING;
+    if (!isRestart) {
+      stateWriter.appendFollowUpEvent(
+          processInstance.getKey(), ProcessInstanceIntent.SUSPENDING, value);
     }
+    final int suspendedJobCount = closeSubscriptionsAndSuspendJobs(processInstance.getKey());
+    startSuspensionBatch(processInstance.getKey(), value);
+    responseWriter.writeAcceptedResponseOnCommand(
+        processInstance.getKey(), ProcessInstanceIntent.SUSPENDING, value, command);
+    suspensionMetrics.jobsSuspended(suspendedJobCount);
+    suspensionMetrics.startSuspendDuration(processInstance.getKey(), suspendStartTime);
   }
 
   /**
@@ -121,12 +136,29 @@ public final class ProcessInstanceSuspendProcessor
     return suspensionJobBehavior.suspendJobs(processInstanceKey);
   }
 
-  private boolean validateCommand(
-      final TypedRecord<ProcessInstanceRecord> command, final ElementInstance elementInstance) {
+  /**
+   * Starts the walk of the element instance tree; {@link
+   * SuspensionBatchSuspendElementInstanceProcessor} writes {@link ProcessInstanceIntent#SUSPENDED}
+   * once it is done.
+   */
+  private void startSuspensionBatch(
+      final long processInstanceKey, final ProcessInstanceRecord value) {
+    final var batch =
+        new SuspensionBatchRecord()
+            .setProcessInstanceKey(value.getProcessInstanceKey())
+            .setProcessDefinitionKey(value.getProcessDefinitionKey())
+            .setStorageOrdinal(value.getStorageOrdinal())
+            .setElementInstanceKey(value.getProcessInstanceKey())
+            .setParentKey(-1)
+            .setIndex(-1);
+    commandWriter.appendFollowUpCommand(
+        processInstanceKey, SuspensionBatchIntent.SUSPEND_ELEMENT_INSTANCE, batch);
+  }
 
-    if (elementInstance == null
-        || elementInstance.getParentKey() > 0
-        || elementInstance.isTerminating()) {
+  private boolean validateCommand(
+      final TypedRecord<ProcessInstanceRecord> command, final ElementInstance processInstance) {
+
+    if (processInstance == null || processInstance.getParentKey() > 0) {
       final var reason = String.format(PROCESS_NOT_FOUND_MESSAGE, command.getKey());
       rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, reason);
       responseWriter.writeRejectedResponseOnCommand(command, RejectionType.NOT_FOUND, reason);
@@ -143,19 +175,19 @@ public final class ProcessInstanceSuspendProcessor
                                 AuthorizationResourceType.PROCESS_DEFINITION))
                         .permissionType(
                             AuthzModelMapper.fromProtocol(PermissionType.SUSPEND_PROCESS_INSTANCE))
-                        .resourceId(elementInstance.getValue().getBpmnProcessId())),
-            elementInstance.getValue(),
+                        .resourceId(processInstance.getValue().getBpmnProcessId())),
+            processInstance.getValue(),
             AuthorizationRejectionMapper.forbidden(
                 PermissionType.SUSPEND_PROCESS_INSTANCE,
                 AuthorizationResourceType.PROCESS_DEFINITION),
-            elementInstance.getValue().getTenantId(),
+            processInstance.getValue().getTenantId(),
             new Rejection(
                 RejectionType.NOT_FOUND,
                 PROCESS_NOT_FOUND_MESSAGE.formatted(
-                    elementInstance.getValue().getProcessInstanceKey())));
+                    processInstance.getValue().getProcessInstanceKey())));
     if (isAuthorized.isLeft()) {
       final var rejection = isAuthorized.getLeft();
-      enrichRejectionCommand(command, elementInstance.getValue());
+      enrichRejectionCommand(command, processInstance.getValue());
       rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
       responseWriter.writeRejectedResponseOnCommand(command, rejection.type(), rejection.reason());
       return false;
@@ -166,16 +198,26 @@ public final class ProcessInstanceSuspendProcessor
             command.getKey(), ValueType.PROCESS_INSTANCE, ProcessInstanceIntent.CANCEL);
     if (existingCancelRequest.isPresent()) {
       final var reason = String.format(PROCESS_CANCEL_IN_PROGRESS_MESSAGE, command.getKey());
-      enrichRejectionCommand(command, elementInstance.getValue());
+      enrichRejectionCommand(command, processInstance.getValue());
       rejectionWriter.appendRejection(command, RejectionType.INVALID_STATE, reason);
       responseWriter.writeRejectedResponseOnCommand(command, RejectionType.INVALID_STATE, reason);
       return false;
     }
 
-    // Check marker presence so all duplicate suspend requests are rejected.
-    if (suspensionState.getSuspensionState(command.getKey()) != null) {
+    if (processInstance.isTerminating()) {
+      final var reason = String.format(PROCESS_TERMINATING_MESSAGE, command.getKey());
+      enrichRejectionCommand(command, processInstance.getValue());
+      rejectionWriter.appendRejection(command, RejectionType.INVALID_STATE, reason);
+      responseWriter.writeRejectedResponseOnCommand(command, RejectionType.INVALID_STATE, reason);
+      return false;
+    }
+
+    // Reject duplicate suspend requests, but let a SUSPENDING instance restart its suspension.
+    final var currentSuspensionState = suspensionState.getSuspensionState(command.getKey());
+    if (currentSuspensionState != null
+        && currentSuspensionState != SuspensionState.State.SUSPENDING) {
       final var reason = String.format(PROCESS_ALREADY_SUSPENDED_MESSAGE, command.getKey());
-      enrichRejectionCommand(command, elementInstance.getValue());
+      enrichRejectionCommand(command, processInstance.getValue());
       rejectionWriter.appendRejection(command, RejectionType.INVALID_STATE, reason);
       responseWriter.writeRejectedResponseOnCommand(command, RejectionType.INVALID_STATE, reason);
       return false;
@@ -193,6 +235,12 @@ public final class ProcessInstanceSuspendProcessor
       final ProcessInstanceRecord processInstanceRecord) {
     command.getValue().setTenantId(processInstanceRecord.getTenantId());
     command.getValue().setRootProcessInstanceKey(processInstanceRecord.getRootProcessInstanceKey());
+  }
+
+  @Override
+  public SuspensionAction onSuspending(final TypedRecord<ProcessInstanceRecord> record) {
+    // process: a repeated suspend restarts a suspension that got stuck in SUSPENDING
+    return SuspensionAction.PROCESS;
   }
 
   @Override

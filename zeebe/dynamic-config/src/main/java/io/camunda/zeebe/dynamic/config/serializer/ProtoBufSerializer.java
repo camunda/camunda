@@ -131,12 +131,6 @@ public class ProtoBufSerializer
   public byte[] encode(final ClusterConfigurationGossipState gossipState) {
     final var builder = Topology.GossipState.newBuilder();
 
-    final ClusterConfiguration topologyToEncode = gossipState.getClusterConfiguration();
-    if (topologyToEncode != null) {
-      final Topology.ClusterTopology clusterTopology = encodeClusterTopology(topologyToEncode);
-      builder.setClusterTopology(clusterTopology);
-    }
-
     final CurrentClusterConfiguration currentToEncode =
         gossipState.getCurrentClusterConfiguration();
     if (currentToEncode != null) {
@@ -160,17 +154,6 @@ public class ProtoBufSerializer
     final ClusterConfigurationGossipState clusterConfigurationGossipState =
         new ClusterConfigurationGossipState();
 
-    if (gossipState.hasClusterTopology()) {
-      try {
-        clusterConfigurationGossipState.setClusterConfiguration(
-            decodeClusterTopology(gossipState.getClusterTopology()));
-      } catch (final Exception e) {
-        throw new DecodingFailed(
-            "Cluster topology could not be deserialized from gossiped state: %s"
-                .formatted(gossipState),
-            e);
-      }
-    }
     if (gossipState.hasCurrentClusterConfiguration()) {
       try {
         clusterConfigurationGossipState.setCurrentClusterConfiguration(
@@ -299,6 +282,27 @@ public class ProtoBufSerializer
         .ifPresent(
             config -> builder.setPartitionDistributor(encodePartitionDistributorConfig(config)));
     clusterConfiguration.clusterId().ifPresent(builder::setClusterId);
+
+    return builder.build();
+  }
+
+  private Topology.ClusterChangePlan encodeChangePlan(final ClusterChangePlan changes) {
+    final var builder =
+        Topology.ClusterChangePlan.newBuilder()
+            .setVersion(changes.version())
+            .setId(changes.id())
+            .setStatus(fromTopologyChangeStatus(changes.status()))
+            .setStartedAt(
+                Timestamp.newBuilder()
+                    .setSeconds(changes.startedAt().getEpochSecond())
+                    .setNanos(changes.startedAt().getNano())
+                    .build());
+    changes
+        .pendingOperations()
+        .forEach(operation -> builder.addPendingOperations(encodeOperation(operation)));
+    changes
+        .completedOperations()
+        .forEach(operation -> builder.addCompletedOperations(encodeCompletedOperation(operation)));
 
     return builder.build();
   }
@@ -489,27 +493,6 @@ public class ProtoBufSerializer
       case RECOVERING -> Topology.State.RECOVERING;
       case LEARNER -> Topology.State.LEARNER;
     };
-  }
-
-  private Topology.ClusterChangePlan encodeChangePlan(final ClusterChangePlan changes) {
-    final var builder =
-        Topology.ClusterChangePlan.newBuilder()
-            .setVersion(changes.version())
-            .setId(changes.id())
-            .setStatus(fromTopologyChangeStatus(changes.status()))
-            .setStartedAt(
-                Timestamp.newBuilder()
-                    .setSeconds(changes.startedAt().getEpochSecond())
-                    .setNanos(changes.startedAt().getNano())
-                    .build());
-    changes
-        .pendingOperations()
-        .forEach(operation -> builder.addPendingOperations(encodeOperation(operation)));
-    changes
-        .completedOperations()
-        .forEach(operation -> builder.addCompletedOperations(encodeCompletedOperation(operation)));
-
-    return builder.build();
   }
 
   private CompletedChange encodeCompletedChange(

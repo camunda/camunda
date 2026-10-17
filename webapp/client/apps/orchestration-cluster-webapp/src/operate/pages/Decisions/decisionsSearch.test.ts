@@ -69,11 +69,14 @@ describe('validateDecisionsSearch', () => {
 	});
 
 	it.for([
-		{evaluated: 'not-a-boolean'},
-		{failed: 'not-a-boolean'},
-		{decisionDefinitionVersion: 'not-a-version'},
-		{decisionDefinitionVersion: 0},
-	])('should reject malformed search instead of broadening the filter', (search) => {
-		expect(() => validateDecisionsSearch(search)).toThrow();
+		{search: {evaluated: 'not-a-boolean', failed: true}, expected: {evaluated: false, failed: true}},
+		{search: {failed: 'not-a-boolean', evaluated: true}, expected: {failed: false, evaluated: true}},
+		{search: {decisionDefinitionVersion: 'not-a-version'}, expected: {decisionDefinitionVersion: undefined}},
+		{search: {decisionDefinitionVersion: 0}, expected: {decisionDefinitionVersion: undefined}},
+		{search: {businessId: 12345}, expected: {businessId: '12345'}},
+	])('should ignore a malformed value instead of failing the route for $search', ({search, expected}) => {
+		const parsed = validateDecisionsSearch({decisionDefinitionId: 'invoice', ...search});
+
+		expect(parsed).toMatchObject({decisionDefinitionId: 'invoice', ...expected});
 	});
 });

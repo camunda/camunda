@@ -48,7 +48,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Predicate;
-import java.util.stream.Stream;
 import org.apache.commons.lang3.StringUtils;
 import org.jspecify.annotations.Nullable;
 import org.springframework.http.ProblemDetail;
@@ -57,6 +56,10 @@ public class ProcessInstanceRequestValidator {
 
   private static final List<String> CANCELLABLE_PROCESS_INSTANCE_STATES =
       List.of(ProcessInstanceState.ACTIVE.name(), ProcessInstanceState.SUSPENDED.name());
+  private static final List<String> ACTIVE_ONLY_PROCESS_INSTANCE_STATES =
+      List.of(ProcessInstanceState.ACTIVE.name());
+  private static final List<String> SUSPENDED_ONLY_PROCESS_INSTANCE_STATES =
+      List.of(ProcessInstanceState.SUSPENDED.name());
 
   public static Optional<ProblemDetail> validateCreateProcessInstanceRequest(
       final ProcessInstanceCreationInstruction request) {
@@ -149,28 +152,65 @@ public class ProcessInstanceRequestValidator {
         });
   }
 
-  /** Rejects explicitly named states that can't be cancelled. */
+  /** Rejects top-level state conditions that name a state that can't be cancelled. */
   public static Optional<ProblemDetail> validateCancelProcessInstanceBatchOperationFilter(
       final ProcessInstanceFilter filter) {
     return validate(
         violations ->
-            Stream.concat(
-                    Stream.of(filter), Stream.ofNullable(filter.orFilters()).flatMap(List::stream))
-                .flatMap(f -> f.stateOperations().stream())
-                .filter(
-                    operation ->
-                        operation.operator() == Operator.EQUALS
-                            || operation.operator() == Operator.IN)
-                .flatMap(operation -> operation.values().stream())
-                .filter(state -> !CANCELLABLE_PROCESS_INSTANCE_STATES.contains(state))
-                .distinct()
-                .forEach(
-                    state ->
-                        violations.add(
-                            ERROR_MESSAGE_INVALID_ATTRIBUTE_VALUE.formatted(
-                                "state",
-                                toProtocolStateName(state),
-                                "one of " + CANCELLABLE_PROCESS_INSTANCE_STATES))));
+            validateProcessInstanceStateFilter(
+                filter, CANCELLABLE_PROCESS_INSTANCE_STATES, violations));
+  }
+
+  /** Rejects top-level state conditions that name a state that can't be suspended. */
+  public static Optional<ProblemDetail> validateSuspendProcessInstanceBatchOperationFilter(
+      final ProcessInstanceFilter filter) {
+    return validate(
+        violations ->
+            validateProcessInstanceStateFilter(
+                filter, ACTIVE_ONLY_PROCESS_INSTANCE_STATES, violations));
+  }
+
+  /** Rejects top-level state conditions that name a state that can't be resumed. */
+  public static Optional<ProblemDetail> validateResumeProcessInstanceBatchOperationFilter(
+      final ProcessInstanceFilter filter) {
+    return validate(
+        violations ->
+            validateProcessInstanceStateFilter(
+                filter, SUSPENDED_ONLY_PROCESS_INSTANCE_STATES, violations));
+  }
+
+  /** Rejects an explicitly named top-level state other than ACTIVE. */
+  public static Optional<ProblemDetail> validateResolveIncidentBatchOperationFilter(
+      final ProcessInstanceFilter filter) {
+    return validate(
+        violations ->
+            validateProcessInstanceStateFilter(
+                filter, ACTIVE_ONLY_PROCESS_INSTANCE_STATES, violations));
+  }
+
+  /**
+   * Rejects explicitly named top-level states outside {@code allowedStates}. Only {@code $eq} and
+   * {@code $in} are checked; other operators ({@code $neq}, {@code $notIn}, {@code $exists}, {@code
+   * $like}) are applied as given and ANDed with the required state by the item provider, so they
+   * can yield an empty batch. States inside orFilters are not validated either; a conflicting
+   * branch yields no items instead of a 400.
+   */
+  private static void validateProcessInstanceStateFilter(
+      final ProcessInstanceFilter filter,
+      final List<String> allowedStates,
+      final List<String> violations) {
+    filter.stateOperations().stream()
+        .filter(
+            operation ->
+                operation.operator() == Operator.EQUALS || operation.operator() == Operator.IN)
+        .flatMap(operation -> operation.values().stream())
+        .filter(state -> !allowedStates.contains(state))
+        .distinct()
+        .forEach(
+            state ->
+                violations.add(
+                    ERROR_MESSAGE_INVALID_ATTRIBUTE_VALUE.formatted(
+                        "state", toProtocolStateName(state), "one of " + allowedStates)));
   }
 
   // The API calls CANCELED instances TERMINATED; report the value the caller actually sent.
@@ -207,6 +247,10 @@ public class ProcessInstanceRequestValidator {
           final var filter =
               SearchQueryFilterMapper.toRequiredProcessInstanceFilter(request.getFilter());
           filter.ifLeft(violations::addAll);
+          filter.ifRight(
+              f ->
+                  validateProcessInstanceStateFilter(
+                      f, ACTIVE_ONLY_PROCESS_INSTANCE_STATES, violations));
 
           final var migrationPlan = request.getMigrationPlan();
           if (migrationPlan == null) {
@@ -284,6 +328,10 @@ public class ProcessInstanceRequestValidator {
           final var filter =
               SearchQueryFilterMapper.toRequiredProcessInstanceFilter(request.getFilter());
           filter.ifLeft(violations::addAll);
+          filter.ifRight(
+              f ->
+                  validateProcessInstanceStateFilter(
+                      f, ACTIVE_ONLY_PROCESS_INSTANCE_STATES, violations));
           if (request.getMoveInstructions() == null || request.getMoveInstructions().isEmpty()) {
             violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("moveInstructions"));
           } else {

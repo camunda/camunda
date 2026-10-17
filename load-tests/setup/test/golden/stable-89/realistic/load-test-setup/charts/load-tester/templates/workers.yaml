@@ -51,7 +51,9 @@ spec:
           env:
             - name: JDK_JAVA_OPTIONS
               value: >-
+                -XX:+ExitOnOutOfMemoryError
                 -XX:+HeapDumpOnOutOfMemoryError
+                -XX:HeapDumpPath=/heap-dumps
             - name: LOG_LEVEL
               value: "INFO"
             - name: ZEEBE_REST_ADDRESS
@@ -141,6 +143,12 @@ spec:
           ports:
             - containerPort: 9600
               name: "http"
+          volumeMounts:
+            - name: heap-dumps
+              mountPath: /heap-dumps
+      volumes:
+        - name: heap-dumps
+          emptyDir: {}
 
 ---
 # Source: load-test-setup/charts/load-tester/templates/workers.yaml
@@ -195,7 +203,9 @@ spec:
           env:
             - name: JDK_JAVA_OPTIONS
               value: >-
+                -XX:+ExitOnOutOfMemoryError
                 -XX:+HeapDumpOnOutOfMemoryError
+                -XX:HeapDumpPath=/heap-dumps
             - name: LOG_LEVEL
               value: "INFO"
             - name: ZEEBE_REST_ADDRESS
@@ -279,6 +289,12 @@ spec:
           ports:
             - containerPort: 9600
               name: "http"
+          volumeMounts:
+            - name: heap-dumps
+              mountPath: /heap-dumps
+      volumes:
+        - name: heap-dumps
+          emptyDir: {}
 
 ---
 # Source: load-test-setup/charts/load-tester/templates/workers.yaml
@@ -333,7 +349,9 @@ spec:
           env:
             - name: JDK_JAVA_OPTIONS
               value: >-
+                -XX:+ExitOnOutOfMemoryError
                 -XX:+HeapDumpOnOutOfMemoryError
+                -XX:HeapDumpPath=/heap-dumps
             - name: LOG_LEVEL
               value: "INFO"
             - name: ZEEBE_REST_ADDRESS
@@ -425,6 +443,12 @@ spec:
           ports:
             - containerPort: 9600
               name: "http"
+          volumeMounts:
+            - name: heap-dumps
+              mountPath: /heap-dumps
+      volumes:
+        - name: heap-dumps
+          emptyDir: {}
 
 ---
 # Source: load-test-setup/charts/load-tester/templates/workers.yaml
@@ -479,7 +503,9 @@ spec:
           env:
             - name: JDK_JAVA_OPTIONS
               value: >-
+                -XX:+ExitOnOutOfMemoryError
                 -XX:+HeapDumpOnOutOfMemoryError
+                -XX:HeapDumpPath=/heap-dumps
             - name: LOG_LEVEL
               value: "INFO"
             - name: ZEEBE_REST_ADDRESS
@@ -563,6 +589,12 @@ spec:
           ports:
             - containerPort: 9600
               name: "http"
+          volumeMounts:
+            - name: heap-dumps
+              mountPath: /heap-dumps
+      volumes:
+        - name: heap-dumps
+          emptyDir: {}
 
 ---
 # Source: load-test-setup/charts/load-tester/templates/workers.yaml
@@ -617,7 +649,9 @@ spec:
           env:
             - name: JDK_JAVA_OPTIONS
               value: >-
+                -XX:+ExitOnOutOfMemoryError
                 -XX:+HeapDumpOnOutOfMemoryError
+                -XX:HeapDumpPath=/heap-dumps
             - name: LOG_LEVEL
               value: "INFO"
             - name: ZEEBE_REST_ADDRESS
@@ -701,6 +735,12 @@ spec:
           ports:
             - containerPort: 9600
               name: "http"
+          volumeMounts:
+            - name: heap-dumps
+              mountPath: /heap-dumps
+      volumes:
+        - name: heap-dumps
+          emptyDir: {}
 
 ---
 # Source: load-test-setup/charts/load-tester/templates/workers.yaml
@@ -755,7 +795,9 @@ spec:
           env:
             - name: JDK_JAVA_OPTIONS
               value: >-
+                -XX:+ExitOnOutOfMemoryError
                 -XX:+HeapDumpOnOutOfMemoryError
+                -XX:HeapDumpPath=/heap-dumps
             - name: LOG_LEVEL
               value: "INFO"
             - name: ZEEBE_REST_ADDRESS
@@ -841,3 +883,9 @@ spec:
           ports:
             - containerPort: 9600
               name: "http"
+          volumeMounts:
+            - name: heap-dumps
+              mountPath: /heap-dumps
+      volumes:
+        - name: heap-dumps
+          emptyDir: {}

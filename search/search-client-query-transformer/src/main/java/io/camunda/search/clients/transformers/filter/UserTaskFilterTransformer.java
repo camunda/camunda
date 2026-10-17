@@ -16,6 +16,7 @@ import static io.camunda.search.clients.query.SearchQueryBuilders.intOperations;
 import static io.camunda.search.clients.query.SearchQueryBuilders.longOperations;
 import static io.camunda.search.clients.query.SearchQueryBuilders.longTerms;
 import static io.camunda.search.clients.query.SearchQueryBuilders.matchNone;
+import static io.camunda.search.clients.query.SearchQueryBuilders.not;
 import static io.camunda.search.clients.query.SearchQueryBuilders.or;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringOperations;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringTerms;
@@ -84,6 +85,7 @@ public class UserTaskFilterTransformer extends IndexFilterTransformer<UserTaskFi
     queries.addAll(getBusinessIdQuery(filter.businessIdOperations()));
     queries.addAll(getPrioritiesQuery(filter.priorityOperations()));
     queries.addAll(getStatesQuery(filter.stateOperations()));
+    ofNullable(filter.isSuspended()).ifPresent(f -> queries.add(getIsSuspendedQuery(f)));
     queries.addAll(getTenantQuery(filter.tenantIdOperations()));
     ofNullable(getElementInstanceKeyQuery(filter.elementInstanceKeys())).ifPresent(queries::add);
     queries.addAll(getCreationTimeQuery(filter.creationDateOperations()));
@@ -233,6 +235,13 @@ public class UserTaskFilterTransformer extends IndexFilterTransformer<UserTaskFi
 
   private List<SearchQuery> getDueDateQuery(final List<Operation<OffsetDateTime>> dueTime) {
     return dateTimeOperations(DUE_DATE, dueTime);
+  }
+
+  private SearchQuery getIsSuspendedQuery(final boolean isSuspended) {
+    // documents indexed before the field existed carry no isSuspended value and read as false
+    return isSuspended
+        ? term(IS_SUSPENDED, true)
+        : or(term(IS_SUSPENDED, false), not(exists(IS_SUSPENDED)));
   }
 
   private List<SearchQuery> getStatesQuery(final List<Operation<String>> states) {

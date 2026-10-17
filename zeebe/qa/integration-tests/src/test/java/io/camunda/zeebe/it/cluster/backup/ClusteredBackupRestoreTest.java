@@ -12,8 +12,8 @@ import static org.assertj.core.api.Assertions.assertThatNoException;
 
 import com.google.cloud.storage.BucketInfo;
 import io.camunda.configuration.Camunda;
-import io.camunda.configuration.Gcs;
-import io.camunda.configuration.PrimaryStorageBackup;
+import io.camunda.configuration.data.primarystorage.PrimaryStorageBackup;
+import io.camunda.configuration.data.primarystorage.backup.Gcs;
 import io.camunda.management.backups.BackupInfo;
 import io.camunda.management.backups.StateCode;
 import io.camunda.management.backups.TakeBackupRuntimeResponse;

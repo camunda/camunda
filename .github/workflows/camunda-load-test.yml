@@ -328,7 +328,7 @@ jobs:
     name: Calculate Image Tag
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    permissions: { }
+    permissions: {}
     outputs:
       image-tag: ${{ inputs.orchestration-tag != '' && inputs.orchestration-tag || (inputs.reuse-tag != '' && inputs.reuse-tag || steps.image-tag.outputs.image-tag) }}
     steps:
@@ -368,9 +368,7 @@ jobs:
     if: ${{ inputs.reuse-tag == '' && inputs.orchestration-tag == '' }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    permissions:
-      contents: 'read'
-      id-token: 'write'
+    permissions: {}
     env:
       CALCULATED_IMAGE_TAG: ${{ needs.calculate-image-tag.outputs.image-tag }}
     steps:
@@ -454,9 +452,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     needs: calculate-image-tag
-    permissions:
-      contents: 'read'
-      id-token: 'write'
+    permissions: {}
     env:
       IMAGE_TAG: ${{ needs.calculate-image-tag.outputs.image-tag }}
     steps:
@@ -512,9 +508,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     needs: calculate-image-tag
-    permissions:
-      contents: read
-      id-token: write
+    permissions: {}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -563,8 +557,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
-      contents: 'read'
-      id-token: 'write'
+      id-token: write # Teleport cluster auth
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -572,7 +565,7 @@ jobs:
           persist-credentials: false
 
       - name: Set up Helm
-        uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
+        uses: jdx/mise-action@08ae2a091c038e1e05ec6f5115dc5c69d5a2a6b8 # v5.1.2
         with:
           minimum_release_age: 15d
           install_args: helm
@@ -580,7 +573,7 @@ jobs:
 
       # Authenticate with Teleport
       - name: Set up Teleport
-        uses: teleport-actions/setup@b638ff596557cc3959eb6b5287d5e58e0c8ac6a6 # v1.1.1
+        uses: teleport-actions/setup@10b5e9f760190f027a1e04e342178d8d6e7eae30 # v2.0.0
         with:
             proxy: camunda.teleport.sh:443
             version: auto

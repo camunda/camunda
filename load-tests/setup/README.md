@@ -179,6 +179,7 @@ You can specify a secondary storage type as the second argument:
 ```
 
 The `none` option runs load tests without any secondary storage, which disables Camunda exporters. This is useful for testing the core orchestration engine performance in isolation.
+The Makefile also disables the data availability monitoring and the k6 `data-read` test, because they read from secondary storage.
 
 #### ECK Elasticsearch
 
@@ -443,7 +444,7 @@ To run a specific workload profile, use one of the named targets:
 make latency   # 1 instance/s, 1 worker — low-throughput, useful for latency measurements
 make typical   # 50 instances/s, 6 workers, typical_process BPMN
 make realistic # Realistic multi-instance benchmark (values from camunda-load-tests-helm)
-make max       # 300 instances/s — maximum stress, also disables consistency check overhead
+make max       # 300 instances/s (500 with secondary_storage=none) — maximum stress, also disables consistency check overhead
 make archiver  # Multi-instance archiver scenario (no workers)
 ```
 
@@ -535,6 +536,8 @@ make clean
 This uninstalls the Helm releases (Camunda Platform + load test + load-test-setup, the latter including the Prometheus Elasticsearch exporter subchart when enabled), removes any secondary-storage chart/PVCs, and finally `kubectl delete namespace --ignore-not-found --wait` to drop the namespace itself. The namespace delete waits for finalization (can take a few minutes for a full load test) so that an immediate `make install` afterwards doesn't race a still-terminating namespace.
 
 The local namespace folder is left in place — keep it if you may want to recreate the namespace later (`make install` will reinstall the load-test-setup chart, which recreates the namespace and credentials secret), or `rm -rf c8-my-load-test-name` from `load-tests/setup/` if you're truly done.
+
+To remove all local folders whose namespace no longer exists, run `./cleanupStaleFolders.sh` from `load-tests/setup/` (dry run) and add `--delete` to remove them.
 
 ## Running on stable VMs
 

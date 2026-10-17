@@ -6,69 +6,32 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {z} from 'zod';
 import {API_VERSION, type Endpoint} from './common';
+import {deleteProcessInstanceRequestSchema} from './gen/zod/deleteProcessInstanceRequestSchema';
+import {processInstanceModificationInstructionSchema} from './gen/zod/processInstanceModificationInstructionSchema';
+import type {DeleteProcessInstanceRequest} from './gen/types/DeleteProcessInstanceRequest';
+import type {ProcessInstanceModificationInstruction} from './gen/types/ProcessInstanceModificationInstruction';
 import {type ProcessInstance} from './processes';
 
-const deleteProcessInstanceRequestBodySchema = z
-	.object({
-		operationReference: z.number().int(),
-	})
-	.optional();
-type DeleteProcessInstanceRequestBody = z.infer<typeof deleteProcessInstanceRequestBodySchema>;
+const deleteProcessInstanceRequestBodySchema = deleteProcessInstanceRequestSchema;
+type DeleteProcessInstanceRequestBody = DeleteProcessInstanceRequest;
+
+const modifyProcessInstanceRequestBodySchema = processInstanceModificationInstructionSchema.refine(
+	({activateInstructions, moveInstructions, terminateInstructions}) =>
+		(activateInstructions !== undefined && activateInstructions.length > 0) ||
+		(moveInstructions !== undefined && moveInstructions.length > 0) ||
+		(terminateInstructions !== undefined && terminateInstructions.length > 0),
+	{
+		message:
+			'At least one instruction (activateInstructions, moveInstructions, or terminateInstructions) must be provided with at least one element',
+	},
+);
+type ModifyProcessInstanceRequestBody = ProcessInstanceModificationInstruction;
 
 const deleteProcessInstance = {
 	method: 'POST',
 	getUrl: ({processInstanceKey}) => `/${API_VERSION}/process-instances/${processInstanceKey}/deletion` as const,
 } as const satisfies Endpoint<Pick<ProcessInstance, 'processInstanceKey'>>;
-
-const variableInstructionSchema = z.object({
-	variables: z.record(z.string(), z.unknown()),
-	scopeId: z.string().optional(),
-});
-const activateInstructionSchema = z.object({
-	elementId: z.string(),
-	variableInstructions: z.array(variableInstructionSchema).optional(),
-	ancestorElementInstanceKey: z.string().optional(),
-});
-const moveInstructionSchema = z.object({
-	sourceElementInstruction: z.discriminatedUnion('sourceType', [
-		z.object({sourceType: z.literal('byId'), sourceElementId: z.string()}),
-		z.object({sourceType: z.literal('byKey'), sourceElementInstanceKey: z.string()}),
-	]),
-	targetElementId: z.string(),
-	ancestorScopeInstruction: z
-		.discriminatedUnion('ancestorScopeType', [
-			z.object({ancestorScopeType: z.literal('direct'), ancestorElementInstanceKey: z.string()}),
-			z.object({ancestorScopeType: z.literal('inferred')}),
-			z.object({ancestorScopeType: z.literal('sourceParent')}),
-		])
-		.optional(),
-	variableInstructions: z.array(variableInstructionSchema).optional(),
-});
-const terminateInstructionSchema = z.union([
-	z.object({elementId: z.string()}).strict(),
-	z.object({elementInstanceKey: z.string()}).strict(),
-]);
-
-const modifyProcessInstanceRequestBodySchema = z
-	.object({
-		operationReference: z.number().optional(),
-		activateInstructions: z.array(activateInstructionSchema).optional(),
-		moveInstructions: z.array(moveInstructionSchema).optional(),
-		terminateInstructions: z.array(terminateInstructionSchema).optional(),
-	})
-	.refine(
-		({activateInstructions, moveInstructions, terminateInstructions}) =>
-			(activateInstructions !== undefined && activateInstructions.length > 0) ||
-			(moveInstructions !== undefined && moveInstructions.length > 0) ||
-			(terminateInstructions !== undefined && terminateInstructions.length > 0),
-		{
-			message:
-				'At least one instruction (activateInstructions, moveInstructions, or terminateInstructions) must be provided with at least one element',
-		},
-	);
-type ModifyProcessInstanceRequestBody = z.infer<typeof modifyProcessInstanceRequestBodySchema>;
 
 const modifyProcessInstance = {
 	method: 'POST',
@@ -81,4 +44,5 @@ export {
 	modifyProcessInstanceRequestBodySchema,
 	modifyProcessInstance,
 };
+
 export type {DeleteProcessInstanceRequestBody, ModifyProcessInstanceRequestBody};

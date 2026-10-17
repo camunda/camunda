@@ -83,7 +83,7 @@ test.describe('Get Process Instance Statistics By Error API Tests', () => {
     request,
   }) => {
     const errorMessage =
-      "Expected result of the expression 'goUp < 0' to be 'BOOLEAN', but was 'NULL'. The evaluation reported the following warnings:\n[NO_VARIABLE_FOUND] No variable found with name 'goUp'\n[NOT_COMPARABLE] Can't compare 'null' with '0'";
+      "Expected result of the condition expression 'goUp < 0' of sequence flow 'SequenceFlow_1goon4z' to be 'BOOLEAN', but was 'NULL'. The evaluation reported the following warnings:\n[NO_VARIABLE_FOUND] No variable found with name 'goUp'\n[NOT_COMPARABLE] Can't compare 'null' with '0'";
     let processInstanceKeyToSearch: string;
 
     await test.step('Start a process instance that will throw an error', async () => {

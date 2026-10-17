@@ -28,6 +28,7 @@ import co.elastic.clients.elasticsearch.indices.RefreshResponse;
 import co.elastic.clients.transport.TransportException;
 import co.elastic.clients.transport.http.TransportHttpClient;
 import io.camunda.exporter.tasks.incident.IncidentUpdateRepository.IncidentBulkUpdate;
+import io.camunda.exporter.tasks.incident.IncidentUpdateRepository.NonIncidentBulkUpdate;
 import io.camunda.exporter.tasks.util.BulkRequestTooLargeException;
 import io.camunda.webapps.schema.entities.incident.IncidentEntity;
 import io.camunda.webapps.schema.entities.incident.IncidentState;
@@ -159,7 +160,7 @@ public final class ElasticsearchIncidentUpdateRepositoryTest {
                                             .reason("[parent] Data too large"))))));
 
     // when
-    final var result = repository.bulkUpdate(bulkUpdateOf(1));
+    final var result = repository.bulkUpdate(incidentBulkUpdateOf(1));
 
     // then
     assertThat(result)
@@ -184,7 +185,7 @@ public final class ElasticsearchIncidentUpdateRepositoryTest {
         .thenReturn(CompletableFuture.failedFuture(rejection));
 
     // when
-    final var result = repository.bulkUpdate(bulkUpdateOf(1));
+    final var result = repository.bulkUpdate(incidentBulkUpdateOf(1));
 
     // then
     assertThat(result)
@@ -206,7 +207,7 @@ public final class ElasticsearchIncidentUpdateRepositoryTest {
                 buildFailedBulkResponse("circuit_breaking_exception", "[parent] Data too large")));
 
     // when
-    final var result = repository.bulkUpdate(bulkUpdateOf(1));
+    final var result = repository.bulkUpdate(incidentBulkUpdateOf(1));
 
     // then - the request was accepted, so its size is not what tripped the breaker
     assertThat(result)
@@ -227,7 +228,7 @@ public final class ElasticsearchIncidentUpdateRepositoryTest {
                 buildFailedBulkResponse("es_rejected_execution_exception", "queue full")));
 
     // when
-    final var result = repository.bulkUpdate(bulkUpdateOf(1));
+    final var result = repository.bulkUpdate(incidentBulkUpdateOf(1));
 
     // then
     assertThat(result)
@@ -248,7 +249,7 @@ public final class ElasticsearchIncidentUpdateRepositoryTest {
                 buildFailedBulkResponse("version_conflict_engine_exception", "conflict")));
 
     // when
-    final var result = repository.bulkUpdate(bulkUpdateOf(1));
+    final var result = repository.bulkUpdate(incidentBulkUpdateOf(1));
 
     // then
     assertThat(result)
@@ -266,7 +267,7 @@ public final class ElasticsearchIncidentUpdateRepositoryTest {
         .thenReturn(CompletableFuture.failedFuture(new RuntimeException("connection reset")));
 
     // when
-    final var result = repository.bulkUpdate(bulkUpdateOf(1));
+    final var result = repository.bulkUpdate(incidentBulkUpdateOf(1));
 
     // then
     assertThat(result)
@@ -274,6 +275,110 @@ public final class ElasticsearchIncidentUpdateRepositoryTest {
         .withThrowableThat()
         .withRootCauseExactlyInstanceOf(RuntimeException.class)
         .withMessageContaining("connection reset");
+  }
+
+  @Test
+  void shouldExtractOnlyUpdatedIdsFromResponseWhenBulkUpdatingIncidents() {
+    // given
+    final var repository = createRepository();
+    final BulkResponse response =
+        new BulkResponse.Builder()
+            .took(1)
+            .errors(false)
+            .items(
+                List.of(
+                    buildSuccessBulkResponseItem("updated", "1"),
+                    buildSuccessBulkResponseItem("noop", "2"),
+                    buildSuccessBulkResponseItem("updated", "3")))
+            .build();
+    Mockito.when(client.bulk(Mockito.any(BulkRequest.class)))
+        .thenReturn(CompletableFuture.completedFuture(response));
+
+    // when
+    final var result = repository.bulkUpdate(incidentBulkUpdateOf(3));
+
+    // then
+    assertThat(result).succeedsWithin(Duration.ofSeconds(5)).isEqualTo(List.of("1", "3"));
+  }
+
+  @Test
+  void shouldThrowPartialUpdateExceptionWhenSomeIncidentsUpdateButOthersFail() {
+    // given
+    final var repository = createRepository();
+    final BulkResponse response =
+        new BulkResponse.Builder()
+            .took(1)
+            .errors(true)
+            .items(
+                List.of(
+                    buildSuccessBulkResponseItem("updated", "123"),
+                    buildFailedBulkResponseItem("version_conflict_engine_exception", "conflict")))
+            .build();
+    Mockito.when(client.bulk(Mockito.any(BulkRequest.class)))
+        .thenReturn(CompletableFuture.completedFuture(response));
+
+    // when
+    final var result = repository.bulkUpdate(incidentBulkUpdateOf(2));
+
+    // then
+    assertThat(result)
+        .failsWithin(Duration.ofSeconds(5))
+        .withThrowableThat()
+        .havingRootCause()
+        .isInstanceOf(IncidentPartialBulkUpdateException.class)
+        .extracting(cause -> ((IncidentPartialBulkUpdateException) cause).getUpdatedIds())
+        .isEqualTo(List.of("123"));
+  }
+
+  @Test
+  void shouldExtractOnlyUpdatedIdsFromResponseWhenBulkUpdatingNonIncidents() {
+    // given
+    final var repository = createRepository();
+    final BulkResponse response =
+        new BulkResponse.Builder()
+            .took(1)
+            .errors(false)
+            .items(
+                List.of(
+                    buildSuccessBulkResponseItem("updated", "1"),
+                    buildSuccessBulkResponseItem("noop", "2"),
+                    buildSuccessBulkResponseItem("updated", "3")))
+            .build();
+    Mockito.when(client.bulk(Mockito.any(BulkRequest.class)))
+        .thenReturn(CompletableFuture.completedFuture(response));
+
+    // when
+    final var result = repository.bulkUpdate(nonIncidentBulkUpdateOf(3));
+
+    // then
+    assertThat(result).succeedsWithin(Duration.ofSeconds(5)).isEqualTo(List.of("1", "3"));
+  }
+
+  @Test
+  void shouldThrowExporterExceptionWhenSomeNonIncidentsUpdateButOthersFail() {
+    // given
+    final var repository = createRepository();
+    final BulkResponse response =
+        new BulkResponse.Builder()
+            .took(1)
+            .errors(true)
+            .items(
+                List.of(
+                    buildSuccessBulkResponseItem("updated", "123"),
+                    buildFailedBulkResponseItem("version_conflict_engine_exception", "conflict")))
+            .build();
+    Mockito.when(client.bulk(Mockito.any(BulkRequest.class)))
+        .thenReturn(CompletableFuture.completedFuture(response));
+
+    // when
+    final var result = repository.bulkUpdate(nonIncidentBulkUpdateOf(2));
+
+    // then
+    assertThat(result)
+        .failsWithin(Duration.ofSeconds(5))
+        .withThrowableThat()
+        .havingRootCause()
+        .isInstanceOf(ExporterException.class);
   }
 
   @Test
@@ -426,7 +531,7 @@ public final class ElasticsearchIncidentUpdateRepositoryTest {
     return response.build();
   }
 
-  private IncidentBulkUpdate bulkUpdateOf(final int updateCount) {
+  private IncidentBulkUpdate incidentBulkUpdateOf(final int updateCount) {
     final var bulk = new IncidentBulkUpdate();
     for (int i = 0; i < updateCount; i++) {
       bulk.incidentRequests()
@@ -439,15 +544,42 @@ public final class ElasticsearchIncidentUpdateRepositoryTest {
     return bulk;
   }
 
+  private NonIncidentBulkUpdate nonIncidentBulkUpdateOf(final int updateCount) {
+    final var bulk = new NonIncidentBulkUpdate();
+    for (int i = 0; i < updateCount; i++) {
+      bulk.flowNodeInstanceRequests()
+          .add(
+              FlowNodeInstanceUpdate.id(String.valueOf(i))
+                  .index("incidentIndex")
+                  .hasIncident(true)
+                  .build());
+    }
+    return bulk;
+  }
+
+  private BulkResponseItem buildSuccessBulkResponseItem(final String result, final String id) {
+    return new BulkResponseItem.Builder()
+        .operationType(OperationType.Update)
+        .status(200)
+        .index("incidentIndex")
+        .id(id)
+        .result(result)
+        .build();
+  }
+
+  private BulkResponseItem buildFailedBulkResponseItem(
+      final String errorType, final String reason) {
+    return new BulkResponseItem.Builder()
+        .operationType(OperationType.Update)
+        .status(429)
+        .index("incidentIndex")
+        .id("0")
+        .error(e -> e.type(errorType).reason(reason))
+        .build();
+  }
+
   private BulkResponse buildFailedBulkResponse(final String errorType, final String reason) {
-    final var item =
-        new BulkResponseItem.Builder()
-            .operationType(OperationType.Update)
-            .status(429)
-            .index("incidentIndex")
-            .id("0")
-            .error(e -> e.type(errorType).reason(reason))
-            .build();
+    final var item = buildFailedBulkResponseItem(errorType, reason);
     return new BulkResponse.Builder().took(1).errors(true).items(List.of(item)).build();
   }
 

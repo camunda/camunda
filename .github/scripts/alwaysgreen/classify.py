@@ -35,6 +35,12 @@ from typing import Any, Iterable, Iterator
 PLATFORM_ERROR_MARKER = "internal error when running your job"
 CANCELLED_MARKER = "The operation was canceled"
 
+#: Conclusions GitHub reports for a job it stopped rather than let fail. A job it
+#: could not place on a runner ends this way, so a scan for failing jobs cannot
+#: see it, yet when nothing else failed it is the only reason the run went red.
+#: These are judged by `noise_verdict` on the same evidence as a failing job.
+STALLED_CONCLUSIONS = ("cancelled", "timed_out")
+
 #: Verdicts that must never reach the fix agent.
 NOISE_PLATFORM = "platform-flake"
 NOISE_CANCELLED = "cancelled"
@@ -52,8 +58,13 @@ def noise_verdict(
     `failure_annotations` are the messages of the job's failure-level check-run
     annotations. A job with no steps *and* no failure annotation carries no
     evidence at all — observed on `Create cluster generation on INT`.
+
+    A stalled conclusion is judged on the same evidence rather than waved
+    through: a job cancelled part-way through a step says so in its annotation
+    and is noise, while one GitHub could not place on a runner says *that*, which
+    is a diagnosis and not noise.
     """
-    if conclusion != "failure":
+    if conclusion != "failure" and conclusion not in STALLED_CONCLUSIONS:
         return None
 
     messages = [m for m in failure_annotations if m]
@@ -432,7 +443,11 @@ class FailingSpec:
 
 
 def ci_job_spec(
-    job_name: str, *, workflow_path: str, failing_steps: Iterable[str]
+    job_name: str,
+    *,
+    workflow_path: str,
+    failing_steps: Iterable[str],
+    conclusion: str = "failure",
 ) -> FailingSpec:
     """Represent a failing CI job as a spec, for a run that had no failing test.
 
@@ -440,16 +455,21 @@ def ci_job_spec(
     one: `file` is the workflow that owns the job, which is the file the fix has
     to change. `statuses` is a single failed attempt, so `deterministic` is True
     and a CI bug is never mistaken for flakiness and "fixed" with a longer wait.
+
+    `conclusion` names how the job ended, so a stalled job says so instead of
+    claiming a failure it never reported.
     """
     steps = [s for s in failing_steps if s]
+    if steps:
+        error = f"CI job failed at step: {', '.join(steps)}"
+    elif conclusion in STALLED_CONCLUSIONS:
+        error = f"CI job ended as {conclusion} without recording a failing step"
+    else:
+        error = "CI job failed with no failing step recorded"
     return FailingSpec(
         file=workflow_path,
         test_name=job_leaf_name(job_name),
-        error=(
-            f"CI job failed at step: {', '.join(steps)}"
-            if steps
-            else "CI job failed with no failing step recorded"
-        ),
+        error=error,
         attempts=1,
         statuses=["failed"],
     )

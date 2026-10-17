@@ -36,6 +36,7 @@ import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperation
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceMigrationMappingInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationMoveInstruction;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceMatcher;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.BatchOperationType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
@@ -571,6 +572,25 @@ abstract class AbstractBatchOperationTest {
         .withResourceType(AuthorizationResourceType.PROCESS_DEFINITION)
         .withResourceMatcher(WILDCARD.getMatcher())
         .withResourceId(WILDCARD.getResourceId())
+        .create(DEFAULT_USER.getUsername());
+  }
+
+  /**
+   * Grants a permission scoped to a single process definition id, instead of the wildcard granted
+   * by {@link #addProcessDefinitionPermissionsToUser(UserRecordValue, PermissionType)}. Used to
+   * simulate a user authorized on one process definition but not another.
+   */
+  protected void addProcessDefinitionPermissionsToUser(
+      final UserRecordValue user, final PermissionType permissionType, final String resourceId) {
+    engine
+        .authorization()
+        .newAuthorization()
+        .withPermissions(permissionType)
+        .withOwnerId(user.getUsername())
+        .withOwnerType(AuthorizationOwnerType.USER)
+        .withResourceType(AuthorizationResourceType.PROCESS_DEFINITION)
+        .withResourceMatcher(AuthorizationResourceMatcher.ID)
+        .withResourceId(resourceId)
         .create(DEFAULT_USER.getUsername());
   }
 }

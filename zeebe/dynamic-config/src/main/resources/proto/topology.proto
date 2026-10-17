@@ -5,11 +5,9 @@ import "google/protobuf/timestamp.proto";
 
 option java_package = "io.camunda.zeebe.dynamic.config.protocol";
 
-// During a rolling upgrade both fields are populated (dual-write): field 1
-// carries the legacy single-group view (read by old brokers), field 2 carries
-// the full multi-partition-group configuration (read by upgraded brokers).
 message GossipState {
-  ClusterTopology clusterTopology = 1;
+  reserved 1;
+  reserved "clusterTopology";
   CurrentClusterConfiguration currentClusterConfiguration = 2;
 }
 
@@ -213,7 +211,9 @@ message PartitionGroupChangeOperation {
 
 message SchemaInitializationOperation {}
 
-// Legacy message for cluster configuration, will be deprecated from 8.10.
+// Legacy message for cluster configuration. Retained only for decoding a persisted
+// configuration file written before 8.10 (see PersistedCurrentClusterConfiguration's
+// VERSION_LEGACY migration branch); no longer gossiped.
 message ClusterTopology {
   int64 version = 1;
   map<string, MemberState> members = 2;

@@ -17,9 +17,9 @@ import io.atomix.cluster.messaging.ClusterCommunicationService;
 import io.camunda.zeebe.dynamic.config.ClusterConfigurationUpdateNotifier;
 import io.camunda.zeebe.dynamic.config.metrics.TopologyMetrics;
 import io.camunda.zeebe.dynamic.config.serializer.ClusterConfigurationSerializer;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
+import io.camunda.zeebe.scheduler.ScheduledTimer;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import java.util.Collections;
@@ -52,11 +52,15 @@ public final class ClusterConfigurationGossiper
 
   // Reuse the same random ordered list for both sync and gossip
   private List<MemberId> membersToSync = new LinkedList<>();
+  private ScheduledTimer syncTimer;
+  // true while a sync request is awaiting its response; ticks are skipped meanwhile so slow peers
+  // don't pile up requests. Only accessed from the actor
+  private boolean syncInFlight;
+  // Set once closed, so that a start() queued after close() does nothing. Only accessed from the
+  // actor
+  private boolean closed;
 
   // The handler which can merge configuration updates and reacts to the changes.
-  private final Consumer<ClusterConfiguration> clusterConfigurationUpdateHandler;
-  // New-model handler; when set, received gossip is delivered as a CurrentClusterConfiguration
-  // (field 2, or migrated from field 1) instead of through the legacy handler.
   private final Consumer<CurrentClusterConfiguration> currentConfigurationUpdateHandler;
   private final TopologyMetrics topologyMetrics;
 
@@ -66,7 +70,6 @@ public final class ClusterConfigurationGossiper
       final ClusterMembershipService membershipService,
       final ClusterConfigurationSerializer serializer,
       final ClusterConfigurationGossiperConfig config,
-      final Consumer<ClusterConfiguration> clusterConfigurationUpdateHandler,
       final Consumer<CurrentClusterConfiguration> currentConfigurationUpdateHandler,
       final TopologyMetrics topologyMetrics) {
     this.executor = executor;
@@ -74,7 +77,6 @@ public final class ClusterConfigurationGossiper
     this.membershipService = membershipService;
     this.config = config;
     this.serializer = serializer;
-    this.clusterConfigurationUpdateHandler = clusterConfigurationUpdateHandler;
     this.currentConfigurationUpdateHandler = currentConfigurationUpdateHandler;
     this.topologyMetrics = topologyMetrics;
   }
@@ -90,7 +92,10 @@ public final class ClusterConfigurationGossiper
   }
 
   private void internalStart() {
-    scheduleSync();
+    if (closed) {
+      return;
+    }
+    syncTimer = executor.runAtFixedRate(config.syncDelay(), this::sync);
     registerSyncHandler();
     registerGossipHandler();
     registerMemberAddedListener();
@@ -126,27 +131,26 @@ public final class ClusterConfigurationGossiper
     communicationService.unsubscribe(GOSSIP_REQUEST_TOPIC);
   }
 
-  private void scheduleSync() {
-    executor.schedule(config.syncDelay(), this::sync);
-  }
-
   private void sync() {
+    if (closed || syncInFlight) {
+      return;
+    }
     refreshMembersToSync();
 
     if (membersToSync.isEmpty()) {
+      LOGGER.debug("No other cluster member known, skipping this configuration sync round");
       return;
     }
 
-    final var randomMemberToSync = membersToSync.remove(0);
-
-    sync(randomMemberToSync);
+    sync(membersToSync.remove(0));
   }
 
   private void sync(final MemberId toMember) {
     LOGGER.trace("Sending sync request to {}", toMember);
-    sendSyncRequest(toMember)
-        .whenCompleteAsync(
-            (response, error) -> handleSyncResponse(response, error, toMember), executor::run);
+    final var request = sendSyncRequest(toMember);
+    syncInFlight = true;
+    request.whenCompleteAsync(
+        (response, error) -> handleSyncResponse(response, error, toMember), executor::run);
   }
 
   private void refreshMembersToSync() {
@@ -164,54 +168,27 @@ public final class ClusterConfigurationGossiper
       final ClusterConfigurationGossipState response,
       final Throwable error,
       final MemberId member) {
+    syncInFlight = false;
     if (error == null) {
       update(response);
     } else {
       LOGGER.warn("Failed to sync with {}", member, error);
     }
-    scheduleSync();
   }
 
   private void update(final ClusterConfigurationGossipState receivedGossipState) {
     if (receivedGossipState.equals(gossipState)) {
       return;
     }
-    if (currentConfigurationUpdateHandler != null) {
-      // New model: prefer field 2; fall back to migrating field 1 from an old broker.
-      final var received = receivedGossipState.getCurrentClusterConfiguration();
-      final CurrentClusterConfiguration wrapper =
-          received != null
-              ? received
-              : receivedGossipState.getClusterConfiguration() != null
-                  ? CurrentClusterConfiguration.fromLegacy(
-                      receivedGossipState.getClusterConfiguration())
-                  : null;
-      if (wrapper != null) {
-        currentConfigurationUpdateHandler.accept(wrapper);
-      }
-      return;
+    final var received = receivedGossipState.getCurrentClusterConfiguration();
+    if (received != null) {
+      currentConfigurationUpdateHandler.accept(received);
     }
-    final ClusterConfiguration topology = receivedGossipState.getClusterConfiguration();
-    if (topology != null) {
-      clusterConfigurationUpdateHandler.accept(topology);
-    }
-  }
-
-  private void onConfigurationUpdated(final ClusterConfiguration updatedConfiguration) {
-    gossipState.setClusterConfiguration(updatedConfiguration);
-    LOGGER.trace("Updated local gossipState to {}", updatedConfiguration);
-    gossip();
-    notifyListeners(updatedConfiguration);
-    topologyMetrics.updateFromTopology(
-        CurrentClusterConfiguration.fromLegacy(updatedConfiguration));
   }
 
   private void onCurrentConfigurationUpdated(
       final CurrentClusterConfiguration updatedConfiguration) {
-    // Dual-write: field 2 carries the full new model, field 1 the legacy view read by old brokers.
-    final var legacyView = updatedConfiguration.toLegacyDefault();
     gossipState.setCurrentClusterConfiguration(updatedConfiguration);
-    gossipState.setClusterConfiguration(legacyView);
     LOGGER.trace("Updated local gossipState to {}", updatedConfiguration);
     gossip();
     notifyListeners(updatedConfiguration);
@@ -221,11 +198,6 @@ public final class ClusterConfigurationGossiper
   private void notifyListeners(final CurrentClusterConfiguration updatedConfiguration) {
     configurationUpdateListeners.forEach(
         listener -> listener.onClusterConfigurationUpdated(updatedConfiguration));
-  }
-
-  private void notifyListeners(final ClusterConfiguration updatedTopology) {
-    configurationUpdateListeners.forEach(
-        listener -> listener.onClusterConfigurationUpdated(updatedTopology));
   }
 
   private ClusterConfigurationGossipState handleSyncRequest(
@@ -238,21 +210,6 @@ public final class ClusterConfigurationGossiper
     return gossipState;
   }
 
-  public void updateClusterConfiguration(final ClusterConfiguration clusterConfiguration) {
-    if (clusterConfiguration == null) {
-      return;
-    }
-    executor.run(
-        () -> {
-          if (!clusterConfiguration.equals(gossipState.getClusterConfiguration())) {
-            onConfigurationUpdated(clusterConfiguration);
-          }
-        });
-  }
-
-  /**
-   * New-model counterpart of {@link #updateClusterConfiguration}; dual-writes both gossip fields.
-   */
   public void updateCurrentClusterConfiguration(
       final CurrentClusterConfiguration currentClusterConfiguration) {
     if (currentClusterConfiguration == null) {
@@ -264,21 +221,6 @@ public final class ClusterConfigurationGossiper
             onCurrentConfigurationUpdated(currentClusterConfiguration);
           }
         });
-  }
-
-  public ActorFuture<ClusterConfiguration> queryClusterConfiguration(final MemberId memberId) {
-    final ActorFuture<ClusterConfiguration> responseFuture = executor.createFuture();
-    sendSyncRequest(memberId)
-        .whenCompleteAsync(
-            (response, error) -> {
-              if (error == null) {
-                responseFuture.complete(response.getClusterConfiguration());
-              } else {
-                responseFuture.completeExceptionally(error);
-              }
-            },
-            executor::run);
-    return responseFuture;
   }
 
   public ActorFuture<CurrentClusterConfiguration> queryCurrentClusterConfiguration(
@@ -340,16 +282,9 @@ public final class ClusterConfigurationGossiper
     executor.run(
         () -> {
           configurationUpdateListeners.add(listener);
-          // Prefer the new-model view (field 2): it carries every partition group, whereas the
-          // legacy view (field 1) is always a single-group projection (see
-          // CurrentClusterConfiguration#toLegacyDefault) and would silently hide every
-          // non-default physical tenant group from a listener backfilled through it. Fall back to
-          // the legacy field only when the new-model one hasn't been populated yet.
           final var currentConfiguration = gossipState.getCurrentClusterConfiguration();
           if (currentConfiguration != null) {
             listener.onClusterConfigurationUpdated(currentConfiguration);
-          } else if (gossipState.getClusterConfiguration() != null) {
-            listener.onClusterConfigurationUpdated(gossipState.getClusterConfiguration());
           }
         });
   }
@@ -383,6 +318,15 @@ public final class ClusterConfigurationGossiper
 
   @Override
   public void close() {
+    executor.run(this::internalClose);
+  }
+
+  private void internalClose() {
+    closed = true;
+    if (syncTimer != null) {
+      syncTimer.cancel();
+      syncTimer = null;
+    }
     unregisterMemberListener();
     unregisterSyncHandler();
     unregisterGossipHandler();

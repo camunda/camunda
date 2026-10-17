@@ -34,6 +34,54 @@ Use a dedicated dotenv file such as `.env.secrets` for imports. `c8run secrets` 
 
 `C8RUN_SECRETS_MODE` defaults to `local`. Local mode makes `C8RUN_SECRETS_DIR` authoritative. Set `C8RUN_SECRETS_MODE=external` when `--config` or Spring settings configure a file, AWS, or GCP store; local `c8run secrets` commands are disabled in external mode.
 
+## Physical tenants
+
+Physical tenants are fully isolated engines inside one c8run. Each one has its own partitions, its own data in secondary storage, its own users, and its own Operate, Tasklist, Admin and Orchestration Cluster API. They require Camunda 8.10 or newer.
+
+```bash
+./c8run physical-tenants add sales # saved for the current OS user
+./c8run start                     # starts "default" plus every saved physical tenant
+./c8run physical-tenants list      # status, login, connectors and URLs per physical tenant
+./c8run physical-tenants remove sales
+```
+
+A physical tenant is served under `http://localhost:8080/physical-tenants/<id>/`, for example `/physical-tenants/sales/operate` or `/physical-tenants/sales/v2/`. The `default` physical tenant always exists and keeps the unprefixed URLs. gRPC clients select a physical tenant with the `Camunda-Physical-Tenant` header; the Java client uses `camunda.client.physicalTenantId`, and the Spring starter uses `camunda.client.physical-tenant-id`. The startup summary lists every physical tenant's URLs and readiness.
+
+Physical tenant IDs use lowercase letters and digits only, up to 64 characters (8 with RDBMS or H2 storage, see below). By default every physical tenant gets the same login as `c8run start` (`--username`/`--password`, `demo`/`demo` unless changed). To give a physical tenant its own user, run `./c8run physical-tenants add hr --username alice`; c8run prompts for the password (or reads it with `--password-stdin`) and saves it in the physical tenants file, which only you can read. It never appears in the generated Camunda configuration, a command line, or your shell history.
+
+Each physical tenant gets its own connectors runtime on the next free port from 8087 upwards (logs in `log/connectors-<id>.log`). Use `--no-connectors` on `physical-tenants add` to skip it for one physical tenant, or `--disable-connectors` on `start` to skip all connectors. Each physical tenant has its own local secrets, so a physical tenant never resolves the default physical tenant's or another physical tenant's `camunda.secrets.*` values. Manage them with `--physical-tenant`, for example `./c8run secrets --physical-tenant sales set OPENAI_API_KEY` or `./c8run secrets --physical-tenant=sales set OPENAI_API_KEY`.
+
+To run with physical tenants for one start only, without saving them (useful in CI), use `./c8run start --physical-tenants sales,hr`. Removing a physical tenant keeps its data in secondary storage under the physical tenant's prefix, so adding the same ID again restores it, including its users. `./c8run physical-tenants reset` removes all saved physical tenants.
+
+Selecting a saved physical tenant with `--physical-tenants` preserves its dedicated login and `--no-connectors` setting. IDs that are not saved use the startup login and Connectors defaults. The flag changes only which physical tenants start; it does not change the saved configuration. `physical-tenants list` shows startup settings for active physical tenants and saved settings for stopped or pending physical tenants. An active physical tenant absent from the saved configuration is marked `active (not saved)`.
+
+Earlier builds ignored saved settings when `--physical-tenants` was used and could initialize an additional user with the startup credentials (by default `demo`/`demo`). Upgrading prevents this for saved physical tenants but does not remove users already initialized. Review and remove unintended users through the tenant's user management; removing and re-adding the physical tenant does not delete its users.
+
+`./c8run physical-tenants path` shows where physical tenants are saved; `C8RUN_TENANTS_FILE` selects another file. If your `--config` already declares `camunda.physical-tenants`, c8run uses it as-is and does not apply its saved physical tenants. Set `C8RUN_TENANTS_MODE=external` to leave physical tenants entirely to your `--config`: the `physical-tenants` commands are disabled, saved physical tenants are not applied, and `start --physical-tenants` is rejected.
+
+Tools that wrap c8run, such as `c8ctl cluster`, can set `C8RUN_CLI_NAME` to the command users type, for example `C8RUN_CLI_NAME="c8ctl cluster"`. c8run then shows that name in help output and in command hints such as `c8ctl cluster physical-tenants list`. When the variable is unset, output names `c8run`.
+
+Physical tenants are isolated engines; logical tenants, such as those managed by `c8ctl list tenants` and `c8ctl use tenant`, are a separate concept.
+
+### Limitations
+
+- Physical tenants require Camunda 8.10 or newer. On older versions every `physical-tenants` command is refused; `./c8run physical-tenants path` still shows the saved file if you need to delete it.
+- With RDBMS secondary storage, including the bundled H2, physical tenant IDs can be at most 8 characters, because the physical tenant's tables are named `<ID>_<table>` and database identifier length is limited. Elasticsearch and OpenSearch allow up to 64.
+- Removing a physical tenant does not delete its data; it stays in secondary storage under the physical tenant's prefix.
+- c8run does not manage physical tenants when your `--config`, `CAMUNDA_PHYSICALTENANTS_*` environment variables or `JAVA_OPTS` already declare them, or when `C8RUN_TENANTS_MODE=external` is set.
+- Each physical tenant's connectors runtime uses an extra local port (from 8087 upwards) and its own JVM.
+- Physical tenants need `C8RUN_SECRETS_MODE=local`, the default, so each physical tenant gets its own secret store.
+
+## Validate saved physical-tenant selection locally
+
+The opt-in Go integration test owns the cluster lifecycle. Point it at a dedicated, stopped distribution containing the C8Run binary under test:
+
+```bash
+C8RUN_E2E_DIR=/path/to/dedicated/c8run go test ./cmd/c8run -run '^TestPhysicalTenantSelectionE2E$' -count=1 -v
+```
+
+Run this from the `c8run/` source directory. It verifies protected API authentication, saved and unsaved tenant selection, disabled Connectors, runtime listing, and restart behavior. Tenant configuration and secrets use temporary directories; engine data remains in the dedicated distribution after the test stops it.
+
 ## CI requirement for merging
 
 Only CI checks related to C8Run (those with "c8run" in the name) and CI runs marked as `required` are needed to merge. Non-C8Run-related CI checks can be ignored.
@@ -111,6 +159,8 @@ The workflow produces platform-specific artifacts for Linux, macOS (ARM and Inte
 C8Run automatically starts the connectors runtime through Spring Boot's `PropertiesLauncher` for connector bundles versioned 8.9.0 or newer (including snapshots). Older bundles continue to run via the legacy `JarLauncher`, so you can switch versions in `.env` without extra configuration.
 
 If you want to run your own connectors runtime, start C8Run with `./c8run start --disable-connectors` to skip launching the bundled connectors jar.
+
+To run the bundled connectors runtime on a port other than `8086`, use `./c8run start --connectors-port <port>`.
 
 ### Headless startup
 

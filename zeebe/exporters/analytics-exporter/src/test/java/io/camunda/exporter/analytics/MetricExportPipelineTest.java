@@ -95,7 +95,7 @@ final class MetricExportPipelineTest {
   @Timeout(30)
   void shouldPostMetricsToOtlpEndpointWhenWindowHasEvents() {
     // given a recorded metric event in the window
-    manager.incrementMetric(COUNTER_NAME, 100L, 1000L, Attributes.empty());
+    manager.incrementMetric(COUNTER_NAME, "{test}", 100L, 1000L, Attributes.empty());
 
     // when the window is flushed through the production reader and exporter
     manager.flushMetrics();

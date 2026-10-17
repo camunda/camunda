@@ -10,6 +10,9 @@ declare module '@tanstack/history' {
 	interface HistoryState {
 		tasklistAutoSelectSource?: 'task-completion';
 		operateDecisionFocus?: {decisionInstanceKey: string} | 'list';
+		operateVariableFilterDraft?: {name: string; value: string};
+		operateVariableFilterOpenedFromList?: true;
+		operateInstanceMigration?: unknown;
 	}
 }
 

@@ -23,7 +23,7 @@ import {createAuditLog, createQueryAuditLogsResponse} from '#/shared-test-module
 // The mock rejects a request that does not match, so the rows only render when the route
 // asked for exactly the first page of admin-category audit logs, sorted by timestamp desc.
 const EXPECTED_INITIAL_REQUEST = z.object({
-	sort: z.tuple([z.object({field: z.literal('timestamp'), order: z.literal('desc')})]),
+	sort: z.tuple([z.object({field: z.literal('timestamp'), order: z.literal('DESC')})]),
 	filter: z.object({category: z.object({$eq: z.literal('ADMIN')})}),
 	page: z.object({from: z.literal(0), limit: z.literal(50)}),
 });

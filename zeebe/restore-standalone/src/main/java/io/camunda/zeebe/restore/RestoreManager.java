@@ -241,7 +241,8 @@ public class RestoreManager implements CloseableSilently {
    */
   public void restore(final Map<Integer, long[]> backupIdsByPartition, final boolean validateConfig)
       throws IOException, ExecutionException, InterruptedException {
-    final var partitionsToRestore = collectPartitions();
+    final var partitionCount = backupIdsByPartition.size();
+    final var partitionsToRestore = collectPartitions(partitionCount);
     final var tasks = new ArrayList<Callable<Void>>(partitionsToRestore.size());
     for (final var partition : partitionsToRestore) {
       final var partitionId = partition.partition().id().number();
@@ -253,7 +254,7 @@ public class RestoreManager implements CloseableSilently {
       }
       tasks.add(
           () -> {
-            restorePartition(partition, backupIds, validateConfig);
+            restorePartition(partition, backupIds, partitionCount, validateConfig);
             return null;
           });
     }
@@ -265,14 +266,14 @@ public class RestoreManager implements CloseableSilently {
   private void restorePartition(
       final InstrumentedRaftPartition partition,
       final long[] backupIds,
+      final int partitionCount,
       final boolean validateConfig)
       throws IOException, FlushException {
     final BackupValidator validator;
     final RaftPartition raftPartition = partition.partition();
 
     if (validateConfig) {
-      validator =
-          new ValidatePartitionCount(physicalTenantConfiguration.getCluster().getPartitionsCount());
+      validator = new ValidatePartitionCount(partitionCount);
     } else {
       LOG.warn("Restoring without validating backup");
       validator = BackupValidator.none();
@@ -297,9 +298,11 @@ public class RestoreManager implements CloseableSilently {
     }
   }
 
-  private Set<InstrumentedRaftPartition> collectPartitions() {
+  /** The local partitions up to {@code partitionCount}; the ones above it are not in the backup. */
+  private Set<InstrumentedRaftPartition> collectPartitions(final int partitionCount) {
     final var raftPartitionFactory = new RaftPartitionFactory(physicalTenantConfiguration);
     return partitions.stream()
+        .filter(metadata -> metadata.id().number() <= partitionCount)
         .map(metadata -> createRaftPartition(metadata, raftPartitionFactory))
         .collect(Collectors.toSet());
   }

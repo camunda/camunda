@@ -160,6 +160,10 @@ This is a small overview of the contents of this repository:
 * **Full build without frontends:** To build the full distribution for local usage without frontends (skipping tests), run the command `./mvnw clean install -DskipChecks -DskipTests -PskipFrontendBuild`.
 * **Full build and test:** To fully build and test the Camunda distribution, run the command: `./mvnw clean install` in the root folder.
 
+The experimental Gradle build is available for local development and focused parity checks. Maven
+remains authoritative; see the [Gradle build guide](gradle/README.md) for supported commands and
+limitations.
+
 If you built a distribution, it can be found in the folder `dist/target`, i.e.
 
 ```
@@ -382,7 +386,7 @@ Some changes need to be copied to other (often older) versions. We use the [back
      `/backport` to trigger the action.
    - a pull request can have multiple backport labels, in which case the action ports the pull request to each of those branches.
 2. The GitHub actions bot comments on the pull request once it finishes:
-   - When _successful_, a new backport pull request was automatically created. A bot will automatically approve and merge it when it passes the CI. If it doesn't, you'll need to fix the problems and request a new review.
+   - When _successful_, a new backport pull request was automatically created. A bot approves it and enables auto-merge once CI passes — but only when the backport touches Zeebe code (`zeebe/`, `clients/`), a `pom.xml`, shared build or webapps configuration, or CI-relevant files under `.github/`, because that approval job runs inside the Zeebe CI workflow and that workflow is skipped otherwise. A backport touching none of those paths is not auto-approved: review and merge it yourself once CI is green. If CI doesn't pass, you'll need to fix the problems and request a new review.
    - If the cherry-pick hits **conflicts**, the action still opens the backport pull request, but as a _draft_ with the conflicts committed as-is, and comments with instructions to resolve them. Resolve the conflicts on that branch, mark the pull request ready, and request a new review.
 
 ## Commit message guidelines

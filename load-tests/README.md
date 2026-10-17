@@ -38,7 +38,7 @@ All automated load tests flow through `camunda-load-test.yml`, which builds imag
 ```mermaid
 graph TD
     subgraph "Scheduled Triggers"
-        SCHEDULED["camunda-scheduled-release-<br/>load-tests.yml<br/><i>Weekdays 02:00 UTC</i>"]
+        SCHEDULED["camunda-scheduled-release-<br/>load-tests.yml<br/><i>Weekdays 00:00 UTC</i>"]
         DAILY["camunda-daily-load-tests.yml<br/><i>Weekdays 02:00 UTC</i>"]
         WEEKLY["camunda-weekly-load-tests.yml<br/><i>Monday 01:00 UTC</i>"]
         ROLLING["zeebe-update-long-running-<br/>migrating-benchmark.yaml<br/><i>Monday 00:00 UTC</i>"]
@@ -46,7 +46,7 @@ graph TD
     end
 
     subgraph "Event Triggers"
-        PR["camunda-pr-load-test.yaml<br/><i>PR label: benchmark</i>"]
+        PR["camunda-pr-load-test.yaml<br/><i>PR label: benchmark-&lt;storage&gt;-&lt;protocol&gt;</i>"]
         ADHOC["Manual workflow_dispatch"]
     end
 
@@ -103,7 +103,7 @@ graph TD
 |       Time        |                  Workflow                  | Frequency |
 |-------------------|--------------------------------------------|-----------|
 | 01:00 UTC Monday  | `camunda-weekly-load-tests.yml`            | Weekly    |
-| 02:00 UTC Mon-Fri | `camunda-scheduled-release-load-tests.yml` | Weekdays  |
+| 00:00 UTC Mon-Fri | `camunda-scheduled-release-load-tests.yml` | Weekdays  |
 | 02:00 UTC Mon-Fri | `camunda-daily-load-tests.yml`             | Weekdays  |
 | 04:00 UTC         | `camunda-load-test-ttl-cleanup.yml`        | Daily     |
 
@@ -282,7 +282,7 @@ The [release load test GitHub workflow](https://github.com/camunda/camunda/blob/
 graph TD
     subgraph "Callers"
         BPMN["Release Process<br/>(BPMN)"]
-        SCHEDULE["Daily Smoke Tests<br/>(weekdays 02:00 UTC)"]
+        SCHEDULE["Daily Smoke Tests<br/>(weekdays 00:00 UTC)"]
     end
 
     subgraph "Abstraction Layer — camunda-release-load-test.yaml"
@@ -354,7 +354,7 @@ Example values from a past release:
 
 > [!NOTE]
 >
-> The scheduled release load test workflow uses hardcoded release tags per branch. Update `.github/workflows/camunda-scheduled-release-load-tests.yml` manually when the tested patch versions change.
+> The scheduled release load test workflow pins a release tag per branch in its `versions` job. Renovate bumps the patch version. Update `.github/workflows/camunda-scheduled-release-load-tests.yml` manually for a new minor version.
 
 #### Daily smoke tests
 
@@ -411,7 +411,7 @@ Before any metrics or profiles are taken the stress tests get a warmup period.
 
 ### Ad-hoc load tests
 
-On top of the previous automated occasions, when load tests run, we support running ad-hoc load tests. They can be either set up by labeling an existing pull-request (PR) at the mono repository with the **benchmark** label, using the [Camunda load test GitHub workflow](https://github.com/camunda/camunda/actions/workflows/camunda-load-test.yml), or deploying the [Camunda Platform](https://github.com/camunda/camunda-platform-helm) and [load test](https://github.com/camunda/camunda-load-tests-helm) Helm Charts [manually](setup/README.md).
+On top of the previous automated occasions, when load tests run, we support running ad-hoc load tests. They can be either set up by labeling an existing pull-request (PR) at the mono repository with a **benchmark** label, using the [Camunda load test GitHub workflow](https://github.com/camunda/camunda/actions/workflows/camunda-load-test.yml), or deploying the [Camunda Platform](https://github.com/camunda/camunda-platform-helm) and [load test](https://github.com/camunda/camunda-load-tests-helm) Helm Charts [manually](setup/README.md).
 
 **Goal:** The goal of these ad-hoc load tests is to have a quick way to validate certain changes (reducing the feedback loop). The intentions can be manifold, may it be stability/reliability, performance, or something else.
 
@@ -425,7 +425,9 @@ On top of the previous automated occasions, when load tests run, we support runn
 
 #### Labeling a PR
 
-It is as easy as it sounds; we can label an existing PR with the [**benchmark**](https://github.com/camunda/camunda/labels/benchmark) label, which triggers a [GitHub Workflow](https://github.com/camunda/camunda/blob/main/.github/workflows/camunda-pr-load-test.yaml). The workflow will build a new Docker image, based on the PR branch, and deploy a new load test against this version.
+It is as easy as it sounds; we can label an existing PR with a benchmark label, which triggers a [GitHub Workflow](https://github.com/camunda/camunda/blob/main/.github/workflows/camunda-pr-load-test.yaml). The workflow will build a new Docker image, based on the PR branch, and deploy a new load test against this version.
+
+The label selects the secondary storage and the client protocol: `benchmark-<storage>-<protocol>`, for example `benchmark-elasticsearch-rest` or `benchmark-none-grpc`. All storages have a REST label. Only Elasticsearch and `none` have a gRPC label, because only these setups have a daily gRPC run to compare with. See the [benchmark labels](https://github.com/camunda/camunda/labels?q=benchmark-).
 
 > [!NOTE]
 >
@@ -438,7 +440,7 @@ Load tests started by labeling a PR will always run a stress test (no endurance 
   1. Waits 15 minutes (warmup), then 30 minutes (metrics accumulation), so PromQL `rate`/`increase` numbers cover steady-state traffic with no ramp-up bias.
   2. Resolves the last completed daily-on-main run via the GitHub Actions API ([`.github/scripts/resolve-daily.py`](../.github/scripts/resolve-daily.py)), walking back up to 7 business days. Derives the daily comparison anchor from `soak.started_at + 45 min` to match the same post-warmup slice as the PR side.
   3. Calls the reusable [`camunda-load-test-metrics.yaml`](../.github/workflows/camunda-load-test-metrics.yaml) workflow against the PR's namespace and the resolved daily namespace, both over an 1800s window.
-  4. Renders a Current / Daily / Optimal / Δ table from [`docs/scripts/queries.yaml`](docs/scripts/queries.yaml) and [`docs/scripts/optimal.json`](docs/scripts/optimal.json), with per-metric tolerances driving the verdict (✅/⚠️/❔). Missing daily values render as `-` so the comment still posts when no completed daily run is found.
+  4. Renders a Current / Daily / Optimal / Δ table from [`docs/scripts/queries.yaml`](docs/scripts/queries.yaml) and [`docs/scripts/optimal.json`](docs/scripts/optimal.json), with per-metric tolerances driving the verdict (✅/⚠️/❔). The optimal values depend on the start rate, so `optimal.json` overrides them for each storage type that runs at a different rate (`none`). Missing daily values render as `-` so the comment still posts when no completed daily run is found.
   5. Tears the PR namespace down once the comparison comment is posted, so namespaces no longer linger after the metrics window closes. Event-driven cleanup on label removal / PR close is unchanged.
 
 A new commit on the PR cancels the in-flight run — including mid-sleep waits — and redeploys fresh. This is handled by job-level concurrency in [`pr-load-test-dispatch.yml`](../.github/workflows/pr-load-test-dispatch.yml), keyed per-DB and per-PR.
@@ -486,7 +488,7 @@ If you need custom tuning, start with the closest `scenario` and then add target
 
 Select the `scenario` input in the workflow dispatch form:
 
-- `max` — artificial stress workload (currently `300` PI/s) for upper-bound throughput checks and quick regression validation; this is the default ad-hoc option. See also the [max / stress load test](../docs/testing/reliability-testing.md#max--stress-load-test).
+- `max` — artificial stress workload (currently `300` PI/s, or `500` PI/s with secondary storage `none`; an explicit `load-test-load` such as `--set load-tester.starter.rate=...` takes precedence) for upper-bound throughput checks and quick regression validation; this is the default ad-hoc option. See also the [max / stress load test](../docs/testing/reliability-testing.md#max--stress-load-test).
 - `realistic` — complex, customer-like workload with multi-instance activities, call activities, and DMN; use this for release-like validation and broader functional realism. See [realistic load](../docs/testing/reliability-testing.md#realistic-load).
 - `typical` — straight-through baseline with a representative BPMN model and `50` PI/s target load; use it for sustained baseline comparisons. See [typical load](../docs/testing/reliability-testing.md#typical-load).
 - `latency` — low-throughput artificial workload (`1` PI/s, `1` worker) to isolate latency and reduce blast radius while debugging. See [latency load test](../docs/testing/reliability-testing.md#latency-load-test).

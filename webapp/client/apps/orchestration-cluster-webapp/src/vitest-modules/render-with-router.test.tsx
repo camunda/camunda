@@ -7,7 +7,7 @@
  */
 
 import {expect} from 'vitest';
-import {it} from '#/vitest-modules/test-extend';
+import {it} from './test-extend';
 import {renderWithRouter} from './render-with-router';
 
 it.for([

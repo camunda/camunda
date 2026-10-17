@@ -117,7 +117,7 @@ const Drd: React.FC<Props> = ({
 									}),
 								});
 							}}
-							onDefinitionsChange={(definitions) => setDefinitionsName(definitions?.name ?? '')}
+							onDefinitionsChange={(definitions) => setDefinitionsName(definitions?.name ?? definitions?.id ?? '')}
 							onError={setRenderError}
 						/>
 					)}

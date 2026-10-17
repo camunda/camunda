@@ -6,97 +6,79 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {z} from 'zod';
-import {
-	API_VERSION,
-	advancedStringFilterSchema,
-	getOrFilterSchema,
-	getQueryRequestBodySchema,
-	getQueryResponseBodySchema,
-	type Endpoint,
-} from './common';
+import {API_VERSION, type Endpoint} from './common';
+import {mappingRuleSearchQueryRequestSchema} from './gen/zod/mappingRuleSearchQueryRequestSchema';
+import {roleClientSearchQueryRequestSchema} from './gen/zod/roleClientSearchQueryRequestSchema';
+import {roleClientSearchResultSchema} from './gen/zod/roleClientSearchResultSchema';
+import {roleCreateRequestSchema} from './gen/zod/roleCreateRequestSchema';
+import {roleCreateResultSchema} from './gen/zod/roleCreateResultSchema';
+import {roleGroupSearchQueryRequestSchema} from './gen/zod/roleGroupSearchQueryRequestSchema';
+import {roleGroupSearchResultSchema} from './gen/zod/roleGroupSearchResultSchema';
+import {roleMappingRuleSearchResultSchema} from './gen/zod/roleMappingRuleSearchResultSchema';
+import {roleSearchQueryRequestSchema} from './gen/zod/roleSearchQueryRequestSchema';
+import {roleSearchQueryResultSchema} from './gen/zod/roleSearchQueryResultSchema';
+import {roleUpdateRequestSchema} from './gen/zod/roleUpdateRequestSchema';
+import {roleUpdateResultSchema} from './gen/zod/roleUpdateResultSchema';
+import {roleUserSearchQueryRequestSchema} from './gen/zod/roleUserSearchQueryRequestSchema';
+import {roleUserSearchResultSchema} from './gen/zod/roleUserSearchResultSchema';
+import type {MappingRuleSearchQueryRequest} from './gen/types/MappingRuleSearchQueryRequest';
+import type {RoleClientSearchQueryRequest} from './gen/types/RoleClientSearchQueryRequest';
+import type {RoleClientSearchResult} from './gen/types/RoleClientSearchResult';
+import type {RoleCreateRequest} from './gen/types/RoleCreateRequest';
+import type {RoleCreateResult} from './gen/types/RoleCreateResult';
+import type {RoleGroupSearchQueryRequest} from './gen/types/RoleGroupSearchQueryRequest';
+import type {RoleGroupSearchResult} from './gen/types/RoleGroupSearchResult';
+import type {RoleMappingRuleSearchResult} from './gen/types/RoleMappingRuleSearchResult';
+import type {RoleSearchQueryRequest} from './gen/types/RoleSearchQueryRequest';
+import type {RoleSearchQueryResult} from './gen/types/RoleSearchQueryResult';
+import type {RoleUpdateRequest} from './gen/types/RoleUpdateRequest';
+import type {RoleUpdateResult} from './gen/types/RoleUpdateResult';
+import type {RoleUserSearchQueryRequest} from './gen/types/RoleUserSearchQueryRequest';
+import type {RoleUserSearchResult} from './gen/types/RoleUserSearchResult';
 import {roleSchema, type Group, type Role} from './group-role';
-import {mappingRuleSchema, type MappingRule} from './mapping-rule';
-import {userSchema} from './user';
+import type {MappingRule} from './mapping-rule';
 
-const createRoleRequestBodySchema = roleSchema;
-type CreateRoleRequestBody = z.infer<typeof createRoleRequestBodySchema>;
+const createRoleRequestBodySchema = roleCreateRequestSchema;
+type CreateRoleRequestBody = RoleCreateRequest;
 
-const createRoleResponseBodySchema = roleSchema;
-type CreateRoleResponseBody = z.infer<typeof createRoleResponseBodySchema>;
+const createRoleResponseBodySchema = roleCreateResultSchema;
+type CreateRoleResponseBody = RoleCreateResult;
 
-const updateRoleRequestBodySchema = roleSchema.pick({
-	name: true,
-	description: true,
-});
-type UpdateRoleRequestBody = z.infer<typeof updateRoleRequestBodySchema>;
+const updateRoleRequestBodySchema = roleUpdateRequestSchema;
+type UpdateRoleRequestBody = RoleUpdateRequest;
 
-const updateRoleResponseBodySchema = roleSchema;
-type UpdateRoleResponseBody = z.infer<typeof updateRoleResponseBodySchema>;
+const updateRoleResponseBodySchema = roleUpdateResultSchema;
+type UpdateRoleResponseBody = RoleUpdateResult;
 
-const queryRolesRequestBodySchema = getQueryRequestBodySchema({
-	sortFields: ['name', 'roleId'] as const,
-	filter: getOrFilterSchema(
-		z.object({
-			roleId: advancedStringFilterSchema.optional(),
-			name: advancedStringFilterSchema.optional(),
-		}),
-	),
-});
-type QueryRolesRequestBody = z.infer<typeof queryRolesRequestBodySchema>;
+const queryRolesRequestBodySchema = roleSearchQueryRequestSchema;
+type QueryRolesRequestBody = RoleSearchQueryRequest;
 
-const queryRolesResponseBodySchema = getQueryResponseBodySchema(roleSchema);
-type QueryRolesResponseBody = z.infer<typeof queryRolesResponseBodySchema>;
+const queryRolesResponseBodySchema = roleSearchQueryResultSchema;
+type QueryRolesResponseBody = RoleSearchQueryResult;
 
-const queryUsersByRoleRequestBodySchema = getQueryRequestBodySchema({
-	sortFields: ['username'] as const,
-	filter: z.never(),
-});
-type QueryUsersByRoleRequestBody = z.infer<typeof queryUsersByRoleRequestBodySchema>;
+const queryUsersByRoleRequestBodySchema = roleUserSearchQueryRequestSchema;
+type QueryUsersByRoleRequestBody = RoleUserSearchQueryRequest;
 
-const queryUsersByRoleResponseBodySchema = getQueryResponseBodySchema(userSchema.pick({username: true}));
-type QueryUsersByRoleResponseBody = z.infer<typeof queryUsersByRoleResponseBodySchema>;
+const queryUsersByRoleResponseBodySchema = roleUserSearchResultSchema;
+type QueryUsersByRoleResponseBody = RoleUserSearchResult;
 
-const queryClientsByRoleRequestBodySchema = getQueryRequestBodySchema({
-	sortFields: ['clientId'] as const,
-	filter: z.never(),
-});
-type QueryClientsByRoleRequestBody = z.infer<typeof queryClientsByRoleRequestBodySchema>;
+const queryClientsByRoleRequestBodySchema = roleClientSearchQueryRequestSchema;
+type QueryClientsByRoleRequestBody = RoleClientSearchQueryRequest;
 
-const queryClientsByRoleResponseBodySchema = getQueryResponseBodySchema(
-	z.object({
-		clientId: z.string(),
-	}),
-);
-type QueryClientsByRoleResponseBody = z.infer<typeof queryClientsByRoleResponseBodySchema>;
+const queryClientsByRoleResponseBodySchema = roleClientSearchResultSchema;
+type QueryClientsByRoleResponseBody = RoleClientSearchResult;
 
-const queryGroupsByRoleRequestBodySchema = getQueryRequestBodySchema({
-	sortFields: ['groupId'] as const,
-	filter: z.never(),
-});
-type QueryGroupsByRoleRequestBody = z.infer<typeof queryGroupsByRoleRequestBodySchema>;
+const queryGroupsByRoleRequestBodySchema = roleGroupSearchQueryRequestSchema;
+type QueryGroupsByRoleRequestBody = RoleGroupSearchQueryRequest;
 
-const queryGroupsByRoleResponseBodySchema = getQueryResponseBodySchema(
-	z.object({
-		groupId: z.string(),
-	}),
-);
-type QueryGroupsByRoleResponseBody = z.infer<typeof queryGroupsByRoleResponseBodySchema>;
+const queryGroupsByRoleResponseBodySchema = roleGroupSearchResultSchema;
+type QueryGroupsByRoleResponseBody = RoleGroupSearchResult;
 
-const queryMappingRulesByRoleRequestBodySchema = getQueryRequestBodySchema({
-	sortFields: ['claimName', 'claimValue', 'name'] as const,
-	filter: mappingRuleSchema
-		.pick({
-			claimName: true,
-			claimValue: true,
-			name: true,
-		})
-		.partial(),
-});
-type QueryMappingRulesByRoleRequestBody = z.infer<typeof queryMappingRulesByRoleRequestBodySchema>;
+const queryMappingRulesByRoleRequestBodySchema = mappingRuleSearchQueryRequestSchema;
+type QueryMappingRulesByRoleRequestBody = MappingRuleSearchQueryRequest;
 
-const queryMappingRulesByRoleResponseBodySchema = getQueryResponseBodySchema(mappingRuleSchema);
-type QueryMappingRulesByRoleResponseBody = z.infer<typeof queryMappingRulesByRoleResponseBodySchema>;
+const queryMappingRulesByRoleResponseBodySchema = roleMappingRuleSearchResultSchema;
+type QueryMappingRulesByRoleResponseBody = RoleMappingRuleSearchResult;
 
 const createRole = {
 	method: 'POST',
@@ -281,6 +263,7 @@ export {
 	queryMappingRulesByRoleRequestBodySchema,
 	queryMappingRulesByRoleResponseBodySchema,
 };
+
 export type {
 	Role,
 	CreateRoleRequestBody,

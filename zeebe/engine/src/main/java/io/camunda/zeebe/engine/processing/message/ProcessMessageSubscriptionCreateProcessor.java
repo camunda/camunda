@@ -16,6 +16,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejection
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.ProcessMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.immutable.SuspensionState;
+import io.camunda.zeebe.engine.state.immutable.SuspensionState.State;
 import io.camunda.zeebe.engine.state.message.ProcessMessageSubscription;
 import io.camunda.zeebe.engine.state.message.TransientPendingSubscriptionState;
 import io.camunda.zeebe.engine.state.message.TransientPendingSubscriptionState.PendingSubscription;
@@ -103,8 +104,9 @@ public final class ProcessMessageSubscriptionCreateProcessor
       eventRecord.wrap(subscription.getRecord());
       eventRecord.setSubscriptionKey(subscriptionRecord.getSubscriptionKey());
 
-      if (suspensionState.getSuspensionState(subscription.getRecord().getProcessInstanceKey())
-          == SuspensionState.State.SUSPENDED) {
+      final var marker =
+          suspensionState.getSuspensionState(subscription.getRecord().getProcessInstanceKey());
+      if (marker == State.SUSPENDING || marker == State.SUSPENDED) {
         // The instance was suspended while this subscription was still mid-handshake, so the
         // suspend pass skipped it (there was no confirmed message-side row to close yet). The
         // handshake has now completed, so a live message-side subscription exists on a suspended
@@ -113,7 +115,7 @@ public final class ProcessMessageSubscriptionCreateProcessor
         // manifest, giving the late handshake a proper completion path instead of leaving an
         // OPENING row that retries CREATE for the whole suspension.
         //
-        // Gated on the exact SUSPENDED state, not isSuspended(): during RESUMING, reopened
+        // Gate SUSPENDING and SUSPENDED only: during RESUMING, reopened
         // subscriptions are expected to complete their handshake normally, not be closed again.
         closeLateHandshake(subscription.getKey(), elementInstanceKey, messageName, tenantId);
       } else {

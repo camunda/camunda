@@ -217,6 +217,96 @@ describe('Multi tenancy', () => {
 		await expect.poll(currentHash).toBeUndefined();
 	});
 
+	it.for([
+		{version: '1', tenantId: '<default>'},
+		{version: '2', tenantId: '<tenant-A>'},
+	])(
+		'should show the diagram for version $version when only $tenantId has it across all tenants',
+		async ({version}, {worker}) => {
+			worker.use(
+				mockQueryProcessInstancesEndpoint({successResponse: EMPTY_PROCESS_INSTANCES}),
+				mockQueryProcessDefinitionsEndpoint({
+					successResponse: HttpResponse.json(
+						createQueryProcessDefinitionsResponse({
+							items: [
+								createProcessDefinition({
+									name: 'Order Process',
+									processDefinitionId: 'order-process',
+									processDefinitionKey: '1',
+									tenantId: '<tenant-A>',
+									version: 2,
+								}),
+								createProcessDefinition({
+									name: 'Order Process',
+									processDefinitionId: 'order-process',
+									processDefinitionKey: '2',
+									tenantId: '<default>',
+									version: 1,
+								}),
+							],
+						}),
+					),
+				}),
+				mockCurrentUserEndpoint({successResponse: CURRENT_USER}),
+				mockGetProcessDefinitionXmlEndpoint({successResponse: HttpResponse.text(BPMN_XML)}),
+				mockGetProcessDefinitionStatisticsEndpoint({
+					successResponse: HttpResponse.json(createGetProcessDefinitionStatisticsResponse([])),
+				}),
+			);
+
+			const screen = await renderProcessesPage({tenantId: 'all', process: 'order-process', version});
+
+			await expect.element(screen.getByRole('combobox', {name: 'Element'})).toBeEnabled();
+			await expect
+				.element(screen.getByText('Process "Order Process" exists in more than one Tenant'))
+				.not.toBeInTheDocument();
+		},
+	);
+
+	it.for<{selection: string; otherTenantVersion: number; search: Record<string, string>}>([
+		{selection: 'the selected version exists', otherTenantVersion: 1, search: {version: '1'}},
+		{
+			selection: 'all versions are selected and the process exists',
+			otherTenantVersion: 2,
+			search: {},
+		},
+	])(
+		'should not show the diagram when $selection in more than one tenant',
+		async ({otherTenantVersion, search}, {worker}) => {
+			worker.use(
+				mockQueryProcessInstancesEndpoint({successResponse: EMPTY_PROCESS_INSTANCES}),
+				mockQueryProcessDefinitionsEndpoint({
+					successResponse: HttpResponse.json(
+						createQueryProcessDefinitionsResponse({
+							items: [
+								createProcessDefinition({
+									name: 'Order Process',
+									processDefinitionId: 'order-process',
+									processDefinitionKey: '1',
+									tenantId: '<tenant-A>',
+									version: otherTenantVersion,
+								}),
+								createProcessDefinition({
+									name: 'Order Process',
+									processDefinitionId: 'order-process',
+									processDefinitionKey: '2',
+									tenantId: '<default>',
+									version: 1,
+								}),
+							],
+						}),
+					),
+				}),
+				mockCurrentUserEndpoint({successResponse: CURRENT_USER}),
+			);
+
+			const screen = await renderProcessesPage({tenantId: 'all', process: 'order-process', ...search});
+
+			await expect.element(screen.getByText('Process "Order Process" exists in more than one Tenant')).toBeVisible();
+			await expect.element(screen.getByRole('combobox', {name: 'Element'})).toBeDisabled();
+		},
+	);
+
 	it('should not scope the process-definitions request when "all tenants" is selected', async ({worker}) => {
 		worker.use(
 			mockQueryProcessInstancesEndpoint({successResponse: EMPTY_PROCESS_INSTANCES}),

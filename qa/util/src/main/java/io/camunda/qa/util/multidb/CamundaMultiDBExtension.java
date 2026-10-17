@@ -18,9 +18,9 @@ import io.camunda.client.impl.basicauth.BasicAuthCredentialsProviderBuilder;
 import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.cluster.SecondaryStorageReadiness;
 import io.camunda.configuration.Camunda;
-import io.camunda.configuration.PrimaryStorageBackup;
-import io.camunda.configuration.SecondaryStorage;
-import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
+import io.camunda.configuration.data.SecondaryStorage;
+import io.camunda.configuration.data.SecondaryStorage.SecondaryStorageType;
+import io.camunda.configuration.data.primarystorage.PrimaryStorageBackup;
 import io.camunda.qa.util.auth.Authenticated;
 import io.camunda.qa.util.auth.TestUser;
 import io.camunda.qa.util.multidb.TestEntityCollector.TestEntityCollection;
@@ -1067,8 +1067,11 @@ public class CamundaMultiDBExtension
       manageApplicationUnderTest();
     }
 
-    if (multiPhysicalTenantIds != null) {
+    if (physicalTenantId != null || multiPhysicalTenantIds != null) {
       awaitEveryPhysicalTenantSecondaryStorageReady();
+    }
+
+    if (multiPhysicalTenantIds != null) {
       multiPhysicalTenantClients = buildMultiPhysicalTenantClients(multiPhysicalTenantIds);
       closeables.add(multiPhysicalTenantClients);
       awaitMultiPhysicalTenantAdminsReady(multiPhysicalTenantClients);

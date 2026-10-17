@@ -80,7 +80,8 @@ public final class ProcessValidationUtil {
   }
 
   private static List<ValidationResult> validate(final BpmnModelInstance model) {
-    final ValidationVisitor visitor = new ValidationVisitor(ZeebeDesignTimeValidators.VALIDATORS);
+    final ValidationVisitor visitor =
+        new ValidationVisitor(ZeebeDesignTimeValidators.getValidators());
 
     final ModelWalker walker = new ModelWalker(model);
     walker.walk(visitor);

@@ -93,6 +93,7 @@ public class ProcessInstanceWriter {
                   .indexName(getProcessInstanceIndexAliasName(procInst.getProcessDefinitionKey()))
                   .source(procInst)
                   .retryNumberOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT)
+                  .requireAlias(true)
                   .scriptData(
                       DatabaseWriterUtil.createScriptData(
                           createProcessInstanceUpdateScript(), params, objectMapper))

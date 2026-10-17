@@ -17,7 +17,7 @@ import type {
 	QueryProcessInstancesResponseBody,
 	QueryDecisionInstancesResponseBody,
 	ProcessInstance,
-} from '@camunda/camunda-api-zod-schemas/8.10';
+} from '@camunda/camunda-api-zod-schemas/8.11';
 import {endpoints} from '#/shared/http/endpoints';
 import {request} from '#/shared/http/request';
 import {mapQueryError} from '#/shared/http/mapQueryError';
@@ -117,7 +117,7 @@ function useInstanceDiagramData(instance: ProcessInstance, hasDiagram: boolean) 
 	const agents = useQuery({
 		...instanceAgentInstancesQuery(processInstanceKey),
 		refetchInterval,
-		enabled: hasDiagram && isRunning,
+		enabled: hasDiagram,
 	});
 	const refetchStatistics = statistics.refetch;
 	const refetchSequenceFlows = sequenceFlows.refetch;

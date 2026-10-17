@@ -6,20 +6,31 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useRef} from 'react';
+import {Fragment, useId, useRef, useState} from 'react';
+import type {QuerySortOrder} from '@camunda/camunda-api-zod-schemas/8.11';
 import {
 	Table,
 	TableBody,
 	TableCell,
+	TableExpandHeader,
 	TableHead,
 	TableHeader,
 	TableRow,
 	TableSelectAll,
 	TableSelectRow,
 } from '@carbon/react';
-import {TableContainer, ScrollContainer, LoadingOverlay, EmptyStateContainer, BareEmptyStateContainer} from './styled';
+import {ChevronRight} from '@carbon/react/icons';
+import {
+	TableContainer,
+	ScrollContainer,
+	LoadingOverlay,
+	EmptyStateContainer,
+	BareEmptyStateContainer,
+	FailureRow,
+	FailureDetailRow,
+} from './styled';
 import {ColumnHeader} from './ColumnHeader';
-import {InfiniteScroller} from '../InfiniteScroller/InfiniteScroller';
+import {InfiniteScroller} from '#/operate/shared/InfiniteScroller/InfiniteScroller';
 
 type TableSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl';
 
@@ -28,7 +39,7 @@ type Column<TRow> = {
 	label: string;
 	sortKey?: string;
 	isDefault?: boolean;
-	defaultOrder?: 'asc' | 'desc';
+	defaultOrder?: QuerySortOrder;
 	render: (row: TRow) => React.ReactNode;
 };
 
@@ -42,9 +53,12 @@ type BaseProps<TRow> = {
 	// Renders the empty state on its own, without the table/column headers, instead of inside a
 	// full-width table row. Opt-in because most tables keep their headers visible when empty.
 	hideHeaderWhenEmpty?: boolean;
-	onSort?: (sortKey: string, order: 'asc' | 'desc') => void;
+	onSort?: (sortKey: string, order: QuerySortOrder) => void;
 	onVerticalScrollStartReach?: React.ComponentProps<typeof InfiniteScroller>['onVerticalScrollStartReach'];
 	onVerticalScrollEndReach?: React.ComponentProps<typeof InfiniteScroller>['onVerticalScrollEndReach'];
+	rowOperationError?: (row: TRow) => {message: string; expandLabel: string} | null;
+	failureDetailsLabel?: string;
+	expansionScope?: string;
 	'data-testid'?: string;
 };
 
@@ -75,12 +89,20 @@ function SortableTable<TRow>(props: Props<TRow>) {
 		onSort,
 		onVerticalScrollStartReach,
 		onVerticalScrollEndReach,
+		rowOperationError,
+		failureDetailsLabel,
+		expansionScope,
 		'data-testid': dataTestId,
 	} = props;
 	const selection = props.selectionType === 'checkbox' ? props : undefined;
 	const scrollableContainerRef = useRef<HTMLDivElement | null>(null);
+	const [expansionState, setExpansionState] = useState(() => ({scope: expansionScope, ids: new Set<string>()}));
+	const detailIdPrefix = useId();
+	if (expansionState.scope !== expansionScope) {
+		setExpansionState({scope: expansionScope, ids: new Set()});
+	}
 	const hasScrollHandlers = onVerticalScrollStartReach !== undefined || onVerticalScrollEndReach !== undefined;
-	const columnCount = columns.length + (selection !== undefined ? 1 : 0);
+	const columnCount = columns.length + (selection !== undefined ? 1 : 0) + (rowOperationError !== undefined ? 1 : 0);
 
 	if (rows.length === 0 && emptyState !== undefined && hideHeaderWhenEmpty) {
 		const emptyContent = <BareEmptyStateContainer>{emptyState}</BareEmptyStateContainer>;
@@ -103,8 +125,10 @@ function SortableTable<TRow>(props: Props<TRow>) {
 			) : (
 				rows.map((row) => {
 					const id = rowKey(row);
-					return (
-						<TableRow key={id}>
+					const error = rowOperationError?.(row);
+					const isExpanded = error != null && expansionState.scope === expansionScope && expansionState.ids.has(id);
+					const cells = (
+						<>
 							{selection !== undefined && (
 								<TableSelectRow
 									id={`select-row-${id}`}
@@ -117,7 +141,55 @@ function SortableTable<TRow>(props: Props<TRow>) {
 							{columns.map((col) => (
 								<TableCell key={col.key}>{col.render(row)}</TableCell>
 							))}
-						</TableRow>
+						</>
+					);
+					return (
+						<Fragment key={id}>
+							<FailureRow
+								$isFailed={error != null}
+								className={
+									rowOperationError === undefined
+										? undefined
+										: isExpanded
+											? 'cds--parent-row cds--expandable-row'
+											: 'cds--parent-row'
+								}
+								data-parent-row={rowOperationError !== undefined ? true : undefined}
+							>
+								{rowOperationError !== undefined && (
+									<TableCell className="cds--table-expand" headers={`${detailIdPrefix}-expand`}>
+										{error != null && (
+											<button
+												type="button"
+												className="cds--table-expand__button"
+												aria-label={error.expandLabel}
+												aria-expanded={isExpanded}
+												aria-controls={isExpanded ? `${detailIdPrefix}-${id}` : undefined}
+												onClick={() =>
+													setExpansionState((current) => {
+														const next = new Set(current.scope === expansionScope ? current.ids : []);
+														if (next.has(id)) {
+															next.delete(id);
+														} else {
+															next.add(id);
+														}
+														return {scope: expansionScope, ids: next};
+													})
+												}
+											>
+												<ChevronRight aria-hidden className="cds--table-expand__svg" />
+											</button>
+										)}
+									</TableCell>
+								)}
+								{cells}
+							</FailureRow>
+							{isExpanded && (
+								<FailureDetailRow id={`${detailIdPrefix}-${id}`} colSpan={columnCount}>
+									{error.message}
+								</FailureDetailRow>
+							)}
+						</Fragment>
 					);
 				})
 			)}
@@ -130,6 +202,11 @@ function SortableTable<TRow>(props: Props<TRow>) {
 			<Table size={size} isSortable>
 				<TableHead>
 					<TableRow>
+						{rowOperationError !== undefined && (
+							<TableExpandHeader id={`${detailIdPrefix}-expand`}>
+								<span className="cds--visually-hidden">{failureDetailsLabel}</span>
+							</TableExpandHeader>
+						)}
 						{selection !== undefined && (
 							<TableSelectAll
 								id="select-all-rows"

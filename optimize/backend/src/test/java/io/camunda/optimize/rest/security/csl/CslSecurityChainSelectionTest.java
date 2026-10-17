@@ -10,6 +10,7 @@ package io.camunda.optimize.rest.security.csl;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
+import io.camunda.optimize.rest.security.AuthenticationCookieFilter;
 import io.camunda.optimize.rest.security.CustomPreAuthenticatedAuthenticationProvider;
 import io.camunda.optimize.rest.security.ccsm.CCSMSecurityConfigurerAdapter;
 import io.camunda.optimize.rest.security.cloud.CCSaaSSecurityConfigurerAdapter;
@@ -27,6 +28,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.boot.LazyInitializationBeanFactoryPostProcessor;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
+import org.springframework.boot.web.servlet.ServletContextInitializerBeans;
 import org.springframework.context.ApplicationContext;
 import org.springframework.core.Ordered;
 
@@ -99,6 +101,11 @@ class CslSecurityChainSelectionTest {
     // OptimizeCloudComponentAccessPolicy fails startup on a blank organization id, as CCSaaS
     // access control must not silently fail open.
     cloudAuthConfiguration.setOrganizationId("org-1");
+    // The legacy adapter's JWT decoders reject a blank JWKS URI when its chains are built. They
+    // never fetch it during the build, so any absolute URL will do.
+    configurationService
+        .getOptimizeApiConfiguration()
+        .setJwtSetUri("https://idp.example.com/.well-known/jwks.json");
     return configurationService;
   }
 
@@ -194,6 +201,31 @@ class CslSecurityChainSelectionTest {
               assertThat(context).hasSingleBean(CCSaaSSecurityConfigurerAdapter.class);
               assertThat(context).hasSingleBean(CCSaasAuth0WebSecurityConfig.class);
               assertThat(context).doesNotHaveBean(OptimizeCamundaSecurityConfig.class);
+            });
+  }
+
+  @Test
+  void shouldNotMapLegacyCcsaasAuthenticationCookieFilterOntoEveryRequest() {
+    // The legacy adapter wires this filter into its OAuth2 chain by hand. As a bare Filter bean,
+    // Spring Boot would also map it onto /*, running it on every request and twice inside the
+    // chain (camunda/camunda#63396). ServletContextInitializerBeans is what Boot uses to decide.
+    ccsaasRunner
+        .withPropertyValues(CSL_FLAG_DISABLED)
+        .run(
+            context -> {
+              assertThat(context).hasNotFailed();
+              final AuthenticationCookieFilter filter =
+                  context.getBean(AuthenticationCookieFilter.class);
+              assertThat(new ServletContextInitializerBeans(context.getBeanFactory()))
+                  .filteredOn(
+                      initializer ->
+                          initializer instanceof final FilterRegistrationBean<?> registration
+                              && registration.getFilter() == filter)
+                  .singleElement()
+                  .satisfies(
+                      registration ->
+                          assertThat(((FilterRegistrationBean<?>) registration).isEnabled())
+                              .isFalse());
             });
   }
 

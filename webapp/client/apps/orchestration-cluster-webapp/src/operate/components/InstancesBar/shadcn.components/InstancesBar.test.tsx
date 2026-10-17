@@ -27,7 +27,7 @@ describe('<InstancesBar />', () => {
 
 		const incidentsBadge = screen.getByTestId('incident-instances-badge');
 		await expect.element(incidentsBadge).toHaveTextContent('3');
-		await expect.element(incidentsBadge).toHaveClass('text-danger-foreground-strong');
+		await expect.element(incidentsBadge).toHaveClass('text-danger-foreground-subtle');
 	});
 
 	it('should not color the incidents count when there are no incidents', async () => {
@@ -35,7 +35,7 @@ describe('<InstancesBar />', () => {
 
 		const incidentsBadge = screen.getByTestId('incident-instances-badge');
 		await expect.element(incidentsBadge).toHaveTextContent('0');
-		await expect.element(incidentsBadge).not.toHaveClass('text-danger-foreground-strong');
+		await expect.element(incidentsBadge).not.toHaveClass('text-danger-foreground-subtle');
 	});
 
 	it('should render the active instances count when it is defined', async () => {
@@ -76,7 +76,7 @@ describe('<InstancesBar />', () => {
 			/>,
 		);
 
-		await expect.element(screen.getByText('order-process').first()).toHaveClass('text-danger-foreground-strong');
+		await expect.element(screen.getByText('order-process').first()).toHaveClass('text-danger-foreground-subtle');
 	});
 
 	it('should not color an incident-type label red when the bar size is not medium', async () => {
@@ -88,7 +88,7 @@ describe('<InstancesBar />', () => {
 			/>,
 		);
 
-		await expect.element(screen.getByText('order-process').first()).not.toHaveClass('text-danger-foreground-strong');
+		await expect.element(screen.getByText('order-process').first()).not.toHaveClass('text-danger-foreground-subtle');
 	});
 
 	it('should use the small bar-height class for size="small"', async () => {

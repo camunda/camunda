@@ -91,6 +91,7 @@ public class HttpJobHandlerConfiguration {
             .setLongPollingTimeout(config.longPolling().getTimeout())
             .setProbeTimeoutMillis(config.longPolling().getProbeTimeout())
             .setMinEmptyResponses(config.longPolling().getMinEmptyResponses())
+            .setNotificationBatchWindow(config.longPolling().getNotificationBatchWindow())
             .setActivationResultMapper(ResponseMapper::toActivateJobsResponse)
             .setResourceExhaustedExceptionProvider(
                 GatewayErrorMapper.RESOURCE_EXHAUSTED_EXCEPTION_PROVIDER)

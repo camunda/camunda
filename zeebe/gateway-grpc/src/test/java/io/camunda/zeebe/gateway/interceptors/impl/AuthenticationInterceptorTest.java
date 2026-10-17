@@ -15,6 +15,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import com.auth0.jwt.JWT;
@@ -50,6 +51,8 @@ import org.assertj.core.api.ListAssert;
 import org.assertj.core.api.MapAssert;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -688,6 +691,51 @@ final class AuthenticationInterceptorTest {
     assertThat(timer.mean(TimeUnit.MILLISECONDS)).isGreaterThan(0);
     assertThat(capturingCall.closeStatus.get().getCode())
         .isEqualTo(Status.UNAUTHENTICATED.getCode());
+  }
+
+  @ParameterizedTest
+  @ValueSource(
+      strings = {
+        // "nocolon" base64-encoded, decodes to a value without ':'
+        "Basic bm9jb2xvbg==",
+        "Basic !!!notbase64",
+        "Basic "
+      })
+  void shouldRejectMalformedBasicAuthHeaderWithUnauthenticated(final String authorization) {
+    // given
+    final var meterRegistry = new SimpleMeterRegistry();
+    final var basicMetrics = new AuthenticationMetrics(meterRegistry, AuthenticationMethod.BASIC);
+    final var capturingCall = new CloseStatusCapturingServerCall<Object, Object>();
+    final var metadata = new Metadata();
+    metadata.put(Key.of("Authorization", Metadata.ASCII_STRING_MARSHALLER), authorization);
+    final var interceptor =
+        new AuthenticationInterceptor(
+            Set.of(DEFAULT_PHYSICAL_TENANT_ID),
+            Map.of(DEFAULT_PHYSICAL_TENANT_ID, new BasicAuth(userServices, passwordEncoder)),
+            true,
+            Map.of(DEFAULT_PHYSICAL_TENANT_ID, basicMetrics),
+            meterRegistry);
+
+    // when
+    interceptor.interceptCall(
+        capturingCall,
+        metadata,
+        (call, headers) -> {
+          call.close(Status.OK, headers);
+          return null;
+        });
+
+    // then
+    assertThat(capturingCall.closeStatus.get().getCode())
+        .isEqualTo(Status.UNAUTHENTICATED.getCode());
+    final var timer =
+        meterRegistry
+            .get(AuthenticationMetricsDoc.LATENCY.getName())
+            .tag(LatencyKeyNames.AUTH_METHOD.asString(), "BASIC")
+            .tag(LatencyKeyNames.AUTH_RESULT.asString(), AuthResultValues.FAILURE.getValue())
+            .timer();
+    assertThat(timer.count()).isOne();
+    verifyNoInteractions(userServices, passwordEncoder);
   }
 
   // PT-dispatch tests

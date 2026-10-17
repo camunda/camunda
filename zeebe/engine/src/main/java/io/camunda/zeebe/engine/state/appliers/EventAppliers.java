@@ -77,6 +77,7 @@ import io.camunda.zeebe.protocol.record.intent.RuntimeInstructionIntent;
 import io.camunda.zeebe.protocol.record.intent.SecretReferenceIntent;
 import io.camunda.zeebe.protocol.record.intent.SignalIntent;
 import io.camunda.zeebe.protocol.record.intent.SignalSubscriptionIntent;
+import io.camunda.zeebe.protocol.record.intent.SuspensionBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.TenantIntent;
 import io.camunda.zeebe.protocol.record.intent.TimerIntent;
 import io.camunda.zeebe.protocol.record.intent.UsageMetricIntent;
@@ -112,6 +113,7 @@ public final class EventAppliers implements EventApplier {
     register(ProcessInstanceResultIntent.COMPLETED, NOOP_EVENT_APPLIER);
     register(ProcessInstanceBatchIntent.ACTIVATED, NOOP_EVENT_APPLIER);
     register(ProcessInstanceBatchIntent.TERMINATED, NOOP_EVENT_APPLIER);
+    register(SuspensionBatchIntent.ELEMENT_INSTANCE_SUSPENDED, NOOP_EVENT_APPLIER);
 
     registerProcessAppliers(state);
     register(ErrorIntent.CREATED, new ErrorCreatedApplier(state.getBannedInstanceState()));
@@ -201,6 +203,7 @@ public final class EventAppliers implements EventApplier {
 
   private void registerAgentHistoryEventAppliers(final MutableProcessingState state) {
     register(AgentHistoryIntent.CREATED, new AgentHistoryCreatedApplier(state));
+    register(AgentHistoryIntent.CREATED, 2, new AgentHistoryCreatedV2Applier(state));
     register(AgentHistoryIntent.COMMITTED, new AgentHistoryCommittedApplier(state));
     register(AgentHistoryIntent.DISCARDED, new AgentHistoryDiscardedApplier(state));
   }
@@ -308,6 +311,7 @@ public final class EventAppliers implements EventApplier {
   private void registerTimeEventAppliers(final MutableProcessingState state) {
     register(TimerIntent.CREATED, new TimerCreatedApplier(state.getTimerState()));
     register(TimerIntent.CREATED, 2, new TimerCreatedV2Applier(state.getTimerState()));
+    register(TimerIntent.CREATED, 3, new TimerCreatedV3Applier(state.getTimerState()));
     register(TimerIntent.CANCELED, new TimerCancelledApplier(state.getTimerState()));
     register(TimerIntent.TRIGGERED, new TimerTriggeredApplier(state.getTimerState()));
     register(TimerIntent.MIGRATED, new TimerInstanceMigratedApplier(state.getTimerState()));
@@ -395,6 +399,16 @@ public final class EventAppliers implements EventApplier {
         ProcessInstanceIntent.ELEMENT_COMPLETED,
         2,
         new ProcessInstanceElementCompletedV2Applier(
+            elementInstanceState,
+            eventScopeInstanceState,
+            variableState,
+            processState,
+            multiInstanceState,
+            bufferedStartMessageEventStateApplier));
+    register(
+        ProcessInstanceIntent.ELEMENT_COMPLETED,
+        3,
+        new ProcessInstanceElementCompletedV3Applier(
             elementInstanceState,
             eventScopeInstanceState,
             variableState,
@@ -553,11 +567,6 @@ public final class EventAppliers implements EventApplier {
     register(JobIntent.PRIORITY_UPDATED, new JobPriorityUpdatedApplier(state));
     register(JobIntent.SUSPENDED, new JobSuspendedApplier(state));
     register(JobIntent.RESUMED, new JobResumedApplier(state));
-    // The secret-resolution state transitions are owned by the SecretReferenceIntent appliers; the
-    // two JobIntent events below exist only so the parked/resumed transition is observable on the
-    // JOB record stream for the wait-state exporter, and carry no state change of their own.
-    register(JobIntent.SECRET_RESOLUTION_PARKED, NOOP_EVENT_APPLIER);
-    register(JobIntent.SECRET_RESOLUTION_RESUMED, NOOP_EVENT_APPLIER);
   }
 
   private void registerMessageAppliers(final MutableProcessingState state) {
@@ -902,6 +911,8 @@ public final class EventAppliers implements EventApplier {
     register(UserTaskIntent.COMPLETION_DENIED, new UserTaskCompletionDeniedApplier(state));
     register(UserTaskIntent.ASSIGNMENT_DENIED, new UserTaskAssignmentDeniedApplier(state));
     register(UserTaskIntent.UPDATE_DENIED, new UserTaskUpdateDeniedApplier(state));
+    register(UserTaskIntent.SUSPENDED, NOOP_EVENT_APPLIER);
+    register(UserTaskIntent.RESUMED, NOOP_EVENT_APPLIER);
   }
 
   private void registerCompensationSubscriptionApplier(

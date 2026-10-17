@@ -7,8 +7,8 @@
  */
 package io.camunda.webapps.controllers;
 
-import static io.camunda.configuration.SecondaryStorage.SecondaryStorageType.elasticsearch;
-import static io.camunda.configuration.SecondaryStorage.SecondaryStorageType.opensearch;
+import static io.camunda.configuration.data.SecondaryStorage.SecondaryStorageType.elasticsearch;
+import static io.camunda.configuration.data.SecondaryStorage.SecondaryStorageType.opensearch;
 
 import io.camunda.configuration.conditions.ConditionalOnSecondaryStorageType;
 import io.camunda.webapps.profiles.ProfileWebAppStandalone;

@@ -13,12 +13,14 @@ import {ThemeProvider} from '#/shared/theme/shadcn.components/ThemeProvider';
 import {NotFoundPage} from '#/shared/pages/shadcn.components/NotFoundPage';
 import {GenericErrorPage} from '#/shared/pages/shadcn.components/GenericErrorPage';
 import {NetworkStatusWatcher} from '#/shared/notifications/shadcn.components/NetworkStatusWatcher';
+import {Notifications} from '#/shared/notifications/shadcn.components/Notifications';
 
 const Route = createFileRoute('/_shadcn')({
 	component: function RouteComponent() {
 		return (
 			<ThemeProvider>
 				<NetworkStatusWatcher />
+				<Notifications />
 				<Outlet />
 			</ThemeProvider>
 		);

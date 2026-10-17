@@ -409,6 +409,19 @@
       prPriority: 10,
     },
     {
+      description: "version.spring-boot-oldest-managing-protobuf and version.protobuf-spring-boot-baseline pin the lowest protobuf runtime that a user application can get, and the protoc version must not go above it. Following the latest Spring Boot patch or protobuf-java fails ProtobufGencodeCompatibilityTest, and satisfying that test by raising protoc breaks users on the older runtime. Raise them by hand, together, only when the oldest Spring Boot line that manages protobuf changes. They are selected by property name because version.spring-boot in the same pom is the real Spring Boot import and must keep updating.",
+      matchManagers: [
+        "maven",
+      ],
+      matchFileNames: [
+        "parent/pom.xml",
+      ],
+      matchJsonata: [
+        "sharedVariableName in ['version.spring-boot-oldest-managing-protobuf', 'version.protobuf-spring-boot-baseline']",
+      ],
+      enabled: false,
+    },
+    {
       description: "Digest + patch updates cover all use cases since they are used as base, so we disable other types.",
       matchManagers: [
         "dockerfile",
@@ -754,7 +767,7 @@
       // Disable automerge for all the load test updates, by default.
       // Automerge can be turned on, on a case by case basis, as needed, until
       // the teams are more confident about the updates received.
-      matchFileNames: ["load-tests/**"],
+      matchFileNames: ["load-tests/setup/**"],
       automerge: false,
       prBodyNotes: [
         "**:warning: Manual verification required before merging :warning:**",
@@ -864,7 +877,7 @@
       ],
       customType: "regex",
       matchStrings: [
-        "renovate: datasource=(?<datasource>.*?) depName=(?<depName>.*?)( versioning=(?<versioning>.*?))?\\s.* '(?<currentValue>.*)'\\s",
+        "renovate: datasource=(?<datasource>.*?) depName=(?<depName>.*?)( depType=(?<depType>.*?))?( versioning=(?<versioning>.*?))?\\s.* '(?<currentValue>.*)'\\s",
       ],
       versioningTemplate: "{{#if versioning}}{{{versioning}}}{{else}}semver{{/if}}",
     },

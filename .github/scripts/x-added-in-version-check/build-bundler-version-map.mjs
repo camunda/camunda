@@ -2,7 +2,7 @@
  * build-bundler-version-map.mjs
  *
  * Uses camunda-schema-bundler to fetch and bundle OpenAPI specs for versions
- * 8.5–8.10 directly from the Camunda GitHub repo, then builds a unified
+ * 8.5–8.11 directly from the Camunda GitHub repo, then builds a unified
  * version map recording when each operation and property was first introduced.
  *
  * This is the bundler-based equivalent of build-version-map.mjs, which reads
@@ -20,9 +20,9 @@ const yaml = { load: (source) => YAML.parse(source) };
 
 // ─── Configuration (env-overridable) ───────────────────────────────────────────────
 //
-//   VERSIONS                Comma-separated list (default: 8.5,8.6,8.7,8.8,8.9,8.10)
+//   VERSIONS                Comma-separated list (default: 8.5,8.6,8.7,8.8,8.9,8.10,8.11)
 //   MAIN_BRANCH_VERSIONS    Versions that track the `main` branch instead of
-//                           a released version's `<v>.0` tag (default: 8.10)
+//                           a released version's `<v>.0` tag (default: 8.11)
 //   LATEST_BRANCH           Optional ref to try first for every
 //                           MAIN_BRANCH_VERSIONS entry. Falls back to `main`
 //                           if the fetch fails (e.g. branch doesn't exist).
@@ -54,9 +54,9 @@ function parseBool(value) {
   if (!value) return false;
   return /^(1|true|yes|on)$/i.test(value);
 }
-const VERSIONS = parseCsv(process.env.VERSIONS, ['8.5', '8.6', '8.7', '8.8', '8.9', '8.10']);
-const MAIN_BRANCH_VERSIONS = parseCsv(process.env.MAIN_BRANCH_VERSIONS, ['8.10']);
-// 8.10 (or whatever MAIN_BRANCH_VERSIONS lists) tracks `main` until it cuts
+const VERSIONS = parseCsv(process.env.VERSIONS, ['8.5', '8.6', '8.7', '8.8', '8.9', '8.10', '8.11']);
+const MAIN_BRANCH_VERSIONS = parseCsv(process.env.MAIN_BRANCH_VERSIONS, ['8.11']);
+// 8.11 (or whatever MAIN_BRANCH_VERSIONS lists) tracks `main` until it cuts
 // its own release branch. Everything else is pinned to its `<version>.0`
 // release tag on camunda/camunda — immutable once cut, unlike the
 // stable/<version> branch, which keeps moving via patch backports. When

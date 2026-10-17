@@ -240,7 +240,8 @@ public final class JobCompleteProcessor
           new AgentHistoryRecord()
               .setJobKey(command.getKey())
               .setJobLeaseToken(job.getJobLeaseToken())
-              .setProcessInstanceKey(job.getProcessInstanceKey()));
+              .setProcessInstanceKey(job.getProcessInstanceKey())
+              .setStorageOrdinal(job.getStorageOrdinal()));
     }
 
     jobMetrics.countJobEvent(JobAction.COMPLETED, job.getJobKind(), job.getType());

@@ -20,6 +20,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Represents a {@link io.camunda.zeebe.backup.api.NamedFileSet} with attached metadata. It is
@@ -69,7 +70,7 @@ public record FileSet(Map<String, FileMetadata> files) {
     private static final TypeReference<Set<String>> WITHOUT_METADATA = new TypeReference<>() {};
 
     @Override
-    public FileSet deserialize(final JsonParser p, final DeserializationContext ctxt)
+    public @Nullable FileSet deserialize(final JsonParser p, final DeserializationContext ctxt)
         throws IOException {
       final var codec = p.getCodec();
       if (p.currentToken() == JsonToken.START_ARRAY) {

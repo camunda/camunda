@@ -31,7 +31,10 @@ import {DateRangeField} from '#/operate/shared/DateRangeField/DateRangeField';
 import {FilterMultiSelect} from '#/operate/shared/FilterMultiSelect/FilterMultiSelect';
 import {spaceAndCapitalize} from '#/operate/shared/utils/spaceAndCapitalize';
 import {AUDIT_LOG_ENTITY_TYPE_FILTER_VALUES, AUDIT_LOG_OPERATION_TYPE_FILTER_VALUES} from './operationsLogFilters';
-import {operationsLogDefinitionsQuery, selectedDefinitionsQuery} from './definitions.queries';
+import {
+	operationsLogDefinitionsQuery,
+	selectedDefinitionsQuery,
+} from '#/operate/shared/queries/processDefinitions.queries';
 import type {OperationsLogSearch} from './operationsLog.schema';
 
 type Props = {

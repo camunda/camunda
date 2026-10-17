@@ -6,76 +6,42 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {z} from 'zod';
-import {
-	API_VERSION,
-	advancedStringFilterSchema,
-	advancedIntegerFilterSchema,
-	getEnumFilterSchema,
-	getQueryRequestBodySchema,
-	getQueryResponseBodySchema,
-	type Endpoint,
-} from './common';
+import {API_VERSION, type Endpoint} from './common';
+import {createGlobalTaskListenerRequestSchema} from './gen/zod/createGlobalTaskListenerRequestSchema';
+import {globalListenerSourceEnumSchema} from './gen/zod/globalListenerSourceEnumSchema';
+import {globalTaskListenerEventTypeEnumSchema} from './gen/zod/globalTaskListenerEventTypeEnumSchema';
+import {globalTaskListenerResultSchema} from './gen/zod/globalTaskListenerResultSchema';
+import {globalTaskListenerSearchQueryRequestSchema} from './gen/zod/globalTaskListenerSearchQueryRequestSchema';
+import {globalTaskListenerSearchQueryResultSchema} from './gen/zod/globalTaskListenerSearchQueryResultSchema';
+import {updateGlobalTaskListenerRequestSchema} from './gen/zod/updateGlobalTaskListenerRequestSchema';
+import type {CreateGlobalTaskListenerRequest} from './gen/types/CreateGlobalTaskListenerRequest';
+import type {GlobalListenerSourceEnumKey} from './gen/types/GlobalListenerSourceEnum';
+import type {GlobalTaskListenerEventTypeEnumKey} from './gen/types/GlobalTaskListenerEventTypeEnum';
+import type {GlobalTaskListenerResult} from './gen/types/GlobalTaskListenerResult';
+import type {GlobalTaskListenerSearchQueryRequest} from './gen/types/GlobalTaskListenerSearchQueryRequest';
+import type {GlobalTaskListenerSearchQueryResult} from './gen/types/GlobalTaskListenerSearchQueryResult';
+import type {UpdateGlobalTaskListenerRequest} from './gen/types/UpdateGlobalTaskListenerRequest';
 
-const globalListenerSourceSchema = z.enum(['CONFIGURATION', 'API']);
-type GlobalListenerSource = z.infer<typeof globalListenerSourceSchema>;
+const globalListenerSourceSchema = globalListenerSourceEnumSchema;
+type GlobalListenerSource = GlobalListenerSourceEnumKey;
 
-const globalTaskListenerEventTypeSchema = z.enum([
-	'all',
-	'creating',
-	'assigning',
-	'updating',
-	'completing',
-	'canceling',
-]);
-type GlobalTaskListenerEventType = z.infer<typeof globalTaskListenerEventTypeSchema>;
+const globalTaskListenerEventTypeSchema = globalTaskListenerEventTypeEnumSchema;
+type GlobalTaskListenerEventType = GlobalTaskListenerEventTypeEnumKey;
 
-const globalTaskListenerSchema = z.object({
-	id: z.string(),
-	type: z.string(),
-	eventTypes: z.array(globalTaskListenerEventTypeSchema),
-	retries: z.number().int().nullable(),
-	afterNonGlobal: z.boolean().nullable(),
-	priority: z.number().int().nullable(),
-	source: globalListenerSourceSchema.optional(),
-});
-type GlobalTaskListener = z.infer<typeof globalTaskListenerSchema>;
+const globalTaskListenerSchema = globalTaskListenerResultSchema;
+type GlobalTaskListener = GlobalTaskListenerResult;
 
-const createGlobalTaskListenerRequestBodySchema = z.object({
-	id: z.string(),
-	type: z.string(),
-	eventTypes: z.array(globalTaskListenerEventTypeSchema),
-	retries: z.number().int().optional(),
-	afterNonGlobal: z.boolean().optional(),
-	priority: z.number().int().optional(),
-});
-type CreateGlobalTaskListenerRequestBody = z.infer<typeof createGlobalTaskListenerRequestBodySchema>;
+const createGlobalTaskListenerRequestBodySchema = createGlobalTaskListenerRequestSchema;
+type CreateGlobalTaskListenerRequestBody = CreateGlobalTaskListenerRequest;
 
-const updateGlobalTaskListenerRequestBodySchema = z.object({
-	type: z.string(),
-	eventTypes: z.array(globalTaskListenerEventTypeSchema),
-	retries: z.number().int().optional(),
-	afterNonGlobal: z.boolean().optional(),
-	priority: z.number().int().optional(),
-});
-type UpdateGlobalTaskListenerRequestBody = z.infer<typeof updateGlobalTaskListenerRequestBodySchema>;
+const updateGlobalTaskListenerRequestBodySchema = updateGlobalTaskListenerRequestSchema;
+type UpdateGlobalTaskListenerRequestBody = UpdateGlobalTaskListenerRequest;
 
-const queryGlobalTaskListenersRequestBodySchema = getQueryRequestBodySchema({
-	sortFields: ['id', 'type', 'afterNonGlobal', 'priority', 'source'] as const,
-	filter: z.object({
-		id: advancedStringFilterSchema.optional(),
-		type: advancedStringFilterSchema.optional(),
-		retries: advancedIntegerFilterSchema.optional(),
-		eventTypes: z.array(getEnumFilterSchema(globalTaskListenerEventTypeSchema)).optional(),
-		afterNonGlobal: z.boolean().optional(),
-		priority: advancedIntegerFilterSchema.optional(),
-		source: getEnumFilterSchema(globalListenerSourceSchema).optional(),
-	}),
-});
-type QueryGlobalTaskListenersRequestBody = z.infer<typeof queryGlobalTaskListenersRequestBodySchema>;
+const queryGlobalTaskListenersRequestBodySchema = globalTaskListenerSearchQueryRequestSchema;
+type QueryGlobalTaskListenersRequestBody = GlobalTaskListenerSearchQueryRequest;
 
-const queryGlobalTaskListenersResponseBodySchema = getQueryResponseBodySchema(globalTaskListenerSchema);
-type QueryGlobalTaskListenersResponseBody = z.infer<typeof queryGlobalTaskListenersResponseBodySchema>;
+const queryGlobalTaskListenersResponseBodySchema = globalTaskListenerSearchQueryResultSchema;
+type QueryGlobalTaskListenersResponseBody = GlobalTaskListenerSearchQueryResult;
 
 const searchGlobalTaskListeners = {
 	method: 'POST',
@@ -116,6 +82,7 @@ export {
 	updateGlobalTaskListener,
 	deleteGlobalTaskListener,
 };
+
 export type {
 	GlobalListenerSource,
 	GlobalTaskListenerEventType,

@@ -88,6 +88,7 @@ describe('Optional Filters', () => {
 		const screen = await renderProcessesPage();
 
 		await expect.element(screen.getByRole('button', {name: 'More Filters'})).toBeVisible();
+		await expect.element(screen.getByRole('heading', {name: 'Variables'})).not.toBeInTheDocument();
 		for (const label of OPTIONAL_FILTER_LABELS) {
 			await expect.element(screen.getByLabelText(label, {exact: true})).not.toBeInTheDocument();
 		}
@@ -144,6 +145,10 @@ describe('Optional Filters', () => {
 	});
 
 	it('should hide more filters button when all optional filters are visible', async ({worker}) => {
+		sessionStorage.setItem(
+			'operate.variableFilter.conditions',
+			JSON.stringify([{name: 'status', operator: 'equals', value: '"open"'}]),
+		);
 		worker.use(
 			mockQueryProcessInstancesEndpoint({successResponse: EMPTY_PROCESS_INSTANCES}),
 			mockQueryProcessDefinitionsEndpoint({successResponse: PROCESS_DEFINITIONS}),

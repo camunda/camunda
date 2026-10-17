@@ -238,6 +238,136 @@ class ExpressionProcessorTest {
   }
 
   @Nested
+  @TestInstance(Lifecycle.PER_CLASS)
+  class EvaluateBooleanExpressionWithLabelTest {
+
+    @Test
+    void shouldUseGenericWordingWhenLabelIsNone() {
+      // given
+      final var processor =
+          new ExpressionProcessor(EXPRESSION_LANGUAGE, DEFAULT_CONTEXT_LOOKUP, DEFAULT_TIMEOUT);
+      final var parsedExpression = EXPRESSION_LANGUAGE.parseExpression("=x");
+
+      // when
+      final var result =
+          processor.evaluateBooleanExpression(
+              parsedExpression, -1L, "tenant_1", ExpressionLabel.NONE);
+
+      // then
+      assertThat(result)
+          .isLeft()
+          .extracting(r -> r.getLeft().getMessage())
+          .isEqualTo(
+              """
+              Expected result of the expression 'x' to be 'BOOLEAN', but was 'NULL'. \
+              The evaluation reported the following warnings:
+              [NO_VARIABLE_FOUND] No variable found with name 'x'""");
+    }
+
+    @Test
+    void shouldUseLabelKindAndTargetInFailureMessage() {
+      // given
+      final var processor =
+          new ExpressionProcessor(EXPRESSION_LANGUAGE, DEFAULT_CONTEXT_LOOKUP, DEFAULT_TIMEOUT);
+      final var parsedExpression = EXPRESSION_LANGUAGE.parseExpression("=x");
+      final var label = new ExpressionLabel("condition expression", "sequence flow 's2'");
+
+      // when
+      final var result =
+          processor.evaluateBooleanExpression(parsedExpression, -1L, "tenant_1", label);
+
+      // then
+      assertThat(result)
+          .isLeft()
+          .extracting(r -> r.getLeft().getMessage())
+          .isEqualTo(
+              """
+              Expected result of the condition expression 'x' of sequence flow 's2' to be 'BOOLEAN', but was 'NULL'. \
+              The evaluation reported the following warnings:
+              [NO_VARIABLE_FOUND] No variable found with name 'x'""");
+    }
+
+    @Test
+    void shouldUseLabelKindWithoutTargetInFailureMessage() {
+      // given
+      final var processor =
+          new ExpressionProcessor(EXPRESSION_LANGUAGE, DEFAULT_CONTEXT_LOOKUP, DEFAULT_TIMEOUT);
+      final var parsedExpression = EXPRESSION_LANGUAGE.parseExpression("=x");
+      final var label = new ExpressionLabel("condition expression", null);
+
+      // when
+      final var result =
+          processor.evaluateBooleanExpression(parsedExpression, -1L, "tenant_1", label);
+
+      // then
+      assertThat(result)
+          .isLeft()
+          .extracting(r -> r.getLeft().getMessage())
+          .isEqualTo(
+              """
+              Expected result of the condition expression 'x' to be 'BOOLEAN', but was 'NULL'. \
+              The evaluation reported the following warnings:
+              [NO_VARIABLE_FOUND] No variable found with name 'x'""");
+    }
+
+    @Test
+    void shouldUseLabelInGenuineEvaluationFailureMessage() {
+      // given: assert() fails because its condition isn't met, not because of a type mismatch, so
+      // this bypasses typeCheck entirely and is handled by evaluateExpressionAsEither's own
+      // isFailure() branch
+      final var processor =
+          new ExpressionProcessor(
+              EXPRESSION_LANGUAGE,
+              new InMemoryVariableEvaluationContext(Map.of("foo", 5)),
+              DEFAULT_TIMEOUT);
+      final var parsedExpression = EXPRESSION_LANGUAGE.parseExpression("=assert(foo, foo > 100)");
+      final var label = new ExpressionLabel("condition expression", "sequence flow 's2'");
+
+      // when
+      final var result =
+          processor.evaluateBooleanExpression(parsedExpression, -1L, "tenant_1", label);
+
+      // then
+      assertThat(result)
+          .isLeft()
+          .extracting(r -> r.getLeft().getMessage())
+          .isEqualTo(
+              """
+              Assertion failure on evaluate the expression 'assert(foo, foo > 100)': The \
+              condition is not fulfilled (condition expression of sequence flow 's2') \
+              The evaluation reported the following warnings:
+              [ASSERT_FAILURE] The condition is not fulfilled""");
+    }
+
+    @Test
+    void shouldUseLabelWhenEvaluationTimesOut() {
+      // given: the evaluation times out before it can even attempt typeCheck, so the label must be
+      // applied directly in evaluateExpressionAsEither's TimeoutException branch
+      final var blockingEL = new EvaluationErrorsTest.FakeBlockingExpressionLanguage();
+      final var processor =
+          new ExpressionProcessor(blockingEL, DEFAULT_CONTEXT_LOOKUP, Duration.ofMillis(1));
+      final var expression = EXPRESSION_LANGUAGE.parseExpression("foo");
+      final var label = new ExpressionLabel("condition expression", "sequence flow 's2'");
+
+      try {
+        // when
+        final var result = processor.evaluateBooleanExpression(expression, -1L, "tenant_1", label);
+
+        // then
+        assertThat(result)
+            .isLeft()
+            .extracting(r -> r.getLeft().getMessage())
+            .isEqualTo(
+                "Expected to evaluate expression but timed out after 1 ms: 'foo' "
+                    + "(condition expression of sequence flow 's2')");
+      } finally {
+        // release the blocking EL to avoid leaking threads
+        blockingEL.release();
+      }
+    }
+  }
+
+  @Nested
   class EvaluateBooleanExpressionWithStringTest {
 
     @Test

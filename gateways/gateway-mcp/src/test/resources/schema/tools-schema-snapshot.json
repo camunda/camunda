@@ -911,6 +911,10 @@
                 },
                 "description": "The user task follow-up date."
               },
+              "isSuspended": {
+                "type": "boolean",
+                "description": "Whether the user task is suspended because its owning process instance is suspended. "
+              },
               "localVariables": {
                 "description": "The local variables of the user task.",
                 "type": "array",

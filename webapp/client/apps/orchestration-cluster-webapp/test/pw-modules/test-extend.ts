@@ -9,26 +9,37 @@
 import {expect, test as base} from '@playwright/test';
 import {defineNetworkFixture, type NetworkFixture} from '@msw/playwright';
 import type {AnyHandler} from 'msw';
+import {HttpNetworkFrame} from 'msw/experimental';
 import AxeBuilder from '@axe-core/playwright';
 import {LoginPage} from '#/pages/Login.page';
-import {TasklistIndexPage} from '#/pages/TasklistIndex.page';
-import {TasklistProcessesPage} from '#/pages/TasklistProcesses.page';
-import {TaskDetailPage} from '#/pages/TaskDetail.page';
-import {OperateIndexPage} from '#/pages/OperateIndex.page';
-import {OperatePreviewPage} from '#/pages/OperatePreview.page';
-import {OperateBatchOperationsPage} from '#/pages/OperateBatchOperations.page';
-import {OperateProcessesPage} from '#/pages/OperateProcesses.page';
-import {OperateDecisionsPage} from '#/pages/OperateDecisions.page';
-import {OperateDecisionInstancePage} from '#/pages/OperateDecisionInstance.page';
-import {OperateOperationsLogPage} from '#/pages/OperateOperationsLog.page';
-import {AdminIndexPage} from '#/pages/AdminIndex.page';
-import {AdminLoginPage} from '#/pages/AdminLogin.page';
-import {AdminMcpProcessesPage} from '#/pages/AdminMcpProcesses.page';
-import {AdminOperationsLogPage} from '#/pages/AdminOperationsLog.page';
+import {TasklistIndexPage} from '#/pages/tasklist/TasklistIndex.page';
+import {TasklistProcessesPage} from '#/pages/tasklist/TasklistProcesses.page';
+import {TaskDetailPage} from '#/pages/tasklist/TaskDetail.page';
+import {OperateIndexPage} from '#/pages/operate/OperateIndex.page';
+import {OperatePreviewPage} from '#/pages/operate/OperatePreview.page';
+import {OperatePreviewDecisionsPage} from '#/pages/operate/OperatePreviewDecisions.page';
+import {OperateBatchOperationsPage} from '#/pages/operate/OperateBatchOperations.page';
+import {OperateProcessesPage} from '#/pages/operate/OperateProcesses.page';
+import {OperateProcessInstancePage} from '#/pages/operate/OperateProcessInstance.page';
+import {OperateDecisionsPage} from '#/pages/operate/OperateDecisions.page';
+import {OperateDecisionInstancePage} from '#/pages/operate/OperateDecisionInstance.page';
+import {OperateOperationsLogPage} from '#/pages/operate/OperateOperationsLog.page';
+import {AdminIndexPage} from '#/pages/admin/AdminIndex.page';
+import {AdminLoginPage} from '#/pages/admin/AdminLogin.page';
+import {AdminMcpProcessesPage} from '#/pages/admin/AdminMcpProcesses.page';
+import {AdminOperationsLogPage} from '#/pages/admin/AdminOperationsLog.page';
+import {AdminMappingRulesPage} from '#/pages/admin/AdminMappingRules.page';
+import {AdminRolesPage} from '#/pages/admin/AdminRoles.page';
+import {AdminRoleDetailPage} from '#/pages/admin/AdminRoleDetail.page';
+import {AdminUsersPage} from '#/pages/AdminUsers.page';
+import {AdminUserDetailPage} from '#/pages/AdminUserDetail.page';
+import {AdminClusterVariablesPage} from '#/pages/admin/AdminClusterVariables.page';
+import {AdminGlobalTaskListenersPage} from '#/pages/admin/AdminGlobalTaskListeners.page';
+import {AdminAuthorizationsPage} from '#/pages/admin/AdminAuthorizations.page';
 import {NotFoundPage} from '#/pages/NotFound.page';
 import {ForbiddenPage} from '#/pages/Forbidden.page';
 import {ComponentAccessDeniedPage} from '#/pages/ComponentAccessDenied.page';
-import {TasklistLoginPage} from '#/pages/TasklistLogin.page';
+import {TasklistLoginPage} from '#/pages/tasklist/TasklistLogin.page';
 
 type Fixtures = {
 	handlers: Array<AnyHandler>;
@@ -41,8 +52,10 @@ type Fixtures = {
 	taskDetailPage: TaskDetailPage;
 	operateIndexPage: OperateIndexPage;
 	operatePreviewPage: OperatePreviewPage;
+	operatePreviewDecisionsPage: OperatePreviewDecisionsPage;
 	operateBatchOperationsPage: OperateBatchOperationsPage;
 	operateProcessesPage: OperateProcessesPage;
+	operateProcessInstancePage: OperateProcessInstancePage;
 	operateDecisionsPage: OperateDecisionsPage;
 	operateDecisionInstancePage: OperateDecisionInstancePage;
 	operateOperationsLogPage: OperateOperationsLogPage;
@@ -50,6 +63,14 @@ type Fixtures = {
 	adminLoginPage: AdminLoginPage;
 	adminMcpProcessesPage: AdminMcpProcessesPage;
 	adminOperationsLogPage: AdminOperationsLogPage;
+	adminMappingRulesPage: AdminMappingRulesPage;
+	adminRolesPage: AdminRolesPage;
+	adminRoleDetailPage: AdminRoleDetailPage;
+	adminUsersPage: AdminUsersPage;
+	adminUserDetailPage: AdminUserDetailPage;
+	adminClusterVariablesPage: AdminClusterVariablesPage;
+	adminGlobalTaskListenersPage: AdminGlobalTaskListenersPage;
+	adminAuthorizationsPage: AdminAuthorizationsPage;
 	notFoundPage: NotFoundPage;
 	forbiddenPage: ForbiddenPage;
 	componentAccessDeniedPage: ComponentAccessDeniedPage;
@@ -81,11 +102,17 @@ const test = base.extend<Fixtures>({
 	operatePreviewPage: async ({page}, use) => {
 		await use(new OperatePreviewPage(page));
 	},
+	operatePreviewDecisionsPage: async ({page}, use) => {
+		await use(new OperatePreviewDecisionsPage(page));
+	},
 	operateBatchOperationsPage: async ({page}, use) => {
 		await use(new OperateBatchOperationsPage(page));
 	},
 	operateProcessesPage: async ({page}, use) => {
 		await use(new OperateProcessesPage(page));
+	},
+	operateProcessInstancePage: async ({page}, use) => {
+		await use(new OperateProcessInstancePage(page));
 	},
 	operateDecisionsPage: async ({page}, use) => {
 		await use(new OperateDecisionsPage(page));
@@ -105,8 +132,32 @@ const test = base.extend<Fixtures>({
 	adminMcpProcessesPage: async ({page}, use) => {
 		await use(new AdminMcpProcessesPage(page));
 	},
+	adminMappingRulesPage: async ({page}, use) => {
+		await use(new AdminMappingRulesPage(page));
+	},
+	adminClusterVariablesPage: async ({page}, use) => {
+		await use(new AdminClusterVariablesPage(page));
+	},
+	adminGlobalTaskListenersPage: async ({page}, use) => {
+		await use(new AdminGlobalTaskListenersPage(page));
+	},
+	adminAuthorizationsPage: async ({page}, use) => {
+		await use(new AdminAuthorizationsPage(page));
+	},
 	adminOperationsLogPage: async ({page}, use) => {
 		await use(new AdminOperationsLogPage(page));
+	},
+	adminRolesPage: async ({page}, use) => {
+		await use(new AdminRolesPage(page));
+	},
+	adminRoleDetailPage: async ({page}, use) => {
+		await use(new AdminRoleDetailPage(page));
+	},
+	adminUsersPage: async ({page}, use) => {
+		await use(new AdminUsersPage(page));
+	},
+	adminUserDetailPage: async ({page}, use) => {
+		await use(new AdminUserDetailPage(page));
 	},
 	notFoundPage: async ({page}, use) => {
 		await use(new NotFoundPage(page));
@@ -125,7 +176,11 @@ const test = base.extend<Fixtures>({
 			const network = defineNetworkFixture({
 				context,
 				handlers,
-				onUnhandledRequest(request, print) {
+				onUnhandledFrame({frame, defaults}) {
+					if (!(frame instanceof HttpNetworkFrame)) {
+						return;
+					}
+					const {request} = frame.data;
 					const url = new URL(request.url);
 					if (
 						request.method === 'GET' &&
@@ -134,7 +189,7 @@ const test = base.extend<Fixtures>({
 					) {
 						return;
 					}
-					print.error();
+					defaults.error();
 				},
 			});
 

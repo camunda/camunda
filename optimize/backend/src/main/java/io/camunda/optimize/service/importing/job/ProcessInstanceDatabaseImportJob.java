@@ -26,8 +26,10 @@ public class ProcessInstanceDatabaseImportJob extends DatabaseImportJob<ProcessI
       final ConfigurationService configurationService,
       final Runnable importCompleteCallback,
       final String sourceExportIndex,
-      final DatabaseClient databaseClient) {
-    super(importCompleteCallback, databaseClient);
+      final DatabaseClient databaseClient,
+      final String recordType,
+      final int partitionId) {
+    super(importCompleteCallback, databaseClient, recordType, partitionId);
     this.zeebeProcessInstanceWriter = zeebeProcessInstanceWriter;
     this.configurationService = configurationService;
     this.sourceExportIndex = sourceExportIndex;

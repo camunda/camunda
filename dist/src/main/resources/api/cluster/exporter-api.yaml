@@ -1,6 +1,6 @@
 openapi: "3.0.2"
 info:
-  title: API Title
+  title: Exporters Management API
   version: "1.0"
 servers:
   - url: "{schema}://{host}:{port}/actuator/exporters"
@@ -14,9 +14,14 @@ servers:
      schema:
        default: http
        description: Management server schema
+tags:
+  - name: Exporter
+
 paths:
   /{exporterId}/disable:
     post:
+      tags:
+        - Exporter
       summary: Disable an exporter
       description: >
         Disable the exporter with the given exporterId. After the exporter is disabled, the records are not exported to this exporter anymore.
@@ -25,6 +30,7 @@ paths:
       parameters:
         - $ref: '#/components/parameters/ExporterId'
         - $ref: '#/components/parameters/PhysicalTenantParameter'
+        - $ref: '#/components/parameters/DryRunParameter'
       responses:
         '202':
           $ref: "#/components/responses/ExporterOperationResponse"
@@ -40,15 +46,18 @@ paths:
           $ref: 'components.yaml#/responses/TimeoutError'
 
   /{exporterId}/enable:
-    summary: Enable an exporter
-    description: >
-      Enable the exporter with the given exporterId. After the exporter is enabled, the records are exported to this exporter.
-      Without the physicalTenant parameter the exporter is enabled in every physical tenant;
-      with it, only the given physical tenant is affected.
     post:
+      tags:
+        - Exporter
+      summary: Enable an exporter
+      description: >
+        Enable the exporter with the given exporterId. After the exporter is enabled, the records are exported to this exporter.
+        Without the physicalTenant parameter the exporter is enabled in every physical tenant;
+        with it, only the given physical tenant is affected.
       parameters:
         - $ref: '#/components/parameters/ExporterId'
         - $ref: '#/components/parameters/PhysicalTenantParameter'
+        - $ref: '#/components/parameters/DryRunParameter'
       requestBody:
         required: false
         content:
@@ -71,6 +80,8 @@ paths:
 
   /{exporterId}:
     delete:
+      tags:
+        - Exporter
       summary: Delete an exporter
       description: >
         Delete the exporter with the given exporterId. This will remove the exporter configuration and stop all export operations for this exporter.
@@ -79,6 +90,7 @@ paths:
       parameters:
         - $ref: '#/components/parameters/ExporterId'
         - $ref: '#/components/parameters/PhysicalTenantParameter'
+        - $ref: '#/components/parameters/DryRunParameter'
       responses:
         '202':
           $ref: "#/components/responses/ExporterOperationResponse"
@@ -95,6 +107,8 @@ paths:
 
   /:
     get:
+      tags:
+        - Exporter
       summary: List all exporters
       description: >
         List all exporters and their status whether they are enabled or disabled.
@@ -136,11 +150,21 @@ components:
       schema:
         $ref: 'components.yaml#/schemas/PhysicalTenantId'
 
+    DryRunParameter:
+      name: dryRun
+      description: If true, requested changes are only simulated and not actually applied.
+      in: query
+      style: form
+      required: false
+      schema:
+        type: boolean
+        default: false
+
   responses:
     ExporterOperationResponse:
       description: Request to disable, enable, or delete exporter is accepted.
       content:
-        application.json:
+        application/json:
           schema:
             $ref: "components.yaml#/schemas/PlannedOperationsResponse"
 

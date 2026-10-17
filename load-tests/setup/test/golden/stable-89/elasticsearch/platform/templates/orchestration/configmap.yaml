@@ -130,7 +130,6 @@ data:
             audiences:
               - "orchestration"
               - "orchestration-api"
-              - "web-modeler-api"
             authorization-uri: "http://localhost:18080/auth/realms/camunda-platform/protocol/openid-connect/auth"
             jwk-set-uri: "http://keycloak:18080/auth/realms/camunda-platform/protocol/openid-connect/certs"
             token-uri: "http://keycloak:18080/auth/realms/camunda-platform/protocol/openid-connect/token"
@@ -259,7 +258,6 @@ data:
             className: "io.camunda.exporter.CamundaExporter"
             args:
               connect:
-                type: "elasticsearch"
                 awsEnabled: false
               history:
                 elsRolloverDateFormat: "date"

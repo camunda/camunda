@@ -27,7 +27,7 @@ describe('<TaskDetailsHistoryPage />', () => {
 				<TaskDetailsHistoryPage
 					userTaskKey={userTaskKey}
 					auditLogs={[]}
-					search={{sort: 'timestamp+desc'}}
+					search={{sort: 'timestamp+DESC'}}
 					onScrollDown={vi.fn()}
 				/>
 			),
@@ -43,7 +43,7 @@ describe('<TaskDetailsHistoryPage />', () => {
 				<TaskDetailsHistoryPage
 					userTaskKey={userTaskKey}
 					auditLogs={auditLogs}
-					search={{sort: 'timestamp+desc'}}
+					search={{sort: 'timestamp+DESC'}}
 					onScrollDown={vi.fn()}
 				/>
 			),
@@ -63,7 +63,7 @@ describe('<TaskDetailsHistoryPage />', () => {
 					<TaskDetailsHistoryPage
 						userTaskKey={userTaskKey}
 						auditLogs={auditLogs}
-						search={{sort: 'timestamp+desc'}}
+						search={{sort: 'timestamp+DESC'}}
 						onScrollDown={onScrollDown}
 					/>
 				</div>

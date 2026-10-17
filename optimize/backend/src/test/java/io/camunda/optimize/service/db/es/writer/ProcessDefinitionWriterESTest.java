@@ -7,14 +7,22 @@
  */
 package io.camunda.optimize.service.db.es.writer;
 
+import static io.camunda.optimize.service.db.DatabaseConstants.PROCESS_DEFINITION_INDEX_NAME;
+import static io.camunda.optimize.service.db.schema.index.AbstractDefinitionIndex.DEFINITION_DELETED;
+import static io.camunda.optimize.service.db.schema.index.ProcessDefinitionIndex.ONBOARDED;
+import static io.camunda.optimize.service.db.schema.index.ProcessDefinitionIndex.PROCESS_DEFINITION_KEY;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import co.elastic.clients.elasticsearch._types.FieldValue;
+import co.elastic.clients.elasticsearch._types.Script;
+import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import io.camunda.optimize.dto.optimize.query.job.EntityType;
@@ -27,6 +35,7 @@ import io.camunda.optimize.service.util.configuration.CacheConfiguration;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.GlobalCacheConfiguration;
 import java.util.List;
+import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -116,6 +125,54 @@ class ProcessDefinitionWriterESTest {
     verify(esClient)
         .doImportBulkRequestWithList(anyString(), captor.capture(), any(), anyBoolean());
     assertThat(captor.getValue()).isEmpty();
+  }
+
+  @Test
+  void shouldOnlyMarkNotYetOnboardedAndNotDeletedVersionsAsOnboardedInBoundedBatches() {
+    // given
+    final Set<String> keys = Set.of("onboardingKeyA", "onboardingKeyB");
+
+    // when
+    writer.markDefinitionKeysAsOnboarded(keys);
+
+    // then
+    final ArgumentCaptor<Script> scriptCaptor = ArgumentCaptor.forClass(Script.class);
+    final ArgumentCaptor<Query> queryCaptor = ArgumentCaptor.forClass(Query.class);
+    verify(taskRepositoryES)
+        .tryUpdateByQueryRequest(
+            anyString(),
+            scriptCaptor.capture(),
+            queryCaptor.capture(),
+            eq(false),
+            eq(50),
+            eq(PROCESS_DEFINITION_INDEX_NAME));
+
+    final List<Query> mustClauses = queryCaptor.getValue().bool().must();
+    assertThat(mustClauses).hasSize(3);
+    assertThat(mustClauses)
+        .anySatisfy(
+            clause -> {
+              assertThat(clause.isTerms()).isTrue();
+              assertThat(clause.terms().field()).isEqualTo(PROCESS_DEFINITION_KEY);
+              assertThat(clause.terms().terms().value())
+                  .extracting(FieldValue::stringValue)
+                  .containsExactlyInAnyOrderElementsOf(keys);
+            });
+    assertThat(mustClauses)
+        .anySatisfy(
+            clause -> {
+              assertThat(clause.isTerm()).isTrue();
+              assertThat(clause.term().field()).isEqualTo(ONBOARDED);
+              assertThat(clause.term().value().booleanValue()).isFalse();
+            });
+    assertThat(mustClauses)
+        .anySatisfy(
+            clause -> {
+              assertThat(clause.isTerm()).isTrue();
+              assertThat(clause.term().field()).isEqualTo(DEFINITION_DELETED);
+              assertThat(clause.term().value().booleanValue()).isFalse();
+            });
+    assertThat(scriptCaptor.getValue().source()).isEqualTo("ctx._source.onboarded = true");
   }
 
   private ProcessDefinitionOptimizeDto definition(final String id) {

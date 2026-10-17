@@ -11,7 +11,7 @@ import {
 	auditLogResultSchema,
 	type AuditLogEntityType,
 	type AuditLogOperationType,
-} from '@camunda/camunda-api-zod-schemas/8.10';
+} from '@camunda/camunda-api-zod-schemas/8.11';
 
 const PAGE_SIZES = [50, 100, 200] as const;
 const DEFAULT_PAGE_SIZE = 50;
@@ -53,7 +53,7 @@ const operationsLogSearchSchema = z.object({
 	timestampFrom: z.iso.datetime().optional().catch(undefined),
 	timestampTo: z.iso.datetime().optional().catch(undefined),
 	sortField: z.enum(SORTABLE_FIELDS).optional(),
-	sortOrder: z.enum(['asc', 'desc']).optional(),
+	sortOrder: z.enum(['ASC', 'DESC']).optional(),
 	page: z.number().int().positive().optional(),
 	pageSize: z.literal(PAGE_SIZES).optional(),
 });

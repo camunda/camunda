@@ -30,6 +30,7 @@ import io.camunda.search.clients.aggregator.SearchTopHitsAggregator.Builder;
 import io.camunda.search.clients.transformers.ServiceTransformers;
 import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.sort.ProcessDefinitionSort;
+import io.camunda.webapps.schema.descriptors.index.ProcessIndex;
 import io.camunda.webapps.schema.entities.ProcessEntity;
 import io.camunda.zeebe.util.collection.Tuple;
 import java.util.List;
@@ -45,15 +46,18 @@ public class ProcessDefinitionLatestVersionAggregationTransformer
     final var transformers = value.getRight();
     final var page = aggregation.page();
     final var sort = aggregation.sort();
+    final var resultConfig = aggregation.resultConfig();
     final Builder<ProcessEntity> topHits = topHits();
 
     // get the MAX version
-    final SearchTopHitsAggregator<ProcessEntity> maxVersionsAgg =
-        topHits
-            .name(AGGREGATION_NAME_LATEST_DEFINITION)
-            .sortOption(new ProcessDefinitionSort.Builder().version().desc().build())
-            .documentClass(ProcessEntity.class)
-            .build();
+    topHits
+        .name(AGGREGATION_NAME_LATEST_DEFINITION)
+        .sortOption(new ProcessDefinitionSort.Builder().version().desc().build())
+        .documentClass(ProcessEntity.class);
+    if (resultConfig == null || !resultConfig.includeXml()) {
+      topHits.excludes(List.of(ProcessIndex.BPMN_XML));
+    }
+    final SearchTopHitsAggregator<ProcessEntity> maxVersionsAgg = topHits.build();
 
     // aggregate terms by process id
     final SearchTermsAggregator.Builder byProcessIdAggSourceBuilder =

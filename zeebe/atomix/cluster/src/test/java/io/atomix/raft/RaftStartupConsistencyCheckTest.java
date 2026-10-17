@@ -16,6 +16,7 @@ import io.atomix.raft.RaftServer.Builder;
 import io.atomix.raft.protocol.InstallRequest;
 import io.atomix.raft.protocol.TestRaftServerProtocol;
 import io.atomix.raft.snapshot.TestSnapshotStore;
+import io.camunda.zeebe.test.util.junit.SlowTest;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -23,7 +24,9 @@ import org.agrona.LangUtil;
 import org.awaitility.Awaitility;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 
+@Category(SlowTest.class)
 public class RaftStartupConsistencyCheckTest {
 
   @Rule public RaftRule raftRule = RaftRule.withBootstrappedNodes(3);

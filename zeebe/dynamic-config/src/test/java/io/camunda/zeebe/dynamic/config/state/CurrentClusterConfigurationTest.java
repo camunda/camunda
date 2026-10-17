@@ -501,13 +501,9 @@ class CurrentClusterConfigurationTest {
       final var migrated = CurrentClusterConfiguration.fromLegacy(legacy);
 
       // then — the plan is recorded (phase 0 exists) but not activated into the default group.
-      // fromLegacy() must stay a pure, repeatable conversion: it is also called on every gossip
-      // update by BrokerTopologyManagerImpl#onClusterConfigurationUpdated(ClusterConfiguration)
-      // purely for read-only topology reporting. If it activated the phase itself, every such call
-      // would call startConfigurationChange again on a freshly-built (never-"pending") default
-      // group, endlessly restarting an already in-progress plan from scratch — this was a real
-      // regression caught by ExporterEnableTest once a broker/gateway kept re-deriving its topology
-      // from repeated legacy gossip.
+      // fromLegacy() must stay a pure, repeatable conversion so migrating the same persisted
+      // configuration does not start its pending change as a side effect. Migration explicitly
+      // activates the phase after conversion.
       assertThat(migrated.phasedChangeState().pending()).isNotEmpty();
       assertThat(
               migrated

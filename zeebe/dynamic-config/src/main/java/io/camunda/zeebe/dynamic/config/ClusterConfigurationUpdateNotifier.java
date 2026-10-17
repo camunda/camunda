@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.dynamic.config;
 
-import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 
 public interface ClusterConfigurationUpdateNotifier {
@@ -28,8 +27,6 @@ public interface ClusterConfigurationUpdateNotifier {
   void removeUpdateListener(ClusterConfigurationUpdateListener listener);
 
   interface ClusterConfigurationUpdateListener {
-    void onClusterConfigurationUpdated(ClusterConfiguration clusterConfiguration);
-
-    void onClusterConfigurationUpdated(final CurrentClusterConfiguration clusterConfiguration);
+    void onClusterConfigurationUpdated(CurrentClusterConfiguration clusterConfiguration);
   }
 }

@@ -7,11 +7,17 @@
  */
 
 import type {SearchMiddleware} from '@tanstack/react-router';
-import type {ProcessInstanceState, QueryProcessInstancesRequestBody} from '@camunda/camunda-api-zod-schemas/8.11';
+import type {
+	ProcessInstanceState,
+	QueryProcessInstancesRequestBody,
+	QuerySortOrder,
+} from '@camunda/camunda-api-zod-schemas/8.11';
 import {z} from 'zod';
 import {parseIds} from '#/operate/shared/utils/parseIds';
+import {createSortSearchParamSchema} from '#/shared/sortSearchParam';
 import {decodeAdvancedStringFilter} from '#/operate/shared/utils/advancedStringFilter';
 import {isSpecificTenant} from '#/operate/shared/utils/isSpecificTenant';
+import {toVariableEntry, type VariableCondition} from './VariablesFilter/variableConditions';
 
 type ProcessInstancesFilter = NonNullable<QueryProcessInstancesRequestBody['filter']>;
 type ProcessInstancesSort = NonNullable<QueryProcessInstancesRequestBody['sort']>;
@@ -25,6 +31,7 @@ type ProcessesSearch = {
 	processInstanceKey?: string;
 	parentProcessInstanceKey?: string;
 	businessId?: string;
+	variable?: VariableCondition[];
 	batchOperationKey?: string;
 	errorMessage?: string;
 	incidentErrorHashCode?: number;
@@ -243,12 +250,13 @@ function mapProcessInstancesFilter(search: ProcessesSearch): ProcessInstancesFil
 				? {$gt: toISO(search.endDateFrom), $lt: toISO(search.endDateTo)}
 				: undefined,
 		businessId: search.businessId ? decodeAdvancedStringFilter(search.businessId) : undefined,
+		variables: search.variable?.length ? search.variable.map(toVariableEntry) : undefined,
 	};
 }
 
-type ResolvedProcessInstancesSort = [{field: ProcessInstancesSortField; order: 'asc' | 'desc'}];
+type ResolvedProcessInstancesSort = [{field: ProcessInstancesSortField; order: QuerySortOrder}];
 
-const DEFAULT_SORT: ResolvedProcessInstancesSort = [{field: 'startDate', order: 'desc'}];
+const DEFAULT_SORT: ResolvedProcessInstancesSort = [{field: 'startDate', order: 'DESC'}];
 
 // The sortable columns InstancesTable wires up — the app never produces a `sort` value outside
 // this set, so anything else can only come from a hand-edited URL.
@@ -263,10 +271,7 @@ const SORTABLE_FIELDS = [
 	'parentProcessInstanceKey',
 ] as const satisfies readonly ProcessInstancesSortField[];
 
-const processInstancesSortSchema = z.object({
-	field: z.enum(SORTABLE_FIELDS),
-	order: z.enum(['asc', 'desc']),
-});
+const processInstancesSortSchema = createSortSearchParamSchema(z.enum(SORTABLE_FIELDS));
 
 /**
  * Parses the `sort` search param (`"field+order"`) into the API sort shape, falling back to start
@@ -274,12 +279,7 @@ const processInstancesSortSchema = z.object({
  * `parseSortParamsV2`, which validates both parts rather than trusting the URL.
  */
 function mapProcessInstancesSort(sort: string | undefined): ResolvedProcessInstancesSort {
-	if (sort === undefined) {
-		return DEFAULT_SORT;
-	}
-
-	const [field, order] = sort.split('+');
-	const result = processInstancesSortSchema.safeParse({field, order});
+	const result = processInstancesSortSchema.safeParse(sort);
 
 	return result.success ? [result.data] : DEFAULT_SORT;
 }

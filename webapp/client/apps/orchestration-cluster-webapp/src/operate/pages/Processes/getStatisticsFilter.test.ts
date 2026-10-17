@@ -6,59 +6,109 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {describe, it, expect} from 'vitest';
+import {describe, expect} from 'vitest';
+import {it} from '#/vitest-modules/test-extend';
 import {getStatisticsFilter} from './getStatisticsFilter';
 
 const NONE = {active: false, incidents: false, completed: false, canceled: false, suspended: false};
 
 describe('getStatisticsFilter', () => {
-	it('returns undefined when no state is selected', () => {
+	it('should return undefined when nothing narrows the instances', () => {
 		expect(getStatisticsFilter(NONE)).toBeUndefined();
 	});
 
-	it('filters to active instances without an incident when only active is selected', () => {
-		expect(getStatisticsFilter({...NONE, active: true})).toEqual({
+	it.for([
+		{
+			scenario: 'active instances without an incident',
+			states: {active: true},
+			expected: {state: {$eq: 'ACTIVE'}, hasIncident: false},
+		},
+		{
+			scenario: 'incidents in any state',
+			states: {incidents: true},
+			expected: {hasIncident: true},
+		},
+		{
+			scenario: 'active instances or incidents',
+			states: {active: true, incidents: true},
+			expected: {$or: [{state: {$eq: 'ACTIVE'}, hasIncident: false}, {hasIncident: true}]},
+		},
+		{
+			scenario: 'every selected state',
+			states: {active: true, completed: true, canceled: true},
+			expected: {state: {$in: ['ACTIVE', 'COMPLETED', 'TERMINATED']}, hasIncident: false},
+		},
+		{
+			scenario: 'completed instances or incidents',
+			states: {completed: true, incidents: true},
+			expected: {$or: [{state: {$eq: 'COMPLETED'}, hasIncident: false}, {hasIncident: true}]},
+		},
+		{
+			scenario: 'suspended instances',
+			states: {suspended: true},
+			expected: {state: {$eq: 'SUSPENDED'}},
+		},
+		{
+			scenario: 'active or suspended instances',
+			states: {active: true, suspended: true},
+			expected: {$or: [{state: {$eq: 'ACTIVE'}, hasIncident: false}, {state: {$eq: 'SUSPENDED'}}]},
+		},
+		{
+			scenario: 'suspended instances or incidents on non-suspended instances',
+			states: {incidents: true, suspended: true},
+			expected: {$or: [{state: {$eq: 'SUSPENDED'}}, {hasIncident: true, state: {$neq: 'SUSPENDED'}}]},
+		},
+	] as const)('should filter to $scenario', ({states, expected}) => {
+		expect(getStatisticsFilter({...NONE, ...states})).toEqual(expected);
+	});
+
+	it('should scope the statistics to the selected element', () => {
+		expect(getStatisticsFilter({...NONE, active: true, elementId: 'task-1'})).toEqual({
 			state: {$eq: 'ACTIVE'},
 			hasIncident: false,
+			elementId: {$eq: 'task-1'},
+			elementInstanceState: {$eq: 'ACTIVE'},
 		});
 	});
 
-	it('does not scope incidents to a state when only incidents is selected', () => {
-		expect(getStatisticsFilter({...NONE, incidents: true})).toEqual({hasIncident: true});
-	});
-
-	it('combines the state filter with an incidents-in-any-state clause when active and incidents are both selected', () => {
-		expect(getStatisticsFilter({...NONE, active: true, incidents: true})).toEqual({
-			$or: [{state: {$eq: 'ACTIVE'}}, {hasIncident: true}],
+	it('should filter by batch operation when no state is selected', () => {
+		expect(getStatisticsFilter({...NONE, batchOperationKey: 'batch-1'})).toEqual({
+			batchOperationKey: {$eq: 'batch-1'},
 		});
 	});
 
-	it('uses $in across multiple selected states', () => {
-		expect(getStatisticsFilter({...NONE, active: true, completed: true, canceled: true})).toEqual({
-			state: {$in: ['ACTIVE', 'COMPLETED', 'TERMINATED']},
+	it('should keep the optional instance criteria', () => {
+		expect(
+			getStatisticsFilter({
+				...NONE,
+				active: true,
+				tenantId: 'tenant-a',
+				processInstanceKey: '1, 2',
+				parentProcessInstanceKey: '3',
+				errorMessage: 'boom',
+				incidentErrorHashCode: 42,
+				hasRetriesLeft: true,
+				businessId: 'eq_order-1',
+				variable: [{name: 'orderId', operator: 'equals', value: '123'}],
+			}),
+		).toEqual({
+			state: {$eq: 'ACTIVE'},
 			hasIncident: false,
+			tenantId: {$eq: 'tenant-a'},
+			processInstanceKey: {$in: ['1', '2']},
+			parentProcessInstanceKey: {$eq: '3'},
+			errorMessage: {$in: ['boom']},
+			incidentErrorHashCode: {$eq: 42},
+			hasRetriesLeft: true,
+			businessId: {$eq: 'order-1'},
+			variables: [{name: 'orderId', value: {$eq: '123'}}],
 		});
 	});
 
-	it('combines multiple states with an incidents-in-any-state clause', () => {
-		expect(getStatisticsFilter({...NONE, completed: true, incidents: true})).toEqual({
-			$or: [{state: {$eq: 'COMPLETED'}}, {hasIncident: true}],
-		});
-	});
-
-	it('filters to suspended instances alone', () => {
-		expect(getStatisticsFilter({...NONE, suspended: true})).toEqual({state: {$eq: 'SUSPENDED'}});
-	});
-
-	it('combines suspended with a selected state as separate branches', () => {
-		expect(getStatisticsFilter({...NONE, active: true, suspended: true})).toEqual({
-			$or: [{state: {$eq: 'ACTIVE'}, hasIncident: false}, {state: {$eq: 'SUSPENDED'}}],
-		});
-	});
-
-	it('excludes suspended instances from the incidents branch to avoid asserting two states at once', () => {
-		expect(getStatisticsFilter({...NONE, incidents: true, suspended: true})).toEqual({
-			$or: [{state: {$eq: 'SUSPENDED'}}, {hasIncident: true, state: {$neq: 'SUSPENDED'}}],
+	it('should drop the process definition fields the endpoint scopes by path', () => {
+		expect(getStatisticsFilter({...NONE, active: true, process: 'order-process', version: 2})).toEqual({
+			state: {$eq: 'ACTIVE'},
+			hasIncident: false,
 		});
 	});
 });

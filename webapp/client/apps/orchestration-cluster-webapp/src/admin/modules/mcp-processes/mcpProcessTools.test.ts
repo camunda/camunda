@@ -7,7 +7,7 @@
  */
 
 import {describe, expect, it} from 'vitest';
-import type {MessageSubscription} from '@camunda/camunda-api-zod-schemas/8.10';
+import type {MessageSubscription} from '@camunda/camunda-api-zod-schemas/8.11';
 import {getMcpProcessToolsRequestBody, mapResponseToTools} from './mcpProcessTools';
 
 function createSubscription(overrides: Partial<MessageSubscription> = {}): MessageSubscription {
@@ -30,6 +30,7 @@ function createSubscription(overrides: Partial<MessageSubscription> = {}): Messa
 		processDefinitionVersion: 3,
 		toolName: 'place-order',
 		inboundConnectorType: null,
+		businessId: null,
 		...overrides,
 	};
 }
@@ -145,15 +146,15 @@ describe('getMcpProcessToolsRequestBody', () => {
 		const body = getMcpProcessToolsRequestBody({});
 
 		// then
-		expect(body.sort).toEqual([{field: 'toolName', order: 'asc'}]);
+		expect(body.sort).toEqual([{field: 'toolName', order: 'ASC'}]);
 	});
 
 	it('should sort descending when the search state asks for it', () => {
 		// when
-		const body = getMcpProcessToolsRequestBody({sortOrder: 'desc'});
+		const body = getMcpProcessToolsRequestBody({sortOrder: 'DESC'});
 
 		// then
-		expect(body.sort).toEqual([{field: 'toolName', order: 'desc'}]);
+		expect(body.sort).toEqual([{field: 'toolName', order: 'DESC'}]);
 	});
 
 	it('should turn a search term into a contains filter on the tool name', () => {

@@ -1,0 +1,45 @@
+---
+# Source: load-test-setup/templates/k6/configmap-data.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: k6-data
+  labels:
+    app.kubernetes.io/component: k6
+data:
+  micro.bpmn: |
+    <?xml version="1.0" encoding="UTF-8"?>
+    <bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.47.0">
+      <bpmn:process id="k6-micro" name="k6-micro" isExecutable="true">
+        <bpmn:startEvent id="start" />
+        <bpmn:endEvent id="end" />
+        <bpmn:sequenceFlow id="flow" sourceRef="start" targetRef="end" />
+        <bpmn:textAnnotation id="note">
+          <bpmn:text>This model only exists for specific k6 tests.
+  
+    No process instance is expected to be created from it. If one is, it completes immediately without any external help, and must stay that way if the model is changed.</bpmn:text>
+        </bpmn:textAnnotation>
+        <bpmn:association id="note_association" sourceRef="start" targetRef="note" />
+      </bpmn:process>
+      <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+        <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="k6-micro">
+          <bpmndi:BPMNShape id="start_di" bpmnElement="start">
+            <dc:Bounds x="182" y="142" width="36" height="36" />
+          </bpmndi:BPMNShape>
+          <bpmndi:BPMNShape id="end_di" bpmnElement="end">
+            <dc:Bounds x="282" y="142" width="36" height="36" />
+          </bpmndi:BPMNShape>
+          <bpmndi:BPMNShape id="note_di" bpmnElement="note">
+            <dc:Bounds x="160" y="20" width="300" height="98" />
+          </bpmndi:BPMNShape>
+          <bpmndi:BPMNEdge id="flow_di" bpmnElement="flow">
+            <di:waypoint x="218" y="160" />
+            <di:waypoint x="282" y="160" />
+          </bpmndi:BPMNEdge>
+          <bpmndi:BPMNEdge id="note_association_di" bpmnElement="note_association">
+            <di:waypoint x="200" y="142" />
+            <di:waypoint x="200" y="118" />
+          </bpmndi:BPMNEdge>
+        </bpmndi:BPMNPlane>
+      </bpmndi:BPMNDiagram>
+    </bpmn:definitions>

@@ -8,7 +8,7 @@
 
 import {afterEach, describe, expect, it} from 'vitest';
 import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
-import {ComponentAccessDeniedError, ComponentNotAvailableError} from '#/shared/errors';
+import {ComponentAccessDeniedError, ComponentNotAvailableError} from './errors';
 import {assertComponentAccessible, hasComponentAccess} from './componentAccess';
 
 describe('component access', () => {

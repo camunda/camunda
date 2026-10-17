@@ -32,6 +32,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
+import java.util.stream.IntStream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -199,9 +200,7 @@ final class OpenSearchArchiverRepositoryTest extends AbstractArchiverRepositoryT
   public void shouldSearchReindexThenBulkDeleteWhenMovingDocumentsById() throws IOException {
     // given
     when(client.search(any(SearchRequest.class), eq(Object.class)))
-        .thenReturn(
-            CompletableFuture.completedFuture(searchResponse("4", "5", "6")),
-            CompletableFuture.completedFuture(searchResponse()));
+        .thenReturn(CompletableFuture.completedFuture(searchResponse("4", "5", "6")));
     when(client.reindex(any(ReindexRequest.class)))
         .thenReturn(
             CompletableFuture.completedFuture(
@@ -228,7 +227,60 @@ final class OpenSearchArchiverRepositoryTest extends AbstractArchiverRepositoryT
     inOrder.verify(client).search(any(SearchRequest.class), eq(Object.class));
     inOrder.verify(client).reindex(any(ReindexRequest.class));
     inOrder.verify(client).bulk(any(BulkRequest.class));
+    inOrder.verifyNoMoreInteractions();
+  }
+
+  @Test
+  public void shouldSearchReindexThenBulkDeleteMultipleTimesWhenMovingDocumentsByIdIfManyDocsFound()
+      throws IOException {
+    // given
+
+    final var fullBatchSize = 2500;
+    final var fullBatchIds =
+        IntStream.rangeClosed(1, fullBatchSize).mapToObj(String::valueOf).toArray(String[]::new);
+    final var lastBatchSize = 1;
+    final var lastBatchIds =
+        IntStream.rangeClosed(1, lastBatchSize).mapToObj(String::valueOf).toArray(String[]::new);
+
+    when(client.search(any(SearchRequest.class), eq(Object.class)))
+        .thenReturn(
+            CompletableFuture.completedFuture(searchResponse(fullBatchIds)),
+            CompletableFuture.completedFuture(searchResponse(lastBatchIds)));
+    when(client.reindex(any(ReindexRequest.class)))
+        .thenReturn(
+            CompletableFuture.completedFuture(
+                ReindexResponse.of(
+                    b -> b.total((long) fullBatchSize).created((long) fullBatchSize).updated(0L))))
+        .thenReturn(
+            CompletableFuture.completedFuture(
+                ReindexResponse.of(
+                    b -> b.total((long) lastBatchSize).created((long) lastBatchSize).updated(0L))));
+    when(client.bulk(any(BulkRequest.class)))
+        .thenReturn(CompletableFuture.completedFuture(bulkResponse(fullBatchIds)))
+        .thenReturn(CompletableFuture.completedFuture(bulkResponse(lastBatchIds)));
+
+    // when
+    final var future =
+        repository.moveDocumentsById(
+            "from-index",
+            "to-index",
+            Map.of("key", List.of("1", "2", "3")),
+            Map.of(),
+            Map.of(),
+            Runnable::run);
+
+    // then
+    assertThat(future).succeedsWithin(Duration.ofSeconds(5));
+
+    final var inOrder = Mockito.inOrder(client);
+    inOrder.verify(client)._transport();
+    inOrder.verify(client)._transportOptions();
     inOrder.verify(client).search(any(SearchRequest.class), eq(Object.class));
+    inOrder.verify(client).reindex(any(ReindexRequest.class));
+    inOrder.verify(client).bulk(any(BulkRequest.class));
+    inOrder.verify(client).search(any(SearchRequest.class), eq(Object.class));
+    inOrder.verify(client).reindex(any(ReindexRequest.class));
+    inOrder.verify(client).bulk(any(BulkRequest.class));
     inOrder.verifyNoMoreInteractions();
   }
 
@@ -251,13 +303,14 @@ final class OpenSearchArchiverRepositoryTest extends AbstractArchiverRepositoryT
   }
 
   @Test
-  void shouldPropagateRoutingForEachBulkDeleteOperation() throws IOException {
+  void shouldPropagateRoutingAndUseOptimisticConcurrencyForEachBulkDeleteOperation()
+      throws IOException {
     // given
     final var docs =
         List.of(
-            new IdWithRouting("4", "routing-4"),
-            new IdWithRouting("5", "routing-5"),
-            new IdWithRouting("6", "routing-6"));
+            new IdWithRouting("4", "routing-4", 40L, 44L),
+            new IdWithRouting("5", "routing-5", 50L, 55L),
+            new IdWithRouting("6", "routing-6", 60L, 66L));
     when(client.bulk(any(BulkRequest.class)))
         .thenReturn(CompletableFuture.completedFuture(bulkResponse("4", "5", "6")));
 
@@ -273,12 +326,24 @@ final class OpenSearchArchiverRepositoryTest extends AbstractArchiverRepositoryT
 
     final var operations = captor.getValue().operations();
     assertThat(operations).hasSize(3);
-    assertThat(operations.get(0).delete().id()).isEqualTo("4");
-    assertThat(operations.get(0).delete().routing()).isEqualTo("routing-4");
-    assertThat(operations.get(1).delete().id()).isEqualTo("5");
-    assertThat(operations.get(1).delete().routing()).isEqualTo("routing-5");
-    assertThat(operations.get(2).delete().id()).isEqualTo("6");
-    assertThat(operations.get(2).delete().routing()).isEqualTo("routing-6");
+
+    final var deleteOperation0 = operations.get(0).delete();
+    assertThat(deleteOperation0.id()).isEqualTo("4");
+    assertThat(deleteOperation0.routing()).isEqualTo("routing-4");
+    assertThat(deleteOperation0.ifSeqNo()).isEqualTo(40L);
+    assertThat(deleteOperation0.ifPrimaryTerm()).isEqualTo(44L);
+
+    final var deleteOperation1 = operations.get(1).delete();
+    assertThat(deleteOperation1.id()).isEqualTo("5");
+    assertThat(deleteOperation1.routing()).isEqualTo("routing-5");
+    assertThat(deleteOperation1.ifSeqNo()).isEqualTo(50L);
+    assertThat(deleteOperation1.ifPrimaryTerm()).isEqualTo(55L);
+
+    final var deleteOperation2 = operations.get(2).delete();
+    assertThat(deleteOperation2.id()).isEqualTo("6");
+    assertThat(deleteOperation2.routing()).isEqualTo("routing-6");
+    assertThat(deleteOperation2.ifSeqNo()).isEqualTo(60L);
+    assertThat(deleteOperation2.ifPrimaryTerm()).isEqualTo(66L);
   }
 
   private SearchResponse<Object> searchResponse(final String... ids) {

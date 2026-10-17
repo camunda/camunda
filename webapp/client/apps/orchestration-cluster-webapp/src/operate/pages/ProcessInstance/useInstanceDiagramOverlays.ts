@@ -11,7 +11,7 @@ import type {
 	AgentInstance,
 	ProcessDefinitionStatistic,
 	WaitStateStatistic,
-} from '@camunda/camunda-api-zod-schemas/8.10';
+} from '@camunda/camunda-api-zod-schemas/8.11';
 import type {BusinessObjects} from 'bpmn-js/lib/NavigatedViewer';
 import type {OverlayData} from '#/operate/shared/Diagram/overlayTypes';
 import {getSubprocessOverlayFromIncidentElements, isProcessOrSubProcessEndEvent} from '#/operate/shared/utils/elements';

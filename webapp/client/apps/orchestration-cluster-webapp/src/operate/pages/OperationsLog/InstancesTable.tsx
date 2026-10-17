@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useEffect, useMemo, useState} from 'react';
+import {useEffect, useMemo, useRef, useState} from 'react';
 import {useTranslation} from 'react-i18next';
 import {useQueries, useQuery, type UseQueryResult} from '@tanstack/react-query';
 import {Button, DataTableSkeleton, InlineNotification, Stack} from '@carbon/react';
@@ -17,7 +17,9 @@ import {
 	type QueryAuditLogsRequestBody,
 } from '@camunda/camunda-api-zod-schemas/8.11';
 import {queries} from '#/shared/http/queries';
+import {createSortSearchParamSchema} from '#/shared/sortSearchParam';
 import {logger} from '#/operate/shared/utils/logger';
+import {notificationsStore} from '#/shared/notifications/notifications.store';
 import {PanelHeader} from '#/operate/shared/PanelHeader/PanelHeader';
 import {PaginatedSortableTable} from '#/operate/shared/PaginatedSortableTable/PaginatedSortableTable';
 import {EmptyMessage} from '#/operate/shared/EmptyMessage/EmptyMessage';
@@ -39,7 +41,8 @@ import {TableContainer} from './styled';
 import {formatToISO} from './utils';
 import type {OperationsLogSearch} from './operationsLog.schema';
 
-const DEFAULT_SORT = 'timestamp+desc';
+const DEFAULT_SORT = {field: 'timestamp', order: 'DESC'} as const;
+const sortSearchParamSchema = createSortSearchParamSchema(auditLogSortFieldEnum);
 
 const combineDefinitionResults = (results: UseQueryResult<GetProcessDefinitionResponseBody>[]) => ({
 	names: Object.fromEntries(
@@ -71,10 +74,10 @@ const InstancesTable: React.FC<Props> = ({search, selectedTenantId, selectedDefi
 		[decisionDefinitions],
 	);
 
-	const [rawSortField, rawSortOrder] = (search.sort ?? DEFAULT_SORT).split('+');
-	const parsedSortField = auditLogSortFieldEnum.safeParse(rawSortField);
-	const sortField = parsedSortField.success ? parsedSortField.data : 'timestamp';
-	const sortOrder = rawSortOrder === 'asc' ? 'asc' : 'desc';
+	const {field: sortField, order: sortOrder} = useMemo(
+		() => sortSearchParamSchema.safeParse(search.sort).data ?? DEFAULT_SORT,
+		[search.sort],
+	);
 
 	const requestFilter: NonNullable<QueryAuditLogsRequestBody['filter']> = {
 		category: {$neq: 'ADMIN'},
@@ -94,6 +97,7 @@ const InstancesTable: React.FC<Props> = ({search, selectedTenantId, selectedDefi
 
 	const {
 		data,
+		dataUpdatedAt,
 		error,
 		status,
 		isFetching,
@@ -107,11 +111,25 @@ const InstancesTable: React.FC<Props> = ({search, selectedTenantId, selectedDefi
 		fetchNextPage,
 	} = useAuditLogs(requestFilter, [{field: sortField, order: sortOrder}]);
 
+	const isFetchErrorReported = useRef(false);
 	useEffect(() => {
-		if (error) {
-			logger.error(error);
+		isFetchErrorReported.current = false;
+	}, [dataUpdatedAt]);
+	useEffect(() => {
+		if (!error) {
+			return;
 		}
-	}, [error]);
+		logger.error(error);
+		if (isFetchErrorReported.current) {
+			return;
+		}
+		isFetchErrorReported.current = true;
+		notificationsStore.displayNotification({
+			isDismissable: true,
+			kind: 'error',
+			title: t('operate.operationsLog.notifications.fetchFailed'),
+		});
+	}, [error, t]);
 
 	const auditLogs = useMemo(() => data?.pages.flatMap((page) => page.items) ?? [], [data]);
 	const processDefinitionKeys = useMemo(
@@ -215,7 +233,7 @@ const InstancesTable: React.FC<Props> = ({search, selectedTenantId, selectedDefi
 			label: t('operate.operationsLog.table.date'),
 			sortKey: 'timestamp',
 			isDefault: true,
-			defaultOrder: 'desc' as const,
+			defaultOrder: 'DESC' as const,
 			render: (row: AuditLog) => formatTimestamp(row.timestamp),
 		},
 		{

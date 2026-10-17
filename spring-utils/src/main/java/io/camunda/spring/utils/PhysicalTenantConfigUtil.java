@@ -8,6 +8,7 @@
 package io.camunda.spring.utils;
 
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.regex.Pattern;
@@ -86,6 +87,46 @@ public final class PhysicalTenantConfigUtil {
                 });
       }
     }
+  }
+
+  /**
+   * The names of entry {@code key} of the map at {@code mapName}, for binding that entry on its
+   * own: one per form in which {@code key} is declared as an entry of {@code mapName} or of {@code
+   * relatedMapNames}, either dotted ({@code map.azure_ad}) or in brackets ({@code map[AzureAd]}).
+   *
+   * <p>The form cannot be derived from the key, because Spring keys a bound map by the element as
+   * written. It matters because Spring matches a bracketed element only exactly and a dotted one
+   * leniently, so each form is looked up as declared. Pass the map that {@code mapName} overlays,
+   * such as the cluster-level map for a tenant's, as a related map, so that the entry is found in
+   * the form either side declares it in.
+   */
+  public static List<ConfigurationPropertyName> mapEntryNames(
+      final Environment environment,
+      final String mapName,
+      final String key,
+      final String... relatedMapNames) {
+    final ConfigurationPropertyName map = ConfigurationPropertyName.of(mapName);
+    final Set<ConfigurationPropertyName> elements = declaredEntryElements(environment, map, key);
+    for (final String relatedMapName : relatedMapNames) {
+      elements.addAll(
+          declaredEntryElements(environment, ConfigurationPropertyName.of(relatedMapName), key));
+    }
+    return elements.stream().map(map::append).toList();
+  }
+
+  private static Set<ConfigurationPropertyName> declaredEntryElements(
+      final Environment environment, final ConfigurationPropertyName map, final String key) {
+    final int entryIndex = map.getNumberOfElements();
+    final Set<ConfigurationPropertyName> elements = new LinkedHashSet<>();
+    for (final ConfigurationPropertySource source : ConfigurationPropertySources.get(environment)) {
+      if (source instanceof final IterableConfigurationPropertySource iter) {
+        iter.stream()
+            .filter(map::isAncestorOf)
+            .filter(name -> key.equals(name.getElement(entryIndex, Form.ORIGINAL)))
+            .forEach(name -> elements.add(name.subName(entryIndex).chop(1)));
+      }
+    }
+    return elements;
   }
 
   /**

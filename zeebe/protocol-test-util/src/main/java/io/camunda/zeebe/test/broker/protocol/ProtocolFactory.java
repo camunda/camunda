@@ -34,6 +34,7 @@ import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.EnumSet;
+import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Function;
@@ -357,7 +358,10 @@ public final class ProtocolFactory {
   }
 
   private void registerRandomizers() {
-    findProtocolTypes().forEach(this::registerProtocolType);
+    ClasspathScan.PROTOCOL_TYPES.forEach(
+        type ->
+            randomizerRegistry.registerRandomizer(
+                type.abstractType(), () -> random.nextObject(type.implementation())));
     randomizerRegistry.registerRandomizer(Object.class, new RawObjectRandomizer());
 
     // restrict longs to be between 0 and max value - this is because many of our long properties
@@ -458,19 +462,10 @@ public final class ProtocolFactory {
    * populate all msgpack properties, including complex types like ArrayProperty.
    */
   private void registerImplClassRandomizers() {
-    try (final var scanResult =
-        new ClassGraph()
-            .enableClassInfo()
-            .acceptPackages("io.camunda.zeebe.protocol.impl")
-            .scan()) {
-      scanResult
-          .getAllClasses()
-          .loadClasses()
-          .forEach(
-              implClass ->
-                  randomizerRegistry.registerRandomizer(
-                      implClass, () -> generateProtocolImplRecord(implClass)));
-    }
+    ClasspathScan.IMPL_CLASSES.forEach(
+        implClass ->
+            randomizerRegistry.registerRandomizer(
+                implClass, () -> generateProtocolImplRecord(implClass)));
   }
 
   private Object generateProtocolImplRecord(final Class<?> implClass) {
@@ -497,34 +492,6 @@ public final class ProtocolFactory {
         LongValue.class, () -> new LongValue(Math.abs(random.nextLong())));
     randomizerRegistry.registerRandomizer(
         BooleanValue.class, () -> new BooleanValue(random.nextBoolean()));
-  }
-
-  private void registerProtocolType(final ClassInfo abstractType) {
-    final var implementations =
-        abstractType
-            .getClassesImplementing()
-            // grab only the immutable implementations
-            .filter(info -> info.hasAnnotation(ImmutableProtocol.Type.class))
-            .directOnly()
-            .loadClasses();
-
-    if (implementations.isEmpty()) {
-      LOGGER.warn(
-          "No implementations found for abstract protocol type {}; random generation will not be possible for this type",
-          abstractType.getName());
-      return;
-    }
-
-    final var implementation = implementations.get(0);
-    if (implementations.size() > 1) {
-      LOGGER.warn(
-          "More than one implementation found for abstract protocol type {}; random generation will use the first one: {}",
-          abstractType.getName(),
-          implementation.getName());
-    }
-
-    randomizerRegistry.registerRandomizer(
-        abstractType.loadClass(), () -> random.nextObject(implementation));
   }
 
   private EasyRandomParameters getDefaultParameters() {
@@ -622,5 +589,59 @@ public final class ProtocolFactory {
       final var variableType = variableTypes[random.nextInt(variableTypes.length)];
       return random.nextObject(variableType);
     }
+  }
+
+  /**
+   * Scanning the classpath is expensive (~100+ ms per scan), and the result is fixed for the
+   * lifetime of the JVM, so do it once instead of on every factory construction.
+   */
+  private static final class ClasspathScan {
+    private static final List<Class<?>> IMPL_CLASSES = scanImplClasses();
+    private static final List<ProtocolType> PROTOCOL_TYPES = scanProtocolTypes();
+
+    private static List<Class<?>> scanImplClasses() {
+      try (final var scanResult =
+          new ClassGraph()
+              .enableClassInfo()
+              .acceptPackages("io.camunda.zeebe.protocol.impl")
+              .scan()) {
+        return List.copyOf(scanResult.getAllClasses().loadClasses());
+      }
+    }
+
+    private static List<ProtocolType> scanProtocolTypes() {
+      return findProtocolTypes().stream()
+          .map(ClasspathScan::resolveProtocolType)
+          .filter(Objects::nonNull)
+          .toList();
+    }
+
+    private static ProtocolType resolveProtocolType(final ClassInfo abstractType) {
+      final var implementations =
+          abstractType
+              .getClassesImplementing()
+              // grab only the immutable implementations
+              .filter(info -> info.hasAnnotation(ImmutableProtocol.Type.class))
+              .directOnly()
+              .loadClasses();
+
+      if (implementations.isEmpty()) {
+        LOGGER.warn(
+            "No implementations found for abstract protocol type {}; random generation will not be possible for this type",
+            abstractType.getName());
+        return null;
+      }
+
+      final var implementation = implementations.get(0);
+      if (implementations.size() > 1) {
+        LOGGER.warn(
+            "More than one implementation found for abstract protocol type {}; random generation will use the first one: {}",
+            abstractType.getName(),
+            implementation.getName());
+      }
+      return new ProtocolType(abstractType.loadClass(), implementation);
+    }
+
+    private record ProtocolType(Class<?> abstractType, Class<?> implementation) {}
   }
 }

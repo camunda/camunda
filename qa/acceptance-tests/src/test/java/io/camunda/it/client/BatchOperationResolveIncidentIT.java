@@ -17,12 +17,15 @@ import static io.camunda.it.util.TestHelper.waitUntilIncidentsAreActive;
 import static io.camunda.it.util.TestHelper.waitUntilIncidentsAreResolved;
 import static io.camunda.it.util.TestHelper.waitUntilProcessInstanceHasIncidents;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.response.CreateBatchOperationResponse;
 import io.camunda.client.api.search.enums.BatchOperationItemState;
 import io.camunda.client.api.search.enums.BatchOperationState;
 import io.camunda.client.api.search.enums.IncidentState;
+import io.camunda.client.api.search.enums.ProcessInstanceState;
 import io.camunda.client.api.search.response.BatchOperationItems.BatchOperationItem;
 import io.camunda.client.api.search.response.Incident;
 import io.camunda.qa.util.multidb.CamundaMultiDBExtension;
@@ -205,6 +208,78 @@ public class BatchOperationResolveIncidentIT {
     assertThat(itemKeys).containsExactlyInAnyOrderElementsOf(activeIncidentKeys);
     assertThat(itemsObj.items().stream().map(BatchOperationItem::getStatus).distinct().toList())
         .containsExactly(BatchOperationItemState.COMPLETED);
+  }
+
+  @Test
+  void shouldNarrowResolveIncidentOrFilterStateInsteadOfIgnoringIt() {
+    // given
+    final var activeIncidentKeys =
+        camundaClient
+            .newIncidentSearchRequest()
+            .filter(f -> f.state(IncidentState.ACTIVE))
+            .send()
+            .join()
+            .items()
+            .stream()
+            .map(Incident::getIncidentKey)
+            .toList();
+
+    // when - a state inside $or is not validated; it is combined (ANDed) with the operation's
+    // required ACTIVE, not discarded: every instance here is ACTIVE, so a COMPLETED branch narrows
+    // the batch to zero items instead of resolving every incident regardless of the filter
+    final Future<CreateBatchOperationResponse> result =
+        camundaClient
+            .newCreateBatchOperationCommand()
+            .resolveIncident()
+            .filter(
+                f ->
+                    f.hasIncident(true)
+                        .orFilters(List.of(b -> b.state(ProcessInstanceState.COMPLETED))))
+            .send();
+
+    // then
+    final var batchOperationKey =
+        assertThat(result)
+            .succeedsWithin(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
+            .actual()
+            .getBatchOperationKey();
+    Awaitility.await("should finish batch operation that matched no items")
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
+        .ignoreExceptions()
+        .untilAsserted(
+            () -> {
+              final var batchOperation =
+                  camundaClient.newBatchOperationGetRequest(batchOperationKey).execute();
+              assertThat(batchOperation.getStatus()).isEqualTo(BatchOperationState.COMPLETED);
+              assertThat(batchOperation.getOperationsTotalCount()).isZero();
+            });
+
+    final var stillActiveIncidentKeys =
+        camundaClient
+            .newIncidentSearchRequest()
+            .filter(f -> f.state(IncidentState.ACTIVE))
+            .send()
+            .join()
+            .items()
+            .stream()
+            .map(Incident::getIncidentKey)
+            .toList();
+    assertThat(stillActiveIncidentKeys).containsExactlyInAnyOrderElementsOf(activeIncidentKeys);
+  }
+
+  @Test
+  void shouldRejectResolveIncidentWithNonActiveStateFilter() {
+    // when / then - only ACTIVE is a valid top-level state filter for resolving incidents
+    assertThatThrownBy(
+            () ->
+                camundaClient
+                    .newCreateBatchOperationCommand()
+                    .resolveIncident()
+                    .filter(f -> f.hasIncident(true).state(ProcessInstanceState.COMPLETED))
+                    .send()
+                    .join())
+        .isInstanceOf(ProblemException.class)
+        .hasMessageContaining("The value for state is 'COMPLETED' but must be one of");
   }
 
   @Test

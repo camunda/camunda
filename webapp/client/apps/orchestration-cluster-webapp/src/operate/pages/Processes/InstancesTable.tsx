@@ -6,15 +6,17 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useEffect, type ReactNode} from 'react';
+import {useEffect, useState, type Dispatch, type ReactNode, type SetStateAction} from 'react';
 import {useMachine} from '@xstate/react';
 import {useTranslation} from 'react-i18next';
 import {useQuery, useQueryClient} from '@tanstack/react-query';
+import {useNavigate} from '@tanstack/react-router';
 import {DataTableSkeleton, SkeletonText} from '@carbon/react';
 import type {
 	BatchOperationItem,
 	BatchOperationItemState,
 	BatchOperationType,
+	ProcessDefinition,
 	ProcessInstance,
 	ProcessInstanceState,
 	QueryBatchOperationItemsRequestBody,
@@ -28,16 +30,37 @@ import {getClientConfig} from '#/shared/config/getClientConfig';
 import {isSpecificTenant} from '#/operate/shared/utils/isSpecificTenant';
 import {formatTimestamp} from '#/operate/shared/utils/formatTimestamp';
 import {useProcessInstancesSearch} from './useProcessInstancesSearch';
-import {batchOperationItemsQueryOptions} from './batchOperationItems.queries';
+import {
+	batchOperationItemsForInstancesQueryOptions,
+	batchOperationItemsQueryOptions,
+} from './batchOperationItems.queries';
 import {InstanceOperations} from './InstanceOperations';
 import type {ProcessesSearch} from './processesFilter';
 import {InstancesTableContainer, ProcessName, InstanceLink, VisuallyHiddenStatus} from './styled';
 import {useProcessInstancesSelection, type ProcessInstancesSelection} from './useProcessInstancesSelection';
 import {ProcessesToolbar} from './ProcessesToolbar';
 import {processBulkOperationMachine} from './processBulkOperationMachine';
+import {MoveAction} from './MoveAction';
+import {MigrateAction} from './MigrateAction';
+import {getMigrationFilter, getMigrationStatisticsFilter, type MigrationScope} from './getMigrationFilter';
+import {BatchModificationFooter} from './BatchModificationFooter';
+import {useDiagramXml} from './useDiagramXml';
+import {getActiveInstancesFilter} from './getActiveInstancesFilter';
+import {getElementName} from './getElementName';
+import type {ProcessDefinitionSelection} from './DiagramPanel';
+import type {ProcessesMode, ProcessesNavigationBlocker} from './ProcessesLayout';
+import type {BatchModificationScope} from './useBatchModificationStatistics';
 
 type Props = {
 	search: ProcessesSearch;
+	mode?: ProcessesMode;
+	navigationBlocker?: ProcessesNavigationBlocker;
+	processDefinitionSelection?: ProcessDefinitionSelection;
+	selectedTargetElementId?: string;
+	onEnterMode?: (mode: ProcessesMode) => void;
+	onExitMode?: () => void;
+	onSelectionScopeChange?: Dispatch<SetStateAction<BatchModificationScope | null>>;
+	onMigrationEnter?: (source: ProcessDefinition, scope: MigrationScope) => void;
 	isActionMode?: boolean;
 	renderActions?: (selection: ProcessInstancesSelection) => ReactNode;
 };
@@ -55,6 +78,9 @@ const ACTIVE_ITEMS_REFETCH_INTERVAL_MS = 5000;
 function getOperationStatesByInstance(items: BatchOperationItem[]) {
 	const statesByInstance = new Map<string, Set<BatchOperationItemState>>();
 	for (const item of items) {
+		if (item.processInstanceKey === null) {
+			continue;
+		}
 		const states = statesByInstance.get(item.processInstanceKey) ?? new Set<BatchOperationItemState>();
 		states.add(item.state);
 		statesByInstance.set(item.processInstanceKey, states);
@@ -70,13 +96,45 @@ function getOperationStatesByInstance(items: BatchOperationItem[]) {
 
 function getActiveOperationsByInstance(items: BatchOperationItem[]) {
 	return items.reduce((operationsByInstance, item) => {
+		if (item.processInstanceKey === null) {
+			return operationsByInstance;
+		}
 		const operations = operationsByInstance.get(item.processInstanceKey) ?? [];
 		operationsByInstance.set(item.processInstanceKey, [...operations, item.operationType]);
 		return operationsByInstance;
 	}, new Map<string, BatchOperationType[]>());
 }
 
-const InstancesTable: React.FC<Props> = ({search, isActionMode, renderActions}) => {
+function selectOperationItems({items}: {items: BatchOperationItem[]}) {
+	return {
+		states: getOperationStatesByInstance(items),
+		failures: items
+			.filter((item) => item.state === 'FAILED')
+			.reduce((messages, item) => {
+				if (item.processInstanceKey === null) {
+					return messages;
+				}
+				const errors = messages.get(item.processInstanceKey) ?? [];
+				errors.push(item.errorMessage);
+				messages.set(item.processInstanceKey, errors);
+				return messages;
+			}, new Map<string, (string | null)[]>()),
+	};
+}
+
+const InstancesTable: React.FC<Props> = ({
+	search,
+	mode = 'list',
+	navigationBlocker,
+	processDefinitionSelection,
+	selectedTargetElementId,
+	onEnterMode,
+	onExitMode,
+	onSelectionScopeChange,
+	onMigrationEnter,
+	isActionMode,
+	renderActions,
+}) => {
 	const {t} = useTranslation();
 	const {
 		processInstances,
@@ -91,17 +149,51 @@ const InstancesTable: React.FC<Props> = ({search, isActionMode, renderActions}) 
 		isFetchingNextPage,
 		hasNextPage,
 		fetchNextPage,
-	} = useProcessInstancesSearch(search);
+	} = useProcessInstancesSearch(search, mode !== 'batch-modification');
 	const selection = useProcessInstancesSelection(search, processInstances, totalCount, hasMoreTotalItems);
-	const [operation, send] = useMachine(processBulkOperationMachine, {input: {queryClient: useQueryClient()}});
-	const isSubmitting = operation.matches('submitting');
+	const queryClient = useQueryClient();
+	const navigate = useNavigate();
+	const [operation, send] = useMachine(processBulkOperationMachine, {input: {queryClient, navigate}});
+	const [modification, sendModification] = useMachine(processBulkOperationMachine, {
+		input: {queryClient, navigate},
+	});
+	const isSubmitting = operation.matches('submitting') || modification.matches('submitting');
 	const {acceptedKey, acceptedIdentity} = operation.context;
 	const {reset, filterIdentity} = selection;
+	const selectionFilter = selection.getRequest('cancel').filter;
+	const scopeIdentity = JSON.stringify({filter: selectionFilter, selectedCount: selection.selectedCount});
+	useEffect(() => {
+		onSelectionScopeChange?.((previous) =>
+			previous !== null && JSON.stringify(previous) === scopeIdentity
+				? previous
+				: {filter: selectionFilter, selectedCount: selection.selectedCount},
+		);
+	}, [selectionFilter, selection.selectedCount, scopeIdentity, onSelectionScopeChange]);
 	useEffect(() => {
 		if (acceptedKey !== null && acceptedIdentity === filterIdentity) {
 			reset();
 		}
 	}, [acceptedKey, acceptedIdentity, filterIdentity, reset]);
+	const definitionKey =
+		processDefinitionSelection?.kind === 'single-version'
+			? processDefinitionSelection.definition.processDefinitionKey
+			: undefined;
+	const {data: diagramData} = useDiagramXml(definitionKey);
+	const [modeDefinition, setModeDefinition] = useState<ProcessDefinition | null>(null);
+	const isDefinitionChanged = modeDefinition === null || modeDefinition.processDefinitionKey !== definitionKey;
+	const exitMode = () => {
+		setModeDefinition(null);
+		onExitMode?.();
+	};
+	const migrationFilter =
+		processDefinitionSelection?.kind === 'single-version'
+			? getMigrationFilter({
+					search,
+					includeIds: selection.mode === 'INCLUDE' ? selection.includedIds : [],
+					excludeIds: selection.excludedIds,
+					processDefinitionKey: processDefinitionSelection.definition.processDefinitionKey,
+				})
+			: null;
 	const canSelect = status === 'success' && !isPlaceholderData && !isSubmitting;
 
 	// The operation-state column only exists while the list is filtered by a batch operation —
@@ -118,13 +210,13 @@ const InstancesTable: React.FC<Props> = ({search, isActionMode, renderActions}) 
 		page: {limit: processInstanceKeys.length},
 	} satisfies QueryBatchOperationItemsRequestBody;
 	const {
-		data: operationItemsByInstance,
+		data: operationItems,
 		isLoading: isLoadingOperationItems,
 		isError: isOperationItemsError,
 	} = useQuery({
-		...batchOperationItemsQueryOptions(operationItemsRequestBody),
+		...batchOperationItemsForInstancesQueryOptions(operationItemsRequestBody),
 		enabled: isOperationStateColumnVisible && processInstanceKeys.length > 0,
-		select: ({items}) => getOperationStatesByInstance(items),
+		select: selectOperationItems,
 		refetchInterval: (query) =>
 			query.state.data?.items.some(({state}) => state === 'ACTIVE') ? ACTIVE_ITEMS_REFETCH_INTERVAL_MS : false,
 	});
@@ -172,7 +264,7 @@ const InstancesTable: React.FC<Props> = ({search, isActionMode, renderActions}) 
 							) : isOperationItemsError ? (
 								t('operate.shared.errorMessage.message')
 							) : (
-								(operationItemsByInstance?.get(row.processInstanceKey) ?? '--')
+								(operationItems?.states.get(row.processInstanceKey) ?? '--')
 							),
 					},
 				]
@@ -231,7 +323,7 @@ const InstancesTable: React.FC<Props> = ({search, isActionMode, renderActions}) 
 			key: 'startDate',
 			sortKey: 'startDate',
 			isDefault: true,
-			defaultOrder: 'desc' as const,
+			defaultOrder: 'DESC' as const,
 			label: t('operate.processes.instancesTable.startDate'),
 			render: (row: ProcessInstance) => formatTimestamp(row.startDate),
 		},
@@ -299,8 +391,54 @@ const InstancesTable: React.FC<Props> = ({search, isActionMode, renderActions}) 
 					key={filterIdentity}
 					selection={selection}
 					isSubmitting={isSubmitting}
-					isActionMode={isActionMode}
-					additionalActions={renderActions?.(selection)}
+					isActionMode={isActionMode || mode !== 'list'}
+					additionalActions={
+						<>
+							{processDefinitionSelection && onEnterMode && (
+								<MoveAction
+									mode={mode}
+									isSubmitting={isSubmitting}
+									selection={selection}
+									processDefinitionSelection={processDefinitionSelection}
+									sourceElementId={search.elementId}
+									onEnter={() => {
+										setModeDefinition(
+											processDefinitionSelection.kind === 'single-version'
+												? processDefinitionSelection.definition
+												: null,
+										);
+										onEnterMode('batch-modification');
+									}}
+								/>
+							)}
+							{processDefinitionSelection && onMigrationEnter && (
+								<MigrateAction
+									mode={mode}
+									isSubmitting={isSubmitting}
+									hasActiveScope={migrationFilter !== null}
+									selection={selection}
+									processDefinitionSelection={processDefinitionSelection}
+									onEnter={() => {
+										if (processDefinitionSelection.kind !== 'single-version' || migrationFilter === null) {
+											return;
+										}
+										const migrationSelection = {
+											search,
+											includeIds: selection.mode === 'INCLUDE' ? selection.includedIds : [],
+											excludeIds: selection.excludedIds,
+										};
+										onMigrationEnter(processDefinitionSelection.definition, {
+											filter: migrationFilter,
+											statisticsFilter: getMigrationStatisticsFilter(migrationSelection),
+											selectedCount: selection.selectedCount,
+											isCountTruncated: selection.isCountTruncated,
+										});
+									}}
+								/>
+							)}
+							{renderActions?.(selection)}
+						</>
+					}
 					onSubmit={(action) =>
 						send({type: 'submit', action, body: selection.getRequest(action), filterIdentity: selection.filterIdentity})
 					}
@@ -318,6 +456,29 @@ const InstancesTable: React.FC<Props> = ({search, isActionMode, renderActions}) 
 					columns={columns}
 					rows={processInstances}
 					rowKey={(row) => row.processInstanceKey}
+					expansionScope={batchOperationKey}
+					rowOperationError={
+						isOperationStateColumnVisible
+							? (row) => {
+									if (isLoadingOperationItems || isOperationItemsError) {
+										return null;
+									}
+									const errors = operationItems?.failures.get(row.processInstanceKey);
+									const message = errors
+										?.map((error) => error ?? t('operate.processes.instancesTable.operationFailed'))
+										.join('\n');
+									return !message
+										? null
+										: {
+												message,
+												expandLabel: t('operate.processes.instancesTable.expandFailure', {
+													key: row.processInstanceKey,
+												}),
+											};
+								}
+							: undefined
+					}
+					failureDetailsLabel={t('operate.processes.instancesTable.failureDetails')}
 					selectionType="checkbox"
 					selectAllLabel={t('operate.processes.toolbar.selectAll')}
 					selectRowLabel={(key) => t('operate.processes.toolbar.selectRow', {key})}
@@ -347,6 +508,46 @@ const InstancesTable: React.FC<Props> = ({search, isActionMode, renderActions}) 
 						fetchNextPage,
 					}}
 					data-testid="process-instances-table"
+				/>
+			)}
+			{mode === 'batch-modification' && processDefinitionSelection && onExitMode && navigationBlocker && (
+				<BatchModificationFooter
+					blocker={navigationBlocker}
+					scope={{filter: selectionFilter, selectedCount: selection.selectedCount}}
+					processDefinitionSelection={processDefinitionSelection}
+					isDefinitionChanged={isDefinitionChanged}
+					sourceElementId={search.elementId}
+					targetElementId={selectedTargetElementId}
+					sourceLabel={getElementName({businessObjects: diagramData?.businessObjects, elementId: search.elementId})}
+					targetLabel={getElementName({
+						businessObjects: diagramData?.businessObjects,
+						elementId: selectedTargetElementId,
+					})}
+					onExit={exitMode}
+					onSubmit={(moveInstruction) => {
+						const activeFilter = getActiveInstancesFilter(selection.getRequest('cancel').filter);
+						if (
+							activeFilter === null ||
+							selection.selectedCount < 1 ||
+							modeDefinition === null ||
+							isDefinitionChanged
+						) {
+							return;
+						}
+						exitMode();
+						sendModification({
+							type: 'submit',
+							action: 'modify',
+							body: {
+								filter: {
+									...activeFilter,
+									tenantId: {$eq: modeDefinition.tenantId},
+								},
+								moveInstructions: [moveInstruction],
+							},
+							filterIdentity,
+						});
+					}}
 				/>
 			)}
 		</InstancesTableContainer>

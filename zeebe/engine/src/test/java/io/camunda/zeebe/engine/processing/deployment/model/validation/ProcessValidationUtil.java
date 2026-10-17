@@ -89,7 +89,7 @@ public class ProcessValidationUtil {
         new ValidationVisitor(
             Stream.of(
                     ZeebeRuntimeValidators.getValidators(expressionLanguage, expressionProcessor),
-                    ZeebeDesignTimeValidators.VALIDATORS,
+                    ZeebeDesignTimeValidators.getValidators(),
                     ZeebeConfigurationValidators.getValidators(
                         ValidationConfig.builder()
                             .withMaxIdFieldLength(MAX_ID_FIELD_LENGTH)

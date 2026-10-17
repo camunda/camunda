@@ -27,6 +27,7 @@ import {
 	SelectValue,
 	Skeleton,
 	Switch,
+	Text,
 } from '@camunda/design-system';
 import {Plus, X} from '@camunda/design-system/icons';
 import {ErrorBoundary} from 'react-error-boundary';
@@ -295,9 +296,9 @@ const FieldsModal: React.FC<Props> = ({isOpen, onClose, onApply, onSave, onEdit,
 										<Field name="assignee">
 											{({input}) => (
 												<fieldset>
-													<legend className="mb-2 text-sm font-medium">
+													<Text as="legend" variant="label-md-strong" className="mb-2">
 														{t('tasklist.customFiltersModalAssigneeLabel')}
-													</legend>
+													</Text>
 													<RadioGroup
 														name={input.name}
 														value={input.value}
@@ -329,9 +330,9 @@ const FieldsModal: React.FC<Props> = ({isOpen, onClose, onApply, onSave, onEdit,
 										<Field name="status">
 											{({input}) => (
 												<fieldset>
-													<legend className="mb-2 text-sm font-medium">
+													<Text as="legend" variant="label-md-strong" className="mb-2">
 														{t('tasklist.customFiltersModalStatusLabel')}
-													</legend>
+													</Text>
 													<RadioGroup
 														name={input.name}
 														value={input.value}
@@ -454,9 +455,9 @@ const FieldsModal: React.FC<Props> = ({isOpen, onClose, onApply, onSave, onEdit,
 										{values?.areAdvancedFiltersEnabled ? (
 											<>
 												<fieldset>
-													<legend className="mb-2 text-sm font-medium">
+													<Text as="legend" variant="label-md-strong" className="mb-2">
 														{t('tasklist.customFiltersModalDueDateLabel')}
-													</legend>
+													</Text>
 													<div className="flex flex-wrap gap-2">
 														<Field<Date | undefined> name="dueDateFrom">
 															{({input}) => (
@@ -484,9 +485,9 @@ const FieldsModal: React.FC<Props> = ({isOpen, onClose, onApply, onSave, onEdit,
 												</fieldset>
 
 												<fieldset>
-													<legend className="mb-2 text-sm font-medium">
+													<Text as="legend" variant="label-md-strong" className="mb-2">
 														{t('tasklist.customFiltersModalFollowUpDateLabel')}
-													</legend>
+													</Text>
 													<div className="flex flex-wrap gap-2">
 														<Field<Date | undefined> name="followUpDateFrom">
 															{({input}) => (
@@ -526,9 +527,9 @@ const FieldsModal: React.FC<Props> = ({isOpen, onClose, onApply, onSave, onEdit,
 												<FieldArray name="variables">
 													{({fields, meta: arrayMeta}) => (
 														<fieldset className="col-span-1 sm:col-span-2">
-															<legend className="mb-3 text-sm font-medium">
+															<Text as="legend" variant="label-md-strong" className="mb-3">
 																{t('tasklist.customFiltersModalTaskVariableLabel')}
-															</legend>
+															</Text>
 															<div className="grid min-w-0 grid-cols-[minmax(0,1fr)_minmax(0,1fr)_2.25rem] items-start gap-x-3 gap-y-4">
 																{fields.map((name, index) => (
 																	<Fragment key={name}>

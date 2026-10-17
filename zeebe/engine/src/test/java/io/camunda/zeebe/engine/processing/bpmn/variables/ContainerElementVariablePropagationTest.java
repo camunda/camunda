@@ -757,7 +757,6 @@ public final class ContainerElementVariablePropagationTest {
   }
 
   @Test
-  @Ignore("https://github.com/camunda/camunda/issues/51496")
   public void shouldMakeChildVariablesAvailableLocallyOnCallActivityWithoutOutputMapping() {
     // given: propagateAllChildVariables=false and no output mapping - per the issue, child
     // variables should still become local to the call activity scope instead of being discarded
@@ -807,6 +806,72 @@ public final class ContainerElementVariablePropagationTest {
         .isTrue();
     // ... and never propagated to the process root
     assertVariableIsNotPropagatedToProcessInstance(processInstanceKey, LOCAL_VAR);
+  }
+
+  @Test
+  public void
+      shouldNotOverwriteExistingProcessInstanceVariableWhenMakingChildVariableLocalOnCallActivity() {
+    // given: propagateAllChildVariables=false, no output mapping, and the process instance root
+    // already has a variable with the same name as the one the child will produce
+    final var parentProcessId = "parentProcessId";
+    final var childProcessId = "childProcessId";
+    final var parentProcess =
+        Bpmn.createExecutableProcess(parentProcessId)
+            .startEvent()
+            .callActivity(
+                "call",
+                c -> c.zeebeProcessId(childProcessId).zeebePropagateAllChildVariables(false))
+            .endEvent()
+            .done();
+    final var childProcess =
+        Bpmn.createExecutableProcess(childProcessId)
+            .startEvent()
+            .intermediateThrowEvent("nestedElement")
+            .zeebeOutputExpression("= \"bar\"", LOCAL_VAR)
+            .endEvent()
+            .done();
+
+    ENGINE
+        .deployment()
+        .withXmlResource("parent.bpmn", parentProcess)
+        .withXmlResource("child.bpmn", childProcess)
+        .deploy();
+
+    // when
+    final long processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(parentProcessId)
+            .withVariables(Map.of(LOCAL_VAR, "original"))
+            .create();
+    final long callActivityInstanceKey =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId("call")
+            .getFirst()
+            .getKey();
+
+    // then: the child's value is local to the call activity scope ...
+    assertThat(
+            RecordingExporter.records()
+                .limitToProcessInstance(processInstanceKey)
+                .variableRecords()
+                .withIntent(VariableIntent.CREATED)
+                .withScopeKey(callActivityInstanceKey)
+                .withName(LOCAL_VAR)
+                .getFirst()
+                .getValue()
+                .getValue())
+        .isEqualTo("\"bar\"");
+    // ... and the pre-existing process instance scope copy is left untouched
+    assertThat(
+            RecordingExporter.records()
+                .limitToProcessInstance(processInstanceKey)
+                .variableRecords()
+                .withScopeKey(processInstanceKey)
+                .withName(LOCAL_VAR))
+        .extracting(Record::getIntent, r -> r.getValue().getValue())
+        .containsExactly(tuple(VariableIntent.CREATED, "\"original\""));
   }
 
   private static void assertVariableIsNotPropagatedToProcessInstance(

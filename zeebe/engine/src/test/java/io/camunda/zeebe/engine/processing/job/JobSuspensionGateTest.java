@@ -8,7 +8,10 @@
 package io.camunda.zeebe.engine.processing.job;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
 
+import io.camunda.zeebe.engine.state.immutable.SuspensionState.State;
+import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.engine.util.RecordToWrite;
 import io.camunda.zeebe.protocol.record.Assertions;
@@ -43,6 +46,27 @@ public final class JobSuspensionGateTest {
     final Record<JobRecordValue> job = ENGINE.createJob(jobType, processId);
     final long processInstanceKey = job.getValue().getProcessInstanceKey();
     ENGINE.processInstance().withInstanceKey(processInstanceKey).suspend();
+
+    // when
+    final Record<JobRecordValue> rejection =
+        ENGINE.job().withKey(job.getKey()).expectRejection().complete();
+
+    // then
+    Assertions.assertThat(rejection)
+        .hasIntent(JobIntent.COMPLETE)
+        .hasRejectionType(RejectionType.INVALID_STATE);
+    assertThat(rejection.getRejectionReason())
+        .contains("process instance with key '" + processInstanceKey + "'");
+  }
+
+  @Test
+  public void shouldRejectJobCompleteWhileSuspending() {
+    // given
+    final String jobType = Strings.newRandomValidBpmnId();
+    final String processId = Strings.newRandomValidBpmnId();
+    final Record<JobRecordValue> job = ENGINE.createJob(jobType, processId);
+    final long processInstanceKey = job.getValue().getProcessInstanceKey();
+    seedSuspending(processInstanceKey);
 
     // when
     final Record<JobRecordValue> rejection =
@@ -231,5 +255,12 @@ public final class JobSuspensionGateTest {
                 ((BufferedCommandRecordValue) r.getValue()).getProcessInstanceKey()
                     == processInstanceKey)
         .getFirst();
+  }
+
+  private static void seedSuspending(final long processInstanceKey) {
+    await().until(ENGINE::hasReachedEnd);
+    ((MutableProcessingState) ENGINE.getProcessingState())
+        .getSuspensionState()
+        .setSuspensionState(processInstanceKey, State.SUSPENDING);
   }
 }

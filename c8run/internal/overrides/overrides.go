@@ -10,12 +10,11 @@ package overrides
 import (
 	"fmt"
 	"os"
-	"path/filepath"
 	"strconv"
 
+	"github.com/camunda/camunda/c8run/internal/springconfig"
 	"github.com/camunda/camunda/c8run/internal/types"
 	"github.com/rs/zerolog/log"
-	"gopkg.in/yaml.v3"
 )
 
 func SetEnvVars() error {
@@ -106,67 +105,7 @@ func SetConnectorsAuthEnvVars(settings types.C8RunSettings) error {
 // when a key is defined nowhere the API is treated as open, matching the default
 // C8Run behaviour.
 func ConnectorsAuthRequired(configPaths []string) bool {
-	authorizationsOn, authorizationsFound := false, false
-	// The API is open unless a source explicitly protects it.
-	apiUnprotected, apiFound := true, false
-
-	for _, path := range configPaths {
-		root, ok := readConfigMap(path)
-		if !ok {
-			continue
-		}
-		if !authorizationsFound {
-			if authorizations, ok := nestedMap(root, "camunda", "security", "authorizations"); ok {
-				if enabled, ok := authorizations["enabled"].(bool); ok {
-					authorizationsOn, authorizationsFound = enabled, true
-				}
-			}
-		}
-		if !apiFound {
-			if authentication, ok := nestedMap(root, "camunda", "security", "authentication"); ok {
-				if unprotected, ok := authentication["unprotected-api"].(bool); ok {
-					apiUnprotected, apiFound = unprotected, true
-				}
-			}
-		}
-		if authorizationsFound && apiFound {
-			break
-		}
-	}
-
-	return authorizationsOn || !apiUnprotected
-}
-
-func readConfigMap(path string) (map[string]any, bool) {
-	if path == "" {
-		return nil, false
-	}
-	info, err := os.Stat(path)
-	if err != nil {
-		return nil, false
-	}
-	if info.IsDir() {
-		return readConfigMap(filepath.Join(path, "application.yaml"))
-	}
-	content, err := os.ReadFile(path)
-	if err != nil {
-		return nil, false
-	}
-	var root map[string]any
-	if err := yaml.Unmarshal(content, &root); err != nil {
-		return nil, false
-	}
-	return root, true
-}
-
-func nestedMap(root map[string]any, keys ...string) (map[string]any, bool) {
-	current := root
-	for _, key := range keys {
-		next, ok := current[key].(map[string]any)
-		if !ok {
-			return nil, false
-		}
-		current = next
-	}
-	return current, true
+	authorizationsOn, _ := springconfig.Bool(configPaths, "camunda.security.authorizations.enabled")
+	apiUnprotected, ok := springconfig.Bool(configPaths, "camunda.security.authentication.unprotected-api")
+	return authorizationsOn || (ok && !apiUnprotected)
 }

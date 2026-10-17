@@ -195,3 +195,40 @@ camunda:
 	assert.Equal(t, "preset-user", os.Getenv("CAMUNDA_CLIENT_AUTH_USERNAME"))
 	assert.Equal(t, "preset-pass", os.Getenv("CAMUNDA_CLIENT_AUTH_PASSWORD"))
 }
+
+func TestConnectorsAuthRequiredHonoursEnvironmentAndJVMOverrides(t *testing.T) {
+	t.Setenv("JAVA_OPTS", "")
+	t.Setenv("JDK_JAVA_OPTIONS", "")
+	t.Setenv("CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED", "")
+	t.Setenv("CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTEDAPI", "")
+	t.Setenv("CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTED_API", "")
+	if ConnectorsAuthRequired(nil) {
+		t.Fatal("expected open API without any configuration")
+	}
+	t.Setenv("CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTEDAPI", "false")
+	if !ConnectorsAuthRequired(nil) {
+		t.Fatal("an environment variable protecting the API must require credentials")
+	}
+	t.Setenv("CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTEDAPI", "")
+	t.Setenv("JDK_JAVA_OPTIONS", "-Dcamunda.security.authorizations.enabled=true")
+	if !ConnectorsAuthRequired(nil) {
+		t.Fatal("a JVM option enabling authorizations must require credentials")
+	}
+}
+
+func TestConnectorsAuthRequiredAcceptsSpringBooleanSpellings(t *testing.T) {
+	t.Setenv("JAVA_OPTS", "")
+	t.Setenv("JDK_JAVA_OPTIONS", "")
+	t.Setenv("CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED", "")
+	t.Setenv("CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTEDAPI", "")
+	t.Setenv("CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTED_API", "off")
+	assert.True(t, ConnectorsAuthRequired(nil), "off protects the API")
+
+	t.Setenv("CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTED_API", "")
+	authorizations := writeConfig(t, "application.yaml", "camunda.security.authorizations.enabled: yes\n")
+	assert.True(t, ConnectorsAuthRequired([]string{authorizations}), "yes enables authorizations")
+
+	t.Setenv("JAVA_OPTS", "-Dcamunda.security.authentication.unprotected-api=No")
+	unprotected := writeConfig(t, "application.yaml", "camunda.security.authentication.unprotected-api: true\n")
+	assert.True(t, ConnectorsAuthRequired([]string{unprotected}), "No in JAVA_OPTS protects the API over the config file")
+}

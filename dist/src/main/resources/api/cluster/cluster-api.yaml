@@ -15,9 +15,16 @@ servers:
       schema:
         default: http
         description: Management server schema
+tags:
+  - name: Cluster Configuration
+  - name: Physical tenant
+  - name: Data
+
 paths:
   /brokers/{brokerId}:
     post:
+      tags:
+        - Cluster Configuration
       summary: Add a broker to the cluster
       description: Add a broker with the given brokerId to the cluster. The broker must be running
         to complete the operation.
@@ -38,6 +45,8 @@ paths:
         '504':
           $ref: 'components.yaml#/responses/TimeoutError'
     delete:
+      tags:
+        - Cluster Configuration
       summary: Remove a broker from the cluster.
       description: Remove a broker with the given brokerId from the cluster. The broker must be
         running to complete the operation.
@@ -59,6 +68,8 @@ paths:
           $ref: 'components.yaml#/responses/TimeoutError'
   /brokers/{brokerId}/partitions/{partitionId}:
     post:
+      tags:
+        - Cluster Configuration
       summary: Add a broker to a partition's replication group, or change its priority
       description: Adds the broker to the replication group of the given partition, replicating it
         with the requested priority. If the broker already replicates the partition, only its
@@ -93,6 +104,8 @@ paths:
         '504':
           $ref: 'components.yaml#/responses/TimeoutError'
     delete:
+      tags:
+        - Cluster Configuration
       summary: Remove a broker from a partition's replication group
       description: Removes the broker from the replication group of the given partition. The
         partition must keep at least one replica, so the last remaining replica cannot be removed.
@@ -123,6 +136,8 @@ paths:
 
   /brokers:
     post:
+      tags:
+        - Cluster Configuration
       summary: Reconfigure the cluster with the given brokers.
       description: The final cluster consists of only the brokers in the request body. New brokers
         in the request will be added to the cluster. Any existing brokers that are not part
@@ -155,6 +170,8 @@ paths:
 
   /purge:
     post:
+      tags:
+        - Data
       summary: Purge data from the cluster
       description: Purges data from Zeebe cluster and all exporters.
         This operation is irreversible and will remove all data from the cluster!
@@ -182,6 +199,8 @@ paths:
 
   /:
     get:
+      tags:
+        - Cluster Configuration
       summary: Get current topology
       description: Returns the current topology of the cluster.
       parameters:
@@ -200,39 +219,9 @@ paths:
         '504':
           $ref: 'components.yaml#/responses/TimeoutError'
 
-  /changes/{changeId}:
-    get:
-      summary: Get a configuration change
-      description: Returns the status and operations of one configuration change.
-      parameters:
-        - $ref: '#/components/parameters/ChangeId'
-      responses:
-        '200':
-          $ref: "#/components/responses/GetConfigurationChangeResponse"
-        '404':
-          $ref: 'components.yaml#/responses/NotFound'
-        '500':
-          $ref: 'components.yaml#/responses/InternalError'
-        '502':
-          $ref: 'components.yaml#/responses/GatewayError'
-        '504':
-          $ref: 'components.yaml#/responses/TimeoutError'
-
-  /changes:
-    get:
-      summary: List configuration changes
-      description: Returns every configuration change currently known to this broker.
-      responses:
-        '200':
-          $ref: "#/components/responses/GetConfigurationChangesResponse"
-        '500':
-          $ref: 'components.yaml#/responses/InternalError'
-        '502':
-          $ref: 'components.yaml#/responses/GatewayError'
-        '504':
-          $ref: 'components.yaml#/responses/TimeoutError'
-
     patch:
+      tags:
+        - Cluster Configuration
       summary: Reconfigure cluster
       description: Reconfigure cluster by adding or removing brokers, adding more partitions, or
                    changing the replicationFactor. Note that adding partitions is an experimental
@@ -273,9 +262,48 @@ paths:
         '504':
           $ref: 'components.yaml#/responses/TimeoutError'
 
+  /changes/{changeId}:
+    get:
+      tags:
+        - Cluster Configuration
+      summary: Get a configuration change
+      description: Returns the status and operations of one configuration change.
+      parameters:
+        - $ref: '#/components/parameters/ChangeId'
+      responses:
+        '200':
+          $ref: "#/components/responses/GetConfigurationChangeResponse"
+        '404':
+          $ref: 'components.yaml#/responses/NotFound'
+        '500':
+          $ref: 'components.yaml#/responses/InternalError'
+        '502':
+          $ref: 'components.yaml#/responses/GatewayError'
+        '504':
+          $ref: 'components.yaml#/responses/TimeoutError'
+
+  /changes:
+    get:
+      tags:
+        - Cluster Configuration
+      summary: List configuration changes
+      description: Returns every configuration change currently known to this broker.
+      responses:
+        '200':
+          $ref: "#/components/responses/GetConfigurationChangesResponse"
+        '500':
+          $ref: 'components.yaml#/responses/InternalError'
+        '502':
+          $ref: 'components.yaml#/responses/GatewayError'
+        '504':
+          $ref: 'components.yaml#/responses/TimeoutError'
+
   /routing-state:
     patch:
-      summary:
+      tags:
+        - Cluster Configuration
+      summary: Update the routing state
+      description:
         Force an update of the routing state using the user provided routing state
         or by fetching the routing state from the engine first and then
         applying it to the configuration.
@@ -310,7 +338,10 @@ paths:
 
   /partitioning:
     put:
-      summary:
+      tags:
+        - Cluster Configuration
+      summary: Update the partition distribution configuration
+      description:
         Update the partition distribution configuration. Exactly one of `config` and `zonePriorities` must be set.
 
         Setting `config` persists a new configuration and applies it immediately by computing the necessary
@@ -355,6 +386,8 @@ paths:
 
   /zones/{zoneId}:
     delete:
+      tags:
+        - Cluster Configuration
       summary: Remove a zone
       description: >
         Removes the given zone's brokers from the cluster and drops the zone from the
@@ -385,6 +418,8 @@ paths:
           $ref: 'components.yaml#/responses/TimeoutError'
       x-added-in-version: "8.10.0"
     post:
+      tags:
+        - Cluster Configuration
       summary: Add back a previously removed zone
       description: Re-adds the operator-supplied brokers and re-includes the given zone in the
         persisted partition distribution configuration, with the supplied replica count and
@@ -419,7 +454,10 @@ paths:
 
   /zones:
     put:
-      summary:
+      tags:
+        - Cluster Configuration
+      summary: Migrate a zone to a zone-aware topology
+      description:
         Migrate one zone of a bare or partially zoned cluster to a zone-aware topology. The request
         contains only the zone name. Before migrating a zone, update the persisted partition
         distribution with `PUT /cluster/partitioning` with a zone aware partition distribution.
@@ -454,6 +492,8 @@ paths:
 
   /physical-tenants/{physicalTenantId}:
     delete:
+      tags:
+        - Physical tenant
       summary: Remove a disabled physical tenant
       description: Discards the given disabled physical tenant, so that brokers still holding its
         partitions may leave the cluster. The tenant must already be disabled, i.e. removed from

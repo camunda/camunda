@@ -6,75 +6,24 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import type {
-	GetProcessDefinitionStatisticsRequestBody,
-	ProcessInstanceState,
-} from '@camunda/camunda-api-zod-schemas/8.11';
+import type {GetProcessDefinitionStatisticsRequestBody} from '@camunda/camunda-api-zod-schemas/8.11';
+import {mapProcessInstancesFilter, type ProcessesSearch} from './processesFilter';
 
 type StatisticsFilter = NonNullable<GetProcessDefinitionStatisticsRequestBody['filter']>;
 
 /**
- * Mirrors legacy Operate's `parseProcessInstancesSearchFilter` state/incidents combination:
- * `incidents` is never scoped to `ACTIVE` — an element keeps an incident regardless of its
- * current state, so it must stay visible even when only non-active states are selected.
- * `suspended` is its own branch rather than a member of the state list because a suspended
- * instance must stay visible independently of the active/completed/canceled selection, and is
- * excluded from the incidents branch to avoid asserting two contradictory states for the same
- * instance. Mirrors `buildStateFilter` in processesFilter.ts, which the instances table uses.
+ * Mirrors legacy Operate's `useProcessInstanceStatisticsFilters`: the diagram statistics use the
+ * instance list filter minus the process-definition fields, which the endpoint scopes by path.
+ * Returns `undefined` when the instance list would skip its request, so the caller skips too.
  */
-function getStateFilter(states: ProcessInstanceState[]): Pick<StatisticsFilter, 'state'> | undefined {
-	if (states.length === 0) {
+function getStatisticsFilter(search: ProcessesSearch): StatisticsFilter | undefined {
+	const filter = mapProcessInstancesFilter(search);
+	if (filter === undefined) {
 		return undefined;
 	}
 
-	return {state: states.length === 1 ? {$eq: states[0]!} : {$in: states}};
-}
-
-/** Returns `undefined` when no instance state is selected — the caller should skip the request entirely. */
-function getStatisticsFilter({
-	active,
-	incidents,
-	completed,
-	canceled,
-	suspended,
-}: {
-	active: boolean;
-	incidents: boolean;
-	completed: boolean;
-	canceled: boolean;
-	suspended: boolean;
-}): StatisticsFilter | undefined {
-	const states: ProcessInstanceState[] = [];
-	if (active) {
-		states.push('ACTIVE');
-	}
-	if (completed) {
-		states.push('COMPLETED');
-	}
-	if (canceled) {
-		states.push('TERMINATED');
-	}
-
-	const stateFilter = getStateFilter(states);
-	const branches: StatisticsFilter[] = [];
-
-	// hasIncident is only pinned to false here when there is no separate incidents branch below —
-	// otherwise an active instance with an incident would match neither branch and drop out.
-	if (stateFilter !== undefined) {
-		branches.push(incidents ? stateFilter : {...stateFilter, hasIncident: false});
-	}
-	if (suspended) {
-		branches.push({state: {$eq: 'SUSPENDED'}});
-	}
-	if (incidents) {
-		branches.push(suspended ? {hasIncident: true, state: {$neq: 'SUSPENDED'}} : {hasIncident: true});
-	}
-
-	if (branches.length === 0) {
-		return undefined;
-	}
-
-	return branches.length === 1 ? branches[0]! : {$or: branches};
+	const {processDefinitionId, processDefinitionVersion, ...statisticsFilter} = filter;
+	return statisticsFilter;
 }
 
 export {getStatisticsFilter};

@@ -7,6 +7,10 @@
  */
 package io.camunda.optimize.service.importing.zeebe.fetcher;
 
+import static io.camunda.optimize.MetricEnum.FETCH_PAGE_SIZE_METRIC;
+import static io.camunda.optimize.MetricEnum.ZEEBE_INDEX_MISSING_METRIC;
+
+import io.camunda.optimize.OptimizeMetrics;
 import io.camunda.optimize.dto.zeebe.ZeebeRecordDto;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import io.camunda.optimize.service.importing.page.PositionBasedImportPage;
@@ -17,6 +21,7 @@ import java.util.ArrayDeque;
 import java.util.Collections;
 import java.util.Deque;
 import java.util.List;
+import java.util.Locale;
 import org.slf4j.Logger;
 
 public abstract class AbstractZeebeRecordFetcher<T> {
@@ -46,10 +51,13 @@ public abstract class AbstractZeebeRecordFetcher<T> {
     } catch (final Exception e) {
       if (isZeebeInstanceIndexNotFoundException(e)) {
         LOG.warn("No Zeebe index with alias {} found to read records from!", getIndexAlias());
+        OptimizeMetrics.getCounter(ZEEBE_INDEX_MISSING_METRIC, getRecordType(), partitionId)
+            .increment();
         return Collections.emptyList();
       } else {
         if (e instanceof IOException) {
           dynamicallyReduceBatchSizeForNextAttempt();
+          reportFetchPageSize();
         }
         final String errorMessage =
             String.format(
@@ -60,6 +68,7 @@ public abstract class AbstractZeebeRecordFetcher<T> {
       }
     }
     markFetchAsSuccessfulAndAdjustBatchSize();
+    reportFetchPageSize();
     trackConsecutiveEmptyPages(results);
     return results;
   }
@@ -77,6 +86,15 @@ public abstract class AbstractZeebeRecordFetcher<T> {
     return positionBasedImportPage.isHasSeenSequenceField()
         ? ZeebeRecordDto.Fields.sequence
         : ZeebeRecordDto.Fields.position;
+  }
+
+  private void reportFetchPageSize() {
+    OptimizeMetrics.setGauge(
+        FETCH_PAGE_SIZE_METRIC, getRecordType(), partitionId, dynamicBatchSize);
+  }
+
+  private String getRecordType() {
+    return getBaseIndexName().replace('-', '_').toUpperCase(Locale.ROOT);
   }
 
   protected String getIndexAlias() {

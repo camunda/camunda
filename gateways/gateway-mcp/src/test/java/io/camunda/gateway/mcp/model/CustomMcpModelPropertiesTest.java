@@ -104,6 +104,7 @@ public class CustomMcpModelPropertiesTest {
                 "elementId",
                 "elementInstanceKey",
                 "followUpDate",
+                "isSuspended",
                 "localVariables",
                 "name",
                 "priority",

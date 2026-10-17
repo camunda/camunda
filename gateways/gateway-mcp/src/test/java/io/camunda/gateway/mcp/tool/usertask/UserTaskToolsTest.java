@@ -99,7 +99,8 @@ class UserTaskToolsTest extends OperationalToolsTest {
           2,
           Map.of("header1", "value1"),
           50,
-          Set.of("tag1", "tag2"));
+          Set.of("tag1", "tag2"),
+          false);
 
   static final SearchQueryResult<UserTaskEntity> USER_TASK_SEARCH_QUERY_RESULT =
       new Builder<UserTaskEntity>()
@@ -310,7 +311,9 @@ class UserTaskToolsTest extends OperationalToolsTest {
                               "businessId",
                               "order-42",
                               "priority",
-                              50),
+                              50,
+                              "isSuspended",
+                              true),
                           "sort",
                           List.of(Map.of("field", "creationDate", "order", "DESC")),
                           "page",
@@ -351,6 +354,8 @@ class UserTaskToolsTest extends OperationalToolsTest {
       assertThat(filter.priorityOperations())
           .extracting(Operation::operator, Operation::value)
           .containsExactly(tuple(Operator.EQUALS, 50));
+
+      assertThat(filter.isSuspended()).isTrue();
 
       assertThat(capturedQuery.sort().orderings())
           .extracting(FieldSorting::field, FieldSorting::order)

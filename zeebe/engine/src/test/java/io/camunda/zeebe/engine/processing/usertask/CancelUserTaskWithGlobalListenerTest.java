@@ -12,10 +12,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskListenerEventType;
+import io.camunda.zeebe.protocol.record.Assertions;
+import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.value.JobKind;
 import io.camunda.zeebe.protocol.record.value.JobListenerEventType;
+import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import org.junit.Rule;
@@ -192,6 +196,46 @@ public class CancelUserTaskWithGlobalListenerTest {
 
     RecordingExporter.userTaskRecords(UserTaskIntent.CANCELED)
         .withProcessInstanceKey(processInstanceKey)
+        .await();
+  }
+
+  @Test
+  public void shouldTerminateSuspendedInstanceWhenGlobalCancelingListenerJobCompleted() {
+    // given
+    engine
+        .globalListener()
+        .withId("GlobalUserTaskListener_Canceling")
+        .withType(GLOBAL_LISTENER_TYPE)
+        .withEventTypes(ZeebeTaskListenerEventType.canceling.name())
+        .create();
+
+    engine
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .userTask("task")
+                .zeebeUserTask()
+                .endEvent()
+                .done())
+        .deploy();
+
+    final long processInstanceKey = engine.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    RecordingExporter.userTaskRecords(UserTaskIntent.CREATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .await();
+    engine.processInstance().withInstanceKey(processInstanceKey).suspend();
+    engine.processInstance().withInstanceKey(processInstanceKey).expectTerminating().cancel();
+
+    // when
+    final Record<JobRecordValue> result =
+        engine.job().ofInstance(processInstanceKey).withType(GLOBAL_LISTENER_TYPE).complete();
+
+    // then
+    Assertions.assertThat(result).hasIntent(JobIntent.COMPLETED);
+    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_TERMINATED)
+        .withRecordKey(processInstanceKey)
         .await();
   }
 }

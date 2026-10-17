@@ -89,4 +89,9 @@ public interface VariableRecordValue
    *     VariableOperationType.UNKNOWN} if the source is unknown.
    */
   VariableSourceValue getSource();
+
+  /**
+   * @return the metadata of the variable, e.g. how its value is protected before it is exported.
+   */
+  VariableMetadataValue getMetadata();
 }

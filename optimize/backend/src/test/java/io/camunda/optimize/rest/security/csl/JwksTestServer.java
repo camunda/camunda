@@ -15,6 +15,7 @@ import com.nimbusds.jose.crypto.RSASSASigner;
 import com.nimbusds.jose.jwk.JWKSet;
 import com.nimbusds.jose.jwk.KeyUse;
 import com.nimbusds.jose.jwk.RSAKey;
+import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpServer;
 import java.net.InetSocketAddress;
 import java.security.KeyPairGenerator;
@@ -23,8 +24,9 @@ import java.security.interfaces.RSAPublicKey;
 
 /**
  * An in-JVM OIDC discovery/JWKS server for signing test bearer tokens, mirroring the pattern from
- * {@code PhysicalTenantApiChainIsolationIT}. Shared by {@link CslChainIntegrationTest} and {@link
- * OptimizeBearerPermissionFilterIntegrationTest}.
+ * {@code PhysicalTenantApiChainIsolationIT}. Shared by {@link CslChainIntegrationTest}, {@link
+ * OptimizeBearerPermissionFilterIntegrationTest} and {@link
+ * OptimizeCcsmComponentAccessPolicyIdentitySdkTest}.
  */
 final class JwksTestServer {
 
@@ -66,8 +68,7 @@ final class JwksTestServer {
         """
             .formatted(base, base, base, base);
 
-    httpServer.createContext(
-        "/jwks",
+    final HttpHandler jwksHandler =
         exchange -> {
           final var body = jwkSetJson.getBytes(UTF_8);
           exchange.getResponseHeaders().set("Content-Type", "application/json");
@@ -75,7 +76,10 @@ final class JwksTestServer {
           try (exchange) {
             exchange.getResponseBody().write(body);
           }
-        });
+        };
+    httpServer.createContext("/jwks", jwksHandler);
+    // The Keycloak flavor of the Identity SDK reads the keys from this path below the issuer.
+    httpServer.createContext("/protocol/openid-connect/certs", jwksHandler);
     httpServer.createContext(
         "/.well-known/openid-configuration",
         exchange -> {

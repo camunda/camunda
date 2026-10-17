@@ -23,7 +23,7 @@ const ProcessDiagramView: React.FC<Props> = ({xml, elementId, processName, proce
 	return (
 		<div className="flex h-full w-full flex-col p-4 pt-0">
 			<Card className="min-h-0 w-full flex-1">
-				<CardHeader>
+				<CardHeader data-testid="process-diagram-header">
 					<CardTitle>{processName}</CardTitle>
 					<CardAction>
 						<Badge variant="neutral">{t('tasklist.processViewProcessVersion', {version: processVersion})}</Badge>

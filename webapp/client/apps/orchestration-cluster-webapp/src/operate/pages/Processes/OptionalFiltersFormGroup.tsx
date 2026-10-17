@@ -10,6 +10,7 @@ import {useEffect, useState} from 'react';
 import {useTranslation} from 'react-i18next';
 import type {FieldValidator} from 'final-form';
 import {Field, useForm} from 'react-final-form';
+import {useMatchRoute} from '@tanstack/react-router';
 import {Checkbox, IconButton, Stack} from '@carbon/react';
 import {Close} from '@carbon/react/icons';
 import {OptionalFiltersMenu} from '#/operate/shared/OptionalFiltersMenu/OptionalFiltersMenu';
@@ -19,6 +20,8 @@ import {TextInputField} from '#/operate/shared/TextInputField/TextInputField';
 import {TextAreaField} from '#/operate/shared/TextAreaField/TextAreaField';
 import {FieldContainer, ButtonContainer} from '#/operate/shared/FiltersPanel/styled';
 import {mergeValidators} from '#/operate/shared/utils/mergeValidators';
+import {VariablesFilter} from './VariablesFilter/VariablesFilter';
+import {setVariableConditions, useVariableConditions} from './VariablesFilter/variableFilterStore';
 import {
 	validateIdsCharacters,
 	validateIdsLength,
@@ -30,9 +33,8 @@ import {
 	validateBatchOperationKeyComplete,
 } from '#/operate/shared/utils/validators';
 
-// The legacy 'variable' optional filter is deliberately omitted here — it stays hidden until
-// #57671 (conditions logic) and #57672 (modal) land.
 type OptionalFilter =
+	| 'variable'
 	| 'processInstanceKey'
 	| 'parentProcessInstanceKey'
 	| 'businessId'
@@ -41,6 +43,11 @@ type OptionalFilter =
 	| 'hasRetriesLeft'
 	| 'startDateRange'
 	| 'endDateRange';
+
+type VariableFieldValues = {
+	variableName?: string;
+	variableValues?: string;
+};
 
 type OptionalFilterValues = {
 	processInstanceKey?: string;
@@ -56,6 +63,7 @@ type OptionalFilterValues = {
 };
 
 const optionalFilters: OptionalFilter[] = [
+	'variable',
 	'processInstanceKey',
 	'businessId',
 	'batchOperationKey',
@@ -74,9 +82,13 @@ const OPTIONAL_FILTER_FIELDS: Record<
 		type?: 'multiline' | 'text' | 'checkbox';
 		rows?: number;
 		validate?: FieldValidator<string | undefined>;
-		keys: (keyof OptionalFilterValues)[];
+		keys: (keyof OptionalFilterValues | keyof VariableFieldValues)[];
 	}
 > = {
+	variable: {
+		keys: ['variableName', 'variableValues'],
+		labelKey: 'operate.processes.variableFilter.title',
+	},
 	processInstanceKey: {
 		keys: ['processInstanceKey'],
 		labelKey: 'operate.processes.filters.processInstanceKey',
@@ -134,9 +146,12 @@ type Props = {
 const OptionalFiltersFormGroup: React.FC<Props> = ({filters, visibleFilters, onVisibleFilterChange}) => {
 	const {t} = useTranslation();
 	const form = useForm();
+	const hasActiveVariableFilters = useVariableConditions().length > 0;
+	const isOnVariablesRoute = Boolean(useMatchRoute()({to: '/operate/processes/filters/variables'}));
 
 	useEffect(() => {
 		const activeFilters: OptionalFilter[] = [
+			...(hasActiveVariableFilters || isOnVariablesRoute ? (['variable'] as const) : []),
 			...(
 				[
 					'processInstanceKey',
@@ -157,7 +172,7 @@ const OptionalFiltersFormGroup: React.FC<Props> = ({filters, visibleFilters, onV
 			const nextVisibleFilters = Array.from(new Set([...currentVisibleFilters, ...activeFilters]));
 			return nextVisibleFilters.length === currentVisibleFilters.length ? currentVisibleFilters : nextVisibleFilters;
 		});
-	}, [filters, onVisibleFilterChange]);
+	}, [filters, hasActiveVariableFilters, isOnVariablesRoute, onVisibleFilterChange]);
 
 	const [isStartDateRangeModalOpen, setIsStartDateRangeModalOpen] = useState<boolean>(false);
 	const [isEndDateRangeModalOpen, setIsEndDateRangeModalOpen] = useState<boolean>(false);
@@ -185,6 +200,8 @@ const OptionalFiltersFormGroup: React.FC<Props> = ({filters, visibleFilters, onV
 					<FieldContainer key={filter}>
 						{(() => {
 							switch (filter) {
+								case 'variable':
+									return <VariablesFilter />;
 								case 'businessId':
 									return (
 										<AdvancedStringFilter
@@ -272,10 +289,13 @@ const OptionalFiltersFormGroup: React.FC<Props> = ({filters, visibleFilters, onV
 									onVisibleFilterChange((currentVisibleFilters) =>
 										currentVisibleFilters.filter((visibleFilter) => visibleFilter !== filter),
 									);
-
 									OPTIONAL_FILTER_FIELDS[filter].keys.forEach((key) => {
 										form.change(key, undefined);
 									});
+
+									if (filter === 'variable') {
+										setVariableConditions([]);
+									}
 
 									form.submit();
 								}}
@@ -291,4 +311,4 @@ const OptionalFiltersFormGroup: React.FC<Props> = ({filters, visibleFilters, onV
 };
 
 export {OptionalFiltersFormGroup};
-export type {OptionalFilter, OptionalFilterValues};
+export type {OptionalFilter, OptionalFilterValues, VariableFieldValues};

@@ -141,6 +141,44 @@ class TaskRepositoryESTest {
   }
 
   @Test
+  void shouldKeepDefaultScrollSizeForUpdateWhenNoneIsRequested() throws IOException {
+    // given
+    final ArgumentCaptor<UpdateByQueryRequest> requestCaptor =
+        ArgumentCaptor.forClass(UpdateByQueryRequest.class);
+    when(esClient.submitUpdateTask(requestCaptor.capture()))
+        .thenReturn(UpdateByQueryResponse.of(b -> b.updated(1L).timedOut(false)));
+
+    // when
+    taskRepositoryES.tryUpdateByQueryRequest(
+        "test reports", mock(Script.class), Query.of(q -> q.matchAll(m -> m)), "test-index");
+
+    // then -- unrelated callers keep the Elasticsearch default batch size
+    assertThat(requestCaptor.getValue().scrollSize()).isNull();
+  }
+
+  @Test
+  void shouldApplyRequestedScrollSizeForUpdate() throws IOException {
+    // given
+    final ArgumentCaptor<UpdateByQueryRequest> requestCaptor =
+        ArgumentCaptor.forClass(UpdateByQueryRequest.class);
+    when(esClient.submitUpdateTask(requestCaptor.capture()))
+        .thenReturn(UpdateByQueryResponse.of(b -> b.updated(1L).timedOut(false)));
+
+    // when
+    taskRepositoryES.tryUpdateByQueryRequest(
+        "test definitions",
+        mock(Script.class),
+        Query.of(q -> q.matchAll(m -> m)),
+        false,
+        50,
+        "test-index");
+
+    // then
+    assertThat(requestCaptor.getValue().scrollSize()).isEqualTo(50L);
+    assertThat(requestCaptor.getValue().conflicts()).isEqualTo(Conflicts.Proceed);
+  }
+
+  @Test
   void shouldThrowWhenAbortedUpdateReportsAVersionConflictFailure() throws IOException {
     // given
     final BulkIndexByScrollFailure conflictFailure =

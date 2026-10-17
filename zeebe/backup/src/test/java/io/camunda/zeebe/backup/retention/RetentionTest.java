@@ -18,6 +18,7 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.atLeastOnce;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
@@ -59,6 +60,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.IntStream;
 import org.junit.jupiter.api.BeforeEach;
@@ -605,7 +607,7 @@ public class RetentionTest {
     }
 
     @Test
-    void shouldPerformAllActionOnOnePartition() {
+    void shouldNotDeleteOnAnyPartitionWhenListingFailsOnOne() {
       // given
       setupMultiPartition(List.of(1, 2));
       final var now = actorScheduler.getClock().instant();
@@ -625,14 +627,9 @@ public class RetentionTest {
       // when
       runRetentionCycle();
 
-      // then — delete commands sent for partition 1 but not partition 2
-      verifyDeleteCommandsSent(1, backupsPerPartition.get(1).subList(0, 4));
-
-      // No delete commands for partition 2's backups
-      backupsPerPartition
-          .get(2)
-          .subList(0, 4)
-          .forEach(backup -> verifyNoDeleteCommandSent(2, backup.id().checkpointId()));
+      // then — without partition 2 the checkpoint shared by all partitions is unknown, so deleting
+      // on partition 1 could remove the only checkpoint the tenant can be restored from
+      verifyNoDeleteCommands();
     }
   }
 
@@ -775,6 +772,315 @@ public class RetentionTest {
       verifyNoDeleteCommandSent(backup3.id().checkpointId());
       verifyNoDeleteCommandSent(backup4.id().checkpointId());
       verifyNoDeleteCommandSent(backup5.id().checkpointId());
+    }
+  }
+
+  /**
+   * Regression tests for <a href="https://github.com/camunda/camunda/issues/62394">#62394</a>: a
+   * tenant is only restorable from a checkpoint id completed on every one of its partitions, so
+   * retention must never delete the newest such checkpoint on any partition, even when partitions
+   * disagree on their own latest completed backup.
+   */
+  @Nested
+  class SharedAnchorAcrossPartitions {
+
+    @BeforeEach
+    void setUp() {
+      setupMultiPartition(List.of(1, 2));
+    }
+
+    @Test
+    void shouldKeepLastSharedCheckpointWhenNewerCheckpointFailedOnOnePartition() {
+      // given — checkpoint 100 completed on both partitions, 105 only on partition 1
+      final var now = actorScheduler.getClock().instant();
+      setupBackupStoreListForPartitions(
+          Map.of(
+              1,
+              List.of(
+                  checkpoint(1, 100, now.minusSeconds(300), BackupStatusCode.COMPLETED),
+                  checkpoint(1, 105, now.minusSeconds(100), BackupStatusCode.COMPLETED)),
+              2,
+              List.of(
+                  checkpoint(2, 100, now.minusSeconds(300), BackupStatusCode.COMPLETED),
+                  checkpoint(2, 105, now.minusSeconds(100), BackupStatusCode.FAILED))));
+
+      // when
+      runRetentionCycle();
+
+      // then — 100 is the only checkpoint the tenant can be restored from
+      verifyNoDeleteCommandSent(1, 100);
+      verifyNoDeleteCommandSent(2, 100);
+    }
+
+    @Test
+    void shouldKeepLastSharedCheckpointWhenNewerCheckpointIsStillInProgressOnOnePartition() {
+      // given — partition 2 lags behind and has not completed checkpoint 105 yet
+      final var now = actorScheduler.getClock().instant();
+      setupBackupStoreListForPartitions(
+          Map.of(
+              1,
+              List.of(
+                  checkpoint(1, 100, now.minusSeconds(300), BackupStatusCode.COMPLETED),
+                  checkpoint(1, 105, now.minusSeconds(100), BackupStatusCode.COMPLETED)),
+              2,
+              List.of(
+                  checkpoint(2, 100, now.minusSeconds(300), BackupStatusCode.COMPLETED),
+                  checkpoint(2, 105, now.minusSeconds(100), BackupStatusCode.IN_PROGRESS))));
+
+      // when
+      runRetentionCycle();
+
+      // then
+      verifyNoDeleteCommandSent(1, 100);
+      verifyNoDeleteCommandSent(2, 100);
+    }
+
+    @Test
+    void shouldKeepLastSharedCheckpointWhenEachPartitionMissesADifferentNewerCheckpoint() {
+      // given — every partition's own latest completed checkpoint (105 and 103) is missing on the
+      // other partition, so the minimum of those is not shared either: only 100 is
+      final var now = actorScheduler.getClock().instant();
+      setupBackupStoreListForPartitions(
+          Map.of(
+              1,
+              List.of(
+                  checkpoint(1, 100, now.minusSeconds(400), BackupStatusCode.COMPLETED),
+                  checkpoint(1, 103, now.minusSeconds(300), BackupStatusCode.FAILED),
+                  checkpoint(1, 105, now.minusSeconds(100), BackupStatusCode.COMPLETED)),
+              2,
+              List.of(
+                  checkpoint(2, 100, now.minusSeconds(400), BackupStatusCode.COMPLETED),
+                  checkpoint(2, 103, now.minusSeconds(300), BackupStatusCode.COMPLETED),
+                  checkpoint(2, 105, now.minusSeconds(100), BackupStatusCode.FAILED))));
+
+      // when
+      runRetentionCycle();
+
+      // then
+      verifyNoDeleteCommandSent(1, 100);
+      verifyNoDeleteCommandSent(2, 100);
+    }
+
+    @Test
+    void shouldDeleteCheckpointsOlderThanTheSharedAnchorOnEveryPartition() {
+      // given — 90 is outside the window of the shared anchor 100 on both partitions
+      final var now = actorScheduler.getClock().instant();
+      setupBackupStoreListForPartitions(
+          Map.of(
+              1,
+              List.of(
+                  checkpoint(1, 90, now.minusSeconds(500), BackupStatusCode.COMPLETED),
+                  checkpoint(1, 100, now.minusSeconds(300), BackupStatusCode.COMPLETED),
+                  checkpoint(1, 105, now.minusSeconds(100), BackupStatusCode.COMPLETED)),
+              2,
+              List.of(
+                  checkpoint(2, 90, now.minusSeconds(500), BackupStatusCode.COMPLETED),
+                  checkpoint(2, 100, now.minusSeconds(300), BackupStatusCode.COMPLETED),
+                  checkpoint(2, 105, now.minusSeconds(100), BackupStatusCode.FAILED))));
+
+      // when
+      runRetentionCycle();
+
+      // then
+      verifyDeleteCommandSent(1, 90);
+      verifyDeleteCommandSent(2, 90);
+      verifyNoDeleteCommandSent(100);
+      verifyNoDeleteCommandSent(105);
+    }
+
+    @Test
+    void shouldUseTheEarliestAnchorTimestampAcrossPartitionsAsWindowBound() {
+      // given — partition 2 recorded the shared anchor 100 earlier than partition 1; 90 is only
+      // outside the window when measured from partition 1's timestamp
+      final var now = actorScheduler.getClock().instant();
+      setupBackupStoreListForPartitions(
+          Map.of(
+              1,
+              List.of(
+                  checkpoint(1, 90, now.minusSeconds(340), BackupStatusCode.COMPLETED),
+                  checkpoint(1, 100, now.minusSeconds(200), BackupStatusCode.COMPLETED)),
+              2,
+              List.of(
+                  checkpoint(2, 90, now.minusSeconds(340), BackupStatusCode.COMPLETED),
+                  checkpoint(2, 100, now.minusSeconds(300), BackupStatusCode.COMPLETED))));
+
+      // when
+      runRetentionCycle();
+
+      // then — both partitions keep 90, as they share the same window bound
+      verifyNoDeleteCommands();
+    }
+
+    @Test
+    void shouldAskEveryPartitionOnceWhenTheyAgreeOnTheLatestCompletedCheckpoint() {
+      // given
+      final var now = actorScheduler.getClock().instant();
+      setupBackupStoreListForPartitions(createBackupsForPartitions(List.of(1, 2), now));
+
+      // when
+      runRetentionCycle();
+
+      // then
+      verify(backupStore, times(2))
+          .list(any(), argThat(options -> options.order() == ListOptions.Order.DESCENDING));
+    }
+
+    @Test
+    void shouldLowerTheCandidateAfterTwoPartitionsAgreedOnIt() {
+      // given — partitions 1 and 2 agree on 105, then partition 3 only has 100 completed, so the
+      // search has to go back to partitions 1 and 2 for 100
+      setupMultiPartition(List.of(1, 2, 3));
+      final var now = actorScheduler.getClock().instant();
+      setupBackupStoreListForPartitions(
+          Map.of(
+              1,
+              List.of(
+                  checkpoint(1, 90, now.minusSeconds(500), BackupStatusCode.COMPLETED),
+                  checkpoint(1, 100, now.minusSeconds(300), BackupStatusCode.COMPLETED),
+                  checkpoint(1, 105, now.minusSeconds(100), BackupStatusCode.COMPLETED)),
+              2,
+              List.of(
+                  checkpoint(2, 90, now.minusSeconds(500), BackupStatusCode.COMPLETED),
+                  checkpoint(2, 100, now.minusSeconds(300), BackupStatusCode.COMPLETED),
+                  checkpoint(2, 105, now.minusSeconds(100), BackupStatusCode.COMPLETED)),
+              3,
+              List.of(
+                  checkpoint(3, 90, now.minusSeconds(500), BackupStatusCode.COMPLETED),
+                  checkpoint(3, 100, now.minusSeconds(300), BackupStatusCode.COMPLETED),
+                  checkpoint(3, 105, now.minusSeconds(100), BackupStatusCode.FAILED))));
+
+      // when
+      runRetentionCycle();
+
+      // then — 90 is outside the window of the shared anchor 100 everywhere, 100 and 105 are kept
+      List.of(1, 2, 3)
+          .forEach(
+              partition -> {
+                verifyDeleteCommandSent(partition, 90);
+                verifyNoDeleteCommandSent(partition, 100);
+                verifyNoDeleteCommandSent(partition, 105);
+              });
+      // one question per partition for 105, then partitions 1 and 2 are asked again for 100
+      verify(backupStore, times(5))
+          .list(any(), argThat(options -> options.order() == ListOptions.Order.DESCENDING));
+    }
+
+    @Test
+    void shouldRetryOnNextScheduleWhenListingFailsAfterTheCandidateWasLowered() {
+      // given — partition 2 lowers the candidate to 100, and asking partition 1 again for it fails
+      // once
+      final var now = actorScheduler.getClock().instant();
+      final var partition1Backups =
+          List.of(
+              checkpoint(1, 90, now.minusSeconds(500), BackupStatusCode.COMPLETED),
+              checkpoint(1, 100, now.minusSeconds(300), BackupStatusCode.COMPLETED),
+              checkpoint(1, 105, now.minusSeconds(100), BackupStatusCode.COMPLETED));
+      setupBackupStoreListForPartitions(
+          Map.of(
+              1,
+              partition1Backups,
+              2,
+              List.of(
+                  checkpoint(2, 90, now.minusSeconds(500), BackupStatusCode.COMPLETED),
+                  checkpoint(2, 100, now.minusSeconds(300), BackupStatusCode.COMPLETED),
+                  checkpoint(2, 105, now.minusSeconds(100), BackupStatusCode.FAILED))));
+      final var failNextLoweredListing = new AtomicBoolean(true);
+      doAnswer(
+              invocation -> {
+                if (failNextLoweredListing.getAndSet(false)) {
+                  return CompletableFuture.failedFuture(new RuntimeException("listing failed"));
+                }
+                final ListOptions options = invocation.getArgument(1);
+                return CompletableFuture.completedFuture(
+                    options.select(partition1Backups, BackupStatus::id));
+              })
+          .when(backupStore)
+          .list(
+              argThat(id -> id.partitionId().get() == 1),
+              argThat(
+                  options ->
+                      options.order() == ListOptions.Order.DESCENDING
+                          && options.startExclusive().isPresent()));
+
+      // when — the first run fails while searching for the shared anchor
+      runRetentionCycle();
+
+      // then — nothing is deleted on any partition
+      verifyNoDeleteCommands();
+
+      // when — the next scheduled run succeeds
+      actorScheduler.updateClock(Duration.ofSeconds(10));
+      actorScheduler.workUntilDone();
+
+      // then
+      verifyDeleteCommandSent(1, 90);
+      verifyDeleteCommandSent(2, 90);
+      verifyNoDeleteCommandSent(100);
+      verifyNoDeleteCommandSent(105);
+    }
+
+    @Test
+    void shouldNotDeleteAnythingWhenNoCheckpointIsCompletedOnEveryPartition() {
+      // given — each partition only completed a checkpoint the other one failed
+      final var now = actorScheduler.getClock().instant();
+      setupBackupStoreListForPartitions(
+          Map.of(
+              1,
+              List.of(
+                  checkpoint(1, 95, now.minusSeconds(500), BackupStatusCode.FAILED),
+                  checkpoint(1, 100, now.minusSeconds(400), BackupStatusCode.COMPLETED),
+                  checkpoint(1, 105, now.minusSeconds(100), BackupStatusCode.FAILED)),
+              2,
+              List.of(
+                  checkpoint(2, 95, now.minusSeconds(500), BackupStatusCode.FAILED),
+                  checkpoint(2, 100, now.minusSeconds(400), BackupStatusCode.FAILED),
+                  checkpoint(2, 105, now.minusSeconds(100), BackupStatusCode.COMPLETED))));
+
+      // when
+      runRetentionCycle();
+
+      // then
+      verifyNoDeleteCommands();
+    }
+
+    @Test
+    void shouldNotDeleteCheckpointsNewerThanTheSharedAnchorWithSkewedTimestamp() {
+      // given — checkpoint 103 on partition 1 was written by a leader whose clock was far behind
+      final var now = actorScheduler.getClock().instant();
+      setupBackupStoreListForPartitions(
+          Map.of(
+              1,
+              List.of(
+                  checkpoint(1, 100, now.minusSeconds(300), BackupStatusCode.COMPLETED),
+                  checkpoint(1, 103, now.minusSeconds(900), BackupStatusCode.COMPLETED),
+                  checkpoint(1, 105, now.minusSeconds(100), BackupStatusCode.COMPLETED)),
+              2,
+              List.of(
+                  checkpoint(2, 100, now.minusSeconds(300), BackupStatusCode.COMPLETED),
+                  checkpoint(2, 105, now.minusSeconds(100), BackupStatusCode.FAILED))));
+
+      // when
+      runRetentionCycle();
+
+      // then
+      verifyNoDeleteCommands();
+    }
+
+    private BackupStatus checkpoint(
+        final int partition,
+        final long checkpointId,
+        final Instant timestamp,
+        final BackupStatusCode statusCode) {
+      final var descriptor =
+          new BackupDescriptorImpl(
+              10L, 3, VersionUtil.getVersion(), timestamp, CheckpointType.SCHEDULED_BACKUP);
+      return new BackupStatusImpl(
+          new BackupIdentifierImpl(1, partition, checkpointId),
+          Optional.of(descriptor),
+          statusCode,
+          null,
+          Optional.empty(),
+          Optional.of(timestamp));
     }
   }
 

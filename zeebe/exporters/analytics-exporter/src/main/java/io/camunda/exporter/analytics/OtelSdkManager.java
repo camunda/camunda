@@ -56,7 +56,14 @@ import java.util.function.Consumer;
 public class OtelSdkManager implements AutoCloseable {
 
   private static final String INSTRUMENTATION_SCOPE = "io.camunda.analytics";
-  private static final String SCHEMA_URL = "https://camunda.io/schemas/analytics/v1";
+
+  /**
+   * The product-telemetry data contract version this exporter's payload conforms to. Releases
+   * before the contract stamped {@code v1}; the contract's first version is {@code 1.0}, so the two
+   * payload shapes are distinguishable from the scope alone.
+   */
+  private static final String SCHEMA_URL = "https://camunda.io/schemas/analytics/1.0";
+
   private static final String OTLP_LOGS_PATH = "/v1/logs";
   private static final String OTLP_METRICS_PATH = "/v1/metrics";
   private static final String SERVICE_NAME_VALUE = "camunda-zeebe";
@@ -147,14 +154,19 @@ public class OtelSdkManager implements AutoCloseable {
         .emit();
   }
 
-  /** Increments the named counter by 1 and updates the export window tracking fields. */
+  /**
+   * Increments the named counter by 1 and updates the export window tracking fields. The unit is
+   * the counter's contracted unit (for example {@code {decision_instance}}); it is fixed when the
+   * counter is first created.
+   */
   public void incrementMetric(
       final String metricName,
+      final String unit,
       final long position,
       final long eventTimeMs,
       final Attributes dimensions) {
     counters
-        .computeIfAbsent(metricName, name -> otelMeter.counterBuilder(name).build())
+        .computeIfAbsent(metricName, name -> otelMeter.counterBuilder(name).setUnit(unit).build())
         .add(1, dimensions);
     metricWindow.record(position, eventTimeMs);
   }
@@ -181,6 +193,7 @@ public class OtelSdkManager implements AutoCloseable {
   private void registerExportWindowGauge() {
     otelMeter
         .gaugeBuilder(EXPORT_WINDOW)
+        .setUnit(AnalyticsAttributes.Metric.EXPORT_WINDOW_UNIT)
         .ofLongs()
         .buildWithCallback(
             measurement -> {

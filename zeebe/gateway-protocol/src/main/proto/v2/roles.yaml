@@ -1116,7 +1116,7 @@ components:
             $ref: '#/components/schemas/RoleUserSearchQuerySortRequest'
       x-properties-added-in-version:
         - propertyName: "filter"
-          addedInVersion: "8.10"
+          addedInVersion: "8.11"
 
     RoleUserFilterRequest:
       description: Role user filter request

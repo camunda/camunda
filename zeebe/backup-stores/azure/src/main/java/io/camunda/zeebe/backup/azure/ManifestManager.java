@@ -179,9 +179,10 @@ public final class ManifestManager {
   void markAsFailed(final BackupIdentifier manifestId, final String failureReason) {
 
     final BlobClient blobClient = blobContainerClient.getBlobClient(manifestIdPath(manifestId));
-    Manifest manifest = getManifest(manifestId);
+    final Manifest manifest = getManifest(manifestId);
     if (manifest == null) {
-      manifest = Manifest.createFailed(manifestId);
+      upload(blobClient, Manifest.createFailed(manifestId, failureReason));
+      return;
     }
 
     final var updatedManifest =
@@ -194,11 +195,15 @@ public final class ManifestManager {
         };
 
     if (manifest != updatedManifest) {
-      try {
-        blobClient.upload(BinaryData.fromBytes(MAPPER.writeValueAsBytes(updatedManifest)), true);
-      } catch (final JsonProcessingException e) {
-        throw new RuntimeException(e);
-      }
+      upload(blobClient, updatedManifest);
+    }
+  }
+
+  private static void upload(final BlobClient blobClient, final Manifest manifest) {
+    try {
+      blobClient.upload(BinaryData.fromBytes(MAPPER.writeValueAsBytes(manifest)), true);
+    } catch (final JsonProcessingException e) {
+      throw new RuntimeException(e);
     }
   }
 

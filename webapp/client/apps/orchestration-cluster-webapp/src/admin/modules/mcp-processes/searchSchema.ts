@@ -15,7 +15,7 @@ const mcpProcessesSearchSchema = z.object({
 	// coerce: a numeric-looking tool name arrives typed as a JS number from the router's
 	// search parser, matching the Operations Log and Processes route schemas.
 	search: z.coerce.string().optional(),
-	sortOrder: z.enum(['asc', 'desc']).optional(),
+	sortOrder: z.enum(['ASC', 'DESC']).optional(),
 	page: z.number().int().positive().optional(),
 	pageSize: z.literal(PAGE_SIZES).optional(),
 });

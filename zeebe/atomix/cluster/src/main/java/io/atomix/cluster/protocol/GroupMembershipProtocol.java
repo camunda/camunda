@@ -23,6 +23,7 @@ import io.atomix.cluster.discovery.NodeDiscoveryService;
 import io.atomix.utils.NamedType;
 import io.atomix.utils.config.Configured;
 import io.atomix.utils.event.ListenerService;
+import io.atomix.utils.net.Address;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -46,6 +47,22 @@ public interface GroupMembershipProtocol
    * @return the member or {@code null} if no node with the given identifier exists
    */
   Member getMember(MemberId memberId);
+
+  /**
+   * Returns the member with the specified address.
+   *
+   * <p>The default implementation scans {@link #getMembers()}, which allocates a new set at every
+   * invocation. Implementations are encouraged to override it with an allocation-free lookup.
+   *
+   * @param address the member address
+   * @return the member or {@code null} if no member with the given address exists
+   */
+  default Member getMember(final Address address) {
+    return getMembers().stream()
+        .filter(member -> member.address().equals(address))
+        .findFirst()
+        .orElse(null);
+  }
 
   /**
    * Joins the cluster.

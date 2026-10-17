@@ -38,7 +38,10 @@ describe('<LoginPage />', () => {
 		const screen = await renderWithRouter(TestLoginPage, {path: '/tasklist/login'});
 
 		const usernameField = screen.getByLabelText(/username/i);
-		const passwordField = screen.getByLabelText(/password/i);
+		// getByLabelText(/password/i) would also match the show/hide password toggle
+		// button (its aria-label contains "password"); scope to the textbox role so
+		// only the input itself is selected.
+		const passwordField = screen.getByRole('textbox', {name: /password/i});
 
 		await userEvent.click(screen.getByRole('button', {name: /login/i}));
 
@@ -63,5 +66,20 @@ describe('<LoginPage />', () => {
 		await expect.element(passwordField).toBeValid();
 		await expect.element(usernameField).toHaveAccessibleDescription(/username is required/i);
 		await expect.element(usernameField).toBeInvalid();
+	});
+
+	it('should toggle password visibility', async () => {
+		const screen = await renderWithRouter(TestLoginPage, {path: '/tasklist/login'});
+		const passwordField = screen.getByRole('textbox', {name: /password/i});
+
+		await expect.element(passwordField).toHaveAttribute('type', 'password');
+
+		await userEvent.click(screen.getByRole('button', {name: /show password/i}));
+
+		await expect.element(passwordField).toHaveAttribute('type', 'text');
+
+		await userEvent.click(screen.getByRole('button', {name: /hide password/i}));
+
+		await expect.element(passwordField).toHaveAttribute('type', 'password');
 	});
 });

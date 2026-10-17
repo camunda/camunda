@@ -199,7 +199,12 @@ public class Engine implements RecordProcessor {
           rejectInstanceCommand(typedCommand, suspension.rejectionReason());
         }
         case BUFFER -> {
-          bufferingBehavior.bufferCommand(typedCommand, suspension.processInstanceKey());
+          bufferingBehavior.bufferCommand(
+              typedCommand.getKey(),
+              typedCommand.getValueType(),
+              typedCommand.getIntent(),
+              typedCommand.getValue(),
+              suspension.processInstanceKey());
         }
         default -> currentProcessor.processRecord(record, processingResultBuilder);
       }

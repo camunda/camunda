@@ -369,3 +369,17 @@ export async function activateSingleJob(
   }).toPass(defaultAssertionOptions);
   return jobKey;
 }
+
+export async function updateJobRetries(
+  request: APIRequestContext,
+  jobKey: string,
+  retries: number,
+): Promise<void> {
+  await assertStatusCode(
+    await request.patch(buildUrl('/jobs/{jobKey}', {jobKey}), {
+      headers: jsonHeaders(),
+      data: {changeset: {retries}},
+    }),
+    204,
+  );
+}

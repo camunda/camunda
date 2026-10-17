@@ -6,67 +6,17 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {z} from 'zod';
-import {API_VERSION, getCollectionResponseBodySchema, type Endpoint} from './common';
+import {API_VERSION, type Endpoint} from './common';
+import {activateAdHocSubProcessActivitiesStatus204Schema} from './gen/zod/activateAdHocSubProcessActivitiesSchema';
+import {adHocSubProcessActivateActivitiesInstructionSchema} from './gen/zod/adHocSubProcessActivateActivitiesInstructionSchema';
+import type {ActivateAdHocSubProcessActivitiesStatus204} from './gen/types/ActivateAdHocSubProcessActivities';
+import type {AdHocSubProcessActivateActivitiesInstruction} from './gen/types/AdHocSubProcessActivateActivitiesInstruction';
 
-const activityTypeSchema = z.enum([
-	'UNSPECIFIED',
-	'PROCESS',
-	'SUB_PROCESS',
-	'EVENT_SUB_PROCESS',
-	'INTERMEDIATE_CATCH_EVENT',
-	'INTERMEDIATE_THROW_EVENT',
-	'BOUNDARY_EVENT',
-	'SERVICE_TASK',
-	'RECEIVE_TASK',
-	'USER_TASK',
-	'MANUAL_TASK',
-	'TASK',
-	'MULTI_INSTANCE_BODY',
-	'CALL_ACTIVITY',
-	'BUSINESS_RULE_TASK',
-	'SCRIPT_TASK',
-	'SEND_TASK',
-	'UNKNOWN',
-]);
-type ActivityType = z.infer<typeof activityTypeSchema>;
+const activateActivityWithinAdHocSubProcessRequestBodySchema = adHocSubProcessActivateActivitiesInstructionSchema;
+type ActivateActivityWithinAdHocSubProcessRequestBody = AdHocSubProcessActivateActivitiesInstruction;
 
-const adHocSubProcessActivityFilterSchema = z.object({
-	processDefinitionKey: z.string(),
-	adHocSubProcessId: z.string(),
-});
-
-const queryActivatableActivitiesRequestBodySchema = z.object({
-	filter: adHocSubProcessActivityFilterSchema,
-});
-type QueryActivatableActivitiesRequestBody = z.infer<typeof queryActivatableActivitiesRequestBodySchema>;
-
-const activatableActivitySchema = z.object({
-	processDefinitionKey: z.string(),
-	processDefinitionId: z.string(),
-	adHocSubProcessId: z.string(),
-	elementId: z.string(),
-	elementName: z.string(),
-	type: activityTypeSchema,
-	documentation: z.string(),
-	tenantId: z.string(),
-});
-type ActivatableActivity = z.infer<typeof activatableActivitySchema>;
-
-const queryActivatableActivitiesResponseBodySchema = getCollectionResponseBodySchema(activatableActivitySchema);
-type QueryActivatableActivitiesResponseBody = z.infer<typeof queryActivatableActivitiesResponseBodySchema>;
-
-const activateActivityWithinAdHocSubProcessRequestBodySchema = z.object({
-	elementId: z.string(),
-});
-type ActivateActivityWithinAdHocSubProcessRequestBody = z.infer<
-	typeof activateActivityWithinAdHocSubProcessRequestBodySchema
->;
-
-const activateActivityWithinAdHocSubProcessResponseBodySchema = z.void();
-type ActivateActivityWithinAdHocSubProcessResponseBody = z.infer<
-	typeof activateActivityWithinAdHocSubProcessResponseBodySchema
->;
+const activateActivityWithinAdHocSubProcessResponseBodySchema = activateAdHocSubProcessActivitiesStatus204Schema;
+type ActivateActivityWithinAdHocSubProcessResponseBody = ActivateAdHocSubProcessActivitiesStatus204;
 
 const activateAdHocSubProcessActivities = {
 	method: 'POST',
@@ -77,19 +27,9 @@ const activateAdHocSubProcessActivities = {
 }>;
 
 export {
-	activityTypeSchema,
-	queryActivatableActivitiesRequestBodySchema,
-	queryActivatableActivitiesResponseBodySchema,
 	activateActivityWithinAdHocSubProcessRequestBodySchema,
 	activateActivityWithinAdHocSubProcessResponseBodySchema,
 	activateAdHocSubProcessActivities,
 };
 
-export type {
-	ActivityType,
-	QueryActivatableActivitiesRequestBody,
-	ActivatableActivity,
-	QueryActivatableActivitiesResponseBody,
-	ActivateActivityWithinAdHocSubProcessRequestBody,
-	ActivateActivityWithinAdHocSubProcessResponseBody,
-};
+export type {ActivateActivityWithinAdHocSubProcessRequestBody, ActivateActivityWithinAdHocSubProcessResponseBody};

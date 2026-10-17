@@ -14,7 +14,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.configuration.Camunda;
-import io.camunda.configuration.PrimaryStorageBackup.BackupStoreType;
+import io.camunda.configuration.data.primarystorage.PrimaryStorageBackup.BackupStoreType;
 import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.backup.client.api.BackupRequestHandler;
 import io.camunda.zeebe.backup.client.api.BackupStatus;
@@ -433,6 +433,7 @@ class BackupMultiPartitionTest {
     backupStatusRequest.setPartitionGroup(DEFAULT_PHYSICAL_TENANT_ID);
     final BrokerClient brokerClient = cluster.anyGateway().bean(BrokerClient.class);
     Awaitility.await()
+        .atMost(30, TimeUnit.SECONDS)
         .ignoreExceptions()
         .untilAsserted(
             () -> {

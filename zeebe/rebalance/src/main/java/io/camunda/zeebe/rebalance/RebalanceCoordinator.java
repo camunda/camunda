@@ -10,7 +10,6 @@ package io.camunda.zeebe.rebalance;
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.ClusterConfigurationUpdateNotifier.ClusterConfigurationUpdateListener;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationCoordinatorSupplier;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.rebalance.RebalanceRequestFailedException.ConfigurationChangeInProgressException;
 import io.camunda.zeebe.rebalance.RebalanceRequestFailedException.NotCoordinatorException;
@@ -84,11 +83,6 @@ public final class RebalanceCoordinator
     this.rebalanceIdGenerator = rebalanceIdGenerator;
     this.clock = clock;
     this.metrics = metrics;
-  }
-
-  @Override
-  public void onClusterConfigurationUpdated(final ClusterConfiguration clusterConfiguration) {
-    onClusterConfigurationUpdated(CurrentClusterConfiguration.fromLegacy(clusterConfiguration));
   }
 
   @Override

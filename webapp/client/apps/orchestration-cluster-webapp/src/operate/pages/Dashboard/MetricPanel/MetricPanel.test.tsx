@@ -42,7 +42,7 @@ describe('<MetricPanel />', () => {
 
 		const screen = await renderWithRouter(MetricPanel, {path: '/operate'});
 
-		await expect.element(screen.getByText('10 Running Process Instances in total')).toBeVisible();
+		await expect.element(screen.getByText('10 running process instances in total')).toBeVisible();
 		await expect
 			.element(screen.getByTestId('total-instances-link'))
 			.toHaveAttribute(
@@ -56,7 +56,7 @@ describe('<MetricPanel />', () => {
 
 		const screen = await renderWithRouter(MetricPanel, {path: '/operate'});
 
-		await expect.element(screen.getByText('0 Running Process Instances in total')).toBeVisible();
+		await expect.element(screen.getByText('0 running process instances in total')).toBeVisible();
 		await expect
 			.element(screen.getByTestId('total-instances-link'))
 			.toHaveAttribute(
@@ -70,7 +70,7 @@ describe('<MetricPanel />', () => {
 
 		const screen = await renderWithRouter(MetricPanel, {path: '/operate'});
 
-		await expect.element(screen.getByText('10 Running Process Instances in total')).toBeVisible();
+		await expect.element(screen.getByText('10 running process instances in total')).toBeVisible();
 		await expect
 			.element(screen.getByTestId('incident-instances-link'))
 			.toHaveAttribute(
@@ -84,7 +84,7 @@ describe('<MetricPanel />', () => {
 
 		const screen = await renderWithRouter(MetricPanel, {path: '/operate'});
 
-		await expect.element(screen.getByText('10 Running Process Instances in total')).toBeVisible();
+		await expect.element(screen.getByText('10 running process instances in total')).toBeVisible();
 		await expect
 			.element(screen.getByTestId('active-instances-link'))
 			.toHaveAttribute(
@@ -106,7 +106,7 @@ describe('<MetricPanel />', () => {
 
 		const screen = await renderWithRouter(MetricPanel, {path: '/operate'});
 
-		await expect.element(screen.getByText('Running Process Instances in total')).toBeVisible();
+		await expect.element(screen.getByText('Running process instances in total')).toBeVisible();
 		await expect.element(screen.getByTestId('total-instances-link')).not.toBeInTheDocument();
 		await expect.element(screen.getByTestId('instances-bar-skeleton')).toBeVisible();
 		await expect.poll(() => statsRequests).toBe(1);
@@ -128,7 +128,7 @@ describe('<MetricPanel />', () => {
 		worker.use(mockGetProcessDefinitionInstanceStatisticsEndpoint({successResponse: STATS_WITH_INSTANCES}));
 
 		const screen = await renderWithRouter(MetricPanel, {path: '/operate'});
-		await expect.element(screen.getByText('10 Running Process Instances in total')).toBeVisible();
+		await expect.element(screen.getByText('10 running process instances in total')).toBeVisible();
 
 		worker.use(mockGetProcessDefinitionInstanceStatisticsEndpoint({successResponse: ERROR_RESPONSE}));
 		await vi.advanceTimersByTimeAsync(5000);
@@ -136,6 +136,6 @@ describe('<MetricPanel />', () => {
 
 		worker.use(mockGetProcessDefinitionInstanceStatisticsEndpoint({successResponse: STATS_WITH_INSTANCES}));
 		await vi.advanceTimersByTimeAsync(5000);
-		await expect.element(screen.getByText('10 Running Process Instances in total')).toBeVisible();
+		await expect.element(screen.getByText('10 running process instances in total')).toBeVisible();
 	});
 });

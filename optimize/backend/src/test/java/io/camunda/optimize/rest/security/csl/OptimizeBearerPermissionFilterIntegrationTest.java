@@ -19,7 +19,8 @@ import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.JWSHeader;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
-import io.camunda.identity.sdk.authentication.exception.TokenVerificationException;
+import io.camunda.identity.sdk.authentication.exception.InvalidClaimException;
+import io.camunda.identity.sdk.authentication.exception.TokenExpiredException;
 import io.camunda.optimize.rest.exceptions.NotAuthorizedException;
 import io.camunda.optimize.rest.security.CustomPreAuthenticatedAuthenticationProvider;
 import io.camunda.optimize.rest.security.ccsm.CCSMSecurityConfigurerAdapter;
@@ -250,14 +251,14 @@ class OptimizeBearerPermissionFilterIntegrationTest {
   }
 
   @Test
-  void shouldLetARoleLessUserThroughWhenTheTokenCannotBeFreshlyVerified() throws Exception {
+  void shouldLetAUserThroughWhenTheTokenHasExpiredSinceTheChainVerifiedIt() throws Exception {
     // given
     final String token = userToken("noopt");
     ccsmRunner()
         .run(
             ctx -> {
               // given
-              doThrow(new TokenVerificationException("token expired"))
+              doThrow(new TokenExpiredException(new RuntimeException("token expired")))
                   .when(ctx.getBean(CCSMTokenService.class))
                   .verifyAccessToken(token);
 
@@ -267,6 +268,27 @@ class OptimizeBearerPermissionFilterIntegrationTest {
 
               // then
               assertThat(response.getStatus()).isEqualTo(200);
+            });
+  }
+
+  @Test
+  void shouldRejectAUserWhoseTokenFailsVerification() throws Exception {
+    // given
+    final String token = userToken("noopt");
+    ccsmRunner()
+        .run(
+            ctx -> {
+              // given
+              doThrow(new InvalidClaimException(new RuntimeException("invalid claim")))
+                  .when(ctx.getBean(CCSMTokenService.class))
+                  .verifyAccessToken(token);
+
+              // when
+              final MockHttpServletResponse response =
+                  callWithBearerToken(ctx, "/api/entities", token);
+
+              // then
+              assertThat(response.getStatus()).isEqualTo(401);
             });
   }
 

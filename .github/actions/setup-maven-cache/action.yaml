@@ -38,14 +38,17 @@ runs:
       #      from downloading multiple artifacts at the same time.
       # `aether.dependencyCollector.impl=bf` uses a breadth first algorithm when resolving/downloading poms.
       #     The `bf` collector is suggested when the project contains many modules and dependencies.
+      # `aether.connector.*` configures the HTTP transport of Maven 3.9 (resolver 1.x).
+      # `aether.connector.requestTimeout` is a socket read timeout (max silence between packets), not a total download time.
       run: |
         tee .mvn/maven.config <<EOF
         --errors
         --batch-mode
         --update-snapshots
-        -D aether.transport.http.connectionMaxTtl=120
-        -D aether.transport.http.reuseConnections=${{ inputs.maven-wagon-http-pool }}
-        -D aether.transport.http.retryHandler.count=5
+        -D aether.connector.requestTimeout=60000
+        -D aether.connector.http.connectionMaxTtl=120
+        -D aether.connector.http.reuseConnections=${{ inputs.maven-wagon-http-pool }}
+        -D aether.connector.http.retryHandler.count=5
         -D aether.enhancedLocalRepository.split=true
         -D aether.enhancedLocalRepository.splitRemote=true
         -D aether.syncContext.named.nameMapper=file-gav

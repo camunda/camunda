@@ -111,8 +111,9 @@ public final class ProcessProcessor implements BpmnElementContainerProcessor<Exe
     // a completing instance may have been RESUMING (a buffered command drained straight to
     // completion, superseding the RESUME_JOBS/COMPLETE_RESUMING chain — see those processors'
     // lifecycle-ending rejection) without ever reaching the normal resume finish line; discard the
-    // sample so it doesn't stay in the map forever
-    suspensionMetrics.cancelResumeDuration(context.getElementInstanceKey());
+    // sample so it doesn't stay in the map forever. The same goes for a SUSPENDING instance whose
+    // walk never reached SUSPENDED.
+    suspensionMetrics.discardDurations(context.getElementInstanceKey());
     return result;
   }
 
@@ -153,7 +154,7 @@ public final class ProcessProcessor implements BpmnElementContainerProcessor<Exe
     if (droppedCommands > 0) {
       suspensionMetrics.commandsDropped(droppedCommands);
     }
-    suspensionMetrics.cancelResumeDuration(piKey);
+    suspensionMetrics.discardDurations(piKey);
   }
 
   private AsyncRequest getAsyncRequest(final BpmnElementContext context) {

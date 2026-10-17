@@ -85,7 +85,7 @@ class AnalyticsExporterOtelIT {
         AnalyticsAttributes.Heartbeat.BROKER_VERSION.getKey(),
         AnalyticsAttributes.Heartbeat.EXPORTER_VERSION.getKey(),
         // schema URL is part of the instrumentation scope, not a record attribute
-        "ScopeLogs SchemaURL: https://camunda.io/schemas/analytics/v1");
+        "ScopeLogs SchemaURL: https://camunda.io/schemas/analytics/1.0");
   }
 
   /** Events arrive at the collector with correct event name and attributes. */

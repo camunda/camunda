@@ -17,6 +17,7 @@ import io.camunda.optimize.dto.optimize.query.businessvalue.BusinessValueOvervie
 import io.camunda.optimize.dto.optimize.query.businessvalue.BusinessValueOverviewResponseDto.CategoryDto;
 import io.camunda.optimize.dto.optimize.query.businessvalue.BusinessValueOverviewResponseDto.CoverageDto;
 import io.camunda.optimize.dto.optimize.query.businessvalue.BusinessValueOverviewResponseDto.OffTargetEntryDto;
+import io.camunda.optimize.dto.optimize.query.businessvalue.BusinessValueOverviewResponseDto.OffTargetStatus;
 import io.camunda.optimize.dto.optimize.query.businessvalue.BusinessValueTargetDto;
 import io.camunda.optimize.dto.optimize.query.definition.DefinitionWithTenantIdsDto;
 import io.camunda.optimize.service.DefinitionService;
@@ -134,9 +135,10 @@ public class BusinessValueOverviewReadService {
             .toList();
 
     final OffsetDateTime now = OffsetDateTime.now();
-    final List<BusinessValueOverviewDto> rows =
+    final AssembledRows assembled =
         withTargetOnlyDefinitions(
             computedRows, currentDefinitions, authorizedTenantIds, range, now);
+    final List<BusinessValueOverviewDto> rows = assembled.rows();
 
     if (rows.isEmpty()) {
       return emptyResponse();
@@ -158,6 +160,23 @@ public class BusinessValueOverviewReadService {
     boolean anyRowStale = false;
 
     for (final BusinessValueOverviewDto row : rows) {
+      // A row the repository returned was measured by a sweep that completed, so a null KPI value
+      // means the definition produced no bucket — nothing completed in the range. A row this
+      // service synthesized has never been measured at all. Both are unmet targets, but only the
+      // first is a statement about the process rather than about our own bookkeeping.
+      //
+      // One exception, accepted rather than handled: with overviewComputeEnabled=false the sweep
+      // writes rows it never measured, and a later target save applies the target to one of them
+      // through applyTargetToExistingRows. Such a row reads as NO_COMPLETED_INSTANCES though
+      // nothing measured it. It takes an operator disabling compute, and the next enabled sweep
+      // corrects it.
+      final OffTargetStatus noMeasurementStatus =
+          assembled
+                  .synthesized()
+                  .contains(new DefinitionKey(row.getTenantId(), row.getProcessDefinitionKey()))
+              ? OffTargetStatus.NOT_MEASURED
+              : OffTargetStatus.NO_COMPLETED_INSTANCES;
+
       totalProcesses++;
       if (row.isHasAnyTarget()) {
         processesWithTarget++;
@@ -176,20 +195,29 @@ public class BusinessValueOverviewReadService {
         ctWithTarget++;
         if (Boolean.TRUE.equals(cycleTime.getMet())) {
           ctMet++;
-        } else if (Boolean.FALSE.equals(cycleTime.getMet())
-            && cycleTime.getValue() != null
-            && cycleTime.getTarget() > 0L) {
+        } else if (cycleTime.getTarget() > 0L) {
           // A cycle-time target of zero would produce Infinity gapPct (division by zero) and break
           // the JSON contract. Front-end target validation is the source of truth; this guard
-          // survives if a zero target slips past it.
+          // survives if a zero target slips past it, for every status.
+          //
+          // met is null, not false, when there is no measured value, so this branch covers a
+          // measured miss and an unmeasured target alike. The extra value check guards only the
+          // met/value pair the writer rejects, so an impossible row degrades instead of throwing.
           offTarget.add(
-              buildOffTargetEntry(
-                  row,
-                  Kpi.CYCLE_TIME,
-                  cycleTime.getValue().doubleValue(),
-                  cycleTime.getTarget().doubleValue(),
-                  CYCLE_TIME_DISPLAY_UNIT,
-                  Direction.LOWER_IS_BETTER));
+              Boolean.FALSE.equals(cycleTime.getMet()) && cycleTime.getValue() != null
+                  ? measuredMiss(
+                      row,
+                      Kpi.CYCLE_TIME,
+                      cycleTime.getValue().doubleValue(),
+                      cycleTime.getTarget().doubleValue(),
+                      CYCLE_TIME_DISPLAY_UNIT,
+                      Direction.LOWER_IS_BETTER)
+                  : noMeasurement(
+                      row,
+                      Kpi.CYCLE_TIME,
+                      cycleTime.getTarget().doubleValue(),
+                      CYCLE_TIME_DISPLAY_UNIT,
+                      noMeasurementStatus));
         }
       }
 
@@ -200,18 +228,23 @@ public class BusinessValueOverviewReadService {
         arWithTarget++;
         if (Boolean.TRUE.equals(automationRate.getMet())) {
           arMet++;
-        } else if (Boolean.FALSE.equals(automationRate.getMet())
-            && automationRate.getValue() != null
-            && automationRate.getTarget() > 0) {
+        } else if (automationRate.getTarget() > 0) {
           // Same zero-target guard as cycle time: a 0% automation target divides by zero on gapPct.
           offTarget.add(
-              buildOffTargetEntry(
-                  row,
-                  Kpi.AUTOMATION_RATE,
-                  automationRate.getValue(),
-                  automationRate.getTarget().doubleValue(),
-                  AUTOMATION_RATE_DISPLAY_UNIT,
-                  Direction.HIGHER_IS_BETTER));
+              Boolean.FALSE.equals(automationRate.getMet()) && automationRate.getValue() != null
+                  ? measuredMiss(
+                      row,
+                      Kpi.AUTOMATION_RATE,
+                      automationRate.getValue(),
+                      automationRate.getTarget().doubleValue(),
+                      AUTOMATION_RATE_DISPLAY_UNIT,
+                      Direction.HIGHER_IS_BETTER)
+                  : noMeasurement(
+                      row,
+                      Kpi.AUTOMATION_RATE,
+                      automationRate.getTarget().doubleValue(),
+                      AUTOMATION_RATE_DISPLAY_UNIT,
+                      automationRateNoMeasurementStatus(row, noMeasurementStatus)));
         }
       }
 
@@ -232,7 +265,23 @@ public class BusinessValueOverviewReadService {
       triggerFullScopeBackstop();
     }
 
-    offTarget.sort(Comparator.comparingDouble(OffTargetEntryDto::getGapPct).reversed());
+    // Measured misses lead, worst gap first — that ranking is the point of the list. nullsLast
+    // puts the no-measurement entries after them; comparingDouble would unbox a null gapPct and
+    // throw.
+    //
+    // Process name alone does not break ties: two tenants, or two definitions, may share a display
+    // name, and the repository query imposes no order of its own. Tenant and key finish the job, so
+    // two reads of unchanged data return the same sequence.
+    offTarget.sort(
+        Comparator.comparing(
+                OffTargetEntryDto::getGapPct, Comparator.nullsLast(Comparator.reverseOrder()))
+            .thenComparing(
+                OffTargetEntryDto::getProcessName, Comparator.nullsLast(Comparator.naturalOrder()))
+            .thenComparing(
+                OffTargetEntryDto::getTenantId, Comparator.nullsLast(Comparator.naturalOrder()))
+            .thenComparing(
+                OffTargetEntryDto::getProcessKey, Comparator.nullsLast(Comparator.naturalOrder()))
+            .thenComparing(OffTargetEntryDto::getKpi));
 
     return new BusinessValueOverviewResponseDto(
         processesWithTarget > 0,
@@ -244,7 +293,7 @@ public class BusinessValueOverviewReadService {
         offTarget);
   }
 
-  private OffTargetEntryDto buildOffTargetEntry(
+  private OffTargetEntryDto measuredMiss(
       final BusinessValueOverviewDto row,
       final Kpi kpi,
       final double value,
@@ -257,12 +306,63 @@ public class BusinessValueOverviewReadService {
         row.getProcessDefinitionKey(),
         row.getProcessDefinitionName(),
         kpi.getId(),
+        OffTargetStatus.OFF_TARGET,
         verdict.value(),
         verdict.target(),
         displayUnit,
         verdict.gapPct(),
         verdict.direction()); // verdict.direction() is "over"/"under" — matches
     // OffTargetEntryDto.comparison
+  }
+
+  /**
+   * Why an automation-rate target has no value.
+   *
+   * <p>A null automation rate does not imply an idle process. The rate divides over task flow
+   * nodes, so {@code ProcessViewAutomationRateInterpreter} returns null both when nothing completed
+   * and when the process has no automatable tasks at all — a process built only from events,
+   * gateways or sub-process containers never produces a rate however many instances it runs.
+   *
+   * <p>Cycle time separates the two. It comes from a duration aggregation over completed instances,
+   * so it is null only when none completed. A row with a cycle time but no automation rate
+   * therefore ran and simply has nothing to automate, which is a permanent property of the model
+   * rather than a gap in the data.
+   *
+   * <p>A synthesized row has never been measured at all, so that verdict wins over both.
+   */
+  private static OffTargetStatus automationRateNoMeasurementStatus(
+      final BusinessValueOverviewDto row, final OffTargetStatus noMeasurementStatus) {
+    if (noMeasurementStatus == OffTargetStatus.NOT_MEASURED) {
+      return OffTargetStatus.NOT_MEASURED;
+    }
+    final CycleTimeBlock cycleTime = row.getCycleTime();
+    return cycleTime != null && cycleTime.getValue() != null
+        ? OffTargetStatus.NOT_APPLICABLE
+        : OffTargetStatus.NO_COMPLETED_INSTANCES;
+  }
+
+  /**
+   * An entry for a target with no measured value. The verdict function is not consulted: it returns
+   * nulls for every output on a null value, so calling it here would only obscure that the target
+   * is all this entry can report.
+   */
+  private OffTargetEntryDto noMeasurement(
+      final BusinessValueOverviewDto row,
+      final Kpi kpi,
+      final double target,
+      final String displayUnit,
+      final OffTargetStatus status) {
+    return new OffTargetEntryDto(
+        row.getTenantId(),
+        row.getProcessDefinitionKey(),
+        row.getProcessDefinitionName(),
+        kpi.getId(),
+        status,
+        null,
+        target,
+        displayUnit,
+        null,
+        null);
   }
 
   private BusinessValueOverviewResponseDto emptyResponse() {
@@ -294,14 +394,16 @@ public class BusinessValueOverviewReadService {
    *
    * <p>A safety net rather than the usual path: {@link
    * BusinessValueOverviewComputeService#computeRowsForTarget} measures the definition and writes
-   * its rows when the target is saved, so this only catches the cases where that did not happen —
-   * the write-time measurement failed, or the sweep is switched off and the definition had no rows
-   * to fall back on. Cheap enough to be worth keeping for those.
+   * its rows when the target is saved, so this only catches the cases where that did not happen. In
+   * practice it is a definition imported since the last sweep: once any sweep has written a row,
+   * {@code alreadyComputed} excludes it here, so a target saved against it after a failed
+   * write-time measurement waits for the next sweep rather than being synthesized. Cheap enough to
+   * be worth keeping for the case it does cover.
    *
    * <p>The entry carries the target and no values, which is what it is: the target is known, the
-   * measurement is not. It therefore contributes to coverage and to the targets-set count, but is
-   * excluded from the off-target list by the existing null-value guards — there is no measurement
-   * to be off by.
+   * measurement is not. It contributes to coverage and to the targets-set count, and appears in the
+   * off-target list as {@link OffTargetStatus#NOT_MEASURED} — the target is unmet, and saying so
+   * without claiming a gap is more useful than omitting it.
    *
    * <p>Stamped with the current time so it never reads as stale. These rows were never computed, so
    * a truthful timestamp would trip the backstop into a fleet-wide recompute on every read for as
@@ -309,7 +411,7 @@ public class BusinessValueOverviewReadService {
    *
    * <p>Not persisted. The sweep owns the index; this only shapes the response.
    */
-  private List<BusinessValueOverviewDto> withTargetOnlyDefinitions(
+  private AssembledRows withTargetOnlyDefinitions(
       final List<BusinessValueOverviewDto> computedRows,
       final Map<DefinitionKey, String> currentDefinitions,
       final List<String> authorizedTenantIds,
@@ -321,6 +423,7 @@ public class BusinessValueOverviewReadService {
     }
 
     final List<BusinessValueOverviewDto> synthesized = new ArrayList<>();
+    final Set<DefinitionKey> synthesizedKeys = new HashSet<>();
     for (final BusinessValueTargetDto target :
         targetRepository.readByTenants(authorizedTenantIds)) {
       final DefinitionKey key =
@@ -347,14 +450,15 @@ public class BusinessValueOverviewReadService {
               0);
       BusinessValueOverviewComputeService.applyTarget(row, target);
       synthesized.add(row);
+      synthesizedKeys.add(key);
     }
 
     if (synthesized.isEmpty()) {
-      return computedRows;
+      return new AssembledRows(computedRows, Set.of());
     }
     final List<BusinessValueOverviewDto> all = new ArrayList<>(computedRows);
     all.addAll(synthesized);
-    return all;
+    return new AssembledRows(all, synthesizedKeys);
   }
 
   private Duration staleThreshold() {
@@ -396,4 +500,12 @@ public class BusinessValueOverviewReadService {
   }
 
   private record DefinitionKey(String tenantId, String processDefinitionKey) {}
+
+  /**
+   * The rows a response is assembled from, plus the subset this service invented because a target
+   * existed without a computed row. The caller needs that subset to tell "measured, nothing
+   * completed" apart from "never measured" — the two are indistinguishable from a row alone.
+   */
+  private record AssembledRows(
+      List<BusinessValueOverviewDto> rows, Set<DefinitionKey> synthesized) {}
 }

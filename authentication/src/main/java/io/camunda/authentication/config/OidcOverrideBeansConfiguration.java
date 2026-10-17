@@ -7,25 +7,31 @@
  */
 package io.camunda.authentication.config;
 
+import static io.camunda.cluster.PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
 import static java.util.stream.Collectors.toMap;
 
+import io.camunda.authentication.pt.PhysicalTenantAuthConfigurations;
 import io.camunda.authentication.pt.PhysicalTenantOidcProviders;
 import io.camunda.security.api.context.CamundaAuthenticationConverter;
 import io.camunda.security.api.context.MembershipResolutionContextPropagator;
 import io.camunda.security.api.context.OidcClaimsProvider;
+import io.camunda.security.api.model.config.AuthenticationConfiguration;
 import io.camunda.security.api.model.config.AuthenticationMethod;
 import io.camunda.security.api.model.config.initialization.ConfiguredUser;
 import io.camunda.security.api.model.config.oidc.OidcConfiguration;
+import io.camunda.security.api.model.config.oidc.OidcPrincipalClaims;
 import io.camunda.security.core.authz.LazyTokenClaimsConverter;
 import io.camunda.security.core.port.in.OidcProviderConfigurationPort;
 import io.camunda.security.core.port.out.MembershipPort;
 import io.camunda.security.spring.CamundaSecurityLibraryProperties;
 import io.camunda.security.spring.annotation.ConditionalOnAuthenticationMethod;
+import io.camunda.security.spring.converter.AdditionalJwkSetUrisByRegistrationId;
 import io.camunda.security.spring.converter.OidcTokenAuthenticationConverter;
 import io.camunda.security.spring.converter.TokenClaimsConvertersByIssuer;
 import io.camunda.security.spring.handler.OAuth2AuthenticationExceptionHandler;
 import io.camunda.security.spring.oidc.AssertionJwkProvider;
 import io.camunda.security.spring.oidc.OidcAccessTokenDecoderFactory;
+import io.camunda.security.spring.oidc.ScopedOidcClaimsProviderFactory;
 import io.camunda.security.spring.oidc.TokenValidatorFactory;
 import io.camunda.spring.utils.ConditionalOnSecondaryStorageEnabled;
 import io.micrometer.common.KeyValues;
@@ -124,17 +130,29 @@ public class OidcOverrideBeansConfiguration {
   }
 
   /**
-   * {@code tokenClaimsConvertersByIssuer} is CSL's per-issuer map of {@link
-   * LazyTokenClaimsConverter}s (see {@code OidcBeansConfiguration}), built from every configured
-   * provider's own {@code usernameClaim}/{@code clientIdClaim}/{@code preferUsernameClaim} —
-   * without it, a bearer token from any non-default provider (e.g. a BYOIDP additional IdP) is
-   * misclassified using the primary provider's claim config instead of its own (issue #61920).
+   * REST bearer-token converter.
+   *
+   * <p>Per-issuer: {@code tokenClaimsConvertersByIssuer} (CSL's map, keyed by {@code iss}) resolves
+   * a token from any configured provider with that provider's own claim config, not the primary
+   * provider's (issue #61920); it serves the cluster/default surface.
+   *
+   * <p>Physical-tenant-aware: when physical tenants are configured, a token on {@code
+   * /physical-tenants/<id>/v2/**} is resolved with that tenant's own claim config. This is required
+   * because {@code physicalTenantClusterAuthUnification} collapses the cluster config onto the
+   * default tenant, so the per-issuer map alone holds only the default tenant's providers and a
+   * non-default tenant's token would otherwise be rejected with {@code 401}
+   * (camunda/camunda#64685). See {@link PhysicalTenantAwareOidcTokenAuthenticationConverter} for
+   * why selection is keyed by tenant rather than issuer.
    */
   @Bean
   public CamundaAuthenticationConverter<Authentication> oidcTokenAuthenticationConverter(
       final LazyTokenClaimsConverter tokenClaimsConverter,
       final OidcClaimsProvider oidcClaimsProvider,
-      final ObjectProvider<TokenClaimsConvertersByIssuer> tokenClaimsConvertersByIssuer) {
+      final ObjectProvider<TokenClaimsConvertersByIssuer> tokenClaimsConvertersByIssuer,
+      final MembershipPort membershipPort,
+      final MembershipResolutionContextPropagator membershipResolutionContextPropagator,
+      final ScopedOidcClaimsProviderFactory scopedOidcClaimsProviderFactory,
+      final Environment environment) {
     final var perIssuerConverters = tokenClaimsConvertersByIssuer.getIfAvailable();
     if (perIssuerConverters == null || perIssuerConverters.byIssuer().isEmpty()) {
       LOG.info(
@@ -146,8 +164,109 @@ public class OidcOverrideBeansConfiguration {
               + " any other issuer fall back to the default provider's claim config",
           perIssuerConverters.byIssuer().keySet());
     }
+    // Cluster/default surface (unprefixed /v2 and /physical-tenants/default): root claim config +
+    // the
+    // per-issuer map (#61920). physicalTenantClusterAuthUnification already collapses the cluster
+    // config onto the default tenant, so the default tenant is served by this converter, not a
+    // rebuilt one — hence it is deliberately excluded from the per-tenant map below.
+    final var defaultConverter =
+        new OidcTokenAuthenticationConverter(
+            tokenClaimsConverter, oidcClaimsProvider, perIssuerConverters);
+    // One converter per NON-DEFAULT physical tenant, each built from that tenant's resolved OIDC
+    // config (#64685). When no physical tenants are configured the map is empty and the plain
+    // default converter is returned unchanged — so non-physical-tenant deployments behave exactly
+    // as
+    // before, and consumers that inject the concrete OidcTokenAuthenticationConverter still get it.
+    final Map<String, CamundaAuthenticationConverter<Authentication>> convertersByPhysicalTenant =
+        new LinkedHashMap<>();
+    PhysicalTenantAuthConfigurations.forAllPhysicalTenants(environment)
+        .forEach(
+            (physicalTenantId, authentication) -> {
+              if (!DEFAULT_PHYSICAL_TENANT_ID.equals(physicalTenantId)) {
+                convertersByPhysicalTenant.put(
+                    physicalTenantId,
+                    buildPhysicalTenantConverter(
+                        physicalTenantId,
+                        authentication,
+                        scopedOidcClaimsProviderFactory,
+                        membershipPort,
+                        membershipResolutionContextPropagator));
+              }
+            });
+    if (convertersByPhysicalTenant.isEmpty()) {
+      return defaultConverter;
+    }
+    // Mirror the per-issuer log above: a one-time record, at bean-build time, of exactly which
+    // tenants got a dedicated claim converter — so an operator can confirm the expected tenants are
+    // covered and spot a missing one (every other tenant, and the cluster surface, uses the
+    // default).
+    LOG.info(
+        "Physical-tenant-aware OIDC bearer-token conversion enabled; dedicated claim converters"
+            + " built for physical tenants {}; any other tenant and the cluster surface use the"
+            + " default claim converter",
+        convertersByPhysicalTenant.keySet());
+    return new PhysicalTenantAwareOidcTokenAuthenticationConverter(
+        convertersByPhysicalTenant, defaultConverter);
+  }
+
+  /**
+   * Builds the bearer-token converter for a single physical tenant from its resolved {@link
+   * AuthenticationConfiguration}: the flat {@code oidc.*} slot is the default claim config, and
+   * every provider that declares an {@code issuer-uri} (the flat slot plus each {@code
+   * providers.oidc.<id>}) contributes an issuer-keyed converter built from its own claim settings —
+   * so a tenant that itself fronts multiple IdPs still resolves each token with the issuing
+   * provider's claims.
+   *
+   * <p>The {@link OidcClaimsProvider} (UserInfo augmentation) is built per tenant from the tenant's
+   * own configuration via {@link ScopedOidcClaimsProviderFactory}, mirroring the gRPC path: a
+   * tenant can enable UserInfo augmentation even when the cluster default disables it, and vice
+   * versa.
+   */
+  private static CamundaAuthenticationConverter<Authentication> buildPhysicalTenantConverter(
+      final String physicalTenantId,
+      final AuthenticationConfiguration authentication,
+      final ScopedOidcClaimsProviderFactory scopedOidcClaimsProviderFactory,
+      final MembershipPort membershipPort,
+      final MembershipResolutionContextPropagator membershipResolutionContextPropagator) {
+    final var flat = authentication.getOidc();
+    final var defaultClaimsConverter =
+        new LazyTokenClaimsConverter(
+            flat.getUsernameClaim(),
+            flat.getClientIdClaim(),
+            flat.isPreferUsernameClaim(),
+            membershipPort,
+            membershipResolutionContextPropagator);
+    final Map<String, LazyTokenClaimsConverter> byIssuer = new LinkedHashMap<>();
+    if (hasText(flat.getIssuerUri()) && hasText(flat.getClientId())) {
+      byIssuer.put(flat.getIssuerUri(), defaultClaimsConverter);
+    }
+    authentication
+        .getProviders()
+        .getOidc()
+        .forEach(
+            (registrationId, provider) -> {
+              if (hasText(provider.getIssuerUri())) {
+                // the provider uses the tenant's claims for each claim that it does not set
+                final var claims = OidcPrincipalClaims.resolve(provider, flat);
+                byIssuer.putIfAbsent(
+                    provider.getIssuerUri(),
+                    new LazyTokenClaimsConverter(
+                        claims.usernameClaim(),
+                        claims.clientIdClaim(),
+                        claims.preferUsernameClaim(),
+                        membershipPort,
+                        membershipResolutionContextPropagator));
+              }
+            });
+    final var claimsProvider =
+        scopedOidcClaimsProviderFactory.buildClaimsProvider(
+            authentication, "physical tenant '" + physicalTenantId + "'");
     return new OidcTokenAuthenticationConverter(
-        tokenClaimsConverter, oidcClaimsProvider, perIssuerConverters);
+        defaultClaimsConverter, claimsProvider, new TokenClaimsConvertersByIssuer(byIssuer));
+  }
+
+  private static boolean hasText(final String value) {
+    return value != null && !value.isBlank();
   }
 
   /**
@@ -208,26 +327,65 @@ public class OidcOverrideBeansConfiguration {
       final LazyTokenClaimsConverter tokenClaimsConverter,
       final HttpServletRequest request,
       final OidcProviderConfigurationPort oidcProviderRepository,
+      final AdditionalJwkSetUrisByRegistrationId additionalJwkSetUrisByRegistrationId,
       final MembershipPort membershipPort,
       final MembershipResolutionContextPropagator membershipResolutionContextPropagator,
-      final Environment environment) {
+      final Environment environment,
+      final PhysicalTenantOidcSettingsRegistry physicalTenantOidcSettings) {
     return new ProviderAwareOidcUserAuthenticationConverter(
         authorizedClientRepository,
         oidcAccessTokenDecoderFactory,
         tokenClaimsConverter,
         request,
-        buildAdditionalJwkSetUrisByIssuer(oidcProviderRepository),
-        buildPreferIdTokenClaimsByRegistrationId(oidcProviderRepository),
-        PhysicalTenantOidcProviders.tokenClaimsConvertersByRegistrationId(
-            environment, membershipPort, membershipResolutionContextPropagator),
-        buildIdentityClaimsByRegistrationId(environment));
+        additionalJwkSetUrisByRegistrationId,
+        buildPreferIdTokenClaimsByRegistrationId(
+            oidcProviderRepository.getOidcAuthenticationConfigurations()),
+        PhysicalTenantOidcProviders.tokenClaimsConverters(
+            PhysicalTenantOidcProviders.defaultTenantNamedProviders(environment),
+            cslProperties.getAuthentication().getOidc(),
+            membershipPort,
+            membershipResolutionContextPropagator),
+        buildIdentityClaimsByRegistrationId(environment),
+        physicalTenantOidcSettings);
+  }
+
+  /**
+   * Resolves the OIDC settings of every non-default physical tenant once, for both the ID-token
+   * decoder factory and the user authentication converter.
+   */
+  @Bean
+  public PhysicalTenantOidcSettingsRegistry physicalTenantOidcSettings(
+      final Environment environment,
+      final MembershipPort membershipPort,
+      final MembershipResolutionContextPropagator membershipResolutionContextPropagator) {
+    final Map<String, PhysicalTenantOidcSettings> settingsByTenant = new LinkedHashMap<>();
+    PhysicalTenantOidcProviders.byPhysicalTenant(environment)
+        .forEach(
+            (physicalTenantId, tenant) -> {
+              final var providers = tenant.providers();
+              final var validatorFactory = newTokenValidatorFactory(cslProperties, providers);
+              settingsByTenant.put(
+                  physicalTenantId,
+                  new PhysicalTenantOidcSettings(
+                      buildIdTokenDecoderFactory(validatorFactory, providers),
+                      PhysicalTenantOidcProviders.tokenClaimsConverters(
+                          providers,
+                          tenant.defaultSlot(),
+                          membershipPort,
+                          membershipResolutionContextPropagator),
+                      PhysicalTenantOidcProviders.identityClaimsByRegistrationId(
+                          providers, tenant.defaultSlot())));
+            });
+    return new PhysicalTenantOidcSettingsRegistry(settingsByTenant);
   }
 
   private Map<String, List<String>> buildIdentityClaimsByRegistrationId(
       final Environment environment) {
     final Map<String, List<String>> identityClaims =
         new LinkedHashMap<>(
-            PhysicalTenantOidcProviders.identityClaimsByRegistrationId(environment));
+            PhysicalTenantOidcProviders.identityClaimsByRegistrationId(
+                PhysicalTenantOidcProviders.defaultTenantNamedProviders(environment),
+                cslProperties.getAuthentication().getOidc()));
     // The root default slot is not a named provider, so normalize its URI-valued identity claims
     // (e.g. iss) under the default registration id too, matching the scoped registrations.
     identityClaims.put(
@@ -240,6 +398,14 @@ public class OidcOverrideBeansConfiguration {
   public TokenValidatorFactory tokenValidatorFactory(
       final CamundaSecurityLibraryProperties cslProperties,
       final OidcProviderConfigurationPort oidcAuthenticationConfigurationRepository) {
+    return newTokenValidatorFactory(
+        cslProperties,
+        oidcAuthenticationConfigurationRepository.getOidcAuthenticationConfigurations());
+  }
+
+  private static TokenValidatorFactory newTokenValidatorFactory(
+      final CamundaSecurityLibraryProperties cslProperties,
+      final Map<String, OidcConfiguration> providers) {
     // SaaS validators stay in the host. The CSL factory composes the base validator chain
     // (timestamp + optional audience) and tacks on the host's SaaS validators via extras.
     final List<OAuth2TokenValidator<Jwt>> extraValidators = new ArrayList<>();
@@ -248,22 +414,37 @@ public class OidcOverrideBeansConfiguration {
       extraValidators.add(new ClusterValidator(cslProperties.getSaas().getClusterId()));
     }
     return new TokenValidatorFactory(
-        oidcAuthenticationConfigurationRepository.getOidcAuthenticationConfigurations(),
-        cslProperties.getAuthentication().getOidc().getClockSkew(),
-        extraValidators);
+        providers, cslProperties.getAuthentication().getOidc().getClockSkew(), extraValidators);
   }
 
+  /**
+   * ID-token decoder factory shared by every oauth2Login chain. Spring caches decoders by
+   * registration id, and a registration id can be shared by the root and several physical tenants
+   * with different issuers, so the decoder factory of the request's physical tenant is used. The
+   * default tenant and requests outside any tenant use the root factory.
+   */
   @Bean
   public JwtDecoderFactory<ClientRegistration> idTokenDecoderFactory(
       final TokenValidatorFactory tokenValidatorFactory,
-      final OidcProviderConfigurationPort oidcAuthenticationConfigurationRepository) {
+      final OidcProviderConfigurationPort oidcAuthenticationConfigurationRepository,
+      final PhysicalTenantOidcSettingsRegistry physicalTenantOidcSettings) {
+    final var rootFactory =
+        buildIdTokenDecoderFactory(
+            tokenValidatorFactory,
+            oidcAuthenticationConfigurationRepository.getOidcAuthenticationConfigurations());
+    return clientRegistration -> {
+      final var settings = physicalTenantOidcSettings.current();
+      final var factory = settings == null ? rootFactory : settings.idTokenDecoderFactory();
+      return factory.createDecoder(clientRegistration);
+    };
+  }
+
+  private JwtDecoderFactory<ClientRegistration> buildIdTokenDecoderFactory(
+      final TokenValidatorFactory tokenValidatorFactory,
+      final Map<String, OidcConfiguration> oidcAuthenticationConfigurations) {
     final var decoderFactory = new OidcIdTokenDecoderFactory();
     decoderFactory.setJwtValidatorFactory(tokenValidatorFactory::createTokenValidator);
 
-    final Map<String, OidcConfiguration> oidcAuthenticationConfigurations =
-        oidcAuthenticationConfigurationRepository.getOidcAuthenticationConfigurations();
-    // The decoder factory is a single bean applied to every oauth2Login chain, so it resolves each
-    // registration's configured id_token JWS algorithm by registrationId.
     final Map<String, JwsAlgorithm> algorithmByRegistrationId =
         oidcAuthenticationConfigurations.entrySet().stream()
             .collect(
@@ -283,32 +464,9 @@ public class OidcOverrideBeansConfiguration {
     return value;
   }
 
-  private Map<String, List<String>> buildAdditionalJwkSetUrisByIssuer(
-      final OidcProviderConfigurationPort oidcProviderRepository) {
-    return oidcProviderRepository.getOidcAuthenticationConfigurations().values().stream()
-        .filter(
-            config ->
-                config.getIssuerUri() != null
-                    && config.getAdditionalJwkSetUris() != null
-                    && !config.getAdditionalJwkSetUris().isEmpty())
-        .collect(
-            toMap(
-                OidcConfiguration::getIssuerUri,
-                config -> List.copyOf(config.getAdditionalJwkSetUris()),
-                (a, b) -> {
-                  if (!a.equals(b)) {
-                    throw new IllegalStateException(
-                        "Multiple OIDC providers share the same issuer URI with different"
-                            + " additional JWKS URIs. Ensure each issuer has a consistent"
-                            + " configuration.");
-                  }
-                  return a;
-                }));
-  }
-
-  private Map<String, Boolean> buildPreferIdTokenClaimsByRegistrationId(
-      final OidcProviderConfigurationPort oidcProviderRepository) {
-    return oidcProviderRepository.getOidcAuthenticationConfigurations().entrySet().stream()
+  private static Map<String, Boolean> buildPreferIdTokenClaimsByRegistrationId(
+      final Map<String, OidcConfiguration> providers) {
+    return providers.entrySet().stream()
         .filter(entry -> entry.getValue().isPreferIdTokenClaims())
         .collect(toMap(Map.Entry::getKey, entry -> Boolean.TRUE));
   }

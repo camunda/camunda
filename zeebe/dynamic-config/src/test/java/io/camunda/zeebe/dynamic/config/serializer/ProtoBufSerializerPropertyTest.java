@@ -9,7 +9,6 @@ package io.camunda.zeebe.dynamic.config.serializer;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.zeebe.dynamic.config.gossip.ClusterConfigurationGossipState;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.util.ClusterTopologyDomain;
@@ -30,18 +29,17 @@ final class ProtoBufSerializerPropertyTest {
   @Domain(ClusterTopologyDomain.class)
   @Domain(DomainContext.Global.class)
   void shouldEncodeAndDecode(@ForAll final ClusterConfiguration clusterConfiguration) {
-    // given
-    final ClusterConfigurationGossipState gossipState = new ClusterConfigurationGossipState();
-    gossipState.setClusterConfiguration(clusterConfiguration);
+    // given — the legacy proto is no longer gossiped, but still read back from a pre-8.10
+    // persisted configuration file (see PersistedCurrentClusterConfiguration's VERSION_LEGACY
+    // migration branch)
     final var protoBufSerializer = new ProtoBufSerializer();
+    final var encoded = protoBufSerializer.encode(clusterConfiguration);
 
     // when
-    final var decodedState = protoBufSerializer.decode(protoBufSerializer.encode(gossipState));
+    final var decoded = protoBufSerializer.decodeClusterTopology(encoded, 0, encoded.length);
 
     // then
-    assertThat(decodedState.getClusterConfiguration())
-        .describedAs(COLLECTION_EQUALITY_HINT)
-        .isEqualTo(clusterConfiguration);
+    assertThat(decoded).describedAs(COLLECTION_EQUALITY_HINT).isEqualTo(clusterConfiguration);
   }
 
   @Property(tries = 100)

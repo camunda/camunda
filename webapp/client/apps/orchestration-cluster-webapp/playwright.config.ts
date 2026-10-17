@@ -130,6 +130,15 @@ export default defineConfig({
 				viewport: FULL_HD_VIEWPORT,
 			},
 		},
+		{
+			name: 'docs-screenshots',
+			testMatch: 'docs-screenshots/**/*.test.ts',
+			use: {
+				...devices['Desktop Chrome'],
+				colorScheme: 'light',
+				viewport: FULL_HD_VIEWPORT,
+			},
+		},
 	],
 	outputDir: 'test-results/',
 	use: {

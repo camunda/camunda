@@ -11,9 +11,16 @@ import static io.camunda.spring.utils.PhysicalTenantConfigUtil.MAX_TENANT_ID_LEN
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.security.api.model.config.AuthenticationConfiguration;
 import io.camunda.security.api.model.config.AuthenticationMethod;
+import io.camunda.security.api.model.config.oidc.OidcPrincipalClaims;
+import io.camunda.security.spring.oidc.NoopOidcClaimsProvider;
+import io.camunda.security.spring.oidc.ScopedClientRegistrationFactory;
+import io.camunda.security.spring.oidc.ScopedOidcClaimsProviderFactory;
 import io.camunda.spring.utils.InvalidPhysicalTenantIdException;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import java.net.http.HttpClient;
 import java.util.Map;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
@@ -481,6 +488,128 @@ class PhysicalTenantAuthConfigurationsTest {
     assertThat(cfg.getProviders().getOidc()).containsOnlyKeys("tenanta");
     assertThat(cfg.getProviders().getOidc().get("tenanta").getClientId())
         .isEqualTo("client-tenanta");
+  }
+
+  @Test
+  void shouldMergeAndNarrowCamelCaseRootProvider() {
+    // given a camel-case root provider, overridden per field and assigned by the tenant
+    final var env =
+        env(
+            Map.of(
+                "camunda.security.authentication.method", "oidc",
+                "camunda.security.authentication.providers.oidc.AzureAd.client-id", "root-client",
+                "camunda.security.authentication.providers.oidc.AzureAd.issuer-uri",
+                    "http://idp/azure",
+                "camunda.security.authentication.providers.oidc.other.client-id", "client-other",
+                "camunda.physical-tenants.tenanta.security.authentication.providers.oidc.AzureAd.client-id",
+                    "pt-client",
+                "camunda.physical-tenants.tenanta.security.authentication.providers.assigned[0]",
+                    "AzureAd"));
+
+    // when
+    final AuthenticationConfiguration cfg =
+        PhysicalTenantAuthConfigurations.forPhysicalTenant("tenanta", env);
+
+    // then
+    assertThat(cfg.getProviders().getOidc()).containsOnlyKeys("AzureAd");
+    final var provider = cfg.getProviders().getOidc().get("AzureAd");
+    assertThat(provider.getClientId()).isEqualTo("pt-client");
+    assertThat(provider.getIssuerUri()).isEqualTo("http://idp/azure");
+  }
+
+  @Test
+  void shouldApplyTenantIssuerOverrideToUnderscoreAndBracketDeclaredProviders() {
+    // given providers declared as `azure_ad` and `[AzureAd]`, each with a tenant issuer override
+    final var env =
+        env(
+            Map.of(
+                "camunda.security.authentication.method", "oidc",
+                "camunda.security.authentication.providers.oidc.azure_ad.client-id", "c1",
+                "camunda.security.authentication.providers.oidc.azure_ad.issuer-uri",
+                    "http://idp/cluster-1",
+                "camunda.security.authentication.providers.oidc[AzureAd].client-id", "c2",
+                "camunda.security.authentication.providers.oidc[AzureAd].issuer-uri",
+                    "http://idp/cluster-2",
+                "camunda.physical-tenants.tenanta.security.authentication.providers.oidc.azure_ad.issuer-uri",
+                    "http://idp/tenant-1",
+                "camunda.physical-tenants.tenanta.security.authentication.providers.oidc[AzureAd].issuer-uri",
+                    "http://idp/tenant-2"));
+
+    // when
+    final AuthenticationConfiguration cfg =
+        PhysicalTenantAuthConfigurations.forPhysicalTenant("tenanta", env);
+
+    // then each provider keeps its cluster client-id and trusts the tenant's issuer
+    final var providers = cfg.getProviders().getOidc();
+    assertThat(providers.get("azure_ad").getClientId()).isEqualTo("c1");
+    assertThat(providers.get("azure_ad").getIssuerUri()).isEqualTo("http://idp/tenant-1");
+    assertThat(providers.get("AzureAd").getClientId()).isEqualTo("c2");
+    assertThat(providers.get("AzureAd").getIssuerUri()).isEqualTo("http://idp/tenant-2");
+  }
+
+  @Test
+  void shouldKeepTenantWideSettingsOfDroppedDefaultSlot() {
+    // given a root default slot with a groups claim and UserInfo augmentation, and a tenant that
+    // is assigned only a named provider
+    final var env =
+        env(
+            Map.of(
+                "camunda.security.authentication.method", "oidc",
+                "camunda.security.authentication.oidc.client-id", "root-client",
+                "camunda.security.authentication.oidc.issuer-uri", "http://idp/root",
+                "camunda.security.authentication.oidc.groups-claim", "groups",
+                "camunda.security.authentication.oidc.user-info-augmentation.enabled", "true",
+                "camunda.security.authentication.providers.oidc.okta.client-id", "client-okta",
+                "camunda.security.authentication.providers.oidc.okta.issuer-uri", "http://idp/okta",
+                "camunda.physical-tenants.tenanta.security.authentication.providers.assigned[0]",
+                    "okta"));
+
+    // when
+    final AuthenticationConfiguration cfg =
+        PhysicalTenantAuthConfigurations.forPhysicalTenant("tenanta", env);
+
+    // then the slot is no longer a provider, but keeps the settings that apply to the tenant
+    assertThat(cfg.getOidc().getClientId()).isNull();
+    assertThat(cfg.getOidc().getIssuerUri()).isNull();
+    assertThat(cfg.getOidc().getGroupsClaim()).isEqualTo("groups");
+    assertThat(cfg.getOidc().getUserInfoAugmentation().isEnabled()).isTrue();
+    // and the tenant still gets a UserInfo-augmenting claims provider, not the no-op one
+    final var claimsProviderFactory =
+        new ScopedOidcClaimsProviderFactory(
+            new ScopedClientRegistrationFactory(),
+            HttpClient.newHttpClient(),
+            new ObjectMapper(),
+            new SimpleMeterRegistry());
+    assertThat(claimsProviderFactory.buildClaimsProvider(cfg))
+        .isNotInstanceOf(NoopOidcClaimsProvider.class);
+  }
+
+  @Test
+  void shouldKeepThePrincipalClaimsOfDroppedDefaultSlot() {
+    // given a tenant that overrides the username claim and is assigned only a named provider
+    final var env =
+        env(
+            Map.of(
+                "camunda.security.authentication.method", "oidc",
+                "camunda.security.authentication.oidc.client-id", "root-client",
+                "camunda.security.authentication.oidc.issuer-uri", "http://idp/root",
+                "camunda.security.authentication.oidc.client-id-claim", "azp",
+                "camunda.security.authentication.providers.oidc.okta.client-id", "client-okta",
+                "camunda.security.authentication.providers.oidc.okta.issuer-uri", "http://idp/okta",
+                "camunda.physical-tenants.tenanta.security.authentication.oidc.username-claim",
+                    "upn",
+                "camunda.physical-tenants.tenanta.security.authentication.providers.assigned[0]",
+                    "okta"));
+
+    // when
+    final AuthenticationConfiguration cfg =
+        PhysicalTenantAuthConfigurations.forPhysicalTenant("tenanta", env);
+
+    // then the claims stay for the named providers to inherit
+    assertThat(cfg.getOidc().getUsernameClaim()).isEqualTo("upn");
+    assertThat(cfg.getOidc().getClientIdClaim()).isEqualTo("azp");
+    assertThat(OidcPrincipalClaims.resolve(cfg.getProviders().getOidc().get("okta"), cfg.getOidc()))
+        .isEqualTo(new OidcPrincipalClaims("upn", "azp", false));
   }
 
   @Test

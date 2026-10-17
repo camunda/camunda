@@ -80,6 +80,56 @@ class PhysicalTenantMapOverlayTest {
     assertThat(doc.getAws().get("private-s3").getRegion()).isEqualTo("eu-west-1");
   }
 
+  @Test
+  void shouldApplyTenantOverrideToRootKeyWithCapitalLetters() {
+    final Document doc =
+        overlay(
+            Map.of(
+                "camunda.document.aws.SharedS3.bucket-name", "root-bucket",
+                "camunda.document.aws.SharedS3.region", "us-east-1",
+                "camunda.physical-tenants.tenanta.document.aws.SharedS3.bucket-name",
+                    "tenant-bucket"));
+
+    final Document.AwsStore store = doc.getAws().get("SharedS3");
+    assertThat(store.getBucketName()).isEqualTo("tenant-bucket");
+    assertThat(store.getRegion()).isEqualTo("us-east-1");
+  }
+
+  @Test
+  void shouldApplyTenantOverrideToBracketDeclaredRootKeyContainingDot() {
+    final Document doc =
+        overlay(
+            Map.of(
+                "camunda.document.aws[shared.s3].bucket-name", "root-bucket",
+                "camunda.document.aws[shared.s3].region", "us-east-1",
+                "camunda.physical-tenants.tenanta.document.aws[shared.s3].bucket-name",
+                    "tenant-bucket"));
+
+    final Document.AwsStore store = doc.getAws().get("shared.s3");
+    assertThat(store.getBucketName()).isEqualTo("tenant-bucket");
+    assertThat(store.getRegion()).isEqualTo("us-east-1");
+  }
+
+  @Test
+  void shouldApplyTenantOverrideToUnderscoreAndBracketDeclaredRootKeys() {
+    final Document doc =
+        overlay(
+            Map.of(
+                "camunda.document.aws.shared_s3.bucket-name", "root-bucket-1",
+                "camunda.document.aws.shared_s3.region", "us-east-1",
+                "camunda.document.aws[SharedS3].bucket-name", "root-bucket-2",
+                "camunda.document.aws[SharedS3].region", "eu-west-1",
+                "camunda.physical-tenants.tenanta.document.aws.shared_s3.bucket-name",
+                    "tenant-bucket-1",
+                "camunda.physical-tenants.tenanta.document.aws[SharedS3].bucket-name",
+                    "tenant-bucket-2"));
+
+    assertThat(doc.getAws().get("shared_s3").getBucketName()).isEqualTo("tenant-bucket-1");
+    assertThat(doc.getAws().get("shared_s3").getRegion()).isEqualTo("us-east-1");
+    assertThat(doc.getAws().get("SharedS3").getBucketName()).isEqualTo("tenant-bucket-2");
+    assertThat(doc.getAws().get("SharedS3").getRegion()).isEqualTo("eu-west-1");
+  }
+
   // criterion 3: fan-out — one engine invocation repairs all registered maps of the spec
   @Test
   void shouldFanOutAcrossAllRegisteredMaps() {

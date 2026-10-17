@@ -7,11 +7,11 @@
  */
 package io.camunda.configuration.physicaltenants;
 
-import io.camunda.configuration.Azure;
-import io.camunda.configuration.Filesystem;
-import io.camunda.configuration.Gcs;
-import io.camunda.configuration.PrimaryStorageBackup;
-import io.camunda.configuration.S3;
+import io.camunda.configuration.data.primarystorage.PrimaryStorageBackup;
+import io.camunda.configuration.data.primarystorage.backup.Azure;
+import io.camunda.configuration.data.primarystorage.backup.Filesystem;
+import io.camunda.configuration.data.primarystorage.backup.Gcs;
+import io.camunda.configuration.data.primarystorage.backup.S3;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.util.List;

@@ -76,6 +76,13 @@ jobs:
       load-test-setup-changes: ${{ steps.filter.outputs.load-test-setup-changes }}
       scripts-changes: ${{ steps.filter.outputs.scripts-changes }}
       load-test-scripts-changes: ${{ steps.filter.outputs.load-test-scripts-changes }}
+      load-test-k6-changes: ${{ steps.filter.outputs.load-test-k6-changes }}
+      # Scope for the orchestration-cluster suite PR check (team-test-automation#188):
+      # base branch, whether any suite file actually changed, and the spec files
+      # the PR added/modified (so the run can gate only on the author's own tests).
+      c8-e2e-suite-base: ${{ steps.c8-e2e-suite-scope.outputs.base }}
+      c8-e2e-suite-run-tests: ${{ steps.c8-e2e-suite-scope.outputs.run-tests }}
+      c8-e2e-suite-changed-specs: ${{ steps.c8-e2e-suite-scope.outputs.changed-specs }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -95,6 +102,73 @@ jobs:
       - name: Detect changes
         uses: ./.github/actions/paths-filter
         id: filter
+      # Resolve the orchestration-cluster suite PR check's scope: the base
+      # branch, whether any file under the suite directory actually changed
+      # (so a CI-only PR tripping c8-e2e-test-suite-changes via ci-relevant does
+      # not start the heavy run), and which spec files the PR added or modified
+      # (so the run gates only on the author's own tests). PR-only; on other
+      # events the outputs stay empty and the suite test job is skipped.
+      - name: Resolve C8 E2E suite PR scope
+        id: c8-e2e-suite-scope
+        if: github.event_name == 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          BASE_REF: ${{ github.event.pull_request.base.ref }}
+          SUITE_PREFIX: qa/c8-orchestration-cluster-e2e-test-suite/
+        run: |
+          set -euo pipefail
+          echo "base=${BASE_REF}" >> "$GITHUB_OUTPUT"
+
+          # One listing, carrying each file's status, so the run decision and the
+          # gating scope can read it differently. Each rename also emits a
+          # synthetic "removed<TAB>previous_filename" entry so a file moved OUT of
+          # the suite still counts for the run decision (via its old suite path);
+          # the changed-specs filter below drops the removed entry and keeps only
+          # the destination.
+          files="$(gh api --paginate "repos/${REPO}/pulls/${PR_NUMBER}/files" \
+            --jq '.[] | ("\(.status)\t\(.filename)"), (select(.previous_filename != null) | "removed\t\(.previous_filename)")')"
+
+          # Run decision: ANY suite file changed, including deletions — a PR that
+          # only removes a fixture, resource or spec can still break the suite and
+          # must be exercised.
+          suite_changed="$(printf '%s\n' "$files" | cut -f2- | grep -F "$SUITE_PREFIX" || true)"
+          if [[ -z "$suite_changed" ]]; then
+            echo "No files under ${SUITE_PREFIX} changed; suite tests will be skipped."
+            echo "run-tests=false" >> "$GITHUB_OUTPUT"
+            {
+              echo "changed-specs<<EOF"
+              echo "EOF"
+            } >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "run-tests=true" >> "$GITHUB_OUTPUT"
+
+          # Gating scope: added/modified/renamed spec files only (a removed spec
+          # cannot fail), path relative to the suite root (matching the Playwright
+          # report), and restricted to the specs the PR matrix actually executes
+          # (the api-tests + chromium projects), so the gate never greens a
+          # changed spec it did not run: v2-stateless-tests (needs
+          # V2_STATELESS_TESTS=true, which swaps the whole project list),
+          # analytics-exporter (its own isolated project) and optimize (its own
+          # projects) are excluded here — they are covered by their dedicated
+          # nightly workflows, exactly as the on-demand run leaves them out.
+          changed_specs="$(printf '%s\n' "$files" \
+            | awk -F'\t' '$1 != "removed" {print $2}' \
+            | sed -n "s#^${SUITE_PREFIX}##p" \
+            | grep -E '\.spec\.ts$' \
+            | grep -E '^tests/' \
+            | grep -Ev '^tests/api/v2/(analytics-exporter|optimize)/' || true)"
+
+          echo "Spec files gating this PR:"
+          printf '%s\n' "${changed_specs:-<none>}"
+
+          {
+            echo "changed-specs<<EOF"
+            printf '%s\n' "$changed_specs"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
 
   actionlint:
     if: needs.detect-changes.outputs.actionlint == 'true'
@@ -107,9 +181,9 @@ jobs:
       # renovate: datasource=github-releases depName=rhysd/actionlint
       ACTIONLINT_VERSION: '1.7.12'
       # renovate: datasource=github-tags depName=open-policy-agent/conftest
-      CONFTEST_VERSION: '0.70.1'
+      CONFTEST_VERSION: '0.71.1'
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@50906bc0cf037574d72f0fd74ac51451f8d4fcae # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@95c6f97de08ce6befa8e1b222140676204d792fb # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
         with:
@@ -125,8 +199,12 @@ jobs:
             unexpected key "queue" for "concurrency" section\. expected one of "cancel-in-progress", "group"
           use_shellcheck: true
       - run: |
-          curl -s -L "https://github.com/open-policy-agent/conftest/releases/download/v${CONFTEST_VERSION}/conftest_${CONFTEST_VERSION}_Linux_x86_64.tar.gz" | tar xvz conftest
-          ./conftest test --rego-version v0 -o github --policy .github .github/workflows/*.y*ml
+          .github/scripts/download-with-retry.sh \
+            "https://github.com/open-policy-agent/conftest/releases/download/v${CONFTEST_VERSION}/conftest_${CONFTEST_VERSION}_Linux_x86_64.tar.gz" \
+            "${RUNNER_TEMP}/conftest.tar.gz"
+          tar xzf "${RUNNER_TEMP}/conftest.tar.gz" -C "${RUNNER_TEMP}" conftest
+          rm -f "${RUNNER_TEMP}/conftest.tar.gz"
+          "${RUNNER_TEMP}/conftest" test --rego-version v0 -o github --policy .github .github/workflows/*.y*ml
       - name: Observe build status
         if: always()
         continue-on-error: true
@@ -160,7 +238,7 @@ jobs:
     timeout-minutes: 5
     permissions: { }  # GITHUB_TOKEN unused in this job
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@50906bc0cf037574d72f0fd74ac51451f8d4fcae # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@95c6f97de08ce6befa8e1b222140676204d792fb # main
       - name: Determine fetch depth for checkout
         id: depth
         run: |
@@ -196,7 +274,7 @@ jobs:
     timeout-minutes: 10
     permissions: { }  # GITHUB_TOKEN unused in this job
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@50906bc0cf037574d72f0fd74ac51451f8d4fcae # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@95c6f97de08ce6befa8e1b222140676204d792fb # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
         with:
@@ -226,7 +304,7 @@ jobs:
     timeout-minutes: 5
     permissions: { }  # GITHUB_TOKEN unused in this job
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@50906bc0cf037574d72f0fd74ac51451f8d4fcae # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@95c6f97de08ce6befa8e1b222140676204d792fb # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
         with:
@@ -254,7 +332,7 @@ jobs:
     env:
       TEST_OWNER: '@camunda/reliability-testing'
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@50906bc0cf037574d72f0fd74ac51451f8d4fcae # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@95c6f97de08ce6befa8e1b222140676204d792fb # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
         with:
@@ -265,7 +343,7 @@ jobs:
           go-version-file: load-tests/setup/test/go.mod
           cache-dependency-path: load-tests/setup/test/go.sum
       - name: Set up Helm
-        uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
+        uses: jdx/mise-action@08ae2a091c038e1e05ec6f5115dc5c69d5a2a6b8 # v5.1.2
         with:
           minimum_release_age: 15d
           install_args: helm
@@ -293,6 +371,47 @@ jobs:
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
 
+  load-test-k6-prettier:
+    if: needs.detect-changes.outputs.load-test-k6-changes == 'true'
+    name: "Load Test / k6"
+    needs: [ detect-changes ]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions: {}
+    env:
+      TEST_OWNER: '@camunda/reliability-testing'
+    steps:
+      - uses: camunda/infra-global-github-actions/start-build-monitor@95c6f97de08ce6befa8e1b222140676204d792fb # main
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 26
+      - name: Install dependencies
+        uses: ./.github/actions/npm-ci-with-retry
+        with:
+          directory: load-tests/setup/charts/load-test-setup/k6
+          max_attempts: "2"
+          timeout_minutes: "3"
+      - name: Check formatting
+        run: make -C load-tests/setup/charts/load-test-setup/k6 check
+      - name: Run k6 script unit tests
+        env:
+          # The node.js test runner only colors its output on a TTY.
+          FORCE_COLOR: 1
+        run: make -C load-tests/setup/charts/load-test-setup/k6 test
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
   load-test-helm-lockfile:
     if: needs.detect-changes.outputs.load-test-setup-changes == 'true'
     name: "Load Test / Helm Chart Lock"
@@ -304,13 +423,13 @@ jobs:
     env:
       TEST_OWNER: '@camunda/reliability-testing'
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@50906bc0cf037574d72f0fd74ac51451f8d4fcae # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@95c6f97de08ce6befa8e1b222140676204d792fb # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
         with:
           persist-credentials: false
       - name: Set up Helm
-        uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
+        uses: jdx/mise-action@08ae2a091c038e1e05ec6f5115dc5c69d5a2a6b8 # v5.1.2
         with:
           minimum_release_age: 15d
           install_args: helm
@@ -341,7 +460,7 @@ jobs:
     timeout-minutes: 10
     permissions: { }  # GITHUB_TOKEN unused in this job
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@50906bc0cf037574d72f0fd74ac51451f8d4fcae # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@95c6f97de08ce6befa8e1b222140676204d792fb # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
         with:
@@ -384,7 +503,7 @@ jobs:
     timeout-minutes: 5
     permissions: { }  # GITHUB_TOKEN unused in this job
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@50906bc0cf037574d72f0fd74ac51451f8d4fcae # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@95c6f97de08ce6befa8e1b222140676204d792fb # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
         with:
@@ -418,7 +537,7 @@ jobs:
     permissions: { }  # GITHUB_TOKEN unused in this job
     runs-on: gcp-perf-core-8-default
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@50906bc0cf037574d72f0fd74ac51451f8d4fcae # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@95c6f97de08ce6befa8e1b222140676204d792fb # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
         with:
@@ -468,7 +587,7 @@ jobs:
             -Dquickly=true
             -DskipQaBuild=true
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@50906bc0cf037574d72f0fd74ac51451f8d4fcae # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@95c6f97de08ce6befa8e1b222140676204d792fb # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
         with:
@@ -544,7 +663,7 @@ jobs:
     timeout-minutes: 20
     permissions: { }  # GITHUB_TOKEN unused in this job
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@50906bc0cf037574d72f0fd74ac51451f8d4fcae # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@95c6f97de08ce6befa8e1b222140676204d792fb # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
         with:
@@ -613,7 +732,7 @@ jobs:
     timeout-minutes: 15
     permissions: { }  # GITHUB_TOKEN unused in this job
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@50906bc0cf037574d72f0fd74ac51451f8d4fcae # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@95c6f97de08ce6befa8e1b222140676204d792fb # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
         with:
@@ -665,7 +784,7 @@ jobs:
     timeout-minutes: 5
     permissions: { }
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@50906bc0cf037574d72f0fd74ac51451f8d4fcae # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@95c6f97de08ce6befa8e1b222140676204d792fb # main
       - name: Set all test constants
         id: set-constants
         run: |
@@ -674,7 +793,7 @@ jobs:
           # ============================================================================
 
           # Zeebe modules owned by @camunda/core-features
-          CORE_FEATURES="':zeebe-auth',':camunda-load-tester',':zeebe-bpmn-model',':zeebe-dmn',':zeebe-expression-language',':zeebe-feel-integration',':zeebe-msgpack-core',':zeebe-msgpack-value',':zeebe-test-util',':zeebe-util',':zeebe-db',':zeebe-workflow-engine',':camunda-secret-store-api',':camunda-secret-store-file',':camunda-secret-store-aws'"
+          CORE_FEATURES="':zeebe-auth',':camunda-load-tester',':zeebe-bpmn-model',':zeebe-dmn',':zeebe-expression-language',':zeebe-feel-integration',':zeebe-msgpack-core',':zeebe-msgpack-value',':zeebe-test-util',':zeebe-util',':zeebe-db',':zeebe-workflow-engine',':camunda-secret-store-api',':camunda-secret-store-file',':camunda-secret-store-aws',':camunda-secret-store-gcp'"
           PROTOCOL="':zeebe-protocol',':zeebe-protocol-asserts',':zeebe-protocol-impl',':zeebe-protocol-jackson',':zeebe-protocol-test-util'"
           GATEWAY="':zeebe-gateway',':zeebe-gateway-grpc',':zeebe-gateway-protocol',':zeebe-gateway-protocol-impl',':zeebe-gateway-rest'"
           EXPORTER="':zeebe-elasticsearch-exporter',':zeebe-opensearch-exporter',':camunda-exporter',':rdbms-exporter',':zeebe-exporter-api',':zeebe-exporter-common',':zeebe-exporter-test'"
@@ -826,6 +945,7 @@ jobs:
               "owner": "@camunda/core-features",
               "module": "Zeebe",
               "test-filter": "io.camunda.zeebe.it.engine.**,!**/*${DOLLAR}*.java",
+              "test-jvm-args": "-XX:MaxRAMPercentage=5 -XX:InitialRAMPercentage=1",
               "allow-stress": true,
               "stressRun": 1
             },
@@ -841,6 +961,7 @@ jobs:
               "owner": "@camunda/zeebe-distributed-platform",
               "module": "Zeebe",
               "test-filter": "io.camunda.zeebe.it.cluster.**,!io.camunda.zeebe.it.cluster.clustering.dynamic.ScaleUpPartitionsTest,!**/*${DOLLAR}*.java",
+              "test-jvm-args": "-XX:MaxRAMPercentage=5 -XX:InitialRAMPercentage=1",
               "allow-stress": true,
               "stressRun": 1
             },
@@ -955,7 +1076,7 @@ jobs:
     outputs:
       flakyTests: ${{ steps.analyze-test-run.outputs.flakyTests }}
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@50906bc0cf037574d72f0fd74ac51451f8d4fcae # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@95c6f97de08ce6befa8e1b222140676204d792fb # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
         with:
@@ -987,7 +1108,7 @@ jobs:
           -D forkCount=7
           -D skipITs -D skipQaBuild=true -D skipChecks -D surefire.rerunFailingTestsCount=${{ env.FLAKY_TEST_RERUN_COUNT }}
           -D junitThreadCount=16
-          -P skip-random-tests,parallel-tests,extract-flaky-tests,skipFrontendBuild
+          -P include-slow-tests,parallel-tests,extract-flaky-tests,skipFrontendBuild
           -pl ${{ env.GENERAL_UT_MODULES }}
           verify
           | tee "${BUILD_OUTPUT_FILE_PATH}"
@@ -1060,7 +1181,7 @@ jobs:
             owner: '@camunda/core-features'
             maven-modules: ${{ needs.setup-tests.outputs.ZEEBE_CLIENT_MODULES }}
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@50906bc0cf037574d72f0fd74ac51451f8d4fcae # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@95c6f97de08ce6befa8e1b222140676204d792fb # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
         with:
@@ -1092,8 +1213,8 @@ jobs:
           -D forkCount=3
           -D skipITs -D skipQaBuild=true -D skipChecks -D surefire.rerunFailingTestsCount=${{ env.FLAKY_TEST_RERUN_COUNT }}
           -D junitThreadCount=16
-          -D argLine="@{argLine} -Xmx4g"
-          -P skip-random-tests,parallel-tests,extract-flaky-tests,skipFrontendBuild
+          -D jvm.test.extra.args=-Xmx4g
+          -P include-slow-tests,parallel-tests,extract-flaky-tests,skipFrontendBuild
           -pl ${{ matrix.maven-modules }}
           verify
           | tee "${BUILD_OUTPUT_FILE_PATH}"
@@ -1379,7 +1500,7 @@ jobs:
       # (.codeowners), instead of the workflow-level default @camunda/engineering-operations.
       TEST_OWNER: '@camunda/data-layer'
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@50906bc0cf037574d72f0fd74ac51451f8d4fcae # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@95c6f97de08ce6befa8e1b222140676204d792fb # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
         with:
@@ -1474,7 +1595,7 @@ jobs:
       # (.codeowners), instead of the workflow-level default @camunda/engineering-operations.
       TEST_OWNER: '@camunda/data-layer'
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@50906bc0cf037574d72f0fd74ac51451f8d4fcae # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@95c6f97de08ce6befa8e1b222140676204d792fb # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
         with:
@@ -1522,11 +1643,11 @@ jobs:
         shell: bash
         run: >
           ./mvnw -B -T1C --no-snapshot-updates
-          -D forkCount=1
+          -D forkCount=2
           -D maven.javadoc.skip=true
           -D skipUTs -D skipChecks
           -D failsafe.rerunFailingTestsCount=${{ env.FLAKY_TEST_RERUN_COUNT }} -D flaky.test.reportDir=failsafe-reports
-          -P async-repl,extract-flaky-tests
+          -P parallel-tests,async-repl,extract-flaky-tests
           -pl qa/acceptance-tests
           verify
           | tee "${BUILD_OUTPUT_FILE_PATH}"
@@ -1603,7 +1724,7 @@ jobs:
         ports:
           - 5000:5000
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@50906bc0cf037574d72f0fd74ac51451f8d4fcae # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@95c6f97de08ce6befa8e1b222140676204d792fb # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
         with:
@@ -1690,6 +1811,8 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           # Propagate matrix test filters (may be empty for other matrix entries)
           TEST_FILTER: ${{ matrix.test-filter }}
+          # Extra JVM args for the forked test JVMs (may be empty), e.g. to cap the heap per fork
+          TEST_JVM_ARGS: ${{ matrix.test-jvm-args }}
           IS_STRESS_ENABLED: ${{ matrix.allow-stress == true && github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'ci:stress-test') }}
         shell: bash
         run: >
@@ -1699,6 +1822,7 @@ jobs:
           -D skipUTs -D skipChecks
           -D failsafe.rerunFailingTestsCount=${{ env.IS_STRESS_ENABLED == 'true' && '0' || env.FLAKY_TEST_RERUN_COUNT }} -D flaky.test.reportDir=failsafe-reports
           -D failsafe.timeout=${{ env.IT_FORK_TIMEOUT_SECONDS }}
+          -D jvm.test.extra.args="${TEST_JVM_ARGS}"
           -Dio.camunda.process.test.camundaDockerImageName="${{ env.CAMUNDA_DOCKER_IMAGE_NAME }}"
           -Dio.camunda.process.test.camundaDockerImageVersion="${{ env.DOCKER_IMAGE_TAG }}"
           -Dio.camunda.process.test.camundaVersion="${{ env.DOCKER_IMAGE_TAG }}"
@@ -1756,7 +1880,7 @@ jobs:
     outputs:
       flakyTests: ${{ steps.analyze-test-run.outputs.flakyTests }}
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@50906bc0cf037574d72f0fd74ac51451f8d4fcae # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@95c6f97de08ce6befa8e1b222140676204d792fb # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
         with:
@@ -1835,7 +1959,7 @@ jobs:
       TEST_ELASTICSEARCH_IMAGE: docker.elastic.co/elasticsearch/elasticsearch:${{ needs.generate-db-versions.outputs.elasticsearch-8 }}
       DOCKER_PLATFORMS: "linux/arm64,linux/amd64" # build AMD64 last so it gets picked up by the test
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@50906bc0cf037574d72f0fd74ac51451f8d4fcae # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@95c6f97de08ce6befa8e1b222140676204d792fb # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
         with:
@@ -1851,7 +1975,7 @@ jobs:
       - name: Upload Hadolint Results
         if: always()
         continue-on-error: ${{ github.event_name == 'merge_group' }}
-        uses: github/codeql-action/upload-sarif@2892aa5e19bbd11bc0cff5427e3b750a04d9e3c2 # v4.38.2
+        uses: github/codeql-action/upload-sarif@24c54180a607b1449ed407dd24f251e4e9147c8d # v4.38.3
         with:
           sarif_file: ./hadolint.sarif
       - uses: ./.github/actions/setup-build
@@ -1865,14 +1989,14 @@ jobs:
       # Consume the shared distball instead of a ~15 min reactor build; GitHub-hosted,
       # so it stays on the GHA artifact API.
       - name: Download distball
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: distball-${{ github.run_id }}
           path: dist/target/
       # Restore the io.camunda SNAPSHOTs archived by build-distball for the `mvn -pl dist/
       # verify` step below (the GHA Maven cache doesn't carry locally-installed SNAPSHOTs).
       - name: Download local Maven SNAPSHOT artifacts
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: m2-installed-${{ github.run_id }}
           path: ${{ runner.temp }}
@@ -2001,8 +2125,20 @@ jobs:
       - name: Check for bypass label
         id: bypass
         shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          # Stale on re-runs: reflects labels at trigger time, not now.
+          PAYLOAD_HAS_LABEL: ${{ contains(github.event.pull_request.labels.*.name, 'ci:flaky-test-bypass') }}
         run: |
-          if [[ "${{ contains(github.event.pull_request.labels.*.name, 'ci:flaky-test-bypass') }}" == "true" ]]; then
+          # Re-runs reuse the original event payload, so prefer the live labels.
+          if live_labels="$(gh api "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/labels" --paginate --jq '.[].name')"; then
+            if grep -qxF 'ci:flaky-test-bypass' <<< "$live_labels"; then has_label=true; else has_label=false; fi
+          else
+            echo "::warning::Could not read live PR labels; falling back to the event payload."
+            has_label="$PAYLOAD_HAS_LABEL"
+          fi
+          if [[ "$has_label" == "true" ]]; then
             echo "::notice::Bypass label 'ci:flaky-test-bypass' detected — sticky entries will be cleared via bypass."
             echo "present=true" >> "$GITHUB_OUTPUT"
           else
@@ -2016,7 +2152,7 @@ jobs:
       # (find + jq) locally per matrix-step-name below — no repeat network cost.
       - name: Download matrix output artifacts
         if: steps.bypass.outputs.present != 'true'
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
 
       - name: Setup jq
         if: steps.bypass.outputs.present != 'true'
@@ -2214,18 +2350,18 @@ jobs:
     timeout-minutes: 20
     permissions: { }  # GITHUB_TOKEN unused in this job
     env:
-      TEST_OWNER: '@camunda/identity'
+      TEST_OWNER: '@camunda/operate-admin-pod'
       CLIENT_DIR: identity/client
     defaults:
       run:
         working-directory: ${{ env.CLIENT_DIR }}
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@50906bc0cf037574d72f0fd74ac51451f8d4fcae # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@95c6f97de08ce6befa8e1b222140676204d792fb # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
         with:
           persist-credentials: false
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 26
           cache: 'npm'
@@ -2274,7 +2410,7 @@ jobs:
     permissions:
       contents: write  # required by Dependency Submission API
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@50906bc0cf037574d72f0fd74ac51451f8d4fcae # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@95c6f97de08ce6befa8e1b222140676204d792fb # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
@@ -2349,12 +2485,12 @@ jobs:
       pull-requests: write
       actions: read  # required to list snapshot-workflow runs for base resolution (Workstream D)
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@50906bc0cf037574d72f0fd74ac51451f8d4fcae # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@95c6f97de08ce6befa8e1b222140676204d792fb # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
       - name: Check for vulnerable dependencies
-        uses: camunda/infra-global-github-actions/dependency-vuln-check@50906bc0cf037574d72f0fd74ac51451f8d4fcae # main
+        uses: camunda/infra-global-github-actions/dependency-vuln-check@95c6f97de08ce6befa8e1b222140676204d792fb # main
         with:
           base-sha: ${{ github.event.pull_request.base.sha }}
           head-sha: ${{ github.event.pull_request.head.sha }}
@@ -2436,12 +2572,12 @@ jobs:
       run:
         working-directory: ${{ env.SUITE_DIR }}
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@50906bc0cf037574d72f0fd74ac51451f8d4fcae # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@95c6f97de08ce6befa8e1b222140676204d792fb # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
         with:
           persist-credentials: false
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 26
       - name: Install dependencies
@@ -2460,6 +2596,30 @@ jobs:
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
 
+  # Automatic PR run of the orchestration-cluster suite against a local stack,
+  # mirroring the manual on-demand matrix for the PR's base branch. It blocks the
+  # merge only on specs this PR added or modified (gating: changed); failures in
+  # untouched, historically flaky tests are reported but do not block. The PR
+  # scope (base branch, which specs changed, whether to run at all) is computed
+  # by the detect-changes job. Runs only on a non-fork pull_request — fork PRs
+  # cannot authenticate to Vault, which the RDBMS leg's setup-build needs.
+  # See camunda/team-test-automation#188.
+  c8-e2e-test-suite-tests:
+    name: "C8 E2E Test Suite / Tests"
+    if: >-
+      needs.detect-changes.outputs.c8-e2e-suite-run-tests == 'true'
+      && github.event.pull_request.head.repo.fork != true
+    needs: [ detect-changes ]
+    uses: ./.github/workflows/ci-c8-orchestration-cluster-e2e-suite-reusable.yml
+    secrets: inherit
+    permissions:
+      contents: read
+    with:
+      base: ${{ needs.detect-changes.outputs.c8-e2e-suite-base }}
+      test-ref: ${{ github.sha }}
+      changed-specs: ${{ needs.detect-changes.outputs.c8-e2e-suite-changed-specs }}
+      gating: changed
+
   protobuf-checks:
     name: "Protobuf Backwards Compatibility"
     needs: [ detect-changes ]
@@ -2475,7 +2635,7 @@ jobs:
       BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha }}
     if: needs.detect-changes.outputs.protobuf-changes == 'true'
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@50906bc0cf037574d72f0fd74ac51451f8d4fcae # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@95c6f97de08ce6befa8e1b222140676204d792fb # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
         with:
@@ -2523,13 +2683,13 @@ jobs:
       # renovate: datasource=npm depName=@camunda8/spectral-cli
       SPECTRAL_VERSION: '6.16.1'
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@50906bc0cf037574d72f0fd74ac51451f8d4fcae # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@95c6f97de08ce6befa8e1b222140676204d792fb # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
         with:
           persist-credentials: false
       - name: Setup Node.js for Spectral
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 26
       - name: Install Spectral CLI
@@ -2597,14 +2757,14 @@ jobs:
     env:
       VERIFIER_DIR: .github/scripts/x-added-in-version-check
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@50906bc0cf037574d72f0fd74ac51451f8d4fcae # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@95c6f97de08ce6befa8e1b222140676204d792fb # main
       - name: Checkout PR
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
         with:
           persist-credentials: false
       - name: Setup Node.js
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: '26'
       - name: Install verifier dependencies
@@ -2651,6 +2811,72 @@ jobs:
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
 
+  openapi-webapp-client-typecheck:
+    # Checks that a change to the C8 REST OpenAPI spec does not break the Webapp Client types.
+    # `npm ci` runs the `prepare` script of @camunda/camunda-api-zod-schemas, which regenerates the
+    # Zod schemas and types from the spec in this checkout, then the whole npm workspace is type-checked.
+    # Changes to webapp/client itself are covered by the blocking "Webapp Client / Type check" job.
+    name: "Check / C8 REST OpenAPI / Webapp Client types"
+    if: needs.detect-changes.outputs.openapi-changes == 'true'
+    needs: [ detect-changes ]
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions: {}  # GITHUB_TOKEN unused in this job
+    env:
+      TEST_OWNER: '@camunda/orchestration-cluster-webapps'
+      TEST_PRODUCT: Orchestration Cluster Webapp
+      TEST_TYPE: Build
+      CLIENT_DIR: webapp/client
+    steps:
+      - uses: camunda/infra-global-github-actions/start-build-monitor@95c6f97de08ce6befa8e1b222140676204d792fb # main
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
+        with:
+          persist-credentials: false
+      - name: Print metadata
+        uses: ./.github/actions/print-metadata
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 26
+      - name: Install dependencies and generate the schemas from the spec
+        uses: ./.github/actions/npm-ci-with-retry
+        with:
+          directory: ${{ env.CLIENT_DIR }}
+          max_attempts: "2"
+          timeout_minutes: "10"
+      - name: Type check
+        working-directory: ${{ env.CLIENT_DIR }}
+        run: npm run typecheck
+      - name: Explain the failure
+        if: failure()
+        run: |
+          cat >> "$GITHUB_STEP_SUMMARY" <<'EOF'
+          ### The OpenAPI spec change breaks the Webapp Client
+
+          The Zod schemas and TypeScript types of `@camunda/camunda-api-zod-schemas` are generated from
+          `zeebe/gateway-protocol/src/main/proto/v2`. With the spec of this PR, the frontend no longer
+          builds or type-checks. See the logs of the failed step for the errors.
+
+          Reproduce locally:
+
+          ```sh
+          cd webapp/client
+          npm ci             # regenerates the schemas from the local spec
+          npm run typecheck
+          ```
+
+          If the change is intended, coordinate the frontend update with the relevant pod.
+          EOF
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+
   renovatelint:
     if: needs.detect-changes.outputs.renovate-config-changes == 'true'
     name: "Lint / Renovate Config Validator"
@@ -2660,14 +2886,14 @@ jobs:
     permissions: {}  # GITHUB_TOKEN unused in this job
     env:
       # renovate: datasource=npm depName=renovate
-      RENOVATE_VERSION: '44.94.3'
+      RENOVATE_VERSION: '44.158.1'
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@50906bc0cf037574d72f0fd74ac51451f8d4fcae # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@95c6f97de08ce6befa8e1b222140676204d792fb # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
         with:
           persist-credentials: false
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 26
       # Retry to absorb transient npm-registry slowness when npx resolves renovate
@@ -2701,7 +2927,7 @@ jobs:
     timeout-minutes: 5
     permissions: {}
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@50906bc0cf037574d72f0fd74ac51451f8d4fcae # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@95c6f97de08ce6befa8e1b222140676204d792fb # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
         with:
@@ -2716,6 +2942,14 @@ jobs:
         run: bats .github/scripts/validate-flattened-poms.bats
       - name: Run release merge-back script tests
         run: bats .github/scripts/mergeback/mergeback.bats
+      - name: Run scoped-run verdict tests
+        run: node --test .github/scripts/scoped-run-junit-verdict.test.mjs
+      - name: Run failing-test owner resolver tests
+        run: bats .ci/scripts/ci/observe-build-status/resolve-failing-test-owner.bats
+      - name: Run OC nightly suite-health tests
+        run: bats .github/scripts/oc-nightly-suite-health/suite-health.bats
+      - name: Run OC nightly fix-PR reopen gate tests
+        run: bats .github/scripts/nightly-fix-reopen.bats
       - name: Observe build status
         if: always()
         continue-on-error: true
@@ -2734,7 +2968,7 @@ jobs:
     timeout-minutes: 5
     permissions: {}
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@50906bc0cf037574d72f0fd74ac51451f8d4fcae # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@95c6f97de08ce6befa8e1b222140676204d792fb # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
         with:
@@ -2744,13 +2978,13 @@ jobs:
         run: python3 -m pip install --quiet pytest -r .github/actions/read-db-versions/requirements.txt
       - name: Install load-test script test dependencies
         if: needs.detect-changes.outputs.load-test-scripts-changes == 'true'
-        uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
       - name: Run repository script unit tests
         if: needs.detect-changes.outputs.scripts-changes == 'true'
         run: pytest --verbose --color=yes --tb=short .github/scripts .github/actions/adjust-pom-for-license-analysis .github/actions/read-db-versions
-      - name: Run load-test script unit tests
+      - name: Run loadtestctl unit tests
         if: needs.detect-changes.outputs.load-test-scripts-changes == 'true'
-        run: make -C load-tests/docs/scripts/load_test_report check
+        run: make -C load-tests/loadtestctl check
       - name: Observe build status
         if: always()
         continue-on-error: true
@@ -2780,6 +3014,7 @@ jobs:
       - build-distball
       - build-platform-frontend
       - c8-e2e-test-suite
+      - c8-e2e-test-suite-tests
       - codeowners-check
       - commitlint
       - database-integration-tests
@@ -2797,8 +3032,10 @@ jobs:
       - junit-vintage-check
       - load-test-golden-tests
       - load-test-helm-lockfile
+      - load-test-k6-prettier
       - maven-spotless-linter
       - openapi-lint
+      - openapi-webapp-client-typecheck
       - openapi-x-added-in-version-check
       - operate-ci
       - optimize-ci
@@ -2903,7 +3140,7 @@ jobs:
       cancel-in-progress: false
       queue: max
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@50906bc0cf037574d72f0fd74ac51451f8d4fcae # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@95c6f97de08ce6befa8e1b222140676204d792fb # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
         with:
@@ -2952,15 +3189,15 @@ jobs:
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
       # Frontend bundles are built once in build-platform-frontend and downloaded here
       # instead of being rebuilt (issue #52693). mvn runs with -PskipFrontendBuild below.
-      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: fe-operate-${{ github.run_id }}
           path: operate/client/build
-      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: fe-webapp-${{ github.run_id }}
           path: webapp/client/apps/orchestration-cluster-webapp/dist
-      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: fe-identity-${{ github.run_id }}
           path: identity/client/dist
@@ -2990,7 +3227,7 @@ jobs:
           retry_on: any
           retry_wait_seconds: 15
           timeout_minutes: 20
-          command: ./mvnw -B -T1C -D skipTests -D skipChecks -PskipFrontendBuild -Dflatten.updatePomFile=true -Ddistro.zip.attach=false compile generate-sources source:jar javadoc:jar deploy
+          command: ./mvnw -B -T1C -D skipTests -D skipChecks -PskipFrontendBuild -Dflatten.updatePomFile=true -Ddistro.zip.attach=false -Doptimize.distro.attach=false compile generate-sources source:jar javadoc:jar deploy
       - name: Observe build status
         if: always()
         continue-on-error: true
@@ -3033,7 +3270,7 @@ jobs:
       cancel-in-progress: false
       queue: max
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@50906bc0cf037574d72f0fd74ac51451f8d4fcae # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@95c6f97de08ce6befa8e1b222140676204d792fb # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
         with:
@@ -3047,15 +3284,15 @@ jobs:
           minimus: true
       # Frontend bundles are built once in build-platform-frontend and downloaded here
       # instead of being rebuilt (issue #52693). build-zeebe runs with -PskipFrontendBuild below.
-      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: fe-operate-${{ github.run_id }}
           path: operate/client/build
-      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: fe-webapp-${{ github.run_id }}
           path: webapp/client/apps/orchestration-cluster-webapp/dist
-      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: fe-identity-${{ github.run_id }}
           path: identity/client/dist
@@ -3063,6 +3300,9 @@ jobs:
         id: build-camunda
         with:
           maven-extra-args: -PskipFrontendBuild
+          # Must stay above the slowest observed build (~5min); two attempts fit the 20min job timeout.
+          retry-max-attempts: 2
+          retry-timeout-minutes: 7
       - uses: ./.github/actions/build-platform-docker
         id: build-camunda-docker
         with:
@@ -3108,7 +3348,7 @@ jobs:
     env:
       TEST_OWNER: '@camunda/core-features'
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@50906bc0cf037574d72f0fd74ac51451f8d4fcae # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@95c6f97de08ce6befa8e1b222140676204d792fb # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
         with:
@@ -3122,7 +3362,7 @@ jobs:
           minimus: true
       # Optimize frontend bundle is built once in build-platform-frontend and downloaded here
       # instead of being rebuilt (issue #52693). The Optimize assembly runs with -PskipFrontendBuild below.
-      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: fe-optimize-${{ github.run_id }}
           path: optimize/client/dist

@@ -17,7 +17,10 @@ type Params = {
 	isFetchingNextPage: boolean;
 	isFetchingPreviousPage: boolean;
 	fetchNextPage: () => Promise<unknown>;
-	fetchPreviousPage: () => Promise<unknown>;
+	fetchPreviousPage: () => Promise<{
+		data?: {pages: Array<{items: unknown[]}>};
+		isFetchPreviousPageError?: boolean;
+	}>;
 };
 
 function useDashboardScrollPagination({
@@ -38,8 +41,12 @@ function useDashboardScrollPagination({
 			if (atBottom && hasNextPage && !isFetchingNextPage) {
 				await fetchNextPage();
 			} else if (atTop && hasPreviousPage && !isFetchingPreviousPage) {
-				await fetchPreviousPage();
-				target.scrollTop = pageSize * ROW_HEIGHT;
+				const result = await fetchPreviousPage();
+				if (result.isFetchPreviousPageError) {
+					return;
+				}
+				const prependedRowCount = result.data?.pages[0]?.items.length ?? pageSize;
+				target.scrollTop = prependedRowCount * ROW_HEIGHT;
 			}
 		},
 		[

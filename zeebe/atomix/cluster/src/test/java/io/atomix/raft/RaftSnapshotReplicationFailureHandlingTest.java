@@ -22,6 +22,7 @@ import io.atomix.raft.protocol.InstallRequest;
 import io.atomix.raft.protocol.InstallResponse;
 import io.atomix.raft.protocol.TestRaftServerProtocol;
 import io.atomix.raft.protocol.TestRaftServerProtocol.ResponseInterceptor;
+import io.camunda.zeebe.test.util.junit.SlowTest;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -32,7 +33,9 @@ import java.util.function.Function;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 
+@Category(SlowTest.class)
 public class RaftSnapshotReplicationFailureHandlingTest {
 
   @Rule public RaftRule raftRule = RaftRule.withBootstrappedNodes(3);

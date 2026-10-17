@@ -44,12 +44,14 @@ spec:
 
       annotations:
 
+        checksum/config-identity-env: 01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b
+        checksum/config-shared-identity-env: 01ee2c1fb1ac6d7d9f4b80ae9f156cf9b41fa54767ac00219f9abbd6364efac2
     spec:
       imagePullSecrets:
         - name: harbor-registry
       initContainers:
         - name: migration
-          image: camunda/optimize:8.10.0-alpha5
+          image: camunda/optimize:8.10.3
           command: ['./upgrade/upgrade.sh', '--skip-warning']
           securityContext:
             allowPrivilegeEscalation: false
@@ -100,7 +102,7 @@ spec:
               subPath: application.yml
       containers:
         - name: optimize
-          image: camunda/optimize:8.10.0-alpha5
+          image: camunda/optimize:8.10.3
           imagePullPolicy: Always
           securityContext:
             allowPrivilegeEscalation: false
@@ -149,8 +151,6 @@ spec:
           envFrom:
             - configMapRef:
                 name: c8-golden-stable-810-elasticsearch-stable-camunda-platform-identity-env-vars
-            - configMapRef:
-                name: c8-golden-stable-810-elasticsearch-stable-camunda-platform-documentstore-env-vars
           resources:
             limits:
               cpu: 2000m

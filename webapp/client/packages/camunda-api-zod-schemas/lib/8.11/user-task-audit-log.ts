@@ -6,42 +6,22 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {z} from 'zod';
-import {
-	API_VERSION,
-	advancedDateTimeFilterSchema,
-	advancedStringFilterSchema,
-	getEnumFilterSchema,
-	getQueryRequestBodySchema,
-	type Endpoint,
-} from './common';
-import {
-	auditLogOperationTypeSchema,
-	auditLogResultSchema,
-	auditLogActorTypeSchema,
-	auditLogSortFieldEnum,
-	queryAuditLogsResponseBodySchema,
-} from './audit-log';
+import {API_VERSION, type Endpoint} from './common';
+import {auditLogSearchQueryResultSchema} from './gen/zod/auditLogSearchQueryResultSchema';
+import {userTaskAuditLogFilterSchema as genUserTaskAuditLogFilterSchema} from './gen/zod/userTaskAuditLogFilterSchema';
+import {userTaskAuditLogSearchQueryRequestSchema} from './gen/zod/userTaskAuditLogSearchQueryRequestSchema';
+import type {AuditLogSearchQueryResult} from './gen/types/AuditLogSearchQueryResult';
+import type {UserTaskAuditLogFilter as GenUserTaskAuditLogFilter} from './gen/types/UserTaskAuditLogFilter';
+import type {UserTaskAuditLogSearchQueryRequest} from './gen/types/UserTaskAuditLogSearchQueryRequest';
 
-const userTaskAuditLogFilterSchema = z
-	.object({
-		operationType: getEnumFilterSchema(auditLogOperationTypeSchema).optional(),
-		result: getEnumFilterSchema(auditLogResultSchema).optional(),
-		timestamp: advancedDateTimeFilterSchema.optional(),
-		actorType: getEnumFilterSchema(auditLogActorTypeSchema).optional(),
-		actorId: advancedStringFilterSchema.optional(),
-	})
-	.partial();
-type UserTaskAuditLogFilter = z.infer<typeof userTaskAuditLogFilterSchema>;
+const userTaskAuditLogFilterSchema = genUserTaskAuditLogFilterSchema;
+type UserTaskAuditLogFilter = GenUserTaskAuditLogFilter;
 
-const queryUserTaskAuditLogsRequestBodySchema = getQueryRequestBodySchema({
-	sortFields: auditLogSortFieldEnum.options as [string, ...string[]],
-	filter: userTaskAuditLogFilterSchema,
-});
-type QueryUserTaskAuditLogsRequestBody = z.infer<typeof queryUserTaskAuditLogsRequestBodySchema>;
+const queryUserTaskAuditLogsRequestBodySchema = userTaskAuditLogSearchQueryRequestSchema;
+type QueryUserTaskAuditLogsRequestBody = UserTaskAuditLogSearchQueryRequest;
 
-const queryUserTaskAuditLogsResponseBodySchema = queryAuditLogsResponseBodySchema;
-type QueryUserTaskAuditLogsResponseBody = z.infer<typeof queryUserTaskAuditLogsResponseBodySchema>;
+const queryUserTaskAuditLogsResponseBodySchema = auditLogSearchQueryResultSchema;
+type QueryUserTaskAuditLogsResponseBody = AuditLogSearchQueryResult;
 
 const queryUserTaskAuditLogs = {
 	method: 'POST',
@@ -54,4 +34,5 @@ export {
 	queryUserTaskAuditLogsResponseBodySchema,
 	queryUserTaskAuditLogs,
 };
+
 export type {UserTaskAuditLogFilter, QueryUserTaskAuditLogsRequestBody, QueryUserTaskAuditLogsResponseBody};

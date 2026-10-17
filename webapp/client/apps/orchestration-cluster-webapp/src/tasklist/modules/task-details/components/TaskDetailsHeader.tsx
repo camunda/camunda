@@ -27,16 +27,16 @@ const RightPanel: React.FC<RightPanelProps> = ({taskState, assignee, user, assig
 		case 'COMPLETED':
 			return (
 				<span
-					className="flex items-center gap-4 text-xs text-neutral-foreground-subtle"
+					className="flex min-w-0 items-center gap-4 text-xs text-neutral-foreground-subtle"
 					data-testid="completion-label"
 					title={t('tasklist.taskDetailsTaskCompletedBy')}
 				>
-					<span className="flex items-center gap-1">
+					<span className="flex shrink-0 items-center gap-1">
 						<CircleCheck className="size-4 text-success-foreground-subtle" aria-hidden />
 						{assignee ? `${t('tasklist.taskDetailsTaskCompletedBy')} ` : t('tasklist.taskAssignmentStatusCompleted')}
 					</span>
 					{assignee ? (
-						<span data-testid="assignee">
+						<span className="flex min-w-0 max-w-60 2xl:max-w-80" data-testid="assignee">
 							<AssigneeBadge currentUser={user} assignee={assignee} />
 						</span>
 					) : null}
@@ -47,7 +47,7 @@ const RightPanel: React.FC<RightPanelProps> = ({taskState, assignee, user, assig
 		case 'FAILED':
 			return (
 				<>
-					<span className="flex items-center max-lg:order-2" data-testid="assignee">
+					<span className="flex min-w-0 max-w-60 items-center max-lg:order-2 2xl:max-w-80" data-testid="assignee">
 						<AssigneeBadge currentUser={user} assignee={assignee} isShortFormat={false} />
 					</span>
 					<span className="flex shrink-0 items-center max-lg:order-1">{assignButton}</span>
@@ -63,14 +63,14 @@ const RightPanel: React.FC<RightPanelProps> = ({taskState, assignee, user, assig
 							? t('tasklist.taskStateUpdatingMessage')
 							: t('tasklist.taskStateCancelingMessage')}
 					</span>
-					<span className="flex items-center" data-testid="assignee">
+					<span className="flex min-w-0 max-w-60 items-center 2xl:max-w-80" data-testid="assignee">
 						<AssigneeBadge currentUser={user} assignee={assignee} isShortFormat={false} />
 					</span>
 				</>
 			);
 		case 'COMPLETING':
 			return (
-				<span className="flex items-center" data-testid="assignee">
+				<span className="flex min-w-0 max-w-60 items-center 2xl:max-w-80" data-testid="assignee">
 					<AssigneeBadge currentUser={user} assignee={assignee} isShortFormat={false} />
 				</span>
 			);
@@ -115,15 +115,15 @@ const TaskDetailsHeader: React.FC<Props> = ({
 					{t('tasklist.taskDetailsBackToListLabel')}
 				</Button>
 			) : null}
-			<div className="flex min-w-40 flex-1 flex-col max-lg:w-full">
-				<Text variant="label-md-strong" className="truncate text-neutral-foreground-strong">
+			<div className="flex min-w-40 flex-1 flex-col max-lg:w-full lg:max-w-2xl">
+				<Text variant="label-md-strong" className="truncate text-neutral-foreground-strong" title={taskName}>
 					{taskName}
 				</Text>
-				<Text variant="helper" className="truncate text-neutral-foreground-subtle">
+				<Text variant="helper" className="truncate text-neutral-foreground-subtle" title={processName}>
 					{processName}
 				</Text>
 			</div>
-			<div className="flex shrink-0 items-center gap-4 max-lg:ml-0 max-lg:w-full max-lg:justify-start lg:ml-auto lg:w-auto lg:justify-end">
+			<div className="flex min-w-0 max-w-full shrink-0 items-center gap-4 max-lg:ml-0 max-lg:w-full max-lg:justify-start lg:ml-auto lg:w-auto lg:justify-end">
 				{detailsButton ? <span className="flex items-center max-lg:order-3">{detailsButton}</span> : null}
 				<RightPanel taskState={taskState} assignee={assignee} user={user} assignButton={assignButton} />
 			</div>

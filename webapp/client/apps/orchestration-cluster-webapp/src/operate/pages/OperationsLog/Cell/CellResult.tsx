@@ -8,7 +8,7 @@
 
 import type {AuditLog} from '@camunda/camunda-api-zod-schemas/8.11/audit-log';
 import {OperationsLogResultIcon} from '#/operate/shared/OperationsLogDetailsModal/OperationsLogResultIcon';
-import {OperationLogName} from '../styled';
+import {OperationLogName} from '#/operate/pages/OperationsLog/styled';
 
 type Props = {
 	item: AuditLog;

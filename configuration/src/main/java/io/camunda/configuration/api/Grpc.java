@@ -1,0 +1,219 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.configuration.api;
+
+import static io.camunda.zeebe.gateway.impl.configuration.ConfigurationDefaults.DEFAULT_HOST;
+import static io.camunda.zeebe.gateway.impl.configuration.ConfigurationDefaults.DEFAULT_MANAGEMENT_THREADS;
+import static io.camunda.zeebe.gateway.impl.configuration.ConfigurationDefaults.DEFAULT_PORT;
+
+import io.camunda.configuration.UnifiedConfigurationHelper;
+import io.camunda.configuration.UnifiedConfigurationHelper.BackwardsCompatibilityMode;
+import io.camunda.configuration.api.grpc.Interceptor;
+import io.camunda.configuration.api.grpc.Ssl;
+import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import org.jspecify.annotations.Nullable;
+
+public class Grpc implements Cloneable {
+  private static final String PREFIX = "camunda.api.grpc";
+  private static final Map<String, String> LEGACY_GATEWAY_PROPERTIES =
+      Map.of(
+          "host", "zeebe.gateway.network.host",
+          "port", "zeebe.gateway.network.port",
+          "minKeepAliveInterval", "zeebe.gateway.network.minKeepAliveInterval",
+          "managementThreads", "zeebe.gateway.threads.managementThreads",
+          "grpcMinThreads", "zeebe.gateway.threads.grpcMinThreads",
+          "grpcMaxThreads", "zeebe.gateway.threads.grpcMaxThreads");
+  private static final Map<String, String> LEGACY_BROKER_PROPERTIES =
+      Map.of(
+          "host", "zeebe.broker.gateway.network.host",
+          "port", "zeebe.broker.gateway.network.port",
+          "minKeepAliveInterval", "zeebe.broker.gateway.network.minKeepAliveInterval",
+          "managementThreads", "zeebe.broker.gateway.threads.managementThreads",
+          "grpcMinThreads", "zeebe.broker.gateway.threads.grpcMinThreads",
+          "grpcMaxThreads", "zeebe.broker.gateway.threads.grpcMaxThreads");
+
+  private Map<String, String> legacyPropertiesMap = LEGACY_BROKER_PROPERTIES;
+
+  /** Sets the address the gateway binds to */
+  private String address = DEFAULT_HOST;
+
+  /** Sets the port the gateway binds to */
+  private int port = DEFAULT_PORT;
+
+  /**
+   * Sets the minimum keep alive interval. This setting specifies the minimum accepted interval
+   * between keep alive pings. This value must be specified as a positive integer followed by 's'
+   * for seconds, 'm' for minutes or 'h' for hours.
+   */
+  private Duration minKeepAliveInterval = Duration.ofSeconds(30);
+
+  /** Sets the ssl configuration for the gateway */
+  private Ssl ssl = new Ssl();
+
+  /** Sets the interceptors */
+  private List<Interceptor> interceptors = new ArrayList<>();
+
+  /** Sets the number of threads the gateway will use to communicate with the broker cluster */
+  private int managementThreads = DEFAULT_MANAGEMENT_THREADS;
+
+  /** Sets the minimum number of threads the gateway will use to handle gRPC requests */
+  private int grpcMinThreads = Runtime.getRuntime().availableProcessors();
+
+  /** Sets the maximum number of threads the gateway will use to handle gRPC requests */
+  private int grpcMaxThreads = 2 * Runtime.getRuntime().availableProcessors();
+
+  /**
+   * Sets the maximum age of a gRPC connection before the gateway proactively closes it (via
+   * GOAWAY), forcing the client to reconnect. Defaults to 5 minutes. Set to unset to disable,
+   * keeping grpc-java's own default of an unbounded connection age.
+   */
+  private @Nullable Duration maxConnectionAge = Duration.ofMinutes(5);
+
+  /**
+   * Sets the grace period, after the maximum connection age elapses, during which existing calls on
+   * the connection may finish before it is forcibly terminated. Only takes effect when the maximum
+   * connection age is set. Defaults to 1 minute. Set to unset to disable, keeping grpc-java's own
+   * default of an infinite grace period.
+   */
+  private @Nullable Duration maxConnectionAgeGrace = Duration.ofMinutes(1);
+
+  public String getAddress() {
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
+        PREFIX + ".address",
+        address,
+        String.class,
+        BackwardsCompatibilityMode.SUPPORTED,
+        Set.of(legacyPropertiesMap.get("host")));
+  }
+
+  public void setAddress(final String address) {
+    this.address = address;
+  }
+
+  public int getPort() {
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
+        PREFIX + ".port",
+        port,
+        Integer.class,
+        BackwardsCompatibilityMode.SUPPORTED,
+        Set.of(legacyPropertiesMap.get("port")));
+  }
+
+  public void setPort(final int port) {
+    this.port = port;
+  }
+
+  public Duration getMinKeepAliveInterval() {
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
+        PREFIX + ".min-keep-alive-interval",
+        minKeepAliveInterval,
+        Duration.class,
+        BackwardsCompatibilityMode.SUPPORTED,
+        Set.of(legacyPropertiesMap.get("minKeepAliveInterval")));
+  }
+
+  public void setMinKeepAliveInterval(final Duration minKeepAliveInterval) {
+    this.minKeepAliveInterval = minKeepAliveInterval;
+  }
+
+  public Ssl getSsl() {
+    return ssl;
+  }
+
+  public void setSsl(final Ssl ssl) {
+    this.ssl = ssl;
+  }
+
+  public int getManagementThreads() {
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
+        PREFIX + ".management-threads",
+        managementThreads,
+        Integer.class,
+        BackwardsCompatibilityMode.SUPPORTED,
+        Set.of(legacyPropertiesMap.get("managementThreads")));
+  }
+
+  public void setManagementThreads(final int managementThreads) {
+    this.managementThreads = managementThreads;
+  }
+
+  public int getGrpcMinThreads() {
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
+        PREFIX + ".grpc-min-threads",
+        grpcMinThreads,
+        Integer.class,
+        BackwardsCompatibilityMode.SUPPORTED,
+        Set.of(legacyPropertiesMap.get("grpcMinThreads")));
+  }
+
+  public void setGrpcMinThreads(final int grpcMinThreads) {
+    this.grpcMinThreads = grpcMinThreads;
+  }
+
+  public int getGrpcMaxThreads() {
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
+        PREFIX + ".grpc-max-threads",
+        grpcMaxThreads,
+        Integer.class,
+        BackwardsCompatibilityMode.SUPPORTED,
+        Set.of(legacyPropertiesMap.get("grpcMaxThreads")));
+  }
+
+  public void setGrpcMaxThreads(final int grpcMaxThreads) {
+    this.grpcMaxThreads = grpcMaxThreads;
+  }
+
+  public @Nullable Duration getMaxConnectionAge() {
+    return maxConnectionAge;
+  }
+
+  public void setMaxConnectionAge(final @Nullable Duration maxConnectionAge) {
+    this.maxConnectionAge = maxConnectionAge;
+  }
+
+  public @Nullable Duration getMaxConnectionAgeGrace() {
+    return maxConnectionAgeGrace;
+  }
+
+  public void setMaxConnectionAgeGrace(final @Nullable Duration maxConnectionAgeGrace) {
+    this.maxConnectionAgeGrace = maxConnectionAgeGrace;
+  }
+
+  public List<Interceptor> getInterceptors() {
+    return interceptors;
+  }
+
+  public void setInterceptors(final List<Interceptor> interceptors) {
+    this.interceptors = interceptors;
+  }
+
+  @Override
+  public Object clone() {
+    try {
+      return super.clone();
+    } catch (final CloneNotSupportedException e) {
+      throw new AssertionError("Unexpected: Class must implement Cloneable", e);
+    }
+  }
+
+  public Grpc withBrokerNetworkProperties() {
+    final var copy = (Grpc) clone();
+    copy.legacyPropertiesMap = LEGACY_BROKER_PROPERTIES;
+    return copy;
+  }
+
+  public Grpc withGatewayNetworkProperties() {
+    final var copy = (Grpc) clone();
+    copy.legacyPropertiesMap = LEGACY_GATEWAY_PROPERTIES;
+    return copy;
+  }
+}

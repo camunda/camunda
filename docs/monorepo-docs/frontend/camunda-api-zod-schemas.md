@@ -36,10 +36,23 @@ For the full list of exported schemas and types, refer to the source
 under `packages/camunda-api-zod-schemas/lib/` — for example
 `packages/camunda-api-zod-schemas/lib/8.8/index.ts`.
 
+## Generated schemas
+
+The schemas and types of 8.11 are generated from the OpenAPI spec in
+`zeebe/gateway-protocol/src/main/proto/v2/`. The versions 8.8, 8.9, and 8.10 are written manually.
+
+- `npm ci` in `webapp/client/` generates the schemas from the local spec and builds the package.
+- To generate them again after a spec change, use
+  `npm run prepare -w @camunda/camunda-api-zod-schemas`.
+- The generated files are in `lib/<version>/gen/`. Git ignores them. Do not change them.
+
+When a spec change breaks the types of the orchestration cluster webapp, correct the webapp in the
+same PR. Ask the pod that owns the changed code to review the PR. The CI job
+"Check / C8 REST OpenAPI / Webapp Client types" examines each spec change.
+
 ## Publishing a new version
 
-1. Increment the version in the `camunda-api-zod-schemas` `package.json`
-   (this is manual for now; we plan to automate it in the future), update the dependency
+1. Increment the version in the `camunda-api-zod-schemas` `package.json`, update the dependency
    version in any consumer npm workspace packages, run `npm i`, and
    push the changes to `main`.
 2. Run the [Publish Zod Schemas to npm](https://github.com/camunda/camunda/actions/workflows/publish-zod-schemas.yml)

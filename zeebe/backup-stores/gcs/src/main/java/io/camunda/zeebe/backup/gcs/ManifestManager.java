@@ -172,7 +172,7 @@ public final class ManifestManager {
     final var blob = client.get(manifestBlobInfo(id).getBlobId());
     try {
       if (blob == null) {
-        final var failed = Manifest.createFailed(id);
+        final var failed = Manifest.createFailed(id, failureReason);
         final var blobInfo = manifestBlobInfoWithMetadata(id, failed);
         client.create(blobInfo, MAPPER.writeValueAsBytes(failed), BlobTargetOption.doesNotExist());
       } else {

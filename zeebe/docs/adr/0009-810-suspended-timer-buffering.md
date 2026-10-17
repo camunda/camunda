@@ -30,10 +30,12 @@ only for previously buffered ones.** The resumed applier upserts the due-date en
 timer still exists, so an already indexed fresh trigger is unchanged and a duplicate trigger cannot
 recreate an index entry after the timer was removed. This side-effect is currently accepted.
 
-**D3. The gate exposes two classification callbacks, `onSuspended` and `onResuming`, both returning
-`SuspensionAction`.** The gate checks the marker and passes commands through while `SUSPENDING`,
-calls `onSuspended` while `SUSPENDED`, and calls `onResuming` while `RESUMING`. Events that accompany
-buffering belong in `onSuspended`; events that accompany resume belong in `onResuming`.
+**D3. The gate exposes three classification callbacks, `onSuspending`, `onSuspended` and
+`onResuming`, all returning `SuspensionAction`.** The gate checks the marker and calls
+`onSuspending` while `SUSPENDING`, `onSuspended` while `SUSPENDED`, and `onResuming` while
+`RESUMING`. `onSuspending` defaults to `onSuspended`, so a `SUSPENDING` instance is gated like a
+`SUSPENDED` one unless a processor overrides it. Events that accompany buffering belong in
+`onSuspended`; events that accompany resume belong in `onResuming`.
 
 - Processors must ensure that the commands returned are compatible between `onSuspended` and
   `onResuming`. For instance, a command that always gets processed on suspend should always get
@@ -91,8 +93,9 @@ a suspension marker for them.
   `NOT_FOUND`. Suspension is not deduplicating.
 - A timer that becomes due after resume is neither suspended nor resumed — the normal path.
 - Every processor implementing `SuspensionAware` must explicitly classify commands for `SUSPENDED`
-  (via `onSuspended`) and for `RESUMING` (via `onResuming`). Commands pass through while
-  `SUSPENDING`. The classifications still need to be reviewed together for consistency.
+  (via `onSuspended`) and for `RESUMING` (via `onResuming`). While `SUSPENDING`, commands get the
+  `onSuspended` classification by default. The classifications still need to be reviewed together
+  for consistency.
 - No downgrade once a timer is suspended: older brokers do not know `TimerIntent` values 6 and 7.
 
 ## Testing

@@ -7,7 +7,7 @@
  */
 
 import {formatRFC3339} from 'date-fns';
-import type {CustomFilters} from '#/tasklist/modules/available-tasks/customFiltersSchema';
+import type {CustomFilters} from './customFiltersSchema';
 import type {CustomFilterSearchParams} from './searchSchema';
 
 function prepareCustomFiltersParams(filters: CustomFilters, user: string): CustomFilterSearchParams {

@@ -101,7 +101,7 @@ const queryMessageSubscriptions = {
 const correlatedMessageSubscriptionSchema = z.object({
 	subscriptionKey: z.string(),
 	processDefinitionId: z.string(),
-	processDefinitionKey: z.string(),
+	processDefinitionKey: z.string().nullable(),
 	processInstanceKey: z.string(),
 	elementId: z.string(),
 	elementInstanceKey: z.string().nullable(),

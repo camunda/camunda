@@ -11,8 +11,9 @@ import {useTranslation} from 'react-i18next';
 import type {IncidentProcessInstanceStatisticsByDefinition} from '@camunda/camunda-api-zod-schemas/8.11';
 import {InstancesBar} from '#/operate/components/InstancesBar/InstancesBar';
 import {incidentsByErrorDefinitionsQuery} from './incidentsByError.queries';
-import {dashboardTenantId, useDashboardTenants} from '../processesLinkFilters';
-import {Li, LinkWrapper} from '../styled';
+import {truncateErrorMessage} from './truncateErrorMessage';
+import {dashboardTenantId, useDashboardTenants} from '#/operate/pages/Dashboard/processesLinkFilters';
+import {Li, LinkWrapper} from '#/operate/pages/Dashboard/styled';
 
 type Props = {
 	errorHashCode: number;
@@ -46,7 +47,7 @@ const IncidentsByErrorDefinitions: React.FC<Props> = ({errorHashCode, errorMessa
 							search={{
 								process: item.processDefinitionId,
 								version: item.processDefinitionVersion,
-								errorMessage,
+								errorMessage: truncateErrorMessage(errorMessage),
 								incidentErrorHashCode: errorHashCode,
 								tenantId,
 								incidents: true,

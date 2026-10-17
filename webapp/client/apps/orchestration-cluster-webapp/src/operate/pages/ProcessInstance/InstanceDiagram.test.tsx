@@ -24,7 +24,7 @@ import {TooltipProvider} from '@camunda/design-system';
 import {HttpResponse, http, delay} from 'msw';
 import i18n from 'i18next';
 import {z} from 'zod';
-import type {ProcessInstance as ProcessInstanceData} from '@camunda/camunda-api-zod-schemas/8.10';
+import type {ProcessInstance as ProcessInstanceData} from '@camunda/camunda-api-zod-schemas/8.11';
 import {it} from '#/vitest-modules/test-extend';
 import {renderWithRouter} from '#/vitest-modules/render-with-router';
 import {createProcessInstance} from '#/shared-test-modules/api-mocks/process-instances';
@@ -517,6 +517,19 @@ describe('<InstanceDiagram />', () => {
 			.toBe('task_1');
 		expect(processInstanceSearchSchema.parse(screen.router.state.location.search).anchorElementId).toBeUndefined();
 		expect(processInstanceSearchSchema.parse(screen.router.state.location.search).elementInstanceKey).toBeUndefined();
+	});
+
+	it('should show agent overlays for a finished process instance', async ({worker}) => {
+		worker.use(...handlers({agents: [createAgentInstance({elementId: 'call_1'})]}));
+		const screen = await renderLoadedPage({nextInstanceState: 'COMPLETED'});
+
+		await screen.router.navigate({
+			to: '/operate/processes/$processInstanceId/details',
+			params: {processInstanceId: 'instance-2'},
+			search: {},
+		});
+
+		await expect.element(screen.getByTestId('instance-agent-call_1')).toHaveTextContent('Thinking...');
 	});
 
 	it('should clear the previous selection when navigating to a different process instance', async ({worker}) => {

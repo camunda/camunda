@@ -75,6 +75,9 @@ public final class BackupService extends Actor implements BackupManager {
   @Override
   protected void onActorClosing() {
     internalBackupManager.close();
+    // checkpoints written but not yet processed will not find their reservation once a new
+    // backup manager is installed, so nothing needs the snapshots reserved for them anymore
+    snapshotStore.releaseAllReservations();
     metrics.close();
   }
 
@@ -156,6 +159,9 @@ public final class BackupService extends Actor implements BackupManager {
       final String failureReason) {
     actor.run(
         () -> {
+          backupDescriptor
+              .snapshotId()
+              .ifPresent(snapshotId -> snapshotStore.releaseReservation(checkpointId, snapshotId));
           final var backupId = getBackupId(checkpointId);
           internalBackupManager.createFailedBackup(
               backupId, backupDescriptor.checkpointPosition(), failureReason, actor);
@@ -221,5 +227,10 @@ public final class BackupService extends Actor implements BackupManager {
   private BackupIdentifierImpl getBackupId(final long checkpointId) {
     return new BackupIdentifierImpl(
         brokerMemberId.nodeIdx(), brokerMemberId.zone(), partitionId.number(), checkpointId);
+  }
+
+  @Override
+  public void releaseSnapshotReservation(final long checkpointId, final String snapshotId) {
+    snapshotStore.releaseReservation(checkpointId, snapshotId);
   }
 }

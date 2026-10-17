@@ -9,6 +9,7 @@ package io.camunda.authentication.config;
 
 import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.core.authz.LazyTokenClaimsConverter;
+import io.camunda.security.spring.converter.AdditionalJwkSetUrisByRegistrationId;
 import io.camunda.security.spring.converter.OidcUserAuthenticationConverter;
 import io.camunda.security.spring.oidc.OidcAccessTokenDecoderFactory;
 import jakarta.servlet.http.HttpServletRequest;
@@ -29,38 +30,44 @@ final class ProviderAwareOidcUserAuthenticationConverter extends OidcUserAuthent
   private final LazyTokenClaimsConverter defaultTokenClaimsConverter;
   private final Map<String, LazyTokenClaimsConverter> tokenClaimsConvertersByRegistrationId;
   private final Map<String, List<String>> identityClaimsByRegistrationId;
+  private final PhysicalTenantOidcSettingsRegistry physicalTenantOidcSettings;
 
   ProviderAwareOidcUserAuthenticationConverter(
       final OAuth2AuthorizedClientRepository authorizedClientRepository,
       final OidcAccessTokenDecoderFactory accessTokenDecoderFactory,
       final LazyTokenClaimsConverter defaultTokenClaimsConverter,
       final HttpServletRequest request,
-      final Map<String, List<String>> additionalJwkSetUrisByIssuer,
+      final AdditionalJwkSetUrisByRegistrationId additionalJwkSetUrisByRegistrationId,
       final Map<String, Boolean> preferIdTokenClaimsByRegistrationId,
       final Map<String, LazyTokenClaimsConverter> tokenClaimsConvertersByRegistrationId,
-      final Map<String, List<String>> identityClaimsByRegistrationId) {
+      final Map<String, List<String>> identityClaimsByRegistrationId,
+      final PhysicalTenantOidcSettingsRegistry physicalTenantOidcSettings) {
     super(
         authorizedClientRepository,
         accessTokenDecoderFactory,
         defaultTokenClaimsConverter,
         request,
-        additionalJwkSetUrisByIssuer,
+        additionalJwkSetUrisByRegistrationId,
         preferIdTokenClaimsByRegistrationId);
     this.defaultTokenClaimsConverter = defaultTokenClaimsConverter;
     this.tokenClaimsConvertersByRegistrationId = Map.copyOf(tokenClaimsConvertersByRegistrationId);
     this.identityClaimsByRegistrationId = Map.copyOf(identityClaimsByRegistrationId);
+    this.physicalTenantOidcSettings = physicalTenantOidcSettings;
   }
 
   @Override
   public CamundaAuthentication convert(final Authentication authentication) {
     final var oauth2Authentication = (OAuth2AuthenticationToken) authentication;
     final var registrationId = oauth2Authentication.getAuthorizedClientRegistrationId();
-    final var tokenClaimsConverter =
-        tokenClaimsConvertersByRegistrationId.getOrDefault(
-            registrationId, defaultTokenClaimsConverter);
+    final var settings = physicalTenantOidcSettings.current();
+    final var tokenClaimsConverter = tokenClaimsConverter(settings, registrationId);
+    final var identityClaims =
+        settings == null
+            ? identityClaimsByRegistrationId
+            : settings.identityClaimsByRegistrationId();
     try {
       final var claims = new HashMap<>(getClaims(oauth2Authentication));
-      identityClaimsByRegistrationId
+      identityClaims
           .getOrDefault(registrationId, List.of())
           .forEach(claim -> normalizeUriClaim(claims, claim));
       return tokenClaimsConverter.convert(claims);
@@ -68,6 +75,23 @@ final class ProviderAwareOidcUserAuthenticationConverter extends OidcUserAuthent
       throw new OAuth2AuthenticationException(
           new OAuth2Error(OAuth2ErrorCodes.INVALID_TOKEN, e.getMessage(), null), e);
     }
+  }
+
+  private LazyTokenClaimsConverter tokenClaimsConverter(
+      final PhysicalTenantOidcSettings settings, final String registrationId) {
+    if (settings == null) {
+      return tokenClaimsConvertersByRegistrationId.getOrDefault(
+          registrationId, defaultTokenClaimsConverter);
+    }
+    final var converter = settings.tokenClaimsConvertersByRegistrationId().get(registrationId);
+    if (converter == null) {
+      throw new OAuth2AuthenticationException(
+          new OAuth2Error(
+              OAuth2ErrorCodes.INVALID_TOKEN,
+              "No OIDC registration '" + registrationId + "' for the physical tenant",
+              null));
+    }
+    return converter;
   }
 
   private static void normalizeUriClaim(final Map<String, Object> claims, final String claimName) {

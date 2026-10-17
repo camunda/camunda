@@ -10,8 +10,9 @@ package io.camunda.authentication.clusteradmin;
 /**
  * A cluster-admin user for HTTP Basic authentication against the {@code /cluster/v2/**} API.
  *
- * <p>Intentionally duplicated from {@code io.camunda.configuration.ClusterAdminUser} (configuration
- * module): {@code authentication} does not depend on {@code configuration} (see {@code
+ * <p>Intentionally duplicated from {@code
+ * io.camunda.configuration.security.clusteradmin.ClusterAdminUser} (configuration module): {@code
+ * authentication} does not depend on {@code configuration} (see {@code
  * PhysicalTenantAuthConfigurations#VALID_TENANT_ID} for the same constraint on an analogous case),
  * so this module binds the {@code camunda.security.cluster-admin.basic.users} property path
  * independently. The configuration-module type exists for typed config metadata only; this one is

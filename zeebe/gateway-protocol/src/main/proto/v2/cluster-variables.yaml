@@ -483,7 +483,6 @@ components:
           allOf:
             - $ref: 'identifiers.yaml#/components/schemas/ClusterVariableName'
         value:
-          type: object
           description: The value of the cluster variable. Can be any JSON object or primitive value. Will be serialized as a JSON string in responses.
         metadata:
           description: >-
@@ -512,7 +511,6 @@ components:
         - value
       properties:
         value:
-          type: object
           description: The new value of the cluster variable. Can be any JSON object or primitive value. Will be serialized as a JSON string in responses.
         metadata:
           description: >-

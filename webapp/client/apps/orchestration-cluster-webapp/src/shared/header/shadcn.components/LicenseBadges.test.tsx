@@ -22,9 +22,9 @@ describe('license note', () => {
 			<LicenseBadges license={createLicense({validLicense: false, isCommercial: false, expiresAt: null})} />,
 		);
 
-		await expect.element(screen.getByText('Non-Production License')).toBeVisible();
+		await expect.element(screen.getByText('Non-production license', {exact: true})).toBeVisible();
 		await expect
-			.element(screen.getByText('Non-Production License'))
+			.element(screen.getByText('Non-production license', {exact: true}))
 			.toHaveAttribute(
 				'title',
 				'Non-production license. For production usage details, visit our terms & conditions page or contact our sales team.',
@@ -38,7 +38,7 @@ describe('license note', () => {
 			/>,
 		);
 
-		expect(screen.getByText('Non-Production License').elements()).toHaveLength(0);
+		expect(screen.getByText('Non-production license', {exact: true}).elements()).toHaveLength(0);
 		expect(screen.getByText('Non-commercial license').elements()).toHaveLength(0);
 	});
 
@@ -56,7 +56,7 @@ describe('license note', () => {
 			/>,
 		);
 
-		await expect.element(screen.getByText('Non-Production License')).toBeVisible();
+		await expect.element(screen.getByText('Non-production license', {exact: true})).toBeVisible();
 		await expect.element(screen.getByText('Non-commercial license - expired')).toBeVisible();
 	});
 
@@ -64,7 +64,7 @@ describe('license note', () => {
 		const screen = await render(<LicenseBadges license={createLicense()} />);
 
 		await expect.element(screen.getByText('Production license')).toBeVisible();
-		expect(screen.getByText('Non-Production License').elements()).toHaveLength(0);
+		expect(screen.getByText('Non-production license', {exact: true}).elements()).toHaveLength(0);
 	});
 
 	it('should show non-commercial license note in self-managed enterprise environment', async () => {

@@ -8,13 +8,14 @@
 
 import type React from 'react';
 
-// TODO(#63423, #63424): delete once InstancesByProcess/IncidentsByError land in PR8
 type ExpandableListRow = {
 	id: string;
 	content: React.ReactNode;
-	name: React.ReactNode;
-	activeCount?: number;
-	incidentsCount: number;
+};
+
+type ExpandableListLoadingIndicator = {
+	testId: string;
+	label: string;
 };
 
 type ExpandableListVariantProps = {
@@ -22,6 +23,10 @@ type ExpandableListVariantProps = {
 	rows: ExpandableListRow[];
 	renderExpansion: (row: ExpandableListRow) => React.ReactNode;
 	isPending: boolean;
+	isFetchingNextPage: boolean;
+	isFetchingPreviousPage: boolean;
+	loadingNextPage: ExpandableListLoadingIndicator;
+	loadingPreviousPage: ExpandableListLoadingIndicator;
 };
 
 type ExpandableListVariantComponent = React.FC<ExpandableListVariantProps>;

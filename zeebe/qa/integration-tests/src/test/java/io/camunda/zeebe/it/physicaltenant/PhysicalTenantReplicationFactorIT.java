@@ -91,7 +91,7 @@ final class PhysicalTenantReplicationFactorIT {
     awaitReplicationFactor(TENANT_A, INITIAL_REPLICATION_FACTOR);
 
     // when — the replication factor is raised, naming no tenant
-    awaitAccepted(
+    TENANTS.awaitAccepted(
         "the cluster accepts the replication factor change",
         () ->
             ClusterActuator.of(cluster.availableGateway())
@@ -128,23 +128,5 @@ final class PhysicalTenantReplicationFactorIT {
                   TopologyAssert.assertThat(client.newTopologyRequest().send().join())
                       .isComplete(BROKERS_COUNT, partitionCount, expectedReplicationFactor));
     }
-  }
-
-  /**
-   * Retries {@code request} until the cluster accepts it. The request is not an assertion — it
-   * either returns or throws a {@link feign.FeignException} — so it cannot be handed to {@code
-   * untilAsserted}, which only retries on {@link AssertionError}. A retry is needed because the
-   * cluster can still be applying its own initial configuration change when the test starts, and
-   * rejects a second change while one is in progress.
-   */
-  private void awaitAccepted(final String alias, final Runnable request) {
-    await(alias)
-        .atMost(Duration.ofSeconds(30))
-        .ignoreExceptions()
-        .until(
-            () -> {
-              request.run();
-              return true;
-            });
   }
 }

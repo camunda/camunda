@@ -46,7 +46,7 @@ data:
             stream-enabled: true
         mode: selfManaged
         auth:
-          token-url: http://keycloak:18080/auth/realms/camunda-platform/protocol/openid-connect/token
+          issuer-url: "http://localhost:18080/auth/realms/camunda-platform"
           client-id: "connectors"
           client-secret: ${VALUES_CAMUNDA_IDENTITY_CLIENT_SECRET}
           audience: "orchestration-api"

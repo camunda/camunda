@@ -123,4 +123,5 @@ follow-up improvement.
 
 - [Solution proposal (internal)](https://docs.google.com/document/d/1za8mqxQVL37VSbM2myi3zBr-CbkPU91yDTiuWlfXMQg/edit?usp=sharing)
 - [Issue #56018](https://github.com/camunda/camunda/issues/56018)
+- [Orchestration cluster ADR-0010](../../../../docs/adr/orchestration-cluster/0010-zone-aware-cluster-identity-and-partitioning.md) — zone-aware clusters; zone operations build on the multi-group configuration model.
 

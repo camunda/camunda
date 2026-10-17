@@ -10,9 +10,9 @@ package io.camunda.zeebe.it.cluster.clustering;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.cluster.MemberId;
-import io.camunda.configuration.FixedPartition;
-import io.camunda.configuration.Node;
-import io.camunda.configuration.Partitioning;
+import io.camunda.configuration.cluster.Partitioning;
+import io.camunda.configuration.cluster.partitioning.FixedPartition;
+import io.camunda.configuration.cluster.partitioning.Node;
 import io.camunda.zeebe.qa.util.actuator.PartitionsActuator;
 import io.camunda.zeebe.qa.util.cluster.TestCluster;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;

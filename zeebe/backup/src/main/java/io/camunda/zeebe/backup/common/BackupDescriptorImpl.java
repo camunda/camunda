@@ -78,8 +78,9 @@ public record BackupDescriptorImpl(
       final Record<CheckpointRecord> record,
       final long latestBackupPosition,
       final int partitionCount) {
+    final var snapshotId = record.getValue().getSnapshotId();
     return new BackupDescriptorImpl(
-        Optional.empty(),
+        snapshotId.isEmpty() ? Optional.empty() : Optional.of(snapshotId),
         OptionalLong.of(latestBackupPosition),
         record.getPosition(),
         partitionCount,

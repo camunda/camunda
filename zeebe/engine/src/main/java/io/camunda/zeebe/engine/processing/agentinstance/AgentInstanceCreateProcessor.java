@@ -227,6 +227,7 @@ public final class AgentInstanceCreateProcessor
             .setBpmnProcessId(elementInstanceValue.getBpmnProcessId())
             .setProcessInstanceKey(elementInstanceValue.getProcessInstanceKey())
             .setRootProcessInstanceKey(elementInstanceValue.getRootProcessInstanceKey())
+            .setStorageOrdinal(elementInstanceValue.getStorageOrdinal())
             .setProcessDefinitionKey(elementInstanceValue.getProcessDefinitionKey())
             .setProcessDefinitionVersion(elementInstanceValue.getVersion())
             .setAgentDefinitionKey(agentDefinitionKey)

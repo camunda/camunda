@@ -43,6 +43,7 @@ import {
 import {createAuditLog, createQueryAuditLogsResponse} from '#/shared-test-modules/api-mocks/audit-logs';
 import {createQueryDecisionDefinitionsResponse} from '#/shared-test-modules/api-mocks/decision-definitions';
 import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
+import {isCursorForwardPagination} from '#/shared-test-modules/api-mocks/shared';
 import {logger} from '#/operate/shared/utils/logger';
 import {OperationsLog} from './OperationsLog';
 import {operationsLogSearchSchema, stripLegacyFilters} from './operationsLog.schema';
@@ -172,18 +173,31 @@ describe('Operations Log saved filters', () => {
 		},
 	);
 
-	it.for(['?version=2', '?allVersions=true', '?processDefinitionVersion=2', '?processDefinitionVersion=all'])(
-		'should reject orphaned %s without querying audit logs',
-		async (query, {worker}) => {
-			const auditRequests = vi.fn(() => EMPTY_AUDIT.clone());
-			worker.use(http.post(endpoints.queryAuditLogs.getUrl(), auditRequests));
+	it.for([
+		{query: '?version=2', emptyState: 'No operations log found'},
+		{query: '?allVersions=true', emptyState: 'No operation log items yet'},
+		{query: '?processDefinitionVersion=2', emptyState: 'No operations log found'},
+		{query: '?processDefinitionVersion=all', emptyState: 'No operation log items yet'},
+	])('should show the log unfiltered by process for orphaned $query', async ({query, emptyState}, {worker}) => {
+		const auditFilters: unknown[] = [];
+		worker.use(
+			mockCurrentUserEndpoint({successResponse: HttpResponse.json(createCurrentUser())}),
+			mockQueryDecisionDefinitionsEndpoint({
+				successResponse: HttpResponse.json(createQueryDecisionDefinitionsResponse()),
+			}),
+			http.post(endpoints.queryAuditLogs.getUrl(), async ({request}) => {
+				auditFilters.push(queryAuditLogsRequestBodySchema.parse(await request.json()).filter);
+				return EMPTY_AUDIT.clone();
+			}),
+		);
 
-			const screen = await renderPage(query);
+		const screen = await renderPage(query);
 
-			await expect.element(screen.getByText(/A process is required for a version filter/)).toBeVisible();
-			expect(auditRequests).not.toHaveBeenCalled();
-		},
-	);
+		await expect.element(screen.getByText(emptyState)).toBeVisible();
+		expect(auditFilters).toHaveLength(1);
+		expect(auditFilters[0]).not.toHaveProperty('processDefinitionId');
+		expect(auditFilters[0]).not.toHaveProperty('processDefinitionKey');
+	});
 
 	it('should preserve numeric-looking process IDs from legacy and canonical links', () => {
 		expect(operationsLogSearchSchema.parse({processDefinitionId: 123, tenantId: TENANT_A}).process).toBe('123');
@@ -262,7 +276,7 @@ describe('Operations Log saved filters', () => {
 				if (body.filter?.isLatestVersion) {
 					return HttpResponse.json(
 						createQueryProcessDefinitionsResponse(
-							body.page?.after
+							isCursorForwardPagination(body.page) && body.page.after
 								? {items: [B_VERSION_2]}
 								: {
 										items: [otherProcessInTenant],
@@ -286,7 +300,7 @@ describe('Operations Log saved filters', () => {
 				}
 				return HttpResponse.json(
 					createQueryProcessDefinitionsResponse(
-						body.page?.after
+						isCursorForwardPagination(body.page) && body.page.after
 							? {items: [B_VERSION_2]}
 							: {items: [], page: {totalItems: 1, hasMoreTotalItems: false, endCursor: 'page-2'}},
 					),
@@ -441,7 +455,7 @@ describe('Operations Log saved filters', () => {
 				if (body.filter?.processDefinitionId) {
 					return HttpResponse.json(
 						createQueryProcessDefinitionsResponse(
-							body.page?.after
+							isCursorForwardPagination(body.page) && body.page.after
 								? {items: [], page: {totalItems: 10000, hasMoreTotalItems: true}}
 								: {items: [A_VERSION_1], page: {totalItems: 10000, hasMoreTotalItems: true, endCursor: 'end'}},
 						),
@@ -612,28 +626,28 @@ describe('Operations Log saved filters', () => {
 		expect(auditRequests).not.toHaveBeenCalled();
 	});
 
-	it('should retain an ambiguous tenantless selection without choosing a tenant or querying audit logs', async ({
-		worker,
-	}) => {
-		const auditRequests = vi.fn();
+	it('should list logs across tenants for an ambiguous tenantless selection', async ({worker}) => {
+		const auditFilters: unknown[] = [];
 		worker.use(
 			http.post(endpoints.queryProcessDefinitions.getUrl(), () =>
 				HttpResponse.json(createQueryProcessDefinitionsResponse({items: [A_VERSION_1, B_VERSION_2]})),
 			),
 			mockCurrentUserEndpoint({successResponse: HttpResponse.json(createCurrentUser())}),
-			http.post(endpoints.queryAuditLogs.getUrl(), () => {
-				auditRequests();
+			mockQueryDecisionDefinitionsEndpoint({
+				successResponse: HttpResponse.json(createQueryDecisionDefinitionsResponse()),
+			}),
+			http.post(endpoints.queryAuditLogs.getUrl(), async ({request}) => {
+				auditFilters.push(queryAuditLogsRequestBodySchema.parse(await request.json()).filter);
 				return EMPTY_AUDIT.clone();
 			}),
 		);
 
 		const screen = await renderPage('?processDefinitionId=invoice&processDefinitionVersion=all');
 
-		await expect
-			.element(screen.getByText('The selected process definition or tenant could not be found'))
-			.toBeVisible();
+		await expect.element(screen.getByText('No operations log found')).toBeVisible();
 		await expect.element(screen.getByRole('combobox', {name: 'Name'})).toHaveValue('invoice');
-		expect(auditRequests).not.toHaveBeenCalled();
+		await expect.poll(() => auditFilters).toMatchObject([{processDefinitionId: 'invoice'}]);
+		expect(auditFilters[0]).not.toHaveProperty('tenantId');
 	});
 
 	it('should resolve a tenantless saved version when only one tenant has that version', async ({worker}) => {
@@ -668,7 +682,7 @@ describe('Operations Log saved filters', () => {
 					lookupRequests.push(body);
 					return HttpResponse.json(
 						createQueryProcessDefinitionsResponse(
-							body.page?.after
+							isCursorForwardPagination(body.page) && body.page.after
 								? {items: [B_VERSION_2]}
 								: {
 										items: [createProcessDefinition({...A_VERSION_1, version: 2})],

@@ -9,6 +9,7 @@ package io.camunda.configuration.physicaltenants;
 
 import io.camunda.configuration.physicaltenants.MapOverlaySpec.MapDescriptor;
 import io.camunda.configuration.physicaltenants.MapOverlaySpec.OverlayContext;
+import io.camunda.spring.utils.PhysicalTenantConfigUtil;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -73,7 +74,8 @@ final class PhysicalTenantMapOverlay {
     // Snapshot every map BEFORE the overlay bind mutates it; defer the per-key rebind.
     final List<Runnable> rebinds = new ArrayList<>();
     for (final MapDescriptor<R, ?> descriptor : spec.maps()) {
-      rebinds.add(prepareRebind(descriptor, root, binder, ptPrefix));
+      rebinds.add(
+          prepareRebind(descriptor, root, environment, binder, spec.rootPrefix(), ptPrefix));
     }
     binder.bind(ptPrefix, Bindable.ofInstance(root), EMPTY_TOLERANT_HANDLER);
     rebinds.forEach(Runnable::run);
@@ -85,7 +87,9 @@ final class PhysicalTenantMapOverlay {
   private static <R, V> Runnable prepareRebind(
       final MapDescriptor<R, V> descriptor,
       final R root,
+      final Environment environment,
       final Binder binder,
+      final String rootPrefix,
       final String ptPrefix) {
     // A null map (a spec root that leaves this map unset) has no root keys to preserve, so there is
     // no rebind work: snapshot as empty and skip.
@@ -111,8 +115,12 @@ final class PhysicalTenantMapOverlay {
             // put is unconditional — a root key missing from the post-overlay map means an empty
             // tenant map value reset it (Spring Boot 4.1 empty-YAML-map behavior), and inherited
             // entries must survive that too.
-            binder.bind(
-                ptPrefix + "." + descriptor.subPath() + "." + key, Bindable.ofInstance(rootValue));
+            PhysicalTenantConfigUtil.mapEntryNames(
+                    environment,
+                    ptPrefix + "." + descriptor.subPath(),
+                    key,
+                    rootPrefix + "." + descriptor.subPath())
+                .forEach(name -> binder.bind(name, Bindable.ofInstance(rootValue)));
             resolved.put(key, rootValue);
           });
     };

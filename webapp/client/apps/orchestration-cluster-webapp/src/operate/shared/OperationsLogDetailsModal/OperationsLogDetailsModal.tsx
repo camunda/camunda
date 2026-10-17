@@ -58,6 +58,8 @@ type DetailsModalState = {
 
 const PARENT_ENTITY_TYPES: AuditLogEntityType[] = ['USER_TASK', 'INCIDENT', 'VARIABLE'];
 const ProcessInstanceLink = createLink<React.FC<React.ComponentProps<'a'>>>(Link);
+const BatchOperationLink = createLink<React.FC<React.ComponentProps<'a'>>>(Link);
+const DecisionInstanceLink = createLink<React.FC<React.ComponentProps<'a'>>>(Link);
 
 const OperationsLogDetailsModal: React.FC<Props> = ({isOpen, onClose, auditLog}) => {
 	const {t} = useTranslation();
@@ -82,9 +84,12 @@ const OperationsLogDetailsModal: React.FC<Props> = ({isOpen, onClose, auditLog})
 				<ParagraphWithIcon>
 					<BatchJob />
 					{t('operate.operationsLog.modal.partOfBatch')}
-					<Link href={`/operate/batch-operations/${auditLog.batchOperationKey}`}>
+					<BatchOperationLink
+						to="/operate/batch-operations/$batchOperationKey"
+						params={{batchOperationKey: auditLog.batchOperationKey}}
+					>
 						{t('operate.operationsLog.modal.viewBatchOperationDetailsLink')}
-					</Link>
+					</BatchOperationLink>
 				</ParagraphWithIcon>
 			) : undefined}
 			<StructuredListWrapper isCondensed isFlush>
@@ -179,6 +184,24 @@ const OperationsLogDetailsModal: React.FC<Props> = ({isOpen, onClose, auditLog})
 								>
 									{entityKeyData.label}
 								</ProcessInstanceLink>
+							) : auditLog.entityType === 'BATCH' ? (
+								<BatchOperationLink
+									to="/operate/batch-operations/$batchOperationKey"
+									params={{batchOperationKey: String(auditLog.batchOperationKey)}}
+									title={entityKeyData.linkLabel}
+									aria-label={entityKeyData.linkLabel}
+								>
+									{entityKeyData.label}
+								</BatchOperationLink>
+							) : auditLog.entityType === 'DECISION' && auditLog.operationType === 'EVALUATE' ? (
+								<DecisionInstanceLink
+									to="/operate/decisions/$decisionInstanceId"
+									params={{decisionInstanceId: auditLog.entityKey}}
+									title={entityKeyData.linkLabel}
+									aria-label={entityKeyData.linkLabel}
+								>
+									{entityKeyData.label}
+								</DecisionInstanceLink>
 							) : entityKeyData.link ? (
 								<Link href={entityKeyData.link} title={entityKeyData.linkLabel} aria-label={entityKeyData.linkLabel}>
 									{entityKeyData.label}
@@ -239,15 +262,16 @@ const OperationsLogDetailsModal: React.FC<Props> = ({isOpen, onClose, auditLog})
 								</FirstColumn>
 								<SecondColumn>
 									<IconText>
-										<Link
-											href={`/operate/batch-operations/${auditLog.batchOperationKey}`}
+										<BatchOperationLink
+											to="/operate/batch-operations/$batchOperationKey"
+											params={{batchOperationKey: String(auditLog.batchOperationKey)}}
 											aria-label={t('operate.operationsLog.entityLinks.viewBatchOperation', {
 												key: auditLog.batchOperationKey,
 											})}
 										>
 											{t('operate.operationsLog.modal.viewBatchOperationDetails')}
 											<ArrowRight />
-										</Link>
+										</BatchOperationLink>
 									</IconText>
 								</SecondColumn>
 							</VerticallyAlignedRow>

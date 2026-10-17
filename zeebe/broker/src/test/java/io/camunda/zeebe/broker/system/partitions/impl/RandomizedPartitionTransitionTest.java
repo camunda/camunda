@@ -43,11 +43,13 @@ import net.jqwik.api.ForAll;
 import net.jqwik.api.GenerationMode;
 import net.jqwik.api.Property;
 import net.jqwik.api.Provide;
+import net.jqwik.api.Tag;
 import net.jqwik.api.lifecycle.AfterTry;
 import net.jqwik.api.lifecycle.BeforeTry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+@Tag("randomized")
 public class RandomizedPartitionTransitionTest {
   private static final Logger LOGGER =
       LoggerFactory.getLogger(RandomizedPartitionTransitionTest.class);

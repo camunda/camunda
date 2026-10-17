@@ -380,6 +380,29 @@ public enum EngineMetricsDoc implements ExtendedMeterDocumentation {
     }
   },
 
+  /** Number of cached process definitions reclaimed by the GC under memory pressure */
+  PROCESS_CACHE_COLLECTED {
+    @Override
+    public String getDescription() {
+      return "Number of cached process definitions reclaimed by the GC under memory pressure";
+    }
+
+    @Override
+    public String getName() {
+      return "zeebe.process.cache.collected.total";
+    }
+
+    @Override
+    public Type getType() {
+      return Type.COUNTER;
+    }
+
+    @Override
+    public KeyName[] getAdditionalKeyNames() {
+      return PartitionKeyNames.values();
+    }
+  },
+
   /** Number of process definitions currently draining (deleted, awaiting last instance) */
   DRAINING_PROCESS_DEFINITIONS {
     @Override

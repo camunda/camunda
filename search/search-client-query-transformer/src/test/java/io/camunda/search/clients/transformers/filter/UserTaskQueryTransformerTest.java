@@ -271,6 +271,60 @@ public class UserTaskQueryTransformerTest extends AbstractTransformerTest {
   }
 
   @Test
+  public void shouldQueryBySuspendedUserTasks() {
+    // given
+    final var filter = FilterBuilders.userTask((f) -> f.isSuspended(true));
+
+    // when
+    final var searchRequest = transformQuery(filter);
+
+    // then
+    final var queryVariant = searchRequest.queryOption();
+    assertThat(queryVariant)
+        .isInstanceOfSatisfying(
+            SearchBoolQuery.class,
+            (t) -> {
+              assertSearchTermQuery(t.must().get(0).queryOption(), "isSuspended", true);
+            });
+  }
+
+  @Test
+  public void shouldQueryByNotSuspendedUserTasksIncludingMissingField() {
+    // given
+    final var filter = FilterBuilders.userTask((f) -> f.isSuspended(false));
+
+    // when
+    final var searchRequest = transformQuery(filter);
+
+    // then
+    final var queryVariant = searchRequest.queryOption();
+    assertThat(queryVariant)
+        .isInstanceOfSatisfying(
+            SearchBoolQuery.class,
+            (t) -> {
+              // user tasks indexed before the field existed have no value and read as not suspended
+              assertThat(t.must().get(0).queryOption())
+                  .isInstanceOfSatisfying(
+                      SearchBoolQuery.class,
+                      (orQuery) -> {
+                        assertThat(orQuery.should()).hasSize(2);
+                        assertSearchTermQuery(
+                            orQuery.should().get(0).queryOption(), "isSuspended", false);
+                        assertThat(orQuery.should().get(1).queryOption())
+                            .isInstanceOfSatisfying(
+                                SearchBoolQuery.class,
+                                (notQuery) ->
+                                    assertThat(notQuery.mustNot())
+                                        .singleElement()
+                                        .extracting(SearchQuery::queryOption)
+                                        .satisfies(
+                                            (mustNotQuery) ->
+                                                assertExistsQuery(mustNotQuery, "isSuspended")));
+                      });
+            });
+  }
+
+  @Test
   public void shouldQueryByTenantId() {
     // given
     final var filter = FilterBuilders.userTask((f) -> f.tenantIds("tenant1"));

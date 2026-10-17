@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" id="incidentProcess" targetNamespace="http://bpmn.io/schema/bpmn">
+  <bpmn:process id="e2e-incident-process" name="Incident process" isExecutable="true">
+    <bpmn:startEvent id="paymentRequested" name="Payment requested">
+      <bpmn:outgoing>toChargeCard</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:serviceTask id="chargeCard" name="Charge card">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="e2e-charge-card" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>toChargeCard</bpmn:incoming>
+      <bpmn:outgoing>toPaymentDone</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:endEvent id="paymentDone" name="Payment done">
+      <bpmn:incoming>toPaymentDone</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="toChargeCard" sourceRef="paymentRequested" targetRef="chargeCard" />
+    <bpmn:sequenceFlow id="toPaymentDone" sourceRef="chargeCard" targetRef="paymentDone" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="diagram">
+    <bpmndi:BPMNPlane id="plane" bpmnElement="e2e-incident-process">
+      <bpmndi:BPMNShape id="paymentRequested_di" bpmnElement="paymentRequested">
+        <dc:Bounds x="152" y="102" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="chargeCard_di" bpmnElement="chargeCard">
+        <dc:Bounds x="240" y="80" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="paymentDone_di" bpmnElement="paymentDone">
+        <dc:Bounds x="392" y="102" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="toChargeCard_di" bpmnElement="toChargeCard">
+        <di:waypoint x="188" y="120" />
+        <di:waypoint x="240" y="120" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="toPaymentDone_di" bpmnElement="toPaymentDone">
+        <di:waypoint x="340" y="120" />
+        <di:waypoint x="392" y="120" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

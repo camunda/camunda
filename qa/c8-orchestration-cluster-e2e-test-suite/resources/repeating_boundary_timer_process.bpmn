@@ -81,7 +81,7 @@
       <bpmn:outgoing>Flow_start_merge</bpmn:outgoing>
     </bpmn:exclusiveGateway>
     <bpmn:sequenceFlow id="Flow_start_merge" sourceRef="Gateway_start_merge" targetRef="Gateway_1hclzaj" />
-    <bpmn:boundaryEvent id="Event_tick_timer" name="Every 20s, 4 times" cancelActivity="false" attachedToRef="Activity_1dpj0f1">
+    <bpmn:boundaryEvent id="Event_tick_timer" name="Every 20s" cancelActivity="false" attachedToRef="Activity_1dpj0f1">
       <bpmn:outgoing>Flow_tick</bpmn:outgoing>
       <bpmn:timerEventDefinition id="TimerEventDefinition_tick">
         <bpmn:timeCycle xsi:type="bpmn:tFormalExpression">R4/PT20S</bpmn:timeCycle>

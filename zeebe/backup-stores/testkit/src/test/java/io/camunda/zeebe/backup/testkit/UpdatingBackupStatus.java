@@ -50,6 +50,19 @@ public interface UpdatingBackupStatus {
 
   @ParameterizedTest
   @MethodSource("provideBackups")
+  default void nonExistingBackupCanBeMarkedAsFailed(final Backup backup) {
+    // when
+    getStore().markFailed(backup.id(), "error").join();
+
+    // then
+    final var readStatus = getStore().getStatus(backup.id()).join();
+
+    Assertions.assertThat(readStatus.statusCode()).isEqualTo(BackupStatusCode.FAILED);
+    Assertions.assertThat(readStatus.failureReason()).hasValue("error");
+  }
+
+  @ParameterizedTest
+  @MethodSource("provideBackups")
   default void markingAsFailedUpdatesTimestamp(final Backup backup) {
     // given
     getStore().save(backup).join();

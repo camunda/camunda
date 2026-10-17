@@ -24,6 +24,8 @@ defaults:
 jobs:
   validate-branch:
     runs-on: ubuntu-latest
+    # Unshallowed checkout plus seven branch fetches.
+    timeout-minutes: 15
     outputs:
       base: ${{ steps.detect-base.outputs.base }}
     steps:
@@ -41,20 +43,44 @@ jobs:
           echo "Branch '$branch_name' exists."
 
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # Base detection counts commits back to each candidate's
+          # merge-base, which a shallow clone cannot answer.
+          fetch-depth: 0
 
       - name: Detect base branch
         id: detect-base
+        env:
+          BRANCH: ${{ github.event.inputs.branch }}
         run: |
-          branch="${{ github.event.inputs.branch }}"
-          echo "Detecting base branch for input branch: $branch"
-          git fetch origin stable/8.6 stable/8.7 stable/8.8 main "$branch"
-          base="main"
-          for candidate in stable/8.6 stable/8.7 stable/8.8 main; do
-            if git merge-base --is-ancestor origin/$candidate origin/$branch; then
+          set -euo pipefail
+          echo "Detecting base branch for input branch: $BRANCH"
+          # main first: an equal distance means the branch forked from trunk
+          # at or before the point a stable line was cut, so it left main, not
+          # that stable line. Strict < below keeps main on a tie.
+          candidates=(main stable/8.10 stable/8.9 stable/8.8 stable/8.7 stable/8.6)
+          git fetch origin "${candidates[@]}" "$BRANCH"
+
+          base=""
+          best=""
+          for candidate in "${candidates[@]}"; do
+            if ! merge_base=$(git merge-base "origin/$candidate" "origin/$BRANCH"); then
+              echo "  $candidate: no common history, skipping"
+              continue
+            fi
+            distance=$(git rev-list --count "$merge_base..origin/$BRANCH")
+            echo "  $candidate: forked at ${merge_base:0:9}, $distance commit(s) since"
+            if [[ -z "$best" || "$distance" -lt "$best" ]]; then
+              best="$distance"
               base="$candidate"
-              break
             fi
           done
+
+          if [[ -z "$base" ]]; then
+            echo "Error: no candidate branch shares history with '$BRANCH'." >&2
+            exit 1
+          fi
+
           echo "Detected base branch: $base"
           echo "base=$base" >> "$GITHUB_OUTPUT"
 
@@ -266,7 +292,7 @@ jobs:
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite/config
 
       - name: Setup Node.js
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 26
           cache: npm
@@ -304,7 +330,7 @@ jobs:
 
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite
 
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: failure()
         with:
           name: C8 Orchestration Cluster API Test Result
@@ -430,7 +456,7 @@ jobs:
           exit 1
 
       - name: Setup Node.js
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 26
           cache: npm
@@ -466,7 +492,7 @@ jobs:
           echo "=== Camunda logs ==="
           cat dev-dist/camunda.log
 
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: failure()
         with:
           name: C8 Orchestration Cluster API Test Result (H2-RDBMS)

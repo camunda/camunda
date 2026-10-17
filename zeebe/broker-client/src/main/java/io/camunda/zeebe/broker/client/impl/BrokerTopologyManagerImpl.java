@@ -20,7 +20,6 @@ import io.camunda.zeebe.broker.client.api.BrokerTopologyListener;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
 import io.camunda.zeebe.broker.client.impl.BrokerClientTopologyImpl.ConfiguredClusterState;
 import io.camunda.zeebe.dynamic.config.ClusterConfigurationUpdateNotifier.ClusterConfigurationUpdateListener;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
@@ -235,14 +234,6 @@ public final class BrokerTopologyManagerImpl extends Actor
                         PartitionRoleValues.FOLLOWER));
           }
         });
-  }
-
-  @Override
-  public void onClusterConfigurationUpdated(final ClusterConfiguration clusterTopology) {
-    if (clusterTopology.isUninitialized()) {
-      return;
-    }
-    onClusterConfigurationUpdated(CurrentClusterConfiguration.fromLegacy(clusterTopology));
   }
 
   @Override

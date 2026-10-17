@@ -70,7 +70,40 @@ describe('mapProcessInstancesFilter', () => {
 			startDate: undefined,
 			endDate: undefined,
 			businessId: undefined,
+			variables: undefined,
 		});
+	});
+
+	it('should combine variable conditions with the URL filters', () => {
+		const search = processesSearchSchema.parse({process: 'orders', tenantId: 'tenant-A', businessId: 'eq_order-123'});
+
+		expect(
+			mapProcessInstancesFilter({
+				...search,
+				variable: [
+					{name: 'status', operator: 'equals', value: '"open"'},
+					{name: 'region', operator: 'exists', value: ''},
+				],
+			}),
+		).toMatchObject({
+			processDefinitionId: {$eq: 'orders'},
+			tenantId: {$eq: 'tenant-A'},
+			businessId: {$eq: 'order-123'},
+			variables: [
+				{name: 'status', value: {$eq: '"open"'}},
+				{name: 'region', value: {$exists: true}},
+			],
+		});
+	});
+
+	it('should omit variables when there are no conditions', () => {
+		expect(mapProcessInstancesFilter({...processesSearchSchema.parse({}), variable: []})?.variables).toBeUndefined();
+	});
+
+	it('should not read variable conditions from the URL', () => {
+		expect(
+			processesSearchSchema.parse({variable: [{name: 'status', operator: 'equals', value: '"open"'}]}),
+		).not.toHaveProperty('variable');
 	});
 
 	it('should preserve message-only bookmarks and the zero error hash', () => {
@@ -114,14 +147,14 @@ describe('mapProcessInstancesFilter', () => {
 
 describe('mapProcessInstancesSort', () => {
 	it.for([
-		['processDefinitionName+asc', 'processDefinitionName', 'asc'],
-		['processInstanceKey+desc', 'processInstanceKey', 'desc'],
-		['processDefinitionVersion+asc', 'processDefinitionVersion', 'asc'],
-		['businessId+desc', 'businessId', 'desc'],
-		['tenantId+asc', 'tenantId', 'asc'],
-		['startDate+desc', 'startDate', 'desc'],
-		['endDate+asc', 'endDate', 'asc'],
-		['parentProcessInstanceKey+desc', 'parentProcessInstanceKey', 'desc'],
+		['processDefinitionName+ASC', 'processDefinitionName', 'ASC'],
+		['processInstanceKey+DESC', 'processInstanceKey', 'DESC'],
+		['processDefinitionVersion+ASC', 'processDefinitionVersion', 'ASC'],
+		['businessId+DESC', 'businessId', 'DESC'],
+		['tenantId+ASC', 'tenantId', 'ASC'],
+		['startDate+DESC', 'startDate', 'DESC'],
+		['endDate+ASC', 'endDate', 'ASC'],
+		['parentProcessInstanceKey+DESC', 'parentProcessInstanceKey', 'DESC'],
 	] as const)('should map the supported sort value %s', ([sort, field, order]) => {
 		expect(mapProcessInstancesSort(sort)).toEqual([{field, order}]);
 	});
@@ -307,7 +340,7 @@ describe('mapProcessInstancesSort', () => {
 		});
 	});
 
-	it.for([undefined, 'unknown+asc', 'startDate+unknown'])('should fall back to the default sort for %s', (sort) => {
-		expect(mapProcessInstancesSort(sort)).toEqual([{field: 'startDate', order: 'desc'}]);
+	it.for([undefined, 'unknown+ASC', 'startDate+unknown'])('should fall back to the default sort for %s', (sort) => {
+		expect(mapProcessInstancesSort(sort)).toEqual([{field: 'startDate', order: 'DESC'}]);
 	});
 });

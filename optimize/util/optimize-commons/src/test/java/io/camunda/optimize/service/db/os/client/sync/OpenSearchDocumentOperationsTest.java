@@ -7,6 +7,7 @@
  */
 package io.camunda.optimize.service.db.os.client.sync;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -18,9 +19,11 @@ import java.io.IOException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch._types.BulkByScrollFailure;
+import org.opensearch.client.opensearch._types.Conflicts;
 import org.opensearch.client.opensearch._types.Script;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch.core.UpdateByQueryRequest;
@@ -72,5 +75,40 @@ class OpenSearchDocumentOperationsTest {
     // when / then
     assertThatThrownBy(() -> documentOperations.updateByQuery("test-index", query, script, true))
         .isInstanceOf(OptimizeByQueryFailureException.class);
+  }
+
+  @Test
+  void shouldKeepDefaultScrollSizeWhenNoneIsRequested() throws IOException {
+    // given
+    final ArgumentCaptor<UpdateByQueryRequest> requestCaptor =
+        ArgumentCaptor.forClass(UpdateByQueryRequest.class);
+    when(openSearchClient.updateByQuery(requestCaptor.capture()))
+        .thenReturn(UpdateByQueryResponse.of(b -> b.updated(0L).timedOut(false)));
+    final Query query = Query.of(q -> q.matchAll(m -> m));
+    final Script script = mock(Script.class);
+
+    // when
+    documentOperations.updateByQuery("test-index", query, script);
+
+    // then -- unrelated callers keep the OpenSearch default batch size
+    assertThat(requestCaptor.getValue().scrollSize()).isNull();
+  }
+
+  @Test
+  void shouldApplyRequestedScrollSize() throws IOException {
+    // given
+    final ArgumentCaptor<UpdateByQueryRequest> requestCaptor =
+        ArgumentCaptor.forClass(UpdateByQueryRequest.class);
+    when(openSearchClient.updateByQuery(requestCaptor.capture()))
+        .thenReturn(UpdateByQueryResponse.of(b -> b.updated(0L).timedOut(false)));
+    final Query query = Query.of(q -> q.matchAll(m -> m));
+    final Script script = mock(Script.class);
+
+    // when
+    documentOperations.updateByQuery("test-index", query, script, false, 50);
+
+    // then
+    assertThat(requestCaptor.getValue().scrollSize()).isEqualTo(50);
+    assertThat(requestCaptor.getValue().conflicts()).isEqualTo(Conflicts.Proceed);
   }
 }

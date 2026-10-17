@@ -79,6 +79,7 @@ final class GraphScopeReconciler {
 
   private final Set<OperationKey> inFlight = new HashSet<>();
   private final Map<OperationKey, ExponentialBackoffRetryDelay> backoffs = new HashMap<>();
+  private final Set<OperationKey> pendingRetries = new HashSet<>();
 
   GraphScopeReconciler(
       final Scope scope,
@@ -140,6 +141,9 @@ final class GraphScopeReconciler {
    * {@code apply()} future completes, and a genuinely hung operation (precisely what gets a change
    * cancelled) never gets there. Without this, that operation's entry would hold one of {@link
    * #MAX_CONCURRENT_OPERATIONS} slots for the lifetime of the process.
+   *
+   * <p>{@code pendingRetries} is deliberately left alone: each mark is cleared by its own retry
+   * timer, which fires within the max retry delay whatever plan the scope runs by then.
    */
   private void forgetOperationsOutside(final @Nullable Long planId) {
     inFlight.removeIf(key -> planId == null || key.planId() != planId);
@@ -169,10 +173,10 @@ final class GraphScopeReconciler {
     if (initialized.isLeft()) {
       observer.failed();
       inFlight.remove(key);
-      LOG.error(
-          "Failed to initialize {} operation {}",
-          scope.describe(),
-          operation,
+      // Nothing else is guaranteed to re-trigger this scope, so retry like a failed apply.
+      retryLater(
+          key,
+          "Failed to stage %s operation %s".formatted(scope.describe(), operation),
           initialized.getLeft());
       return;
     }
@@ -197,16 +201,10 @@ final class GraphScopeReconciler {
 
     if (error != null) {
       observer.failed();
-      final Duration delay = backoffFor(key).nextDelay();
-      LOG.warn(
-          "Failed to apply {} operation {}. Will be retried in {}.",
-          scope.describe(),
-          operation,
-          delay,
-          error);
       // Only this operation waits; the scope's other runnable operations are unaffected, which is
       // the point of keying in-flight state per operation.
-      executor.schedule(delay, this::reconcile);
+      retryLater(
+          key, "Failed to apply %s operation %s".formatted(scope.describe(), operation), error);
       return;
     }
 
@@ -231,18 +229,41 @@ final class GraphScopeReconciler {
     if (persisted.isLeft()) {
       // The operation itself succeeded; only recording it locally failed. Retrying re-derives it
       // from the graph, which is safe because operations are idempotent.
-      final Duration delay = backoffFor(key).nextDelay();
-      LOG.warn(
-          "Applied {} operation {} but failed to record it. Will be retried in {}.",
-          scope.describe(),
-          operation,
-          delay,
+      retryLater(
+          key,
+          "Applied %s operation %s but failed to record it".formatted(scope.describe(), operation),
           persisted.getLeft());
-      executor.schedule(delay, this::reconcile);
       return;
     }
     backoffs.remove(key);
     LOG.info("{} operation {} applied.", scope.describe(), operation);
+  }
+
+  /**
+   * Schedules a reconcile pass to retry {@code key}, unless one is already scheduled for it. An
+   * external trigger can start a new attempt while a retry is pending; if that attempt fails too,
+   * scheduling again would start a second retry chain, and every further trigger yet another.
+   *
+   * <p>The key is marked before scheduling and unmarked only by the timer itself, so this also
+   * holds when the executor runs the scheduled task inline. It relies on the executor eventually
+   * running every scheduled task: a dropped task would leave the key marked with no retry coming.
+   * An actor only drops timers once it is closing, together with this reconciler, but the
+   * synchronous {@code TestConcurrencyControl} also drops tasks that reschedule themselves more
+   * than ten levels deep.
+   */
+  private void retryLater(final OperationKey key, final String failure, final Throwable error) {
+    if (!pendingRetries.add(key)) {
+      LOG.debug("{}. A retry is already scheduled.", failure, error);
+      return;
+    }
+    final Duration delay = backoffFor(key).nextDelay();
+    LOG.warn("{}. Will be retried in {}.", failure, delay, error);
+    executor.schedule(
+        delay,
+        () -> {
+          pendingRetries.remove(key);
+          reconcile();
+        });
   }
 
   private ExponentialBackoffRetryDelay backoffFor(final OperationKey key) {

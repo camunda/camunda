@@ -92,6 +92,7 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationVariableInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.RuntimeInstructionRecord;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.SuspensionBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.resource.ResourceDeletionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.scaling.ScaleRecord;
 import io.camunda.zeebe.protocol.impl.record.value.secretreference.SecretReferenceRecord;
@@ -102,6 +103,7 @@ import io.camunda.zeebe.protocol.impl.record.value.timer.TimerRecord;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableDocumentRecord;
+import io.camunda.zeebe.protocol.impl.record.value.variable.VariableMetadataRecord;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableRecord;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableSourceRecord;
 import io.camunda.zeebe.protocol.record.ChannelType;
@@ -129,6 +131,7 @@ import io.camunda.zeebe.protocol.record.value.GlobalListenerSource;
 import io.camunda.zeebe.protocol.record.value.HistoryDeletionType;
 import io.camunda.zeebe.protocol.record.value.JobResultType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
+import io.camunda.zeebe.protocol.record.value.ProtectionMode;
 import io.camunda.zeebe.protocol.record.value.ResolutionState;
 import io.camunda.zeebe.protocol.record.value.ResourceType;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
@@ -681,6 +684,7 @@ final class JsonSerializableToJsonTest {
                   .setExpression("=10 + 5")
                   .setResultValue(wrapString("15"))
                   .setScopeKey(1)
+                  .setStorageOrdinal(1234)
                   .setTenantId("test-tenant")
                   .setWarnings(List.of("warning1", "warning2"))
                   .setVariables(VARIABLES_MSGPACK)
@@ -693,6 +697,7 @@ final class JsonSerializableToJsonTest {
                   "expression":"=10 + 5",
                   "resultValue":49,
                   "scopeKey":1,
+                  "storageOrdinal":1234,
                   "warnings":["warning1","warning2"],
                   "variables":{
                     "foo":"bar"
@@ -1745,6 +1750,9 @@ final class JsonSerializableToJsonTest {
                   "elementInstanceKey": 3,
                   "source": {
                     "type":"API"
+                  },
+                  "metadata": {
+                    "protectionModes":[]
                   }
                 }
                 """
@@ -1773,6 +1781,9 @@ final class JsonSerializableToJsonTest {
                   .setProcessDefinitionKey(processDefinitionKey)
                   .setBpmnProcessId(wrapString(bpmnProcessId))
                   .setSource(source)
+                  .setMetadata(
+                      new VariableMetadataRecord()
+                          .setProtectionModes(List.of(ProtectionMode.REDACT)))
                   .setTenantId("tenant-test")
                   .setRootProcessInstanceKey(rootProcessInstanceKey)
                   .setStorageOrdinal(storageOrdinal);
@@ -1791,6 +1802,9 @@ final class JsonSerializableToJsonTest {
                   "elementInstanceKey": 3,
                   "source": {
                     "type":"API"
+                  },
+                  "metadata": {
+                    "protectionModes":["REDACT"]
                   }
                 }
                 """
@@ -2531,13 +2545,15 @@ final class JsonSerializableToJsonTest {
                     .setCheckpointId(1L)
                     .setCheckpointPosition(10L)
                     .setCheckpointType(CheckpointType.SCHEDULED_BACKUP)
-                    .setFirstLogPosition(100L),
+                    .setFirstLogPosition(100L)
+                    .setSnapshotId("1-1-1-0-0-123"),
         """
                 {
                   "checkpointId":1,
                   "checkpointPosition":10,
                   "checkpointType":"SCHEDULED_BACKUP",
-                  "firstLogPosition":100
+                  "firstLogPosition":100,
+                  "snapshotId":"1-1-1-0-0-123"
                 }
                 """
       },
@@ -2553,7 +2569,8 @@ final class JsonSerializableToJsonTest {
                   "checkpointId":1,
                   "checkpointPosition":10,
                   "checkpointType":"MANUAL_BACKUP",
-                  "firstLogPosition":-1
+                  "firstLogPosition":-1,
+                  "snapshotId":""
                 }
                 """
       },
@@ -3041,6 +3058,46 @@ final class JsonSerializableToJsonTest {
                   "index": 10,
                   "tenantId": "<default>",
                   "storageOrdinal": 9
+                }
+                """
+      },
+
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      //////////////////////////////// SuspensionBatchRecord
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      {
+        "SuspensionBatchRecord",
+        (Supplier<UnifiedRecordValue>)
+            () ->
+                new SuspensionBatchRecord()
+                    .setProcessInstanceKey(123L)
+                    .setProcessDefinitionKey(234L)
+                    .setElementInstanceKey(456L)
+                    .setParentKey(345L)
+                    .setIndex(567L)
+                    .setStorageOrdinal(1001),
+        """
+                {
+                  "processInstanceKey": 123,
+                  "processDefinitionKey": 234,
+                  "elementInstanceKey": 456,
+                  "parentKey": 345,
+                  "index": 567,
+                  "storageOrdinal": 1001
+                }
+                """
+      },
+      {
+        "Empty SuspensionBatchRecord",
+        (Supplier<UnifiedRecordValue>) SuspensionBatchRecord::new,
+        """
+                {
+                  "processInstanceKey": -1,
+                  "processDefinitionKey": -1,
+                  "elementInstanceKey": -1,
+                  "parentKey": -1,
+                  "index": -1,
+                  "storageOrdinal": 0
                 }
                 """
       },

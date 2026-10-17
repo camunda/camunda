@@ -49,6 +49,7 @@ public class UserTaskEntityMapperTest {
             .processDefinitionVersion(7)
             .customHeaders(Map.of("key", "value"))
             .priority(8)
+            .isSuspended(true)
             .build();
 
     // When

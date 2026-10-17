@@ -25,9 +25,12 @@ import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.MessageStartProcessInstanceRequestRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.protocol.record.value.deployment.ProcessMetadataValue;
+import io.camunda.zeebe.stream.api.StreamClock.ControllableStreamClock.Modification;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.time.Instant;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.awaitility.Awaitility;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -262,13 +265,17 @@ public final class MessageStartProcessInstanceRequestRequestProcessorTest {
   @Test
   public void shouldTreatExactDeadlineBoundaryAsExpired() {
     // Pins the guard's boundary semantics as inclusive (messageDeadline <= now, not <): a request
-    // whose deadline is exactly the current clock value counts as expired. Pinning the clock makes
-    // the processor's clock.millis() stable so an exact-equality deadline can be asserted
-    // deterministically — with a live clock the comparison would race the wall clock.
+    // whose deadline is exactly the current clock value counts as expired. Pinning the stream clock
+    // to a known instant makes the processor's clock.millis() return exactly that value. Reading
+    // the time back from the actor clock instead races the actor threads' clock updates.
     engine.deployment().withXmlResource(MESSAGE_START_PROCESS).deploy();
     final long subscriptionKey = waitForStartEventSubscriptionKey();
-    engine.getClock().pinCurrentTime();
-    final long now = engine.getClock().getCurrentTimeInMillis();
+    final long now = System.currentTimeMillis();
+    engine.clock().pinAt(now);
+    // the pin is applied as a post-commit side effect, so make sure the engine sees the pinned time
+    final var pinned = Modification.pinAt(Instant.ofEpochMilli(now));
+    Awaitility.await("stream clock pinned")
+        .until(() -> engine.getStreamClock().currentModification(), pinned::equals);
 
     // when a REQUEST arrives whose messageDeadline is EXACTLY now (positive TTL)
     engine.writeRecords(

@@ -12,8 +12,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.configuration.PrimaryStorageBackup;
-import io.camunda.configuration.PrimaryStorageBackup.BackupStoreType;
+import io.camunda.configuration.data.primarystorage.PrimaryStorageBackup;
+import io.camunda.configuration.data.primarystorage.PrimaryStorageBackup.BackupStoreType;
+import io.camunda.zeebe.qa.util.actuator.PartitionsActuator;
 import io.camunda.zeebe.qa.util.cluster.PhysicalTenantsITHelper;
 import io.camunda.zeebe.qa.util.cluster.PhysicalTenantsITHelper.Storage;
 import io.camunda.zeebe.qa.util.cluster.TestHealthProbe;
@@ -100,6 +101,24 @@ final class ClusterRuntimeBackupIT {
                     camunda.getData().getPrimaryStorage().getBackup(), tenantABackupDir));
     // autoStart is off, so readiness is awaited here rather than by the extension.
     BROKER.start().await(TestHealthProbe.READY);
+
+    final var partitions = PartitionsActuator.of(BROKER);
+    partitions.takeSnapshot(DEFAULT_TENANT_ID);
+    partitions.takeSnapshot(TENANT_A);
+
+    Awaitility.await("every partition has taken its first snapshot")
+        .atMost(BACKUP_TIMEOUT)
+        .ignoreExceptions()
+        .untilAsserted(
+            () ->
+                assertThat(partitions.queryByTenant())
+                    .containsOnlyKeys(DEFAULT_TENANT_ID, TENANT_A)
+                    .allSatisfy(
+                        (tenant, statuses) ->
+                            assertThat(statuses.values())
+                                .isNotEmpty()
+                                .allSatisfy(
+                                    status -> assertThat(status.snapshotId()).isNotNull())));
 
     final var base = BROKER.restAddress().toString().replaceAll("/+$", "");
     clusterBackupsUri = URI.create(base + "/cluster/v2/backups/runtime");

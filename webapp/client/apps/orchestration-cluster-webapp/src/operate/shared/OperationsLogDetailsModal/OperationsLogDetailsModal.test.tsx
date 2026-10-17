@@ -14,6 +14,14 @@ import {createAuditLog} from '#/shared-test-modules/api-mocks/audit-logs';
 import {OperationsLogDetailsModal} from './OperationsLogDetailsModal';
 
 const OPERATE_ROOT_PATH = '/operate';
+const BASEPATH_CASES = [
+	{basepath: '', expectedPathPrefix: ''},
+	{basepath: '/camunda', expectedPathPrefix: '/camunda'},
+	{
+		basepath: '/camunda/physical-tenants/tenant-a',
+		expectedPathPrefix: '/camunda/physical-tenants/tenant-a',
+	},
+] as const;
 
 function renderModal(auditLog: ReturnType<typeof createAuditLog>, basepath = '') {
 	return renderWithRouter(() => <OperationsLogDetailsModal isOpen onClose={() => {}} auditLog={auditLog} />, {
@@ -43,38 +51,64 @@ describe('<OperationsLogDetailsModal />', () => {
 		await expect.element(screen.getByText(format(parseISO(auditLog.timestamp), 'yyyy-MM-dd HH:mm:ss'))).toBeVisible();
 	});
 
-	it('should show a link to the batch operation when the audit log is part of a batch', async () => {
-		const auditLog = createAuditLog({
-			entityType: 'USER_TASK',
-			batchOperationKey: 'batch-123',
-		});
+	it.for(BASEPATH_CASES)(
+		'should show a link to the batch operation when the audit log is part of a batch at basepath "$basepath"',
+		async ({basepath, expectedPathPrefix}) => {
+			const auditLog = createAuditLog({
+				entityType: 'USER_TASK',
+				batchOperationKey: 'batch-123',
+			});
 
-		const screen = await renderModal(auditLog);
+			const screen = await renderModal(auditLog, basepath);
 
-		await expect.element(screen.getByRole('dialog')).toMatchTextContent('This operation is part of a batch.');
-		await expect
-			.element(screen.getByRole('link', {name: 'View batch operation details.'}))
-			.toHaveAttribute('href', '/operate/batch-operations/batch-123');
-	});
+			await expect.element(screen.getByRole('dialog')).toMatchTextContent('This operation is part of a batch.');
+			await expect
+				.element(screen.getByRole('link', {name: 'View batch operation details.'}))
+				.toHaveAttribute('href', `${expectedPathPrefix}/operate/batch-operations/batch-123`);
+		},
+	);
 
-	it('should render the applied-to section for BATCH entity types', async () => {
-		const auditLog = createAuditLog({
-			entityType: 'BATCH',
-			operationType: 'CANCEL',
-			batchOperationKey: 'batch-456',
-			batchOperationType: 'CANCEL_PROCESS_INSTANCE',
-		});
+	it.for(BASEPATH_CASES)(
+		'should render batch entity links in the details modal with the correct basepath "$basepath"',
+		async ({basepath, expectedPathPrefix}) => {
+			const auditLog = createAuditLog({
+				entityType: 'BATCH',
+				operationType: 'CANCEL',
+				batchOperationKey: 'batch-456',
+				batchOperationType: 'CANCEL_PROCESS_INSTANCE',
+			});
 
-		const screen = await renderModal(auditLog);
+			const screen = await renderModal(auditLog, basepath);
 
-		await expect.element(screen.getByText('Applied to:')).toBeVisible();
-		await expect.element(screen.getByText(/process instances/)).toBeVisible();
-	});
+			await expect.element(screen.getByText('Applied to:')).toBeVisible();
+			await expect.element(screen.getByText(/process instances/)).toBeVisible();
+			await expect
+				.element(screen.getByRole('link').filter({hasText: 'batch-456'}))
+				.toHaveAttribute('href', `${expectedPathPrefix}/operate/batch-operations/batch-456`);
+			await expect
+				.element(screen.getByRole('link').filter({hasText: 'View batch operation details'}))
+				.toHaveAttribute('href', `${expectedPathPrefix}/operate/batch-operations/batch-456`);
+		},
+	);
 
-	it.for([
-		{basepath: '', expectedPathPrefix: ''},
-		{basepath: '/camunda', expectedPathPrefix: '/camunda'},
-	])(
+	it.for(BASEPATH_CASES)(
+		'should preserve the legacy null batch key destination at basepath "$basepath"',
+		async ({basepath, expectedPathPrefix}) => {
+			const auditLog = createAuditLog({
+				entityType: 'BATCH',
+				batchOperationKey: null,
+				batchOperationType: 'CANCEL_PROCESS_INSTANCE',
+			});
+
+			const screen = await renderModal(auditLog, basepath);
+
+			await expect
+				.element(screen.getByRole('link').filter({hasText: 'View batch operation details'}))
+				.toHaveAttribute('href', `${expectedPathPrefix}/operate/batch-operations/null`);
+		},
+	);
+
+	it.for(BASEPATH_CASES)(
 		'should render a process instance entity link with the correct basepath "$basepath"',
 		async ({basepath, expectedPathPrefix}) => {
 			const auditLog = createAuditLog({
@@ -92,10 +126,7 @@ describe('<OperationsLogDetailsModal />', () => {
 		},
 	);
 
-	it.for([
-		{basepath: '', expectedPathPrefix: ''},
-		{basepath: '/camunda', expectedPathPrefix: '/camunda'},
-	])(
+	it.for(BASEPATH_CASES)(
 		'should render a parent process instance link with the correct basepath "$basepath"',
 		async ({basepath, expectedPathPrefix}) => {
 			const auditLog = createAuditLog({
@@ -110,6 +141,24 @@ describe('<OperationsLogDetailsModal />', () => {
 			await expect
 				.element(screen.getByRole('link', {name: 'View process instance 2251799813685250'}))
 				.toHaveAttribute('href', `${expectedPathPrefix}/operate/processes/2251799813685250`);
+		},
+	);
+
+	it.for(BASEPATH_CASES)(
+		'should render a decision instance entity link with the correct basepath "$basepath"',
+		async ({basepath, expectedPathPrefix}) => {
+			const auditLog = createAuditLog({
+				entityType: 'DECISION',
+				entityKey: '2251799813685250',
+				operationType: 'EVALUATE',
+				decisionDefinitionKey: '2251799813685250',
+			});
+
+			const screen = await renderModal(auditLog, basepath);
+
+			await expect
+				.element(screen.getByRole('link', {name: 'View decision instance 2251799813685250'}))
+				.toHaveAttribute('href', `${expectedPathPrefix}/operate/decisions/2251799813685250`);
 		},
 	);
 

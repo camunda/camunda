@@ -9,7 +9,7 @@
 import {useTranslation} from 'react-i18next';
 import type {AuditLog} from '@camunda/camunda-api-zod-schemas/8.11/audit-log';
 import {mapToCellDetailsData} from '#/operate/shared/OperationsLogDetailsModal/operationsLogUtils';
-import {PropertyText} from '../styled';
+import {PropertyText} from '#/operate/pages/OperationsLog/styled';
 
 type Props = {
 	item: AuditLog;

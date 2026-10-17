@@ -10,9 +10,10 @@ import {afterEach, beforeEach, describe, expect, onTestFinished, vi} from 'vites
 import {userEvent} from 'vitest/browser';
 import {cleanup} from 'vitest-browser-react';
 import {HttpResponse, http} from 'msw';
+import {queryElementInstancesRequestBodySchema} from '@camunda/camunda-api-zod-schemas/8.11';
 import {it} from '#/vitest-modules/test-extend';
 import {renderWithRouter} from '#/vitest-modules/render-with-router';
-import {useRouterState} from '@tanstack/react-router';
+import {useParams, useRouterState} from '@tanstack/react-router';
 import {
 	mockCurrentUserEndpoint,
 	mockGetProcessDefinitionXmlEndpoint,
@@ -21,9 +22,16 @@ import {
 	mockGetProcessInstanceWaitStateStatisticsEndpoint,
 	mockQueryProcessDefinitionsEndpoint,
 	mockQueryProcessInstanceIncidentsEndpoint,
+	mockQueryElementInstancesEndpoint,
+	mockGetElementInstanceEndpoint,
 } from '#/shared-test-modules/mock-handlers';
 import {createCurrentUser} from '#/shared-test-modules/api-mocks/current-user';
 import {createProcessInstance} from '#/shared-test-modules/api-mocks/process-instances';
+import {
+	createElementInstance,
+	createQueryElementInstancesResponse,
+} from '#/shared-test-modules/api-mocks/element-instances';
+import {processInstanceHeaderHandlers} from '#/shared-test-modules/process-instance-header-handlers';
 import {createCallHierarchy} from '#/shared-test-modules/api-mocks/call-hierarchy';
 import {createPaginatedResponse, createProblemDetails} from '#/shared-test-modules/api-mocks/shared';
 import {
@@ -36,6 +44,8 @@ import {endpoints} from '#/shared/http/endpoints';
 import {getStateLocally, storeStateLocally} from '#/shared/browser-storage/local-storage';
 import {ProcessInstance} from './ProcessInstance';
 import {processInstanceSearchSchema} from './processInstanceSearch';
+import {InstanceDiagram} from './InstanceDiagram';
+import {InstanceHistory} from './InstanceHistory';
 
 const PROCESS_INSTANCE_ID = '2251799813685280';
 const PROCESS_XML_WITH_CALL_ACTIVITY =
@@ -55,6 +65,21 @@ function SelectionPage() {
 	return <ProcessInstance processInstanceId={PROCESS_INSTANCE_ID} search={processInstanceSearchSchema.parse(search)} />;
 }
 
+function HistoryPage() {
+	const {processInstanceId = PROCESS_INSTANCE_ID} = useParams({strict: false});
+	const search = useRouterState({select: (state) => state.location.search});
+	return (
+		<div style={{height: '700px', width: '1200px'}}>
+			<ProcessInstance
+				processInstanceId={processInstanceId}
+				search={processInstanceSearchSchema.parse(search)}
+				topPanel={<InstanceDiagram />}
+				bottomPanel={<InstanceHistory />}
+			/>
+		</div>
+	);
+}
+
 function getProcessInstancePageHandlers({
 	processInstance = createProcessInstance({processInstanceKey: PROCESS_INSTANCE_ID}),
 	callHierarchy = [],
@@ -71,6 +96,7 @@ function getProcessInstancePageHandlers({
 	processXml?: string;
 } = {}) {
 	return [
+		mockQueryElementInstancesEndpoint({successResponse: HttpResponse.json(createQueryElementInstancesResponse())}),
 		mockCurrentUserEndpoint({successResponse: HttpResponse.json(currentUser)}),
 		mockGetProcessInstanceEndpoint({successResponse: HttpResponse.json(processInstance)}),
 		mockQueryProcessDefinitionsEndpoint({successResponse: HttpResponse.json(processDefinitions)}),
@@ -173,6 +199,78 @@ describe('<ProcessInstance />', () => {
 		await expect
 			.poll(() => screen.router.state.location.pathname)
 			.toBe(`/operate/processes/${PROCESS_INSTANCE_ID}/details`);
+	});
+
+	it('should reset history without losing diagram selection cleanup on an assembled instance transition', async ({
+		worker,
+	}) => {
+		const instance = createProcessInstance({state: 'COMPLETED', tenantId: 'tenant-a'});
+		const next = createProcessInstance({
+			processInstanceKey: '2251799813685290',
+			processDefinitionName: 'Next Process',
+			state: 'COMPLETED',
+			tenantId: 'tenant-a',
+		});
+		worker.use(
+			...processInstanceHeaderHandlers(instance),
+			mockGetElementInstanceEndpoint({successResponse: HttpResponse.json(createElementInstance())}),
+		);
+		const historyItems = (owner: string) =>
+			Array.from({length: 100}, (_, index) =>
+				createElementInstance({
+					processInstanceKey: owner,
+					elementInstanceKey: String(
+						BigInt(owner === instance.processInstanceKey ? '2251799813786000' : '2251799813796000') + BigInt(index),
+					),
+					elementId: 'task-1',
+					state: 'COMPLETED',
+				}),
+			);
+		worker.use(
+			http.post(endpoints.queryElementInstances({}).url, async ({request}) => {
+				const owner = queryElementInstancesRequestBodySchema.parse(await request.json()).filter
+					?.elementInstanceScopeKey;
+				if (typeof owner !== 'string') {
+					throw new Error('Expected a history scope key');
+				}
+				return HttpResponse.json(createQueryElementInstancesResponse(historyItems(owner)));
+			}),
+		);
+		const screen = await renderWithRouter(HistoryPage, {
+			path: '/operate/processes/$processInstanceId/variables',
+			initialEntry: `/operate/processes/${instance.processInstanceKey}/variables?elementId=task-1&elementInstanceKey=2251799813685281&anchorElementId=task-1&isMultiInstanceBody=true&isPlaceholder=false&tenantId=tenant-a`,
+		});
+		await expect.element(screen.getByRole('button', {name: 'Reset diagram zoom'})).toBeVisible();
+		await expect.element(screen.getByRole('treeitem', {name: 'My Process'})).toBeVisible();
+		await userEvent.click(screen.getByText('End date', {exact: true}));
+		await userEvent.click(screen.getByText('Execution count', {exact: true}));
+		await expect.element(screen.getByRole('switch', {name: 'End date'})).toBeChecked();
+		await expect.element(screen.getByRole('switch', {name: 'Execution count'})).toBeChecked();
+		const historyTop = screen.getByRole('treeitem', {name: 'My Process'}).element().getBoundingClientRect().top;
+		await userEvent.wheel(screen.getByRole('region', {name: 'Instance History'}), {delta: {y: 500}});
+		await expect
+			.poll(() => screen.getByRole('treeitem', {name: 'My Process'}).element().getBoundingClientRect().top)
+			.toBeLessThan(historyTop);
+		screen.queryClient.setQueryData(['processInstance', next.processInstanceKey], next);
+		screen.queryClient.setQueryData(
+			['instanceHistory', next.processInstanceKey, next.processInstanceKey, 0, 0],
+			createQueryElementInstancesResponse(historyItems(next.processInstanceKey)),
+		);
+		worker.use(mockGetProcessInstanceEndpoint({successResponse: HttpResponse.json(next)}));
+
+		await screen.router.navigate({
+			to: '/operate/processes/$processInstanceId/variables',
+			params: {processInstanceId: next.processInstanceKey},
+			search: true,
+		});
+
+		await expect.element(screen.getByRole('treeitem', {name: 'Next Process'})).toBeVisible();
+		await expect.poll(() => screen.router.state.location.search).toEqual({tenantId: 'tenant-a'});
+		await expect.element(screen.getByRole('switch', {name: 'End date'})).not.toBeChecked();
+		await expect.element(screen.getByRole('switch', {name: 'Execution count'})).not.toBeChecked();
+		await expect
+			.poll(() => screen.getByRole('treeitem', {name: 'Next Process'}).element().getBoundingClientRect().top)
+			.toBe(historyTop);
 	});
 
 	it('should open the details tab when switching to a call activity before XML loads', async ({worker}) => {

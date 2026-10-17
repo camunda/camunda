@@ -44,13 +44,20 @@ ADR for that domain is written.
   secondary-storage schema initialization: concurrent per-tenant init with
   background retry, a startup gate released once every tenant has settled and
   one is serviceable (held on gateway nodes for Elasticsearch/OpenSearch, on
-  every node for RDBMS), and a context abort only when every tenant fails
-  terminally (camunda/camunda#57025, camunda/camunda#54299).
+  every node for RDBMS), a context abort only when every tenant fails
+  terminally, and per-tenant state on `/actuator/health` outside every probe
+  group (camunda/camunda#57025, camunda/camunda#54299, camunda/camunda#63674).
 - `clients/0001-unify-spring-starter-on-multi-client-config-path.md` — collapse
   the `camunda-spring-boot-starter` onto a single (multi-client) auto-config
   path, remapping `camunda.client.*` to `camunda.clients.default.*`, with a
   `defaultCamundaClient` `@Primary` bean plus a `camundaClient` alias for
   backward compatibility (camunda/camunda#57344).
+- `clients/0002-reserved-poll-capacity-for-job-worker.md` — a streaming job
+  worker reserves `floor(0.25·maxJobsActive)` of its capacity for the poll path
+  while pushed jobs starve the poll (polled jobs are refused); the lane limits
+  only the push path, the single capacity count stays, poll-only workers are
+  unchanged, no measurable throughput cost in a cluster A/B
+  (camunda/camunda#59734).
 - `storage/001-remove-numeric-key-from-identity-entity-filters.md` — drop the
   internal numeric `key` filter fields from `UserFilter`, `GroupFilter`,
   `TenantFilter`, and `MappingRuleFilter`; Identity entities are filtered by their
@@ -80,4 +87,8 @@ ADR for that domain is written.
   provider selection, authorization routing, gRPC authentication, configuration
   resolution, exporter assignment, and async context propagation. See
   [`orchestration-cluster/README.md`](orchestration-cluster/README.md).
+- `gradle/001-gradle-experimental-ci-integration.md` — how the experimental
+  Gradle build stays aligned with Maven as the source of truth, with focused
+  Gradle checks on relevant changes, a complete CI path selectable by build tool,
+  scheduled Gradle tests (full CI).
 

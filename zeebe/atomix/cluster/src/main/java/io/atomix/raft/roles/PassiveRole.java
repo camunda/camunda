@@ -113,8 +113,23 @@ public class PassiveRole extends InactiveRole {
 
   private void truncateUncommittedEntries() throws CheckedJournalException {
     if (role() == RaftServer.Role.PASSIVE && raft.getLog().getLastIndex() > raft.getCommitIndex()) {
-      raft.getLog().deleteAfter(raft.getCommitIndex());
+      deleteLogAfter(raft.getCommitIndex());
     }
+  }
+
+  /**
+   * Deletes the entries after the given index and drops a configuration that came from one of them.
+   * The journal is truncated before the flush that can fail, so the configuration has to be dropped
+   * in that case too: the retry sees an already truncated log and would never do it.
+   */
+  private void deleteLogAfter(final long index) throws FlushException {
+    try {
+      raft.getLog().deleteAfter(index);
+    } catch (final FlushException e) {
+      raft.getCluster().dropConfigurationsWithoutLogEntry(index);
+      throw e;
+    }
+    raft.getCluster().dropConfigurationsWithoutLogEntry(index);
   }
 
   @Override
@@ -612,26 +627,21 @@ public class PassiveRole extends InactiveRole {
     // to this index.
     // Skip the snapshot and response successfully.
     if (raft.getCommitIndex() > request.index()) {
-      return Either.left(
-          logResponse(
-              InstallResponse.builder()
-                  .withStatus(Status.OK)
-                  .withPreferredChunkSize(snapshotChunkSize)
-                  .build()));
+      return Either.left(skipNotNeededSnapshot());
     }
 
     // If the snapshot already exists locally, do not overwrite it with a replicated snapshot.
     // Simply reply to the request successfully.
     final var latestIndex = raft.getCurrentSnapshotIndex();
     if (latestIndex >= request.index()) {
-      abortPendingSnapshots();
+      return Either.left(skipNotNeededSnapshot());
+    }
 
-      return Either.left(
-          logResponse(
-              InstallResponse.builder()
-                  .withStatus(Status.OK)
-                  .withPreferredChunkSize(snapshotChunkSize)
-                  .build()));
+    // If the log has the snapshot's last entry, installing the snapshot would reset the log and
+    // delete the entries after it, which this member may already have acknowledged and the leader
+    // may have committed. The log already covers the snapshot, so skip it.
+    if (logContains(request.index(), request.term())) {
+      return Either.left(skipNotNeededSnapshot());
     }
 
     if (!request.complete() && request.nextChunkId() == null) {
@@ -655,12 +665,7 @@ public class PassiveRole extends InactiveRole {
       // This should not happen because we previously check for the latest snapshot. But, if it
       // happens, instead of crashing raft thread, we respond with success because we already
       // have the snapshot.
-      return CompletableFuture.completedFuture(
-          logResponse(
-              InstallResponse.builder()
-                  .withStatus(Status.OK)
-                  .withPreferredChunkSize(snapshotChunkSize)
-                  .build()));
+      return CompletableFuture.completedFuture(skipNotNeededSnapshot());
     } else {
       log.warn(
           "Failed to create pending snapshot when receiving snapshot {}",
@@ -672,6 +677,32 @@ public class PassiveRole extends InactiveRole {
                   .withStatus(Status.ERROR)
                   .withError(Type.APPLICATION_ERROR, "Failed to create pending snapshot")
                   .build()));
+    }
+  }
+
+  /**
+   * Responds to an install request for a snapshot this member does not need, and tells the leader
+   * to stop sending it. Aborts a pending install of the same snapshot, so the listeners notified
+   * when it started are notified that it ended.
+   */
+  private InstallResponse skipNotNeededSnapshot() {
+    abortPendingSnapshots();
+    return logResponse(
+        InstallResponse.builder()
+            .withStatus(Status.OK)
+            .withPreferredChunkSize(snapshotChunkSize)
+            .withSnapshotNotNeeded()
+            .build());
+  }
+
+  private boolean logContains(final long index, final long term) {
+    final var raftLog = raft.getLog();
+    if (raftLog.isEmpty() || index < raftLog.getFirstIndex() || index > raftLog.getLastIndex()) {
+      return false;
+    }
+
+    try (final RaftLogReader reader = raftLog.openUncommittedReader()) {
+      return reader.seek(index) == index && reader.hasNext() && reader.next().term() == term;
     }
   }
 
@@ -870,7 +901,7 @@ public class PassiveRole extends InactiveRole {
       // Reset the log to the previous index plus one.
       if (request.prevLogTerm() == 0) {
         log.debug("Reset first index to {}", request.prevLogIndex() + 1);
-        raft.getLog().reset(request.prevLogIndex() + 1);
+        resetLog(request.prevLogIndex() + 1);
       }
 
       // Iterate through entries and append them.
@@ -975,7 +1006,7 @@ public class PassiveRole extends InactiveRole {
         // the log and append the leader's entry.
         if (lastEntry.term() != entry.term()) {
           try {
-            raft.getLog().deleteAfter(index - 1);
+            deleteLogAfter(index - 1);
           } catch (final FlushException e) {
             return !failAppend(index - 1, future);
           }
@@ -1034,7 +1065,7 @@ public class PassiveRole extends InactiveRole {
       // the log and append the leader's entry.
       if (existingEntry.term() != entry.term()) {
         try {
-          raft.getLog().deleteAfter(index - 1);
+          deleteLogAfter(index - 1);
         } catch (final FlushException e) {
           return failAppend(index - 1, future);
         }
@@ -1150,6 +1181,15 @@ public class PassiveRole extends InactiveRole {
         raftLog.getLastIndex(),
         snapshotIndex,
         snapshotIndex + 1);
-    raftLog.reset(snapshotIndex + 1);
+    resetLog(snapshotIndex + 1);
+  }
+
+  /**
+   * Resets the log so that it starts at the given index. No entry remains, so a configuration that
+   * came from one of them is dropped too.
+   */
+  private void resetLog(final long firstIndex) {
+    raft.getLog().reset(firstIndex);
+    raft.getCluster().reloadStoredConfiguration();
   }
 }

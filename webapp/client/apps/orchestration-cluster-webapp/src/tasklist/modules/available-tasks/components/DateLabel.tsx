@@ -19,7 +19,7 @@ type Props = {
 
 const DateLabel: React.FC<Props> = ({date, relativeLabel, absoluteLabel, icon, align = 'top-start'}) => (
 	<LabelWithTooltip
-		title={
+		label={
 			['week', 'months', 'years'].includes(date.relative.resolution)
 				? `${absoluteLabel} ${date.relative.speech}`
 				: `${relativeLabel} ${date.relative.speech}`

@@ -1,0 +1,8 @@
+# Used by CI to run the physical tenant e2e test with protected APIs and authorizations,
+# so tenant-specific logins are actually enforced.
+camunda:
+  security:
+    authentication:
+      unprotected-api: false
+    authorizations:
+      enabled: true

@@ -68,7 +68,9 @@ public final class ExpressionValidator {
           ERROR_MESSAGE_TENANT_MISMATCH_SCOPE.formatted(scopeKey, record.getTenantId()));
     }
 
-    return Either.right(new ResolvedInstance(value.getTenantId(), value.getBpmnProcessId()));
+    return Either.right(
+        new ResolvedInstance(
+            value.getTenantId(), value.getBpmnProcessId(), value.getStorageOrdinal()));
   }
 
   private static boolean tenantMismatch(final String provided, final String actual) {
@@ -109,8 +111,8 @@ public final class ExpressionValidator {
       Optional<ResolvedInstance> resolvedInstance) {}
 
   /**
-   * Metadata derived from the resolved scope instance — captured here so the processor can reuse it
-   * (tenant inference, authorization checks) without a second state lookup.
+   * Metadata derived from the resolved scope instance - captured here so the processor can reuse it
+   * (tenant inference, authorization checks, storage ordinal) without a second state lookup.
    */
-  public record ResolvedInstance(String tenantId, String bpmnProcessId) {}
+  public record ResolvedInstance(String tenantId, String bpmnProcessId, int storageOrdinal) {}
 }

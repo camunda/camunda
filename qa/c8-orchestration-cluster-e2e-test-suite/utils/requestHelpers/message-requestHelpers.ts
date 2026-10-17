@@ -10,7 +10,7 @@ import type {APIRequestContext} from 'playwright-core';
 import {expect} from '@playwright/test';
 import {assertStatusCode, buildUrl, jsonHeaders} from '../http';
 import {validateResponse} from 'json-body-assertions';
-import {defaultAssertionOptions} from '../constants';
+import {defaultAssertionOptions, extendedAssertionOptions} from '../constants';
 
 export interface CorrelatedMessageSubscription {
   correlationKey: string;
@@ -127,6 +127,9 @@ export async function expectStartSubscriptionAbsent(
   processDefinitionId: string,
   processDefinitionKey: string,
 ): Promise<void> {
+  // Deleting a process definition with its history drains the definition
+  // first and purges its history afterwards, with no batch operation to wait
+  // on. Until the purge, the subscription stays in state DELETED.
   await expect(async () => {
     const item = await findStartEventSubscription(
       request,
@@ -137,5 +140,5 @@ export async function expectStartSubscriptionAbsent(
       item,
       `Expected no START_EVENT subscription for processDefinitionKey ${processDefinitionKey}`,
     ).toBeUndefined();
-  }).toPass(defaultAssertionOptions);
+  }).toPass(extendedAssertionOptions);
 }

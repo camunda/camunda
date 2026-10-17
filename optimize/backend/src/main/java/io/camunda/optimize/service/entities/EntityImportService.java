@@ -114,7 +114,7 @@ public class EntityImportService {
         retrieveAllDashboardsToImport(entitiesToImport);
 
     reportImportService.validateAllReportsOrFail(userId, collection, reportsToImport);
-    dashboardImportService.validateAllDashboardsOrFail(userId, dashboardsToImport);
+    dashboardImportService.validateAllDashboardsOrFail(dashboardsToImport);
 
     final Map<String, EntityIdResponseDto> originalIdToNewIdMap = new HashMap<>();
     reportImportService.importReportsIntoCollection(

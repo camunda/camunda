@@ -57,7 +57,7 @@ services:
     depends_on:
       - keycloak
     container_name: identity
-    image: camunda/identity:8.9.9
+    image: camunda/identity:8.10.1
     ports:
       - "8084:8080"
     volumes:
@@ -92,7 +92,7 @@ services:
       start_period: 30s
   camunda:
     container_name: camunda
-    image: camunda/camunda:8.9.21
+    image: camunda/camunda:8.10.4
     environment:
       - SPRING_PROFILES_ACTIVE=broker,operate,tasklist,dev-data
       - JAVA_TOOL_OPTIONS=-Xms512m -Xmx2g

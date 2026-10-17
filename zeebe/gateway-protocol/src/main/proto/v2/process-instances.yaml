@@ -416,6 +416,15 @@ paths:
             application/problem+json:
               schema:
                 $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+        "409":
+          description: |
+            The process instance cannot be canceled, for example because it is already being
+            terminated or because it is a child process instance.
+            More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
         "503":
@@ -441,12 +450,11 @@ paths:
       summary: Cancel process instances (batch)
       description: |
         Cancels multiple active or suspended process instances.
-        Only ACTIVE and SUSPENDED root instances can be cancelled. A state filter narrows the batch
-        to the given states. Requesting any state other than ACTIVE or SUSPENDED through the `$eq` or
-        `$in` operators is rejected. Other state operators (`$neq`, `$exists`, `$like`) are applied as
-        given, and the batch remains limited to ACTIVE and SUSPENDED instances. Without a state filter,
-        both ACTIVE and SUSPENDED instances are selected. Any given filter for parentProcessInstanceKey
-        is ignored and overridden during this batch operation.
+        Only ACTIVE and SUSPENDED root instances are cancelled; child instances are cancelled
+        together with their root instance. The given filter only narrows the batch, except for
+        parentProcessInstanceKey: a top-level filter is ignored, and an `$or` branch on it matches
+        nothing. Other `state` operators (`$neq`, `$notIn`, `$exists`, `$like`) are applied as given
+        and are not validated.
         This is done asynchronously, the progress can be tracked using the batchOperationKey from the response and the batch operation status endpoint (/batch-operations/{batchOperationKey}).
       requestBody:
         required: true
@@ -463,7 +471,9 @@ paths:
                 $ref: 'batch-operations.yaml#/components/schemas/BatchOperationCreatedResult'
         "400":
           description: >
-            The process instance batch operation failed.
+            The process instance batch operation failed, for example because the filter requests a
+            top-level `state` other than ACTIVE or SUSPENDED through `$eq` or `$in`. States inside
+            `$or` branches are not validated.
             More details are provided in the response body.
           content:
             application/problem+json:
@@ -494,11 +504,10 @@ paths:
       summary: Resolve related incidents (batch)
       description: |
         Resolves multiple instances of process instances.
-        Since only process instances with ACTIVE state can have unresolved incidents, any given
-        filters for state are ignored and overridden during this batch operation.
+        Only incidents of ACTIVE process instances are resolved. The given filter only narrows the batch.
         This is done asynchronously, the progress can be tracked using the batchOperationKey from the response and the batch operation status endpoint (/batch-operations/{batchOperationKey}).
       requestBody:
-        required: false
+        required: true
         content:
           application/json:
             schema:
@@ -512,7 +521,9 @@ paths:
                 $ref: 'batch-operations.yaml#/components/schemas/BatchOperationCreatedResult'
         "400":
           description: >
-            The process instance batch operation failed.
+            The process instance batch operation failed, for example because the filter requests a
+            top-level `state` other than ACTIVE through `$eq` or `$in`. States inside `$or` branches
+            are not validated.
             More details are provided in the response body.
           content:
             application/problem+json:
@@ -543,8 +554,7 @@ paths:
       summary: Migrate process instances (batch)
       description: |
         Migrate multiple process instances.
-        Since only process instances with ACTIVE state can be migrated, any given
-        filters for state are ignored and overridden during this batch operation.
+        Only ACTIVE process instances are migrated. The given filter only narrows the batch.
         This is done asynchronously, the progress can be tracked using the batchOperationKey from the response and the batch operation status endpoint (/batch-operations/{batchOperationKey}).
       requestBody:
         required: true
@@ -561,7 +571,9 @@ paths:
                 $ref: 'batch-operations.yaml#/components/schemas/BatchOperationCreatedResult'
         "400":
           description: >
-            The process instance batch operation failed.
+            The process instance batch operation failed, for example because the filter requests a
+            top-level `state` other than ACTIVE through `$eq` or `$in`. States inside `$or` branches
+            are not validated.
             More details are provided in the response body.
           content:
             application/problem+json:
@@ -592,8 +604,7 @@ paths:
       summary: Modify process instances (batch)
       description: |
         Modify multiple process instances.
-        Since only process instances with ACTIVE state can be modified, any given
-        filters for state are ignored and overridden during this batch operation.
+        Only ACTIVE process instances are modified. The given filter only narrows the batch.
         In contrast to single modification operation, it is not possible to add variable instructions or modify by element key.
         It is only possible to use the element id of the source and target.
         This is done asynchronously, the progress can be tracked using the batchOperationKey from the response and the batch operation status endpoint (/batch-operations/{batchOperationKey}).
@@ -612,7 +623,9 @@ paths:
                 $ref: 'batch-operations.yaml#/components/schemas/BatchOperationCreatedResult'
         "400":
           description: >
-            The process instance batch operation failed.
+            The process instance batch operation failed, for example because the filter requests a
+            top-level `state` other than ACTIVE through `$eq` or `$in`. States inside `$or` branches
+            are not validated.
             More details are provided in the response body.
           content:
             application/problem+json:
@@ -643,10 +656,10 @@ paths:
       summary: Suspend process instances (batch)
       description: |
         Suspends multiple running process instances.
-        Any given filter for state or parentProcessInstanceKey is ignored and overridden, as only
-        ACTIVE process instances can be suspended and suspension does not cascade between parent
-        and child instances, so child instances are suspended independently of their parent or
-        root instance.
+        Only ACTIVE process instances are suspended. The given filter only narrows the batch.
+        Other `state` operators (`$neq`, `$notIn`, `$exists`, `$like`) are applied as given and are
+        not validated. Suspension does not cascade, so child instances are suspended independently of their parent
+        or root instance.
         This is done asynchronously, the progress can be tracked using the batchOperationKey from the response and the batch operation status endpoint (/batch-operations/{batchOperationKey}).
       requestBody:
         required: true
@@ -663,7 +676,9 @@ paths:
                 $ref: 'batch-operations.yaml#/components/schemas/BatchOperationCreatedResult'
         "400":
           description: >
-            The process instance batch operation failed.
+            The process instance batch operation failed, for example because the filter requests a
+            top-level `state` other than ACTIVE through `$eq` or `$in`. States inside `$or` branches
+            are not validated.
             More details are provided in the response body.
           content:
             application/problem+json:
@@ -694,10 +709,10 @@ paths:
       summary: Resume process instances (batch)
       description: |
         Resumes multiple suspended process instances.
-        Any given filter for state or parentProcessInstanceKey is ignored and overridden, as only
-        SUSPENDED process instances can be resumed and resumption does not cascade between parent
-        and child instances, so child instances are resumed independently of their parent or root
-        instance.
+        Only SUSPENDED process instances are resumed. The given filter only narrows the batch.
+        Other `state` operators (`$neq`, `$notIn`, `$exists`, `$like`) are applied as given and are
+        not validated. Resumption does not cascade, so child instances are resumed independently of their parent
+        or root instance.
         This is done asynchronously, the progress can be tracked using the batchOperationKey from the response and the batch operation status endpoint (/batch-operations/{batchOperationKey}).
       requestBody:
         required: true
@@ -714,7 +729,9 @@ paths:
                 $ref: 'batch-operations.yaml#/components/schemas/BatchOperationCreatedResult'
         "400":
           description: >
-            The process instance batch operation failed.
+            The process instance batch operation failed, for example because the filter requests a
+            top-level `state` other than SUSPENDED through `$eq` or `$in`. States inside `$or`
+            branches are not validated.
             More details are provided in the response body.
           content:
             application/problem+json:
@@ -1984,11 +2001,17 @@ components:
         processDefinitionKey:
           allOf:
             - $ref: 'keys.yaml#/components/schemas/ProcessDefinitionKey'
-          description: The process definition key.
+          description: |
+            The process definition key. This field is not present for sequence flows imported
+            by Operate 8.1 or earlier.
+          nullable: true
         processDefinitionId:
           allOf:
             - $ref: 'identifiers.yaml#/components/schemas/ProcessDefinitionId'
-          description: The process definition id.
+          description: |
+            The process definition id. This field is not present for sequence flows imported by
+            Operate 8.1 or earlier.
+          nullable: true
         elementId:
           allOf:
             - $ref: 'identifiers.yaml#/components/schemas/ElementId'

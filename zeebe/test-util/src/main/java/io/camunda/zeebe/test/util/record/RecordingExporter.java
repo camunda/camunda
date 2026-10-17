@@ -56,6 +56,7 @@ import io.camunda.zeebe.protocol.record.intent.RoleIntent;
 import io.camunda.zeebe.protocol.record.intent.SecretReferenceIntent;
 import io.camunda.zeebe.protocol.record.intent.SignalIntent;
 import io.camunda.zeebe.protocol.record.intent.SignalSubscriptionIntent;
+import io.camunda.zeebe.protocol.record.intent.SuspensionBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.TenantIntent;
 import io.camunda.zeebe.protocol.record.intent.TimerIntent;
 import io.camunda.zeebe.protocol.record.intent.UsageMetricIntent;
@@ -119,6 +120,7 @@ import io.camunda.zeebe.protocol.record.value.RoleRecordValue;
 import io.camunda.zeebe.protocol.record.value.SecretReferenceRecordValue;
 import io.camunda.zeebe.protocol.record.value.SignalRecordValue;
 import io.camunda.zeebe.protocol.record.value.SignalSubscriptionRecordValue;
+import io.camunda.zeebe.protocol.record.value.SuspensionBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantRecordValue;
 import io.camunda.zeebe.protocol.record.value.TimerRecordValue;
 import io.camunda.zeebe.protocol.record.value.UsageMetricRecordValue;
@@ -473,6 +475,16 @@ public final class RecordingExporter implements Exporter {
   public static ProcessInstanceBatchRecordStream processInstanceBatchRecords(
       final ProcessInstanceBatchIntent intent) {
     return processInstanceBatchRecords().withIntent(intent);
+  }
+
+  public static SuspensionBatchRecordStream suspensionBatchRecords() {
+    return new SuspensionBatchRecordStream(
+        records(ValueType.SUSPENSION_BATCH, SuspensionBatchRecordValue.class));
+  }
+
+  public static SuspensionBatchRecordStream suspensionBatchRecords(
+      final SuspensionBatchIntent intent) {
+    return suspensionBatchRecords().withIntent(intent);
   }
 
   public static TimerRecordStream timerRecords() {

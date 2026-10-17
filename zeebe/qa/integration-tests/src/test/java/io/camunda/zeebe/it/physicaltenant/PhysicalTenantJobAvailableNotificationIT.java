@@ -8,7 +8,6 @@
 package io.camunda.zeebe.it.physicaltenant;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.awaitility.Awaitility.await;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.response.ActivateJobsResponse;
@@ -82,19 +81,7 @@ final class PhysicalTenantJobAvailableNotificationIT {
             .endEvent()
             .done();
 
-    await("deployment to tenant A succeeds")
-        .atMost(Duration.ofSeconds(30))
-        .ignoreExceptions()
-        .untilAsserted(
-            () ->
-                assertThat(
-                        tenantAClient
-                            .newDeployResourceCommand()
-                            .addProcessModel(process, PROCESS_ID + ".bpmn")
-                            .send()
-                            .join()
-                            .getProcesses())
-                    .isNotEmpty());
+    TENANTS.deploy(tenantAClient, process, PROCESS_ID);
 
     final var jobs =
         tenantAClient

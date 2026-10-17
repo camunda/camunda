@@ -59,9 +59,11 @@ public abstract class AsyncReplicationIT<R extends ReplicationClusterContainer>
         getCurrentAcknowledgedExporterPosition());
   }
 
+  // Outage and recovery stay in one test: recovery needs the paused state the outage creates, so a
+  // separate recovery test would run against a healthy cluster when failsafe reruns it alone.
   @Test
   @Order(1)
-  void shouldNeverAcknowledgeAndStopExportingWhenReplicaIsRemoved()
+  void shouldPauseExportingWhenReplicaIsRemovedAndResumeWhenItRecovers()
       throws ExecutionException, InterruptedException, TimeoutException {
     // given - a stable, fully acknowledged state
     final long acknowledgedPositionBeforeRemoval = getCurrentAcknowledgedExporterPosition();
@@ -110,16 +112,11 @@ public abstract class AsyncReplicationIT<R extends ReplicationClusterContainer>
     assertThat(getCurrentExporterPosition()).isEqualTo(exportedPositionAfterMaxLag);
     assertAcknowledgedPositionNotAdvancedBeyond(acknowledgedPositionBeforeRemoval);
     LOG.info(
-        "Replica outage test completed with exporter position {}, acknowledged position {}",
+        "Replica outage phase completed with exporter position {}, acknowledged position {}",
         getCurrentExporterPosition(),
         getCurrentAcknowledgedExporterPosition());
-  }
 
-  @Test
-  @Order(2)
-  void shouldResumeExportingAndAcknowledgeWhenReplicaRecovers()
-      throws ExecutionException, InterruptedException, TimeoutException {
-    // given - exporter is paused after replica was removed (state left by test @Order(1))
+    // given - exporter is paused after the replica was removed
     final long exportedPositionBeforeRecovery = getCurrentExporterPosition();
     final long acknowledgedPositionBeforeRecovery = getCurrentAcknowledgedExporterPosition();
 
@@ -139,7 +136,7 @@ public abstract class AsyncReplicationIT<R extends ReplicationClusterContainer>
     awaitAcknowledgedPositionAdvances(acknowledgedPositionBeforeRecovery);
     exporterAcknowledgedAll();
     LOG.info(
-        "Replica recovery test completed at exporter position {}, acknowledged position {}",
+        "Replica outage and recovery test completed at exporter position {}, acknowledged position {}",
         getCurrentExporterPosition(),
         getCurrentAcknowledgedExporterPosition());
   }

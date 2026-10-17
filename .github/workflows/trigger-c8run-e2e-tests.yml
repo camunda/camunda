@@ -1,5 +1,5 @@
 # description: Runs c8-cross-component-e2e-tests on C8Run.
-# test location: https://github.com/camunda/c8-cross-component-e2e-tests/tree/main/tests/c8Run-8.10
+# test location: https://github.com/camunda/c8-cross-component-e2e-tests/tree/main/tests/c8Run-<minor of pom.xml>
 # type: CI
 # owner: @camunda/qa-engineering
 name: Trigger c8-cross-component-e2e-tests
@@ -24,10 +24,17 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
+      # The e2e side packages the branch's own pom version, so the suite has to follow it.
+      # c8run/.env pins the last released CAMUNDA_VERSION (8.10.0-alpha4 on an 8.11 main)
+      # and would pick the previous minor's tests/c8Run-<minor>.
       - name: Extract minor version
         id: version
         run: |
-          version=$(grep '^CAMUNDA_VERSION=' c8run/.env | cut -d= -f2 | grep -oP '^\d+\.\d+')
+          version=$(awk '/<parent>/{p=1} p && /<version>/{gsub(/.*<version>|<\/version>.*/,""); print; exit}' pom.xml | grep -oP '^\d+\.\d+')
+          if [[ -z "$version" ]]; then
+            echo "::error::Could not resolve the minor version from pom.xml"
+            exit 1
+          fi
           echo "version=$version" >> "$GITHUB_OUTPUT"
 
       - name: Generate a GitHub token for camunda/camunda repo

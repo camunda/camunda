@@ -89,7 +89,8 @@ final class PartitionBalanceMetricsTest {
   @Test
   void shouldReportNothingUntilAConfigurationArrives() {
     // when
-    metrics.onClusterConfigurationUpdated(ClusterConfiguration.uninitialized());
+    metrics.onClusterConfigurationUpdated(
+        CurrentClusterConfiguration.fromLegacy(ClusterConfiguration.uninitialized()));
 
     // then
     assertThat(registry.find("zeebe.cluster.partition.balanced").gauges()).isEmpty();
@@ -99,13 +100,15 @@ final class PartitionBalanceMetricsTest {
   void shouldStopReportingOnAPartitionTheConfigurationNoLongerHas() {
     // given
     metrics.onClusterConfigurationUpdated(
-        ClusterConfiguration.init()
-            .addMember(MEMBER_1, MemberState.initializeAsActive(partitions(1, 2))));
+        CurrentClusterConfiguration.fromLegacy(
+            ClusterConfiguration.init()
+                .addMember(MEMBER_1, MemberState.initializeAsActive(partitions(1, 2)))));
 
     // when
     metrics.onClusterConfigurationUpdated(
-        ClusterConfiguration.init()
-            .addMember(MEMBER_1, MemberState.initializeAsActive(partitions(1))));
+        CurrentClusterConfiguration.fromLegacy(
+            ClusterConfiguration.init()
+                .addMember(MEMBER_1, MemberState.initializeAsActive(partitions(1)))));
 
     // then
     assertThat(registry.find("zeebe.cluster.partition.balanced").tag("partition", "2").gauge())
@@ -118,8 +121,7 @@ final class PartitionBalanceMetricsTest {
   void shouldStopReportingOnThePartitionsOfADisabledPhysicalTenant() {
     // given
     leaders.put(1, MEMBER_2);
-    final var configuration =
-        CurrentClusterConfiguration.fromLegacy(configurationWithPriorities(Map.of(MEMBER_1, 1)));
+    final var configuration = configurationWithPriorities(Map.of(MEMBER_1, 1));
     metrics.onClusterConfigurationUpdated(configuration);
 
     // when
@@ -139,7 +141,7 @@ final class PartitionBalanceMetricsTest {
         .value();
   }
 
-  private ClusterConfiguration configurationWithPriorities(
+  private CurrentClusterConfiguration configurationWithPriorities(
       final Map<MemberId, Integer> lowerPriorities) {
     var configuration = ClusterConfiguration.init();
     for (final var entry : lowerPriorities.entrySet()) {
@@ -150,10 +152,11 @@ final class PartitionBalanceMetricsTest {
                   Map.of(
                       1, PartitionState.active(entry.getValue(), DynamicPartitionConfig.init()))));
     }
-    return configuration.addMember(
-        MEMBER_2,
-        MemberState.initializeAsActive(
-            Map.of(1, PartitionState.active(9, DynamicPartitionConfig.init()))));
+    return CurrentClusterConfiguration.fromLegacy(
+        configuration.addMember(
+            MEMBER_2,
+            MemberState.initializeAsActive(
+                Map.of(1, PartitionState.active(9, DynamicPartitionConfig.init())))));
   }
 
   private Map<Integer, PartitionState> partitions(final int... partitionIds) {

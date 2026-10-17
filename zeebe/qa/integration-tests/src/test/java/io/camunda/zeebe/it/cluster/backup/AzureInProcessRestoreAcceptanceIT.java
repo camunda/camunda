@@ -8,7 +8,7 @@
 package io.camunda.zeebe.it.cluster.backup;
 
 import io.camunda.configuration.Camunda;
-import io.camunda.configuration.PrimaryStorageBackup;
+import io.camunda.configuration.data.primarystorage.PrimaryStorageBackup;
 import io.camunda.zeebe.test.testcontainers.AzuriteContainer;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.testcontainers.junit.jupiter.Container;

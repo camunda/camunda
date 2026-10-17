@@ -7,8 +7,6 @@
  */
 package io.camunda.optimize.service.businessvalue;
 
-import static io.camunda.optimize.service.db.DatabaseConstants.LIST_FETCH_LIMIT;
-
 import io.camunda.optimize.dto.optimize.DefinitionType;
 import io.camunda.optimize.dto.optimize.SimpleDefinitionDto;
 import io.camunda.optimize.dto.optimize.query.businessvalue.BusinessValueOverviewDto;
@@ -229,6 +227,29 @@ public class BusinessValueOverviewComputeService {
           final BusinessValueTargetDto target = targetsByDocId.get(docId);
           return target != null && hasAnyTarget(target) && !targetedDocIds.contains(docId);
         });
+
+    // Re-read the live definitions rather than reusing the snapshot taken before the evaluations.
+    // A definition deleted during the sweep has already had its overview rows removed by the
+    // process-definition deletion cascade; upserting the stale snapshot would put them straight
+    // back, and no later sweep selects a deleted definition, so nothing would ever remove them
+    // again. Same two-reads shape as the target read above, and it narrows the window from the
+    // whole sweep to the bulk write itself.
+    final Set<String> liveDocIds = liveDefinitionDocIds();
+    if (liveDocIds.isEmpty()) {
+      // Every definition vanishing mid-sweep is far more likely to be a failed or incomplete read
+      // than a real fleet-wide deletion. Skipping the write costs this tick's freshness; writing
+      // rows whose definitions cannot be confirmed risks resurrecting rows nothing will clean up.
+      LOG.warn(
+          "No live process definitions resolved after evaluation; skipping the overview write "
+              + "rather than upserting rows that may belong to deleted definitions.");
+      return;
+    }
+    rowsToUpsert.removeIf(
+        row -> !liveDocIds.contains(targetDocId(row.getTenantId(), row.getProcessDefinitionKey())));
+    if (rowsToUpsert.isEmpty()) {
+      LOG.debug("No business-value overview rows left to upsert after the liveness re-check");
+      return;
+    }
 
     // Stamped here rather than when the sweep started, so that whichever writer touches a row last
     // also leaves the latest timestamp on it. A sweep that began before a target write and finished
@@ -468,9 +489,9 @@ public class BusinessValueOverviewComputeService {
    * user pick that tenant, so a key-level set would measure a definition for tenants nobody asked
    * about and attribute one tenant's answer to another.
    *
-   * <p>A cleared target leaves its document behind with null fields rather than deleting it, so
-   * presence alone is not enough — the definition stops being measured only once every target field
-   * is null, which is what clearing is supposed to mean.
+   * <p>A cleared target leaves its document behind with null fields rather than deleting it. The
+   * repository already leaves those out of the scan; the {@link #hasAnyTarget} filter here keeps
+   * the selection correct on its own rather than resting on that query.
    */
   private Set<String> targetedDocIds() {
     return readTargets().entrySet().stream()
@@ -684,18 +705,18 @@ public class BusinessValueOverviewComputeService {
     return pairs;
   }
 
+  /**
+   * The {@code (tenantId, processDefinitionKey)} pairs that are still fully imported, read fresh so
+   * it reflects deletions that landed while this sweep was evaluating.
+   */
+  private Set<String> liveDefinitionDocIds() {
+    return resolveDefinitions().stream()
+        .map(def -> targetDocId(def.tenantId(), def.processDefinitionKey()))
+        .collect(Collectors.toSet());
+  }
+
   private Map<String, BusinessValueTargetDto> readTargets() {
     final List<BusinessValueTargetDto> all = targetRepository.scanAll();
-    if (all.size() >= LIST_FETCH_LIMIT) {
-      // scanAll() is capped at LIST_FETCH_LIMIT. Any target rows beyond the cap are treated as
-      // absent by the sweep and would overwrite existing overview rows with null targets. Log so
-      // this is visible before it becomes a silent regression; paginated scan is a follow-up.
-      LOG.warn(
-          "Business-value target scan returned {} rows — at or past the LIST_FETCH_LIMIT cap. "
-              + "Targets beyond the cap are missing from this sweep and their overview rows will "
-              + "show no target until paginated scan is implemented.",
-          all.size());
-    }
     final Map<String, BusinessValueTargetDto> byId = new HashMap<>(all.size());
     for (final BusinessValueTargetDto row : all) {
       byId.put(targetDocId(row.getTenantId(), row.getProcessDefinitionKey()), row);

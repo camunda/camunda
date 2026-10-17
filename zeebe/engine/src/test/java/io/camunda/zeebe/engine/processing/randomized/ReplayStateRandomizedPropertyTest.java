@@ -26,6 +26,7 @@ import org.assertj.core.api.SoftAssertions;
 import org.awaitility.Awaitility;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.junit.rules.TestWatcher;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -33,6 +34,7 @@ import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 
 @RunWith(Parameterized.class)
+@Category(RandomizedTestCategory.class)
 public class ReplayStateRandomizedPropertyTest {
 
   private static final String PROCESS_COUNT = System.getProperty("processCount", "3");

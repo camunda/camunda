@@ -123,6 +123,7 @@ public class ProcessVariableWriter {
         .scriptData(updateScriptData)
         .source(processInstanceDto)
         .retryNumberOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT)
+        .requireAlias(true)
         .build();
   }
 

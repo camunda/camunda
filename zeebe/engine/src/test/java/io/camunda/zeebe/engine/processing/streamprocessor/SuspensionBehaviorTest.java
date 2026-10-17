@@ -44,6 +44,7 @@ final class SuspensionBehaviorTest {
 
   private static final long PROCESS_INSTANCE_KEY = 42L;
   private static final long JOB_KEY = 7L;
+  private static final long ELEMENT_INSTANCE_KEY = 21L;
   private static final long AD_HOC_SUB_PROCESS_ELEMENT_INSTANCE_KEY = 13L;
 
   private ProcessingState processingState;
@@ -127,7 +128,7 @@ final class SuspensionBehaviorTest {
 
   @ParameterizedTest
   @EnumSource(SuspensionAction.class)
-  void shouldProcessByDefaultWhileSuspending(final SuspensionAction behavior) {
+  void shouldApplySuspendedClassificationByDefaultWhileSuspending(final SuspensionAction behavior) {
     // given
     markerIs(State.SUSPENDING);
     final var command = command();
@@ -137,10 +138,34 @@ final class SuspensionBehaviorTest {
     final var result = suspensionBehavior.process(command, processor);
 
     // then
-    assertThat(result.outcome()).isEqualTo(SuspensionAction.PROCESS);
+    assertThat(result.outcome()).isEqualTo(behavior);
     assertThat(result.processInstanceKey()).isEqualTo(PROCESS_INSTANCE_KEY);
-    assertThat(result.rejectionReason()).isNull();
+    if (behavior == SuspensionAction.REJECT) {
+      assertThat(result.rejectionReason())
+          .isEqualTo(SuspensionAware.ERROR_MESSAGE_SUSPENDED_PI.formatted(PROCESS_INSTANCE_KEY));
+    } else {
+      assertThat(result.rejectionReason()).isNull();
+    }
     verifyOnSuspending(processor, command);
+  }
+
+  @Test
+  void shouldApplyOverriddenClassificationWhileSuspending() {
+    // given
+    markerIs(State.SUSPENDING);
+    final var command = command();
+    final var processor = overridingProcessor(SuspensionAction.REJECT);
+    final var suspensionAware = (SuspensionAware<?>) processor;
+    doReturn(SuspensionAction.PROCESS).when(suspensionAware).onSuspending(any());
+
+    // when
+    final var result = suspensionBehavior.process(command, processor);
+
+    // then
+    assertThat(result.outcome()).isEqualTo(SuspensionAction.PROCESS);
+    verify(suspensionAware).onSuspending(any());
+    verify(suspensionAware, never()).onSuspended(any());
+    verify(suspensionAware, never()).onResuming(any());
   }
 
   @Test
@@ -208,17 +233,20 @@ final class SuspensionBehaviorTest {
     final var command = command();
     final var processor = overridingProcessor(SuspensionAction.BUFFER);
 
-    // when / then - BUFFER is only valid while SUSPENDED; re-buffering while draining is a bug
+    // when / then - re-buffering while draining is a bug
     assertThatThrownBy(() -> suspensionBehavior.process(command, processor))
         .isInstanceOf(IllegalStateException.class)
         .hasMessageContaining("Expected PROCESS or REJECT from onResuming, but got BUFFER");
     verifyOnResuming(processor, command);
   }
 
-  @Test
-  void shouldCarryCustomRejectionReasonWhenProcessorRejects() {
+  @ParameterizedTest
+  @EnumSource(
+      value = State.class,
+      names = {"SUSPENDING", "SUSPENDED"})
+  void shouldCarryCustomRejectionReasonWhenProcessorRejects(final State marker) {
     // given
-    markerIs(State.SUSPENDED);
+    markerIs(marker);
     final var command = command();
     final var processor = overridingProcessor(SuspensionAction.REJECT);
     stubRejectionReason(processor, command, "custom user-task reason");
@@ -229,7 +257,11 @@ final class SuspensionBehaviorTest {
     // then - Engine can use this instead of the generic suspended-process-instance message
     assertThat(result.outcome()).isEqualTo(SuspensionAction.REJECT);
     assertThat(result.rejectionReason()).isEqualTo("custom user-task reason");
-    verifyOnSuspended(processor, command);
+    if (marker == State.SUSPENDING) {
+      verifyOnSuspending(processor, command);
+    } else {
+      verifyOnSuspended(processor, command);
+    }
   }
 
   @Test
@@ -307,6 +339,132 @@ final class SuspensionBehaviorTest {
     assertThat(result.outcome()).isEqualTo(SuspensionAction.REJECT);
     assertThat(result.processInstanceKey()).isEqualTo(PROCESS_INSTANCE_KEY);
     verifyOnSuspended(processor, command);
+  }
+
+  @ParameterizedTest
+  @EnumSource(
+      value = State.class,
+      names = {"SUSPENDED", "RESUMING", "SUSPENDING"})
+  void shouldProcessJobCommandOfTerminatingElement(final State marker) {
+    // given
+    jobOfElementInstance();
+    elementInstanceIsTerminating(true);
+    markerIs(marker);
+    final var command = jobCommand();
+    final var processor = overridingProcessor(SuspensionAction.REJECT);
+
+    // when
+    final var result = suspensionBehavior.process(command, processor);
+
+    // then
+    assertThat(result.outcome()).isEqualTo(SuspensionAction.PROCESS);
+    assertThat(result.processInstanceKey()).isEqualTo(PROCESS_INSTANCE_KEY);
+    assertThat(result.rejectionReason()).isNull();
+  }
+
+  @Test
+  void shouldProcessJobCommandOfTerminatingElementCarriedOnCommandValue() {
+    // given - internal job commands carry the full job record
+    elementInstanceIsTerminating(true);
+    markerIs(State.SUSPENDED);
+    final var command = mock(TypedRecord.class);
+    when(command.getValue())
+        .thenReturn(
+            new JobRecord()
+                .setProcessInstanceKey(PROCESS_INSTANCE_KEY)
+                .setElementInstanceKey(ELEMENT_INSTANCE_KEY));
+    when(command.getKey()).thenReturn(JOB_KEY);
+    when(command.getValueType()).thenReturn(ValueType.JOB);
+    final var processor = overridingProcessor(SuspensionAction.REJECT);
+
+    // when
+    final var result = suspensionBehavior.process(command, processor);
+
+    // then
+    assertThat(result.outcome()).isEqualTo(SuspensionAction.PROCESS);
+  }
+
+  @Test
+  void shouldApplyProcessorClassificationForJobCommandOfNonTerminatingElement() {
+    // given
+    jobOfElementInstance();
+    elementInstanceIsTerminating(false);
+    markerIs(State.SUSPENDED);
+    final var command = jobCommand();
+    final var processor = overridingProcessor(SuspensionAction.REJECT);
+
+    // when
+    final var result = suspensionBehavior.process(command, processor);
+
+    // then
+    assertThat(result.outcome()).isEqualTo(SuspensionAction.REJECT);
+  }
+
+  @Test
+  void shouldProcessCompleteExecutionListenerCommandOfTerminatingElement() {
+    // given
+    elementInstanceIsTerminating(true);
+    markerIs(State.SUSPENDED);
+    final var command = completeExecutionListenerCommand();
+    final var processor = overridingProcessor(SuspensionAction.BUFFER);
+
+    // when
+    final var result = suspensionBehavior.process(command, processor);
+
+    // then
+    assertThat(result.outcome()).isEqualTo(SuspensionAction.PROCESS);
+  }
+
+  @Test
+  void
+      shouldApplyProcessorClassificationForCompleteExecutionListenerCommandOfNonTerminatingElement() {
+    // given
+    elementInstanceIsTerminating(false);
+    markerIs(State.SUSPENDED);
+    final var command = completeExecutionListenerCommand();
+    final var processor = overridingProcessor(SuspensionAction.BUFFER);
+
+    // when
+    final var result = suspensionBehavior.process(command, processor);
+
+    // then
+    assertThat(result.outcome()).isEqualTo(SuspensionAction.BUFFER);
+  }
+
+  private static TypedRecord<?> completeExecutionListenerCommand() {
+    final var command = mock(TypedRecord.class);
+    when(command.getValue())
+        .thenReturn(new ProcessInstanceRecord().setProcessInstanceKey(PROCESS_INSTANCE_KEY));
+    when(command.getKey()).thenReturn(ELEMENT_INSTANCE_KEY);
+    when(command.getIntent()).thenReturn(ProcessInstanceIntent.COMPLETE_EXECUTION_LISTENER);
+    when(command.getValueType()).thenReturn(ValueType.PROCESS_INSTANCE);
+    return command;
+  }
+
+  private void jobOfElementInstance() {
+    final var jobState = mock(JobState.class);
+    when(processingState.getJobState()).thenReturn(jobState);
+    when(jobState.getJob(JOB_KEY))
+        .thenReturn(
+            new JobRecord()
+                .setProcessInstanceKey(PROCESS_INSTANCE_KEY)
+                .setElementInstanceKey(ELEMENT_INSTANCE_KEY));
+  }
+
+  private void elementInstanceIsTerminating(final boolean terminating) {
+    final var elementInstanceState = mock(ElementInstanceState.class);
+    final var elementInstance = mock(ElementInstance.class);
+    when(processingState.getElementInstanceState()).thenReturn(elementInstanceState);
+    when(elementInstanceState.getInstance(ELEMENT_INSTANCE_KEY)).thenReturn(elementInstance);
+    when(elementInstance.isTerminating()).thenReturn(terminating);
+  }
+
+  private static TypedRecord<?> jobCommand() {
+    final var command = mock(TypedRecord.class);
+    when(command.getValue()).thenReturn(new JobRecord());
+    when(command.getKey()).thenReturn(JOB_KEY);
+    when(command.getValueType()).thenReturn(ValueType.JOB);
+    return command;
   }
 
   @Test
@@ -432,7 +590,7 @@ final class SuspensionBehaviorTest {
   private static void verifyOnSuspending(
       final TypedRecordProcessor<?> processor, final TypedRecord<?> command) {
     verify((SuspensionAware) processor).onSuspending(command);
-    verify((SuspensionAware) processor, never()).onSuspended(any());
+    verify((SuspensionAware) processor).onSuspended(command);
     verify((SuspensionAware) processor, never()).onResuming(any());
   }
 

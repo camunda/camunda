@@ -12,17 +12,27 @@ import static io.camunda.configuration.beanoverrides.BrokerBasedPropertiesOverri
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.application.commons.rdbms.RdbmsDataSources;
+import io.camunda.configuration.data.SecondaryStorage.SecondaryStorageType;
+import io.camunda.configuration.data.primarystorage.PrimaryStorageBackup.BackupStoreType;
+import io.camunda.db.rdbms.sql.ExporterPositionMapper;
+import io.camunda.db.rdbms.write.RdbmsMapperBundle;
+import io.camunda.management.backups.StateCode;
 import io.camunda.zeebe.management.cluster.BrokerState;
 import io.camunda.zeebe.management.cluster.PartitionState;
 import io.camunda.zeebe.management.cluster.PartitionStateCode;
+import io.camunda.zeebe.qa.util.actuator.BackupActuator;
 import io.camunda.zeebe.qa.util.actuator.ClusterActuator;
 import io.camunda.zeebe.qa.util.actuator.ExportersActuator;
+import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.topology.ClusterActuatorAssert;
 import java.nio.file.Path;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.time.Duration;
+import java.util.List;
 import java.util.Map;
+import java.util.UUID;
+import java.util.stream.IntStream;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -33,6 +43,11 @@ import org.junit.jupiter.api.io.TempDir;
  * shared fixture and test cases, and {@link RdbmsRangeRestoreIT} for the standalone counterpart.
  */
 final class InProcessRdbmsRangeRestoreIT extends RdbmsRangeRestoreTestBase {
+
+  private static final int BACKUP_PARTITIONS_COUNT = 3;
+  private static final int SCALED_PARTITIONS_COUNT = 5;
+  private static final String SCALED_PROCESS_ID = "rdbms-scaled-restore-process";
+  private static final String SCALED_JOB_TYPE = "rdbms-scaled-restore-job";
 
   private static @TempDir Path backupDir;
 
@@ -79,6 +94,142 @@ final class InProcessRdbmsRangeRestoreIT extends RdbmsRangeRestoreTestBase {
     try (final var connection = dataSource.getConnection()) {
       assertThat(deployedResourceTableExists(connection)).isTrue();
     }
+  }
+
+  @Test
+  void shouldRestoreTheBackupsPartitionsAfterAScaleUp() throws Exception {
+    // given - a broker with 3 partitions, of its own since the shared fixture has 2, with a backup
+    // covering the exported positions of all 3
+    final var h2Url =
+        "jdbc:h2:mem:rdbms-scaled-restore-"
+            + UUID.randomUUID()
+            + ";DB_CLOSE_DELAY=-1;MODE=PostgreSQL";
+    try (final var scaledBroker =
+        new TestStandaloneBroker()
+            .withRecordingExporter(true)
+            .withSecondaryStorageType(SecondaryStorageType.rdbms)
+            .withUnifiedConfig(
+                cfg -> {
+                  cfg.getCluster().setPartitionCount(BACKUP_PARTITIONS_COUNT);
+                  final var rdbms = cfg.getData().getSecondaryStorage().getRdbms();
+                  rdbms.setUrl(h2Url);
+                  rdbms.setUsername("sa");
+                  rdbms.setPassword("");
+                  cfg.getData().getSecondaryStorage().setAutoconfigureCamundaExporter(false);
+                  final var backup = cfg.getData().getPrimaryStorage().getBackup();
+                  backup.setStore(BackupStoreType.FILESYSTEM);
+                  backup
+                      .getFilesystem()
+                      .setBasePath(backupDir.resolve(UUID.randomUUID().toString()).toString());
+                  backup.setContinuous(true);
+                })
+            .start()
+            .awaitCompleteTopology(1, BACKUP_PARTITIONS_COUNT, 1, Duration.ofSeconds(60))) {
+      final List<Long> backedUpInstanceKeys;
+      try (final var client = scaledBroker.newClientBuilder().build()) {
+        backedUpInstanceKeys =
+            InProcessRestoreTestUtil.deployAndCreateInstancesOnEveryPartition(
+                client, SCALED_PROCESS_ID, SCALED_JOB_TYPE, BACKUP_PARTITIONS_COUNT);
+      }
+      awaitExporterOpenedOnEveryPartition(scaledBroker);
+      final var clusterActuator = ClusterActuator.of(scaledBroker);
+      final var disableExporter =
+          ExportersActuator.of(scaledBroker).disableExporter(RDBMS_EXPORTER_NAME);
+      awaitScaledChangeCompletes(clusterActuator, disableExporter.getChangeId());
+      assertBackupCoversExportedPositions(scaledBroker);
+
+      // and - the cluster is scaled up to 5 partitions
+      InProcessRestoreTestUtil.scaleUpPartitions(clusterActuator, SCALED_PARTITIONS_COUNT, 1);
+
+      try (final var client = scaledBroker.newClientBuilder().build()) {
+        final var toRecovering = InProcessRestoreTestUtil.changeMode(client, "RECOVERING", false);
+        awaitScaledChangeCompletes(clusterActuator, toRecovering);
+
+        // and - the RDBMS is restored to the backup's point, so it only holds exported positions
+        // for the backup's 3 partitions, not for the 2 added by the scale-up
+        final var dataSource =
+            scaledBroker.bean(RdbmsDataSources.class).dataSourceFor(DEFAULT_PHYSICAL_TENANT_ID);
+        try (final var connection = dataSource.getConnection();
+            final var statement = connection.createStatement()) {
+          statement.executeUpdate(
+              "DELETE FROM EXPORTER_POSITION WHERE PARTITION_ID > " + BACKUP_PARTITIONS_COUNT);
+          connection.commit();
+        }
+
+        // when - restoring the latest common checkpoint of the partitions the RDBMS holds
+        final var restore = InProcessRestoreTestUtil.triggerRestore(client, Map.of());
+        awaitScaledChangeCompletes(clusterActuator, restore);
+
+        // then - the group routes over the backup's partitions again
+        InProcessRestoreTestUtil.assertRoutesOverPartitions(
+            clusterActuator, BACKUP_PARTITIONS_COUNT);
+        InProcessRestoreTestUtil.assertOnlyRestoredPartitionDirectories(
+            scaledBroker.getWorkingDirectory(),
+            DEFAULT_PHYSICAL_TENANT_ID,
+            BACKUP_PARTITIONS_COUNT,
+            SCALED_PARTITIONS_COUNT);
+        InProcessRestoreTestUtil.assertNewInstancesLandOnPartitions(
+            scaledBroker, SCALED_PROCESS_ID, BACKUP_PARTITIONS_COUNT);
+
+        // and - the backup's partitions are restored and processing
+        InProcessRestoreTestUtil.awaitJobsOfInstancesActivatable(
+            client, SCALED_JOB_TYPE, backedUpInstanceKeys);
+      }
+    }
+  }
+
+  private static void awaitExporterOpenedOnEveryPartition(final TestStandaloneBroker broker) {
+    final var exporterPositions = exporterPositionMapper(broker);
+    Awaitility.await("the RDBMS exporter opened on every partition")
+        .atMost(Duration.ofSeconds(60))
+        .untilAsserted(
+            () ->
+                IntStream.rangeClosed(1, BACKUP_PARTITIONS_COUNT)
+                    .forEach(
+                        partitionId ->
+                            assertThat(exporterPositions.findOne(partitionId))
+                                .describedAs("exported position for partition %d", partitionId)
+                                .isNotNull()));
+  }
+
+  private static void assertBackupCoversExportedPositions(final TestStandaloneBroker broker) {
+    final var exporterPositions = exporterPositionMapper(broker);
+    final var backupActuator = BackupActuator.of(broker);
+    final long backupId = backupActuator.take().getBackupId();
+    Awaitility.await("backup %d completes".formatted(backupId))
+        .atMost(Duration.ofSeconds(30))
+        .ignoreExceptions()
+        .untilAsserted(
+            () ->
+                assertThat(backupActuator.status(backupId).getState())
+                    .isEqualTo(StateCode.COMPLETED));
+    assertThat(backupActuator.status(backupId).getDetails())
+        .hasSize(BACKUP_PARTITIONS_COUNT)
+        .allSatisfy(
+            details -> {
+              final var exportedPosition = exporterPositions.findOne(details.getPartitionId());
+              assertThat(exportedPosition)
+                  .describedAs("exported position for partition %d", details.getPartitionId())
+                  .isNotNull();
+              assertThat(details.getCheckpointPosition())
+                  .isGreaterThanOrEqualTo(exportedPosition.lastExportedPosition());
+            });
+  }
+
+  private static ExporterPositionMapper exporterPositionMapper(final TestStandaloneBroker broker) {
+    final Map<String, RdbmsMapperBundle> bundles = broker.bean("rdbmsMapperBundles");
+    return bundles.get(DEFAULT_PHYSICAL_TENANT_ID).exporterPositionMapper();
+  }
+
+  private static void awaitScaledChangeCompletes(
+      final ClusterActuator clusterActuator, final long changeId) {
+    Awaitility.await("cluster configuration change %d completes".formatted(changeId))
+        .timeout(Duration.ofMinutes(2))
+        .untilAsserted(
+            () ->
+                ClusterActuatorAssert.assertThat(clusterActuator)
+                    .hasCompletedChanges(changeId)
+                    .doesNotHavePendingChanges());
   }
 
   private static boolean deployedResourceTableExists(final Connection connection)

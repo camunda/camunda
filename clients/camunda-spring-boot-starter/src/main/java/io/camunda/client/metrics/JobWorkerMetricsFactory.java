@@ -44,6 +44,15 @@ public interface JobWorkerMetricsFactory {
    *
    * @param type the type of the job worker for which metrics are being created. This typically
    *     corresponds to the job type handled by the worker.
+   * @param physicalTenantId the physical tenant ID of the client the worker is opened on: the ID
+   *     configured on the client, else the client's name. Lets implementations keep the metrics of
+   *     the same job type apart when it is served by clients of different physical tenants. May be
+   *     {@code null} if the caller does not know it.
    */
-  record JobWorkerMetricsFactoryContext(String type) {}
+  record JobWorkerMetricsFactoryContext(String type, String physicalTenantId) {
+
+    public JobWorkerMetricsFactoryContext(final String type) {
+      this(type, null);
+    }
+  }
 }

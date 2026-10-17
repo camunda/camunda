@@ -107,11 +107,12 @@ public final class UserTaskCommandProcessors {
       final Map<UserTaskIntent, UserTaskCommandProcessor> commandToProcessor) {
     final var missingProcessors =
         UserTaskIntent.commands().stream()
-            // Exclude COMPLETE_TASK_LISTENER and REJECT_TASK_LISTENER as they don't require a
-            // dedicated processor.
-            // This intent is handled internally within UserTaskProcessor
+            // Exclude COMPLETE_TASK_LISTENER, REJECT_TASK_LISTENER and RESUME as they don't
+            // require a dedicated processor.
+            // These intents are handled internally within UserTaskProcessor
             .filter(intent -> intent != UserTaskIntent.COMPLETE_TASK_LISTENER)
             .filter(intent -> intent != UserTaskIntent.DENY_TASK_LISTENER)
+            .filter(intent -> intent != UserTaskIntent.RESUME)
             .filter(intent -> !commandToProcessor.containsKey(intent))
             .collect(Collectors.toSet());
 

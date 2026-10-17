@@ -14,11 +14,14 @@ import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import io.camunda.configuration.UnifiedConfigurationException;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.env.YamlPropertySourceLoader;
 import org.springframework.core.env.Environment;
 import org.springframework.core.env.MapPropertySource;
+import org.springframework.core.env.StandardEnvironment;
+import org.springframework.core.env.SystemEnvironmentPropertySource;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.mock.env.MockEnvironment;
 
@@ -134,6 +137,112 @@ class PhysicalTenantAssignedProvidersValidationTest {
   }
 
   @Test
+  void shouldAcceptDashedProviderId() {
+    // given a named provider whose id contains a dash, assigned as declared
+    final Environment environment =
+        environmentWith(
+            Map.of(
+                "camunda.security.authentication.method", "oidc",
+                "camunda.security.authentication.providers.oidc.azure-ad.client-id", "c",
+                "camunda.physical-tenants.tenanta.security.authentication.providers.assigned[0]",
+                    "azure-ad"));
+
+    // when / then
+    assertThatCode(() -> PhysicalTenantAssignedProvidersValidation.validate(environment))
+        .doesNotThrowAnyException();
+  }
+
+  @Test
+  void shouldAcceptCamelCaseProviderId() {
+    // given a named provider whose id contains capital letters, assigned as declared
+    final Environment environment =
+        environmentWith(
+            Map.of(
+                "camunda.security.authentication.method", "oidc",
+                "camunda.security.authentication.providers.oidc.AzureAd.client-id", "c",
+                "camunda.security.authentication.providers.oidc.AzureAd.issuer-uri",
+                    "https://idp.example.com",
+                "camunda.physical-tenants.tenanta.security.authentication.providers.assigned[0]",
+                    "AzureAd"));
+
+    // when / then
+    assertThatCode(() -> PhysicalTenantAssignedProvidersValidation.validate(environment))
+        .doesNotThrowAnyException();
+  }
+
+  @Test
+  void shouldRejectAssignedIdMatchingOnlyTheNormalizedProviderId() {
+    // given a provider declared as "azure-ad" but assigned as "azuread": the runtime keeps
+    // providers by their declared id, so this selection would leave the tenant without a provider
+    final Environment environment =
+        environmentWith(
+            Map.of(
+                "camunda.security.authentication.method", "oidc",
+                "camunda.security.authentication.providers.oidc.azure-ad.client-id", "c",
+                "camunda.physical-tenants.tenanta.security.authentication.providers.assigned[0]",
+                    "azuread"));
+
+    // when / then
+    assertThatExceptionOfType(UnifiedConfigurationException.class)
+        .isThrownBy(() -> PhysicalTenantAssignedProvidersValidation.validate(environment))
+        .withMessageContaining("unknown OIDC provider id(s) [azuread]")
+        .withMessageContaining("known ids are [azure-ad]")
+        .withMessageContaining("did you mean [azure-ad]?");
+  }
+
+  @Test
+  void shouldAcceptAssignedIdOfProviderSplitAcrossYamlAndEnvironmentVariable() {
+    // given a provider declared as "azure-ad" whose secret comes from an environment variable:
+    // the runtime binds it under both "azure-ad" and "azuread", each with the full config, so
+    // assigning "azuread" gives the tenant a working provider
+    final MockEnvironment environment =
+        environmentWith(
+            Map.of(
+                "camunda.security.authentication.method", "oidc",
+                "camunda.security.authentication.providers.oidc.azure-ad.client-id", "c",
+                "camunda.physical-tenants.tenanta.security.authentication.providers.assigned[0]",
+                    "azuread"));
+    environment
+        .getPropertySources()
+        .addFirst(
+            new SystemEnvironmentPropertySource(
+                StandardEnvironment.SYSTEM_ENVIRONMENT_PROPERTY_SOURCE_NAME,
+                Map.of(
+                    "CAMUNDA_SECURITY_AUTHENTICATION_PROVIDERS_OIDC_AZUREAD_CLIENTSECRET", "s")));
+
+    // when / then
+    assertThatCode(() -> PhysicalTenantAssignedProvidersValidation.validate(environment))
+        .doesNotThrowAnyException();
+  }
+
+  @Test
+  void shouldAcceptAssignedProviderDeclaredWithEmptyValue() throws IOException {
+    // given a provider declared with no fields, which the runtime still binds as a providers map
+    // key
+    final Environment environment =
+        yamlEnvironment(
+            """
+            camunda:
+              security:
+                authentication:
+                  method: oidc
+                  providers:
+                    oidc:
+                      azure:
+              physical-tenants:
+                tenanta:
+                  security:
+                    authentication:
+                      providers:
+                        assigned: [azure]
+            """);
+
+    // when / then
+    assertThatCode(() -> PhysicalTenantAssignedProvidersValidation.validate(environment))
+        .doesNotThrowAnyException();
+  }
+
+  @Test
   void shouldAcceptReservedOidcIdWhenDefaultSlotHasContent() {
     // given a configured default slot and a named provider, and a tenant assigning both
     final Environment environment =
@@ -204,6 +313,29 @@ class PhysicalTenantAssignedProvidersValidationTest {
     assertThatExceptionOfType(UnifiedConfigurationException.class)
         .isThrownBy(() -> PhysicalTenantAssignedProvidersValidation.validate(environment))
         .withMessageContaining("tenanta")
+        .withMessageContaining("reserved");
+  }
+
+  @Test
+  void shouldRejectNamedProviderSpellingTheReservedOidcIdDifferently() {
+    // given a default slot and a named provider "Oidc" on another issuer: Spring binds "Oidc" to
+    // the same name as the reserved "oidc", so it must not be accepted as a separate provider
+    final Environment environment =
+        environmentWith(
+            Map.of(
+                "camunda.security.authentication.method", "oidc",
+                "camunda.security.authentication.oidc.client-id", "root-client",
+                "camunda.security.authentication.oidc.issuer-uri", "https://root.example.com",
+                "camunda.security.authentication.providers.oidc.Oidc.client-id", "named-client",
+                "camunda.security.authentication.providers.oidc.Oidc.issuer-uri",
+                    "https://named.example.com",
+                "camunda.physical-tenants.tenanta.security.authentication.providers.assigned[0]",
+                    "Oidc"));
+
+    // when / then
+    assertThatExceptionOfType(UnifiedConfigurationException.class)
+        .isThrownBy(() -> PhysicalTenantAssignedProvidersValidation.validate(environment))
+        .withMessageContaining("may not be called 'Oidc'")
         .withMessageContaining("reserved");
   }
 
@@ -367,6 +499,108 @@ class PhysicalTenantAssignedProvidersValidationTest {
   }
 
   @Test
+  void shouldRejectCamelCaseProvidersWithSameIssuerInAssigned() {
+    // given two camel-case named providers sharing the same issuer-uri, both assigned
+    final Environment environment =
+        environmentWith(
+            Map.of(
+                "camunda.security.authentication.method", "oidc",
+                "camunda.security.authentication.providers.oidc.AzureAd.issuer-uri",
+                    "https://idp.example.com",
+                "camunda.security.authentication.providers.oidc.EntraId.issuer-uri",
+                    "https://idp.example.com",
+                "camunda.physical-tenants.tenanta.security.authentication.providers.assigned[0]",
+                    "AzureAd",
+                "camunda.physical-tenants.tenanta.security.authentication.providers.assigned[1]",
+                    "EntraId"));
+
+    // when / then
+    assertThatExceptionOfType(UnifiedConfigurationException.class)
+        .isThrownBy(() -> PhysicalTenantAssignedProvidersValidation.validate(environment))
+        .withMessageContaining("same issuer URI")
+        .withMessageContaining("[AzureAd, EntraId]");
+  }
+
+  @Test
+  void shouldRejectBracketDeclaredProviderSharingIssuerInAssigned() {
+    // given a provider whose id contains a dot, declared in brackets, sharing an issuer with
+    // another
+    final Environment environment =
+        environmentWith(
+            Map.of(
+                "camunda.security.authentication.method", "oidc",
+                "camunda.security.authentication.providers.oidc[corp.idp].issuer-uri",
+                    "https://idp.example.com",
+                "camunda.security.authentication.providers.oidc.other.issuer-uri",
+                    "https://idp.example.com",
+                "camunda.physical-tenants.tenanta.security.authentication.providers.assigned[0]",
+                    "corp.idp",
+                "camunda.physical-tenants.tenanta.security.authentication.providers.assigned[1]",
+                    "other"));
+
+    // when / then
+    assertThatExceptionOfType(UnifiedConfigurationException.class)
+        .isThrownBy(() -> PhysicalTenantAssignedProvidersValidation.validate(environment))
+        .withMessageContaining("same issuer URI")
+        .withMessageContaining("[corp.idp, other]");
+  }
+
+  @Test
+  void shouldRejectCollisionFromTenantIssuerOverrideOnUnderscoreOrBracketDeclaredProvider() {
+    // given providers declared as `azure_ad` and `[AzureAd]`, each overridden by the tenant to the
+    // issuer of a third provider
+    for (final String declared : List.of(".azure_ad", "[AzureAd]")) {
+      final String id = declared.replaceAll("[.\\[\\]]", "");
+      final Environment environment =
+          environmentWith(
+              Map.of(
+                  "camunda.security.authentication.method",
+                  "oidc",
+                  "camunda.security.authentication.providers.oidc" + declared + ".issuer-uri",
+                  "https://cluster.example.com",
+                  "camunda.security.authentication.providers.oidc.other.issuer-uri",
+                  "https://other.example.com",
+                  "camunda.physical-tenants.tenanta.security.authentication.providers.oidc"
+                      + declared
+                      + ".issuer-uri",
+                  "https://other.example.com",
+                  "camunda.physical-tenants.tenanta.security.authentication.providers.assigned[0]",
+                  id,
+                  "camunda.physical-tenants.tenanta.security.authentication.providers.assigned[1]",
+                  "other"));
+
+      // when / then the tenant's override is read, so the collision is found
+      assertThatExceptionOfType(UnifiedConfigurationException.class)
+          .isThrownBy(() -> PhysicalTenantAssignedProvidersValidation.validate(environment))
+          .withMessageContaining("same issuer URI")
+          .withMessageContaining("[" + id + ", other]");
+    }
+  }
+
+  @Test
+  void shouldRejectUnderscoreAndBracketDeclaredProvidersSharingIssuer() {
+    // given `azure_ad` and `[AzureAd]`, which Spring binds as two separate providers, on one issuer
+    final Environment environment =
+        environmentWith(
+            Map.of(
+                "camunda.security.authentication.method", "oidc",
+                "camunda.security.authentication.providers.oidc.azure_ad.issuer-uri",
+                    "https://idp.example.com",
+                "camunda.security.authentication.providers.oidc[AzureAd].issuer-uri",
+                    "https://idp.example.com",
+                "camunda.physical-tenants.tenanta.security.authentication.providers.assigned[0]",
+                    "azure_ad",
+                "camunda.physical-tenants.tenanta.security.authentication.providers.assigned[1]",
+                    "AzureAd"));
+
+    // when / then they are not merged as one provider, so the collision is found
+    assertThatExceptionOfType(UnifiedConfigurationException.class)
+        .isThrownBy(() -> PhysicalTenantAssignedProvidersValidation.validate(environment))
+        .withMessageContaining("same issuer URI")
+        .withMessageContaining("[azure_ad, AzureAd]");
+  }
+
+  @Test
   void shouldRejectDefaultSlotAndNamedProviderSharingIssuerInAssigned() {
     // given the default slot and a named provider both configured with the same issuer-uri,
     // and a tenant assigning both via the reserved "oidc" id and the named id
@@ -452,6 +686,30 @@ class PhysicalTenantAssignedProvidersValidationTest {
                     "a"));
 
     // when / then — deduplication prevents a false issuer-collision report
+    assertThatCode(() -> PhysicalTenantAssignedProvidersValidation.validate(environment))
+        .doesNotThrowAnyException();
+  }
+
+  @Test
+  void shouldNotReportFalseCollisionForProviderSplitAcrossYamlAndEnvironmentVariable() {
+    // given a provider declared as "azure-ad" whose secret comes from an environment variable:
+    // Spring binds it under both "azure-ad" and "azuread", each carrying the same issuer
+    final MockEnvironment environment =
+        environmentWith(
+            Map.of(
+                "camunda.security.authentication.method", "oidc",
+                "camunda.security.authentication.providers.oidc.azure-ad.client-id", "c",
+                "camunda.security.authentication.providers.oidc.azure-ad.issuer-uri",
+                    "https://idp.example.com"));
+    environment
+        .getPropertySources()
+        .addFirst(
+            new SystemEnvironmentPropertySource(
+                StandardEnvironment.SYSTEM_ENVIRONMENT_PROPERTY_SOURCE_NAME,
+                Map.of(
+                    "CAMUNDA_SECURITY_AUTHENTICATION_PROVIDERS_OIDC_AZUREAD_CLIENTSECRET", "s")));
+
+    // when / then — both keys are the same provider, not two providers sharing an issuer
     assertThatCode(() -> PhysicalTenantAssignedProvidersValidation.validate(environment))
         .doesNotThrowAnyException();
   }

@@ -16,14 +16,18 @@ const Container = styled.main`
 	height: 100%;
 `;
 
-function ProcessesLayout(props: ComponentProps<typeof InstancesList>) {
+type ProcessesMode = 'list' | 'batch-modification' | 'migration';
+type ProcessesNavigationBlocker = {status: 'idle' | 'blocked'; proceed?: () => void; reset?: () => void};
+
+function ProcessesLayout({title, ...props}: ComponentProps<typeof InstancesList> & {title?: string}) {
 	const {t} = useTranslation();
 	return (
 		<Container id="main-content" tabIndex={-1}>
-			<VisuallyHiddenH1>{t('operate.processes.title')}</VisuallyHiddenH1>
+			<VisuallyHiddenH1>{title ?? t('operate.processes.title')}</VisuallyHiddenH1>
 			<InstancesList {...props} />
 		</Container>
 	);
 }
 
 export {ProcessesLayout};
+export type {ProcessesMode, ProcessesNavigationBlocker};

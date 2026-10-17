@@ -20,6 +20,9 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 
 import io.camunda.zeebe.protocol.record.ValueTypeMapping.Mapping;
 import io.camunda.zeebe.protocol.record.intent.Intent;
+import io.camunda.zeebe.protocol.record.intent.SuspensionBatchIntent;
+import io.camunda.zeebe.protocol.record.value.ProcessInstanceRelated;
+import io.camunda.zeebe.protocol.record.value.SuspensionBatchRecordValue;
 import java.util.EnumSet;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
@@ -75,5 +78,18 @@ final class ValueTypeMappingTest {
     // then
     assertThatCode(() -> ValueTypeMapping.get(unmappedType))
         .isInstanceOf(IllegalArgumentException.class);
+  }
+
+  @Test
+  void shouldMapSuspensionBatchRecord() {
+    // when
+    final Mapping<?, ?> mapping = ValueTypeMapping.get(ValueType.SUSPENSION_BATCH);
+
+    // then
+    assertThat(mapping.getValueClass()).isEqualTo(SuspensionBatchRecordValue.class);
+    assertThat(mapping.getIntentClass()).isEqualTo(SuspensionBatchIntent.class);
+    assertThat(ProcessInstanceRelated.class).isAssignableFrom(mapping.getValueClass());
+    assertThat(ValueTypes.isUserCommand(ValueType.SUSPENSION_BATCH)).isFalse();
+    assertThat(ValueType.SUSPENSION_BATCH.value()).isEqualTo((short) 79);
   }
 }

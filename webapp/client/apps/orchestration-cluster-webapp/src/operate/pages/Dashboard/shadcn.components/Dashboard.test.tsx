@@ -8,24 +8,27 @@
 
 import {it} from '#/vitest-modules/test-extend';
 import {renderWithRouter} from '#/vitest-modules/render-with-router';
-import {describe, expect} from 'vitest';
+import {afterEach, beforeEach, describe, expect} from 'vitest';
 import {HttpResponse} from 'msw';
 import {z} from 'zod';
 import {
 	mockGetProcessDefinitionInstanceStatisticsEndpoint,
 	mockGetIncidentProcessInstanceStatisticsByErrorEndpoint,
 	mockCurrentUserEndpoint,
+	mockQueryProcessDefinitionsEndpoint,
 } from '#/shared-test-modules/mock-handlers';
 import {createProcessDefinitionInstanceStatistics} from '#/shared-test-modules/api-mocks/process-definition-statistics';
 import {createIncidentProcessInstanceStatisticsByError} from '#/shared-test-modules/api-mocks/incident-statistics';
 import {createPaginatedResponse} from '#/shared-test-modules/api-mocks/shared';
+import {createQueryProcessDefinitionsResponse} from '#/shared-test-modules/api-mocks/process-definitions';
+import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
 import {Dashboard} from './Dashboard';
 
 const PROCESS_STATS_REQUEST_SCHEMA = z.object({
 	sort: z.array(
 		z.object({
 			field: z.enum(['activeInstancesWithoutIncidentCount', 'activeInstancesWithIncidentCount']),
-			order: z.literal('desc'),
+			order: z.literal('DESC'),
 		}),
 	),
 	page: z.object({from: z.number(), limit: z.number()}).optional(),
@@ -66,6 +69,8 @@ const INCIDENTS_RESPONSE_WITH_ERRORS = HttpResponse.json(
 
 const INCIDENTS_RESPONSE_EMPTY = HttpResponse.json(createPaginatedResponse());
 
+const NO_DRAINING_RESPONSE = HttpResponse.json(createQueryProcessDefinitionsResponse());
+
 const CURRENT_USER_RESPONSE = HttpResponse.json({
 	userId: 'test-user',
 	displayName: 'Test User',
@@ -73,6 +78,14 @@ const CURRENT_USER_RESPONSE = HttpResponse.json({
 });
 
 describe('<Dashboard />', () => {
+	beforeEach(() => {
+		sessionStorage.setItem('clientConfig', JSON.stringify(createSystemConfiguration()));
+	});
+
+	afterEach(() => {
+		sessionStorage.clear();
+	});
+
 	it('should render the sr-only dashboard title', async ({worker}) => {
 		worker.use(
 			mockGetProcessDefinitionInstanceStatisticsEndpoint({
@@ -80,6 +93,12 @@ describe('<Dashboard />', () => {
 				successResponse: STATS_RESPONSE_WITH_INSTANCES,
 				failureResponse: FAILURE_RESPONSE,
 			}),
+			mockGetIncidentProcessInstanceStatisticsByErrorEndpoint({
+				schema: INCIDENTS_REQUEST_SCHEMA,
+				successResponse: INCIDENTS_RESPONSE_WITH_ERRORS,
+				failureResponse: FAILURE_RESPONSE,
+			}),
+			mockQueryProcessDefinitionsEndpoint({successResponse: NO_DRAINING_RESPONSE}),
 		);
 
 		const screen = await renderWithRouter(Dashboard, {path: '/operate-preview'});
@@ -99,6 +118,7 @@ describe('<Dashboard />', () => {
 				successResponse: INCIDENTS_RESPONSE_WITH_ERRORS,
 				failureResponse: FAILURE_RESPONSE,
 			}),
+			mockQueryProcessDefinitionsEndpoint({successResponse: NO_DRAINING_RESPONSE}),
 		);
 
 		const screen = await renderWithRouter(Dashboard, {path: '/operate-preview'});
@@ -118,15 +138,16 @@ describe('<Dashboard />', () => {
 				successResponse: INCIDENTS_RESPONSE_WITH_ERRORS,
 				failureResponse: FAILURE_RESPONSE,
 			}),
+			mockQueryProcessDefinitionsEndpoint({successResponse: NO_DRAINING_RESPONSE}),
 		);
 
 		const screen = await renderWithRouter(Dashboard, {path: '/operate-preview'});
 
-		await expect.element(screen.getByText('Process Instances by Name')).toBeVisible();
-		await expect.element(screen.getByText('Process Incidents by Error Message')).toBeVisible();
+		await expect.element(screen.getByText('Process instances by name')).toBeVisible();
+		await expect.element(screen.getByText('Process incidents by error message')).toBeVisible();
 	});
 
-	it('should render sample rows in both list tiles, pending real data', async ({worker}) => {
+	it('should render real process rows and real incident rows', async ({worker}) => {
 		worker.use(
 			mockGetProcessDefinitionInstanceStatisticsEndpoint({
 				schema: PROCESS_STATS_REQUEST_SCHEMA,
@@ -138,14 +159,13 @@ describe('<Dashboard />', () => {
 				successResponse: INCIDENTS_RESPONSE_WITH_ERRORS,
 				failureResponse: FAILURE_RESPONSE,
 			}),
+			mockQueryProcessDefinitionsEndpoint({successResponse: NO_DRAINING_RESPONSE}),
 		);
 
 		const screen = await renderWithRouter(Dashboard, {path: '/operate-preview'});
 
-		await expect.element(screen.getByText('Order process')).toBeVisible();
-		await expect.element(screen.getByText('Connection timeout')).toBeVisible();
-		expect(screen.getByText('Process One').elements()).toHaveLength(0);
-		expect(screen.getByText('Payment gateway request timed out').elements()).toHaveLength(0);
+		await expect.element(screen.getByText('Process One', {exact: false})).toBeVisible();
+		await expect.element(screen.getByText('Payment gateway request timed out')).toBeVisible();
 	});
 
 	it('should render the no-instances empty state when there are no running instances', async ({worker}) => {
@@ -190,8 +210,8 @@ describe('<Dashboard />', () => {
 
 		const screen = await renderWithRouter(Dashboard, {path: '/operate-preview'});
 
-		await expect.element(screen.getByText('Process Instances by Name')).toBeVisible();
-		await expect.element(screen.getByText('Process Incidents by Error Message')).not.toBeInTheDocument();
+		await expect.element(screen.getByText('Process instances by name')).toBeVisible();
+		await expect.element(screen.getByText('Process incidents by error message')).not.toBeInTheDocument();
 	});
 
 	it('should render the go-to-modeler button when the current user has a modeler link', async ({worker}) => {

@@ -7,32 +7,25 @@
  */
 
 import {render} from 'vitest-browser-react';
-import {afterEach, describe, expect, vi} from 'vitest';
+import {describe, expect} from 'vitest';
 import {userEvent} from 'vitest/browser';
 import {it} from '#/vitest-modules/test-extend';
 import {HelpMenu} from './HelpMenu';
 
 describe('Info bar', () => {
-	afterEach(() => {
-		vi.unstubAllGlobals();
-	});
-
-	it('should render with correct links', async () => {
-		const mockOpenFn = vi.fn();
-		vi.stubGlobal('open', mockOpenFn);
+	it.for([
+		['Documentation', 'https://docs.camunda.io/'],
+		['Camunda Academy', 'https://academy.camunda.com/'],
+		['Community Forum', 'https://forum.camunda.io'],
+	] as const)('should render the %s link', async ([name, href]) => {
 		const screen = await render(<HelpMenu isPaidPlan={false} />);
 
 		await userEvent.click(screen.getByRole('button', {name: 'Info'}));
-		await userEvent.click(screen.getByRole('menuitem', {name: 'Documentation'}));
-		expect(mockOpenFn).toHaveBeenLastCalledWith('https://docs.camunda.io/', '_blank', 'noopener,noreferrer');
 
-		await userEvent.click(screen.getByRole('button', {name: 'Info'}));
-		await userEvent.click(screen.getByRole('menuitem', {name: 'Camunda Academy'}));
-		expect(mockOpenFn).toHaveBeenLastCalledWith('https://academy.camunda.com/', '_blank', 'noopener,noreferrer');
-
-		await userEvent.click(screen.getByRole('button', {name: 'Info'}));
-		await userEvent.click(screen.getByRole('menuitem', {name: 'Community Forum'}));
-		expect(mockOpenFn).toHaveBeenLastCalledWith('https://forum.camunda.io', '_blank', 'noopener,noreferrer');
+		const link = screen.getByRole('menuitem', {name});
+		await expect.element(link).toHaveAttribute('href', href);
+		await expect.element(link).toHaveAttribute('target', '_blank');
+		await expect.element(link).toHaveAttribute('rel', 'noopener noreferrer');
 	});
 
 	it('should not render feedback and support link for free plan', async () => {
@@ -43,18 +36,13 @@ describe('Info bar', () => {
 		expect(screen.getByRole('menuitem', {name: 'Feedback and Support'}).elements()).toHaveLength(0);
 	});
 
-	it.for(['enterprise', 'paid-cc'])('should render correct links for feedback and support - %s', async () => {
-		const mockOpenFn = vi.fn();
-		vi.stubGlobal('open', mockOpenFn);
+	it('should render the feedback and support link for paid plans', async () => {
 		const screen = await render(<HelpMenu isPaidPlan />);
 
 		await userEvent.click(screen.getByRole('button', {name: 'Info'}));
-		await userEvent.click(screen.getByRole('menuitem', {name: 'Feedback and Support'}));
 
-		expect(mockOpenFn).toHaveBeenLastCalledWith(
-			'https://jira.camunda.com/projects/SUPPORT/queues',
-			'_blank',
-			'noopener,noreferrer',
-		);
+		const link = screen.getByRole('menuitem', {name: 'Feedback and Support'});
+		await expect.element(link).toHaveAttribute('href', 'https://jira.camunda.com/projects/SUPPORT/queues');
+		await expect.element(link).toHaveAttribute('target', '_blank');
 	});
 });

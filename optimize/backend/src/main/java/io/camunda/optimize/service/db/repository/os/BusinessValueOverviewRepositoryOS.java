@@ -84,6 +84,21 @@ public class BusinessValueOverviewRepositoryOS implements BusinessValueOverviewR
   }
 
   @Override
+  public void deleteByIds(final List<String> documentIds) {
+    if (documentIds == null || documentIds.isEmpty()) {
+      return;
+    }
+    final String indexAlias =
+        indexNameService.getOptimizeIndexAliasForIndex(BUSINESS_VALUE_OVERVIEW_INDEX_NAME);
+    final List<BulkOperation> operations =
+        documentIds.stream()
+            .map(id -> BulkOperation.of(op -> op.delete(d -> d.index(indexAlias).id(id))))
+            .toList();
+    osClient.doBulkRequest(
+        BulkRequest.Builder::new, operations, BUSINESS_VALUE_OVERVIEW_INDEX_NAME, false);
+  }
+
+  @Override
   public Optional<BusinessValueOverviewDto> getByKey(
       final String tenantId, final String processDefinitionKey, final MetricRange metricRange) {
     final String documentId =
