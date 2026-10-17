@@ -11,6 +11,7 @@ import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.zeebe.msgpack.property.DocumentProperty;
+import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.msgpack.value.StringValue;
@@ -36,6 +37,7 @@ public final class MessageStartEventSubscriptionRecord extends UnifiedRecordValu
   private static final StringValue BUSINESS_ID_KEY = new StringValue("businessId");
   private static final StringValue VARIABLES_KEY = new StringValue("variables");
   private static final StringValue TENANT_ID_KEY = new StringValue("tenantId");
+  private static final StringValue STORAGE_ORDINAL_KEY = new StringValue("storageOrdinal");
 
   private final LongProperty processDefinitionKeyProp =
       new LongProperty(PROCESS_DEFINITION_KEY_KEY, -1L);
@@ -51,9 +53,10 @@ public final class MessageStartEventSubscriptionRecord extends UnifiedRecordValu
   private final DocumentProperty variablesProp = new DocumentProperty(VARIABLES_KEY);
   private final StringProperty tenantIdProp =
       new StringProperty(TENANT_ID_KEY, TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+  private final IntegerProperty storageOrdinalProp = new IntegerProperty(STORAGE_ORDINAL_KEY, 0);
 
   public MessageStartEventSubscriptionRecord() {
-    super(10);
+    super(11);
     declareProperty(processDefinitionKeyProp)
         .declareProperty(messageNameProp)
         .declareProperty(startEventIdProp)
@@ -63,7 +66,8 @@ public final class MessageStartEventSubscriptionRecord extends UnifiedRecordValu
         .declareProperty(correlationKeyProp)
         .declareProperty(businessIdProp)
         .declareProperty(variablesProp)
-        .declareProperty(tenantIdProp);
+        .declareProperty(tenantIdProp)
+        .declareProperty(storageOrdinalProp);
   }
 
   public void wrap(final MessageStartEventSubscriptionRecord record) {
@@ -77,6 +81,7 @@ public final class MessageStartEventSubscriptionRecord extends UnifiedRecordValu
     businessIdProp.setValue(record.getBusinessIdBuffer());
     variablesProp.setValue(record.getVariablesBuffer());
     tenantIdProp.setValue(record.getTenantId());
+    storageOrdinalProp.setValue(record.getStorageOrdinal());
   }
 
   @JsonIgnore
@@ -206,6 +211,16 @@ public final class MessageStartEventSubscriptionRecord extends UnifiedRecordValu
 
   public MessageStartEventSubscriptionRecord setTenantId(final String tenantId) {
     tenantIdProp.setValue(tenantId);
+    return this;
+  }
+
+  @Override
+  public int getStorageOrdinal() {
+    return storageOrdinalProp.getValue();
+  }
+
+  public MessageStartEventSubscriptionRecord setStorageOrdinal(final int storageOrdinal) {
+    storageOrdinalProp.setValue(storageOrdinal);
     return this;
   }
 }

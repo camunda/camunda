@@ -29,8 +29,10 @@ import io.camunda.zeebe.protocol.record.intent.ProcessEventIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
+import io.camunda.zeebe.protocol.record.value.StorageOrdinalRelated;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import io.camunda.zeebe.util.collection.Tuple;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.slf4j.Logger;
@@ -206,7 +208,17 @@ public final class EventHandle {
     }
   }
 
-  public long triggerMessageStartEvent(
+  /**
+   * Triggers a message start event: writes the CORRELATED event and activates a new root process
+   * instance for it. The storage ordinal is resolved here, next to the new instance key, and
+   * returned with it so the caller can stamp its own follow-up records (the CORRELATED response)
+   * with the same value.
+   *
+   * @return the key of the new process instance and its storage ordinal, or {@code -1} with {@link
+   *     StorageOrdinalRelated#NOT_ORDINAL_CONTROLLED} when no instance can be created for the start
+   *     event (definition draining or already removed)
+   */
+  public Tuple<Long, Integer> triggerMessageStartEvent(
       final long subscriptionKey,
       final MessageStartEventSubscriptionRecord subscription,
       final long messageKey,
@@ -219,10 +231,11 @@ public final class EventHandle {
     // no instance will be created (definition draining or already removed).
     if (!canCreateInstanceForStartEvent(
         subscription.getProcessDefinitionKey(), subscription.getTenantId())) {
-      return -1L;
+      return Tuple.of(-1L, StorageOrdinalRelated.NOT_ORDINAL_CONTROLLED);
     }
 
     final var newProcessInstanceKey = keyGenerator.nextKey();
+    final int storageOrdinal = storageOrdinalProvider.getStorageOrdinal();
     startEventSubscriptionRecord
         .setProcessDefinitionKey(subscription.getProcessDefinitionKey())
         .setBpmnProcessId(subscription.getBpmnProcessIdBuffer())
@@ -233,7 +246,8 @@ public final class EventHandle {
         .setMessageName(messageName)
         .setBusinessId(businessId)
         .setVariables(variables)
-        .setTenantId(subscription.getTenantId());
+        .setTenantId(subscription.getTenantId())
+        .setStorageOrdinal(storageOrdinal);
 
     stateWriter.appendFollowUpEvent(
         subscriptionKey,
@@ -246,9 +260,10 @@ public final class EventHandle {
         startEventSubscriptionRecord.getStartEventIdBuffer(),
         variables,
         subscription.getTenantId(),
-        businessId);
+        businessId,
+        storageOrdinal);
 
-    return newProcessInstanceKey;
+    return Tuple.of(newProcessInstanceKey, storageOrdinal);
   }
 
   public boolean activateProcessInstanceForStartEvent(
@@ -268,13 +283,38 @@ public final class EventHandle {
       final DirectBuffer variablesBuffer,
       final String tenantId,
       final DirectBuffer businessId) {
+    return activateProcessInstanceForStartEvent(
+        processDefinitionKey,
+        processInstanceKey,
+        targetElementId,
+        variablesBuffer,
+        tenantId,
+        businessId,
+        storageOrdinalProvider.getStorageOrdinal());
+  }
+
+  /**
+   * Activates a new root process instance for a start event with an already resolved storage
+   * ordinal.
+   *
+   * @param storageOrdinal the ordinal assigned to the new root instance; resolved once by the
+   *     caller from the {@link StorageOrdinalProvider} so that the caller can stamp its own
+   *     follow-up records (e.g. CORRELATED events and replies) with the same value
+   */
+  public boolean activateProcessInstanceForStartEvent(
+      final long processDefinitionKey,
+      final long processInstanceKey,
+      final DirectBuffer targetElementId,
+      final DirectBuffer variablesBuffer,
+      final String tenantId,
+      final DirectBuffer businessId,
+      final int storageOrdinal) {
 
     if (!canCreateInstanceForStartEvent(processDefinitionKey, tenantId)) {
       return false;
     }
 
     final var process = processState.getProcessByKeyAndTenant(processDefinitionKey, tenantId);
-    final int storageOrdinal = storageOrdinalProvider.getStorageOrdinal();
 
     triggeringProcessEvent(
         processDefinitionKey,

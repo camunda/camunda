@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.state.message;
 
 import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.msgpack.UnpackedObject;
+import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 
 /**
@@ -22,10 +23,22 @@ public final class MessageStartProcessInstanceDedupEntry extends UnpackedObject 
 
   private final LongProperty processInstanceKeyProp = new LongProperty("processInstanceKey", -1L);
   private final LongProperty deletionDeadlineProp = new LongProperty("deletionDeadline", -1L);
+  private final IntegerProperty storageOrdinalProp = new IntegerProperty("storageOrdinal", 0);
 
   public MessageStartProcessInstanceDedupEntry() {
-    super(2);
-    declareProperty(processInstanceKeyProp).declareProperty(deletionDeadlineProp);
+    super(3);
+    declareProperty(processInstanceKeyProp)
+        .declareProperty(deletionDeadlineProp)
+        .declareProperty(storageOrdinalProp);
+  }
+
+  public int getStorageOrdinal() {
+    return storageOrdinalProp.getValue();
+  }
+
+  public MessageStartProcessInstanceDedupEntry setStorageOrdinal(final int storageOrdinal) {
+    storageOrdinalProp.setValue(storageOrdinal);
+    return this;
   }
 
   public long getProcessInstanceKey() {

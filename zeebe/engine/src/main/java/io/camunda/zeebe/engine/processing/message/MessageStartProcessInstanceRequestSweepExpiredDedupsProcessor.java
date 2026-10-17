@@ -15,6 +15,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWr
 import io.camunda.zeebe.engine.state.immutable.MessageStartProcessInstanceDedupState;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageStartProcessInstanceRequestRecord;
 import io.camunda.zeebe.protocol.record.intent.MessageStartProcessInstanceRequestIntent;
+import io.camunda.zeebe.protocol.record.value.StorageOrdinalRelated;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import java.time.InstantSource;
 import org.agrona.collections.MutableLong;
@@ -80,7 +81,10 @@ public final class MessageStartProcessInstanceRequestSweepExpiredDedupsProcessor
                 return false;
               }
               entry.reset();
-              entry.setProcessDefinitionKey(processDefinitionKey).setMessageKey(messageKey);
+              entry
+                  .setProcessDefinitionKey(processDefinitionKey)
+                  .setMessageKey(messageKey)
+                  .setStorageOrdinal(StorageOrdinalRelated.NOT_ORDINAL_CONTROLLED);
               stateWriter.appendFollowUpEvent(
                   record.getKey(),
                   MessageStartProcessInstanceRequestIntent.EXPIRED_DEDUP_DELETED,
@@ -108,7 +112,8 @@ public final class MessageStartProcessInstanceRequestSweepExpiredDedupsProcessor
       commandWriter.appendFollowUpCommand(
           record.getKey(),
           MessageStartProcessInstanceRequestIntent.SWEEP_EXPIRED_DEDUPS,
-          new MessageStartProcessInstanceRequestRecord());
+          new MessageStartProcessInstanceRequestRecord()
+              .setStorageOrdinal(StorageOrdinalRelated.NOT_ORDINAL_CONTROLLED));
     }
   }
 }
