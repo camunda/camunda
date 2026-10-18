@@ -14,13 +14,14 @@ import {
   type ContentItem,
   type Evidence,
 } from './evidence';
+import {formatInline} from '../StructuredValue/format';
 import {Card, CardTitle, Fields, Label, Value, CodeValue} from './styled';
 
 const text = (value: unknown): string | null => {
   if (value === undefined || value === null || value === '') {
     return null;
   }
-  return typeof value === 'string' ? value : JSON.stringify(value);
+  return typeof value === 'string' ? value : formatInline(value);
 };
 
 type Row = [label: string, value: unknown, code?: boolean];
@@ -51,6 +52,42 @@ const citation = (value: unknown) => {
   }
   return [value.title, value.url].filter(Boolean).join(' — ');
 };
+
+const documentNames = (value: unknown) =>
+  Array.isArray(value) && value.length > 0
+    ? value
+        .map((doc) =>
+          isRecord(doc)
+            ? [doc.fileName, doc.documentId ? `(${doc.documentId})` : null]
+                .filter(Boolean)
+                .join(' ')
+            : text(doc),
+        )
+        .join(', ')
+    : null;
+
+const PdfParsingCard: React.FC<{parsing: Record<string, unknown>}> = ({
+  parsing,
+}) => (
+  <Card data-testid="evidence-document-parsing">
+    <CardTitle>
+      PDF parsing
+      <Tag size="sm" type={parsing.plugin ? 'purple' : 'gray'}>
+        {parsing.plugin
+          ? `${text(parsing.plugin)} plugin, provider-run`
+          : 'provider default'}
+      </Tag>
+    </CardTitle>
+    <Rows
+      rows={[
+        ['Engine', parsing.pdfEngine],
+        ['Sent as', parsing.sentAs],
+        ['Configured via', parsing.configuredVia, true],
+        ['Documents', documentNames(parsing.documents)],
+      ]}
+    />
+  </Card>
+);
 
 type EvidenceCardProps = {
   evidence: Evidence;
@@ -118,6 +155,9 @@ const EvidenceCard: React.FC<EvidenceCardProps> = ({
             <CardTitle>Provider-run server tools</CardTitle>
             <Rows rows={[['Configured', list(serverTools.configured)]]} />
           </Card>
+          {isRecord(evidence.documentParsing) && (
+            <PdfParsingCard parsing={evidence.documentParsing} />
+          )}
         </>
       );
     }
@@ -194,6 +234,8 @@ const EvidenceCard: React.FC<EvidenceCardProps> = ({
           />
         </Card>
       );
+    case 'documentParsing':
+      return <PdfParsingCard parsing={evidence} />;
     case 'document':
       return (
         <Card data-testid="evidence-document">

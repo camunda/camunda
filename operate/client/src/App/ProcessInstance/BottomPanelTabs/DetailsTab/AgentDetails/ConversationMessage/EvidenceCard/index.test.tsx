@@ -11,6 +11,41 @@ import {EvidenceCards} from './index';
 import {isEvidenceOnly} from './evidence';
 
 describe('<EvidenceCards />', () => {
+  it('should render which engine parsed the attached PDF', () => {
+    render(
+      <EvidenceCards
+        content={[
+          {
+            contentType: 'OBJECT',
+            object: {
+              evidence: {
+                kind: 'documentParsing',
+                sentAs: 'input_file content part',
+                plugin: 'file-parser',
+                pdfEngine: 'native',
+                configuredVia: 'bodyProperties.plugins',
+                documents: [
+                  {
+                    fileName: 'statement-2026-09.pdf',
+                    documentId: 'doc-1',
+                    contentType: 'application/pdf',
+                  },
+                ],
+              },
+            },
+          },
+        ]}
+      />,
+    );
+
+    const card = within(screen.getByTestId('evidence-document-parsing'));
+    expect(
+      card.getByText('file-parser plugin, provider-run'),
+    ).toBeInTheDocument();
+    expect(card.getByText('native')).toBeInTheDocument();
+    expect(card.getByText('statement-2026-09.pdf (doc-1)')).toBeInTheDocument();
+  });
+
   it('should render linked prompt, credential and server tool configuration', () => {
     render(
       <EvidenceCards
