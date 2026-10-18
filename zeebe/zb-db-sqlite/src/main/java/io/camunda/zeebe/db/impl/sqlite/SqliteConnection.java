@@ -36,11 +36,31 @@ final class SqliteConnection implements AutoCloseable {
   private static final Logger LOG = LoggerFactory.getLogger(SqliteConnection.class);
 
   private final Connection connection;
+  private final boolean readOnly;
+  private int snapshotDepth;
   private final Map<String, PreparedStatement> statements = new HashMap<>();
   private final Map<String, Deque<PreparedStatement>> idleCursorStatements = new HashMap<>();
 
-  private SqliteConnection(final Connection connection) {
+  private SqliteConnection(final Connection connection, final boolean readOnly) {
     this.connection = connection;
+    this.readOnly = readOnly;
+  }
+
+  /**
+   * Makes everything read until the matching {@link #endSnapshot()} see the same committed state,
+   * which a reader does not do by itself because it reads outside of a transaction. A writer always
+   * reads inside its transaction, so this does nothing for it. Calls nest.
+   */
+  void beginSnapshot() throws SQLException {
+    if (readOnly && snapshotDepth++ == 0) {
+      execute("BEGIN");
+    }
+  }
+
+  void endSnapshot() throws SQLException {
+    if (readOnly && --snapshotDepth == 0) {
+      execute("COMMIT");
+    }
   }
 
   /**
@@ -58,7 +78,7 @@ final class SqliteConnection implements AutoCloseable {
       connection.close();
       throw e;
     }
-    return new SqliteConnection(connection);
+    return new SqliteConnection(connection, false);
   }
 
   /** Opens a connection that sees committed state only and cannot write. */
@@ -72,7 +92,7 @@ final class SqliteConnection implements AutoCloseable {
       connection.close();
       throw e;
     }
-    return new SqliteConnection(connection);
+    return new SqliteConnection(connection, true);
   }
 
   private static String url(final Path file) {
