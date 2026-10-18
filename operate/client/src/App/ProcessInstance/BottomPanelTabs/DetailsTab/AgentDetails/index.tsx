@@ -46,6 +46,19 @@ import {ConversationHistory} from './ConversationHistory';
 import {LatestAgentMessage} from './ConversationHistory/LatestAgentMessage';
 import {AvailableTools} from './AvailableTools';
 import {useSystemPromptEvidence} from './useSystemPromptEvidence';
+import {useProcessInstanceXml} from 'modules/queries/processDefinitions/useProcessInstanceXml';
+
+const CREDENTIAL_INPUT =
+  /<zeebe:input\s+source="([^"]*)"\s+target="provider\.[^"]*Credential"/;
+
+// The credential binding expression is resolved by the engine before the
+// connector runs, so it is read from the deployed model instead.
+const getCredentialBinding = (xml: string | undefined) => {
+  const match = xml?.match(CREDENTIAL_INPUT);
+  return match
+    ? match[1]!.replaceAll('&#34;', '"').replaceAll('&quot;', '"')
+    : null;
+};
 
 const STATUS_LABELS: Record<AgentInstanceStatus, string> = {
   UNKNOWN: 'Unknown',
@@ -110,6 +123,14 @@ const AgentDetails: React.FC<AgentDetailsProps> = ({
       processInstanceKey: agentInstance?.processInstanceKey ?? '',
       enabled: agentInstance !== null,
     });
+
+  const {data: processXml} = useProcessInstanceXml({
+    processDefinitionKey: agentInstance?.processDefinitionKey,
+  });
+  const credentialBinding = useMemo(
+    () => getCredentialBinding(processXml?.xml),
+    [processXml?.xml],
+  );
 
   const selectableAgentInstances = useMemo(
     () =>
@@ -239,6 +260,7 @@ const AgentDetails: React.FC<AgentDetailsProps> = ({
             isVisible={isConversationHistoryOpen}
             selectedElementInstanceKey={selectedElementInstanceKey}
             agentsElementInstanceKeys={agentInstance.elementInstanceKeys}
+            credentialBinding={credentialBinding}
           />
         </AccordionItem>
         <AccordionItem

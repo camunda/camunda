@@ -28,6 +28,8 @@ import {MessageDetailsModal} from './MessageDetailsModal';
 import {MessageMetrics} from './MessageMetrics';
 import {DocumentContent} from './MessageAttachments/DocumentContent';
 import {ToolCalls} from './MessageAttachments/ToolCalls';
+import {EvidenceCards} from './EvidenceCard';
+import {isEvidenceOnly} from './EvidenceCard/evidence';
 
 type Actor =
   Exclude<AgentInstanceHistoryRole, 'TOOL_RESULT' | 'CONFIGURATION'> | 'SYSTEM';
@@ -53,6 +55,8 @@ type ConversationMessageProps = {
   historyItemKey?: string;
   metrics?: Metrics;
   toolCalls?: ToolCall[];
+  label?: string;
+  credentialBinding?: string | null;
 };
 
 const ConversationMessage: React.FC<ConversationMessageProps> = ({
@@ -61,6 +65,8 @@ const ConversationMessage: React.FC<ConversationMessageProps> = ({
   historyItemKey,
   metrics = null,
   toolCalls = [],
+  label,
+  credentialBinding,
 }) => {
   const [messageDetails, dispatch] = useReducer(
     messageDetailsReducer,
@@ -74,7 +80,7 @@ const ConversationMessage: React.FC<ConversationMessageProps> = ({
       aria-label={readableTitleByActor[actor]}
     >
       <MessageHeader>
-        <ActorLabel>{labelByActor[actor]}</ActorLabel>
+        <ActorLabel>{label ?? labelByActor[actor]}</ActorLabel>
         <MessageMetrics metrics={metrics} />
       </MessageHeader>
       {content.map((entry, index) => {
@@ -83,6 +89,9 @@ const ConversationMessage: React.FC<ConversationMessageProps> = ({
             return null;
           }
           case 'OBJECT': {
+            if (isEvidenceOnly(entry)) {
+              return null;
+            }
             const value = JSON.stringify(entry.object, null, 2);
             return (
               <MessageContent
@@ -117,6 +126,7 @@ const ConversationMessage: React.FC<ConversationMessageProps> = ({
         content={content}
         modalTitleSuffix="conversation message"
       />
+      <EvidenceCards content={content} credentialBinding={credentialBinding} />
       <ToolCalls toolCalls={toolCalls} />
       {messageDetails.state === 'visible' && (
         <MessageDetailsModal
