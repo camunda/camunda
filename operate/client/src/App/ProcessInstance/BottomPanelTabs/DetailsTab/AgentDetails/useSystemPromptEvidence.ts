@@ -16,7 +16,7 @@ const systemPromptEvidenceSchema = z.object({
   systemPrompt: z.object({
     type: z.literal('linked'),
     promptId: z.string().min(1),
-    binding: z.literal('latest'),
+    binding: z.enum(['latest', 'deployment', 'versionTag']),
     version: z.number().int().positive(),
     prompt: z.string().min(1),
   }),
@@ -34,7 +34,9 @@ const parseSystemPromptEvidence = (value: string) => {
   return {
     ...evidence,
     type: 'Linked',
-    binding: 'Latest',
+    binding: {latest: 'Latest', deployment: 'Deployment', versionTag: 'Version tag'}[
+      binding
+    ],
   };
 };
 
