@@ -6,8 +6,8 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Fragment} from 'react';
-import {Tag} from '@carbon/react';
+import {Fragment, isValidElement} from 'react';
+import {Link, Tag} from '@carbon/react';
 import {
   getContentEvidence,
   isRecord,
@@ -29,11 +29,13 @@ type Row = [label: string, value: unknown, code?: boolean];
 const Rows: React.FC<{rows: Row[]}> = ({rows}) => (
   <Fields>
     {rows
-      .filter(([, value]) => text(value) !== null)
+      .filter(([, value]) => isValidElement(value) || text(value) !== null)
       .map(([label, value, code]) => (
         <Fragment key={label}>
           <Label>{label}</Label>
-          {code ? (
+          {isValidElement(value) ? (
+            <Value>{value}</Value>
+          ) : code ? (
             <CodeValue>{text(value)}</CodeValue>
           ) : (
             <Value>{text(value)}</Value>
@@ -42,6 +44,19 @@ const Rows: React.FC<{rows: Row[]}> = ({rows}) => (
       ))}
   </Fields>
 );
+
+const remoteProcessInstance = (evidence: Record<string, unknown>) => {
+  const key = text(evidence.remoteProcessInstanceKey);
+  const url = text(evidence.remoteOperateUrl);
+  if (url !== null && /^https?:\/\//.test(url)) {
+    return (
+      <Link href={url} target="_blank" rel="noopener noreferrer">
+        {key ?? url}
+      </Link>
+    );
+  }
+  return key ?? 'not a Camunda agent / not reported';
+};
 
 const list = (value: unknown) =>
   Array.isArray(value) && value.length > 0 ? value.join(', ') : 'none';
@@ -230,6 +245,7 @@ const EvidenceCard: React.FC<EvidenceCardProps> = ({
               ['Task ID', evidence.taskId, true],
               ['Task state', evidence.state],
               ['Polls', evidence.polls],
+              ['Remote process instance', remoteProcessInstance(evidence)],
             ]}
           />
         </Card>

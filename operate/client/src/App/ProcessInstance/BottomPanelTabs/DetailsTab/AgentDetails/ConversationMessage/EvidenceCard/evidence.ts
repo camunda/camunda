@@ -28,7 +28,17 @@ const getEvidence = (object: unknown): Evidence[] => {
   if (isRecord(evidence) && typeof evidence.kind === 'string') {
     result.push(
       evidence.kind === 'a2a'
-        ? {...evidence, taskId: object.taskId, state: object.state, kind: 'a2a'}
+        ? {
+            ...evidence,
+            taskId: object.taskId,
+            state: object.state,
+            remoteProcessInstanceKey:
+              evidence.remoteProcessInstanceKey ??
+              object.remoteProcessInstanceKey,
+            remoteOperateUrl:
+              evidence.remoteOperateUrl ?? object.remoteOperateUrl,
+            kind: 'a2a',
+          }
         : (evidence as Evidence),
     );
   }

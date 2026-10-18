@@ -149,6 +149,55 @@ describe('<EvidenceCards />', () => {
     expect(a2a.getByText('bearer (token never recorded)')).toBeInTheDocument();
   });
 
+  it('should link to the remote Camunda process instance', () => {
+    render(
+      <EvidenceCards
+        content={[
+          {
+            contentType: 'OBJECT',
+            object: {
+              taskId: 'task-1',
+              state: 'TASK_STATE_COMPLETED',
+              remoteProcessInstanceKey: '2251799813720201',
+              remoteOperateUrl:
+                'http://localhost:38080/operate/processes/2251799813720201',
+              evidence: {kind: 'a2a', authScheme: 'bearer'},
+            },
+          },
+        ]}
+      />,
+    );
+
+    const link = within(screen.getByTestId('evidence-a2a')).getByRole('link', {
+      name: '2251799813720201',
+    });
+    expect(link).toHaveAttribute(
+      'href',
+      'http://localhost:38080/operate/processes/2251799813720201',
+    );
+    expect(link).toHaveAttribute('target', '_blank');
+    expect(link).toHaveAttribute('rel', 'noopener noreferrer');
+  });
+
+  it('should state when the remote agent reports no process instance', () => {
+    render(
+      <EvidenceCards
+        content={[
+          {
+            contentType: 'OBJECT',
+            object: {taskId: 'task-1', evidence: {kind: 'a2a'}},
+          },
+        ]}
+      />,
+    );
+
+    expect(
+      within(screen.getByTestId('evidence-a2a')).getByText(
+        'not a Camunda agent / not reported',
+      ),
+    ).toBeInTheDocument();
+  });
+
   it('should only treat evidence wrappers as evidence-only content', () => {
     expect(
       isEvidenceOnly({contentType: 'OBJECT', object: {evidence: {kind: 'x'}}}),
