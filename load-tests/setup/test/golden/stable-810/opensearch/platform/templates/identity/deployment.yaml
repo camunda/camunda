@@ -49,7 +49,7 @@ spec:
         - name: harbor-registry
       containers:
         - name: identity
-          image: camunda/identity:8.10.0
+          image: camunda/identity:8.10.1
           imagePullPolicy: Always
           securityContext:
             allowPrivilegeEscalation: false
