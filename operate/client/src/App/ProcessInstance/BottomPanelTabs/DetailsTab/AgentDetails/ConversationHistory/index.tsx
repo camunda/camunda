@@ -107,6 +107,26 @@ const ConversationHistory: React.FC<ConversationHistoryProps> = ({
           .find((item) => item.role === 'USER')?.historyItemKey
       : undefined;
 
+  // The connector records the configuration on creation and on each turn
+  // start; only show it when it changed.
+  const visibleConfigurationKeys = new Set<string>();
+  if (status === 'success') {
+    let previous: string | null = null;
+    for (const item of Array.from(data.entries())
+      .sort(([a], [b]) => a - b)
+      .flatMap(([, items]) => items)
+      .filter((item) => item.role === 'CONFIGURATION')
+      .sort((a, b) =>
+        BigInt(a.historyItemKey) < BigInt(b.historyItemKey) ? -1 : 1,
+      )) {
+      const current = JSON.stringify(item.content);
+      if (current !== previous && getContentEvidence(item.content).length > 0) {
+        visibleConfigurationKeys.add(item.historyItemKey);
+      }
+      previous = current;
+    }
+  }
+
   if (status === 'pending') {
     return (
       <div data-testid="conversation-history-skeleton">
@@ -149,7 +169,7 @@ const ConversationHistory: React.FC<ConversationHistoryProps> = ({
                 {sortOrder === 'asc' && loopIterationNode}
                 {items.map((item) =>
                   item.role === 'CONFIGURATION' ? (
-                    getContentEvidence(item.content).length > 0 ? (
+                    visibleConfigurationKeys.has(item.historyItemKey) ? (
                       <ConversationMessage
                         key={item.historyItemKey}
                         historyItemKey={item.historyItemKey}
