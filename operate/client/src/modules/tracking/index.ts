@@ -347,7 +347,7 @@ type Events =
    */
   | {
       eventName: 'document-previewed' | 'document-downloaded';
-      documentType: 'image' | 'pdf' | 'json' | 'unknown';
+      documentType: 'image' | 'pdf' | 'json' | 'text' | 'unknown';
       contentType: string | null;
       size: number | null;
     };

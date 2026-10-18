@@ -39,11 +39,15 @@ const Column = styled.section`
   }
 `;
 
-const EditorContainer = styled.div`
-  block-size: 40vh;
+const ResultContainer = styled.div`
+  max-block-size: 40vh;
+  overflow: auto;
+  font-size: var(--cds-body-compact-01-font-size);
+  line-height: var(--cds-body-compact-01-line-height);
+  color: var(--cds-text-primary);
 
   @container (max-inline-size: calc(2 * ${EDITOR_BASIS} + ${COLUMN_GAP})) {
-    block-size: 25vh;
+    max-block-size: 25vh;
   }
 `;
 
@@ -63,4 +67,4 @@ const EmptyHint = styled.span`
   color: var(--cds-text-secondary);
 `;
 
-export {Description, Columns, Column, ColumnLabel, EditorContainer, EmptyHint};
+export {Description, Columns, Column, ColumnLabel, ResultContainer, EmptyHint};

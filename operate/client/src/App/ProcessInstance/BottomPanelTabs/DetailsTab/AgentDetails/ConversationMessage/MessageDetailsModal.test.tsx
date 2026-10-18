@@ -64,12 +64,13 @@ describe('<MessageDetailsModal />', () => {
     expect(await screen.findByRole('textbox')).toHaveValue('Hello **world**');
   });
 
-  it('should render source only without tabs for json content', () => {
+  it('should render structured content as labeled fields without tabs', () => {
     render(
       <MessageDetailsModal
         title="Object details"
-        language="json"
+        language="structured"
         content='{"foo": "bar"}'
+        value={{foo: 'bar'}}
         onClose={vi.fn()}
       />,
     );
@@ -78,7 +79,9 @@ describe('<MessageDetailsModal />', () => {
       screen.queryByRole('tab', {name: 'Preview'}),
     ).not.toBeInTheDocument();
     expect(screen.queryByRole('tab', {name: 'Source'})).not.toBeInTheDocument();
-    expect(screen.getByTestId('monaco-editor')).toHaveValue('{"foo": "bar"}');
+    expect(screen.queryByTestId('monaco-editor')).not.toBeInTheDocument();
+    expect(screen.getByText('Foo')).toBeInTheDocument();
+    expect(screen.getByText('bar')).toBeInTheDocument();
   });
 
   it('should call onClose when the close button is clicked', async () => {

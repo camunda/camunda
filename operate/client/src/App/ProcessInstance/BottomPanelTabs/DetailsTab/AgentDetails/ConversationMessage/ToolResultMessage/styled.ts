@@ -51,11 +51,10 @@ const ToolLabel = styled(ActorLabel)`
 
 const ResultPreview = styled.p`
   grid-area: content;
-  font-family: var(--cds-code-01-font-family);
-  font-size: var(--cds-code-01-font-size);
-  font-weight: var(--cds-code-01-font-weight);
-  line-height: var(--cds-code-01-line-height);
-  letter-spacing: var(--cds-code-01-letter-spacing);
+  font-size: var(--cds-body-compact-01-font-size);
+  font-weight: var(--cds-body-compact-01-font-weight);
+  line-height: var(--cds-body-compact-01-line-height);
+  letter-spacing: var(--cds-body-compact-01-letter-spacing);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;

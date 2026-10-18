@@ -136,10 +136,38 @@ describe('toDocumentInfo', () => {
     expect(result.type).toBe('pdf');
   });
 
+  it('should map text/plain and text/csv to the text document type', () => {
+    for (const contentType of ['text/plain', 'text/csv; charset=utf-8']) {
+      const result = toDocumentInfo(
+        makeDocRef({
+          metadata: {...makeDocRef().metadata, contentType},
+        }),
+      );
+      expect(result.type).toBe('text');
+    }
+  });
+
+  it('should fall back to the file extension for generic content types', () => {
+    const result = toDocumentInfo(
+      makeDocRef({
+        metadata: {
+          ...makeDocRef().metadata,
+          contentType: 'application/octet-stream',
+          fileName: 'transactions.CSV',
+        },
+      }),
+    );
+    expect(result.type).toBe('text');
+  });
+
   it('should map an unrecognized contentType to the unknown document type', () => {
     const result = toDocumentInfo(
       makeDocRef({
-        metadata: {...makeDocRef().metadata, contentType: 'text/plain'},
+        metadata: {
+          ...makeDocRef().metadata,
+          contentType: 'application/zip',
+          fileName: 'archive.zip',
+        },
       }),
     );
 

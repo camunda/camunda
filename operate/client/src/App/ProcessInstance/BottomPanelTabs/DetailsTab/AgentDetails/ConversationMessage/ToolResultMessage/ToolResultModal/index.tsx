@@ -6,7 +6,6 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {lazy, Suspense} from 'react';
 import {Modal} from '@carbon/react';
 import {CopyButton} from 'modules/components/CopyButton';
 import {
@@ -14,27 +13,18 @@ import {
   getToolCallResult,
   type ContentItem,
 } from '../getRenderableResult';
+import {StructuredText} from '../../StructuredValue/StructuredText';
+import {StructuredValue} from '../../StructuredValue';
+import {EvidenceCards} from '../../EvidenceCard';
+import {getContentEvidence} from '../../EvidenceCard/evidence';
 import {
   Description,
   Columns,
   Column,
   ColumnLabel,
-  EditorContainer,
+  ResultContainer,
   EmptyHint,
 } from './styled';
-
-const RichTextEditor = lazy(async () => {
-  const [{loadMonaco}, {RichTextEditor}] = await Promise.all([
-    import('modules/loadMonaco'),
-    import('modules/components/RichTextEditor'),
-  ]);
-
-  loadMonaco();
-
-  return {default: RichTextEditor};
-});
-
-const PREVIEW_OPTIONS = {overviewRulerLanes: 0};
 
 type ToolResultModalProps = {
   toolName: string;
@@ -51,8 +41,9 @@ const ToolResultModal: React.FC<ToolResultModalProps> = ({
   content,
   onClose,
 }) => {
-  const inputValue = input !== null ? JSON.stringify(input, null, 2) : null;
+  const hasInput = input !== null && Object.keys(input).length > 0;
   const result = getToolCallResult(content);
+  const hasEvidence = getContentEvidence(content).length > 0;
 
   return (
     <Modal
@@ -66,21 +57,17 @@ const ToolResultModal: React.FC<ToolResultModalProps> = ({
       <Columns>
         <Column aria-label="Input" data-testid="tool-call-input">
           <ColumnLabel>Input</ColumnLabel>
-          {inputValue !== null && (
-            <CopyButton value={inputValue} hasIconOnly tooltipAlignment="end" />
+          {hasInput && (
+            <CopyButton
+              value={JSON.stringify(input, null, 2)}
+              hasIconOnly
+              tooltipAlignment="end"
+            />
           )}
-          {inputValue !== null ? (
-            <EditorContainer>
-              <Suspense>
-                <RichTextEditor
-                  value={inputValue}
-                  readOnly
-                  language="json"
-                  height="100%"
-                  options={PREVIEW_OPTIONS}
-                />
-              </Suspense>
-            </EditorContainer>
+          {hasInput ? (
+            <ResultContainer>
+              <StructuredValue value={input} />
+            </ResultContainer>
           ) : (
             <EmptyHint>Tool called without input arguments.</EmptyHint>
           )}
@@ -89,25 +76,27 @@ const ToolResultModal: React.FC<ToolResultModalProps> = ({
           <ColumnLabel>Output</ColumnLabel>
           {result !== null && (
             <CopyButton
-              value={result.value}
+              value={result.copyValue}
               hasIconOnly
               tooltipAlignment="end"
             />
           )}
-          {result !== null ? (
-            <EditorContainer>
-              <Suspense>
-                <RichTextEditor
-                  value={result.value}
-                  readOnly
-                  language={result.language}
-                  height="100%"
-                  options={PREVIEW_OPTIONS}
-                />
-              </Suspense>
-            </EditorContainer>
-          ) : (
+          {result === null && hasEvidence && (
+            <ResultContainer>
+              <EvidenceCards content={content} />
+            </ResultContainer>
+          )}
+          {result === null && !hasEvidence && (
             <EmptyHint>{EMPTY_RESULT_MESSAGE}</EmptyHint>
+          )}
+          {result !== null && (
+            <ResultContainer>
+              {result.kind === 'structured' ? (
+                <StructuredValue value={result.value} />
+              ) : (
+                <StructuredText content={result.value} />
+              )}
+            </ResultContainer>
           )}
         </Column>
       </Columns>

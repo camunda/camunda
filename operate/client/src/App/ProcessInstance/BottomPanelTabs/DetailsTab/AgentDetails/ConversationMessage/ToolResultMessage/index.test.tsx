@@ -41,7 +41,7 @@ describe('<ToolResultMessage />', () => {
     expect(message.getByText('Tool output here')).toBeInTheDocument();
   });
 
-  it('should render a compact JSON preview for object content', () => {
+  it('should render a readable one-line summary for object content', () => {
     render(
       <ToolResultMessage
         availableTools={[]}
@@ -58,7 +58,7 @@ describe('<ToolResultMessage />', () => {
     );
 
     expect(
-      screen.getByText('{"message":"Tool output here","hello":"world"}'),
+      screen.getByText('Message: Tool output here · Hello: world'),
     ).toBeInTheDocument();
   });
 

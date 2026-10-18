@@ -73,21 +73,6 @@ const TextContent = styled.div`
   color: var(--cds-text-primary);
 `;
 
-const ObjectContent = styled.pre`
-  flex: 1;
-  overflow: auto;
-  border-radius: 4px;
-  padding: var(--cds-spacing-03);
-  background-color: var(--cds-layer-03);
-  font-family: var(--cds-code-01-font-family);
-  font-size: var(--cds-code-01-font-size);
-  font-weight: var(--cds-code-01-font-weight);
-  line-height: var(--cds-code-01-line-height);
-  letter-spacing: var(--cds-code-01-letter-spacing);
-  white-space: pre-wrap;
-  word-break: break-word;
-`;
-
 const ModalContent = styled(TextContent)`
   min-height: 60vh;
   max-height: 70vh;
@@ -110,7 +95,6 @@ export {
   MessageBlock,
   ActorLabel,
   TextContent,
-  ObjectContent,
   MessageActions,
   ModalContent,
   ModalToolbar,
