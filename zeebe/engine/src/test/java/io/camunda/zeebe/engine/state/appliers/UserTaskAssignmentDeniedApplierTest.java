@@ -87,7 +87,7 @@ public class UserTaskAssignmentDeniedApplierTest {
   @Test
   public void shouldCleanUpInitialAssigneeIfAssignmentDeniedByTaskListener() {
     // given
-    final long userTaskKey = new Random().nextLong();
+    final long userTaskKey = new Random().nextLong(Long.MAX_VALUE);
     final var initialAssignee = "initial";
 
     final var given = new UserTaskRecord().setAssignee(initialAssignee).setUserTaskKey(userTaskKey);

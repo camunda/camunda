@@ -56,8 +56,8 @@ public class UserTaskCancelingV2ApplierTest {
   @Test
   void shouldStoreCancelingStatesWhenNoOngoingTransition() {
     // given
-    final long userTaskKey = new Random().nextLong();
-    final long elementInstanceKey = new Random().nextLong();
+    final long userTaskKey = new Random().nextLong(Long.MAX_VALUE);
+    final long elementInstanceKey = new Random().nextLong(Long.MAX_VALUE);
 
     final var userTaskRecord =
         new UserTaskRecord().setUserTaskKey(userTaskKey).setElementInstanceKey(elementInstanceKey);
@@ -87,10 +87,10 @@ public class UserTaskCancelingV2ApplierTest {
   @Test
   void shouldCleanupOngoingUpdateTransitionTriggeredByTaskVariablesUpdateAndStoreCancelingStates() {
     // given
-    final long userTaskKey = new Random().nextLong();
-    final long elementInstanceKey = new Random().nextLong();
-    final long variableDocumentKey = new Random().nextLong();
-    final long asyncRequestKey = new Random().nextLong();
+    final long userTaskKey = new Random().nextLong(Long.MAX_VALUE);
+    final long elementInstanceKey = new Random().nextLong(Long.MAX_VALUE);
+    final long variableDocumentKey = new Random().nextLong(Long.MAX_VALUE);
+    final long asyncRequestKey = new Random().nextLong(Long.MAX_VALUE);
 
     final var variablesBuffer = MsgPackUtil.asMsgPack(Map.of("status", "approved"));
 
@@ -147,9 +147,9 @@ public class UserTaskCancelingV2ApplierTest {
   @Test
   void shouldCleanupOngoingClaimTransitionAndStoreCancelingStates() {
     // given
-    final long userTaskKey = new Random().nextLong();
-    final long elementInstanceKey = new Random().nextLong();
-    final long asyncRequestKey = new Random().nextLong();
+    final long userTaskKey = new Random().nextLong(Long.MAX_VALUE);
+    final long elementInstanceKey = new Random().nextLong(Long.MAX_VALUE);
+    final long asyncRequestKey = new Random().nextLong(Long.MAX_VALUE);
 
     final var userTaskRecord =
         new UserTaskRecord().setUserTaskKey(userTaskKey).setElementInstanceKey(elementInstanceKey);
@@ -164,7 +164,7 @@ public class UserTaskCancelingV2ApplierTest {
             .setScopeKey(elementInstanceKey)
             .setIntent(UserTaskIntent.CLAIM)
             .setValueType(ValueType.USER_TASK)
-            .setRequestId(new Random().nextLong())
+            .setRequestId(new Random().nextLong(Long.MAX_VALUE))
             .setRequestStreamId(new Random().nextInt());
     testSetup.applyEventToState(
         asyncRequestKey, AsyncRequestIntent.RECEIVED, requestMetadataRecord);
@@ -202,8 +202,8 @@ public class UserTaskCancelingV2ApplierTest {
   @Test
   public void shouldClearInitialAssigneeOnUserTaskCancelingTransition() {
     // given
-    final long userTaskKey = new Random().nextLong();
-    final long elementInstanceKey = new Random().nextLong();
+    final long userTaskKey = new Random().nextLong(Long.MAX_VALUE);
+    final long elementInstanceKey = new Random().nextLong(Long.MAX_VALUE);
     final String initialAssignee = "initial_assignee";
 
     final var userTaskRecord =

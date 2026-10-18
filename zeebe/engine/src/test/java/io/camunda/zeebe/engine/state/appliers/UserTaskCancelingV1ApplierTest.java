@@ -45,8 +45,8 @@ public class UserTaskCancelingV1ApplierTest {
   @Test
   void shouldTransitionUserTaskLifecycleToCancelingOnApply() {
     // given
-    final long userTaskKey = new Random().nextLong();
-    final long elementInstanceKey = new Random().nextLong();
+    final long userTaskKey = new Random().nextLong(Long.MAX_VALUE);
+    final long elementInstanceKey = new Random().nextLong(Long.MAX_VALUE);
 
     final var userTaskRecord =
         new UserTaskRecord().setUserTaskKey(userTaskKey).setElementInstanceKey(elementInstanceKey);
