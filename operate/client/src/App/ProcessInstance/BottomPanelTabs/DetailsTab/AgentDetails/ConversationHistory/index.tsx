@@ -27,6 +27,7 @@ import {
 } from './styled';
 import {flattenPaginatedPages} from 'modules/queries/flattenPaginatedPages';
 import {ToolResultMessage} from '../ConversationMessage/ToolResultMessage';
+import {getContentEvidence} from '../ConversationMessage/EvidenceCard/evidence';
 import type {InfiniteData} from '@tanstack/react-query';
 import {isActiveAgentInstanceStatus} from 'modules/queries/agentInstances/agentInstanceStatus';
 
@@ -51,6 +52,7 @@ type ConversationHistoryProps = {
   isVisible: boolean;
   selectedElementInstanceKey: string | null;
   agentsElementInstanceKeys: string[];
+  credentialBinding?: string | null;
 };
 
 const ConversationHistory: React.FC<ConversationHistoryProps> = ({
@@ -60,6 +62,7 @@ const ConversationHistory: React.FC<ConversationHistoryProps> = ({
   isVisible,
   selectedElementInstanceKey,
   agentsElementInstanceKeys,
+  credentialBinding = null,
 }) => {
   const canBeScoped =
     agentsElementInstanceKeys.length > 1 && selectedElementInstanceKey !== null;
@@ -93,6 +96,16 @@ const ConversationHistory: React.FC<ConversationHistoryProps> = ({
     }
     lastAgentStatus.current = agentInstanceStatus;
   }, [agentInstanceStatus, isEnabled, refetch]);
+
+  // The first user message starts the agent; later ones are analyst feedback
+  // that sends the agent into another revise loop.
+  const firstUserMessageKey =
+    status === 'success'
+      ? Array.from(data.entries())
+          .sort(([a], [b]) => a - b)
+          .flatMap(([, items]) => items)
+          .find((item) => item.role === 'USER')?.historyItemKey
+      : undefined;
 
   if (status === 'pending') {
     return (
@@ -135,8 +148,18 @@ const ConversationHistory: React.FC<ConversationHistoryProps> = ({
               <Fragment key={iteration}>
                 {sortOrder === 'asc' && loopIterationNode}
                 {items.map((item) =>
-                  item.role === 'CONFIGURATION' ? null : item.role ===
-                    'TOOL_RESULT' ? (
+                  item.role === 'CONFIGURATION' ? (
+                    getContentEvidence(item.content).length > 0 ? (
+                      <ConversationMessage
+                        key={item.historyItemKey}
+                        historyItemKey={item.historyItemKey}
+                        actor="SYSTEM"
+                        label="Agent configuration"
+                        content={item.content}
+                        credentialBinding={credentialBinding}
+                      />
+                    ) : null
+                  ) : item.role === 'TOOL_RESULT' ? (
                     <ToolResultMessage
                       key={item.historyItemKey}
                       availableTools={availableTools}
@@ -151,6 +174,13 @@ const ConversationHistory: React.FC<ConversationHistoryProps> = ({
                       content={item.content}
                       toolCalls={item.toolCalls}
                       metrics={item.metrics}
+                      label={
+                        item.role === 'USER' &&
+                        firstUserMessageKey !== undefined &&
+                        item.historyItemKey !== firstUserMessageKey
+                          ? 'User · analyst feedback (revise)'
+                          : undefined
+                      }
                     />
                   ),
                 )}
