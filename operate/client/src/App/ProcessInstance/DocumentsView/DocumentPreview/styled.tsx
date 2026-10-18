@@ -27,6 +27,19 @@ const PreviewJSONContainer = styled.div`
   min-height: 80vh;
 `;
 
+const PreviewTextContent = styled.pre`
+  max-height: 80vh;
+  overflow: auto;
+  margin: 0;
+  padding: var(--cds-spacing-05);
+  background: var(--cds-field);
+  color: var(--cds-text-primary);
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.8125rem;
+  line-height: 1.4;
+  white-space: pre;
+`;
+
 const TooltipTrigger = styled.span`
   display: inline-flex;
   cursor: not-allowed;
@@ -36,4 +49,10 @@ const TooltipTrigger = styled.span`
   }
 `;
 
-export {PreviewImg, PreviewPdf, PreviewJSONContainer, TooltipTrigger};
+export {
+  PreviewImg,
+  PreviewPdf,
+  PreviewJSONContainer,
+  PreviewTextContent,
+  TooltipTrigger,
+};

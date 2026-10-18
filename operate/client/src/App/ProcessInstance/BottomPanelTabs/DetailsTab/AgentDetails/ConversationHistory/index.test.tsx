@@ -196,12 +196,55 @@ describe('<ConversationHistory />', () => {
     expect(
       message.getByRole('heading', {name: 'Assistant'}),
     ).toBeInTheDocument();
-    expect(
-      screen.getByText(
-        '{\n  "message": "Some structured content",\n  "hello": "world"\n}',
-        {normalizer: (text) => text},
-      ),
-    ).toBeInTheDocument();
+    expect(message.getByText('Message')).toBeInTheDocument();
+    expect(message.getByText('Some structured content')).toBeInTheDocument();
+    expect(message.getByText('Hello')).toBeInTheDocument();
+    expect(message.getByText('world')).toBeInTheDocument();
+    expect(message.queryByText(/[{}"]/)).not.toBeInTheDocument();
+  });
+
+  it('should hide inline document tags and render JSON text as fields', async () => {
+    mockSearchAgentInstanceHistory().withSuccess(
+      searchResult([
+        mockAgentInstanceHistoryItem({
+          historyItemKey: '1',
+          role: 'ASSISTANT',
+          content: [
+            {
+              contentType: 'TEXT',
+              text: '<doc id="d-1" fileName="statement.txt" contentType="text/plain" />',
+            },
+            {
+              contentType: 'TEXT',
+              text: '{"decision": "APPROVE", "refundAmount": 482.17}',
+            },
+          ],
+        }),
+      ]),
+    );
+
+    render(
+      <ConversationHistory
+        agentInstanceKey={AGENT_INSTANCE_KEY}
+        availableTools={[]}
+        agentInstanceStatus="COMPLETED"
+        isVisible
+        selectedElementInstanceKey={null}
+        agentsElementInstanceKeys={[]}
+      />,
+      {wrapper: createWrapper()},
+    );
+
+    await waitForElementToBeRemoved(
+      screen.queryByTestId('conversation-history-skeleton'),
+    );
+
+    const message = within(screen.getByTestId('conversation-message-1'));
+    expect(message.getByText('Decision')).toBeInTheDocument();
+    expect(message.getByText('APPROVE')).toBeInTheDocument();
+    expect(message.getByText('Refund amount')).toBeInTheDocument();
+    expect(message.getByText('482.17')).toBeInTheDocument();
+    expect(message.queryByText(/<doc|[{}]/)).not.toBeInTheDocument();
   });
 
   it('should render tool results in the history', async () => {

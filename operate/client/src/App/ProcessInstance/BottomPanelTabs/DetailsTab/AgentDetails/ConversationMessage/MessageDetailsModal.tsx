@@ -9,7 +9,8 @@
 import {lazy, Suspense, useState} from 'react';
 import {Modal, Switch} from '@carbon/react';
 import {CopyButton} from 'modules/components/CopyButton';
-import {MarkdownMessage} from './MarkdownMessage';
+import {StructuredText} from './StructuredValue/StructuredText';
+import {StructuredValue} from './StructuredValue';
 import {ModalContent, ModalToolbar, ViewSwitcher} from './styled';
 
 const RichTextEditor = lazy(async () => {
@@ -25,8 +26,10 @@ const RichTextEditor = lazy(async () => {
 
 type MessageDetailsModalProps = {
   title: string;
-  language: 'markdown' | 'json';
+  language: 'markdown' | 'structured';
+  /** Markdown source, or the copy value for structured content. */
   content: string;
+  value?: unknown;
   onClose: () => void;
 };
 
@@ -34,6 +37,7 @@ const MessageDetailsModal: React.FC<MessageDetailsModalProps> = ({
   title,
   language,
   content,
+  value,
   onClose,
 }) => {
   const [modalView, setModalView] = useState<'preview' | 'source'>('preview');
@@ -61,7 +65,7 @@ const MessageDetailsModal: React.FC<MessageDetailsModalProps> = ({
           </ModalToolbar>
           {modalView === 'preview' ? (
             <ModalContent>
-              <MarkdownMessage content={content} />
+              <StructuredText content={content} />
             </ModalContent>
           ) : (
             <Suspense>
@@ -70,9 +74,15 @@ const MessageDetailsModal: React.FC<MessageDetailsModalProps> = ({
           )}
         </>
       ) : (
-        <Suspense>
-          <RichTextEditor value={content} readOnly language={language} />
-        </Suspense>
+        <>
+          <ModalToolbar>
+            <span />
+            <CopyButton value={content} />
+          </ModalToolbar>
+          <ModalContent>
+            <StructuredValue value={value} />
+          </ModalContent>
+        </>
       )}
     </Modal>
   );

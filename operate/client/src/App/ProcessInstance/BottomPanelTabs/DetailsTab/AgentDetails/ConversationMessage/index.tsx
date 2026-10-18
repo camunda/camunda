@@ -20,10 +20,9 @@ import {
   ActorLabel,
   TextContent,
   MessageActions,
-  ObjectContent,
   MessageHeader,
 } from './styled';
-import {MarkdownMessage} from './MarkdownMessage';
+import {StructuredText} from './StructuredValue/StructuredText';
 import {MessageDetailsModal} from './MessageDetailsModal';
 import {MessageMetrics} from './MessageMetrics';
 import {DocumentContent} from './MessageAttachments/DocumentContent';
@@ -31,6 +30,13 @@ import {ToolCalls} from './MessageAttachments/ToolCalls';
 import {ReasoningNote} from './ReasoningNote';
 import {EvidenceCards} from './EvidenceCard';
 import {isEvidenceOnly} from './EvidenceCard/evidence';
+import {StructuredValue} from './StructuredValue';
+import {
+  isEmptyValue,
+  omitEvidence,
+  parseStructuredText,
+  stripDocumentTags,
+} from './StructuredValue/format';
 
 type Actor =
   Exclude<AgentInstanceHistoryRole, 'TOOL_RESULT' | 'CONFIGURATION'> | 'SYSTEM';
@@ -98,33 +104,47 @@ const ConversationMessage: React.FC<ConversationMessageProps> = ({
               );
             }
 
-            if (isEvidenceOnly(entry)) {
+            if (
+              isEvidenceOnly(entry) ||
+              isEmptyValue(omitEvidence(entry.object))
+            ) {
               return null;
             }
-            const value = JSON.stringify(entry.object, null, 2);
             return (
-              <MessageContent
+              <StructuredContent
                 key={index}
-                value={value}
+                value={entry.object}
                 onExpandClick={() =>
-                  dispatch({type: 'show-object', actor, value})
+                  dispatch({type: 'show-object', actor, value: entry.object})
                 }
-              >
-                <ObjectContent>{value}</ObjectContent>
-              </MessageContent>
+              />
             );
           }
           case 'TEXT': {
+            const text = stripDocumentTags(entry.text);
+            if (text === '') {
+              return null;
+            }
+            const structured = parseStructuredText(text);
+            if (structured !== null) {
+              return (
+                <StructuredContent
+                  key={index}
+                  value={structured}
+                  onExpandClick={() =>
+                    dispatch({type: 'show-object', actor, value: structured})
+                  }
+                />
+              );
+            }
             return (
               <MessageContent
                 key={index}
-                value={entry.text}
-                onExpandClick={() =>
-                  dispatch({type: 'show-text', actor, text: entry.text})
-                }
+                value={text}
+                onExpandClick={() => dispatch({type: 'show-text', actor, text})}
               >
                 <TextContent>
-                  <MarkdownMessage content={entry.text} />
+                  <StructuredText content={text} />
                 </TextContent>
               </MessageContent>
             );
@@ -142,6 +162,7 @@ const ConversationMessage: React.FC<ConversationMessageProps> = ({
           title={messageDetails.title}
           language={messageDetails.language}
           content={messageDetails.content}
+          value={messageDetails.value}
           onClose={() => dispatch({type: 'hide'})}
         />
       )}
@@ -202,15 +223,33 @@ const MessageContent: React.FC<MessageContentProps> = ({
   );
 };
 
+type StructuredContentProps = {
+  value: unknown;
+  onExpandClick: () => void;
+};
+
+const StructuredContent: React.FC<StructuredContentProps> = ({
+  value,
+  onExpandClick,
+}) => (
+  <MessageContent
+    value={JSON.stringify(omitEvidence(value), null, 2)}
+    onExpandClick={onExpandClick}
+  >
+    <StructuredValue value={value} />
+  </MessageContent>
+);
+
 type MessageDetailsState = {
   state: 'visible' | 'hidden';
-  language: 'markdown' | 'json';
+  language: 'markdown' | 'structured';
   content: string;
+  value?: unknown;
   title: string;
 };
 type MessageDetailsAction =
   | {type: 'show-text'; actor: Actor; text: string}
-  | {type: 'show-object'; actor: Actor; value: string}
+  | {type: 'show-object'; actor: Actor; value: unknown}
   | {type: 'hide'};
 
 const initialMessageDetailsState: MessageDetailsState = {
@@ -235,8 +274,9 @@ function messageDetailsReducer(
     case 'show-object':
       return {
         state: 'visible',
-        language: 'json',
-        content: action.value,
+        language: 'structured',
+        content: JSON.stringify(omitEvidence(action.value), null, 2),
+        value: action.value,
         title: readableTitleByActor[action.actor],
       };
     case 'hide':

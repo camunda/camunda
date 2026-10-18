@@ -48,6 +48,15 @@ const jsonDocument: DocumentInfo = {
   isExpired: false,
 };
 
+const textDocument: DocumentInfo = {
+  link: '/v2/documents/csv',
+  fileName: 'transactions.csv',
+  type: 'text',
+  contentType: 'text/csv',
+  size: 128,
+  isExpired: false,
+};
+
 const unknownDocument: DocumentInfo = {
   link: '/v2/documents/archive',
   fileName: 'archive.zip',
@@ -139,6 +148,23 @@ describe('<PreviewDocumentButton />', () => {
     const editor = await screen.findByTestId('monaco-editor');
     expect(editor).toHaveValue(
       '{\n\t"foo": "bar",\n\t"nested": {\n\t\t"baz": 1\n\t}\n}',
+    );
+  });
+
+  it('should open the modal and render plain text for csv documents', async () => {
+    mockDownloadDocument().withSuccess('date,amount\n2026-09-01,12.50\n');
+
+    const {user} = render(
+      <PreviewDocumentButton document={textDocument} labelSuffix="myCsv" />,
+      {wrapper: createWrapper()},
+    );
+
+    const button = screen.getByLabelText('Preview document for myCsv');
+    expect(button).toBeEnabled();
+    await user.click(button);
+
+    expect(await screen.findByLabelText('transactions.csv')).toHaveTextContent(
+      'date,amount 2026-09-01,12.50',
     );
   });
 

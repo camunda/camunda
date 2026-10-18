@@ -28,7 +28,7 @@ describe('<ToolResultModal />', () => {
     expect(modal.getByText('Searches the web.')).toBeInTheDocument();
   });
 
-  it('should render the input and output in rich-text editors', async () => {
+  it('should render the input as fields and the output as text', async () => {
     render(
       <ToolResultModal
         toolName="search"
@@ -39,16 +39,12 @@ describe('<ToolResultModal />', () => {
       />,
     );
 
-    const inputEditor = await within(
-      screen.getByTestId('tool-call-input'),
-    ).findByTestId('monaco-editor');
-    const outputEditor = within(
-      screen.getByTestId('tool-call-output'),
-    ).getByTestId('monaco-editor');
-    expect(inputEditor).toHaveValue(
-      JSON.stringify({query: 'camunda'}, null, 2),
-    );
-    expect(outputEditor).toHaveValue('Tool output here');
+    const input = within(screen.getByTestId('tool-call-input'));
+    const output = within(screen.getByTestId('tool-call-output'));
+    expect(input.getByText('Query')).toBeInTheDocument();
+    expect(input.getByText('camunda')).toBeInTheDocument();
+    expect(output.getByText('Tool output here')).toBeInTheDocument();
+    expect(screen.queryByTestId('monaco-editor')).not.toBeInTheDocument();
   });
 
   it('should render object results as output', async () => {
@@ -64,12 +60,10 @@ describe('<ToolResultModal />', () => {
       />,
     );
 
-    const outputEditor = await within(
-      screen.getByTestId('tool-call-output'),
-    ).findByTestId('monaco-editor');
-    expect(outputEditor).toHaveValue(
-      JSON.stringify({message: 'Tool output here'}, null, 2),
-    );
+    const output = within(screen.getByTestId('tool-call-output'));
+    expect(output.getByText('Message')).toBeInTheDocument();
+    expect(output.getByText('Tool output here')).toBeInTheDocument();
+    expect(output.queryByText(/[{}"]/)).not.toBeInTheDocument();
   });
 
   it('should not show an input editor when no input was provided', async () => {
