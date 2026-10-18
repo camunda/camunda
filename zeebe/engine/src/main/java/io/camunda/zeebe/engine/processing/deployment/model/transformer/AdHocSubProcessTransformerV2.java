@@ -20,6 +20,7 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.InputMapping;
 import io.camunda.zeebe.engine.processing.deployment.model.transformation.ModelElementTransformer;
 import io.camunda.zeebe.engine.processing.deployment.model.transformation.TransformContext;
 import io.camunda.zeebe.engine.processing.deployment.model.transformer.zeebe.AgentElementTypeTransformer;
+import io.camunda.zeebe.engine.processing.deployment.model.transformer.zeebe.LinkedResourcesTransformer;
 import io.camunda.zeebe.engine.processing.deployment.model.transformer.zeebe.TaskDefinitionTransformer;
 import io.camunda.zeebe.engine.processing.deployment.model.transformer.zeebe.TaskHeadersTransformer;
 import io.camunda.zeebe.feel.tagged.impl.TaggedParameter;
@@ -29,6 +30,7 @@ import io.camunda.zeebe.model.bpmn.instance.CompletionCondition;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeAdHoc;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeAdHocImplementationType;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeAgentDefinition;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeLinkedResources;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskDefinition;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskHeaders;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
@@ -50,6 +52,8 @@ public final class AdHocSubProcessTransformerV2
   private final TaskDefinitionTransformer taskDefinitionTransformer =
       new TaskDefinitionTransformer();
   private final TaskHeadersTransformer taskHeadersTransformer = new TaskHeadersTransformer();
+  private final LinkedResourcesTransformer linkedResourcesTransformer =
+      new LinkedResourcesTransformer();
   private final TaggedParameterExtractor taggedParameterExtractor = new TaggedParameterExtractor();
   private final AgentElementTypeTransformer agentElementTypeTransformer =
       new AgentElementTypeTransformer();
@@ -157,6 +161,9 @@ public final class AdHocSubProcessTransformerV2
 
     final var taskHeaders = element.getSingleExtensionElement(ZeebeTaskHeaders.class);
     taskHeadersTransformer.transform(executableAdHocSubProcess, taskHeaders, element);
+
+    final var linkedResources = element.getSingleExtensionElement(ZeebeLinkedResources.class);
+    linkedResourcesTransformer.transform(executableAdHocSubProcess, linkedResources);
   }
 
   private void setAgentDefinitionType(
