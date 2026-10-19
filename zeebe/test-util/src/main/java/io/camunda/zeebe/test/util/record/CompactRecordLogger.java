@@ -1588,6 +1588,7 @@ public class CompactRecordLogger {
       case ClockIntent.RESET, ClockIntent.RESETTED -> "to system time";
       case ClockIntent.FETCH -> "current time";
       case ClockIntent.FETCHED -> "current time is " + formatPinnedTime(value.getTime());
+      case ClockIntent.ADD -> "by " + Duration.ofMillis(value.getTime());
       case ClockIntent.OFFSET, ClockIntent.OFFSETTED ->
           "to system time plus " + Duration.ofMillis(value.getTime());
       default -> "to " + value.getTime();

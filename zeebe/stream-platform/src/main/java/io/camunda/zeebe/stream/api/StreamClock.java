@@ -100,6 +100,9 @@ public interface StreamClock extends InstantSource {
       return !(currentModification() instanceof Modification.None);
     }
 
+    /** Returns the current system time in milliseconds, ignoring any modification. */
+    long systemMillis();
+
     sealed interface Modification {
       static None none() {
         return new None();

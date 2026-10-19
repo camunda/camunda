@@ -11,6 +11,7 @@ import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavi
 import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.state.immutable.ClockState;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ClockIntent;
 import io.camunda.zeebe.stream.api.StreamClock.ControllableStreamClock;
@@ -23,6 +24,7 @@ public final class ClockProcessors {
       final TypedRecordProcessors typedRecordProcessors,
       final Writers writers,
       final KeyGenerator keyGenerator,
+      final ClockState clockState,
       final ControllableStreamClock clock,
       final CommandDistributionBehavior commandDistributionBehavior,
       final CslAuthorizationCheck cslCheck) {
@@ -39,6 +41,11 @@ public final class ClockProcessors {
         ValueType.CLOCK,
         ClockIntent.FETCH,
         new ClockFetchProcessor(writers, keyGenerator, clock, cslCheck));
+    typedRecordProcessors.onCommand(
+        ValueType.CLOCK,
+        ClockIntent.ADD,
+        new ClockAddProcessor(
+            writers, keyGenerator, clockState, clock, commandDistributionBehavior, cslCheck));
     typedRecordProcessors.onCommand(
         ValueType.CLOCK,
         ClockIntent.OFFSET,

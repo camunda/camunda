@@ -457,7 +457,13 @@ public final class EngineProcessors {
         permissionsBehavior);
 
     ClockProcessors.addClockProcessors(
-        typedRecordProcessors, writers, keyGenerator, clock, commandDistributionBehavior, cslCheck);
+        typedRecordProcessors,
+        writers,
+        keyGenerator,
+        processingState.getClockState(),
+        clock,
+        commandDistributionBehavior,
+        cslCheck);
 
     addIdentityProcessors(
         keyGenerator,

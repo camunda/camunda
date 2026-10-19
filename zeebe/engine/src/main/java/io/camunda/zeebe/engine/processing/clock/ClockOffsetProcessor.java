@@ -34,8 +34,9 @@ import org.jspecify.annotations.NullMarked;
  * Sets the total offset between the clock and the system time, replacing any previous pin or
  * offset. The clock keeps running from the new time.
  *
- * <p>The command holds the total offset, not a change to it, so a partition that receives it twice
- * ends up with the same clock.
+ * <p>The {@link ClockAddProcessor} sends this command to the other partitions. The command holds
+ * the total offset, not a change to it, so a partition that receives it twice ends up with the same
+ * clock.
  */
 @NullMarked
 public final class ClockOffsetProcessor implements DistributedTypedRecordProcessor<ClockRecord> {
