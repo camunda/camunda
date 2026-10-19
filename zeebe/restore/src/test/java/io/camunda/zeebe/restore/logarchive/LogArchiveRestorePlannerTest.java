@@ -282,6 +282,46 @@ final class LogArchiveRestorePlannerTest {
         .hasMessageContaining("is below the exported position 4");
   }
 
+  @Test
+  void shouldStartTheBridgedArchivePartAtTheStartOfTheTimeline() {
+    // given - the snapshot at index 9 alone would start the journal at object 8..10
+    startArchive(5);
+    archive.resetSource(5);
+    archive.appendAll(5, 6, 7, 8, 9, 10, 11, 12);
+    archive.checkpoint(10, 11);
+    archive.archive(7);
+    archive.archive(10);
+    archive.archive(12);
+    archive.archiveSnapshot(snapshot("9-1-9-9-1", 9, 9, 9, 9));
+    final var view = LogArchiveView.read(store, TIMELINE, 1);
+
+    // when
+    final var plan = LogArchiveRestorePlanner.planBridged(view, checkpoint(view, 10), 3L);
+
+    // then
+    assertThat(plan.firstIndex()).isEqualTo(5);
+    assertThat(plan.snapshotIndex()).isEqualTo(9);
+    assertThat(plan.objects()).hasSize(3);
+  }
+
+  @Test
+  void shouldFailTheBridgedArchivePartWhenTheCheckpointIsBelowTheExportedPosition() {
+    // given
+    startArchive(5);
+    archive.resetSource(5);
+    archive.appendAll(5, 6, 7);
+    archive.checkpoint(10, 6);
+    archive.archive(7);
+    archive.archiveSnapshot(snapshot("5-1-5-5-1", 5, 5, 5, 5));
+    final var view = LogArchiveView.read(store, TIMELINE, 1);
+    final var checkpoint = checkpoint(view, 10);
+
+    // when - then
+    assertThatThrownBy(() -> LogArchiveRestorePlanner.planBridged(view, checkpoint, 7L))
+        .isInstanceOf(LogArchiveRestoreException.class)
+        .hasMessageContaining("is below the exported position 7");
+  }
+
   private void startArchive(final long startIndex) {
     archive = new TestLogArchive(store, TIMELINE, 1, sourceDirectory, meterRegistry);
     archive.startTimeline(startIndex, "");

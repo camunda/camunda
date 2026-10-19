@@ -19,6 +19,7 @@ import io.camunda.zeebe.backup.logarchive.store.LogArchiveStore;
 import io.camunda.zeebe.journal.CheckedJournalException.FlushException;
 import io.camunda.zeebe.journal.JournalMetaStore.InMemory;
 import io.camunda.zeebe.journal.file.SegmentedJournal;
+import io.camunda.zeebe.restore.logarchive.HandoverRestorePlan.BridgedFromArchive;
 import io.camunda.zeebe.snapshots.SnapshotFileInfoProvider;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStore;
 import io.camunda.zeebe.util.FileUtil;
@@ -195,6 +196,218 @@ public final class LogArchiveRestore {
       throw new LogArchiveRestoreException(
           "Failed to flush the restored journal of partition %d".formatted(plan.partitionId()), e);
     }
+  }
+
+  /**
+   * Completes a bridged restore of one partition (spec section 18.5a): the old backups of the plan
+   * were already restored into the target's journal without their snapshot (see {@code
+   * PartitionRestoreService#restoreLog}). Truncates that journal after {@code switchIndex - 1},
+   * appends the archived frames from {@code switchIndex} up to the checkpoint, then installs the
+   * archived snapshot and writes the timeline file, as {@link #restorePartition} does.
+   *
+   * <p>Fails, writing nothing more, unless the journal is one log at the seam: the old journal
+   * starts at or before the exported position + 1 and reaches at least to {@code switchIndex}, and
+   * every archived frame it also holds has the same asqn and checksum (the checksum covers the
+   * whole serialized entry: index, asqn and data).
+   *
+   * @param bridged the plan of the partition
+   * @param target where to restore to; holds the journal restored from the old backups
+   * @throws LogArchiveRestoreException if the archive does not allow restoring to the checkpoint,
+   *     or the old journal and the archive do not form one log
+   */
+  public LogArchivePartitionRestoreResult restoreBridgedPartition(
+      final BridgedFromArchive bridged, final LogArchiveRestoreTarget target) {
+    final var view = bridged.view();
+    if (view.partitionId() != target.partitionId()) {
+      throw new IllegalArgumentException(
+          "View of partition %d cannot restore partition %d"
+              .formatted(view.partitionId(), target.partitionId()));
+    }
+    final var checkpoint = bridged.checkpoint();
+    final long checkpointId = checkpoint.checkpointId();
+    final var plan =
+        LogArchiveRestorePlanner.planBridged(view, checkpoint, bridged.exportedPosition());
+    if (plan.firstIndex() != bridged.switchIndex()) {
+      throw failure(
+          plan,
+          "the archived objects start at index %d, not at the switch index %d"
+              .formatted(plan.firstIndex(), bridged.switchIndex()));
+    }
+    LOG.info(
+        "Restoring partition {} bridged to checkpoint {} at position {}: old backups {} up to index"
+            + " {}, then timeline '{}' from switch index {} (objects {} to {}), snapshot {}",
+        plan.partitionId(),
+        checkpointId,
+        checkpoint.checkpointPosition(),
+        bridged.oldBackupIds(),
+        bridged.switchIndex() - 1,
+        view.timelineId(),
+        bridged.switchIndex(),
+        plan.objects().getFirst().key(),
+        plan.objects().getLast().key(),
+        plan.snapshot().map(ArchivedSnapshotJson::id).orElse("<none>"));
+
+    try {
+      final var range = bridgeJournal(view, plan, bridged, target);
+      if (plan.snapshot().isPresent()) {
+        installSnapshot(view, plan.snapshot().get(), target);
+      }
+      verifyJournal(plan, target);
+      final var newTimelineId = restoredTimelineId(view.timelineId(), checkpointId);
+      writeTimelineFile(target.dataDirectory(), newTimelineId);
+      LOG.info(
+          "Restored partition {} bridged to checkpoint {}: journal {} to {} (old backups up to {},"
+              + " log archive from {}), new timeline '{}'",
+          plan.partitionId(),
+          checkpointId,
+          range[0],
+          range[1],
+          bridged.switchIndex() - 1,
+          bridged.switchIndex(),
+          newTimelineId);
+      return new LogArchivePartitionRestoreResult(
+          plan.partitionId(),
+          checkpointId,
+          checkpoint.checkpointPosition(),
+          plan.snapshot().map(ArchivedSnapshotJson::id),
+          range[0],
+          range[1],
+          newTimelineId);
+    } catch (final IOException e) {
+      throw new UncheckedIOException(e);
+    } catch (final FlushException e) {
+      throw new LogArchiveRestoreException(
+          "Failed to flush the restored journal of partition %d".formatted(plan.partitionId()), e);
+    }
+  }
+
+  /**
+   * Joins the old journal in the target and the archived frames at the switch index.
+   *
+   * @return the first and the last index of the joined journal
+   */
+  private long[] bridgeJournal(
+      final LogArchiveView view,
+      final LogArchiveRestorePlan plan,
+      final BridgedFromArchive bridged,
+      final LogArchiveRestoreTarget target)
+      throws FlushException {
+    final long switchIndex = bridged.switchIndex();
+    final long checkpointPosition = plan.checkpoint().checkpointPosition();
+    try (final var journal = openJournal(target)) {
+      if (journal.isEmpty()) {
+        throw failure(plan, "the old backups restored no journal to bridge from");
+      }
+      final long firstIndex = journal.getFirstIndex();
+      final long oldLastIndex = journal.getLastIndex();
+      if (firstIndex >= switchIndex || oldLastIndex < switchIndex) {
+        throw failure(
+            plan,
+            ("the journal of the old backups holds indexes %d to %d; it must start before and"
+                    + " reach the switch index %d to overlap with the archive")
+                .formatted(firstIndex, oldLastIndex, switchIndex));
+      }
+      final var overlap = new long[2][(int) (oldLastIndex - switchIndex + 1)];
+      final long lastOldAsqn = readOldSide(journal, plan, bridged, overlap);
+
+      journal.deleteAfter(switchIndex - 1);
+      long expectedIndex = switchIndex;
+      boolean continued = false;
+      for (final var object : plan.objects()) {
+        for (final var frame : download(view, object).frames()) {
+          if (frame.index() != expectedIndex) {
+            throw failure(
+                plan,
+                "object %s holds index %d where %d was expected"
+                    .formatted(object.key(), frame.index(), expectedIndex));
+          }
+          if (frame.index() <= oldLastIndex) {
+            final int offset = (int) (frame.index() - switchIndex);
+            if (frame.asqn() != overlap[0][offset] || frame.checksum() != overlap[1][offset]) {
+              throw failure(
+                  plan,
+                  ("the old backups and the log archive differ at index %d: asqn %d and checksum"
+                          + " %d in the old backups, asqn %d and checksum %d in %s; they are not"
+                          + " the same log")
+                      .formatted(
+                          frame.index(),
+                          overlap[0][offset],
+                          overlap[1][offset],
+                          frame.asqn(),
+                          frame.checksum(),
+                          object.key()));
+            }
+          }
+          if (!continued && frame.asqn() >= 0) {
+            if (frame.asqn() <= lastOldAsqn) {
+              throw failure(
+                  plan,
+                  ("the first archived entry at index %d has asqn %d, not after the last asqn %d"
+                          + " of the old backups before the switch index")
+                      .formatted(frame.index(), frame.asqn(), lastOldAsqn));
+            }
+            continued = true;
+          }
+          if (frame.asqn() > checkpointPosition) {
+            throw missingCheckpointFrame(plan, frame.index(), frame.asqn());
+          }
+          final var record = journal.append(frame.checksum(), frame.serializedRecord());
+          if (record.index() != frame.index() || record.asqn() != frame.asqn()) {
+            throw failure(
+                plan,
+                "appended record (index %d, asqn %d) differs from frame (index %d, asqn %d) of %s"
+                    .formatted(
+                        record.index(), record.asqn(), frame.index(), frame.asqn(), object.key()));
+          }
+          if (frame.asqn() == checkpointPosition) {
+            journal.flush();
+            return new long[] {firstIndex, frame.index()};
+          }
+          expectedIndex++;
+        }
+      }
+      throw missingCheckpointFrame(plan, expectedIndex - 1, -1);
+    }
+  }
+
+  /**
+   * Checks that the old journal starts early enough for the exporter and records the asqn and
+   * checksum of the entries from the switch index on, which the archive must repeat.
+   *
+   * @param overlap filled with the asqns ({@code [0]}) and checksums ({@code [1]}) from the switch
+   *     index on
+   * @return the last asqn before the switch index, -1 if there is none
+   */
+  private static long readOldSide(
+      final SegmentedJournal journal,
+      final LogArchiveRestorePlan plan,
+      final BridgedFromArchive bridged,
+      final long[][] overlap) {
+    final long switchIndex = bridged.switchIndex();
+    final long required = Math.max(bridged.exportedPosition() + 1, 1);
+    long firstAsqn = -1;
+    long lastAsqn = -1;
+    try (final var reader = journal.openReader()) {
+      while (reader.hasNext()) {
+        final var record = reader.next();
+        if (record.index() >= switchIndex) {
+          final int offset = (int) (record.index() - switchIndex);
+          overlap[0][offset] = record.asqn();
+          overlap[1][offset] = record.checksum();
+        } else if (record.asqn() >= 0) {
+          firstAsqn = firstAsqn < 0 ? record.asqn() : firstAsqn;
+          lastAsqn = record.asqn();
+        }
+      }
+    }
+    if (firstAsqn < 0 || firstAsqn > required) {
+      throw failure(
+          plan,
+          ("the journal of the old backups starts at asqn %d before the switch index %d, after the"
+                  + " exported position %d + 1")
+              .formatted(firstAsqn, switchIndex, bridged.exportedPosition()));
+    }
+    return lastAsqn;
   }
 
   /** The timeline a partition restored to a checkpoint archives to; deterministic on purpose. */

@@ -44,7 +44,7 @@ public final class TestRestorableBackupStore implements BackupStore {
    *
    * @return A future that completes with the backup that was taken.
    */
-  CompletableFuture<Backup> waitForBackup(final BackupIdentifier id) {
+  public CompletableFuture<Backup> waitForBackup(final BackupIdentifier id) {
     return waiters.computeIfAbsent(id, (ignored) -> new CompletableFuture<>());
   }
 

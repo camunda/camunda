@@ -54,8 +54,56 @@ public final class LogArchiveRestorePlanner {
           "checkpoint %d at position %d is not covered by the archived position %d"
               .formatted(checkpoint.checkpointId(), position, view.archivedPosition()));
     }
-    final long requiredPosition = requiredPosition(view, checkpoint, exportedPosition);
+    return plan(view, checkpoint, requiredPosition(view, checkpoint, exportedPosition));
+  }
 
+  /**
+   * The archive part of a bridged restore (spec section 18.5a): like {@link #plan(LogArchiveView,
+   * CoveredCheckpointJson, Optional)}, but the objects start at the first object of the timeline,
+   * because old backups provide the log before it. The snapshot still comes from the archive.
+   *
+   * @param exportedPosition the position the RDBMS exported up to; the checkpoint must not be below
+   *     it
+   * @throws LogArchiveRestoreException if no contiguous range of objects leads from the start of
+   *     the timeline to the checkpoint, the archived snapshot is not covered by it, or the
+   *     checkpoint is below the exported position
+   */
+  public static LogArchiveRestorePlan planBridged(
+      final LogArchiveView view,
+      final CoveredCheckpointJson checkpoint,
+      final long exportedPosition) {
+    if (checkpoint.checkpointPosition() < exportedPosition) {
+      throw failure(
+          view,
+          "checkpoint %d at position %d is below the exported position %d"
+              .formatted(
+                  checkpoint.checkpointId(), checkpoint.checkpointPosition(), exportedPosition));
+    }
+    final var plan = plan(view, checkpoint, Long.MIN_VALUE);
+    if (plan.firstIndex() != view.startIndex()) {
+      throw failure(
+          view,
+          "the objects start at index %d, not at the start of the timeline %d"
+              .formatted(plan.firstIndex(), view.startIndex()));
+    }
+    return plan;
+  }
+
+  /**
+   * @param requiredPosition the first position the journal must contain: {@link Long#MAX_VALUE} if
+   *     only the snapshot matters, {@link Long#MIN_VALUE} to start at the first object
+   */
+  private static LogArchiveRestorePlan plan(
+      final LogArchiveView view,
+      final CoveredCheckpointJson checkpoint,
+      final long requiredPosition) {
+    final long position = checkpoint.checkpointPosition();
+    if (position < 0 || position > view.archivedPosition()) {
+      throw failure(
+          view,
+          "checkpoint %d at position %d is not covered by the archived position %d"
+              .formatted(checkpoint.checkpointId(), position, view.archivedPosition()));
+    }
     final var snapshot = selectSnapshot(view, position);
     final long snapshotIndex = snapshot.map(ArchivedSnapshotJson::index).orElse(0L);
     final var objects = selectObjects(view, snapshotIndex, requiredPosition, checkpoint);

@@ -17,6 +17,7 @@ import io.camunda.zeebe.db.impl.rocksdb.RocksDBSnapshotFileInfoProvider;
 import io.camunda.zeebe.journal.CheckedJournalException.FlushException;
 import io.camunda.zeebe.restore.PartitionRestoreService.BackupValidator;
 import io.camunda.zeebe.restore.logarchive.HandoverRestorePlan;
+import io.camunda.zeebe.restore.logarchive.HandoverRestorePlan.BridgedFromArchive;
 import io.camunda.zeebe.restore.logarchive.HandoverRestorePlan.FromArchive;
 import io.camunda.zeebe.restore.logarchive.HandoverRestorePlan.OldBackups;
 import io.camunda.zeebe.restore.logarchive.HandoverRestoreRequest;
@@ -42,9 +43,10 @@ import org.slf4j.LoggerFactory;
 /**
  * Restores the default physical tenant across the handover from the old backups to the log archive
  * (spec section 18.5, PoC scope: no other tenants). Each local partition is restored from where the
- * target checkpoint exists, old backups or the archive; see {@link HandoverRestoreResolver}. Both
- * paths write the timeline file as they do on their own, and node 0 writes the restored topology
- * file, as in a classic whole-cluster restore.
+ * target checkpoint exists, old backups or the archive, or bridged from both when the RDBMS needs
+ * log from before the archive; see {@link HandoverRestoreResolver}. All paths write the timeline
+ * file as they do on their own, and node 0 writes the restored topology file, as in a classic
+ * whole-cluster restore.
  */
 @NullMarked
 public final class HandoverClusterRestore implements CloseableSilently {
@@ -158,6 +160,35 @@ public final class HandoverClusterRestore implements CloseableSilently {
                   "Restored partition {} from log archive timeline '{}'; new timeline is '{}'",
                   partitionId,
                   archived.timelineId(),
+                  result.timelineId());
+            }
+            case final BridgedFromArchive bridged -> {
+              LOG.info(
+                  "Restoring partition {} bridged: old backups {} up to index {}, log archive"
+                      + " timeline '{}' from switch index {}, because the exported position {} lies"
+                      + " before the start of the archive",
+                  partitionId,
+                  bridged.oldBackupIds(),
+                  bridged.switchIndex() - 1,
+                  bridged.timelineId(),
+                  bridged.switchIndex(),
+                  bridged.exportedPosition());
+              new PartitionRestoreService(
+                      backupStore,
+                      raftPartition,
+                      brokerId,
+                      new RocksDBSnapshotFileInfoProvider(),
+                      registry)
+                  .restoreLog(
+                      bridged.oldBackupIds().stream().mapToLong(Long::longValue).toArray(),
+                      validator);
+              final var result =
+                  archiveRestore.restoreBridgedPartition(
+                      bridged, LogArchiveRestoreTarget.of(raftPartition, brokerId));
+              LOG.info(
+                  "Restored partition {} bridged at switch index {}; new timeline is '{}'",
+                  partitionId,
+                  bridged.switchIndex(),
                   result.timelineId());
             }
           }
