@@ -1,0 +1,465 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="employee-onboarding-definitions" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.40.0" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.11.0">
+  <bpmn:process id="employee-onboarding" name="Employee onboarding" isExecutable="true">
+    <bpmn:extensionElements>
+      <zeebe:case title="onboardingTitle" caseForm="onboarding-case-details" />
+    </bpmn:extensionElements>
+    <bpmn:startEvent id="offer-accepted" name="Offer accepted">
+      <bpmn:extensionElements>
+        <zeebe:ioMapping>
+          <zeebe:output source="=[{label: &#34;Employee&#34;, value: employeeName}, {label: &#34;Role&#34;, value: role}, {label: &#34;Team&#34;, value: team}, {label: &#34;Start date&#34;, value: startDate}, {label: &#34;Manager&#34;, value: manager}]" target="caseHeader" />
+        </zeebe:ioMapping>
+      </bpmn:extensionElements>
+      <bpmn:outgoing>flow-to-preparation</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:sequenceFlow id="flow-to-preparation" sourceRef="offer-accepted" targetRef="preparation" />
+    <bpmn:subProcess id="preparation" name="Preparation">
+      <bpmn:extensionElements>
+        <zeebe:stage />
+        <zeebe:ioMapping>
+          <zeebe:output source="=append(caseHeader, {label: &#34;Employee ID&#34;, value: employeeId})" target="caseHeader" />
+        </zeebe:ioMapping>
+      </bpmn:extensionElements>
+      <bpmn:incoming>flow-to-preparation</bpmn:incoming>
+      <bpmn:outgoing>flow-to-first-day</bpmn:outgoing>
+      <bpmn:startEvent id="preparation-start">
+        <bpmn:outgoing>preparation-flow-1</bpmn:outgoing>
+      </bpmn:startEvent>
+      <bpmn:userTask id="create-contract" name="Create the contract">
+        <bpmn:extensionElements>
+          <zeebe:userTask />
+          <zeebe:formDefinition formId="create-contract" />
+          <zeebe:assignmentDefinition candidateGroups="hr" />
+        </bpmn:extensionElements>
+        <bpmn:incoming>preparation-flow-1</bpmn:incoming>
+        <bpmn:outgoing>preparation-flow-2</bpmn:outgoing>
+      </bpmn:userTask>
+      <bpmn:userTask id="collect-signed-contract" name="Collect the signed contract">
+        <bpmn:extensionElements>
+          <zeebe:userTask />
+          <zeebe:formDefinition formId="collect-signed-contract" />
+          <zeebe:assignmentDefinition candidateGroups="hr" />
+        </bpmn:extensionElements>
+        <bpmn:incoming>preparation-flow-2</bpmn:incoming>
+        <bpmn:incoming>preparation-flow-follow-up</bpmn:incoming>
+        <bpmn:outgoing>preparation-flow-3</bpmn:outgoing>
+      </bpmn:userTask>
+      <bpmn:exclusiveGateway id="contract-signed" name="Contract signed?" default="preparation-flow-signed">
+        <bpmn:incoming>preparation-flow-3</bpmn:incoming>
+        <bpmn:outgoing>preparation-flow-signed</bpmn:outgoing>
+        <bpmn:outgoing>preparation-flow-not-signed</bpmn:outgoing>
+      </bpmn:exclusiveGateway>
+      <bpmn:userTask id="order-equipment" name="Order the equipment">
+        <bpmn:extensionElements>
+          <zeebe:userTask />
+          <zeebe:formDefinition formId="order-equipment" />
+          <zeebe:assignmentDefinition candidateGroups="it" />
+        </bpmn:extensionElements>
+        <bpmn:incoming>preparation-flow-signed</bpmn:incoming>
+        <bpmn:outgoing>preparation-flow-5</bpmn:outgoing>
+      </bpmn:userTask>
+      <bpmn:scriptTask id="generate-employee-id" name="Generate the employee ID">
+        <bpmn:extensionElements>
+          <zeebe:script expression="=&#34;EMP-&#34; + string(today().year) + &#34;-&#34; + upper case(substring(employeeName, 1, 3))" resultVariable="employeeId" />
+        </bpmn:extensionElements>
+        <bpmn:incoming>preparation-flow-5</bpmn:incoming>
+        <bpmn:outgoing>preparation-flow-6</bpmn:outgoing>
+      </bpmn:scriptTask>
+      <bpmn:endEvent id="preparation-end">
+        <bpmn:incoming>preparation-flow-6</bpmn:incoming>
+      </bpmn:endEvent>
+      <bpmn:userTask id="follow-up-candidate" name="Follow up with the candidate">
+        <bpmn:extensionElements>
+          <zeebe:userTask />
+          <zeebe:formDefinition formId="follow-up-candidate" />
+          <zeebe:assignmentDefinition candidateGroups="hr" />
+        </bpmn:extensionElements>
+        <bpmn:incoming>preparation-flow-not-signed</bpmn:incoming>
+        <bpmn:outgoing>preparation-flow-follow-up</bpmn:outgoing>
+      </bpmn:userTask>
+      <bpmn:sequenceFlow id="preparation-flow-1" sourceRef="preparation-start" targetRef="create-contract" />
+      <bpmn:sequenceFlow id="preparation-flow-2" sourceRef="create-contract" targetRef="collect-signed-contract" />
+      <bpmn:sequenceFlow id="preparation-flow-3" sourceRef="collect-signed-contract" targetRef="contract-signed" />
+      <bpmn:sequenceFlow id="preparation-flow-5" sourceRef="order-equipment" targetRef="generate-employee-id" />
+      <bpmn:sequenceFlow id="preparation-flow-6" sourceRef="generate-employee-id" targetRef="preparation-end" />
+      <bpmn:sequenceFlow id="preparation-flow-signed" name="yes" sourceRef="contract-signed" targetRef="order-equipment" />
+      <bpmn:sequenceFlow id="preparation-flow-not-signed" name="no" sourceRef="contract-signed" targetRef="follow-up-candidate">
+        <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=contractSigned = false</bpmn:conditionExpression>
+      </bpmn:sequenceFlow>
+      <bpmn:sequenceFlow id="preparation-flow-follow-up" sourceRef="follow-up-candidate" targetRef="collect-signed-contract" />
+    </bpmn:subProcess>
+    <bpmn:sequenceFlow id="flow-to-first-day" sourceRef="preparation" targetRef="first-day" />
+    <bpmn:subProcess id="first-day" name="First day">
+      <bpmn:extensionElements>
+        <zeebe:stage />
+      </bpmn:extensionElements>
+      <bpmn:incoming>flow-to-first-day</bpmn:incoming>
+      <bpmn:outgoing>flow-to-training</bpmn:outgoing>
+      <bpmn:startEvent id="first-day-start">
+        <bpmn:outgoing>first-day-flow-1</bpmn:outgoing>
+      </bpmn:startEvent>
+      <bpmn:userTask id="welcome-employee" name="Welcome the employee">
+        <bpmn:extensionElements>
+          <zeebe:userTask />
+          <zeebe:formDefinition formId="welcome-employee" />
+          <zeebe:assignmentDefinition candidateGroups="managers" />
+        </bpmn:extensionElements>
+        <bpmn:incoming>first-day-flow-1</bpmn:incoming>
+        <bpmn:outgoing>first-day-flow-2</bpmn:outgoing>
+      </bpmn:userTask>
+      <bpmn:userTask id="hand-over-equipment" name="Hand over the equipment">
+        <bpmn:extensionElements>
+          <zeebe:userTask />
+          <zeebe:formDefinition formId="hand-over-equipment" />
+          <zeebe:assignmentDefinition candidateGroups="it" />
+        </bpmn:extensionElements>
+        <bpmn:incoming>first-day-flow-2</bpmn:incoming>
+        <bpmn:outgoing>first-day-flow-3</bpmn:outgoing>
+      </bpmn:userTask>
+      <bpmn:userTask id="set-up-accounts" name="Set up the accounts">
+        <bpmn:extensionElements>
+          <zeebe:userTask />
+          <zeebe:formDefinition formId="set-up-accounts" />
+          <zeebe:assignmentDefinition candidateGroups="it" />
+        </bpmn:extensionElements>
+        <bpmn:incoming>first-day-flow-3</bpmn:incoming>
+        <bpmn:outgoing>first-day-flow-4</bpmn:outgoing>
+      </bpmn:userTask>
+      <bpmn:endEvent id="first-day-end">
+        <bpmn:incoming>first-day-flow-4</bpmn:incoming>
+      </bpmn:endEvent>
+      <bpmn:sequenceFlow id="first-day-flow-1" sourceRef="first-day-start" targetRef="welcome-employee" />
+      <bpmn:sequenceFlow id="first-day-flow-2" sourceRef="welcome-employee" targetRef="hand-over-equipment" />
+      <bpmn:sequenceFlow id="first-day-flow-3" sourceRef="hand-over-equipment" targetRef="set-up-accounts" />
+      <bpmn:sequenceFlow id="first-day-flow-4" sourceRef="set-up-accounts" targetRef="first-day-end" />
+    </bpmn:subProcess>
+    <bpmn:sequenceFlow id="flow-to-training" sourceRef="first-day" targetRef="training" />
+    <bpmn:subProcess id="training" name="Training">
+      <bpmn:extensionElements>
+        <zeebe:stage />
+      </bpmn:extensionElements>
+      <bpmn:incoming>flow-to-training</bpmn:incoming>
+      <bpmn:outgoing>flow-to-probation</bpmn:outgoing>
+      <bpmn:startEvent id="training-start">
+        <bpmn:outgoing>training-flow-1</bpmn:outgoing>
+      </bpmn:startEvent>
+      <bpmn:userTask id="complete-safety-training" name="Complete the safety training">
+        <bpmn:extensionElements>
+          <zeebe:userTask />
+          <zeebe:formDefinition formId="complete-safety-training" />
+          <zeebe:assignmentDefinition candidateGroups="employees" />
+        </bpmn:extensionElements>
+        <bpmn:incoming>training-flow-1</bpmn:incoming>
+        <bpmn:outgoing>training-flow-2</bpmn:outgoing>
+      </bpmn:userTask>
+      <bpmn:userTask id="shadow-colleague" name="Shadow a colleague">
+        <bpmn:extensionElements>
+          <zeebe:userTask />
+          <zeebe:formDefinition formId="shadow-colleague" />
+          <zeebe:assignmentDefinition candidateGroups="employees" />
+        </bpmn:extensionElements>
+        <bpmn:incoming>training-flow-2</bpmn:incoming>
+        <bpmn:outgoing>training-flow-3</bpmn:outgoing>
+      </bpmn:userTask>
+      <bpmn:userTask id="sign-off-training" name="Sign off the training">
+        <bpmn:extensionElements>
+          <zeebe:userTask />
+          <zeebe:formDefinition formId="sign-off-training" />
+          <zeebe:assignmentDefinition candidateGroups="managers" />
+        </bpmn:extensionElements>
+        <bpmn:incoming>training-flow-3</bpmn:incoming>
+        <bpmn:outgoing>training-flow-4</bpmn:outgoing>
+      </bpmn:userTask>
+      <bpmn:endEvent id="training-end">
+        <bpmn:incoming>training-flow-4</bpmn:incoming>
+      </bpmn:endEvent>
+      <bpmn:sequenceFlow id="training-flow-1" sourceRef="training-start" targetRef="complete-safety-training" />
+      <bpmn:sequenceFlow id="training-flow-2" sourceRef="complete-safety-training" targetRef="shadow-colleague" />
+      <bpmn:sequenceFlow id="training-flow-3" sourceRef="shadow-colleague" targetRef="sign-off-training" />
+      <bpmn:sequenceFlow id="training-flow-4" sourceRef="sign-off-training" targetRef="training-end" />
+    </bpmn:subProcess>
+    <bpmn:sequenceFlow id="flow-to-probation" sourceRef="training" targetRef="probation" />
+    <bpmn:subProcess id="probation" name="Probation">
+      <bpmn:extensionElements>
+        <zeebe:stage />
+        <zeebe:ioMapping>
+          <zeebe:output source="=append(caseHeader, {label: &#34;Probation&#34;, value: if probationPassed then &#34;passed&#34; else &#34;not passed&#34;})" target="caseHeader" />
+        </zeebe:ioMapping>
+      </bpmn:extensionElements>
+      <bpmn:incoming>flow-to-probation</bpmn:incoming>
+      <bpmn:outgoing>flow-to-onboarded</bpmn:outgoing>
+      <bpmn:startEvent id="probation-start">
+        <bpmn:outgoing>probation-flow-1</bpmn:outgoing>
+      </bpmn:startEvent>
+      <bpmn:userTask id="mid-probation-review" name="Hold the mid-probation review">
+        <bpmn:extensionElements>
+          <zeebe:userTask />
+          <zeebe:formDefinition formId="mid-probation-review" />
+          <zeebe:assignmentDefinition candidateGroups="managers" />
+        </bpmn:extensionElements>
+        <bpmn:incoming>probation-flow-1</bpmn:incoming>
+        <bpmn:outgoing>probation-flow-2</bpmn:outgoing>
+      </bpmn:userTask>
+      <bpmn:userTask id="final-review" name="Hold the final review">
+        <bpmn:extensionElements>
+          <zeebe:userTask />
+          <zeebe:formDefinition formId="final-review" />
+          <zeebe:assignmentDefinition candidateGroups="managers" />
+        </bpmn:extensionElements>
+        <bpmn:incoming>probation-flow-2</bpmn:incoming>
+        <bpmn:outgoing>probation-flow-3</bpmn:outgoing>
+      </bpmn:userTask>
+      <bpmn:endEvent id="probation-end">
+        <bpmn:incoming>probation-flow-3</bpmn:incoming>
+      </bpmn:endEvent>
+      <bpmn:sequenceFlow id="probation-flow-1" sourceRef="probation-start" targetRef="mid-probation-review" />
+      <bpmn:sequenceFlow id="probation-flow-2" sourceRef="mid-probation-review" targetRef="final-review" />
+      <bpmn:sequenceFlow id="probation-flow-3" sourceRef="final-review" targetRef="probation-end" />
+    </bpmn:subProcess>
+    <bpmn:sequenceFlow id="flow-to-onboarded" sourceRef="probation" targetRef="employee-onboarded" />
+    <bpmn:endEvent id="employee-onboarded" name="Employee onboarded">
+      <bpmn:incoming>flow-to-onboarded</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:subProcess id="offer-declined" name="Offer declined" triggeredByEvent="true">
+      <bpmn:extensionElements>
+        <zeebe:stage />
+      </bpmn:extensionElements>
+      <bpmn:startEvent id="offer-declined-start" name="Offer declined">
+        <bpmn:outgoing>flow-declined-1</bpmn:outgoing>
+        <bpmn:messageEventDefinition id="offer-declined-definition" messageRef="message-offer-declined" />
+      </bpmn:startEvent>
+      <bpmn:userTask id="archive-candidate" name="Archive the candidate">
+        <bpmn:extensionElements>
+          <zeebe:userTask />
+          <zeebe:formDefinition formId="archive-candidate" />
+          <zeebe:assignmentDefinition candidateGroups="hr" />
+        </bpmn:extensionElements>
+        <bpmn:incoming>flow-declined-1</bpmn:incoming>
+        <bpmn:outgoing>flow-declined-2</bpmn:outgoing>
+      </bpmn:userTask>
+      <bpmn:endEvent id="offer-declined-end">
+        <bpmn:incoming>flow-declined-2</bpmn:incoming>
+      </bpmn:endEvent>
+      <bpmn:sequenceFlow id="flow-declined-1" sourceRef="offer-declined-start" targetRef="archive-candidate" />
+      <bpmn:sequenceFlow id="flow-declined-2" sourceRef="archive-candidate" targetRef="offer-declined-end" />
+    </bpmn:subProcess>
+  </bpmn:process>
+  <bpmn:message id="message-offer-declined" name="offer-declined">
+    <bpmn:extensionElements>
+      <zeebe:subscription correlationKey="=onboardingId" />
+    </bpmn:extensionElements>
+  </bpmn:message>
+  <bpmndi:BPMNDiagram id="employee-onboarding-diagram">
+    <bpmndi:BPMNPlane id="employee-onboarding-plane" bpmnElement="employee-onboarding">
+      <bpmndi:BPMNShape id="offer-accepted_di" bpmnElement="offer-accepted">
+        <dc:Bounds x="110" y="207" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="preparation_di" bpmnElement="preparation" isExpanded="true">
+        <dc:Bounds x="196" y="70" width="882" height="310" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="preparation-start_di" bpmnElement="preparation-start">
+        <dc:Bounds x="226" y="182" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="create-contract_di" bpmnElement="create-contract">
+        <dc:Bounds x="312" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="collect-signed-contract_di" bpmnElement="collect-signed-contract">
+        <dc:Bounds x="462" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="contract-signed_di" bpmnElement="contract-signed">
+        <dc:Bounds x="612" y="175" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="order-equipment_di" bpmnElement="order-equipment">
+        <dc:Bounds x="712" y="100" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="follow-up-candidate_di" bpmnElement="follow-up-candidate">
+        <dc:Bounds x="712" y="220" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="generate-employee-id_di" bpmnElement="generate-employee-id">
+        <dc:Bounds x="862" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="preparation-end_di" bpmnElement="preparation-end">
+        <dc:Bounds x="1012" y="182" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="first-day_di" bpmnElement="first-day" isExpanded="true">
+        <dc:Bounds x="1128" y="155" width="632" height="140" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="first-day-start_di" bpmnElement="first-day-start">
+        <dc:Bounds x="1158" y="207" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="welcome-employee_di" bpmnElement="welcome-employee">
+        <dc:Bounds x="1244" y="185" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="hand-over-equipment_di" bpmnElement="hand-over-equipment">
+        <dc:Bounds x="1394" y="185" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="set-up-accounts_di" bpmnElement="set-up-accounts">
+        <dc:Bounds x="1544" y="185" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="first-day-end_di" bpmnElement="first-day-end">
+        <dc:Bounds x="1694" y="207" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="training_di" bpmnElement="training" isExpanded="true">
+        <dc:Bounds x="1810" y="155" width="632" height="140" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="training-start_di" bpmnElement="training-start">
+        <dc:Bounds x="1840" y="207" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="complete-safety-training_di" bpmnElement="complete-safety-training">
+        <dc:Bounds x="1926" y="185" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="shadow-colleague_di" bpmnElement="shadow-colleague">
+        <dc:Bounds x="2076" y="185" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="sign-off-training_di" bpmnElement="sign-off-training">
+        <dc:Bounds x="2226" y="185" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="training-end_di" bpmnElement="training-end">
+        <dc:Bounds x="2376" y="207" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="probation_di" bpmnElement="probation" isExpanded="true">
+        <dc:Bounds x="2492" y="155" width="482" height="140" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="probation-start_di" bpmnElement="probation-start">
+        <dc:Bounds x="2522" y="207" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="mid-probation-review_di" bpmnElement="mid-probation-review">
+        <dc:Bounds x="2608" y="185" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="final-review_di" bpmnElement="final-review">
+        <dc:Bounds x="2758" y="185" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="probation-end_di" bpmnElement="probation-end">
+        <dc:Bounds x="2908" y="207" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="employee-onboarded_di" bpmnElement="employee-onboarded">
+        <dc:Bounds x="3024" y="207" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="offer-declined_di" bpmnElement="offer-declined" isExpanded="true">
+        <dc:Bounds x="110" y="460" width="332" height="140" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="offer-declined-start_di" bpmnElement="offer-declined-start">
+        <dc:Bounds x="140" y="512" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="archive-candidate_di" bpmnElement="archive-candidate">
+        <dc:Bounds x="226" y="490" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="offer-declined-end_di" bpmnElement="offer-declined-end">
+        <dc:Bounds x="376" y="512" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="preparation-flow-1_di" bpmnElement="preparation-flow-1">
+        <di:waypoint x="262" y="200" />
+        <di:waypoint x="312" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="preparation-flow-2_di" bpmnElement="preparation-flow-2">
+        <di:waypoint x="412" y="200" />
+        <di:waypoint x="462" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="preparation-flow-3_di" bpmnElement="preparation-flow-3">
+        <di:waypoint x="562" y="200" />
+        <di:waypoint x="612" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="preparation-flow-5_di" bpmnElement="preparation-flow-5">
+        <di:waypoint x="812" y="140" />
+        <di:waypoint x="837" y="140" />
+        <di:waypoint x="837" y="200" />
+        <di:waypoint x="862" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="preparation-flow-6_di" bpmnElement="preparation-flow-6">
+        <di:waypoint x="962" y="200" />
+        <di:waypoint x="1012" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="preparation-flow-signed_di" bpmnElement="preparation-flow-signed">
+        <di:waypoint x="662" y="200" />
+        <di:waypoint x="687" y="200" />
+        <di:waypoint x="687" y="140" />
+        <di:waypoint x="712" y="140" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="preparation-flow-not-signed_di" bpmnElement="preparation-flow-not-signed">
+        <di:waypoint x="662" y="200" />
+        <di:waypoint x="687" y="200" />
+        <di:waypoint x="687" y="260" />
+        <di:waypoint x="712" y="260" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="preparation-flow-follow-up_di" bpmnElement="preparation-flow-follow-up">
+        <di:waypoint x="762" y="300" />
+        <di:waypoint x="762" y="340" />
+        <di:waypoint x="527" y="340" />
+        <di:waypoint x="527" y="240" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="first-day-flow-1_di" bpmnElement="first-day-flow-1">
+        <di:waypoint x="1194" y="225" />
+        <di:waypoint x="1244" y="225" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="first-day-flow-2_di" bpmnElement="first-day-flow-2">
+        <di:waypoint x="1344" y="225" />
+        <di:waypoint x="1394" y="225" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="first-day-flow-3_di" bpmnElement="first-day-flow-3">
+        <di:waypoint x="1494" y="225" />
+        <di:waypoint x="1544" y="225" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="first-day-flow-4_di" bpmnElement="first-day-flow-4">
+        <di:waypoint x="1644" y="225" />
+        <di:waypoint x="1694" y="225" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="training-flow-1_di" bpmnElement="training-flow-1">
+        <di:waypoint x="1876" y="225" />
+        <di:waypoint x="1926" y="225" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="training-flow-2_di" bpmnElement="training-flow-2">
+        <di:waypoint x="2026" y="225" />
+        <di:waypoint x="2076" y="225" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="training-flow-3_di" bpmnElement="training-flow-3">
+        <di:waypoint x="2176" y="225" />
+        <di:waypoint x="2226" y="225" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="training-flow-4_di" bpmnElement="training-flow-4">
+        <di:waypoint x="2326" y="225" />
+        <di:waypoint x="2376" y="225" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="probation-flow-1_di" bpmnElement="probation-flow-1">
+        <di:waypoint x="2558" y="225" />
+        <di:waypoint x="2608" y="225" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="probation-flow-2_di" bpmnElement="probation-flow-2">
+        <di:waypoint x="2708" y="225" />
+        <di:waypoint x="2758" y="225" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="probation-flow-3_di" bpmnElement="probation-flow-3">
+        <di:waypoint x="2858" y="225" />
+        <di:waypoint x="2908" y="225" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="flow-to-preparation_di" bpmnElement="flow-to-preparation">
+        <di:waypoint x="146" y="225" />
+        <di:waypoint x="196" y="225" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="flow-to-first-day_di" bpmnElement="flow-to-first-day">
+        <di:waypoint x="1078" y="225" />
+        <di:waypoint x="1128" y="225" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="flow-to-training_di" bpmnElement="flow-to-training">
+        <di:waypoint x="1760" y="225" />
+        <di:waypoint x="1810" y="225" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="flow-to-probation_di" bpmnElement="flow-to-probation">
+        <di:waypoint x="2442" y="225" />
+        <di:waypoint x="2492" y="225" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="flow-to-onboarded_di" bpmnElement="flow-to-onboarded">
+        <di:waypoint x="2974" y="225" />
+        <di:waypoint x="3024" y="225" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="flow-declined-1_di" bpmnElement="flow-declined-1">
+        <di:waypoint x="176" y="530" />
+        <di:waypoint x="226" y="530" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="flow-declined-2_di" bpmnElement="flow-declined-2">
+        <di:waypoint x="326" y="530" />
+        <di:waypoint x="376" y="530" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>
+

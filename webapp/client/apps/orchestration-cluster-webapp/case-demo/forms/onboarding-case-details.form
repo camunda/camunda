@@ -1,0 +1,73 @@
+{
+  "executionPlatform": "Camunda Cloud",
+  "executionPlatformVersion": "8.11.0",
+  "exporter": {
+    "name": "Camunda Modeler",
+    "version": "5.40.0"
+  },
+  "schemaVersion": 18,
+  "id": "onboarding-case-details",
+  "type": "default",
+  "components": [
+    {
+      "type": "textfield",
+      "key": "employeeName",
+      "label": "Employee",
+      "id": "Field_employeeName_301"
+    },
+    {
+      "type": "textfield",
+      "key": "role",
+      "label": "Role",
+      "id": "Field_role_302"
+    },
+    {
+      "type": "textfield",
+      "key": "team",
+      "label": "Team",
+      "id": "Field_team_303"
+    },
+    {
+      "type": "textfield",
+      "key": "startDate",
+      "label": "Start date",
+      "id": "Field_startDate_304"
+    },
+    {
+      "type": "textfield",
+      "key": "manager",
+      "label": "Manager",
+      "id": "Field_manager_305"
+    },
+    {
+      "type": "textfield",
+      "key": "contractType",
+      "label": "Contract",
+      "id": "Field_contractType_306"
+    },
+    {
+      "type": "number",
+      "key": "salary",
+      "label": "Yearly salary (EUR)",
+      "id": "Field_salary_307"
+    },
+    {
+      "type": "textfield",
+      "key": "employeeId",
+      "label": "Employee ID",
+      "id": "Field_employeeId_308"
+    },
+    {
+      "type": "textfield",
+      "key": "laptopModel",
+      "label": "Laptop",
+      "id": "Field_laptopModel_309"
+    },
+    {
+      "type": "textfield",
+      "key": "emailAddress",
+      "label": "Email address",
+      "id": "Field_emailAddress_310"
+    }
+  ]
+}

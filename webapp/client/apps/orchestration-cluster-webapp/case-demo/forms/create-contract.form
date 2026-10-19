@@ -1,0 +1,58 @@
+{
+  "executionPlatform": "Camunda Cloud",
+  "executionPlatformVersion": "8.11.0",
+  "exporter": {
+    "name": "Camunda Modeler",
+    "version": "5.40.0"
+  },
+  "schemaVersion": 18,
+  "id": "create-contract",
+  "type": "default",
+  "components": [
+    {
+      "type": "text",
+      "text": "### Step 1 of 3: create the contract",
+      "id": "Text_311"
+    },
+    {
+      "type": "textfield",
+      "key": "employeeName",
+      "label": "Employee",
+      "id": "Field_employeeName_312",
+      "readonly": true
+    },
+    {
+      "type": "select",
+      "key": "contractType",
+      "label": "Contract type",
+      "id": "Field_contractType_313",
+      "validate": {
+        "required": true
+      },
+      "values": [
+        {
+          "value": "permanent",
+          "label": "Permanent"
+        },
+        {
+          "value": "fixed-term",
+          "label": "Fixed term"
+        },
+        {
+          "value": "internship",
+          "label": "Internship"
+        }
+      ]
+    },
+    {
+      "type": "number",
+      "key": "salary",
+      "label": "Yearly salary (EUR)",
+      "id": "Field_salary_314",
+      "validate": {
+        "required": true,
+        "min": 0
+      }
+    }
+  ]
+}
