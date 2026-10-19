@@ -18,6 +18,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.lenient;
@@ -36,6 +37,7 @@ import io.camunda.zeebe.broker.client.api.BrokerClusterState;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
 import io.camunda.zeebe.protocol.impl.encoding.CheckpointStateResponse;
 import io.camunda.zeebe.protocol.impl.encoding.CheckpointStateResponse.PartitionCheckpointState;
+import io.camunda.zeebe.protocol.impl.encoding.CheckpointStateResponse.PartitionLogArchiveState;
 import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
 import io.camunda.zeebe.scheduler.testing.ControlledActorSchedulerExtension;
 import io.camunda.zeebe.util.VersionUtil;
@@ -649,6 +651,138 @@ public class CheckpointScheduleTest {
 
     // then
     verify(backupRequestHandler, never()).activateLogArchive(any());
+  }
+
+  @Test
+  void shouldTakeHandoverBackupWhenLogArchiveIsReady() {
+    // given - the archive passed the last backup and archived a snapshot
+    final var now = actorScheduler.getClock().getCurrentTime().toEpochMilli();
+    final var state = backupState(now, 1L, CheckpointType.SCHEDULED_BACKUP, 50);
+    state.setLogArchiveStates(Set.of(new PartitionLogArchiveState(1, true, 60, 10, -1)));
+    givenCheckpointState(state);
+    checkpointScheduler = createHandoverScheduler();
+
+    // when
+    actorScheduler.submitActor(checkpointScheduler);
+    actorScheduler.workUntilDone();
+    actorScheduler.updateClock(Duration.ofSeconds(5));
+    actorScheduler.workUntilDone();
+
+    // then
+    verify(backupRequestHandler, times(1))
+        .checkpoint(DEFAULT_PHYSICAL_TENANT_ID, CheckpointType.HANDOVER);
+    verify(backupRequestHandler, never())
+        .checkpoint(DEFAULT_PHYSICAL_TENANT_ID, CheckpointType.SCHEDULED_BACKUP);
+    verify(backupRequestHandler, never()).completeHandover(any(), anyLong());
+  }
+
+  @Test
+  void shouldCompleteHandoverWithoutTakingBackupsWhileItIsPending() {
+    // given - H is confirmed and archived, but not recorded yet
+    final var now = actorScheduler.getClock().getCurrentTime().toEpochMilli();
+    final var state = backupState(now, 7L, CheckpointType.HANDOVER, 50);
+    state.setLogArchiveStates(Set.of(new PartitionLogArchiveState(1, true, 60, 10, -1)));
+    givenCheckpointState(state);
+    doReturn(CompletableFuture.completedFuture(null))
+        .when(backupRequestHandler)
+        .completeHandover(DEFAULT_PHYSICAL_TENANT_ID, 7L);
+    checkpointScheduler = createHandoverScheduler();
+
+    // when - well past the next scheduled backup
+    actorScheduler.submitActor(checkpointScheduler);
+    actorScheduler.workUntilDone();
+    for (int i = 0; i < 6; i++) {
+      actorScheduler.updateClock(Duration.ofSeconds(5));
+      actorScheduler.workUntilDone();
+    }
+
+    // then - sent right away and retried, but no backup that could hide H
+    verify(backupRequestHandler, atLeast(3)).completeHandover(DEFAULT_PHYSICAL_TENANT_ID, 7L);
+    verify(backupRequestHandler, never()).checkpoint(eq(DEFAULT_PHYSICAL_TENANT_ID), any());
+  }
+
+  @Test
+  void shouldTakeScheduledBackupsAfterTheHandover() {
+    // given - the handover is first pending, then recorded
+    final var now = actorScheduler.getClock().getCurrentTime().toEpochMilli();
+    final var pending = backupState(now, 7L, CheckpointType.HANDOVER, 50);
+    pending.setLogArchiveStates(Set.of(new PartitionLogArchiveState(1, true, 60, 10, -1)));
+    final var recorded = backupState(now, 7L, CheckpointType.HANDOVER, 50);
+    recorded.setLogArchiveStates(Set.of(new PartitionLogArchiveState(1, true, 60, 10, 7L)));
+    doReturn(CompletableFuture.completedStage(pending))
+        .doReturn(CompletableFuture.completedStage(recorded))
+        .when(backupRequestHandler)
+        .getCheckpointState(DEFAULT_PHYSICAL_TENANT_ID);
+    doReturn(CompletableFuture.completedFuture(null))
+        .when(backupRequestHandler)
+        .completeHandover(DEFAULT_PHYSICAL_TENANT_ID, 7L);
+    checkpointScheduler = createHandoverScheduler();
+
+    // when
+    actorScheduler.submitActor(checkpointScheduler);
+    actorScheduler.workUntilDone();
+    actorScheduler.updateClock(Duration.ofSeconds(5));
+    actorScheduler.workUntilDone();
+
+    // then
+    verify(backupRequestHandler, times(1)).completeHandover(DEFAULT_PHYSICAL_TENANT_ID, 7L);
+    verify(backupRequestHandler, times(1))
+        .checkpoint(DEFAULT_PHYSICAL_TENANT_ID, CheckpointType.SCHEDULED_BACKUP);
+    verify(backupRequestHandler, never())
+        .checkpoint(DEFAULT_PHYSICAL_TENANT_ID, CheckpointType.HANDOVER);
+  }
+
+  @Test
+  void shouldIgnoreLogArchiveStateWhenLogArchiveIsDisabled() {
+    // given - a state that would lead to a handover backup with the archive enabled
+    final var now = actorScheduler.getClock().getCurrentTime().toEpochMilli();
+    final var state = backupState(now, 1L, CheckpointType.SCHEDULED_BACKUP, 50);
+    state.setLogArchiveStates(Set.of(new PartitionLogArchiveState(1, true, 60, 10, -1)));
+    givenCheckpointState(state);
+    checkpointScheduler =
+        createScheduler(null, new Schedule.IntervalSchedule(Duration.ofSeconds(5)));
+
+    // when
+    actorScheduler.submitActor(checkpointScheduler);
+    actorScheduler.workUntilDone();
+    actorScheduler.updateClock(Duration.ofSeconds(5));
+    actorScheduler.workUntilDone();
+
+    // then
+    verify(backupRequestHandler, times(1))
+        .checkpoint(DEFAULT_PHYSICAL_TENANT_ID, CheckpointType.SCHEDULED_BACKUP);
+    verify(backupRequestHandler, never())
+        .checkpoint(DEFAULT_PHYSICAL_TENANT_ID, CheckpointType.HANDOVER);
+  }
+
+  private void givenCheckpointState(final CheckpointStateResponse state) {
+    doReturn(CompletableFuture.completedStage(state))
+        .when(backupRequestHandler)
+        .getCheckpointState(DEFAULT_PHYSICAL_TENANT_ID);
+  }
+
+  private CheckpointStateResponse backupState(
+      final long timestamp, final long backupId, final CheckpointType type, final long position) {
+    final var response = new CheckpointStateResponse();
+    response.setBackupStates(
+        Set.of(new PartitionCheckpointState(1, backupId, type, timestamp, position, 1)));
+    return response;
+  }
+
+  /** A scheduler with a 5s backup schedule and the log archive enabled, its activation done. */
+  private CheckpointScheduler createHandoverScheduler() {
+    givenBrokerVersions(VersionUtil.getVersion());
+    doReturn(CompletableFuture.completedFuture(Map.of(1, true)))
+        .when(backupRequestHandler)
+        .activateLogArchive(DEFAULT_PHYSICAL_TENANT_ID);
+    return new CheckpointScheduler(
+        DEFAULT_PHYSICAL_TENANT_ID,
+        null,
+        new Schedule.IntervalSchedule(Duration.ofSeconds(5)),
+        backupRequestHandler,
+        topologyManager,
+        meterRegistry,
+        true);
   }
 
   private void givenBrokerVersions(final String... versions) {
