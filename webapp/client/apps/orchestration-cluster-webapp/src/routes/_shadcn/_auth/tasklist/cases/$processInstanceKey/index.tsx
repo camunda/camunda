@@ -6,11 +6,25 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {createFileRoute} from '@tanstack/react-router';
-import {PageLayout} from '@camunda/design-system';
+import {useCallback} from 'react';
+import {createFileRoute, useNavigate} from '@tanstack/react-router';
+import {TasklistCaseTasksPage} from '#/tasklist/pages/TasklistCaseTasksPage';
+import {useCaseData} from '#/tasklist/modules/case-details/caseData';
 
-const Route = createFileRoute('/_shadcn/_auth/tasklist/cases/$processInstanceKey/')({
-	component: () => <PageLayout />,
+export const Route = createFileRoute('/_shadcn/_auth/tasklist/cases/$processInstanceKey/')({
+	component: function TasklistCaseTasksRoute() {
+		const navigate = useNavigate();
+		const {processInstanceKey} = Route.useParams();
+		const caseData = useCaseData(processInstanceKey);
+		const openTask = useCallback(
+			(userTaskKey: string) =>
+				navigate({
+					to: '/tasklist/cases/$processInstanceKey/tasks/$userTaskKey',
+					params: {processInstanceKey, userTaskKey},
+				}),
+			[navigate, processInstanceKey],
+		);
+
+		return <TasklistCaseTasksPage {...caseData} onOpenTask={openTask} />;
+	},
 });
-
-export {Route};
