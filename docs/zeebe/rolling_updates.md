@@ -65,6 +65,8 @@ See https://github.com/camunda/camunda/issues/30727 for an example of such an is
 This also applies to startup tasks that write a new record, such as `IdentitySetupInitializer` or `RpaReexportMigrator`.
 They write the record as soon as a new-version leader starts, so such tasks should be treated like any other new record.
 
+This risk is accepted: it is not a reason to avoid adding a new record when an implementation needs one.
+
 When changing command behavior, older brokers can simply continue replaying the new sequence of events produced.
 When the old broker is processing, it will continue to produce the old sequence of events and new brokers will have to replay it.
 
