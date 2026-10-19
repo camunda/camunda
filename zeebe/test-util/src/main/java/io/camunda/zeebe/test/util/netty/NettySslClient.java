@@ -59,7 +59,10 @@ public final class NettySslClient {
   public static NettySslClient ofSelfSigned(final SelfSignedCertificate certificate) {
     try {
       return new NettySslClient(
-          SslContextBuilder.forClient().trustManager(certificate.certificate()).build());
+          SslContextBuilder.forClient()
+              .trustManager(certificate.certificate())
+              .endpointIdentificationAlgorithm(null)
+              .build());
     } catch (final SSLException e) {
       throw new UncheckedIOException(e);
     }
