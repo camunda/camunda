@@ -305,6 +305,9 @@ opensearch:
   connection:
     # Use AWS credentials for authentication
     awsEnabled: ${CAMUNDA_OPTIMIZE_OPENSEARCH_AWS_ENABLED:false}
+    # Maximum time in seconds Optimize keeps retrying to read its metadata document during startup,
+    # e.g. while OpenSearch is still recovering the metadata index shard. 0 disables retries.
+    metadataReadMaxWaitInSeconds: ${CAMUNDA_OPTIMIZE_OPENSEARCH_METADATA_READ_MAX_WAIT_IN_SECONDS:600}
     # Maximum time without connection to Opensearch, Optimize should
     # wait until a timeout triggers.
     timeout: 10000
@@ -422,6 +425,9 @@ es:
     clusterTaskCheckingEnabled: ${CAMUNDA_OPTIMIZE_ELASTICSEARCH_CLUSTER_TASK_CHECKING_ENABLED:true}
     # Determines whether this Optimize instance should perform schema initialization
     initSchemaEnabled: ${CAMUNDA_OPTIMIZE_ELASTICSEARCH_INIT_SCHEMA_ENABLED:true}
+    # Maximum time in seconds Optimize keeps retrying to read its metadata document during startup,
+    # e.g. while Elasticsearch is still recovering the metadata index shard. 0 disables retries.
+    metadataReadMaxWaitInSeconds: ${CAMUNDA_OPTIMIZE_ELASTICSEARCH_METADATA_READ_MAX_WAIT_IN_SECONDS:600}
     # Maximum time without connection to Elasticsearch, Optimize should
     # wait until a timeout triggers.
     timeout: 10000
