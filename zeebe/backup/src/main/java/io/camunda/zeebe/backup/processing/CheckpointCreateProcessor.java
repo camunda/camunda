@@ -9,6 +9,7 @@ package io.camunda.zeebe.backup.processing;
 
 import io.camunda.zeebe.backup.api.BackupManager;
 import io.camunda.zeebe.backup.common.BackupDescriptorImpl;
+import io.camunda.zeebe.backup.logarchive.state.DbLogArchiveState;
 import io.camunda.zeebe.backup.metrics.CheckpointMetrics;
 import io.camunda.zeebe.backup.processing.state.CheckpointState;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
@@ -20,13 +21,18 @@ import io.camunda.zeebe.protocol.record.intent.management.CheckpointIntent;
 import io.camunda.zeebe.stream.api.ProcessingResult;
 import io.camunda.zeebe.stream.api.ProcessingResultBuilder;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public final class CheckpointCreateProcessor {
+  private static final Logger LOG = LoggerFactory.getLogger(CheckpointCreateProcessor.class);
+
   private final CheckpointState checkpointState;
   private final BackupManager backupManager;
   private final CheckpointMetrics metrics;
   private final ScalingStatusSupplier scalingStatusSupplier;
   private final CheckpointCreatedEventApplier checkpointCreatedApplier;
+  private final DbLogArchiveState logArchiveState;
   private final PartitionCountSupplier partitionCountSupplier;
 
   public CheckpointCreateProcessor(
@@ -35,13 +41,15 @@ public final class CheckpointCreateProcessor {
       final ScalingStatusSupplier scalingStatusSupplier,
       final PartitionCountSupplier partitionCountSupplier,
       final CheckpointMetrics metrics,
-      final CheckpointCreatedEventApplier checkpointCreatedApplier) {
+      final CheckpointCreatedEventApplier checkpointCreatedApplier,
+      final DbLogArchiveState logArchiveState) {
     this.checkpointState = checkpointState;
     this.backupManager = backupManager;
     this.scalingStatusSupplier = scalingStatusSupplier;
     this.metrics = metrics;
     this.partitionCountSupplier = partitionCountSupplier;
     this.checkpointCreatedApplier = checkpointCreatedApplier;
+    this.logArchiveState = logArchiveState;
   }
 
   public ProcessingResult process(
@@ -75,8 +83,15 @@ public final class CheckpointCreateProcessor {
     final var descriptor =
         BackupDescriptorImpl.from(record, latestBackupPosition, currentPartitionCount);
 
+    // After the handover the checkpoint is a restore point of the log archive only: no old-style
+    // backup is taken (or marked as failed). The decision is made from replicated state.
+    final boolean oldBackupRetired = logArchiveState.meta().isAfterHandover(checkpointId);
+
     // Create backup (either normal or failed based on scaling state)
-    if (scalingInProgress) {
+    if (oldBackupRetired) {
+      LOG.trace(
+          "Not taking an old-style backup for checkpoint {} after the handover", checkpointId);
+    } else if (scalingInProgress) {
       // We want to mark the backup as failed for observability
       backupManager.createFailedBackup(
           checkpointId, descriptor, "Cannot create checkpoint while scaling is in progress");

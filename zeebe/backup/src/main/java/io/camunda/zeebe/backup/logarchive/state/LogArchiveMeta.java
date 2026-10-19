@@ -162,6 +162,14 @@ public final class LogArchiveMeta extends UnpackedObject implements DbValue {
     return getHandoverCheckpointId() >= 0;
   }
 
+  /**
+   * Whether the checkpoint is a restore point of the log archive only: a handover is recorded and
+   * the checkpoint is newer than the handover checkpoint H. No old-style backup exists for it.
+   */
+  public boolean isAfterHandover(final long checkpointId) {
+    return hasHandover() && checkpointId > getHandoverCheckpointId();
+  }
+
   /** Returns an independent copy. */
   public LogArchiveMeta copy() {
     return new LogArchiveMeta()

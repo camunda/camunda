@@ -51,7 +51,10 @@ public final class CheckpointCreatedEventApplier {
         checkpointTimestamp,
         checkpointRecord.getCheckpointType());
 
-    if (trackBackupMetadata && checkpointRecord.getCheckpointType() == CheckpointType.MARKER) {
+    // Markers extend backup ranges of the old backups; after the handover no backup follows them.
+    if (trackBackupMetadata
+        && checkpointRecord.getCheckpointType() == CheckpointType.MARKER
+        && !logArchiveState.meta().isAfterHandover(checkpointRecord.getCheckpointId())) {
       checkpointMetadataState.addMarkerCheckpoint(
           checkpointRecord.getCheckpointId(),
           checkpointRecord.getCheckpointPosition(),
