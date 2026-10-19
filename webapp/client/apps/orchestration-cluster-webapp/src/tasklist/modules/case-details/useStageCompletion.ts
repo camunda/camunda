@@ -30,13 +30,12 @@ function useStageCompletion(caseRef: Pick<ProcessInstance, 'processInstanceKey' 
 	const queryClient = useQueryClient();
 	const actorRef = useActorRef(stageCompletionMachine, {input: {queryClient, caseRef}});
 	const status = useSelector(actorRef, deriveStatus);
-	const closingStageName = useSelector(actorRef, (snapshot) => snapshot.context.request?.stageName ?? null);
 	const completeStage = useCallback(
 		(request: StageCompletionRequest) => actorRef.send({type: 'stage.complete', ...request}),
 		[actorRef],
 	);
 
-	return {status, closingStageName, completeStage};
+	return {status, completeStage};
 }
 
 export {useStageCompletion};
