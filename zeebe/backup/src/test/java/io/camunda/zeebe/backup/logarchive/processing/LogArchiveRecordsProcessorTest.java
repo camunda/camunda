@@ -417,6 +417,34 @@ final class LogArchiveRecordsProcessorTest {
   }
 
   @Test
+  void shouldCarryTheTimestampOfACheckpointIntoTheCommitEntry() throws Exception {
+    // given
+    harness.accept(LogArchiveIntent.START_TIMELINE, startTimeline(TIMELINE, 1));
+    harness.createCheckpoint(7, 5, CheckpointType.MARKER);
+
+    // when
+    final var event =
+        harness.accept(LogArchiveIntent.ARCHIVE_LOG, archiveLog(object(1, 10, 1, 10)));
+
+    // then
+    assertThat(event.getCheckpoints())
+        .extracting("checkpointTimestamp")
+        .containsExactly(LogArchiveHarness.timestampOf(7));
+    final var entry =
+        LogArchiveJson.read(harness.published.getLast().commitEntryJson(), CommitEntry.class);
+    assertThat(entry.checkpoints())
+        .extracting("checkpointTimestamp")
+        .containsExactly(LogArchiveHarness.timestampOf(7));
+
+    // and a follower replaying the log writes the same bytes
+    try (final var replica = new LogArchiveHarness(replicaDirectory.toFile(), CONFIG)) {
+      replica.replayLog(harness.log);
+      assertThat(replica.state().outboxAfter(-1).getLast().commitEntryJson())
+          .isEqualTo(harness.published.getLast().commitEntryJson());
+    }
+  }
+
+  @Test
   void shouldCoverCheckpointsOfEveryType() {
     // given
     harness.accept(LogArchiveIntent.START_TIMELINE, startTimeline(TIMELINE, 1));

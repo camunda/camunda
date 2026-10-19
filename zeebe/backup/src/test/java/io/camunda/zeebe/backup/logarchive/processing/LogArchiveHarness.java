@@ -194,12 +194,19 @@ final class LogArchiveHarness implements AutoCloseable {
     switch (event) {
       case final CheckpointCreated created ->
           transactionContext.runInTransaction(
-              () -> checkpointCreatedApplier.apply(created.toRecord(), 0));
+              () ->
+                  checkpointCreatedApplier.apply(
+                      created.toRecord(), timestampOf(created.checkpointId())));
       case final BackupConfirmed confirmed ->
           transactionContext.runInTransaction(
               () -> checkpointConfirmedApplier.apply(confirmed.toRecord(), 0));
       case final CapturedEvent captured -> throw new IllegalArgumentException("" + captured);
     }
+  }
+
+  /** The timestamp the harness gives a checkpoint when it is created. */
+  static long timestampOf(final long checkpointId) {
+    return 1_700_000_000_000L + checkpointId;
   }
 
   void replay(final CapturedEvent event) {

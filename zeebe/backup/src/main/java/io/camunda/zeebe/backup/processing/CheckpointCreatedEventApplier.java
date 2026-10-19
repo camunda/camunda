@@ -62,7 +62,8 @@ public final class CheckpointCreatedEventApplier {
       logArchiveState.insertPendingCheckpoint(
           checkpointRecord.getCheckpointId(),
           checkpointRecord.getCheckpointPosition(),
-          checkpointRecord.getCheckpointType());
+          checkpointRecord.getCheckpointType(),
+          checkpointTimestamp);
     }
 
     checkpointListeners.forEach(

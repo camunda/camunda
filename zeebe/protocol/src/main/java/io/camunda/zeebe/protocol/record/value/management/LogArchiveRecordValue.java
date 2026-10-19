@@ -190,5 +190,10 @@ public interface LogArchiveRecordValue extends RecordValue {
     long getCheckpointPosition();
 
     CheckpointType getCheckpointType();
+
+    /**
+     * @return the timestamp of the checkpoint in epoch millis, or -1 if unknown
+     */
+    long getCheckpointTimestamp();
   }
 }

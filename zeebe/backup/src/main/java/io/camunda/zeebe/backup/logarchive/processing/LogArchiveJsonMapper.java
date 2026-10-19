@@ -223,7 +223,8 @@ public final class LogArchiveJsonMapper {
     return new CoveredCheckpointJson(
         checkpoint.getCheckpointId(),
         checkpoint.getCheckpointPosition(),
-        checkpoint.getCheckpointType().name());
+        checkpoint.getCheckpointType().name(),
+        checkpoint.getCheckpointTimestamp());
   }
 
   public static ArchivedSnapshotJson snapshot(final ArchivedSnapshotValue snapshot) {
