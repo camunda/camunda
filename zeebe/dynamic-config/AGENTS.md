@@ -35,11 +35,12 @@ The code is split into two Maven/Gradle modules. `api` owns `io.camunda.zeebe.dy
 `impl` owns `io.camunda.zeebe.dynamic.config.impl`; the two never share a package:
 
 - `api/` (`zeebe-cluster-config-api`) — contracts and the data model: `state/`, request/response
-  types, request sender, executor interfaces, serializer interfaces, the JSON serializer, the
-  partition distributors and reassigners. Modules that only read or send configuration depend on
+  types, request sender, executor interfaces, serializer interfaces, the JSON serializer and the
+  partition distributors. Modules that only read or send configuration depend on
   this module.
 - `impl/` (`zeebe-cluster-config-impl`) — behavior: coordinator, appliers, transformers, request
-  server and handler, gossiper, initializers, `ProtoBufSerializer` and the protobuf sources.
+  server and handler, partition reassigners, gossiper, initializers, `ProtoBufSerializer` and the
+  protobuf sources.
   Composition roots (broker, `dist/`, restore, tests) depend on it and construct the
   implementations directly.
 
@@ -49,16 +50,20 @@ live in `api/src/test` and are shared with `impl/` through the `api` test-jar.
 
 ## Package breakdown
 
-The packages below are in `api`. `impl` mirrors the `api/`, `changes/`, `serializer/`, `util/` and `gossip/` names under `impl.`, for example `impl.changes` for the coordinator and appliers.
+The packages below are in `api`, except `changes/` and `transformers/`, which are in `impl`.
+`impl` mirrors the `api/`, `serializer/`, `util/` and `gossip/` names under `impl.`. For example,
+`impl.api` holds the request server and handler, and `impl.util` holds the partition reassigners.
+`impl.changes` holds the coordinator and appliers. `impl.metrics` holds the topology metrics.
 
-|    Package    |                                                                                                               What lives here                                                                                                                |
-|---------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `api/`        | **Request/response types** (`ClusterConfigurationManagementRequest.*`), **transformers** (one per operation family — convert a request into a `List<Op>`), request sender/server/handler, topics enum                                        |
-| `changes/`    | **Appliers** — one class per operation type (e.g. `PartitionJoinApplier`). Each applier executes an op against the live broker and advances `ClusterConfiguration`. Also `ConfigurationChangeCoordinator(Impl)` which drives the apply loop. |
-| `state/`      | **Immutable data model**: `ClusterConfiguration`, `MemberState`, `PartitionState`, `PartitionDistributorConfig`, `ClusterConfigurationChangeOperation` (sealed op hierarchy), `RoutingState`                                                 |
-| `serializer/` | `ProtoBufSerializer` — encode/decode all request and state types to/from proto bytes. `ClusterConfigurationSerializer` for the persisted topology snapshot.                                                                                  |
-| `util/`       | `ZoneAwarePartitionDistributor`, `RoundRobinPartitionDistributor`, `ConfigurationUtil` (build `ClusterConfiguration` from a distribution map)                                                                                                |
-| root          | Wiring: `ClusterConfigurationManagerImpl` (gossip listener + apply), `PersistedClusterConfiguration` (disk persistence), initializers (`PartitionDistributorInitializer`, `RoutingStateInitializer`, …)                                      |
+|     Package     |                                                                                                               What lives here                                                                                                                |
+|-----------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `api/`          | **Request/response types** (`ClusterConfigurationManagementRequest.*`), request sender, topics enum (`impl.api` has the request server and handler)                                                                                          |
+| `transformers/` | **Transformers** (`impl` only) — one per operation family, convert a request into a `List<Op>`                                                                                                                                               |
+| `changes/`      | **Appliers** — one class per operation type (e.g. `PartitionJoinApplier`). Each applier executes an op against the live broker and advances `ClusterConfiguration`. Also `ConfigurationChangeCoordinator(Impl)` which drives the apply loop. |
+| `state/`        | **Immutable data model**: `ClusterConfiguration`, `MemberState`, `PartitionState`, `PartitionDistributorConfig`, `ClusterConfigurationChangeOperation` (sealed op hierarchy), `RoutingState`                                                 |
+| `serializer/`   | `ProtoBufSerializer` — encode/decode all request and state types to/from proto bytes. `ClusterConfigurationSerializer` for the persisted topology snapshot.                                                                                  |
+| `util/`         | `ZoneAwarePartitionDistributor`, `RoundRobinPartitionDistributor`, `ConfigurationUtil` (build `ClusterConfiguration` from a distribution map)                                                                                                |
+| root            | Wiring: `ClusterConfigurationManagerImpl` (gossip listener + apply), `PersistedClusterConfiguration` (disk persistence), initializers (`PartitionDistributorInitializer`, `RoutingStateInitializer`, …)                                      |
 
 ## Operational guides
 
