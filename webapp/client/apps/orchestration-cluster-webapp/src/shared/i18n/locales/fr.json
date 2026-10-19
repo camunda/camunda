@@ -913,7 +913,8 @@
 			"caseClosedDescription": "Il n’y a plus de travail dans ce dossier.",
 			"caseActivitySlow": "L’activité a démarré. Sa tâche met plus de temps que d’habitude à s’afficher.",
 			"caseActivityCompletedTimes": "Terminée {{count}}×",
-			"caseActivityCompletedBefore": "Déjà terminée {{count}}×"
+			"caseActivityCompletedBefore": "Déjà terminée {{count}}×",
+			"caseStageBlockedNoWork": "L’étape attend la résolution de l’incident"
 		},
 		"operate": {
 			"dashboard": {

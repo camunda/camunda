@@ -19,8 +19,21 @@ The engine has no case or stage entity. This package reads:
 | `getCaseTitle(variable)`        | The case title from the variable the case marker names                                 |
 | `getDocumentReferences(vars)`   | Document references in variable values                                                 |
 
+## Stage kinds
+
+| Kind          | BPMN                               | On the line                                                             |
+| ------------- | ---------------------------------- | ----------------------------------------------------------------------- |
+| `subProcess`  | Embedded sub-process               | Yes, in the order of the sequence flows                                 |
+| `adHoc`       | Ad-hoc sub-process                 | Yes                                                                     |
+| `alternative` | Interrupting event sub-process     | Only once the case enters it; it replaces the stages that did not start |
+| `optional`    | Non-interrupting event sub-process | No: the design has no model for optional stages yet (GAP-001)           |
+
+A stage marker below the top level is ignored. A loop back to an earlier stage (rework) runs it again: the stages
+after it that ended before the new run read as ahead.
+
 ## Prototype conventions
 
 - The "I am done" activity of a stage is the send task with the job type `case-stage-done`, or a send task whose
   name contains "done".
 - Required tasks come from a static `activeElementsCollection` list of strings, for example `=["a", "b"]`.
+- Dates are compared as timestamps: the searches return them with different offsets.

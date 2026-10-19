@@ -910,7 +910,8 @@
 			"caseClosedDescription": "In diesem Fall gibt es keine Arbeit mehr.",
 			"caseActivitySlow": "Die Aktivität wurde gestartet. Ihre Aufgabe erscheint später als üblich.",
 			"caseActivityCompletedTimes": "{{count}}× erledigt",
-			"caseActivityCompletedBefore": "Zuvor {{count}}× erledigt"
+			"caseActivityCompletedBefore": "Zuvor {{count}}× erledigt",
+			"caseStageBlockedNoWork": "Die Phase wartet, bis der Vorfall gelöst ist"
 		},
 		"operate": {
 			"dashboard": {

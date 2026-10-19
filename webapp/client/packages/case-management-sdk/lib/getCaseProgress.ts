@@ -24,6 +24,7 @@ type StageState = 'done' | 'inProgress' | 'incident' | 'cancelled' | 'skipped' |
 type StageProgress = {
 	stage: Stage;
 	state: StageState;
+	/** The start and end of the latest run of the stage; a loop back runs a stage again. */
 	startDate: string | null;
 	endDate: string | null;
 	/** The latest element instance of the stage; ad-hoc activation needs it. */
@@ -32,8 +33,13 @@ type StageProgress = {
 
 const STARTED_STATES = new Set<StageState>(['done', 'inProgress', 'incident', 'cancelled']);
 
+/** Dates can come with different offsets from different searches, so the SDK compares timestamps. */
+function toTime(date: string | null | undefined): number {
+	return date === null || date === undefined ? 0 : Date.parse(date) || 0;
+}
+
 function byStartDate(first: ElementInstanceLike, second: ElementInstanceLike): number {
-	return first.startDate.localeCompare(second.startDate);
+	return toTime(first.startDate) - toTime(second.startDate);
 }
 
 function getStageProgress(stage: Stage, elementInstances: ElementInstanceLike[]): StageProgress {
@@ -46,7 +52,7 @@ function getStageProgress(stage: Stage, elementInstances: ElementInstanceLike[])
 
 	const progress = {
 		stage,
-		startDate: instances[0]?.startDate ?? null,
+		startDate: latest.startDate,
 		endDate: latest.endDate ?? null,
 		elementInstanceKey: latest.elementInstanceKey,
 	};
@@ -67,10 +73,29 @@ function getStageProgress(stage: Stage, elementInstances: ElementInstanceLike[])
 	// "Stage done" terminates the stage on purpose, so it reads as done, not as cancelled (STAGES.md)
 	const boundaryEventId = stage.manualCompletion?.boundaryEventId;
 	const wasDoneManually = elementInstances.some(
-		({elementId, startDate}) => elementId === boundaryEventId && startDate >= latest.startDate,
+		({elementId, startDate}) => elementId === boundaryEventId && toTime(startDate) >= toTime(latest.startDate),
 	);
 
 	return {...progress, state: wasDoneManually ? 'done' : 'cancelled'};
+}
+
+/**
+ * A loop back to an earlier stage (rework) starts it again. The stages after it that ended before this
+ * new start must run again, so they read as ahead, not as done.
+ */
+function resetReworkedStages(mainStages: StageProgress[]): StageProgress[] {
+	const currentIndex = mainStages.findIndex(({state}) => state === 'inProgress' || state === 'incident');
+	const reworkStart = mainStages[currentIndex]?.startDate;
+
+	if (currentIndex < 0 || reworkStart === undefined || reworkStart === null) {
+		return mainStages;
+	}
+
+	return mainStages.map((stageProgress, index) =>
+		index > currentIndex && stageProgress.endDate !== null && toTime(stageProgress.endDate) <= toTime(reworkStart)
+			? {...stageProgress, state: 'ahead', startDate: null, endDate: null, elementInstanceKey: null}
+			: stageProgress,
+	);
 }
 
 /**
@@ -83,14 +108,16 @@ function getCaseProgress(
 	processInstanceState: ProcessInstanceState,
 ): StageProgress[] {
 	const progress = model.stages.map((stage) => getStageProgress(stage, elementInstances));
-	const mainStages = progress.filter(({stage}) => stage.kind !== 'alternative');
+	const mainStages = resetReworkedStages(
+		progress.filter(({stage}) => stage.kind === 'subProcess' || stage.kind === 'adHoc'),
+	);
 	const enteredAlternatives = progress.filter(
 		({stage, state}) => stage.kind === 'alternative' && STARTED_STATES.has(state),
 	);
 
 	if (enteredAlternatives.length > 0) {
 		return [...mainStages.filter(({state}) => STARTED_STATES.has(state)), ...enteredAlternatives].sort(
-			(first, second) => (first.startDate ?? '').localeCompare(second.startDate ?? ''),
+			(first, second) => toTime(first.startDate) - toTime(second.startDate),
 		);
 	}
 

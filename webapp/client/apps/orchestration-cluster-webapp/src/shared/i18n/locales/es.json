@@ -910,7 +910,8 @@
 			"caseClosedDescription": "No hay más trabajo en este caso.",
 			"caseActivitySlow": "La actividad se inició. Su tarea tarda más de lo habitual en aparecer.",
 			"caseActivityCompletedTimes": "Hecha {{count}}×",
-			"caseActivityCompletedBefore": "Hecha {{count}}× antes"
+			"caseActivityCompletedBefore": "Hecha {{count}}× antes",
+			"caseStageBlockedNoWork": "La etapa espera hasta que se resuelva el incidente"
 		},
 		"operate": {
 			"dashboard": {

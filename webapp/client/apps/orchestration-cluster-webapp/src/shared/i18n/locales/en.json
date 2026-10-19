@@ -922,7 +922,8 @@
 			"caseClosedDescription": "There is no more work in this case.",
 			"caseActivitySlow": "The activity started. Its task takes longer to show than usual.",
 			"caseActivityCompletedTimes": "Done {{count}}×",
-			"caseActivityCompletedBefore": "Done {{count}}× before"
+			"caseActivityCompletedBefore": "Done {{count}}× before",
+			"caseStageBlockedNoWork": "The stage waits until the incident is resolved"
 		},
 		"operate": {
 			"dashboard": {

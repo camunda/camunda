@@ -35,8 +35,10 @@ type StageCompletion = {
 type StageWork = {
 	/** Activities of an ad-hoc stage: required first, then optional. */
 	activities: StageActivity[];
-	/** Open user tasks of the stage that are not an activity of the list above. */
+	/** Open user tasks of the stage that are not an activity of the list above, and of optional stages. */
 	openTasks: UserTask[];
+	/** The optional stage of an open task, by user task key: it runs next to the active stage (GAP-001). */
+	optionalStageNames: Record<string, string>;
 	completion: StageCompletion | null;
 };
 
@@ -102,23 +104,36 @@ function getStageWork({
 	rootVariables: Variable[];
 }): StageWork {
 	const openTasks = userTasks.filter(({state}) => state === 'CREATED');
+	const stagesById = new Map(model.stages.map((stage) => [stage.id, stage]));
+	const getOptionalStage = ({elementId}: UserTask) => {
+		const stage = stagesById.get(model.stageIdByElementId.get(elementId) ?? '');
+		return stage?.kind === 'optional' ? stage : undefined;
+	};
+	const optionalStageNames = Object.fromEntries(
+		openTasks.flatMap((task) => {
+			const optionalStage = getOptionalStage(task);
+			return optionalStage === undefined ? [] : [[task.userTaskKey, optionalStage.name]];
+		}),
+	);
 	const stage = currentStage?.stage;
 
 	if (stage === undefined || currentStage === null) {
-		return {activities: [], openTasks, completion: null};
+		return {activities: [], openTasks, optionalStageNames, completion: null};
 	}
 
-	const stageTasks = openTasks.filter(({elementId}) => {
-		const stageId = model.stageIdByElementId.get(elementId);
-		return stageId === undefined || stageId === stage.id;
+	const stageTasks = openTasks.filter((task) => {
+		const stageId = model.stageIdByElementId.get(task.elementId);
+		return stageId === undefined || stageId === stage.id || getOptionalStage(task) !== undefined;
 	});
-	const stageStartDate = currentStage.startDate ?? '';
+	// The element instance search returns UTC dates and the user task search dates with an offset, so the
+	// run window compares timestamps, not strings.
+	const runStart = Date.parse(currentStage.startDate ?? '') || 0;
 	const stageInstances = elementInstances.filter(
-		({elementId, startDate}) => stage.elementIds.includes(elementId) && startDate >= stageStartDate,
+		({elementId, startDate}) => stage.elementIds.includes(elementId) && Date.parse(startDate) >= runStart,
 	);
 	const openTasksByElementId = new Map(stageTasks.map((task) => [task.elementId, task]));
 	const stageTaskHistory = userTasks.filter(
-		({elementId, creationDate}) => stage.elementIds.includes(elementId) && creationDate >= stageStartDate,
+		({elementId, creationDate}) => stage.elementIds.includes(elementId) && Date.parse(creationDate) >= runStart,
 	);
 	const adHoc = stage.adHoc;
 	const activityIds = adHoc === null ? [] : [...adHoc.requiredElementIds, ...adHoc.optionalElementIds];
@@ -135,6 +150,7 @@ function getStageWork({
 	return {
 		activities,
 		openTasks: stageTasks.filter(({elementId}) => !activityIds.includes(elementId)),
+		optionalStageNames,
 		completion:
 			manualCompletion === null
 				? null
