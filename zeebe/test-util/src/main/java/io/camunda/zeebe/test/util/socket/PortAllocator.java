@@ -43,6 +43,7 @@ final class PortAllocator {
   private final List<FileChannel> reservations = new ArrayList<>();
 
   private int cursor;
+  private boolean lockDirCreated;
 
   /**
    * @param lockDir directory shared by all allocators that must not hand out the same port
@@ -58,10 +59,13 @@ final class PortAllocator {
   }
 
   synchronized int nextPort() {
-    try {
-      Files.createDirectories(lockDir);
-    } catch (final IOException e) {
-      throw new UncheckedIOException("Failed to create port lock directory " + lockDir, e);
+    if (!lockDirCreated) {
+      try {
+        Files.createDirectories(lockDir);
+      } catch (final IOException e) {
+        throw new UncheckedIOException("Failed to create port lock directory " + lockDir, e);
+      }
+      lockDirCreated = true;
     }
 
     for (int i = 0; i < portCount; i++) {
