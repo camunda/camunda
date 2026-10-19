@@ -27,6 +27,11 @@ public class ClockClient {
           RecordingExporter.clockRecords(ClockIntent.RESETTED)
               .withSourceRecordPosition(position)
               .getFirst();
+  private static final Function<Long, Record<ClockRecordValue>> FETCH_SUCCESS_EXPECTATION =
+      (position) ->
+          RecordingExporter.clockRecords(ClockIntent.FETCHED)
+              .withSourceRecordPosition(position)
+              .getFirst();
   private static final Function<Long, Record<ClockRecordValue>> REJECTION_EXPECTATION =
       (position) ->
           RecordingExporter.clockRecords()
@@ -86,6 +91,20 @@ public class ClockClient {
 
     final long position = writeCommand(ClockIntent.RESET);
     return Objects.requireNonNullElse(expectation, RESET_SUCCESS_EXPECTATION).apply(position);
+  }
+
+  public Record<ClockRecordValue> fetch() {
+    record.reset();
+
+    final long position = writeCommand(ClockIntent.FETCH);
+    return Objects.requireNonNullElse(expectation, FETCH_SUCCESS_EXPECTATION).apply(position);
+  }
+
+  public Record<ClockRecordValue> fetch(final String username) {
+    record.reset();
+
+    final long position = writeCommand(ClockIntent.FETCH, username);
+    return Objects.requireNonNullElse(expectation, FETCH_SUCCESS_EXPECTATION).apply(position);
   }
 
   private long writeCommand(final ClockIntent intent) {

@@ -1581,14 +1581,13 @@ public class CompactRecordLogger {
   private String summarizeClock(final Record<?> record) {
     final var value = (ClockRecordValue) record.getValue();
 
-    final var clockValue =
-        switch (record.getIntent()) {
-          case ClockIntent.PIN, ClockIntent.PINNED -> formatPinnedTime(value.getTime());
-          case ClockIntent.RESET, ClockIntent.RESETTED -> "system time";
-          default -> value.getTime();
-        };
-
-    return "to %s".formatted(clockValue);
+    return switch (record.getIntent()) {
+      case ClockIntent.PIN, ClockIntent.PINNED -> "to " + formatPinnedTime(value.getTime());
+      case ClockIntent.RESET, ClockIntent.RESETTED -> "to system time";
+      case ClockIntent.FETCH -> "current time";
+      case ClockIntent.FETCHED -> "current time is " + formatPinnedTime(value.getTime());
+      default -> "to " + value.getTime();
+    };
   }
 
   private String summarizeRole(final Record<?> record) {
