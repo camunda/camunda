@@ -17,13 +17,12 @@ import {request} from '#/shared/http/request';
 import {
 	getCaseElementInstancesRequestBody,
 	getCaseUserTasksRequestBody,
-	isTaskOfCase,
 } from '#/tasklist/modules/case-details/getCaseRequestBodies';
 import type {StageCompletion} from '#/tasklist/modules/case-details/getStageWork';
 
 const MAX_POLLS = 20;
 
-type CaseRef = Pick<ProcessInstance, 'processInstanceKey' | 'businessId' | 'tenantId'>;
+type CaseRef = Pick<ProcessInstance, 'processInstanceKey' | 'tenantId'>;
 
 type ActivityRequest = {
 	/** The element instance of the ad-hoc stage that holds the activity. */
@@ -157,12 +156,15 @@ const fetchCaseLogic = fromPromise<CaseSnapshot, {queryClient: QueryClient; case
 			...queries.queryElementInstances(getCaseElementInstancesRequestBody(caseRef.processInstanceKey)),
 			staleTime: 0,
 		}),
-		queryClient.fetchQuery({...queries.queryUserTasksPage(getCaseUserTasksRequestBody(caseRef)), staleTime: 0}),
+		queryClient.fetchQuery({
+			...queries.queryUserTasksPage(getCaseUserTasksRequestBody(caseRef.processInstanceKey)),
+			staleTime: 0,
+		}),
 	]);
 
 	return {
 		elementInstances: elementInstances.items,
-		userTasks: userTasks.items.filter((task) => isTaskOfCase(task, caseRef.processInstanceKey)),
+		userTasks: userTasks.items,
 	};
 });
 

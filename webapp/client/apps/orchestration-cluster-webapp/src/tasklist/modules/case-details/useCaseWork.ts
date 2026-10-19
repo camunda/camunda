@@ -35,7 +35,7 @@ function useCaseWork({
 	caseRef,
 	onOpenTask,
 }: {
-	caseRef: Pick<ProcessInstance, 'processInstanceKey' | 'businessId' | 'tenantId'>;
+	caseRef: Pick<ProcessInstance, 'processInstanceKey' | 'tenantId'>;
 	onOpenTask: (userTaskKey: string) => void;
 }) {
 	const queryClient = useQueryClient();
