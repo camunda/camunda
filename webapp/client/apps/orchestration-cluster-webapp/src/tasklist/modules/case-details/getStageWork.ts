@@ -16,7 +16,10 @@ type StageActivity = {
 	elementId: string;
 	name: string;
 	isRequired: boolean;
+	/** The current state: an open task or a running instance wins over earlier completions. */
 	status: ActivityStatus;
+	/** How often the activity completed in this run of the stage, also while it runs again. */
+	completedCount: number;
 	/** The open user task of this activity, if it has one. */
 	userTask: UserTask | null;
 };
@@ -57,22 +60,32 @@ function resolveCorrelationKey(expression: string | null, rootVariables: Variabl
 	return typeof value === 'string' || typeof value === 'number' ? String(value) : null;
 }
 
-function getActivityStatus(
+/**
+ * Combines both searches: the user task search can show a completion before the element instance
+ * search does, and the other way around.
+ */
+function getActivityState(
 	elementId: string,
 	stageInstances: ElementInstance[],
-	openTasksByElementId: Map<string, UserTask>,
-): ActivityStatus {
-	if (openTasksByElementId.has(elementId)) {
-		return 'open';
-	}
-
+	stageTasks: UserTask[],
+): Pick<StageActivity, 'status' | 'completedCount'> {
 	const instances = stageInstances.filter((instance) => instance.elementId === elementId);
+	const tasks = stageTasks.filter((task) => task.elementId === elementId);
+	const completedKeys = new Set([
+		...instances.filter(({state}) => state === 'COMPLETED').map(({elementInstanceKey}) => elementInstanceKey),
+		...tasks.filter(({state}) => state === 'COMPLETED').map(({elementInstanceKey}) => elementInstanceKey),
+	]);
+	const completedCount = completedKeys.size;
 
-	if (instances.some(({state}) => state === 'ACTIVE')) {
-		return 'active';
+	if (tasks.some(({state}) => state === 'CREATED')) {
+		return {status: 'open', completedCount};
 	}
 
-	return instances.some(({state}) => state === 'COMPLETED') ? 'completed' : 'notStarted';
+	if (instances.some(({state, elementInstanceKey}) => state === 'ACTIVE' && !completedKeys.has(elementInstanceKey))) {
+		return {status: 'active', completedCount};
+	}
+
+	return {status: completedCount > 0 ? 'completed' : 'notStarted', completedCount};
 }
 
 function getStageWork({
@@ -104,13 +117,16 @@ function getStageWork({
 		({elementId, startDate}) => stage.elementIds.includes(elementId) && startDate >= stageStartDate,
 	);
 	const openTasksByElementId = new Map(stageTasks.map((task) => [task.elementId, task]));
+	const stageTaskHistory = userTasks.filter(
+		({elementId, creationDate}) => stage.elementIds.includes(elementId) && creationDate >= stageStartDate,
+	);
 	const adHoc = stage.adHoc;
 	const activityIds = adHoc === null ? [] : [...adHoc.requiredElementIds, ...adHoc.optionalElementIds];
 	const activities = activityIds.map((elementId) => ({
 		elementId,
 		name: model.elementNames.get(elementId) ?? elementId,
 		isRequired: adHoc?.requiredElementIds.includes(elementId) ?? false,
-		status: getActivityStatus(elementId, stageInstances, openTasksByElementId),
+		...getActivityState(elementId, stageInstances, stageTaskHistory),
 		userTask: openTasksByElementId.get(elementId) ?? null,
 	}));
 	const manualCompletion = stage.manualCompletion;
@@ -126,7 +142,7 @@ function getStageWork({
 						messageName: manualCompletion.messageName,
 						doneElementId: manualCompletion.doneElementId,
 						correlationKey: resolveCorrelationKey(manualCompletion.correlationKey, rootVariables),
-						isAllowed: requiredActivities.every(({status}) => status === 'completed'),
+						isAllowed: requiredActivities.every(({completedCount}) => completedCount > 0),
 					},
 	};
 }
