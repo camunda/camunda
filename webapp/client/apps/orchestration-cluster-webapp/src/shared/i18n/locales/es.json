@@ -899,7 +899,10 @@
 			"caseNoDocuments": "No hay documentos",
 			"caseDiagramTitle": "Proceso",
 			"caseDiagramDescription": "Este caso llama a otros procesos, por lo que muestra el diagrama del proceso en lugar de sus etapas",
-			"caseNoOpenWorkInCase": "No hay trabajo pendiente en este caso"
+			"caseNoOpenWorkInCase": "No hay trabajo pendiente en este caso",
+			"caseStageClosing": "Cerrando la etapa…",
+			"caseStageWaitingForNext": "Etapa cerrada. Esperando la siguiente etapa…",
+			"caseStageDoneSlow": "La etapa está cerrada. La siguiente etapa tarda más de lo habitual en aparecer."
 		},
 		"operate": {
 			"dashboard": {

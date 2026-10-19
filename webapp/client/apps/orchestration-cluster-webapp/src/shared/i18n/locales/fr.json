@@ -902,7 +902,10 @@
 			"caseNoDocuments": "Aucun document",
 			"caseDiagramTitle": "Processus",
 			"caseDiagramDescription": "Ce dossier appelle d'autres processus : il affiche donc le diagramme du processus au lieu de ses étapes",
-			"caseNoOpenWorkInCase": "Aucun travail en cours dans ce dossier"
+			"caseNoOpenWorkInCase": "Aucun travail en cours dans ce dossier",
+			"caseStageClosing": "Clôture de l’étape…",
+			"caseStageWaitingForNext": "Étape clôturée. En attente de l’étape suivante…",
+			"caseStageDoneSlow": "L’étape est clôturée. L’étape suivante met plus de temps que d’habitude à s’afficher."
 		},
 		"operate": {
 			"dashboard": {

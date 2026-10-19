@@ -12,7 +12,8 @@ import {toast} from '@camunda/design-system';
 import type {CaseData} from '#/tasklist/modules/case-details/caseData';
 import {CaseWorkCard} from '#/tasklist/modules/case-details/components/CaseWorkCard';
 import {getCaseView} from '#/tasklist/modules/case-details/getCaseView';
-import {useActivateActivity, useCompleteStage} from '#/tasklist/modules/case-details/useCaseActions';
+import {useActivateActivity} from '#/tasklist/modules/case-details/useCaseActions';
+import {useStageCompletion} from '#/tasklist/modules/case-details/useStageCompletion';
 
 type Props = CaseData & {
 	onOpenTask: (userTaskKey: string) => void;
@@ -28,13 +29,13 @@ const TasklistCaseTasksPage: React.FC<Props> = ({
 	rootVariables,
 }) => {
 	const {t} = useTranslation();
-	const {currentStage, work} = useMemo(
+	const {model, currentStage, work} = useMemo(
 		() => getCaseView({processInstance, xml, elementInstances, userTasks, rootVariables}),
 		[processInstance, xml, elementInstances, userTasks, rootVariables],
 	);
 	const stageInstanceKey = currentStage?.elementInstanceKey ?? null;
 	const activateActivity = useActivateActivity(stageInstanceKey);
-	const completeStage = useCompleteStage(stageInstanceKey, processInstance.tenantId);
+	const stageCompletion = useStageCompletion(processInstance);
 
 	return (
 		<CaseWorkCard
@@ -42,7 +43,8 @@ const TasklistCaseTasksPage: React.FC<Props> = ({
 			work={work}
 			currentUsername={currentUser.username}
 			startingElementId={activateActivity.isPending ? (activateActivity.variables ?? null) : null}
-			isCompletingStage={completeStage.isPending}
+			stageCompletionStatus={stageCompletion.status}
+			closingStageName={stageCompletion.closingStageName}
 			onOpenTask={onOpenTask}
 			onStartActivity={(elementId) =>
 				activateActivity.mutate(elementId, {
@@ -50,9 +52,12 @@ const TasklistCaseTasksPage: React.FC<Props> = ({
 				})
 			}
 			onCompleteStage={() => {
-				if (work.completion !== null) {
-					completeStage.mutate(work.completion, {
-						onError: () => toast.error(t('tasklist.caseStageDoneFailed')),
+				if (work.completion !== null && currentStage !== null && stageInstanceKey !== null) {
+					stageCompletion.completeStage({
+						stageName: currentStage.stage.name,
+						stageInstanceKey,
+						stageIds: model.stages.map(({id}) => id),
+						completion: work.completion,
 					});
 				}
 			}}

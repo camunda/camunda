@@ -10,7 +10,6 @@ import {useMutation, useQueryClient} from '@tanstack/react-query';
 import {endpoints} from '#/shared/http/endpoints';
 import {mapQueryError} from '#/shared/http/mapQueryError';
 import {request} from '#/shared/http/request';
-import type {StageCompletion} from '#/tasklist/modules/case-details/getStageWork';
 
 async function activateElement(adHocSubProcessInstanceKey: string, elementId: string): Promise<void> {
 	const {error} = await request(
@@ -48,34 +47,4 @@ function useActivateActivity(adHocSubProcessInstanceKey: string | null) {
 	});
 }
 
-/**
- * Completes a stage with the manual completion pattern of STAGES.md: activate "I am done", then let
- * "Stage done" catch the message.
- *
- * prototype: in the design, "I am done" publishes the message through a job worker. The case page
- * correlates the message itself, so that the demo runs without a worker.
- */
-function useCompleteStage(adHocSubProcessInstanceKey: string | null, tenantId: string) {
-	const invalidateCase = useInvalidateCase();
-
-	return useMutation({
-		mutationFn: async ({messageName, doneElementId, correlationKey}: StageCompletion) => {
-			if (correlationKey === null) {
-				throw new Error('The correlation key of the stage cannot be resolved');
-			}
-
-			if (doneElementId !== null && adHocSubProcessInstanceKey !== null) {
-				await activateElement(adHocSubProcessInstanceKey, doneElementId);
-			}
-
-			const {error} = await request(endpoints.correlateMessage({name: messageName, correlationKey, tenantId}));
-
-			if (error !== null) {
-				throw mapQueryError(error);
-			}
-		},
-		onSettled: invalidateCase,
-	});
-}
-
-export {useActivateActivity, useCompleteStage};
+export {useActivateActivity};

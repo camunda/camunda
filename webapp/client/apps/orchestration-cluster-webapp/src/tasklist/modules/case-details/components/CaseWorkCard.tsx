@@ -24,6 +24,7 @@ import {ArrowRight, Check, CircleCheck, CirclePlay, LoaderCircle, UserRound} fro
 import type {UserTask} from '@camunda/camunda-api-zod-schemas/8.11';
 import {cn} from '#/shared/cn';
 import type {ActivityStatus, StageActivity, StageWork} from '#/tasklist/modules/case-details/getStageWork';
+import type {StageCompletionStatus} from '#/tasklist/modules/case-details/useStageCompletion';
 
 function useAssignmentLabel() {
 	const {t} = useTranslation();
@@ -81,7 +82,8 @@ type Props = {
 	work: StageWork;
 	currentUsername: string;
 	startingElementId: string | null;
-	isCompletingStage: boolean;
+	stageCompletionStatus: StageCompletionStatus;
+	closingStageName: string | null;
 	onOpenTask: (userTaskKey: string) => void;
 	onStartActivity: (elementId: string) => void;
 	onCompleteStage: () => void;
@@ -92,7 +94,8 @@ const CaseWorkCard: React.FC<Props> = ({
 	work,
 	currentUsername,
 	startingElementId,
-	isCompletingStage,
+	stageCompletionStatus,
+	closingStageName,
 	onOpenTask,
 	onStartActivity,
 	onCompleteStage,
@@ -102,6 +105,25 @@ const CaseWorkCard: React.FC<Props> = ({
 	const {activities, openTasks, completion} = work;
 	const completedCount = activities.filter(({status}) => status === 'completed').length;
 	const hasWork = activities.length > 0 || openTasks.length > 0;
+
+	if (stageCompletionStatus !== 'idle') {
+		return (
+			<Card aria-busy>
+				<CardHeader>
+					<CardDescription className="text-xs font-semibold tracking-wide uppercase">
+						{t('tasklist.caseCurrentStage')}
+					</CardDescription>
+					<CardTitle className="text-lg">{closingStageName ?? stageName}</CardTitle>
+				</CardHeader>
+				<CardContent className="flex items-center gap-3 text-sm text-neutral-foreground-subtle" role="status">
+					<Spinner />
+					{stageCompletionStatus === 'completing'
+						? t('tasklist.caseStageClosing')
+						: t('tasklist.caseStageWaitingForNext')}
+				</CardContent>
+			</Card>
+		);
+	}
 
 	const renderOpenButton = (userTask: UserTask) => (
 		<Button variant="secondary" size="sm" onClick={() => onOpenTask(userTask.userTaskKey)}>
@@ -216,11 +238,8 @@ const CaseWorkCard: React.FC<Props> = ({
 								? t('tasklist.caseStageDoneHint')
 								: t('tasklist.caseStageDoneBlocked')}
 					</span>
-					<Button
-						disabled={!completion.isAllowed || completion.correlationKey === null || isCompletingStage}
-						onClick={onCompleteStage}
-					>
-						{isCompletingStage ? <Spinner /> : <Check aria-hidden />}
+					<Button disabled={!completion.isAllowed || completion.correlationKey === null} onClick={onCompleteStage}>
+						<Check aria-hidden />
 						{t('tasklist.caseStageDoneButton')}
 					</Button>
 				</CardFooter>

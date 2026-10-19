@@ -911,7 +911,10 @@
 			"caseNoDocuments": "No documents",
 			"caseDiagramTitle": "Process",
 			"caseDiagramDescription": "This case calls other processes, so it shows the process diagram instead of its stages",
-			"caseNoOpenWorkInCase": "No open work in this case"
+			"caseNoOpenWorkInCase": "No open work in this case",
+			"caseStageClosing": "Closing the stage…",
+			"caseStageWaitingForNext": "Stage closed. Waiting for the next stage…",
+			"caseStageDoneSlow": "The stage is closed. The next stage takes longer to show than usual."
 		},
 		"operate": {
 			"dashboard": {

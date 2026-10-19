@@ -899,7 +899,10 @@
 			"caseNoDocuments": "Keine Dokumente",
 			"caseDiagramTitle": "Prozess",
 			"caseDiagramDescription": "Dieser Fall ruft andere Prozesse auf und zeigt daher das Prozessdiagramm statt seiner Phasen",
-			"caseNoOpenWorkInCase": "Keine offene Arbeit in diesem Fall"
+			"caseNoOpenWorkInCase": "Keine offene Arbeit in diesem Fall",
+			"caseStageClosing": "Phase wird geschlossen…",
+			"caseStageWaitingForNext": "Phase geschlossen. Warten auf die nächste Phase…",
+			"caseStageDoneSlow": "Die Phase ist geschlossen. Die nächste Phase erscheint später als üblich."
 		},
 		"operate": {
 			"dashboard": {
