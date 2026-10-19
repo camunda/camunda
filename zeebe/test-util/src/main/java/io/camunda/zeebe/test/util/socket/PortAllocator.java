@@ -65,7 +65,8 @@ final class PortAllocator {
     }
 
     for (int i = 0; i < portCount; i++) {
-      final int port = minPort + (cursor++ % portCount);
+      final int port = minPort + cursor;
+      cursor = (cursor + 1) % portCount;
       if (triedPorts.add(port) && tryReserve(port)) {
         return port;
       }
