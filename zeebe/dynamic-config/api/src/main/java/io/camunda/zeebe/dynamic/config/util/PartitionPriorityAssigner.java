@@ -15,16 +15,16 @@ import java.util.Map;
 
 /**
  * Shared Raft election priority assignment used by {@link RoundRobinPartitionDistributor} and
- * {@link AdditivePartitionReassigner} (and, in the future, a general-case reassigner supporting
+ * {@code AdditivePartitionReassigner} (and, in the future, a general-case reassigner supporting
  * broker/replication-factor changes), so they all produce the same failover behavior: the primary
  * gets the highest priority, and which follower gets the second-highest priority alternates across
  * partitions so that leadership loss is spread evenly across followers.
  */
-final class PartitionPriorityAssigner {
+public final class PartitionPriorityAssigner {
 
   private PartitionPriorityAssigner() {}
 
-  static Map<MemberId, Integer> assignPriorities(
+  public static Map<MemberId, Integer> assignPriorities(
       final PartitionId partitionId,
       final List<MemberId> membersForPartition,
       final MemberId primary,

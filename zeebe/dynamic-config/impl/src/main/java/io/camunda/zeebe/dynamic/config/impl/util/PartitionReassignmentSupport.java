@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.dynamic.config.util;
+package io.camunda.zeebe.dynamic.config.impl.util;
 
 import io.atomix.cluster.MemberId;
 import io.atomix.primitive.partition.PartitionMetadata;
@@ -16,6 +16,7 @@ import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionCh
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionLeaveOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionPromoteOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionReconfigurePriorityOperation;
+import io.camunda.zeebe.dynamic.config.util.ConfigurationUtil;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Comparator;

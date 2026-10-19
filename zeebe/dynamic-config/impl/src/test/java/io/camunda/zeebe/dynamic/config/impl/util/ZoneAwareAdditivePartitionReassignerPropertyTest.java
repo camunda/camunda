@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.dynamic.config.util;
+package io.camunda.zeebe.dynamic.config.impl.util;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -15,6 +15,7 @@ import io.camunda.cluster.PartitionId;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.ZoneSpec;
+import io.camunda.zeebe.dynamic.config.util.ConfigurationUtil;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;

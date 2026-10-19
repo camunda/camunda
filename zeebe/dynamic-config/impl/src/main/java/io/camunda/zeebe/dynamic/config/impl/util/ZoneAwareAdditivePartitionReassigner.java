@@ -5,18 +5,21 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.dynamic.config.util;
+package io.camunda.zeebe.dynamic.config.impl.util;
 
-import static io.camunda.zeebe.dynamic.config.util.PartitionReassignmentSupport.accumulateLoad;
-import static io.camunda.zeebe.dynamic.config.util.PartitionReassignmentSupport.selectNewPartitionMembers;
-import static io.camunda.zeebe.dynamic.config.util.PartitionReassignmentSupport.validateExistingPartitionsAreNotRemoved;
-import static io.camunda.zeebe.dynamic.config.util.PartitionReassignmentSupport.validateTargetMembers;
+import static io.camunda.zeebe.dynamic.config.impl.util.PartitionReassignmentSupport.accumulateLoad;
+import static io.camunda.zeebe.dynamic.config.impl.util.PartitionReassignmentSupport.selectNewPartitionMembers;
+import static io.camunda.zeebe.dynamic.config.impl.util.PartitionReassignmentSupport.validateExistingPartitionsAreNotRemoved;
+import static io.camunda.zeebe.dynamic.config.impl.util.PartitionReassignmentSupport.validateTargetMembers;
 
 import io.atomix.cluster.MemberId;
 import io.atomix.primitive.partition.PartitionMetadata;
 import io.camunda.cluster.PartitionId;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.ZoneSpec;
+import io.camunda.zeebe.dynamic.config.util.ConfigurationUtil;
+import io.camunda.zeebe.dynamic.config.util.ZoneAwarePartitionDistributor;
+import io.camunda.zeebe.dynamic.config.util.ZoneSpecValidation;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;

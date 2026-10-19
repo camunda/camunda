@@ -5,17 +5,18 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.dynamic.config.util;
+package io.camunda.zeebe.dynamic.config.impl.util;
 
 import io.atomix.cluster.MemberId;
 import io.atomix.primitive.partition.PartitionMetadata;
 import io.camunda.cluster.PartitionId;
+import io.camunda.zeebe.dynamic.config.util.ConfigurationUtil;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
 /** Shared test fixtures for building {@link PartitionMetadata} instances in reassigner tests. */
-public final class PartitionMetadataFixtures {
+final class PartitionMetadataFixtures {
 
   private PartitionMetadataFixtures() {}
 
@@ -24,7 +25,7 @@ public final class PartitionMetadataFixtures {
    * every other member gets a strictly lower, distinct priority) so round-tripping through {@link
    * ConfigurationUtil} preserves the given primary exactly.
    */
-  public static PartitionMetadata partition(
+  static PartitionMetadata partition(
       final String group, final int number, final Set<MemberId> members, final MemberId primary) {
     final Map<MemberId, Integer> priorities = new HashMap<>();
     priorities.put(primary, members.size());

@@ -15,18 +15,18 @@ import java.util.stream.Collectors;
 
 /**
  * Shared {@link ZoneSpec} validation used by every zone-aware partition placement implementation —
- * currently {@link ZoneAwarePartitionDistributor} and {@link ZoneAwareAdditivePartitionReassigner}
+ * currently {@link ZoneAwarePartitionDistributor} and {@code ZoneAwareAdditivePartitionReassigner}
  * — so the two can never drift apart on what a valid zone configuration or a valid target member
  * set looks like.
  */
-final class ZoneSpecValidation {
+public final class ZoneSpecValidation {
 
   private ZoneSpecValidation() {}
 
   /**
    * @throws IllegalArgumentException if two zones share the same {@link ZoneSpec#name()}
    */
-  static void validateZoneSpecs(final List<ZoneSpec> zoneSpecs) {
+  public static void validateZoneSpecs(final List<ZoneSpec> zoneSpecs) {
     zoneSpecs.stream()
         .collect(Collectors.groupingBy(ZoneSpec::name))
         .forEach(
@@ -42,7 +42,8 @@ final class ZoneSpecValidation {
    * @throws IllegalStateException if the sum of every zone's {@link ZoneSpec#numberOfReplicas()}
    *     does not equal {@code replicationFactor}
    */
-  static void validateReplicaSum(final List<ZoneSpec> zoneSpecs, final int replicationFactor) {
+  public static void validateReplicaSum(
+      final List<ZoneSpec> zoneSpecs, final int replicationFactor) {
     final var totalReplicas = zoneSpecs.stream().mapToInt(ZoneSpec::numberOfReplicas).sum();
     if (totalReplicas != replicationFactor) {
       throw new IllegalStateException(
@@ -55,7 +56,7 @@ final class ZoneSpecValidation {
    * @throws IllegalStateException if any zone has fewer members in {@code clusterMembers} than its
    *     {@link ZoneSpec#numberOfReplicas()}
    */
-  static void validateZoneHasSufficientBrokers(
+  public static void validateZoneHasSufficientBrokers(
       final List<ZoneSpec> zoneSpecs, final Set<MemberId> clusterMembers) {
     for (final var spec : zoneSpecs) {
       final long zoneCount = clusterMembers.stream().filter(m -> m.isInZone(spec.name())).count();
@@ -71,7 +72,7 @@ final class ZoneSpecValidation {
    * @throws IllegalStateException if any member of {@code clusterMembers} has a non-null {@link
    *     MemberId#zone()} that is not one of {@code zoneSpecs}
    */
-  static void validateKnownZonedMembers(
+  public static void validateKnownZonedMembers(
       final List<ZoneSpec> zoneSpecs, final Set<MemberId> clusterMembers) {
     final var zoneNames = zoneSpecs.stream().map(ZoneSpec::name).collect(Collectors.toSet());
     for (final var member : clusterMembers) {
@@ -87,7 +88,7 @@ final class ZoneSpecValidation {
    * @throws IllegalArgumentException if any member of {@code clusterMembers} is bare (has no zone),
    *     e.g. because a zone migration has not completed yet on all brokers
    */
-  static void validateNoBareMembers(final Set<MemberId> clusterMembers) {
+  public static void validateNoBareMembers(final Set<MemberId> clusterMembers) {
     final var bareMembers = clusterMembers.stream().filter(MemberId::isBare).toList();
     if (!bareMembers.isEmpty()) {
       throw new IllegalArgumentException(

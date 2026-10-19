@@ -17,8 +17,6 @@ import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionCh
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionJoinOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionPromoteOperation;
 import io.camunda.zeebe.dynamic.config.util.ConfigurationUtil;
-import io.camunda.zeebe.dynamic.config.util.PartitionReassigner;
-import io.camunda.zeebe.dynamic.config.util.PartitionReassignmentSupport;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
