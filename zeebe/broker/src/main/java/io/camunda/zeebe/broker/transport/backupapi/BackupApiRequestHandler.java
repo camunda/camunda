@@ -7,7 +7,11 @@
  */
 package io.camunda.zeebe.broker.transport.backupapi;
 
+import static java.util.stream.Collectors.toSet;
+
+import io.atomix.cluster.BrokerMemberId;
 import io.camunda.cluster.PartitionId;
+import io.camunda.zeebe.backup.api.BackupIdentifierWildcard.CheckpointPattern;
 import io.camunda.zeebe.backup.api.BackupManager;
 import io.camunda.zeebe.backup.logarchive.leader.LogArchiveActivation;
 import io.camunda.zeebe.backup.logarchive.state.DbLogArchiveState;
@@ -20,6 +24,7 @@ import io.camunda.zeebe.logstreams.log.LogAppendEntry;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter.WriteFailure;
 import io.camunda.zeebe.logstreams.log.WriteContext;
+import io.camunda.zeebe.protocol.impl.encoding.BackupListResponse;
 import io.camunda.zeebe.protocol.impl.encoding.BackupRangesResponse;
 import io.camunda.zeebe.protocol.impl.encoding.BackupRangesResponse.PartitionBackupRange;
 import io.camunda.zeebe.protocol.impl.encoding.BackupStatusResponse;
@@ -29,6 +34,7 @@ import io.camunda.zeebe.protocol.impl.encoding.CheckpointStateResponse.Partition
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.value.management.ArchivedSnapshot;
 import io.camunda.zeebe.protocol.impl.record.value.management.CheckpointRecord;
+import io.camunda.zeebe.protocol.impl.record.value.management.CoveredCheckpoint;
 import io.camunda.zeebe.protocol.impl.record.value.management.LogArchiveRecord;
 import io.camunda.zeebe.protocol.management.AdminRequestType;
 import io.camunda.zeebe.protocol.management.BackupRequestType;
@@ -45,7 +51,10 @@ import io.camunda.zeebe.snapshots.PersistedSnapshotStore;
 import io.camunda.zeebe.transport.RequestType;
 import io.camunda.zeebe.transport.impl.AtomixServerTransport;
 import io.camunda.zeebe.util.Either;
+import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.Objects;
 import java.util.Optional;
 import org.jspecify.annotations.Nullable;
 
@@ -65,6 +74,7 @@ public final class BackupApiRequestHandler extends ReadOnlyBackupApiRequestHandl
   private final DbLogArchiveState logArchiveState;
   private final CheckpointSnapshotReserver snapshotReserver;
   private final @Nullable LogArchiveActivation logArchiveActivation;
+  private final BrokerMemberId memberId;
 
   public BackupApiRequestHandler(
       final AtomixServerTransport transport,
@@ -77,10 +87,12 @@ public final class BackupApiRequestHandler extends ReadOnlyBackupApiRequestHandl
       final PersistedSnapshotStore snapshotStore,
       final SnapshotTrigger snapshotTrigger,
       final PartitionId partition,
+      final BrokerMemberId memberId,
       final boolean backupFeatureEnabled,
       final @Nullable LogArchiveActivation logArchiveActivation) {
     super("BackupApi", backupManager, partition, transport, backupFeatureEnabled);
     this.logArchiveActivation = logArchiveActivation;
+    this.memberId = memberId;
     this.logStreamWriter = logStreamWriter;
     this.backupManager = backupManager;
     this.checkpointState = checkpointState;
@@ -178,6 +190,134 @@ public final class BackupApiRequestHandler extends ReadOnlyBackupApiRequestHandl
             .setSnapshotId(snapshotId.orElse(""));
     return logStreamWriter.tryWrite(
         WriteContext.internal(), LogAppendEntry.of(metadata, checkpointRecord));
+  }
+
+  /**
+   * A checkpoint after the handover has no old-style backup; the log archive answers for it: {@code
+   * COMPLETED} once the archived position reached the checkpoint, {@code IN_PROGRESS} before. A
+   * checkpoint created between the handover checkpoint and the recorded handover can still have an
+   * old backup, so the old store is asked first.
+   */
+  @Override
+  protected ActorFuture<Either<ErrorResponseWriter, BackupApiResponseWriter>>
+      handleQueryStatusRequest(
+          final BackupApiRequestReader requestReader,
+          final BackupApiResponseWriter responseWriter,
+          final ErrorResponseWriter errorWriter) {
+    final long checkpointId = requestReader.backupId();
+    if (!logArchiveState.meta().isAfterHandover(checkpointId)) {
+      return super.handleQueryStatusRequest(requestReader, responseWriter, errorWriter);
+    }
+
+    final ActorFuture<Either<ErrorResponseWriter, BackupApiResponseWriter>> result =
+        actor.createFuture();
+    backupManager
+        .getBackupStatus(checkpointId)
+        .onComplete(
+            (status, error) -> {
+              if (error != null) {
+                errorWriter.errorCode(ErrorCode.INTERNAL_ERROR).errorMessage(error.getMessage());
+                result.complete(Either.left(errorWriter));
+              } else if (encodeStatusCode(status.statusCode()) != BackupStatusCode.DOES_NOT_EXIST) {
+                result.complete(Either.right(responseWriter.withStatus(buildResponse(status))));
+              } else {
+                result.complete(
+                    Either.right(responseWriter.withStatus(archiveStatusResponse(checkpointId))));
+              }
+            },
+            actor);
+    return result;
+  }
+
+  private BackupStatusResponse archiveStatusResponse(final long checkpointId) {
+    final var response =
+        new BackupStatusResponse()
+            .setBackupId(checkpointId)
+            .setBrokerId(memberId.nodeIdx(), memberId.zone())
+            .setPartitionId(partitionId.number());
+    final var checkpoint = logArchiveState.findCheckpoint(checkpointId);
+    if (checkpoint.isEmpty()) {
+      return response.setStatus(BackupStatusCode.DOES_NOT_EXIST);
+    }
+    return fillArchiveStatus(
+        response, checkpoint.get(), logArchiveState.meta().getArchivedPosition());
+  }
+
+  private static BackupStatusResponse fillArchiveStatus(
+      final BackupStatusResponse response,
+      final CoveredCheckpoint checkpoint,
+      final long archivedPosition) {
+    // a checkpoint without a position lies in a sealed chunk, which is archived by definition
+    final boolean archived =
+        checkpoint.getCheckpointPosition() < 0
+            || archivedPosition >= checkpoint.getCheckpointPosition();
+    response.setStatus(archived ? BackupStatusCode.COMPLETED : BackupStatusCode.IN_PROGRESS);
+    if (checkpoint.getCheckpointPosition() >= 0) {
+      response.setCheckpointPosition(checkpoint.getCheckpointPosition());
+    }
+    if (checkpoint.getCheckpointTimestamp() >= 0) {
+      response.setCreatedAt(Instant.ofEpochMilli(checkpoint.getCheckpointTimestamp()).toString());
+    }
+    return response;
+  }
+
+  /**
+   * Lists the old backups together with the log archive's backup checkpoints after the handover,
+   * ordered by id. An old backup wins over an archive checkpoint with the same id.
+   */
+  @Override
+  protected ActorFuture<Either<ErrorResponseWriter, BackupApiResponseWriter>>
+      handleListBackupRequest(
+          final BackupApiRequestReader requestReader,
+          final BackupApiResponseWriter responseWriter,
+          final ErrorResponseWriter errorWriter) {
+    final var meta = logArchiveState.meta();
+    if (!meta.hasHandover()) {
+      return super.handleListBackupRequest(requestReader, responseWriter, errorWriter);
+    }
+
+    // the reader is reused for the next request, so it must not be read in the callback
+    final var requestedPattern = requestReader.pattern();
+    final ActorFuture<Either<ErrorResponseWriter, BackupApiResponseWriter>> result =
+        actor.createFuture();
+    backupManager
+        .listBackups(requestedPattern)
+        .onComplete(
+            (backups, error) -> {
+              if (error != null) {
+                errorWriter.errorCode(ErrorCode.INTERNAL_ERROR).errorMessage(error.getMessage());
+                result.complete(Either.left(errorWriter));
+                return;
+              }
+              final var statuses = new ArrayList<>(buildBackupListResponse(backups).getBackups());
+              final var oldIds =
+                  statuses.stream().map(BackupListResponse.BackupStatus::backupId).collect(toSet());
+              final var pattern = CheckpointPattern.of(requestedPattern);
+              final long archivedPosition = meta.getArchivedPosition();
+              logArchiveState.checkpointsAfter(meta.getHandoverCheckpointId()).stream()
+                  .filter(checkpoint -> checkpoint.getCheckpointType().shouldCreateBackup())
+                  .filter(checkpoint -> pattern.matches(checkpoint.getCheckpointId()))
+                  .filter(checkpoint -> !oldIds.contains(checkpoint.getCheckpointId()))
+                  .forEach(
+                      checkpoint -> {
+                        final var archive =
+                            fillArchiveStatus(
+                                new BackupStatusResponse(), checkpoint, archivedPosition);
+                        statuses.add(
+                            new BackupListResponse.BackupStatus(
+                                checkpoint.getCheckpointId(),
+                                partitionId.number(),
+                                archive.getStatus(),
+                                "",
+                                "",
+                                Objects.requireNonNullElse(archive.getCreatedAt(), "")));
+                      });
+              statuses.sort(Comparator.comparingLong(BackupListResponse.BackupStatus::backupId));
+              result.complete(
+                  Either.right(responseWriter.withBackupList(new BackupListResponse(statuses))));
+            },
+            actor);
+    return result;
   }
 
   private ActorFuture<Either<ErrorResponseWriter, BackupApiResponseWriter>>

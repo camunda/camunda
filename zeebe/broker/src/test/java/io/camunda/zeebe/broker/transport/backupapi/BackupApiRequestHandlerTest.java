@@ -9,6 +9,7 @@ package io.camunda.zeebe.broker.transport.backupapi;
 
 import static io.camunda.zeebe.backup.processing.state.CheckpointState.NO_CHECKPOINT;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.inOrder;
@@ -19,6 +20,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import io.atomix.cluster.BrokerMemberId;
 import io.camunda.cluster.PartitionId;
 import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.zeebe.backup.api.BackupManager;
@@ -47,6 +49,7 @@ import io.camunda.zeebe.protocol.impl.encoding.CheckpointStateResponse.Partition
 import io.camunda.zeebe.protocol.impl.encoding.ErrorResponse;
 import io.camunda.zeebe.protocol.impl.record.value.management.ArchivedSnapshot;
 import io.camunda.zeebe.protocol.impl.record.value.management.CheckpointRecord;
+import io.camunda.zeebe.protocol.impl.record.value.management.CoveredCheckpoint;
 import io.camunda.zeebe.protocol.impl.record.value.management.LogArchiveRecord;
 import io.camunda.zeebe.protocol.management.BackupRequestType;
 import io.camunda.zeebe.protocol.management.BackupStatusCode;
@@ -132,6 +135,7 @@ class BackupApiRequestHandlerTest {
             snapshotStore,
             snapshotTrigger,
             new PartitionId(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, 1),
+            BrokerMemberId.from(3),
             true,
             () -> {
               logArchiveActivations++;
@@ -428,6 +432,163 @@ class BackupApiRequestHandlerTest {
         new BackupListResponse.BackupStatus(
             2, 1, BackupStatusCode.COMPLETED, "", "test", createdAt.toString());
     assertThat(listResponse.getBackups()).containsExactly(expected);
+  }
+
+  @Test
+  void shouldReportArchiveCheckpointAfterHandoverAsCompletedOnceArchived() {
+    // given
+    givenHandover(10L, 500L);
+    givenOldBackupDoesNotExist(20L);
+    when(logArchiveState.findCheckpoint(20L))
+        .thenReturn(Optional.of(archiveCheckpoint(20L, 600L, CheckpointType.MANUAL_BACKUP, 1000L)));
+    when(logArchiveState.meta()).thenReturn(handoverMeta(10L, 500L).setArchivedPosition(600L));
+
+    // when
+    final var statusResponse = queryStatus(20L);
+
+    // then
+    assertThat(statusResponse)
+        .returns(20L, BackupStatusResponse::getBackupId)
+        .returns(1, BackupStatusResponse::getPartitionId)
+        .returns(3, BackupStatusResponse::getBrokerId)
+        .returns(BackupStatusCode.COMPLETED, BackupStatusResponse::getStatus)
+        .returns(600L, BackupStatusResponse::getCheckpointPosition)
+        .returns(Instant.ofEpochMilli(1000L).toString(), BackupStatusResponse::getCreatedAt)
+        .returns(null, BackupStatusResponse::getSnapshotId);
+  }
+
+  @Test
+  void shouldReportArchiveCheckpointAfterHandoverAsInProgressBeforeArchived() {
+    // given
+    givenOldBackupDoesNotExist(20L);
+    when(logArchiveState.findCheckpoint(20L))
+        .thenReturn(Optional.of(archiveCheckpoint(20L, 600L, CheckpointType.MANUAL_BACKUP, 1000L)));
+    when(logArchiveState.meta()).thenReturn(handoverMeta(10L, 500L).setArchivedPosition(599L));
+
+    // when
+    final var statusResponse = queryStatus(20L);
+
+    // then
+    assertThat(statusResponse.getStatus()).isEqualTo(BackupStatusCode.IN_PROGRESS);
+  }
+
+  @Test
+  void shouldReportUnknownCheckpointAfterHandoverAsDoesNotExist() {
+    // given
+    givenOldBackupDoesNotExist(20L);
+    when(logArchiveState.findCheckpoint(20L)).thenReturn(Optional.empty());
+    when(logArchiveState.meta()).thenReturn(handoverMeta(10L, 500L).setArchivedPosition(600L));
+
+    // when
+    final var statusResponse = queryStatus(20L);
+
+    // then
+    assertThat(statusResponse.getStatus()).isEqualTo(BackupStatusCode.DOES_NOT_EXIST);
+  }
+
+  @Test
+  void shouldKeepOldStatusForBackupUpToHandover() {
+    // given
+    final long checkpointId = 10L;
+    when(logArchiveState.meta()).thenReturn(handoverMeta(10L, 500L).setArchivedPosition(600L));
+    when(backupManager.getBackupStatus(checkpointId))
+        .thenReturn(
+            CompletableActorFuture.completed(
+                new BackupStatusImpl(
+                    new BackupIdentifierImpl(1, brokerZone(), 1, checkpointId),
+                    Optional.empty(),
+                    io.camunda.zeebe.backup.api.BackupStatusCode.FAILED,
+                    Optional.of("boom"),
+                    Optional.empty(),
+                    Optional.empty())));
+
+    // when
+    final var statusResponse = queryStatus(checkpointId);
+
+    // then
+    assertThat(statusResponse.getStatus()).isEqualTo(BackupStatusCode.FAILED);
+    verify(logArchiveState, never()).findCheckpoint(anyLong());
+  }
+
+  @Test
+  void shouldListOldBackupsAndArchiveCheckpointsOrderedById() {
+    // given
+    when(logArchiveState.meta()).thenReturn(handoverMeta(10L, 500L).setArchivedPosition(650L));
+    final var oldBackup =
+        new BackupStatusImpl(
+            new BackupIdentifierImpl(1, brokerZone(), 1, 10L),
+            Optional.of(
+                new BackupDescriptorImpl(
+                    "s-id", 500, 3, "test", Instant.now(), CheckpointType.HANDOVER)),
+            io.camunda.zeebe.backup.api.BackupStatusCode.COMPLETED,
+            Optional.empty(),
+            Optional.of(Instant.ofEpochMilli(1000)),
+            Optional.empty());
+    when(backupManager.listBackups(""))
+        .thenReturn(CompletableActorFuture.completed(List.of(oldBackup)));
+    when(logArchiveState.checkpointsAfter(10L))
+        .thenReturn(
+            List.of(
+                archiveCheckpoint(30L, 700L, CheckpointType.SCHEDULED_BACKUP, 3000L),
+                archiveCheckpoint(25L, 650L, CheckpointType.MARKER, 2500L),
+                archiveCheckpoint(20L, 600L, CheckpointType.MANUAL_BACKUP, 2000L)));
+
+    // when
+    final var listResponse = new BackupListResponse(List.of());
+    serverOutput.setResponseObject(listResponse);
+    handleRequest(new BackupRequest().setType(BackupRequestType.LIST).setPartitionId(1));
+
+    // then
+    assertThat(responseFuture).succeedsWithin(Duration.ofMillis(100)).matches(Either::isRight);
+    assertThat(listResponse.getBackups())
+        .extracting(
+            BackupListResponse.BackupStatus::backupId, BackupListResponse.BackupStatus::status)
+        .containsExactly(
+            tuple(10L, BackupStatusCode.COMPLETED),
+            tuple(20L, BackupStatusCode.COMPLETED),
+            tuple(30L, BackupStatusCode.IN_PROGRESS));
+  }
+
+  private void givenHandover(final long checkpointId, final long position) {
+    when(logArchiveState.meta()).thenReturn(handoverMeta(checkpointId, position));
+  }
+
+  private static LogArchiveMeta handoverMeta(final long checkpointId, final long position) {
+    return new LogArchiveMeta().setHandoverCheckpointId(checkpointId).setHandoverPosition(position);
+  }
+
+  private static CoveredCheckpoint archiveCheckpoint(
+      final long id, final long position, final CheckpointType type, final long timestamp) {
+    return new CoveredCheckpoint()
+        .setCheckpointId(id)
+        .setCheckpointPosition(position)
+        .setCheckpointType(type)
+        .setCheckpointTimestamp(timestamp);
+  }
+
+  private void givenOldBackupDoesNotExist(final long checkpointId) {
+    when(backupManager.getBackupStatus(checkpointId))
+        .thenReturn(
+            CompletableActorFuture.completed(
+                new BackupStatusImpl(
+                    new BackupIdentifierImpl(1, brokerZone(), 1, checkpointId),
+                    Optional.empty(),
+                    io.camunda.zeebe.backup.api.BackupStatusCode.DOES_NOT_EXIST,
+                    Optional.empty(),
+                    Optional.empty(),
+                    Optional.empty())));
+  }
+
+  private BackupStatusResponse queryStatus(final long checkpointId) {
+    final var statusResponse = new BackupStatusResponse();
+    serverOutput.setResponseObject(statusResponse);
+    handleRequest(
+        new BackupRequest()
+            .setType(BackupRequestType.QUERY_STATUS)
+            .setPartitionId(1)
+            .setBackupId(checkpointId));
+    assertThat(responseFuture).succeedsWithin(Duration.ofMillis(100)).matches(Either::isRight);
+    return statusResponse;
   }
 
   @RegressionTest("https://github.com/camunda/camunda/issues/12597")
