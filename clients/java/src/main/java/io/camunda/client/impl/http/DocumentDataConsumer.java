@@ -144,8 +144,10 @@ public class DocumentDataConsumer<T>
       return;
     }
 
-    inputStream.endOfStream();
+    // set before signalling the end so that a concurrent releaseResources() can never flag a fully
+    // received document as aborted
     completed = true;
+    inputStream.endOfStream();
   }
 
   @Override
@@ -155,7 +157,9 @@ public class DocumentDataConsumer<T>
     // for data that never arrives
     if (!problemDetail && !completed) {
       inputStream.signalError(
-          new IOException("Document stream was released before the response was fully received"));
+          new IOException(
+              "Document stream was aborted before the response was fully received (connection"
+                  + " closed, timed out or cancelled)"));
     }
   }
 
