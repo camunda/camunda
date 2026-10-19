@@ -13,7 +13,11 @@ import {cn} from '#/shared/cn';
 import {formatISODateTime} from '#/tasklist/modules/dates/formatDateRelative';
 
 // The design system's precompiled stylesheet only ships the token utilities it uses itself,
-// so the action colors are referenced through their CSS variables.
+// so the action colors are referenced through their CSS variables. Danger uses the border token for
+// icons and lines, and the subtle foreground for text: both stay red in the light and the dark theme.
+const DANGER_ICON = 'text-[color:var(--danger-border-strong)]';
+const DANGER_TEXT = 'text-danger-foreground-subtle';
+
 const STATE_MAPPINGS = {
 	done: {
 		icon: CircleCheck,
@@ -31,14 +35,14 @@ const STATE_MAPPINGS = {
 	},
 	incident: {
 		icon: CircleAlert,
-		iconClassName: 'text-danger-foreground-strong',
-		labelClassName: 'font-semibold text-danger-foreground-strong',
-		statusClassName: 'text-danger-foreground-strong',
+		iconClassName: DANGER_ICON,
+		labelClassName: `font-semibold ${DANGER_TEXT}`,
+		statusClassName: DANGER_TEXT,
 		labelKey: 'tasklist.caseStageIncident',
 	},
 	cancelled: {
 		icon: CircleX,
-		iconClassName: 'text-neutral-foreground-subtle',
+		iconClassName: DANGER_ICON,
 		labelClassName: 'text-neutral-foreground-subtle',
 		statusClassName: 'text-neutral-foreground-subtle',
 		labelKey: 'tasklist.caseStageCancelled',
@@ -66,6 +70,21 @@ const REACHED_STATES = new Set<StageState>(['done', 'skipped', 'cancelled', 'inP
 const PASSED_STATES = new Set<StageState>(['done', 'skipped', 'cancelled']);
 const REACHED_CONNECTOR = 'bg-[color:var(--success-action-default)]';
 const PENDING_CONNECTOR = 'bg-border';
+// An alternative stage cancelled the planned stages: the line turns red from the cancelled stage on.
+const CANCELLED_CONNECTOR = 'bg-[color:var(--danger-border-strong)]';
+const ALTERNATIVE_CLASS_NAMES = {
+	iconClassName: DANGER_ICON,
+	labelClassName: `font-semibold ${DANGER_TEXT}`,
+	statusClassName: DANGER_TEXT,
+};
+
+function getConnector(isAfterCancellation: boolean, isReached: boolean): string {
+	if (isAfterCancellation) {
+		return CANCELLED_CONNECTOR;
+	}
+
+	return isReached ? REACHED_CONNECTOR : PENDING_CONNECTOR;
+}
 
 function getTime(isoDate: string | null): string | null {
 	return isoDate === null ? null : (formatISODateTime(isoDate)?.relative.text ?? null);
@@ -77,11 +96,17 @@ type Props = {
 
 const StageLine: React.FC<Props> = ({progress}) => {
 	const {t} = useTranslation();
+	const cancelledIndex = progress.findIndex(({state}) => state === 'cancelled');
+	const isAfterCancellation = (index: number) => cancelledIndex >= 0 && index >= cancelledIndex;
 
 	return (
 		<ol className="flex items-start" aria-label={t('tasklist.caseStagesLabel')}>
 			{progress.map(({stage, state, startDate, endDate}, index) => {
-				const {icon: Icon, iconClassName, labelClassName, statusClassName, labelKey} = STATE_MAPPINGS[state];
+				const isActiveAlternative = stage.kind === 'alternative' && state !== 'cancelled';
+				const {icon: Icon, labelKey, ...stateClassNames} = STATE_MAPPINGS[state];
+				const {iconClassName, labelClassName, statusClassName} = isActiveAlternative
+					? ALTERNATIVE_CLASS_NAMES
+					: stateClassNames;
 				const previous = progress[index - 1];
 				const isFirst = index === 0;
 				const isLast = index === progress.length - 1;
@@ -99,14 +124,14 @@ const StageLine: React.FC<Props> = ({progress}) => {
 							<span
 								className={cn(
 									'h-0.5 flex-1 rounded-full',
-									isFirst ? 'bg-transparent' : isReachedFromPrevious ? REACHED_CONNECTOR : PENDING_CONNECTOR,
+									isFirst ? 'bg-transparent' : getConnector(isAfterCancellation(index - 1), isReachedFromPrevious),
 								)}
 							/>
 							<Icon className={cn('mx-1.5 size-6 shrink-0', iconClassName)} />
 							<span
 								className={cn(
 									'h-0.5 flex-1 rounded-full',
-									isLast ? 'bg-transparent' : PASSED_STATES.has(state) ? REACHED_CONNECTOR : PENDING_CONNECTOR,
+									isLast ? 'bg-transparent' : getConnector(isAfterCancellation(index), PASSED_STATES.has(state)),
 								)}
 							/>
 						</div>
