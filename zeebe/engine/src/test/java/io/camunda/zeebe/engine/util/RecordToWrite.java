@@ -115,6 +115,21 @@ public final class RecordToWrite implements LogAppendEntry {
     return new RecordToWrite(recordMetadata);
   }
 
+  /** Like a command written by the broker itself: no authorization claims, no request. */
+  public static RecordToWrite commandWithoutClaims() {
+    return new RecordToWrite(new RecordMetadata().recordType(RecordType.COMMAND));
+  }
+
+  /** Like a command sent by a client through the gateway: user claims and request metadata. */
+  public static RecordToWrite commandFromRequest(final String username) {
+    return new RecordToWrite(
+        new RecordMetadata()
+            .recordType(RecordType.COMMAND)
+            .requestId(1L)
+            .requestStreamId(1)
+            .authorization(AuthorizationUtil.getAuthInfo(username)));
+  }
+
   public static RecordToWrite event() {
     final RecordMetadata recordMetadata = new RecordMetadata();
     return new RecordToWrite(recordMetadata.recordType(RecordType.EVENT));

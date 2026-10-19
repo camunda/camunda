@@ -32,6 +32,7 @@ public class JobCommandPreconditionValidator {
   private final List<JobCommandCheck> customChecks;
   private final CslTenantCheck tenantCheck;
   private final BannedInstanceCommandCheck bannedInstanceCheck;
+  private boolean skipTenantFilterForInternalCommands;
 
   public JobCommandPreconditionValidator(
       final JobState jobState,
@@ -55,6 +56,16 @@ public class JobCommandPreconditionValidator {
     this.customChecks = customChecks;
     this.tenantCheck = tenantCheck;
     bannedInstanceCheck = new BannedInstanceCommandCheck(bannedInstanceState);
+  }
+
+  /**
+   * Looks the job up without a tenant filter when the command is internal. The broker writes such
+   * commands (e.g. YIELD after a failed job push) without authorization claims, which resolve to no
+   * tenant at all when multi-tenancy checks are enabled.
+   */
+  JobCommandPreconditionValidator skipTenantFilterForInternalCommands() {
+    skipTenantFilterForInternalCommands = true;
+    return this;
   }
 
   public Either<Rejection, JobRecord> check(final TypedRecord<JobRecord> command) {
@@ -102,7 +113,8 @@ public class JobCommandPreconditionValidator {
     final long jobKey = command.getKey();
     final var authorizedTenants = tenantCheck.resolveAuthorizedTenants(command.getAuthorizations());
     final var storedJob =
-        authorizedTenants.wildcard()
+        (skipTenantFilterForInternalCommands && command.isInternalCommand())
+                || authorizedTenants.wildcard()
             ? jobState.getJob(jobKey)
             : jobState.getJob(jobKey, authorizedTenants);
 
