@@ -15,8 +15,6 @@ import io.camunda.zeebe.restore.logarchive.HandoverRestorePlan.BridgedFromArchiv
 import io.camunda.zeebe.restore.logarchive.HandoverRestorePlan.FromArchive;
 import io.camunda.zeebe.restore.logarchive.HandoverRestorePlan.OldBackups;
 import io.camunda.zeebe.restore.logarchive.HandoverRestorePlan.PartitionPlan;
-import java.time.Duration;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
@@ -43,13 +41,13 @@ import org.slf4j.LoggerFactory;
  * point before the handover, the new branch takes old backups again until its own handover, and
  * those come after the first handover in time.
  *
- * <p>A time range picks T among the checkpoints of both sides, the same way {@link
- * RestorePointResolver} does among old ones: T must be restorable on every partition, the one
- * closest to {@code to}, or the latest without {@code to}. With RDBMS, an archive checkpoint is
- * only restorable if it is at or after the exported position E and the archive reaches back to E +
- * 1. If the archive starts after E + 1, the partition is restored "bridged": the old backups of the
- * same branch provide the log from E + 1 up to the start of the archive, the archive the rest and
- * the snapshot (see {@link BridgedFromArchive}).
+ * <p>A time range is resolved exactly as continuous backup resolves it, by {@link
+ * RestorePointResolver#resolve} on a {@link ContinuousBackupView} of each partition that maps the
+ * archive onto continuous backup: the same inputs are accepted or rejected with the same messages
+ * and resolve to the same restore point. Only how the partition is assembled differs: old backups,
+ * the archive, or, if the archive starts after the exported position E + 1, "bridged" with the old
+ * backups of the same branch providing the log from E + 1 up to the start of the archive (see
+ * {@link BridgedFromArchive}).
  *
  * <p>Without any log archive or handover, this is exactly today's restore: backup ids are restored
  * as given, and a time range is resolved by {@link RestorePointResolver#resolve}.
@@ -178,80 +176,36 @@ public final class HandoverRestoreResolver {
     }
   }
 
+  /**
+   * Resolves the time range by the rules of continuous backup on each partition's {@link
+   * ContinuousBackupView}: {@link RestorePointResolver#resolve} picks the checkpoint and the
+   * backups, or rejects the range with its own message. Only the partitions the RDBMS holds an
+   * exported position for are restored, like the existing restore does. Each partition then
+   * restores the checkpoint from where it is: old backups for an old checkpoint, the archive (alone
+   * or bridged) for an archived one.
+   */
   private static HandoverRestorePlan resolveTimeRange(
       final List<Partition> partitions, final HandoverRestoreRequest request) {
-    final var reference = partitions.getFirst();
-    final var rejected = new LinkedHashMap<Long, String>();
-    for (final var candidate : reference.candidates()) {
-      final var plans = new TreeMap<Integer, PartitionPlan>();
-      final var absent = new ArrayList<Integer>();
-      @Nullable String rejection = null;
-      for (final var partition : partitions) {
-        final var plan = partition.plan(candidate.checkpointId());
-        if (plan.isPresent()) {
-          plans.put(partition.id(), plan.get());
-        } else if (partition.didNotExistAt(candidate.checkpointId())) {
-          absent.add(partition.id());
-        } else {
-          rejection =
-              "partition %d: %s"
-                  .formatted(partition.id(), partition.rejection(candidate.checkpointId()));
-          break;
-        }
-      }
-      if (rejection == null) {
-        rejection = absentNotLast(candidate.checkpointId(), plans, absent);
-      }
-      if (rejection != null) {
-        rejected.put(candidate.checkpointId(), rejection);
-        continue;
-      }
-      if (!rejected.isEmpty()) {
-        LOG.info(
-            "Skipped restore points before choosing checkpoint {}: {}",
-            candidate.checkpointId(),
-            rejected);
-      }
-      return withOldBackups(candidate.checkpointId(), plans, partitions, request, absent);
-    }
-    throw new LogArchiveRestoreException(
-        "No checkpoint in [%s, %s] can be restored on every partition. %s"
-            .formatted(
-                request.from(),
-                request.to(),
-                partitions.stream().map(Partition::describeCoverage).toList()));
-  }
-
-  /** Replaces the old-side placeholders with the backups that restore them. */
-  private static HandoverRestorePlan withOldBackups(
-      final long checkpointId,
-      final TreeMap<Integer, PartitionPlan> plans,
-      final List<Partition> partitions,
-      final HandoverRestoreRequest request,
-      final List<Integer> absent) {
-    final var oldPartitions =
-        partitions.stream().filter(p -> plans.get(p.id()) instanceof OldBackups).toList();
-    if (!oldPartitions.isEmpty()) {
-      final var exportedPositions = new HashMap<Integer, Long>();
-      oldPartitions.forEach(
-          p -> {
-            final var exported = request.exportedPosition(p.id());
-            if (exported != null) {
-              exportedPositions.put(p.id(), exported);
-            }
-          });
-      final var backups =
-          RestorePointResolver.resolveBackups(
-              oldPartitions.stream().map(p -> p.source.oldMetadata().orElseThrow()).toList(),
-              checkpointId,
-              request.from(),
-              exportedPositions.isEmpty() ? null : exportedPositions);
-      backups
-          .backupsByPartitionId()
-          .forEach((id, entries) -> plans.put(id, new OldBackups(checkpointIds(entries))));
+    final var exportedPositions = request.exportedPositions();
+    final var restored =
+        exportedPositions.isEmpty()
+            ? partitions
+            : partitions.stream().filter(p -> exportedPositions.containsKey(p.id())).toList();
+    final var backups =
+        RestorePointResolver.resolve(
+            restored.stream().map(p -> p.continuousBackupView().metadata()).toList(),
+            request.from(),
+            request.to(),
+            exportedPositions.isEmpty() ? null : exportedPositions);
+    final long checkpointId = backups.globalCheckpointId();
+    final var plans = new TreeMap<Integer, PartitionPlan>();
+    for (final var partition : restored) {
+      final var entries =
+          Objects.requireNonNull(backups.backupsByPartitionId().get(partition.id()));
+      plans.put(partition.id(), partition.planTimeRange(checkpointId, entries));
     }
     final var plan = new HandoverRestorePlan(checkpointId, plans);
-    logPlan(plan, absent);
+    logPlan(plan, List.of());
     return plan;
   }
 
@@ -273,9 +227,6 @@ public final class HandoverRestoreResolver {
     return entries.stream().map(CheckpointEntry::checkpointId).toList();
   }
 
-  /** A restore point candidate; {@code timestamp} is null if unknown. */
-  private record Candidate(long checkpointId, @Nullable Instant timestamp) {}
-
   /** One partition's view of both sides, with the archive decisions cached per checkpoint. */
   private static final class Partition {
     private final PartitionRestoreSources source;
@@ -285,6 +236,7 @@ public final class HandoverRestoreResolver {
     private final Map<Long, Optional<PartitionPlan>> archiveDecisions = new HashMap<>();
     private final Map<Long, String> rejections = new HashMap<>();
     private @Nullable TreeMap<Long, CheckpointEntry> oldRestorable;
+    private @Nullable ContinuousBackupView continuousBackupView;
 
     Partition(final PartitionRestoreSources source, final HandoverRestoreRequest request) {
       this.source = source;
@@ -315,67 +267,38 @@ public final class HandoverRestoreResolver {
       return oldRestorable;
     }
 
-    /** The plan for the checkpoint on this partition, preferring the old backups. */
-    Optional<PartitionPlan> plan(final long checkpointId) {
-      if (oldRestorable().containsKey(checkpointId)) {
-        // placeholder; the backups are resolved once the checkpoint is chosen
-        return Optional.of(new OldBackups(List.of(checkpointId)));
+    /** The partition as continuous backup sees it, with the archive mapped onto it. */
+    ContinuousBackupView continuousBackupView() {
+      if (continuousBackupView == null) {
+        continuousBackupView = ContinuousBackupView.of(source);
       }
-      return fromArchive(checkpointId);
+      return continuousBackupView;
     }
 
     /**
-     * The restore point candidates of this partition on both sides: the restorable old checkpoints
-     * and the archive's covered checkpoints, ordered like {@link RestorePointResolver} orders them.
+     * The plan for the checkpoint a time range resolved to, with the backups {@link
+     * RestorePointResolver} chose for it in the {@link #continuousBackupView()}: the old backups
+     * restore an old checkpoint; an archived one is restored from the archive of the current
+     * branch, alone or bridged with the old backups.
+     *
+     * @throws LogArchiveRestoreException if the archive cannot restore the checkpoint
      */
-    List<Candidate> candidates() {
-      final var byId = new TreeMap<Long, Candidate>();
-      oldRestorable()
-          .values()
-          .forEach(
-              entry ->
-                  byId.put(
-                      entry.checkpointId(),
-                      new Candidate(entry.checkpointId(), entry.checkpointTimestamp())));
-      for (final var view : timelinesById.values()) {
-        view.checkpointsNewestFirst()
-            .filter(checkpoint -> checkpoint.checkpointPosition() <= view.archivedPosition())
-            .forEach(
-                checkpoint -> {
-                  final var timestamp =
-                      checkpoint.checkpointTimestamp() < 0
-                          ? null
-                          : Instant.ofEpochMilli(checkpoint.checkpointTimestamp());
-                  if (inTimeRange(timestamp)) {
-                    byId.putIfAbsent(
-                        checkpoint.checkpointId(),
-                        new Candidate(checkpoint.checkpointId(), timestamp));
-                  }
-                });
+    PartitionPlan planTimeRange(final long checkpointId, final List<CheckpointEntry> backups) {
+      if (continuousBackupView().isOld(checkpointId)) {
+        return new OldBackups(checkpointIds(backups));
       }
-      final var to = request.to();
-      final Comparator<Candidate> order =
-          to == null
-              ? Comparator.comparingLong(Candidate::checkpointId).reversed()
-              : Comparator.<Candidate, Boolean>comparing(c -> c.timestamp() == null)
-                  .thenComparing(
-                      c ->
-                          c.timestamp() == null
-                              ? Duration.ZERO
-                              : Duration.between(to, c.timestamp()).abs())
-                  .thenComparing(Comparator.comparingLong(Candidate::checkpointId).reversed());
-      return byId.values().stream().sorted(order).toList();
+      return fromArchive(checkpointId)
+          .orElseThrow(
+              () ->
+                  new LogArchiveRestoreException(
+                      "Checkpoint %d cannot be restored on partition %d: %s. %s"
+                          .formatted(
+                              checkpointId, id(), rejection(checkpointId), describeCoverage())));
     }
 
-    /**
-     * An archive checkpoint counts from {@code from} on. Without a timestamp (archived by an older
-     * version) it cannot be placed in a time range, so it only counts for the latest restore point.
-     */
-    private boolean inTimeRange(final @Nullable Instant timestamp) {
-      if (request.from() == null && request.to() == null) {
-        return true;
-      }
-      return timestamp != null && (request.from() == null || !timestamp.isBefore(request.from()));
+    /** The timelines an archived checkpoint is searched in. */
+    private Collection<LogArchiveView> searchedTimelines() {
+      return request.byBackupId() ? timelinesById.values() : continuousBackupView().branch();
     }
 
     /**
@@ -396,14 +319,17 @@ public final class HandoverRestoreResolver {
 
     private Optional<PartitionPlan> decideArchive(final long checkpointId) {
       final var occurrences = new LinkedHashMap<LogArchiveView, CoveredCheckpointJson>();
-      for (final var view : timelinesById.values()) {
+      final var searched = searchedTimelines();
+      for (final var view : searched) {
         view.findCheckpoint(checkpointId)
             .filter(checkpoint -> checkpoint.checkpointPosition() <= view.archivedPosition())
             .ifPresent(checkpoint -> occurrences.put(view, checkpoint));
       }
       if (occurrences.isEmpty()) {
         rejections.put(
-            checkpointId, "not covered by the log archive timelines " + timelinesById.keySet());
+            checkpointId,
+            "not covered by the log archive timelines "
+                + searched.stream().map(LogArchiveView::timelineId).toList());
         return Optional.empty();
       }
       final var newestFirst = oneHistoryNewestFirst(checkpointId, occurrences);

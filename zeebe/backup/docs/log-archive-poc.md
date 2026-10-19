@@ -668,13 +668,23 @@ Integration tests (broker, filesystem store first, then MinIO):
   at. The log archive only restore mode (`--logArchive.*`) does not leave out partitions added later.
 - The bridged restore (18.5a) only bridges to a timeline that records the handover itself. A
   timeline that descends from it (restored `.r<T>` or forked) and starts after E + 1 is not bridged,
-  even though its log up to the fork equals its parent's; the restore falls back to the old backups.
+  even though its log up to the fork equals its parent's; a time range that resolves to a checkpoint
+  of it fails.
   The overlap check holds the asqn and checksum of every old entry from A on in memory (16 bytes per
   entry up to the old chain's last checkpoint).
-- A time range with `--from` inherits the old restore's trimming of backups before `from`: it rejects
-  the chain if the first remaining backup's checkpoint lies after E, even when its log starts before
-  E (`RestorePointResolver.discardUnnecessaryBackupsBeforeTimestamp`). This affects the old path and
-  the bridge alike; restoring with `--to` only avoids it.
+- Inherited from continuous backup, on purpose (18.5a): a time range with `--from` and RDBMS has a
+  narrow window. `--from` drops the backups before it, and the first remaining backup must be at or
+  below E (`RestorePointResolver.discardUnnecessaryBackupsBeforeTimestamp`), even when its log starts
+  before E; with the archive, an archived snapshot's backup counts the same way. So `--from` must lie
+  between the range start and the last backup at or below E; restoring with `--to` only avoids it.
+  Likewise `--from` before the first backup of every range is rejected, and a time range needs T on
+  every partition the RDBMS holds a position for (no partition is left out, unlike a restore by
+  backup id after a scale-up).
+- A time range sees only the current branch (18.5a), as continuous backup sees only the branch that
+  wrote `metadata.json` last; a checkpoint of another branch is restored by backup id or with
+  `--logArchive.timeline`. Covered checkpoints without `checkpointTimestamp` (archived by an older
+  PoC version) cannot be placed in time and are left out. In messages, a backup mapped from the
+  archive shows its checkpoint's type, or `SCHEDULED_BACKUP` for a marker.
 
 ## 16. Working rules for workstreams
 
@@ -863,7 +873,7 @@ before its handover was recorded; old path) or in its archive (archive path), as
 The planner needs no change: the timeline starts at index 1 and the archived snapshot is selected as
 usual. A target before the scale-up does not exist on the new partition. The old restore takes the
 partition count from the backup and leaves the newer partitions out; the handover restore does the
-same: a partition that cannot restore the target is left out if one of its timelines starts at
+same for a restore by backup id: a partition that cannot restore the target is left out if one of its timelines starts at
 position 1 and every checkpoint it knows, on both sides, is newer than the target (checkpoint ids only
 grow on a partition, and a partition that existed at the target holds it in its log). Only the
 highest partitions can be left out; a missing partition below one that holds the target fails the
@@ -910,8 +920,8 @@ A restore by checkpoint id never combines the sides on one partition: the snapsh
 18.4 step 4 guarantees an archived snapshot ≤ H for every T > H, so the archive alone restores every
 T > H. Only an RDBMS time range whose exported position lies before the archive combines them (the
 bridged restore, 18.5a). If the old-side file is missing (leader died
-before the outbox wrote it), the restore also searches the configured archive timeline. "latest" means the newest checkpoint restorable on every
-partition, comparing both sides. After a restore from old backups the new timeline's parent is
+before the outbox wrote it), the restore also searches the configured archive timeline. A restore without backup id ("latest")
+is a time range without bounds and follows 18.5a. After a restore from old backups the new timeline's parent is
 `legacy:<backupId>`.
 
 Restore entry point: `restore-standalone` gets a log archive mode (timeline, target checkpoint id or
@@ -919,18 +929,52 @@ Restore entry point: `restore-standalone` gets a log archive mode (timeline, tar
 
 ### 18.5a Time-range restore (RDBMS) across the handover (H4)
 
-`--from`/`--to` restores pick T by time. With RDBMS as secondary storage, T's position must be
-≥ E (the position the RDBMS already exported) on every partition, and the restored journal must
-contain the log from E + 1 so the exporter resumes without a gap. One resolver covers both sides:
+**Same rules as continuous backup.** `--from`/`--to` (and a restore without backup id) work exactly
+as with continuous backup, whether the cluster uses continuous backup only, has handed over to the
+log archive, or uses only the log archive: the same inputs are accepted or rejected with the same
+messages, and resolve to the same restore point by the same rules. Only how a partition's data is
+assembled differs: old backups, the archive, or both (bridged).
 
-1. Candidates per partition: old checkpoints from `metadata.json` and archive checkpoints (covered
-   checkpoints, which carry `checkpointTimestamp`), each tagged with its side.
-2. A candidate counts on a partition only if that partition can restore it: old — today's
-   `RestorePointResolver` rules; archive — position ≥ E, an archived snapshot ≤ T exists, and the
-   archived log reaches back to E + 1.
-3. T = a checkpoint valid on every partition, from `--from`, closest to `--to` (latest if absent).
-4. Per partition, the path by where T exists (18.5). The archive restore starts the journal at
-   min(E + 1, snapshot index) instead of the snapshot.
+The rules, unchanged from continuous backup (`RestoreValidator`, `RestorePointResolver`):
+
+1. **Validation.** A time range, and a restore without backup id, needs the RDBMS exported positions
+   E: without RDBMS it is rejected with "Cannot resolve a restore point: no backupId was specified
+   and no exported-position data is available …" ("Time range restore (from/to) is only supported
+   for continuous backups" comes first if continuous backup is off; Elasticsearch/OpenSearch reject
+   time ranges). The partitions restored are those the RDBMS holds a position for (1 to k; a gap or
+   none at all fails).
+2. **Range.** Per partition, the first backup range whose start backup is at or before `--from` and
+   that covers E (its first log position ≤ E, its end ≥ E). None: "No usable range found for
+   partition …".
+3. **Candidates.** All checkpoints of that range, markers and backups, also those before `--from`,
+   that exist on every partition with position ≥ E.
+4. **T.** The candidate closest to `--to`, before or after; the latest without `--to`.
+5. **Start.** The backups up to the first one at or after T. `--from` drops those before it (keeping
+   one), and the first remaining one must still be at or below E, else "After discarding backups
+   before …, the exporter position … is not covered by the first remaining backup …". Without
+   `--from`, E trims: the restore starts at the last backup at or below E.
+
+**Mapping.** `ContinuousBackupView` makes each partition look like continuous backup metadata, and
+`HandoverRestoreResolver` runs the unchanged `RestorePointResolver.resolve` on it, so every rule and
+message above applies as is. Without any archive or handover, `RestorePointResolver.resolve` runs
+on the old `metadata.json` directly, as before.
+
+| Continuous backup | Log archive |
+|---|---|
+| backup of checkpoint C: a snapshot below C and the log up to C; a possible start | an archived snapshot and the archived log up to the first covered checkpoint C after it (processed, last follow-up event and max exported position below C's position, as the planner selects snapshots). A timeline that starts at index 1 also starts its first checkpoint. Its first log position is the previous backup's position + 1, the first one's the first archived position |
+| marker | every other covered checkpoint (`checkpointTimestamp`) |
+| range | the archive of the current branch, contiguous by construction: from its first backup to its newest covered checkpoint, which ends the range as a backup does. Covered checkpoints before the first backup are left out: no archived snapshot restores them |
+| one range up to and past H | the old range that holds H (same id, same position) up to H, continued by the archive after H on the same branch |
+| `metadata.json` holds the branch that wrote it last | the current branch of the archive: a leaf timeline with its ancestors, each up to its child's first covered checkpoint; the one whose newest checkpoint is newest. With old backups, only a branch that records a handover of them (or whose archive starts at the partition's first record, 18.4a) continues them; otherwise the old backups are the current branch |
+
+**Assembly.** Per partition, for T and the backups the rules chose:
+
+- T is an old checkpoint: those old backups, restored by the old restore, unchanged.
+- T is archived: the archive of the current branch (`FromArchive`); the journal starts at
+  min(E + 1, snapshot index), which needs the archive to reach back to E + 1. Otherwise bridged
+  (below). If neither can restore T, the restore fails and says why. T is fixed by the rules: there is
+  no fallback to another restore point, as a continuous-backup restore fails on a backup it cannot
+  read.
 
 The archive normally reaches back to E + 1: compaction waits for exporters, and the archive starts
 at the first index on disk at activation. If the RDBMS was reset to an older state, or its exporter
@@ -939,7 +983,7 @@ the archive start A. Such a partition is restored **bridged**: one journal from 
 same branch, the old backups for the indexes up to A − 1 and the archive from A up to T.
 
 **Plan** (`BridgedFromArchive`: old backup ids, timeline, T, E, switch index = A). The resolver
-plans it for an archive candidate whose plain plan fails only because the archive starts after
+plans it for an archived T whose plain plan fails only because the archive starts after
 E + 1 (`startIndex > 1` and `firstArchivedPosition > max(E + 1, 1)`), if:
 
 - the timeline records a handover H (its `HANDOVER` commit entry), and H is an old checkpoint at
@@ -955,10 +999,11 @@ E + 1 (`startIndex > 1` and `firstArchivedPosition > max(E + 1, 1)`), if:
   is completed.
 
 Sound because compaction was pinned to the old backups until H, so their chain has no gaps up to H,
-and the archive started before H (A ≤ index of H), so the chain covers E + 1 … A − 1. Bridging
-comes after the plain archive path and before the fallback: with it, the latest restore point after
-H is restorable; the fallback to the newest old checkpoint (logging why) or the failure naming E and
-both sides' coverage remains for partitions where even the bridge is impossible.
+and the archive started before H (A ≤ index of H), so the chain covers E + 1 … A − 1. In the
+continuous-backup view this is the range across H: its start (the last backup at or below E, or the
+first remaining one after `--from`) is an old backup, and T lies after H. Bridging comes after the
+plain archive path; where even the bridge is impossible, the restore fails naming E and both sides'
+coverage.
 
 **Restore** (`HandoverClusterRestore`, then `LogArchiveRestore.restoreBridgedPartition`):
 
@@ -1027,7 +1072,11 @@ restore points and the RPO stays at the backup interval.
   scheduled backups go on without old-style uploads, restores after and before the scale-up); an
   RDBMS behind the archive start (`LogArchiveBridgedRdbmsRestoreIT`: compaction past E + 1 before
   the log archive is enabled, bridged restore to a checkpoint after H, gap-free re-export from
-  E + 1).
+  E + 1). Time ranges: `TimeRangeParityTest` runs the same `--from`/`--to`/E against
+  continuous-backup-only metadata and equivalent handed-over and archive-only clusters and expects the
+  same T or error; `LogArchiveHandoverRestoreIT` expects a time range without RDBMS to be rejected
+  as with continuous backup, `LogArchiveHandoverRdbmsRestoreIT` restores `--from` inside the old
+  range before H to `--to` after H.
 - Manual test scenario G (brownfield upgrade) in `log-archive-manual-test.md` and its scripts.
 
 ### 18.8 Workstreams

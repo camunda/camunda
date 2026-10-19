@@ -241,11 +241,21 @@ public class RestoreApp implements ApplicationRunner {
       logArchive.setEnabled(true);
     }
     final var selection = Objects.requireNonNull(selectionPerTenant.get(tenantId));
-    final var request =
-        selection.hasBackupIds()
-            ? HandoverRestoreRequest.ofBackupIds(selection.backupIds())
-            : HandoverRestoreRequest.ofTimeRange(
-                selection.from(), selection.to(), exportedPositions(tenantId, partitionCount));
+    final HandoverRestoreRequest request;
+    if (selection.hasBackupIds()) {
+      request = HandoverRestoreRequest.ofBackupIds(selection.backupIds());
+    } else {
+      // A time range (or the latest restore point) is resolved by the rules of continuous backup,
+      // so it is accepted and rejected as there, with the same messages: the log archive is a
+      // continuous backup, whatever the continuous-backup setting says.
+      restoreValidator(tenantId).validateParameters(restoreRequest(tenantId, selection, true));
+      request =
+          HandoverRestoreRequest.ofTimeRange(
+              selection.from(),
+              selection.to(),
+              RestoreValidator.rangeRestoreExportedPositions(
+                  Objects.requireNonNull(exportedPositionSupplier(tenantId)), partitionCount));
+    }
     try (final var restore =
         new HandoverClusterRestore(
             tenantConfiguration, backupStores.forPhysicalTenant(tenantId), meterRegistry)) {
@@ -308,21 +318,6 @@ public class RestoreApp implements ApplicationRunner {
     }
     return IntStream.rangeClosed(1, partitionCount)
         .anyMatch(partition -> !store.loadHandoverRecords(partition).join().isEmpty());
-  }
-
-  /** The RDBMS exported positions of the tenant's partitions that have one; empty without RDBMS. */
-  private Map<Integer, Long> exportedPositions(final String tenantId, final int partitionCount) {
-    final var supplier = exportedPositionSupplier(tenantId);
-    final var positions = new TreeMap<Integer, Long>();
-    if (supplier != null) {
-      for (int partition = 1; partition <= partitionCount; partition++) {
-        final var position = supplier.apply(partition);
-        if (position != null) {
-          positions.put(partition, position);
-        }
-      }
-    }
-    return positions;
   }
 
   private void restoreFromLogArchive(final LogArchiveSelection selection) throws Exception {
@@ -429,31 +424,42 @@ public class RestoreApp implements ApplicationRunner {
     final Map<String, Map<Integer, long[]>> backupIdsPerTenant = new LinkedHashMap<>();
     selectionPerTenant.forEach(
         (physicalTenantId, selection) -> {
-          final var environment =
-              physicalTenantRestoreEnvironments.forPhysicalTenant(physicalTenantId);
-          final var restoreRequest =
-              new RestoreRequest(
-                  physicalTenantId,
-                  new TenantRestoreArguments(
-                      selection.toRestoreParameters(),
-                      environment.databaseType(),
-                      environment.continuousBackups()),
-                  false);
-          final var validator =
-              new RestoreValidator(
-                  physicalTenantConfigurations
-                      .forPhysicalTenant(physicalTenantId)
-                      .getCluster()
-                      .getPartitionsCount(),
-                  backupStores.forPhysicalTenant(physicalTenantId),
-                  exportedPositionSupplier(physicalTenantId));
-          final var result = validator.validate(restoreRequest);
+          final var continuousBackups =
+              physicalTenantRestoreEnvironments
+                  .forPhysicalTenant(physicalTenantId)
+                  .continuousBackups();
+          final var result =
+              restoreValidator(physicalTenantId)
+                  .validate(restoreRequest(physicalTenantId, selection, continuousBackups));
           if (result.isLeft()) {
             throw (RuntimeException) result.getLeft();
           }
           backupIdsPerTenant.put(physicalTenantId, result.get().backups());
         });
     return backupIdsPerTenant;
+  }
+
+  private RestoreRequest restoreRequest(
+      final String physicalTenantId,
+      final RestoreSelection selection,
+      final boolean continuousBackups) {
+    return new RestoreRequest(
+        physicalTenantId,
+        new TenantRestoreArguments(
+            selection.toRestoreParameters(),
+            physicalTenantRestoreEnvironments.forPhysicalTenant(physicalTenantId).databaseType(),
+            continuousBackups),
+        false);
+  }
+
+  private RestoreValidator restoreValidator(final String physicalTenantId) {
+    return new RestoreValidator(
+        physicalTenantConfigurations
+            .forPhysicalTenant(physicalTenantId)
+            .getCluster()
+            .getPartitionsCount(),
+        backupStores.forPhysicalTenant(physicalTenantId),
+        exportedPositionSupplier(physicalTenantId));
   }
 
   private static Map<String, Integer> partitionCounts(

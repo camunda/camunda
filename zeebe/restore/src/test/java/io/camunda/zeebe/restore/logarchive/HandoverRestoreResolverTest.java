@@ -233,6 +233,34 @@ final class HandoverRestoreResolverTest {
   }
 
   @Test
+  void shouldResolveATimeRangeOnTheCurrentBranchOnly() {
+    // given - tl was restored to 6; tl.r6 re-archived 5 and 6 and went on with 11, while tl still
+    // holds 7 of the abandoned branch
+    final var restored =
+        TimelineFixture.start(store, "tl.r6", 1, 35, TIMELINE)
+            .archive(44)
+            .snapshot(42)
+            .archive(54, checkpoint(5, 50))
+            .archive(64, checkpoint(6, 60))
+            .archive(74, checkpoint(11, 66));
+    final var sources = Map.of(1, withTimelines(brownfield(1), restored.view()));
+
+    // when
+    final var plan =
+        HandoverRestoreResolver.resolve(
+            sources,
+            HandoverRestoreRequest.ofTimeRange(
+                null, Instant.ofEpochMilli(timestamp(7)), Map.of(1, 45L)));
+
+    // then - like continuous backup, whose metadata holds the current branch only, 7 is no
+    // candidate; 6 is the closest one, restored from the current timeline
+    assertThat(plan.checkpointId()).isEqualTo(6);
+    assertThat(plan.partitions().get(1))
+        .isInstanceOfSatisfying(
+            FromArchive.class, archived -> assertThat(archived.timelineId()).isEqualTo("tl.r6"));
+  }
+
+  @Test
   void shouldFailWhenTheCheckpointIsInTwoHistories() {
     // given - the branch reused the manual checkpoint id 7 at another position
     final var source = branchAfterRestoreBeforeHandover(1, true);
@@ -498,7 +526,7 @@ final class HandoverRestoreResolverTest {
   }
 
   @Test
-  void shouldNotBridgeWithAnIncompleteOldBackup() {
+  void shouldFailToBridgeWithAnIncompleteOldBackup() {
     // given - old backup 2 between E and the archive never completed
     final var brownfield = brownfield(1);
     final var completed = completed(1, 5);
@@ -513,13 +541,15 @@ final class HandoverRestoreResolverTest {
                 brownfield.handovers(),
                 brownfield.timelines()));
 
-    // when
-    final var plan =
-        HandoverRestoreResolver.resolve(
-            sources, HandoverRestoreRequest.ofTimeRange(null, null, Map.of(1, 15L)));
-
-    // then
-    assertThat(plan.allFromOldBackups()).isTrue();
+    // when - then - the time range resolves to 7 as with continuous backup, which the partition
+    // cannot restore; there is no fallback to another checkpoint
+    assertThatThrownBy(
+            () ->
+                HandoverRestoreResolver.resolve(
+                    sources, HandoverRestoreRequest.ofTimeRange(null, null, Map.of(1, 15L))))
+        .isInstanceOf(LogArchiveRestoreException.class)
+        .hasMessageContaining("Checkpoint 7 cannot be restored on partition 1")
+        .hasMessageContaining("old backups [2] are not completed");
   }
 
   @Test
@@ -541,11 +571,9 @@ final class HandoverRestoreResolverTest {
             () ->
                 HandoverRestoreResolver.resolve(
                     sources, HandoverRestoreRequest.ofTimeRange(null, null, Map.of(1, 15L))))
-        .isInstanceOf(LogArchiveRestoreException.class)
-        .hasMessageContaining("No checkpoint")
-        .hasMessageContaining("exported position 15")
-        .hasMessageContaining("old checkpoints none")
-        .hasMessageContaining("'tl' positions 25..74");
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("No usable range found for partition 1")
+        .hasMessageContaining("exportedPosition=15");
   }
 
   // ---- partitions added after the handover (scale-up) -----------------------------------------
@@ -596,7 +624,7 @@ final class HandoverRestoreResolverTest {
   }
 
   @Test
-  void shouldLeaveOutAPartitionAddedAfterTheCheckpointPickedInATimeRange() {
+  void shouldPickACheckpointOfEveryPartitionInATimeRange() {
     // given
     final var sources = Map.of(1, brownfield(1), 2, brownfield(2), 3, addedAfterHandover(3));
     final var to = Instant.ofEpochMilli(timestamp(6));
@@ -606,9 +634,9 @@ final class HandoverRestoreResolverTest {
         HandoverRestoreResolver.resolve(
             sources, HandoverRestoreRequest.ofTimeRange(null, to, Map.of()));
 
-    // then
-    assertThat(plan.checkpointId()).isEqualTo(6);
-    assertThat(plan.partitions()).containsOnlyKeys(1, 2);
+    // then - like continuous backup, the checkpoint closest to `to` that every partition holds
+    assertThat(plan.checkpointId()).isEqualTo(7);
+    assertThat(plan.partitions()).containsOnlyKeys(1, 2, 3);
   }
 
   @Test

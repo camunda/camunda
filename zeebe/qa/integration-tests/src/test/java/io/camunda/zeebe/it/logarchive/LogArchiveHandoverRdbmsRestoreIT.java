@@ -113,11 +113,13 @@ final class LogArchiveHandoverRdbmsRestoreIT {
   void shouldRestoreFromTheArchiveAndResumeTheRdbmsExporterAfterTheExportedPosition()
       throws Exception {
     // given -- a completed handover, an RDBMS that exported phases a to c, and data after the
-    // exported position E (phase d) that only the log holds
-    final var from = Instant.now();
+    // exported position E (phase d) that only the log holds; the range starts inside the old
+    // backups' range, before H, as continuous backup requires a backup at or before `from`
     final var client = source.newClientBuilder().build();
     final long process = deployProcess(client);
+    takeBackup(BackupActuator.of(source));
     createInstances(client, process, "a", PHASE_SIZE);
+    final var from = Instant.now();
     final long old = takeBackup(BackupActuator.of(source));
     createInstances(client, process, "b", PHASE_SIZE);
     PartitionsActuator.of(source).takeSnapshot();
@@ -141,7 +143,8 @@ final class LogArchiveHandoverRdbmsRestoreIT {
     source.stop();
     final var to = Instant.now().plusSeconds(60);
 
-    // when -- restoring a range from before the handover to after the archive checkpoint
+    // when -- restoring a range from inside the old backups, before the handover, to after the
+    // archive checkpoint
     final var restoredBucket = copyBucket("restored-bucket");
     final var data = testDirectory.resolve("restored-data");
     restore(restoredBucket, data, app -> app.withTimeRange(from, to));
@@ -175,7 +178,20 @@ final class LogArchiveHandoverRdbmsRestoreIT {
           .isEqualTo(Map.of("a", PHASE_SIZE, "b", PHASE_SIZE, "c", PHASE_SIZE, "d", PHASE_SIZE));
     }
 
-    // and -- an RDBMS ahead of every checkpoint cannot be restored to, with a clear message
+    // and -- a range that starts before every backup is rejected as with continuous backup
+    final var beforeEveryBackup = from.minus(Duration.ofDays(1));
+    final var earlyBucket = copyBucket("early-bucket");
+    assertThatThrownBy(
+            () ->
+                restore(
+                    earlyBucket,
+                    testDirectory.resolve("early-data"),
+                    app -> app.withTimeRange(beforeEveryBackup, to)))
+        .hasStackTraceContaining(
+            "No usable range found for partition 1 with from=" + beforeEveryBackup);
+
+    // and -- an RDBMS ahead of every checkpoint cannot be restored to, with the same message as
+    // with continuous backup
     setExportedPositions(Long.MAX_VALUE / 2);
     final var aheadBucket = copyBucket("ahead-bucket");
     assertThatThrownBy(
@@ -184,8 +200,8 @@ final class LogArchiveHandoverRdbmsRestoreIT {
                     aheadBucket,
                     testDirectory.resolve("ahead-data"),
                     app -> app.withTimeRange(from, to)))
-        .hasStackTraceContaining("can be restored on every partition")
-        .hasStackTraceContaining("exported position");
+        .hasStackTraceContaining("No usable range found for partition 1")
+        .hasStackTraceContaining("exportedPosition=" + Long.MAX_VALUE / 2);
   }
 
   private void disableRdbmsExporter() {
