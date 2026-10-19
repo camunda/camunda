@@ -265,6 +265,7 @@ range and at or before the backup that covers E (one second off either way fails
 | H2b | same store | `--to=<C's time>` | archive path; rows 120, nothing after C; 120 jobs |
 | H3 | `h-compacted`: 1 MB segments, 512 KB max message size; E frozen early, 300 instances × 10 KB, wait for compaction, then `upgrade` | `--to=<now>` | archive starts after E+1 (`timeline.json` startIndex > 1); restore skips every archive checkpoint ("the archive starts at position … after the exported position … + 1") and falls back to H (`tl-0.b<H>`); rows 30 → 330; 330 jobs |
 | H4 | `h-handover`: E frozen before the upgrade, old backup O, then handover | `--to=<O's time>` | old path (`.b`); rows 30 → 60; 60 jobs |
+| H5 | `h-handover`: E frozen before the upgrade, handover H, C after H | `--to=<C's time>` | archive path (`.r`); the restored journal starts at or before E+1, before H (the archive's log reaches back before H); rows 30 → 120 across H, nothing after C; 120 jobs |
 
 ### Snapshot checks (S)
 
