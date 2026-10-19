@@ -32,10 +32,10 @@ import org.jspecify.annotations.Nullable;
 /**
  * A pending change plan is considered a restore if its pending operations contain a {@link
  * PartitionRestoreOperation} or {@link PartitionPreRestoreOperation} (partitions are still being
- * restored), or a trailing epilogue operation - a mode transition to {@link Mode#PROCESSING} or the
- * final {@link UpdateIncarnationNumberOperation} - whose completed operations already include a
- * {@link PartitionRestoreOperation} or {@link PartitionPreRestoreOperation}. There is at most one
- * restore in flight at any time.
+ * restored), or a trailing epilogue operation - the {@link UpdateIncarnationNumberOperation} or a
+ * mode transition to {@link Mode#PROCESSING} - whose completed operations already include a {@link
+ * PartitionRestoreOperation} or {@link PartitionPreRestoreOperation}. There is at most one restore
+ * in flight at any time.
  */
 @NullMarked
 public record RestoreStatus(ChangePlan plan, List<BrokerRestoreStatus> brokers) {

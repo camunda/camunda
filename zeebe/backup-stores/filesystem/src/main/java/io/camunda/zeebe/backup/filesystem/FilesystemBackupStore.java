@@ -25,13 +25,10 @@ import io.camunda.zeebe.util.FileUtil;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
-import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -202,56 +199,6 @@ public final class FilesystemBackupStore implements BackupStore {
           final var manifest = manifestManager.getManifest(id);
           manifestManager.markAsDeleted(requireNonNull(manifest));
           return BackupStatusCode.DELETED;
-        },
-        executor);
-  }
-
-  @Override
-  public CompletableFuture<Void> storeHistoryManifest(final UUID historyId, final byte[] content) {
-    return CompletableFuture.runAsync(
-        () -> {
-          final var base = Path.of(config.basePath());
-          final var directory = base.resolve("histories");
-          try {
-            Files.createDirectories(directory);
-            FileUtil.flushDirectory(base);
-            final var temporary = Files.createTempFile(directory, historyId.toString(), ".tmp");
-            try {
-              Files.write(
-                  temporary,
-                  content,
-                  StandardOpenOption.WRITE,
-                  StandardOpenOption.SYNC,
-                  StandardOpenOption.TRUNCATE_EXISTING);
-              Files.move(
-                  temporary,
-                  directory.resolve(historyId + ".json"),
-                  StandardCopyOption.ATOMIC_MOVE,
-                  StandardCopyOption.REPLACE_EXISTING);
-              FileUtil.flushDirectory(directory);
-            } finally {
-              Files.deleteIfExists(temporary);
-            }
-          } catch (final IOException e) {
-            throw new UncheckedIOException(e);
-          }
-        },
-        executor);
-  }
-
-  @Override
-  public CompletableFuture<Optional<byte[]>> loadHistoryManifest(final UUID historyId) {
-    return CompletableFuture.supplyAsync(
-        () -> {
-          final var path =
-              Path.of(config.basePath()).resolve("histories").resolve(historyId + ".json");
-          try {
-            return Optional.of(Files.readAllBytes(path));
-          } catch (final NoSuchFileException e) {
-            return Optional.empty();
-          } catch (final IOException e) {
-            throw new UncheckedIOException(e);
-          }
         },
         executor);
   }

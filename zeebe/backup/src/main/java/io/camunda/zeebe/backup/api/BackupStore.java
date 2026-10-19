@@ -11,23 +11,10 @@ import java.nio.file.Path;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
 /** A store where the backup is stored * */
 public interface BackupStore {
-
-  /** Unconditional PUT at histories/{historyId}.json. Retries must use identical bytes. */
-  default CompletableFuture<Void> storeHistoryManifest(final UUID historyId, final byte[] content) {
-    return CompletableFuture.failedFuture(
-        new UnsupportedOperationException("History manifests are not supported by this store"));
-  }
-
-  /** Read immutable activation metadata independently of backup retention. */
-  default CompletableFuture<Optional<byte[]>> loadHistoryManifest(final UUID historyId) {
-    return CompletableFuture.failedFuture(
-        new UnsupportedOperationException("History manifests are not supported by this store"));
-  }
 
   /** Saves the backup to the backup storage. */
   CompletableFuture<Void> save(Backup backup);

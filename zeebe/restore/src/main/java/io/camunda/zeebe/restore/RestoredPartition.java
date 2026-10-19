@@ -7,27 +7,13 @@
  */
 package io.camunda.zeebe.restore;
 
-import io.camunda.zeebe.backup.history.HistoryManifest;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 
-/** Provenance and exact journal boundary recovered from a partition's backup chain. */
+/**
+ * Where a restored partition's journal ends: with the entry at {@code checkpointIndex}, which holds
+ * the checkpoint record at {@code checkpointPosition}. Up to there, it is the journal of the
+ * history the last backup was taken in; backups from before histories existed don't name one.
+ */
 public record RestoredPartition(
-    int partitionId, Optional<UUID> sourceHistoryId, long index, long position) {
-  public RestoredPartition {
-    Objects.requireNonNull(sourceHistoryId);
-    if (partitionId <= 0 || index <= 0 || position <= 0) {
-      throw new IllegalArgumentException("A restored partition needs a positive checkpoint");
-    }
-  }
-
-  /** Legacy backups remain restorable, but cannot silently claim known Event Plane ancestry. */
-  public HistoryManifest.Base historyBase() {
-    return new HistoryManifest.Base(
-        sourceHistoryId.orElseThrow(
-            () -> new IllegalStateException("Backup has no history identity; ancestry is unknown")),
-        index,
-        position);
-  }
-}
+    int partitionId, Optional<UUID> historyId, long checkpointIndex, long checkpointPosition) {}

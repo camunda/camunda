@@ -46,6 +46,7 @@ import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.time.Instant;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -159,11 +160,7 @@ class PartitionRestoreServiceTest {
     final var backup = takeBackup(backupId, 4);
 
     // when
-    final var restored = restoreService.restore(backupId, BackupValidator.none());
-    assertThat(restored.index()).isEqualTo(4);
-    assertThat(restored.position()).isEqualTo(4);
-    assertThat(restored.sourceHistoryId()).isEmpty();
-    assertThatThrownBy(restored::historyBase).isInstanceOf(IllegalStateException.class);
+    restoreService.restore(backupId, BackupValidator.none());
 
     // then
     assertThat(dataDirectoryToRestore).isNotEmptyDirectory();
@@ -248,6 +245,53 @@ class PartitionRestoreServiceTest {
         .hasMessageContaining("Expected backup to have 2 partitions, but has 1");
   }
 
+  @Test
+  void shouldReportWhereTheRestoredJournalEnds() throws IOException, FlushException {
+    // given - record positions that differ from the entries' indexes
+    appendRecord(100, "data");
+    appendRecord(200, "checkpoint");
+    appendRecord(300, "data");
+    final var history = UUID.randomUUID();
+    takeBackup(1, descriptor(200).withHistoryId(history));
+
+    // when
+    final var restored = restoreService.restore(1, BackupValidator.none());
+
+    // then
+    assertThat(restored)
+        .isEqualTo(new RestoredPartition(partitionId, Optional.of(history), 2, 200));
+  }
+
+  @Test
+  void shouldReportTheHistoryOfTheLastBackup() throws IOException, FlushException {
+    // given - a chain whose first backup was taken in the history the second one's took over
+    appendRecord(100, "first checkpoint");
+    takeBackup(1, descriptor(100).withHistoryId(UUID.randomUUID()));
+    appendRecord(200, "second checkpoint");
+    final var history = UUID.randomUUID();
+    takeBackup(2, descriptor(200).withHistoryId(history));
+
+    // when
+    final var restored = restoreService.restore(new long[] {1, 2}, BackupValidator.none());
+
+    // then
+    assertThat(restored)
+        .isEqualTo(new RestoredPartition(partitionId, Optional.of(history), 2, 200));
+  }
+
+  @Test
+  void shouldReportNoHistoryForABackupThatNamesNone() throws IOException, FlushException {
+    // given
+    appendRecord(100, "checkpoint");
+    takeBackup(1, 100);
+
+    // when
+    final var restored = restoreService.restore(1, BackupValidator.none());
+
+    // then
+    assertThat(restored.historyId()).isEmpty();
+  }
+
   private Set<String> getRegularFiles(final Path directory) throws IOException {
     final Set<String> restoredSegmentFiles;
     try (final var stream = Files.list(directory)) {
@@ -260,69 +304,8 @@ class PartitionRestoreServiceTest {
     return restoredSegmentFiles;
   }
 
-  @Test
-  void shouldReportKnownHistoryWithIndexDistinctFromRecordPosition() throws Exception {
-    // given
-    appendRecord(100, "data");
-    appendRecord(200, "checkpoint");
-    appendRecord(300, "later data");
-    final var historyId = UUID.randomUUID();
-    final var descriptor =
-        new BackupDescriptorImpl(200, 1, "test", Instant.now(), CheckpointType.MANUAL_BACKUP)
-            .withHistoryId(historyId);
-    backupService.takeBackup(7, descriptor).join();
-    // when
-    final var restored = restoreService.restore(7, BackupValidator.none());
-    // then
-    assertThat(restored.sourceHistoryId()).contains(historyId);
-    assertThat(restored.index()).isEqualTo(2);
-    assertThat(restored.position()).isEqualTo(200);
-    assertThat(restored.historyBase().sourceHistoryId()).isEqualTo(historyId);
-  }
-
   private Backup takeBackup(final long backupId, final long checkpointPosition) {
-    return takeBackup(
-        backupId,
-        new BackupDescriptorImpl(
-            checkpointPosition, 1, "test", Instant.now(), CheckpointType.MANUAL_BACKUP));
-  }
-
-  @Test
-  void shouldRejectABackupChainWithConflictingKnownHistories() {
-    // given
-    appendRecord(100, "first checkpoint");
-    takeBackup(
-        1,
-        new BackupDescriptorImpl(100, 1, "test", Instant.now(), CheckpointType.MANUAL_BACKUP)
-            .withHistoryId(UUID.randomUUID()));
-    appendRecord(200, "second checkpoint");
-    takeBackup(
-        2,
-        new BackupDescriptorImpl(200, 1, "test", Instant.now(), CheckpointType.MANUAL_BACKUP)
-            .withHistoryId(UUID.randomUUID()));
-    // when / then
-    assertThatThrownBy(() -> restoreService.restore(new long[] {1, 2}, BackupValidator.none()))
-        .isInstanceOf(IllegalStateException.class)
-        .hasMessageContaining("different histories");
-  }
-
-  @Test
-  void shouldKeepMixedLegacyAndKnownProvenanceUnknown() throws Exception {
-    // given
-    appendRecord(100, "legacy checkpoint");
-    takeBackup(1, 100);
-    appendRecord(200, "known checkpoint");
-    takeBackup(
-        2,
-        new BackupDescriptorImpl(200, 1, "test", Instant.now(), CheckpointType.MANUAL_BACKUP)
-            .withHistoryId(UUID.randomUUID()));
-    // when
-    final var restored = restoreService.restore(new long[] {1, 2}, BackupValidator.none());
-    // then
-    assertThat(restored.sourceHistoryId()).isEmpty();
-    assertThat(restored.index()).isEqualTo(2);
-    assertThat(restored.position()).isEqualTo(200);
-    assertThatThrownBy(restored::historyBase).isInstanceOf(IllegalStateException.class);
+    return takeBackup(backupId, descriptor(checkpointPosition));
   }
 
   private Backup takeBackup(final long backupId, final BackupDescriptorImpl descriptor) {
@@ -330,6 +313,15 @@ class PartitionRestoreServiceTest {
         backupStore.waitForBackup(new BackupIdentifierImpl(nodeId, partitionId, backupId));
     backupService.takeBackup(backupId, descriptor);
     return backup.orTimeout(30, TimeUnit.SECONDS).join();
+  }
+
+  private static BackupDescriptorImpl descriptor(final long checkpointPosition) {
+    return new BackupDescriptorImpl(
+        checkpointPosition,
+        1, // Use partition count of 1 for tests
+        "test",
+        Instant.now(),
+        CheckpointType.MANUAL_BACKUP);
   }
 
   private void appendRecord(final long asqn, final String data) {

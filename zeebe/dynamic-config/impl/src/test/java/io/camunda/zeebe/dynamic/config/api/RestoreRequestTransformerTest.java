@@ -841,8 +841,10 @@ final class RestoreRequestTransformerTest {
   }
 
   @Test
-  void shouldChangeTheIncarnationBeforeAnyPartitionResumesProcessing() {
-    // given - two brokers must both see the new history before either starts processing.
+  void shouldChangeTheIncarnationBeforeAnyPartitionProcessesAgain() {
+    // given - two brokers, two partitions. The incarnation number is the group's own state, and
+    // the Event Plane's publishers read it when a partition starts, so it has to change after every
+    // restore and before any partition processes the restored data.
     final var memberOne = MemberId.from("0");
     final var memberTwo = MemberId.from("1");
     final var transformer =
@@ -862,16 +864,24 @@ final class RestoreRequestTransformerTest {
                     memberOne, recovering(1, 2),
                     memberTwo, recovering(1, 2))));
 
-    // then - the identity changes after all restore I/O, and every start depends on it
+    // then - one change, after the routing state, and every mode change waits for it
     EitherAssert.assertThat(result).isRight();
     final var graph = graphOf(result.get());
-    final var bump = idsOf(graph, UpdateIncarnationNumberOperation.class).getFirst();
-    assertThat(graph.operations().get(bump).dependsOn())
-        .containsExactlyElementsOf(idsOf(graph, UpdateRoutingState.class));
-    assertThat(idsOf(graph, ModeChangeOperation.class))
-        .hasSize(2)
-        .allSatisfy(
-            start -> assertThat(graph.operations().get(start).dependsOn()).containsExactly(bump));
+    assertThat(idsOf(graph, UpdateIncarnationNumberOperation.class))
+        .singleElement()
+        .satisfies(
+            change -> {
+              assertThat(graph.operations().get(change).dependsOn())
+                  .describedAs("dependencies of the incarnation change")
+                  .containsExactlyElementsOf(idsOf(graph, UpdateRoutingState.class));
+              assertThat(idsOf(graph, ModeChangeOperation.class))
+                  .hasSize(2)
+                  .allSatisfy(
+                      modeChange ->
+                          assertThat(graph.operations().get(modeChange).dependsOn())
+                              .describedAs("dependencies of a mode change")
+                              .containsExactly(change));
+            });
   }
 
   private static MemberId memberOf(final OperationGraph graph, final OperationId operationId) {

@@ -1,58 +1,60 @@
-# Describe restored tenant histories with immutable manifests
+# Each life of a physical tenant is a history
 
-**DRI**: Event Plane and cluster configuration maintainers
+**DRI**: Lena Schönburg
 
 **Status**: Proposed (8.11)
 
-**Purpose**: Define backup provenance and the publication boundary for tenant history changes.
+**Deciders**
+- Lena Schönburg
 
-**Audience**: Backup, restore, cluster configuration and Event Plane maintainers.
+**Purpose**: Decide what the cluster records so that the Event Plane can tell a physical tenant's
+histories apart after a restore or a purge.
+
+**Audience**: Engineers working on backup, restore, purge and the dynamic configuration.
 
 ## Context
 
-Restores reuse journal indexes and record positions. Consumers need the shared prefix between their
-previous history and the restored one. A backup can come from an older history than the one being
-replaced. The Event Plane must remain outside backup, restore and publishing's critical path.
+The Event Plane keeps a copy of every partition's journal in object storage. A restore writes the
+same Raft indexes and record positions again, with other records, and its backup can come from an
+older history than the one it replaces. Consumers need to know which of the records they read
+still count. The Event Plane's side is
+[History manifests](https://github.com/camunda/event-plane/blob/b001616b7fa1f9a0d294613c36a948b1d50f9fc0/docs/14-history-manifests.md),
+proposed in [camunda/event-plane#88](https://github.com/camunda/event-plane/pull/88).
 
 ## Decision
 
-**D1. A history is an inherited prefix plus an append-only suffix.**
-A manifest identifies one physical tenant history by UUID and records every restored partition's
-source history, checkpoint index and checkpoint position. It is immutable and survives data retention.
+**D1. Each life of a physical tenant is a history, named by a random id.** A new tenant, a purge
+and a restore each start one; leader changes keep it. For each partition, a history takes over
+another history's journal up to and including a checkpoint's entry, or nothing.
 
-**D2. Restore preparation precedes history activation and processing.**
-One coordinator owns the operation identity and fixed timestamp. All partitions remain stopped until
-inherited journal publication and durable installation of the shared history have completed. An
-ordinary object PUT then publishes the complete manifest. There are no conditional writes.
+**D2. Every broker has the history in its dynamic configuration before the tenant's partitions
+start again.** The operation makes up the id and its creation time once, and keeps them, so that
+retries and every broker use the same. The configuration also holds what the history takes over in
+each partition: its manifest. Processing then goes on without waiting for object storage or the
+Event Plane; the Event Plane's publishers write the manifest to their store before their first
+upload.
 
-**D3. Current-history selection is best effort.**
-The Event Plane selects the greatest fixed timestamp and canonical UUID for the tenant. Clock errors
-may select an older history indefinitely. Ancestry and transition reporting remain exact; ordinary
-uploads never affect selection. Consumers may catch up independently.
+**D3. A backup names the history it was taken in, and a restore reports where each partition's
+journal ends**: the checkpoint's index and position, and the history of the last backup, which
+the journal up to there belongs to. Backups from before histories name none.
 
-**D4. Backups preserve provenance; legacy ancestry is explicit.**
-A backup records its source history. Restore reports that identity and the actual journal checkpoint.
-A legacy backup remains restorable, but cannot activate a history claiming known ancestry without an
-explicit migration policy.
+**D4. The incarnation number changes before any partition processes the restored data**, where
+the history changes, no longer after the restore has finished.
 
 ## Alternatives considered
 
-- **Stamp every Raft entry.** Adds journal-format work to answer ancestry that restore already knows.
-- **Globally ordered activation.** Requires coordination beyond the accepted best-effort selection
-  contract; fixed timestamps keep the restore metadata small.
+- **Stamp the history on every Raft entry.** Changes the journal format to tell what the restore
+  already knows.
+- **Wait until object storage has the manifest, and the entries the backup's history hadn't
+  uploaded, before processing.** Puts object storage on the restore's critical path. Once backups
+  are made of the Event Plane's segments, those entries are in the store anyway.
 
 ## Consequences
 
-- Normal publishing starts after the prepared checkpoint and needs no ancestry map or per-entry stamp.
-- The binary segment format, archive preparation and replicated upload floor remain separate work.
-- Native backup success alone is not proof of archive publication. Runtime activation stays unwired
-  until preparation has a real implementation.
-- Shared segments require backup-aware retention and rollup; history selection does not authorize deletion.
-
-## Source
-
-- [Event Plane design draft](https://github.com/camunda/event-plane/pull/88).
-- [Manifest contract](https://github.com/camunda/event-plane/blob/1706be87f575173c10e5071e2a67ae2ee5f4ab52/docs/14-history-manifests.md)
-  and [JSON schema](https://github.com/camunda/event-plane/blob/1706be87f575173c10e5071e2a67ae2ee5f4ab52/api/src/main/resources/history/history-manifest-v1.schema.json).
-- [Implementation boundary](../../../zeebe/backup/docs/history-manifests.md).
-
+- Done here: backups carry an optional history id, a restore reports where each partition's journal
+  ends, and the incarnation number changes before processing.
+- Still to do: keeping the history and its manifest in the configuration, for new tenants, purges,
+  online restores and both kinds of offline restore; filling in the history id when taking a
+  backup; and the publisher.
+- A restore from a backup that names no history needs a rule for what it takes over before the
+  Event Plane can follow it.

@@ -18,8 +18,7 @@ public interface BackupStoreTestKit
         UpdatingBackupStatus,
         QueryingBackupStatus,
         ListingBackups,
-        StoringBackupMetadata,
-        StoringHistoryManifests {
+        StoringBackupMetadata {
 
   static Stream<? extends Arguments> provideBackups() throws Exception {
     return TestBackupProvider.provideArguments();

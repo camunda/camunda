@@ -18,7 +18,7 @@ import java.util.UUID;
  * status
  */
 public interface BackupDescriptor {
-  /** Source history at this checkpoint; absent for backups made before history publication. */
+  /** The history this backup was taken in; empty for backups from before histories existed. */
   default Optional<UUID> historyId() {
     return Optional.empty();
   }

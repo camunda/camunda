@@ -36,7 +36,6 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -259,35 +258,6 @@ public final class GcsBackupStore implements BackupStore {
         },
         executor,
         deleteConcurrencyLimit);
-  }
-
-  @Override
-  public CompletableFuture<Void> storeHistoryManifest(final UUID historyId, final byte[] content) {
-    return CompletableFuture.runAsync(
-        () -> {
-          final var blobInfo =
-              BlobInfo.newBuilder(bucketInfo, basePath + "histories/" + historyId + ".json")
-                  .build();
-          client.create(blobInfo, content);
-        },
-        executor);
-  }
-
-  @Override
-  public CompletableFuture<Optional<byte[]>> loadHistoryManifest(final UUID historyId) {
-    return CompletableFuture.supplyAsync(
-        () -> {
-          final var blobId =
-              BlobInfo.newBuilder(bucketInfo, basePath + "histories/" + historyId + ".json")
-                  .build()
-                  .getBlobId();
-          final var blob = client.get(blobId);
-          if (blob == null || !blob.exists()) {
-            return Optional.empty();
-          }
-          return Optional.of(blob.getContent());
-        },
-        executor);
   }
 
   @Override
