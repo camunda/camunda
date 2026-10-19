@@ -1,0 +1,52 @@
+{
+  "executionPlatform": "Camunda Cloud",
+  "executionPlatformVersion": "8.11.0",
+  "exporter": {
+    "name": "Camunda Modeler",
+    "version": "5.40.0"
+  },
+  "schemaVersion": 18,
+  "id": "underwriter-review",
+  "type": "default",
+  "components": [
+    {
+      "type": "number",
+      "key": "creditScore",
+      "label": "Credit score",
+      "id": "Field_creditScore_23",
+      "readonly": true
+    },
+    {
+      "type": "number",
+      "key": "loanAmount",
+      "label": "Loan amount (EUR)",
+      "id": "Field_loanAmount_24",
+      "readonly": true
+    },
+    {
+      "type": "radio",
+      "key": "decision",
+      "label": "Decision",
+      "id": "Field_decision_25",
+      "validate": {
+        "required": true
+      },
+      "values": [
+        {
+          "label": "Approve",
+          "value": "approved"
+        },
+        {
+          "label": "Reject",
+          "value": "rejected"
+        }
+      ]
+    },
+    {
+      "type": "textarea",
+      "key": "underwriterNotes",
+      "label": "Notes",
+      "id": "Field_underwriterNotes_26"
+    }
+  ]
+}

@@ -1,0 +1,28 @@
+{
+  "executionPlatform": "Camunda Cloud",
+  "executionPlatformVersion": "8.11.0",
+  "exporter": {
+    "name": "Camunda Modeler",
+    "version": "5.40.0"
+  },
+  "schemaVersion": 18,
+  "id": "request-document",
+  "type": "default",
+  "components": [
+    {
+      "type": "textfield",
+      "key": "requestedDocument",
+      "label": "Requested document",
+      "id": "Field_requestedDocument_21",
+      "validate": {
+        "required": true
+      }
+    },
+    {
+      "type": "textarea",
+      "key": "requestMessage",
+      "label": "Message to the applicant",
+      "id": "Field_requestMessage_22"
+    }
+  ]
+}

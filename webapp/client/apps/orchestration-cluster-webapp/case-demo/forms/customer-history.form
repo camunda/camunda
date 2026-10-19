@@ -1,0 +1,22 @@
+{
+  "executionPlatform": "Camunda Cloud",
+  "executionPlatformVersion": "8.11.0",
+  "exporter": {
+    "name": "Camunda Modeler",
+    "version": "5.40.0"
+  },
+  "schemaVersion": 18,
+  "id": "customer-history",
+  "type": "default",
+  "components": [
+    {
+      "type": "textarea",
+      "key": "customerHistory",
+      "label": "Customer history",
+      "id": "Field_customerHistory_20",
+      "validate": {
+        "required": true
+      }
+    }
+  ]
+}

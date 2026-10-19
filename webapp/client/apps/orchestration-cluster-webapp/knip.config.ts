@@ -26,6 +26,8 @@ const config: KnipConfig = {
 		// consumers migrate to the shadcn Frame/InstanceHeader siblings
 		'src/operate/shared/Frame/shadcn.components/Frame.tsx',
 		'src/operate/shared/InstanceHeader/shadcn.components/InstanceHeader.tsx',
+		// prototype: a standalone Node script that seeds the case management demo
+		'case-demo/**',
 	],
 	ignoreDependencies: ['@vitest/browser'],
 	typescript: {

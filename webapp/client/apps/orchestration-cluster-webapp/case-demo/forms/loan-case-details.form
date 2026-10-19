@@ -1,0 +1,61 @@
+{
+  "executionPlatform": "Camunda Cloud",
+  "executionPlatformVersion": "8.11.0",
+  "exporter": {
+    "name": "Camunda Modeler",
+    "version": "5.40.0"
+  },
+  "schemaVersion": 18,
+  "id": "loan-case-details",
+  "type": "default",
+  "components": [
+    {
+      "type": "textfield",
+      "key": "applicantName",
+      "label": "Applicant",
+      "id": "Field_applicantName_1"
+    },
+    {
+      "type": "textfield",
+      "key": "applicantEmail",
+      "label": "Email",
+      "id": "Field_applicantEmail_2"
+    },
+    {
+      "type": "number",
+      "key": "loanAmount",
+      "label": "Loan amount (EUR)",
+      "id": "Field_loanAmount_3"
+    },
+    {
+      "type": "number",
+      "key": "termYears",
+      "label": "Term (years)",
+      "id": "Field_termYears_4"
+    },
+    {
+      "type": "textfield",
+      "key": "loanPurpose",
+      "label": "Loan purpose",
+      "id": "Field_loanPurpose_5"
+    },
+    {
+      "type": "number",
+      "key": "monthlyIncome",
+      "label": "Monthly income (EUR)",
+      "id": "Field_monthlyIncome_6"
+    },
+    {
+      "type": "number",
+      "key": "creditScore",
+      "label": "Credit score",
+      "id": "Field_creditScore_7"
+    },
+    {
+      "type": "textfield",
+      "key": "decision",
+      "label": "Decision",
+      "id": "Field_decision_8"
+    }
+  ]
+}
