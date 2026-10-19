@@ -17,6 +17,7 @@ import io.camunda.db.rdbms.write.queue.ContextType;
 import io.camunda.db.rdbms.write.queue.ExecutionQueue;
 import io.camunda.db.rdbms.write.queue.InsertVariableMerger;
 import io.camunda.db.rdbms.write.queue.QueueItem;
+import io.camunda.db.rdbms.write.queue.QueueItemMerger;
 import io.camunda.db.rdbms.write.queue.WriteStatementType;
 import java.util.Collection;
 import java.util.HashMap;
@@ -27,8 +28,13 @@ import java.util.Set;
 
 public class VariableWriter extends ProcessInstanceDependant implements RdbmsWriter {
 
-  // after the variable insert, which has the default order 0
-  private static final int PROTECTION_MODES_ORDER = 1;
+  // the variable insert and update have the default order 0
+  private static final int DELETE_PROTECTION_MODES_ORDER = 1;
+  private static final int INSERT_PROTECTION_MODES_ORDER = 2;
+  private static final String DELETE_PROTECTION_MODES_STATEMENT =
+      "io.camunda.db.rdbms.sql.VariableMapper.deleteProtectionModes";
+  private static final String INSERT_PROTECTION_MODES_STATEMENT =
+      "io.camunda.db.rdbms.sql.VariableMapper.insertProtectionModes";
 
   private final ExecutionQueue executionQueue;
   private final VariableMapper variableMapper;
@@ -83,6 +89,8 @@ public class VariableWriter extends ProcessInstanceDependant implements RdbmsWri
             variable.truncateValue(
                 vendorDatabaseProperties.variableValuePreviewSize(),
                 vendorDatabaseProperties.charColumnMaxBytes())));
+
+    replaceProtectionModes(variable);
   }
 
   public void migrateToProcess(final long variableKey, final String processDefinitionId) {
@@ -115,14 +123,12 @@ public class VariableWriter extends ProcessInstanceDependant implements RdbmsWri
   }
 
   /**
-   * Queues one row per protection mode of a variable. Nothing is queued for a variable without
-   * protection modes.
+   * Queues the protection modes of a created variable as one insert. Nothing is queued for a
+   * variable without protection modes.
    *
-   * <p>The statements share the {@link ContextType#VARIABLE} context and the INSERT type with the
-   * batched variable insert, which has the default order. They use a higher order, so they are
-   * executed after the variable insert and satisfy the foreign key from the modes to the variable.
-   *
-   * @param variable the variable that was queued for insertion
+   * <p>The insert shares the INSERT type with the batched variable insert, which has the default
+   * order. It uses a higher order, so it is executed after the variable insert and satisfies the
+   * foreign key from the modes to the variable.
    */
   private void insertProtectionModes(final VariableDbModel variable) {
     final var protectionModes = variable.protectionModes();
@@ -130,15 +136,75 @@ public class VariableWriter extends ProcessInstanceDependant implements RdbmsWri
       return;
     }
 
-    for (final var mode : protectionModes) {
+    executionQueue.executeInQueue(
+        new QueueItem(
+            ContextType.VARIABLE,
+            WriteStatementType.INSERT,
+            variable.variableKey(),
+            INSERT_PROTECTION_MODES_STATEMENT,
+            new VariableMapper.ProtectionModesDto(variable.variableKey(), protectionModes),
+            INSERT_PROTECTION_MODES_ORDER));
+  }
+
+  /**
+   * Replaces the protection modes of an updated variable: deletes the existing rows, then inserts
+   * the current set.
+   *
+   * <p>The queue sorts the {@link ContextType#VARIABLE} context by statement type, then order, not
+   * by arrival. Two updates of one variable in the same flush would therefore run both deletes
+   * before both inserts, so the inserts collide on the primary key and a mode removed by the later
+   * update comes back. To prevent this, a variable has at most one modes insert queued per flush. A
+   * later update replaces its modes in place. When they become empty, the item turns into a second
+   * delete, which does nothing after the first.
+   */
+  private void replaceProtectionModes(final VariableDbModel variable) {
+    final var variableKey = variable.variableKey();
+    final var protectionModes = variable.protectionModes();
+
+    executionQueue.executeInQueue(
+        new QueueItem(
+            ContextType.VARIABLE,
+            WriteStatementType.UPDATE,
+            variableKey,
+            DELETE_PROTECTION_MODES_STATEMENT,
+            variableKey,
+            DELETE_PROTECTION_MODES_ORDER));
+
+    final var wasMerged =
+        executionQueue.tryMergeWithExistingQueueItem(
+            new QueueItemMerger() {
+              @Override
+              public boolean canBeMerged(final QueueItem queueItem) {
+                return queueItem.contextType() == ContextType.VARIABLE
+                    && queueItem.statementType() == WriteStatementType.UPDATE
+                    && queueItem.order() == INSERT_PROTECTION_MODES_ORDER
+                    && queueItem.id().equals(variableKey);
+              }
+
+              @Override
+              public QueueItem merge(final QueueItem originalItem) {
+                return protectionModes.isEmpty()
+                    ? originalItem.copy(
+                        b ->
+                            b.statementId(DELETE_PROTECTION_MODES_STATEMENT).parameter(variableKey))
+                    : originalItem.copy(
+                        b ->
+                            b.statementId(INSERT_PROTECTION_MODES_STATEMENT)
+                                .parameter(
+                                    new VariableMapper.ProtectionModesDto(
+                                        variableKey, protectionModes)));
+              }
+            });
+
+    if (!wasMerged && !protectionModes.isEmpty()) {
       executionQueue.executeInQueue(
           new QueueItem(
               ContextType.VARIABLE,
-              WriteStatementType.INSERT,
-              variable.variableKey(),
-              "io.camunda.db.rdbms.sql.VariableMapper.insertProtectionModes",
-              new VariableMapper.ProtectionModeDto(variable.variableKey(), mode),
-              PROTECTION_MODES_ORDER));
+              WriteStatementType.UPDATE,
+              variableKey,
+              INSERT_PROTECTION_MODES_STATEMENT,
+              new VariableMapper.ProtectionModesDto(variableKey, protectionModes),
+              INSERT_PROTECTION_MODES_ORDER));
     }
   }
 
