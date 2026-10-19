@@ -638,6 +638,36 @@ public class CheckpointScheduleTest {
   }
 
   @Test
+  void shouldActivateLogArchiveOfAPartitionAddedLater() {
+    // given - every timeline is started, then a scale-up adds partition 2
+    givenBrokerVersions(VersionUtil.getVersion());
+    doReturn(CompletableFuture.completedFuture(Map.of(1, true)))
+        .doReturn(CompletableFuture.completedFuture(Map.of(1, true, 2, true)))
+        .when(backupRequestHandler)
+        .activateLogArchive(DEFAULT_PHYSICAL_TENANT_ID);
+    checkpointScheduler = createLogArchiveActivationScheduler();
+    actorScheduler.submitActor(checkpointScheduler);
+    actorScheduler.workUntilDone();
+    for (int i = 0; i < 3; i++) {
+      actorScheduler.updateClock(Duration.ofSeconds(10));
+      actorScheduler.workUntilDone();
+    }
+    verify(backupRequestHandler, times(1)).activateLogArchive(DEFAULT_PHYSICAL_TENANT_ID);
+
+    // when
+    final var topology = topologyManager.getTopology(DEFAULT_PHYSICAL_TENANT_ID);
+    when(topology.getPartitionsCount()).thenReturn(2);
+    when(topology.getPartitions()).thenReturn(List.of(1, 2));
+    for (int i = 0; i < 6; i++) {
+      actorScheduler.updateClock(Duration.ofSeconds(10));
+      actorScheduler.workUntilDone();
+    }
+
+    // then - activated once more, then idle again
+    verify(backupRequestHandler, times(2)).activateLogArchive(DEFAULT_PHYSICAL_TENANT_ID);
+  }
+
+  @Test
   void shouldNotActivateLogArchiveWhenDisabled() {
     // given
     givenBrokerVersions(VersionUtil.getVersion());
