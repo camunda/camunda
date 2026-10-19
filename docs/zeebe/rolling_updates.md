@@ -57,10 +57,10 @@ When adding a new record, command or event, we break compatibility with older br
 An old-version follower that encounters the new record cannot replay it, so its stream processor becomes unhealthy until the broker is upgraded.
 Raft replication keeps working in the meantime, and the follower recovers once it runs the new version.
 For followers, this is a transient state during rolling updates and resolves itself once the old broker is updated.
+See https://github.com/camunda/camunda/issues/30727 for an example of this.
 
 There is one edge case: if leadership moves back to a not-yet-upgraded broker after a new-version leader has written the new record, that partition cannot make progress until this broker is upgraded.
 The same applies to new versions of existing events.
-See https://github.com/camunda/camunda/issues/30727 for an example of such an issue, where a partition became dead.
 
 This also applies to startup tasks that write a new record, such as `IdentitySetupInitializer` or `RpaReexportMigrator`.
 They write the record as soon as a new-version leader starts, so such tasks should be treated like any other new record.
