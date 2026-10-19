@@ -14,6 +14,7 @@ import io.camunda.zeebe.db.impl.DbCompositeKey;
 import io.camunda.zeebe.db.impl.DbForeignKey;
 import io.camunda.zeebe.db.impl.DbLong;
 import io.camunda.zeebe.db.impl.DbString;
+import io.camunda.zeebe.db.impl.DbVersionedKey;
 import io.camunda.zeebe.engine.state.mutable.MutableMappingRuleState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRuleRecord;
@@ -38,20 +39,19 @@ public class DbMappingRuleState implements MutableMappingRuleState {
   private final DbString claimName = new DbString();
   private final DbString claimValue = new DbString();
   private final DbLong policyVersion = new DbLong();
-  private final DbCompositeKey<DbCompositeKey<DbString, DbString>, DbLong> claim =
-      new DbCompositeKey<>(new DbCompositeKey<>(claimName, claimValue), policyVersion);
+  private final DbVersionedKey<DbCompositeKey<DbString, DbString>> claim =
+      new DbVersionedKey<>(new DbCompositeKey<>(claimName, claimValue), policyVersion);
   private final PersistedMappingRule persistedMappingRule = new PersistedMappingRule();
   private final ColumnFamily<
-          DbCompositeKey<DbCompositeKey<DbString, DbString>, DbLong>, PersistedMappingRule>
+          DbVersionedKey<DbCompositeKey<DbString, DbString>>, PersistedMappingRule>
       mappingRuleColumnFamily;
 
   private final DbString mappingRuleId = new DbString();
-  private final DbCompositeKey<DbString, DbLong> idKey =
-      new DbCompositeKey<>(mappingRuleId, policyVersion);
-  private final DbForeignKey<DbCompositeKey<DbCompositeKey<DbString, DbString>, DbLong>> fkClaim;
+  private final DbVersionedKey<DbString> idKey = new DbVersionedKey<>(mappingRuleId, policyVersion);
+  private final DbForeignKey<DbVersionedKey<DbCompositeKey<DbString, DbString>>> fkClaim;
   private final ColumnFamily<
-          DbCompositeKey<DbString, DbLong>,
-          DbForeignKey<DbCompositeKey<DbCompositeKey<DbString, DbString>, DbLong>>>
+          DbVersionedKey<DbString>,
+          DbForeignKey<DbVersionedKey<DbCompositeKey<DbString, DbString>>>>
       claimByIdColumnFamily;
 
   private final LongSupplier currentVersion;
@@ -135,17 +135,17 @@ public class DbMappingRuleState implements MutableMappingRuleState {
     claimByIdColumnFamily.whileTrueReverse(
         idKey,
         (key, fk) -> {
-          if (!key.first().toString().equals(id)) {
+          if (!key.wrappedKey().toString().equals(id)) {
             return false;
           }
-          final long entryVersion = key.second().getValue();
+          final long entryVersion = key.version().getValue();
           if (entryVersion > visible) {
             return true;
           }
           // copy the claim out of the foreign key before the column family is read again
           final var target = fk.inner();
-          found[0] = target.first().first().toString();
-          found[1] = target.first().second().toString();
+          found[0] = target.wrappedKey().first().toString();
+          found[1] = target.wrappedKey().second().toString();
           found[2] = entryVersion;
           return false;
         });
@@ -170,7 +170,7 @@ public class DbMappingRuleState implements MutableMappingRuleState {
               || !value.getClaimValue().equals(claimValue)) {
             return false;
           }
-          if (key.second().getValue() > visible) {
+          if (key.version().getValue() > visible) {
             return true;
           }
           if (!value.isDeleted()) {
@@ -188,7 +188,7 @@ public class DbMappingRuleState implements MutableMappingRuleState {
     final Map<String, Long> latestVersion = new HashMap<>();
     mappingRuleColumnFamily.whileTrue(
         (key, value) -> {
-          final long entryVersion = key.second().getValue();
+          final long entryVersion = key.version().getValue();
           final var claimKey = value.getClaimName() + '\u0000' + value.getClaimValue();
           if (entryVersion <= visible && entryVersion > latestVersion.getOrDefault(claimKey, -1L)) {
             latestVersion.put(claimKey, entryVersion);

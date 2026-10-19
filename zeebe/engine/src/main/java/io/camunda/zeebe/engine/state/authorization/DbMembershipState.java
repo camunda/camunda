@@ -14,6 +14,7 @@ import io.camunda.zeebe.db.impl.DbCompositeKey;
 import io.camunda.zeebe.db.impl.DbEnumValue;
 import io.camunda.zeebe.db.impl.DbLong;
 import io.camunda.zeebe.db.impl.DbString;
+import io.camunda.zeebe.db.impl.DbVersionedKey;
 import io.camunda.zeebe.engine.state.mutable.MutableMembershipState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.record.value.EntityType;
@@ -34,12 +35,16 @@ public final class DbMembershipState implements MutableMembershipState {
 
   private final EntityKeyAndRelationKey entityKeyAndRelationKey = new EntityKeyAndRelationKey();
   private final RelationKeyAndEntityKey relationKeyAndEntityKey = new RelationKeyAndEntityKey();
-  private final VersionedEntityKey versionedEntityKey = new VersionedEntityKey();
-  private final VersionedRelationKey versionedRelationKey = new VersionedRelationKey();
+  private final DbVersionedKey<EntityKeyAndRelationKey> versionedEntityKey =
+      new DbVersionedKey<>(new EntityKeyAndRelationKey(), new DbLong());
+  private final DbVersionedKey<RelationKeyAndEntityKey> versionedRelationKey =
+      new DbVersionedKey<>(new RelationKeyAndEntityKey(), new DbLong());
   private final DbMembershipStatus status = new DbMembershipStatus();
 
-  private final ColumnFamily<VersionedEntityKey, DbMembershipStatus> relationsByEntity;
-  private final ColumnFamily<VersionedRelationKey, DbMembershipStatus> entitiesByRelation;
+  private final ColumnFamily<DbVersionedKey<EntityKeyAndRelationKey>, DbMembershipStatus>
+      relationsByEntity;
+  private final ColumnFamily<DbVersionedKey<RelationKeyAndEntityKey>, DbMembershipStatus>
+      entitiesByRelation;
   private final LongSupplier currentVersion;
 
   public DbMembershipState(
@@ -93,10 +98,10 @@ public final class DbMembershipState implements MutableMembershipState {
     relationsByEntity.whileEqualPrefix(
         new EntityKeyAndRelationType(entityType, entityId, relationType),
         (key, value) -> {
-          final long version = key.second().getValue();
+          final long version = key.version().getValue();
           if (version <= visible) {
             // entries of one relation are contiguous and ordered by version, so the last one wins
-            latest.put(key.first().second().id(), new Object[] {version, value.getValue()});
+            latest.put(key.wrappedKey().second().id(), new Object[] {version, value.getValue()});
           }
         });
 
@@ -121,9 +126,9 @@ public final class DbMembershipState implements MutableMembershipState {
     entitiesByRelation.whileEqualPrefix(
         new RelationKey(relationType, relationId),
         (key, value) -> {
-          final long version = key.second().getValue();
+          final long version = key.version().getValue();
           if (version <= visible) {
-            final var entity = key.first().entity();
+            final var entity = key.wrappedKey().entity();
             latest.put(
                 entity.type() + "/" + entity.id(),
                 new Object[] {entity.type(), entity.id(), value.getValue()});
@@ -146,20 +151,20 @@ public final class DbMembershipState implements MutableMembershipState {
       final String relationId,
       final long commandVersion) {
     final long visible = visibleVersion(commandVersion);
-    versionedEntityKey.first().setAll(entityType, entityId, relationType, relationId);
-    versionedEntityKey.second().wrapLong(visible);
+    versionedEntityKey.wrappedKey().setAll(entityType, entityId, relationType, relationId);
+    versionedEntityKey.version().wrapLong(visible);
     final var active = new boolean[1];
     relationsByEntity.whileTrueReverse(
         versionedEntityKey,
         (key, value) -> {
-          final var pair = key.first();
+          final var pair = key.wrappedKey();
           if (!pair.first().type().equals(entityType)
               || !pair.first().id().equals(entityId)
               || !pair.relation().type().equals(relationType)
               || !pair.relation().id().equals(relationId)) {
             return false;
           }
-          if (key.second().getValue() > visible) {
+          if (key.version().getValue() > visible) {
             return true;
           }
           active[0] = value.getValue() == MembershipStatus.ACTIVE;
@@ -175,13 +180,13 @@ public final class DbMembershipState implements MutableMembershipState {
       final String relationId,
       final long version,
       final MembershipStatus membershipStatus) {
-    versionedEntityKey.first().setAll(entityType, entityId, relationType, relationId);
-    versionedEntityKey.second().wrapLong(version);
+    versionedEntityKey.wrappedKey().setAll(entityType, entityId, relationType, relationId);
+    versionedEntityKey.version().wrapLong(version);
     status.setValue(membershipStatus);
     relationsByEntity.upsert(versionedEntityKey, status);
 
-    versionedRelationKey.first().setAll(entityType, entityId, relationType, relationId);
-    versionedRelationKey.second().wrapLong(version);
+    versionedRelationKey.wrappedKey().setAll(entityType, entityId, relationType, relationId);
+    versionedRelationKey.version().wrapLong(version);
     entitiesByRelation.upsert(versionedRelationKey, status);
   }
 
@@ -280,22 +285,6 @@ public final class DbMembershipState implements MutableMembershipState {
 
     public EntityKey entity() {
       return second();
-    }
-  }
-
-  /** The relation key of a membership together with the policy version of the entry. */
-  private static final class VersionedEntityKey
-      extends DbCompositeKey<EntityKeyAndRelationKey, DbLong> {
-    public VersionedEntityKey() {
-      super(new EntityKeyAndRelationKey(), new DbLong());
-    }
-  }
-
-  /** The entity-side key of a membership together with the policy version of the entry. */
-  private static final class VersionedRelationKey
-      extends DbCompositeKey<RelationKeyAndEntityKey, DbLong> {
-    public VersionedRelationKey() {
-      super(new RelationKeyAndEntityKey(), new DbLong());
     }
   }
 

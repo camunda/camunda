@@ -10,9 +10,9 @@ package io.camunda.zeebe.engine.state.authorization;
 import io.camunda.zeebe.db.ColumnFamily;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
-import io.camunda.zeebe.db.impl.DbCompositeKey;
 import io.camunda.zeebe.db.impl.DbLong;
 import io.camunda.zeebe.db.impl.DbString;
+import io.camunda.zeebe.db.impl.DbVersionedKey;
 import io.camunda.zeebe.engine.state.mutable.MutableRoleState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
@@ -28,10 +28,9 @@ public class DbRoleState implements MutableRoleState {
 
   private final DbString roleId = new DbString();
   private final DbLong policyVersion = new DbLong();
-  private final DbCompositeKey<DbString, DbLong> versionedKey =
-      new DbCompositeKey<>(roleId, policyVersion);
+  private final DbVersionedKey<DbString> versionedKey = new DbVersionedKey<>(roleId, policyVersion);
   private final PersistedRole persistedRole = new PersistedRole();
-  private final ColumnFamily<DbCompositeKey<DbString, DbLong>, PersistedRole> roleColumnFamily;
+  private final ColumnFamily<DbVersionedKey<DbString>, PersistedRole> roleColumnFamily;
   private final LongSupplier currentVersion;
 
   public DbRoleState(
@@ -71,7 +70,7 @@ public class DbRoleState implements MutableRoleState {
           if (!value.getRoleId().equals(roleId)) {
             return false;
           }
-          if (key.second().getValue() > current) {
+          if (key.version().getValue() > current) {
             return true;
           }
           if (!value.isDeleted()) {

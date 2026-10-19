@@ -13,9 +13,9 @@ import com.google.common.cache.LoadingCache;
 import io.camunda.zeebe.db.ColumnFamily;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
-import io.camunda.zeebe.db.impl.DbCompositeKey;
 import io.camunda.zeebe.db.impl.DbLong;
 import io.camunda.zeebe.db.impl.DbString;
+import io.camunda.zeebe.db.impl.DbVersionedKey;
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.state.mutable.MutableGroupState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
@@ -40,10 +40,10 @@ public class DbGroupState implements MutableGroupState {
 
   private final DbString groupId = new DbString();
   private final DbLong policyVersion = new DbLong();
-  private final DbCompositeKey<DbString, DbLong> versionedKey =
-      new DbCompositeKey<>(groupId, policyVersion);
+  private final DbVersionedKey<DbString> versionedKey =
+      new DbVersionedKey<>(groupId, policyVersion);
   private final PersistedGroup persistedGroup = new PersistedGroup();
-  private final ColumnFamily<DbCompositeKey<DbString, DbLong>, PersistedGroup> groupColumnFamily;
+  private final ColumnFamily<DbVersionedKey<DbString>, PersistedGroup> groupColumnFamily;
   private final LongSupplier currentVersion;
 
   private final LoadingCache<NameKey, Set<String>> groupIdsByName;
@@ -103,7 +103,7 @@ public class DbGroupState implements MutableGroupState {
           if (!value.getGroupId().equals(groupId)) {
             return false;
           }
-          if (key.second().getValue() > visible) {
+          if (key.version().getValue() > visible) {
             return true;
           }
           if (!value.isDeleted()) {
@@ -148,7 +148,7 @@ public class DbGroupState implements MutableGroupState {
     final Map<String, Long> visibleVersions = new HashMap<>();
     groupColumnFamily.whileTrue(
         (key, value) -> {
-          final long entryVersion = key.second().getValue();
+          final long entryVersion = key.version().getValue();
           if (entryVersion <= version
               && entryVersion > visibleVersions.getOrDefault(value.getGroupId(), -1L)) {
             visibleVersions.put(value.getGroupId(), entryVersion);

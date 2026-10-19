@@ -13,6 +13,7 @@ import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.impl.DbCompositeKey;
 import io.camunda.zeebe.db.impl.DbLong;
 import io.camunda.zeebe.db.impl.DbString;
+import io.camunda.zeebe.db.impl.DbVersionedKey;
 import io.camunda.zeebe.engine.state.mutable.MutableAuthorizationState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
@@ -43,19 +44,18 @@ public class DbAuthorizationState implements MutableAuthorizationState {
   // authorization key + version -> authorization
   private final DbLong authorizationKey = new DbLong();
   private final DbLong authorizationVersion = new DbLong();
-  private final DbCompositeKey<DbLong, DbLong> versionedAuthorizationKey =
-      new DbCompositeKey<>(authorizationKey, authorizationVersion);
-  private final ColumnFamily<DbCompositeKey<DbLong, DbLong>, PersistedAuthorization>
+  private final DbVersionedKey<DbLong> versionedAuthorizationKey =
+      new DbVersionedKey<>(authorizationKey, authorizationVersion);
+  private final ColumnFamily<DbVersionedKey<DbLong>, PersistedAuthorization>
       authorizationByAuthorizationKeyColumnFamily;
 
   // owner type + owner id + version -> authorization keys
   private final DbString keysOwnerType = new DbString();
   private final DbString keysOwnerId = new DbString();
   private final DbLong keysVersion = new DbLong();
-  private final DbCompositeKey<DbCompositeKey<DbString, DbString>, DbLong> versionedOwner =
-      new DbCompositeKey<>(new DbCompositeKey<>(keysOwnerType, keysOwnerId), keysVersion);
-  private final ColumnFamily<
-          DbCompositeKey<DbCompositeKey<DbString, DbString>, DbLong>, AuthorizationKeys>
+  private final DbVersionedKey<DbCompositeKey<DbString, DbString>> versionedOwner =
+      new DbVersionedKey<>(new DbCompositeKey<>(keysOwnerType, keysOwnerId), keysVersion);
+  private final ColumnFamily<DbVersionedKey<DbCompositeKey<DbString, DbString>>, AuthorizationKeys>
       authorizationKeysByOwnerColumnFamily;
 
   // owner type + owner id + resource type + version -> permissions
@@ -63,16 +63,15 @@ public class DbAuthorizationState implements MutableAuthorizationState {
   private final DbString permissionsOwnerId = new DbString();
   private final DbString permissionsResourceType = new DbString();
   private final DbLong permissionsVersion = new DbLong();
-  private final DbCompositeKey<DbCompositeKey<DbCompositeKey<DbString, DbString>, DbString>, DbLong>
+  private final DbVersionedKey<DbCompositeKey<DbCompositeKey<DbString, DbString>, DbString>>
       versionedOwnerAndResourceType =
-          new DbCompositeKey<>(
+          new DbVersionedKey<>(
               new DbCompositeKey<>(
                   new DbCompositeKey<>(permissionsOwnerType, permissionsOwnerId),
                   permissionsResourceType),
               permissionsVersion);
   private final ColumnFamily<
-          DbCompositeKey<DbCompositeKey<DbCompositeKey<DbString, DbString>, DbString>, DbLong>,
-          Permissions>
+          DbVersionedKey<DbCompositeKey<DbCompositeKey<DbString, DbString>, DbString>>, Permissions>
       permissionsColumnFamily;
 
   private final LongSupplier currentVersion;
@@ -215,10 +214,10 @@ public class DbAuthorizationState implements MutableAuthorizationState {
     authorizationByAuthorizationKeyColumnFamily.whileTrueReverse(
         versionedAuthorizationKey,
         (entryKey, value) -> {
-          if (entryKey.first().getValue() != key) {
+          if (entryKey.wrappedKey().getValue() != key) {
             return false;
           }
-          if (entryKey.second().getValue() > version) {
+          if (entryKey.version().getValue() > version) {
             return true;
           }
           if (!value.isDeleted()) {
@@ -239,11 +238,11 @@ public class DbAuthorizationState implements MutableAuthorizationState {
     authorizationKeysByOwnerColumnFamily.whileTrueReverse(
         versionedOwner,
         (entryKey, value) -> {
-          if (!entryKey.first().first().toString().equals(ownerType)
-              || !entryKey.first().second().toString().equals(ownerId)) {
+          if (!entryKey.wrappedKey().first().toString().equals(ownerType)
+              || !entryKey.wrappedKey().second().toString().equals(ownerId)) {
             return false;
           }
-          if (entryKey.second().getValue() > version) {
+          if (entryKey.version().getValue() > version) {
             return true;
           }
           found.copyFrom(value);
@@ -262,13 +261,13 @@ public class DbAuthorizationState implements MutableAuthorizationState {
     permissionsColumnFamily.whileTrueReverse(
         versionedOwnerAndResourceType,
         (entryKey, value) -> {
-          final var ownerAndResourceType = entryKey.first();
+          final var ownerAndResourceType = entryKey.wrappedKey();
           if (!ownerAndResourceType.first().first().toString().equals(ownerType)
               || !ownerAndResourceType.first().second().toString().equals(ownerId)
               || !ownerAndResourceType.second().toString().equals(resourceType)) {
             return false;
           }
-          if (entryKey.second().getValue() > version) {
+          if (entryKey.version().getValue() > version) {
             return true;
           }
           found.copyFrom(value);

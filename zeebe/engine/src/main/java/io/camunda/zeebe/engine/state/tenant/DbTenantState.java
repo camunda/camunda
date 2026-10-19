@@ -10,9 +10,9 @@ package io.camunda.zeebe.engine.state.tenant;
 import io.camunda.zeebe.db.ColumnFamily;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
-import io.camunda.zeebe.db.impl.DbCompositeKey;
 import io.camunda.zeebe.db.impl.DbLong;
 import io.camunda.zeebe.db.impl.DbString;
+import io.camunda.zeebe.db.impl.DbVersionedKey;
 import io.camunda.zeebe.engine.state.mutable.MutableTenantState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
@@ -28,10 +28,10 @@ public class DbTenantState implements MutableTenantState {
 
   private final DbString tenantId = new DbString();
   private final DbLong policyVersion = new DbLong();
-  private final DbCompositeKey<DbString, DbLong> versionedKey =
-      new DbCompositeKey<>(tenantId, policyVersion);
+  private final DbVersionedKey<DbString> versionedKey =
+      new DbVersionedKey<>(tenantId, policyVersion);
   private final PersistedTenant persistedTenant = new PersistedTenant();
-  private final ColumnFamily<DbCompositeKey<DbString, DbLong>, PersistedTenant> tenantsColumnFamily;
+  private final ColumnFamily<DbVersionedKey<DbString>, PersistedTenant> tenantsColumnFamily;
   private final LongSupplier currentVersion;
 
   public DbTenantState(
@@ -76,14 +76,14 @@ public class DbTenantState implements MutableTenantState {
     final var visibleDeleted = new boolean[] {true};
     tenantsColumnFamily.whileTrue(
         (key, value) -> {
-          final var id = key.first().toString();
+          final var id = key.wrappedKey().toString();
           if (visible[0] != null && !visible[0].equals(id)) {
             if (!visibleDeleted[0] && !callback.apply(visible[0])) {
               return false;
             }
             visible[0] = null;
           }
-          if (key.second().getValue() <= current) {
+          if (key.version().getValue() <= current) {
             visible[0] = value.getTenantId();
             visibleDeleted[0] = value.isDeleted();
           }
@@ -106,7 +106,7 @@ public class DbTenantState implements MutableTenantState {
           if (!value.getTenantId().equals(tenantId)) {
             return false;
           }
-          if (key.second().getValue() > current) {
+          if (key.version().getValue() > current) {
             return true;
           }
           if (!value.isDeleted()) {
