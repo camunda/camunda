@@ -25,8 +25,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
+import java.util.SortedMap;
+import java.util.TreeMap;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.stream.Collectors;
 
 final class TestRestorableBackupStore implements BackupStore {
@@ -34,6 +37,7 @@ final class TestRestorableBackupStore implements BackupStore {
   final Map<BackupIdentifier, Backup> backups = new ConcurrentHashMap<>();
   final Map<BackupIdentifier, CompletableFuture<Backup>> waiters = new ConcurrentHashMap<>();
   final Map<Integer, byte[]> metadataByPartition = new ConcurrentHashMap<>();
+  final Map<Integer, SortedMap<Long, byte[]>> handoversByPartition = new ConcurrentHashMap<>();
 
   /**
    * Must be called before a backup is saved or marked as failed.
@@ -138,6 +142,21 @@ final class TestRestorableBackupStore implements BackupStore {
   public CompletableFuture<Optional<byte[]>> loadBackupMetadata(final int partitionId) {
     return CompletableFuture.completedFuture(
         Optional.ofNullable(metadataByPartition.get(partitionId)));
+  }
+
+  @Override
+  public CompletableFuture<Void> storeHandoverRecord(
+      final int partitionId, final long checkpointId, final byte[] content) {
+    handoversByPartition
+        .computeIfAbsent(partitionId, id -> new ConcurrentSkipListMap<>())
+        .put(checkpointId, content);
+    return CompletableFuture.completedFuture(null);
+  }
+
+  @Override
+  public CompletableFuture<SortedMap<Long, byte[]>> loadHandoverRecords(final int partitionId) {
+    return CompletableFuture.completedFuture(
+        new TreeMap<>(handoversByPartition.getOrDefault(partitionId, new TreeMap<>())));
   }
 
   @Override

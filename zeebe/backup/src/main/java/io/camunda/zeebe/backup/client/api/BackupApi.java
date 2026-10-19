@@ -107,4 +107,15 @@ public interface BackupApi {
    * @param physicalTenantId the physical tenant (partition group) to target
    */
   CompletionStage<Void> deleteRuntimeState(String physicalTenantId);
+
+  /**
+   * Asks every partition of the given physical tenant to complete the handover from continuous
+   * backup to the log archive at the given HANDOVER checkpoint (see the log archive spec, section
+   * 18.2). A partition rejects the request if the checkpoint is not a confirmed handover backup or
+   * the archive has not reached it yet; the accepted handover shows in {@link #getCheckpointState}.
+   *
+   * @param physicalTenantId the physical tenant (partition group) to target
+   * @param checkpointId id of the confirmed HANDOVER checkpoint
+   */
+  CompletionStage<Void> completeHandover(String physicalTenantId, long checkpointId);
 }

@@ -34,9 +34,12 @@ public final class LogArchiveRecord extends UnifiedRecordValue implements LogArc
   private final LongProperty archivedPositionProperty = new LongProperty("archivedPosition", -1L);
   private final ArrayProperty<CoveredCheckpoint> checkpointsProperty =
       new ArrayProperty<>("checkpoints", CoveredCheckpoint::new);
+  private final LongProperty handoverCheckpointIdProperty =
+      new LongProperty("handoverCheckpointId", -1L);
+  private final LongProperty handoverPositionProperty = new LongProperty("handoverPosition", -1L);
 
   public LogArchiveRecord() {
-    super(11);
+    super(13);
     declareProperty(timelineIdProperty)
         .declareProperty(seqProperty)
         .declareProperty(startIndexProperty)
@@ -47,7 +50,9 @@ public final class LogArchiveRecord extends UnifiedRecordValue implements LogArc
         .declareProperty(publishedSeqProperty)
         .declareProperty(archivedIndexProperty)
         .declareProperty(archivedPositionProperty)
-        .declareProperty(checkpointsProperty);
+        .declareProperty(checkpointsProperty)
+        .declareProperty(handoverCheckpointIdProperty)
+        .declareProperty(handoverPositionProperty);
   }
 
   @Override
@@ -167,6 +172,26 @@ public final class LogArchiveRecord extends UnifiedRecordValue implements LogArc
 
   public LogArchiveRecord addCheckpoint(final CoveredCheckpointValue checkpoint) {
     checkpointsProperty.add().copy(checkpoint);
+    return this;
+  }
+
+  @Override
+  public long getHandoverCheckpointId() {
+    return handoverCheckpointIdProperty.getValue();
+  }
+
+  public LogArchiveRecord setHandoverCheckpointId(final long handoverCheckpointId) {
+    handoverCheckpointIdProperty.setValue(handoverCheckpointId);
+    return this;
+  }
+
+  @Override
+  public long getHandoverPosition() {
+    return handoverPositionProperty.getValue();
+  }
+
+  public LogArchiveRecord setHandoverPosition(final long handoverPosition) {
+    handoverPositionProperty.setValue(handoverPosition);
     return this;
   }
 }

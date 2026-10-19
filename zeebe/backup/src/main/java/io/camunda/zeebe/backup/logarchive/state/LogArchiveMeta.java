@@ -33,9 +33,12 @@ public final class LogArchiveMeta extends UnpackedObject implements DbValue {
   private final LongProperty nextChunkNoProperty = new LongProperty("nextChunkNo", 1L);
   private final LongProperty firstArchivedPositionProperty =
       new LongProperty("firstArchivedPosition", -1L);
+  private final LongProperty handoverCheckpointIdProperty =
+      new LongProperty("handoverCheckpointId", -1L);
+  private final LongProperty handoverPositionProperty = new LongProperty("handoverPosition", -1L);
 
   public LogArchiveMeta() {
-    super(9);
+    super(11);
     declareProperty(timelineIdProperty)
         .declareProperty(parentTimelineIdProperty)
         .declareProperty(startIndexProperty)
@@ -44,7 +47,9 @@ public final class LogArchiveMeta extends UnpackedObject implements DbValue {
         .declareProperty(nextSeqProperty)
         .declareProperty(lastPublishedSeqProperty)
         .declareProperty(nextChunkNoProperty)
-        .declareProperty(firstArchivedPositionProperty);
+        .declareProperty(firstArchivedPositionProperty)
+        .declareProperty(handoverCheckpointIdProperty)
+        .declareProperty(handoverPositionProperty);
   }
 
   /** The id of the current timeline, empty if no timeline was started yet. */
@@ -132,6 +137,31 @@ public final class LogArchiveMeta extends UnpackedObject implements DbValue {
     return this;
   }
 
+  /** The id of the handover checkpoint H, -1 if no handover is recorded on this timeline. */
+  public long getHandoverCheckpointId() {
+    return handoverCheckpointIdProperty.getValue();
+  }
+
+  public LogArchiveMeta setHandoverCheckpointId(final long handoverCheckpointId) {
+    handoverCheckpointIdProperty.setValue(handoverCheckpointId);
+    return this;
+  }
+
+  /** The log position of the handover checkpoint H, -1 if no handover is recorded. */
+  public long getHandoverPosition() {
+    return handoverPositionProperty.getValue();
+  }
+
+  public LogArchiveMeta setHandoverPosition(final long handoverPosition) {
+    handoverPositionProperty.setValue(handoverPosition);
+    return this;
+  }
+
+  /** Whether a handover is recorded on this timeline. */
+  public boolean hasHandover() {
+    return getHandoverCheckpointId() >= 0;
+  }
+
   /** Returns an independent copy. */
   public LogArchiveMeta copy() {
     return new LogArchiveMeta()
@@ -143,12 +173,14 @@ public final class LogArchiveMeta extends UnpackedObject implements DbValue {
         .setNextSeq(getNextSeq())
         .setLastPublishedSeq(getLastPublishedSeq())
         .setNextChunkNo(getNextChunkNo())
-        .setFirstArchivedPosition(getFirstArchivedPosition());
+        .setFirstArchivedPosition(getFirstArchivedPosition())
+        .setHandoverCheckpointId(getHandoverCheckpointId())
+        .setHandoverPosition(getHandoverPosition());
   }
 
   @Override
   public String toString() {
-    return "LogArchiveMeta{timelineId=%s, parentTimelineId=%s, startIndex=%d, archivedIndex=%d, archivedPosition=%d, nextSeq=%d, lastPublishedSeq=%d, nextChunkNo=%d, firstArchivedPosition=%d}"
+    return "LogArchiveMeta{timelineId=%s, parentTimelineId=%s, startIndex=%d, archivedIndex=%d, archivedPosition=%d, nextSeq=%d, lastPublishedSeq=%d, nextChunkNo=%d, firstArchivedPosition=%d, handoverCheckpointId=%d, handoverPosition=%d}"
         .formatted(
             getTimelineId(),
             getParentTimelineId(),
@@ -158,6 +190,8 @@ public final class LogArchiveMeta extends UnpackedObject implements DbValue {
             getNextSeq(),
             getLastPublishedSeq(),
             getNextChunkNo(),
-            getFirstArchivedPosition());
+            getFirstArchivedPosition(),
+            getHandoverCheckpointId(),
+            getHandoverPosition());
   }
 }

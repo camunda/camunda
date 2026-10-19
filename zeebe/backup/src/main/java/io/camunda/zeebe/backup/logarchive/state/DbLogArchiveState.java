@@ -244,13 +244,17 @@ public final class DbLogArchiveState {
    * checkpoint {@code CREATED} applier.
    */
   public void insertPendingCheckpoint(
-      final long checkpointId, final long checkpointPosition, final CheckpointType checkpointType) {
+      final long checkpointId,
+      final long checkpointPosition,
+      final CheckpointType checkpointType,
+      final long checkpointTimestamp) {
     pendingCheckpointKey.wrapLong(checkpointId);
     pendingCheckpointValue
         .value()
         .setCheckpointId(checkpointId)
         .setCheckpointPosition(checkpointPosition)
-        .setCheckpointType(checkpointType);
+        .setCheckpointType(checkpointType)
+        .setCheckpointTimestamp(checkpointTimestamp);
     pendingCheckpointsColumnFamily.upsert(pendingCheckpointKey, pendingCheckpointValue);
   }
 

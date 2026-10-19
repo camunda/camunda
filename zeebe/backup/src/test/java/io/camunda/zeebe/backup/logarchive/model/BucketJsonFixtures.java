@@ -53,7 +53,7 @@ final class BucketJsonFixtures {
   }
 
   static CoveredCheckpointJson coveredCheckpoint() {
-    return new CoveredCheckpointJson(1792137600000L, 4931877, "MARKER");
+    return new CoveredCheckpointJson(1792137600000L, 4931877, "MARKER", 1792137600123L);
   }
 
   static CommitEntry commitLogArchived() {

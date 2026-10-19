@@ -113,7 +113,8 @@ final class UnifiedRecordValueTest {
                 new CoveredCheckpoint()
                     .setCheckpointId(8L)
                     .setCheckpointPosition(30L)
-                    .setCheckpointType(CheckpointType.SCHEDULED_BACKUP));
+                    .setCheckpointType(CheckpointType.SCHEDULED_BACKUP)
+                    .setCheckpointTimestamp(1234L));
     final var buffer = new UnsafeBuffer(new byte[original.getLength()]);
     original.write(buffer, 0);
 

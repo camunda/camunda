@@ -53,13 +53,19 @@ public final class DbPositionSupplier implements StatePositionSupplier {
    * {@link Long#MAX_VALUE} when its feature is disabled, so that it does not control compaction. F
    * is -1 until the first application entry is archived, which keeps the previous snapshot's
    * compaction bound.
+   *
+   * <p>Once a handover to the log archive is recorded, the old backups no longer pin compaction:
+   * only F does (spec section 18.2).
    */
   @Override
   public long getHighestBackupPosition() {
+    final var meta = logArchiveState != null ? logArchiveState.meta() : null;
+    final boolean handedOver = meta != null && meta.hasHandover();
     final long backupPosition =
-        continuousBackup ? checkpointState.getLatestBackupPosition() : Long.MAX_VALUE;
-    final long archivedPosition =
-        logArchiveState != null ? logArchiveState.meta().getArchivedPosition() : Long.MAX_VALUE;
+        continuousBackup && !handedOver
+            ? checkpointState.getLatestBackupPosition()
+            : Long.MAX_VALUE;
+    final long archivedPosition = meta != null ? meta.getArchivedPosition() : Long.MAX_VALUE;
     return Math.min(backupPosition, archivedPosition);
   }
 }

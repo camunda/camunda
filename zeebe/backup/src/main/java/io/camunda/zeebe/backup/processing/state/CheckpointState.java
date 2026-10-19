@@ -79,6 +79,23 @@ public interface CheckpointState {
   long getLatestBackupFirstLogPosition();
 
   /**
+   * Set the latest confirmed backup of type {@link CheckpointType#HANDOVER}. It is kept apart from
+   * the latest backup because later backups replace that one, while the handover can only be
+   * completed for a handover backup that is confirmed.
+   */
+  void setLatestHandoverBackupInfo(
+      final long checkpointId, final long checkpointPosition, final long timestamp);
+
+  /** Returns the id of the latest confirmed handover backup, {@link #NO_CHECKPOINT} if none. */
+  long getLatestHandoverBackupId();
+
+  /** Returns the position of the latest confirmed handover backup, -1 if none. */
+  long getLatestHandoverBackupPosition();
+
+  /** Clears the latest handover backup info. Used during state reset when switching stores. */
+  void clearLatestHandoverBackupInfo();
+
+  /**
    * Clears the latest backup info, resetting it to the initial state (no backup). Used when the
    * latest backup is deleted and there is no predecessor backup.
    */

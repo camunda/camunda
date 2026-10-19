@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.backup.logarchive.processing;
 
+import io.camunda.zeebe.backup.logarchive.model.HandoverJson;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -31,10 +32,23 @@ import org.jspecify.annotations.Nullable;
  * @param rootJson the bytes of {@code root/<seq>.json}. After writing it and {@code _latest.json},
  *     the publisher writes {@code CONFIRM_PUBLISHED(seq)}
  * @param seal the index chunk to write, followed by {@code SEAL_INDEX}
+ * @param handover set if the commit entry is the {@code HANDOVER} one: the publisher then also
+ *     writes the handover file to the store of the old backups, before the root
  */
 public record PublishRequest(
     String timelineId,
     long seq,
     byte @Nullable [] commitEntryJson,
     byte @Nullable [] rootJson,
-    @Nullable SealRequest seal) {}
+    @Nullable SealRequest seal,
+    @Nullable HandoverJson handover) {
+
+  public PublishRequest(
+      final String timelineId,
+      final long seq,
+      final byte @Nullable [] commitEntryJson,
+      final byte @Nullable [] rootJson,
+      final @Nullable SealRequest seal) {
+    this(timelineId, seq, commitEntryJson, rootJson, seal, null);
+  }
+}

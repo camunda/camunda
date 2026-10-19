@@ -18,6 +18,7 @@ import io.camunda.zeebe.backup.client.api.BackupResponse;
 import io.camunda.zeebe.backup.client.api.BackupStatus;
 import io.camunda.zeebe.backup.client.api.BrokerBackupRangesRequest;
 import io.camunda.zeebe.backup.client.api.BrokerCheckpointStateRequest;
+import io.camunda.zeebe.backup.client.api.BrokerCompleteHandoverRequest;
 import io.camunda.zeebe.backup.client.api.State;
 import io.camunda.zeebe.backup.common.CheckpointIdGenerator;
 import io.camunda.zeebe.broker.client.api.BrokerErrorException;
@@ -39,6 +40,7 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutionException;
 import org.junit.Before;
 import org.junit.Test;
@@ -438,6 +440,53 @@ public class BackupRequestHandlerTest extends GatewayTest {
     final var state = future.toCompletableFuture().join();
     assertThat(state.getCheckpointStates())
         .extracting(CheckpointStateResponse.PartitionCheckpointState::partitionId)
+        .containsExactlyInAnyOrderElementsOf(
+            brokerClient.getTopologyManager().getTopology().getPartitions());
+  }
+
+  @Test
+  public void shouldAggregateLogArchiveStatesOfAllPartitions() {
+    // given
+    brokerClient.registerHandler(
+        BrokerCheckpointStateRequest.class,
+        request -> {
+          final var response = new CheckpointStateResponse();
+          response.setLogArchiveStates(
+              Set.of(
+                  new CheckpointStateResponse.PartitionLogArchiveState(
+                      request.getPartitionId(), true, 10, -1, 7)));
+          return new BrokerResponse<>(response);
+        });
+
+    // when
+    final var future = requestHandler.getCheckpointState(DEFAULT_PHYSICAL_TENANT_ID);
+
+    // then
+    assertThat(future).succeedsWithin(Duration.ofMillis(500));
+    final var state = future.toCompletableFuture().join();
+    assertThat(state.getLogArchiveStates())
+        .extracting(CheckpointStateResponse.PartitionLogArchiveState::partitionId)
+        .containsExactlyInAnyOrderElementsOf(
+            brokerClient.getTopologyManager().getTopology().getPartitions());
+  }
+
+  @Test
+  public void shouldSendCompleteHandoverToEveryPartition() {
+    // given
+    final var partitions = new ConcurrentLinkedQueue<Integer>();
+    brokerClient.registerHandler(
+        BrokerCompleteHandoverRequest.class,
+        request -> {
+          partitions.add(request.getPartitionId());
+          return new BrokerResponse<>(new BackupStatusResponse());
+        });
+
+    // when
+    final var future = requestHandler.completeHandover(DEFAULT_PHYSICAL_TENANT_ID, 42L);
+
+    // then
+    assertThat(future).succeedsWithin(Duration.ofMillis(500));
+    assertThat(partitions)
         .containsExactlyInAnyOrderElementsOf(
             brokerClient.getTopologyManager().getTopology().getPartitions());
   }

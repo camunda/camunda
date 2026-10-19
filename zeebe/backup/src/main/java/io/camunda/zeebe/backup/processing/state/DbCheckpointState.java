@@ -18,6 +18,7 @@ import org.jspecify.annotations.Nullable;
 public final class DbCheckpointState implements CheckpointState {
   private static final String LATEST_CHECKPOINT_KEY = "checkpoint";
   private static final String LATEST_BACKUP_KEY = "backup";
+  private static final String LATEST_HANDOVER_BACKUP_KEY = "handoverBackup";
 
   private final CheckpointInfo checkpointInfo = new CheckpointInfo();
   private final ColumnFamily<DbString, CheckpointInfo> checkpointColumnFamily;
@@ -107,6 +108,34 @@ public final class DbCheckpointState implements CheckpointState {
   @Override
   public long getLatestBackupFirstLogPosition() {
     return getFirstLogPosition(LATEST_BACKUP_KEY);
+  }
+
+  @Override
+  public void setLatestHandoverBackupInfo(
+      final long checkpointId, final long checkpointPosition, final long timestamp) {
+    checkpointInfoKey.wrapString(LATEST_HANDOVER_BACKUP_KEY);
+    checkpointInfo
+        .setId(checkpointId)
+        .setPosition(checkpointPosition)
+        .setTimestamp(timestamp)
+        .setType(CheckpointType.HANDOVER);
+    checkpointColumnFamily.upsert(checkpointInfoKey, checkpointInfo);
+  }
+
+  @Override
+  public long getLatestHandoverBackupId() {
+    return getCheckpointId(LATEST_HANDOVER_BACKUP_KEY);
+  }
+
+  @Override
+  public long getLatestHandoverBackupPosition() {
+    return getCheckpointPosition(LATEST_HANDOVER_BACKUP_KEY);
+  }
+
+  @Override
+  public void clearLatestHandoverBackupInfo() {
+    checkpointInfoKey.wrapString(LATEST_HANDOVER_BACKUP_KEY);
+    checkpointColumnFamily.deleteIfExists(checkpointInfoKey);
   }
 
   @Override

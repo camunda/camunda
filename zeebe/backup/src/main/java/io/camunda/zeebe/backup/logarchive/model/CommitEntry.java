@@ -50,7 +50,8 @@ import org.jspecify.annotations.Nullable;
   "objects",
   "checkpoints",
   "snapshot",
-  "chunk"
+  "chunk",
+  "handover"
 })
 public record CommitEntry(
     int formatVersion,
@@ -67,7 +68,44 @@ public record CommitEntry(
     @JsonInclude(JsonInclude.Include.NON_EMPTY) List<LogObjectJson> objects,
     @JsonInclude(JsonInclude.Include.NON_EMPTY) List<CoveredCheckpointJson> checkpoints,
     @JsonInclude(JsonInclude.Include.NON_NULL) @Nullable ArchivedSnapshotJson snapshot,
-    @JsonInclude(JsonInclude.Include.NON_NULL) @Nullable IndexChunkJson chunk) {
+    @JsonInclude(JsonInclude.Include.NON_NULL) @Nullable IndexChunkJson chunk,
+    @JsonInclude(JsonInclude.Include.NON_NULL) @Nullable HandoverJson handover) {
+
+  /** A commit entry without a handover, i.e. of any type but {@link Type#HANDOVER}. */
+  public CommitEntry(
+      final int formatVersion,
+      final String timelineId,
+      final int partitionId,
+      final long seq,
+      final Type type,
+      final long recordPosition,
+      final long recordTimestamp,
+      final long archivedIndex,
+      final long archivedPosition,
+      final @Nullable Long startIndex,
+      final @Nullable String parentTimelineId,
+      final List<LogObjectJson> objects,
+      final List<CoveredCheckpointJson> checkpoints,
+      final @Nullable ArchivedSnapshotJson snapshot,
+      final @Nullable IndexChunkJson chunk) {
+    this(
+        formatVersion,
+        timelineId,
+        partitionId,
+        seq,
+        type,
+        recordPosition,
+        recordTimestamp,
+        archivedIndex,
+        archivedPosition,
+        startIndex,
+        parentTimelineId,
+        objects,
+        checkpoints,
+        snapshot,
+        chunk,
+        null);
+  }
 
   public CommitEntry {
     objects = objects == null ? List.of() : List.copyOf(objects);
@@ -79,6 +117,7 @@ public record CommitEntry(
     TIMELINE_STARTED,
     LOG_ARCHIVED,
     SNAPSHOT_ARCHIVED,
-    INDEX_SEALED
+    INDEX_SEALED,
+    HANDOVER
   }
 }

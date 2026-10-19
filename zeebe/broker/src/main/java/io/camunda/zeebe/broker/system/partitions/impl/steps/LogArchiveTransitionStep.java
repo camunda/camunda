@@ -146,7 +146,9 @@ public final class LogArchiveTransitionStep implements PartitionTransitionStep {
             (meta, bucketAhead) -> {
               archiver.onRecoveryChecked(meta.copy(), bucketAhead);
               uploader.onRecoveryChecked(meta.copy(), bucketAhead);
-            });
+            },
+            // the old backups receive the handover file; it is not owned (or closed) here
+            context.getBackupStore());
     final var components = new LeaderComponents(store, archiver, uploader, publisher);
     leaderComponents = components;
 

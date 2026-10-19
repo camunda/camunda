@@ -49,6 +49,7 @@ public final class CheckpointStateClearedApplier {
     // Clear latest checkpoint and backup info from the DEFAULT column family
     checkpointState.clearLatestCheckpointInfo();
     checkpointState.clearLatestBackupInfo();
+    checkpointState.clearLatestHandoverBackupInfo();
 
     // Clear all checkpoint metadata entries from the CHECKPOINTS column family
     checkpointMetadataState.clearAll();

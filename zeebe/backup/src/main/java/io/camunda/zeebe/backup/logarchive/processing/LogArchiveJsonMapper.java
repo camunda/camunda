@@ -10,6 +10,8 @@ package io.camunda.zeebe.backup.logarchive.processing;
 import io.camunda.zeebe.backup.logarchive.model.ArchivedSnapshotJson;
 import io.camunda.zeebe.backup.logarchive.model.CommitEntry;
 import io.camunda.zeebe.backup.logarchive.model.CoveredCheckpointJson;
+import io.camunda.zeebe.backup.logarchive.model.HandoverFile;
+import io.camunda.zeebe.backup.logarchive.model.HandoverJson;
 import io.camunda.zeebe.backup.logarchive.model.IndexChunkFile;
 import io.camunda.zeebe.backup.logarchive.model.IndexChunkJson;
 import io.camunda.zeebe.backup.logarchive.model.LogArchiveJson;
@@ -44,7 +46,7 @@ public final class LogArchiveJsonMapper {
    * Maps an event of the processor to its commit entry.
    *
    * @param eventIntent one of {@code TIMELINE_STARTED}, {@code LOG_ARCHIVED}, {@code
-   *     SNAPSHOT_ARCHIVED}, {@code INDEX_SEALED}
+   *     SNAPSHOT_ARCHIVED}, {@code INDEX_SEALED}, {@code HANDOVER_COMPLETED}
    * @param event the event record as written to the log, including seq, archivedIndex,
    *     archivedPosition and the covered checkpoints
    * @param recordPosition see {@link LogArchiveRecordsProcessor#recordPositionOf}
@@ -79,7 +81,10 @@ public final class LogArchiveJsonMapper {
             ? event.getCheckpoints().stream().map(LogArchiveJsonMapper::checkpoint).toList()
             : List.of(),
         type == CommitEntry.Type.SNAPSHOT_ARCHIVED ? snapshot(event.getSnapshot()) : null,
-        type == CommitEntry.Type.INDEX_SEALED ? chunk(event.getChunk()) : null);
+        type == CommitEntry.Type.INDEX_SEALED ? chunk(event.getChunk()) : null,
+        type == CommitEntry.Type.HANDOVER
+            ? new HandoverJson(event.getHandoverCheckpointId(), event.getHandoverPosition())
+            : null);
   }
 
   /** Same as {@link #commitEntry}, serialized. */
@@ -91,6 +96,17 @@ public final class LogArchiveJsonMapper {
       final long recordTimestamp) {
     return LogArchiveJson.write(
         commitEntry(partitionId, eventIntent, event, recordPosition, recordTimestamp));
+  }
+
+  /** The handover file for the store of the old backups. */
+  public static HandoverFile handoverFile(
+      final int partitionId, final String timelineId, final HandoverJson handover) {
+    return new HandoverFile(
+        LogArchiveJson.FORMAT_VERSION,
+        partitionId,
+        handover.checkpointId(),
+        handover.checkpointPosition(),
+        timelineId);
   }
 
   /** The root for {@code seq}, built from the state as of applying that seq. */
@@ -116,7 +132,10 @@ public final class LogArchiveJsonMapper {
             .flatMap(open -> open.checkpoints().stream())
             .map(LogArchiveJsonMapper::checkpoint)
             .toList(),
-        snapshots.stream().map(LogArchiveJsonMapper::snapshot).toList());
+        snapshots.stream().map(LogArchiveJsonMapper::snapshot).toList(),
+        meta.hasHandover()
+            ? new HandoverJson(meta.getHandoverCheckpointId(), meta.getHandoverPosition())
+            : null);
   }
 
   /**
@@ -204,7 +223,8 @@ public final class LogArchiveJsonMapper {
     return new CoveredCheckpointJson(
         checkpoint.getCheckpointId(),
         checkpoint.getCheckpointPosition(),
-        checkpoint.getCheckpointType().name());
+        checkpoint.getCheckpointType().name(),
+        checkpoint.getCheckpointTimestamp());
   }
 
   public static ArchivedSnapshotJson snapshot(final ArchivedSnapshotValue snapshot) {
@@ -240,6 +260,7 @@ public final class LogArchiveJsonMapper {
       case LOG_ARCHIVED -> CommitEntry.Type.LOG_ARCHIVED;
       case SNAPSHOT_ARCHIVED -> CommitEntry.Type.SNAPSHOT_ARCHIVED;
       case INDEX_SEALED -> CommitEntry.Type.INDEX_SEALED;
+      case HANDOVER_COMPLETED -> CommitEntry.Type.HANDOVER;
       default ->
           throw new IllegalArgumentException("Intent %s has no commit entry".formatted(intent));
     };

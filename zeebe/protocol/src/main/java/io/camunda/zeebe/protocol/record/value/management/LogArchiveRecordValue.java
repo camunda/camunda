@@ -79,6 +79,16 @@ public interface LogArchiveRecordValue extends RecordValue {
    */
   List<CoveredCheckpointValue> getCheckpoints();
 
+  /**
+   * @return the id of the handover checkpoint, or -1 if not applicable
+   */
+  long getHandoverCheckpointId();
+
+  /**
+   * @return the position of the handover checkpoint, or -1 if not applicable
+   */
+  long getHandoverPosition();
+
   @Value.Immutable
   @ImmutableProtocol(builder = ImmutableLogObjectValue.Builder.class)
   interface LogObjectValue {
@@ -180,5 +190,10 @@ public interface LogArchiveRecordValue extends RecordValue {
     long getCheckpointPosition();
 
     CheckpointType getCheckpointType();
+
+    /**
+     * @return the timestamp of the checkpoint in epoch millis, or -1 if unknown
+     */
+    long getCheckpointTimestamp();
   }
 }

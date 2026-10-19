@@ -10,6 +10,7 @@ package io.camunda.zeebe.broker.transport.backupapi;
 import io.camunda.cluster.PartitionId;
 import io.camunda.zeebe.backup.api.BackupManager;
 import io.camunda.zeebe.backup.logarchive.leader.LogArchiveActivation;
+import io.camunda.zeebe.backup.logarchive.state.DbLogArchiveState;
 import io.camunda.zeebe.backup.processing.state.CheckpointState;
 import io.camunda.zeebe.backup.processing.state.DbBackupRangeState;
 import io.camunda.zeebe.backup.processing.state.DbCheckpointMetadataState;
@@ -24,8 +25,11 @@ import io.camunda.zeebe.protocol.impl.encoding.BackupRangesResponse.PartitionBac
 import io.camunda.zeebe.protocol.impl.encoding.BackupStatusResponse;
 import io.camunda.zeebe.protocol.impl.encoding.CheckpointStateResponse;
 import io.camunda.zeebe.protocol.impl.encoding.CheckpointStateResponse.PartitionCheckpointState;
+import io.camunda.zeebe.protocol.impl.encoding.CheckpointStateResponse.PartitionLogArchiveState;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
+import io.camunda.zeebe.protocol.impl.record.value.management.ArchivedSnapshot;
 import io.camunda.zeebe.protocol.impl.record.value.management.CheckpointRecord;
+import io.camunda.zeebe.protocol.impl.record.value.management.LogArchiveRecord;
 import io.camunda.zeebe.protocol.management.AdminRequestType;
 import io.camunda.zeebe.protocol.management.BackupRequestType;
 import io.camunda.zeebe.protocol.management.BackupStatusCode;
@@ -33,6 +37,7 @@ import io.camunda.zeebe.protocol.record.ErrorCode;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.management.CheckpointIntent;
+import io.camunda.zeebe.protocol.record.intent.management.LogArchiveIntent;
 import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
@@ -40,6 +45,7 @@ import io.camunda.zeebe.snapshots.PersistedSnapshotStore;
 import io.camunda.zeebe.transport.RequestType;
 import io.camunda.zeebe.transport.impl.AtomixServerTransport;
 import io.camunda.zeebe.util.Either;
+import java.util.Comparator;
 import java.util.Optional;
 import org.jspecify.annotations.Nullable;
 
@@ -56,6 +62,7 @@ public final class BackupApiRequestHandler extends ReadOnlyBackupApiRequestHandl
   private final CheckpointState checkpointState;
   private final DbCheckpointMetadataState checkpointMetadataState;
   private final DbBackupRangeState backupRangeState;
+  private final DbLogArchiveState logArchiveState;
   private final CheckpointSnapshotReserver snapshotReserver;
   private final @Nullable LogArchiveActivation logArchiveActivation;
 
@@ -66,6 +73,7 @@ public final class BackupApiRequestHandler extends ReadOnlyBackupApiRequestHandl
       final CheckpointState checkpointState,
       final DbCheckpointMetadataState checkpointMetadataState,
       final DbBackupRangeState backupRangeState,
+      final DbLogArchiveState logArchiveState,
       final PersistedSnapshotStore snapshotStore,
       final SnapshotTrigger snapshotTrigger,
       final PartitionId partition,
@@ -78,6 +86,7 @@ public final class BackupApiRequestHandler extends ReadOnlyBackupApiRequestHandl
     this.checkpointState = checkpointState;
     this.checkpointMetadataState = checkpointMetadataState;
     this.backupRangeState = backupRangeState;
+    this.logArchiveState = logArchiveState;
     snapshotReserver =
         new CheckpointSnapshotReserver(snapshotStore, snapshotTrigger, checkpointState, actor);
   }
@@ -106,6 +115,8 @@ public final class BackupApiRequestHandler extends ReadOnlyBackupApiRequestHandl
       case SYNC_METADATA -> handleSyncMetadataRequest(responseWriter, errorWriter);
       case CLEAR_STATE -> handleClearStateRequest(responseWriter, errorWriter);
       case ACTIVATE_LOG_ARCHIVE -> handleActivateLogArchiveRequest(responseWriter, errorWriter);
+      case COMPLETE_HANDOVER ->
+          handleCompleteHandoverRequest(requestReader, responseWriter, errorWriter);
       default ->
           CompletableActorFuture.completed(unknownRequest(errorWriter, requestReader.type()));
     };
@@ -223,8 +234,55 @@ public final class BackupApiRequestHandler extends ReadOnlyBackupApiRequestHandl
               checkpointState.getLatestCheckpointPosition());
       response.getCheckpointStates().add(cpState);
     }
+    response.getLogArchiveStates().add(logArchiveStateOfPartition());
     result.complete(Either.right(responseWriter.withCheckpointState(response)));
     return result;
+  }
+
+  private PartitionLogArchiveState logArchiveStateOfPartition() {
+    final var meta = logArchiveState.meta();
+    final long newestSnapshotPosition =
+        logArchiveState.snapshots().stream()
+            .max(Comparator.comparingLong(ArchivedSnapshot::getProcessedPosition))
+            .map(ArchivedSnapshot::getProcessedPosition)
+            .orElse(-1L);
+    return new PartitionLogArchiveState(
+        partitionId.number(),
+        !meta.getTimelineId().isEmpty(),
+        meta.getArchivedPosition(),
+        newestSnapshotPosition,
+        meta.getHandoverCheckpointId());
+  }
+
+  /**
+   * Writes the command; whether the handover is accepted is decided when the log archive processor
+   * processes it, and shows in the checkpoint state. The response only acknowledges the write.
+   */
+  private ActorFuture<Either<ErrorResponseWriter, BackupApiResponseWriter>>
+      handleCompleteHandoverRequest(
+          final BackupApiRequestReader requestReader,
+          final BackupApiResponseWriter responseWriter,
+          final ErrorResponseWriter errorWriter) {
+    final long checkpointId = requestReader.backupId();
+    final var written =
+        logStreamWriter.tryWrite(
+            WriteContext.internal(),
+            LogAppendEntry.of(
+                new RecordMetadata()
+                    .recordType(RecordType.COMMAND)
+                    .valueType(ValueType.LOG_ARCHIVE)
+                    .intent(LogArchiveIntent.COMPLETE_HANDOVER),
+                new LogArchiveRecord().setHandoverCheckpointId(checkpointId)));
+    if (written.isLeft()) {
+      return CompletableActorFuture.completed(
+          Either.left(errorWriter.mapWriteError(partitionId.number(), written.getLeft())));
+    }
+    final var response =
+        new BackupStatusResponse()
+            .setBackupId(checkpointId)
+            .setStatus(BackupStatusCode.IN_PROGRESS)
+            .setPartitionId(partitionId.number());
+    return CompletableActorFuture.completed(Either.right(responseWriter.withStatus(response)));
   }
 
   private ActorFuture<Either<ErrorResponseWriter, BackupApiResponseWriter>>

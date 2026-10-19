@@ -7,8 +7,10 @@
  */
 package io.camunda.zeebe.backup.logarchive.model;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import java.util.List;
+import org.jspecify.annotations.Nullable;
 
 /**
  * The content of {@code root/<seq>.json} (spec section 9.4). Every list is always written, even
@@ -33,7 +35,8 @@ import java.util.List;
   "chunks",
   "openObjects",
   "openCheckpoints",
-  "snapshots"
+  "snapshots",
+  "handover"
 })
 public record RootFile(
     int formatVersion,
@@ -47,7 +50,38 @@ public record RootFile(
     List<IndexChunkJson> chunks,
     List<LogObjectJson> openObjects,
     List<CoveredCheckpointJson> openCheckpoints,
-    List<ArchivedSnapshotJson> snapshots) {
+    List<ArchivedSnapshotJson> snapshots,
+    @JsonInclude(JsonInclude.Include.NON_NULL) @Nullable HandoverJson handover) {
+
+  /** A root of a timeline without a handover. */
+  public RootFile(
+      final int formatVersion,
+      final String timelineId,
+      final String parentTimelineId,
+      final int partitionId,
+      final long seq,
+      final long startIndex,
+      final long archivedIndex,
+      final long archivedPosition,
+      final List<IndexChunkJson> chunks,
+      final List<LogObjectJson> openObjects,
+      final List<CoveredCheckpointJson> openCheckpoints,
+      final List<ArchivedSnapshotJson> snapshots) {
+    this(
+        formatVersion,
+        timelineId,
+        parentTimelineId,
+        partitionId,
+        seq,
+        startIndex,
+        archivedIndex,
+        archivedPosition,
+        chunks,
+        openObjects,
+        openCheckpoints,
+        snapshots,
+        null);
+  }
 
   public RootFile {
     chunks = chunks == null ? List.of() : List.copyOf(chunks);

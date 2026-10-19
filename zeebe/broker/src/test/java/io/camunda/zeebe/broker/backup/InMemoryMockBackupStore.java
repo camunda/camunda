@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
+import java.util.SortedMap;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -92,6 +93,17 @@ public class InMemoryMockBackupStore implements BackupStore, AutoCloseable {
   @Override
   public CompletableFuture<Optional<byte[]>> loadBackupMetadata(final int partitionId) {
     throw new UnsupportedOperationException("Backup metadata is not yet supported");
+  }
+
+  @Override
+  public CompletableFuture<Void> storeHandoverRecord(
+      final int partitionId, final long checkpointId, final byte[] content) {
+    throw new UnsupportedOperationException("Handover records are not yet supported");
+  }
+
+  @Override
+  public CompletableFuture<SortedMap<Long, byte[]>> loadHandoverRecords(final int partitionId) {
+    throw new UnsupportedOperationException("Handover records are not yet supported");
   }
 
   @Override

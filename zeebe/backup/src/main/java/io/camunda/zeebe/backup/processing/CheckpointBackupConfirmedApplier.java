@@ -11,6 +11,7 @@ import io.camunda.zeebe.backup.processing.state.CheckpointState;
 import io.camunda.zeebe.backup.processing.state.DbBackupRangeState;
 import io.camunda.zeebe.backup.processing.state.DbCheckpointMetadataState;
 import io.camunda.zeebe.protocol.impl.record.value.management.CheckpointRecord;
+import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
 
 public class CheckpointBackupConfirmedApplier {
   private final CheckpointState checkpointState;
@@ -46,6 +47,10 @@ public class CheckpointBackupConfirmedApplier {
     final var checkpointType = checkpointRecord.getCheckpointType();
     checkpointState.setLatestBackupInfo(
         checkpointId, checkpointPosition, checkpointTimestamp, checkpointType, firstLogPosition);
+    if (checkpointType == CheckpointType.HANDOVER) {
+      checkpointState.setLatestHandoverBackupInfo(
+          checkpointId, checkpointPosition, checkpointTimestamp);
+    }
     if (trackBackupMetadata) {
       checkpointMetadataState.addBackupCheckpoint(
           checkpointId, checkpointPosition, checkpointTimestamp, checkpointType, firstLogPosition);

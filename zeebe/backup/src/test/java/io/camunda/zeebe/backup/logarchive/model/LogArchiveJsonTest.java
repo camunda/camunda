@@ -96,6 +96,20 @@ final class LogArchiveJsonTest {
   }
 
   @Test
+  void shouldReadCoveredCheckpointWithoutTimestampAsUnknown() {
+    // given - as written before the timestamp was recorded
+    final String json =
+        "{\"checkpointId\":7,\"checkpointPosition\":15,\"checkpointType\":\"MARKER\"}";
+
+    // when
+    final var checkpoint =
+        LogArchiveJson.read(json.getBytes(StandardCharsets.UTF_8), CoveredCheckpointJson.class);
+
+    // then
+    assertThat(checkpoint).isEqualTo(new CoveredCheckpointJson(7, 15, "MARKER", -1));
+  }
+
+  @Test
   void shouldOmitOptionalPartsOfCommitEntryThatDoNotApply() {
     // given
     final CommitEntry timelineStarted = BucketJsonFixtures.commitTimelineStarted();
