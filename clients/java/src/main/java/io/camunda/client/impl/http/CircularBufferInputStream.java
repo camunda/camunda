@@ -169,9 +169,9 @@ public class CircularBufferInputStream extends InputStream {
       }
     }
     if (exception != null) {
-      final IOException ex = exception;
-      exception = null;
-      throw ex;
+      // the error is sticky: callers that read again after a failure must fail again instead of
+      // blocking forever on data that will never arrive
+      throw exception;
     }
     return availableData == 0;
   }
