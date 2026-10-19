@@ -647,8 +647,9 @@ Integration tests (broker, filesystem store first, then MinIO):
 ## 15a. Known limits of the PoC
 
 - A rolled-back state forks a new timeline (section 8.4). The forked-from timeline is left as it
-  was; nothing links it to the fork except the fork's `parentTimelineId`, and restore does not
-  follow forks or parents on its own: the operator picks the timeline to restore from.
+  was; the fork's `parentTimelineId` (and its `timeline.json`) links it back. The handover restore
+  follows forks and parents from its seeds (section 18.5); the log archive only restore mode restores
+  from the timeline the operator names.
 
 - The root lists every archived snapshot and the state keeps every snapshot descriptor. Without
   retention both grow without bound (about 17,500 snapshots a year at one every 30 minutes).
@@ -870,6 +871,23 @@ Per target checkpoint T and partition, using `metadata/<partition>/handover/` an
 | no old backup T | archive only (existing `LogArchiveRestore`) in the timeline that covers T, searched among the timelines named by `handover/<H>.json` records and their forks |
 | T covered by more than one timeline | the operator names the timeline (manual ids can repeat across branches) |
 | T nowhere | fail, naming the partition and the newest restorable checkpoint on each side |
+
+**Discovering the timelines.** The seeds are the timelines named by the handover records and the
+configured timeline (an explicit `--logArchive.timeline` names the one timeline to use and is read
+directly, without discovery). Per partition, restore lists the timelines with one delimiter listing
+(`listChildPrefixes("log-archive/")`), reads `log-archive/<timeline>/p<partition>/timeline.json` of each
+(section 9.6, in parallel) and builds the parent graph from `parentTimelineId`. It selects the seeds and
+every timeline whose parent chain leads to one, or whose id is derived from one (`.r<checkpoint>`,
+`.b<backupId>`, `.f<seq>`, for a timeline that started without a parent). Only then it reads the views of
+the selected timelines. The ids of descendants do not matter: a timeline that does not start with a seed
+(e.g. after the configured timeline name changed) is found through its parent. Nothing below the
+timeline level is listed to find timelines, so the cost does not grow with the amount of archived data.
+
+Timelines written before the registry existed have no `timeline.json`. For those only, restore falls
+back to the id rule: a timeline without the file is a candidate if it is a seed or its id is derived
+from one, and it exists if it holds `commits/00000000000000000001.json`; its parent is not read, so such
+a timeline is found only through its id. One that is neither registered nor named by a seed's id is not
+found.
 
 The decision is by where T exists, not by comparing T with H: after a restore to a point before H,
 the new branch (`<tl>.b<T>`) takes old backups again until its own handover H2, and those come after

@@ -14,6 +14,7 @@ import io.camunda.zeebe.backup.logarchive.model.HandoverJson;
 import io.camunda.zeebe.backup.logarchive.model.LogArchiveJson;
 import io.camunda.zeebe.backup.logarchive.model.LogArchiveKeys;
 import io.camunda.zeebe.backup.logarchive.model.LogObjectJson;
+import io.camunda.zeebe.backup.logarchive.model.TimelineFile;
 import java.util.List;
 
 /**
@@ -48,7 +49,32 @@ final class TimelineFixture {
     commit(CommitEntry.Type.TIMELINE_STARTED, startIndex, parentTimelineId, List.of(), List.of());
   }
 
+  /** Starts a timeline the way the publisher does: commit entry and registry file. */
   static TimelineFixture start(
+      final InMemoryLogArchiveStore store,
+      final String timelineId,
+      final int partitionId,
+      final long startIndex,
+      final String parentTimelineId) {
+    final var fixture =
+        startWithoutRegistry(store, timelineId, partitionId, startIndex, parentTimelineId);
+    store
+        .put(
+            fixture.prefix + LogArchiveKeys.timelineKey(),
+            LogArchiveJson.write(
+                new TimelineFile(
+                    LogArchiveJson.FORMAT_VERSION,
+                    timelineId,
+                    partitionId,
+                    parentTimelineId,
+                    startIndex,
+                    1)))
+        .join();
+    return fixture;
+  }
+
+  /** Starts a timeline of an archive written before the registry file existed. */
+  static TimelineFixture startWithoutRegistry(
       final InMemoryLogArchiveStore store,
       final String timelineId,
       final int partitionId,
