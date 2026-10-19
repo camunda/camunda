@@ -1,1 +1,23 @@
-{}
+{
+  "c8-orchestration-cluster-nightly-8.8-e2e.yml": {
+    "streak": {
+      "start_run": "38833318112",
+      "start_day": "2026-10-16",
+      "alerted_at": 1792396770
+    }
+  },
+  "c8-orchestration-cluster-nightly-8.9-e2e.yml": {
+    "streak": {
+      "start_run": "38835705993",
+      "start_day": "2026-10-16",
+      "alerted_at": 1792396770
+    }
+  },
+  "c8-orchestration-cluster-nightly-main-api-rdbms.yml": {
+    "streak": {
+      "start_run": "38991944895",
+      "start_day": "2026-10-17",
+      "alerted_at": 1792396770
+    }
+  }
+}
