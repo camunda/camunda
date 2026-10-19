@@ -22,5 +22,7 @@
   <modules>
     <module>api</module>
     <module>impl</module>
+    <module>openapi</module>
+    <module>rest</module>
   </modules>
 </project>

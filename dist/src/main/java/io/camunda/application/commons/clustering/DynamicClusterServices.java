@@ -104,13 +104,19 @@ public class DynamicClusterServices {
   }
 
   @Bean
+  public ProtoBufSerializer clusterConfigurationSerializer() {
+    return new ProtoBufSerializer();
+  }
+
+  @Bean
   public ClusterConfigurationManagementRequestSender clusterManagementRequestSender(
-      final BrokerTopologyManager brokerTopologyManager) {
+      final BrokerTopologyManager brokerTopologyManager,
+      final ProtoBufSerializer clusterConfigurationSerializer) {
     return new ClusterConfigurationManagementRequestSender(
         clusterCommunicationService,
         ClusterConfigurationCoordinatorSupplier.from(
             brokerTopologyManager::getClusterConfiguration),
-        new ProtoBufSerializer(),
+        clusterConfigurationSerializer,
         clusterMembershipService.getLocalMember().id());
   }
 

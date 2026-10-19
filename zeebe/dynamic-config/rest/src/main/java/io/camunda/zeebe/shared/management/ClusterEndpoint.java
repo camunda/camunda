@@ -30,7 +30,7 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest
 import io.camunda.zeebe.dynamic.config.api.ErrorResponse;
 import io.camunda.zeebe.dynamic.config.api.ErrorResponse.ErrorCode;
 import io.camunda.zeebe.dynamic.config.serializer.ClusterConfigurationJsonSerializer;
-import io.camunda.zeebe.dynamic.config.serializer.ProtoBufSerializer;
+import io.camunda.zeebe.dynamic.config.serializer.ClusterConfigurationSerializer;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.RoutingState.MessageCorrelation;
 import io.camunda.zeebe.dynamic.config.state.RoutingState.MessageCorrelation.HashMod;
@@ -85,10 +85,14 @@ public class ClusterEndpoint {
       Set.of("dryRun", "force", "replicationFactor", "physicalTenant");
 
   private final ClusterConfigurationManagementRequestSender requestSender;
+  private final ClusterConfigurationSerializer serializer;
 
   @Autowired
-  public ClusterEndpoint(final ClusterConfigurationManagementRequestSender requestSender) {
+  public ClusterEndpoint(
+      final ClusterConfigurationManagementRequestSender requestSender,
+      final ClusterConfigurationSerializer serializer) {
     this.requestSender = requestSender;
+    this.serializer = serializer;
   }
 
   @GetMapping(produces = "application/json")
@@ -151,8 +155,8 @@ public class ClusterEndpoint {
    * is at fault.
    *
    * <p>The shape is the configuration model's own, so it changes whenever the model does.
-   * Deliberately absent from {@code api/cluster/cluster-api.yaml} for that reason: a debugging aid
-   * rather than a contract.
+   * Deliberately absent from {@code cluster-api.yaml} for that reason: a debugging aid rather than
+   * a contract.
    */
   @GetMapping(path = "/dump", produces = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<?> dumpConfigurationAsJson() {
@@ -183,7 +187,7 @@ public class ClusterEndpoint {
                   // `curl -OJ` write a file instead.
                   .header(
                       HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"cluster-config.pb\"")
-                  .body(new ProtoBufSerializer().encodeCurrentClusterConfiguration(configuration)));
+                  .body(serializer.encodeCurrentClusterConfiguration(configuration)));
     } catch (final Exception error) {
       return ClusterApiUtils.mapError(error);
     }

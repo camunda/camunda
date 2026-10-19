@@ -246,7 +246,7 @@ protoc --decode topology_protocol.CurrentClusterConfiguration \
 unpacked. Any other `Accept` value is refused with a 406.
 
 The JSON shape is the internal model and changes whenever the model does. That is why the endpoint
-is deliberately absent from `dist/src/main/resources/api/cluster/cluster-api.yaml` — it is a
+is deliberately absent from `zeebe/dynamic-config/openapi/src/main/resources/api/cluster-api.yaml` — it is a
 debugging aid, not a contract. Note also that the configuration is always fetched from the
 coordinator, so querying different nodes returns the same content.
 
