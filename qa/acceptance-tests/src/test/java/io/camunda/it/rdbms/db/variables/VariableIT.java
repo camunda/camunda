@@ -138,6 +138,117 @@ public class VariableIT {
   }
 
   @TestTemplate
+  public void shouldAddProtectionModesOnUpdate(final CamundaRdbmsTestApplication testApplication)
+      throws SQLException {
+    // given
+    final var rdbmsService = testApplication.getRdbmsService();
+    final var variable = createAndSaveVariable(rdbmsService, b -> b);
+
+    // when
+    updateProtectionModes(rdbmsService, variable, Set.of(ProtectionModeDbModel.REDACT));
+
+    // then
+    assertThat(findProtectionModeCodes(testApplication, variable.variableKey()))
+        .containsExactly(ProtectionModeDbModel.REDACT.getCode());
+  }
+
+  @TestTemplate
+  public void shouldRemoveProtectionModesOnUpdate(final CamundaRdbmsTestApplication testApplication)
+      throws SQLException {
+    // given
+    final var rdbmsService = testApplication.getRdbmsService();
+    final var variable =
+        createAndSaveVariable(
+            rdbmsService, b -> b.protectionModes(Set.of(ProtectionModeDbModel.REDACT)));
+
+    // when
+    updateProtectionModes(rdbmsService, variable, Set.of());
+
+    // then
+    assertThat(findProtectionModeCodes(testApplication, variable.variableKey())).isEmpty();
+  }
+
+  @TestTemplate
+  public void shouldKeepProtectionModesOnUpdateWithSameModes(
+      final CamundaRdbmsTestApplication testApplication) throws SQLException {
+    // given
+    final var rdbmsService = testApplication.getRdbmsService();
+    final var modes = Set.of(ProtectionModeDbModel.REDACT);
+    final var variable = createAndSaveVariable(rdbmsService, b -> b.protectionModes(modes));
+
+    // when
+    updateProtectionModes(rdbmsService, variable, modes);
+
+    // then
+    assertThat(findProtectionModeCodes(testApplication, variable.variableKey()))
+        .containsExactly(ProtectionModeDbModel.REDACT.getCode());
+  }
+
+  @TestTemplate
+  public void shouldApplyLastProtectionModesOfRepeatedUpdatesInOneFlush(
+      final CamundaRdbmsTestApplication testApplication) throws SQLException {
+    // given
+    final var rdbmsService = testApplication.getRdbmsService();
+    final var redact = Set.of(ProtectionModeDbModel.REDACT);
+    final var variableToUnprotect =
+        createAndSaveVariable(rdbmsService, b -> b.protectionModes(redact));
+    final var variableToProtect = createAndSaveVariable(rdbmsService, b -> b);
+    final var variableKeptProtected =
+        createAndSaveVariable(rdbmsService, b -> b.protectionModes(redact));
+
+    // when
+    final var writer = rdbmsService.createWriter(PARTITION_ID);
+    writer.getVariableWriter().update(withModes(variableToUnprotect, redact));
+    writer.getVariableWriter().update(withModes(variableToUnprotect, Set.of()));
+    writer.getVariableWriter().update(withModes(variableToProtect, Set.of()));
+    writer.getVariableWriter().update(withModes(variableToProtect, redact));
+    writer.getVariableWriter().update(withModes(variableKeptProtected, redact));
+    writer.getVariableWriter().update(withModes(variableKeptProtected, redact));
+    writer.flush();
+
+    // then
+    assertThat(findProtectionModeCodes(testApplication, variableToUnprotect.variableKey()))
+        .isEmpty();
+    assertThat(findProtectionModeCodes(testApplication, variableToProtect.variableKey()))
+        .containsExactly(ProtectionModeDbModel.REDACT.getCode());
+    assertThat(findProtectionModeCodes(testApplication, variableKeptProtected.variableKey()))
+        .containsExactly(ProtectionModeDbModel.REDACT.getCode());
+  }
+
+  @TestTemplate
+  public void shouldApplyUpdatedProtectionModesOfVariableCreatedInSameFlush(
+      final CamundaRdbmsTestApplication testApplication) throws SQLException {
+    // given
+    final var rdbmsService = testApplication.getRdbmsService();
+    final var variable =
+        VariableFixtures.createRandomized(
+            b -> b.protectionModes(Set.of(ProtectionModeDbModel.REDACT)));
+
+    // when
+    final var writer = rdbmsService.createWriter(PARTITION_ID);
+    writer.getVariableWriter().create(variable);
+    writer.getVariableWriter().update(withModes(variable, Set.of()));
+    writer.flush();
+
+    // then
+    assertThat(findProtectionModeCodes(testApplication, variable.variableKey())).isEmpty();
+  }
+
+  private static VariableDbModel withModes(
+      final VariableDbModel variable, final Set<ProtectionModeDbModel> modes) {
+    return variable.copy(b -> ((VariableDbModelBuilder) b).protectionModes(modes));
+  }
+
+  private static void updateProtectionModes(
+      final RdbmsService rdbmsService,
+      final VariableDbModel variable,
+      final Set<ProtectionModeDbModel> modes) {
+    final var writer = rdbmsService.createWriter(PARTITION_ID);
+    writer.getVariableWriter().update(withModes(variable, modes));
+    writer.flush();
+  }
+
+  @TestTemplate
   public void shouldUpdateAndFindVariableByKey(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final VariableDbModel randomizedVariable = prepareRandomVariablesAndReturnOne(testApplication);

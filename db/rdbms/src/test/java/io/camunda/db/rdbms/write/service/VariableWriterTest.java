@@ -7,10 +7,13 @@
  */
 package io.camunda.db.rdbms.write.service;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -26,11 +29,13 @@ import io.camunda.db.rdbms.write.queue.BatchInsertDto;
 import io.camunda.db.rdbms.write.queue.ContextType;
 import io.camunda.db.rdbms.write.queue.ExecutionQueue;
 import io.camunda.db.rdbms.write.queue.QueueItem;
+import io.camunda.db.rdbms.write.queue.QueueItemMerger;
 import io.camunda.db.rdbms.write.queue.WriteStatementType;
 import java.util.List;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 
 class VariableWriterTest {
 
@@ -104,8 +109,8 @@ class VariableWriterTest {
                         && queueItem
                             .parameter()
                             .equals(
-                                new VariableMapper.ProtectionModeDto(
-                                    123L, ProtectionModeDbModel.REDACT))));
+                                new VariableMapper.ProtectionModesDto(
+                                    123L, Set.of(ProtectionModeDbModel.REDACT)))));
   }
 
   @Test
@@ -230,5 +235,176 @@ class VariableWriterTest {
                     123L,
                     "io.camunda.db.rdbms.sql.VariableMapper.update",
                     truncatedModel)));
+  }
+
+  @Test
+  void shouldReplaceProtectionModesOnUpdate() {
+    // given
+    when(model.variableKey()).thenReturn(123L);
+    when(model.protectionModes()).thenReturn(Set.of(ProtectionModeDbModel.REDACT));
+
+    // when
+    writer.update(model);
+
+    // then
+    final var inOrder = inOrder(executionQueue);
+    inOrder
+        .verify(executionQueue)
+        .executeInQueue(
+            eq(
+                new QueueItem(
+                    ContextType.VARIABLE,
+                    WriteStatementType.UPDATE,
+                    123L,
+                    "io.camunda.db.rdbms.sql.VariableMapper.deleteProtectionModes",
+                    123L,
+                    1)));
+    inOrder
+        .verify(executionQueue)
+        .executeInQueue(
+            eq(
+                new QueueItem(
+                    ContextType.VARIABLE,
+                    WriteStatementType.UPDATE,
+                    123L,
+                    "io.camunda.db.rdbms.sql.VariableMapper.insertProtectionModes",
+                    new VariableMapper.ProtectionModesDto(
+                        123L, Set.of(ProtectionModeDbModel.REDACT)),
+                    2)));
+  }
+
+  @Test
+  void shouldOnlyDeleteProtectionModesOnUpdateWithoutModes() {
+    // given
+    when(model.variableKey()).thenReturn(123L);
+    when(model.protectionModes()).thenReturn(Set.of());
+
+    // when
+    writer.update(model);
+
+    // then
+    verify(executionQueue)
+        .executeInQueue(
+            argThat(
+                queueItem ->
+                    queueItem.statementId().endsWith("VariableMapper.deleteProtectionModes")));
+    verify(executionQueue, never())
+        .executeInQueue(
+            argThat(
+                queueItem ->
+                    queueItem.statementId().endsWith("VariableMapper.insertProtectionModes")));
+  }
+
+  @Test
+  void shouldReplaceQueuedProtectionModesInsertOfSameVariable() {
+    // given
+    when(model.variableKey()).thenReturn(123L);
+    when(model.protectionModes()).thenReturn(Set.of());
+    writer.update(model);
+    final var merger = ArgumentCaptor.forClass(QueueItemMerger.class);
+    verify(executionQueue).tryMergeWithExistingQueueItem(merger.capture());
+    final var queuedInsert =
+        new QueueItem(
+            ContextType.VARIABLE,
+            WriteStatementType.UPDATE,
+            123L,
+            "io.camunda.db.rdbms.sql.VariableMapper.insertProtectionModes",
+            new VariableMapper.ProtectionModesDto(123L, Set.of(ProtectionModeDbModel.REDACT)),
+            2);
+
+    // when
+    final var canBeMerged = merger.getValue().canBeMerged(queuedInsert);
+    final var merged = merger.getValue().merge(queuedInsert);
+
+    // then
+    assertThat(canBeMerged).isTrue();
+    assertThat(merged.statementId())
+        .isEqualTo("io.camunda.db.rdbms.sql.VariableMapper.deleteProtectionModes");
+    assertThat(merged.parameter()).isEqualTo(123L);
+    assertThat(merged.order()).isEqualTo(2);
+  }
+
+  @Test
+  void shouldReplaceModesOfQueuedProtectionModesInsert() {
+    // given
+    when(model.variableKey()).thenReturn(123L);
+    when(model.protectionModes()).thenReturn(Set.of(ProtectionModeDbModel.REDACT));
+    writer.update(model);
+    final var merger = ArgumentCaptor.forClass(QueueItemMerger.class);
+    verify(executionQueue).tryMergeWithExistingQueueItem(merger.capture());
+    final var queuedNoop =
+        new QueueItem(
+            ContextType.VARIABLE,
+            WriteStatementType.UPDATE,
+            123L,
+            "io.camunda.db.rdbms.sql.VariableMapper.deleteProtectionModes",
+            123L,
+            2);
+
+    // when
+    final var merged = merger.getValue().merge(queuedNoop);
+
+    // then
+    assertThat(merged.statementId())
+        .isEqualTo("io.camunda.db.rdbms.sql.VariableMapper.insertProtectionModes");
+    assertThat(merged.parameter())
+        .isEqualTo(
+            new VariableMapper.ProtectionModesDto(123L, Set.of(ProtectionModeDbModel.REDACT)));
+  }
+
+  @Test
+  void shouldNotMergeProtectionModesIntoOtherQueueItems() {
+    // given
+    when(model.variableKey()).thenReturn(123L);
+    when(model.protectionModes()).thenReturn(Set.of(ProtectionModeDbModel.REDACT));
+    writer.update(model);
+    final var merger = ArgumentCaptor.forClass(QueueItemMerger.class);
+    verify(executionQueue).tryMergeWithExistingQueueItem(merger.capture());
+
+    // then
+    final var variableUpdate =
+        new QueueItem(
+            ContextType.VARIABLE,
+            WriteStatementType.UPDATE,
+            123L,
+            "io.camunda.db.rdbms.sql.VariableMapper.update",
+            truncatedModel);
+    final var otherVariableInsert =
+        new QueueItem(
+            ContextType.VARIABLE,
+            WriteStatementType.UPDATE,
+            456L,
+            "io.camunda.db.rdbms.sql.VariableMapper.insertProtectionModes",
+            new VariableMapper.ProtectionModesDto(456L, Set.of(ProtectionModeDbModel.REDACT)),
+            2);
+    final var createInsert =
+        new QueueItem(
+            ContextType.VARIABLE,
+            WriteStatementType.INSERT,
+            123L,
+            "io.camunda.db.rdbms.sql.VariableMapper.insertProtectionModes",
+            new VariableMapper.ProtectionModesDto(123L, Set.of(ProtectionModeDbModel.REDACT)),
+            2);
+    assertThat(merger.getValue().canBeMerged(variableUpdate)).isFalse();
+    assertThat(merger.getValue().canBeMerged(otherVariableInsert)).isFalse();
+    assertThat(merger.getValue().canBeMerged(createInsert)).isFalse();
+  }
+
+  @Test
+  void shouldNotQueueProtectionModesInsertWhenMergedIntoExistingItem() {
+    // given
+    when(model.variableKey()).thenReturn(123L);
+    when(model.protectionModes()).thenReturn(Set.of(ProtectionModeDbModel.REDACT));
+    when(executionQueue.tryMergeWithExistingQueueItem(any())).thenReturn(true);
+
+    // when
+    writer.update(model);
+
+    // then
+    verify(executionQueue, never())
+        .executeInQueue(
+            argThat(
+                queueItem ->
+                    queueItem.statementId().endsWith("VariableMapper.insertProtectionModes")));
   }
 }
