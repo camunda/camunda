@@ -27,6 +27,8 @@ import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.common.BackupDescriptorImpl;
 import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
 import io.camunda.zeebe.backup.common.BackupStatusImpl;
+import io.camunda.zeebe.backup.logarchive.state.DbLogArchiveState;
+import io.camunda.zeebe.backup.logarchive.state.LogArchiveMeta;
 import io.camunda.zeebe.backup.processing.state.CheckpointState;
 import io.camunda.zeebe.backup.processing.state.DbBackupRangeState;
 import io.camunda.zeebe.backup.processing.state.DbCheckpointMetadataState;
@@ -41,12 +43,17 @@ import io.camunda.zeebe.protocol.impl.encoding.BackupRequest;
 import io.camunda.zeebe.protocol.impl.encoding.BackupStatusResponse;
 import io.camunda.zeebe.protocol.impl.encoding.CheckpointStateResponse;
 import io.camunda.zeebe.protocol.impl.encoding.CheckpointStateResponse.PartitionCheckpointState;
+import io.camunda.zeebe.protocol.impl.encoding.CheckpointStateResponse.PartitionLogArchiveState;
 import io.camunda.zeebe.protocol.impl.encoding.ErrorResponse;
+import io.camunda.zeebe.protocol.impl.record.value.management.ArchivedSnapshot;
 import io.camunda.zeebe.protocol.impl.record.value.management.CheckpointRecord;
+import io.camunda.zeebe.protocol.impl.record.value.management.LogArchiveRecord;
 import io.camunda.zeebe.protocol.management.BackupRequestType;
 import io.camunda.zeebe.protocol.management.BackupStatusCode;
 import io.camunda.zeebe.protocol.management.BackupStatusResponseEncoder;
 import io.camunda.zeebe.protocol.record.ErrorCode;
+import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.management.LogArchiveIntent;
 import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
@@ -95,6 +102,7 @@ class BackupApiRequestHandlerTest {
   @Mock CheckpointState checkpointState;
   @Mock DbCheckpointMetadataState checkpointMetadataState;
   @Mock DbBackupRangeState backupRangeState;
+  @Mock DbLogArchiveState logArchiveState;
   @Mock PersistedSnapshotStore snapshotStore;
   @Mock PersistedSnapshot freshSnapshot;
   @Mock SnapshotTrigger snapshotTrigger;
@@ -118,6 +126,7 @@ class BackupApiRequestHandlerTest {
             checkpointState,
             checkpointMetadataState,
             backupRangeState,
+            logArchiveState,
             snapshotStore,
             snapshotTrigger,
             new PartitionId(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, 1),
@@ -128,6 +137,7 @@ class BackupApiRequestHandlerTest {
     serverOutput = new ResponseReader();
     responseFuture = new CompletableFuture<>();
 
+    lenient().when(logArchiveState.meta()).thenReturn(new LogArchiveMeta());
     lenient().when(snapshotTrigger.forceSnapshot()).thenAnswer(invocation -> takenSnapshot);
     lenient()
         .when(backupManager.getBackupRangeStatus())
@@ -580,6 +590,97 @@ class BackupApiRequestHandlerTest {
     assertThat(responseFuture).succeedsWithin(Duration.ofMinutes(1)).matches(Either::isRight);
     assertThat(stateResponse.getCheckpointStates()).isEmpty();
     assertThat(stateResponse.getBackupStates()).isEmpty();
+  }
+
+  @Test
+  void shouldReturnLogArchiveStateWithoutTimeline() {
+    // given
+    when(checkpointState.getLatestCheckpointId()).thenReturn(-1L);
+    when(checkpointState.getLatestBackupId()).thenReturn(-1L);
+    final var request =
+        new BackupRequest().setType(BackupRequestType.QUERY_STATE).setPartitionId(1);
+    final var stateResponse = new CheckpointStateResponse();
+    serverOutput.setResponseObject(stateResponse);
+
+    // when
+    handleRequest(request);
+
+    // then
+    assertThat(responseFuture).succeedsWithin(Duration.ofMinutes(1)).matches(Either::isRight);
+    assertThat(stateResponse.getLogArchiveStates())
+        .containsExactly(new PartitionLogArchiveState(1, false, -1, -1, -1));
+  }
+
+  @Test
+  void shouldReturnLogArchiveState() {
+    // given
+    when(checkpointState.getLatestCheckpointId()).thenReturn(-1L);
+    when(checkpointState.getLatestBackupId()).thenReturn(-1L);
+    when(logArchiveState.meta())
+        .thenReturn(
+            new LogArchiveMeta()
+                .setTimelineId("tl-0")
+                .setArchivedPosition(500)
+                .setHandoverCheckpointId(42));
+    when(logArchiveState.snapshots())
+        .thenReturn(
+            List.of(
+                new ArchivedSnapshot().setId("a").setProcessedPosition(100),
+                new ArchivedSnapshot().setId("b").setProcessedPosition(300),
+                new ArchivedSnapshot().setId("c").setProcessedPosition(200)));
+    final var request =
+        new BackupRequest().setType(BackupRequestType.QUERY_STATE).setPartitionId(1);
+    final var stateResponse = new CheckpointStateResponse();
+    serverOutput.setResponseObject(stateResponse);
+
+    // when
+    handleRequest(request);
+
+    // then
+    assertThat(responseFuture).succeedsWithin(Duration.ofMinutes(1)).matches(Either::isRight);
+    assertThat(stateResponse.getLogArchiveStates())
+        .containsExactly(new PartitionLogArchiveState(1, true, 500, 300, 42));
+  }
+
+  @Test
+  void shouldWriteCompleteHandoverCommandToTheLog() {
+    // given
+    final var writtenEntry = captureWrittenEntry(Either.right(1L));
+    final var request =
+        new BackupRequest()
+            .setType(BackupRequestType.COMPLETE_HANDOVER)
+            .setPartitionId(1)
+            .setBackupId(42);
+    final var statusResponse = new BackupStatusResponse();
+    serverOutput.setResponseObject(statusResponse);
+
+    // when
+    handleRequest(request);
+
+    // then
+    final var entry = writtenEntry.getValue();
+    assertThat(entry.recordMetadata().getValueType()).isEqualTo(ValueType.LOG_ARCHIVE);
+    assertThat(entry.recordMetadata().getIntent()).isEqualTo(LogArchiveIntent.COMPLETE_HANDOVER);
+    assertThat(((LogArchiveRecord) entry.recordValue()).getHandoverCheckpointId()).isEqualTo(42);
+    assertThat(responseFuture).succeedsWithin(Duration.ofMinutes(1)).matches(Either::isRight);
+    assertThat(statusResponse.getBackupId()).isEqualTo(42);
+  }
+
+  @Test
+  void shouldFailCompleteHandoverWhenTheCommandCannotBeWritten() {
+    // given
+    captureWrittenEntry(Either.left(WriteFailure.WRITE_LIMIT_EXHAUSTED));
+    final var request =
+        new BackupRequest()
+            .setType(BackupRequestType.COMPLETE_HANDOVER)
+            .setPartitionId(1)
+            .setBackupId(42);
+
+    // when
+    handleRequest(request);
+
+    // then
+    assertThat(responseFuture).succeedsWithin(Duration.ofMinutes(1)).matches(Either::isLeft);
   }
 
   @Test

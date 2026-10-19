@@ -113,6 +113,20 @@ public final class BackupRequestHandler implements BackupApi {
         .thenApply(ignored -> null);
   }
 
+  @Override
+  public CompletionStage<Void> completeHandover(
+      final String physicalTenantId, final long checkpointId) {
+    return broadcastRequest(
+            physicalTenantId,
+            partitionId -> {
+              final var request = new BrokerCompleteHandoverRequest();
+              request.setPartitionId(partitionId);
+              request.setBackupId(checkpointId);
+              return request;
+            })
+        .thenApply(ignored -> null);
+  }
+
   /**
    * Trigger a checkpoint of the given type across all partitions of the given physical tenant
    *
@@ -390,8 +404,14 @@ public final class BackupRequestHandler implements BackupApi {
     final var backupStates =
         responses.stream().flatMap(r -> r.getBackupStates().stream()).collect(Collectors.toSet());
 
+    final var logArchiveStates =
+        responses.stream()
+            .flatMap(r -> r.getLogArchiveStates().stream())
+            .collect(Collectors.toSet());
+
     response.setCheckpointStates(checkpointStates);
     response.setBackupStates(backupStates);
+    response.setLogArchiveStates(logArchiveStates);
     return response;
   }
 

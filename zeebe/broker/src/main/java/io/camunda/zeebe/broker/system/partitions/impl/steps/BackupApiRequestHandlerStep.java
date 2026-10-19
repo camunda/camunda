@@ -8,6 +8,7 @@
 package io.camunda.zeebe.broker.system.partitions.impl.steps;
 
 import io.atomix.raft.RaftServer.Role;
+import io.camunda.zeebe.backup.logarchive.state.DbLogArchiveState;
 import io.camunda.zeebe.backup.processing.state.DbBackupRangeState;
 import io.camunda.zeebe.backup.processing.state.DbCheckpointMetadataState;
 import io.camunda.zeebe.backup.processing.state.DbCheckpointState;
@@ -68,6 +69,8 @@ public final class BackupApiRequestHandlerStep implements PartitionTransitionSte
         new DbCheckpointMetadataState(context.getZeebeDb(), context.getZeebeDb().createContext());
     final var backupRangeState =
         new DbBackupRangeState(context.getZeebeDb(), context.getZeebeDb().createContext());
+    final var logArchiveState =
+        new DbLogArchiveState(context.getZeebeDb(), context.getZeebeDb().createContext());
     final var snapshotDirector = context.getSnapshotDirector();
     final var requestHandler =
         new BackupApiRequestHandler(
@@ -77,6 +80,7 @@ public final class BackupApiRequestHandlerStep implements PartitionTransitionSte
             checkpointState,
             checkpointMetadataState,
             backupRangeState,
+            logArchiveState,
             context.getPersistedSnapshotStore(),
             () -> snapshotDirector.forceSnapshot(),
             context.partitionId(),
