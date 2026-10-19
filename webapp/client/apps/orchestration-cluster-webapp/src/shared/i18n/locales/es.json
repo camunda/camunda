@@ -892,7 +892,7 @@
 			"caseStageDoneUnresolvable": "La etapa no se puede cerrar desde aquí: su clave de correlación es desconocida",
 			"caseStageDoneFailed": "No se pudo cerrar la etapa",
 			"caseCurrentTask": "Tarea actual",
-			"caseCloseTask": "Cerrar tarea",
+			"caseCloseTask": "Volver a las tareas del caso",
 			"caseTaskWithoutForm": "Esta tarea no tiene formulario. Complétela cuando el trabajo esté hecho.",
 			"caseDetailsTitle": "Detalles",
 			"caseDetailsDescription": "El formulario del caso, con los datos del caso",
@@ -901,7 +901,8 @@
 			"caseNoDocuments": "No hay documentos",
 			"caseDiagramTitle": "Proceso",
 			"caseDiagramDescription": "Este caso llama a otros procesos, por lo que muestra el diagrama del proceso en lugar de sus etapas",
-			"caseNoOpenWorkInCase": "No hay trabajo pendiente en este caso"
+			"caseNoOpenWorkInCase": "No hay trabajo pendiente en este caso",
+			"caseTaskCompleted": "{{name}} completada"
 		},
 		"operate": {
 			"dashboard": {

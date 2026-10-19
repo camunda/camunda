@@ -892,7 +892,7 @@
 			"caseStageDoneUnresolvable": "Die Phase kann hier nicht geschlossen werden: ihr Korrelationsschlüssel ist unbekannt",
 			"caseStageDoneFailed": "Die Phase konnte nicht geschlossen werden",
 			"caseCurrentTask": "Aktuelle Aufgabe",
-			"caseCloseTask": "Aufgabe schließen",
+			"caseCloseTask": "Zurück zu den Aufgaben des Falls",
 			"caseTaskWithoutForm": "Diese Aufgabe hat kein Formular. Schließen Sie sie ab, wenn die Arbeit erledigt ist.",
 			"caseDetailsTitle": "Details",
 			"caseDetailsDescription": "Das Fallformular, gefüllt mit den Falldaten",
@@ -901,7 +901,8 @@
 			"caseNoDocuments": "Keine Dokumente",
 			"caseDiagramTitle": "Prozess",
 			"caseDiagramDescription": "Dieser Fall ruft andere Prozesse auf und zeigt daher das Prozessdiagramm statt seiner Phasen",
-			"caseNoOpenWorkInCase": "Keine offene Arbeit in diesem Fall"
+			"caseNoOpenWorkInCase": "Keine offene Arbeit in diesem Fall",
+			"caseTaskCompleted": "{{name}} abgeschlossen"
 		},
 		"operate": {
 			"dashboard": {

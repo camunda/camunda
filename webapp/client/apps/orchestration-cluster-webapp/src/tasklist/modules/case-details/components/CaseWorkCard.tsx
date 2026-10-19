@@ -8,10 +8,8 @@
 
 import {useTranslation} from 'react-i18next';
 import {
-	Badge,
 	Button,
 	Card,
-	CardAction,
 	CardContent,
 	CardDescription,
 	CardFooter,
@@ -56,17 +54,15 @@ type TaskRowProps = {
 	name: string;
 	description: string;
 	icon: React.ReactNode;
-	isHighlighted?: boolean;
 	isDone?: boolean;
 	action?: React.ReactNode;
 };
 
-const WorkRow: React.FC<TaskRowProps> = ({name, description, icon, isHighlighted, isDone, action}) => (
+const WorkRow: React.FC<TaskRowProps> = ({name, description, icon, isDone, action}) => (
 	<li
 		className={cn(
 			'flex items-center gap-3 rounded-md border border-border px-3 py-2.5',
 			isDone && 'bg-[color:var(--success-background-subtle)]',
-			isHighlighted && 'border-[color:var(--info-action-default)]',
 		)}
 	>
 		{icon}
@@ -84,8 +80,6 @@ type Props = {
 	stageName: string | null;
 	work: StageWork;
 	currentUsername: string;
-	selectedTaskKey: string | null;
-	isSearchingNextWork: boolean;
 	startingElementId: string | null;
 	isCompletingStage: boolean;
 	onOpenTask: (userTaskKey: string) => void;
@@ -97,8 +91,6 @@ const CaseWorkCard: React.FC<Props> = ({
 	stageName,
 	work,
 	currentUsername,
-	selectedTaskKey,
-	isSearchingNextWork,
 	startingElementId,
 	isCompletingStage,
 	onOpenTask,
@@ -112,11 +104,7 @@ const CaseWorkCard: React.FC<Props> = ({
 	const hasWork = activities.length > 0 || openTasks.length > 0;
 
 	const renderOpenButton = (userTask: UserTask) => (
-		<Button
-			variant={selectedTaskKey === userTask.userTaskKey ? 'default' : 'secondary'}
-			size="sm"
-			onClick={() => onOpenTask(userTask.userTaskKey)}
-		>
+		<Button variant="secondary" size="sm" onClick={() => onOpenTask(userTask.userTaskKey)}>
 			{t('tasklist.caseOpenTask')}
 			<ArrowRight aria-hidden />
 		</Button>
@@ -155,14 +143,6 @@ const CaseWorkCard: React.FC<Props> = ({
 					{stageName === null ? t('tasklist.caseOpenWork') : t('tasklist.caseCurrentStage')}
 				</CardDescription>
 				<CardTitle className="text-lg">{stageName ?? t('tasklist.caseAllOpenTasks')}</CardTitle>
-				{isSearchingNextWork ? (
-					<CardAction>
-						<Badge variant="info">
-							<Spinner />
-							{t('tasklist.caseSearchingNextWork')}
-						</Badge>
-					</CardAction>
-				) : null}
 			</CardHeader>
 			<CardContent className="flex flex-col gap-5">
 				{hasWork ? null : (
@@ -184,7 +164,6 @@ const CaseWorkCard: React.FC<Props> = ({
 									name={userTask.name || userTask.elementId}
 									description={getAssignmentLabel(userTask, currentUsername)}
 									icon={<UserRound className="size-4 shrink-0 text-[color:var(--info-action-default)]" aria-hidden />}
-									isHighlighted={selectedTaskKey === userTask.userTaskKey}
 									action={renderOpenButton(userTask)}
 								/>
 							))}
@@ -221,7 +200,6 @@ const CaseWorkCard: React.FC<Props> = ({
 										)
 									}
 									isDone={activity.status === 'completed'}
-									isHighlighted={activity.userTask !== null && selectedTaskKey === activity.userTask.userTaskKey}
 									action={renderActivityAction(activity)}
 								/>
 							))}

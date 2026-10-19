@@ -895,7 +895,7 @@
 			"caseStageDoneUnresolvable": "L'étape ne peut pas être clôturée ici : sa clé de corrélation est inconnue",
 			"caseStageDoneFailed": "L'étape n'a pas pu être clôturée",
 			"caseCurrentTask": "Tâche actuelle",
-			"caseCloseTask": "Fermer la tâche",
+			"caseCloseTask": "Retour aux tâches du dossier",
 			"caseTaskWithoutForm": "Cette tâche n'a pas de formulaire. Terminez-la lorsque le travail est fait.",
 			"caseDetailsTitle": "Détails",
 			"caseDetailsDescription": "Le formulaire du dossier, rempli avec les données du dossier",
@@ -904,7 +904,8 @@
 			"caseNoDocuments": "Aucun document",
 			"caseDiagramTitle": "Processus",
 			"caseDiagramDescription": "Ce dossier appelle d'autres processus : il affiche donc le diagramme du processus au lieu de ses étapes",
-			"caseNoOpenWorkInCase": "Aucun travail en cours dans ce dossier"
+			"caseNoOpenWorkInCase": "Aucun travail en cours dans ce dossier",
+			"caseTaskCompleted": "{{name}} terminée"
 		},
 		"operate": {
 			"dashboard": {

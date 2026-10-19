@@ -904,7 +904,7 @@
 			"caseStageDoneUnresolvable": "The stage cannot be closed from here: its correlation key is unknown",
 			"caseStageDoneFailed": "The stage could not be closed",
 			"caseCurrentTask": "Current task",
-			"caseCloseTask": "Close task",
+			"caseCloseTask": "Back to the tasks of the case",
 			"caseTaskWithoutForm": "This task has no form. Complete it when the work is done.",
 			"caseDetailsTitle": "Details",
 			"caseDetailsDescription": "The case form, filled from the case data",
@@ -913,7 +913,8 @@
 			"caseNoDocuments": "No documents",
 			"caseDiagramTitle": "Process",
 			"caseDiagramDescription": "This case calls other processes, so it shows the process diagram instead of its stages",
-			"caseNoOpenWorkInCase": "No open work in this case"
+			"caseNoOpenWorkInCase": "No open work in this case",
+			"caseTaskCompleted": "{{name}} completed"
 		},
 		"operate": {
 			"dashboard": {
