@@ -49,6 +49,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
@@ -361,6 +362,33 @@ public final class S3BackupStore implements BackupStore {
                     .thenApply(Manifest::statusCode);
               }
               return CompletableFuture.completedFuture(manifest.statusCode());
+            });
+  }
+
+  @Override
+  public CompletableFuture<Void> storeHistoryManifest(final UUID historyId, final byte[] content) {
+    final var key =
+        config.basePath().map(base -> base + "/").orElse("") + "histories/" + historyId + ".json";
+    return client
+        .putObject(
+            req -> req.bucket(config.bucketName()).key(key), AsyncRequestBody.fromBytes(content))
+        .thenApply(resp -> null);
+  }
+
+  @Override
+  public CompletableFuture<Optional<byte[]>> loadHistoryManifest(final UUID historyId) {
+    final var key =
+        config.basePath().map(base -> base + "/").orElse("") + "histories/" + historyId + ".json";
+    return client
+        .getObject(
+            req -> req.bucket(config.bucketName()).key(key), AsyncResponseTransformer.toBytes())
+        .thenApply(response -> Optional.of(response.asByteArray()))
+        .exceptionally(
+            throwable -> {
+              if (throwable.getCause() instanceof NoSuchKeyException) {
+                return Optional.empty();
+              }
+              throw new RuntimeException(throwable);
             });
   }
 

@@ -11,12 +11,18 @@ import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
 import java.time.Instant;
 import java.util.Optional;
 import java.util.OptionalLong;
+import java.util.UUID;
 
 /**
  * Additional information about the backup that might be required for restoring or querying the
  * status
  */
 public interface BackupDescriptor {
+  /** Source history at this checkpoint; absent for backups made before history publication. */
+  default Optional<UUID> historyId() {
+    return Optional.empty();
+  }
+
   /**
    * @return id of the snapshot included in the backup
    */

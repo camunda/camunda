@@ -36,6 +36,7 @@ import java.nio.file.StandardCopyOption;
 import java.util.Arrays;
 import java.util.NoSuchElementException;
 import java.util.Optional;
+import java.util.UUID;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -71,9 +72,9 @@ public class PartitionRestoreService {
    * Downloads a single backup and restores it to the partition's data directory. The backup is
    * truncated to the checkpoint position.
    */
-  public void restore(final long backupId, final BackupValidator validator)
+  public RestoredPartition restore(final long backupId, final BackupValidator validator)
       throws IOException, FlushException {
-    restore(new long[] {backupId}, validator);
+    return restore(new long[] {backupId}, validator);
   }
 
   /**
@@ -82,7 +83,7 @@ public class PartitionRestoreService {
    *
    * @param backupIds ids of the backups to restore from
    */
-  public void restore(final long[] backupIds, final BackupValidator validator)
+  public RestoredPartition restore(final long[] backupIds, final BackupValidator validator)
       throws IOException, FlushException {
     validateAndSortBackupIds(backupIds);
 
@@ -93,11 +94,22 @@ public class PartitionRestoreService {
             .withMetaStore(new InMemory())
             .build()) {
       Backup previousBackup = null;
+      Optional<UUID> knownHistory = Optional.empty();
+      boolean completeProvenance = true;
       for (final var backupId : backupIds) {
         final var restoreTarget =
             rootDirectory.resolve("restoring-partition" + partitionId + "-backup-" + backupId);
         FileUtil.ensureDirectoryExists(restoreTarget);
         final var backup = download(backupId, restoreTarget, validator);
+        final var history = backup.descriptor().historyId();
+        if (history.isPresent() && knownHistory.isPresent() && !history.equals(knownHistory)) {
+          throw new IllegalStateException("Cannot combine backups from different histories");
+        }
+        if (history.isPresent()) {
+          knownHistory = history;
+        } else {
+          completeProvenance = false;
+        }
         if (previousBackup == null) {
           // Only take the first snapshot, all others are redundant because we have the full log.
           moveSnapshotFiles(backup);
@@ -107,12 +119,16 @@ public class PartitionRestoreService {
         previousBackup = backup;
         FileUtil.deleteFolder(restoreTarget);
       }
+      // TODO: As an additional consistency check:
+      // - Validate journal.firstIndex <= snapshotIndex + 1
+      // - Verify journal.lastEntry.asqn == checkpointPosition
       restoredJournal.flush();
+      return new RestoredPartition(
+          partitionId,
+          completeProvenance ? knownHistory : Optional.empty(),
+          restoredJournal.getLastIndex(),
+          requireNonNull(previousBackup).descriptor().checkpointPosition());
     }
-
-    // TODO: As an additional consistency check:
-    // - Validate journal.firstIndex <= snapshotIndex + 1
-    // - Verify journal.lastEntry.asqn == checkpointPosition
   }
 
   /** Ensures that we have a valid array of backup ids. */

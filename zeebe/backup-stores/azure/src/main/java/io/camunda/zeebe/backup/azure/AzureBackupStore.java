@@ -37,6 +37,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -303,6 +304,33 @@ public final class AzureBackupStore implements BackupStore {
         },
         executor,
         deleteConcurrencyLimit);
+  }
+
+  @Override
+  public CompletableFuture<Void> storeHistoryManifest(final UUID historyId, final byte[] content) {
+    return CompletableFuture.runAsync(
+        () -> {
+          assureContainerCreated();
+          final var blobName = "histories/" + historyId + ".json";
+          final var blobClient = blobContainerClient.getBlobClient(blobName);
+          blobClient.upload(BinaryData.fromBytes(content), true);
+        },
+        executor);
+  }
+
+  @Override
+  public CompletableFuture<Optional<byte[]>> loadHistoryManifest(final UUID historyId) {
+    return CompletableFuture.supplyAsync(
+        () -> {
+          assureContainerCreated();
+          final var blobName = "histories/" + historyId + ".json";
+          final var blobClient = blobContainerClient.getBlobClient(blobName);
+          if (!blobClient.exists()) {
+            return Optional.empty();
+          }
+          return Optional.of(blobClient.downloadContent().toBytes());
+        },
+        executor);
   }
 
   @Override

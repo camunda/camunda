@@ -151,9 +151,9 @@ final class ClusterRestoreRequestTransformerTest {
         new PartitionRestoreOperation(MEMBER, 1, new TreeSet<>(backupIds)),
         new UpdateRoutingState(
             MEMBER, Optional.of(RoutingState.initializeWithPartitionCount(partitionCount))),
+        new UpdateIncarnationNumberOperation(MEMBER),
         new ModeChangeOperation(MEMBER, Mode.PROCESSING),
-        new AwaitModeChangeOperation(MEMBER, Mode.PROCESSING),
-        new UpdateIncarnationNumberOperation(MEMBER));
+        new AwaitModeChangeOperation(MEMBER, Mode.PROCESSING));
   }
 
   private static List<PartitionGroupOperation> tenantBRestoreOperations(
@@ -163,9 +163,9 @@ final class ClusterRestoreRequestTransformerTest {
         new PartitionRestoreOperation(MEMBER, 2, new TreeSet<>(backupIds)),
         new UpdateRoutingState(
             MEMBER, Optional.of(RoutingState.initializeWithPartitionCount(partitionCount))),
+        new UpdateIncarnationNumberOperation(MEMBER),
         new ModeChangeOperation(MEMBER, Mode.PROCESSING),
-        new AwaitModeChangeOperation(MEMBER, Mode.PROCESSING),
-        new UpdateIncarnationNumberOperation(MEMBER));
+        new AwaitModeChangeOperation(MEMBER, Mode.PROCESSING));
   }
 
   private static List<PartitionGroupOperation> tenantCRestoreOperations(
@@ -175,9 +175,9 @@ final class ClusterRestoreRequestTransformerTest {
         new PartitionRestoreOperation(MEMBER, 3, new TreeSet<>(backupIds)),
         new UpdateRoutingState(
             MEMBER, Optional.of(RoutingState.initializeWithPartitionCount(partitionCount))),
+        new UpdateIncarnationNumberOperation(MEMBER),
         new ModeChangeOperation(MEMBER, Mode.PROCESSING),
-        new AwaitModeChangeOperation(MEMBER, Mode.PROCESSING),
-        new UpdateIncarnationNumberOperation(MEMBER));
+        new AwaitModeChangeOperation(MEMBER, Mode.PROCESSING));
   }
 
   /**
