@@ -24,7 +24,8 @@ In scope:
 
 Out of scope: event plane, holds, retention and deletion of any kind (including the orphan sweeper),
 GCS and Azure, incremental snapshots, merging small objects, migrating existing backups, scaling the
-partition count, metrics beyond basic counters.
+partition count (except for partitions added after the handover, section 18.4a), metrics beyond
+basic counters.
 
 Naming: always "log archive" (classes `LogArchive*`), never just "archive".
 
@@ -632,6 +633,14 @@ Integration tests (broker, filesystem store first, then MinIO):
   retention is out of scope.
 - A new leader learns only the newest archived snapshot on recovery
   (`onNewestArchivedSnapshotRecovered`), which is all the uploader needs.
+- Scale-up after the handover (section 18.4a): the new partition uploads old-style backups until
+  its handover is recorded (before activation, and for a few seconds after). Until its first cut it
+  has no first archived position, so the scheduler stops backups for those seconds (row 3a). A
+  checkpoint taken while scaling is in progress is marked failed on the old side but is covered by
+  the archive like any other; neither side guards a restore to it. The handover restore takes the
+  partitions to restore from the configured partition count: it must hold every partition of the
+  target (after a dynamic scale-up, configure the scaled count); higher partitions are not looked
+  at. The log archive only restore mode (`--logArchive.*`) does not leave out partitions added later.
 
 ## 16. Working rules for workstreams
 
@@ -681,7 +690,11 @@ the unchanged old restore code on unchanged data.
 - **Activation:** the checkpoint scheduler checks the gate. When it is open and the log archive is
   enabled, it sends a new management request `ACTIVATE_LOG_ARCHIVE` to every partition. The partition
   leader's archiver then writes `START_TIMELINE` (configured timeline, start index = first index on
-  disk) if the timeline is still empty. The request is idempotent.
+  disk) if the timeline is still empty. The request is idempotent. Once every partition reports a
+  started timeline, the activation loop only watches the topology (a local check every 10 s, no
+  request) and starts another round when it holds a partition that is not activated yet, i.e. one
+  added by a scale-up (section 18.4a). The activated partitions are kept in memory for this watch
+  only; a restarted or moved scheduler starts over with a round.
 - **Archiver change:** on recovery, the archiver no longer starts the first timeline by itself. It
   waits for activation. Starting a *new* timeline after a restore (timeline file differs from state)
   stays automatic, because a restore always runs on upgraded brokers.
@@ -699,9 +712,11 @@ the unchanged old restore code on unchanged data.
      `COMPLETE_HANDOVER(H)` to every partition. The leader writes the new log archive command
      `COMPLETE_HANDOVER` → event `HANDOVER_COMPLETED` (gets a seq, so it is a commit entry of type
      `HANDOVER` with H's id and position).
-- **Validation of `COMPLETE_HANDOVER`:** timeline started; H is a confirmed backup of type HANDOVER
-  in the checkpoint state; `archivedPosition ≥ H.position`; no handover recorded yet (a repeat for
-  the same H is rejected and harmless).
+- **Validation of `COMPLETE_HANDOVER`:** timeline started; no handover recorded yet (a repeat for
+  the same H is rejected and harmless); then either H is the latest confirmed backup of type
+  HANDOVER in the checkpoint state and `archivedPosition ≥ H.position`, or the partition has no
+  confirmed HANDOVER backup at all and its timeline holds its whole history (section 18.4a), in
+  which case the handover is recorded with `handoverPosition = 0`.
 - **Applier of `HANDOVER_COMPLETED`:** records `handoverCheckpointId` and `handoverPosition` in the log
   archive meta and in the checkpoint state, and adds the old-side file write to the outbox.
 - **Old side: `metadata/<partition>/handover/<H>.json`**, a new file next to `metadata.json`:
@@ -720,7 +735,8 @@ the unchanged old restore code on unchanged data.
 `CheckpointStateResponse` (cluster-management-protocol.xml) gets a new group `logArchiveStates`
 with `sinceVersion="3"` (schema version 2 → 3): `partitionId`, `timelineStarted` (uint8),
 `archivedPosition` (int64), `newestArchivedSnapshotProcessedPosition` (int64, -1 if none),
-`handoverCheckpointId` (int64, -1 if none). The partition's `BackupApiRequestHandler` fills it from
+`handoverCheckpointId` (int64, -1 if none), `firstArchivedPosition` (int64, -1 if nothing is
+archived yet; added later in the same schema version, PoC only). The partition's `BackupApiRequestHandler` fills it from
 `DbLogArchiveState`; `BackupRequestHandler` aggregates it like the existing groups.
 
 ### 18.4 Handover decision (H3)
@@ -736,7 +752,8 @@ The checkpoint scheduler, per physical tenant, on its backup tick:
    every partition, or H is already recorded on some partitions: send `COMPLETE_HANDOVER(H)` to every
    partition right away, and repeat it with backoff until it is recorded everywhere (a repeat is
    rejected harmlessly). No backup is taken meanwhile, since a newer confirmed backup would hide H
-   from this check. Partitions that recorded different handovers (not expected without a restore)
+   from this check; except when every partition without H was added after the handover (18.4a),
+   which never waits for H to be its last backup. Partitions that recorded different handovers (not expected without a restore)
    fall through to normal scheduled backups.
 4. Else, if on every partition the timeline is started, `archivedPosition ≥` the last confirmed old
    backup's position, and an archived snapshot exists: take the next backup as type `HANDOVER`
@@ -747,13 +764,76 @@ The checkpoint scheduler, per physical tenant, on its backup tick:
 All decisions are derived from the query, never from scheduler memory, so they survive the
 scheduler moving to another broker.
 
-Partitions added after the handover (scale-up) have no old history: they start archive-only and
-count as handed over in steps 2 and 3. (Not implemented in the PoC yet: such a partition keeps
-steps 2 and 3 from matching.)
+Partitions added after the handover (scale-up) are handled by section 18.4a: while H is recorded on
+the other partitions only, a partition whose archive starts at its first record gets
+`COMPLETE_HANDOVER(H)` and backups go on meanwhile (`HandoverDecision` row 3s).
 
 The decision is `HandoverDecision`, a pure function of the query result; its javadoc has the
 decision table. The `COMPLETE_HANDOVER` of step 3 waits for the first backup tick after H is
 confirmed and archived, so it lags H by up to one backup interval.
+
+### 18.4a Partitions added after the handover (scale-up)
+
+A partition added by a scale-up after the handover has no history before H, so it should be
+archive-only from birth.
+
+**How a new partition starts.** Dynamic scaling bootstraps the partition from a *bootstrap snapshot*
+of partition 1 (`SnapshotInitializationUtil`, `SnapshotApiHandlerTransitionStep`): a copy of partition
+1's newest snapshot holding only the `GLOBAL` column families (deployments and other global state),
+with id `1-1-0-0` (index 1, term 1, processed position 0). Every partition-local column family starts
+empty, including `CHECKPOINTS` and all `LOG_ARCHIVE_*` ones, so the new partition has no checkpoint
+state, no backups and no timeline. Its journal and its record positions start at 1. Its first
+records are the scaling commands, then the checkpoints the scheduler keeps broadcasting (taken while
+scaling is in progress they are marked failed on the old side, as before), with old-style backups
+of the later ones until a handover is recorded on it.
+
+**Activation.** The activation loop notices the new partition in the topology (18.1). Nothing has
+compacted the journal before (the compaction cap holds at F = -1 until the first archived entry), so
+`START_TIMELINE` starts the configured timeline at index 1: the timeline holds the partition's whole
+log. The snapshot uploader archives the newest local snapshot shortly after (the bootstrap snapshot
+or a later one).
+
+**Rule.** `COMPLETE_HANDOVER(H)` is also accepted by a partition that has no confirmed HANDOVER backup
+at all (it took no part in the handover) if its timeline holds its whole history:
+
+- `firstArchivedPosition == 1`: every record of the partition is in this timeline, contiguous from
+  its start;
+- at least one archived snapshot: the partition did not start from an empty state but from the
+  copied global state, which is not in its log; the archived snapshot is the only way to bring it
+  back. It plays the role of the snapshot precondition of step 4.
+
+The event records H's id with `handoverPosition = 0` ("from the start": the position before the
+partition's first record). It is the same `HANDOVER_COMPLETED` event, with a commit entry, a root and
+the old-side `handover/<H>.json` (position 0) as usual. Sound because the partition never needs an
+old backup: every restore point after its handover lies after the archived snapshot and inside the
+archived log, and old backups it took before (at most a short window, see below) stay valid old
+restore points that the restore prefers where they exist. A partition that holds a HANDOVER backup
+keeps the original rule only (H must be that backup), so the two rules never compete; a partition
+whose archive starts after its first record and that misses H keeps being rejected (today's
+behaviour for a genuine partial failure). The position check uses replicated state only, so leader
+and followers decide alike.
+
+**Scheduler** (`HandoverDecision`): with H recorded on some partitions, if every partition without a
+handover has `firstArchivedPosition == 1` (row 3s), the scheduler sends `COMPLETE_HANDOVER(H)` and
+keeps taking scheduled backups on schedule; the tick repeats with backoff until H is recorded
+everywhere. Otherwise row 3a holds as before: COMPLETE_HANDOVER and no backups. A partition of the
+handover that was activated before anything was compacted also has `firstArchivedPosition == 1`;
+it still records H by its HANDOVER backup, and the backups taken meanwhile do not hide H from it,
+since the processor checks the latest HANDOVER backup, not the latest backup. Before the new
+partition is activated, row 1 holds and backups are taken as scheduled; the new partition uploads
+old-style backups for them (the handed-over partitions skip theirs). Until its handover is recorded
+the new partition keeps uploading old-style backups; after that, the skip of 18.6 applies.
+
+**Restore.** A target after the scale-up exists on the new partition either as an old backup (taken
+before its handover was recorded; old path) or in its archive (archive path), as on any partition.
+The planner needs no change: the timeline starts at index 1 and the archived snapshot is selected as
+usual. A target before the scale-up does not exist on the new partition. The old restore takes the
+partition count from the backup and leaves the newer partitions out; the handover restore does the
+same: a partition that cannot restore the target is left out if one of its timelines starts at
+position 1 and every checkpoint it knows, on both sides, is newer than the target (checkpoint ids only
+grow on a partition, and a partition that existed at the target holds it in its log). Only the
+highest partitions can be left out; a missing partition below one that holds the target fails the
+restore. The restored topology then holds the restored partitions only, as for old backups.
 
 ### 18.5 Restore across the handover (H5)
 
@@ -824,7 +904,9 @@ point and tell me when it is safe" in tests and locally.
   observe activation, H, `HANDOVER_COMPLETED`, old backups stop, pin released); gate stays closed
   with one broker advertising an older version; restore before, at and after H; restore before H
   followed by a second handover; missing old-side file; `COMPLETE_HANDOVER` reaching only some
-  partitions; manual backup after handover reports `COMPLETED` once archived.
+  partitions; manual backup after handover reports `COMPLETED` once archived; a scale-up after the
+  handover (`LogArchiveScaleUpIT`: the new partition is activated and records H from its start,
+  scheduled backups go on without old-style uploads, restores after and before the scale-up).
 - Manual test scenario G (brownfield upgrade) in `log-archive-manual-test.md` and its scripts.
 
 ### 18.8 Workstreams
