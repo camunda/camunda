@@ -84,7 +84,8 @@ public class CheckpointStateResponse implements BufferReader, BufferWriter {
           .archivedPosition(partitionState.archivedPosition)
           .newestArchivedSnapshotProcessedPosition(
               partitionState.newestArchivedSnapshotProcessedPosition)
-          .handoverCheckpointId(partitionState.handoverCheckpointId);
+          .handoverCheckpointId(partitionState.handoverCheckpointId)
+          .firstArchivedPosition(partitionState.firstArchivedPosition);
     }
     return headerEncoder.encodedLength() + bodyEncoder.encodedLength();
   }
@@ -129,7 +130,8 @@ public class CheckpointStateResponse implements BufferReader, BufferWriter {
                         state.timelineStarted() != 0,
                         state.archivedPosition(),
                         state.newestArchivedSnapshotProcessedPosition(),
-                        state.handoverCheckpointId())));
+                        state.handoverCheckpointId(),
+                        state.firstArchivedPosition())));
   }
 
   public Set<PartitionCheckpointState> getCheckpointStates() {
@@ -161,13 +163,33 @@ public class CheckpointStateResponse implements BufferReader, BufferWriter {
    *
    * @param newestArchivedSnapshotProcessedPosition -1 if no snapshot is archived
    * @param handoverCheckpointId -1 if no handover is recorded
+   * @param firstArchivedPosition the position of the first archived application entry of the
+   *     timeline, -1 if none is archived yet; 1 means the timeline holds the partition's whole log
    */
   public record PartitionLogArchiveState(
       int partitionId,
       boolean timelineStarted,
       long archivedPosition,
       long newestArchivedSnapshotProcessedPosition,
-      long handoverCheckpointId) {}
+      long handoverCheckpointId,
+      long firstArchivedPosition) {
+
+    /** Constructor without the first archived position, which is then unknown (-1). */
+    public PartitionLogArchiveState(
+        final int partitionId,
+        final boolean timelineStarted,
+        final long archivedPosition,
+        final long newestArchivedSnapshotProcessedPosition,
+        final long handoverCheckpointId) {
+      this(
+          partitionId,
+          timelineStarted,
+          archivedPosition,
+          newestArchivedSnapshotProcessedPosition,
+          handoverCheckpointId,
+          -1L);
+    }
+  }
 
   public record PartitionCheckpointState(
       int partitionId,

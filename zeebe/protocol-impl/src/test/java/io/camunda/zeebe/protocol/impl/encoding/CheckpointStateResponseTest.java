@@ -31,7 +31,7 @@ class CheckpointStateResponseTest {
         Set.of(new PartitionCheckpointState(1, 9, CheckpointType.HANDOVER, 90, 900, 5)));
     response.setLogArchiveStates(
         Set.of(
-            new PartitionLogArchiveState(1, true, 1234, 800, 9),
+            new PartitionLogArchiveState(1, true, 1234, 800, 9, 1),
             new PartitionLogArchiveState(2, false, -1, -1, -1)));
 
     // when

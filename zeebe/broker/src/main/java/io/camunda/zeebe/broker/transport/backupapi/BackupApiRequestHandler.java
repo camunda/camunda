@@ -391,7 +391,8 @@ public final class BackupApiRequestHandler extends ReadOnlyBackupApiRequestHandl
         !meta.getTimelineId().isEmpty(),
         meta.getArchivedPosition(),
         newestSnapshotPosition,
-        meta.getHandoverCheckpointId());
+        meta.getHandoverCheckpointId(),
+        meta.getFirstArchivedPosition());
   }
 
   /**
