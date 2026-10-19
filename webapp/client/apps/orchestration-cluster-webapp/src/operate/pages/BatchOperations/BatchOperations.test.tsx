@@ -180,14 +180,13 @@ describe('<BatchOperations />', () => {
 		await expect.element(screen.getByRole('button', {name: 'Nächste Seite'})).toBeVisible();
 	});
 
-	it('should show loading before a successful empty response', async ({worker}) => {
-		worker.use(mockQueryBatchOperationsEndpoint({successResponse: EMPTY_RESPONSE}));
+	it('should show loading rather than the empty message while the first response is pending', async ({worker}) => {
+		worker.use(mockQueryBatchOperationsEndpoint({successResponse: EMPTY_RESPONSE, delay: 'infinite'}));
 
 		const screen = await renderRoute();
 
+		await expect.element(screen.getByRole('table')).toBeVisible();
 		await expect.element(screen.getByText('No batch operations found')).not.toBeInTheDocument();
-		await expect.element(screen.getByText('No batch operations found')).toBeVisible();
-		await expect.element(screen.getByRole('columnheader')).not.toBeInTheDocument();
 	});
 
 	it('should update the document title when the language changes', async ({worker}) => {

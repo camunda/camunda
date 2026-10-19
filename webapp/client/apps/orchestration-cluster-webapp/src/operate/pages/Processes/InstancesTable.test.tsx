@@ -697,7 +697,12 @@ describe('<InstancesTable />', () => {
 							page: {totalItems: pageSize + 1, endCursor: 'next-page'},
 						}),
 					),
-					failureResponse: HttpResponse.json(
+					failureResponse: HttpResponse.json({}, {status: 500}),
+					once: true,
+				}),
+				mockQueryBatchOperationItemsEndpoint({
+					schema: z.object({page: z.object({after: z.literal('next-page'), limit: z.literal(10_000)})}),
+					successResponse: HttpResponse.json(
 						createQueryBatchOperationItemsResponse({
 							items: [
 								createBatchOperationItem({
@@ -710,6 +715,7 @@ describe('<InstancesTable />', () => {
 							page: {totalItems: pageSize + 1},
 						}),
 					),
+					failureResponse: HttpResponse.json({}, {status: 500}),
 				}),
 			);
 			const screen = await renderInstancesTable({...BASE_SEARCH, batchOperationKey: 'batch-op-1'});
