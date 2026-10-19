@@ -997,6 +997,25 @@ Once a handover is recorded on a partition:
 This keeps `POST /actuator/backups` + `GET /actuator/backups/{id}` usable as "give me a restore
 point and tell me when it is safe" in tests and locally.
 
+### 18.6a What operators notice: fresher restore points, same rules
+
+The restore rules do not change: restore points are checkpoints (markers and backups),
+`--backupId`/`--from`/`--to` and the RDBMS rules select them as with continuous backup, and a
+checkpoint both approaches can restore gives the same result. What changes is where the restorable
+range ends:
+
+| | Continuous backup | Log archive |
+|---|---|---|
+| A marker becomes restorable | when the next backup completes (its segments contain the marker) | when the archive has covered it, seconds later |
+| Newest restore point | last completed backup | newest archived checkpoint |
+| RPO bounded by | backup interval + backup duration | marker interval + archive lag (cut interval, upload, commit) |
+
+Visible effects: "latest" and a `--to` close to now can give a newer checkpoint than before; a
+manual backup reports `COMPLETED` once archived instead of after an upload. Markers become the
+fine-grained restore points, so with the log archive `checkpointInterval` should always be set (no
+default; 5–15 s is cheap: one record per partition, no upload). Without it, only backups are
+restore points and the RPO stays at the backup interval.
+
 ### 18.7 Tests and local runbook (H7, H8)
 
 - Integration tests: upgrade simulation (start with continuous backup only, enable the log archive,
