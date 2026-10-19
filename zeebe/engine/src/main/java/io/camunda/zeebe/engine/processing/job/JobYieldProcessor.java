@@ -44,7 +44,8 @@ public final class JobYieldProcessor implements TypedRecordProcessor<JobRecord> 
     this.authorizationCheckBehavior = authorizationCheckBehavior;
     preconditionChecker =
         new JobCommandPreconditionValidator(
-            jobState, "yield", List.of(State.ACTIVATED), authorizationCheckBehavior);
+                jobState, "yield", List.of(State.ACTIVATED), authorizationCheckBehavior)
+            .skipTenantFilterForInternalCommands();
   }
 
   @Override

@@ -29,6 +29,7 @@ public class JobCommandPreconditionValidator {
   private final String intent;
   private final List<JobCommandCheck> customChecks;
   private final AuthorizationCheckBehavior authorizationCheckBehavior;
+  private boolean skipTenantFilterForInternalCommands;
 
   public JobCommandPreconditionValidator(
       final JobState jobState,
@@ -51,11 +52,23 @@ public class JobCommandPreconditionValidator {
     this.authorizationCheckBehavior = authorizationCheckBehavior;
   }
 
+  /**
+   * Looks the job up without a tenant filter when the command is internal. The broker writes such
+   * commands (e.g. YIELD after a failed job push) without authorization claims, which resolve to no
+   * tenant at all when multi-tenancy checks are enabled.
+   */
+  JobCommandPreconditionValidator skipTenantFilterForInternalCommands() {
+    skipTenantFilterForInternalCommands = true;
+    return this;
+  }
+
   protected Either<Rejection, JobRecord> check(
       final State state, final TypedRecord<JobRecord> command) {
     final long jobKey = command.getKey();
-    final var authorizedTenantIds = authorizationCheckBehavior.getAuthorizedTenantIds(command);
-    final var storedJob = jobState.getJob(jobKey, authorizedTenantIds);
+    final var storedJob =
+        skipTenantFilterForInternalCommands && command.isInternalCommand()
+            ? jobState.getJob(jobKey)
+            : jobState.getJob(jobKey, authorizationCheckBehavior.getAuthorizedTenantIds(command));
 
     if (state == State.NOT_FOUND || storedJob == null) {
       return Either.left(
