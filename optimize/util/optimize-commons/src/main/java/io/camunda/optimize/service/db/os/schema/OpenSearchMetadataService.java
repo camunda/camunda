@@ -18,6 +18,7 @@ import io.camunda.optimize.service.db.os.client.dsl.QueryDSL;
 import io.camunda.optimize.service.db.schema.DatabaseMetadataService;
 import io.camunda.optimize.service.db.schema.ScriptData;
 import io.camunda.optimize.service.db.schema.index.MetadataIndex;
+import io.camunda.optimize.service.exceptions.OptimizeMetadataReadException;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import io.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;
 import java.io.IOException;
@@ -46,13 +47,13 @@ public class OpenSearchMetadataService extends DatabaseMetadataService<OptimizeO
 
   @Override
   public Optional<MetadataDto> readMetadata(final OptimizeOpenSearchClient osClient) {
-    final boolean metaDataIndexExists =
-        osClient.getRichOpenSearchClient().index().indexExists(METADATA_INDEX_NAME);
-    if (!metaDataIndexExists) {
-      LOG.info("Optimize Metadata index wasn't found, thus no metadata available.");
-      return Optional.empty();
-    }
     try {
+      final boolean metaDataIndexExists =
+          osClient.getRichOpenSearchClient().index().indexExists(METADATA_INDEX_NAME);
+      if (!metaDataIndexExists) {
+        LOG.info("Optimize Metadata index wasn't found, thus no metadata available.");
+        return Optional.empty();
+      }
       final Optional<MetadataDto> metadata =
           osClient
               .getRichOpenSearchClient()
@@ -66,8 +67,7 @@ public class OpenSearchMetadataService extends DatabaseMetadataService<OptimizeO
       }
       return metadata;
     } catch (final OptimizeRuntimeException e) {
-      LOG.error(ERROR_MESSAGE_READING_METADATA_DOC, e);
-      throw new OptimizeRuntimeException(ERROR_MESSAGE_READING_METADATA_DOC, e);
+      throw new OptimizeMetadataReadException(ERROR_MESSAGE_READING_METADATA_DOC, e);
     }
   }
 

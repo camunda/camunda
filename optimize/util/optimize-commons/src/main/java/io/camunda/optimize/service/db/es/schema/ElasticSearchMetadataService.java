@@ -26,6 +26,7 @@ import io.camunda.optimize.service.db.es.builders.OptimizeUpdateRequestBuilderES
 import io.camunda.optimize.service.db.schema.DatabaseMetadataService;
 import io.camunda.optimize.service.db.schema.ScriptData;
 import io.camunda.optimize.service.db.schema.index.MetadataIndex;
+import io.camunda.optimize.service.exceptions.OptimizeMetadataReadException;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import io.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
 import java.io.IOException;
@@ -69,8 +70,7 @@ public class ElasticSearchMetadataService
       }
       return Optional.of(getMetadataResponse.source());
     } catch (final IOException | ElasticsearchException e) {
-      LOG.error(ERROR_MESSAGE_READING_METADATA_DOC, e);
-      throw new OptimizeRuntimeException(ERROR_MESSAGE_READING_METADATA_DOC, e);
+      throw new OptimizeMetadataReadException(ERROR_MESSAGE_READING_METADATA_DOC, e);
     }
   }
 
