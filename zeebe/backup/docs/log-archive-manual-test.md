@@ -197,7 +197,7 @@ cd zeebe/backup/docs/log-archive-manual && source ./env.sh
    ./cluster.sh wipe
    rm -rf "$WORK/store/g-run-<x>"; cp -R "$WORK/store/g-brownfield-frozen" "$WORK/store/g-run-<x>"
    export STORE_OVERRIDE="$WORK/store/g-run-<x>"
-   ./restore.sh g-brownfield --backupId=<id>          # (a) O, (b) H, (c) C
+   LOG_ARCHIVE=on ./restore.sh g-brownfield --backupId=<id>   # (a) O, (b) H, (c) C
    LOG_ARCHIVE=on ./cluster.sh start g-brownfield && ./api.sh jobs
    ```
    Keep the logs of each run (`mkdir -p "$WORK/runs/<x>" && cp "$WORK"/*-*.log "$WORK/runs/<x>/"`
@@ -222,23 +222,18 @@ cd zeebe/backup/docs/log-archive-manual && source ./env.sh
      timeline (`logArchiveTimeline` other than `tl-0`); the checksums of `<H>.json` are unchanged.
      Old files are never modified, only added next to.
 
-**TODO (verify on the first run, the scripts assume these):**
-- The `formatVersion` value in the handover files (expected `1`, same as `LogArchiveJson.FORMAT_VERSION`).
-- The exact restore log lines for the old and the archive path; the greps above match
-  `Restored partition` from `HandoverClusterRestore`.
-- The name of the timeline the archive restore creates for C (`tl-0.r<C>` in scenario C; here
-  `tl-0.b<C>` or similar is possible). The g-extra check needs the new branch's handover to have a
-  checkpoint id above H (assumed because ids come from the clock; verify).
-- Whether H is always taken after p3 is created. The handover waits for an archived snapshot, so
-  H should be at least about a minute after the upgrade; if the (b) count is 120, not 90, check
-  the H timing first.
-- Whether the restore needs `LOG_ARCHIVE=on`. It is passed for all runs to match the upgraded
-  cluster; the old path should not care.
-- `api.sh backup` returns `backupId` (per `TakeBackupRuntimeResponse` in
-  `dist/src/main/resources/api/backup-management-api.yaml`); if the field name differs, fix the `jq` in
-  steps 1 and 3.
-- `cluster.sh upgrade` restarts all brokers at once, not rolling. A rolling upgrade is a
-  separate scenario (the gate is the same).
+**Confirmed on the first run (2026-10-19):**
+- The restore needs `LOG_ARCHIVE=on`, like the upgraded brokers. Without it the restore app only
+  knows old backups: (c) fails with "No completed backup found", and (a)/(b) write no timeline
+  file, so the started cluster forks `tl-0.f<n>` instead of `tl-0.b<id>` (safe, but not the
+  intended name). `restore.sh` unsets `LOG_ARCHIVE` for the restore app itself, because Spring
+  would bind it to the app's `--logArchive.*` arguments.
+- Handover files have `formatVersion` 1. The scheduler took H about 40 s after the upgrade, after
+  p3. Timeline files after restore: `tl-0.b<H>` (b), `tl-0.r<C>` (c), `tl-0.b<O>` (a).
+- Results: (a) 60 jobs (p1, p2), (b) 90 (p1–p3), (c) 120 (p1–p4), p5 never.
+- Known gap: archive checkpoints in a sealed index chunk drop out of `/actuator/backups` (and
+  their status becomes DOES_NOT_EXIST). In the run, C and the scheduled backup after H were gone
+  from the listing about two minutes after H.
 
 ## 4. What we record
 

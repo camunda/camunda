@@ -4,6 +4,9 @@
 source "$(dirname "$0")/env.sh"
 S=$1; shift
 for i in $(seq 0 $((BROKERS - 1))); do
+  # LOG_ARCHIVE only selects the broker config above; the restore app would bind it to its own
+  # --logArchive.* arguments (Spring relaxed binding) and fail
   ( while IFS= read -r kv; do export "$kv"; done < <(broker_env "$i" "$S")
+    unset LOG_ARCHIVE
     "$DIST/bin/restore" "$@" > "$WORK/restore-$i.log" 2>&1 ) && echo "broker $i restored" || { echo "broker $i restore FAILED, see $WORK/restore-$i.log"; tail -5 "$WORK/restore-$i.log"; }
 done
