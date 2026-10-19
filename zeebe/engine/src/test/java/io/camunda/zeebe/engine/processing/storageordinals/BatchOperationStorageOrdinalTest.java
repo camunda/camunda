@@ -29,7 +29,9 @@ import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BatchOperationChunkRecordValue.BatchOperationItemValue;
 import io.camunda.zeebe.protocol.record.value.BatchOperationCreationRecordValue;
+import io.camunda.zeebe.protocol.record.value.BatchOperationRelated;
 import io.camunda.zeebe.protocol.record.value.BatchOperationType;
+import io.camunda.zeebe.protocol.record.value.StorageOrdinalRelated;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
@@ -53,6 +55,9 @@ public final class BatchOperationStorageOrdinalTest {
 
   private static final int PARTITION_COUNT = 2;
   private static final int FIXED_ORDINAL = 1234;
+  // the follower partition runs under its own ordinal, so a follower that stamped from its own
+  // provider instead of the lead's batch operation would show up in every assertion below
+  private static final int FOLLOWER_PARTITION_ORDINAL = 4321;
 
   private static final ConfiguredUser DEFAULT_USER =
       new ConfiguredUser(
@@ -67,8 +72,11 @@ public final class BatchOperationStorageOrdinalTest {
           UUID.randomUUID().toString(),
           UUID.randomUUID().toString());
 
-  private final SearchClientsProxy searchClientsProxy = Mockito.mock(SearchClientsProxy.class);
-  private final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter =
+  // static so they can sit above the public rules that reference them, checkstyle wants instance
+  // fields ordered by visibility and a rule initializer cannot reference a field declared below
+  private static final SearchClientsProxy SEARCH_CLIENTS_PROXY =
+      Mockito.mock(SearchClientsProxy.class);
+  private static final BrokerRequestAuthorizationConverter BROKER_REQUEST_AUTHORIZATION_CONVERTER =
       Mockito.mock(BrokerRequestAuthorizationConverter.class);
 
   @Rule
@@ -97,12 +105,19 @@ public final class BatchOperationStorageOrdinalTest {
                       .setBatchOperationQueryRetryMax(10)
                       .setBatchOperationQueryRetryInitialDelay(Duration.ofMinutes(5))
                       .setBatchOperationQueryRetryMaxDelay(Duration.ofMinutes(5)))
-          .withSearchClientsProxy(searchClientsProxy)
-          .withBrokerRequestAuthorizationConverter(brokerRequestAuthorizationConverter);
+          .withPartitionEngineConfig(
+              (partitionId, config) -> {
+                if (partitionId != 1) {
+                  config.setFixedStorageOrdinal(FOLLOWER_PARTITION_ORDINAL);
+                }
+              })
+          .withSearchClientsProxy(SEARCH_CLIENTS_PROXY)
+          .withBrokerRequestAuthorizationConverter(BROKER_REQUEST_AUTHORIZATION_CONVERTER);
 
   @Before
   public void setUp() {
-    when(searchClientsProxy.withSecurityContext(any())).thenReturn(searchClientsProxy);
+    Mockito.reset(SEARCH_CLIENTS_PROXY);
+    when(SEARCH_CLIENTS_PROXY.withSecurityContext(any())).thenReturn(SEARCH_CLIENTS_PROXY);
   }
 
   @Test
@@ -173,7 +188,7 @@ public final class BatchOperationStorageOrdinalTest {
   @Test
   public void shouldCarryOrdinalToInitializingRecord() {
     // given
-    when(searchClientsProxy.searchProcessInstances(any(ProcessInstanceQuery.class)))
+    when(SEARCH_CLIENTS_PROXY.searchProcessInstances(any(ProcessInstanceQuery.class)))
         .thenReturn(processInstancePage(Set.of(1L, 2L, 3L), 10000))
         .thenThrow(new RuntimeException("search unavailable"));
 
@@ -582,6 +597,35 @@ public final class BatchOperationStorageOrdinalTest {
         .containsExactlyInAnyOrder(tuple(1L, 5), tuple(2L, 5), tuple(3L, 9));
   }
 
+  @Test
+  public void shouldNotStampFollowerRecordsWithFollowerPartitionOrdinal() {
+    // given
+    stubProcessInstanceSearch(Set.of(1L, 2L, 3L));
+    final long batchOperationKey = createBatchOperation();
+
+    // then every batch operation record on the follower carries the lead's ordinal
+    final var followerRecords =
+        RecordingExporter.records()
+            .withPartitionId(2)
+            .limit(
+                record ->
+                    record.getIntent() == BatchOperationIntent.PARTITION_COMPLETED
+                        && belongsTo(record, batchOperationKey))
+            .filter(record -> belongsTo(record, batchOperationKey))
+            .collect(Collectors.toList());
+
+    assertThat(followerRecords).isNotEmpty();
+    assertThat(followerRecords)
+        .extracting(record -> ((StorageOrdinalRelated) record.getValue()).getStorageOrdinal())
+        .containsOnly(FIXED_ORDINAL)
+        .doesNotContain(FOLLOWER_PARTITION_ORDINAL);
+  }
+
+  private static boolean belongsTo(final Record<?> record, final long batchOperationKey) {
+    return record.getValue() instanceof BatchOperationRelated related
+        && related.getBatchOperationKey() == batchOperationKey;
+  }
+
   private long createBatchOperation() {
     final long batchOperationKey = createBatchOperationRecord().getValue().getBatchOperationKey();
     for (int partitionId = 1; partitionId <= PARTITION_COUNT; partitionId++) {
@@ -609,7 +653,7 @@ public final class BatchOperationStorageOrdinalTest {
   }
 
   private void stubProcessInstanceSearch(final Set<Long> processInstanceKeys) {
-    when(searchClientsProxy.searchProcessInstances(any(ProcessInstanceQuery.class)))
+    when(SEARCH_CLIENTS_PROXY.searchProcessInstances(any(ProcessInstanceQuery.class)))
         .thenReturn(processInstancePage(processInstanceKeys, processInstanceKeys.size()));
   }
 
@@ -628,7 +672,7 @@ public final class BatchOperationStorageOrdinalTest {
   }
 
   private void stubProcessInstanceSearchFailure() {
-    when(searchClientsProxy.searchProcessInstances(any(ProcessInstanceQuery.class)))
+    when(SEARCH_CLIENTS_PROXY.searchProcessInstances(any(ProcessInstanceQuery.class)))
         .thenThrow(new RuntimeException("search unavailable"));
   }
 

@@ -102,6 +102,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.LongConsumer;
@@ -149,6 +150,8 @@ public final class EngineRule extends ExternalResource {
         cfg.setEnableRpaReexportMigration(false);
         cfg.setEnableProcessDefinitionRestore(false);
       };
+  private BiConsumer<Integer, EngineConfiguration> partitionEngineConfigModifier =
+      (partitionId, cfg) -> {};
   private SearchClientsProxy searchClientsProxy;
   private BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter;
   private Optional<RoutingState> initialRoutingState = Optional.empty();
@@ -297,6 +300,16 @@ public final class EngineRule extends ExternalResource {
     return this;
   }
 
+  /**
+   * Modifies the engine configuration of a single partition, applied after the modifiers given to
+   * {@link #withEngineConfig(Consumer)}. Lets a test give partitions different settings.
+   */
+  public EngineRule withPartitionEngineConfig(
+      final BiConsumer<Integer, EngineConfiguration> modifier) {
+    partitionEngineConfigModifier = partitionEngineConfigModifier.andThen(modifier);
+    return this;
+  }
+
   public EngineRule withSearchClientsProxy(final SearchClientsProxy searchClientsProxy) {
     this.searchClientsProxy = searchClientsProxy;
     return this;
@@ -375,6 +388,8 @@ public final class EngineRule extends ExternalResource {
                 }
 
                 engineConfigModifier.accept(recordProcessorContext.getConfig());
+                partitionEngineConfigModifier.accept(
+                    partitionId, recordProcessorContext.getConfig());
                 return EngineProcessors.createEngineProcessors(
                         recordProcessorContext,
                         partitionCount,
