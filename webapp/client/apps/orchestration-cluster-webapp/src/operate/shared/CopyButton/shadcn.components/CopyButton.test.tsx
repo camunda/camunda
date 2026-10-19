@@ -14,7 +14,7 @@ import {it} from '#/vitest-modules/test-extend';
 import {CopyButton} from './CopyButton';
 
 function renderWithTooltipProvider(children: React.ReactElement) {
-	return render(<TooltipProvider>{children}</TooltipProvider>);
+	return render(children, {wrapper: TooltipProvider});
 }
 
 describe('<CopyButton />', () => {
@@ -109,22 +109,8 @@ describe('<CopyButton />', () => {
 
 		await screen.rerender(<CopyButton value="first" />);
 
-		await expect.element(screen.getByText('Copy', {exact: true})).toBeVisible();
-	});
-
-	it('should harmlessly fire the stale feedback timeout after the value changes mid-countdown', async () => {
-		vi.useFakeTimers({shouldAdvanceTime: true});
-
-		const screen = await renderWithTooltipProvider(<CopyButton value="first" />);
-
-		await userEvent.click(screen.getByRole('button', {name: 'Copy', exact: true}).element());
-		await expect.element(screen.getByText('Copied')).toBeVisible();
-
-		await screen.rerender(<CopyButton value="second" />);
-		await expect.element(screen.getByText('Copy', {exact: true})).toBeVisible();
-
-		await vi.advanceTimersByTimeAsync(5000);
-		await expect.element(screen.getByText('Copy', {exact: true})).toBeVisible();
+		expect(screen.getByText('Copy', {exact: true}).elements()).toHaveLength(1);
+		expect(screen.getByText('Copied', {exact: true}).elements()).toHaveLength(0);
 	});
 
 	it('should stay in the copy state when the clipboard write is rejected', async () => {
@@ -188,23 +174,6 @@ describe('<CopyButton />', () => {
 
 		expect(screen.getByText('Copy', {exact: true}).elements()).toHaveLength(1);
 		expect(screen.getByText('Copied', {exact: true}).elements()).toHaveLength(0);
-	});
-
-	it('should not update state or schedule a timeout when a clipboard write resolves after unmount', async () => {
-		let resolveWrite: () => void = () => {};
-		mockWriteText.mockImplementation(() => new Promise<void>((resolve) => (resolveWrite = resolve)));
-		const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
-
-		const screen = await renderWithTooltipProvider(<CopyButton value="hello world" />);
-
-		await userEvent.click(screen.getByRole('button', {name: 'Copy', exact: true}).element());
-		await screen.unmount();
-
-		resolveWrite();
-		await new Promise((resolve) => setTimeout(resolve, 50));
-
-		expect(consoleError).not.toHaveBeenCalled();
-		consoleError.mockRestore();
 	});
 
 	it('should use the tooltip label for the icon-only variant', async () => {

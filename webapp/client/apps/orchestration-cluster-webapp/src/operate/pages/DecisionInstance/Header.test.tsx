@@ -42,7 +42,10 @@ describe('<Header />', () => {
 	it('should show a loading skeleton', async ({worker}) => {
 		worker.use(
 			mockCurrentUserEndpoint({successResponse: HttpResponse.json(createCurrentUser())}),
-			mockGetDecisionInstanceEndpoint({successResponse: HttpResponse.json(createDecisionInstance()), delay: 500}),
+			mockGetDecisionInstanceEndpoint({
+				successResponse: HttpResponse.json(createDecisionInstance()),
+				delay: 'infinite',
+			}),
 		);
 
 		const screen = await renderHeader();

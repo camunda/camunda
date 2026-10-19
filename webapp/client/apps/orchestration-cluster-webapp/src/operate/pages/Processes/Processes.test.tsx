@@ -121,11 +121,24 @@ describe('<Processes />', () => {
 		await expect.element(screen.getByRole('combobox', {name: 'Version'})).not.toBeDisabled();
 	});
 
+	it('should disable the element combobox while the selected definition XML loads', async ({worker}) => {
+		worker.use(
+			mockQueryProcessInstancesEndpoint({successResponse: EMPTY_PROCESS_INSTANCES}),
+			mockQueryProcessDefinitionsEndpoint({successResponse: PROCESS_DEFINITIONS}),
+			mockGetProcessDefinitionXmlEndpoint({successResponse: HttpResponse.text(BPMN_XML), delay: 'infinite'}),
+		);
+
+		const screen = await renderPage({process: 'order-process', version: 1});
+
+		await expect.element(screen.getByRole('combobox', {name: 'Version'})).toBeEnabled();
+		await expect.element(screen.getByRole('combobox', {name: 'Element'})).toBeDisabled();
+	});
+
 	it('should enable the element combobox after the selected definition XML loads', async ({worker}) => {
 		worker.use(
 			mockQueryProcessInstancesEndpoint({successResponse: EMPTY_PROCESS_INSTANCES}),
 			mockQueryProcessDefinitionsEndpoint({successResponse: PROCESS_DEFINITIONS}),
-			mockGetProcessDefinitionXmlEndpoint({successResponse: HttpResponse.text(BPMN_XML), delay: 1500}),
+			mockGetProcessDefinitionXmlEndpoint({successResponse: HttpResponse.text(BPMN_XML)}),
 			mockGetProcessDefinitionStatisticsEndpoint({
 				successResponse: HttpResponse.json(createGetProcessDefinitionStatisticsResponse([])),
 			}),
@@ -133,7 +146,6 @@ describe('<Processes />', () => {
 
 		const screen = await renderPage({process: 'order-process', version: 1});
 
-		await expect.element(screen.getByRole('combobox', {name: 'Element'})).toBeDisabled();
 		await expect.element(screen.getByRole('combobox', {name: 'Element'})).toBeEnabled();
 	});
 

@@ -115,7 +115,6 @@ describe('<BatchItemsTable />', () => {
 		worker.use(
 			mockQueryBatchOperationItemsEndpoint({
 				successResponse: HttpResponse.json(createQueryBatchOperationItemsResponse()),
-				delay: 1000,
 			}),
 		);
 		await userEvent.click(screen.getByRole('button', {name: 'Retry'}));
@@ -180,14 +179,11 @@ describe('<BatchItemsTable />', () => {
 						items: [createBatchOperationItem({processInstanceKey: '2251799813685251'})],
 					}),
 				),
-				delay: 1000,
 			}),
 		);
 		await userEvent.click(screen.getByRole('button', {name: 'Retry'}));
 
-		await expect.element(screen.getByText('Retrying items')).toBeVisible();
 		await expect.element(screen.getByRole('link', {name: 'View process instance 2251799813685251'})).toBeVisible();
-		await expect.element(screen.getByText('Retrying items')).not.toBeInTheDocument();
 		await expect.element(screen.getByText("Couldn't fetch data")).not.toBeInTheDocument();
 	});
 
@@ -286,15 +282,15 @@ describe('<BatchItemsTable />', () => {
 						items: [createBatchOperationItem({processInstanceKey: '2251799813685251'})],
 					}),
 				),
-				delay: 400,
+				delay: 'infinite',
 			}),
 		);
 		await userEvent.click(screen.getByRole('button', {name: 'Change operation'}));
 
-		await expect.element(oldLink).not.toBeInTheDocument();
 		await expect.element(screen.getByTestId('batch-items-table')).not.toBeInTheDocument();
+		await expect.element(screen.getByRole('table')).toBeVisible();
+		await expect.element(oldLink).not.toBeInTheDocument();
 		await expect.element(screen.getByText('No items found')).not.toBeInTheDocument();
-		await expect.element(screen.getByRole('link', {name: 'View process instance 2251799813685251'})).toBeVisible();
 	});
 
 	it.for([

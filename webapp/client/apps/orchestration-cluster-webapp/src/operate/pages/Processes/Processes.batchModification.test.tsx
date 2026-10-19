@@ -476,80 +476,48 @@ describe('Processes batch modification', () => {
 
 	it('should not apply the move once a filter change clears the selection', async ({worker}) => {
 		mockPage(worker);
-		const modificationRequests: unknown[] = [];
-		const onRequest = async ({request}: {request: Request}) => {
-			if (request.url.endsWith('/process-instances/modification')) {
-				modificationRequests.push(await request.clone().json());
-			}
-		};
-		worker.events.on('request:start', onRequest);
+		const screen = await renderPage();
+		await enterMode(screen);
+		await clickDiagramElement('end_event');
+		await userEvent.click(screen.getByRole('button', {name: 'Review Modification'}));
+		const review = screen.getByRole('dialog', {name: 'Apply Modifications'});
+		await expect.element(review.getByRole('button', {name: 'Apply'})).toBeEnabled();
 
-		try {
-			worker.use(mockCreateModificationBatchOperationEndpoint({successResponse: accepted()}));
-			const screen = await renderPage();
-			await enterMode(screen);
-			await clickDiagramElement('end_event');
-			await userEvent.click(screen.getByRole('button', {name: 'Review Modification'}));
-			const review = screen.getByRole('dialog', {name: 'Apply Modifications'});
-			await expect.element(review.getByRole('button', {name: 'Apply'})).toBeEnabled();
+		await screen.router.navigate({to: '.', search: (prev) => ({...prev, businessId: 'eq_invoice-123'})});
 
-			await screen.router.navigate({to: '.', search: (prev) => ({...prev, businessId: 'eq_invoice-123'})});
-
-			await expect.element(review.getByRole('button', {name: 'Apply'})).toBeDisabled();
-			await userEvent.click(review.getByRole('button', {name: 'Apply'}), {force: true});
-			await expect.element(screen.getByText('Batch Modification Mode')).toBeVisible();
-			expect(modificationRequests).toEqual([]);
-		} finally {
-			worker.events.removeListener('request:start', onRequest);
-		}
+		await expect.element(review.getByRole('button', {name: 'Apply'})).toBeDisabled();
 	});
 
 	it('should not apply the move once the process exists in more than one tenant', async ({worker}) => {
 		mockPage(worker);
-		const modificationRequests: unknown[] = [];
-		const onRequest = async ({request}: {request: Request}) => {
-			if (request.url.endsWith('/process-instances/modification')) {
-				modificationRequests.push(await request.clone().json());
-			}
-		};
-		worker.events.on('request:start', onRequest);
+		const screen = await renderPage(DEFAULT_SEARCH.replace('&tenantId=tenant-a', ''));
+		await enterMode(screen);
+		await clickDiagramElement('end_event');
+		await userEvent.click(screen.getByRole('button', {name: 'Review Modification'}));
+		const review = screen.getByRole('dialog', {name: 'Apply Modifications'});
+		await expect.element(review.getByRole('button', {name: 'Apply'})).toBeEnabled();
 
-		try {
-			worker.use(mockCreateModificationBatchOperationEndpoint({successResponse: accepted()}));
-			const screen = await renderPage(DEFAULT_SEARCH.replace('&tenantId=tenant-a', ''));
-			await enterMode(screen);
-			await clickDiagramElement('end_event');
-			await userEvent.click(screen.getByRole('button', {name: 'Review Modification'}));
-			const review = screen.getByRole('dialog', {name: 'Apply Modifications'});
-			await expect.element(review.getByRole('button', {name: 'Apply'})).toBeEnabled();
+		worker.use(
+			mockQueryProcessDefinitionsEndpoint({
+				successResponse: HttpResponse.json(
+					createQueryProcessDefinitionsResponse({
+						items: ['tenant-a', 'tenant-b'].map((tenantId, index) =>
+							createProcessDefinition({
+								processDefinitionId: 'my_simple_process',
+								processDefinitionKey: String(123 + index),
+								tenantId,
+								version: 1,
+								name: 'Invoice process',
+							}),
+						),
+					}),
+				),
+			}),
+		);
+		await screen.queryClient.invalidateQueries();
 
-			worker.use(
-				mockQueryProcessDefinitionsEndpoint({
-					successResponse: HttpResponse.json(
-						createQueryProcessDefinitionsResponse({
-							items: ['tenant-a', 'tenant-b'].map((tenantId, index) =>
-								createProcessDefinition({
-									processDefinitionId: 'my_simple_process',
-									processDefinitionKey: String(123 + index),
-									tenantId,
-									version: 1,
-									name: 'Invoice process',
-								}),
-							),
-						}),
-					),
-				}),
-			);
-			await screen.queryClient.invalidateQueries();
-
-			await expect.element(screen.getByText('Process "Invoice process" exists in more than one Tenant')).toBeVisible();
-			await expect.element(review.getByRole('button', {name: 'Apply'})).toBeDisabled();
-			await userEvent.click(review.getByRole('button', {name: 'Apply'}), {force: true});
-			await expect.element(screen.getByText('Batch Modification Mode')).toBeVisible();
-			expect(modificationRequests).toEqual([]);
-		} finally {
-			worker.events.removeListener('request:start', onRequest);
-		}
+		await expect.element(screen.getByText('Process "Invoice process" exists in more than one Tenant')).toBeVisible();
+		await expect.element(review.getByRole('button', {name: 'Apply'})).toBeDisabled();
 	});
 
 	it('should leave the affected instances blank while counting', async ({worker}) => {

@@ -703,6 +703,22 @@ describe('<InstanceDiagram />', () => {
 		await expect.poll(() => screen.router.state.location.pathname).toBe('/operate/decisions/decision-1');
 	});
 
+	it('should mark a called process as loading while its drilldown resolves', async ({worker}) => {
+		worker.use(
+			...handlers(),
+			mockQueryElementInstancesEndpoint({
+				successResponse: HttpResponse.json(singleResult({elementInstanceKey: 'element-1'})),
+				delay: 'infinite',
+			}),
+		);
+
+		await renderLoadedPage();
+		const shape = document.querySelector<SVGElement>('[data-element-id="call_1"]');
+		await userEvent.dblClick(shape!);
+
+		await expect.poll(() => shape?.classList.contains('op-drilldown-loading')).toBe(true);
+	});
+
 	it.for([
 		{elementId: 'call_1', message: 'Failed to resolve called instances'},
 		{elementId: 'rule_1', message: 'Failed to resolve called decision instances'},
@@ -711,7 +727,6 @@ describe('<InstanceDiagram />', () => {
 		async ({elementId, message}, {worker}) => {
 			const failure = {
 				successResponse: HttpResponse.json(createProblemDetails({status: 500}), {status: 500}),
-				delay: 200,
 			};
 			worker.use(
 				...handlers(),
@@ -727,7 +742,6 @@ describe('<InstanceDiagram />', () => {
 			const shape = document.querySelector<SVGElement>(`[data-element-id="${elementId}"]`);
 			await userEvent.dblClick(shape!);
 
-			await expect.poll(() => shape?.classList.contains('op-drilldown-loading')).toBe(true);
 			await expect.poll(() => notificationsStore.notifications.map(({title}) => title)).toContain(message);
 			await expect.poll(() => shape?.classList.contains('op-drilldown-loading')).toBe(false);
 			expect(screen.router.state.location.pathname).toBe(`/operate/processes/${INSTANCE_ID}/details`);

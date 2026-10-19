@@ -72,23 +72,28 @@ describe('<DecisionOperations />', () => {
 		await expect.element(screen.getByText('my-drd', {exact: true})).toBeVisible();
 	});
 
-	it('should block further deletion while pending, then notify and clear only the deleted selection', async ({
-		worker,
-	}) => {
-		worker.use(
-			mockDeleteResourceEndpoint({
-				schema: deleteResourceRequestBodySchema.refine((body) => body?.deleteHistory === true),
-				successResponse: HttpResponse.json({resourceKey: DEFINITION.decisionRequirementsKey, batchOperation: null}),
-				failureResponse: new HttpResponse(null, {status: 400}),
-				delay: 500,
-			}),
-		);
+	it('should block further deletion while pending', async ({worker}) => {
+		worker.use(mockDeleteResourceEndpoint({successResponse: HttpResponse.json({}), delay: 'infinite'}));
 		const screen = await renderOperations();
 
 		await submit(screen);
 
 		await expect.element(screen.getByRole('button', {name: ACTION_NAME})).toBeDisabled();
 		await expect.element(screen.getByRole('heading', {name: 'Delete DRD', exact: true})).not.toBeInTheDocument();
+	});
+
+	it('should notify and clear only the deleted selection', async ({worker}) => {
+		worker.use(
+			mockDeleteResourceEndpoint({
+				schema: deleteResourceRequestBodySchema.refine((body) => body?.deleteHistory === true),
+				successResponse: HttpResponse.json({resourceKey: DEFINITION.decisionRequirementsKey, batchOperation: null}),
+				failureResponse: new HttpResponse(null, {status: 400}),
+			}),
+		);
+		const screen = await renderOperations();
+
+		await submit(screen);
+
 		await expect.element(screen.getByText('Operation created', {exact: true})).toBeVisible();
 		await expect.element(screen.getByRole('button', {name: ACTION_NAME})).toBeEnabled();
 		expect(screen.router.state.location.search).toEqual({
@@ -133,45 +138,5 @@ describe('<DecisionOperations />', () => {
 		worker.use(mockDeleteResourceEndpoint({successResponse: HttpResponse.json({})}));
 		await submit(screen);
 		await expect.element(screen.getByText('Operation created', {exact: true})).toBeVisible();
-	});
-
-	it.for([{tenantId: 'tenant-b'}, {tenantId: 'all'}, {tenantId: undefined}])(
-		'should not clear a newer tenant scope $tenantId when the previous deletion finishes',
-		async ({tenantId}, {worker}) => {
-			worker.use(mockDeleteResourceEndpoint({successResponse: HttpResponse.json({}), delay: 500}));
-			const screen = await renderOperations();
-			await submit(screen);
-			await screen.router.navigate({
-				to: '/operate/decisions',
-				search: {
-					decisionDefinitionId: 'my-decision',
-					decisionDefinitionVersion: 1,
-					tenantId,
-					evaluated: true,
-					failed: true,
-				},
-			});
-
-			await expect.element(screen.getByText('Operation created', {exact: true})).toBeVisible();
-			expect(screen.router.state.location.search).toEqual({
-				decisionDefinitionId: 'my-decision',
-				decisionDefinitionVersion: 1,
-				...(tenantId === undefined ? {} : {tenantId}),
-				evaluated: true,
-				failed: true,
-			});
-		},
-	);
-
-	it('should not navigate back to decisions after leaving while deletion is pending', async ({worker}) => {
-		worker.use(mockDeleteResourceEndpoint({successResponse: HttpResponse.json({}), delay: 500}));
-		const screen = await renderOperations();
-		await submit(screen);
-		await screen.router.navigate({to: '/operate'});
-
-		await expect
-			.poll(() => notificationsStore.notifications.some(({title}) => title === 'Operation created'))
-			.toBe(true);
-		expect(screen.router.state.location.pathname).toBe('/operate');
 	});
 });

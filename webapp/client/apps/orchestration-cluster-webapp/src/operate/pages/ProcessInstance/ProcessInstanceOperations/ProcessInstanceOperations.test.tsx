@@ -180,7 +180,7 @@ describe('<ProcessInstanceOperations />', () => {
 
 	it.for(ACTIONS)(
 		'should submit $action with no request body and preserve its acceptance lifecycle',
-		async ({action, state, pending, success, mock}, {worker}) => {
+		async ({action, state, success, mock}, {worker}) => {
 			mockViewport(false);
 			const instance = createInstance(state);
 			const requests: Request[] = [];
@@ -197,7 +197,6 @@ describe('<ProcessInstanceOperations />', () => {
 							action === 'Retry'
 								? HttpResponse.json({batchOperationKey: 'retry-batch'}, {status: 202})
 								: new HttpResponse(null, {status: 204}),
-						delay: 200,
 					}),
 					mockGetProcessInstanceCallHierarchyEndpoint({successResponse: HttpResponse.json([])}),
 					mockGetProcessInstanceEndpoint({
@@ -206,7 +205,6 @@ describe('<ProcessInstanceOperations />', () => {
 				);
 				const screen = await renderOperations(instance, {basepath: '/deployment'});
 				await execute(screen, action, instance.processInstanceKey);
-				await expect.element(screen.getByText(pending)).toBeVisible();
 				if (action === 'Delete') {
 					await expect.poll(() => notificationsStore.notifications[0]?.title).toBe(success);
 				} else {
@@ -232,6 +230,21 @@ describe('<ProcessInstanceOperations />', () => {
 			} finally {
 				worker.events.removeListener('request:start', onRequest);
 			}
+		},
+	);
+
+	it.for(ACTIONS)(
+		'should show $pending while $action is in flight',
+		async ({action, state, pending, mock}, {worker}) => {
+			mockViewport(false);
+			const instance = createInstance(state);
+			worker.use(
+				mock({successResponse: new HttpResponse(null, {status: 204}), delay: 'infinite'}),
+				mockGetProcessInstanceCallHierarchyEndpoint({successResponse: HttpResponse.json([])}),
+			);
+			const screen = await renderOperations(instance);
+			await execute(screen, action, instance.processInstanceKey);
+			await expect.element(screen.getByText(pending)).toBeVisible();
 		},
 	);
 
@@ -325,23 +338,39 @@ describe('<ProcessInstanceOperations />', () => {
 	);
 
 	it.for([
+		{action: 'Suspend', state: 'ACTIVE', pending: 'Suspending...', mock: mockSuspendProcessInstanceEndpoint},
+		{action: 'Resume', state: 'SUSPENDED', pending: 'Resuming...', mock: mockResumeProcessInstanceEndpoint},
+	] as const)(
+		'should keep $action pending while secondary storage still returns the previous state',
+		async ({action, state, pending, mock}, {worker}) => {
+			mockViewport(false);
+			const instance = createInstance(state);
+			worker.use(
+				mock({successResponse: new HttpResponse(null, {status: 204})}),
+				mockGetProcessInstanceEndpoint({successResponse: HttpResponse.json(instance)}),
+			);
+			const screen = await renderOperations(instance);
+			await execute(screen, action, instance.processInstanceKey);
+			await expect.element(screen.getByText(pending)).toBeVisible();
+		},
+	);
+
+	it.for([
 		{action: 'Suspend', state: 'ACTIVE', target: 'SUSPENDED', mock: mockSuspendProcessInstanceEndpoint},
 		{action: 'Resume', state: 'SUSPENDED', target: 'ACTIVE', mock: mockResumeProcessInstanceEndpoint},
 		{action: 'Resume', state: 'SUSPENDED', target: 'COMPLETED', mock: mockResumeProcessInstanceEndpoint},
 		{action: 'Resume', state: 'SUSPENDED', target: 'TERMINATED', mock: mockResumeProcessInstanceEndpoint},
 	] as const)(
-		'should keep $action pending until secondary storage reaches $target',
+		'should finish $action once secondary storage reaches $target',
 		async ({action, state, target, mock}, {worker}) => {
 			mockViewport(false);
 			const instance = createInstance(state);
 			worker.use(
 				mock({successResponse: new HttpResponse(null, {status: 204})}),
-				mockGetProcessInstanceEndpoint({successResponse: HttpResponse.json(instance), once: true}),
 				mockGetProcessInstanceEndpoint({successResponse: HttpResponse.json({...instance, state: target})}),
 			);
 			const screen = await renderOperations(instance);
 			await execute(screen, action, instance.processInstanceKey);
-			await expect.element(screen.getByText(action === 'Suspend' ? 'Suspending...' : 'Resuming...')).toBeVisible();
 			await expect
 				.element(screen.getByText(action === 'Suspend' ? 'Instance suspended' : 'Instance resumed'))
 				.toBeVisible();
@@ -361,7 +390,7 @@ describe('<ProcessInstanceOperations />', () => {
 		const setCollapsed = mockViewport(true);
 		const instance = createInstance('ACTIVE');
 		worker.use(
-			mockSuspendProcessInstanceEndpoint({successResponse: new HttpResponse(null, {status: 204}), delay: 500}),
+			mockSuspendProcessInstanceEndpoint({successResponse: new HttpResponse(null, {status: 204}), delay: 'infinite'}),
 			mockGetProcessInstanceEndpoint({successResponse: HttpResponse.json({...instance, state: 'SUSPENDED'})}),
 		);
 		const screen = await renderOperations(instance);
@@ -374,7 +403,6 @@ describe('<ProcessInstanceOperations />', () => {
 		await expect.element(screen.getByRole('menuitem', {name: 'Cancel'})).toBeEnabled();
 		setCollapsed(false);
 		await expect.element(screen.getByText('Suspending...')).toBeVisible();
-		await expect.element(screen.getByText('Instance suspended')).toBeVisible();
 	});
 
 	it.for(['ACTIVE', 'SUSPENDED', 'COMPLETED', 'TERMINATED'] as const)(

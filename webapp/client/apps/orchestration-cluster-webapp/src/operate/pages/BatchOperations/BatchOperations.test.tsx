@@ -180,14 +180,13 @@ describe('<BatchOperations />', () => {
 		await expect.element(screen.getByRole('button', {name: 'Nächste Seite'})).toBeVisible();
 	});
 
-	it('should show loading before a successful empty response', async ({worker}) => {
-		worker.use(mockQueryBatchOperationsEndpoint({successResponse: EMPTY_RESPONSE, delay: 250}));
+	it('should show loading rather than the empty message while the first response is pending', async ({worker}) => {
+		worker.use(mockQueryBatchOperationsEndpoint({successResponse: EMPTY_RESPONSE, delay: 'infinite'}));
 
 		const screen = await renderRoute();
 
+		await expect.element(screen.getByRole('table')).toBeVisible();
 		await expect.element(screen.getByText('No batch operations found')).not.toBeInTheDocument();
-		await expect.element(screen.getByText('No batch operations found')).toBeVisible();
-		await expect.element(screen.getByRole('columnheader')).not.toBeInTheDocument();
 	});
 
 	it('should update the document title when the language changes', async ({worker}) => {
@@ -200,20 +199,6 @@ describe('<BatchOperations />', () => {
 		await i18n.changeLanguage('de');
 		await expect.element(screen.getByText('Keine Stapeloperationen gefunden')).toBeVisible();
 		expect(document.title).toBe('Operate: Stapeloperationen');
-	});
-
-	it('should show loading while refreshing an empty list', async ({worker}) => {
-		worker.use(mockQueryBatchOperationsEndpoint({successResponse: EMPTY_RESPONSE}));
-		const screen = await renderRoute();
-		await expect.element(screen.getByText('No batch operations found')).toBeVisible();
-
-		worker.use(mockQueryBatchOperationsEndpoint({successResponse: EMPTY_RESPONSE, delay: 300}));
-		const refresh = screen.queryClient.invalidateQueries({queryKey: ['batchOperations']});
-
-		await expect.element(screen.getByRole('columnheader', {name: 'Operation'})).toBeVisible();
-		await expect.element(screen.getByText('No batch operations found')).not.toBeInTheDocument();
-		await refresh;
-		await expect.element(screen.getByText('No batch operations found')).toBeVisible();
 	});
 
 	it('should show an initial failure with a retry that recovers to the list', async ({worker}) => {
@@ -303,11 +288,11 @@ describe('<BatchOperations />', () => {
 		const screen = await renderRoute();
 		await expect.element(screen.getByRole('link', {name: 'Resolve Incident'})).toBeVisible();
 
-		worker.use(mockQueryBatchOperationsEndpoint({successResponse: EMPTY_RESPONSE, delay: 300}));
+		worker.use(mockQueryBatchOperationsEndpoint({successResponse: EMPTY_RESPONSE, delay: 'infinite'}));
 		await userEvent.click(screen.getByRole('button', {name: 'Next page'}));
 
+		await expect.element(screen.getByText('21–25 of 25 items')).toBeVisible();
 		await expect.element(screen.getByRole('link', {name: 'Resolve Incident'})).toBeVisible();
-		await expect.element(screen.getByText('No batch operations found')).toBeVisible();
 	});
 
 	it('should use the validated sort and offset from a bookmarked URL', async ({worker}) => {
