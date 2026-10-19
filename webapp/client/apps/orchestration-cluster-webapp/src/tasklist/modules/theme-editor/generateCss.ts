@@ -57,9 +57,12 @@ function toCustomCss({light, dark}: ThemeTokens, config: ThemeConfig) {
  * over the unscoped design system rules with the same specificity, because of scope proximity.
  */
 function toPreviewCss({light, dark}: ThemeTokens) {
-	const rules = [toRule('.c4-ui', light, '  '), toRule('.c4-ui.dark,\n  .dark .c4-ui', dark, '  ')].filter(
-		(rule) => rule !== '',
-	);
+	// The doubled class raises specificity above an applied theme (`html .c4-ui`), so the preview
+	// always shows the draft. That also means the tokens must be complete, not a diff from the defaults.
+	const rules = [
+		toRule('.c4-ui.c4-ui', light, '  '),
+		toRule('.c4-ui.c4-ui.dark,\n  .dark .c4-ui.c4-ui', dark, '  '),
+	].filter((rule) => rule !== '');
 
 	if (rules.length === 0) {
 		return '';

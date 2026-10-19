@@ -24,43 +24,32 @@ import {
 	CardTitle,
 	Separator,
 } from '@camunda/design-system';
-import {ArrowLeft, Moon, RotateCcw, Shuffle, Sun} from '@camunda/design-system/icons';
+import {ArrowLeft} from '@camunda/design-system/icons';
 import {Link} from '@tanstack/react-router';
 import {observer} from 'mobx-react-lite';
 import {useTranslation} from 'react-i18next';
-import {
-	ACCENT_COLOR_OPTIONS,
-	BASE_COLOR_OPTIONS,
-	PRIMARY_COLOR_OPTIONS,
-	RADIUS_OPTIONS,
-} from '#/tasklist/modules/theme-editor/presets';
+import {ACCENT_COLOR_OPTIONS, BASE_COLOR_OPTIONS, PRIMARY_COLOR_OPTIONS} from '#/tasklist/modules/theme-editor/presets';
 import {themeEditorStore} from '#/tasklist/modules/theme-editor/themeEditorStore';
+import {ColorField} from './ColorField';
 import {ExportDialog} from './ExportDialog';
-import {ThemePicker} from './ThemePicker';
+import {LogoField} from './LogoField';
+import {RadiusSlider} from './RadiusSlider';
+import {Section} from './Section';
 
 type Props = {
-	mode: 'light' | 'dark';
 	isResetDialogOpen: boolean;
-	onToggleMode: () => void;
 	onResetDialogOpenChange: (open: boolean) => void;
 };
 
-function renderShortcut(keys: string) {
-	return (
-		<kbd className="ml-auto rounded border border-border px-1 font-mono text-xs text-neutral-foreground-subtle">
-			{keys}
-		</kbd>
-	);
-}
-
-const Customizer: React.FC<Props> = observer(({mode, isResetDialogOpen, onToggleMode, onResetDialogOpenChange}) => {
+const Customizer: React.FC<Props> = observer(({isResetDialogOpen, onResetDialogOpenChange}) => {
 	const {t} = useTranslation();
-	const {config, isDefault, setConfig, setOverride, clearOverride, shuffle, reset} = themeEditorStore;
+	const {config, isDefault, hasUnappliedChanges, setConfig, setOverride, clearOverride, applyTheme, reset} =
+		themeEditorStore;
 
 	return (
 		<Card size="sm" className="flex max-h-full min-h-0 flex-col self-start">
 			<CardHeader>
-				<Button asChild variant="ghost" size="sm" className="-ml-2 w-fit">
+				<Button asChild variant="ghost" size="sm" className="-ml-2 mb-2 w-fit">
 					<Link to="/tasklist">
 						<ArrowLeft aria-hidden />
 						{t('tasklist.themeEditorBack')}
@@ -69,53 +58,52 @@ const Customizer: React.FC<Props> = observer(({mode, isResetDialogOpen, onToggle
 				<CardTitle>{t('tasklist.themeEditorTitle')}</CardTitle>
 				<CardDescription>{t('tasklist.themeEditorDescription')}</CardDescription>
 			</CardHeader>
-			<CardContent className="flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto">
-				<ThemePicker
-					label={t('tasklist.themeEditorBase')}
-					value={config.base}
-					options={BASE_COLOR_OPTIONS}
-					onSelect={(base) => setConfig({base})}
-					onPreview={(base) => setOverride({base})}
-					onPreviewEnd={clearOverride}
-				/>
-				<ThemePicker
-					label={t('tasklist.themeEditorPrimary')}
-					value={config.primary}
-					options={PRIMARY_COLOR_OPTIONS}
-					onSelect={(primary) => setConfig({primary})}
-					onPreview={(primary) => setOverride({primary})}
-					onPreviewEnd={clearOverride}
-				/>
-				<ThemePicker
-					label={t('tasklist.themeEditorAccent')}
-					value={config.accent}
-					options={ACCENT_COLOR_OPTIONS}
-					onSelect={(accent) => setConfig({accent})}
-					onPreview={(accent) => setOverride({accent})}
-					onPreviewEnd={clearOverride}
-				/>
+			{/* The vertical padding leaves room for the focus ring, which the scroll area would clip. */}
+			<CardContent className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto py-1">
+				<LogoField onChange={(logo) => setConfig({logo})} />
 				<Separator className="my-1" />
-				<ThemePicker
-					label={t('tasklist.themeEditorRadius')}
-					value={config.radius}
-					options={RADIUS_OPTIONS}
-					variant="radius"
-					onSelect={(radius) => setConfig({radius})}
-					onPreview={(radius) => setOverride({radius})}
-					onPreviewEnd={clearOverride}
-				/>
+				<div className="flex flex-col gap-2">
+					<ColorField
+						label={t('tasklist.themeEditorBase')}
+						hexLabel={t('tasklist.themeEditorHexLabel', {color: t('tasklist.themeEditorBase')})}
+						customLabel={t('tasklist.themeEditorCustom')}
+						value={config.base}
+						options={BASE_COLOR_OPTIONS}
+						onSelect={(base) => setConfig({base})}
+						onPreview={(base) => setOverride({base})}
+						onPreviewEnd={clearOverride}
+					/>
+					<ColorField
+						label={t('tasklist.themeEditorPrimary')}
+						hexLabel={t('tasklist.themeEditorHexLabel', {color: t('tasklist.themeEditorPrimary')})}
+						customLabel={t('tasklist.themeEditorCustom')}
+						value={config.primary}
+						options={PRIMARY_COLOR_OPTIONS}
+						onSelect={(primary) => setConfig({primary})}
+						onPreview={(primary) => setOverride({primary})}
+						onPreviewEnd={clearOverride}
+					/>
+					<ColorField
+						label={t('tasklist.themeEditorAccent')}
+						hexLabel={t('tasklist.themeEditorHexLabel', {color: t('tasklist.themeEditorAccent')})}
+						customLabel={t('tasklist.themeEditorCustom')}
+						value={config.accent}
+						options={ACCENT_COLOR_OPTIONS}
+						onSelect={(accent) => setConfig({accent})}
+						onPreview={(accent) => setOverride({accent})}
+						onPreviewEnd={clearOverride}
+					/>
+				</div>
+				<Separator className="my-1" />
+				<Section title={t('tasklist.themeEditorRadius')}>
+					<RadiusSlider
+						label={t('tasklist.themeEditorRadius')}
+						value={config.radius}
+						onChange={(radius) => setConfig({radius})}
+					/>
+				</Section>
 			</CardContent>
-			<CardFooter className="flex flex-col gap-2">
-				<Button type="button" variant="secondary" className="w-full" onClick={onToggleMode}>
-					{mode === 'dark' ? <Sun aria-hidden /> : <Moon aria-hidden />}
-					{mode === 'dark' ? t('tasklist.themeEditorLightMode') : t('tasklist.themeEditorDarkMode')}
-					{renderShortcut('D')}
-				</Button>
-				<Button type="button" variant="secondary" className="w-full" onClick={shuffle}>
-					<Shuffle aria-hidden />
-					{t('tasklist.themeEditorShuffle')}
-					{renderShortcut('R')}
-				</Button>
+			<CardFooter className="flex flex-col gap-2 pb-3!">
 				<Button
 					type="button"
 					variant="secondary"
@@ -123,11 +111,12 @@ const Customizer: React.FC<Props> = observer(({mode, isResetDialogOpen, onToggle
 					disabled={isDefault}
 					onClick={() => onResetDialogOpenChange(true)}
 				>
-					<RotateCcw aria-hidden />
-					{t('tasklist.themeEditorReset')}
-					{renderShortcut('⇧R')}
+					{t('tasklist.themeEditorResetTheme')}
 				</Button>
 				<ExportDialog />
+				<Button type="button" className="w-full" disabled={!hasUnappliedChanges} onClick={applyTheme}>
+					{t('tasklist.themeEditorApply')}
+				</Button>
 			</CardFooter>
 			<AlertDialog open={isResetDialogOpen} onOpenChange={onResetDialogOpenChange}>
 				<AlertDialogContent>

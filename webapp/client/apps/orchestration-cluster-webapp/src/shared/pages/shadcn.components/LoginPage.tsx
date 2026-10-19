@@ -10,7 +10,8 @@ import {useRouter} from '@tanstack/react-router';
 import {Form, Field} from 'react-final-form';
 import {FORM_ERROR} from 'final-form';
 import {useTranslation} from 'react-i18next';
-import {Alert, Button, CamundaLogo, Card, CardContent, Heading, Input, Label, Text} from '@camunda/design-system';
+import {Alert, Button, Card, CardContent, Heading, Input, Label, Text} from '@camunda/design-system';
+import {AppLogo} from '#/tasklist/modules/theme-editor/components/AppLogo';
 import {getCurrentCopyrightNoticeText} from '#/shared/login/getCurrentCopyrightNoticeText';
 import {Disclaimer} from '#/shared/login/shadcn.components/Disclaimer';
 import {authenticationStore} from '#/shared/auth/authentication.store';
@@ -76,7 +77,7 @@ const LoginPage: React.FC<Props> = ({title}) => {
 							<Card>
 								<CardContent className="flex flex-col gap-4">
 									<div className="flex justify-center pt-2">
-										<CamundaLogo className="size-12" />
+										<AppLogo className="size-12" />
 									</div>
 									<Heading as="h1" variant="heading-lg" className="mb-2 pb-2 text-center">
 										{title}

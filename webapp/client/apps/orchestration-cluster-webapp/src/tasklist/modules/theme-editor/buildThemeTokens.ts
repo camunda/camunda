@@ -6,7 +6,8 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {DEFAULT_THEME_CONFIG, getPalette, type Palette, type ThemeConfig} from './presets';
+import {getReadableForeground, type Palette} from './colorRamp';
+import {DEFAULT_THEME_CONFIG, getPalette, type ThemeConfig} from './presets';
 
 type TokenMap = Record<string, string>;
 
@@ -17,6 +18,15 @@ type ThemeTokens = {
 };
 
 const WHITE = '#ffffff';
+
+/*
+ * The design system sizes its larger corners, such as cards, as `calc(var(--radius) + 4px)`, so a
+ * radius of 0 would still round them by 4px. A radius of -4px cancels that offset. Negative corner
+ * radii resolve to 0, so the smaller corners, `calc(var(--radius) - 2px)`, stay square.
+ */
+function toEffectiveRadius(radius: string) {
+	return parseFloat(radius) === 0 ? '-4px' : radius;
+}
 
 function mix(color: string, percentage: number, other = 'transparent') {
 	return `color-mix(in srgb, ${color} ${percentage}%, ${other})`;
@@ -50,7 +60,7 @@ function buildLightTokens(neutral: Palette, primary: Palette | null, accent: Pal
 					'--primary-action-hover': primary['800'],
 					'--primary-action-active': primary['900'],
 					'--primary-action-disabled': mix(primary['700'], 38),
-					'--primary-action-foreground': WHITE,
+					'--primary-action-foreground': getReadableForeground(primary['700']),
 					'--primary-background-subtle': primary['50'],
 					'--primary-background-strong': primary['100'],
 					'--primary-foreground-subtle': primary['700'],
@@ -63,7 +73,7 @@ function buildLightTokens(neutral: Palette, primary: Palette | null, accent: Pal
 		'--background': neutral['50'],
 		'--foreground': neutral['900'],
 		'--border': mix(neutral['400'], 20),
-		'--radius': radius,
+		'--radius': toEffectiveRadius(radius),
 		'--popover': WHITE,
 		'--popover-foreground': neutral['900'],
 		'--input': neutral['300'],
@@ -89,7 +99,7 @@ function buildLightTokens(neutral: Palette, primary: Palette | null, accent: Pal
 		'--accent-action-hover': accent['800'],
 		'--accent-action-active': accent['900'],
 		'--accent-action-disabled': mix(accent['700'], 38),
-		'--accent-action-foreground': WHITE,
+		'--accent-action-foreground': getReadableForeground(accent['700']),
 		'--accent-background-subtle': accent['50'],
 		'--accent-background-strong': accent['100'],
 		'--accent-foreground-subtle': accent['700'],
@@ -158,7 +168,7 @@ function buildDarkTokens(neutral: Palette, primary: Palette | null, accent: Pale
 		'--accent-action-hover': accent['800'],
 		'--accent-action-active': accent['900'],
 		'--accent-action-disabled': mix(accent['700'], 38),
-		'--accent-action-foreground': WHITE,
+		'--accent-action-foreground': getReadableForeground(accent['700']),
 		'--accent-background-subtle': mix(accent['500'], 14, neutral['900']),
 		'--accent-background-strong': mix(accent['500'], 22, neutral['800']),
 		'--accent-foreground-subtle': accent['400'],
@@ -169,17 +179,12 @@ function buildDarkTokens(neutral: Palette, primary: Palette | null, accent: Pale
 }
 
 function buildAllTokens({base, primary, accent, radius}: ThemeConfig): ThemeTokens {
-	const neutralPalette = getPalette(base);
+	const neutralPalette = getPalette(base, 'neutral');
 	const primaryPalette = primary === 'default' ? null : getPalette(primary);
-	// The brand's action color is brand-600, one step lighter than the hue presets use.
-	const lightPrimaryPalette =
-		primary === 'camunda' && primaryPalette !== null
-			? {...primaryPalette, '700': primaryPalette['600'], '800': primaryPalette['700'], '900': primaryPalette['800']}
-			: primaryPalette;
 	const accentPalette = getPalette(accent);
 
 	return {
-		light: buildLightTokens(neutralPalette, lightPrimaryPalette, accentPalette, radius),
+		light: buildLightTokens(neutralPalette, primaryPalette, accentPalette, radius),
 		dark: buildDarkTokens(neutralPalette, primaryPalette, accentPalette),
 	};
 }
@@ -200,5 +205,5 @@ function buildThemeTokens(config: ThemeConfig): ThemeTokens {
 	};
 }
 
-export {buildThemeTokens};
+export {buildAllTokens, buildThemeTokens};
 export type {ThemeTokens, TokenMap};

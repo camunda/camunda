@@ -9,6 +9,7 @@
 import {z} from 'zod';
 import {createBrowserStorage} from './createBrowserStorage';
 import {namedCustomFiltersSchema} from '#/tasklist/modules/available-tasks/customFiltersSchema';
+import {themeConfigSchema} from '#/tasklist/modules/theme-editor/presets';
 
 const {
 	store: storeStateLocally,
@@ -21,6 +22,7 @@ const {
 	'tasklist.autoSelectNextTask': z.boolean(),
 	'tasklist.hasCompletedTask': z.boolean(),
 	'tasklist.hasConsentedToStartProcess': z.boolean(),
+	'tasklist.appliedTheme': themeConfigSchema,
 	'tasklist.customFilters': z.record(z.string(), namedCustomFiltersSchema),
 	'operate.panelStates': z.record(z.string(), z.union([z.boolean(), z.array(z.number())])),
 });

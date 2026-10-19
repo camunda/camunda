@@ -7,38 +7,40 @@
  */
 
 import {action, computed, makeObservable, observable} from 'mobx';
-import {buildThemeTokens} from './buildThemeTokens';
+import {getAppliedTheme, saveAppliedTheme} from './appliedTheme';
+import {buildAllTokens, buildThemeTokens} from './buildThemeTokens';
 import {toCustomCss, toPreviewCss} from './generateCss';
-import {BASE_COLORS, DEFAULT_THEME_CONFIG, HUES, RADII, type ThemeConfig} from './presets';
+import {DEFAULT_THEME_CONFIG, type ThemeConfig} from './presets';
 
 type PreviewDataset = 'sample' | 'empty';
 
-function pickRandom<T>(values: readonly T[], current: T): T {
-	const candidates = values.filter((value) => value !== current);
-
-	return candidates[Math.floor(Math.random() * candidates.length)] ?? current;
+function isSameConfig(first: ThemeConfig, second: ThemeConfig) {
+	return (Object.keys(DEFAULT_THEME_CONFIG) as (keyof ThemeConfig)[]).every((key) => first[key] === second[key]);
 }
 
 class ThemeEditorStore {
-	config: ThemeConfig = {...DEFAULT_THEME_CONFIG};
+	/** The theme applied to the app in this browser, or `null` for the default theme. */
+	applied: ThemeConfig | null = getAppliedTheme();
+	config: ThemeConfig = {...(this.applied ?? DEFAULT_THEME_CONFIG)};
 	/** Temporary selection while hovering over a picker option. Never exported. */
 	override: Partial<ThemeConfig> | null = null;
 	dataset: PreviewDataset = 'sample';
 
 	constructor() {
 		makeObservable(this, {
+			applied: observable,
 			config: observable,
 			override: observable,
 			dataset: observable,
 			previewConfig: computed,
 			isDefault: computed,
+			hasUnappliedChanges: computed,
 			previewCss: computed,
 			customCss: computed,
 			setConfig: action,
 			setOverride: action,
 			clearOverride: action,
-			setDataset: action,
-			shuffle: action,
+			applyTheme: action,
 			reset: action,
 		});
 	}
@@ -48,13 +50,15 @@ class ThemeEditorStore {
 	}
 
 	get isDefault() {
-		return (Object.keys(DEFAULT_THEME_CONFIG) as (keyof ThemeConfig)[]).every(
-			(key) => this.config[key] === DEFAULT_THEME_CONFIG[key],
-		);
+		return isSameConfig(this.config, DEFAULT_THEME_CONFIG);
+	}
+
+	get hasUnappliedChanges() {
+		return !isSameConfig(this.config, this.applied ?? DEFAULT_THEME_CONFIG);
 	}
 
 	get previewCss() {
-		return toPreviewCss(buildThemeTokens(this.previewConfig));
+		return toPreviewCss(buildAllTokens(this.previewConfig));
 	}
 
 	get customCss() {
@@ -74,27 +78,19 @@ class ThemeEditorStore {
 		this.override = null;
 	};
 
-	setDataset = (dataset: PreviewDataset) => {
-		this.dataset = dataset;
+	applyTheme = () => {
+		this.applied = this.isDefault ? null : {...this.config};
+		saveAppliedTheme(this.applied);
 	};
 
-	shuffle = () => {
-		const primary = Math.random() < 0.2 ? 'default' : pickRandom(['camunda', ...HUES] as const, this.config.primary);
-
-		this.setConfig({
-			base: pickRandom(BASE_COLORS, this.config.base),
-			primary,
-			accent: pickRandom(HUES, this.config.accent),
-			radius: pickRandom(RADII, this.config.radius),
-		});
-	};
-
+	/** Returns the editor to the default theme and removes an applied theme. */
 	reset = () => {
 		this.setConfig({...DEFAULT_THEME_CONFIG});
+		this.applied = null;
+		saveAppliedTheme(null);
 	};
 }
 
 const themeEditorStore = new ThemeEditorStore();
 
 export {themeEditorStore};
-export type {PreviewDataset};

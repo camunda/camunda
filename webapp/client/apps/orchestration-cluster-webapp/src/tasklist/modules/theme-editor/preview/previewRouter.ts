@@ -133,5 +133,5 @@ function createPreviewQueryClient() {
 
 type PreviewRouter = ReturnType<typeof createPreviewRouter>;
 
-export {PREVIEW_PATHS, createPreviewQueryClient, createPreviewRouter};
+export {createPreviewQueryClient, createPreviewRouter};
 export type {PreviewRouter};

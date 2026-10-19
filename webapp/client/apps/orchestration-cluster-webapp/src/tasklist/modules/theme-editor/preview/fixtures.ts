@@ -173,10 +173,6 @@ function getPreviewVariables(task: UserTask): Variable[] {
 				{id: 2, name: 'John Smith', date: '2026-09-14'},
 				{id: 3, name: 'Ada Lovelace', date: '2026-09-27'},
 			]),
-			createVariable(task, 'user', [
-				{name: 'Jane', last_name: 'Doe', age: 34},
-				{name: 'John', last_name: 'Smith', age: 41},
-			]),
 		];
 	}
 

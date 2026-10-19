@@ -10,7 +10,6 @@ import {
 	AppHeader,
 	AppSidebar,
 	Avatar,
-	CamundaLogo,
 	NavBreadcrumbSwitcher,
 	SidebarProvider,
 	camundaAppIcons,
@@ -20,6 +19,7 @@ import {Link, Outlet, useParams, useSearch} from '@tanstack/react-router';
 import {useMemo} from 'react';
 import {useTranslation} from 'react-i18next';
 import {useSidebarNavigation} from '#/shared/header/useSidebarNavigation.shadcn';
+import {PreviewLogo} from '#/tasklist/modules/theme-editor/components/PreviewLogo';
 import {AsyncActionButton} from '#/tasklist/modules/task-details/components/AsyncActionButton';
 import {TaskDetailsForm} from '#/tasklist/modules/task-details-form/components/TaskDetailsForm';
 import {TaskDetailsVariables} from '#/tasklist/modules/task-details-variables/components/TaskDetailsVariables';
@@ -73,7 +73,7 @@ const PreviewShell: React.FC = () => {
 					showSidebarTrigger={false}
 					logo={
 						<Link aria-label={t('loginLogoLabel')} className="flex items-center" to="/tasklist">
-							<CamundaLogo />
+							<PreviewLogo />
 						</Link>
 					}
 					breadcrumb={

@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {AppHeader, AppSidebar, CamundaLogo, SidebarProvider, toast, useMediaQuery} from '@camunda/design-system';
+import {AppHeader, AppSidebar, SidebarProvider, toast, useMediaQuery} from '@camunda/design-system';
 import {SaasNotifications} from '@camunda/oc-saas-notifications';
 import {useC3Profile} from '@camunda/camunda-composite-components';
 import {useSuspenseQuery} from '@tanstack/react-query';
@@ -18,6 +18,7 @@ import {getBootConfig} from '#/shared/config/getBootConfig';
 import {getClientConfig} from '#/shared/config/getClientConfig';
 import {queries} from '#/shared/http/queries';
 import {useSidebarNavigation} from '#/shared/header/useSidebarNavigation.shadcn';
+import {AppLogo} from '#/tasklist/modules/theme-editor/components/AppLogo';
 import {AccountMenu} from './AccountMenu';
 import {Breadcrumbs} from './Breadcrumbs';
 import {HelpMenu} from './HelpMenu';
@@ -101,7 +102,7 @@ const Header: React.FC<Props> = ({children, currentApp, initialSaasToken}) => {
 						skipToContentTargetId="main-content"
 						logo={
 							<Link aria-label={t('loginLogoLabel')} className="flex items-center" to={homeRoute}>
-								<CamundaLogo />
+								<AppLogo />
 							</Link>
 						}
 						breadcrumb={breadcrumb}

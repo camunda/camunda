@@ -28,7 +28,7 @@ import {themeEditorStore} from '#/tasklist/modules/theme-editor/themeEditorStore
 
 const ExportDialog: React.FC = observer(() => {
 	const {t} = useTranslation();
-	const {customCss} = themeEditorStore;
+	const {config, customCss} = themeEditorStore;
 
 	const handleDownload = useCallback(() => {
 		const url = URL.createObjectURL(new Blob([customCss], {type: 'text/css'}));
@@ -43,7 +43,7 @@ const ExportDialog: React.FC = observer(() => {
 	return (
 		<Dialog>
 			<DialogTrigger asChild>
-				<Button type="button" className="w-full">
+				<Button type="button" variant="secondary" className="w-full">
 					{t('tasklist.themeEditorGetCss')}
 				</Button>
 			</DialogTrigger>
@@ -73,6 +73,11 @@ const ExportDialog: React.FC = observer(() => {
 						<Text variant="body-sm" className="text-neutral-foreground-subtle">
 							{t('tasklist.themeEditorExportRestart')}
 						</Text>
+						{config.logo === null ? null : (
+							<Text variant="body-sm" className="text-neutral-foreground-subtle">
+								{t('tasklist.themeEditorExportLogoNote')}
+							</Text>
+						)}
 					</div>
 				</DialogBody>
 				<DialogFooter showCloseButton closeButtonLabel={t('tasklist.themeEditorClose')}>

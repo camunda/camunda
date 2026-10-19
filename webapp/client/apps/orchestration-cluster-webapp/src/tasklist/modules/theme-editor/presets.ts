@@ -7,33 +7,14 @@
  */
 
 import colors from 'tailwindcss/colors';
-
-type Shade = '50' | '100' | '200' | '300' | '400' | '500' | '600' | '700' | '800' | '900' | '950';
-type Palette = Record<Shade, string>;
+import {z} from 'zod';
+import {buildColorRamp, buildNeutralRamp, isHexColor, type HexColor, type Palette} from './colorRamp';
 
 type PresetOption<Value extends string> = {
 	value: Value;
 	label: string;
 	/** Color shown next to the option in the picker. */
 	swatch: string;
-};
-
-/**
- * Camunda brand ramp, copied from the design system (`--color-brand-*`). Used for
- * the "Camunda orange" primary so the preset matches the brand exactly.
- */
-const CAMUNDA_BRAND: Palette = {
-	'50': '#fef3ee',
-	'100': '#ffece3',
-	'200': '#ffd7c3',
-	'300': '#ffbba6',
-	'400': '#ffa088',
-	'500': '#fc5d0d',
-	'600': '#c44500',
-	'700': '#9c3700',
-	'800': '#742900',
-	'900': '#4c1b00',
-	'950': '#240e00',
 };
 
 const BASE_COLORS = ['zinc', 'slate', 'gray', 'neutral', 'stone', 'mauve', 'olive', 'mist', 'taupe'] as const;
@@ -57,17 +38,28 @@ const HUES = [
 ] as const;
 type Hue = (typeof HUES)[number];
 
-type PrimaryColor = 'default' | 'camunda' | Hue;
+type PrimaryColor = 'default' | Hue;
 type AccentColor = Hue;
 
-const RADII = ['0', '0.25rem', '0.5rem', '0.75rem', '1rem'] as const;
-type Radius = (typeof RADII)[number];
+/** The radius, in rem, that the editor's 100% stands for. */
+const MAX_RADIUS_REM = 1.5;
 
+function radiusToPercent(radius: string) {
+	return Math.min(100, Math.round((parseFloat(radius) / MAX_RADIUS_REM) * 100));
+}
+
+function percentToRadius(percent: number) {
+	return `${Number(((percent / 100) * MAX_RADIUS_REM).toFixed(3))}rem`;
+}
+
+/** Each color is either a preset or a custom `#rrggbb` value. */
 type ThemeConfig = {
-	base: BaseColor;
-	primary: PrimaryColor;
-	accent: AccentColor;
-	radius: Radius;
+	base: BaseColor | HexColor;
+	primary: PrimaryColor | HexColor;
+	accent: AccentColor | HexColor;
+	radius: string;
+	/** An uploaded logo as a `data:` URL, or `null` for the Camunda logo. */
+	logo: string | null;
 };
 
 /** Matches the design system's shipped values. */
@@ -76,14 +68,33 @@ const DEFAULT_THEME_CONFIG: ThemeConfig = {
 	primary: 'default',
 	accent: 'indigo',
 	radius: '0.5rem',
+	logo: null,
 };
+
+/** Validates a stored config, so a stale or edited value can never reach the token builder. */
+const themeConfigSchema = z.object({
+	base: z.union([z.enum(BASE_COLORS), z.custom<HexColor>((value) => typeof value === 'string' && isHexColor(value))]),
+	primary: z.union([
+		z.literal('default'),
+		z.enum(HUES),
+		z.custom<HexColor>((value) => typeof value === 'string' && isHexColor(value)),
+	]),
+	accent: z.union([z.enum(HUES), z.custom<HexColor>((value) => typeof value === 'string' && isHexColor(value))]),
+	radius: z.string().regex(/^\d*\.?\d+(rem)?$/),
+	logo: z.string().startsWith('data:image/').nullable().default(null),
+});
 
 function capitalize(value: string) {
 	return value.charAt(0).toUpperCase() + value.slice(1);
 }
 
-function getPalette(color: BaseColor | Hue | 'camunda'): Palette {
-	return color === 'camunda' ? CAMUNDA_BRAND : colors[color];
+/** `neutral` ramps are for surfaces and text. Custom colors only tint them. */
+function getPalette(color: BaseColor | Hue | HexColor, role: 'neutral' | 'color' = 'color'): Palette {
+	if (isHexColor(color)) {
+		return role === 'neutral' ? buildNeutralRamp(color) : buildColorRamp(color);
+	}
+
+	return colors[color];
 }
 
 const BASE_COLOR_OPTIONS: PresetOption<BaseColor>[] = BASE_COLORS.map((value) => ({
@@ -94,7 +105,6 @@ const BASE_COLOR_OPTIONS: PresetOption<BaseColor>[] = BASE_COLORS.map((value) =>
 
 const PRIMARY_COLOR_OPTIONS: PresetOption<PrimaryColor>[] = [
 	{value: 'default', label: 'Default', swatch: colors.zinc['950']},
-	{value: 'camunda', label: 'Camunda orange', swatch: CAMUNDA_BRAND['600']},
 	...HUES.map((value) => ({value, label: capitalize(value), swatch: getPalette(value)['700']})),
 ];
 
@@ -104,23 +114,14 @@ const ACCENT_COLOR_OPTIONS: PresetOption<AccentColor>[] = HUES.map((value) => ({
 	swatch: getPalette(value)['700'],
 }));
 
-const RADIUS_OPTIONS: PresetOption<Radius>[] = [
-	{value: '0', label: 'None', swatch: '0'},
-	{value: '0.25rem', label: 'Small', swatch: '0.25rem'},
-	{value: '0.5rem', label: 'Default', swatch: '0.5rem'},
-	{value: '0.75rem', label: 'Medium', swatch: '0.75rem'},
-	{value: '1rem', label: 'Large', swatch: '1rem'},
-];
-
 export {
 	ACCENT_COLOR_OPTIONS,
 	BASE_COLOR_OPTIONS,
-	BASE_COLORS,
 	DEFAULT_THEME_CONFIG,
-	HUES,
 	PRIMARY_COLOR_OPTIONS,
-	RADII,
-	RADIUS_OPTIONS,
 	getPalette,
+	percentToRadius,
+	radiusToPercent,
+	themeConfigSchema,
 };
-export type {Palette, PresetOption, ThemeConfig};
+export type {PresetOption, ThemeConfig};

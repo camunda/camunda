@@ -14,37 +14,43 @@ import type {PresetOption} from '#/tasklist/modules/theme-editor/presets';
 
 type Props<Value extends string> = {
 	label: string;
-	value: Value;
+	/** A value that is not one of the options counts as custom, for example a hex color. */
+	value: string;
 	options: PresetOption<Value>[];
-	variant?: 'color' | 'radius';
+	customLabel: string;
 	onSelect: (value: Value) => void;
+	onSelectCustom: () => void;
 	/** Called while an option is hovered or focused, to preview it without committing. */
 	onPreview: (value: Value) => void;
 	onPreviewEnd: () => void;
 };
 
-const Swatch: React.FC<{swatch: string; variant: 'color' | 'radius'}> = ({swatch, variant}) =>
-	variant === 'color' ? (
-		<span aria-hidden className="size-4 shrink-0 rounded-full ring-1 ring-border" style={{backgroundColor: swatch}} />
-	) : (
-		<span
-			aria-hidden
-			className="size-4 shrink-0 border-t-2 border-l-2 border-foreground"
-			style={{borderTopLeftRadius: swatch === '0' ? 0 : `calc(${swatch} * 1.5)`}}
-		/>
-	);
+const CUSTOM_SWATCH = 'conic-gradient(red, yellow, lime, aqua, blue, magenta, red)';
+
+const Swatch: React.FC<{swatch: string}> = ({swatch}) => (
+	<span aria-hidden className="size-4 shrink-0 rounded-full ring-1 ring-border" style={{background: swatch}} />
+);
+
+const OPTION_CLASS_NAME = cn(
+	'flex items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm outline-none',
+	'hover:bg-neutral-background-medium focus-visible:bg-neutral-background-medium',
+	'focus-visible:ring-2 focus-visible:ring-ring',
+);
 
 function ThemePicker<Value extends string>({
 	label,
 	value,
 	options,
-	variant = 'color',
+	customLabel,
 	onSelect,
+	onSelectCustom,
 	onPreview,
 	onPreviewEnd,
 }: Props<Value>) {
 	const [isOpen, setIsOpen] = useState(false);
-	const selected = options.find((option) => option.value === value) ?? options[0]!;
+	const preset = options.find((option) => option.value === value);
+	const isCustom = preset === undefined;
+	const selected = preset ?? {value, label: customLabel, swatch: value};
 
 	return (
 		<Popover
@@ -58,7 +64,7 @@ function ThemePicker<Value extends string>({
 			}}
 		>
 			<PopoverTrigger asChild>
-				<Button type="button" variant="ghost" className="h-auto w-full justify-between gap-3 px-3 py-2 text-left">
+				<Button type="button" variant="secondary" className="h-auto w-full justify-between gap-3 px-3 py-2 text-left">
 					<span className="flex min-w-0 flex-col">
 						<Text as="span" variant="helper" className="text-neutral-foreground-subtle">
 							{label}
@@ -67,7 +73,7 @@ function ThemePicker<Value extends string>({
 							{selected.label}
 						</Text>
 					</span>
-					<Swatch swatch={selected.swatch} variant={variant} />
+					<Swatch swatch={selected.swatch} />
 				</Button>
 			</PopoverTrigger>
 			<PopoverContent
@@ -77,6 +83,23 @@ function ThemePicker<Value extends string>({
 				onMouseLeave={onPreviewEnd}
 			>
 				<div role="radiogroup" aria-label={label} className="flex flex-col">
+					<button
+						type="button"
+						role="radio"
+						aria-checked={isCustom}
+						className={OPTION_CLASS_NAME}
+						onMouseEnter={onPreviewEnd}
+						onFocus={onPreviewEnd}
+						onClick={() => {
+							onSelectCustom();
+							setIsOpen(false);
+						}}
+					>
+						<Swatch swatch={isCustom ? selected.swatch : CUSTOM_SWATCH} />
+						<span className="flex-1 truncate">{customLabel}</span>
+						{isCustom ? <Check aria-hidden className="size-4" /> : null}
+					</button>
+					<div role="separator" className="my-1 h-px bg-border" />
 					{options.map((option) => {
 						const isSelected = option.value === value;
 
@@ -86,11 +109,7 @@ function ThemePicker<Value extends string>({
 								type="button"
 								role="radio"
 								aria-checked={isSelected}
-								className={cn(
-									'flex items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm outline-none',
-									'hover:bg-neutral-background-medium focus-visible:bg-neutral-background-medium',
-									'focus-visible:ring-2 focus-visible:ring-ring',
-								)}
+								className={OPTION_CLASS_NAME}
 								onMouseEnter={() => onPreview(option.value)}
 								onFocus={() => onPreview(option.value)}
 								onClick={() => {
@@ -98,7 +117,7 @@ function ThemePicker<Value extends string>({
 									setIsOpen(false);
 								}}
 							>
-								<Swatch swatch={option.swatch} variant={variant} />
+								<Swatch swatch={option.swatch} />
 								<span className="flex-1 truncate">{option.label}</span>
 								{isSelected ? <Check aria-hidden className="size-4" /> : null}
 							</button>
