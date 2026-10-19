@@ -49,6 +49,20 @@ test.describe('Suspend & Resume Batch Operation Tests', () => {
         );
       });
 
+    await test.step('Wait until batch operation is active', async () => {
+      // Suspend only once the batch has finished initializing (query state
+      // ACTIVE means the engine already applied its INITIALIZED transition). A
+      // suspend issued while the batch is still initializing is accepted (204)
+      // and briefly exported as SUSPENDED — so the poll below would pass — but
+      // the end-of-initialization transition overwrites the status back to
+      // INITIALIZED, the batch keeps running to completion, and the later
+      // resume then races into INVALID_STATE 'INITIALIZED' and finally a
+      // permanent NOT_FOUND. Oracle's slower initialization widens that window.
+      // Gating on ACTIVE closes the race and matches this test's "suspend
+      // active batch operation" intent.
+      await expectBatchState(request, key, 'ACTIVE');
+    });
+
     await test.step('Send suspend request', async () => {
       const res = await suspendBatchOperation(request, key);
       await assertStatusCode(res, 204);
