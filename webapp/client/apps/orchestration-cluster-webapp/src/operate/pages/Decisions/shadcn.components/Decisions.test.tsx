@@ -10,7 +10,11 @@ import {describe, expect} from 'vitest';
 import {userEvent} from 'vitest/browser';
 import {it} from '#/vitest-modules/test-extend';
 import {renderWithRouter} from '#/vitest-modules/render-with-router';
-import {Decisions} from './Decisions';
+import {useSearch} from '@tanstack/react-router';
+import {validateDecisionsSearch} from '../decisionsSearch';
+import {Decisions as DecisionsPage} from './Decisions';
+
+const Decisions: React.FC = () => <DecisionsPage search={validateDecisionsSearch(useSearch({strict: false}))} />;
 
 describe('<Decisions />', () => {
 	it('should render the sr-only decisions title', async () => {
