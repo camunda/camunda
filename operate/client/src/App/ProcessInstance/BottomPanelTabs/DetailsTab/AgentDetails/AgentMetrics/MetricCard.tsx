@@ -39,13 +39,7 @@ const MetricCard: React.FC<MetricCardProps> = ({
       <MetricCardValueRow>
         <MetricCardValue>{value.toLocaleString()}</MetricCardValue>
         {valueInfo !== undefined && (
-          <IconButton
-            kind="ghost"
-            size="xs"
-            label={valueInfo}
-            align="bottom"
-            aria-label={`${title} calculation`}
-          >
+          <IconButton kind="ghost" size="xs" label={valueInfo} align="bottom">
             <Information />
           </IconButton>
         )}
