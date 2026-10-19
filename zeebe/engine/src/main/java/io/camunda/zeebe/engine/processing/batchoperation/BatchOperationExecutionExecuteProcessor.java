@@ -133,9 +133,9 @@ public final class BatchOperationExecutionExecuteProcessor
       return;
     }
 
-    final var entityKeys = batchOperationState.getNextItemKeys(batchKey, BATCH_SIZE);
+    final var nextItems = batchOperationState.getNextItems(batchKey, BATCH_SIZE);
     // If there are no more items to process, we can mark the partition as completed
-    if (entityKeys.isEmpty()) {
+    if (nextItems.isEmpty()) {
       LOGGER.debug(
           "No items to process for BatchOperation {} on partition {}",
           batchKey,
@@ -152,14 +152,18 @@ public final class BatchOperationExecutionExecuteProcessor
     metrics.stopStartExecuteLatencyMeasure(batchKey);
 
     // mark the items as in progress
-    appendBatchOperationExecutionExecutingEvent(batchOperation, Set.copyOf(entityKeys));
+    appendBatchOperationExecutionExecutingEvent(batchOperation, Set.copyOf(nextItems.itemKeys()));
 
     // retrieve the handler for the batch operation type and execute each itemKey with it
     final var handler = handlers.get(batchOperation.getBatchOperationType());
-    entityKeys.forEach(entityKey -> handler.execute(entityKey, batchOperation));
+    nextItems
+        .itemKeys()
+        .forEach(
+            entityKey ->
+                handler.execute(entityKey, nextItems.batchItemsStorageOrdinal(), batchOperation));
 
     // schedule the next EXECUTE command to continue processing the next batch of items
-    appendBatchOperationExecutionExecutedEvent(batchOperation, Set.copyOf(entityKeys));
+    appendBatchOperationExecutionExecutedEvent(batchOperation, Set.copyOf(nextItems.itemKeys()));
     appendBatchOperationExecuteCommand(command, batchKey, batchOperation);
 
     metrics.startExecuteCycleLatencyMeasure(batchKey, batchOperation.getBatchOperationType());

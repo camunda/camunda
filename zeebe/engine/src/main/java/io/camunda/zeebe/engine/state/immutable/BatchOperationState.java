@@ -39,20 +39,32 @@ public interface BatchOperationState {
   Optional<PersistedBatchOperation> getNextPendingBatchOperation();
 
   /**
-   * Retrieves the next <code>batchSize</code> unprocessed itemKeys for a given batch operation.
-   * This method is usually called by the BatchOperationExecuteProcessor to execute the next X
-   * items.<br>
+   * Retrieves the next <code>batchSize</code> unprocessed items for a given batch operation. This
+   * method is usually called by the BatchOperationExecuteProcessor to execute the next X items.
+   * <br>
    * <br>
    * This method can return fewer than <code>batchSize</code> itemKeys. This does not mean that
    * there are no more itemKeys but depends on the internal structure of the batch operation state.
    * <br>
    * <br>
-   * If the returned list is empty, it means that there are no more itemKeys to process for the
+   * If the returned itemKeys are empty, it means that there are no more itemKeys to process for the
    * given batch operation.
    *
    * @param batchOperationKey the key of the batch operation
    * @param batchSize the maximum number of itemKeys to retrieve
-   * @return a list of itemKeys for the batch operations, up to the specified batch size
+   * @return the next items with the storage ordinal they share, up to the specified batch size
    */
-  List<Long> getNextItemKeys(long batchOperationKey, int batchSize);
+  NextItems getNextItems(long batchOperationKey, int batchSize);
+
+  /**
+   * The next pending items of a batch operation. All of them come from one chunk and share its
+   * storage ordinal, 0 when unknown.
+   */
+  record NextItems(int batchItemsStorageOrdinal, List<Long> itemKeys) {
+    public static final NextItems EMPTY = new NextItems(0, List.of());
+
+    public boolean isEmpty() {
+      return itemKeys.isEmpty();
+    }
+  }
 }

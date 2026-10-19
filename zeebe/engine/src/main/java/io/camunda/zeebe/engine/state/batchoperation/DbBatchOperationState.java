@@ -19,7 +19,6 @@ import io.camunda.zeebe.engine.state.mutable.MutableBatchOperationState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationCreationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationError;
-import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
@@ -376,16 +375,16 @@ public class DbBatchOperationState implements MutableBatchOperationState {
   }
 
   @Override
-  public List<Long> getNextItemKeys(final long batchOperationKey, final int batchSize) {
+  public NextItems getNextItems(final long batchOperationKey, final int batchSize) {
     final var batch = get(batchOperationKey);
     if (batch.isEmpty()) {
       LOGGER.error(
           "Batch operation with key {} not found, cannot get next item keys.", batchOperationKey);
-      return List.of();
+      return NextItems.EMPTY;
     }
 
     if (!batch.get().hasChunks()) {
-      return List.of();
+      return NextItems.EMPTY;
     }
 
     // return the next item keys for the batch operation. This will not return more than batchSize
@@ -395,7 +394,8 @@ public class DbBatchOperationState implements MutableBatchOperationState {
     final var chunk = batchOperationChunksColumnFamily.get(fkBatchKeyAndChunkKey);
     final var chunkKeys = chunk.getItemKeys();
 
-    return chunkKeys.stream().limit(batchSize).toList();
+    return new NextItems(
+        chunk.getBatchItemsStorageOrdinal(), chunkKeys.stream().limit(batchSize).toList());
   }
 
   /** This deletes everything related to the batch operation. */

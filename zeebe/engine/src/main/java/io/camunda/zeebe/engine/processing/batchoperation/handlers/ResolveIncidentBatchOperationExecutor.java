@@ -39,30 +39,38 @@ public class ResolveIncidentBatchOperationExecutor implements BatchOperationExec
   }
 
   @Override
-  public void execute(final long incidentKey, final PersistedBatchOperation batchOperation) {
+  public void execute(
+      final long incidentKey,
+      final int storageOrdinal,
+      final PersistedBatchOperation batchOperation) {
     final var incident = incidentState.getIncidentRecord(incidentKey);
     if (incident == null) {
       // ok I admit it, this is a bit of a hack, but we need to provoke an IncidentIntent.REVOLVE
       // rejection here, so we still append the resolve incident command
-      resolveIncident(incidentKey, batchOperation);
+      resolveIncident(incidentKey, storageOrdinal, batchOperation);
       return;
     }
 
     if (incidentState.isJobIncident(incident)) {
       LOGGER.trace("Increasing retries for job with key '{}'", incident.getJobKey());
-      final var jobRecord = new JobRecord().setRetries(1);
+      final var jobRecord = new JobRecord().setRetries(1).setStorageOrdinal(storageOrdinal);
       sendCommandWithMetadata(
           incident.getJobKey(), JobIntent.UPDATE_RETRIES, jobRecord, batchOperation);
     }
 
     LOGGER.trace("Resolving incident with key '{}'", incidentKey);
-    resolveIncident(incidentKey, batchOperation);
+    resolveIncident(incidentKey, storageOrdinal, batchOperation);
   }
 
   private void resolveIncident(
-      final long incidentKey, final PersistedBatchOperation batchOperation) {
+      final long incidentKey,
+      final int storageOrdinal,
+      final PersistedBatchOperation batchOperation) {
     sendCommandWithMetadata(
-        incidentKey, IncidentIntent.RESOLVE, new IncidentRecord(), batchOperation);
+        incidentKey,
+        IncidentIntent.RESOLVE,
+        new IncidentRecord().setStorageOrdinal(storageOrdinal),
+        batchOperation);
   }
 
   private void sendCommandWithMetadata(

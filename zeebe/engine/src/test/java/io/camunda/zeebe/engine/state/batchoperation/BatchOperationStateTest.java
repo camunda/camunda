@@ -37,6 +37,7 @@ import io.camunda.zeebe.protocol.record.value.HistoryDeletionRecordValue;
 import io.camunda.zeebe.protocol.record.value.HistoryDeletionType;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.LongStream;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -366,7 +367,7 @@ public class BatchOperationStateTest {
     final var batchOperationKey = createDefaultBatch(1, 0);
 
     // when
-    final var keys = state.getNextItemKeys(batchOperationKey, 5);
+    final var keys = state.getNextItems(batchOperationKey, 5).itemKeys();
 
     // then
     assertThat(keys).isEmpty();
@@ -395,9 +396,53 @@ public class BatchOperationStateTest {
     assertThat(persistedBatchOperation.getNumTotalItems()).isEqualTo(10);
     assertThat(persistedBatchOperation.getNumExecutedItems()).isEqualTo(0);
 
-    final var nextKeys = state.getNextItemKeys(batchOperationKey, 5);
+    final var nextKeys = state.getNextItems(batchOperationKey, 5).itemKeys();
     assertThat(nextKeys).hasSize(5);
     assertThat(nextKeys).containsSequence(List.of(0L, 1L, 2L, 3L, 4L));
+  }
+
+  @Test
+  void shouldReturnChunkOrdinalWithNextItems() {
+    // given
+    final var batchOperationKey = 1L;
+    state.create(batchOperationKey, createRecord(batchOperationKey));
+    state.addChunk(10L, batchOperationKey, 7, Set.of(1L, 2L));
+
+    // when
+    final var next = state.getNextItems(batchOperationKey, 5);
+
+    // then
+    assertThat(next.batchItemsStorageOrdinal()).isEqualTo(7);
+    assertThat(next.itemKeys()).containsExactlyInAnyOrder(1L, 2L);
+  }
+
+  @Test
+  void shouldStoreOrdinalZeroForChunkAddedWithoutOrdinal() {
+    // given
+    final var batchOperationKey = 1L;
+    state.create(batchOperationKey, createRecord(batchOperationKey));
+
+    // when the overload kept for the chunk CREATED applier version 2 is used
+    state.addChunk(10L, batchOperationKey, Set.of(1L, 2L));
+
+    // then
+    final var next = state.getNextItems(batchOperationKey, 5);
+    assertThat(next.batchItemsStorageOrdinal()).isZero();
+    assertThat(next.itemKeys()).containsExactlyInAnyOrder(1L, 2L);
+  }
+
+  @Test
+  void shouldReturnEmptyNextItemsWhenBatchOperationHasNoChunks() {
+    // given
+    final var batchOperationKey = 1L;
+    state.create(batchOperationKey, createRecord(batchOperationKey));
+
+    // when
+    final var next = state.getNextItems(batchOperationKey, 5);
+
+    // then
+    assertThat(next.isEmpty()).isTrue();
+    assertThat(next.batchItemsStorageOrdinal()).isZero();
   }
 
   @Test
@@ -421,7 +466,7 @@ public class BatchOperationStateTest {
     assertThat(persistedBatchOperation.getMinChunkKey()).isEqualTo(0);
     assertThat(persistedBatchOperation.getMaxChunkKey()).isEqualTo(0);
 
-    final var nextKeys = state.getNextItemKeys(batchOperationKey, 10);
+    final var nextKeys = state.getNextItems(batchOperationKey, 10).itemKeys();
     assertThat(nextKeys).hasSize(5);
     assertThat(nextKeys).containsSequence(List.of(0L, 1L, 2L, 3L, 4L));
   }
@@ -499,7 +544,7 @@ public class BatchOperationStateTest {
     assertThat(persistedBatchOperation.getMinChunkKey()).isEqualTo(0);
     assertThat(persistedBatchOperation.getMaxChunkKey()).isEqualTo(2);
 
-    final var nextItemKeys = state.getNextItemKeys(batchOperationKey, 5);
+    final var nextItemKeys = state.getNextItems(batchOperationKey, 5).itemKeys();
     assertThat(nextItemKeys).hasSize(5);
     assertThat(nextItemKeys).containsSequence(List.of(6L, 7L, 8L, 9L, 10L));
     assertThat(persistedBatchOperation.getNumTotalItems()).isEqualTo(MAX_DB_CHUNK_SIZE * 3);
@@ -521,7 +566,7 @@ public class BatchOperationStateTest {
     assertThat(persistedBatchOperation.getMinChunkKey()).isEqualTo(1);
     assertThat(persistedBatchOperation.getMaxChunkKey()).isEqualTo(2);
 
-    final var nextItemKeys = state.getNextItemKeys(batchOperationKey, 3);
+    final var nextItemKeys = state.getNextItems(batchOperationKey, 3).itemKeys();
     assertThat(nextItemKeys)
         .containsSequence(
             List.of(MAX_DB_CHUNK_SIZE, MAX_DB_CHUNK_SIZE + 1L, MAX_DB_CHUNK_SIZE + 2L));
@@ -572,7 +617,7 @@ public class BatchOperationStateTest {
 
     // then
     assertThat(state.get(batchOperationKey)).isEmpty();
-    assertThat(state.getNextItemKeys(batchOperationKey, 20)).isEmpty();
+    assertThat(state.getNextItems(batchOperationKey, 20).itemKeys()).isEmpty();
   }
 
   @Test
@@ -915,5 +960,12 @@ public class BatchOperationStateTest {
     assertThat(firstError.getPartitionId()).isEqualTo(partitionId);
     assertThat(firstError.getType()).isEqualTo(errorType);
     assertThat(firstError.getMessage()).isEqualTo(stacktrace);
+  }
+
+  private static BatchOperationCreationRecord createRecord(final long batchOperationKey) {
+    return new BatchOperationCreationRecord()
+        .setBatchOperationKey(batchOperationKey)
+        .setBatchOperationType(BatchOperationType.CANCEL_PROCESS_INSTANCE)
+        .setEntityFilter(convertToBuffer(new ProcessInstanceFilter.Builder().build()));
   }
 }

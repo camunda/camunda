@@ -33,7 +33,8 @@ public class DeleteDecisionInstanceBatchOperationExecutor implements BatchOperat
   }
 
   @Override
-  public void execute(final long itemKey, final PersistedBatchOperation batchOperation) {
+  public void execute(
+      final long itemKey, final int storageOrdinal, final PersistedBatchOperation batchOperation) {
     LOGGER.trace("Delete decision instance with key '{}'", itemKey);
 
     final var authentication = batchOperation.getAuthentication();
