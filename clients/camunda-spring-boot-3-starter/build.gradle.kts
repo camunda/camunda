@@ -4,6 +4,8 @@ import buildlogic.ArtifactKind
 import org.gradle.process.CommandLineArgumentProvider
 import buildlogic.OptionalDependenciesPomAction
 import buildlogic.micrometerOptionalDependencies
+import io.camunda.gradle.pom.PomResolver
+import io.camunda.gradle.pom.resolvePomProperty
 
 plugins {
   id("buildlogic.client-conventions")
@@ -158,9 +160,37 @@ tasks.named<Jar>("jar") { enabled = false }
 // ResourceUtils.getFile("classpath:...") requires real filesystem paths — it cannot resolve
 // resources from inside a JAR. The base starter's main output must appear as directories on the
 // test classpath rather than being consumed via its published JAR.
+// Mirrors the Surefire classpath swap in pom.xml: tests run on Spring Boot 3's Micrometer
+// (version.micrometer-spring-boot-3) while compilation and the published POM keep the repo's.
+val micrometerModules = listOf("micrometer-core", "micrometer-commons", "micrometer-observation")
+val springBoot3MicrometerVersion =
+  resolvePomProperty(
+    "version.micrometer-spring-boot-3",
+    PomResolver(providers.fileContents(layout.projectDirectory.file("pom.xml")).asText.get())
+      .properties(),
+  )
+val springBoot3Micrometer =
+  configurations.create("springBoot3Micrometer") {
+    isCanBeConsumed = false
+    isCanBeResolved = true
+    isTransitive = false
+    // Registered after parent-conventions' global Micrometer pin, so this one wins.
+    resolutionStrategy.eachDependency { useVersion(springBoot3MicrometerVersion) }
+  }
+
+dependencies {
+  micrometerModules.forEach {
+    add(springBoot3Micrometer.name, "io.micrometer:$it:$springBoot3MicrometerVersion")
+  }
+}
+
 tasks.named<Test>("test") {
   // Append these directories so the SB3 overrides in this module take precedence over SB4 classes.
-  classpath += baseStarterMainOutput
+  val micrometerJarPrefixes = micrometerModules.map { "$it-" }
+  classpath =
+    classpath.filter { file -> micrometerJarPrefixes.none { file.name.startsWith(it) } } +
+      springBoot3Micrometer +
+      baseStarterMainOutput
 }
 
 // Use the shadow jar as the runtime artifact for inter-project dependencies.
