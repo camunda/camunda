@@ -195,7 +195,11 @@ public class DbBatchOperationState implements MutableBatchOperationState {
   }
 
   @Override
-  public void addChunk(final long key, final long batchOperationKey, final Set<Long> itemKeys) {
+  public void addChunk(
+      final long key,
+      final long batchOperationKey,
+      final int batchItemsStorageOrdinal,
+      final Set<Long> itemKeys) {
     final var oBatch = get(batchOperationKey);
     if (oBatch.isEmpty()) {
       LOGGER.error(
@@ -218,13 +222,23 @@ public class DbBatchOperationState implements MutableBatchOperationState {
         batchOperationKey);
 
     final var batchChunk = new PersistedBatchOperationChunk();
-    batchChunk.setKey(key).setBatchOperationKey(batchOperationKey).setItemKeys(itemKeys);
+    batchChunk
+        .setKey(key)
+        .setBatchOperationKey(batchOperationKey)
+        .setBatchItemsStorageOrdinal(batchItemsStorageOrdinal)
+        .setItemKeys(itemKeys);
     batchOperationChunksColumnFamily.insert(fkBatchKeyAndChunkKey, batchChunk);
 
     final var batch = oBatch.get();
     batch.addChunkKey(key);
     batch.setNumTotalItems(batch.getNumTotalItems() + itemKeys.size());
     batchOperationColumnFamily.update(batchKey, batch);
+  }
+
+  @Override
+  @Deprecated
+  public void addChunk(final long key, final long batchOperationKey, final Set<Long> itemKeys) {
+    addChunk(key, batchOperationKey, 0, itemKeys);
   }
 
   @Override

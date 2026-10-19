@@ -28,6 +28,7 @@ public class BatchOperationChunkCreatedV3Applier
     batchOperationState.addChunk(
         chunkKey,
         value.getBatchOperationKey(),
+        value.getBatchItemsStorageOrdinal(),
         value.getItems().stream()
             .map(BatchOperationItemValue::getItemKey)
             .collect(Collectors.toSet()));
