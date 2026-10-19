@@ -16,9 +16,11 @@ import io.camunda.zeebe.protocol.impl.record.value.job.JobResult;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobResultCorrections;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.intent.AsyncRequestIntent;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceModificationIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.test.util.Strings;
@@ -248,21 +250,84 @@ public class ModifyProcessInstanceTerminatingElementTest {
         .hasChangedAttributes("assignee", "priority");
   }
 
+  @Test
+  public void shouldCompleteCancelRequestWhenTerminatingUserTaskOfCanceledInstance() {
+    // given
+    final long batchOperationReference = 1L;
+    final long processInstanceKey =
+        createProcessInstanceBlockedByCancelingListener(batchOperationReference);
+
+    // when
+    terminateElementByModification(processInstanceKey, "userTask");
+
+    // then
+    assertThatCancelRequestIsCompleted(processInstanceKey, batchOperationReference);
+  }
+
+  @Test
+  public void shouldCompleteCancelRequestWhenTerminatingFlowScopeOfCanceledInstance() {
+    // given
+    final long batchOperationReference = 2L;
+    final long processInstanceKey =
+        createProcessInstanceBlockedByCancelingListener(batchOperationReference);
+
+    // when
+    terminateElementByModification(processInstanceKey, "sub");
+
+    // then
+    assertThatCancelRequestIsCompleted(processInstanceKey, batchOperationReference);
+  }
+
+  @Test
+  public void shouldCompleteCancelRequestWhenTerminatingCanceledInstanceItself() {
+    // given
+    final long batchOperationReference = 3L;
+    final long processInstanceKey =
+        createProcessInstanceBlockedByCancelingListener(batchOperationReference);
+
+    // when
+    ENGINE
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .modification()
+        .terminateElement(processInstanceKey)
+        .modify();
+
+    // then
+    assertThatCancelRequestIsCompleted(processInstanceKey, batchOperationReference);
+  }
+
   /**
    * Creates a process instance that is canceled while its subprocess contains a user task with a
    * canceling task listener. The listener job fails without retries, so the instance stays
    * terminating and an incident is raised.
    */
   private long createProcessInstanceBlockedByCancelingListener() {
+    final long processInstanceKey = createProcessInstanceWithCancelingListener();
+    ENGINE.processInstance().withInstanceKey(processInstanceKey).expectTerminating().cancel();
+    failCancelingListenerJob(processInstanceKey, LISTENER_TYPE);
+    return processInstanceKey;
+  }
+
+  /** Same as {@link #createProcessInstanceBlockedByCancelingListener()}, canceled by a batch. */
+  private long createProcessInstanceBlockedByCancelingListener(final long batchOperationReference) {
+    final long processInstanceKey = createProcessInstanceWithCancelingListener();
+    ENGINE
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .withBatchOperationReference(batchOperationReference)
+        .expectTerminating()
+        .cancel();
+    failCancelingListenerJob(processInstanceKey, LISTENER_TYPE);
+    return processInstanceKey;
+  }
+
+  private long createProcessInstanceWithCancelingListener() {
     final String processId = Strings.newRandomValidBpmnId();
     ENGINE.deployment().withXmlResource(processWithCancelingListener(processId)).deploy();
     final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(processId).create();
     // cancel only once the user task exists, otherwise its canceling listeners would not run
     getUserTaskKey(processInstanceKey);
-
-    ENGINE.processInstance().withInstanceKey(processInstanceKey).expectTerminating().cancel();
-    failCancelingListenerJob(processInstanceKey, LISTENER_TYPE);
-
     return processInstanceKey;
   }
 
@@ -339,6 +404,32 @@ public class ModifyProcessInstanceTerminatingElementTest {
                 .withProcessInstanceKey(processInstanceKey)
                 .exists())
         .describedAs("Expected the incident of the canceling listener job to be resolved")
+        .isTrue();
+  }
+
+  /**
+   * Asserts that the modification completes the pending cancel request of the process instance, as
+   * a regular termination does, so that the batch operation item of the instance can complete.
+   */
+  private static void assertThatCancelRequestIsCompleted(
+      final long processInstanceKey, final long batchOperationReference) {
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_TERMINATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementType(BpmnElementType.PROCESS)
+                .getFirst()
+                .getBatchOperationReference())
+        .describedAs("Expected the process instance to be terminated by the batch operation")
+        .isEqualTo(batchOperationReference);
+    assertThat(
+            RecordingExporter.records()
+                .limit(r -> r.getIntent() == ProcessInstanceModificationIntent.MODIFIED)
+                .asyncRequestRecords()
+                .withIntent(AsyncRequestIntent.PROCESSED)
+                .withRequestScopeKey(processInstanceKey)
+                .withRequestIntent(ProcessInstanceIntent.CANCEL)
+                .exists())
+        .describedAs("Expected the cancel request to be processed")
         .isTrue();
   }
 
