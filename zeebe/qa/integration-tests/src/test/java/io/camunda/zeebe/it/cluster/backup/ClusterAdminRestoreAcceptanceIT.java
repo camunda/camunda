@@ -58,13 +58,13 @@ import org.junit.jupiter.api.io.TempDir;
  * overrides} coexists with).
  *
  * <p>Covers the three shapes {@link
- * io.camunda.zeebe.dynamic.config.api.ClusterRestoreRequestTransformer} supports: a request naming
- * one physical tenant, forcing the restore onto just that tenant while the rest of the cluster is
- * left alone; a request naming every known physical tenant of the cluster — the shape {@code
- * ClusterRecoveryServices} builds when the request omits {@code physicalTenantId} — restoring them
- * all from the same backup in one change; and that same cluster-wide shape with one tenant's backup
- * selection overridden to a different, additional backup, proving the override reaches exactly the
- * tenant it names and nowhere else.
+ * io.camunda.zeebe.dynamic.config.impl.api.ClusterRestoreRequestTransformer} supports: a request
+ * naming one physical tenant, forcing the restore onto just that tenant while the rest of the
+ * cluster is left alone; a request naming every known physical tenant of the cluster — the shape
+ * {@code ClusterRecoveryServices} builds when the request omits {@code physicalTenantId} —
+ * restoring them all from the same backup in one change; and that same cluster-wide shape with one
+ * tenant's backup selection overridden to a different, additional backup, proving the override
+ * reaches exactly the tenant it names and nowhere else.
  *
  * <h4>What the parallelism assertions here do and do not establish</h4>
  *

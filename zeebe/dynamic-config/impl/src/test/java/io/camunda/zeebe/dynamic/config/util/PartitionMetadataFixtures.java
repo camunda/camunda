@@ -15,7 +15,7 @@ import java.util.Map;
 import java.util.Set;
 
 /** Shared test fixtures for building {@link PartitionMetadata} instances in reassigner tests. */
-final class PartitionMetadataFixtures {
+public final class PartitionMetadataFixtures {
 
   private PartitionMetadataFixtures() {}
 
@@ -24,7 +24,7 @@ final class PartitionMetadataFixtures {
    * every other member gets a strictly lower, distinct priority) so round-tripping through {@link
    * ConfigurationUtil} preserves the given primary exactly.
    */
-  static PartitionMetadata partition(
+  public static PartitionMetadata partition(
       final String group, final int number, final Set<MemberId> members, final MemberId primary) {
     final Map<MemberId, Integer> priorities = new HashMap<>();
     priorities.put(primary, members.size());

@@ -15,8 +15,8 @@ one across the cluster.
 
 Other modules depend on `api` (and `openapi`/`rest` where needed), never on `impl` at compile time.
 The composition roots (broker, dist, restore-standalone) construct the `*Impl` services directly;
-debug-cli also reads the raw protobuf. Package names are the same across `api` and `impl`, so a
-package listed below can live in both modules.
+debug-cli also reads the raw protobuf. `impl` lives under `io.camunda.zeebe.dynamic.config.impl`;
+every other package below belongs to `api`.
 
 ## Request flow
 
@@ -31,8 +31,8 @@ REST controller (rest/)
 
 ## Modules
 
-The code is split into two Maven/Gradle modules that share the `io.camunda.zeebe.dynamic.config`
-package root:
+The code is split into two Maven/Gradle modules. `api` owns `io.camunda.zeebe.dynamic.config`,
+`impl` owns `io.camunda.zeebe.dynamic.config.impl`; the two never share a package:
 
 - `api/` (`zeebe-cluster-config-api`) — contracts and the data model: `state/`, request/response
   types, request sender, executor interfaces, serializer interfaces, the JSON serializer, the
@@ -49,7 +49,7 @@ live in `api/src/test` and are shared with `impl/` through the `api` test-jar.
 
 ## Package breakdown
 
-Several packages (`api/`, `changes/`, `serializer/`, `util/`, `gossip/`) exist in both modules. The interfaces and types live in `api/`, the implementations in `impl/`.
+The packages below are in `api`. `impl` mirrors the `api/`, `changes/`, `serializer/`, `util/` and `gossip/` names under `impl.`, for example `impl.changes` for the coordinator and appliers.
 
 |    Package    |                                                                                                               What lives here                                                                                                                |
 |---------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
