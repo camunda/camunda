@@ -427,6 +427,66 @@ const mockQueryTenantsEndpoint = createEndpointMock({
 	endpoint: endpoints.queryTenants.getUrl(),
 	method: endpoints.queryTenants.method,
 });
+
+const mockGetTenantEndpoint = createEndpointMock({
+	endpoint: decodeURIComponent(endpoints.getTenant.getUrl({tenantId: ':tenantId'})),
+	method: endpoints.getTenant.method,
+});
+
+const mockCreateTenantEndpoint = createEndpointMock({
+	endpoint: endpoints.createTenant.getUrl(),
+	method: endpoints.createTenant.method,
+});
+
+const mockUpdateTenantEndpoint = createEndpointMock({
+	endpoint: decodeURIComponent(endpoints.updateTenant.getUrl({tenantId: ':tenantId'})),
+	method: endpoints.updateTenant.method,
+});
+
+const mockDeleteTenantEndpoint = createEndpointMock({
+	endpoint: decodeURIComponent(endpoints.deleteTenant.getUrl({tenantId: ':tenantId'})),
+	method: endpoints.deleteTenant.method,
+});
+
+const mockQueryUsersByTenantEndpoint = createEndpointMock({
+	endpoint: decodeURIComponent(endpoints.queryUsersByTenant.getUrl({tenantId: ':tenantId'})),
+	method: endpoints.queryUsersByTenant.method,
+});
+
+const mockQueryGroupsByTenantEndpoint = createEndpointMock({
+	endpoint: decodeURIComponent(endpoints.queryGroupsByTenant.getUrl({tenantId: ':tenantId'})),
+	method: endpoints.queryGroupsByTenant.method,
+});
+
+const mockQueryRolesByTenantEndpoint = createEndpointMock({
+	endpoint: decodeURIComponent(endpoints.queryRolesByTenant.getUrl({tenantId: ':tenantId'})),
+	method: endpoints.queryRolesByTenant.method,
+});
+
+const mockQueryMappingRulesByTenantEndpoint = createEndpointMock({
+	endpoint: decodeURIComponent(endpoints.queryMappingRulesByTenant.getUrl({tenantId: ':tenantId'})),
+	method: endpoints.queryMappingRulesByTenant.method,
+});
+
+const mockQueryClientsByTenantEndpoint = createEndpointMock({
+	endpoint: decodeURIComponent(endpoints.queryClientsByTenant.getUrl({tenantId: ':tenantId'})),
+	method: endpoints.queryClientsByTenant.method,
+});
+
+const mockAssignUserToTenantEndpoint = createEndpointMock({
+	endpoint: decodeURIComponent(endpoints.assignUserToTenant.getUrl({tenantId: ':tenantId', username: ':username'})),
+	method: endpoints.assignUserToTenant.method,
+});
+
+const mockAssignClientToTenantEndpoint = createEndpointMock({
+	endpoint: decodeURIComponent(endpoints.assignClientToTenant.getUrl({tenantId: ':tenantId', clientId: ':clientId'})),
+	method: endpoints.assignClientToTenant.method,
+});
+
+const mockUnassignUserFromTenantEndpoint = createEndpointMock({
+	endpoint: decodeURIComponent(endpoints.unassignUserFromTenant.getUrl({tenantId: ':tenantId', username: ':username'})),
+	method: endpoints.unassignUserFromTenant.method,
+});
 const mockSearchGlobalTaskListenersEndpoint = createEndpointMock({
 	endpoint: endpoints.searchGlobalTaskListeners.getUrl(),
 	method: endpoints.searchGlobalTaskListeners.method,
@@ -740,6 +800,18 @@ export {
 	mockUpdateGlobalClusterVariableEndpoint,
 	mockDeleteGlobalClusterVariableEndpoint,
 	mockQueryTenantsEndpoint,
+	mockGetTenantEndpoint,
+	mockCreateTenantEndpoint,
+	mockUpdateTenantEndpoint,
+	mockDeleteTenantEndpoint,
+	mockQueryUsersByTenantEndpoint,
+	mockQueryGroupsByTenantEndpoint,
+	mockQueryRolesByTenantEndpoint,
+	mockQueryMappingRulesByTenantEndpoint,
+	mockQueryClientsByTenantEndpoint,
+	mockAssignUserToTenantEndpoint,
+	mockAssignClientToTenantEndpoint,
+	mockUnassignUserFromTenantEndpoint,
 	mockSearchGlobalTaskListenersEndpoint,
 	mockGetGlobalTaskListenerEndpoint,
 	mockCreateGlobalTaskListenerEndpoint,
