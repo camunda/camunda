@@ -1153,7 +1153,6 @@
 			"caseActivityActive": "Läuft",
 			"caseActivityCompleted": "Erledigt",
 			"caseActivityNotStarted": "Noch nicht verwendet",
-			"caseActivityStart": "Starten",
 			"caseActivityStartAgain": "Erneut",
 			"caseActivityStartFailed": "Die Aktivität konnte nicht gestartet werden",
 			"caseStageDoneButton": "Erledigt",
@@ -1180,7 +1179,8 @@
 			"casesStatusSuspended": "Angehalten",
 			"caseClosedCompleted": "Dieser Fall ist abgeschlossen",
 			"caseClosedCancelled": "Dieser Fall wurde abgebrochen",
-			"caseClosedDescription": "In diesem Fall gibt es keine Arbeit mehr."
+			"caseClosedDescription": "In diesem Fall gibt es keine Arbeit mehr.",
+			"caseActivitySlow": "Die Aktivität wurde gestartet. Ihre Aufgabe erscheint später als üblich."
 		},
 		"operate": {
 			"dashboard": {

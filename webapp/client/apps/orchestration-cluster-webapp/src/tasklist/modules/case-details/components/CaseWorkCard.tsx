@@ -24,7 +24,7 @@ import {ArrowRight, Check, CircleCheck, CirclePlay, LoaderCircle, UserRound} fro
 import type {ProcessInstance, UserTask} from '@camunda/camunda-api-zod-schemas/8.11';
 import {cn} from '#/shared/cn';
 import type {ActivityStatus, StageActivity, StageWork} from '#/tasklist/modules/case-details/getStageWork';
-import type {StageCompletionStatus} from '#/tasklist/modules/case-details/useStageCompletion';
+import type {CaseWorkStatus} from '#/tasklist/modules/case-details/useCaseWork';
 
 function useAssignmentLabel() {
 	const {t} = useTranslation();
@@ -82,10 +82,11 @@ type Props = {
 	stageName: string | null;
 	work: StageWork;
 	currentUsername: string;
-	startingElementId: string | null;
-	stageCompletionStatus: StageCompletionStatus;
+	caseWorkStatus: CaseWorkStatus;
+	/** The optional activity that the case worker opens, while the case starts it. */
+	openingElementId: string | null;
 	onOpenTask: (userTaskKey: string) => void;
-	onStartActivity: (elementId: string) => void;
+	onOpenActivity: (elementId: string) => void;
 	onCompleteStage: () => void;
 };
 
@@ -94,27 +95,28 @@ const CaseWorkCard: React.FC<Props> = ({
 	stageName,
 	work,
 	currentUsername,
-	startingElementId,
-	stageCompletionStatus,
+	caseWorkStatus,
+	openingElementId,
 	onOpenTask,
-	onStartActivity,
+	onOpenActivity,
 	onCompleteStage,
 }) => {
 	const {t} = useTranslation();
 	const getAssignmentLabel = useAssignmentLabel();
 	const {activities, openTasks, completion} = work;
-	const isClosingStage = stageCompletionStatus !== 'idle';
+	const isBusy = caseWorkStatus !== 'idle';
+	const isClosingStage = caseWorkStatus === 'completingStage' || caseWorkStatus === 'waitingForNextStage';
 	const completedCount = activities.filter(({status}) => status === 'completed').length;
 	const hasWork = activities.length > 0 || openTasks.length > 0;
 
 	// The searches can show the next stage before the stage completion settles, so the footer stays
 	// until the state machine is idle again.
 	const getCompletionHint = (): string => {
-		if (stageCompletionStatus === 'completing') {
+		if (caseWorkStatus === 'completingStage') {
 			return t('tasklist.caseStageClosing');
 		}
 
-		if (stageCompletionStatus === 'waitingForNextStage') {
+		if (caseWorkStatus === 'waitingForNextStage') {
 			return t('tasklist.caseStageWaitingForNext');
 		}
 
@@ -130,7 +132,7 @@ const CaseWorkCard: React.FC<Props> = ({
 	};
 
 	const renderOpenButton = (userTask: UserTask) => (
-		<Button variant="secondary" size="sm" disabled={isClosingStage} onClick={() => onOpenTask(userTask.userTaskKey)}>
+		<Button variant="secondary" size="sm" disabled={isBusy} onClick={() => onOpenTask(userTask.userTaskKey)}>
 			{t('tasklist.caseOpenTask')}
 			<ArrowRight aria-hidden />
 		</Button>
@@ -153,11 +155,12 @@ const CaseWorkCard: React.FC<Props> = ({
 			<Button
 				variant="secondary"
 				size="sm"
-				disabled={startingElementId !== null || isClosingStage}
-				onClick={() => onStartActivity(elementId)}
+				disabled={isBusy}
+				aria-busy={openingElementId === elementId}
+				onClick={() => onOpenActivity(elementId)}
 			>
-				{startingElementId === elementId ? <Spinner /> : null}
-				{status === 'completed' ? t('tasklist.caseActivityStartAgain') : t('tasklist.caseActivityStart')}
+				{status === 'completed' ? t('tasklist.caseActivityStartAgain') : t('tasklist.caseOpenTask')}
+				{openingElementId === elementId ? <Spinner /> : <ArrowRight aria-hidden />}
 			</Button>
 		);
 	};
