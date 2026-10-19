@@ -6,7 +6,38 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import type {CaseModel} from './parseCaseModel';
+
 const CASE_HEADER_VARIABLE = 'caseHeader';
+const VARIABLE_REFERENCE = /^=\s*([A-Za-z_][A-Za-z0-9_]*)\s*$/;
+
+/** Returns the variable that an expression such as `=caseId` reads, or `null` for any other expression. */
+function getVariableReference(expression: string | null): string | null {
+	return expression === null ? null : (VARIABLE_REFERENCE.exec(expression)?.[1] ?? null);
+}
+
+/**
+ * The root-scope variables that a case application reads, taken from the BPMN: the title variable of the
+ * case marker, the case header, and the correlation keys of "Stage done". A case application requests
+ * these names only, not all variables of the case.
+ */
+function getCaseVariableNames(model: CaseModel): string[] {
+	const names = new Set([CASE_HEADER_VARIABLE]);
+
+	if (model.caseMarker?.titleVariable) {
+		names.add(model.caseMarker.titleVariable);
+	}
+
+	for (const {manualCompletion} of model.stages) {
+		const correlationVariable = getVariableReference(manualCompletion?.correlationKey ?? null);
+
+		if (correlationVariable !== null) {
+			names.add(correlationVariable);
+		}
+	}
+
+	return [...names];
+}
 
 type CaseHeaderEntry = {
 	label: string;
@@ -103,5 +134,12 @@ function getDocumentReferences(variables: VariableLike[]): DocumentReference[] {
 	});
 }
 
-export {CASE_HEADER_VARIABLE, getCaseHeader, getCaseTitle, getDocumentReferences};
+export {
+	CASE_HEADER_VARIABLE,
+	getCaseHeader,
+	getCaseTitle,
+	getCaseVariableNames,
+	getDocumentReferences,
+	getVariableReference,
+};
 export type {CaseHeaderEntry, DocumentReference, VariableLike};

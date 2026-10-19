@@ -7,15 +7,18 @@
  */
 
 import {useCallback} from 'react';
-import {createFileRoute, useNavigate} from '@tanstack/react-router';
+import {createFileRoute, getRouteApi, useNavigate} from '@tanstack/react-router';
 import {TasklistCaseTasksPage} from '#/tasklist/pages/TasklistCaseTasksPage';
 import {useCaseData} from '#/tasklist/modules/case-details/caseData';
+
+const caseRoute = getRouteApi('/_shadcn/_auth/tasklist/cases/$processInstanceKey');
 
 export const Route = createFileRoute('/_shadcn/_auth/tasklist/cases/$processInstanceKey/')({
 	component: function TasklistCaseTasksRoute() {
 		const navigate = useNavigate();
 		const {processInstanceKey} = Route.useParams();
-		const caseData = useCaseData(processInstanceKey);
+		const {variableNames} = caseRoute.useLoaderData();
+		const caseData = useCaseData(processInstanceKey, variableNames);
 		const openTask = useCallback(
 			(userTaskKey: string) =>
 				navigate({

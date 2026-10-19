@@ -10,14 +10,20 @@ The engine has no case or stage entity. This package reads:
 
 ## API
 
-| Function                        | Purpose                                                                                |
-| ------------------------------- | -------------------------------------------------------------------------------------- |
-| `parseCaseModel(xml, id)`       | Case marker, stages in sequence-flow order, required and optional tasks, manual "Done" |
-| `getCaseProgress(model, ei, s)` | State of each stage from the element instance search                                   |
-| `getCurrentStage(progress)`     | The stage that is in progress                                                          |
-| `getCaseHeader(variable)`       | The `caseHeader` label-value pairs                                                     |
-| `getCaseTitle(variable)`        | The case title from the variable the case marker names                                 |
-| `getDocumentReferences(vars)`   | Document references in variable values                                                 |
+| Function                        | Purpose                                                                                            |
+| ------------------------------- | -------------------------------------------------------------------------------------------------- |
+| `parseCaseModel(xml, id)`       | Case marker, stages in sequence-flow order, required and optional tasks, manual "Done"             |
+| `getCaseProgress(model, ei, s)` | State of each stage from the element instance search                                               |
+| `getCurrentStage(progress)`     | The stage that is in progress                                                                      |
+| `getCaseHeader(variable)`       | The `caseHeader` label-value pairs                                                                 |
+| `getCaseTitle(variable)`        | The case title from the variable the case marker names                                             |
+| `getDocumentReferences(vars)`   | Document references in variable values                                                             |
+| `getCaseVariableNames(model)`   | The root-scope variables to request: title variable, case header, correlation keys of "Stage done" |
+| `getVariableReference(expr)`    | The variable that an expression such as `=caseId` reads                                            |
+
+A case application requests only the variables that `getCaseVariableNames` returns, plus the fields of the case form,
+never all variables of a case. The BPMN does not name the document variables: search them by value, for example
+`value: {$like: "*camunda.document.type*"}`.
 
 ## Stage kinds
 

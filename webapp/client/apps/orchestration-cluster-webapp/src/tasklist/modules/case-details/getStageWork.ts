@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import type {CaseModel, StageProgress} from '@camunda/case-management-sdk';
+import {getVariableReference, type CaseModel, type StageProgress} from '@camunda/case-management-sdk';
 import type {ElementInstance, UserTask, Variable} from '@camunda/camunda-api-zod-schemas/8.11';
 import {tryParseJSON} from '#/tasklist/modules/json/tryParseJSON';
 
@@ -42,11 +42,9 @@ type StageWork = {
 	completion: StageCompletion | null;
 };
 
-const VARIABLE_REFERENCE = /^=\s*([A-Za-z_][A-Za-z0-9_]*)\s*$/;
-
 // prototype: the engine evaluates the correlation key; the case page only resolves a plain variable reference
 // such as `=caseId`, or a static key.
-function resolveCorrelationKey(expression: string | null, rootVariables: Variable[]): string | null {
+function resolveCorrelationKey(expression: string | null, caseVariables: Variable[]): string | null {
 	if (expression === null) {
 		return null;
 	}
@@ -55,8 +53,8 @@ function resolveCorrelationKey(expression: string | null, rootVariables: Variabl
 		return expression;
 	}
 
-	const variableName = VARIABLE_REFERENCE.exec(expression)?.[1];
-	const variable = rootVariables.find(({name}) => name === variableName);
+	const variableName = getVariableReference(expression);
+	const variable = caseVariables.find(({name}) => name === variableName);
 	const value = variable === undefined ? undefined : tryParseJSON(variable.value);
 
 	return typeof value === 'string' || typeof value === 'number' ? String(value) : null;
@@ -95,13 +93,13 @@ function getStageWork({
 	currentStage,
 	elementInstances,
 	userTasks,
-	rootVariables,
+	caseVariables,
 }: {
 	model: CaseModel;
 	currentStage: StageProgress | null;
 	elementInstances: ElementInstance[];
 	userTasks: UserTask[];
-	rootVariables: Variable[];
+	caseVariables: Variable[];
 }): StageWork {
 	const openTasks = userTasks.filter(({state}) => state === 'CREATED');
 	const stagesById = new Map(model.stages.map((stage) => [stage.id, stage]));
@@ -157,7 +155,7 @@ function getStageWork({
 				: {
 						messageName: manualCompletion.messageName,
 						doneElementId: manualCompletion.doneElementId,
-						correlationKey: resolveCorrelationKey(manualCompletion.correlationKey, rootVariables),
+						correlationKey: resolveCorrelationKey(manualCompletion.correlationKey, caseVariables),
 						isAllowed: requiredActivities.every(({completedCount}) => completedCount > 0),
 					},
 	};

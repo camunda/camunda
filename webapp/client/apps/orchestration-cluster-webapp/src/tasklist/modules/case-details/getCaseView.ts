@@ -16,14 +16,14 @@ function getCaseView({
 	xml,
 	elementInstances,
 	userTasks,
-	rootVariables,
-}: Omit<CaseData, 'currentUser'>) {
+	caseVariables,
+}: Pick<CaseData, 'processInstance' | 'xml' | 'elementInstances' | 'userTasks' | 'caseVariables'>) {
 	const model = parseCaseModel(xml, processInstance.processDefinitionId);
 	// A case with a call activity is outside the case contract and gets the simplified view (CASE_IDENTITY.md).
 	const isSimplifiedView = model.caseMarker !== null && model.hasCallActivity;
 	const progress = isSimplifiedView ? [] : getCaseProgress(model, elementInstances, processInstance.state);
 	const currentStage = getCurrentStage(progress);
-	const work = getStageWork({model, currentStage, elementInstances, userTasks, rootVariables});
+	const work = getStageWork({model, currentStage, elementInstances, userTasks, caseVariables});
 
 	return {model, isSimplifiedView, progress, currentStage, work};
 }

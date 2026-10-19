@@ -30,12 +30,28 @@ function getCaseUserTasksRequestBody(processInstanceKey: string): QueryUserTasks
 	};
 }
 
-/** Case data lives in the root scope (CASE_DATA.md), so one search serves the title, header, documents and form. */
-function getRootVariablesRequestBody(processInstanceKey: string): QueryVariablesRequestBody {
+/**
+ * Case data lives in the root scope (CASE_DATA.md). The search requests the named variables only: the
+ * names come from the BPMN and the case form, never all variables of the case.
+ */
+function getCaseVariablesRequestBody(processInstanceKey: string, names: string[]): QueryVariablesRequestBody {
 	return {
-		filter: {processInstanceKey, scopeKey: processInstanceKey},
+		filter: {processInstanceKey, scopeKey: processInstanceKey, name: {$in: [...names].sort()}},
 		page: {limit: MAX_ITEMS},
 	};
 }
 
-export {getCaseElementInstancesRequestBody, getCaseUserTasksRequestBody, getRootVariablesRequestBody};
+/** The BPMN does not name the document variables, so the search matches the document reference in the value. */
+function getDocumentVariablesRequestBody(processInstanceKey: string): QueryVariablesRequestBody {
+	return {
+		filter: {processInstanceKey, scopeKey: processInstanceKey, value: {$like: '*camunda.document.type*'}},
+		page: {limit: MAX_ITEMS},
+	};
+}
+
+export {
+	getCaseElementInstancesRequestBody,
+	getCaseUserTasksRequestBody,
+	getCaseVariablesRequestBody,
+	getDocumentVariablesRequestBody,
+};
