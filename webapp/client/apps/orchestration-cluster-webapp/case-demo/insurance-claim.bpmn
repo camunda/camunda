@@ -1,0 +1,768 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="insurance-claim-definitions" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.40.0" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.11.0">
+  <bpmn:process id="insurance-claim" name="Insurance claim" isExecutable="true">
+    <bpmn:extensionElements>
+      <zeebe:case title="claimTitle" caseForm="claim-case-details" />
+    </bpmn:extensionElements>
+    <bpmn:startEvent id="claim-submitted" name="Claim submitted">
+      <bpmn:extensionElements>
+        <zeebe:ioMapping>
+          <zeebe:output source="=[{label: &#34;Claimant&#34;, value: claimantName}, {label: &#34;Policy&#34;, value: policyNumber}, {label: &#34;Claim type&#34;, value: claimType}, {label: &#34;Reported on&#34;, value: string(today())}]" target="caseHeader" />
+        </zeebe:ioMapping>
+      </bpmn:extensionElements>
+      <bpmn:outgoing>flow-to-registered</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:sequenceFlow id="flow-to-registered" sourceRef="claim-submitted" targetRef="claim-registered" />
+    <bpmn:subProcess id="claim-registered" name="Claim registered">
+      <bpmn:extensionElements>
+        <zeebe:stage />
+        <zeebe:ioMapping>
+          <zeebe:output source="=append(caseHeader, {label: &#34;Estimated damage&#34;, value: string(estimatedDamage) + &#34; EUR&#34;})" target="caseHeader" />
+        </zeebe:ioMapping>
+      </bpmn:extensionElements>
+      <bpmn:incoming>flow-to-registered</bpmn:incoming>
+      <bpmn:outgoing>flow-to-routing</bpmn:outgoing>
+      <bpmn:startEvent id="registered-start">
+        <bpmn:outgoing>flow-registered-1</bpmn:outgoing>
+      </bpmn:startEvent>
+      <bpmn:userTask id="register-claim" name="Register the claim">
+        <bpmn:extensionElements>
+          <zeebe:userTask />
+          <zeebe:formDefinition formId="register-claim" />
+          <zeebe:assignmentDefinition candidateGroups="claim-handlers" />
+        </bpmn:extensionElements>
+        <bpmn:incoming>flow-registered-1</bpmn:incoming>
+        <bpmn:outgoing>flow-registered-2</bpmn:outgoing>
+      </bpmn:userTask>
+      <bpmn:exclusiveGateway id="fraud-check" name="Fraud suspected?" default="flow-no-fraud">
+        <bpmn:incoming>flow-registered-2</bpmn:incoming>
+        <bpmn:outgoing>flow-fraud</bpmn:outgoing>
+        <bpmn:outgoing>flow-no-fraud</bpmn:outgoing>
+      </bpmn:exclusiveGateway>
+      <bpmn:endEvent id="fraud-suspected" name="Fraud suspected">
+        <bpmn:incoming>flow-fraud</bpmn:incoming>
+        <bpmn:escalationEventDefinition id="fraud-suspected-definition" escalationRef="escalation-fraud" />
+      </bpmn:endEvent>
+      <bpmn:endEvent id="registered-end">
+        <bpmn:incoming>flow-no-fraud</bpmn:incoming>
+      </bpmn:endEvent>
+      <bpmn:sequenceFlow id="flow-registered-1" sourceRef="registered-start" targetRef="register-claim" />
+      <bpmn:sequenceFlow id="flow-registered-2" sourceRef="register-claim" targetRef="fraud-check" />
+      <bpmn:sequenceFlow id="flow-fraud" name="yes" sourceRef="fraud-check" targetRef="fraud-suspected">
+        <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=fraudSuspected</bpmn:conditionExpression>
+      </bpmn:sequenceFlow>
+      <bpmn:sequenceFlow id="flow-no-fraud" name="no" sourceRef="fraud-check" targetRef="registered-end" />
+    </bpmn:subProcess>
+    <bpmn:sequenceFlow id="flow-to-routing" sourceRef="claim-registered" targetRef="damage-routing" />
+    <bpmn:exclusiveGateway id="damage-routing" name="Damage above 10,000 EUR?" default="flow-skip-expert">
+      <bpmn:incoming>flow-to-routing</bpmn:incoming>
+      <bpmn:outgoing>flow-to-expert</bpmn:outgoing>
+      <bpmn:outgoing>flow-skip-expert</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:sequenceFlow id="flow-to-expert" name="yes" sourceRef="damage-routing" targetRef="expert-assessment">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=estimatedDamage &gt; 10000</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="flow-skip-expert" name="no" sourceRef="damage-routing" targetRef="coverage-check" />
+    <bpmn:subProcess id="expert-assessment" name="Expert assessment">
+      <bpmn:extensionElements>
+        <zeebe:stage />
+      </bpmn:extensionElements>
+      <bpmn:incoming>flow-to-expert</bpmn:incoming>
+      <bpmn:outgoing>flow-expert-to-coverage</bpmn:outgoing>
+      <bpmn:startEvent id="expert-start">
+        <bpmn:outgoing>flow-expert-1</bpmn:outgoing>
+      </bpmn:startEvent>
+      <bpmn:parallelGateway id="expert-split">
+        <bpmn:incoming>flow-expert-1</bpmn:incoming>
+        <bpmn:outgoing>flow-expert-inspect</bpmn:outgoing>
+        <bpmn:outgoing>flow-expert-quotes</bpmn:outgoing>
+      </bpmn:parallelGateway>
+      <bpmn:userTask id="inspect-damage" name="Inspect the damage">
+        <bpmn:extensionElements>
+          <zeebe:userTask />
+          <zeebe:formDefinition formId="inspect-damage" />
+          <zeebe:assignmentDefinition candidateGroups="experts" />
+        </bpmn:extensionElements>
+        <bpmn:incoming>flow-expert-inspect</bpmn:incoming>
+        <bpmn:outgoing>flow-inspect-join</bpmn:outgoing>
+      </bpmn:userTask>
+      <bpmn:subProcess id="collect-quotes" name="Collect repair quotes">
+        <bpmn:extensionElements>
+          <zeebe:ioMapping>
+            <zeebe:input source="=[&#34;Garage Alpha&#34;, &#34;Garage Beta&#34;, &#34;Garage Gamma&#34;]" target="workshops" />
+          </zeebe:ioMapping>
+        </bpmn:extensionElements>
+        <bpmn:incoming>flow-expert-quotes</bpmn:incoming>
+        <bpmn:outgoing>flow-quotes-join</bpmn:outgoing>
+        <bpmn:startEvent id="quotes-start">
+          <bpmn:outgoing>flow-quotes-1</bpmn:outgoing>
+        </bpmn:startEvent>
+        <bpmn:userTask id="request-quote" name="Request a repair quote">
+          <bpmn:extensionElements>
+            <zeebe:userTask />
+            <zeebe:formDefinition formId="request-quote" />
+            <zeebe:assignmentDefinition candidateGroups="experts" />
+            <zeebe:ioMapping>
+              <zeebe:input source="=null" target="quote" />
+            </zeebe:ioMapping>
+          </bpmn:extensionElements>
+          <bpmn:incoming>flow-quotes-1</bpmn:incoming>
+          <bpmn:outgoing>flow-quotes-2</bpmn:outgoing>
+          <bpmn:multiInstanceLoopCharacteristics>
+            <bpmn:extensionElements>
+              <zeebe:loopCharacteristics inputCollection="=workshops" inputElement="workshop" outputCollection="quotes" outputElement="={workshop: workshop, amount: quote}" />
+            </bpmn:extensionElements>
+          </bpmn:multiInstanceLoopCharacteristics>
+        </bpmn:userTask>
+        <bpmn:endEvent id="quotes-end">
+          <bpmn:incoming>flow-quotes-2</bpmn:incoming>
+        </bpmn:endEvent>
+        <bpmn:sequenceFlow id="flow-quotes-1" sourceRef="quotes-start" targetRef="request-quote" />
+        <bpmn:sequenceFlow id="flow-quotes-2" sourceRef="request-quote" targetRef="quotes-end" />
+      </bpmn:subProcess>
+      <bpmn:parallelGateway id="expert-join">
+        <bpmn:incoming>flow-inspect-join</bpmn:incoming>
+        <bpmn:incoming>flow-quotes-join</bpmn:incoming>
+        <bpmn:outgoing>flow-expert-report</bpmn:outgoing>
+      </bpmn:parallelGateway>
+      <bpmn:subProcess id="expert-report" name="Expert report">
+        <bpmn:incoming>flow-expert-report</bpmn:incoming>
+        <bpmn:outgoing>flow-expert-end</bpmn:outgoing>
+        <bpmn:startEvent id="report-start">
+          <bpmn:outgoing>flow-report-1</bpmn:outgoing>
+        </bpmn:startEvent>
+        <bpmn:subProcess id="draft-report" name="Draft the report">
+          <bpmn:extensionElements>
+            <zeebe:stage />
+          </bpmn:extensionElements>
+          <bpmn:incoming>flow-report-1</bpmn:incoming>
+          <bpmn:outgoing>flow-report-2</bpmn:outgoing>
+          <bpmn:startEvent id="draft-start">
+            <bpmn:outgoing>flow-draft-1</bpmn:outgoing>
+          </bpmn:startEvent>
+          <bpmn:userTask id="write-report" name="Write the expert report">
+            <bpmn:extensionElements>
+              <zeebe:userTask />
+              <zeebe:formDefinition formId="write-report" />
+              <zeebe:assignmentDefinition candidateGroups="experts" />
+            </bpmn:extensionElements>
+            <bpmn:incoming>flow-draft-1</bpmn:incoming>
+            <bpmn:outgoing>flow-draft-2</bpmn:outgoing>
+          </bpmn:userTask>
+          <bpmn:endEvent id="draft-end">
+            <bpmn:incoming>flow-draft-2</bpmn:incoming>
+          </bpmn:endEvent>
+          <bpmn:sequenceFlow id="flow-draft-1" sourceRef="draft-start" targetRef="write-report" />
+          <bpmn:sequenceFlow id="flow-draft-2" sourceRef="write-report" targetRef="draft-end" />
+        </bpmn:subProcess>
+        <bpmn:userTask id="review-report" name="Review the expert report">
+          <bpmn:extensionElements>
+            <zeebe:userTask />
+            <zeebe:formDefinition formId="review-report" />
+            <zeebe:assignmentDefinition candidateGroups="claim-handlers" />
+          </bpmn:extensionElements>
+          <bpmn:incoming>flow-report-2</bpmn:incoming>
+          <bpmn:outgoing>flow-report-3</bpmn:outgoing>
+        </bpmn:userTask>
+        <bpmn:endEvent id="report-end">
+          <bpmn:incoming>flow-report-3</bpmn:incoming>
+        </bpmn:endEvent>
+        <bpmn:sequenceFlow id="flow-report-1" sourceRef="report-start" targetRef="draft-report" />
+        <bpmn:sequenceFlow id="flow-report-2" sourceRef="draft-report" targetRef="review-report" />
+        <bpmn:sequenceFlow id="flow-report-3" sourceRef="review-report" targetRef="report-end" />
+      </bpmn:subProcess>
+      <bpmn:endEvent id="expert-end">
+        <bpmn:incoming>flow-expert-end</bpmn:incoming>
+      </bpmn:endEvent>
+      <bpmn:sequenceFlow id="flow-expert-1" sourceRef="expert-start" targetRef="expert-split" />
+      <bpmn:sequenceFlow id="flow-expert-inspect" sourceRef="expert-split" targetRef="inspect-damage" />
+      <bpmn:sequenceFlow id="flow-expert-quotes" sourceRef="expert-split" targetRef="collect-quotes" />
+      <bpmn:sequenceFlow id="flow-inspect-join" sourceRef="inspect-damage" targetRef="expert-join" />
+      <bpmn:sequenceFlow id="flow-quotes-join" sourceRef="collect-quotes" targetRef="expert-join" />
+      <bpmn:sequenceFlow id="flow-expert-report" sourceRef="expert-join" targetRef="expert-report" />
+      <bpmn:sequenceFlow id="flow-expert-end" sourceRef="expert-report" targetRef="expert-end" />
+    </bpmn:subProcess>
+    <bpmn:sequenceFlow id="flow-expert-to-coverage" sourceRef="expert-assessment" targetRef="coverage-check" />
+    <bpmn:adHocSubProcess id="coverage-check" name="Coverage check">
+      <bpmn:extensionElements>
+        <zeebe:stage />
+        <zeebe:adHoc activeElementsCollection="=[&#34;check-policy&#34;, &#34;check-deductible&#34;]" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>flow-skip-expert</bpmn:incoming>
+      <bpmn:incoming>flow-expert-to-coverage</bpmn:incoming>
+      <bpmn:incoming>flow-need-more-info</bpmn:incoming>
+      <bpmn:outgoing>flow-to-decision</bpmn:outgoing>
+      <bpmn:userTask id="check-policy" name="Check the policy">
+        <bpmn:extensionElements>
+          <zeebe:userTask />
+          <zeebe:formDefinition formId="check-policy" />
+          <zeebe:assignmentDefinition candidateGroups="claim-handlers" />
+        </bpmn:extensionElements>
+      </bpmn:userTask>
+      <bpmn:userTask id="check-deductible" name="Check the deductible">
+        <bpmn:extensionElements>
+          <zeebe:userTask />
+          <zeebe:formDefinition formId="check-deductible" />
+          <zeebe:assignmentDefinition candidateGroups="claim-handlers" />
+        </bpmn:extensionElements>
+      </bpmn:userTask>
+      <bpmn:userTask id="ask-customer" name="Ask the customer for details">
+        <bpmn:extensionElements>
+          <zeebe:userTask />
+          <zeebe:formDefinition formId="ask-customer" />
+          <zeebe:assignmentDefinition candidateGroups="claim-handlers" />
+        </bpmn:extensionElements>
+      </bpmn:userTask>
+      <bpmn:userTask id="request-police-report" name="Request the police report">
+        <bpmn:extensionElements>
+          <zeebe:userTask />
+          <zeebe:formDefinition formId="request-police-report" />
+          <zeebe:assignmentDefinition candidateGroups="claim-handlers" />
+        </bpmn:extensionElements>
+      </bpmn:userTask>
+    </bpmn:adHocSubProcess>
+    <bpmn:sequenceFlow id="flow-to-decision" sourceRef="coverage-check" targetRef="decision" />
+    <bpmn:subProcess id="decision" name="Decision">
+      <bpmn:extensionElements>
+        <zeebe:stage />
+        <zeebe:ioMapping>
+          <zeebe:output source="=append(caseHeader, {label: &#34;Decision&#34;, value: decision})" target="caseHeader" />
+        </zeebe:ioMapping>
+      </bpmn:extensionElements>
+      <bpmn:incoming>flow-to-decision</bpmn:incoming>
+      <bpmn:outgoing>flow-to-decision-routing</bpmn:outgoing>
+      <bpmn:startEvent id="decision-start">
+        <bpmn:outgoing>flow-decision-1</bpmn:outgoing>
+      </bpmn:startEvent>
+      <bpmn:userTask id="decide-claim" name="Decide on the claim">
+        <bpmn:extensionElements>
+          <zeebe:userTask />
+          <zeebe:formDefinition formId="decide-claim" />
+          <zeebe:assignmentDefinition candidateGroups="claim-managers" />
+        </bpmn:extensionElements>
+        <bpmn:incoming>flow-decision-1</bpmn:incoming>
+        <bpmn:outgoing>flow-decision-2</bpmn:outgoing>
+      </bpmn:userTask>
+      <bpmn:endEvent id="decision-end">
+        <bpmn:incoming>flow-decision-2</bpmn:incoming>
+      </bpmn:endEvent>
+      <bpmn:sequenceFlow id="flow-decision-1" sourceRef="decision-start" targetRef="decide-claim" />
+      <bpmn:sequenceFlow id="flow-decision-2" sourceRef="decide-claim" targetRef="decision-end" />
+    </bpmn:subProcess>
+    <bpmn:sequenceFlow id="flow-to-decision-routing" sourceRef="decision" targetRef="decision-routing" />
+    <bpmn:exclusiveGateway id="decision-routing" name="Decision?" default="flow-rejected">
+      <bpmn:incoming>flow-to-decision-routing</bpmn:incoming>
+      <bpmn:outgoing>flow-approved</bpmn:outgoing>
+      <bpmn:outgoing>flow-need-more-info</bpmn:outgoing>
+      <bpmn:outgoing>flow-rejected</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:sequenceFlow id="flow-approved" name="approved" sourceRef="decision-routing" targetRef="payout">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=decision = "approved"</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="flow-need-more-info" name="need more information" sourceRef="decision-routing" targetRef="coverage-check">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=decision = "needMoreInfo"</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="flow-rejected" name="rejected" sourceRef="decision-routing" targetRef="claim-rejected" />
+    <bpmn:endEvent id="claim-rejected" name="Claim rejected">
+      <bpmn:incoming>flow-rejected</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:subProcess id="payout" name="Payout">
+      <bpmn:extensionElements>
+        <zeebe:stage />
+      </bpmn:extensionElements>
+      <bpmn:incoming>flow-approved</bpmn:incoming>
+      <bpmn:outgoing>flow-to-paid</bpmn:outgoing>
+      <bpmn:startEvent id="payout-start">
+        <bpmn:outgoing>flow-payout-1</bpmn:outgoing>
+      </bpmn:startEvent>
+      <bpmn:userTask id="approve-payout" name="Approve the payout">
+        <bpmn:extensionElements>
+          <zeebe:userTask />
+          <zeebe:formDefinition formId="approve-payout" />
+          <zeebe:assignmentDefinition candidateGroups="claim-managers" />
+        </bpmn:extensionElements>
+        <bpmn:incoming>flow-payout-1</bpmn:incoming>
+        <bpmn:outgoing>flow-payout-2</bpmn:outgoing>
+      </bpmn:userTask>
+      <bpmn:endEvent id="payout-end">
+        <bpmn:incoming>flow-payout-2</bpmn:incoming>
+      </bpmn:endEvent>
+      <bpmn:sequenceFlow id="flow-payout-1" sourceRef="payout-start" targetRef="approve-payout" />
+      <bpmn:sequenceFlow id="flow-payout-2" sourceRef="approve-payout" targetRef="payout-end" />
+    </bpmn:subProcess>
+    <bpmn:sequenceFlow id="flow-to-paid" sourceRef="payout" targetRef="claim-paid" />
+    <bpmn:endEvent id="claim-paid" name="Claim paid">
+      <bpmn:incoming>flow-to-paid</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:subProcess id="claim-withdrawn" name="Claim withdrawn" triggeredByEvent="true">
+      <bpmn:extensionElements>
+        <zeebe:stage />
+      </bpmn:extensionElements>
+      <bpmn:startEvent id="withdrawn-start" name="Withdrawn">
+        <bpmn:outgoing>flow-withdrawn-1</bpmn:outgoing>
+        <bpmn:messageEventDefinition id="withdrawn-start-definition" messageRef="message-claim-withdrawn" />
+      </bpmn:startEvent>
+      <bpmn:userTask id="confirm-withdrawal" name="Confirm the withdrawal">
+        <bpmn:extensionElements>
+          <zeebe:userTask />
+          <zeebe:formDefinition formId="confirm-withdrawal" />
+          <zeebe:assignmentDefinition candidateGroups="claim-handlers" />
+        </bpmn:extensionElements>
+        <bpmn:incoming>flow-withdrawn-1</bpmn:incoming>
+        <bpmn:outgoing>flow-withdrawn-2</bpmn:outgoing>
+      </bpmn:userTask>
+      <bpmn:endEvent id="withdrawn-end">
+        <bpmn:incoming>flow-withdrawn-2</bpmn:incoming>
+      </bpmn:endEvent>
+      <bpmn:sequenceFlow id="flow-withdrawn-1" sourceRef="withdrawn-start" targetRef="confirm-withdrawal" />
+      <bpmn:sequenceFlow id="flow-withdrawn-2" sourceRef="confirm-withdrawal" targetRef="withdrawn-end" />
+    </bpmn:subProcess>
+    <bpmn:subProcess id="fraud-investigation" name="Fraud investigation" triggeredByEvent="true">
+      <bpmn:extensionElements>
+        <zeebe:stage />
+      </bpmn:extensionElements>
+      <bpmn:startEvent id="fraud-start" name="Fraud suspected">
+        <bpmn:outgoing>flow-fraud-1</bpmn:outgoing>
+        <bpmn:escalationEventDefinition id="fraud-start-definition" escalationRef="escalation-fraud" />
+      </bpmn:startEvent>
+      <bpmn:userTask id="investigate-fraud" name="Investigate the fraud">
+        <bpmn:extensionElements>
+          <zeebe:userTask />
+          <zeebe:formDefinition formId="investigate-fraud" />
+          <zeebe:assignmentDefinition candidateGroups="fraud-team" />
+        </bpmn:extensionElements>
+        <bpmn:incoming>flow-fraud-1</bpmn:incoming>
+        <bpmn:outgoing>flow-fraud-2</bpmn:outgoing>
+      </bpmn:userTask>
+      <bpmn:endEvent id="fraud-end">
+        <bpmn:incoming>flow-fraud-2</bpmn:incoming>
+      </bpmn:endEvent>
+      <bpmn:sequenceFlow id="flow-fraud-1" sourceRef="fraud-start" targetRef="investigate-fraud" />
+      <bpmn:sequenceFlow id="flow-fraud-2" sourceRef="investigate-fraud" targetRef="fraud-end" />
+    </bpmn:subProcess>
+    <bpmn:subProcess id="claim-expired" name="Claim expired" triggeredByEvent="true">
+      <bpmn:extensionElements>
+        <zeebe:stage />
+      </bpmn:extensionElements>
+      <bpmn:startEvent id="expired-start" name="Deadline reached">
+        <bpmn:outgoing>flow-expired-1</bpmn:outgoing>
+        <bpmn:timerEventDefinition id="expired-start-definition">
+          <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">=claimDeadline</bpmn:timeDuration>
+        </bpmn:timerEventDefinition>
+      </bpmn:startEvent>
+      <bpmn:userTask id="close-expired-claim" name="Close the expired claim">
+        <bpmn:extensionElements>
+          <zeebe:userTask />
+          <zeebe:formDefinition formId="close-expired-claim" />
+          <zeebe:assignmentDefinition candidateGroups="claim-handlers" />
+        </bpmn:extensionElements>
+        <bpmn:incoming>flow-expired-1</bpmn:incoming>
+        <bpmn:outgoing>flow-expired-2</bpmn:outgoing>
+      </bpmn:userTask>
+      <bpmn:endEvent id="expired-end">
+        <bpmn:incoming>flow-expired-2</bpmn:incoming>
+      </bpmn:endEvent>
+      <bpmn:sequenceFlow id="flow-expired-1" sourceRef="expired-start" targetRef="close-expired-claim" />
+      <bpmn:sequenceFlow id="flow-expired-2" sourceRef="close-expired-claim" targetRef="expired-end" />
+    </bpmn:subProcess>
+    <bpmn:subProcess id="customer-contact" name="Customer contact" triggeredByEvent="true">
+      <bpmn:extensionElements>
+        <zeebe:stage />
+      </bpmn:extensionElements>
+      <bpmn:startEvent id="customer-called" name="Customer called" isInterrupting="false">
+        <bpmn:outgoing>flow-contact-1</bpmn:outgoing>
+        <bpmn:messageEventDefinition id="customer-called-definition" messageRef="message-customer-called" />
+      </bpmn:startEvent>
+      <bpmn:userTask id="call-customer-back" name="Call the customer back">
+        <bpmn:extensionElements>
+          <zeebe:userTask />
+          <zeebe:formDefinition formId="call-customer-back" />
+          <zeebe:assignmentDefinition candidateGroups="claim-handlers" />
+        </bpmn:extensionElements>
+        <bpmn:incoming>flow-contact-1</bpmn:incoming>
+        <bpmn:outgoing>flow-contact-2</bpmn:outgoing>
+      </bpmn:userTask>
+      <bpmn:endEvent id="contact-end">
+        <bpmn:incoming>flow-contact-2</bpmn:incoming>
+      </bpmn:endEvent>
+      <bpmn:sequenceFlow id="flow-contact-1" sourceRef="customer-called" targetRef="call-customer-back" />
+      <bpmn:sequenceFlow id="flow-contact-2" sourceRef="call-customer-back" targetRef="contact-end" />
+    </bpmn:subProcess>
+  </bpmn:process>
+  <bpmn:message id="message-claim-withdrawn" name="claim-withdrawn">
+    <bpmn:extensionElements>
+      <zeebe:subscription correlationKey="=claimId" />
+    </bpmn:extensionElements>
+  </bpmn:message>
+  <bpmn:message id="message-customer-called" name="customer-called">
+    <bpmn:extensionElements>
+      <zeebe:subscription correlationKey="=claimId" />
+    </bpmn:extensionElements>
+  </bpmn:message>
+  <bpmn:escalation id="escalation-fraud" name="Fraud suspected" escalationCode="fraud" />
+  <bpmndi:BPMNDiagram id="insurance-claim-diagram">
+    <bpmndi:BPMNPlane id="insurance-claim-plane" bpmnElement="insurance-claim">
+      <bpmndi:BPMNShape id="claim-submitted_di" bpmnElement="claim-submitted">
+        <dc:Bounds x="110" y="252" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="claim-registered_di" bpmnElement="claim-registered" isExpanded="true">
+        <dc:Bounds x="196" y="184" width="432" height="172" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="registered-start_di" bpmnElement="registered-start">
+        <dc:Bounds x="226" y="252" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="register-claim_di" bpmnElement="register-claim">
+        <dc:Bounds x="312" y="230" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="fraud-check_di" bpmnElement="fraud-check">
+        <dc:Bounds x="462" y="245" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="fraud-suspected_di" bpmnElement="fraud-suspected">
+        <dc:Bounds x="562" y="214" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="registered-end_di" bpmnElement="registered-end">
+        <dc:Bounds x="562" y="290" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="damage-routing_di" bpmnElement="damage-routing">
+        <dc:Bounds x="678" y="245" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="expert-assessment_di" bpmnElement="expert-assessment" isExpanded="true">
+        <dc:Bounds x="778" y="110" width="1528" height="320" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="expert-start_di" bpmnElement="expert-start">
+        <dc:Bounds x="808" y="252" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="expert-split_di" bpmnElement="expert-split">
+        <dc:Bounds x="894" y="245" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="inspect-damage_di" bpmnElement="inspect-damage">
+        <dc:Bounds x="1110" y="140" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="collect-quotes_di" bpmnElement="collect-quotes" isExpanded="true">
+        <dc:Bounds x="994" y="260" width="332" height="140" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="quotes-start_di" bpmnElement="quotes-start">
+        <dc:Bounds x="1024" y="312" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="request-quote_di" bpmnElement="request-quote">
+        <dc:Bounds x="1110" y="290" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="quotes-end_di" bpmnElement="quotes-end">
+        <dc:Bounds x="1260" y="312" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="expert-join_di" bpmnElement="expert-join">
+        <dc:Bounds x="1376" y="245" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="expert-report_di" bpmnElement="expert-report" isExpanded="true">
+        <dc:Bounds x="1476" y="170" width="714" height="200" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="report-start_di" bpmnElement="report-start">
+        <dc:Bounds x="1506" y="252" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="draft-report_di" bpmnElement="draft-report" isExpanded="true">
+        <dc:Bounds x="1592" y="200" width="332" height="140" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="draft-start_di" bpmnElement="draft-start">
+        <dc:Bounds x="1622" y="252" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="write-report_di" bpmnElement="write-report">
+        <dc:Bounds x="1708" y="230" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="draft-end_di" bpmnElement="draft-end">
+        <dc:Bounds x="1858" y="252" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="review-report_di" bpmnElement="review-report">
+        <dc:Bounds x="1974" y="230" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="report-end_di" bpmnElement="report-end">
+        <dc:Bounds x="2124" y="252" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="expert-end_di" bpmnElement="expert-end">
+        <dc:Bounds x="2240" y="252" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="coverage-check_di" bpmnElement="coverage-check" isExpanded="true">
+        <dc:Bounds x="2356" y="200" width="610" height="140" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="check-policy_di" bpmnElement="check-policy">
+        <dc:Bounds x="2386" y="230" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="check-deductible_di" bpmnElement="check-deductible">
+        <dc:Bounds x="2536" y="230" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ask-customer_di" bpmnElement="ask-customer">
+        <dc:Bounds x="2686" y="230" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="request-police-report_di" bpmnElement="request-police-report">
+        <dc:Bounds x="2836" y="230" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="decision_di" bpmnElement="decision" isExpanded="true">
+        <dc:Bounds x="3016" y="200" width="332" height="140" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="decision-start_di" bpmnElement="decision-start">
+        <dc:Bounds x="3046" y="252" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="decide-claim_di" bpmnElement="decide-claim">
+        <dc:Bounds x="3132" y="230" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="decision-end_di" bpmnElement="decision-end">
+        <dc:Bounds x="3282" y="252" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="decision-routing_di" bpmnElement="decision-routing">
+        <dc:Bounds x="3398" y="245" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="claim-rejected_di" bpmnElement="claim-rejected">
+        <dc:Bounds x="3646" y="162" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="payout_di" bpmnElement="payout" isExpanded="true">
+        <dc:Bounds x="3498" y="238" width="332" height="140" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="payout-start_di" bpmnElement="payout-start">
+        <dc:Bounds x="3528" y="290" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="approve-payout_di" bpmnElement="approve-payout">
+        <dc:Bounds x="3614" y="268" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="payout-end_di" bpmnElement="payout-end">
+        <dc:Bounds x="3764" y="290" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="claim-paid_di" bpmnElement="claim-paid">
+        <dc:Bounds x="3880" y="252" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="claim-withdrawn_di" bpmnElement="claim-withdrawn" isExpanded="true">
+        <dc:Bounds x="110" y="510" width="332" height="140" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="withdrawn-start_di" bpmnElement="withdrawn-start">
+        <dc:Bounds x="140" y="562" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="confirm-withdrawal_di" bpmnElement="confirm-withdrawal">
+        <dc:Bounds x="226" y="540" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="withdrawn-end_di" bpmnElement="withdrawn-end">
+        <dc:Bounds x="376" y="562" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="fraud-investigation_di" bpmnElement="fraud-investigation" isExpanded="true">
+        <dc:Bounds x="492" y="510" width="332" height="140" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="fraud-start_di" bpmnElement="fraud-start">
+        <dc:Bounds x="522" y="562" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="investigate-fraud_di" bpmnElement="investigate-fraud">
+        <dc:Bounds x="608" y="540" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="fraud-end_di" bpmnElement="fraud-end">
+        <dc:Bounds x="758" y="562" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="claim-expired_di" bpmnElement="claim-expired" isExpanded="true">
+        <dc:Bounds x="874" y="510" width="332" height="140" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="expired-start_di" bpmnElement="expired-start">
+        <dc:Bounds x="904" y="562" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="close-expired-claim_di" bpmnElement="close-expired-claim">
+        <dc:Bounds x="990" y="540" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="expired-end_di" bpmnElement="expired-end">
+        <dc:Bounds x="1140" y="562" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="customer-contact_di" bpmnElement="customer-contact" isExpanded="true">
+        <dc:Bounds x="1256" y="510" width="332" height="140" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="customer-called_di" bpmnElement="customer-called">
+        <dc:Bounds x="1286" y="562" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="call-customer-back_di" bpmnElement="call-customer-back">
+        <dc:Bounds x="1372" y="540" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="contact-end_di" bpmnElement="contact-end">
+        <dc:Bounds x="1522" y="562" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="flow-registered-1_di" bpmnElement="flow-registered-1">
+        <di:waypoint x="262" y="270" />
+        <di:waypoint x="312" y="270" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="flow-registered-2_di" bpmnElement="flow-registered-2">
+        <di:waypoint x="412" y="270" />
+        <di:waypoint x="462" y="270" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="flow-fraud_di" bpmnElement="flow-fraud">
+        <di:waypoint x="512" y="270" />
+        <di:waypoint x="537" y="270" />
+        <di:waypoint x="537" y="232" />
+        <di:waypoint x="562" y="232" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="flow-no-fraud_di" bpmnElement="flow-no-fraud">
+        <di:waypoint x="512" y="270" />
+        <di:waypoint x="537" y="270" />
+        <di:waypoint x="537" y="308" />
+        <di:waypoint x="562" y="308" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="flow-quotes-1_di" bpmnElement="flow-quotes-1">
+        <di:waypoint x="1060" y="330" />
+        <di:waypoint x="1110" y="330" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="flow-quotes-2_di" bpmnElement="flow-quotes-2">
+        <di:waypoint x="1210" y="330" />
+        <di:waypoint x="1260" y="330" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="flow-draft-1_di" bpmnElement="flow-draft-1">
+        <di:waypoint x="1658" y="270" />
+        <di:waypoint x="1708" y="270" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="flow-draft-2_di" bpmnElement="flow-draft-2">
+        <di:waypoint x="1808" y="270" />
+        <di:waypoint x="1858" y="270" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="flow-report-1_di" bpmnElement="flow-report-1">
+        <di:waypoint x="1542" y="270" />
+        <di:waypoint x="1592" y="270" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="flow-report-2_di" bpmnElement="flow-report-2">
+        <di:waypoint x="1924" y="270" />
+        <di:waypoint x="1974" y="270" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="flow-report-3_di" bpmnElement="flow-report-3">
+        <di:waypoint x="2074" y="270" />
+        <di:waypoint x="2124" y="270" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="flow-expert-1_di" bpmnElement="flow-expert-1">
+        <di:waypoint x="844" y="270" />
+        <di:waypoint x="894" y="270" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="flow-expert-inspect_di" bpmnElement="flow-expert-inspect">
+        <di:waypoint x="944" y="270" />
+        <di:waypoint x="1027" y="270" />
+        <di:waypoint x="1027" y="180" />
+        <di:waypoint x="1110" y="180" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="flow-expert-quotes_di" bpmnElement="flow-expert-quotes">
+        <di:waypoint x="944" y="270" />
+        <di:waypoint x="969" y="270" />
+        <di:waypoint x="969" y="330" />
+        <di:waypoint x="994" y="330" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="flow-inspect-join_di" bpmnElement="flow-inspect-join">
+        <di:waypoint x="1210" y="180" />
+        <di:waypoint x="1293" y="180" />
+        <di:waypoint x="1293" y="270" />
+        <di:waypoint x="1376" y="270" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="flow-quotes-join_di" bpmnElement="flow-quotes-join">
+        <di:waypoint x="1326" y="330" />
+        <di:waypoint x="1351" y="330" />
+        <di:waypoint x="1351" y="270" />
+        <di:waypoint x="1376" y="270" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="flow-expert-report_di" bpmnElement="flow-expert-report">
+        <di:waypoint x="1426" y="270" />
+        <di:waypoint x="1476" y="270" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="flow-expert-end_di" bpmnElement="flow-expert-end">
+        <di:waypoint x="2190" y="270" />
+        <di:waypoint x="2240" y="270" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="flow-decision-1_di" bpmnElement="flow-decision-1">
+        <di:waypoint x="3082" y="270" />
+        <di:waypoint x="3132" y="270" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="flow-decision-2_di" bpmnElement="flow-decision-2">
+        <di:waypoint x="3232" y="270" />
+        <di:waypoint x="3282" y="270" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="flow-payout-1_di" bpmnElement="flow-payout-1">
+        <di:waypoint x="3564" y="308" />
+        <di:waypoint x="3614" y="308" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="flow-payout-2_di" bpmnElement="flow-payout-2">
+        <di:waypoint x="3714" y="308" />
+        <di:waypoint x="3764" y="308" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="flow-to-registered_di" bpmnElement="flow-to-registered">
+        <di:waypoint x="146" y="270" />
+        <di:waypoint x="196" y="270" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="flow-to-routing_di" bpmnElement="flow-to-routing">
+        <di:waypoint x="628" y="270" />
+        <di:waypoint x="678" y="270" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="flow-to-expert_di" bpmnElement="flow-to-expert">
+        <di:waypoint x="728" y="270" />
+        <di:waypoint x="778" y="270" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="flow-skip-expert_di" bpmnElement="flow-skip-expert">
+        <di:waypoint x="703" y="295" />
+        <di:waypoint x="703" y="450" />
+        <di:waypoint x="2661" y="450" />
+        <di:waypoint x="2661" y="340" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="flow-expert-to-coverage_di" bpmnElement="flow-expert-to-coverage">
+        <di:waypoint x="2306" y="270" />
+        <di:waypoint x="2356" y="270" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="flow-to-decision_di" bpmnElement="flow-to-decision">
+        <di:waypoint x="2966" y="270" />
+        <di:waypoint x="3016" y="270" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="flow-to-decision-routing_di" bpmnElement="flow-to-decision-routing">
+        <di:waypoint x="3348" y="270" />
+        <di:waypoint x="3398" y="270" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="flow-approved_di" bpmnElement="flow-approved">
+        <di:waypoint x="3448" y="270" />
+        <di:waypoint x="3473" y="270" />
+        <di:waypoint x="3473" y="308" />
+        <di:waypoint x="3498" y="308" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="flow-need-more-info_di" bpmnElement="flow-need-more-info">
+        <di:waypoint x="3423" y="245" />
+        <di:waypoint x="3423" y="90" />
+        <di:waypoint x="2661" y="90" />
+        <di:waypoint x="2661" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="flow-rejected_di" bpmnElement="flow-rejected">
+        <di:waypoint x="3448" y="270" />
+        <di:waypoint x="3547" y="270" />
+        <di:waypoint x="3547" y="180" />
+        <di:waypoint x="3646" y="180" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="flow-to-paid_di" bpmnElement="flow-to-paid">
+        <di:waypoint x="3830" y="308" />
+        <di:waypoint x="3855" y="308" />
+        <di:waypoint x="3855" y="270" />
+        <di:waypoint x="3880" y="270" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="flow-withdrawn-1_di" bpmnElement="flow-withdrawn-1">
+        <di:waypoint x="176" y="580" />
+        <di:waypoint x="226" y="580" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="flow-withdrawn-2_di" bpmnElement="flow-withdrawn-2">
+        <di:waypoint x="326" y="580" />
+        <di:waypoint x="376" y="580" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="flow-fraud-1_di" bpmnElement="flow-fraud-1">
+        <di:waypoint x="558" y="580" />
+        <di:waypoint x="608" y="580" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="flow-fraud-2_di" bpmnElement="flow-fraud-2">
+        <di:waypoint x="708" y="580" />
+        <di:waypoint x="758" y="580" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="flow-expired-1_di" bpmnElement="flow-expired-1">
+        <di:waypoint x="940" y="580" />
+        <di:waypoint x="990" y="580" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="flow-expired-2_di" bpmnElement="flow-expired-2">
+        <di:waypoint x="1090" y="580" />
+        <di:waypoint x="1140" y="580" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="flow-contact-1_di" bpmnElement="flow-contact-1">
+        <di:waypoint x="1322" y="580" />
+        <di:waypoint x="1372" y="580" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="flow-contact-2_di" bpmnElement="flow-contact-2">
+        <di:waypoint x="1472" y="580" />
+        <di:waypoint x="1522" y="580" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>
+

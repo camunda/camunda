@@ -1,0 +1,35 @@
+{
+  "executionPlatform": "Camunda Cloud",
+  "executionPlatformVersion": "8.11.0",
+  "exporter": {
+    "name": "Camunda Modeler",
+    "version": "5.40.0"
+  },
+  "schemaVersion": 18,
+  "id": "inspect-damage",
+  "type": "default",
+  "components": [
+    {
+      "type": "number",
+      "key": "estimatedDamage",
+      "label": "Estimated damage (EUR)",
+      "id": "Field_estimatedDamage_117",
+      "readonly": true
+    },
+    {
+      "type": "checkbox",
+      "key": "damageConfirmed",
+      "label": "The damage is confirmed",
+      "id": "Field_damageConfirmed_118"
+    },
+    {
+      "type": "textarea",
+      "key": "inspectionNotes",
+      "label": "Inspection notes",
+      "id": "Field_inspectionNotes_119",
+      "validate": {
+        "required": true
+      }
+    }
+  ]
+}

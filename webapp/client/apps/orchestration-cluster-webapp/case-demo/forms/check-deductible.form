@@ -1,0 +1,23 @@
+{
+  "executionPlatform": "Camunda Cloud",
+  "executionPlatformVersion": "8.11.0",
+  "exporter": {
+    "name": "Camunda Modeler",
+    "version": "5.40.0"
+  },
+  "schemaVersion": 18,
+  "id": "check-deductible",
+  "type": "default",
+  "components": [
+    {
+      "type": "number",
+      "key": "deductible",
+      "label": "Deductible (EUR)",
+      "id": "Field_deductible_129",
+      "validate": {
+        "required": true,
+        "min": 0
+      }
+    }
+  ]
+}

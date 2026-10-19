@@ -1,0 +1,67 @@
+{
+  "executionPlatform": "Camunda Cloud",
+  "executionPlatformVersion": "8.11.0",
+  "exporter": {
+    "name": "Camunda Modeler",
+    "version": "5.40.0"
+  },
+  "schemaVersion": 18,
+  "id": "claim-case-details",
+  "type": "default",
+  "components": [
+    {
+      "type": "textfield",
+      "key": "claimantName",
+      "label": "Claimant",
+      "id": "Field_claimantName_101"
+    },
+    {
+      "type": "textfield",
+      "key": "policyNumber",
+      "label": "Policy number",
+      "id": "Field_policyNumber_102"
+    },
+    {
+      "type": "textfield",
+      "key": "claimType",
+      "label": "Claim type",
+      "id": "Field_claimType_103"
+    },
+    {
+      "type": "textfield",
+      "key": "incidentDate",
+      "label": "Incident date",
+      "id": "Field_incidentDate_104"
+    },
+    {
+      "type": "number",
+      "key": "estimatedDamage",
+      "label": "Estimated damage (EUR)",
+      "id": "Field_estimatedDamage_105"
+    },
+    {
+      "type": "textarea",
+      "key": "claimDescription",
+      "label": "Description",
+      "id": "Field_claimDescription_106"
+    },
+    {
+      "type": "number",
+      "key": "deductible",
+      "label": "Deductible (EUR)",
+      "id": "Field_deductible_107"
+    },
+    {
+      "type": "textfield",
+      "key": "decision",
+      "label": "Decision",
+      "id": "Field_decision_108"
+    },
+    {
+      "type": "number",
+      "key": "payoutAmount",
+      "label": "Payout (EUR)",
+      "id": "Field_payoutAmount_109"
+    }
+  ]
+}

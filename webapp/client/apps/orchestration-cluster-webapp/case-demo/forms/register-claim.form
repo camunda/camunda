@@ -1,0 +1,81 @@
+{
+  "executionPlatform": "Camunda Cloud",
+  "executionPlatformVersion": "8.11.0",
+  "exporter": {
+    "name": "Camunda Modeler",
+    "version": "5.40.0"
+  },
+  "schemaVersion": 18,
+  "id": "register-claim",
+  "type": "default",
+  "components": [
+    {
+      "type": "text",
+      "text": "### Register the claim\nComplete the claim data that the customer gave.",
+      "id": "Text_110"
+    },
+    {
+      "type": "textfield",
+      "key": "claimantName",
+      "label": "Claimant",
+      "id": "Field_claimantName_111",
+      "readonly": true
+    },
+    {
+      "type": "select",
+      "key": "claimType",
+      "label": "Claim type",
+      "id": "Field_claimType_112",
+      "validate": {
+        "required": true
+      },
+      "values": [
+        {
+          "value": "vehicle",
+          "label": "Vehicle"
+        },
+        {
+          "value": "property",
+          "label": "Property"
+        },
+        {
+          "value": "liability",
+          "label": "Liability"
+        }
+      ]
+    },
+    {
+      "type": "textfield",
+      "key": "incidentDate",
+      "label": "Incident date",
+      "id": "Field_incidentDate_113",
+      "validate": {
+        "required": true
+      }
+    },
+    {
+      "type": "number",
+      "key": "estimatedDamage",
+      "label": "Estimated damage (EUR)",
+      "id": "Field_estimatedDamage_114",
+      "validate": {
+        "required": true,
+        "min": 0
+      },
+      "description": "Above 10,000 EUR an expert assesses the damage"
+    },
+    {
+      "type": "textarea",
+      "key": "claimDescription",
+      "label": "Description",
+      "id": "Field_claimDescription_115"
+    },
+    {
+      "type": "checkbox",
+      "key": "fraudSuspected",
+      "label": "Fraud suspected",
+      "id": "Field_fraudSuspected_116",
+      "description": "Starts a fraud investigation"
+    }
+  ]
+}

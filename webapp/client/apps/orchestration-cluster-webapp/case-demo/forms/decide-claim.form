@@ -1,0 +1,65 @@
+{
+  "executionPlatform": "Camunda Cloud",
+  "executionPlatformVersion": "8.11.0",
+  "exporter": {
+    "name": "Camunda Modeler",
+    "version": "5.40.0"
+  },
+  "schemaVersion": 18,
+  "id": "decide-claim",
+  "type": "default",
+  "components": [
+    {
+      "type": "number",
+      "key": "estimatedDamage",
+      "label": "Estimated damage (EUR)",
+      "id": "Field_estimatedDamage_133",
+      "readonly": true
+    },
+    {
+      "type": "number",
+      "key": "deductible",
+      "label": "Deductible (EUR)",
+      "id": "Field_deductible_134",
+      "readonly": true
+    },
+    {
+      "type": "radio",
+      "key": "decision",
+      "label": "Decision",
+      "id": "Field_decision_135",
+      "validate": {
+        "required": true
+      },
+      "values": [
+        {
+          "value": "approved",
+          "label": "Approve"
+        },
+        {
+          "value": "rejected",
+          "label": "Reject"
+        },
+        {
+          "value": "needMoreInfo",
+          "label": "Need more information"
+        }
+      ]
+    },
+    {
+      "type": "number",
+      "key": "payoutAmount",
+      "label": "Payout (EUR)",
+      "id": "Field_payoutAmount_136",
+      "conditional": {
+        "hide": "=decision != \"approved\""
+      }
+    },
+    {
+      "type": "textarea",
+      "key": "decisionNotes",
+      "label": "Notes",
+      "id": "Field_decisionNotes_137"
+    }
+  ]
+}
