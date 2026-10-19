@@ -771,6 +771,10 @@ The decision is by where T exists, not by comparing T with H: after a restore to
 the new branch (`<tl>.b<T>`) takes old backups again until its own handover H2, and those come after
 H in time.
 
+The restore app takes this path when the log archive is enabled in its configuration, when a
+timeline is named, or when the old store has handover files for any partition: the bucket, not
+the configuration, says whether the cluster handed over.
+
 There is no combined path (old backup H + archived log): the snapshot precondition in 18.4 step 4
 guarantees an archived snapshot ≤ H for every T > H. If the old-side file is missing (leader died
 before the outbox wrote it), the restore also searches the configured archive timeline. "latest" means the newest checkpoint restorable on every

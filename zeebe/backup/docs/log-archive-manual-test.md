@@ -223,11 +223,12 @@ cd zeebe/backup/docs/log-archive-manual && source ./env.sh
      Old files are never modified, only added next to.
 
 **Confirmed on the first run (2026-10-19):**
-- The restore needs `LOG_ARCHIVE=on`, like the upgraded brokers. Without it the restore app only
-  knows old backups: (c) fails with "No completed backup found", and (a)/(b) write no timeline
-  file, so the started cluster forks `tl-0.f<n>` instead of `tl-0.b<id>` (safe, but not the
-  intended name). `restore.sh` unsets `LOG_ARCHIVE` for the restore app itself, because Spring
-  would bind it to the app's `--logArchive.*` arguments.
+- The first run restored without the log archive in the restore configuration: the restore app
+  then only knew old backups ((c) failed with "No completed backup found"; (a)/(b) wrote no
+  timeline file). Fixed: when the old store has handover files, the restore app takes the
+  handover-aware path whatever the flag says. `LOG_ARCHIVE=on` is still passed to match the
+  upgraded brokers; `restore.sh` unsets it for the restore app itself, because Spring would bind
+  it to the app's `--logArchive.*` arguments.
 - Handover files have `formatVersion` 1. The scheduler took H about 40 s after the upgrade, after
   p3. Timeline files after restore: `tl-0.b<H>` (b), `tl-0.r<C>` (c), `tl-0.b<O>` (a).
 - Results: (a) 60 jobs (p1, p2), (b) 90 (p1–p3), (c) 120 (p1–p4), p5 never.

@@ -20,6 +20,7 @@ import io.camunda.configuration.data.SecondaryStorage.SecondaryStorageType;
 import io.camunda.db.rdbms.sql.ExporterPositionMapper;
 import io.camunda.db.rdbms.write.RdbmsMapperBundle;
 import io.camunda.db.rdbms.write.domain.ExporterPositionModel;
+import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RestoreRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.TenantRestoreArguments;
@@ -42,6 +43,7 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.ExecutionException;
 import java.util.function.IntFunction;
+import java.util.stream.IntStream;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
@@ -218,12 +220,22 @@ public class RestoreApp implements ApplicationRunner {
       return false;
     }
     final var tenantConfiguration = physicalTenantConfigurations.forPhysicalTenant(tenantId);
-    if (!tenantConfiguration.getData().getBackup().getLogArchive().isEnabled()
-        && explicitTimeline.isEmpty()) {
-      return false;
+    final var partitionCount = tenantConfiguration.getCluster().getPartitionsCount();
+    final var logArchive = tenantConfiguration.getData().getBackup().getLogArchive();
+    if (!logArchive.isEnabled() && explicitTimeline.isEmpty()) {
+      if (!hasHandoverRecords(tenantId, partitionCount)) {
+        return false;
+      }
+      // The bucket, not this configuration, says whether the cluster handed over: a restore run
+      // with an outdated configuration would otherwise miss every restore point after H, and the
+      // old path would restore without naming the new timeline. Enabling it here also makes the
+      // old path write the timeline file.
+      LOG.info(
+          "The log archive is disabled in this configuration, but the backup store records a"
+              + " handover to it; restoring as with the log archive enabled");
+      logArchive.setEnabled(true);
     }
     final var selection = Objects.requireNonNull(selectionPerTenant.get(tenantId));
-    final var partitionCount = tenantConfiguration.getCluster().getPartitionsCount();
     final var request =
         selection.hasBackupIds()
             ? HandoverRestoreRequest.ofBackupIds(selection.backupIds())
@@ -261,6 +273,18 @@ public class RestoreApp implements ApplicationRunner {
               true));
       return true;
     }
+  }
+
+  /** Whether any partition of the tenant has a handover record next to its old backups. */
+  private boolean hasHandoverRecords(final String tenantId, final int partitionCount) {
+    final BackupStore store;
+    try {
+      store = backupStores.forPhysicalTenant(tenantId);
+    } catch (final IllegalArgumentException noBackupStore) {
+      return false;
+    }
+    return IntStream.rangeClosed(1, partitionCount)
+        .anyMatch(partition -> !store.loadHandoverRecords(partition).join().isEmpty());
   }
 
   /** The RDBMS exported positions of the tenant's partitions that have one; empty without RDBMS. */

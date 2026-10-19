@@ -221,6 +221,29 @@ final class LogArchiveHandoverRestoreIT {
   }
 
   @Test
+  void shouldRestoreAcrossTheHandoverWithTheLogArchiveDisabledInTheRestoreConfiguration() {
+    // given -- a completed handover, restored with a configuration from before the upgrade
+    final var scenario = runSourceThroughHandover(false);
+    source.stop();
+    final Consumer<TestRestoreApp> archiveDisabled =
+        app -> app.withProperty("zeebe.broker.data.backup.logArchive.enabled", false);
+
+    // when / then -- a backup after H is still found in the archive
+    assertRestore(
+        "disabled-after",
+        app -> archiveDisabled.accept(app.withBackupId(scenario.archived())),
+        TIMELINE + ".r" + scenario.archived(),
+        Map.of("a", PHASE_SIZE, "b", PHASE_SIZE, "c", PHASE_SIZE));
+
+    // and -- a backup before H takes the old path and still names the new branch
+    assertRestore(
+        "disabled-before",
+        app -> archiveDisabled.accept(app.withBackupId(scenario.old())),
+        TIMELINE + ".b" + scenario.old(),
+        Map.of("a", PHASE_SIZE));
+  }
+
+  @Test
   void shouldReportAManualBackupAfterTheHandoverFromTheArchive() throws IOException {
     // given -- a completed handover
     final var scenario = runSourceThroughHandover(false);
