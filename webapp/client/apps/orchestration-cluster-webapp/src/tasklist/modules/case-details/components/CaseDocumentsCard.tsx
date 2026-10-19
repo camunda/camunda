@@ -32,7 +32,7 @@ const CaseDocumentsCard: React.FC<Props> = ({documents}) => {
 					<ul className="flex flex-col divide-y divide-border">
 						{documents.map(({variableName, documentId, contentHash, fileName, contentType, size}) => (
 							<li key={`${variableName}-${documentId}`} className="flex items-center gap-3 py-2.5 first:pt-0 last:pb-0">
-								<FileText className="size-4 shrink-0 text-[color:var(--danger-action-default)]" aria-hidden />
+								<FileText className="size-4 shrink-0 text-danger-foreground-strong" aria-hidden />
 								<div className="flex min-w-0 flex-1 flex-col gap-0.5">
 									<a
 										href={endpoints.getDocument({documentId, contentHash: contentHash ?? undefined}).url}

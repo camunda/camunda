@@ -8,14 +8,12 @@
 
 import {useTranslation} from 'react-i18next';
 import {Alert, AlertDescription, AlertTitle} from '@camunda/design-system';
-import {TriangleAlert} from '@camunda/design-system/icons';
 
 const CaseIncidentBanner: React.FC = () => {
 	const {t} = useTranslation();
 
 	return (
 		<Alert variant="destructive">
-			<TriangleAlert aria-hidden />
 			<AlertTitle>{t('tasklist.caseIncidentTitle')}</AlertTitle>
 			<AlertDescription>{t('tasklist.caseIncidentDescription')}</AlertDescription>
 		</Alert>

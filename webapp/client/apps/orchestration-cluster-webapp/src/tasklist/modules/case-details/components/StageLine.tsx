@@ -31,9 +31,9 @@ const STATE_MAPPINGS = {
 	},
 	incident: {
 		icon: CircleAlert,
-		iconClassName: 'text-[color:var(--danger-action-default)]',
-		labelClassName: 'font-semibold text-neutral-foreground-strong',
-		statusClassName: 'text-[color:var(--danger-action-default)]',
+		iconClassName: 'text-danger-foreground-strong',
+		labelClassName: 'font-semibold text-danger-foreground-strong',
+		statusClassName: 'text-danger-foreground-strong',
 		labelKey: 'tasklist.caseStageIncident',
 	},
 	cancelled: {

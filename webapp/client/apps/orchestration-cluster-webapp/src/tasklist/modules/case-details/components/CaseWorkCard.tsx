@@ -80,6 +80,7 @@ const WorkRow: React.FC<TaskRowProps> = ({name, description, icon, isDone, actio
 type Props = {
 	caseState: ProcessInstance['state'];
 	stageName: string | null;
+	isStageBlocked: boolean;
 	work: StageWork;
 	currentUsername: string;
 	caseWorkStatus: CaseWorkStatus;
@@ -93,6 +94,7 @@ type Props = {
 const CaseWorkCard: React.FC<Props> = ({
 	caseState,
 	stageName,
+	isStageBlocked,
 	work,
 	currentUsername,
 	caseWorkStatus,
@@ -203,7 +205,13 @@ const CaseWorkCard: React.FC<Props> = ({
 				{hasWork ? null : (
 					<EmptyState
 						size="sm"
-						heading={stageName === null ? t('tasklist.caseNoOpenWorkInCase') : t('tasklist.caseNoOpenWork')}
+						heading={
+							isStageBlocked
+								? t('tasklist.caseStageBlockedNoWork')
+								: stageName === null
+									? t('tasklist.caseNoOpenWorkInCase')
+									: t('tasklist.caseNoOpenWork')
+						}
 					/>
 				)}
 
@@ -217,7 +225,12 @@ const CaseWorkCard: React.FC<Props> = ({
 								<WorkRow
 									key={userTask.userTaskKey}
 									name={userTask.name || userTask.elementId}
-									description={getAssignmentLabel(userTask, currentUsername)}
+									description={[
+										work.optionalStageNames[userTask.userTaskKey],
+										getAssignmentLabel(userTask, currentUsername),
+									]
+										.filter(Boolean)
+										.join(' · ')}
 									icon={<UserRound className="size-4 shrink-0 text-[color:var(--info-action-default)]" aria-hidden />}
 									action={renderOpenButton(userTask)}
 								/>

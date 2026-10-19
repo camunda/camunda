@@ -39,6 +39,7 @@ const TasklistCaseTasksPage: React.FC<Props> = ({
 		<CaseWorkCard
 			caseState={processInstance.state}
 			stageName={currentStage?.stage.name ?? null}
+			isStageBlocked={currentStage?.state === 'incident'}
 			work={work}
 			currentUsername={currentUser.username}
 			caseWorkStatus={caseWork.status}

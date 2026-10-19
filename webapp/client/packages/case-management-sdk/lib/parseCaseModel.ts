@@ -61,7 +61,12 @@ type AdHocSettings = {
 	manualCompletion: ManualCompletion | null;
 };
 
-type StageKind = 'subProcess' | 'adHoc' | 'alternative';
+/**
+ * - `alternative`: an interrupting event sub-process; it replaces the rest of the line (STAGES.md)
+ * - `optional`: a non-interrupting event sub-process; it runs next to the active stage. The design has no
+ *   model for optional stages yet (GAP-001), so the line does not show it.
+ */
+type StageKind = 'subProcess' | 'adHoc' | 'alternative' | 'optional';
 
 type Stage = {
 	id: string;
@@ -118,6 +123,12 @@ function getChildFlowNodes(element: Element): Element[] {
 
 function getDescendantFlowNodes(element: Element): Element[] {
 	return getChildFlowNodes(element).flatMap((child) => [child, ...getDescendantFlowNodes(child)]);
+}
+
+function isNonInterrupting(eventSubProcess: Element): boolean {
+	return getChildFlowNodes(eventSubProcess).some(
+		(child) => isBpmn(child, 'startEvent') && child.getAttribute('isInterrupting') === 'false',
+	);
 }
 
 function isEventSubProcess(element: Element): boolean {
@@ -250,6 +261,10 @@ function getFlowDistances(process: Element): Map<string, number> {
 	return distances;
 }
 
+function isEventDriven(stage: Stage): boolean {
+	return stage.kind === 'alternative' || stage.kind === 'optional';
+}
+
 function parseCaseModel(xml: string, processDefinitionId: string): CaseModel {
 	const document = new DOMParser().parseFromString(xml, 'application/xml');
 
@@ -304,7 +319,13 @@ function parseCaseModel(xml: string, processDefinitionId: string): CaseModel {
 		const elementIds = getDescendantFlowNodes(element).flatMap((child) => child.getAttribute('id') ?? []);
 		const manualCompletion = findManualCompletion(document, process, element);
 		const isAdHoc = isBpmn(element, 'adHocSubProcess');
-		const kind: StageKind = isEventSubProcess(element) ? 'alternative' : isAdHoc ? 'adHoc' : 'subProcess';
+		const kind: StageKind = isEventSubProcess(element)
+			? isNonInterrupting(element)
+				? 'optional'
+				: 'alternative'
+			: isAdHoc
+				? 'adHoc'
+				: 'subProcess';
 
 		for (const elementId of elementIds) {
 			stageIdByElementId.set(elementId, id);
@@ -325,7 +346,7 @@ function parseCaseModel(xml: string, processDefinitionId: string): CaseModel {
 	const sortedStages = stages
 		.sort(
 			(first, second) =>
-				Number(first.stage.kind === 'alternative') - Number(second.stage.kind === 'alternative') ||
+				Number(isEventDriven(first.stage)) - Number(isEventDriven(second.stage)) ||
 				first.distance - second.distance ||
 				first.documentOrder - second.documentOrder,
 		)
