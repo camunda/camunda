@@ -97,6 +97,23 @@
             </excludes>
             <flexmark/>
           </markdown>
+          <!-- Keep in sync with the kotlin block in gradle/build-logic (buildlogic.root-conventions).
+          Gradle reads the ktfmt version from the same parent pom property, otherwise the two
+          formatters rewrite each other's output. -->
+          <kotlin>
+            <includes>
+              <include>**/*.kt</include>
+            </includes>
+            <excludes>
+              <exclude>**/target/**</exclude>
+              <exclude>**/node_modules/**</exclude>
+              <exclude>**/build/**</exclude>
+            </excludes>
+            <ktfmt>
+              <version>${plugin.version.ktfmt}</version>
+              <style>GOOGLE</style>
+            </ktfmt>
+          </kotlin>
         </configuration>
       </plugin>
     </plugins>
