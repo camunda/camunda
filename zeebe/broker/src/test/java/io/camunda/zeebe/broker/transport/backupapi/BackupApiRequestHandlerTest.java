@@ -473,6 +473,24 @@ class BackupApiRequestHandlerTest {
   }
 
   @Test
+  void shouldReportBackupCheckpointOfASealedChunkAsCompletedWithItsPosition() {
+    // given -- the checkpoint is far below F, as it is once its objects are sealed into a chunk
+    givenOldBackupDoesNotExist(20L);
+    when(logArchiveState.findCheckpoint(20L))
+        .thenReturn(Optional.of(archiveCheckpoint(20L, 600L, CheckpointType.MANUAL_BACKUP, 1000L)));
+    when(logArchiveState.meta()).thenReturn(handoverMeta(10L, 500L).setArchivedPosition(90_000L));
+
+    // when
+    final var statusResponse = queryStatus(20L);
+
+    // then
+    assertThat(statusResponse)
+        .returns(BackupStatusCode.COMPLETED, BackupStatusResponse::getStatus)
+        .returns(600L, BackupStatusResponse::getCheckpointPosition)
+        .returns(Instant.ofEpochMilli(1000L).toString(), BackupStatusResponse::getCreatedAt);
+  }
+
+  @Test
   void shouldReportUnknownCheckpointAfterHandoverAsDoesNotExist() {
     // given
     givenOldBackupDoesNotExist(20L);
@@ -547,6 +565,31 @@ class BackupApiRequestHandlerTest {
             tuple(10L, BackupStatusCode.COMPLETED),
             tuple(20L, BackupStatusCode.COMPLETED),
             tuple(30L, BackupStatusCode.IN_PROGRESS));
+  }
+
+  @Test
+  void shouldListBackupCheckpointsOfSealedChunksAsCompleted() {
+    // given
+    when(logArchiveState.meta()).thenReturn(handoverMeta(10L, 500L).setArchivedPosition(90_000L));
+    when(backupManager.listBackups("")).thenReturn(CompletableActorFuture.completed(List.of()));
+    when(logArchiveState.checkpointsAfter(10L))
+        .thenReturn(
+            List.of(
+                archiveCheckpoint(20L, 600L, CheckpointType.MANUAL_BACKUP, 2000L),
+                archiveCheckpoint(30L, 700L, CheckpointType.SCHEDULED_BACKUP, 3000L)));
+
+    // when
+    final var listResponse = new BackupListResponse(List.of());
+    serverOutput.setResponseObject(listResponse);
+    handleRequest(new BackupRequest().setType(BackupRequestType.LIST).setPartitionId(1));
+
+    // then
+    assertThat(responseFuture).succeedsWithin(Duration.ofMillis(100)).matches(Either::isRight);
+    assertThat(listResponse.getBackups())
+        .extracting(
+            BackupListResponse.BackupStatus::backupId, BackupListResponse.BackupStatus::status)
+        .containsExactly(
+            tuple(20L, BackupStatusCode.COMPLETED), tuple(30L, BackupStatusCode.COMPLETED));
   }
 
   private void givenHandover(final long checkpointId, final long position) {

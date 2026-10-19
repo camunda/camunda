@@ -30,7 +30,6 @@ import java.util.Optional;
 import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Access to the replicated log archive state (spec section 5), stored in the {@code LOG_ARCHIVE_*}
@@ -71,6 +70,12 @@ public final class DbLogArchiveState {
   private final ColumnFamily<DbLong, ObjectDbValue<CoveredCheckpoint>>
       pendingCheckpointsColumnFamily;
 
+  private final DbLong backupCheckpointKey = new DbLong();
+  private final ObjectDbValue<CoveredCheckpoint> backupCheckpointValue =
+      new ObjectDbValue<>(CoveredCheckpoint::new);
+  private final ColumnFamily<DbLong, ObjectDbValue<CoveredCheckpoint>>
+      backupCheckpointsColumnFamily;
+
   public DbLogArchiveState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
     metaKey.wrapString(META_KEY);
@@ -98,6 +103,12 @@ public final class DbLogArchiveState {
             transactionContext,
             pendingCheckpointKey,
             pendingCheckpointValue);
+    backupCheckpointsColumnFamily =
+        zeebeDb.createColumnFamily(
+            ZbColumnFamilies.LOG_ARCHIVE_BACKUP_CHECKPOINTS,
+            transactionContext,
+            backupCheckpointKey,
+            backupCheckpointValue);
   }
 
   // ---------------------------------------------------------------------------------------------
@@ -190,10 +201,9 @@ public final class DbLogArchiveState {
   }
 
   /**
-   * Finds a checkpoint the log archive knows about: a pending one, one covered by an open object,
-   * or, if its id is the first or last checkpoint id of a sealed chunk, that one. A sealed chunk
-   * keeps no further checkpoints in the state, so such a checkpoint has no position (-1) and no
-   * timestamp (-1); it is archived by definition.
+   * Finds a checkpoint that backup status and listing can report: a pending one, or a backup
+   * checkpoint that a {@code LOG_ARCHIVED} event has covered. The latter stays known after its
+   * objects are sealed into an index chunk.
    */
   public Optional<CoveredCheckpoint> findCheckpoint(final long checkpointId) {
     pendingCheckpointKey.wrapLong(checkpointId);
@@ -201,39 +211,16 @@ public final class DbLogArchiveState {
     if (pending != null) {
       return Optional.of(new CoveredCheckpoint().copy(pending.value()));
     }
-    final var found = new AtomicReference<CoveredCheckpoint>();
-    openObjectsColumnFamily.whileTrue(
-        (key, value) -> {
-          value
-              .checkpoints()
-              .forEach(
-                  checkpoint -> {
-                    if (checkpoint.getCheckpointId() == checkpointId) {
-                      found.set(new CoveredCheckpoint().copy(checkpoint));
-                    }
-                  });
-          return found.get() == null;
-        });
-    if (found.get() != null) {
-      return Optional.of(found.get());
-    }
-    final var sealed = new AtomicBoolean(false);
-    chunksColumnFamily.forEach(
-        chunk -> {
-          final var value = chunk.value();
-          if (value.getFirstCheckpointId() == checkpointId
-              || value.getLastCheckpointId() == checkpointId) {
-            sealed.set(true);
-          }
-        });
-    return sealed.get()
-        ? Optional.of(new CoveredCheckpoint().setCheckpointId(checkpointId))
-        : Optional.empty();
+    backupCheckpointKey.wrapLong(checkpointId);
+    final var archived = backupCheckpointsColumnFamily.get(backupCheckpointKey);
+    return archived == null
+        ? Optional.empty()
+        : Optional.of(new CoveredCheckpoint().copy(archived.value()));
   }
 
   /**
-   * The pending checkpoints and those covered by open objects with an id greater than {@code
-   * checkpointId}, in checkpoint id order. Checkpoints of sealed chunks are not included.
+   * The pending checkpoints and the covered backup checkpoints with an id greater than {@code
+   * checkpointId}, in checkpoint id order.
    */
   public List<CoveredCheckpoint> checkpointsAfter(final long checkpointId) {
     final var result = new TreeMap<Long, CoveredCheckpoint>();
@@ -244,17 +231,13 @@ public final class DbLogArchiveState {
                 value.value().getCheckpointId(), new CoveredCheckpoint().copy(value.value()));
           }
         });
-    openObjectsColumnFamily.forEach(
-        object ->
-            object
-                .checkpoints()
-                .forEach(
-                    checkpoint -> {
-                      if (checkpoint.getCheckpointId() > checkpointId) {
-                        result.put(
-                            checkpoint.getCheckpointId(), new CoveredCheckpoint().copy(checkpoint));
-                      }
-                    }));
+    backupCheckpointKey.wrapLong(checkpointId + 1);
+    backupCheckpointsColumnFamily.whileTrue(
+        backupCheckpointKey,
+        (key, value) -> {
+          result.put(key.getValue(), new CoveredCheckpoint().copy(value.value()));
+          return true;
+        });
     return List.copyOf(result.values());
   }
 
@@ -335,7 +318,20 @@ public final class DbLogArchiveState {
     pendingCheckpointsColumnFamily.deleteExisting(pendingCheckpointKey);
   }
 
-  /** Deletes every log archive row including the meta row and the pending checkpoints. */
+  /**
+   * Records a checkpoint that a {@code LOG_ARCHIVED} event has covered and whose type creates a
+   * backup. Called by the {@code LOG_ARCHIVED} applier.
+   */
+  public void insertBackupCheckpoint(final CoveredCheckpoint checkpoint) {
+    backupCheckpointKey.wrapLong(checkpoint.getCheckpointId());
+    backupCheckpointValue.value().copy(checkpoint);
+    backupCheckpointsColumnFamily.upsert(backupCheckpointKey, backupCheckpointValue);
+  }
+
+  /**
+   * Deletes every log archive row including the meta row, but neither the pending checkpoints nor
+   * the backup checkpoints.
+   */
   public void clearAll() {
     clear(metaColumnFamily);
     clear(openObjectsColumnFamily);

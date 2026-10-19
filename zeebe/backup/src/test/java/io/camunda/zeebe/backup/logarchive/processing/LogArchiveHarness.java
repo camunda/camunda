@@ -320,6 +320,10 @@ final class LogArchiveHarness implements AutoCloseable {
         .forEach(
             checkpoint -> builder.append(LogArchiveJsonMapper.checkpoint(checkpoint)).append('\n'));
     state
+        .checkpointsAfter(-1)
+        .forEach(
+            checkpoint -> builder.append(LogArchiveJsonMapper.checkpoint(checkpoint)).append('\n'));
+    state
         .outboxAfter(-1)
         .forEach(
             row ->
