@@ -29,6 +29,17 @@ describe('<CollapsablePanel />', () => {
 		expect(onToggle).toHaveBeenCalledTimes(1);
 	});
 
+	it('should expand when clicking anywhere on the collapsed rail', async () => {
+		const onToggle = vi.fn();
+		const screen = await render(
+			<CollapsablePanel label="Filters" panelPosition="LEFT" isCollapsed onToggle={onToggle} maxWidth={300} />,
+		);
+
+		await userEvent.click(screen.getByTestId('collapsed-panel'));
+
+		expect(onToggle).toHaveBeenCalledTimes(1);
+	});
+
 	it('should render the expanded panel with children, header, and footer, and call onToggle when collapsed', async () => {
 		const onToggle = vi.fn();
 		const screen = await render(
