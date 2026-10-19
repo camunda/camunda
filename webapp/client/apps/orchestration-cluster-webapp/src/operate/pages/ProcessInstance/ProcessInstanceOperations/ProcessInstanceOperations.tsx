@@ -19,7 +19,7 @@ import {isWidthBelowBreakpoint, useMatchMedia} from '#/operate/shared/useMatchMe
 import {MigrationHelperModal} from '#/operate/shared/MigrationHelperModal/MigrationHelperModal';
 import {isMigrationHelperHidden} from '#/operate/shared/MigrationHelperModal/migrationHelperPreference';
 import {getInstanceMigrationLocation} from '#/operate/pages/Processes/instanceMigration';
-import {ENABLE_PROCESS_MIGRATION} from '#/shared/feature-flags';
+import {ENABLE_PROCESS_INSTANCE_MODIFICATION, ENABLE_PROCESS_MIGRATION} from '#/shared/feature-flags';
 import {useProcessInstancePage} from '#/operate/pages/ProcessInstance/useProcessInstancePage';
 import {useProcessInstanceModification} from '#/operate/pages/ProcessInstance/useProcessInstanceModification';
 import {ModificationHelperModal} from '#/operate/pages/ProcessInstance/ModificationHelperModal';
@@ -186,7 +186,7 @@ function ProcessInstanceOperations() {
 	const modifyLabel = t('operate.processInstance.modification.modify');
 	const modifyTitle = t('operate.shared.operations.modifyTitle', {processInstanceKey});
 	const modifyControl =
-		state !== 'ACTIVE' ? null : isCollapsed ? (
+		!ENABLE_PROCESS_INSTANCE_MODIFICATION || state !== 'ACTIVE' ? null : isCollapsed ? (
 			<MenuItem label={modifyLabel} renderIcon={Tools} onClick={openModification} />
 		) : (
 			<Button
@@ -227,7 +227,7 @@ function ProcessInstanceOperations() {
 					{migrateControl}
 				</>
 			)}
-			{isModificationHelperOpen && (
+			{isModificationHelperOpen && state === 'ACTIVE' && (
 				<ModificationHelperModal
 					open
 					onClose={() => setIsModificationHelperOpen(false)}

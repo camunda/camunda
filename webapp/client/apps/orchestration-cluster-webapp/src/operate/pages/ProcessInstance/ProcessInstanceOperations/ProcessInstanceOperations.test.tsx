@@ -35,6 +35,8 @@ import {ProcessInstanceModificationContext} from '../useProcessInstanceModificat
 import {initialModificationState} from '../modifications/modificationReducer';
 import {ProcessInstanceOperations} from './ProcessInstanceOperations';
 
+vi.mock('#/shared/feature-flags', () => ({ENABLE_PROCESS_MIGRATION: true, ENABLE_PROCESS_INSTANCE_MODIFICATION: true}));
+
 const ACTIONS = [
 	{
 		action: 'Retry',

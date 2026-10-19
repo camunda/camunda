@@ -49,6 +49,8 @@ import {InstanceDiagram} from './InstanceDiagram';
 import {InstanceHistory} from './InstanceHistory';
 import {ProcessInstanceOperations} from './ProcessInstanceOperations/ProcessInstanceOperations';
 
+vi.mock('#/shared/feature-flags', () => ({ENABLE_PROCESS_MIGRATION: true, ENABLE_PROCESS_INSTANCE_MODIFICATION: true}));
+
 const PROCESS_INSTANCE_ID = '2251799813685280';
 const PROCESS_XML_WITH_CALL_ACTIVITY =
 	'<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"><process id="my-process"><callActivity id="call-activity" /></process></definitions>';
@@ -99,7 +101,7 @@ function ModificationPage() {
 
 function renderModificationPage() {
 	return renderWithRouter(ModificationPage, {
-		path: '/operate/processes/$processInstanceId/variables',
+		path: '/operate/processes/$processInstanceId/$',
 		initialEntry: `/operate/processes/${PROCESS_INSTANCE_ID}/variables?elementId=user-task`,
 	});
 }
@@ -505,6 +507,34 @@ describe('<ProcessInstance />', () => {
 			await expect.element(screen.getByRole('button', {name: modifyButton})).toBeVisible();
 		});
 
+		it('should keep modification mode across tabs and ask before leaving the instance', async ({worker}) => {
+			localStorage.setItem('sharedState', JSON.stringify({hideModificationHelperModal: true}));
+			worker.use(...getProcessInstancePageHandlers());
+			const screen = await renderModificationPage();
+			await userEvent.click(screen.getByRole('button', {name: modifyButton}));
+
+			void screen.router.navigate({
+				to: '/operate/processes/$processInstanceId/$',
+				params: {processInstanceId: PROCESS_INSTANCE_ID, _splat: 'incidents'},
+			});
+			await expect
+				.poll(() => screen.router.state.location.pathname)
+				.toBe(`/operate/processes/${PROCESS_INSTANCE_ID}/incidents`);
+			await expect.element(screen.getByRole('dialog', {name: 'Leave Modification Mode'})).not.toBeInTheDocument();
+
+			void screen.router.navigate({
+				to: '/operate/processes/$processInstanceId/$',
+				params: {processInstanceId: '2251799813685299', _splat: 'variables'},
+			});
+			await userEvent.click(
+				screen.getByRole('dialog', {name: 'Leave Modification Mode'}).getByRole('button', {name: 'Stay'}),
+			);
+
+			await expect.element(screen.getByRole('dialog', {name: 'Leave Modification Mode'})).not.toBeInTheDocument();
+			await expect.element(screen.getByRole('button', {name: 'Discard All'})).toBeVisible();
+			expect(screen.router.state.location.pathname).toBe(`/operate/processes/${PROCESS_INSTANCE_ID}/incidents`);
+		});
+
 		it('should not restore modification mode when returning to a left instance', async ({worker}) => {
 			localStorage.setItem('sharedState', JSON.stringify({hideModificationHelperModal: true}));
 			worker.use(...getProcessInstancePageHandlers());
@@ -513,8 +543,8 @@ describe('<ProcessInstance />', () => {
 			await expect.element(screen.getByRole('button', {name: 'Discard All'})).toBeVisible();
 
 			void screen.router.navigate({
-				to: '/operate/processes/$processInstanceId/variables',
-				params: {processInstanceId: '2251799813685299'},
+				to: '/operate/processes/$processInstanceId/$',
+				params: {processInstanceId: '2251799813685299', _splat: 'variables'},
 			});
 			await userEvent.click(
 				screen.getByRole('dialog', {name: 'Leave Modification Mode'}).getByRole('button', {name: 'Leave'}),

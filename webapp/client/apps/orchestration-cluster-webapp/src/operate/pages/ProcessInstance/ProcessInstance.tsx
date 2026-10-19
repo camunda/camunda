@@ -56,7 +56,7 @@ const ProcessInstance: React.FC<Props> = ({processInstanceId, search, topPanel, 
 	);
 	const blocker = useBlocker({
 		shouldBlockFn: isLeavingInstance,
-		disabled: !isModificationModeEnabled,
+		disabled: !isModificationModeEnabled || isUnauthorized || isNotFound,
 		enableBeforeUnload: false,
 		withResolver: true,
 	});
