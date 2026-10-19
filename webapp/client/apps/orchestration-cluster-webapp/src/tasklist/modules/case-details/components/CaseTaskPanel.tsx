@@ -6,7 +6,6 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useCallback} from 'react';
 import {useTranslation} from 'react-i18next';
 import {
 	Button,
@@ -30,23 +29,19 @@ type Props = {
 	currentUser: CurrentUser;
 	formSchema: string | null;
 	variables: Variable[];
-	onCompleted: (userTaskKey: string) => void;
+	onCompleted: () => void;
 	onClose: () => void;
 };
 
-/**
- * Works a task inside the case page, so that the case worker does not return to the task list
- * (CASE_UI.md, "Moving to the next work").
- */
+/** Works a task inside the case page, so that the case worker stays in the case. */
 const CaseTaskPanel: React.FC<Props> = ({task, currentUser, formSchema, variables, onCompleted, onClose}) => {
 	const {t} = useTranslation();
-	const handleComplete = useCallback(() => onCompleted(task.userTaskKey), [onCompleted, task.userTaskKey]);
 	const {status, isCompletionAllowed, isHidden, complete} = useTaskCompletion({
 		userTaskKey: task.userTaskKey,
 		currentUser: currentUser.username,
 		taskState: task.state,
 		assignee: task.assignee ?? null,
-		onComplete: handleComplete,
+		onComplete: onCompleted,
 	});
 
 	return (

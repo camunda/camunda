@@ -39,6 +39,7 @@ cd webapp/client && npm run dev:oc
 | Case title                      | `caseTitle` on the process instance                    | Read from the variable that `<zeebe:case title>` names                                   |
 | Case form                       | Latest form by form ID                                 | New endpoint `GET /v2/forms/{formId}/latest`                                             |
 | Variables of an opened task     | Effective variables from primary storage               | Existing eventually consistent variable search                                           |
+| After a completion              | The case page opens the next task of the case          | The case page returns to the task list of the case                                       |
 | "Done" on a stage               | "I am done" publishes the message through a job worker | The case page activates "I am done" and correlates the "Stage done" message itself       |
 | "I am done" activity            | Not named by the design                                | The send task with job type `case-stage-done`, or a send task whose name contains "done" |
 | Correlation key of "Stage done" | Any FEEL expression                                    | Only a variable reference such as `=caseId`, or a static value                           |

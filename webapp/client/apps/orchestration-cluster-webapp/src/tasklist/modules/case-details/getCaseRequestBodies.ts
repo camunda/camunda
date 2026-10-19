@@ -44,14 +44,6 @@ function getCaseUserTasksRequestBody(caseRef: CaseRef): QueryUserTasksRequestBod
 	};
 }
 
-function getOpenCaseUserTasksRequestBody(caseRef: CaseRef): QueryUserTasksRequestBody {
-	return {
-		filter: {...getCaseTaskFilter(caseRef), state: 'CREATED'},
-		sort: [{field: 'creationDate', order: 'ASC'}],
-		page: {limit: MAX_ITEMS},
-	};
-}
-
 /** Case data lives in the root scope (CASE_DATA.md), so one search serves the title, header, documents and form. */
 function getRootVariablesRequestBody(processInstanceKey: string): QueryVariablesRequestBody {
 	return {
@@ -60,10 +52,4 @@ function getRootVariablesRequestBody(processInstanceKey: string): QueryVariables
 	};
 }
 
-export {
-	getCaseElementInstancesRequestBody,
-	getCaseUserTasksRequestBody,
-	getOpenCaseUserTasksRequestBody,
-	getRootVariablesRequestBody,
-	isTaskOfCase,
-};
+export {getCaseElementInstancesRequestBody, getCaseUserTasksRequestBody, getRootVariablesRequestBody, isTaskOfCase};

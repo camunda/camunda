@@ -6,8 +6,6 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useTranslation} from 'react-i18next';
-import {Card, CardDescription, CardHeader, CardTitle, Spinner} from '@camunda/design-system';
 import type {CurrentUser, UserTask, Variable} from '@camunda/camunda-api-zod-schemas/8.11';
 import {CaseTaskPanel} from '#/tasklist/modules/case-details/components/CaseTaskPanel';
 
@@ -16,49 +14,20 @@ type Props = {
 	currentUser: CurrentUser;
 	formSchema: string | null;
 	variables: Variable[];
-	isSearchingNextWork: boolean;
-	onCompleted: (userTaskKey: string) => void;
+	onCompleted: () => void;
 	onClose: () => void;
 };
 
-const TasklistCaseTaskPage: React.FC<Props> = ({
-	task,
-	currentUser,
-	formSchema,
-	variables,
-	isSearchingNextWork,
-	onCompleted,
-	onClose,
-}) => {
-	const {t} = useTranslation();
-
-	if (isSearchingNextWork) {
-		return (
-			<Card>
-				<CardHeader>
-					<CardDescription className="text-xs font-semibold tracking-wide uppercase">
-						{t('tasklist.caseTaskCompleted', {name: task.name || task.elementId})}
-					</CardDescription>
-					<CardTitle className="flex items-center gap-2 text-lg">
-						<Spinner />
-						{t('tasklist.caseSearchingNextWork')}
-					</CardTitle>
-				</CardHeader>
-			</Card>
-		);
-	}
-
-	return (
-		<CaseTaskPanel
-			key={task.userTaskKey}
-			task={task}
-			currentUser={currentUser}
-			formSchema={formSchema}
-			variables={variables}
-			onCompleted={onCompleted}
-			onClose={onClose}
-		/>
-	);
-};
+const TasklistCaseTaskPage: React.FC<Props> = ({task, currentUser, formSchema, variables, onCompleted, onClose}) => (
+	<CaseTaskPanel
+		key={task.userTaskKey}
+		task={task}
+		currentUser={currentUser}
+		formSchema={formSchema}
+		variables={variables}
+		onCompleted={onCompleted}
+		onClose={onClose}
+	/>
+);
 
 export {TasklistCaseTaskPage};
