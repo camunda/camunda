@@ -20,6 +20,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.batchoperation.PersistedBatchOperation;
 import io.camunda.zeebe.engine.state.distribution.DistributionQueue;
 import io.camunda.zeebe.engine.state.immutable.BatchOperationState;
+import io.camunda.zeebe.engine.state.immutable.BatchOperationState.NextItems;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationExecutionRecord;
@@ -33,7 +34,6 @@ import io.camunda.zeebe.protocol.record.value.BatchOperationType;
 import io.camunda.zeebe.stream.api.FollowUpCommandMetadata;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
-import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 import org.slf4j.Logger;
@@ -141,7 +141,7 @@ public final class BatchOperationExecutionExecuteProcessor
           batchKey,
           command.getPartitionId());
 
-      appendBatchOperationExecutionExecutedEvent(batchOperation, Collections.emptySet());
+      appendBatchOperationExecutionExecutedEvent(batchOperation, NextItems.EMPTY);
       appendBatchOperationExecutionCompletedEvent(command, batchOperation);
 
       metrics.stopTotalExecutionLatencyMeasure(batchKey);
@@ -152,7 +152,7 @@ public final class BatchOperationExecutionExecuteProcessor
     metrics.stopStartExecuteLatencyMeasure(batchKey);
 
     // mark the items as in progress
-    appendBatchOperationExecutionExecutingEvent(batchOperation, Set.copyOf(nextItems.itemKeys()));
+    appendBatchOperationExecutionExecutingEvent(batchOperation, nextItems);
 
     // retrieve the handler for the batch operation type and execute each itemKey with it
     final var handler = handlers.get(batchOperation.getBatchOperationType());
@@ -163,7 +163,7 @@ public final class BatchOperationExecutionExecuteProcessor
                 handler.execute(entityKey, nextItems.batchItemsStorageOrdinal(), batchOperation));
 
     // schedule the next EXECUTE command to continue processing the next batch of items
-    appendBatchOperationExecutionExecutedEvent(batchOperation, Set.copyOf(nextItems.itemKeys()));
+    appendBatchOperationExecutionExecutedEvent(batchOperation, nextItems);
     appendBatchOperationExecuteCommand(command, batchKey, batchOperation);
 
     metrics.startExecuteCycleLatencyMeasure(batchKey, batchOperation.getBatchOperationType());
@@ -199,11 +199,12 @@ public final class BatchOperationExecutionExecuteProcessor
   }
 
   private void appendBatchOperationExecutionExecutingEvent(
-      final PersistedBatchOperation batchOperation, final Set<Long> keys) {
+      final PersistedBatchOperation batchOperation, final NextItems nextItems) {
     final var batchExecute = new BatchOperationExecutionRecord();
     batchExecute.setBatchOperationKey(batchOperation.getKey());
     batchExecute.setStorageOrdinal(batchOperation.getStorageOrdinal());
-    batchExecute.setItemKeys(keys);
+    batchExecute.setItemKeys(Set.copyOf(nextItems.itemKeys()));
+    batchExecute.setBatchItemsStorageOrdinal(nextItems.batchItemsStorageOrdinal());
     stateWriter.appendFollowUpEvent(
         batchOperation.getKey(),
         BatchOperationExecutionIntent.EXECUTING,
@@ -212,7 +213,7 @@ public final class BatchOperationExecutionExecuteProcessor
   }
 
   private void appendBatchOperationExecutionExecutedEvent(
-      final PersistedBatchOperation batchOperation, final Set<Long> keys) {
+      final PersistedBatchOperation batchOperation, final NextItems nextItems) {
     final var batchExecute = new BatchOperationExecutionRecord();
 
     // Occasionally log a heartbeat
@@ -227,7 +228,8 @@ public final class BatchOperationExecutionExecuteProcessor
 
     batchExecute.setBatchOperationKey(batchOperation.getKey());
     batchExecute.setStorageOrdinal(batchOperation.getStorageOrdinal());
-    batchExecute.setItemKeys(keys);
+    batchExecute.setItemKeys(Set.copyOf(nextItems.itemKeys()));
+    batchExecute.setBatchItemsStorageOrdinal(nextItems.batchItemsStorageOrdinal());
     stateWriter.appendFollowUpEvent(
         batchOperation.getKey(),
         BatchOperationExecutionIntent.EXECUTED,

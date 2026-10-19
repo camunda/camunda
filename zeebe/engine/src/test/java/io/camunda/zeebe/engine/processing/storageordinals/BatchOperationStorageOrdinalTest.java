@@ -236,6 +236,10 @@ public final class BatchOperationStorageOrdinalTest {
     assertThat(records)
         .extracting(record -> record.getValue().getStorageOrdinal())
         .containsOnly(FIXED_ORDINAL);
+    // the item providers do not supply an ordinal yet, so the items' ordinal is 0 = unknown
+    assertThat(records)
+        .extracting(record -> record.getValue().getBatchItemsStorageOrdinal())
+        .containsOnly(0);
   }
 
   @Test
