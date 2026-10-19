@@ -868,9 +868,7 @@
 			"caseCurrentStage": "Aktuelle Phase",
 			"caseOpenWork": "Offene Arbeit",
 			"caseAllOpenTasks": "Alle offenen Aufgaben",
-			"caseSearchingNextWork": "Nächste Aufgabe wird gesucht…",
 			"caseNoOpenWork": "Keine offene Arbeit in dieser Phase",
-			"caseNoNextWork": "Keine weitere Arbeit für Sie in diesem Fall",
 			"caseTasksLabel": "Aufgaben",
 			"caseTaskAssignedToYou": "Ihnen zugewiesen",
 			"caseTaskUnassigned": "Nicht zugewiesen",
@@ -901,8 +899,7 @@
 			"caseNoDocuments": "Keine Dokumente",
 			"caseDiagramTitle": "Prozess",
 			"caseDiagramDescription": "Dieser Fall ruft andere Prozesse auf und zeigt daher das Prozessdiagramm statt seiner Phasen",
-			"caseNoOpenWorkInCase": "Keine offene Arbeit in diesem Fall",
-			"caseTaskCompleted": "{{name}} abgeschlossen"
+			"caseNoOpenWorkInCase": "Keine offene Arbeit in diesem Fall"
 		},
 		"operate": {
 			"dashboard": {

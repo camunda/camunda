@@ -7,13 +7,10 @@
  */
 
 import {useCallback} from 'react';
-import {useTranslation} from 'react-i18next';
 import {createFileRoute, notFound, useNavigate} from '@tanstack/react-router';
 import {useSuspenseQuery} from '@tanstack/react-query';
-import {toast} from '@camunda/design-system';
 import {TasklistCaseTaskPage} from '#/tasklist/pages/TasklistCaseTaskPage';
 import {loadCaseTask} from '#/tasklist/modules/case-details/caseData';
-import {useNextWork} from '#/tasklist/modules/case-details/useNextWork';
 import {queries} from '#/shared/http/queries';
 
 export const Route = createFileRoute('/_shadcn/_auth/tasklist/cases/$processInstanceKey/tasks/$userTaskKey')({
@@ -28,36 +25,15 @@ export const Route = createFileRoute('/_shadcn/_auth/tasklist/cases/$processInst
 	},
 	remountDeps: ({params: {userTaskKey}}) => [userTaskKey],
 	component: function TasklistCaseTaskRoute() {
-		const {t} = useTranslation();
 		const navigate = useNavigate();
 		const {processInstanceKey, userTaskKey} = Route.useParams();
 		const {formSchema, variables} = Route.useLoaderData();
 		const {data: currentUser} = useSuspenseQuery(queries.getCurrentUser());
-		const {data: processInstance} = useSuspenseQuery(queries.getProcessInstance(processInstanceKey));
 		const {data: task} = useSuspenseQuery(queries.getUserTask(userTaskKey));
-
-		const openTask = useCallback(
-			(nextTaskKey: string) =>
-				navigate({
-					to: '/tasklist/cases/$processInstanceKey/tasks/$userTaskKey',
-					params: {processInstanceKey, userTaskKey: nextTaskKey},
-				}),
-			[navigate, processInstanceKey],
-		);
 		const showTasks = useCallback(
 			() => navigate({to: '/tasklist/cases/$processInstanceKey', params: {processInstanceKey}}),
 			[navigate, processInstanceKey],
 		);
-		const showNoWork = useCallback(() => {
-			toast.info(t('tasklist.caseNoNextWork'));
-			showTasks();
-		}, [showTasks, t]);
-		const {isSearchingNextWork, searchNextWork} = useNextWork({
-			processInstance,
-			username: currentUser.username,
-			onNextTask: openTask,
-			onNoWork: showNoWork,
-		});
 
 		return (
 			<TasklistCaseTaskPage
@@ -65,8 +41,7 @@ export const Route = createFileRoute('/_shadcn/_auth/tasklist/cases/$processInst
 				currentUser={currentUser}
 				formSchema={formSchema}
 				variables={variables}
-				isSearchingNextWork={isSearchingNextWork}
-				onCompleted={searchNextWork}
+				onCompleted={showTasks}
 				onClose={showTasks}
 			/>
 		);

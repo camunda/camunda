@@ -880,9 +880,7 @@
 			"caseCurrentStage": "Current stage",
 			"caseOpenWork": "Open work",
 			"caseAllOpenTasks": "All open tasks",
-			"caseSearchingNextWork": "Finding the next task…",
 			"caseNoOpenWork": "No open work in this stage",
-			"caseNoNextWork": "No more work for you in this case",
 			"caseTasksLabel": "Tasks",
 			"caseTaskAssignedToYou": "Assigned to you",
 			"caseTaskUnassigned": "Unassigned",
@@ -913,8 +911,7 @@
 			"caseNoDocuments": "No documents",
 			"caseDiagramTitle": "Process",
 			"caseDiagramDescription": "This case calls other processes, so it shows the process diagram instead of its stages",
-			"caseNoOpenWorkInCase": "No open work in this case",
-			"caseTaskCompleted": "{{name}} completed"
+			"caseNoOpenWorkInCase": "No open work in this case"
 		},
 		"operate": {
 			"dashboard": {

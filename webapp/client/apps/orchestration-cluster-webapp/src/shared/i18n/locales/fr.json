@@ -871,9 +871,7 @@
 			"caseCurrentStage": "Étape actuelle",
 			"caseOpenWork": "Travail en cours",
 			"caseAllOpenTasks": "Toutes les tâches ouvertes",
-			"caseSearchingNextWork": "Recherche de la tâche suivante…",
 			"caseNoOpenWork": "Aucun travail en cours dans cette étape",
-			"caseNoNextWork": "Plus de travail pour vous dans ce dossier",
 			"caseTasksLabel": "Tâches",
 			"caseTaskAssignedToYou": "Assignée à vous",
 			"caseTaskUnassigned": "Non assignée",
@@ -904,8 +902,7 @@
 			"caseNoDocuments": "Aucun document",
 			"caseDiagramTitle": "Processus",
 			"caseDiagramDescription": "Ce dossier appelle d'autres processus : il affiche donc le diagramme du processus au lieu de ses étapes",
-			"caseNoOpenWorkInCase": "Aucun travail en cours dans ce dossier",
-			"caseTaskCompleted": "{{name}} terminée"
+			"caseNoOpenWorkInCase": "Aucun travail en cours dans ce dossier"
 		},
 		"operate": {
 			"dashboard": {
