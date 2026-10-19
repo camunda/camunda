@@ -13,6 +13,7 @@ import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.transport.TransportOptions;
 import io.camunda.optimize.service.db.es.schema.ElasticSearchSchemaManager;
 import io.camunda.optimize.service.db.es.schema.TransportOptionsProvider;
+import io.camunda.optimize.service.db.schema.DatabaseMetadataStartupValidator;
 import io.camunda.optimize.service.db.schema.OptimizeIndexNameService;
 import io.camunda.optimize.service.util.BackoffCalculator;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -65,7 +66,13 @@ public final class OptimizeElasticsearchClientFactory {
             optimizeIndexNameService,
             transportOptionsProvider);
 
-    elasticSearchSchemaManager.validateDatabaseMetadata(prefixedClient);
+    new DatabaseMetadataStartupValidator(
+            backoffCalculator,
+            configurationService
+                .getElasticSearchConfiguration()
+                .getConnection()
+                .getMetadataReadMaxWaitInSeconds())
+        .validate(() -> elasticSearchSchemaManager.validateDatabaseMetadata(prefixedClient));
 
     final boolean initSchemaEnabled =
         configurationService.getElasticSearchConfiguration().getConnection().isInitSchemaEnabled();
