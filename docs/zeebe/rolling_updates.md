@@ -53,8 +53,17 @@ All changes we make should fall into one of two categories:
 1. Adding new commands and events, typically to implement new features.
 2. Changing command behavior to produce different sequence of events, typically to fix bugs or extend features.
 
-When adding new commands or events, we break compatibility with older brokers because they cannot process or replay them.
-This is a transient state during rolling updates and resolves itself once the old broker is updated.
+When adding a new record, command or event, we break compatibility with older brokers because they cannot process or replay it.
+An old-version follower that encounters the new record cannot replay it, so its stream processor becomes unhealthy until the broker is upgraded.
+Raft replication keeps working in the meantime, and the follower recovers once it runs the new version.
+For followers, this is a transient state during rolling updates and resolves itself once the old broker is updated.
+
+There is one edge case: if leadership moves back to a not-yet-upgraded broker after a new-version leader has written the new record, that partition cannot make progress until this broker is upgraded.
+The same applies to new versions of existing events.
+See https://github.com/camunda/camunda/issues/30727 for an example of such an issue, where a partition became dead.
+
+This also applies to startup tasks that write a new record, such as `IdentitySetupInitializer` or `RpaReexportMigrator`.
+They write the record as soon as a new-version leader starts, so such tasks should be treated like any other new record.
 
 When changing command behavior, older brokers can simply continue replaying the new sequence of events produced.
 When the old broker is processing, it will continue to produce the old sequence of events and new brokers will have to replay it.
