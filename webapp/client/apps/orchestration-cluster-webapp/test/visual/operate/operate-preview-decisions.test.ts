@@ -65,7 +65,7 @@ test('should match the resized decisions panels snapshot after dragging the resi
 		.poll(() =>
 			page.evaluate(() => {
 				const panelStates = JSON.parse(localStorage.getItem('operate.panelStates') ?? '{}');
-				return panelStates['decisions-instances-vertical-panel']?.[0];
+				return panelStates['decision-instances-vertical-panel']?.[0];
 			}),
 		)
 		.toBeLessThan(50);
