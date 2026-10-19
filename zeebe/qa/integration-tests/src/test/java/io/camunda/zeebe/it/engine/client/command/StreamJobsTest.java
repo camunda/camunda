@@ -216,7 +216,7 @@ final class StreamJobsTest {
         .asInstanceOf(InstanceOfAssertFactories.throwable(StatusRuntimeException.class))
         .extracting(StatusRuntimeException::getStatus)
         .extracting(Status::getCode)
-        .isEqualTo(Code.CANCELLED);
+        .isEqualTo(Code.UNAVAILABLE);
   }
 
   private void awaitStreamRegistered(final String jobType) {
