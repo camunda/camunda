@@ -65,10 +65,12 @@ API-level E2E tests live in `e2e_tests/`. These are run by C8Run CI. Run locally
 What runs:
 - `api_tests.sh` — v2 API smoke (process instances, user tasks, Zeebe topology, centralized secret resolution) on Linux, macOS ARM, and macOS Intel
 - Windows: the same script via `c8run.exe start --config e2e_tests/config-flag.yaml`
+- `physical_tenants_tests.sh` — physical tenant routing, authentication, data/secrets isolation, and Connectors on Linux, macOS ARM/Intel, and Windows
+- `TestPhysicalTenantSelectionE2E` — physical tenant selection authentication regression on Linux, macOS ARM/Intel, and Windows
 
 This layer owns no UI assertions. Browser coverage lives in Layer 2, where QA owns the page objects — duplicating locators here only produced drift, since a UI change in `webapp/` does not trigger this workflow.
 
-**RDBMS setup:** the extracted distribution starts with `--config ../../e2e_tests/config-flag.yaml` on the bundled H2 file-based default. The file changes one RDBMS exporter setting and nothing about where data is stored, because the physical tenant steps restart the same installation with another config. `api_tests.sh` reads the setting back from the actuator `configprops` endpoint, so the test fails when `--config` is not applied. This is the only layer that passes an explicit config file.
+**RDBMS setup:** the extracted distribution starts with `--config ../../e2e_tests/config-flag.yaml` on the bundled H2 file-based default. The file changes one RDBMS exporter setting and nothing about where data is stored. `api_tests.sh` reads the setting back from the actuator `configprops` endpoint, so the test fails when `--config` is not applied. Physical tenant isolation and selection run in separate jobs against freshly extracted distributions. This is the only layer that passes an explicit config file.
 
 ```yaml
 camunda:
@@ -79,6 +81,18 @@ camunda:
 ```
 
 Linux/macOS use the `.github/actions/setup-c8run` composite action to build and start c8run. Windows builds `c8run.exe` from source and starts it inline.
+
+### Physical tenant authentication regression
+
+`TestPhysicalTenantSelectionE2E` enables API protection and authorizations. It checks that saved physical tenants retain dedicated credentials and disabled Connectors across plain startup, explicit selection, and restart; startup credentials are rejected for those physical tenants. Unsaved IDs use startup defaults, are listed as `active (not saved)`, and are absent after a subsequent plain restart. Selection leaves the saved configuration unchanged.
+
+The test is skipped unless `C8RUN_E2E_DIR` is set. CI sets it automatically for Linux, macOS ARM/Intel, and Windows. To run locally from `c8run/`, use a dedicated, stopped distribution containing the binary under test:
+
+```bash
+C8RUN_E2E_DIR=/path/to/dedicated/c8run go test ./cmd/c8run -run '^TestPhysicalTenantSelectionE2E$' -count=1 -timeout=10m -v
+```
+
+The test owns startup and shutdown. Physical tenant configuration and secrets use temporary directories; engine data remains in the dedicated distribution after shutdown.
 
 ### Layer 2 — QA E2E suite (`camunda/c8-cross-component-e2e-tests`)
 
