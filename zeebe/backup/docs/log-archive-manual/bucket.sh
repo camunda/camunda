@@ -1,9 +1,68 @@
 #!/usr/bin/env bash
-# Usage: bucket.sh <scenario> [timeline] — summary of the log archive per partition
+# Usage: bucket.sh <scenario> [timeline]                      summary of the log archive per partition
+#        bucket.sh old-backups <scenario>                     old-style backups and metadata.json per partition
+#        bucket.sh handover <scenario>                        handover files metadata/<p>/handover/<H>.json
+#        bucket.sh handover-commits <scenario> [timeline]     HANDOVER commit entries of the archive
+#        bucket.sh wait-handover <scenario> [afterId]         waits until every partition has a handover
+#                                                             above afterId, prints its checkpoint id
 source "$(dirname "$0")/env.sh"
+
+case "${1:-}" in
+  old-backups)
+    D=$(store_of "${2:?scenario}")
+    for p in $(seq 1 $PARTITIONS); do
+      echo "p$p: old-style backups (manifests/$p): $(ls "$D/manifests/$p" 2>/dev/null | tr '\n' ' ')"
+      jq -c . "$D/metadata/$p/metadata.json" 2>/dev/null || echo "  no metadata/$p/metadata.json"
+    done
+    exit 0 ;;
+  handover)
+    D=$(store_of "${2:?scenario}")
+    for p in $(seq 1 $PARTITIONS); do
+      echo "p$p: handover files"
+      found=0
+      for f in "$D/metadata/$p/handover/"*.json; do
+        [ -f "$f" ] || continue
+        found=1; echo "  $(basename "$f")"; jq -c . "$f"
+      done
+      [ $found -eq 1 ] || echo "  none"
+    done
+    exit 0 ;;
+  handover-commits)
+    D=$(store_of "${2:?scenario}"); T=${3:-tl-0}
+    for p in $(seq 1 $PARTITIONS); do
+      found=0
+      for f in "$D/log-archive/$T/p$p/commits/"*.json; do
+        [ -f "$f" ] || continue
+        out=$(jq -c 'select(.type=="HANDOVER") | {seq, type, handover}' "$f")
+        [ -n "$out" ] && { found=1; echo "p$p $(basename "$f"): $out"; }
+      done
+      [ $found -eq 1 ] || echo "p$p: no HANDOVER commit entry"
+    done
+    exit 0 ;;
+  wait-handover)
+    D=$(store_of "${2:?scenario}"); after=${3:-0}
+    for _ in $(seq 180); do
+      ids=""; complete=1
+      for p in $(seq 1 $PARTITIONS); do
+        id=$(for f in "$D/metadata/$p/handover/"*.json; do [ -f "$f" ] && jq -r .checkpointId "$f"; done | sort -n | tail -1)
+        if [ -z "$id" ] || [ "$id" -le "$after" ]; then complete=0; break; fi
+        ids="$ids $id"
+      done
+      if [ $complete -eq 1 ]; then
+        set -- $ids; first=$1
+        for id in "$@"; do
+          [ "$id" = "$first" ] || { echo "partitions recorded different handovers:$ids" >&2; exit 1; }
+        done
+        echo "$first"; exit 0
+      fi
+      sleep 5
+    done
+    echo "no handover above $after on every partition, see $D/metadata" >&2; exit 1 ;;
+esac
+
 S=${1:?scenario}; T=${2:-tl-0}
 for p in $(seq 1 $PARTITIONS); do
-  pre="$STORE/$S/log-archive/$T/p$p"
+  pre="$(store_of "$S")/log-archive/$T/p$p"
   [ -d "$pre" ] || { echo "p$p: no archive yet ($pre)"; continue; }
   c() { ls "$pre/$1" 2>/dev/null | wc -l | tr -d ' '; }
   echo "p$p: commits=$(c commits) data=$(c data) index=$(c index) snapshots=$(c state)"
