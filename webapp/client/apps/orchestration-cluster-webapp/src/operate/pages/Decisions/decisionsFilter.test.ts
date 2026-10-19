@@ -7,7 +7,7 @@
  */
 
 import {describe, it, expect} from 'vitest';
-import {mapDecisionInstancesSort} from './decisionsFilter';
+import {applyInstanceSelection, mapDecisionInstancesSort} from './decisionsFilter';
 
 describe('mapDecisionInstancesSort', () => {
 	it('defaults to evaluation date descending when no sort param is given', () => {
@@ -28,5 +28,27 @@ describe('mapDecisionInstancesSort', () => {
 
 	it('falls back to the default when the order is missing', () => {
 		expect(mapDecisionInstancesSort('businessId')).toEqual([{field: 'evaluationDate', order: 'DESC'}]);
+	});
+});
+
+describe('applyInstanceSelection', () => {
+	const filter = {state: {$in: ['EVALUATED']}, decisionEvaluationInstanceKey: {$in: ['1', '2', '3']}} as never;
+
+	it('keeps the filter untouched without a selection', () => {
+		expect(applyInstanceSelection(filter, [], [])).toBe(filter);
+	});
+
+	it('keeps an active instance-key filter when rows are excluded', () => {
+		expect(applyInstanceSelection(filter, [], ['1'])).toEqual({
+			state: {$in: ['EVALUATED']},
+			decisionEvaluationInstanceKey: {$in: ['1', '2', '3'], $notIn: ['1']},
+		});
+	});
+
+	it('limits included rows to the active instance-key filter', () => {
+		expect(applyInstanceSelection(filter, ['2', '9'], [])).toEqual({
+			state: {$in: ['EVALUATED']},
+			decisionEvaluationInstanceKey: {$in: ['2']},
+		});
 	});
 });
