@@ -807,7 +807,7 @@ jobs:
                 "type": "section",
                 "text": {
                   "type": "mrkdwn",
-                  "text": "Hey <@UPAQETUHZ>, <@U08Q31GGFNW>, <@UCFU9K4UD>,\na new Camunda 8 Getting Started bundle has been packaged:"
+                  "text": "Hey <@UPAQETUHZ>, <@U08Q31GGFNW>,\na new Camunda 8 Getting Started bundle has been packaged:"
                 }
               },
               {
