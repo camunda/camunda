@@ -714,10 +714,16 @@ with `sinceVersion="3"` (schema version 2 → 3): `partitionId`, `timelineStarte
 The checkpoint scheduler, per physical tenant, on its backup tick:
 
 1. If no partition has a timeline yet: check the gate, send `ACTIVATE_LOG_ARCHIVE`, done.
-2. If a handover is recorded on every partition: the old backup loop is finished. Do nothing (the
-   marker loop keeps running). After a scheduler failover this is re-derived from the query.
-3. If a HANDOVER checkpoint H is confirmed on every partition and F ≥ H on every partition: send
-   `COMPLETE_HANDOVER(H)` to every partition.
+2. If a handover is recorded on every partition: keep taking `SCHEDULED_BACKUP` checkpoints on
+   schedule. They remain restore points; the partitions skip the old-style upload for them and
+   report their status from the archive (18.6). After a scheduler failover this is re-derived from
+   the query.
+3. If a HANDOVER checkpoint H is the last confirmed backup on every partition (same id) and F ≥ H on
+   every partition, or H is already recorded on some partitions: send `COMPLETE_HANDOVER(H)` to every
+   partition right away, and repeat it with backoff until it is recorded everywhere (a repeat is
+   rejected harmlessly). No backup is taken meanwhile, since a newer confirmed backup would hide H
+   from this check. Partitions that recorded different handovers (not expected without a restore)
+   fall through to normal scheduled backups.
 4. Else, if on every partition the timeline is started, `archivedPosition ≥` the last confirmed old
    backup's position, and an archived snapshot exists: take the next backup as type `HANDOVER`
    instead of `SCHEDULED_BACKUP`. The snapshot precondition is what makes every target after H
@@ -728,7 +734,12 @@ All decisions are derived from the query, never from scheduler memory, so they s
 scheduler moving to another broker.
 
 Partitions added after the handover (scale-up) have no old history: they start archive-only and
-count as handed over in steps 2 and 3.
+count as handed over in steps 2 and 3. (Not implemented in the PoC yet: such a partition keeps
+steps 2 and 3 from matching.)
+
+The decision is `HandoverDecision`, a pure function of the query result; its javadoc has the
+decision table. The `COMPLETE_HANDOVER` of step 3 waits for the first backup tick after H is
+confirmed and archived, so it lags H by up to one backup interval.
 
 ### 18.5 Restore across the handover (H5)
 

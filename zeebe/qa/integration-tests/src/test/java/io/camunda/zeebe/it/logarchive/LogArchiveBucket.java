@@ -179,6 +179,12 @@ final class LogArchiveBucket implements AutoCloseable {
           assertThat(entry.chunk()).isNotNull();
           chunks.add(entry.chunk());
         }
+        case HANDOVER -> {
+          assertThat(entry.handover()).isNotNull();
+          assertThat(entry.handover().checkpointPosition())
+              .as("handover position is archived")
+              .isLessThanOrEqualTo(archivedPosition);
+        }
         default ->
             throw new AssertionError(
                 "unexpected commit entry type %s at seq %d".formatted(entry.type(), entry.seq()));

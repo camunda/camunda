@@ -34,6 +34,8 @@ import org.slf4j.LoggerFactory;
  *
  * <p>If the log archive is enabled, it also activates the log archive once every broker is upgraded
  * (spec section 18.1), in a separate loop that ends once every partition has started its timeline.
+ * The backup loop then hands over from continuous backup to the log archive, as decided by {@link
+ * HandoverDecision} on each tick (spec section 18.4).
  */
 public class CheckpointScheduler extends Actor implements AutoCloseable {
   private static final long BACKOFF_INITIAL_DELAY_MS = 1000;
@@ -141,12 +143,43 @@ public class CheckpointScheduler extends Actor implements AutoCloseable {
     if (rescheduledRecoveringTenant(CheckpointType.SCHEDULED_BACKUP)) {
       return;
     }
-    acquirePartitionStates(CheckpointStateResponse::getBackupStates)
-        .thenApply(this::determineNextBackup, this)
-        .andThen(this::backupCheckpoint, this)
+    acquirePartitionStates(Function.identity())
+        .andThen(this::backupOrCompleteHandover, this)
         .onComplete(
             (res, err) -> handleExecutionCompletion(res, err, CheckpointType.SCHEDULED_BACKUP),
             this);
+  }
+
+  /**
+   * Takes the backup if it is due, as a HANDOVER backup if the log archive is ready to take over,
+   * or completes the handover instead (spec section 18.4, see {@link HandoverDecision}).
+   */
+  private ActorFuture<ExecutionResult> backupOrCompleteHandover(
+      final CheckpointStateResponse state) {
+    final var decision = HandoverDecision.decide(state, activateLogArchive);
+    if (decision.action() == HandoverDecision.Action.COMPLETE_HANDOVER) {
+      return completeHandover(decision.checkpointId());
+    }
+    return checkpointIfNeeded(determineNextBackup(state.getBackupStates()), decision.backupType());
+  }
+
+  /**
+   * Sends COMPLETE_HANDOVER to every partition. The partitions only acknowledge the write, so
+   * whether the handover is recorded shows in a later query: the tick is repeated with backoff
+   * until it is recorded on every partition.
+   */
+  private ActorFuture<ExecutionResult> completeHandover(final long checkpointId) {
+    LOG.info(
+        "Completing the handover to the log archive at checkpoint {} for physical tenant {}",
+        checkpointId,
+        physicalTenantId);
+    final CompletableActorFuture<ExecutionResult> future = new CompletableActorFuture<>();
+    backupRequestHandler
+        .completeHandover(physicalTenantId, checkpointId)
+        .toCompletableFuture()
+        .thenApplyAsync(ignored -> ExecutionResult.handoverPending(checkpointId), this)
+        .whenCompleteAsync(future, this);
+    return future;
   }
 
   /**
@@ -239,11 +272,11 @@ public class CheckpointScheduler extends Actor implements AutoCloseable {
    *
    * @param stateFilter projection from the full response to the subset of partition states needed
    *     by the calling loop
-   * @return a future that completes with the set of partition checkpoint states
+   * @return a future that completes with the projected partition states
    */
-  private ActorFuture<Set<PartitionCheckpointState>> acquirePartitionStates(
-      final Function<CheckpointStateResponse, Set<PartitionCheckpointState>> stateFilter) {
-    final ActorFuture<Set<PartitionCheckpointState>> future = createFuture();
+  private <T> ActorFuture<T> acquirePartitionStates(
+      final Function<CheckpointStateResponse, T> stateFilter) {
+    final ActorFuture<T> future = createFuture();
     backupRequestHandler
         .getCheckpointState(physicalTenantId)
         .thenApplyAsync(stateFilter, this)
@@ -300,12 +333,12 @@ public class CheckpointScheduler extends Actor implements AutoCloseable {
           .thenApplyAsync(
               id -> {
                 LOG.debug("Checkpoint {} triggered with id {}", type, id);
-                return new ExecutionResult(id, type, ActorClock.currentInstant(), true);
+                return new ExecutionResult(id, type, ActorClock.currentInstant(), true, false);
               },
               this)
           .whenCompleteAsync(future, this);
     } else {
-      future.complete(new ExecutionResult(0L, type, nextExecution, false));
+      future.complete(new ExecutionResult(0L, type, nextExecution, false, false));
     }
     return future;
   }
@@ -314,7 +347,9 @@ public class CheckpointScheduler extends Actor implements AutoCloseable {
       final ExecutionResult result, final Throwable error, final CheckpointType type) {
     final long delay;
     if (error != null) {
-      delay = backOff(error, type);
+      delay = backOff(String.valueOf(error.getMessage()), type);
+    } else if (result.handoverPending) {
+      delay = backOff("handover at checkpoint %d pending".formatted(result.checkpointId), type);
     } else {
       if (type == CheckpointType.MARKER) {
         markerErrorDelayMs = 0;
@@ -346,7 +381,7 @@ public class CheckpointScheduler extends Actor implements AutoCloseable {
     }
   }
 
-  private long backOff(final Throwable error, final CheckpointType checkpointType) {
+  private long backOff(final String reason, final CheckpointType checkpointType) {
     final long delay;
     if (checkpointType == CheckpointType.MARKER) {
       delay = markerErrorStrategy.applyAsLong(markerErrorDelayMs);
@@ -355,8 +390,7 @@ public class CheckpointScheduler extends Actor implements AutoCloseable {
       delay = backupErrorStrategy.applyAsLong(backupErrorDelayMs);
       backupErrorDelayMs = delay;
     }
-    LOG.debug(
-        "Backing off {} scheduler for {} ms due to: {}", checkpointType, delay, error.getMessage());
+    LOG.debug("Backing off {} scheduler for {} ms due to: {}", checkpointType, delay, reason);
     return delay;
   }
 
@@ -372,10 +406,6 @@ public class CheckpointScheduler extends Actor implements AutoCloseable {
         .orElseThrow(() -> new CouldNotDetermineNextExecution(schedule));
   }
 
-  private CompletableActorFuture<ExecutionResult> backupCheckpoint(final Instant nextExecution) {
-    return checkpointIfNeeded(nextExecution, CheckpointType.SCHEDULED_BACKUP);
-  }
-
   private CompletableActorFuture<ExecutionResult> markerCheckpoint(final Instant nextExecution) {
     return checkpointIfNeeded(nextExecution, CheckpointType.MARKER);
   }
@@ -386,6 +416,20 @@ public class CheckpointScheduler extends Actor implements AutoCloseable {
     }
   }
 
+  /**
+   * @param handoverPending whether COMPLETE_HANDOVER was sent instead of a checkpoint, so the tick
+   *     is repeated with backoff until the handover is recorded everywhere
+   */
   record ExecutionResult(
-      long checkpointId, CheckpointType type, Instant checkpointTime, boolean checkpointTaken) {}
+      long checkpointId,
+      CheckpointType type,
+      Instant checkpointTime,
+      boolean checkpointTaken,
+      boolean handoverPending) {
+
+    static ExecutionResult handoverPending(final long checkpointId) {
+      return new ExecutionResult(
+          checkpointId, CheckpointType.HANDOVER, ActorClock.currentInstant(), false, true);
+    }
+  }
 }
