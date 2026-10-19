@@ -9,8 +9,10 @@ package io.camunda.zeebe.backup.logarchive.processing;
 
 import static io.camunda.zeebe.backup.logarchive.processing.LogArchiveHarness.TIMELINE;
 import static io.camunda.zeebe.backup.logarchive.processing.LogArchiveHarness.archiveLog;
+import static io.camunda.zeebe.backup.logarchive.processing.LogArchiveHarness.archiveSnapshot;
 import static io.camunda.zeebe.backup.logarchive.processing.LogArchiveHarness.confirmPublished;
 import static io.camunda.zeebe.backup.logarchive.processing.LogArchiveHarness.object;
+import static io.camunda.zeebe.backup.logarchive.processing.LogArchiveHarness.snapshot;
 import static io.camunda.zeebe.backup.logarchive.processing.LogArchiveHarness.startTimeline;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -384,6 +386,107 @@ final class LogArchiveHandoverTest {
         RejectionType.INVALID_STATE);
   }
 
+  // ---- partitions added after the handover (scale-up) -----------------------------------------
+
+  @Test
+  void shouldRecordHandoverFromTheStartOnAPartitionThatHoldsItsWholeHistoryInTheArchive() {
+    // given - a partition without any HANDOVER backup whose archive starts at its first record
+    // and holds a snapshot, as one added by a scale-up after the handover; its old-style backups
+    // before the handover is recorded do not matter
+    archiveWholeHistoryWithSnapshot();
+    harness.createCheckpoint(HANDOVER_ID + 5, 18, CheckpointType.SCHEDULED_BACKUP);
+    harness.confirmBackup(HANDOVER_ID + 5, 18, CheckpointType.SCHEDULED_BACKUP);
+
+    // when
+    final var event = harness.accept(LogArchiveIntent.COMPLETE_HANDOVER, completeHandover());
+
+    // then
+    assertThat(event.getHandoverCheckpointId()).isEqualTo(HANDOVER_ID);
+    assertThat(event.getHandoverPosition())
+        .isEqualTo(LogArchiveRecordsProcessor.HANDOVER_POSITION_FROM_START);
+    final var meta = harness.state().meta();
+    assertThat(meta.getHandoverCheckpointId()).isEqualTo(HANDOVER_ID);
+    assertThat(meta.getHandoverPosition())
+        .isEqualTo(LogArchiveRecordsProcessor.HANDOVER_POSITION_FROM_START);
+    assertThat(harness.published.getLast().handover())
+        .isEqualTo(
+            new HandoverJson(HANDOVER_ID, LogArchiveRecordsProcessor.HANDOVER_POSITION_FROM_START));
+  }
+
+  @Test
+  void shouldReplayHandoverFromTheStartToTheSameState() throws Exception {
+    // given
+    archiveWholeHistoryWithSnapshot();
+    harness.accept(LogArchiveIntent.COMPLETE_HANDOVER, completeHandover());
+
+    // when
+    try (final var replica = new LogArchiveHarness(replicaDirectory.toFile(), CONFIG)) {
+      replica.replayLog(harness.log);
+
+      // then
+      assertThat(replica.fingerprint()).isEqualTo(harness.fingerprint());
+      assertThat(replica.state().meta().getHandoverPosition())
+          .isEqualTo(LogArchiveRecordsProcessor.HANDOVER_POSITION_FROM_START);
+    }
+  }
+
+  @Test
+  void shouldRejectRepeatedHandoverFromTheStart() {
+    // given
+    archiveWholeHistoryWithSnapshot();
+    harness.accept(LogArchiveIntent.COMPLETE_HANDOVER, completeHandover());
+
+    // then
+    assertRejected(completeHandover(), RejectionType.INVALID_STATE);
+  }
+
+  @Test
+  void shouldRejectHandoverFromTheStartWhenTheArchiveStartsLater() {
+    // given - no HANDOVER backup, old backups, and an archive that starts after the first record:
+    // the history before it is only in the old backups
+    harness.createCheckpoint(HANDOVER_ID - 2, 3, CheckpointType.SCHEDULED_BACKUP);
+    harness.confirmBackup(HANDOVER_ID - 2, 3, CheckpointType.SCHEDULED_BACKUP);
+    harness.accept(LogArchiveIntent.START_TIMELINE, startTimeline(TIMELINE, 5));
+    harness.accept(LogArchiveIntent.ARCHIVE_LOG, archiveLog(object(5, 20, 5, 20)));
+    harness.accept(LogArchiveIntent.ARCHIVE_SNAPSHOT, archiveSnapshot(snapshot("s-10", 10)));
+
+    // then
+    assertRejected(completeHandover(), RejectionType.INVALID_STATE);
+  }
+
+  @Test
+  void shouldRejectHandoverFromTheStartWithoutArchivedSnapshot() {
+    // given - the whole log is archived, but the state the partition started from is not
+    harness.accept(LogArchiveIntent.START_TIMELINE, startTimeline(TIMELINE, 1));
+    harness.accept(LogArchiveIntent.ARCHIVE_LOG, archiveLog(object(1, 20, 1, 20)));
+
+    // then
+    assertRejected(completeHandover(), RejectionType.INVALID_STATE);
+  }
+
+  @Test
+  void shouldRejectHandoverFromTheStartBeforeAnythingIsArchived() {
+    // given
+    harness.accept(LogArchiveIntent.START_TIMELINE, startTimeline(TIMELINE, 1));
+
+    // then
+    assertRejected(completeHandover(), RejectionType.INVALID_STATE);
+  }
+
+  @Test
+  void shouldNotRecordHandoverFromTheStartOnAPartitionWithItsOwnHandoverBackup() {
+    // given - the partition took part in the handover: H is its confirmed HANDOVER backup, but the
+    // archive has not reached it yet, although it holds the whole history
+    harness.accept(LogArchiveIntent.START_TIMELINE, startTimeline(TIMELINE, 1));
+    harness.createCheckpoint(HANDOVER_ID, 25, CheckpointType.HANDOVER);
+    harness.accept(LogArchiveIntent.ARCHIVE_LOG, archiveLog(object(1, 20, 1, 20)));
+    harness.accept(LogArchiveIntent.ARCHIVE_SNAPSHOT, archiveSnapshot(snapshot("s-10", 10)));
+    harness.confirmBackup(HANDOVER_ID, 25, CheckpointType.HANDOVER);
+
+    // then
+    assertRejected(completeHandover(), RejectionType.INVALID_STATE);
+  }
+
   // ---------------------------------------------------------------------------------------------
 
   /** F is 20, the handover checkpoint lies at 15 and its backup is confirmed. */
@@ -392,6 +495,13 @@ final class LogArchiveHandoverTest {
     harness.createCheckpoint(HANDOVER_ID, HANDOVER_POSITION, CheckpointType.HANDOVER);
     harness.accept(LogArchiveIntent.ARCHIVE_LOG, archiveLog(object(1, 20, 1, 20)));
     harness.confirmBackup(HANDOVER_ID, HANDOVER_POSITION, CheckpointType.HANDOVER);
+  }
+
+  /** F is 20, the archive holds the log from the first record on and a snapshot at index 10. */
+  private void archiveWholeHistoryWithSnapshot() {
+    harness.accept(LogArchiveIntent.START_TIMELINE, startTimeline(TIMELINE, 1));
+    harness.accept(LogArchiveIntent.ARCHIVE_LOG, archiveLog(object(1, 20, 1, 20)));
+    harness.accept(LogArchiveIntent.ARCHIVE_SNAPSHOT, archiveSnapshot(snapshot("s-10", 10)));
   }
 
   private static LogArchiveRecord completeHandover() {

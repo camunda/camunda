@@ -57,6 +57,15 @@ public final class LogArchiveRecordsProcessor
    */
   public static final long NO_RECORD_TIMESTAMP = -1L;
 
+  /**
+   * The handover position recorded by a partition that took no part in the handover (spec section
+   * 18.4): the position before its first record, as everything after it is in the log archive.
+   */
+  public static final long HANDOVER_POSITION_FROM_START = 0L;
+
+  /** The position of the first record of every partition's log. */
+  private static final long FIRST_LOG_POSITION = 1L;
+
   private static final Logger LOG = LoggerFactory.getLogger(LogArchiveRecordsProcessor.class);
 
   private final LogArchiveProcessorConfig config;
@@ -259,11 +268,15 @@ public final class LogArchiveRecordsProcessor
       case SEAL_INDEX -> event.setSeq(meta.getNextSeq()).setChunk(commandValue.getChunk());
       case CONFIRM_PUBLISHED -> event.setPublishedSeq(commandValue.getPublishedSeq());
       case COMPLETE_HANDOVER ->
-          // the position is that of the confirmed handover backup, validated to match the command
+          // the position is that of the confirmed handover backup, validated to match the command;
+          // a partition without one took no part in the handover and records it from its start
           event
               .setSeq(meta.getNextSeq())
               .setHandoverCheckpointId(commandValue.getHandoverCheckpointId())
-              .setHandoverPosition(checkpointState.getLatestHandoverBackupPosition());
+              .setHandoverPosition(
+                  checkpointState.getLatestHandoverBackupId() == CheckpointState.NO_CHECKPOINT
+                      ? HANDOVER_POSITION_FROM_START
+                      : checkpointState.getLatestHandoverBackupPosition());
       default -> throw new IllegalStateException("Unexpected intent " + intent);
     }
 
@@ -615,8 +628,13 @@ public final class LogArchiveRecordsProcessor
   }
 
   /**
-   * Spec section 18.2. The timeline id of the command is not checked: the request for a handover
-   * comes from outside the log archive and cannot know it.
+   * Spec sections 18.2 and 18.4. The timeline id of the command is not checked: the request for a
+   * handover comes from outside the log archive and cannot know it.
+   *
+   * <p>A partition that took part in the handover records H once H is its confirmed HANDOVER backup
+   * and the archive has reached it. A partition that took no part in it, because it was added by a
+   * scale-up after H, has no HANDOVER backup at all; it records H if its archive holds its whole
+   * history ({@link #coversWholeHistory}), at {@link #HANDOVER_POSITION_FROM_START}.
    */
   private @Nullable Rejection validateCompleteHandover(
       final LogArchiveRecord command, final LogArchiveMeta meta) {
@@ -633,10 +651,14 @@ public final class LogArchiveRecordsProcessor
           "Expected no handover, but the handover at checkpoint %d is already recorded"
               .formatted(meta.getHandoverCheckpointId()));
     }
-    if (checkpointState.getLatestHandoverBackupId() != checkpointId) {
+    final long latestHandoverBackup = checkpointState.getLatestHandoverBackupId();
+    if (latestHandoverBackup == CheckpointState.NO_CHECKPOINT) {
+      return validateHandoverFromStart(checkpointId, meta);
+    }
+    if (latestHandoverBackup != checkpointId) {
       return invalidState(
           "Expected checkpoint %d to be a confirmed backup of type HANDOVER, but the latest confirmed one is %d"
-              .formatted(checkpointId, checkpointState.getLatestHandoverBackupId()));
+              .formatted(checkpointId, latestHandoverBackup));
     }
     final long handoverPosition = checkpointState.getLatestHandoverBackupPosition();
     if (meta.getArchivedPosition() < handoverPosition) {
@@ -645,5 +667,33 @@ public final class LogArchiveRecordsProcessor
               .formatted(handoverPosition, meta.getArchivedPosition()));
     }
     return null;
+  }
+
+  private @Nullable Rejection validateHandoverFromStart(
+      final long checkpointId, final LogArchiveMeta meta) {
+    if (!coversWholeHistory(meta)) {
+      return invalidState(
+          ("Expected checkpoint %d to be a confirmed backup of type HANDOVER, or the log archive to"
+                  + " hold the partition's whole history (log from position %d and an archived"
+                  + " snapshot), but there is no confirmed HANDOVER backup and the log archive"
+                  + " starts at position %d with %d archived snapshots")
+              .formatted(
+                  checkpointId,
+                  FIRST_LOG_POSITION,
+                  meta.getFirstArchivedPosition(),
+                  state.snapshots().size()));
+    }
+    return null;
+  }
+
+  /**
+   * Whether the timeline alone restores every point of the partition's history, so no old backup is
+   * needed for any of it: it holds the log from the partition's first record on, and a snapshot is
+   * archived. A partition added by a scale-up does not start from an empty state but from a copy of
+   * the global state of partition 1, which is not in its log; the archived snapshot is the only way
+   * to bring it back. Every later restore point lies after that snapshot.
+   */
+  private boolean coversWholeHistory(final LogArchiveMeta meta) {
+    return meta.getFirstArchivedPosition() == FIRST_LOG_POSITION && !state.snapshots().isEmpty();
   }
 }
