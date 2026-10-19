@@ -149,7 +149,7 @@ public class RestoreApp implements ApplicationRunner {
     final var restoredPartitionCounts = partitionCounts(backupIdsPerTenant);
     final var recreatesTopology =
         ClusterRestore.shouldRewriteTopologyFile(
-            arguments.targetDataPolicy(),
+            arguments.targetDataPolicy(physicalTenantConfigurations.physicalTenantIds().size() > 1),
             selectionPerTenant
                 .keySet()
                 .containsAll(physicalTenantConfigurations.physicalTenantIds()));
@@ -235,7 +235,7 @@ public class RestoreApp implements ApplicationRunner {
         restoreConfiguration);
     clusterRestore.restore(
         backupIdsPerTenant,
-        arguments.targetDataPolicy(),
+        arguments.targetDataPolicy(physicalTenantConfigurations.physicalTenantIds().size() > 1),
         restoreConfiguration.validateConfig(),
         restoreConfiguration.ignoreFilesInTarget());
     LOG.info("Successfully restored physical tenants {}", backupIdsPerTenant.keySet());

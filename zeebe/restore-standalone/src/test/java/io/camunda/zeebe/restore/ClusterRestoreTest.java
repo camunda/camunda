@@ -115,6 +115,28 @@ final class ClusterRestoreTest {
   class DataDirectory {
 
     @Test
+    void shouldPruneOnlyTheDefaultTenantWhileOtherTenantsKeepTheirData(@TempDir final Path dir)
+        throws IOException {
+      // given — a node holding data of two tenants
+      final var clusterRestore = clusterRestore(dir, Map.of("default", 1, OTHER_TENANT, 1));
+      final var staleDefault = Files.createDirectories(dir.resolve("default/partitions/1"));
+      Files.createFile(staleDefault.resolve("stale"));
+      final var otherData = Files.createDirectories(dir.resolve(OTHER_TENANT + "/partitions/1"));
+      Files.createFile(otherData.resolve("keep"));
+
+      // when — only the default tenant is restored. It has no real backups, so the restore fails
+      // after preparing the target.
+      assertThatThrownBy(
+              () ->
+                  clusterRestore.restore(selection("default"), REPLACE_SELECTED, false, List.of()))
+          .isNotInstanceOf(DirectoryNotEmptyException.class);
+
+      // then — the default tenant was pruned rather than rejected, the other tenant untouched
+      assertThat(staleDefault.resolve("stale")).doesNotExist();
+      assertThat(otherData.resolve("keep")).exists();
+    }
+
+    @Test
     void shouldFailWhenDirectoryIsNotEmpty(@TempDir final Path dir) throws IOException {
       // given
       final var clusterRestore = clusterRestore(dir, Map.of("default", 1));
