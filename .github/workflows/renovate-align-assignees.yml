@@ -15,6 +15,15 @@ on:
         description: 'Log the intended assignee changes without applying them'
         type: boolean
         default: false
+  # Self-test: a change to the reconciler runs it against live PRs in dry-run
+  # (never writes — see DRY_RUN below), exercising the full workflow wiring and
+  # scoped token on the PR branch, which schedule/workflow_dispatch cannot do
+  # before the workflow is on the default branch.
+  pull_request:
+    paths:
+      - '.github/workflows/renovate-align-assignees.yml'
+      - '.github/scripts/align-renovate-assignees.mjs'
+      - '.github/scripts/align-renovate-assignees.test.mjs'
 
 defaults:
   run:
@@ -38,7 +47,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           GITHUB_REPOSITORY: ${{ github.repository }}
-          DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run || 'false' }}
+          DRY_RUN: ${{ (github.event_name == 'workflow_dispatch' && inputs.dry_run) || github.event_name == 'pull_request' || 'false' }}
         run: node .github/scripts/align-renovate-assignees.mjs
 
       - name: Observe build status
