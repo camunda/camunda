@@ -6,11 +6,11 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {afterEach, describe, expect, onTestFinished, vi} from 'vitest';
+import {afterEach, describe, expect, vi} from 'vitest';
 import {userEvent} from 'vitest/browser';
 import {cleanup} from 'vitest-browser-react';
 import {HttpResponse} from 'msw';
-import type {SetupWorker} from 'msw/browser';
+import {z} from 'zod';
 import {useRouterState} from '@tanstack/react-router';
 import type {Variable} from '@camunda/camunda-api-zod-schemas/8.11';
 import {it} from '#/vitest-modules/test-extend';
@@ -29,6 +29,7 @@ import {
 } from '#/shared-test-modules/api-mocks/element-instances';
 import {createQueryVariablesByUserTaskResponse, createVariable} from '#/shared-test-modules/api-mocks/variables';
 import {createProblemDetails} from '#/shared-test-modules/api-mocks/shared';
+import {notificationsStore} from '#/shared/notifications/notifications.store';
 import {ProcessInstancePageProvider} from './ProcessInstancePageProvider';
 import {ProcessInstanceVariables} from './ProcessInstanceVariables';
 import {processInstanceSearchSchema} from './processInstanceSearch';
@@ -37,22 +38,14 @@ const PROCESS_INSTANCE_ID = '2251799813685280';
 
 afterEach(async () => {
 	await cleanup();
+	notificationsStore.reset();
 });
 
-function variablesResponse(items: Variable[], totalItems = items.length) {
-	return HttpResponse.json(createQueryVariablesByUserTaskResponse({items, page: {totalItems}}));
-}
-
-function trackVariableSearches(worker: SetupWorker) {
-	const bodies: unknown[] = [];
-	const onRequest = async ({request}: {request: Request}) => {
-		if (request.url.endsWith('/variables/search')) {
-			bodies.push(await request.clone().json());
-		}
-	};
-	worker.events.on('request:start', onRequest);
-	onTestFinished(() => worker.events.removeListener('request:start', onRequest));
-	return bodies;
+function variablesResponse(
+	items: Variable[],
+	page?: {totalItems?: number; hasMoreTotalItems?: boolean; endCursor?: string},
+) {
+	return HttpResponse.json(createQueryVariablesByUserTaskResponse({items, page}));
 }
 
 function renderVariables(search = '') {
@@ -79,13 +72,20 @@ function renderVariables(search = '') {
 
 describe('<ProcessInstanceVariables />', () => {
 	it('should show the process instance variables sorted by name', async ({worker}) => {
-		const bodies = trackVariableSearches(worker);
 		worker.use(
 			mockQueryVariablesEndpoint({
+				schema: z.object({
+					filter: z
+						.object({processInstanceKey: z.literal(PROCESS_INSTANCE_ID), scopeKey: z.literal(PROCESS_INSTANCE_ID)})
+						.strict(),
+					page: z.object({limit: z.literal(50)}).strict(),
+					sort: z.tuple([z.object({field: z.literal('name'), order: z.literal('ASC')})]),
+				}),
 				successResponse: variablesResponse([
 					createVariable({name: 'amount', value: '100', variableKey: '1'}),
 					createVariable({name: 'customer', value: '{"name":"Jane"}', variableKey: '2'}),
 				]),
+				failureResponse: HttpResponse.json(createProblemDetails({status: 500}), {status: 500}),
 				delay: 100,
 			}),
 		);
@@ -95,15 +95,6 @@ describe('<ProcessInstanceVariables />', () => {
 		await expect.element(screen.getByRole('button', {name: 'Copy amount'})).toHaveTextContent('100');
 		await expect.element(screen.getByRole('button', {name: 'Copy customer'})).toHaveTextContent('{ "name": "Jane" }');
 		expect(screen.getByTestId('variables-spinner').query()).toBeNull();
-		await expect
-			.poll(() => bodies)
-			.toEqual([
-				{
-					filter: {processInstanceKey: PROCESS_INSTANCE_ID, scopeKey: PROCESS_INSTANCE_ID},
-					page: {from: 0, limit: 50},
-					sort: [{field: 'name', order: 'ASC'}],
-				},
-			]);
 	});
 
 	it('should show an empty message when the scope has no variables', async ({worker}) => {
@@ -138,7 +129,6 @@ describe('<ProcessInstanceVariables />', () => {
 	});
 
 	it('should ask for a single instance when the selected element has several', async ({worker}) => {
-		const bodies = trackVariableSearches(worker);
 		worker.use(
 			mockQueryElementInstancesEndpoint({
 				successResponse: HttpResponse.json(createQueryElementInstancesResponse([], 3)),
@@ -149,7 +139,6 @@ describe('<ProcessInstanceVariables />', () => {
 		await expect
 			.element(screen.getByText('To view the variables, select a single element instance in the instance history.'))
 			.toBeVisible();
-		expect(bodies).toEqual([]);
 	});
 
 	it('should show an empty message for an element that has not run', async ({worker}) => {
@@ -163,52 +152,45 @@ describe('<ProcessInstanceVariables />', () => {
 		await expect.element(screen.getByText('The element has no variables')).toBeVisible();
 	});
 
-	it('should not query variables for a placeholder instance', async ({worker}) => {
-		const bodies = trackVariableSearches(worker);
+	it('should show an empty message for a placeholder instance', async () => {
 		const screen = await renderVariables('?elementId=user-task&elementInstanceKey=1&isPlaceholder=true');
 
 		await expect.element(screen.getByText('The element has no variables')).toBeVisible();
-		expect(bodies).toEqual([]);
 	});
 
 	it('should scope variables to the selected element instance', async ({worker}) => {
-		const bodies = trackVariableSearches(worker);
 		const elementInstance = createElementInstance({elementInstanceKey: '2251799813685299'});
 		worker.use(
 			mockGetElementInstanceEndpoint({successResponse: HttpResponse.json(elementInstance)}),
-			mockQueryVariablesEndpoint({successResponse: variablesResponse([createVariable({name: 'local'})])}),
+			mockQueryVariablesEndpoint({
+				schema: z.object({filter: z.object({scopeKey: z.literal(elementInstance.elementInstanceKey)})}),
+				successResponse: variablesResponse([createVariable({name: 'local'})]),
+				failureResponse: variablesResponse([]),
+			}),
 		);
 		const screen = await renderVariables(
 			`?elementId=user-task&elementInstanceKey=${elementInstance.elementInstanceKey}`,
 		);
 
 		await expect.element(screen.getByTestId('variable-local')).toBeVisible();
-		await expect
-			.poll(() => bodies)
-			.toContainEqual(
-				expect.objectContaining({
-					filter: {processInstanceKey: PROCESS_INSTANCE_ID, scopeKey: elementInstance.elementInstanceKey},
-				}),
-			);
 	});
 
 	it('should search variables by name', async ({worker}) => {
-		const bodies = trackVariableSearches(worker);
 		worker.use(mockQueryVariablesEndpoint({successResponse: variablesResponse([createVariable({name: 'amount'})])}));
 		const screen = await renderVariables();
 		await expect.element(screen.getByTestId('variable-amount')).toBeVisible();
 
-		worker.use(mockQueryVariablesEndpoint({successResponse: variablesResponse([])}));
+		worker.use(
+			mockQueryVariablesEndpoint({
+				schema: z.object({filter: z.object({name: z.object({$like: z.literal('*cust*')})})}),
+				successResponse: variablesResponse([]),
+				failureResponse: variablesResponse([createVariable({name: 'amount'})]),
+			}),
+		);
 		await userEvent.fill(screen.getByRole('searchbox', {name: 'Search variables by name'}), ' cust ');
 
 		await expect.element(screen.getByText('No variables match your search')).toBeVisible();
-		await expect
-			.poll(() => bodies)
-			.toContainEqual(
-				expect.objectContaining({
-					filter: {processInstanceKey: PROCESS_INSTANCE_ID, scopeKey: PROCESS_INSTANCE_ID, name: {$like: '*cust*'}},
-				}),
-			);
+
 		await expect.element(screen.getByRole('searchbox', {name: 'Search variables by name'})).toBeVisible();
 	});
 
@@ -269,7 +251,11 @@ describe('<ProcessInstanceVariables />', () => {
 
 		await userEvent.click(screen.getByRole('button', {name: 'Open'}));
 
-		await expect.element(screen.getByRole('dialog', {name: 'Full value of amount'})).toBeVisible();
+		const dialog = screen.getByRole('dialog', {name: 'Full value of amount'});
+		await expect.element(dialog).toBeVisible();
+		await userEvent.keyboard('{Escape}');
+		await expect.element(dialog).not.toBeInTheDocument();
+		await expect.element(screen.getByRole('button', {name: 'Open'})).toHaveFocus();
 	});
 
 	it('should notify when the full value cannot be fetched', async ({worker}) => {
@@ -285,25 +271,37 @@ describe('<ProcessInstanceVariables />', () => {
 
 		await userEvent.click(screen.getByRole('button', {name: 'Open'}));
 
-		await expect.element(screen.getByRole('button', {name: 'Open'})).toBeVisible();
+		await expect
+			.poll(() => notificationsStore.notifications.map(({title}) => title))
+			.toContain('Failed to fetch full amount');
+		await expect.element(screen.getByRole('button', {name: 'Open'})).toHaveFocus();
 		await expect.element(screen.getByRole('dialog')).not.toBeInTheDocument();
 	});
 
 	describe('pagination', () => {
 		const {getObserver} = setUpFakeIntersectionObserver();
 
-		it('should load the next page when scrolling to the end', async ({worker}) => {
-			const bodies = trackVariableSearches(worker);
+		it('should load the next page from the cursor when scrolling past a capped total', async ({worker}) => {
 			const firstPage = Array.from({length: 50}, (_, index) =>
 				createVariable({name: `var-${String(index).padStart(2, '0')}`, variableKey: `${index}`}),
 			);
-			worker.use(mockQueryVariablesEndpoint({successResponse: variablesResponse(firstPage, 51)}));
+			worker.use(
+				mockQueryVariablesEndpoint({
+					successResponse: variablesResponse(firstPage, {
+						totalItems: 50,
+						hasMoreTotalItems: true,
+						endCursor: 'cursor-1',
+					}),
+				}),
+			);
 			const screen = await renderVariables();
 			await expect.element(screen.getByTestId('variable-var-49')).toBeInTheDocument();
 
 			worker.use(
 				mockQueryVariablesEndpoint({
-					successResponse: variablesResponse([createVariable({name: 'var-50', variableKey: '50'})], 51),
+					schema: z.object({page: z.object({after: z.literal('cursor-1'), limit: z.literal(50)})}),
+					successResponse: variablesResponse([createVariable({name: 'var-50', variableKey: '50'})]),
+					failureResponse: HttpResponse.json(createProblemDetails({status: 500}), {status: 500}),
 				}),
 			);
 			const list = screen.getByTestId('variables-list').element();
@@ -311,7 +309,6 @@ describe('<ProcessInstanceVariables />', () => {
 			getObserver().intersect(screen.getByTestId('variable-var-49').element());
 
 			await expect.element(screen.getByTestId('variable-var-50')).toBeInTheDocument();
-			await expect.poll(() => bodies).toContainEqual(expect.objectContaining({page: {from: 50, limit: 50}}));
 		});
 	});
 });

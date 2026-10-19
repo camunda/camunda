@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useState} from 'react';
+import {useRef, useState} from 'react';
 import {useQueryClient} from '@tanstack/react-query';
 import {useTranslation} from 'react-i18next';
 import {Button} from '@carbon/react';
@@ -27,8 +27,12 @@ const ViewFullVariableButton: React.FC<Props> = ({variableKey, variableName, but
 	const queryClient = useQueryClient();
 	const [isLoading, setIsLoading] = useState(false);
 	const [fullValue, setFullValue] = useState<string | null>(null);
+	const triggerRef = useRef<HTMLButtonElement>(null);
 
 	const open = async () => {
+		if (isLoading) {
+			return;
+		}
 		setIsLoading(true);
 		try {
 			setFullValue((await queryClient.fetchQuery(variableQuery(variableKey))).value);
@@ -43,12 +47,9 @@ const ViewFullVariableButton: React.FC<Props> = ({variableKey, variableName, but
 		}
 	};
 
-	if (isLoading) {
-		return <InlineLoading data-testid="variable-operation-spinner" />;
-	}
-
 	return (
 		<>
+			{isLoading && <InlineLoading data-testid="variable-operation-spinner" />}
 			{buttonLabel === undefined ? (
 				<Button
 					kind="ghost"
@@ -58,10 +59,12 @@ const ViewFullVariableButton: React.FC<Props> = ({variableKey, variableName, but
 					aria-label={t('operate.processInstance.variables.open')}
 					iconDescription={t('operate.processInstance.variables.openDescription')}
 					tooltipPosition="top"
+					ref={triggerRef}
+					aria-busy={isLoading}
 					onClick={open}
 				/>
 			) : (
-				<Button kind="ghost" size="sm" onClick={open}>
+				<Button kind="ghost" size="sm" ref={triggerRef} aria-busy={isLoading} onClick={open}>
 					{buttonLabel}
 				</Button>
 			)}
@@ -71,7 +74,10 @@ const ViewFullVariableButton: React.FC<Props> = ({variableKey, variableName, but
 					variableName={variableName}
 					isVisible
 					readOnly
-					onClose={() => setFullValue(null)}
+					onClose={() => {
+						setFullValue(null);
+						triggerRef.current?.focus();
+					}}
 					title={t('operate.processInstance.variables.fullValueTitle', {name: variableName})}
 				/>
 			)}

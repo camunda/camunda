@@ -13,6 +13,7 @@ import {useTranslation} from 'react-i18next';
 import {Tag} from '@carbon/react';
 import type {ProcessInstance} from '@camunda/camunda-api-zod-schemas/8.11';
 import {hasProcessLevelWaitState} from '#/operate/shared/utils/waitStates';
+import {isInstanceRunning} from '#/operate/shared/utils/processInstance';
 import {selectionIncidentsCountQuery, useProcessInstanceWaitStateStatistics} from './processInstance.queries';
 import {useProcessInstanceElementSelection} from './useProcessInstanceElementSelection';
 import {useProcessInstancePage} from './useProcessInstancePage';
@@ -49,8 +50,7 @@ const ProcessInstanceTabs: React.FC<{isHistoryTabVisible: boolean}> = ({isHistor
 	const navigate = useNavigate();
 	const {processInstanceId, processInstance} = useProcessInstancePage();
 	const {hasSelection} = useProcessInstanceElementSelection();
-	const {data: waitStateStatistics, isLoading: isWaitStateLoading} =
-		useProcessInstanceWaitStateStatistics(processInstance);
+	const {data: waitStateStatistics} = useProcessInstanceWaitStateStatistics(processInstance);
 	const incidentsCount = useSelectionIncidentsCount(processInstance);
 	const isProcessLevelWaiting = hasProcessLevelWaitState(waitStateStatistics, processInstance.processDefinitionId);
 
@@ -71,7 +71,7 @@ const ProcessInstanceTabs: React.FC<{isHistoryTabVisible: boolean}> = ({isHistor
 	];
 
 	const selectedTab = tabs.find(({key}) => matchRoute({to: TAB_PATHS[key]}));
-	const isDeferringRedirect = !hasSelection && isWaitStateLoading;
+	const isDeferringRedirect = !hasSelection && isInstanceRunning(processInstance) && waitStateStatistics === undefined;
 	const redirectTarget =
 		selectedTab !== undefined && selectedTab.key !== 'history' && !selectedTab.visible && !isDeferringRedirect
 			? TAB_PATHS[hasSelection || isProcessLevelWaiting ? 'details' : 'variables']

@@ -6,10 +6,11 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {afterEach, describe, expect, onTestFinished} from 'vitest';
+import {afterEach, describe, expect} from 'vitest';
 import {userEvent} from 'vitest/browser';
 import {cleanup} from 'vitest-browser-react';
 import {HttpResponse} from 'msw';
+import {z} from 'zod';
 import {useRouterState} from '@tanstack/react-router';
 import {it} from '#/vitest-modules/test-extend';
 import {renderWithRouter} from '#/vitest-modules/render-with-router';
@@ -25,7 +26,7 @@ import {
 	createElementInstance,
 	createQueryElementInstancesResponse,
 } from '#/shared-test-modules/api-mocks/element-instances';
-import {createPaginatedResponse} from '#/shared-test-modules/api-mocks/shared';
+import {createPaginatedResponse, createProblemDetails} from '#/shared-test-modules/api-mocks/shared';
 import {ProcessInstancePageProvider} from './ProcessInstancePageProvider';
 import {ProcessInstanceTabs} from './ProcessInstanceTabs';
 import {processInstanceSearchSchema} from './processInstanceSearch';
@@ -118,20 +119,16 @@ describe('<ProcessInstanceTabs />', () => {
 	it('should redirect a hidden Incidents tab to Details when the selected element has no incidents', async ({
 		worker,
 	}) => {
-		const requests: unknown[] = [];
-		const onRequest = async ({request}: {request: Request}) => {
-			if (request.url.endsWith('/incidents/search')) {
-				requests.push(await request.clone().json());
-			}
-		};
-		worker.events.on('request:start', onRequest);
-		onTestFinished(() => worker.events.removeListener('request:start', onRequest));
 		worker.use(
 			waitStates(),
 			mockQueryElementInstancesEndpoint({
 				successResponse: HttpResponse.json(createQueryElementInstancesResponse([], 2)),
 			}),
-			mockQueryProcessInstanceIncidentsEndpoint({successResponse: incidentsCount(0)}),
+			mockQueryProcessInstanceIncidentsEndpoint({
+				schema: z.object({filter: z.object({state: z.literal('ACTIVE'), elementId: z.literal('user-task')})}),
+				successResponse: incidentsCount(0),
+				failureResponse: incidentsCount(5),
+			}),
 		);
 		const screen = await renderTabs({
 			initialEntry: 'incidents?elementId=user-task&tenant=tenant-a',
@@ -142,9 +139,6 @@ describe('<ProcessInstanceTabs />', () => {
 			.poll(() => screen.router.state.location.pathname)
 			.toBe(`/operate/processes/${PROCESS_INSTANCE_ID}/details`);
 		expect(screen.router.state.location.search).toEqual({elementId: 'user-task', tenant: 'tenant-a'});
-		await expect
-			.poll(() => requests)
-			.toContainEqual({filter: {state: 'ACTIVE', elementId: 'user-task'}, page: {limit: 0}});
 		await expect.element(screen.getByRole('link', {name: /Incidents/})).not.toBeInTheDocument();
 	});
 
@@ -175,23 +169,17 @@ describe('<ProcessInstanceTabs />', () => {
 		expect(screen.router.state.location.search).toEqual({tenant: 'tenant-a'});
 	});
 
-	it('should keep a direct Details entry while process-level wait states load', async ({worker}) => {
-		const processInstance = createProcessInstance({processInstanceKey: PROCESS_INSTANCE_ID, hasIncident: false});
+	it('should keep a direct Details entry when wait states fail to load', async ({worker}) => {
 		worker.use(
 			mockGetProcessInstanceWaitStateStatisticsEndpoint({
-				successResponse: HttpResponse.json(
-					createPaginatedResponse({items: [{elementId: processInstance.processDefinitionId, waitingCount: 1}]}),
-				),
-				delay: 200,
+				successResponse: HttpResponse.json(createProblemDetails({status: 503}), {status: 503}),
 			}),
 		);
-		const screen = await renderTabs({initialEntry: 'details', processInstance});
+		const screen = await renderTabs({initialEntry: 'details'});
 
-		expect(screen.router.state.location.pathname).toBe(`/operate/processes/${PROCESS_INSTANCE_ID}/details`);
-		await expect.element(screen.getByRole('link', {name: 'Details'})).toHaveAttribute('aria-current', 'page');
-		await expect.poll(() => screen.queryClient.isFetching()).toBe(0);
-		await expect.element(screen.getByRole('link', {name: 'Details'})).toHaveAttribute('aria-current', 'page');
-		await expect.poll(() => screen.router.state.status).toBe('idle');
+		await expect
+			.poll(() => screen.queryClient.getQueryState(['processInstanceWaitStateStatistics', PROCESS_INSTANCE_ID])?.status)
+			.toBe('error');
 		expect(screen.router.state.location.pathname).toBe(`/operate/processes/${PROCESS_INSTANCE_ID}/details`);
 	});
 

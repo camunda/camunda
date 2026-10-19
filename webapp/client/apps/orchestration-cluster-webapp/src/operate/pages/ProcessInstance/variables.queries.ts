@@ -34,16 +34,15 @@ function variablesQuery({
 						instanceRequest<QueryVariablesResponseBody>(
 							endpoints.queryVariables({
 								filter: {processInstanceKey, scopeKey, ...(name === undefined ? {} : {name: {$like: name}})},
-								page: {from: pageParam, limit: VARIABLES_PAGE_SIZE},
+								page:
+									pageParam === null ? {limit: VARIABLES_PAGE_SIZE} : {after: pageParam, limit: VARIABLES_PAGE_SIZE},
 								sort: [{field: 'name', order: 'ASC'}],
 							}),
 							signal,
 						),
-		initialPageParam: 0,
-		getNextPageParam: (lastPage, _, lastPageParam) => {
-			const nextPageParam = lastPageParam + VARIABLES_PAGE_SIZE;
-			return nextPageParam < lastPage.page.totalItems ? nextPageParam : undefined;
-		},
+		initialPageParam: null as string | null,
+		getNextPageParam: ({items, page}) =>
+			items.length < VARIABLES_PAGE_SIZE || page.endCursor === null ? undefined : page.endCursor,
 	});
 }
 
