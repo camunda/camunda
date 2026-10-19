@@ -105,8 +105,11 @@ final class ClusterEndpointTest {
   }
 
   private ClusterEndpoint createEndpoint() {
-    return new ClusterEndpoint(
-        mock(ClusterConfigurationManagementRequestSender.class), new ProtoBufSerializer());
+    return createEndpoint(mock(ClusterConfigurationManagementRequestSender.class));
+  }
+
+  private ClusterEndpoint createEndpoint(final ClusterConfigurationManagementRequestSender sender) {
+    return new ClusterEndpoint(sender, new ProtoBufSerializer());
   }
 
   @Nested
@@ -125,7 +128,7 @@ final class ClusterEndpointTest {
     void shouldReturn404ForUnknownPhysicalTenant() {
       // given
       final var sender = mock(ClusterConfigurationManagementRequestSender.class);
-      final var endpoint = new ClusterEndpoint(sender, new ProtoBufSerializer());
+      final var endpoint = createEndpoint(sender);
       when(sender.getTopology())
           .thenReturn(CompletableFuture.completedFuture(Either.right(singleTenantConfiguration())));
 
@@ -140,7 +143,7 @@ final class ClusterEndpointTest {
     void shouldTreatBlankPhysicalTenantAsAbsent() {
       // given
       final var sender = mock(ClusterConfigurationManagementRequestSender.class);
-      final var endpoint = new ClusterEndpoint(sender, new ProtoBufSerializer());
+      final var endpoint = createEndpoint(sender);
       when(sender.getTopology())
           .thenReturn(CompletableFuture.completedFuture(Either.right(singleTenantConfiguration())));
 
@@ -155,7 +158,7 @@ final class ClusterEndpointTest {
     void shouldReturnTopologyWhenPhysicalTenantIsAbsent() {
       // given
       final var sender = mock(ClusterConfigurationManagementRequestSender.class);
-      final var endpoint = new ClusterEndpoint(sender, new ProtoBufSerializer());
+      final var endpoint = createEndpoint(sender);
       when(sender.getTopology())
           .thenReturn(CompletableFuture.completedFuture(Either.right(singleTenantConfiguration())));
 
@@ -173,7 +176,7 @@ final class ClusterEndpointTest {
       // uninitialized body, not a 404, since "no groups yet" means "not bootstrapped", not
       // "unknown tenant".
       final var sender = mock(ClusterConfigurationManagementRequestSender.class);
-      final var endpoint = new ClusterEndpoint(sender, new ProtoBufSerializer());
+      final var endpoint = createEndpoint(sender);
       when(sender.getTopology())
           .thenReturn(
               CompletableFuture.completedFuture(
@@ -197,7 +200,7 @@ final class ClusterEndpointTest {
     void shouldPurgeEveryPhysicalTenantWhenParameterIsAbsent() {
       // given
       final var sender = senderAcceptingPurge();
-      final var endpoint = new ClusterEndpoint(sender, new ProtoBufSerializer());
+      final var endpoint = createEndpoint(sender);
 
       // when
       endpoint.purge(false, null).join();
@@ -210,7 +213,7 @@ final class ClusterEndpointTest {
     void shouldPurgeOnlyTheGivenPhysicalTenant() {
       // given
       final var sender = senderAcceptingPurge();
-      final var endpoint = new ClusterEndpoint(sender, new ProtoBufSerializer());
+      final var endpoint = createEndpoint(sender);
 
       // when
       endpoint.purge(true, "tenant-a").join();
@@ -223,7 +226,7 @@ final class ClusterEndpointTest {
     void shouldTreatABlankPhysicalTenantAsAbsent() {
       // given
       final var sender = senderAcceptingPurge();
-      final var endpoint = new ClusterEndpoint(sender, new ProtoBufSerializer());
+      final var endpoint = createEndpoint(sender);
 
       // when
       endpoint.purge(false, "  ").join();
@@ -260,7 +263,7 @@ final class ClusterEndpointTest {
     void shouldSendPartitionDistributionRequestWhenConfigSet() {
       // given
       final var sender = mock(ClusterConfigurationManagementRequestSender.class);
-      final var endpoint = new ClusterEndpoint(sender, new ProtoBufSerializer());
+      final var endpoint = createEndpoint(sender);
       final var config = zoneAwareConfig();
       final var expected =
           new UpdatePartitionDistributorConfigRequest(
@@ -289,7 +292,7 @@ final class ClusterEndpointTest {
     void shouldSendZonePrioritiesRequestWhenZonePrioritiesSet() {
       // given
       final var sender = mock(ClusterConfigurationManagementRequestSender.class);
-      final var endpoint = new ClusterEndpoint(sender, new ProtoBufSerializer());
+      final var endpoint = createEndpoint(sender);
       final var zoneOrder = List.of("zone-b", "zone-a");
       final var expected = new UpdateZonePrioritiesRequest(zoneOrder, true);
       when(sender.updateZonePriorities(expected))
@@ -316,7 +319,7 @@ final class ClusterEndpointTest {
     void shouldRejectWhenBothConfigAndZonePrioritiesSet() {
       // given
       final var sender = mock(ClusterConfigurationManagementRequestSender.class);
-      final var endpoint = new ClusterEndpoint(sender, new ProtoBufSerializer());
+      final var endpoint = createEndpoint(sender);
 
       // when
       final var response =
@@ -335,7 +338,7 @@ final class ClusterEndpointTest {
     void shouldRejectWhenNeitherConfigNorZonePrioritiesSet() {
       // given
       final var sender = mock(ClusterConfigurationManagementRequestSender.class);
-      final var endpoint = new ClusterEndpoint(sender, new ProtoBufSerializer());
+      final var endpoint = createEndpoint(sender);
 
       // when
       final var response =
@@ -368,7 +371,7 @@ final class ClusterEndpointTest {
     void shouldGetConfigurationChangeById() {
       // given
       final var sender = mock(ClusterConfigurationManagementRequestSender.class);
-      final var endpoint = new ClusterEndpoint(sender, new ProtoBufSerializer());
+      final var endpoint = createEndpoint(sender);
       when(sender.getTopology())
           .thenReturn(
               CompletableFuture.completedFuture(
@@ -390,7 +393,7 @@ final class ClusterEndpointTest {
     void shouldReturn404WhenChangeIdIsUnknown() {
       // given
       final var sender = mock(ClusterConfigurationManagementRequestSender.class);
-      final var endpoint = new ClusterEndpoint(sender, new ProtoBufSerializer());
+      final var endpoint = createEndpoint(sender);
       when(sender.getTopology())
           .thenReturn(
               CompletableFuture.completedFuture(
@@ -407,7 +410,7 @@ final class ClusterEndpointTest {
     void shouldRejectNonNumericChangeId() {
       // given
       final var sender = mock(ClusterConfigurationManagementRequestSender.class);
-      final var endpoint = new ClusterEndpoint(sender, new ProtoBufSerializer());
+      final var endpoint = createEndpoint(sender);
 
       // when
       final var response = endpoint.getConfigurationChange("not-a-number");
@@ -421,7 +424,7 @@ final class ClusterEndpointTest {
     void shouldListConfigurationChanges() {
       // given
       final var sender = mock(ClusterConfigurationManagementRequestSender.class);
-      final var endpoint = new ClusterEndpoint(sender, new ProtoBufSerializer());
+      final var endpoint = createEndpoint(sender);
       when(sender.getTopology())
           .thenReturn(
               CompletableFuture.completedFuture(
@@ -446,8 +449,7 @@ final class ClusterEndpointTest {
     void shouldDumpTheConfigurationAsJson() {
       // given
       final var configuration = configuration();
-      final var endpoint =
-          new ClusterEndpoint(senderReturning(configuration), new ProtoBufSerializer());
+      final var endpoint = createEndpoint(senderReturning(configuration));
 
       // when
       final var response = endpoint.dumpConfigurationAsJson();
@@ -464,8 +466,7 @@ final class ClusterEndpointTest {
     void shouldDumpTheSameConfigurationAsProtobuf() {
       // given
       final var configuration = configuration();
-      final var endpoint =
-          new ClusterEndpoint(senderReturning(configuration), new ProtoBufSerializer());
+      final var endpoint = createEndpoint(senderReturning(configuration));
 
       // when
       final var response = endpoint.dumpConfigurationAsProtobuf();
@@ -481,8 +482,7 @@ final class ClusterEndpointTest {
     @Test
     void shouldOfferProtobufAsAnAttachment() {
       // given — a bare curl would otherwise write binary straight to the terminal
-      final var endpoint =
-          new ClusterEndpoint(senderReturning(configuration()), new ProtoBufSerializer());
+      final var endpoint = createEndpoint(senderReturning(configuration()));
 
       // when
       final var response = endpoint.dumpConfigurationAsProtobuf();
@@ -516,7 +516,7 @@ final class ClusterEndpointTest {
     void shouldScaleTheGivenPhysicalTenant() {
       // given
       final var sender = senderAcceptingPatch();
-      final var endpoint = new ClusterEndpoint(sender, new ProtoBufSerializer());
+      final var endpoint = createEndpoint(sender);
 
       // when
       endpoint.updateClusterConfiguration(false, false, partitionCountRequest(3), "tenant-a");
@@ -537,7 +537,7 @@ final class ClusterEndpointTest {
     void shouldScaleTheDefaultPhysicalTenantWhenParameterIsAbsent() {
       // given
       final var sender = senderAcceptingPatch();
-      final var endpoint = new ClusterEndpoint(sender, new ProtoBufSerializer());
+      final var endpoint = createEndpoint(sender);
 
       // when
       endpoint.updateClusterConfiguration(false, false, partitionCountRequest(3), null);
@@ -554,7 +554,7 @@ final class ClusterEndpointTest {
     void shouldTreatABlankPhysicalTenantAsAbsent() {
       // given
       final var sender = senderAcceptingPatch();
-      final var endpoint = new ClusterEndpoint(sender, new ProtoBufSerializer());
+      final var endpoint = createEndpoint(sender);
 
       // when
       endpoint.updateClusterConfiguration(false, false, partitionCountRequest(3), "  ");
@@ -594,7 +594,7 @@ final class ClusterEndpointTest {
     void shouldPassForceOnToTheRemoveZoneRequest(final boolean force) {
       // given
       final var sender = senderAcceptingRemoveZone();
-      final var endpoint = new ClusterEndpoint(sender, new ProtoBufSerializer());
+      final var endpoint = createEndpoint(sender);
 
       // when
       final var response = endpoint.removeZone("zone-a", false, force);
@@ -628,7 +628,7 @@ final class ClusterEndpointTest {
     void shouldDeriveZonedBrokerIdsFromNumberOfBrokers() {
       // given
       final var sender = senderAcceptingAddZone();
-      final var endpoint = new ClusterEndpoint(sender, new ProtoBufSerializer());
+      final var endpoint = createEndpoint(sender);
 
       // when
       final var response =
@@ -656,7 +656,7 @@ final class ClusterEndpointTest {
     void shouldRejectWhenBothBrokersAndNumberOfBrokersSet() {
       // given
       final var sender = mock(ClusterConfigurationManagementRequestSender.class);
-      final var endpoint = new ClusterEndpoint(sender, new ProtoBufSerializer());
+      final var endpoint = createEndpoint(sender);
 
       // when
       final var response =
@@ -678,7 +678,7 @@ final class ClusterEndpointTest {
     void shouldRejectWhenNeitherBrokersNorNumberOfBrokersSet() {
       // given
       final var sender = mock(ClusterConfigurationManagementRequestSender.class);
-      final var endpoint = new ClusterEndpoint(sender, new ProtoBufSerializer());
+      final var endpoint = createEndpoint(sender);
 
       // when
       final var response =
@@ -696,7 +696,7 @@ final class ClusterEndpointTest {
     void shouldRejectNonPositiveNumberOfBrokers() {
       // given
       final var sender = mock(ClusterConfigurationManagementRequestSender.class);
-      final var endpoint = new ClusterEndpoint(sender, new ProtoBufSerializer());
+      final var endpoint = createEndpoint(sender);
 
       // when
       final var response =
@@ -714,7 +714,7 @@ final class ClusterEndpointTest {
     void shouldRejectInvalidZoneIdWhenDerivingFromNumberOfBrokers() {
       // given
       final var sender = mock(ClusterConfigurationManagementRequestSender.class);
-      final var endpoint = new ClusterEndpoint(sender, new ProtoBufSerializer());
+      final var endpoint = createEndpoint(sender);
 
       // when
       // underscore is reserved as the zone/nodeIdx separator, so it's not a valid zone character
