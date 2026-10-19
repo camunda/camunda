@@ -41,8 +41,8 @@ jobs:
           roleId: ${{ secrets.VAULT_ROLE_ID }}
           secretId: ${{ secrets.VAULT_SECRET_ID }}
           secrets: |
-            secret/data/products/camunda/ci/common AURORA_POSTGRESQL_PASSWORD;
-            secret/data/products/camunda/ci/common AURORA_POSTGRESQL_USERNAME;
+            secret/data/products/camunda/aurorapg AURORA_POSTGRESQL_PASSWORD;
+            secret/data/products/camunda/aurorapg AURORA_POSTGRESQL_USERNAME;
       - name: Set temp GH envs
         id: temp-vars
         run: |
@@ -60,7 +60,7 @@ jobs:
         run: ./.github/actions/rdbms/create-aurora-database.sh
         env:
           PGDATABASE: ${{env.AURORA_DATABASE}}
-          PGHOST: camunda-ci-eks-aurora-postgresql-15.cluster-clnwzia8ptad.eu-central-1.rds.amazonaws.com
+          PGHOST: camunda-ci-eks-aurora-postgresql-17.cluster-clnwzia8ptad.eu-central-1.rds.amazonaws.com
           PGPASSWORD: ${{ steps.secrets.outputs.AURORA_POSTGRESQL_PASSWORD }}
           PGPORT: 5432
           PGUSER: ${{ steps.secrets.outputs.AURORA_POSTGRESQL_USERNAME }}
@@ -85,7 +85,7 @@ jobs:
           -D maven.javadoc.skip=true
           -D skipUTs -D skipChecks
           -D flaky.test.reportDir=failsafe-reports
-          -D test.integration.aurora.aws.url="jdbc:aws-wrapper:postgresql://camunda-ci-eks-aurora-postgresql-15.cluster-clnwzia8ptad.eu-central-1.rds.amazonaws.com:5432/${{env.AURORA_DATABASE}}?wrapperPlugins=iam"
+          -D test.integration.aurora.aws.url="jdbc:aws-wrapper:postgresql://camunda-ci-eks-aurora-postgresql-17.cluster-clnwzia8ptad.eu-central-1.rds.amazonaws.com:5432/${{env.AURORA_DATABASE}}?wrapperPlugins=iam"
           -D test.integration.aurora.aws.username=zeebe-irsa
           -D test.integration.camunda.database.type=rdbms_aurora
           -P parallel-tests,extract-flaky-tests,multi-db-test
@@ -97,7 +97,7 @@ jobs:
         run: ./.github/actions/rdbms/drop-aurora-database.sh
         env:
           PGDATABASE: ${{env.AURORA_DATABASE}}
-          PGHOST: camunda-ci-eks-aurora-postgresql-15.cluster-clnwzia8ptad.eu-central-1.rds.amazonaws.com
+          PGHOST: camunda-ci-eks-aurora-postgresql-17.cluster-clnwzia8ptad.eu-central-1.rds.amazonaws.com
           PGPASSWORD: ${{ steps.secrets.outputs.AURORA_POSTGRESQL_PASSWORD }}
           PGPORT: 5432
           PGUSER: ${{ steps.secrets.outputs.AURORA_POSTGRESQL_USERNAME }}
