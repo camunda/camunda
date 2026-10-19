@@ -145,6 +145,32 @@ public final class FilesystemLogArchiveStore implements LogArchiveStore {
   }
 
   @Override
+  public CompletableFuture<List<String>> listChildPrefixes(final String prefix) {
+    if (!prefix.endsWith("/")) {
+      return CompletableFuture.failedFuture(
+          new IllegalArgumentException("Expected a prefix ending with '/', but got: " + prefix));
+    }
+    return supply(
+        () -> {
+          final var directory = basePath.resolve(prefix).normalize();
+          if (!directory.startsWith(basePath)
+              || directory.startsWith(tmpPath)
+              || !Files.isDirectory(directory)) {
+            return List.of();
+          }
+          final var names = new ArrayList<String>();
+          try (final Stream<Path> children = Files.list(directory)) {
+            children
+                .filter(Files::isDirectory)
+                .map(child -> child.getFileName().toString())
+                .forEach(names::add);
+          }
+          Collections.sort(names);
+          return names;
+        });
+  }
+
+  @Override
   public CompletableFuture<Void> closeAsync() {
     executor.shutdown();
     return CompletableFuture.completedFuture(null);

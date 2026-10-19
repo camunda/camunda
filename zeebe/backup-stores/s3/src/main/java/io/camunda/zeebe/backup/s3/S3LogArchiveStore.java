@@ -17,6 +17,7 @@ import software.amazon.awssdk.core.FileTransformerConfiguration;
 import software.amazon.awssdk.core.async.AsyncRequestBody;
 import software.amazon.awssdk.core.async.AsyncResponseTransformer;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
+import software.amazon.awssdk.services.s3.model.CommonPrefix;
 import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
 import software.amazon.awssdk.services.s3.model.S3Exception;
 import software.amazon.awssdk.services.s3.model.S3Object;
@@ -107,6 +108,29 @@ public final class S3LogArchiveStore implements LogArchiveStore {
               // of the S3-compatible implementation.
               java.util.Collections.sort(keys);
               return List.copyOf(keys);
+            });
+  }
+
+  @Override
+  public CompletableFuture<List<String>> listChildPrefixes(final String prefix) {
+    if (!prefix.endsWith("/")) {
+      return failed(
+          new IllegalArgumentException("Expected a prefix ending with '/', but got: " + prefix));
+    }
+    final var fullPrefix = basePrefix + prefix;
+    final var names = new java.util.ArrayList<String>();
+    return client
+        .listObjectsV2Paginator(r -> r.bucket(bucket).prefix(fullPrefix).delimiter("/"))
+        .subscribe(
+            page ->
+                page.commonPrefixes().stream()
+                    .map(CommonPrefix::prefix)
+                    .map(p -> p.substring(fullPrefix.length(), p.length() - 1))
+                    .forEach(names::add))
+        .thenApply(
+            ignored -> {
+              java.util.Collections.sort(names);
+              return List.copyOf(names);
             });
   }
 

@@ -11,9 +11,9 @@ import io.camunda.zeebe.backup.logarchive.model.CommitEntry;
 import io.camunda.zeebe.backup.logarchive.model.HandoverJson;
 import io.camunda.zeebe.backup.logarchive.model.LogArchiveJson;
 import io.camunda.zeebe.backup.logarchive.model.LogArchiveKeys;
+import io.camunda.zeebe.backup.logarchive.model.TimelineFile;
 import io.camunda.zeebe.backup.logarchive.state.DbLogArchiveState;
 import io.camunda.zeebe.backup.logarchive.state.LogArchiveMeta;
-import io.camunda.zeebe.backup.logarchive.state.OutboxRow;
 import io.camunda.zeebe.backup.processing.state.CheckpointState;
 import io.camunda.zeebe.backup.processing.state.DbCheckpointState;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
@@ -206,9 +206,16 @@ public final class LogArchiveRecordsProcessor
     final var timelineId = meta.getTimelineId();
     final var outbox = state.outboxAfter(meta.getLastPublishedSeq());
     for (final var row : outbox) {
+      final var entry = LogArchiveJson.read(row.commitEntryJson(), CommitEntry.class);
       currentPublication.publish(
           new PublishRequest(
-              timelineId, row.seq(), row.commitEntryJson(), null, null, handoverOf(meta, row)));
+              timelineId,
+              row.seq(),
+              row.commitEntryJson(),
+              null,
+              null,
+              handoverOf(meta, entry),
+              timelineOf(entry)));
     }
 
     final long rootSeq = meta.getNextSeq() - 1;
@@ -225,12 +232,19 @@ public final class LogArchiveRecordsProcessor
    * the old backups. Only the one row that follows the recorded handover can be that entry, so
    * nothing is parsed unless a handover is recorded.
    */
-  private static @Nullable HandoverJson handoverOf(final LogArchiveMeta meta, final OutboxRow row) {
+  private static @Nullable HandoverJson handoverOf(
+      final LogArchiveMeta meta, final CommitEntry entry) {
     if (!meta.hasHandover()) {
       return null;
     }
-    final var entry = LogArchiveJson.read(row.commitEntryJson(), CommitEntry.class);
     return entry.type() == CommitEntry.Type.HANDOVER ? entry.handover() : null;
+  }
+
+  /** The registry file of an outbox row if it is the {@code TIMELINE_STARTED} commit entry. */
+  private static @Nullable TimelineFile timelineOf(final CommitEntry entry) {
+    return entry.type() == CommitEntry.Type.TIMELINE_STARTED
+        ? LogArchiveJsonMapper.timelineFile(entry)
+        : null;
   }
 
   // ---------------------------------------------------------------------------------------------
@@ -360,6 +374,9 @@ public final class LogArchiveRecordsProcessor
         seal,
         handover
             ? new HandoverJson(event.getHandoverCheckpointId(), event.getHandoverPosition())
+            : null,
+        eventIntent == LogArchiveIntent.TIMELINE_STARTED
+            ? LogArchiveJsonMapper.timelineFile(config.partitionId(), event)
             : null);
   }
 

@@ -400,6 +400,7 @@ log-archive/tl-0/p1/
   index/00000000000002600001-00000000000002731000.json
   root/00000000000000004100.json
   _latest.json
+  timeline.json
 ```
 
 ### 9.1 Deterministic JSON
@@ -443,6 +444,23 @@ only object that is ever overwritten with different content.
 
 The `ArchivedSnapshot` fields plus `files`: the sorted list of file names.
 
+### 9.6 Timeline registry `timeline.json`
+
+`{"formatVersion":1,"timelineId":"tl-0.r5","partitionId":1,"parentTimelineId":"tl-0","startIndex":2731001,"startedSeq":1}`
+
+One small file per timeline and partition, at `log-archive/<timeline>/p<partition>/timeline.json`. It
+holds what the `TIMELINE_STARTED` commit entry holds (`startedSeq` is its seq), so the bytes are a pure
+function of that event and a republish writes the same bytes. It exists so that restore can find the
+timelines and their parents with one delimiter listing of `log-archive/` and one GET per timeline,
+instead of listing every data object (section 18.5).
+
+The publisher writes it in the same request as the `TIMELINE_STARTED` commit entry, right after
+`commits/<seq>.json` and before the root: a `timeline.json` therefore only exists for a timeline whose
+`TIMELINE_STARTED` entry exists. The outbox row of that entry stays until `PUBLISHED`, so a crash or a
+leader change between the two PUTs is repaired by the republish on recovery (8.4), which writes the same
+bytes. It is never overwritten with different content. Timelines written before the registry existed
+have no such file (18.5 describes how restore treats them).
+
 ## 10. Log object format v1
 
 Big-endian.
@@ -483,9 +501,15 @@ public interface LogArchiveStore {
   CompletableFuture<byte[]> getRange(String key, long offset, int length);
   CompletableFuture<Void> getToFile(String key, Path target);
   CompletableFuture<List<String>> list(String prefix);
+  CompletableFuture<List<String>> listChildPrefixes(String prefix);
   CompletableFuture<Void> closeAsync();
 }
 ```
+
+`listChildPrefixes("log-archive/")` returns the names of the folders directly below the prefix
+(`["tl-0", "tl-0.r123", …]`), sorted, without the prefix and the trailing `/`; the prefix must end with
+`/`. S3 lists with delimiter `/` and reads `CommonPrefixes`, the filesystem store lists directories; neither
+enumerates the objects below the folders.
 
 Keys are relative to the store's base path; the `log-archive/` prefix is part of the key. Implementations
 in the S3 and filesystem backup store modules, created from the existing store config. No conditional
@@ -623,8 +647,9 @@ Integration tests (broker, filesystem store first, then MinIO):
 ## 15a. Known limits of the PoC
 
 - A rolled-back state forks a new timeline (section 8.4). The forked-from timeline is left as it
-  was; nothing links it to the fork except the fork's `parentTimelineId`, and restore does not
-  follow forks or parents on its own: the operator picks the timeline to restore from.
+  was; the fork's `parentTimelineId` (and its `timeline.json`) links it back. The handover restore
+  follows forks and parents from its seeds (section 18.5); the log archive only restore mode restores
+  from the timeline the operator names.
 
 - The root lists every archived snapshot and the state keeps every snapshot descriptor. Without
   retention both grow without bound (about 17,500 snapshots a year at one every 30 minutes).
@@ -846,6 +871,23 @@ Per target checkpoint T and partition, using `metadata/<partition>/handover/` an
 | no old backup T | archive only (existing `LogArchiveRestore`) in the timeline that covers T, searched among the timelines named by `handover/<H>.json` records and their forks |
 | T covered by more than one timeline | the operator names the timeline (manual ids can repeat across branches) |
 | T nowhere | fail, naming the partition and the newest restorable checkpoint on each side |
+
+**Discovering the timelines.** The seeds are the timelines named by the handover records and the
+configured timeline (an explicit `--logArchive.timeline` names the one timeline to use and is read
+directly, without discovery). Per partition, restore lists the timelines with one delimiter listing
+(`listChildPrefixes("log-archive/")`), reads `log-archive/<timeline>/p<partition>/timeline.json` of each
+(section 9.6, in parallel) and builds the parent graph from `parentTimelineId`. It selects the seeds and
+every timeline whose parent chain leads to one, or whose id is derived from one (`.r<checkpoint>`,
+`.b<backupId>`, `.f<seq>`, for a timeline that started without a parent). Only then it reads the views of
+the selected timelines. The ids of descendants do not matter: a timeline that does not start with a seed
+(e.g. after the configured timeline name changed) is found through its parent. Nothing below the
+timeline level is listed to find timelines, so the cost does not grow with the amount of archived data.
+
+Timelines written before the registry existed have no `timeline.json`. For those only, restore falls
+back to the id rule: a timeline without the file is a candidate if it is a seed or its id is derived
+from one, and it exists if it holds `commits/00000000000000000001.json`; its parent is not read, so such
+a timeline is found only through its id. One that is neither registered nor named by a seed's id is not
+found.
 
 The decision is by where T exists, not by comparing T with H: after a restore to a point before H,
 the new branch (`<tl>.b<T>`) takes old backups again until its own handover H2, and those come after

@@ -8,6 +8,7 @@
 package io.camunda.zeebe.backup.logarchive.processing;
 
 import io.camunda.zeebe.backup.logarchive.model.HandoverJson;
+import io.camunda.zeebe.backup.logarchive.model.TimelineFile;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -34,6 +35,8 @@ import org.jspecify.annotations.Nullable;
  * @param seal the index chunk to write, followed by {@code SEAL_INDEX}
  * @param handover set if the commit entry is the {@code HANDOVER} one: the publisher then also
  *     writes the handover file to the store of the old backups, before the root
+ * @param timeline set if the commit entry is the {@code TIMELINE_STARTED} one: the publisher then
+ *     also writes the timeline's registry file {@code timeline.json}, after the commit entry
  */
 public record PublishRequest(
     String timelineId,
@@ -41,7 +44,18 @@ public record PublishRequest(
     byte @Nullable [] commitEntryJson,
     byte @Nullable [] rootJson,
     @Nullable SealRequest seal,
-    @Nullable HandoverJson handover) {
+    @Nullable HandoverJson handover,
+    @Nullable TimelineFile timeline) {
+
+  public PublishRequest(
+      final String timelineId,
+      final long seq,
+      final byte @Nullable [] commitEntryJson,
+      final byte @Nullable [] rootJson,
+      final @Nullable SealRequest seal,
+      final @Nullable HandoverJson handover) {
+    this(timelineId, seq, commitEntryJson, rootJson, seal, handover, null);
+  }
 
   public PublishRequest(
       final String timelineId,
@@ -49,6 +63,6 @@ public record PublishRequest(
       final byte @Nullable [] commitEntryJson,
       final byte @Nullable [] rootJson,
       final @Nullable SealRequest seal) {
-    this(timelineId, seq, commitEntryJson, rootJson, seal, null);
+    this(timelineId, seq, commitEntryJson, rootJson, seal, null, null);
   }
 }

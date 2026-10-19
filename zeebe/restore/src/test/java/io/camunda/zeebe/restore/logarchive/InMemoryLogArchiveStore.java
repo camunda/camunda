@@ -19,11 +19,15 @@ import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentSkipListMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /** A {@link LogArchiveStore} keeping all objects in memory. */
 final class InMemoryLogArchiveStore implements LogArchiveStore {
 
   private final NavigableMap<String, byte[]> objects = new ConcurrentSkipListMap<>();
+
+  /** The listings and reads in the order they were made, e.g. {@code get <key>}. */
+  final List<String> calls = new CopyOnWriteArrayList<>();
 
   @Override
   public CompletableFuture<Void> put(final String key, final byte[] content) {
@@ -42,6 +46,7 @@ final class InMemoryLogArchiveStore implements LogArchiveStore {
 
   @Override
   public CompletableFuture<Optional<byte[]>> getIfExists(final String key) {
+    calls.add("get " + key);
     return CompletableFuture.completedFuture(
         Optional.ofNullable(objects.get(key)).map(byte[]::clone));
   }
@@ -73,8 +78,21 @@ final class InMemoryLogArchiveStore implements LogArchiveStore {
 
   @Override
   public CompletableFuture<List<String>> list(final String prefix) {
+    calls.add("list " + prefix);
     return CompletableFuture.completedFuture(
         List.copyOf(objects.subMap(prefix, true, prefix + Character.MAX_VALUE, false).keySet()));
+  }
+
+  @Override
+  public CompletableFuture<List<String>> listChildPrefixes(final String prefix) {
+    calls.add("listChildPrefixes " + prefix);
+    return CompletableFuture.completedFuture(
+        objects.subMap(prefix, true, prefix + Character.MAX_VALUE, false).keySet().stream()
+            .map(key -> key.substring(prefix.length()))
+            .filter(rest -> rest.contains("/"))
+            .map(rest -> rest.substring(0, rest.indexOf('/')))
+            .distinct()
+            .toList());
   }
 
   @Override

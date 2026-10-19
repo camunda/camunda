@@ -24,6 +24,7 @@ import io.camunda.zeebe.backup.logarchive.model.IndexChunkFile;
 import io.camunda.zeebe.backup.logarchive.model.LogArchiveJson;
 import io.camunda.zeebe.backup.logarchive.model.LogArchiveKeys;
 import io.camunda.zeebe.backup.logarchive.model.RootFile;
+import io.camunda.zeebe.backup.logarchive.model.TimelineFile;
 import io.camunda.zeebe.backup.logarchive.processing.LogArchiveHarness.RecordingListener;
 import io.camunda.zeebe.protocol.impl.record.value.management.IndexChunk;
 import io.camunda.zeebe.protocol.impl.record.value.management.LogArchiveRecord;
@@ -111,6 +112,38 @@ final class LogArchiveRecordsProcessorTest {
     assertThat(entry.archivedIndex()).isZero();
     assertThat(entry.archivedPosition()).isEqualTo(-1);
     assertThat(entry.recordPosition()).isEqualTo(harness.events.getLast().commandPosition());
+  }
+
+  @Test
+  void shouldPublishTimelineFileWithTimelineStartedOnly() {
+    // when
+    harness.accept(LogArchiveIntent.START_TIMELINE, startTimeline(TIMELINE, 1));
+    harness.accept(LogArchiveIntent.ARCHIVE_LOG, archiveLog(object(1)));
+
+    // then
+    assertThat(harness.published).hasSize(2);
+    assertThat(harness.published.get(0).timeline())
+        .isEqualTo(new TimelineFile(1, TIMELINE, 1, "parent", 1, 1));
+    assertThat(harness.published.get(1).timeline()).isNull();
+  }
+
+  @Test
+  void shouldRepublishIdenticalTimelineFileOnRecovered() {
+    // given
+    harness.accept(LogArchiveIntent.START_TIMELINE, startTimeline(TIMELINE, 1));
+    harness.accept(LogArchiveIntent.ARCHIVE_LOG, archiveLog(object(1)));
+    final var original = harness.published.getFirst().timeline();
+    harness.published.clear();
+
+    // when
+    harness.recover();
+
+    // then
+    assertThat(harness.published.getFirst().seq()).isEqualTo(1);
+    assertThat(harness.published.getFirst().timeline()).isEqualTo(original);
+    assertThat(harness.published.get(1).timeline()).isNull();
+    assertThat(LogArchiveJson.write(harness.published.getFirst().timeline()))
+        .isEqualTo(LogArchiveJson.write(original));
   }
 
   @Test

@@ -283,6 +283,17 @@ public final class LogArchivePublisher extends Actor
           put(prefix + LogArchiveKeys.commitKey(seq), json);
         }
       }
+      case TIMELINE -> {
+        // after the commit entry, so a timeline.json only exists for a timeline whose
+        // TIMELINE_STARTED entry exists; the outbox row survives a crash in between and the
+        // republish writes the same bytes
+        final var timeline = request.timeline();
+        if (timeline == null) {
+          advance();
+        } else {
+          put(prefix + LogArchiveKeys.timelineKey(), LogArchiveJson.write(timeline));
+        }
+      }
       case HANDOVER -> writeHandover(request);
       case ROOT -> {
         final var json = request.rootJson();
@@ -455,6 +466,7 @@ public final class LogArchivePublisher extends Actor
 
   private enum Step {
     COMMIT,
+    TIMELINE,
     HANDOVER,
     ROOT,
     LATEST,

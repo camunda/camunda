@@ -29,6 +29,11 @@ public final class LogArchiveKeys {
 
   private LogArchiveKeys() {}
 
+  /** The prefix of all timelines, {@code log-archive/}. */
+  public static String timelinesPrefix() {
+    return "log-archive/";
+  }
+
   /** The prefix of all keys of one partition of one timeline, e.g. {@code log-archive/tl-0/p1/}. */
   public static String partitionPrefix(final String timelineId, final int partitionId) {
     return "log-archive/" + timelineId + "/p" + partitionId + "/";
@@ -52,6 +57,11 @@ public final class LogArchiveKeys {
   /** {@code root/<seq>.json} */
   public static String rootKey(final long seq) {
     return "root/" + pad(seq) + ".json";
+  }
+
+  /** {@code timeline.json} */
+  public static String timelineKey() {
+    return "timeline.json";
   }
 
   /** {@code _latest.json} */

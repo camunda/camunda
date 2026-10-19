@@ -483,6 +483,11 @@ final class SnapshotUploaderTest {
     }
 
     @Override
+    public CompletableFuture<List<String>> listChildPrefixes(final String prefix) {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
     public CompletableFuture<Void> closeAsync() {
       return CompletableFuture.completedFuture(null);
     }
