@@ -113,21 +113,8 @@ const TabPanel = styled.div`
 	height: 100%;
 	display: flex;
 	flex-direction: column;
-	> nav {
-		display: flex;
-		gap: var(--cds-spacing-05);
-		padding: var(--cds-spacing-05);
-	}
-	> div {
-		flex: 1;
-		min-height: 0;
-	}
-	a {
-		color: var(--cds-link-primary);
-	}
-	a[aria-current='page'] {
-		font-weight: 600;
-	}
+	overflow: hidden;
+	background-color: var(--cds-layer);
 `;
 
 export {

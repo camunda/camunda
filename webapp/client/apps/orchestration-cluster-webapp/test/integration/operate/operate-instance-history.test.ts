@@ -54,7 +54,7 @@ test('should select history instances from a direct tenant URL and clear only se
 	await expect(operateProcessInstancePage.historyTree.getByText('Review invoice', {exact: true})).toBeVisible();
 	expect(new URL(page.url()).searchParams.get('elementInstanceKey')).toBe(JSON.stringify(element.elementInstanceKey));
 	await operateProcessInstancePage.historyTree.getByText('My Process', {exact: true}).click();
-	await expect(page).toHaveURL(`/operate/processes/${instance.processInstanceKey}/details?tenantId=tenant-a`);
+	await expect(page).toHaveURL(`/operate/processes/${instance.processInstanceKey}/variables?tenantId=tenant-a`);
 });
 
 test('should navigate and expand history with one keyboard tab stop without changing selection on focus', async ({

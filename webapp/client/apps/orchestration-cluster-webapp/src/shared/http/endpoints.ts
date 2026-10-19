@@ -20,6 +20,7 @@ import {
 	type QueryElementInstancesRequestBody,
 	type QueryAgentInstancesRequestBody,
 	type QueryProcessInstanceIncidentsRequestBody,
+	type QueryElementInstanceIncidentsRequestBody,
 	type CancelProcessInstanceRequestBody,
 	type DeleteProcessInstanceRequestBody,
 	type SuspendProcessInstanceRequestBody,
@@ -49,6 +50,7 @@ import {
 	type AuditLog,
 	type DecisionInstance,
 	type Variable,
+	type QueryVariablesRequestBody,
 	type ProcessInstance,
 	type MappingRule,
 	type CreateMappingRuleRequestBody,
@@ -391,6 +393,14 @@ const endpoints = {
 			headers: {'Content-Type': 'application/json'},
 		}),
 
+	queryElementInstanceIncidents: (elementInstanceKey: string, body: QueryElementInstanceIncidentsRequestBody) =>
+		new Request(getFullURL(unifiedAPIEndpoints.queryElementInstanceIncidents.getUrl({elementInstanceKey})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.queryElementInstanceIncidents.method,
+			body: JSON.stringify(body),
+			headers: {'Content-Type': 'application/json'},
+		}),
+
 	queryBatchOperations: (body: QueryBatchOperationsRequestBody) =>
 		new Request(getFullURL(unifiedAPIEndpoints.queryBatchOperations.getUrl()), {
 			...BASE_REQUEST_OPTIONS,
@@ -559,6 +569,14 @@ const endpoints = {
 		new Request(getFullURL(unifiedAPIEndpoints.queryVariablesByUserTask.getUrl({userTaskKey, truncateValues})), {
 			...BASE_REQUEST_OPTIONS,
 			method: unifiedAPIEndpoints.queryVariablesByUserTask.method,
+			body: JSON.stringify(body),
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	queryVariables: (body: QueryVariablesRequestBody) =>
+		new Request(getFullURL(unifiedAPIEndpoints.queryVariables.getUrl()), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.queryVariables.method,
 			body: JSON.stringify(body),
 			headers: {'Content-Type': 'application/json'},
 		}),

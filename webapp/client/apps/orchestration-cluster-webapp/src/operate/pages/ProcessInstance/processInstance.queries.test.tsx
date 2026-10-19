@@ -9,7 +9,7 @@
 import {useState} from 'react';
 import {QueryClient, QueryClientProvider, useQuery} from '@tanstack/react-query';
 import {cleanup, render} from 'vitest-browser-react';
-import {afterEach, expect, vi} from 'vitest';
+import {afterEach, expect, onTestFinished, vi} from 'vitest';
 import {userEvent} from 'vitest/browser';
 import {HttpResponse} from 'msw';
 import {z} from 'zod';
@@ -28,6 +28,7 @@ import {
 	processInstanceQuery,
 	processInstanceIncidentsCountQuery,
 	processInstanceWaitStateStatisticsQuery,
+	selectionIncidentsCountQuery,
 	useProcessInstance,
 	useProcessInstanceWaitStateStatistics,
 } from './processInstance.queries';
@@ -232,6 +233,26 @@ it('should count only active incidents without fetching incident rows', async ({
 	expect(
 		await queryClient.fetchQuery(processInstanceIncidentsCountQuery({processInstanceKey: '1', hasIncident: true})),
 	).toBe(3);
+});
+
+it('should share the process incidents count with the header when nothing is selected', async ({worker}) => {
+	const requests = vi.fn();
+	const onRequest = ({request}: {request: Request}) => {
+		if (request.url.endsWith('/incidents/search')) {
+			requests();
+		}
+	};
+	worker.events.on('request:start', onRequest);
+	onTestFinished(() => worker.events.removeListener('request:start', onRequest));
+	const client = new QueryClient({defaultOptions: {queries: {retry: false}}});
+	worker.use(
+		mockQueryProcessInstanceIncidentsEndpoint({successResponse: HttpResponse.json(createPaginatedResponse())}),
+	);
+
+	await client.fetchQuery(processInstanceIncidentsCountQuery({processInstanceKey: '42', hasIncident: true}));
+	await client.fetchQuery(selectionIncidentsCountQuery({processInstanceKey: '42'}));
+
+	expect(requests).toHaveBeenCalledTimes(1);
 });
 
 it('should load counts only for reported incidents and hide resolved counts', async ({worker}) => {
