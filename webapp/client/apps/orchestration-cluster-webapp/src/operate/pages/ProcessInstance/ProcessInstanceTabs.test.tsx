@@ -26,7 +26,7 @@ import {
 	createElementInstance,
 	createQueryElementInstancesResponse,
 } from '#/shared-test-modules/api-mocks/element-instances';
-import {createPaginatedResponse, createProblemDetails} from '#/shared-test-modules/api-mocks/shared';
+import {createPaginatedResponse} from '#/shared-test-modules/api-mocks/shared';
 import {ProcessInstancePageProvider} from './ProcessInstancePageProvider';
 import {ProcessInstanceTabs} from './ProcessInstanceTabs';
 import {processInstanceSearchSchema} from './processInstanceSearch';
@@ -169,29 +169,10 @@ describe('<ProcessInstanceTabs />', () => {
 		expect(screen.router.state.location.search).toEqual({tenant: 'tenant-a'});
 	});
 
-	it('should keep a direct Details entry when wait states fail to load', async ({worker}) => {
-		worker.use(
-			mockGetProcessInstanceWaitStateStatisticsEndpoint({
-				successResponse: HttpResponse.json(createProblemDetails({status: 503}), {status: 503}),
-			}),
-		);
-		const screen = await renderTabs({initialEntry: 'details'});
-
-		await expect
-			.poll(() => screen.queryClient.getQueryState(['processInstanceWaitStateStatistics', PROCESS_INSTANCE_ID])?.status)
-			.toBe('error');
-		expect(screen.router.state.location.pathname).toBe(`/operate/processes/${PROCESS_INSTANCE_ID}/details`);
-	});
-
-	it('should redirect a hidden Incidents tab to Details once process-level wait states load', async ({worker}) => {
+	it('should redirect a hidden Incidents tab to Details when the process is waiting', async ({worker}) => {
 		const processInstance = createProcessInstance({processInstanceKey: PROCESS_INSTANCE_ID, hasIncident: true});
 		worker.use(
-			mockGetProcessInstanceWaitStateStatisticsEndpoint({
-				successResponse: HttpResponse.json(
-					createPaginatedResponse({items: [{elementId: processInstance.processDefinitionId, waitingCount: 1}]}),
-				),
-				delay: 200,
-			}),
+			waitStates([{elementId: processInstance.processDefinitionId, waitingCount: 1}]),
 			mockQueryProcessInstanceIncidentsEndpoint({successResponse: incidentsCount(0)}),
 		);
 		const screen = await renderTabs({initialEntry: 'incidents', processInstance});

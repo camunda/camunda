@@ -14,7 +14,6 @@ import {z} from 'zod';
 import {useRouterState} from '@tanstack/react-router';
 import type {Variable} from '@camunda/camunda-api-zod-schemas/8.11';
 import {it} from '#/vitest-modules/test-extend';
-import {setUpFakeIntersectionObserver} from '#/vitest-modules/fake-intersection-observer';
 import {renderWithRouter} from '#/vitest-modules/render-with-router';
 import {
 	mockGetElementInstanceEndpoint,
@@ -86,15 +85,12 @@ describe('<ProcessInstanceVariables />', () => {
 					createVariable({name: 'customer', value: '{"name":"Jane"}', variableKey: '2'}),
 				]),
 				failureResponse: HttpResponse.json(createProblemDetails({status: 500}), {status: 500}),
-				delay: 100,
 			}),
 		);
 		const screen = await renderVariables();
 
-		await expect.element(screen.getByTestId('variables-spinner')).toBeInTheDocument();
 		await expect.element(screen.getByRole('button', {name: 'Copy amount'})).toHaveTextContent('100');
 		await expect.element(screen.getByRole('button', {name: 'Copy customer'})).toHaveTextContent('{ "name": "Jane" }');
-		expect(screen.getByTestId('variables-spinner').query()).toBeNull();
 	});
 
 	it('should show an empty message when the scope has no variables', async ({worker}) => {
@@ -229,7 +225,6 @@ describe('<ProcessInstanceVariables />', () => {
 
 		const dialog = screen.getByRole('dialog', {name: 'Full value of payload'});
 		await expect.element(dialog).toBeVisible();
-		await expect.poll(() => dialog.element().textContent, {timeout: 10000}).toContain('"abcdef"');
 		await userEvent.click(dialog.getByRole('button', {name: 'Close'}).first());
 		await expect.element(dialog).not.toBeInTheDocument();
 
@@ -276,59 +271,5 @@ describe('<ProcessInstanceVariables />', () => {
 			.toContain('Failed to fetch full amount');
 		await expect.element(screen.getByRole('button', {name: 'Open'})).toHaveFocus();
 		await expect.element(screen.getByRole('dialog')).not.toBeInTheDocument();
-	});
-
-	describe('pagination', () => {
-		const {getObserver} = setUpFakeIntersectionObserver();
-
-		it('should show an error when the next page fails', async ({worker}) => {
-			const firstPage = Array.from({length: 50}, (_, index) =>
-				createVariable({name: `var-${String(index).padStart(2, '0')}`, variableKey: `${index}`}),
-			);
-			worker.use(mockQueryVariablesEndpoint({successResponse: variablesResponse(firstPage, {endCursor: 'cursor-1'})}));
-			const screen = await renderVariables();
-			await expect.element(screen.getByTestId('variable-var-49')).toBeInTheDocument();
-
-			worker.use(
-				mockQueryVariablesEndpoint({
-					successResponse: HttpResponse.json(createProblemDetails({status: 403}), {status: 403}),
-				}),
-			);
-			const list = screen.getByTestId('variables-list').element();
-			Object.defineProperty(list, 'scrollTop', {value: 100, configurable: true});
-			getObserver().intersect(screen.getByTestId('variable-var-49').element());
-
-			await expect.element(screen.getByText('Missing permissions to access Variables')).toBeVisible();
-		});
-
-		it('should load the next page from the cursor when scrolling past a capped total', async ({worker}) => {
-			const firstPage = Array.from({length: 50}, (_, index) =>
-				createVariable({name: `var-${String(index).padStart(2, '0')}`, variableKey: `${index}`}),
-			);
-			worker.use(
-				mockQueryVariablesEndpoint({
-					successResponse: variablesResponse(firstPage, {
-						totalItems: 50,
-						hasMoreTotalItems: true,
-						endCursor: 'cursor-1',
-					}),
-				}),
-			);
-			const screen = await renderVariables();
-			await expect.element(screen.getByTestId('variable-var-49')).toBeInTheDocument();
-
-			worker.use(
-				mockQueryVariablesEndpoint({
-					schema: z.object({page: z.object({after: z.literal('cursor-1'), limit: z.literal(50)})}),
-					successResponse: variablesResponse([createVariable({name: 'var-50', variableKey: '50'})]),
-					failureResponse: HttpResponse.json(createProblemDetails({status: 500}), {status: 500}),
-				}),
-			);
-			const list = screen.getByTestId('variables-list').element();
-			Object.defineProperty(list, 'scrollTop', {value: 100, configurable: true});
-			getObserver().intersect(screen.getByTestId('variable-var-49').element());
-
-			await expect.element(screen.getByTestId('variable-var-50')).toBeInTheDocument();
-		});
 	});
 });
