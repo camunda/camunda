@@ -58,7 +58,10 @@ const CollapsablePanel = forwardRef<HTMLDivElement, Props>(
 				aria-label={label}
 				ref={collapsablePanelRef}
 				data-testid={isCollapsed ? 'collapsed-panel' : 'expanded-panel'}
+				// The whole collapsed rail expands the panel, matching the Carbon panel; the icon button stays the keyboard target.
+				onClick={isCollapsed ? onToggle : undefined}
 				className={cn(
+					isCollapsed && 'cursor-pointer',
 					'h-full shrink-0 overflow-hidden bg-background transition-[width] duration-150 ease-out motion-reduce:transition-none',
 					isLeft ? 'border-r border-border' : 'border-l border-border',
 					isOverlay && cn('absolute z-[7999]', isLeft ? 'left-0' : 'right-0'),
@@ -77,7 +80,6 @@ const CollapsablePanel = forwardRef<HTMLDivElement, Props>(
 							<IconButton
 								variant="ghost"
 								size="sm"
-								onClick={onToggle}
 								label={t('operate.shared.collapsablePanel.expand', {label})}
 								tooltipSide={tooltipSide}
 								icon={icon ?? toggleChevron}
@@ -107,6 +109,16 @@ const CollapsablePanel = forwardRef<HTMLDivElement, Props>(
 							/>
 						)}
 					</header>
+					{isCollapsed && (
+						<Heading
+							as="h2"
+							variant="heading-xs"
+							aria-hidden
+							className="m-0 mx-auto mt-6 text-foreground [writing-mode:vertical-lr] rotate-180"
+						>
+							{label}
+						</Heading>
+					)}
 					<div className={cn('flex min-h-0 grow flex-col', isCollapsed && 'invisible')} inert={isCollapsed}>
 						<div ref={ref} className={cn('relative grow', scrollable ? 'overflow-auto' : 'overflow-hidden')}>
 							{children}
