@@ -435,6 +435,52 @@ same file. As a rough starting point, plan for one additional node per 2-3 extra
 default shard settings — reduce further if you also raise the shard/replica counts in the platform
 values.
 
+#### Optional dual region cluster
+
+A load test can run as **one zone-aware cluster spread over two namespaces**, `<name>-region-a` and
+`<name>-region-b`, to exercise cross-namespace replication and Elasticsearch export between regions.
+Each namespace is scaffolded and installed like a normal load test (3 brokers, its own Elasticsearch);
+the settings that join them come from `generate-dual-region-values.sh`.
+
+```sh
+# the namespaces are scaffolded one by one, the same way as for a single namespace
+./newLoadTest.sh c8-demo-region-a elasticsearch 1 false
+./newLoadTest.sh c8-demo-region-b elasticsearch 1 false
+
+# region-b first, so that the Elasticsearch region-a exports to is up (with elasticsearch)
+make -C c8-demo-region-b install dual_region=true dual_region_zone=region-b \
+  dual_region_peer_namespace=c8-demo-region-a dual_region_cluster_name=c8-demo \
+  additional_load_test_configuration="--set load-tester.enabled=false"
+make -C c8-demo-region-a install dual_region=true dual_region_zone=region-a \
+  dual_region_peer_namespace=c8-demo-region-b dual_region_cluster_name=c8-demo
+```
+
+The `dual_region_*` variables of `common.mk`:
+
+|           Variable           |                                 Meaning                                  |
+|------------------------------|--------------------------------------------------------------------------|
+| `dual_region`                | `true` to enable                                                         |
+| `dual_region_zone`           | `region-a` or `region-b`: the zone of the brokers in this namespace      |
+| `dual_region_peer_namespace` | the namespace of the other region                                        |
+| `dual_region_cluster_name`   | cluster name, identical in both namespaces (brokers only join their own) |
+
+With `dual_region=true` the Makefile generates `camunda-platform-dual-region-override.yaml` and
+passes it as `application-override.yml`. It sets zone-aware partitioning with one zone per
+namespace, the cluster size, replication factor and initial contact points spanning both
+namespaces (by pod FQDN), the shared cluster name, a FQDN advertised host, and, with
+`secondary_storage=elasticsearch`, a second Camunda exporter writing to the Elasticsearch of the
+other region, so each region's records land in both. With `secondary_storage=none` there is no
+exporter to add. Because it takes the place of the
+`application-override.yml` of `scenario=max`, it carries that scenario's overrides itself.
+
+Limits: `secondary_storage=elasticsearch` or `none` only, no Optimize, no physical tenants, and `main` only
+(`dual_region_supported`). The brokers only become ready once both namespaces are installed.
+
+In the GitHub workflow, set the `dual-region` input of `camunda-load-test.yml`. It deploys
+`c8-<name>-region-a` and `c8-<name>-region-b`, with the load generators in region A only. Delete both
+namespaces with `camunda-delete-load-test.yml`, one run per namespace; the TTL cleanup handles
+each one on its own.
+
 ### Running specific scenarios
 
 By default, `make install` uses the load test chart's own defaults (no workload profile applied).
