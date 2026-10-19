@@ -160,10 +160,21 @@ public class CheckpointScheduler extends Actor implements AutoCloseable {
   private ActorFuture<ExecutionResult> backupOrCompleteHandover(
       final CheckpointStateResponse state) {
     final var decision = HandoverDecision.decide(state, activateLogArchive);
-    if (decision.action() == HandoverDecision.Action.COMPLETE_HANDOVER) {
+    if (!decision.takesBackup()) {
       return completeHandover(decision.checkpointId());
     }
-    return checkpointIfNeeded(determineNextBackup(state.getBackupStates()), decision.backupType());
+    final var backup =
+        checkpointIfNeeded(determineNextBackup(state.getBackupStates()), decision.backupType());
+    if (!decision.completesHandover()) {
+      return backup;
+    }
+    // partitions added after the handover record it while backups go on (row 3s); the backup is
+    // taken first, so a partition that cannot be reached yet does not hold it up
+    return backup.andThen(
+        result ->
+            completeHandover(decision.checkpointId())
+                .thenApply(ignored -> result.withHandoverPending(), this),
+        this);
   }
 
   /**
@@ -377,23 +388,28 @@ public class CheckpointScheduler extends Actor implements AutoCloseable {
     if (error != null) {
       delay = backOff(String.valueOf(error.getMessage()), type);
     } else if (result.handoverPending) {
-      delay = backOff("handover at checkpoint %d pending".formatted(result.checkpointId), type);
+      recordTakenCheckpoint(result, type);
+      delay = backOff("handover pending", type);
     } else {
       if (type == CheckpointType.MARKER) {
         markerErrorDelayMs = 0;
       } else {
         backupErrorDelayMs = 0;
       }
-      if (result.checkpointTaken) {
-        metrics.recordLastCheckpointId(result.checkpointId, type);
-        metrics.recordLastCheckpointTime(result.checkpointTime, type);
-      }
+      recordTakenCheckpoint(result, type);
       delay = computeNextDelay(result, type);
     }
     LOG.debug("Next {} checkpoint scheduled in {} ms", type, delay);
     final Runnable task =
         type == CheckpointType.MARKER ? this::markerSchedulingTask : this::backupSchedulingTask;
     schedule(Duration.ofMillis(delay), task);
+  }
+
+  private void recordTakenCheckpoint(final ExecutionResult result, final CheckpointType type) {
+    if (result.checkpointTaken) {
+      metrics.recordLastCheckpointId(result.checkpointId, type);
+      metrics.recordLastCheckpointTime(result.checkpointTime, type);
+    }
   }
 
   private long computeNextDelay(final ExecutionResult result, final CheckpointType type) {
@@ -445,8 +461,8 @@ public class CheckpointScheduler extends Actor implements AutoCloseable {
   }
 
   /**
-   * @param handoverPending whether COMPLETE_HANDOVER was sent instead of a checkpoint, so the tick
-   *     is repeated with backoff until the handover is recorded everywhere
+   * @param handoverPending whether COMPLETE_HANDOVER was sent, instead of or after a checkpoint, so
+   *     the tick is repeated with backoff until the handover is recorded everywhere
    */
   record ExecutionResult(
       long checkpointId,
@@ -458,6 +474,11 @@ public class CheckpointScheduler extends Actor implements AutoCloseable {
     static ExecutionResult handoverPending(final long checkpointId) {
       return new ExecutionResult(
           checkpointId, CheckpointType.HANDOVER, ActorClock.currentInstant(), false, true);
+    }
+
+    /** This result, with the tick repeated with backoff until the handover is recorded. */
+    ExecutionResult withHandoverPending() {
+      return new ExecutionResult(checkpointId, type, checkpointTime, checkpointTaken, true);
     }
   }
 }

@@ -37,6 +37,12 @@ import org.jspecify.annotations.Nullable;
  *       <td>{@link Action#SCHEDULED_BACKUP}: still restore points, served from the archive</td></tr>
  *   <tr><td>-</td><td>partitions recorded different handovers (not expected without a restore)
  *       </td><td>{@link Action#SCHEDULED_BACKUP}, nothing can complete the handover</td></tr>
+ *   <tr><td>3s</td><td>a handover H is recorded on some partitions only, and every partition
+ *       without it was added after the handover: its log archive starts at the partition's first
+ *       record</td>
+ *       <td>{@link Action#COMPLETE_HANDOVER_AND_BACKUP} H: such a partition took no part in the
+ *       handover and records H from its start once a snapshot is archived; backups go on
+ *       meanwhile, as no partition waits for H to be its last confirmed backup</td></tr>
  *   <tr><td>3a</td><td>a handover H is recorded on some partitions only</td>
  *       <td>{@link Action#COMPLETE_HANDOVER} H: the first request was only sent once H was
  *       confirmed and archived everywhere, so the remaining partitions only missed the request
@@ -52,16 +58,25 @@ import org.jspecify.annotations.Nullable;
  *   </tr>
  * </table>
  *
- * <p>Backups are taken on schedule only. {@link Action#COMPLETE_HANDOVER} is sent right away and
- * retried with backoff until recorded everywhere (a partition that recorded it rejects a repeat);
- * no backup is taken meanwhile, since a newer confirmed backup would hide H from row 3b.
+ * <p>Backups are taken on schedule only. COMPLETE_HANDOVER is sent right away and retried with
+ * backoff until recorded everywhere (a partition that recorded it rejects a repeat). With {@link
+ * Action#COMPLETE_HANDOVER}, no backup is taken meanwhile, since a newer confirmed backup would
+ * hide H from row 3b.
  *
- * <p>Partitions added after the handover (scale-up) are not handled: they have no handover recorded
- * and keep rows 2 and 3 from matching.
+ * <p>A partition added by a scale-up after the handover is first activated (row 1 until then; it
+ * takes old-style backups meanwhile), then matches row 3s until it recorded H, then row 2. Row 3s
+ * tells such a partition apart by its first archived position only: the partitions that took part
+ * in the handover started their timeline at activation, after their first record, unless they were
+ * activated before anything was compacted. Such a partition still records H by its HANDOVER backup,
+ * which later backups do not hide from it: it checks its latest HANDOVER backup, not its latest
+ * backup. A partition that has archived nothing yet matches row 3a until its first cut, seconds.
  */
 record HandoverDecision(Action action, long checkpointId) {
 
   static final long NO_CHECKPOINT = -1L;
+
+  /** The position of the first record of every partition's log. */
+  private static final long FIRST_LOG_POSITION = 1L;
 
   private static final HandoverDecision SCHEDULED =
       new HandoverDecision(Action.SCHEDULED_BACKUP, NO_CHECKPOINT);
@@ -107,9 +122,18 @@ record HandoverDecision(Action action, long checkpointId) {
       return SCHEDULED;
     }
 
-    // 3a
+    // 3s and 3a
     if (recordedHandovers.size() == 1) {
-      return new HandoverDecision(Action.COMPLETE_HANDOVER, recordedHandovers.iterator().next());
+      final long recorded = recordedHandovers.iterator().next();
+      final boolean onlyAddedAfterTheHandover =
+          archives.values().stream()
+              .filter(archive -> archive.handoverCheckpointId() == NO_CHECKPOINT)
+              .allMatch(archive -> archive.firstArchivedPosition() == FIRST_LOG_POSITION);
+      return new HandoverDecision(
+          onlyAddedAfterTheHandover
+              ? Action.COMPLETE_HANDOVER_AND_BACKUP
+              : Action.COMPLETE_HANDOVER,
+          recorded);
     }
 
     // 3b
@@ -160,6 +184,16 @@ record HandoverDecision(Action action, long checkpointId) {
     return map;
   }
 
+  /** Whether COMPLETE_HANDOVER is sent on this tick. */
+  boolean completesHandover() {
+    return action == Action.COMPLETE_HANDOVER || action == Action.COMPLETE_HANDOVER_AND_BACKUP;
+  }
+
+  /** Whether a backup is taken on this tick when one is due. */
+  boolean takesBackup() {
+    return action != Action.COMPLETE_HANDOVER;
+  }
+
   /** The checkpoint type of the backup to take when one is due. */
   CheckpointType backupType() {
     return action == Action.HANDOVER_BACKUP
@@ -173,6 +207,11 @@ record HandoverDecision(Action action, long checkpointId) {
     /** Take a backup of type {@link CheckpointType#HANDOVER} when due. */
     HANDOVER_BACKUP,
     /** Send COMPLETE_HANDOVER for {@link #checkpointId()} to every partition now. */
-    COMPLETE_HANDOVER
+    COMPLETE_HANDOVER,
+    /**
+     * Take a backup of type {@link CheckpointType#SCHEDULED_BACKUP} when due, and send
+     * COMPLETE_HANDOVER for {@link #checkpointId()} to every partition now.
+     */
+    COMPLETE_HANDOVER_AND_BACKUP
   }
 }

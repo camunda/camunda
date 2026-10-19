@@ -763,6 +763,37 @@ public class CheckpointScheduleTest {
   }
 
   @Test
+  void shouldKeepTakingBackupsWhileAPartitionAddedAfterTheHandoverRecordsIt() {
+    // given - partition 1 recorded H, partition 2 was added later and archived from its start
+    final var now = actorScheduler.getClock().getCurrentTime().toEpochMilli();
+    final var state = backupState(now, 7L, CheckpointType.HANDOVER, 50);
+    state.setLogArchiveStates(
+        Set.of(
+            new PartitionLogArchiveState(1, true, 60, 10, 7L),
+            new PartitionLogArchiveState(2, true, 30, 5, -1, 1)));
+    givenCheckpointState(state);
+    doReturn(CompletableFuture.completedFuture(null))
+        .when(backupRequestHandler)
+        .completeHandover(DEFAULT_PHYSICAL_TENANT_ID, 7L);
+    checkpointScheduler = createHandoverScheduler();
+
+    // when - past the next scheduled backup
+    actorScheduler.submitActor(checkpointScheduler);
+    actorScheduler.workUntilDone();
+    for (int i = 0; i < 6; i++) {
+      actorScheduler.updateClock(Duration.ofSeconds(5));
+      actorScheduler.workUntilDone();
+    }
+
+    // then - the handover is sent and retried, and the scheduled backup is taken meanwhile
+    verify(backupRequestHandler, atLeast(3)).completeHandover(DEFAULT_PHYSICAL_TENANT_ID, 7L);
+    verify(backupRequestHandler, atLeast(1))
+        .checkpoint(DEFAULT_PHYSICAL_TENANT_ID, CheckpointType.SCHEDULED_BACKUP);
+    verify(backupRequestHandler, never())
+        .checkpoint(DEFAULT_PHYSICAL_TENANT_ID, CheckpointType.HANDOVER);
+  }
+
+  @Test
   void shouldIgnoreLogArchiveStateWhenLogArchiveIsDisabled() {
     // given - a state that would lead to a handover backup with the archive enabled
     final var now = actorScheduler.getClock().getCurrentTime().toEpochMilli();

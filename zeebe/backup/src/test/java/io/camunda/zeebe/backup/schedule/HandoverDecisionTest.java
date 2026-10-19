@@ -265,6 +265,90 @@ final class HandoverDecisionTest {
     assertThat(decision.action()).isEqualTo(Action.SCHEDULED_BACKUP);
   }
 
+  @Test
+  void shouldCompleteHandoverAndKeepTakingBackupsWhenOnlyPartitionsAddedAfterItLackIt() {
+    // given - partitions 1 and 2 recorded H; partition 3 was added later, its archive starts at its
+    // first record, and it took old-style backups before it was activated
+    archive(1, true, 100, 10, HANDOVER);
+    archive(2, true, 90, 20, HANDOVER);
+    backup(1, HANDOVER, CheckpointType.HANDOVER, 80);
+    backup(2, HANDOVER, CheckpointType.HANDOVER, 85);
+    addedAfterHandover(3, 30, 5);
+    backup(3, HANDOVER + 10, CheckpointType.SCHEDULED_BACKUP, 12);
+
+    // when
+    final var decision = HandoverDecision.decide(state, true);
+
+    // then
+    assertThat(decision)
+        .isEqualTo(new HandoverDecision(Action.COMPLETE_HANDOVER_AND_BACKUP, HANDOVER));
+    assertThat(decision.completesHandover()).isTrue();
+    assertThat(decision.takesBackup()).isTrue();
+    assertThat(decision.backupType()).isEqualTo(CheckpointType.SCHEDULED_BACKUP);
+  }
+
+  @Test
+  void shouldKeepTakingBackupsWhileThePartitionAddedAfterTheHandoverHasNoSnapshotArchived() {
+    // given - partition 3 cannot record H before a snapshot is archived; backups go on meanwhile
+    archive(1, true, 100, 10, HANDOVER);
+    archive(2, true, 90, 20, HANDOVER);
+    addedAfterHandover(3, 30, NONE);
+
+    // when
+    final var decision = HandoverDecision.decide(state, true);
+
+    // then
+    assertThat(decision)
+        .isEqualTo(new HandoverDecision(Action.COMPLETE_HANDOVER_AND_BACKUP, HANDOVER));
+  }
+
+  @Test
+  void shouldStopBackupsWhenAPartitionThatTookPartInTheHandoverLacksIt() {
+    // given - partition 2 took part in the handover, its archive starts after its first record;
+    // partition 3 was added later
+    archive(1, true, 100, 10, HANDOVER);
+    archive(2, true, 90, 20, NONE);
+    backup(1, HANDOVER, CheckpointType.HANDOVER, 80);
+    backup(2, HANDOVER, CheckpointType.HANDOVER, 85);
+    addedAfterHandover(3, 30, 5);
+
+    // when
+    final var decision = HandoverDecision.decide(state, true);
+
+    // then
+    assertThat(decision).isEqualTo(new HandoverDecision(Action.COMPLETE_HANDOVER, HANDOVER));
+    assertThat(decision.takesBackup()).isFalse();
+  }
+
+  @Test
+  void shouldTakeScheduledBackupWhenThePartitionAddedAfterTheHandoverRecordedIt() {
+    // given
+    archive(1, true, 100, 10, HANDOVER);
+    archive(2, true, 90, 20, HANDOVER);
+    state.getLogArchiveStates().add(new PartitionLogArchiveState(3, true, 30, 5, HANDOVER, 1));
+
+    // when
+    final var decision = HandoverDecision.decide(state, true);
+
+    // then
+    assertThat(decision.action()).isEqualTo(Action.SCHEDULED_BACKUP);
+    assertThat(decision.completesHandover()).isFalse();
+  }
+
+  @Test
+  void shouldTakeScheduledBackupWhileThePartitionAddedAfterTheHandoverIsNotActivated() {
+    // given
+    archive(1, true, 100, 10, HANDOVER);
+    archive(2, true, 90, 20, HANDOVER);
+    archive(3, false, NONE, NONE, NONE);
+
+    // when
+    final var decision = HandoverDecision.decide(state, true);
+
+    // then
+    assertThat(decision.action()).isEqualTo(Action.SCHEDULED_BACKUP);
+  }
+
   private void archive(
       final int partitionId,
       final boolean timelineStarted,
@@ -280,6 +364,16 @@ final class HandoverDecisionTest {
                 archivedPosition,
                 newestSnapshotPosition,
                 handoverCheckpointId));
+  }
+
+  /** A partition whose log archive starts at its first record and has no handover recorded. */
+  private void addedAfterHandover(
+      final int partitionId, final long archivedPosition, final long newestSnapshotPosition) {
+    state
+        .getLogArchiveStates()
+        .add(
+            new PartitionLogArchiveState(
+                partitionId, true, archivedPosition, newestSnapshotPosition, NONE, 1));
   }
 
   private void backup(
