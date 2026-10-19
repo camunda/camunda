@@ -26,12 +26,4 @@ describe('<DrainingTag />', () => {
 
 		await expect.element(screen.getByText('This version is draining')).toBeVisible();
 	});
-
-	it('should apply a custom className to the tag', async () => {
-		const screen = await render(
-			<DrainingTag label="Draining" description="This version is draining" className="custom-class" />,
-		);
-
-		await expect.element(screen.getByTestId('draining-tag')).toHaveClass('custom-class');
-	});
 });

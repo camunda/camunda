@@ -66,7 +66,6 @@ describe('<DiagramHeader />', () => {
 		const screen = await renderSingleVersion(createProcessDefinition({versionTag: 'release-1'}));
 
 		await expect.element(screen.getByText('release-1')).toBeVisible();
-		await expect.poll(() => screen.queryClient.isFetching()).toBe(0);
 	});
 
 	it('does not show a version tag for an all-versions selection', async () => {

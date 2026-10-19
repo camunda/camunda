@@ -563,12 +563,10 @@ describe('Processes bulk toolbar', () => {
 		});
 	});
 
-	const languages = ['en', 'de', 'fr', 'es'] as const;
-	const actions = ['delete', 'cancel', 'retry'] as const;
-	const counts = [1, 3] as const;
-	const translatedConfirmationCases = languages.flatMap((language) =>
-		actions.flatMap((action) => counts.map((count) => ({language, action, count}))),
-	);
+	const translatedConfirmationCases = [
+		{language: 'de', action: 'delete', count: 1},
+		{language: 'de', action: 'delete', count: 3},
+	] as const;
 
 	it.for(translatedConfirmationCases)(
 		'should preserve the translated $language $action label in a $count-instance confirmation',

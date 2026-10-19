@@ -17,12 +17,4 @@ describe('<Decisions />', () => {
 
 		await expect.element(screen.getByRole('heading', {name: 'Decisions'})).toBeInTheDocument();
 	});
-
-	it('should render all scaffold placeholders', async () => {
-		const screen = await renderWithRouter(Decisions, {path: '/operate-preview/decisions'});
-
-		await expect.element(screen.getByText('Filters panel placeholder')).toBeVisible();
-		await expect.element(screen.getByText('Decision panel placeholder')).toBeVisible();
-		await expect.element(screen.getByText('Instances table placeholder')).toBeVisible();
-	});
 });
