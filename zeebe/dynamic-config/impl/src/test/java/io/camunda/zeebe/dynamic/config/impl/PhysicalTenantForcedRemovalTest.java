@@ -23,8 +23,6 @@ import io.camunda.zeebe.dynamic.config.changes.ClusterChangeExecutor.NoopCluster
 import io.camunda.zeebe.dynamic.config.changes.ModeChangeExecutor.NoopModeChangeExecutor;
 import io.camunda.zeebe.dynamic.config.changes.PartitionScalingChangeExecutor.NoopPartitionScalingChangeExecutor;
 import io.camunda.zeebe.dynamic.config.changes.RestoreChangeExecutor.NoopRestoreChangeExecutor;
-import io.camunda.zeebe.dynamic.config.impl.api.ForceRemoveBrokersRequestTransformer;
-import io.camunda.zeebe.dynamic.config.impl.api.RemoveZoneTransformer;
 import io.camunda.zeebe.dynamic.config.impl.changes.ConfigurationChangeCoordinator.ConfigurationChangeRequest;
 import io.camunda.zeebe.dynamic.config.impl.changes.ConfigurationChangeCoordinatorImpl;
 import io.camunda.zeebe.dynamic.config.impl.changes.GlobalConfigurationChangeAppliersImpl;
@@ -33,6 +31,8 @@ import io.camunda.zeebe.dynamic.config.impl.changes.NoopPartitionChangeExecutor;
 import io.camunda.zeebe.dynamic.config.impl.changes.PartitionGroupConfigurationChangeAppliersImpl;
 import io.camunda.zeebe.dynamic.config.impl.metrics.TopologyManagerMetrics;
 import io.camunda.zeebe.dynamic.config.impl.serializer.ProtoBufSerializer;
+import io.camunda.zeebe.dynamic.config.impl.transformers.ForceRemoveBrokersRequestTransformer;
+import io.camunda.zeebe.dynamic.config.impl.transformers.RemoveZoneTransformer;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
