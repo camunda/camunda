@@ -17,6 +17,7 @@ import io.camunda.document.api.DocumentReference;
 import io.camunda.document.api.DocumentStore;
 import io.camunda.document.api.DocumentStoreRecord;
 import io.camunda.document.store.SimpleDocumentStoreRegistry;
+import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.api.model.authz.AuthorizationResourceType;
 import io.camunda.security.api.model.authz.AuthorizationScope;
@@ -262,10 +263,14 @@ public class DocumentServices extends PhysicalTenantScopedApiServices<DocumentSe
       return true;
     }
 
-    return authorizationChecker
-        .collectPermissionTypes(
-            AuthorizationScope.WILDCARD_CHAR, AuthorizationResourceType.DOCUMENT, authentication)
-        .contains(permission);
+    try {
+      return authorizationChecker
+          .collectPermissionTypes(
+              AuthorizationScope.WILDCARD_CHAR, AuthorizationResourceType.DOCUMENT, authentication)
+          .contains(permission);
+    } catch (final CamundaSearchException e) {
+      throw ErrorMapper.mapSearchError(e);
+    }
   }
 
   public record DocumentCreateRequest(

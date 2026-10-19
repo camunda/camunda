@@ -16,6 +16,8 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.camunda.search.exception.CamundaSearchException;
+import io.camunda.search.exception.CamundaSearchException.Reason;
 import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.api.model.authz.AuthorizationResourceType;
 import io.camunda.security.api.model.authz.PermissionType;
@@ -172,6 +174,43 @@ public class RuntimeBackupServicesTest {
     // then
     assertServiceExceptionStatus(future, Status.FORBIDDEN);
     verify(backupApi, never()).takeBackup(any(), any(Long.class));
+  }
+
+  @Test
+  public void takeBackupShouldFailWithInternalErrorWhenPermissionSearchFails() {
+    // given
+    authorizationsConfig.setEnabled(true);
+    when(authorizationChecker.collectPermissionTypes(any(), any(), any()))
+        .thenThrow(
+            new CamundaSearchException(
+                "Failed to execute findAll query", Reason.SEARCH_SERVER_FAILED));
+
+    // when
+    final var error = catchThrowable(() -> manualModeServices.takeBackup(42L, authentication));
+
+    // then
+    assertThat(error)
+        .isInstanceOfSatisfying(
+            ServiceException.class, e -> assertThat(e.getStatus()).isEqualTo(Status.INTERNAL));
+    verify(backupApi, never()).takeBackup(any(), any(Long.class));
+  }
+
+  @Test
+  public void takeBackupShouldFailAsUnavailableWhenPermissionSearchCannotConnect() {
+    // given
+    authorizationsConfig.setEnabled(true);
+    when(authorizationChecker.collectPermissionTypes(any(), any(), any()))
+        .thenThrow(
+            new CamundaSearchException(
+                "Failed to execute findAll query", Reason.CONNECTION_FAILED));
+
+    // when
+    final var error = catchThrowable(() -> manualModeServices.takeBackup(42L, authentication));
+
+    // then
+    assertThat(error)
+        .isInstanceOfSatisfying(
+            ServiceException.class, e -> assertThat(e.getStatus()).isEqualTo(Status.UNAVAILABLE));
   }
 
   @Test

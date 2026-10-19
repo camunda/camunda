@@ -9,6 +9,7 @@ package io.camunda.service;
 
 import static io.camunda.service.authorization.Authorizations.EXPORTER_PAUSE_AUTHORIZATION;
 
+import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.api.model.authz.AuthorizationScope;
 import io.camunda.security.api.model.config.AuthorizationsConfiguration;
@@ -120,11 +121,15 @@ public final class ExportingServices extends PhysicalTenantScopedApiServices<Exp
       return true;
     }
 
-    return authorizationChecker
-        .collectPermissionTypes(
-            AuthorizationScope.WILDCARD_CHAR,
-            EXPORTER_PAUSE_AUTHORIZATION.resourceType(),
-            authentication)
-        .contains(EXPORTER_PAUSE_AUTHORIZATION.permissionType());
+    try {
+      return authorizationChecker
+          .collectPermissionTypes(
+              AuthorizationScope.WILDCARD_CHAR,
+              EXPORTER_PAUSE_AUTHORIZATION.resourceType(),
+              authentication)
+          .contains(EXPORTER_PAUSE_AUTHORIZATION.permissionType());
+    } catch (final CamundaSearchException e) {
+      throw ErrorMapper.mapSearchError(e);
+    }
   }
 }

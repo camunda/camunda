@@ -19,6 +19,8 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.camunda.search.exception.CamundaSearchException;
+import io.camunda.search.exception.CamundaSearchException.Reason;
 import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.api.model.authz.AuthorizationResourceType;
 import io.camunda.security.api.model.authz.PermissionType;
@@ -303,5 +305,23 @@ public class HistoryBackupServicesTest {
     final var exception = catchThrowable(future::join).getCause();
     assertThat(exception).isInstanceOf(ServiceException.class);
     assertThat(((ServiceException) exception).getStatus()).isEqualTo(expectedStatus);
+  }
+
+  @Test
+  public void shouldFailTakeWithInternalErrorWhenPermissionSearchFails() {
+    // given
+    authorizationsConfig.setEnabled(true);
+    when(authorizationChecker.collectPermissionTypes(any(), any(), any()))
+        .thenThrow(
+            new CamundaSearchException(
+                "Failed to execute findAll query", Reason.SEARCH_SERVER_FAILED));
+
+    // when
+    final var error = catchThrowable(() -> services.takeBackup(42L, authentication));
+
+    // then
+    assertThat(error)
+        .isInstanceOfSatisfying(
+            ServiceException.class, e -> assertThat(e.getStatus()).isEqualTo(Status.INTERNAL));
   }
 }

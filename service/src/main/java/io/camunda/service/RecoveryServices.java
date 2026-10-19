@@ -10,6 +10,7 @@ package io.camunda.service;
 import static io.camunda.service.authorization.Authorizations.BACKUP_RESTORE_AUTHORIZATION;
 import static io.camunda.service.authorization.Authorizations.SYSTEM_UPDATE_AUTHORIZATION;
 
+import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.api.model.authz.AuthorizationScope;
 import io.camunda.security.api.model.config.AuthorizationsConfiguration;
@@ -130,9 +131,15 @@ public final class RecoveryServices extends PhysicalTenantScopedApiServices<Reco
       return true;
     }
 
-    return authorizationChecker
-        .collectPermissionTypes(
-            AuthorizationScope.WILDCARD_CHAR, requiredAuthorization.resourceType(), authentication)
-        .contains(requiredAuthorization.permissionType());
+    try {
+      return authorizationChecker
+          .collectPermissionTypes(
+              AuthorizationScope.WILDCARD_CHAR,
+              requiredAuthorization.resourceType(),
+              authentication)
+          .contains(requiredAuthorization.permissionType());
+    } catch (final CamundaSearchException e) {
+      throw ErrorMapper.mapSearchError(e);
+    }
   }
 }

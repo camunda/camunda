@@ -8,6 +8,7 @@
 package io.camunda.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.catchThrowable;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -21,12 +22,16 @@ import io.camunda.document.api.DocumentReference;
 import io.camunda.document.api.DocumentStore;
 import io.camunda.document.api.DocumentStoreRecord;
 import io.camunda.document.store.SimpleDocumentStoreRegistry;
+import io.camunda.search.exception.CamundaSearchException;
+import io.camunda.search.exception.CamundaSearchException.Reason;
 import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.api.model.authz.PermissionType;
 import io.camunda.security.api.model.config.AuthorizationsConfiguration;
 import io.camunda.security.core.authz.AuthorizationChecker;
 import io.camunda.service.DocumentServices.DocumentCreateRequest;
 import io.camunda.service.DocumentServices.DocumentReferenceResponse;
+import io.camunda.service.exception.ServiceException;
+import io.camunda.service.exception.ServiceException.Status;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.util.Either;
@@ -352,5 +357,24 @@ public class DocumentServicesTest {
     return new BufferedReader(new InputStreamReader(inputStream))
         .lines()
         .collect(Collectors.joining("\n"));
+  }
+
+  @Test
+  public void createDocumentShouldFailWithInternalErrorWhenPermissionSearchFails() {
+    // given
+    authorizationsConfig.setEnabled(true);
+    when(authorizationChecker.collectPermissionTypes(any(), any(), any()))
+        .thenThrow(
+            new CamundaSearchException(
+                "Failed to execute findAll query", Reason.SEARCH_SERVER_FAILED));
+    final var fileMock = mock(DocumentCreateRequest.class);
+
+    // when
+    final var error = catchThrowable(() -> services.createDocument(fileMock, authentication));
+
+    // then
+    assertThat(error)
+        .isInstanceOfSatisfying(
+            ServiceException.class, e -> assertThat(e.getStatus()).isEqualTo(Status.INTERNAL));
   }
 }
