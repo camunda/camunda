@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.dynamic.config.state;
 
+import static java.util.Objects.requireNonNull;
+
 import com.google.common.collect.ImmutableSortedMap;
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.state.RoutingState.RequestHandling.AllPartitions;
@@ -14,7 +16,6 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.SortedMap;
 import java.util.TreeMap;
@@ -69,11 +70,11 @@ public record PartitionGroupConfiguration(
   public static final long INITIAL_INCARNATION_NUMBER = 0;
 
   public PartitionGroupConfiguration {
-    Objects.requireNonNull(members, "members must not be null");
-    Objects.requireNonNull(routingState, "routingState must not be null");
-    Objects.requireNonNull(pendingChanges, "pendingChanges must not be null");
-    Objects.requireNonNull(lastChange, "lastChange must not be null");
-    Objects.requireNonNull(availability, "availability must not be null");
+    requireNonNull(members, "members must not be null");
+    requireNonNull(routingState, "routingState must not be null");
+    requireNonNull(pendingChanges, "pendingChanges must not be null");
+    requireNonNull(lastChange, "lastChange must not be null");
+    requireNonNull(availability, "availability must not be null");
     if (incarnationNumber < 0) {
       throw new IllegalArgumentException("Incarnation number must be >= 0");
     }
@@ -591,12 +592,12 @@ public record PartitionGroupConfiguration(
         .filter(entry -> entry.getValue().hasPartition(partitionId))
         .filter(
             entry ->
-                Objects.requireNonNull(entry.getValue().getPartition(partitionId))
+                requireNonNull(entry.getValue().getPartition(partitionId))
                     .state()
                     .isActiveReplica())
         .max(
             Comparator.comparingInt(
-                e -> Objects.requireNonNull(e.getValue().getPartition(partitionId)).priority()))
+                e -> requireNonNull(e.getValue().getPartition(partitionId)).priority()))
         .map(Entry::getKey);
   }
 

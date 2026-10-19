@@ -7,12 +7,13 @@
  */
 package io.camunda.zeebe.dynamic.config.state;
 
+import static java.util.Objects.requireNonNull;
+
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSortedMap;
 import io.camunda.zeebe.dynamic.config.state.ExporterState.State;
 import java.util.Collection;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.SortedMap;
 
@@ -28,8 +29,8 @@ public record ExportingConfig(ExportingState state, SortedMap<String, ExporterSt
   }
 
   public ExportingConfig {
-    Objects.requireNonNull(state);
-    Objects.requireNonNull(exporters);
+    requireNonNull(state);
+    requireNonNull(exporters);
   }
 
   public static ExportingConfig init() {

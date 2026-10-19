@@ -7,8 +7,9 @@
  */
 package io.camunda.zeebe.dynamic.config.state;
 
+import static java.util.Objects.requireNonNull;
+
 import java.time.Instant;
-import java.util.Objects;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
@@ -35,8 +36,8 @@ import org.jspecify.annotations.Nullable;
 public record BrokerState(long version, Instant lastUpdated, State state) {
 
   public BrokerState {
-    Objects.requireNonNull(lastUpdated, "lastUpdated must not be null");
-    Objects.requireNonNull(state, "state must not be null");
+    requireNonNull(lastUpdated, "lastUpdated must not be null");
+    requireNonNull(state, "state must not be null");
   }
 
   /** Creates an initial state at version {@code 0} in {@link State#ACTIVE}. */

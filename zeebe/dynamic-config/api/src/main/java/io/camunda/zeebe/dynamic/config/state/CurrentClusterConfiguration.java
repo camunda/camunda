@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.dynamic.config.state;
 
+import static java.util.Objects.requireNonNull;
+
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.InitializableClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan.Status;
@@ -23,7 +25,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.SortedMap;
@@ -64,9 +65,9 @@ public record CurrentClusterConfiguration(
   public static final String DEFAULT_GROUP = "default";
 
   public CurrentClusterConfiguration {
-    Objects.requireNonNull(globalConfiguration, "globalConfiguration must not be null");
-    Objects.requireNonNull(partitionGroups, "partitionGroups must not be null");
-    Objects.requireNonNull(phasedChangeState, "phasedChangeState must not be null");
+    requireNonNull(globalConfiguration, "globalConfiguration must not be null");
+    requireNonNull(partitionGroups, "partitionGroups must not be null");
+    requireNonNull(phasedChangeState, "phasedChangeState must not be null");
     partitionGroups = Map.copyOf(partitionGroups);
   }
 
@@ -518,7 +519,7 @@ public record CurrentClusterConfiguration(
 
     final long newId = phasedChangeState.nextId();
     final var newState = phasedChangeState.initPlan(phases);
-    final var plan = Objects.requireNonNull(newState.pending().get(newId));
+    final var plan = requireNonNull(newState.pending().get(newId));
     return withPhasedChangeState(newState).applyPhase(plan);
   }
 

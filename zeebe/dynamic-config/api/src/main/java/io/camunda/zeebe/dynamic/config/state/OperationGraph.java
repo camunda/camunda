@@ -7,12 +7,13 @@
  */
 package io.camunda.zeebe.dynamic.config.state;
 
+import static java.util.Objects.requireNonNull;
+
 import java.util.ArrayDeque;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.SortedMap;
@@ -206,7 +207,7 @@ public record OperationGraph(SortedMap<OperationId, PlannedOperation> operations
 
     public PlannedOperation {
       dependsOn = Collections.unmodifiableSortedSet(new TreeSet<>(dependsOn));
-      Objects.requireNonNull(groupId, "groupId must not be null");
+      requireNonNull(groupId, "groupId must not be null");
       if (groupId.isPresent() && !(operation instanceof PartitionGroupOperation)) {
         throw new IllegalArgumentException(
             "Operation %s targets no partition group, but is planned against group '%s'"

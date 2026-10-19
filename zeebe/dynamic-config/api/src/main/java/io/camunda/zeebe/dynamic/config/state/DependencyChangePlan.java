@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.dynamic.config.state;
 
+import static java.util.Objects.requireNonNull;
+
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan.CompletedOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan.Status;
@@ -15,7 +17,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.SortedMap;
 import java.util.SortedSet;
 import java.util.TreeMap;
@@ -309,7 +310,7 @@ public record DependencyChangePlan(
 
   /** The operation behind an id, for callers that already know it exists. */
   public ClusterConfigurationChangeOperation operation(final OperationId operationId) {
-    return Objects.requireNonNull(
+    return requireNonNull(
             graph.operations().get(operationId),
             () -> "%s is not part of this plan".formatted(operationId))
         .operation();
