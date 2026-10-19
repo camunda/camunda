@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.dynamic.config.util;
 
+import static java.util.Objects.requireNonNull;
+
 import io.atomix.cluster.MemberId;
 import io.atomix.primitive.partition.PartitionMetadata;
 import io.camunda.cluster.PartitionId;
@@ -78,10 +80,12 @@ public final class ConfigurationUtil {
       final var partitionId = partitionMetadata.id().number();
       for (final var member : partitionMetadata.members()) {
         final var memberPriority = partitionMetadata.getPriority(member);
+        final var config =
+            requireNonNull(partitionConfig.get(groupId), "no config for group " + groupId);
         partitionStatesByGroupAndMember
             .computeIfAbsent(groupId, ignored -> new HashMap<>())
             .computeIfAbsent(member, ignored -> new HashMap<>())
-            .put(partitionId, PartitionState.active(memberPriority, partitionConfig.get(groupId)));
+            .put(partitionId, PartitionState.active(memberPriority, config));
       }
     }
 
