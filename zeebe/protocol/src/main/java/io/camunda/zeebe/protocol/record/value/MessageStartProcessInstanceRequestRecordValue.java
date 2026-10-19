@@ -36,7 +36,8 @@ import org.immutables.value.Value;
  */
 @Value.Immutable
 @ImmutableProtocol(builder = ImmutableMessageStartProcessInstanceRequestRecordValue.Builder.class)
-public interface MessageStartProcessInstanceRequestRecordValue extends RecordValue, TenantOwned {
+public interface MessageStartProcessInstanceRequestRecordValue
+    extends RecordValue, TenantOwned, StorageOrdinalRelated {
 
   /**
    * @return the key of the buffered message on {@code P_K} that triggered this request; encodes the

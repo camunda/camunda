@@ -19,11 +19,11 @@ import io.camunda.zeebe.protocol.impl.record.value.agenthistory.AgentHistoryReco
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobResult;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobResultActivateElement;
+import io.camunda.zeebe.protocol.impl.record.value.message.MessageStartEventSubscriptionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.secretreference.SecretReferenceRecord;
 import io.camunda.zeebe.protocol.impl.record.value.signal.SignalSubscriptionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.timer.TimerRecord;
 import io.camunda.zeebe.protocol.record.Record;
-import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.AdHocSubProcessInstructionIntent;
@@ -32,6 +32,8 @@ import io.camunda.zeebe.protocol.record.intent.AgentInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ConditionalSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
+import io.camunda.zeebe.protocol.record.intent.MessageCorrelationIntent;
+import io.camunda.zeebe.protocol.record.intent.MessageStartEventSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessEventIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceBatchIntent;
@@ -146,7 +148,144 @@ public final class StorageOrdinalAssignmentTest {
                 .getStorageOrdinal())
         .isEqualTo(FIXED_ORDINAL);
 
+    assertThat(
+            RecordingExporter.messageStartEventSubscriptionRecords(
+                    MessageStartEventSubscriptionIntent.CORRELATED)
+                .withBpmnProcessId("message-start-process")
+                .getFirst()
+                .getValue())
+        .satisfies(
+            correlated -> {
+              assertThat(correlated.getProcessInstanceKey()).isEqualTo(processInstanceKey);
+              assertThat(correlated.getStorageOrdinal()).isEqualTo(FIXED_ORDINAL);
+            });
+
     assertProcessEventTriggeringCarriesOrdinal(processInstanceKey);
+  }
+
+  @Test
+  public void shouldAssignConfiguredOrdinalToMessageCorrelationRecordsOfAStartEvent() {
+    // given
+    engine
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess("message-correlation-start-process")
+                .startEvent()
+                .message("ordinal-correlation-start-message")
+                .endEvent()
+                .done())
+        .deploy();
+
+    // when: the message is correlated synchronously, which starts an instance
+    final var correlated =
+        engine
+            .messageCorrelation()
+            .withName("ordinal-correlation-start-message")
+            .withCorrelationKey("")
+            .correlate();
+
+    // then: CORRELATING carries no instance yet, CORRELATED carries the new instance's ordinal
+    assertThat(
+            RecordingExporter.messageCorrelationRecords(MessageCorrelationIntent.CORRELATING)
+                .withName("ordinal-correlation-start-message")
+                .getFirst()
+                .getValue()
+                .getStorageOrdinal())
+        .isEqualTo(StorageOrdinalRelated.NOT_ORDINAL_CONTROLLED);
+    assertThat(correlated.getIntent()).isEqualTo(MessageCorrelationIntent.CORRELATED);
+    assertThat(correlated.getValue().getProcessInstanceKey()).isPositive();
+    assertThat(correlated.getValue().getStorageOrdinal()).isEqualTo(FIXED_ORDINAL);
+  }
+
+  @Test
+  public void shouldAssignConfiguredOrdinalToMessageCorrelationRecordsOfASubscription() {
+    // given: an instance waiting at an intermediate message catch event
+    engine
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess("message-correlation-catch-process")
+                .startEvent()
+                .intermediateCatchEvent("message-catch")
+                .message(
+                    m ->
+                        m.name("ordinal-correlation-catch-message")
+                            .zeebeCorrelationKeyExpression("key"))
+                .endEvent()
+                .done())
+        .deploy();
+    final long processInstanceKey =
+        engine
+            .processInstance()
+            .ofBpmnProcessId("message-correlation-catch-process")
+            .withVariable("key", "correlation-key-2")
+            .create();
+    RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.CREATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .await();
+
+    // when
+    final var correlated =
+        engine
+            .messageCorrelation()
+            .withName("ordinal-correlation-catch-message")
+            .withCorrelationKey("correlation-key-2")
+            .correlate();
+
+    // then
+    assertThat(correlated.getIntent()).isEqualTo(MessageCorrelationIntent.CORRELATED);
+    assertThat(correlated.getValue().getProcessInstanceKey()).isEqualTo(processInstanceKey);
+    assertThat(correlated.getValue().getStorageOrdinal()).isEqualTo(FIXED_ORDINAL);
+  }
+
+  @Test
+  public void shouldAssignConfiguredOrdinalToBufferedMessageStartCorrelation() {
+    // given: a message start event whose first instance holds the correlation key lock
+    engine
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess("buffered-message-start-process")
+                .startEvent()
+                .message(m -> m.name("ordinal-buffered-start-message"))
+                .serviceTask("hold", t -> t.zeebeJobType("ordinal-hold-job"))
+                .endEvent()
+                .done())
+        .deploy();
+    engine
+        .message()
+        .withName("ordinal-buffered-start-message")
+        .withCorrelationKey("buffered-key")
+        .withTimeToLive(Duration.ofMinutes(5))
+        .publish();
+    final long firstInstanceKey =
+        RecordingExporter.messageStartEventSubscriptionRecords(
+                MessageStartEventSubscriptionIntent.CORRELATED)
+            .withBpmnProcessId("buffered-message-start-process")
+            .getFirst()
+            .getValue()
+            .getProcessInstanceKey();
+
+    // and: a second message with the same correlation key is buffered behind the lock
+    engine
+        .message()
+        .withName("ordinal-buffered-start-message")
+        .withCorrelationKey("buffered-key")
+        .withTimeToLive(Duration.ofMinutes(5))
+        .publish();
+
+    // when: the holder completes, the buffered message starts the next instance
+    engine.job().ofInstance(firstInstanceKey).withType("ordinal-hold-job").complete();
+
+    // then: the second CORRELATED carries the configured ordinal too
+    final var secondCorrelated =
+        RecordingExporter.messageStartEventSubscriptionRecords(
+                MessageStartEventSubscriptionIntent.CORRELATED)
+            .withBpmnProcessId("buffered-message-start-process")
+            .limit(2)
+            .asList()
+            .get(1)
+            .getValue();
+    assertThat(secondCorrelated.getProcessInstanceKey()).isNotEqualTo(firstInstanceKey);
+    assertThat(secondCorrelated.getStorageOrdinal()).isEqualTo(FIXED_ORDINAL);
   }
 
   @Test
@@ -709,14 +848,13 @@ public final class StorageOrdinalAssignmentTest {
         .withCorrelationKey("correlation-key-2")
         .publish();
 
-    // then: every subscription EVENT up to correlation carries the ordinal on both sides; the
-    // inter-partition CREATE/CORRELATE commands are excluded, commands are not exported
+    // then: every subscription record up to correlation carries the ordinal on both sides,
+    // including the inter-partition CREATE and CORRELATE commands
     assertThat(
             RecordingExporter.processMessageSubscriptionRecords()
                 .withProcessInstanceKey(processInstanceKey)
                 .withMessageName("ordinal-catch-message")
                 .limit(r -> r.getIntent() == ProcessMessageSubscriptionIntent.CORRELATED)
-                .filter(r -> r.getRecordType() == RecordType.EVENT)
                 .asList())
         .isNotEmpty()
         .extracting(record -> record.getValue().getStorageOrdinal())
@@ -726,9 +864,63 @@ public final class StorageOrdinalAssignmentTest {
                 .withProcessInstanceKey(processInstanceKey)
                 .withMessageName("ordinal-catch-message")
                 .limit(r -> r.getIntent() == MessageSubscriptionIntent.CORRELATED)
-                .filter(r -> r.getRecordType() == RecordType.EVENT)
                 .asList())
         .isNotEmpty()
+        .extracting(record -> record.getValue().getStorageOrdinal())
+        .containsOnly(FIXED_ORDINAL);
+  }
+
+  @Test
+  public void shouldAssignConfiguredOrdinalToClosedMessageSubscriptionRecords() {
+    // given: an instance waiting at an intermediate message catch event
+    engine
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess("closed-message-subscription-process")
+                .startEvent()
+                .intermediateCatchEvent("message-catch")
+                .message(m -> m.name("ordinal-closed-message").zeebeCorrelationKeyExpression("key"))
+                .endEvent()
+                .done())
+        .deploy();
+    final long processInstanceKey =
+        engine
+            .processInstance()
+            .ofBpmnProcessId("closed-message-subscription-process")
+            .withVariable("key", "correlation-key-3")
+            .create();
+
+    RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.CREATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .await();
+
+    // when: the instance is cancelled, which closes the subscription on both sides
+    engine.processInstance().withInstanceKey(processInstanceKey).cancel();
+
+    // then: the DELETE command, its acknowledging DELETE command and the DELETED events all carry
+    // the ordinal, including the command sent back to the process instance partition
+    final var messageSubscriptionRecords =
+        RecordingExporter.messageSubscriptionRecords()
+            .withProcessInstanceKey(processInstanceKey)
+            .limit(r -> r.getIntent() == MessageSubscriptionIntent.DELETED)
+            .asList();
+    assertThat(messageSubscriptionRecords)
+        .extracting(Record::getIntent)
+        .contains(MessageSubscriptionIntent.DELETE, MessageSubscriptionIntent.DELETED);
+    assertThat(messageSubscriptionRecords)
+        .extracting(record -> record.getValue().getStorageOrdinal())
+        .containsOnly(FIXED_ORDINAL);
+
+    final var processMessageSubscriptionRecords =
+        RecordingExporter.processMessageSubscriptionRecords()
+            .withProcessInstanceKey(processInstanceKey)
+            .limit(r -> r.getIntent() == ProcessMessageSubscriptionIntent.DELETED)
+            .asList();
+    assertThat(processMessageSubscriptionRecords)
+        .extracting(Record::getIntent)
+        .contains(
+            ProcessMessageSubscriptionIntent.DELETE, ProcessMessageSubscriptionIntent.DELETED);
+    assertThat(processMessageSubscriptionRecords)
         .extracting(record -> record.getValue().getStorageOrdinal())
         .containsOnly(FIXED_ORDINAL);
   }
@@ -1032,6 +1224,119 @@ public final class StorageOrdinalAssignmentTest {
     // then: the DELETED event derives -1 instead of the persisted 0
     assertThat(
             RecordingExporter.signalSubscriptionRecords(SignalSubscriptionIntent.DELETED)
+                .withRecordKey(legacyKey)
+                .getFirst()
+                .getValue()
+                .getStorageOrdinal())
+        .isEqualTo(StorageOrdinalRelated.NOT_ORDINAL_CONTROLLED);
+  }
+
+  @Test
+  public void shouldMarkDeploymentScopedMessageStartEventSubscriptionsAsNotOrdinalControlled() {
+    // given: a definition with a message start event
+    final var deployment =
+        engine
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess("message-start-subscription-process")
+                    .startEvent("message-start")
+                    .message("ordinal-definition-message")
+                    .endEvent()
+                    .done())
+            .deploy();
+    final long processDefinitionKey =
+        deployment.getValue().getProcessesMetadata().get(0).getProcessDefinitionKey();
+
+    // then: the start-event subscription belongs to the definition, not to an instance
+    final var created =
+        RecordingExporter.messageStartEventSubscriptionRecords(
+                MessageStartEventSubscriptionIntent.CREATED)
+            .withProcessDefinitionKey(processDefinitionKey)
+            .getFirst()
+            .getValue();
+    assertThat(created.getProcessInstanceKey()).isEqualTo(-1L);
+    assertThat(created.getStorageOrdinal()).isEqualTo(StorageOrdinalRelated.NOT_ORDINAL_CONTROLLED);
+
+    // when: a new version replaces the definition, the old subscription is closed
+    engine
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess("message-start-subscription-process")
+                .startEvent()
+                .endEvent()
+                .done())
+        .deploy();
+
+    // then: the DELETED event, appended from the stored subscription, is not ordinal controlled
+    assertThat(
+            RecordingExporter.messageStartEventSubscriptionRecords(
+                    MessageStartEventSubscriptionIntent.DELETED)
+                .withProcessDefinitionKey(processDefinitionKey)
+                .getFirst()
+                .getValue()
+                .getStorageOrdinal())
+        .isEqualTo(StorageOrdinalRelated.NOT_ORDINAL_CONTROLLED);
+  }
+
+  @Test
+  public void shouldMarkLegacyMessageStartEventSubscriptionAsNotOrdinalControlledWhenClosed() {
+    // given: a definition with a message start event
+    final var deployment =
+        engine
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess("legacy-message-start-process")
+                    .startEvent("message-start")
+                    .message("legacy-definition-message")
+                    .endEvent()
+                    .done())
+            .deploy();
+    final long processDefinitionKey =
+        deployment.getValue().getProcessesMetadata().get(0).getProcessDefinitionKey();
+    final var created =
+        RecordingExporter.messageStartEventSubscriptionRecords(
+                MessageStartEventSubscriptionIntent.CREATED)
+            .withProcessDefinitionKey(processDefinitionKey)
+            .getFirst();
+
+    // and: a start subscription row as it was persisted before the ordinal existed, with the
+    // default ordinal 0 persisted
+    final var legacyKey = created.getKey() + 100_000L;
+    final var legacySubscription =
+        new MessageStartEventSubscriptionRecord()
+            .setProcessDefinitionKey(created.getValue().getProcessDefinitionKey())
+            .setBpmnProcessId(BufferUtil.wrapString(created.getValue().getBpmnProcessId()))
+            .setStartEventId(BufferUtil.wrapString(created.getValue().getStartEventId()))
+            .setMessageName(BufferUtil.wrapString(created.getValue().getMessageName()))
+            .setTenantId(created.getValue().getTenantId())
+            .setProcessInstanceKey(-1L)
+            .setStorageOrdinal(StorageOrdinalRelated.MAIN_INDEX);
+    // the engine only applies a written event to state on replay, so stop and restart it around
+    // the write, as the neighbouring legacy subscription test does
+    engine.stop();
+    engine.writeRecords(
+        RecordToWrite.event()
+            .messageStartEventSubscription(
+                MessageStartEventSubscriptionIntent.CREATED, legacySubscription)
+            .key(legacyKey));
+    // starting the engine re-exports the whole partition log, so clear the previously seen records
+    RecordingExporter.reset();
+    engine.start();
+
+    // when: a new version replaces the definition, closing the legacy subscription
+    engine
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess("legacy-message-start-process")
+                .startEvent()
+                .endEvent()
+                .done())
+        .deploy();
+
+    // then: the DELETED event derives -1 instead of the persisted 0
+    assertThat(
+            RecordingExporter.messageStartEventSubscriptionRecords(
+                    MessageStartEventSubscriptionIntent.DELETED)
                 .withRecordKey(legacyKey)
                 .getFirst()
                 .getValue()
