@@ -80,7 +80,9 @@ public final class BackupApiRequestHandlerStep implements PartitionTransitionSte
             context.getPersistedSnapshotStore(),
             () -> snapshotDirector.forceSnapshot(),
             context.partitionId(),
-            isBackupEnabled);
+            isBackupEnabled,
+            // set by the log archive step, which runs before this one
+            context.getLogArchiveActivation());
     context.getActorSchedulingService().submitActor(requestHandler).onComplete(installed);
     installed.onComplete(
         (ignore, error) -> {

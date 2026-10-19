@@ -9,6 +9,7 @@ package io.camunda.zeebe.broker.transport.backupapi;
 
 import io.camunda.cluster.PartitionId;
 import io.camunda.zeebe.backup.api.BackupManager;
+import io.camunda.zeebe.backup.logarchive.leader.LogArchiveActivation;
 import io.camunda.zeebe.backup.processing.state.CheckpointState;
 import io.camunda.zeebe.backup.processing.state.DbBackupRangeState;
 import io.camunda.zeebe.backup.processing.state.DbCheckpointMetadataState;
@@ -40,6 +41,7 @@ import io.camunda.zeebe.transport.RequestType;
 import io.camunda.zeebe.transport.impl.AtomixServerTransport;
 import io.camunda.zeebe.util.Either;
 import java.util.Optional;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Request handler to handle commands and queries related to the backup ({@link
@@ -55,6 +57,7 @@ public final class BackupApiRequestHandler extends ReadOnlyBackupApiRequestHandl
   private final DbCheckpointMetadataState checkpointMetadataState;
   private final DbBackupRangeState backupRangeState;
   private final CheckpointSnapshotReserver snapshotReserver;
+  private final @Nullable LogArchiveActivation logArchiveActivation;
 
   public BackupApiRequestHandler(
       final AtomixServerTransport transport,
@@ -66,8 +69,10 @@ public final class BackupApiRequestHandler extends ReadOnlyBackupApiRequestHandl
       final PersistedSnapshotStore snapshotStore,
       final SnapshotTrigger snapshotTrigger,
       final PartitionId partition,
-      final boolean backupFeatureEnabled) {
+      final boolean backupFeatureEnabled,
+      final @Nullable LogArchiveActivation logArchiveActivation) {
     super("BackupApi", backupManager, partition, transport, backupFeatureEnabled);
+    this.logArchiveActivation = logArchiveActivation;
     this.logStreamWriter = logStreamWriter;
     this.backupManager = backupManager;
     this.checkpointState = checkpointState;
@@ -100,6 +105,7 @@ public final class BackupApiRequestHandler extends ReadOnlyBackupApiRequestHandl
       case QUERY_RANGES -> handleQueryRangesRequest(responseWriter, errorWriter);
       case SYNC_METADATA -> handleSyncMetadataRequest(responseWriter, errorWriter);
       case CLEAR_STATE -> handleClearStateRequest(responseWriter, errorWriter);
+      case ACTIVATE_LOG_ARCHIVE -> handleActivateLogArchiveRequest(responseWriter, errorWriter);
       default ->
           CompletableActorFuture.completed(unknownRequest(errorWriter, requestReader.type()));
     };
@@ -271,6 +277,47 @@ public final class BackupApiRequestHandler extends ReadOnlyBackupApiRequestHandl
                 result.complete(Either.left(errorWriter));
               }
             });
+    return result;
+  }
+
+  /**
+   * Activates the log archive of this partition (spec section 18.1) and answers with {@code
+   * COMPLETED} once the partition's state holds a started timeline, {@code IN_PROGRESS} while the
+   * start is pending, and {@code DOES_NOT_EXIST} if the log archive is disabled on this broker.
+   */
+  private ActorFuture<Either<ErrorResponseWriter, BackupApiResponseWriter>>
+      handleActivateLogArchiveRequest(
+          final BackupApiResponseWriter responseWriter, final ErrorResponseWriter errorWriter) {
+    final var activation = logArchiveActivation;
+    if (activation == null) {
+      return CompletableActorFuture.completed(
+          Either.right(
+              responseWriter.withStatus(
+                  new BackupStatusResponse()
+                      .setStatus(BackupStatusCode.DOES_NOT_EXIST)
+                      .setPartitionId(partitionId.number()))));
+    }
+    final ActorFuture<Either<ErrorResponseWriter, BackupApiResponseWriter>> result =
+        actor.createFuture();
+    activation
+        .activate()
+        .onComplete(
+            (timelineStarted, error) -> {
+              if (error == null) {
+                final var response =
+                    new BackupStatusResponse()
+                        .setStatus(
+                            timelineStarted
+                                ? BackupStatusCode.COMPLETED
+                                : BackupStatusCode.IN_PROGRESS)
+                        .setPartitionId(partitionId.number());
+                result.complete(Either.right(responseWriter.withStatus(response)));
+              } else {
+                errorWriter.errorCode(ErrorCode.INTERNAL_ERROR).errorMessage(error.getMessage());
+                result.complete(Either.left(errorWriter));
+              }
+            },
+            actor);
     return result;
   }
 

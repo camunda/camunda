@@ -480,6 +480,32 @@ public class CheckpointSchedulerServiceTest {
   }
 
   @Test
+  void shouldStartCheckpointSchedulerForLogArchiveActivationWithoutAnySchedule() {
+    // given — the log archive is enabled, but nothing else is scheduled
+    final var backupCfg = retentionOnlyBackupCfg("log-archive-only");
+    backupCfg.getRetention().setWindow(null);
+    backupCfg.getLogArchive().setEnabled(true);
+    backupCfgByTenant.put(DEFAULT_PHYSICAL_TENANT_ID, backupCfg);
+    schedulingService = createSchedulingService();
+    doReturn(Set.of(member1)).when(membershipService).getMembers();
+    doReturn(member1).when(membershipService).getLocalMember();
+
+    // when
+    schedulingService.onActorStarting();
+    schedulingService.onActorStarted();
+
+    // then
+    Awaitility.await()
+        .untilAsserted(
+            () ->
+                verify(scheduler, times(1))
+                    .submitActor(
+                        argThat(CheckpointScheduler.class::isInstance),
+                        eq(SchedulingHints.IO_BOUND)));
+    verify(scheduler, never()).submitActor(argThat(BackupRetention.class::isInstance), any());
+  }
+
+  @Test
   void shouldRelocateStandaloneRetentionJobOnMembershipChange() {
     // given — retention only, and this broker is not the lowest member
     backupCfgByTenant.put(DEFAULT_PHYSICAL_TENANT_ID, retentionOnlyBackupCfg("retention-only"));

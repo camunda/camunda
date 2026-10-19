@@ -19,6 +19,7 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -28,6 +29,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
+import io.atomix.cluster.BrokerMemberId;
 import io.camunda.zeebe.backup.client.api.BackupRequestHandler;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.BrokerClusterState;
@@ -36,13 +38,16 @@ import io.camunda.zeebe.protocol.impl.encoding.CheckpointStateResponse;
 import io.camunda.zeebe.protocol.impl.encoding.CheckpointStateResponse.PartitionCheckpointState;
 import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
 import io.camunda.zeebe.scheduler.testing.ControlledActorSchedulerExtension;
+import io.camunda.zeebe.util.VersionUtil;
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -590,6 +595,84 @@ public class CheckpointScheduleTest {
     verify(backupRequestHandler, times(1)).getCheckpointState(DEFAULT_PHYSICAL_TENANT_ID);
     verify(backupRequestHandler, times(1))
         .checkpoint(DEFAULT_PHYSICAL_TENANT_ID, CheckpointType.MARKER);
+  }
+
+  @Test
+  void shouldNotActivateLogArchiveWhileABrokerIsNotUpgraded() {
+    // given
+    givenBrokerVersions(VersionUtil.getVersion(), "0.1.0");
+    checkpointScheduler = createLogArchiveActivationScheduler();
+
+    // when
+    actorScheduler.submitActor(checkpointScheduler);
+    actorScheduler.workUntilDone();
+    actorScheduler.updateClock(Duration.ofMinutes(1));
+    actorScheduler.workUntilDone();
+
+    // then
+    verify(backupRequestHandler, never()).activateLogArchive(any());
+  }
+
+  @Test
+  void shouldActivateLogArchiveUntilEveryTimelineIsStarted() {
+    // given
+    givenBrokerVersions(VersionUtil.getVersion(), VersionUtil.getVersion());
+    doReturn(CompletableFuture.completedFuture(Map.of(1, true, 2, false)))
+        .doReturn(CompletableFuture.completedFuture(Map.of(1, true, 2, true)))
+        .when(backupRequestHandler)
+        .activateLogArchive(DEFAULT_PHYSICAL_TENANT_ID);
+    checkpointScheduler = createLogArchiveActivationScheduler();
+
+    // when
+    actorScheduler.submitActor(checkpointScheduler);
+    actorScheduler.workUntilDone();
+    for (int i = 0; i < 10; i++) {
+      actorScheduler.updateClock(Duration.ofSeconds(10));
+      actorScheduler.workUntilDone();
+    }
+
+    // then - activated again until both partitions report a started timeline, then stopped
+    verify(backupRequestHandler, times(2)).activateLogArchive(DEFAULT_PHYSICAL_TENANT_ID);
+  }
+
+  @Test
+  void shouldNotActivateLogArchiveWhenDisabled() {
+    // given
+    givenBrokerVersions(VersionUtil.getVersion());
+    checkpointScheduler = createScheduler(null, null);
+
+    // when
+    actorScheduler.submitActor(checkpointScheduler);
+    actorScheduler.workUntilDone();
+    actorScheduler.updateClock(Duration.ofMinutes(1));
+    actorScheduler.workUntilDone();
+
+    // then
+    verify(backupRequestHandler, never()).activateLogArchive(any());
+  }
+
+  private void givenBrokerVersions(final String... versions) {
+    final var topology = topologyManager.getTopology(DEFAULT_PHYSICAL_TENANT_ID);
+    final var brokers = new ArrayList<BrokerMemberId>();
+    for (int i = 0; i < versions.length; i++) {
+      final var broker = BrokerMemberId.from(i);
+      brokers.add(broker);
+      when(topology.getBrokerVersion(broker)).thenReturn(versions[i]);
+    }
+    when(topology.isInitialized()).thenReturn(true);
+    when(topology.getClusterSize()).thenReturn(versions.length);
+    when(topology.getBrokers()).thenReturn(brokers);
+  }
+
+  private CheckpointScheduler createLogArchiveActivationScheduler() {
+    return new CheckpointScheduler(
+        DEFAULT_PHYSICAL_TENANT_ID,
+        null,
+        null,
+        backupRequestHandler,
+        topologyManager,
+        meterRegistry,
+        true);
   }
 
   private CheckpointStateResponse checkpointState(

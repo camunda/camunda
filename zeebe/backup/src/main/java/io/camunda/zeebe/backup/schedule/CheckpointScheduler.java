@@ -17,6 +17,7 @@ import io.camunda.zeebe.scheduler.clock.ActorClock;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.util.ExponentialBackoff;
+import io.camunda.zeebe.util.VersionUtil;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Duration;
 import java.time.Instant;
@@ -30,10 +31,15 @@ import org.slf4j.LoggerFactory;
  * Triggers marker checkpoints and scheduled backups for a single physical tenant, on that tenant's
  * own schedules. All requests are targeted at the tenant's partitions only, so tenants with
  * different backup configurations never interfere with each other.
+ *
+ * <p>If the log archive is enabled, it also activates the log archive once every broker is upgraded
+ * (spec section 18.1), in a separate loop that ends once every partition has started its timeline.
  */
 public class CheckpointScheduler extends Actor implements AutoCloseable {
   private static final long BACKOFF_INITIAL_DELAY_MS = 1000;
   private static final long BACKOFF_MAX_DELAY_MS = 10_000;
+  private static final long ACTIVATION_INITIAL_DELAY_MS = 1000;
+  private static final long ACTIVATION_MAX_DELAY_MS = 10_000;
 
   private static final Logger LOG = LoggerFactory.getLogger(CheckpointScheduler.class);
   private final String physicalTenantId;
@@ -47,6 +53,9 @@ public class CheckpointScheduler extends Actor implements AutoCloseable {
   private final ExponentialBackoff markerErrorStrategy;
   private long backupErrorDelayMs;
   private final ExponentialBackoff backupErrorStrategy;
+  private final boolean activateLogArchive;
+  private long activationDelayMs;
+  private final ExponentialBackoff activationStrategy;
 
   public CheckpointScheduler(
       final String physicalTenantId,
@@ -55,6 +64,29 @@ public class CheckpointScheduler extends Actor implements AutoCloseable {
       final BackupRequestHandler backupRequestHandler,
       final BrokerTopologyManager topologyManager,
       final MeterRegistry meterRegistry) {
+    this(
+        physicalTenantId,
+        checkpointSchedule,
+        backupSchedule,
+        backupRequestHandler,
+        topologyManager,
+        meterRegistry,
+        false);
+  }
+
+  /**
+   * @param checkpointSchedule schedule of marker checkpoints, or {@code null} for none
+   * @param backupSchedule schedule of backups, or {@code null} for none
+   * @param activateLogArchive whether to run the log archive activation loop
+   */
+  public CheckpointScheduler(
+      final String physicalTenantId,
+      final Schedule checkpointSchedule,
+      final Schedule backupSchedule,
+      final BackupRequestHandler backupRequestHandler,
+      final BrokerTopologyManager topologyManager,
+      final MeterRegistry meterRegistry,
+      final boolean activateLogArchive) {
     super("CheckpointScheduler", null, Map.of(ACTOR_PROP_PHYSICAL_TENANT, physicalTenantId));
     this.physicalTenantId = physicalTenantId;
     this.checkpointSchedule = checkpointSchedule;
@@ -66,6 +98,9 @@ public class CheckpointScheduler extends Actor implements AutoCloseable {
         new ExponentialBackoff(BACKOFF_MAX_DELAY_MS, BACKOFF_INITIAL_DELAY_MS, 1.2, 0);
     backupErrorStrategy =
         new ExponentialBackoff(BACKOFF_MAX_DELAY_MS, BACKOFF_INITIAL_DELAY_MS, 1.2, 0);
+    this.activateLogArchive = activateLogArchive;
+    activationStrategy =
+        new ExponentialBackoff(ACTIVATION_MAX_DELAY_MS, ACTIVATION_INITIAL_DELAY_MS, 1.2, 0);
   }
 
   @Override
@@ -79,6 +114,10 @@ public class CheckpointScheduler extends Actor implements AutoCloseable {
     if (backupSchedule != null) {
       LOG.info("Backup scheduler initialized with interval {}", backupSchedule);
       actor.run(this::backupSchedulingTask);
+    }
+    if (activateLogArchive) {
+      LOG.info("Log archive activation started for physical tenant {}", physicalTenantId);
+      actor.run(this::logArchiveActivationTask);
     }
   }
 
@@ -108,6 +147,54 @@ public class CheckpointScheduler extends Actor implements AutoCloseable {
         .onComplete(
             (res, err) -> handleExecutionCompletion(res, err, CheckpointType.SCHEDULED_BACKUP),
             this);
+  }
+
+  /**
+   * Activates the log archive of every partition once every broker runs at least the current minor
+   * version (spec section 18.1), and stops once every partition reports a started timeline. Until
+   * then it checks again with backoff; a request that reaches only some partitions, or a partition
+   * that has not started its timeline yet, simply leads to another round, as activation is
+   * idempotent.
+   *
+   * <p>Nothing is remembered between rounds, so after a restart or a move of the scheduler to
+   * another broker the loop starts over, and ends after one round if every timeline is started.
+   */
+  private void logArchiveActivationTask() {
+    if (topologyManager.isRecovering(physicalTenantId)) {
+      retryLogArchiveActivation("physical tenant is in recovery mode");
+      return;
+    }
+    if (!BrokerVersionGate.allBrokersUpgraded(
+        topologyManager.getTopology(physicalTenantId), VersionUtil.getVersion())) {
+      retryLogArchiveActivation("not every broker runs the current version yet");
+      return;
+    }
+    backupRequestHandler
+        .activateLogArchive(physicalTenantId)
+        .whenCompleteAsync(
+            (timelineStartedByPartition, error) -> {
+              if (error != null) {
+                retryLogArchiveActivation("activation failed: " + error.getMessage());
+              } else if (timelineStartedByPartition.containsValue(false)) {
+                retryLogArchiveActivation(
+                    "timelines not started on every partition yet: " + timelineStartedByPartition);
+              } else {
+                LOG.info(
+                    "Log archive activated on every partition of physical tenant {}",
+                    physicalTenantId);
+              }
+            },
+            this);
+  }
+
+  private void retryLogArchiveActivation(final String reason) {
+    activationDelayMs = activationStrategy.applyAsLong(activationDelayMs);
+    LOG.debug(
+        "Log archive activation of physical tenant {} retried in {} ms: {}",
+        physicalTenantId,
+        activationDelayMs,
+        reason);
+    schedule(Duration.ofMillis(activationDelayMs), this::logArchiveActivationTask);
   }
 
   /**

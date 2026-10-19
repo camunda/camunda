@@ -8,12 +8,14 @@
 package io.camunda.zeebe.backup.logarchive.leader;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import io.camunda.zeebe.backup.logarchive.format.LogArchiveFrame;
 import io.camunda.zeebe.backup.logarchive.format.LogObjectDecoder;
+import io.camunda.zeebe.backup.logarchive.leader.LogArchiverTimeline.Effective;
 import io.camunda.zeebe.backup.logarchive.model.LogArchiveKeys;
 import io.camunda.zeebe.backup.logarchive.state.LogArchiveMeta;
 import io.camunda.zeebe.backup.logarchive.store.LogArchiveStore;
@@ -393,9 +395,120 @@ final class LogArchiverTest {
   }
 
   @Test
-  void shouldStartTimelineWhenNoneWasStarted() {
+  void shouldAwaitActivationWhenNoTimelineWasStarted() {
     // given
     startArchiver(3 * FRAME_BYTES, () -> TIMELINE);
+    source.commit(3);
+
+    // when
+    archiver.onRecoveryChecked(new LogArchiveMeta(), false);
+    scheduler.updateClock(CUT_INTERVAL.multipliedBy(3));
+    scheduler.workUntilDone();
+
+    // then
+    assertThat(archiver.state()).isEqualTo(LogArchiver.State.AWAIT_ACTIVATION);
+    assertThat(written).isEmpty();
+    assertThat(store.keys()).isEmpty();
+  }
+
+  @Test
+  void shouldStartTimelineOnActivation() {
+    // given
+    startArchiver(3 * FRAME_BYTES, () -> TIMELINE);
+    source.commit(3);
+    archiver.onRecoveryChecked(new LogArchiveMeta(), false);
+    scheduler.workUntilDone();
+
+    // when
+    final var timelineStarted = activate();
+
+    // then
+    assertThat(timelineStarted).isFalse();
+    assertThat(written).hasSize(1);
+    final var command = written.getFirst();
+    assertThat(command.intent()).isEqualTo(LogArchiveIntent.START_TIMELINE);
+    assertThat(command.record().getTimelineId()).isEqualTo(TIMELINE);
+    assertThat(command.record().getStartIndex()).isEqualTo(1);
+    assertThat(command.record().getParentTimelineId()).isEmpty();
+  }
+
+  @Test
+  void shouldStartTimelineOnlyOnceWhenActivatedTwice() {
+    // given
+    startArchiver(3 * FRAME_BYTES, () -> TIMELINE);
+    source.commit(3);
+    archiver.onRecoveryChecked(new LogArchiveMeta(), false);
+    scheduler.workUntilDone();
+
+    // when
+    activate();
+    activate();
+
+    // then
+    assertThat(written)
+        .extracting(Written::intent)
+        .containsExactly(LogArchiveIntent.START_TIMELINE);
+  }
+
+  @Test
+  void shouldStartTimelineOnRecoveryWhenActivatedBefore() {
+    // given - the activation arrives before the processor recovered
+    startArchiver(3 * FRAME_BYTES, () -> TIMELINE);
+    source.commit(3);
+    assertThat(activate()).isFalse();
+    assertThat(written).isEmpty();
+
+    // when
+    archiver.onRecoveryChecked(new LogArchiveMeta(), false);
+    scheduler.workUntilDone();
+
+    // then
+    assertThat(written)
+        .extracting(w -> w.intent(), w -> w.record().getTimelineId())
+        .containsExactly(tuple(LogArchiveIntent.START_TIMELINE, TIMELINE));
+  }
+
+  @Test
+  void shouldReportStartedTimelineOnActivation() {
+    // given
+    startArchiver(3 * FRAME_BYTES, () -> TIMELINE);
+    source.commit(3);
+    archiver.onRecoveryChecked(new LogArchiveMeta(), false);
+    scheduler.workUntilDone();
+    activate();
+
+    // when
+    archiver.onTimelineStarted(TIMELINE);
+    scheduler.workUntilDone();
+
+    // then
+    assertThat(activate()).isTrue();
+    assertThat(written)
+        .extracting(Written::intent)
+        .containsExactly(LogArchiveIntent.START_TIMELINE, LogArchiveIntent.ARCHIVE_LOG);
+  }
+
+  @Test
+  void shouldResumeStartedTimelineWithoutActivation() {
+    // given
+    startArchiver(3 * FRAME_BYTES, () -> TIMELINE);
+    source.commit(3);
+
+    // when
+    recover(TIMELINE, 0);
+
+    // then
+    assertThat(archiveLogRanges()).containsExactly(range(1, 3));
+    assertThat(written).extracting(Written::intent).doesNotContain(LogArchiveIntent.START_TIMELINE);
+    assertThat(activate()).isTrue();
+  }
+
+  @Test
+  void shouldStartTimelineFromTimelineFileWithoutActivation(@TempDir final Path dir)
+      throws Exception {
+    // given - a restore wrote the timeline file, and the restored state holds no timeline
+    Files.writeString(dir.resolve(LogArchiverTimeline.TIMELINE_FILE_NAME), "tl-0.r42\n");
+    startArchiverWith(3 * FRAME_BYTES, () -> LogArchiverTimeline.resolveEffective(dir, TIMELINE));
     source.commit(3);
 
     // when
@@ -403,11 +516,26 @@ final class LogArchiverTest {
     scheduler.workUntilDone();
 
     // then
-    final var command = written.getFirst();
-    assertThat(command.intent()).isEqualTo(LogArchiveIntent.START_TIMELINE);
-    assertThat(command.record().getTimelineId()).isEqualTo(TIMELINE);
-    assertThat(command.record().getStartIndex()).isEqualTo(1);
-    assertThat(command.record().getParentTimelineId()).isEmpty();
+    assertThat(written)
+        .extracting(w -> w.intent(), w -> w.record().getTimelineId())
+        .containsExactly(tuple(LogArchiveIntent.START_TIMELINE, "tl-0.r42"));
+  }
+
+  @Test
+  void shouldNotActivateAfterClose() {
+    // given
+    startArchiver(3 * FRAME_BYTES, () -> TIMELINE);
+    archiver.onRecoveryChecked(new LogArchiveMeta(), false);
+    scheduler.workUntilDone();
+    archiver.closeAsync();
+    scheduler.workUntilDone();
+
+    // when - e.g. a request that reached a leader which just stepped down
+    archiver.activate();
+    scheduler.workUntilDone();
+
+    // then
+    assertThat(written).isEmpty();
   }
 
   @Test
@@ -473,6 +601,7 @@ final class LogArchiverTest {
     // when
     archiver.onRecoveryChecked(new LogArchiveMeta(), false);
     scheduler.workUntilDone();
+    activate();
 
     // then
     final var command = written.getFirst();
@@ -530,6 +659,7 @@ final class LogArchiverTest {
     startArchiver(3 * FRAME_BYTES, () -> TIMELINE);
     archiver.onRecoveryChecked(new LogArchiveMeta(), false);
     scheduler.workUntilDone();
+    activate();
 
     // when
     archiver.onCommandRejected(
@@ -548,7 +678,7 @@ final class LogArchiverTest {
   void shouldUseTimelineFileOverConfiguration(@TempDir final Path dir) throws Exception {
     // given
     Files.writeString(dir.resolve(LogArchiverTimeline.TIMELINE_FILE_NAME), "tl-0.r42\n");
-    startArchiver(3 * FRAME_BYTES, () -> LogArchiverTimeline.resolve(dir, TIMELINE));
+    startArchiverWith(3 * FRAME_BYTES, () -> LogArchiverTimeline.resolveEffective(dir, TIMELINE));
 
     // when
     recover(TIMELINE, 0);
@@ -639,7 +769,12 @@ final class LogArchiverTest {
 
   // -----------------------------------------------------------------------------------------------
 
+  /** Starts an archiver whose effective timeline is the configured one, without timeline file. */
   private void startArchiver(final long cutMaxBytes, final Supplier<String> timeline) {
+    startArchiverWith(cutMaxBytes, () -> Effective.configured(timeline.get()));
+  }
+
+  private void startArchiverWith(final long cutMaxBytes, final Supplier<Effective> timeline) {
     archiver =
         new LogArchiver(
             PARTITION,
@@ -653,6 +788,13 @@ final class LogArchiverTest {
             IDLE_CUT_INTERVAL);
     scheduler.submitActor(archiver);
     scheduler.workUntilDone();
+  }
+
+  /** Activates the archiver and returns whether it reported a started timeline. */
+  private boolean activate() {
+    final var timelineStarted = archiver.activate();
+    scheduler.workUntilDone();
+    return timelineStarted.join();
   }
 
   private void recover(final String timelineId, final long archivedIndex) {

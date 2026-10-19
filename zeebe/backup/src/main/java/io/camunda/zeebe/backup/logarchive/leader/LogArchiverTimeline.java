@@ -28,15 +28,42 @@ public final class LogArchiverTimeline {
    * @throws UncheckedIOException if the timeline file exists but cannot be read
    */
   public static String resolve(final Path partitionDirectory, final String configuredTimeline) {
+    return resolveEffective(partitionDirectory, configuredTimeline).timelineId();
+  }
+
+  /**
+   * Like {@link #resolve(Path, String)}, but also tells whether the timeline comes from the
+   * timeline file, i.e. from a restore.
+   *
+   * @throws UncheckedIOException if the timeline file exists but cannot be read
+   */
+  public static Effective resolveEffective(
+      final Path partitionDirectory, final String configuredTimeline) {
     final var file = partitionDirectory.resolve(TIMELINE_FILE_NAME);
     if (!Files.exists(file)) {
-      return configuredTimeline;
+      return Effective.configured(configuredTimeline);
     }
     try {
       final var timeline = Files.readString(file, StandardCharsets.UTF_8).strip();
-      return timeline.isEmpty() ? configuredTimeline : timeline;
+      return timeline.isEmpty()
+          ? Effective.configured(configuredTimeline)
+          : new Effective(timeline, true);
     } catch (final IOException e) {
       throw new UncheckedIOException("Failed to read the log archive timeline file " + file, e);
+    }
+  }
+
+  /**
+   * The effective timeline of a partition.
+   *
+   * @param timelineId the timeline to archive into
+   * @param fromTimelineFile whether it was written by a restore into the timeline file; otherwise
+   *     it is the configured one
+   */
+  public record Effective(String timelineId, boolean fromTimelineFile) {
+
+    public static Effective configured(final String timelineId) {
+      return new Effective(timelineId, false);
     }
   }
 }

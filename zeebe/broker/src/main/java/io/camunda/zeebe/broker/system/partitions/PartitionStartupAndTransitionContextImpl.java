@@ -15,6 +15,7 @@ import io.camunda.cluster.PartitionId;
 import io.camunda.security.configuration.EngineSecurityConfig;
 import io.camunda.zeebe.backup.api.BackupManager;
 import io.camunda.zeebe.backup.api.BackupStore;
+import io.camunda.zeebe.backup.logarchive.leader.LogArchiveActivation;
 import io.camunda.zeebe.backup.logarchive.processing.LogArchiveRecordsProcessor;
 import io.camunda.zeebe.backup.processing.CheckpointRecordsProcessor;
 import io.camunda.zeebe.broker.PartitionListener;
@@ -112,6 +113,7 @@ public class PartitionStartupAndTransitionContextImpl
   private final TopologyManager topologyManager;
   private BackupStore backupStore;
   private LogArchiveRecordsProcessor logArchiveProcessor;
+  private LogArchiveActivation logArchiveActivation;
   private AdminApiRequestHandler adminApiService;
   private PartitionAdminAccess adminAccess;
   private ControllableStreamClock clock;
@@ -390,6 +392,16 @@ public class PartitionStartupAndTransitionContextImpl
   @Override
   public void setLogArchiveProcessor(final LogArchiveRecordsProcessor logArchiveProcessor) {
     this.logArchiveProcessor = logArchiveProcessor;
+  }
+
+  @Override
+  public LogArchiveActivation getLogArchiveActivation() {
+    return logArchiveActivation;
+  }
+
+  @Override
+  public void setLogArchiveActivation(final LogArchiveActivation logArchiveActivation) {
+    this.logArchiveActivation = logArchiveActivation;
   }
 
   @Override

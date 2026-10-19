@@ -18,6 +18,7 @@ import io.camunda.zeebe.broker.client.api.dto.BrokerRequest;
 import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
 import io.camunda.zeebe.protocol.impl.encoding.BackupListResponse;
 import io.camunda.zeebe.protocol.impl.encoding.BackupRangesResponse;
+import io.camunda.zeebe.protocol.impl.encoding.BackupStatusResponse;
 import io.camunda.zeebe.protocol.impl.encoding.CheckpointStateResponse;
 import io.camunda.zeebe.protocol.management.BackupStatusCode;
 import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
@@ -26,6 +27,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.OptionalLong;
@@ -124,6 +126,24 @@ public final class BackupRequestHandler implements BackupApi {
       final String physicalTenantId, final CheckpointType checkpointType) {
     final var checkpointId = checkpointIdGenerator.generateCheckpointId();
     return takeBackup(physicalTenantId, checkpointId, checkpointType);
+  }
+
+  /**
+   * Asks every partition of the given physical tenant to activate its log archive (spec section
+   * 18.1). Only send this once every broker runs the current version. Idempotent.
+   *
+   * @return per partition id, whether that partition's log archive timeline is started
+   */
+  public CompletionStage<Map<Integer, Boolean>> activateLogArchive(final String physicalTenantId) {
+    return broadcastRequest(physicalTenantId, this::createActivateLogArchiveRequest)
+        .thenApply(
+            responses ->
+                responses.stream()
+                    .collect(
+                        Collectors.toMap(
+                            BackupStatusResponse::getPartitionId,
+                            response -> response.getStatus() == BackupStatusCode.COMPLETED,
+                            Boolean::logicalAnd)));
   }
 
   @VisibleForTesting
@@ -416,6 +436,12 @@ public final class BackupRequestHandler implements BackupApi {
 
   private BrokerMetadataSyncRequest createMetadataSyncRequest(final int partitionId) {
     final var request = new BrokerMetadataSyncRequest();
+    request.setPartitionId(partitionId);
+    return request;
+  }
+
+  private BrokerActivateLogArchiveRequest createActivateLogArchiveRequest(final int partitionId) {
+    final var request = new BrokerActivateLogArchiveRequest();
     request.setPartitionId(partitionId);
     return request;
   }

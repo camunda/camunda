@@ -46,7 +46,8 @@ import org.slf4j.LoggerFactory;
  * Owns the scheduled checkpoint/backup and backup retention jobs of every physical tenant this
  * broker runs. Each tenant brings its own backup configuration, so it gets its own {@link
  * CheckpointScheduler} and {@link BackupRetention} actors, targeting only that tenant's partitions
- * and writing to only that tenant's backup store.
+ * and writing to only that tenant's backup store. With the log archive enabled, the {@link
+ * CheckpointScheduler} also activates it, so it is created even without any schedule.
  *
  * <p>The jobs are cluster-wide singletons: they run on the member with the lowest id, and all
  * tenants' jobs are started and stopped together as membership changes.
@@ -139,8 +140,13 @@ public class CheckpointSchedulingService extends Actor implements ClusterMembers
       backupSchedule = backupCfg.getSchedule();
     }
     final var withRetention = shouldRegisterRetentionJob(backupCfg);
+    // the log archive is activated by the scheduler, even if no schedule is configured
+    final var activateLogArchive = backupCfg.getLogArchive().isEnabled();
 
-    if (checkpointSchedule == null && backupSchedule == null && !withRetention) {
+    if (checkpointSchedule == null
+        && backupSchedule == null
+        && !withRetention
+        && !activateLogArchive) {
       return null;
     }
 
@@ -151,7 +157,7 @@ public class CheckpointSchedulingService extends Actor implements ClusterMembers
             meterRegistry, Tags.of(PartitionKeyNames.PHYSICAL_TENANT.asString(), physicalTenantId));
 
     CheckpointScheduler checkpointScheduler = null;
-    if (checkpointSchedule != null || backupSchedule != null) {
+    if (checkpointSchedule != null || backupSchedule != null || activateLogArchive) {
       final var backupRequestHandler =
           new BackupRequestHandler(brokerClient, new CheckpointIdGenerator(backupCfg.getOffset()));
       checkpointScheduler =
@@ -161,7 +167,8 @@ public class CheckpointSchedulingService extends Actor implements ClusterMembers
               backupSchedule,
               backupRequestHandler,
               brokerClient.getTopologyManager(),
-              tenantMeterRegistry);
+              tenantMeterRegistry,
+              activateLogArchive);
     }
 
     BackupRetention backupRetentionJob = null;

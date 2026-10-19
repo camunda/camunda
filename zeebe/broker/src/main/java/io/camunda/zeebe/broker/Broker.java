@@ -143,7 +143,13 @@ public final class Broker implements AutoCloseable {
     // the persisted values once the cluster has bootstrapped
     result.setClusterSize(clusterCfg.getClusterSize());
 
-    final String version = VersionUtil.getVersion();
+    // test only: lets an integration test simulate a broker that is not upgraded yet
+    final var testOnlyVersion =
+        brokerCfg.getData().getBackup().getLogArchive().getTestOnlyAdvertisedVersion();
+    final String version =
+        testOnlyVersion != null && !testOnlyVersion.isBlank()
+            ? testOnlyVersion
+            : VersionUtil.getVersion();
     if (version != null && !version.isBlank()) {
       result.setVersion(version);
     }

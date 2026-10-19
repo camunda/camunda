@@ -13,6 +13,7 @@ import io.atomix.raft.RaftServer.Role;
 import io.camunda.security.configuration.EngineSecurityConfig;
 import io.camunda.zeebe.backup.api.BackupManager;
 import io.camunda.zeebe.backup.api.BackupStore;
+import io.camunda.zeebe.backup.logarchive.leader.LogArchiveActivation;
 import io.camunda.zeebe.backup.logarchive.processing.LogArchiveRecordsProcessor;
 import io.camunda.zeebe.backup.processing.CheckpointRecordsProcessor;
 import io.camunda.zeebe.broker.PartitionListener;
@@ -145,6 +146,14 @@ public interface PartitionTransitionContext extends PartitionContext {
   @Nullable LogArchiveRecordsProcessor getLogArchiveProcessor();
 
   void setLogArchiveProcessor(@Nullable LogArchiveRecordsProcessor logArchiveProcessor);
+
+  /**
+   * Activates the leader's log archive (spec section 18.1), or null if the log archive is disabled
+   * or this partition is not the leader.
+   */
+  @Nullable LogArchiveActivation getLogArchiveActivation();
+
+  void setLogArchiveActivation(@Nullable LogArchiveActivation logArchiveActivation);
 
   @Nullable BackupStore getBackupStore();
 
