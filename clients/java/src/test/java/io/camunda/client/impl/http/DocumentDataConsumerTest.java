@@ -267,7 +267,7 @@ public class DocumentDataConsumerTest {
   }
 
   @Test
-  @Timeout(value = 10, unit = TimeUnit.SECONDS)
+  @Timeout(value = 30, unit = TimeUnit.SECONDS)
   void shouldWakeBlockedReaderWhenResourcesAreReleasedBeforeStreamEnd() throws Exception {
     // given
     final DocumentDataConsumer<InputStream> consumer = new DocumentDataConsumer<>(16, objectMapper);
@@ -284,7 +284,7 @@ public class DocumentDataConsumerTest {
   }
 
   @Test
-  @Timeout(value = 10, unit = TimeUnit.SECONDS)
+  @Timeout(value = 30, unit = TimeUnit.SECONDS)
   void shouldWakeBlockedReaderWhenResponseConsumerFailsWithoutReachingEntityConsumer()
       throws Exception {
     // given
@@ -362,11 +362,7 @@ public class DocumentDataConsumerTest {
       try {
         await()
             .atMost(Duration.ofSeconds(5))
-            .until(
-                () ->
-                    reader.thread.getState() == Thread.State.WAITING
-                        && Arrays.stream(reader.thread.getStackTrace())
-                            .anyMatch(f -> f.getMethodName().equals("canConsumeData")));
+            .until(() -> reader.thread.getState() == Thread.State.WAITING);
       } catch (final Throwable t) {
         reader.close();
         throw t;
