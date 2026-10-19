@@ -1,0 +1,163 @@
+# description: Isolated, temporary AlwaysGreen caller and GitHub gate validation.
+# test location: .github/scripts/test_alwaysgreen_caller.py
+# type: CI spike; never merge this workflow.
+# owner: @camunda/distribution
+name: AlwaysGreen isolated caller spike
+
+on:
+  pull_request:
+    branches: [triage-66384-precursor]
+    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
+
+permissions: {}
+
+defaults:
+  run:
+    shell: bash
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  TEST_OWNER: '@camunda/distribution'
+
+jobs:
+  contract-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Print metadata
+        uses: ./.github/actions/print-metadata
+        with:
+          test_product: alwaysgreen
+          test_type: CI
+      - name: Prepare test dependencies
+        run: |
+          # MOCK-START
+          python3 -m venv "$RUNNER_TEMP/caller-venv"
+          "$RUNNER_TEMP/caller-venv/bin/pip" install pytest==9.1.1 pyyaml==6.0.3
+          # MOCK-END
+      - name: Check gate drift and execution provenance
+        env:
+          WORKFLOW_REF: ${{ github.workflow_ref }}
+          WORKFLOW_SHA: ${{ github.workflow_sha }}
+          EVENT_SHA: ${{ github.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          # MOCK-START
+          "$RUNNER_TEMP/caller-venv/bin/python" .github/scripts/alwaysgreen-spike.py drift
+          printf 'event=%s\nworkflow_ref=%s\nworkflow_sha=%s\nevent_sha=%s\nhead_sha=%s\ncheckout_sha=%s\n' \
+            "$EVENT_NAME" "$WORKFLOW_REF" "$WORKFLOW_SHA" "$EVENT_SHA" "$HEAD_SHA" "$(git rev-parse HEAD)" \
+            | tee -a "$GITHUB_STEP_SUMMARY"
+          test "$(git rev-parse HEAD)" = "$EVENT_SHA"
+          # MOCK-END
+      - name: Run actual caller tests with no network or inherited credentials
+        run: |
+          # MOCK-START
+          sudo unshare --net env -i PATH=/usr/bin:/bin \
+            "$RUNNER_TEMP/caller-venv/bin/python" .github/scripts/alwaysgreen-spike.py isolated
+          # MOCK-END
+      - name: Observe spike status without external reporting
+        if: always()
+        run: |
+          # MOCK-START
+          echo "No Vault, observability API, receiver POST, or deployment is used by this spike."
+          # MOCK-END
+
+  upstream-success:
+    runs-on: ubuntu-latest
+    timeout-minutes: 1
+    steps:
+      - name: Controlled successful dependency
+        run: |
+          # MOCK-START
+          echo "EXPECTED_UPSTREAM_SUCCESS"
+          # MOCK-END
+      - name: Observe synthetic status locally
+        if: always()
+        run: |
+          # MOCK-START
+          echo "Synthetic success; no external reporting."
+          # MOCK-END
+
+  upstream-failure:
+    runs-on: ubuntu-latest
+    timeout-minutes: 1
+    steps:
+      - name: Controlled failed dependency
+        run: |
+          # MOCK-START
+          echo "EXPECTED_UPSTREAM_FAILURE"
+          exit 1
+          # MOCK-END
+      - name: Observe synthetic status locally
+        if: always()
+        run: |
+          # MOCK-START
+          echo "Expected failure is asserted by the verifier."
+          # MOCK-END
+
+  caller-after-success:
+    needs: [upstream-success, contract-tests]
+    if: ${{ always() && contains(needs.*.result, 'failure')
+            && !github.event.pull_request.draft }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 1
+    steps:
+      - name: Reject an unexpected gate entry
+        run: |
+          # MOCK-START
+          echo "::error::The caller must not run after successful dependencies."
+          exit 1
+          # MOCK-END
+
+  caller-after-failure:
+    needs: [upstream-failure, contract-tests]
+    if: ${{ always() && contains(needs.*.result, 'failure')
+            && !github.event.pull_request.draft }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 1
+    steps:
+      - name: Record gate entry without a real dispatch
+        run: |
+          # MOCK-START
+          echo "EXPECTED_CALLER_GATE_ENTRY"
+          # MOCK-END
+      - name: Observe synthetic status locally
+        if: always()
+        run: |
+          # MOCK-START
+          echo "Gate exercised; actual payload scripts run only in isolated contract-tests."
+          # MOCK-END
+
+  verify:
+    if: always()
+    needs: [contract-tests, upstream-success, upstream-failure, caller-after-success, caller-after-failure]
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Verify the scenario, not the overall workflow color
+        env:
+          RESULTS: ${{ toJSON(needs) }}
+          IS_DRAFT: ${{ github.event.pull_request.draft || false }}
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          python3 .github/scripts/alwaysgreen-spike.py verdict
+      - name: Observe verifier status locally
+        if: always()
+        run: |
+          # MOCK-START
+          echo "No external reporting. Read the verifier result instead of the synthetic run conclusion."
+          # MOCK-END
