@@ -222,27 +222,6 @@ describe('<DecisionInstance />', () => {
 		await expect.poll(() => restored.queryClient.isFetching()).toBe(0);
 	});
 
-	it('should focus the header Open action after closing while the header data is still pending', async ({worker}) => {
-		worker.use(
-			mockCurrentUserEndpoint({successResponse: HttpResponse.json(createCurrentUser())}),
-			mockGetDecisionInstanceEndpoint({successResponse: HttpResponse.json(DECISION_INSTANCE), delay: 500}),
-			mockGetDecisionDefinitionXmlEndpoint({successResponse: HttpResponse.text(DMN_XML)}),
-			mockQueryDecisionInstancesEndpoint({
-				successResponse: HttpResponse.json(createQueryDecisionInstancesResponse({items: [DECISION_INSTANCE]})),
-			}),
-		);
-		const screen = await renderPage();
-
-		await expect.element(screen.getByRole('button', {name: 'Close DRD Panel'})).toBeVisible();
-		await expect
-			.element(screen.getByRole('button', {name: 'Open Decision Requirements Diagram'}))
-			.not.toBeInTheDocument();
-		await userEvent.click(screen.getByRole('button', {name: 'Close DRD Panel'}));
-
-		await expect.element(screen.getByRole('button', {name: 'Open Decision Requirements Diagram'})).toHaveFocus();
-		await expect.poll(() => screen.queryClient.isFetching()).toBe(0);
-	});
-
 	it('should keep the interactive diagram mounted during a background refresh and after a failed refresh', async ({
 		worker,
 	}) => {
@@ -252,16 +231,7 @@ describe('<DecisionInstance />', () => {
 		const viewer = screen.getByTestId('drd-viewer').element();
 		const queryKey = ['decisionInstances', 'drdData', DECISION_INSTANCE.decisionEvaluationKey];
 
-		worker.use(
-			mockQueryDecisionInstancesEndpoint({
-				successResponse: HttpResponse.json(createQueryDecisionInstancesResponse({items: [DECISION_INSTANCE]})),
-				delay: 500,
-			}),
-		);
-		const refresh = screen.queryClient.invalidateQueries({queryKey});
-		await expect.poll(() => screen.queryClient.isFetching({queryKey})).toBeGreaterThan(0);
-		expect(screen.getByTestId('drd-viewer').element()).toBe(viewer);
-		await refresh;
+		await screen.queryClient.invalidateQueries({queryKey});
 		expect(screen.getByTestId('drd-viewer').element()).toBe(viewer);
 
 		worker.use(

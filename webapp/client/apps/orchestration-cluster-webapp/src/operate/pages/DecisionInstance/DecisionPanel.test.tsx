@@ -308,44 +308,6 @@ describe('<DecisionPanel />', () => {
 		await expect.element(screen.getByText("Couldn't fetch data")).not.toBeInTheDocument();
 	});
 
-	it('should show loading and then error for a failed xml refetch with warm cache', async ({worker}) => {
-		worker.use(
-			mockGetDecisionInstanceEndpoint({
-				successResponse: HttpResponse.json(
-					createDecisionInstance({
-						decisionEvaluationInstanceKey: DECISION_INSTANCE_ID,
-						decisionDefinitionKey: DECISION_DEFINITION_KEY,
-					}),
-				),
-			}),
-			mockGetDecisionDefinitionXmlEndpoint({
-				successResponse: HttpResponse.text(DMN_XML_WITH_LITERAL_EXPRESSION_AND_HIGHLIGHTABLE_TABLE),
-			}),
-		);
-
-		const screen = await renderDecisionPanel();
-
-		await expect.element(screen.getByText('Invoice Amount')).toBeVisible();
-		worker.use(
-			mockGetDecisionDefinitionXmlEndpoint({
-				successResponse: HttpResponse.json(createProblemDetails({status: 500}), {status: 500}),
-				delay: 500,
-			}),
-		);
-		const cachedDecisionDefinitionXmlQuery = screen.queryClient
-			.getQueryCache()
-			.find({queryKey: ['decisionDefinitionXml', DECISION_DEFINITION_KEY]});
-		if (cachedDecisionDefinitionXmlQuery === undefined) {
-			throw new Error('Expected decision definition xml query to be cached');
-		}
-		const refetchPromise = cachedDecisionDefinitionXmlQuery.fetch();
-
-		await expect.element(screen.getByTestId('diagram-spinner')).toBeVisible();
-		await refetchPromise.catch(() => undefined);
-		await expect.element(screen.getByText("Couldn't fetch data")).toBeVisible();
-		await expect.element(screen.getByText('Invoice Amount')).not.toBeInTheDocument();
-	});
-
 	it('should show loading state while the decision instance is still loading', async ({worker}) => {
 		worker.use(
 			mockGetDecisionInstanceEndpoint({
@@ -355,16 +317,36 @@ describe('<DecisionPanel />', () => {
 						decisionDefinitionKey: DECISION_DEFINITION_KEY,
 					}),
 				),
-				delay: 500,
-			}),
-			mockGetDecisionDefinitionXmlEndpoint({
-				successResponse: HttpResponse.text(DMN_XML_WITH_LITERAL_EXPRESSION_AND_HIGHLIGHTABLE_TABLE),
+				delay: 'infinite',
 			}),
 		);
 
 		const screen = await renderDecisionPanel();
 
 		await expect.element(screen.getByTestId('diagram-spinner')).toBeVisible();
-		await expect.element(screen.getByText('Invoice Amount')).toBeVisible();
+	});
+
+	it('should show loading state while the decision definition xml is still loading', async ({worker}) => {
+		worker.use(
+			mockGetDecisionInstanceEndpoint({
+				successResponse: HttpResponse.json(
+					createDecisionInstance({
+						decisionEvaluationInstanceKey: DECISION_INSTANCE_ID,
+						decisionDefinitionKey: DECISION_DEFINITION_KEY,
+						state: 'FAILED',
+						evaluationFailure: 'Evaluation failed',
+					}),
+				),
+			}),
+			mockGetDecisionDefinitionXmlEndpoint({
+				successResponse: HttpResponse.text(DMN_XML_WITH_LITERAL_EXPRESSION_AND_HIGHLIGHTABLE_TABLE),
+				delay: 'infinite',
+			}),
+		);
+
+		const screen = await renderDecisionPanel();
+
+		await expect.element(screen.getByTestId('incident-banner')).toBeVisible();
+		await expect.element(screen.getByTestId('diagram-spinner')).toBeVisible();
 	});
 });

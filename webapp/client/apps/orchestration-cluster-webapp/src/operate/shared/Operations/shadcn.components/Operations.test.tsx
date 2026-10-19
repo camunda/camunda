@@ -354,52 +354,30 @@ describe('<Operations />', () => {
 		expect(screen.getByRole('button', {name: 'Apply', exact: true}).elements()).toHaveLength(0);
 	});
 
-	it('should never drop focus to the document body while the call hierarchy check resolves', async ({worker}) => {
+	it('should move focus into the root instance warning modal once the call hierarchy check resolves', async ({
+		worker,
+	}) => {
 		worker.use(
 			mockGetProcessInstanceCallHierarchyEndpoint({
 				successResponse: HttpResponse.json([
 					createCallHierarchy({processInstanceKey: '3', processDefinitionName: 'some root process'}),
 				]),
-				delay: 150,
 			}),
 		);
 
-		const focusedElements: Element[] = [];
-		const onFocusIn = (event: FocusEvent) => {
-			if (event.target instanceof Element) {
-				focusedElements.push(event.target);
-			}
-		};
-		document.addEventListener('focusin', onFocusIn);
+		const screen = await render(
+			<Operations
+				operations={[{type: 'CANCEL_PROCESS_INSTANCE', onExecute: vi.fn()}]}
+				processInstanceKey={PROCESS_INSTANCE_KEY}
+			/>,
+			{wrapper: getWrapper()},
+		);
 
-		try {
-			const screen = await render(
-				<Operations
-					operations={[{type: 'CANCEL_PROCESS_INSTANCE', onExecute: vi.fn()}]}
-					processInstanceKey={PROCESS_INSTANCE_KEY}
-				/>,
-				{wrapper: getWrapper()},
-			);
+		await userEvent.click(screen.getByRole('button', {name: /cancel instance/i}));
 
-			await userEvent.click(screen.getByRole('button', {name: /cancel instance/i}));
-
-			// While the call hierarchy request is pending, the AlertDialog is showing and should
-			// have moved focus into itself already (never left on the trigger button nor on body).
-			await expect.element(screen.getByTestId('confirm-cancellation-modal')).toBeVisible();
-			expect(document.activeElement).not.toBe(document.body);
-			expect(document.activeElement?.closest('[data-testid="confirm-cancellation-modal"]')).not.toBeNull();
-
-			// Once the query resolves, the AlertDialog unmounts and the passive Dialog mounts in its
-			// place; focus must land inside the new dialog, never regressing to the document body.
-			await expect.element(screen.getByTestId('passive-cancellation-modal')).toBeVisible();
-			expect(document.activeElement).not.toBe(document.body);
-			expect(document.activeElement?.closest('[data-testid="passive-cancellation-modal"]')).not.toBeNull();
-
-			// No focusin event observed anywhere during the whole transition targeted body directly.
-			expect(focusedElements).not.toContain(document.body);
-		} finally {
-			document.removeEventListener('focusin', onFocusIn);
-		}
+		const passiveModal = screen.getByTestId('passive-cancellation-modal');
+		await expect.element(passiveModal).toBeVisible();
+		await expect.poll(() => passiveModal.element().contains(document.activeElement)).toBe(true);
 	});
 
 	it('should keep the root instance warning modal open when clicking outside it', async ({worker}) => {

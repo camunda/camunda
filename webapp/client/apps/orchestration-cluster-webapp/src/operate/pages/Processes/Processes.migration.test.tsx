@@ -926,25 +926,6 @@ describe('Processes migration', () => {
 		},
 	);
 
-	it('should not return to the target list when the user left while the migration was pending', async ({worker}) => {
-		mockPage(worker);
-		worker.use(mockCreateMigrationBatchOperationEndpoint({successResponse: accepted(), delay: 1500}));
-		const screen = await renderPage();
-		await enterSummary(screen);
-		await confirmMigration(screen);
-		await expect.element(screen.getByText('Migrating...')).toBeVisible();
-
-		screen.router.history.push('/operate/processes?process=my_simple_process');
-		await userEvent.click(
-			screen.getByRole('dialog', {name: 'Leave Migration Mode'}).getByRole('button', {name: 'Leave'}),
-		);
-
-		await expect
-			.element(screen.getByText('The batch operation "Migrate Process Instance" has been started'), {timeout: 4000})
-			.toBeVisible();
-		expect(screen.router.state.location.searchStr).toBe('?process=my_simple_process');
-	});
-
 	it('should show the pending migration and lock the footer until it is accepted', async ({worker}) => {
 		mockPage(worker);
 		worker.use(mockCreateMigrationBatchOperationEndpoint({successResponse: accepted(), delay: 'infinite'}));

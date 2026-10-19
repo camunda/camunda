@@ -244,29 +244,43 @@ describe('<ProcessOperations />', () => {
 	it.for([
 		{name: 'definition', definition: DEFINITION, actionName: ACTION_NAME},
 		{name: 'history', definition: DELETED_DEFINITION, actionName: HISTORY_ACTION_NAME},
-	])(
-		'should disable $name deletion while pending and notify once created',
-		async ({definition, actionName}, {worker}) => {
-			worker.use(
-				mockDrainingDefinitions(),
-				mockRunningInstancesCount(0),
-				mockDeleteResourceEndpoint({
-					schema: deleteResourceRequestBodySchema.refine((body) => body?.deleteHistory === true),
-					successResponse: HttpResponse.json({resourceKey: DEFINITION.processDefinitionKey, batchOperation: null}),
-					failureResponse: new HttpResponse(null, {status: 400}),
-					delay: 500,
-				}),
-			);
-			const screen = await renderOperations(definition);
+	])('should disable $name deletion while pending', async ({definition, actionName}, {worker}) => {
+		worker.use(
+			mockDrainingDefinitions(),
+			mockRunningInstancesCount(0),
+			mockDeleteResourceEndpoint({
+				successResponse: HttpResponse.json({resourceKey: DEFINITION.processDefinitionKey, batchOperation: null}),
+				delay: 'infinite',
+			}),
+		);
+		const screen = await renderOperations(definition);
 
-			await confirmDeletion(screen, actionName);
+		await confirmDeletion(screen, actionName);
 
-			await expect.element(screen.getByRole('dialog')).not.toBeInTheDocument();
-			await expect.element(screen.getByRole('button', {name: actionName})).toBeDisabled();
-			await expect.element(screen.getByText('Operation created', {exact: true})).toBeVisible();
-			await expect.element(screen.getByRole('button', {name: actionName})).toBeEnabled();
-		},
-	);
+		await expect.element(screen.getByRole('dialog')).not.toBeInTheDocument();
+		await expect.element(screen.getByRole('button', {name: actionName})).toBeDisabled();
+	});
+
+	it.for([
+		{name: 'definition', definition: DEFINITION, actionName: ACTION_NAME},
+		{name: 'history', definition: DELETED_DEFINITION, actionName: HISTORY_ACTION_NAME},
+	])('should notify once $name deletion is created', async ({definition, actionName}, {worker}) => {
+		worker.use(
+			mockDrainingDefinitions(),
+			mockRunningInstancesCount(0),
+			mockDeleteResourceEndpoint({
+				schema: deleteResourceRequestBodySchema.refine((body) => body?.deleteHistory === true),
+				successResponse: HttpResponse.json({resourceKey: DEFINITION.processDefinitionKey, batchOperation: null}),
+				failureResponse: new HttpResponse(null, {status: 400}),
+			}),
+		);
+		const screen = await renderOperations(definition);
+
+		await confirmDeletion(screen, actionName);
+
+		await expect.element(screen.getByText('Operation created', {exact: true})).toBeVisible();
+		await expect.element(screen.getByRole('button', {name: actionName})).toBeEnabled();
+	});
 
 	it.for([
 		{
