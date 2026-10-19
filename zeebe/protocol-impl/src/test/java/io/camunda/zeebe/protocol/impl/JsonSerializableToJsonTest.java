@@ -4477,7 +4477,8 @@ final class JsonSerializableToJsonTest {
                 {
                   "batchOperationKey": 12345,
                   "items": [],
-                  "storageOrdinal": 0
+                  "storageOrdinal": 0,
+                  "batchItemsStorageOrdinal": 0
                 }
                 """
       },
@@ -4499,7 +4500,8 @@ final class JsonSerializableToJsonTest {
                                 .setProcessInstanceKey(2L)
                                 .setRootProcessInstanceKey(3L),
                             new BatchOperationItem().setItemKey(2L).setProcessInstanceKey(2L)))
-                    .setStorageOrdinal(14),
+                    .setStorageOrdinal(14)
+                    .setBatchItemsStorageOrdinal(7),
         """
                 {
                   "items": [
@@ -4519,7 +4521,8 @@ final class JsonSerializableToJsonTest {
                     }
                   ],
                   "batchOperationKey": 12345,
-                  "storageOrdinal": 14
+                  "storageOrdinal": 14,
+                  "batchItemsStorageOrdinal": 7
                 }
                 """
       },
