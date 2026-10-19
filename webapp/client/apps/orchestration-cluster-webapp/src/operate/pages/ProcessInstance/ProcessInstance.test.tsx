@@ -605,7 +605,7 @@ describe('<ProcessInstance />', () => {
 			await screen.unmount();
 			const nextVisit = await renderPage();
 
-			await expect.element(nextVisit.getByRole('heading', {name: 'Operate Process Instance'})).toBeInTheDocument();
+			await expect.element(nextVisit.getByText(PROCESS_INSTANCE_ID, {exact: true})).toBeVisible();
 			await expect
 				.element(nextVisit.getByRole('dialog', {name: "Here's what moved in Operate"}))
 				.not.toBeInTheDocument();
@@ -616,7 +616,7 @@ describe('<ProcessInstance />', () => {
 			worker.use(...getProcessInstancePageHandlers());
 			const screen = await renderPage();
 
-			await expect.element(screen.getByRole('heading', {name: 'Operate Process Instance'})).toBeInTheDocument();
+			await expect.element(screen.getByText(PROCESS_INSTANCE_ID, {exact: true})).toBeVisible();
 			await expect.element(screen.getByRole('dialog', {name: "Here's what moved in Operate"})).not.toBeInTheDocument();
 		});
 	});
