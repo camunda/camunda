@@ -7,11 +7,9 @@
  */
 
 import type {
-	ProcessInstance,
 	QueryElementInstancesRequestBody,
 	QueryUserTasksRequestBody,
 	QueryVariablesRequestBody,
-	UserTask,
 } from '@camunda/camunda-api-zod-schemas/8.11';
 
 const MAX_ITEMS = 1000;
@@ -24,21 +22,9 @@ function getCaseElementInstancesRequestBody(processInstanceKey: string): QueryEl
 	};
 }
 
-type CaseRef = Pick<ProcessInstance, 'processInstanceKey' | 'businessId'>;
-
-// Tasks of called processes inherit the business ID of the case. The user task search has no root process
-// instance filter, so the case page keeps the tasks whose root is the case (see isTaskOfCase).
-function getCaseTaskFilter({processInstanceKey, businessId}: CaseRef): QueryUserTasksRequestBody['filter'] {
-	return businessId === null || businessId === undefined ? {processInstanceKey} : {businessId: {$eq: businessId}};
-}
-
-function isTaskOfCase({processInstanceKey, rootProcessInstanceKey}: UserTask, caseKey: string): boolean {
-	return (rootProcessInstanceKey ?? processInstanceKey) === caseKey;
-}
-
-function getCaseUserTasksRequestBody(caseRef: CaseRef): QueryUserTasksRequestBody {
+function getCaseUserTasksRequestBody(processInstanceKey: string): QueryUserTasksRequestBody {
 	return {
-		filter: getCaseTaskFilter(caseRef),
+		filter: {processInstanceKey},
 		sort: [{field: 'creationDate', order: 'ASC'}],
 		page: {limit: MAX_ITEMS},
 	};
@@ -52,4 +38,4 @@ function getRootVariablesRequestBody(processInstanceKey: string): QueryVariables
 	};
 }
 
-export {getCaseElementInstancesRequestBody, getCaseUserTasksRequestBody, getRootVariablesRequestBody, isTaskOfCase};
+export {getCaseElementInstancesRequestBody, getCaseUserTasksRequestBody, getRootVariablesRequestBody};

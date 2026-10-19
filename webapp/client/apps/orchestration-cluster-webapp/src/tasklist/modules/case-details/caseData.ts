@@ -6,7 +6,6 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useMemo} from 'react';
 import {useSuspenseQuery, type QueryClient} from '@tanstack/react-query';
 import type {
 	CurrentUser,
@@ -22,7 +21,6 @@ import {
 	getCaseElementInstancesRequestBody,
 	getCaseUserTasksRequestBody,
 	getRootVariablesRequestBody,
-	isTaskOfCase,
 } from '#/tasklist/modules/case-details/getCaseRequestBodies';
 import {extractVariablesFromFormSchema} from '#/tasklist/modules/form-js/extractVariablesFromFormSchema';
 import {getSelectedVariablesRequestBody} from '#/tasklist/modules/task-details-form/getSelectedVariablesRequestBody';
@@ -72,7 +70,7 @@ async function loadCaseData(queryClient: QueryClient, processInstanceKey: string
 		queryClient.query(queries.getCurrentUser()),
 		queryClient.query(queries.getProcessDefinitionXml(processInstance.processDefinitionKey)),
 		queryClient.query(queries.queryElementInstances(getCaseElementInstancesRequestBody(processInstanceKey))),
-		queryClient.query(queries.queryUserTasksPage(getCaseUserTasksRequestBody(processInstance))),
+		queryClient.query(queries.queryUserTasksPage(getCaseUserTasksRequestBody(processInstanceKey))),
 		queryClient.query(queries.queryVariables(getRootVariablesRequestBody(processInstanceKey), {truncateValues: false})),
 	]);
 
@@ -99,24 +97,20 @@ function useCaseData(processInstanceKey: string): CaseData {
 		refetchInterval: REFETCH_INTERVAL,
 	});
 	const {data: userTasks} = useSuspenseQuery({
-		...queries.queryUserTasksPage(getCaseUserTasksRequestBody(processInstance)),
+		...queries.queryUserTasksPage(getCaseUserTasksRequestBody(processInstanceKey)),
 		refetchInterval: REFETCH_INTERVAL,
 	});
 	const {data: rootVariables} = useSuspenseQuery({
 		...queries.queryVariables(getRootVariablesRequestBody(processInstanceKey), {truncateValues: false}),
 		refetchInterval: REFETCH_INTERVAL,
 	});
-	const caseUserTasks = useMemo(
-		() => userTasks.items.filter((userTask) => isTaskOfCase(userTask, processInstanceKey)),
-		[userTasks.items, processInstanceKey],
-	);
 
 	return {
 		currentUser,
 		processInstance,
 		xml,
 		elementInstances: elementInstances.items,
-		userTasks: caseUserTasks,
+		userTasks: userTasks.items,
 		rootVariables: rootVariables.items,
 	};
 }
