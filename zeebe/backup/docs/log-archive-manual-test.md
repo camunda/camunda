@@ -232,10 +232,12 @@ cd zeebe/backup/docs/log-archive-manual && source ./env.sh
 - Handover files have `formatVersion` 1. The scheduler took H about 40 s after the upgrade, after
   p3. Timeline files after restore: `tl-0.b<H>` (b), `tl-0.r<C>` (c), `tl-0.b<O>` (a).
 - Results: (a) 60 jobs (p1, p2), (b) 90 (p1–p3), (c) 120 (p1–p4), p5 never.
-- Further restore cases (run 2026-10-19, all pass): time range `--from` before H, `--to` at C →
-  archive path, 120 jobs; time range ending at O, before H (no RDBMS) → old path, 60 jobs (failed
-  before fix fcabcdc1959; give `--to` with milliseconds, a whole second can land on a neighbouring
-  backup); restore with the archive disabled in the restore configuration → still the archive, 120;
+- Further restore cases (run 2026-10-19, all pass): time ranges across H without RDBMS (`--from`
+  before H, `--to` at C → archive, 120 jobs; `--to` at O → old path, 60 jobs; give `--to` with
+  milliseconds, a whole second can land on a neighbouring checkpoint). **Since the time-range
+  alignment (spec §18.5a) these are rejected like with continuous backup** ("Cannot resolve a
+  restore point: no backupId was specified and no exported-position data is available …"); time
+  ranges across H are covered with RDBMS in scenario H. Restore with the archive disabled in the restore configuration → still the archive, 120;
   restore to O, then a second handover H2 on `tl-0.b<O>`, `<H>.json` unchanged; scale-up to 3
   partitions after the handover (`PATCH /actuator/cluster` partitions count 3): partition 3 records
   the handover, a backup S has no old-style upload on it, restore to S (`PARTITIONS=3`) → 90 jobs.
