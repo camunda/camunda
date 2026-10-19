@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Usage: cluster.sh start <scenario> | stop | kill <node> | restart <node> <scenario> | wipe | leader <partition>
+# Usage: cluster.sh start <scenario> | upgrade <scenario> | stop | kill <node> | restart <node> <scenario> | wipe | leader <partition>
+#   LOG_ARCHIVE=on enables the log archive on start/restart/upgrade (g-brownfield only, default off)
 source "$(dirname "$0")/env.sh"
 start_broker() {
   local i=$1 scenario=$2
@@ -23,6 +24,10 @@ case "$1" in
     sleep 8; echo "cluster stopped" ;;
   kill) kill -9 "$(cat "$WORK/broker-$2.pid")"; echo "broker $2 killed (SIGKILL)" ;;
   restart) start_broker "$2" "$3"; echo "broker $2 started" ;;
+  upgrade)
+    # Scenario G: stop all brokers, start them again on the same data with the log archive on.
+    # Locally every broker runs the same build, so the activation gate opens as soon as they are up.
+    "$0" stop && LOG_ARCHIVE=on "$0" start "$2" ;;
   wipe) rm -rf "$WORK"/broker-*/data; echo "broker data wiped (store kept)" ;;
   store-off) chmod -R a-w "$STORE"; echo "store made read-only" ;;
   store-on) chmod -R u+w "$STORE"; echo "store writable again" ;;

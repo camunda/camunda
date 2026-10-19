@@ -112,6 +112,134 @@ judgement or exploration step; everything else Claude runs and reports.
    data directory shrinks after the next snapshot.
 5. **You:** is the retry logging reasonable, or too noisy?
 
+### G. Brownfield upgrade with handover (continuous backup first, log archive enabled later)
+
+Simulates a cluster that runs continuous backup and is then upgraded to a build with the log
+archive. The old backups and the archive share one store folder (`$WORK/store/g-brownfield`), as
+they do on a real cluster. Everything runs on the local dist with `env` from `cluster.sh`:
+`g-brownfield` has continuous backup (schedule PT1M, as in B) and the log archive is off unless
+`LOG_ARCHIVE=on` is set (`cluster.sh upgrade`). Restores run on copies of the store
+(`STORE_OVERRIDE`), so a restored cluster never writes into the store the other restores read.
+
+Tags and checkpoints used below:
+
+| Tag | Created | Checkpoint | Expected job count at that checkpoint |
+|-----|---------|------------|---------------------------------------|
+| p1, p2 | before the upgrade | O = manual backup after p2 (old-style) | 60 (p1 + p2) |
+| p3 | right after the upgrade | H = handover, taken by the scheduler | 90 (p1 + p2 + p3) |
+| p4 | after H is recorded | C = manual backup after p4 (archive only) | 120 (p1 to p4) |
+| p5 | after C | none | not restorable to, must not appear in any restore |
+
+Start from empty volumes:
+
+```bash
+cd zeebe/backup/docs/log-archive-manual && source ./env.sh
+./cluster.sh stop; ./cluster.sh wipe; rm -rf "$WORK/store/g-brownfield"*
+```
+
+1. **Before the upgrade (archive off).** `./cluster.sh start g-brownfield`, then `./api.sh deploy`,
+   `./api.sh load 30 p1`. Wait for two scheduled backups:
+   `until [ "$(./api.sh backups | grep -c COMPLETED)" -ge 2 ]; do sleep 10; done`.
+   Then `./api.sh load 30 p2`, `O=$(./api.sh backup | jq -r .backupId)` and wait with
+   `./api.sh status $O` until `COMPLETED`. Save the listing:
+   `./bucket.sh old-backups g-brownfield > "$WORK/g-before-upgrade.txt"`.
+   - **Look at:** `ls "$WORK/store/g-brownfield"` (no `log-archive/` folder);
+     `./bucket.sh old-backups g-brownfield` (two or more checkpoint folders under `manifests/1` and
+     `manifests/2`); `grep -hi "log archive activ" "$WORK"/broker-*.log` (no output).
+   - **Pass:** at least two COMPLETED old-style backups per partition, O among them, no archive
+     folder, no activation line.
+
+2. **Upgrade (all brokers restarted with the archive on, same data).**
+   `./cluster.sh upgrade g-brownfield`, then `./api.sh load 30 p3` right away, so p3 is created
+   before the handover (the handover needs an archived snapshot, which takes about a minute).
+   - **Look at:** `grep -hi "log archive" "$WORK"/broker-*.log | grep -i "activ\|timeline"`: the
+     scheduler line `Log archive activation started for physical tenant ...` and, per partition,
+     `log archive is activated; starting the first timeline 'tl-0'` (or
+     `started log archive timeline tl-0 at index ...`). Then
+     `./bucket.sh g-brownfield`, and `./bucket.sh old-backups g-brownfield` compared with
+     `g-before-upgrade.txt`.
+   - **Pass:** each partition has a `log-archive/tl-0/p<n>/` folder whose first commit entry is
+     `TIMELINE_STARTED`; old-style backups keep being created (new checkpoint folders appear in
+     `manifests/`), so both sides run side by side; `./api.sh backups` has no FAILED entry.
+
+3. **Handover.** Wait for H, then add the tags and the manual backup C:
+   ```bash
+   H=$(./bucket.sh wait-handover g-brownfield)   # up to 15 min, prints the id H
+   ./api.sh load 30 p4
+   C=$(./api.sh backup | jq -r .backupId)
+   until ./api.sh status $C | grep -q COMPLETED; do sleep 2; done
+   ./api.sh load 30 p5
+   ```
+   - **Look at:** `./bucket.sh handover g-brownfield` (one file per partition,
+     `metadata/<p>/handover/<H>.json`, printed); `./bucket.sh handover-commits g-brownfield`
+     (one HANDOVER commit entry per partition, `handover.checkpointId` equal to H);
+     `./api.sh status $C`; `./api.sh backups`.
+   - **Pass:**
+     - every partition has the file with the same `checkpointId` H, `logArchiveTimeline` `tl-0`,
+       and `partitionId` matching its folder;
+     - every partition has exactly one HANDOVER commit entry, with H;
+     - `metadata.json` has the same keys as in `g-before-upgrade.txt` (format unchanged);
+     - `./api.sh status $C` is `COMPLETED`, and H and C appear in `./api.sh backups` in id order;
+     - C has no old-style folder: `ls "$WORK/store/g-brownfield/manifests/1" | grep -c "^$C$"` prints `0`.
+   - **No new old-style backups after H:** after C is COMPLETED, save
+     `./bucket.sh old-backups g-brownfield > "$WORK/g-after-H-1.txt"`, wait 150 s (two scheduled
+     ticks), save `g-after-H-2.txt`. `diff` must print nothing: the scheduled backups still run as
+     restore points but upload nothing old-style.
+
+4. **Restore (stop the cluster; restore three checkpoints from copies of the store).** Freeze the
+   store first:
+   ```bash
+   ./cluster.sh stop
+   cp -R "$WORK/store/g-brownfield" "$WORK/store/g-brownfield-frozen"
+   ```
+   Then for each run (a), (b), (c):
+   ```bash
+   ./cluster.sh wipe
+   rm -rf "$WORK/store/g-run-<x>"; cp -R "$WORK/store/g-brownfield-frozen" "$WORK/store/g-run-<x>"
+   export STORE_OVERRIDE="$WORK/store/g-run-<x>"
+   ./restore.sh g-brownfield --backupId=<id>          # (a) O, (b) H, (c) C
+   LOG_ARCHIVE=on ./cluster.sh start g-brownfield && ./api.sh jobs
+   ```
+   Keep the logs of each run (`mkdir -p "$WORK/runs/<x>" && cp "$WORK"/*-*.log "$WORK/runs/<x>/"`
+   before the next run), then `./cluster.sh stop`. `unset STORE_OVERRIDE` at the end.
+
+   - **(a) old backup before H:** `--backupId=$O`. **Pass:** `./api.sh jobs` reports exactly 60,
+     tags p1 and p2 only; `grep -h "Restored partition" "$WORK"/restore-*.log` names old backups.
+   - **(b) at H:** `--backupId=$H`. **Pass:** exactly 90, tags p1 to p3; the log says old backups
+     (H is an old-style backup).
+   - **(c) after H, archive only:** `--backupId=$C`. **Pass:** exactly 120, tags p1 to p4 (p4 was
+     created after H, so it can only come from the archive); the log names the log archive for
+     each partition; `ls "$STORE_OVERRIDE/log-archive"` shows a new timeline derived from `tl-0`.
+   - **In every run:** no tag other than the expected ones, and p5 never appears.
+
+5. **(g-extra, optional) second handover after a restore before H.** Continue with run (a) (its
+   cluster is still up with the archive on, `STORE_OVERRIDE` still set):
+   Before waiting, record the checksums of the existing handover files:
+   `md5 -q "$STORE_OVERRIDE/metadata/1/handover/$H.json" "$STORE_OVERRIDE/metadata/2/handover/$H.json"`.
+   Then `H2=$(./bucket.sh wait-handover g-brownfield $H)` (the wait is for a handover above H, so the
+   existing one does not match), and `./bucket.sh handover g-brownfield`.
+   - **Pass:** each partition has two files, `<H>.json` and `<H2>.json`, with `H2` on the new
+     timeline (`logArchiveTimeline` other than `tl-0`); the checksums of `<H>.json` are unchanged.
+     Old files are never modified, only added next to.
+
+**TODO (verify on the first run, the scripts assume these):**
+- The `formatVersion` value in the handover files (expected `1`, same as `LogArchiveJson.FORMAT_VERSION`).
+- The exact restore log lines for the old and the archive path; the greps above match
+  `Restored partition` from `HandoverClusterRestore`.
+- The name of the timeline the archive restore creates for C (`tl-0.r<C>` in scenario C; here
+  `tl-0.b<C>` or similar is possible). The g-extra check needs the new branch's handover to have a
+  checkpoint id above H (assumed because ids come from the clock; verify).
+- Whether H is always taken after p3 is created. The handover waits for an archived snapshot, so
+  H should be at least about a minute after the upgrade; if the (b) count is 120, not 90, check
+  the H timing first.
+- Whether the restore needs `LOG_ARCHIVE=on`. It is passed for all runs to match the upgraded
+  cluster; the old path should not care.
+- `api.sh backup` returns `backupId` (per `TakeBackupRuntimeResponse` in
+  `dist/src/main/resources/api/backup-management-api.yaml`); if the field name differs, fix the `jq` in
+  steps 1 and 3.
+- `cluster.sh upgrade` restarts all brokers at once, not rolling. A rolling upgrade is a
+  separate scenario (the gate is the same).
+
 ## 4. What we record
 
 For every scenario: pass/fail per expectation, anything surprising, log excerpts for failures, and

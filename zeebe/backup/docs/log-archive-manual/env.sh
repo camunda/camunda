@@ -9,6 +9,10 @@ export PARTITIONS=2
 export REST_BASE=8080   # broker i serves REST on 8080+i
 export MGMT_BASE=9600   # broker i serves the management API on 9600+i
 
+# The store folder of a scenario. STORE_OVERRIDE=<dir> points a run at another folder, e.g. a copy
+# of a store that a restore may write into.
+store_of() { echo "${STORE_OVERRIDE:-$STORE/$1}"; }
+
 # Scenario switches, set by cluster.sh from the scenario name
 broker_env() {
   local i=$1 scenario=$2
@@ -31,11 +35,11 @@ broker_env() {
     "CAMUNDA_DATA_SNAPSHOTPERIOD=PT1M"
     "CAMUNDA_DATA_PRIMARYSTORAGE_LOGSTREAM_LOGSEGMENTSIZE=8MB"
     "CAMUNDA_DATA_PRIMARYSTORAGE_BACKUP_STORE=FILESYSTEM"
-    "CAMUNDA_DATA_PRIMARYSTORAGE_BACKUP_FILESYSTEM_BASEPATH=$STORE/$scenario"
+    "CAMUNDA_DATA_PRIMARYSTORAGE_BACKUP_FILESYSTEM_BASEPATH=$(store_of "$scenario")"
   )
   case "$scenario" in
     a-classic) ;;
-    b-continuous|d-both)
+    b-continuous|d-both|g-brownfield)
       env+=("CAMUNDA_DATA_PRIMARYSTORAGE_BACKUP_CONTINUOUS=true"
             "CAMUNDA_DATA_PRIMARYSTORAGE_BACKUP_SCHEDULE=PT1M"
             "CAMUNDA_DATA_PRIMARYSTORAGE_BACKUP_CHECKPOINTINTERVAL=PT15S"
@@ -43,12 +47,16 @@ broker_env() {
             "CAMUNDA_DATA_PRIMARYSTORAGE_BACKUP_RETENTION_CLEANUPSCHEDULE=PT1H") ;;
   esac
   case "$scenario" in
-    c-archive|d-both|e-kill|f-outage)
-      env+=("ZEEBE_BROKER_DATA_BACKUP_LOGARCHIVE_ENABLED=true"
-            "ZEEBE_BROKER_DATA_BACKUP_LOGARCHIVE_CUTINTERVAL=PT1S"
-            "ZEEBE_BROKER_DATA_BACKUP_LOGARCHIVE_SNAPSHOTUPLOADINTERVAL=PT1M"
-            "ZEEBE_BROKER_DATA_BACKUP_LOGARCHIVE_CHUNKSIZE=50"
-            "ZEEBE_BROKER_DATA_BACKUP_LOGARCHIVE_ROOTEVERY=20") ;;
+    c-archive|d-both|e-kill|f-outage|g-brownfield)
+      # g-brownfield starts without the log archive (the old cluster); LOG_ARCHIVE=on enables it
+      # for the upgraded cluster, see cluster.sh upgrade.
+      if [ "$scenario" != g-brownfield ] || [ "${LOG_ARCHIVE:-off}" = on ]; then
+        env+=("ZEEBE_BROKER_DATA_BACKUP_LOGARCHIVE_ENABLED=true"
+              "ZEEBE_BROKER_DATA_BACKUP_LOGARCHIVE_CUTINTERVAL=PT1S"
+              "ZEEBE_BROKER_DATA_BACKUP_LOGARCHIVE_SNAPSHOTUPLOADINTERVAL=PT1M"
+              "ZEEBE_BROKER_DATA_BACKUP_LOGARCHIVE_CHUNKSIZE=50"
+              "ZEEBE_BROKER_DATA_BACKUP_LOGARCHIVE_ROOTEVERY=20")
+      fi ;;
   esac
   printf '%s\n' "${env[@]}"
 }
