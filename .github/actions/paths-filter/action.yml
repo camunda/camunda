@@ -370,6 +370,7 @@ runs:
           - '**/src/main/**'
           - '**/src/test/**'
           - '**/src/it/**'
+          - '!gradle/**'
 
         maven-change:
           - 'bom/**'
