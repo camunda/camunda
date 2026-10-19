@@ -65,6 +65,16 @@ describe('<Decisions />', () => {
 		await expect.element(screen.getByRole('heading', {name: 'Decisions'})).toBeInTheDocument();
 	});
 
+	it('should focus the page heading when returning from a decision requirements diagram', async ({worker}) => {
+		worker.use(mockInstances());
+		const screen = await renderWithRouter(DecisionsWithSearch, {path: '/operate-preview/decisions'});
+		await expect.element(screen.getByRole('heading', {name: 'Decisions'})).toBeInTheDocument();
+
+		await screen.router.navigate({to: '.', state: {operateDecisionFocus: 'list'}});
+
+		await expect.element(screen.getByRole('heading', {name: 'Decisions'})).toHaveFocus();
+	});
+
 	it('should render the filters panel with the optional filters menu, the decision panel and the instances table', async ({
 		worker,
 	}) => {
@@ -278,6 +288,7 @@ describe('<Decisions />', () => {
 
 		await expect.element(screen.getByLabelText('Version')).toBeEnabled();
 		await (screen.getByLabelText('Version').element() as HTMLElement).click();
+		await expect.element(screen.getByRole('option', {name: '2'})).toBeVisible();
 		await (screen.getByRole('option', {name: '2'}).element() as HTMLElement).click();
 
 		await expect.poll(() => screen.router.state.location.search).toMatchObject({decisionDefinitionVersion: 2});
@@ -298,7 +309,7 @@ describe('<Decisions />', () => {
 		expect(screen.router.state.location.search).toMatchObject({failed: false});
 	});
 
-	it('should place the remove button in the label row without overlapping the filter input', async ({worker}) => {
+	it('should place the remove button beside the filter input without overlapping it', async ({worker}) => {
 		// The test stylesheet has no Tailwind preflight, so inputs would otherwise render content-box
 		const borderBox = document.head.appendChild(document.createElement('style'));
 		borderBox.textContent = '*, ::before, ::after {box-sizing: border-box;}';
@@ -313,7 +324,7 @@ describe('<Decisions />', () => {
 		const input = screen.getByLabelText('Business ID', {exact: true}).element().getBoundingClientRect();
 		const button = screen.getByRole('button', {name: 'Remove Business ID filter'}).element().getBoundingClientRect();
 
-		expect(button.bottom).toBeLessThanOrEqual(input.top);
+		expect(button.left).toBeGreaterThanOrEqual(input.right);
 	});
 
 	it('should remove active optional filters when resetting', async ({worker}) => {
