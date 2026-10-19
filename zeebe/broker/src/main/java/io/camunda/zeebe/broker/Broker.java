@@ -47,6 +47,18 @@ public final class Broker implements AutoCloseable {
       final SystemContext systemContext,
       final SpringBrokerBridge springBrokerBridge,
       final List<PartitionListener> additionalPartitionListeners) {
+    this(
+        systemContext,
+        springBrokerBridge,
+        additionalPartitionListeners,
+        PhysicalTenantPartitionListenerFactory.NONE);
+  }
+
+  public Broker(
+      final SystemContext systemContext,
+      final SpringBrokerBridge springBrokerBridge,
+      final List<PartitionListener> additionalPartitionListeners,
+      final PhysicalTenantPartitionListenerFactory physicalTenantPartitionListenerFactory) {
     this.systemContext = systemContext;
 
     final ActorScheduler scheduler = this.systemContext.getScheduler();
@@ -82,6 +94,8 @@ public final class Broker implements AutoCloseable {
             systemContext.getExportedPositionSuppliers(),
             systemContext.getNodeIdProvider(),
             systemContext.getPhysicalTenantIds());
+    startupContext.setPhysicalTenantPartitionListenerFactory(
+        physicalTenantPartitionListenerFactory);
 
     brokerStartupActor = new BrokerStartupActor(startupContext);
     scheduler.submitActor(brokerStartupActor);

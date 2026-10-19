@@ -15,6 +15,7 @@ import io.camunda.security.api.model.config.AuthenticationConfiguration;
 import io.camunda.service.UserServices;
 import io.camunda.zeebe.broker.PartitionListener;
 import io.camunda.zeebe.broker.PartitionRaftListener;
+import io.camunda.zeebe.broker.PhysicalTenantPartitionListenerFactory;
 import io.camunda.zeebe.broker.SpringBrokerBridge;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.clustering.ClusterServicesImpl;
@@ -89,6 +90,11 @@ public interface BrokerStartupContext {
   void removePartitionRaftListener(PartitionRaftListener partitionListener);
 
   List<PartitionListener> getPartitionListeners();
+
+  /** Per-physical-tenant listeners; see {@link PhysicalTenantPartitionListenerFactory}. */
+  default PhysicalTenantPartitionListenerFactory getPhysicalTenantPartitionListenerFactory() {
+    return PhysicalTenantPartitionListenerFactory.NONE;
+  }
 
   List<PartitionRaftListener> getPartitionRaftListeners();
 

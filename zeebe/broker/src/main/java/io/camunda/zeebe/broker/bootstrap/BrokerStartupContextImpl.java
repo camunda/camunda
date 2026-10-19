@@ -18,6 +18,7 @@ import io.camunda.security.api.model.config.AuthenticationConfiguration;
 import io.camunda.service.UserServices;
 import io.camunda.zeebe.broker.PartitionListener;
 import io.camunda.zeebe.broker.PartitionRaftListener;
+import io.camunda.zeebe.broker.PhysicalTenantPartitionListenerFactory;
 import io.camunda.zeebe.broker.SpringBrokerBridge;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.clustering.ClusterServicesImpl;
@@ -64,6 +65,8 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   private final ClusterServicesImpl clusterServices;
   private final BrokerClient brokerClient;
   private final List<PartitionListener> partitionListeners = new ArrayList<>();
+  private PhysicalTenantPartitionListenerFactory physicalTenantPartitionListenerFactory =
+      PhysicalTenantPartitionListenerFactory.NONE;
   private final List<PartitionRaftListener> partitionRaftListeners = new ArrayList<>();
   private final Duration shutdownTimeout;
   private final MeterRegistry meterRegistry;
@@ -205,6 +208,17 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   @Override
   public List<PartitionListener> getPartitionListeners() {
     return unmodifiableList(partitionListeners);
+  }
+
+  @Override
+  public PhysicalTenantPartitionListenerFactory getPhysicalTenantPartitionListenerFactory() {
+    return physicalTenantPartitionListenerFactory;
+  }
+
+  public void setPhysicalTenantPartitionListenerFactory(
+      final PhysicalTenantPartitionListenerFactory physicalTenantPartitionListenerFactory) {
+    this.physicalTenantPartitionListenerFactory =
+        requireNonNull(physicalTenantPartitionListenerFactory);
   }
 
   @Override

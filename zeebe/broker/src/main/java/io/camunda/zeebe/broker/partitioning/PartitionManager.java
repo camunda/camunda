@@ -81,6 +81,8 @@ public interface PartitionManager {
     // sees its own group's partitions, resolving the bare-int partition-id aliasing bug.
     final var partitionListeners = new ArrayList<>(brokerStartupContext.getPartitionListeners());
     partitionListeners.add(jobStreamService.errorHandlerService());
+    partitionListeners.addAll(
+        brokerStartupContext.getPhysicalTenantPartitionListenerFactory().create(physicalTenantId));
 
     return new PartitionManagerImpl(
         physicalTenantId,

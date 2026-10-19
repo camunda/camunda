@@ -134,7 +134,9 @@ public class BrokerModuleConfiguration implements CloseableSilently {
 
   @Bean(destroyMethod = "close")
   public Broker broker(
-      @Autowired(required = false) final List<ExporterDescriptor> exporterDescriptors) {
+      @Autowired(required = false) final List<ExporterDescriptor> exporterDescriptors,
+      final ObjectProvider<PhysicalTenantPartitionListenerFactory>
+          physicalTenantPartitionListenerFactory) {
     final Function<String, UserServices> userServicesForTenant =
         physicalTenantId -> serviceRegistry.userServices(physicalTenantId);
     final Function<AuthenticationConfiguration, JwtDecoder> jwtDecoderFactory =
@@ -166,7 +168,13 @@ public class BrokerModuleConfiguration implements CloseableSilently {
             .createSystemContext();
     springBrokerBridge.registerShutdownHelper(shutdownHelper::initiateShutdown);
     springBrokerBridge.registerSchemaInitializerLookup(schemaInitializerLookupSupplier());
-    broker = new Broker(systemContext, springBrokerBridge, Collections.emptyList());
+    broker =
+        new Broker(
+            systemContext,
+            springBrokerBridge,
+            Collections.emptyList(),
+            physicalTenantPartitionListenerFactory.getIfAvailable(
+                () -> PhysicalTenantPartitionListenerFactory.NONE));
 
     // already initiate starting the broker
     // to ensure that the necessary ports
