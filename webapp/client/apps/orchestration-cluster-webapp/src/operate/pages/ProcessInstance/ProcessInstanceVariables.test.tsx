@@ -281,6 +281,26 @@ describe('<ProcessInstanceVariables />', () => {
 	describe('pagination', () => {
 		const {getObserver} = setUpFakeIntersectionObserver();
 
+		it('should show an error when the next page fails', async ({worker}) => {
+			const firstPage = Array.from({length: 50}, (_, index) =>
+				createVariable({name: `var-${String(index).padStart(2, '0')}`, variableKey: `${index}`}),
+			);
+			worker.use(mockQueryVariablesEndpoint({successResponse: variablesResponse(firstPage, {endCursor: 'cursor-1'})}));
+			const screen = await renderVariables();
+			await expect.element(screen.getByTestId('variable-var-49')).toBeInTheDocument();
+
+			worker.use(
+				mockQueryVariablesEndpoint({
+					successResponse: HttpResponse.json(createProblemDetails({status: 403}), {status: 403}),
+				}),
+			);
+			const list = screen.getByTestId('variables-list').element();
+			Object.defineProperty(list, 'scrollTop', {value: 100, configurable: true});
+			getObserver().intersect(screen.getByTestId('variable-var-49').element());
+
+			await expect.element(screen.getByText('Missing permissions to access Variables')).toBeVisible();
+		});
+
 		it('should load the next page from the cursor when scrolling past a capped total', async ({worker}) => {
 			const firstPage = Array.from({length: 50}, (_, index) =>
 				createVariable({name: `var-${String(index).padStart(2, '0')}`, variableKey: `${index}`}),

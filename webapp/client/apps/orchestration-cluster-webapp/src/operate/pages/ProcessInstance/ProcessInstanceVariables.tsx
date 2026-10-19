@@ -76,7 +76,7 @@ const VariablesTable: React.FC<{processInstanceKey: string; scopeKey: string}> =
 				/>
 			</VariablesSearch>
 			<DimmableResults $dimmed={isPlaceholderData}>
-				{data === undefined && error !== null ? (
+				{error !== null ? (
 					<VariablesError error={error} />
 				) : !isLoading && searchTerm.trim() !== '' && variables.length === 0 ? (
 					<EmptyMessageContainer>
@@ -174,7 +174,7 @@ const ProcessInstanceVariables: React.FC = () => {
 		variablesQuery({processInstanceKey: processInstanceId, scopeKey: canQuery ? scopeKey : null}),
 	);
 
-	if ((canQuery && isError && data === undefined) || isFetchingElementError) {
+	if ((canQuery && isError) || isFetchingElementError) {
 		return <VariablesError error={error} />;
 	}
 
