@@ -18,6 +18,7 @@ import io.camunda.zeebe.backup.common.BackupMetadata.RangeEntry;
 import io.camunda.zeebe.backup.logarchive.model.HandoverFile;
 import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
 import io.camunda.zeebe.restore.RestorePointResolver;
+import io.camunda.zeebe.restore.logarchive.HandoverRestorePlan.BridgedFromArchive;
 import io.camunda.zeebe.restore.logarchive.HandoverRestorePlan.FromArchive;
 import io.camunda.zeebe.restore.logarchive.HandoverRestorePlan.OldBackups;
 import java.time.Instant;
@@ -355,7 +356,7 @@ final class HandoverRestoreResolverTest {
   }
 
   @Test
-  void shouldFallBackToTheOldBackupsWhenTheRdbmsIsBehindTheArchive() {
+  void shouldBridgeOldBackupsAndTheArchiveWhenTheRdbmsIsBehindTheArchive() {
     // given - the RDBMS was reset to position 15, before the archive starts at 25
     final var sources = Map.of(1, brownfield(1), 2, brownfield(2));
 
@@ -364,11 +365,161 @@ final class HandoverRestoreResolverTest {
         HandoverRestoreResolver.resolve(
             sources, HandoverRestoreRequest.ofTimeRange(null, null, Map.of(1, 15L, 2, 15L)));
 
+    // then - the latest checkpoint; old backups 1 (at 10, below E) to 3 (the first one reaching
+    // into the archive) provide the log before the archive start
+    assertThat(plan.checkpointId()).isEqualTo(7);
+    assertThat(plan.allFromOldBackups()).isFalse();
+    assertThat(plan.oldBackupIds()).isEmpty();
+    assertThat(plan.partitions().values())
+        .allSatisfy(
+            partition ->
+                assertThat(partition)
+                    .isInstanceOfSatisfying(
+                        BridgedFromArchive.class,
+                        bridged -> {
+                          assertThat(bridged.oldBackupIds()).containsExactly(1L, 2L, 3L);
+                          assertThat(bridged.timelineId()).isEqualTo(TIMELINE);
+                          assertThat(bridged.checkpoint().checkpointId()).isEqualTo(7);
+                          assertThat(bridged.exportedPosition()).isEqualTo(15);
+                          assertThat(bridged.switchIndex()).isEqualTo(25);
+                        }));
+  }
+
+  @Test
+  void shouldBridgeFromTheFirstOldBackupWhenNothingWasExported() {
+    // given
+    final var sources = Map.of(1, brownfield(1));
+
+    // when
+    final var plan =
+        HandoverRestoreResolver.resolve(
+            sources, HandoverRestoreRequest.ofTimeRange(null, null, Map.of(1, -1L)));
+
+    // then
+    assertThat(plan.checkpointId()).isEqualTo(7);
+    assertThat(plan.partitions().get(1))
+        .isInstanceOfSatisfying(
+            BridgedFromArchive.class,
+            bridged -> assertThat(bridged.oldBackupIds()).containsExactly(1L, 2L, 3L));
+  }
+
+  @Test
+  void shouldNotBridgeWhenTheArchiveReachesBackToTheExportedPosition() {
+    // given - E + 1 is the archive start
+    final var sources = Map.of(1, brownfield(1));
+
+    // when
+    final var plan =
+        HandoverRestoreResolver.resolve(
+            sources, HandoverRestoreRequest.ofTimeRange(null, null, Map.of(1, 24L)));
+
+    // then
+    assertThat(plan.checkpointId()).isEqualTo(7);
+    assertThat(plan.partitions().get(1))
+        .isInstanceOfSatisfying(
+            FromArchive.class, archived -> assertThat(archived.exportedPosition()).contains(24L));
+  }
+
+  @Test
+  void shouldFallBackToTheOldBackupsWhenTheTimelineRecordsNoHandover() {
+    // given - the RDBMS is behind the archive, and the archive does not link to the old backups
+    final var sources =
+        Map.of(
+            1,
+            new PartitionRestoreSources(
+                1,
+                Optional.of(oldMetadata(1, 5)),
+                completed(1, 5),
+                List.of(handover(1)),
+                List.of(
+                    TimelineFixture.start(store, TIMELINE, 1, 25, "")
+                        .archive(34, checkpoint(3, 30))
+                        .archive(44, checkpoint(4, 40))
+                        .snapshot(42)
+                        .archive(54, checkpoint(5, 50))
+                        .archive(64, checkpoint(6, 60))
+                        .view())));
+
+    // when
+    final var plan =
+        HandoverRestoreResolver.resolve(
+            sources, HandoverRestoreRequest.ofTimeRange(null, null, Map.of(1, 15L)));
+
     // then - the newest old checkpoint that covers E
     assertThat(plan.checkpointId()).isEqualTo(5);
     assertThat(plan.allFromOldBackups()).isTrue();
     assertThat(plan.partitions().get(1))
         .isInstanceOfSatisfying(OldBackups.class, old -> assertThat(old.backupIds()).endsWith(5L));
+  }
+
+  @Test
+  void shouldFallBackToTheOldBackupsWhenTheyDoNotHoldTheHandoverOfTheTimeline() {
+    // given - the old backups hold checkpoint 5 at another position than the timeline's handover
+    final var checkpoints = new ArrayList<>(oldCheckpoints(1, 4));
+    checkpoints.add(oldEntry(5, 48, 41, CheckpointType.HANDOVER));
+    final var metadata =
+        new BackupMetadata(
+            BackupMetadata.VERSION, 1, Instant.now(), checkpoints, List.of(new RangeEntry(1, 5)));
+    final var sources =
+        Map.of(
+            1,
+            new PartitionRestoreSources(
+                1,
+                Optional.of(metadata),
+                completed(1, 5),
+                List.of(handover(1)),
+                List.of(brownfieldArchive(1).view())));
+
+    // when
+    final var plan =
+        HandoverRestoreResolver.resolve(
+            sources, HandoverRestoreRequest.ofTimeRange(null, null, Map.of(1, 15L)));
+
+    // then
+    assertThat(plan.checkpointId()).isEqualTo(5);
+    assertThat(plan.allFromOldBackups()).isTrue();
+  }
+
+  @Test
+  void shouldNeverBridgeAcrossBranches() {
+    // given - restored to old backup 3, the branch tl.b3 took old backups 8 and 9 (H2); the RDBMS
+    // is at 15, in the range of old backups 1 to 3 that both branches share
+    final var sources = Map.of(1, branchAfterRestoreBeforeHandover(1, true));
+
+    // when
+    final var plan =
+        HandoverRestoreResolver.resolve(
+            sources, HandoverRestoreRequest.ofTimeRange(null, null, Map.of(1, 15L)));
+
+    // then - neither tl (H = 5 is not in that range) nor tl.b3 (H2 = 9 is in another range) is
+    // bridged; the newest old checkpoint of the range wins
+    assertThat(plan.checkpointId()).isEqualTo(3);
+    assertThat(plan.allFromOldBackups()).isTrue();
+  }
+
+  @Test
+  void shouldNotBridgeWithAnIncompleteOldBackup() {
+    // given - old backup 2 between E and the archive never completed
+    final var brownfield = brownfield(1);
+    final var completed = completed(1, 5);
+    completed.remove(2L);
+    final var sources =
+        Map.of(
+            1,
+            new PartitionRestoreSources(
+                1,
+                brownfield.oldMetadata(),
+                completed,
+                brownfield.handovers(),
+                brownfield.timelines()));
+
+    // when
+    final var plan =
+        HandoverRestoreResolver.resolve(
+            sources, HandoverRestoreRequest.ofTimeRange(null, null, Map.of(1, 15L)));
+
+    // then
+    assertThat(plan.allFromOldBackups()).isTrue();
   }
 
   @Test
