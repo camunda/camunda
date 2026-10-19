@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="generator" content="Docusaurus v3.10.2">
 <title data-rh="true">FOSSA Reporting Runbook | Camunda Platform</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:url" content="https://camunda.github.io/camunda/pr-preview/pr-66005/fossa-reporting-runbook/"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-default-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-default-current"><meta data-rh="true" property="og:title" content="FOSSA Reporting Runbook | Camunda Platform"><meta data-rh="true" name="description" content="How to publish FOSSA attribution and SBOM reports for a component in the monorepo release. For"><meta data-rh="true" property="og:description" content="How to publish FOSSA attribution and SBOM reports for a component in the monorepo release. For"><link data-rh="true" rel="icon" href="/camunda/pr-preview/pr-66005/img/black-C.png"><link data-rh="true" rel="canonical" href="https://camunda.github.io/camunda/pr-preview/pr-66005/fossa-reporting-runbook/"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-66005/fossa-reporting-runbook/" hreflang="en"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-66005/fossa-reporting-runbook/" hreflang="x-default"><link rel="stylesheet" href="/camunda/pr-preview/pr-66005/assets/css/styles.44533d03.css">
-<script src="/camunda/pr-preview/pr-66005/assets/js/runtime~main.b396b349.js" defer="defer"></script>
-<script src="/camunda/pr-preview/pr-66005/assets/js/main.91ee7499.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-66005/assets/js/runtime~main.a5354ea3.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-66005/assets/js/main.3f34d525.js" defer="defer"></script>
 </head>
 <body>
 <svg style="display: none;"><defs>
@@ -56,9 +56,28 @@ before the next patch release.</li>
 </ol>
 <h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="when-a-release-run-fails">When a release run fails<a href="#when-a-release-run-fails" class="hash-link" aria-label="Direct link to When a release run fails" title="Direct link to When a release run fails" translate="no">​</a></h2>
 <ul>
-<li class=""><strong><code>wait-for-scan</code> times out.</strong> The scan for that tag revision is missing or still running. Check
-the <code>check-licenses.yml</code> run for the tag SHA. The FOSSA CLI can hang, so re-run the scan if needed,
-then re-run the failed job. Release artifacts are already published at that point.</li>
+<li class=""><strong><code>wait-for-scan</code> times out.</strong> The scan for that tag revision is missing, failed or still running.
+Release artifacts are already published at that point, so only the scan and the failed job need a
+re-run:<!-- -->
+<ol>
+<li class="">
+<p>Find the <code>check-licenses.yml</code> runs for the tag SHA. A release starts two of them, one for the
+<code>release-X.Y.Z</code> branch push and one for the tag push. <code>wait-for-scan</code> looks up the revision by
+project and SHA only, so either run is enough.</p>
+<div class="language-bash codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-bash codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">gh api &quot;repos/camunda/camunda/actions/workflows/check-licenses.yml/runs?head_sha=$(git rev-list -n1 &lt;tag&gt;)&quot; \</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  --jq &#x27;.workflow_runs[] | &quot;\(.id) \(.head_branch) \(.conclusion)&quot;&#x27;</span><br></div></code></pre></div></div>
+</li>
+<li class="">
+<p>If the <code>Analyze &lt;project&gt; dependencies</code> job is red, use &quot;Re-run failed jobs&quot; on that run.
+<code>check-licenses.yml</code> has no <code>workflow_dispatch</code>, so a re-run is the only way to scan an existing
+tag again. If the scan is still running, wait for it to finish.</p>
+</li>
+<li class="">
+<p>Once the scan is green, use &quot;Re-run job&quot; on the failed <code>fossa-release*</code> job in the release run.
+That job and the notify jobs that depend on it run again, the rest of the release keeps its
+results.</p>
+</li>
+</ol>
+</li>
 <li class=""><strong>Other failures.</strong> The failed job triggers <code>notify-if-failed</code>. The release manager dispatches it
 to Engineering Operations for plumbing issues. Wrong report content goes through the license
 triage process.</li>
