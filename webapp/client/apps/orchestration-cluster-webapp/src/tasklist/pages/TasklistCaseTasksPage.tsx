@@ -44,7 +44,6 @@ const TasklistCaseTasksPage: React.FC<Props> = ({
 			currentUsername={currentUser.username}
 			startingElementId={activateActivity.isPending ? (activateActivity.variables ?? null) : null}
 			stageCompletionStatus={stageCompletion.status}
-			closingStageName={stageCompletion.closingStageName}
 			onOpenTask={onOpenTask}
 			onStartActivity={(elementId) =>
 				activateActivity.mutate(elementId, {
@@ -52,9 +51,8 @@ const TasklistCaseTasksPage: React.FC<Props> = ({
 				})
 			}
 			onCompleteStage={() => {
-				if (work.completion !== null && currentStage !== null && stageInstanceKey !== null) {
+				if (work.completion !== null && stageInstanceKey !== null) {
 					stageCompletion.completeStage({
-						stageName: currentStage.stage.name,
 						stageInstanceKey,
 						stageIds: model.stages.map(({id}) => id),
 						completion: work.completion,

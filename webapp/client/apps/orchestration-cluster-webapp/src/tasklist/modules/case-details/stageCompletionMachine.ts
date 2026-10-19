@@ -26,7 +26,6 @@ const MAX_POLLS = 20;
 type CaseRef = Pick<ProcessInstance, 'processInstanceKey' | 'businessId' | 'tenantId'>;
 
 type StageCompletionRequest = {
-	stageName: string;
 	/** The element instance of the stage that the case worker closes. */
 	stageInstanceKey: string;
 	/** The element IDs of all stages of the case, to detect the next stage. */

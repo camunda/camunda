@@ -83,7 +83,6 @@ type Props = {
 	currentUsername: string;
 	startingElementId: string | null;
 	stageCompletionStatus: StageCompletionStatus;
-	closingStageName: string | null;
 	onOpenTask: (userTaskKey: string) => void;
 	onStartActivity: (elementId: string) => void;
 	onCompleteStage: () => void;
@@ -95,7 +94,6 @@ const CaseWorkCard: React.FC<Props> = ({
 	currentUsername,
 	startingElementId,
 	stageCompletionStatus,
-	closingStageName,
 	onOpenTask,
 	onStartActivity,
 	onCompleteStage,
@@ -103,30 +101,34 @@ const CaseWorkCard: React.FC<Props> = ({
 	const {t} = useTranslation();
 	const getAssignmentLabel = useAssignmentLabel();
 	const {activities, openTasks, completion} = work;
+	const isClosingStage = stageCompletionStatus !== 'idle';
 	const completedCount = activities.filter(({status}) => status === 'completed').length;
 	const hasWork = activities.length > 0 || openTasks.length > 0;
 
-	if (stageCompletionStatus !== 'idle') {
-		return (
-			<Card aria-busy>
-				<CardHeader>
-					<CardDescription className="text-xs font-semibold tracking-wide uppercase">
-						{t('tasklist.caseCurrentStage')}
-					</CardDescription>
-					<CardTitle className="text-lg">{closingStageName ?? stageName}</CardTitle>
-				</CardHeader>
-				<CardContent className="flex items-center gap-3 text-sm text-neutral-foreground-subtle" role="status">
-					<Spinner />
-					{stageCompletionStatus === 'completing'
-						? t('tasklist.caseStageClosing')
-						: t('tasklist.caseStageWaitingForNext')}
-				</CardContent>
-			</Card>
-		);
-	}
+	// The searches can show the next stage before the stage completion settles, so the footer stays
+	// until the state machine is idle again.
+	const getCompletionHint = (): string => {
+		if (stageCompletionStatus === 'completing') {
+			return t('tasklist.caseStageClosing');
+		}
+
+		if (stageCompletionStatus === 'waitingForNextStage') {
+			return t('tasklist.caseStageWaitingForNext');
+		}
+
+		if (completion === null) {
+			return '';
+		}
+
+		if (completion.correlationKey === null) {
+			return t('tasklist.caseStageDoneUnresolvable');
+		}
+
+		return completion.isAllowed ? t('tasklist.caseStageDoneHint') : t('tasklist.caseStageDoneBlocked');
+	};
 
 	const renderOpenButton = (userTask: UserTask) => (
-		<Button variant="secondary" size="sm" onClick={() => onOpenTask(userTask.userTaskKey)}>
+		<Button variant="secondary" size="sm" disabled={isClosingStage} onClick={() => onOpenTask(userTask.userTaskKey)}>
 			{t('tasklist.caseOpenTask')}
 			<ArrowRight aria-hidden />
 		</Button>
@@ -149,7 +151,7 @@ const CaseWorkCard: React.FC<Props> = ({
 			<Button
 				variant="secondary"
 				size="sm"
-				disabled={startingElementId !== null}
+				disabled={startingElementId !== null || isClosingStage}
 				onClick={() => onStartActivity(elementId)}
 			>
 				{startingElementId === elementId ? <Spinner /> : null}
@@ -229,17 +231,19 @@ const CaseWorkCard: React.FC<Props> = ({
 					</section>
 				)}
 			</CardContent>
-			{completion === null ? null : (
+			{completion === null && !isClosingStage ? null : (
 				<CardFooter className="flex items-center justify-between gap-4 border-t border-border">
-					<span className="text-xs text-neutral-foreground-subtle">
-						{completion.correlationKey === null
-							? t('tasklist.caseStageDoneUnresolvable')
-							: completion.isAllowed
-								? t('tasklist.caseStageDoneHint')
-								: t('tasklist.caseStageDoneBlocked')}
+					<span className="text-xs text-neutral-foreground-subtle" role="status">
+						{getCompletionHint()}
 					</span>
-					<Button disabled={!completion.isAllowed || completion.correlationKey === null} onClick={onCompleteStage}>
-						<Check aria-hidden />
+					<Button
+						disabled={
+							isClosingStage || completion === null || !completion.isAllowed || completion.correlationKey === null
+						}
+						aria-busy={isClosingStage}
+						onClick={onCompleteStage}
+					>
+						{isClosingStage ? <Spinner /> : <Check aria-hidden />}
 						{t('tasklist.caseStageDoneButton')}
 					</Button>
 				</CardFooter>
