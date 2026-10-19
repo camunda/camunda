@@ -28,6 +28,7 @@ Cookie: X-CSRF-TOKEN=
 
 ###
 # @name login-post
+# @no-cookie-jar
 POST {{ZEEBE_REST_ADDRESS_LOCAL}}/login
 Content-Type: application/x-www-form-urlencoded
 Accept: application/json
