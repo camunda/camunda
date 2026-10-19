@@ -11,6 +11,7 @@ import io.camunda.zeebe.protocol.management.CheckpointStateResponseDecoder;
 import io.camunda.zeebe.protocol.management.CheckpointStateResponseEncoder;
 import io.camunda.zeebe.protocol.management.CheckpointStateResponseEncoder.BackupStatesEncoder;
 import io.camunda.zeebe.protocol.management.CheckpointStateResponseEncoder.CheckpointStatesEncoder;
+import io.camunda.zeebe.protocol.management.CheckpointStateResponseEncoder.LogArchiveStatesEncoder;
 import io.camunda.zeebe.protocol.management.MessageHeaderDecoder;
 import io.camunda.zeebe.protocol.management.MessageHeaderEncoder;
 import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
@@ -31,6 +32,7 @@ public class CheckpointStateResponse implements BufferReader, BufferWriter {
 
   private Set<PartitionCheckpointState> checkpointStates = new HashSet<>();
   private Set<PartitionCheckpointState> backupStates = new HashSet<>();
+  private Set<PartitionLogArchiveState> logArchiveStates = new HashSet<>();
 
   @Override
   public int getLength() {
@@ -40,7 +42,9 @@ public class CheckpointStateResponse implements BufferReader, BufferWriter {
         + CheckpointStatesEncoder.sbeHeaderSize()
         + checkpointStates.size() * CheckpointStatesEncoder.sbeBlockLength()
         + BackupStatesEncoder.sbeHeaderSize()
-        + backupStates.size() * BackupStatesEncoder.sbeBlockLength();
+        + backupStates.size() * BackupStatesEncoder.sbeBlockLength()
+        + LogArchiveStatesEncoder.sbeHeaderSize()
+        + logArchiveStates.size() * LogArchiveStatesEncoder.sbeBlockLength();
   }
 
   @Override
@@ -68,6 +72,19 @@ public class CheckpointStateResponse implements BufferReader, BufferWriter {
           .checkpointTimestamp(partitionState.checkpointTimestamp)
           .checkpointPosition(partitionState.checkpointPosition)
           .firstLogPosition(partitionState.firstLogPosition);
+    }
+
+    // the group is always written, with a count of zero if empty
+    final var logArchiveStateEncoder = bodyEncoder.logArchiveStatesCount(logArchiveStates.size());
+    for (final PartitionLogArchiveState partitionState : logArchiveStates) {
+      logArchiveStateEncoder
+          .next()
+          .partitionId(partitionState.partitionId)
+          .timelineStarted((short) (partitionState.timelineStarted ? 1 : 0))
+          .archivedPosition(partitionState.archivedPosition)
+          .newestArchivedSnapshotProcessedPosition(
+              partitionState.newestArchivedSnapshotProcessedPosition)
+          .handoverCheckpointId(partitionState.handoverCheckpointId);
     }
     return headerEncoder.encodedLength() + bodyEncoder.encodedLength();
   }
@@ -100,6 +117,19 @@ public class CheckpointStateResponse implements BufferReader, BufferWriter {
                         state.checkpointTimestamp(),
                         state.checkpointPosition(),
                         state.firstLogPosition())));
+
+    // empty when the message was encoded with schema version 2 or lower
+    bodyDecoder
+        .logArchiveStates()
+        .forEach(
+            state ->
+                logArchiveStates.add(
+                    new PartitionLogArchiveState(
+                        state.partitionId(),
+                        state.timelineStarted() != 0,
+                        state.archivedPosition(),
+                        state.newestArchivedSnapshotProcessedPosition(),
+                        state.handoverCheckpointId())));
   }
 
   public Set<PartitionCheckpointState> getCheckpointStates() {
@@ -117,6 +147,27 @@ public class CheckpointStateResponse implements BufferReader, BufferWriter {
   public void setBackupStates(final Set<PartitionCheckpointState> backupStates) {
     this.backupStates = backupStates;
   }
+
+  public Set<PartitionLogArchiveState> getLogArchiveStates() {
+    return logArchiveStates;
+  }
+
+  public void setLogArchiveStates(final Set<PartitionLogArchiveState> logArchiveStates) {
+    this.logArchiveStates = logArchiveStates;
+  }
+
+  /**
+   * The log archive state of a partition.
+   *
+   * @param newestArchivedSnapshotProcessedPosition -1 if no snapshot is archived
+   * @param handoverCheckpointId -1 if no handover is recorded
+   */
+  public record PartitionLogArchiveState(
+      int partitionId,
+      boolean timelineStarted,
+      long archivedPosition,
+      long newestArchivedSnapshotProcessedPosition,
+      long handoverCheckpointId) {}
 
   public record PartitionCheckpointState(
       int partitionId,
