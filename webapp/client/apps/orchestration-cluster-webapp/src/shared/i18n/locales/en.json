@@ -1396,6 +1396,31 @@
 					"open": "Open variable",
 					"openDescription": "Open",
 					"fullValueTitle": "Full value of {{name}}"
+				},
+				"modification": {
+					"pageHeading": "Operate Process Instance - Modification Mode",
+					"frameTitle": "Process Instance Modification Mode",
+					"modify": "Modify",
+					"discardAll": "Discard All",
+					"review": "Review Modifications",
+					"discardTitle": "Discard Modifications",
+					"discard": "Discard",
+					"discardDescription": "About to discard all added modifications for instance {{processInstanceKey}}.",
+					"discardHint": "Click \"Discard\" to proceed.",
+					"leaveTitle": "Leave Modification Mode",
+					"stay": "Stay",
+					"leave": "Leave",
+					"leaveDescription": "By leaving this page, all planned modification/s will be discarded.",
+					"helperIntro": "Process instance modification mode allows you to plan multiple modifications on a process instance.",
+					"helperSelect": "By clicking on an element, you can select one of following modifications if applicable:",
+					"add": "Add",
+					"cancel": "Cancel",
+					"move": "Move",
+					"helperAdd": "a single element instance",
+					"helperCancel": "all running element instances",
+					"helperMove": "all the running element instances to a different target element in the diagram",
+					"helperVariables": "Additionally, you add/edit variables by selecting the element scope in the Instance History panel.",
+					"helperReview": "A summary of all planned modifications will be shown after clicking on “Review Modifications”. The modification will be applied after the confirmation of the summary."
 				}
 			},
 			"operations": {

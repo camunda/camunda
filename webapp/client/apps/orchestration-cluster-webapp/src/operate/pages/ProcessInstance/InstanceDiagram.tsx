@@ -30,6 +30,7 @@ import {useInstanceDiagramOverlays, type ModificationBadge} from './useInstanceD
 import {InstanceDiagramOverlays} from './InstanceDiagramOverlays';
 import {Panel} from './instanceDiagram.styled';
 import {InstanceHistoryContext} from './useInstanceHistory';
+import {useProcessInstanceModification} from './useProcessInstanceModification';
 
 const NO_MODIFICATION_BADGES: ModificationBadge[] = [];
 
@@ -43,7 +44,7 @@ type Props = {
 };
 
 function InstanceDiagram({
-	isModificationModeEnabled = false,
+	isModificationModeEnabled: modificationModeOverride,
 	isExecutionCountVisible: executionCountOverride,
 	modifiableElements,
 	modificationBadges = NO_MODIFICATION_BADGES,
@@ -51,6 +52,8 @@ function InstanceDiagram({
 	onModificationElementSelection,
 }: Props) {
 	const {processInstanceId, processInstance, selection, search} = useProcessInstancePage();
+	const modification = useProcessInstanceModification();
+	const isModificationModeEnabled = modificationModeOverride ?? modification.isModificationModeEnabled;
 	const history = useContext(InstanceHistoryContext);
 	const isExecutionCountVisible = executionCountOverride ?? history?.executionCount ?? false;
 	const {t} = useTranslation();

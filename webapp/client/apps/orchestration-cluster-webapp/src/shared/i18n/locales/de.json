@@ -1384,6 +1384,31 @@
 					"open": "Variable öffnen",
 					"openDescription": "Öffnen",
 					"fullValueTitle": "Vollständiger Wert von {{name}}"
+				},
+				"modification": {
+					"pageHeading": "Operate Prozessinstanz - Änderungsmodus",
+					"frameTitle": "Änderungsmodus der Prozessinstanz",
+					"modify": "Ändern",
+					"discardAll": "Alle verwerfen",
+					"review": "Änderungen prüfen",
+					"discardTitle": "Änderungen verwerfen",
+					"discard": "Verwerfen",
+					"discardDescription": "Alle hinzugefügten Änderungen für die Instanz {{processInstanceKey}} werden verworfen.",
+					"discardHint": "Klicken Sie auf „Verwerfen“, um fortzufahren.",
+					"leaveTitle": "Änderungsmodus verlassen",
+					"stay": "Bleiben",
+					"leave": "Verlassen",
+					"leaveDescription": "Wenn Sie diese Seite verlassen, werden alle geplanten Änderungen verworfen.",
+					"helperIntro": "Im Änderungsmodus der Prozessinstanz können Sie mehrere Änderungen an einer Prozessinstanz planen.",
+					"helperSelect": "Durch Klicken auf ein Element können Sie, sofern zutreffend, eine der folgenden Änderungen auswählen:",
+					"add": "Hinzufügen",
+					"cancel": "Abbrechen",
+					"move": "Verschieben",
+					"helperAdd": "eine einzelne Elementinstanz",
+					"helperCancel": "alle laufenden Elementinstanzen",
+					"helperMove": "alle laufenden Elementinstanzen zu einem anderen Zielelement im Diagramm",
+					"helperVariables": "Zusätzlich können Sie Variablen hinzufügen oder bearbeiten, indem Sie den Elementbereich im Bereich „Instanzverlauf“ auswählen.",
+					"helperReview": "Eine Zusammenfassung aller geplanten Änderungen wird nach dem Klicken auf „Änderungen prüfen“ angezeigt. Die Änderung wird nach Bestätigung der Zusammenfassung angewendet."
 				}
 			},
 			"operations": {

@@ -1384,6 +1384,31 @@
 					"open": "Abrir variable",
 					"openDescription": "Abrir",
 					"fullValueTitle": "Valor completo de {{name}}"
+				},
+				"modification": {
+					"pageHeading": "Operate Instancia de proceso - Modo de modificación",
+					"frameTitle": "Modo de modificación de la instancia de proceso",
+					"modify": "Modificar",
+					"discardAll": "Descartar todo",
+					"review": "Revisar modificaciones",
+					"discardTitle": "Descartar modificaciones",
+					"discard": "Descartar",
+					"discardDescription": "Se van a descartar todas las modificaciones añadidas para la instancia {{processInstanceKey}}.",
+					"discardHint": "Haz clic en «Descartar» para continuar.",
+					"leaveTitle": "Salir del modo de modificación",
+					"stay": "Quedarse",
+					"leave": "Salir",
+					"leaveDescription": "Al salir de esta página, se descartarán todas las modificaciones planificadas.",
+					"helperIntro": "El modo de modificación de la instancia de proceso te permite planificar varias modificaciones en una instancia de proceso.",
+					"helperSelect": "Al hacer clic en un elemento, puedes seleccionar una de las siguientes modificaciones, si procede:",
+					"add": "Añadir",
+					"cancel": "Cancelar",
+					"move": "Mover",
+					"helperAdd": "una única instancia de elemento",
+					"helperCancel": "todas las instancias de elemento en ejecución",
+					"helperMove": "todas las instancias de elemento en ejecución a otro elemento de destino del diagrama",
+					"helperVariables": "Además, puedes añadir o editar variables seleccionando el ámbito del elemento en el panel Historial de la instancia.",
+					"helperReview": "Se mostrará un resumen de todas las modificaciones planificadas tras hacer clic en «Revisar modificaciones». La modificación se aplicará tras confirmar el resumen."
 				}
 			},
 			"operations": {

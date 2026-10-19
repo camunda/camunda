@@ -6,13 +6,15 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useEffect, useRef} from 'react';
-import {useNavigate} from '@tanstack/react-router';
+import {useCallback, useEffect, useRef} from 'react';
+import {useBlocker, useNavigate} from '@tanstack/react-router';
+import {Modal} from '@carbon/react';
 import {useTranslation} from 'react-i18next';
 import {notificationsStore} from '#/shared/notifications/notifications.store';
 import {GenericErrorPage} from '#/shared/pages/GenericErrorPage';
 import {VisuallyHiddenH1} from '#/operate/shared/VisuallyHiddenH1/VisuallyHiddenH1';
 import {InstanceDetail} from '#/operate/shared/InstanceDetail/InstanceDetail';
+import {Frame} from '#/operate/shared/Frame/Frame';
 import {EmptyState} from '#/operate/components/EmptyState/EmptyState';
 import permissionDeniedIconUrl from '#/operate/assets/permission-denied.svg';
 import {useCallHierarchy} from '#/operate/shared/Operations/Operations.queries';
@@ -21,6 +23,8 @@ import {ProcessInstancePageProvider} from './ProcessInstancePageProvider';
 import {ProcessInstanceHeader} from './ProcessInstanceHeader';
 import {ProcessInstanceHeaderSkeleton} from './ProcessInstanceHeaderSkeleton';
 import {ProcessInstanceBreadcrumb} from './ProcessInstanceBreadcrumb';
+import {ProcessInstanceModificationFooter} from './ProcessInstanceModificationFooter';
+import {useModificationController} from './useProcessInstanceModification';
 import {useProcessInstance} from './processInstance.queries';
 import {
 	getProcessInstanceTabPath,
@@ -43,6 +47,19 @@ const ProcessInstance: React.FC<Props> = ({processInstanceId, search, topPanel, 
 	const {query, isUnauthorized, isNotFound, isGenericError} = useProcessInstance(processInstanceId);
 	const {data: processInstance, error, refetch} = query;
 	const {data: diagram, isPending: isDiagramPending} = useDiagramXml(processInstance?.processDefinitionKey);
+	const modification = useModificationController(processInstanceId);
+	const {isModificationModeEnabled} = modification;
+	const isLeavingInstance = useCallback(
+		({next}: {next: {params: object}}) =>
+			!('processInstanceId' in next.params) || next.params.processInstanceId !== processInstanceId,
+		[processInstanceId],
+	);
+	const blocker = useBlocker({
+		shouldBlockFn: isLeavingInstance,
+		disabled: !isModificationModeEnabled || isUnauthorized || isNotFound,
+		enableBeforeUnload: false,
+		withResolver: true,
+	});
 	const previousSelection = useRef({
 		processInstanceId,
 		hasSelection: hasProcessInstanceSelection(search),
@@ -87,7 +104,7 @@ const ProcessInstance: React.FC<Props> = ({processInstanceId, search, topPanel, 
 			search.elementId !== undefined &&
 			diagram?.businessObjects[search.elementId]?.$type === 'bpmn:CallActivity';
 		previousSelection.current = {processInstanceId, hasSelection, elementId: search.elementId};
-		if (isFirstSelection || isSwitchingToCallActivity) {
+		if (!isModificationModeEnabled && (isFirstSelection || isSwitchingToCallActivity)) {
 			void navigate({
 				to: getProcessInstanceTabPath(processInstance.hasIncident ? 'incidents' : 'details'),
 				params: {processInstanceId},
@@ -95,7 +112,7 @@ const ProcessInstance: React.FC<Props> = ({processInstanceId, search, topPanel, 
 				replace: true,
 			});
 		}
-	}, [processInstance, diagram, isDiagramPending, search, processInstanceId, navigate]);
+	}, [processInstance, diagram, isDiagramPending, search, processInstanceId, navigate, isModificationModeEnabled]);
 
 	if (isUnauthorized) {
 		return (
@@ -134,20 +151,47 @@ const ProcessInstance: React.FC<Props> = ({processInstanceId, search, topPanel, 
 			processInstanceId={processInstanceId}
 			processInstance={processInstance}
 			search={search}
+			modification={modification}
 		>
 			<Container>
-				<VisuallyHiddenH1>{t('operate.processInstance.title')}</VisuallyHiddenH1>
-				<InstanceDetail
-					type="process"
-					breadcrumb={
-						hierarchy && hierarchy.length > 0 ? (
-							<ProcessInstanceBreadcrumb callHierarchy={hierarchy.slice(0, -1)} processInstance={processInstance} />
-						) : undefined
-					}
-					header={<ProcessInstanceHeader operations={headerOperations} />}
-					topPanel={topPanel ?? <div />}
-					bottomPanel={bottomPanel ?? <div />}
-				/>
+				<VisuallyHiddenH1>
+					{t(
+						isModificationModeEnabled
+							? 'operate.processInstance.modification.pageHeading'
+							: 'operate.processInstance.title',
+					)}
+				</VisuallyHiddenH1>
+				<Frame
+					frame={{
+						isVisible: isModificationModeEnabled,
+						headerTitle: t('operate.processInstance.modification.frameTitle'),
+					}}
+				>
+					<InstanceDetail
+						type="process"
+						hasLoadingOverlay={modification.state.status === 'applying-modifications'}
+						footer={isModificationModeEnabled ? <ProcessInstanceModificationFooter /> : undefined}
+						breadcrumb={
+							hierarchy && hierarchy.length > 0 ? (
+								<ProcessInstanceBreadcrumb callHierarchy={hierarchy.slice(0, -1)} processInstance={processInstance} />
+							) : undefined
+						}
+						header={<ProcessInstanceHeader operations={headerOperations} />}
+						topPanel={topPanel ?? <div />}
+						bottomPanel={bottomPanel ?? <div />}
+					/>
+				</Frame>
+				<Modal
+					open={blocker.status === 'blocked'}
+					modalHeading={t('operate.processInstance.modification.leaveTitle')}
+					preventCloseOnClickOutside
+					onRequestClose={() => blocker.reset?.()}
+					secondaryButtonText={t('operate.processInstance.modification.stay')}
+					primaryButtonText={t('operate.processInstance.modification.leave')}
+					onRequestSubmit={() => blocker.proceed?.()}
+				>
+					<p>{t('operate.processInstance.modification.leaveDescription')}</p>
+				</Modal>
 			</Container>
 		</ProcessInstancePageProvider>
 	);
