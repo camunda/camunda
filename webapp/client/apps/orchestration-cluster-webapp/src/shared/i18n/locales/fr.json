@@ -911,7 +911,9 @@
 			"caseClosedCompleted": "Ce dossier est terminé",
 			"caseClosedCancelled": "Ce dossier a été annulé",
 			"caseClosedDescription": "Il n’y a plus de travail dans ce dossier.",
-			"caseActivitySlow": "L’activité a démarré. Sa tâche met plus de temps que d’habitude à s’afficher."
+			"caseActivitySlow": "L’activité a démarré. Sa tâche met plus de temps que d’habitude à s’afficher.",
+			"caseActivityCompletedTimes": "Terminée {{count}}×",
+			"caseActivityCompletedBefore": "Déjà terminée {{count}}×"
 		},
 		"operate": {
 			"dashboard": {

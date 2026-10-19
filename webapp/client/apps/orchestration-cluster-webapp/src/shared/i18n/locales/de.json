@@ -908,7 +908,9 @@
 			"caseClosedCompleted": "Dieser Fall ist abgeschlossen",
 			"caseClosedCancelled": "Dieser Fall wurde abgebrochen",
 			"caseClosedDescription": "In diesem Fall gibt es keine Arbeit mehr.",
-			"caseActivitySlow": "Die Aktivität wurde gestartet. Ihre Aufgabe erscheint später als üblich."
+			"caseActivitySlow": "Die Aktivität wurde gestartet. Ihre Aufgabe erscheint später als üblich.",
+			"caseActivityCompletedTimes": "{{count}}× erledigt",
+			"caseActivityCompletedBefore": "Zuvor {{count}}× erledigt"
 		},
 		"operate": {
 			"dashboard": {

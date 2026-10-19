@@ -920,7 +920,9 @@
 			"caseClosedCompleted": "This case is completed",
 			"caseClosedCancelled": "This case was cancelled",
 			"caseClosedDescription": "There is no more work in this case.",
-			"caseActivitySlow": "The activity started. Its task takes longer to show than usual."
+			"caseActivitySlow": "The activity started. Its task takes longer to show than usual.",
+			"caseActivityCompletedTimes": "Done {{count}}×",
+			"caseActivityCompletedBefore": "Done {{count}}× before"
 		},
 		"operate": {
 			"dashboard": {

@@ -908,7 +908,9 @@
 			"caseClosedCompleted": "Este caso está completado",
 			"caseClosedCancelled": "Este caso fue cancelado",
 			"caseClosedDescription": "No hay más trabajo en este caso.",
-			"caseActivitySlow": "La actividad se inició. Su tarea tarda más de lo habitual en aparecer."
+			"caseActivitySlow": "La actividad se inició. Su tarea tarda más de lo habitual en aparecer.",
+			"caseActivityCompletedTimes": "Hecha {{count}}×",
+			"caseActivityCompletedBefore": "Hecha {{count}}× antes"
 		},
 		"operate": {
 			"dashboard": {

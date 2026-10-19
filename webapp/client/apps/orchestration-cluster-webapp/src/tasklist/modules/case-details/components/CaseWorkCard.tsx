@@ -106,7 +106,7 @@ const CaseWorkCard: React.FC<Props> = ({
 	const {activities, openTasks, completion} = work;
 	const isBusy = caseWorkStatus !== 'idle';
 	const isClosingStage = caseWorkStatus === 'completingStage' || caseWorkStatus === 'waitingForNextStage';
-	const completedCount = activities.filter(({status}) => status === 'completed').length;
+	const completedCount = activities.filter((activity) => activity.completedCount > 0).length;
 	const hasWork = activities.length > 0 || openTasks.length > 0;
 
 	// The searches can show the next stage before the stage completion settles, so the footer stays
@@ -137,6 +137,19 @@ const CaseWorkCard: React.FC<Props> = ({
 			<ArrowRight aria-hidden />
 		</Button>
 	);
+
+	const getActivityDescription = ({isRequired, status, completedCount: timesCompleted}: StageActivity): string =>
+		[
+			isRequired ? t('tasklist.caseActivityRequired') : t('tasklist.caseActivityOptional'),
+			status === 'completed' && timesCompleted > 1
+				? t('tasklist.caseActivityCompletedTimes', {count: timesCompleted})
+				: t(ACTIVITY_STATUS_KEYS[status]),
+			status !== 'completed' && timesCompleted > 0
+				? t('tasklist.caseActivityCompletedBefore', {count: timesCompleted})
+				: null,
+		]
+			.filter((part) => part !== null)
+			.join(' · ');
 
 	const renderActivityAction = ({elementId, isRequired, status, userTask}: StageActivity) => {
 		if (userTask !== null) {
@@ -230,12 +243,9 @@ const CaseWorkCard: React.FC<Props> = ({
 								<WorkRow
 									key={activity.elementId}
 									name={activity.name}
-									description={[
-										activity.isRequired ? t('tasklist.caseActivityRequired') : t('tasklist.caseActivityOptional'),
-										t(ACTIVITY_STATUS_KEYS[activity.status]),
-									].join(' · ')}
+									description={getActivityDescription(activity)}
 									icon={
-										activity.status === 'completed' ? (
+										activity.completedCount > 0 ? (
 											<CircleCheck className="size-4 shrink-0 text-[color:var(--success-action-default)]" aria-hidden />
 										) : (
 											<CirclePlay className="size-4 shrink-0 text-neutral-foreground-subtle" aria-hidden />
