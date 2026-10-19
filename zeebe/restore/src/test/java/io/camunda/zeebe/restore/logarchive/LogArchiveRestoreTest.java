@@ -138,6 +138,36 @@ final class LogArchiveRestoreTest {
   }
 
   @Test
+  void shouldStartJournalAtExportedPositionBelowTheSnapshot() throws IOException {
+    // given
+    final var archive = archive(1);
+    archive.appendAll(1, 2, 3, 4, 5, 6, 7, 8);
+    archive.checkpoint(1_000L, 7);
+    archive.archive(2);
+    archive.archive(4);
+    archive.archive(6);
+    archive.seal(2);
+    archive.archive(8);
+    final var snapshot = archive.uploadSnapshot(takeSnapshot("p1", 6, 6, 6, 6));
+    archive.publishRoot();
+    final var target = target(1);
+
+    // when - the RDBMS exported up to position 2
+    final var result =
+        restore.restorePartition(
+            LogArchiveView.read(store, TIMELINE, 1), 1_000L, target, Optional.of(2L));
+
+    // then - the journal starts at the object holding position 3, below the snapshot index 6
+    final var expected =
+        archive.sourceFrames().stream()
+            .filter(frame -> frame.index() >= 3 && frame.index() <= 7)
+            .toList();
+    assertThat(readJournal(target)).containsExactlyElementsOf(expected);
+    assertThat(result.firstIndex()).isEqualTo(3);
+    assertThat(result.snapshotId()).hasValue(snapshot.id());
+  }
+
+  @Test
   void shouldRestoreFromIndexOneWithoutSnapshot() throws IOException {
     // given
     final var archive = archive(1);

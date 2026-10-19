@@ -29,6 +29,24 @@ public final class LogArchiveRestorePlanner {
    */
   public static LogArchiveRestorePlan plan(
       final LogArchiveView view, final CoveredCheckpointJson checkpoint) {
+    return plan(view, checkpoint, Optional.empty());
+  }
+
+  /**
+   * Like {@link #plan(LogArchiveView, CoveredCheckpointJson)}, but the journal also contains the
+   * log after the given exported position: it starts at the object holding {@code exportedPosition
+   * + 1} if that is before the snapshot, so an exporter that is at {@code exportedPosition} resumes
+   * without a gap.
+   *
+   * @param exportedPosition the position up to which the secondary storage already exported, empty
+   *     if the journal only has to start at the snapshot
+   * @throws LogArchiveRestoreException if no contiguous range of objects leads from the snapshot or
+   *     the exported position to the checkpoint, or the checkpoint is below the exported position
+   */
+  public static LogArchiveRestorePlan plan(
+      final LogArchiveView view,
+      final CoveredCheckpointJson checkpoint,
+      final Optional<Long> exportedPosition) {
     final long position = checkpoint.checkpointPosition();
     if (position < 0 || position > view.archivedPosition()) {
       throw failure(
@@ -36,11 +54,43 @@ public final class LogArchiveRestorePlanner {
           "checkpoint %d at position %d is not covered by the archived position %d"
               .formatted(checkpoint.checkpointId(), position, view.archivedPosition()));
     }
+    final long requiredPosition = requiredPosition(view, checkpoint, exportedPosition);
 
     final var snapshot = selectSnapshot(view, position);
     final long snapshotIndex = snapshot.map(ArchivedSnapshotJson::index).orElse(0L);
-    final var objects = selectObjects(view, snapshotIndex, checkpoint);
+    final var objects = selectObjects(view, snapshotIndex, requiredPosition, checkpoint);
     return new LogArchiveRestorePlan(view.partitionId(), checkpoint, snapshot, objects);
+  }
+
+  /**
+   * The first position the journal must contain, {@link Long#MAX_VALUE} if only the snapshot
+   * matters. An exported position of -1 means nothing was exported, so the log is needed from
+   * position 1, as for backups.
+   */
+  private static long requiredPosition(
+      final LogArchiveView view,
+      final CoveredCheckpointJson checkpoint,
+      final Optional<Long> exportedPosition) {
+    if (exportedPosition.isEmpty()) {
+      return Long.MAX_VALUE;
+    }
+    final long exported = exportedPosition.get();
+    if (checkpoint.checkpointPosition() < exported) {
+      throw failure(
+          view,
+          "checkpoint %d at position %d is below the exported position %d"
+              .formatted(checkpoint.checkpointId(), checkpoint.checkpointPosition(), exported));
+    }
+    final long required = Math.max(exported + 1, 1);
+    final long firstArchived = view.firstArchivedPosition();
+    if (view.startIndex() > 1 && (firstArchived < 0 || firstArchived > required)) {
+      throw failure(
+          view,
+          "the archive starts at position %d (index %d), after the exported position %d + 1"
+              .formatted(firstArchived, view.startIndex(), exported));
+    }
+    // the checkpoint's object is always replayed; never ask for more than that
+    return Math.min(required, checkpoint.checkpointPosition());
   }
 
   /**
@@ -62,22 +112,25 @@ public final class LogArchiveRestorePlanner {
   }
 
   private static List<LogObjectJson> selectObjects(
-      final LogArchiveView view, final long snapshotIndex, final CoveredCheckpointJson checkpoint) {
+      final LogArchiveView view,
+      final long snapshotIndex,
+      final long requiredPosition,
+      final CoveredCheckpointJson checkpoint) {
     final long position = checkpoint.checkpointPosition();
     final var selected = new ArrayList<LogObjectJson>();
 
     for (final var chunk : view.chunks()) {
-      if (chunk.lastIndex() < snapshotIndex) {
-        continue; // entirely covered by the snapshot; do not read the chunk file
+      if (chunk.lastIndex() < snapshotIndex && chunk.lastPosition() < requiredPosition) {
+        continue; // entirely covered by the snapshot and exported; do not read the chunk file
       }
       for (final var object : view.readChunk(chunk).objects()) {
-        if (select(view, selected, object, snapshotIndex, checkpoint)) {
+        if (select(view, selected, object, snapshotIndex, requiredPosition, checkpoint)) {
           return selected;
         }
       }
     }
     for (final var object : view.openObjects()) {
-      if (select(view, selected, object, snapshotIndex, checkpoint)) {
+      if (select(view, selected, object, snapshotIndex, requiredPosition, checkpoint)) {
         return selected;
       }
     }
@@ -98,15 +151,20 @@ public final class LogArchiveRestorePlanner {
                 view.archivedPosition()));
   }
 
-  /** Adds the object if needed; returns true once the object containing the checkpoint is added. */
+  /**
+   * Adds the object if needed; returns true once the object containing the checkpoint is added. The
+   * first object is the one holding the snapshot index or the required position, whichever comes
+   * first, so the journal may start below the snapshot.
+   */
   private static boolean select(
       final LogArchiveView view,
       final List<LogObjectJson> selected,
       final LogObjectJson object,
       final long snapshotIndex,
+      final long requiredPosition,
       final CoveredCheckpointJson checkpoint) {
     if (selected.isEmpty()) {
-      if (object.lastIndex() < snapshotIndex) {
+      if (object.lastIndex() < snapshotIndex && object.lastPosition() < requiredPosition) {
         return false;
       }
       if (object.firstIndex() > snapshotIndex + 1) {
