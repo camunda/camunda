@@ -137,10 +137,10 @@ public final class DynamicConfigExportingStateController implements ExportingSta
    * A partition's {@code exporting} config is {@code null} until something initializes it (e.g.
    * {@code PartitionGroupExporterStateInitializer} on the local member after restart, or the
    * receiving side of a gossip update from a peer that has not run that initializer yet, or a peer
-   * still on a wire format that predates this field). {@link
-   * io.camunda.zeebe.dynamic.config.impl.api.ExportingStateChangeRequestTransformer} already treats
-   * that as equivalent to {@link ExportingState#UNKNOWN} rather than dereferencing it; this mirrors
-   * that instead of risking a {@link NullPointerException}.
+   * still on a wire format that predates this field). {@code
+   * ExportingStateChangeRequestTransformer} already treats that as equivalent to {@link
+   * ExportingState#UNKNOWN} rather than dereferencing it; this mirrors that instead of risking a
+   * {@link NullPointerException}.
    */
   private static ExportingState exportingStateOf(final PartitionState partition) {
     final var config = partition.config();
