@@ -10,6 +10,7 @@ package io.camunda.zeebe.restore.logarchive;
 import io.camunda.zeebe.backup.logarchive.model.ArchivedSnapshotJson;
 import io.camunda.zeebe.backup.logarchive.model.CommitEntry;
 import io.camunda.zeebe.backup.logarchive.model.CoveredCheckpointJson;
+import io.camunda.zeebe.backup.logarchive.model.HandoverJson;
 import io.camunda.zeebe.backup.logarchive.model.IndexChunkFile;
 import io.camunda.zeebe.backup.logarchive.model.IndexChunkJson;
 import io.camunda.zeebe.backup.logarchive.model.LatestHint;
@@ -30,6 +31,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Stream;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -57,6 +59,7 @@ public final class LogArchiveView {
   private final List<LogObjectJson> openObjects;
   private final List<ArchivedSnapshotJson> snapshots;
   private final List<CoveredCheckpointJson> checkpoints;
+  private final @Nullable HandoverJson handover;
   private final Map<Long, IndexChunkFile> chunkFiles = new HashMap<>();
 
   private LogArchiveView(final LogArchiveStore store, final Folder folder) {
@@ -73,6 +76,7 @@ public final class LogArchiveView {
     openObjects = List.copyOf(folder.openObjects);
     snapshots = List.copyOf(folder.snapshots);
     checkpoints = List.copyOf(folder.checkpoints.values());
+    handover = folder.handover;
   }
 
   /**
@@ -224,6 +228,29 @@ public final class LogArchiveView {
     return checkpoints;
   }
 
+  /** The handover from the old backups recorded in this timeline, empty if there is none. */
+  public Optional<HandoverJson> handover() {
+    return Optional.ofNullable(handover);
+  }
+
+  /**
+   * The position of the first archived application entry, -1 if none is archived yet. Positions
+   * before it are not in this timeline.
+   */
+  public long firstArchivedPosition() {
+    for (final var chunk : chunks) {
+      if (chunk.firstPosition() >= 0) {
+        return chunk.firstPosition();
+      }
+    }
+    for (final var object : openObjects) {
+      if (object.firstPosition() >= 0) {
+        return object.firstPosition();
+      }
+    }
+    return -1;
+  }
+
   String partitionPrefix() {
     return LogArchiveKeys.partitionPrefix(timelineId, partitionId);
   }
@@ -356,6 +383,7 @@ public final class LogArchiveView {
     private final List<LogObjectJson> openObjects = new ArrayList<>();
     private final List<ArchivedSnapshotJson> snapshots = new ArrayList<>();
     private final Map<Long, CoveredCheckpointJson> checkpoints = new LinkedHashMap<>();
+    private @Nullable HandoverJson handover;
 
     private Folder(final String timelineId, final int partitionId) {
       this.timelineId = timelineId;
@@ -378,6 +406,7 @@ public final class LogArchiveView {
       folder.openObjects.addAll(root.openObjects());
       folder.snapshots.addAll(root.snapshots());
       root.openCheckpoints().forEach(folder::addCheckpoint);
+      folder.handover = root.handover();
       return folder;
     }
 
@@ -394,6 +423,7 @@ public final class LogArchiveView {
         case LOG_ARCHIVED -> applyLogArchived(entry);
         case SNAPSHOT_ARCHIVED -> applySnapshotArchived(entry);
         case INDEX_SEALED -> applyIndexSealed(entry);
+        case HANDOVER -> applyHandover(entry);
         case null, default -> throw inconsistent("unknown commit entry type " + entry.type());
       }
       lastSeq = expectedSeq;
@@ -459,6 +489,14 @@ public final class LogArchiveView {
       }
       openObjects.subList(0, count).clear();
       chunks.add(chunk);
+    }
+
+    private void applyHandover(final CommitEntry entry) {
+      requireStarted(entry);
+      if (entry.handover() == null) {
+        throw inconsistent("HANDOVER entry %d has no handover".formatted(entry.seq()));
+      }
+      handover = entry.handover();
     }
 
     private void addCheckpoint(final CoveredCheckpointJson checkpoint) {

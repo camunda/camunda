@@ -12,6 +12,7 @@ import io.camunda.zeebe.backup.logarchive.format.LogObjectEncoder;
 import io.camunda.zeebe.backup.logarchive.model.ArchivedSnapshotJson;
 import io.camunda.zeebe.backup.logarchive.model.CommitEntry;
 import io.camunda.zeebe.backup.logarchive.model.CoveredCheckpointJson;
+import io.camunda.zeebe.backup.logarchive.model.HandoverJson;
 import io.camunda.zeebe.backup.logarchive.model.IndexChunkFile;
 import io.camunda.zeebe.backup.logarchive.model.IndexChunkJson;
 import io.camunda.zeebe.backup.logarchive.model.LatestHint;
@@ -49,6 +50,8 @@ final class TestLogArchive implements AutoCloseable {
   private final SegmentedJournal sourceJournal;
 
   private long startIndex = -1;
+  private String parentTimelineId = "";
+  private HandoverJson handover;
   private long archivedIndex;
   private long archivedPosition = -1;
   private long firstArchivedPosition = -1;
@@ -58,7 +61,7 @@ final class TestLogArchive implements AutoCloseable {
   private final List<IndexChunkJson> chunks = new ArrayList<>();
   private final List<ArchivedSnapshotJson> snapshots = new ArrayList<>();
   private final List<CoveredCheckpointJson> openCheckpoints = new ArrayList<>();
-  private final TreeMap<Long, Long> pendingCheckpoints = new TreeMap<>();
+  private final TreeMap<Long, long[]> pendingCheckpoints = new TreeMap<>();
 
   TestLogArchive(
       final InMemoryLogArchiveStore store,
@@ -108,6 +111,7 @@ final class TestLogArchive implements AutoCloseable {
 
   void startTimeline(final long startIndex, final String parentTimelineId) {
     this.startIndex = startIndex;
+    this.parentTimelineId = parentTimelineId;
     archivedIndex = startIndex - 1;
     commit(
         CommitEntry.Type.TIMELINE_STARTED,
@@ -121,7 +125,18 @@ final class TestLogArchive implements AutoCloseable {
 
   /** A checkpoint taken at the given position; covered once it is archived. */
   void checkpoint(final long checkpointId, final long position) {
-    pendingCheckpoints.put(checkpointId, position);
+    checkpoint(checkpointId, position, -1);
+  }
+
+  /** A checkpoint taken at the given position and time (epoch millis, -1 if unknown). */
+  void checkpoint(final long checkpointId, final long position, final long timestamp) {
+    pendingCheckpoints.put(checkpointId, new long[] {position, timestamp});
+  }
+
+  /** Records the handover from the old backups at the given checkpoint. */
+  void handover(final long checkpointId, final long checkpointPosition) {
+    handover = new HandoverJson(checkpointId, checkpointPosition);
+    commit(CommitEntry.Type.HANDOVER, null, null, List.of(), List.of(), null, null);
   }
 
   /** Archives all source entries after F up to and including {@code lastIndex} as one object. */
@@ -152,9 +167,11 @@ final class TestLogArchive implements AutoCloseable {
     }
     final var covered = new ArrayList<CoveredCheckpointJson>();
     while (!pendingCheckpoints.isEmpty()
-        && pendingCheckpoints.firstEntry().getValue() <= archivedPosition) {
+        && pendingCheckpoints.firstEntry().getValue()[0] <= archivedPosition) {
       final var entry = pendingCheckpoints.pollFirstEntry();
-      covered.add(new CoveredCheckpointJson(entry.getKey(), entry.getValue(), "MARKER"));
+      covered.add(
+          new CoveredCheckpointJson(
+              entry.getKey(), entry.getValue()[0], "MARKER", entry.getValue()[1]));
     }
     openCheckpoints.addAll(covered);
     commit(CommitEntry.Type.LOG_ARCHIVED, null, null, List.of(object), covered, null, null);
@@ -257,7 +274,7 @@ final class TestLogArchive implements AutoCloseable {
         new RootFile(
             LogArchiveJson.FORMAT_VERSION,
             timelineId,
-            "",
+            parentTimelineId,
             partitionId,
             seq,
             startIndex,
@@ -266,7 +283,8 @@ final class TestLogArchive implements AutoCloseable {
             chunks,
             openObjects,
             openCheckpoints,
-            snapshots);
+            snapshots,
+            handover);
     store.put(prefix + LogArchiveKeys.rootKey(seq), LogArchiveJson.write(root)).join();
     store
         .put(
@@ -302,7 +320,8 @@ final class TestLogArchive implements AutoCloseable {
             objects,
             checkpoints,
             snapshot,
-            chunk);
+            chunk,
+            type == CommitEntry.Type.HANDOVER ? handover : null);
     store.put(prefix + LogArchiveKeys.commitKey(seq), LogArchiveJson.write(entry)).join();
   }
 

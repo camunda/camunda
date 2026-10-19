@@ -13,6 +13,7 @@ import static org.assertj.core.api.Assertions.tuple;
 
 import io.camunda.zeebe.backup.logarchive.model.ArchivedSnapshotJson;
 import io.camunda.zeebe.backup.logarchive.model.CoveredCheckpointJson;
+import io.camunda.zeebe.backup.logarchive.model.HandoverJson;
 import io.camunda.zeebe.backup.logarchive.model.LogArchiveKeys;
 import io.camunda.zeebe.backup.logarchive.model.LogObjectJson;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -182,6 +183,62 @@ final class LogArchiveViewTest {
     assertThatThrownBy(() -> LogArchiveView.read(store, TIMELINE, 1))
         .isInstanceOf(LogArchiveRestoreException.class)
         .hasMessageContaining("expected it to start at index 3");
+  }
+
+  @Test
+  void shouldFoldHandoverAfterTheRoot() {
+    // given
+    archive.appendAll(1, 2, 3);
+    archive.checkpoint(100, 2);
+    archive.archive(3);
+    archive.publishRoot();
+    archive.handover(100, 2);
+    archive.appendAll(4);
+    archive.archive(4);
+
+    // when
+    final var view = LogArchiveView.read(store, TIMELINE, 1);
+
+    // then
+    assertThat(view.handover()).contains(new HandoverJson(100, 2));
+    assertThat(view.archivedPosition()).isEqualTo(4);
+  }
+
+  @Test
+  void shouldReadHandoverAndParentFromTheRoot(@TempDir final Path forkSource) {
+    // given
+    try (final var forked = new TestLogArchive(store, "tl-fork", 1, forkSource, meterRegistry)) {
+      forked.startTimeline(1, TIMELINE);
+      forked.appendAll(1, 2);
+      forked.checkpoint(100, 2);
+      forked.archive(2);
+      forked.handover(100, 2);
+      forked.publishRoot();
+    }
+
+    // when
+    final var view = LogArchiveView.read(store, "tl-fork", 1);
+
+    // then
+    assertThat(view.rootSeq()).isEqualTo(view.lastSeq());
+    assertThat(view.handover()).contains(new HandoverJson(100, 2));
+    assertThat(view.parentTimelineId()).isEqualTo(TIMELINE);
+  }
+
+  @Test
+  void shouldReportTheFirstArchivedPosition() {
+    // given
+    archive.append(-1);
+    archive.archive(1);
+    archive.appendAll(7, 8);
+    archive.archive(3);
+    archive.seal(1);
+
+    // when
+    final var view = LogArchiveView.read(store, TIMELINE, 1);
+
+    // then
+    assertThat(view.firstArchivedPosition()).isEqualTo(7);
   }
 
   private static ArchivedSnapshotJson snapshot(
