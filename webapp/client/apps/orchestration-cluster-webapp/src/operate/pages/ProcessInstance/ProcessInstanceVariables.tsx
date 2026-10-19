@@ -165,7 +165,10 @@ const ProcessInstanceVariables: React.FC = () => {
 	} = useProcessInstanceElementSelection();
 	const hasNoInstances = hasSelection && selectedElementInstanceKey === null && selectedElementInstanceCount === 0;
 	const hasMultipleInstances =
-		selectedElementInstanceKey === null && selectedElementInstanceCount !== null && selectedElementInstanceCount > 1;
+		selectedElementInstanceKey === null &&
+		selectedElementInstanceCount !== null &&
+		selectedElementInstanceCount > 0 &&
+		resolvedElementInstance === null;
 	const scopeKey = hasSelection
 		? (selectedElementInstanceKey ?? resolvedElementInstance?.elementInstanceKey ?? null)
 		: processInstanceId;

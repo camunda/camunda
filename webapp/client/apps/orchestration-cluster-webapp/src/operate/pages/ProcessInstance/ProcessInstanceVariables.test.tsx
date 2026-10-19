@@ -27,7 +27,7 @@ import {
 	createQueryElementInstancesResponse,
 } from '#/shared-test-modules/api-mocks/element-instances';
 import {createQueryVariablesByUserTaskResponse, createVariable} from '#/shared-test-modules/api-mocks/variables';
-import {createProblemDetails} from '#/shared-test-modules/api-mocks/shared';
+import {createPaginatedResponse, createProblemDetails} from '#/shared-test-modules/api-mocks/shared';
 import {notificationsStore} from '#/shared/notifications/notifications.store';
 import {ProcessInstancePageProvider} from './ProcessInstancePageProvider';
 import {ProcessInstanceVariables} from './ProcessInstanceVariables';
@@ -128,6 +128,24 @@ describe('<ProcessInstanceVariables />', () => {
 		worker.use(
 			mockQueryElementInstancesEndpoint({
 				successResponse: HttpResponse.json(createQueryElementInstancesResponse([], 3)),
+			}),
+		);
+		const screen = await renderVariables('?elementId=user-task');
+
+		await expect
+			.element(screen.getByText('To view the variables, select a single element instance in the instance history.'))
+			.toBeVisible();
+	});
+
+	it('should ask for a single instance when the selected element count is only a lower bound', async ({worker}) => {
+		worker.use(
+			mockQueryElementInstancesEndpoint({
+				successResponse: HttpResponse.json(
+					createPaginatedResponse({
+						items: [createElementInstance()],
+						page: {totalItems: 1, hasMoreTotalItems: true, startCursor: null, endCursor: null},
+					}),
+				),
 			}),
 		);
 		const screen = await renderVariables('?elementId=user-task');
@@ -248,7 +266,7 @@ describe('<ProcessInstanceVariables />', () => {
 
 		const dialog = screen.getByRole('dialog', {name: 'Full value of amount'});
 		await expect.element(dialog).toBeVisible();
-		await userEvent.keyboard('{Escape}');
+		await userEvent.click(dialog.getByRole('button', {name: 'Close'}).first());
 		await expect.element(dialog).not.toBeInTheDocument();
 		await expect.element(screen.getByRole('button', {name: 'Open'})).toHaveFocus();
 	});
