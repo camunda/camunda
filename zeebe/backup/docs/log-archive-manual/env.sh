@@ -5,13 +5,17 @@ export DIST="${DIST:-$REPO_ROOT/dist/target/camunda-zeebe}"
 export WORK="${WORK:-/tmp/log-archive-manual}"
 export STORE="$WORK/store"   # filesystem backup store, one folder per scenario
 export BROKERS=3
-export PARTITIONS=2
+export PARTITIONS=${PARTITIONS:-2}
 export REST_BASE=8080   # broker i serves REST on 8080+i
 export MGMT_BASE=9600   # broker i serves the management API on 9600+i
 
 # The store folder of a scenario. STORE_OVERRIDE=<dir> points a run at another folder, e.g. a copy
 # of a store that a restore may write into.
 store_of() { echo "${STORE_OVERRIDE:-$STORE/$1}"; }
+# The H2 database of an h-* scenario (RDBMS secondary storage). H2_OVERRIDE=<path> points a run at a
+# copy, so a restored cluster's exporter does not change the database the next restore reads.
+h2_of() { echo "${H2_OVERRIDE:-$WORK/h2/$1}"; }
+h2_url() { echo "jdbc:h2:file:$(h2_of "$1");AUTO_SERVER=TRUE;MODE=PostgreSQL"; }
 
 # Scenario switches, set by cluster.sh from the scenario name
 broker_env() {
@@ -39,7 +43,7 @@ broker_env() {
   )
   case "$scenario" in
     a-classic) ;;
-    b-continuous|d-both|g-brownfield)
+    b-continuous|d-both|g-brownfield|h-rdbms|h-handover|h-compacted)
       env+=("CAMUNDA_DATA_PRIMARYSTORAGE_BACKUP_CONTINUOUS=true"
             "CAMUNDA_DATA_PRIMARYSTORAGE_BACKUP_SCHEDULE=PT1M"
             "CAMUNDA_DATA_PRIMARYSTORAGE_BACKUP_CHECKPOINTINTERVAL=PT15S"
@@ -47,10 +51,24 @@ broker_env() {
             "CAMUNDA_DATA_PRIMARYSTORAGE_BACKUP_RETENTION_CLEANUPSCHEDULE=PT1H") ;;
   esac
   case "$scenario" in
-    c-archive|d-both|e-kill|f-outage|g-brownfield)
-      # g-brownfield starts without the log archive (the old cluster); LOG_ARCHIVE=on enables it
-      # for the upgraded cluster, see cluster.sh upgrade.
-      if [ "$scenario" != g-brownfield ] || [ "${LOG_ARCHIVE:-off}" = on ]; then
+    h-*)
+      env+=("CAMUNDA_DATA_SECONDARYSTORAGE_TYPE=rdbms"
+            "CAMUNDA_DATA_SECONDARYSTORAGE_RDBMS_URL=$(h2_url "$scenario")"
+            "CAMUNDA_DATA_SECONDARYSTORAGE_RDBMS_USERNAME=sa"
+            "CAMUNDA_DATA_SECONDARYSTORAGE_RDBMS_PASSWORD=") ;;
+  esac
+  case "$scenario" in
+    h-compacted)
+      # small segments, so the log is compacted before the archive starts
+      # (the segment size must exceed the max message size, 4 MB by default)
+      env+=("CAMUNDA_DATA_PRIMARYSTORAGE_LOGSTREAM_LOGSEGMENTSIZE=1MB"
+            "CAMUNDA_CLUSTER_NETWORK_MAXMESSAGESIZE=512KB") ;;
+  esac
+  case "$scenario" in
+    c-archive|d-both|e-kill|f-outage|g-brownfield|h-handover|h-compacted)
+      # g-brownfield and h-handover/h-compacted start without the log archive (the old cluster);
+      # LOG_ARCHIVE=on enables it for the upgraded cluster, see cluster.sh upgrade.
+      if [ "${scenario#g-}" = "$scenario" ] && [ "${scenario#h-}" = "$scenario" ] || [ "${LOG_ARCHIVE:-off}" = on ]; then
         env+=("ZEEBE_BROKER_DATA_BACKUP_LOGARCHIVE_ENABLED=true"
               "ZEEBE_BROKER_DATA_BACKUP_LOGARCHIVE_CUTINTERVAL=PT1S"
               "ZEEBE_BROKER_DATA_BACKUP_LOGARCHIVE_SNAPSHOTUPLOADINTERVAL=PT1M"

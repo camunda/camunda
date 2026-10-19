@@ -232,9 +232,49 @@ cd zeebe/backup/docs/log-archive-manual && source ./env.sh
 - Handover files have `formatVersion` 1. The scheduler took H about 40 s after the upgrade, after
   p3. Timeline files after restore: `tl-0.b<H>` (b), `tl-0.r<C>` (c), `tl-0.b<O>` (a).
 - Results: (a) 60 jobs (p1, p2), (b) 90 (p1–p3), (c) 120 (p1–p4), p5 never.
+- Further restore cases (run 2026-10-19, all pass): time range `--from` before H, `--to` at C →
+  archive path, 120 jobs; time range ending at O, before H (no RDBMS) → old path, 60 jobs (failed
+  before fix fcabcdc1959; give `--to` with milliseconds, a whole second can land on a neighbouring
+  backup); restore with the archive disabled in the restore configuration → still the archive, 120;
+  restore to O, then a second handover H2 on `tl-0.b<O>`, `<H>.json` unchanged; scale-up to 3
+  partitions after the handover (`PATCH /actuator/cluster` partitions count 3): partition 3 records
+  the handover, a backup S has no old-style upload on it, restore to S (`PARTITIONS=3`) → 90 jobs.
+- Counting jobs activates them for 10 minutes. A restore to a later checkpoint of the same branch
+  brings them back activated; count after their timeout or before the checkpoint.
 - Fixed gap: in this run, archive checkpoints in a sealed index chunk dropped out of
   `/actuator/backups` (status DOES_NOT_EXIST) about two minutes after H. They are now kept in
   `LOG_ARCHIVE_BACKUP_CHECKPOINTS` and stay listed and `COMPLETED`.
+
+### H. RDBMS (H2) as secondary storage
+
+The `h-*` scenarios use an H2 file database in server mode (`$WORK/h2/<scenario>`,
+`AUTO_SERVER=TRUE`), shared by the three brokers and the restore app. Each restore runs on copies
+of the store and the database (`STORE_OVERRIDE`, `H2_OVERRIDE`), so a restored exporter does not
+change the exported position E another restore reads. E is frozen by disabling the RDBMS exporter
+(`POST /actuator/exporters/rdbms/disable`); rows are counted in `PROCESS_INSTANCE`, positions read
+from `EXPORTER_POSITION` (`java -cp $DIST/lib/h2-*.jar org.h2.tools.Shell -url ...`).
+
+With RDBMS, restore with `--to` only: E decides where the journal starts. A `--from` makes the
+existing old-path resolver discard backups before it, and it must then still lie inside a backup
+range and at or before the backup that covers E (one second off either way fails).
+
+| Case | Setup | Restore | Pass |
+|---|---|---|---|
+| H1 | `h-rdbms`: continuous backup + RDBMS; 50 instances, E frozen, 50 more, backup | `--to=<now>` | old path; rows 50 → 100 after the restored exporter resumes; 100 jobs |
+| H2 | `h-handover`: brownfield (archive off, then `upgrade`), handover H, E frozen after H, C, more instances | `--to=<now>` | archive path (`.r`); rows 90 → 120; 120 jobs |
+| H2b | same store | `--to=<C's time>` | archive path; rows 120, nothing after C; 120 jobs |
+| H3 | `h-compacted`: 1 MB segments, 512 KB max message size; E frozen early, 300 instances × 10 KB, wait for compaction, then `upgrade` | `--to=<now>` | archive starts after E+1 (`timeline.json` startIndex > 1); restore skips every archive checkpoint ("the archive starts at position … after the exported position … + 1") and falls back to H (`tl-0.b<H>`); rows 30 → 330; 330 jobs |
+| H4 | `h-handover`: E frozen before the upgrade, old backup O, then handover | `--to=<O's time>` | old path (`.b`); rows 30 → 60; 60 jobs |
+
+### Snapshot checks (S)
+
+- **Snapshot choice**, for every archive restore: take "Restoring partition N to checkpoint … at
+  position P: snapshot X" from the restore log and check against the archived descriptors
+  (`state/<id>/descriptor.json`) that X is the newest snapshot whose `processedPosition`,
+  `lastFollowupEventPosition` and `maxExportedPosition` are all ≤ P.
+- **Descriptors**: `fileCount` and `sizeBytes` match the files next to them.
+- **Big snapshot**: 3,000 instances with a 10 KB payload before C (snapshots of about 20 MB),
+  restore to C → 3,000 jobs.
 
 ## 4. What we record
 
