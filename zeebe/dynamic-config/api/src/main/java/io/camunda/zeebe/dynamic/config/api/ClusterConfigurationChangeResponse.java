@@ -18,10 +18,8 @@ import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.Phase;
 import java.util.List;
 import java.util.Map;
 import java.util.SortedMap;
-import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
-@NullMarked
 public record ClusterConfigurationChangeResponse(
     long changeId,
     LegacyConfigurationChangeResponse legacyResponse,

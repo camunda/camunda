@@ -77,8 +77,8 @@ public class PartitionGroupExportingStateInitializer
     BrokerPartitionState updated = brokerPartitionState;
     for (final var partitionId : brokerPartitionState.partitions().keySet()) {
       final var partitionState = brokerPartitionState.partitions().get(partitionId);
-      if (!partitionState.config().isInitialized()
-          || partitionState.config().exporting().state() != ExportingState.UNKNOWN) {
+      final var exporting = partitionState.config().exporting();
+      if (exporting == null || exporting.state() != ExportingState.UNKNOWN) {
         continue;
       }
       final var legacyState = legacyExportingStates.get(new PartitionId(groupId, partitionId));

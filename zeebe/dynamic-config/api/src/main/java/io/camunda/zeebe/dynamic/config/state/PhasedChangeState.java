@@ -16,7 +16,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import org.jspecify.annotations.NullMarked;
 
 /**
  * Holds every currently pending {@link PhasedChangePlan}, keyed by id, plus a bounded window of
@@ -58,7 +57,6 @@ import org.jspecify.annotations.NullMarked;
  *       disagree about which ones they remember.
  * </ul>
  */
-@NullMarked
 public record PhasedChangeState(
     long nextId, Map<Long, PhasedChangePlan> pending, List<CompletedPhasedChange> history) {
 

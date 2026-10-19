@@ -13,7 +13,9 @@ import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 import java.io.IOException;
+import org.jspecify.annotations.NullMarked;
 
+@NullMarked
 class BrokerIdDeserializer extends StdDeserializer<BrokerId> {
 
   BrokerIdDeserializer() {

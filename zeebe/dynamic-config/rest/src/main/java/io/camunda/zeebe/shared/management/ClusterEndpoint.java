@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.shared.management;
 
+import static java.util.Objects.requireNonNull;
+
 import io.atomix.cluster.BrokerMemberId;
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.AddMembersRequest;
@@ -203,7 +205,7 @@ public class ClusterEndpoint {
     return action.apply(topology.get());
   }
 
-  private ResponseEntity<Error> invalidRequest(final String message) {
+  private ResponseEntity<Error> invalidRequest(final @Nullable String message) {
     final var errorResponse = new Error();
     errorResponse.setMessage(message);
     return ResponseEntity.status(400).body(errorResponse);
@@ -366,12 +368,15 @@ public class ClusterEndpoint {
               .map(ClusterConfigPatchRequestPartitions::getReplicationFactor);
 
       if (isScale) {
+        final var scaleBrokers = requireNonNull(brokers, "brokers must be set when scaling");
         final var scaleRequest =
             new ClusterScaleRequest(
-                Optional.of(brokers.getCount()),
+                Optional.of(
+                    requireNonNull(
+                        scaleBrokers.getCount(), "brokers count must be set when scaling")),
                 newPartitionCount,
                 newReplicationFactor,
-                Optional.ofNullable(request.getBrokers().getZone()).filter(z -> !z.isBlank()),
+                Optional.ofNullable(scaleBrokers.getZone()).filter(z -> !z.isBlank()),
                 tenant,
                 dryRun);
         return ClusterApiUtils.mapOperationResponse(
@@ -389,20 +394,20 @@ public class ClusterEndpoint {
   private ResponseEntity<?> patchCluster(
       final boolean dryRun,
       final ClusterConfigPatchRequest request,
-      final ClusterConfigPatchRequestBrokers brokers,
+      final @Nullable ClusterConfigPatchRequestBrokers brokers,
       final Optional<Integer> newPartitionCount,
       final Optional<Integer> newReplicationFactor,
       final Optional<String> physicalTenant) {
     final Set<MemberId> brokersToAdd =
         brokers != null
-            ? request.getBrokers().getAdd().stream()
+            ? brokers.getAdd().stream()
                 .map(String::valueOf)
                 .map(MemberId::from)
                 .collect(Collectors.toSet())
             : Set.of();
     final Set<MemberId> brokersToRemove =
         brokers != null
-            ? request.getBrokers().getRemove().stream()
+            ? brokers.getRemove().stream()
                 .map(String::valueOf)
                 .map(MemberId::from)
                 .collect(Collectors.toSet())
@@ -420,8 +425,8 @@ public class ClusterEndpoint {
 
   private ResponseEntity<?> forceRemoveBrokers(
       final boolean dryRun,
-      final ClusterConfigPatchRequestBrokers brokers,
-      final ClusterConfigPatchRequestPartitions partitions) {
+      final @Nullable ClusterConfigPatchRequestBrokers brokers,
+      final @Nullable ClusterConfigPatchRequestPartitions partitions) {
 
     if (brokers == null) {
       return invalidRequest("Must provide a set of brokers to force remove.");

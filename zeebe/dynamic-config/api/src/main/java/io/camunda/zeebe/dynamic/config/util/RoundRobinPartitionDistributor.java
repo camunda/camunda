@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.dynamic.config.util;
 
+import static java.util.Objects.requireNonNull;
+
 import com.google.common.collect.Sets;
 import io.atomix.cluster.MemberId;
 import io.atomix.primitive.partition.PartitionMetadata;
@@ -84,7 +86,7 @@ public final class RoundRobinPartitionDistributor implements PartitionDistributo
               partitionId,
               Set.copyOf(membersForPartition),
               priorities,
-              priorities.get(primary),
+              requireNonNull(priorities.get(primary), "primary must have a priority"),
               primary));
     }
     return metadata;

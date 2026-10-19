@@ -15,7 +15,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.SortedMap;
 import java.util.function.UnaryOperator;
-import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -46,7 +45,6 @@ import org.jspecify.annotations.Nullable;
  * @param partitions state of every partition of this group that the broker replicates
  * @param mode the operating mode of this broker within this group
  */
-@NullMarked
 public record BrokerPartitionState(
     long version, Instant lastUpdated, SortedMap<Integer, PartitionState> partitions, Mode mode) {
 

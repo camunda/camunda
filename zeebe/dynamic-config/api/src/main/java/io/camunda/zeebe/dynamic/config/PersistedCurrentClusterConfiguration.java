@@ -17,7 +17,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.zip.CRC32C;
-import org.jspecify.annotations.NullMarked;
 
 /**
  * The multi-partition-group counterpart of {@link PersistedClusterConfiguration}. Reads and writes
@@ -41,7 +40,6 @@ import org.jspecify.annotations.NullMarked;
  *
  * First-boot migration after an upgrade is therefore automatic and requires no separate step.
  */
-@NullMarked
 public final class PersistedCurrentClusterConfiguration {
 
   /** Name of the file in the data directory that stores the persisted cluster configuration. */

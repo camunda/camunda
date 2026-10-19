@@ -33,7 +33,6 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
-import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -53,7 +52,6 @@ import org.jspecify.annotations.Nullable;
  * @param partitionGroups per-group partition configuration, keyed by group id
  * @param phasedChangeState the lifecycle state of the cluster-spanning change plan
  */
-@NullMarked
 public record CurrentClusterConfiguration(
     long version,
     GlobalConfiguration globalConfiguration,

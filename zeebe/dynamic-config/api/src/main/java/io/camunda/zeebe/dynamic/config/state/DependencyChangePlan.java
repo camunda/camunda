@@ -21,7 +21,6 @@ import java.util.SortedMap;
 import java.util.SortedSet;
 import java.util.TreeMap;
 import java.util.TreeSet;
-import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -40,7 +39,6 @@ import org.jspecify.annotations.Nullable;
  * Commutative, associative, and idempotent by construction, with no version to move and no barrier
  * to release.
  */
-@NullMarked
 public record DependencyChangePlan(
     long id,
     Status status,

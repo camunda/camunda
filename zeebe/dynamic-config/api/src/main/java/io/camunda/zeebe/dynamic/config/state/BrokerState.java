@@ -10,7 +10,6 @@ package io.camunda.zeebe.dynamic.config.state;
 import static java.util.Objects.requireNonNull;
 
 import java.time.Instant;
-import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -32,7 +31,6 @@ import org.jspecify.annotations.Nullable;
  * @param lastUpdated time this state was last updated
  * @param state the lifecycle state of the broker
  */
-@NullMarked
 public record BrokerState(long version, Instant lastUpdated, State state) {
 
   public BrokerState {

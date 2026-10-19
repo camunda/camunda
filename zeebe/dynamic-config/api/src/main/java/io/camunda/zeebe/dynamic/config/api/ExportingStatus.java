@@ -11,7 +11,6 @@ import io.camunda.zeebe.dynamic.config.state.ExportingState;
 import java.util.Collection;
 import java.util.Set;
 import java.util.stream.Collectors;
-import org.jspecify.annotations.NullMarked;
 
 /**
  * The exporting status aggregated over every replica of every partition of a physical tenant.
@@ -20,7 +19,6 @@ import org.jspecify.annotations.NullMarked;
  * tooling if all replicas agree; when they don't, the tenant is {@link #MIXED} and the operation is
  * still in flight or was only partially applied.
  */
-@NullMarked
 public enum ExportingStatus {
   /** All replicas are actively exporting and committing their position. */
   EXPORTING,

@@ -20,6 +20,7 @@ import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.micrometer.core.instrument.MeterRegistry;
+import org.jspecify.annotations.NullMarked;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,6 +38,7 @@ import org.slf4j.LoggerFactory;
  * construct a lossy reconstruction of an in-progress plan that conflicted with its own,
  * natively-tracked one.
  */
+@NullMarked
 public class GatewayClusterConfigurationServiceImpl extends Actor
     implements GatewayClusterConfigurationService {
   private static final Logger LOG =

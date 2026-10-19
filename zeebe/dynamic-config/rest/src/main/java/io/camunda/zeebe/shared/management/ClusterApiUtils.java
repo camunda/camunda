@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.shared.management;
 
+import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.mapping;
 import static java.util.stream.Collectors.toList;
 
@@ -138,7 +139,7 @@ final class ClusterApiUtils {
 
   static ResponseEntity<?> mapError(final Throwable error) {
     if (error instanceof CompletionException) {
-      return mapError(error.getCause());
+      return mapError(requireNonNull(error.getCause(), "completion exception must have a cause"));
     }
 
     final var errorResponse = new Error();
@@ -363,7 +364,7 @@ final class ClusterApiUtils {
    * activating it) — in that case nothing has completed yet, so the whole phase is still pending.
    */
   private static void splitSubConfigOperations(
-      final String physicalTenantId,
+      final @Nullable String physicalTenantId,
       final List<? extends ClusterConfigurationChangeOperation> phaseOperations,
       final Optional<? extends ChangePlan> subConfigPlan,
       final List<CompletedOperationProgress> completed,
@@ -435,7 +436,7 @@ final class ClusterApiUtils {
   }
 
   private static List<Operation> mapOperations(
-      final String physicalTenantId,
+      final @Nullable String physicalTenantId,
       final List<? extends ClusterConfigurationChangeOperation> operations) {
     return operations.stream().map(op -> mapOperation(physicalTenantId, op)).toList();
   }
@@ -461,7 +462,8 @@ final class ClusterApiUtils {
   }
 
   static Operation mapOperation(
-      final String physicalTenantId, final ClusterConfigurationChangeOperation operation) {
+      final @Nullable String physicalTenantId,
+      final ClusterConfigurationChangeOperation operation) {
     final var convertedOperation =
         switch (operation) {
           case final MemberJoinOperation join ->
@@ -739,7 +741,7 @@ final class ClusterApiUtils {
   }
 
   private static List<PartitionState> mapPartitionStates(
-      final String physicalTenantId,
+      final @Nullable String physicalTenantId,
       final SortedMap<Integer, io.camunda.zeebe.dynamic.config.state.PartitionState> partitions) {
     return partitions.entrySet().stream()
         .map(
@@ -755,7 +757,10 @@ final class ClusterApiUtils {
 
   private static PartitionConfig mapPartitionConfig(final DynamicPartitionConfig config) {
     final var exporters =
-        config.exporting().exporters().entrySet().stream()
+        requireNonNull(config.exporting(), "exporting config must be initialized")
+            .exporters()
+            .entrySet()
+            .stream()
             .map(
                 entry ->
                     new ExporterConfig()
@@ -1023,7 +1028,8 @@ final class ClusterApiUtils {
         new TopologyChangeCompletedInner()
             .operation(
                 TopologyChangeCompletedInner.OperationEnum.fromValue(
-                    operation.getOperation().getValue()))
+                    requireNonNull(operation.getOperation(), "operation type must be set")
+                        .getValue()))
             .brokerId(operation.getBrokerId())
             .partitionId(operation.getPartitionId())
             .physicalTenant(operation.getPhysicalTenant())
@@ -1098,7 +1104,13 @@ final class ClusterApiUtils {
             .flatMap(
                 m ->
                     m.partitions().values().stream()
-                        .flatMap(p -> p.config().exporting().exporters().entrySet().stream()))
+                        .flatMap(
+                            p ->
+                                requireNonNull(
+                                    p.config().exporting(), "exporting config must be initialized")
+                                    .exporters()
+                                    .entrySet()
+                                    .stream()))
             .collect(
                 Collectors.groupingBy(Entry::getKey, mapping(e -> e.getValue().state(), toList())));
     return exporters.entrySet().stream()
@@ -1122,7 +1134,8 @@ final class ClusterApiUtils {
       final ExporterStatus status,
       final ExporterStatus other,
       final ClusterConfiguration clusterConfiguration) {
-    if (status.getStatus().equals(other.getStatus()) && !clusterConfiguration.hasPendingChanges()) {
+    if (requireNonNull(status.getStatus(), "status must be set").equals(other.getStatus())
+        && !clusterConfiguration.hasPendingChanges()) {
       return status;
     }
 

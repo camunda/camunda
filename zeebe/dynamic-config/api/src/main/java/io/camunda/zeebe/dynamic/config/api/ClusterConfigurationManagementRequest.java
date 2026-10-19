@@ -20,11 +20,9 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.Set;
-import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
 /** Defines the supported requests for the configuration management. */
-@NullMarked
 public sealed interface ClusterConfigurationManagementRequest {
 
   /**

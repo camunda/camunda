@@ -24,7 +24,6 @@ import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
-import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -56,7 +55,6 @@ import org.jspecify.annotations.Nullable;
  * @param availability whether this tenant is currently disabled; carries its own version,
  *     independent of {@code version} — see {@link TenantAvailability}
  */
-@NullMarked
 public record PartitionGroupConfiguration(
     long version,
     long incarnationNumber,

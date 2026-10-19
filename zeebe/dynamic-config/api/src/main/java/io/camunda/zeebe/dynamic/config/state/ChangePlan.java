@@ -11,7 +11,6 @@ import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan.CompletedOperatio
 import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan.Status;
 import java.time.Instant;
 import java.util.List;
-import org.jspecify.annotations.NullMarked;
 
 /**
  * What every consumer outside the execution loop needs from an ongoing change, whichever execution
@@ -37,7 +36,6 @@ import org.jspecify.annotations.NullMarked;
  * <p>{@link ClusterChangePlan} implements this without any other change: it already had every
  * method below. That is the whole cost of coexistence on the retiring path.
  */
-@NullMarked
 public sealed interface ChangePlan permits ClusterChangePlan, DependencyChangePlan {
 
   /** The id of this change, as issued by the coordinator. */

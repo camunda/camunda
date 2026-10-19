@@ -20,7 +20,6 @@ import java.util.SortedMap;
 import java.util.SortedSet;
 import java.util.TreeMap;
 import java.util.TreeSet;
-import org.jspecify.annotations.NullMarked;
 
 /**
  * The operations of one change and the order constraints between them — the immutable template a
@@ -70,7 +69,6 @@ import org.jspecify.annotations.NullMarked;
  *       depends on the live configuration, not just on its own fields.
  * </ul>
  */
-@NullMarked
 public record OperationGraph(SortedMap<OperationId, PlannedOperation> operations) {
 
   /**

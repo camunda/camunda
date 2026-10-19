@@ -16,7 +16,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import org.jspecify.annotations.NullMarked;
 
 /**
  * Awaits completion of a cluster configuration change submitted through a {@link
@@ -24,7 +23,6 @@ import org.jspecify.annotations.NullMarked;
  * been fully applied. Useful for callers that need a synchronous request/response contract on top
  * of the otherwise asynchronous cluster configuration change mechanism.
  */
-@NullMarked
 public final class ClusterConfigurationChangeAwaiter {
 
   private final ClusterConfigurationManagementRequestSender requestSender;

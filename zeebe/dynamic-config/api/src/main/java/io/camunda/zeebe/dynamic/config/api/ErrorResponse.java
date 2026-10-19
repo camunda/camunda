@@ -7,7 +7,9 @@
  */
 package io.camunda.zeebe.dynamic.config.api;
 
-public record ErrorResponse(ErrorCode code, String message) {
+import org.jspecify.annotations.Nullable;
+
+public record ErrorResponse(ErrorCode code, @Nullable String message) {
 
   /**
    * Maps this error response to the corresponding typed {@link

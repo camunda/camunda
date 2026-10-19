@@ -26,7 +26,6 @@ import java.util.Optional;
 import java.util.SortedMap;
 import java.util.SortedSet;
 import java.util.TreeMap;
-import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -37,7 +36,6 @@ import org.jspecify.annotations.Nullable;
  * {@link PartitionRestoreOperation} or {@link PartitionPreRestoreOperation}. There is at most one
  * restore in flight at any time.
  */
-@NullMarked
 public record RestoreStatus(ChangePlan plan, List<BrokerRestoreStatus> brokers) {
 
   /** Derives {@code brokers} from the plan once, rather than recomputing it on every access. */

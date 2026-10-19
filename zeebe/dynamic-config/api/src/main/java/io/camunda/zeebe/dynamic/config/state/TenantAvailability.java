@@ -7,8 +7,6 @@
  */
 package io.camunda.zeebe.dynamic.config.state;
 
-import org.jspecify.annotations.NullMarked;
-
 /**
  * Whether a physical tenant (a {@link PartitionGroupConfiguration}) is currently running, and if
  * not why. The three cases are mutually exclusive, so they are one {@link State} rather than
@@ -31,7 +29,6 @@ import org.jspecify.annotations.NullMarked;
  * @param version this sub-record's own version, bumped on every state change
  * @param state whether the tenant is running, and if not why
  */
-@NullMarked
 public record TenantAvailability(long version, State state) {
 
   public static final long INITIAL_VERSION = 0;

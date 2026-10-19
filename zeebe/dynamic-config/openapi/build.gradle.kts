@@ -78,6 +78,7 @@ dependencies {
   implementation(libs.io.swagger.core.v3.swagger.annotations.jakarta)
   implementation(libs.org.springframework.spring.core)
   implementation(libs.org.springframework.spring.context)
+  implementation(libs.org.jspecify.jspecify)
 }
 
 description = "Zeebe Dynamic Cluster Configuration OpenAPI"

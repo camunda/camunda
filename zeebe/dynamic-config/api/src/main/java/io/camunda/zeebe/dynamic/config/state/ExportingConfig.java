@@ -16,6 +16,7 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.Optional;
 import java.util.SortedMap;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Represents configuration or state of exporting in a partition that can be updated during runtime.
@@ -52,11 +53,15 @@ public record ExportingConfig(ExportingState state, SortedMap<String, ExporterSt
     return new ExportingConfig(state, newExporters);
   }
 
+  private ExporterState exporter(final String exporterName) {
+    return requireNonNull(exporters.get(exporterName), "exporter must exist: " + exporterName);
+  }
+
   public ExportingConfig disableExporter(final String exporterName) {
     return updateExporter(
         exporterName,
         new ExporterState(
-            exporters.get(exporterName).metadataVersion(),
+            exporter(exporterName).metadataVersion(),
             ExporterState.State.DISABLED,
             Optional.empty()));
   }
@@ -77,7 +82,7 @@ public record ExportingConfig(ExportingState state, SortedMap<String, ExporterSt
             builder.put(
                 exporterName,
                 new ExporterState(
-                    exporters.get(exporterName).metadataVersion(),
+                    exporter(exporterName).metadataVersion(),
                     ExporterState.State.DISABLED,
                     Optional.empty())));
 
@@ -91,7 +96,9 @@ public record ExportingConfig(ExportingState state, SortedMap<String, ExporterSt
   }
 
   public ExportingConfig enableExporter(
-      final String exporterName, final String initializeFrom, final long metadataVersion) {
+      final String exporterName,
+      @Nullable final String initializeFrom,
+      final long metadataVersion) {
     return updateExporter(
         exporterName,
         new ExporterState(metadataVersion, State.ENABLED, Optional.ofNullable(initializeFrom)));
@@ -131,9 +138,9 @@ public record ExportingConfig(ExportingState state, SortedMap<String, ExporterSt
             builder.put(
                 exporterName,
                 new ExporterState(
-                    exporters.get(exporterName).metadataVersion(),
+                    exporter(exporterName).metadataVersion(),
                     ExporterState.State.CONFIG_NOT_FOUND,
-                    exporters.get(exporterName).initializedFrom())));
+                    exporter(exporterName).initializedFrom())));
 
     final var newExporters =
         builder.buildKeepingLast(); // choose last one if there are duplicate keys

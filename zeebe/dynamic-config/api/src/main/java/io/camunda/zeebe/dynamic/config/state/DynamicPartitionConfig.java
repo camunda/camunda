@@ -7,10 +7,13 @@
  */
 package io.camunda.zeebe.dynamic.config.state;
 
+import static java.util.Objects.requireNonNull;
+
 import java.util.function.UnaryOperator;
+import org.jspecify.annotations.Nullable;
 
 /** Represents configuration of a partition that can be updated during runtime. */
-public record DynamicPartitionConfig(ExportingConfig exporting) {
+public record DynamicPartitionConfig(@Nullable ExportingConfig exporting) {
 
   public static DynamicPartitionConfig uninitialized() {
     return new DynamicPartitionConfig(null);
@@ -30,6 +33,7 @@ public record DynamicPartitionConfig(ExportingConfig exporting) {
 
   public DynamicPartitionConfig updateExporting(
       final UnaryOperator<ExportingConfig> exportingUpdater) {
-    return new DynamicPartitionConfig(exportingUpdater.apply(exporting));
+    return new DynamicPartitionConfig(
+        exportingUpdater.apply(requireNonNull(exporting, "exporting config must be initialized")));
   }
 }

@@ -127,8 +127,8 @@ public final class ConfigurationUtil {
     }
 
     final var memberPriorityByPartition = new HashMap<Integer, Map<MemberId, Integer>>();
-    clusterConfiguration
-        .partitionGroup(groupName)
+    requireNonNull(
+            clusterConfiguration.partitionGroup(groupName), "unknown partition group " + groupName)
         .members()
         .forEach(
             (memberId, member) -> {
