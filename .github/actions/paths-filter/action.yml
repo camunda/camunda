@@ -375,6 +375,7 @@ runs:
           - '**/src/it/**'
           # extra source root registered via build-helper-maven-plugin in the configuration module
           - 'configuration/src/build/**'
+          - '!gradle/**'
 
         maven-change:
           - 'bom/**'
