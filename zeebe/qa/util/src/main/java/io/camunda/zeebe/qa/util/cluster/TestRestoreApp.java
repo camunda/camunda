@@ -64,9 +64,13 @@ public final class TestRestoreApp extends TestSpringApplication<TestRestoreApp> 
       args.add(
           "--backupId="
               + Arrays.stream(backupId).mapToObj(Long::toString).collect(Collectors.joining(",")));
-    } else if (from != null && to != null) {
-      args.add("--from=" + from);
-      args.add("--to=" + to);
+    } else {
+      if (from != null) {
+        args.add("--from=" + from);
+      }
+      if (to != null) {
+        args.add("--to=" + to);
+      }
     }
     if (allTenants) {
       args.add("--allTenants");
