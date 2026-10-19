@@ -1,0 +1,38 @@
+{
+  "executionPlatform": "Camunda Cloud",
+  "executionPlatformVersion": "8.11.0",
+  "exporter": {
+    "name": "Camunda Modeler",
+    "version": "5.40.0"
+  },
+  "schemaVersion": 18,
+  "id": "final-review",
+  "type": "default",
+  "components": [
+    {
+      "type": "text",
+      "text": "### Step 2 of 2: final review",
+      "id": "Text_347"
+    },
+    {
+      "type": "textfield",
+      "key": "employeeName",
+      "label": "Employee",
+      "id": "Field_employeeName_348",
+      "readonly": true
+    },
+    {
+      "type": "textfield",
+      "key": "midProbationRating",
+      "label": "Mid-probation rating",
+      "id": "Field_midProbationRating_349",
+      "readonly": true
+    },
+    {
+      "type": "checkbox",
+      "key": "probationPassed",
+      "label": "The employee passed the probation",
+      "id": "Field_probationPassed_350"
+    }
+  ]
+}

@@ -9,7 +9,7 @@
 /* global process, Buffer */
 
 // Deploys the demo case models and starts cases in different situations.
-// Usage: node seed.mjs [--deploy-only] [--only=loan|claim|address]
+// Usage: node seed.mjs [--deploy-only] [--only=loan|claim|onboarding|address]
 // Environment: CAMUNDA_URL (default http://localhost:8080), CAMUNDA_USER / CAMUNDA_PASSWORD (default demo / demo)
 
 import {readFile, readdir} from 'node:fs/promises';
@@ -262,6 +262,100 @@ async function seedClaims(documents) {
 	await completeTask(rejected, 'decide-claim', {decision: 'rejected', decisionNotes: 'Below the deductible.'});
 }
 
+// Employee onboarding: stages with sequential tasks, a loop inside a stage, an automatic step, an alternative stage.
+async function seedOnboardings() {
+	const onboarding = (number, employeeName, role, team, label) =>
+		startCase(
+			'employee-onboarding',
+			`ON-${RUN_ID}-${number}`,
+			{
+				onboardingId: `ON-${RUN_ID}-${number}`,
+				onboardingTitle: `Onboarding of ${employeeName}, ${role}`,
+				employeeName,
+				role,
+				team,
+				startDate: '2026-11-02',
+				manager: 'demo',
+			},
+			label,
+		);
+	const prepare = async (key) => {
+		await completeTask(key, 'create-contract', {contractType: 'permanent', salary: 62000});
+		await completeTask(key, 'collect-signed-contract', {contractSigned: true});
+		await completeTask(key, 'order-equipment', {laptopModel: 'developer', phoneNeeded: false});
+	};
+	const firstDay = async (key) => {
+		await completeTask(key, 'welcome-employee', {welcomeNotes: 'Team lunch at noon.'});
+		await completeTask(key, 'hand-over-equipment', {equipmentHandedOver: true});
+		await completeTask(key, 'set-up-accounts', {emailAddress: 'new.hire@example.com', accountsCreated: true});
+	};
+	const train = async (key) => {
+		await completeTask(key, 'complete-safety-training', {safetyTrainingPassed: true});
+		await completeTask(key, 'shadow-colleague', {buddy: 'Ana Silva', shadowingNotes: 'Release process'});
+		await completeTask(key, 'sign-off-training', {trainingSignedOff: true});
+	};
+
+	await onboarding('01', 'Hannah Schulz', 'Backend engineer', 'Platform', 'Onboarding: new, step 1 of Preparation');
+
+	const signing = await onboarding('02', 'Diego Ramos', 'Designer', 'Experience', 'Onboarding: step 2 of Preparation');
+	await completeTask(signing, 'create-contract', {contractType: 'fixed-term', salary: 54000});
+
+	const followUp = await onboarding(
+		'03',
+		'Aisha Khan',
+		'Data analyst',
+		'Insights',
+		'Onboarding: contract not signed, loop in the stage',
+	);
+	await completeTask(followUp, 'create-contract', {contractType: 'permanent', salary: 58000});
+	await completeTask(followUp, 'collect-signed-contract', {contractSigned: false});
+
+	const handOver = await onboarding(
+		'04',
+		'Lukas Weber',
+		'Frontend engineer',
+		'Platform',
+		'Onboarding: First day, step 2 of 3',
+	);
+	await prepare(handOver);
+	await completeTask(handOver, 'welcome-employee', {welcomeNotes: 'Office tour done.'});
+
+	const signOff = await onboarding(
+		'05',
+		'Sofia Rossi',
+		'Product manager',
+		'Growth',
+		'Onboarding: Training, step 3 of 3',
+	);
+	await prepare(signOff);
+	await firstDay(signOff);
+	await completeTask(signOff, 'complete-safety-training', {safetyTrainingPassed: true});
+	await completeTask(signOff, 'shadow-colleague', {buddy: 'Lena Fischer', shadowingNotes: 'Roadmap planning'});
+
+	const review = await onboarding(
+		'06',
+		'Ben Carter',
+		'Support engineer',
+		'Customer care',
+		'Onboarding: Probation, final review',
+	);
+	await prepare(review);
+	await firstDay(review);
+	await train(review);
+	await completeTask(review, 'mid-probation-review', {midProbationRating: 'on-track'});
+
+	const declined = await onboarding(
+		'07',
+		'Chloe Martin',
+		'Recruiter',
+		'People',
+		'Onboarding: offer declined (alternative stage)',
+	);
+	await completeTask(declined, 'create-contract', {contractType: 'permanent', salary: 51000});
+	await waitForElement(declined, 'collect-signed-contract');
+	await correlate('offer-declined', `ON-${RUN_ID}-07`);
+}
+
 // A process without a case marker: the case page shows it without stages.
 async function seedAddressChange() {
 	await startCase(
@@ -292,6 +386,10 @@ async function main() {
 
 	if (ONLY === undefined || ONLY === 'claim') {
 		await seedClaims(documents);
+	}
+
+	if (ONLY === undefined || ONLY === 'onboarding') {
+		await seedOnboardings();
 	}
 
 	if (ONLY === undefined || ONLY === 'address') {

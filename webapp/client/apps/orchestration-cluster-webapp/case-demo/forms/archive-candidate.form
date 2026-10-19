@@ -1,0 +1,29 @@
+{
+  "executionPlatform": "Camunda Cloud",
+  "executionPlatformVersion": "8.11.0",
+  "exporter": {
+    "name": "Camunda Modeler",
+    "version": "5.40.0"
+  },
+  "schemaVersion": 18,
+  "id": "archive-candidate",
+  "type": "default",
+  "components": [
+    {
+      "type": "textfield",
+      "key": "employeeName",
+      "label": "Employee",
+      "id": "Field_employeeName_351",
+      "readonly": true
+    },
+    {
+      "type": "textarea",
+      "key": "declineReason",
+      "label": "Why did the candidate decline?",
+      "id": "Field_declineReason_352",
+      "validate": {
+        "required": true
+      }
+    }
+  ]
+}

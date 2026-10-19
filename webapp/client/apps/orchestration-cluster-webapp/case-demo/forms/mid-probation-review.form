@@ -1,0 +1,54 @@
+{
+  "executionPlatform": "Camunda Cloud",
+  "executionPlatformVersion": "8.11.0",
+  "exporter": {
+    "name": "Camunda Modeler",
+    "version": "5.40.0"
+  },
+  "schemaVersion": 18,
+  "id": "mid-probation-review",
+  "type": "default",
+  "components": [
+    {
+      "type": "text",
+      "text": "### Step 1 of 2: mid-probation review",
+      "id": "Text_343"
+    },
+    {
+      "type": "textfield",
+      "key": "employeeName",
+      "label": "Employee",
+      "id": "Field_employeeName_344",
+      "readonly": true
+    },
+    {
+      "type": "radio",
+      "key": "midProbationRating",
+      "label": "Rating",
+      "id": "Field_midProbationRating_345",
+      "validate": {
+        "required": true
+      },
+      "values": [
+        {
+          "value": "on-track",
+          "label": "On track"
+        },
+        {
+          "value": "needs-support",
+          "label": "Needs support"
+        },
+        {
+          "value": "at-risk",
+          "label": "At risk"
+        }
+      ]
+    },
+    {
+      "type": "textarea",
+      "key": "midProbationNotes",
+      "label": "Notes",
+      "id": "Field_midProbationNotes_346"
+    }
+  ]
+}

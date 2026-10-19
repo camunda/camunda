@@ -5,16 +5,17 @@ project (`CASE_UI.md`, `STAGES.md`, `CASE_DATA.md`, `CASE_IDENTITY.md`, `NEXT_WO
 
 ## Contents
 
-| File                           | Purpose                                                                                                                                 |
-| ------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------- |
-| `loan-application.bpmn`        | The loan case: case marker, two embedded stages, an ad-hoc stage with "I am done" / "Stage done", two more stages, an alternative stage |
-| `loan-with-credit-bureau.bpmn` | A case with a call activity. It is outside the case contract, so the case page shows the simplified view                                |
-| `credit-bureau-check.bpmn`     | The process that the call activity calls                                                                                                |
-| `insurance-claim.bpmn`         | The claim case: deep nesting, a skipped stage, a rework loop, three alternative stages, an optional stage, an incident                  |
-| `address-change.bpmn`          | A process without a case marker: the case page shows it without stages                                                                  |
-| `forms/`                       | The task forms and the case forms `loan-case-details` and `claim-case-details`                                                          |
-| `seed.mjs`                     | Deploys everything and starts cases in different situations; `--only=loan`, `--only=claim` or `--only=address` seeds one group          |
-| `start-camunda.sh`             | Starts the orchestration cluster from the local `dist` build, like `make env-up` in `webapp/`                                           |
+| File                           | Purpose                                                                                                                                             |
+| ------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `loan-application.bpmn`        | The loan case: case marker, two embedded stages, an ad-hoc stage with "I am done" / "Stage done", two more stages, an alternative stage             |
+| `loan-with-credit-bureau.bpmn` | A case with a call activity. It is outside the case contract, so the case page shows the simplified view                                            |
+| `credit-bureau-check.bpmn`     | The process that the call activity calls                                                                                                            |
+| `insurance-claim.bpmn`         | The claim case: deep nesting, a skipped stage, a rework loop, three alternative stages, an optional stage, an incident                              |
+| `employee-onboarding.bpmn`     | The onboarding case: stages with sequential tasks, a loop inside a stage, an automatic step, an alternative stage                                   |
+| `address-change.bpmn`          | A process without a case marker: the case page shows it without stages                                                                              |
+| `forms/`                       | The task forms and the case forms `loan-case-details`, `claim-case-details` and `onboarding-case-details`                                           |
+| `seed.mjs`                     | Deploys everything and starts cases in different situations; `--only=loan`, `--only=claim`, `--only=onboarding` or `--only=address` seeds one group |
+| `start-camunda.sh`             | Starts the orchestration cluster from the local `dist` build, like `make env-up` in `webapp/`                                                       |
 
 ## The insurance claim case
 
@@ -34,6 +35,20 @@ Insurance claim                          process, case marker
 ├─ Fraud investigation                   alternative stage: escalation from inside "Claim registered"
 ├─ Claim expired                         alternative stage: timer, the deadline comes from the variable claimDeadline
 └─ Customer contact                      non-interrupting event sub-process: optional stage, see GAP-001
+```
+
+## The employee onboarding case
+
+```
+Employee onboarding                      process, case marker
+├─ Preparation                           stage, sequential tasks:
+│  Create the contract → Collect the signed contract → (Contract signed?)
+│     no:  Follow up with the candidate → back to Collect the signed contract
+│     yes: Order the equipment → Generate the employee ID (script task, no person)
+├─ First day                             Welcome the employee → Hand over the equipment → Set up the accounts
+├─ Training                              Complete the safety training → Shadow a colleague → Sign off the training
+├─ Probation                             Hold the mid-probation review → Hold the final review
+└─ Offer declined                        alternative stage: message
 ```
 
 ## Seeded situations
@@ -57,6 +72,13 @@ Insurance claim                          process, case marker
 | `CL-…-10`   | Suspended                                | Badge "Suspended"                                                                        |
 | (none)      | No business ID                           | The list and the header show the process instance key                                    |
 | `CL-…-12`   | Rejected                                 | Completed case: not in the list, Payout reads as skipped; the seed prints its link       |
+| `ON-…-01`   | New onboarding                           | Preparation, step 1: Create the contract                                                 |
+| `ON-…-02`   | Contract created                         | Preparation, step 2: Collect the signed contract                                         |
+| `ON-…-03`   | Contract not signed                      | The loop inside Preparation: Follow up with the candidate                                |
+| `ON-…-04`   | Preparation done, employee welcomed      | First day, step 2; the header shows the employee ID from the script task                 |
+| `ON-…-05`   | First day done, two trainings done       | Training, step 3: Sign off the training                                                  |
+| `ON-…-06`   | Mid-probation review done                | Probation, step 2: Hold the final review                                                 |
+| `ON-…-07`   | Offer declined                           | Offer declined replaces the line; Preparation reads as cancelled                         |
 | `AC-…-01`   | Address change                           | No case marker: no stages, all open tasks                                                |
 
 ## Run

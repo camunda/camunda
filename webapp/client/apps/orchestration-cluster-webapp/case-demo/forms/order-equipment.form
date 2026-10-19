@@ -1,0 +1,54 @@
+{
+  "executionPlatform": "Camunda Cloud",
+  "executionPlatformVersion": "8.11.0",
+  "exporter": {
+    "name": "Camunda Modeler",
+    "version": "5.40.0"
+  },
+  "schemaVersion": 18,
+  "id": "order-equipment",
+  "type": "default",
+  "components": [
+    {
+      "type": "text",
+      "text": "### Step 3 of 3: order the equipment",
+      "id": "Text_321"
+    },
+    {
+      "type": "textfield",
+      "key": "employeeName",
+      "label": "Employee",
+      "id": "Field_employeeName_322",
+      "readonly": true
+    },
+    {
+      "type": "select",
+      "key": "laptopModel",
+      "label": "Laptop",
+      "id": "Field_laptopModel_323",
+      "validate": {
+        "required": true
+      },
+      "values": [
+        {
+          "value": "standard",
+          "label": "Standard 14\""
+        },
+        {
+          "value": "developer",
+          "label": "Developer 16\""
+        },
+        {
+          "value": "designer",
+          "label": "Designer 16\""
+        }
+      ]
+    },
+    {
+      "type": "checkbox",
+      "key": "phoneNeeded",
+      "label": "The employee needs a phone",
+      "id": "Field_phoneNeeded_324"
+    }
+  ]
+}

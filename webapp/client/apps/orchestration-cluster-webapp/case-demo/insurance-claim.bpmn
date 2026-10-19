@@ -403,364 +403,364 @@
   <bpmndi:BPMNDiagram id="insurance-claim-diagram">
     <bpmndi:BPMNPlane id="insurance-claim-plane" bpmnElement="insurance-claim">
       <bpmndi:BPMNShape id="claim-submitted_di" bpmnElement="claim-submitted">
-        <dc:Bounds x="110" y="252" width="36" height="36" />
+        <dc:Bounds x="110" y="212" width="36" height="36" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="claim-registered_di" bpmnElement="claim-registered" isExpanded="true">
-        <dc:Bounds x="196" y="184" width="432" height="172" />
+        <dc:Bounds x="196" y="144" width="432" height="172" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="registered-start_di" bpmnElement="registered-start">
-        <dc:Bounds x="226" y="252" width="36" height="36" />
+        <dc:Bounds x="226" y="212" width="36" height="36" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="register-claim_di" bpmnElement="register-claim">
-        <dc:Bounds x="312" y="230" width="100" height="80" />
+        <dc:Bounds x="312" y="190" width="100" height="80" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="fraud-check_di" bpmnElement="fraud-check">
-        <dc:Bounds x="462" y="245" width="50" height="50" />
+        <dc:Bounds x="462" y="205" width="50" height="50" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="fraud-suspected_di" bpmnElement="fraud-suspected">
-        <dc:Bounds x="562" y="214" width="36" height="36" />
+        <dc:Bounds x="562" y="174" width="36" height="36" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="registered-end_di" bpmnElement="registered-end">
-        <dc:Bounds x="562" y="290" width="36" height="36" />
+        <dc:Bounds x="562" y="250" width="36" height="36" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="damage-routing_di" bpmnElement="damage-routing">
-        <dc:Bounds x="678" y="245" width="50" height="50" />
+        <dc:Bounds x="678" y="205" width="50" height="50" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="expert-assessment_di" bpmnElement="expert-assessment" isExpanded="true">
-        <dc:Bounds x="778" y="110" width="1528" height="320" />
+        <dc:Bounds x="778" y="70" width="1528" height="320" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="expert-start_di" bpmnElement="expert-start">
-        <dc:Bounds x="808" y="252" width="36" height="36" />
+        <dc:Bounds x="808" y="212" width="36" height="36" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="expert-split_di" bpmnElement="expert-split">
-        <dc:Bounds x="894" y="245" width="50" height="50" />
+        <dc:Bounds x="894" y="205" width="50" height="50" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="inspect-damage_di" bpmnElement="inspect-damage">
-        <dc:Bounds x="1110" y="140" width="100" height="80" />
+        <dc:Bounds x="1110" y="100" width="100" height="80" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="collect-quotes_di" bpmnElement="collect-quotes" isExpanded="true">
-        <dc:Bounds x="994" y="260" width="332" height="140" />
+        <dc:Bounds x="994" y="220" width="332" height="140" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="quotes-start_di" bpmnElement="quotes-start">
-        <dc:Bounds x="1024" y="312" width="36" height="36" />
+        <dc:Bounds x="1024" y="272" width="36" height="36" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="request-quote_di" bpmnElement="request-quote">
-        <dc:Bounds x="1110" y="290" width="100" height="80" />
+        <dc:Bounds x="1110" y="250" width="100" height="80" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="quotes-end_di" bpmnElement="quotes-end">
-        <dc:Bounds x="1260" y="312" width="36" height="36" />
+        <dc:Bounds x="1260" y="272" width="36" height="36" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="expert-join_di" bpmnElement="expert-join">
-        <dc:Bounds x="1376" y="245" width="50" height="50" />
+        <dc:Bounds x="1376" y="205" width="50" height="50" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="expert-report_di" bpmnElement="expert-report" isExpanded="true">
-        <dc:Bounds x="1476" y="170" width="714" height="200" />
+        <dc:Bounds x="1476" y="130" width="714" height="200" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="report-start_di" bpmnElement="report-start">
-        <dc:Bounds x="1506" y="252" width="36" height="36" />
+        <dc:Bounds x="1506" y="212" width="36" height="36" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="draft-report_di" bpmnElement="draft-report" isExpanded="true">
-        <dc:Bounds x="1592" y="200" width="332" height="140" />
+        <dc:Bounds x="1592" y="160" width="332" height="140" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="draft-start_di" bpmnElement="draft-start">
-        <dc:Bounds x="1622" y="252" width="36" height="36" />
+        <dc:Bounds x="1622" y="212" width="36" height="36" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="write-report_di" bpmnElement="write-report">
-        <dc:Bounds x="1708" y="230" width="100" height="80" />
+        <dc:Bounds x="1708" y="190" width="100" height="80" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="draft-end_di" bpmnElement="draft-end">
-        <dc:Bounds x="1858" y="252" width="36" height="36" />
+        <dc:Bounds x="1858" y="212" width="36" height="36" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="review-report_di" bpmnElement="review-report">
-        <dc:Bounds x="1974" y="230" width="100" height="80" />
+        <dc:Bounds x="1974" y="190" width="100" height="80" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="report-end_di" bpmnElement="report-end">
-        <dc:Bounds x="2124" y="252" width="36" height="36" />
+        <dc:Bounds x="2124" y="212" width="36" height="36" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="expert-end_di" bpmnElement="expert-end">
-        <dc:Bounds x="2240" y="252" width="36" height="36" />
+        <dc:Bounds x="2240" y="212" width="36" height="36" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="coverage-check_di" bpmnElement="coverage-check" isExpanded="true">
-        <dc:Bounds x="2356" y="200" width="610" height="140" />
+        <dc:Bounds x="2356" y="160" width="610" height="140" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="check-policy_di" bpmnElement="check-policy">
-        <dc:Bounds x="2386" y="230" width="100" height="80" />
+        <dc:Bounds x="2386" y="190" width="100" height="80" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="check-deductible_di" bpmnElement="check-deductible">
-        <dc:Bounds x="2536" y="230" width="100" height="80" />
+        <dc:Bounds x="2536" y="190" width="100" height="80" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="ask-customer_di" bpmnElement="ask-customer">
-        <dc:Bounds x="2686" y="230" width="100" height="80" />
+        <dc:Bounds x="2686" y="190" width="100" height="80" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="request-police-report_di" bpmnElement="request-police-report">
-        <dc:Bounds x="2836" y="230" width="100" height="80" />
+        <dc:Bounds x="2836" y="190" width="100" height="80" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="decision_di" bpmnElement="decision" isExpanded="true">
-        <dc:Bounds x="3016" y="200" width="332" height="140" />
+        <dc:Bounds x="3016" y="160" width="332" height="140" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="decision-start_di" bpmnElement="decision-start">
-        <dc:Bounds x="3046" y="252" width="36" height="36" />
+        <dc:Bounds x="3046" y="212" width="36" height="36" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="decide-claim_di" bpmnElement="decide-claim">
-        <dc:Bounds x="3132" y="230" width="100" height="80" />
+        <dc:Bounds x="3132" y="190" width="100" height="80" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="decision-end_di" bpmnElement="decision-end">
-        <dc:Bounds x="3282" y="252" width="36" height="36" />
+        <dc:Bounds x="3282" y="212" width="36" height="36" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="decision-routing_di" bpmnElement="decision-routing">
-        <dc:Bounds x="3398" y="245" width="50" height="50" />
+        <dc:Bounds x="3398" y="205" width="50" height="50" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="claim-rejected_di" bpmnElement="claim-rejected">
-        <dc:Bounds x="3646" y="162" width="36" height="36" />
+        <dc:Bounds x="3646" y="122" width="36" height="36" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="payout_di" bpmnElement="payout" isExpanded="true">
-        <dc:Bounds x="3498" y="238" width="332" height="140" />
+        <dc:Bounds x="3498" y="198" width="332" height="140" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="payout-start_di" bpmnElement="payout-start">
-        <dc:Bounds x="3528" y="290" width="36" height="36" />
+        <dc:Bounds x="3528" y="250" width="36" height="36" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="approve-payout_di" bpmnElement="approve-payout">
-        <dc:Bounds x="3614" y="268" width="100" height="80" />
+        <dc:Bounds x="3614" y="228" width="100" height="80" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="payout-end_di" bpmnElement="payout-end">
-        <dc:Bounds x="3764" y="290" width="36" height="36" />
+        <dc:Bounds x="3764" y="250" width="36" height="36" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="claim-paid_di" bpmnElement="claim-paid">
-        <dc:Bounds x="3880" y="252" width="36" height="36" />
+        <dc:Bounds x="3880" y="212" width="36" height="36" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="claim-withdrawn_di" bpmnElement="claim-withdrawn" isExpanded="true">
-        <dc:Bounds x="110" y="510" width="332" height="140" />
+        <dc:Bounds x="110" y="520" width="332" height="140" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="withdrawn-start_di" bpmnElement="withdrawn-start">
-        <dc:Bounds x="140" y="562" width="36" height="36" />
+        <dc:Bounds x="140" y="572" width="36" height="36" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="confirm-withdrawal_di" bpmnElement="confirm-withdrawal">
-        <dc:Bounds x="226" y="540" width="100" height="80" />
+        <dc:Bounds x="226" y="550" width="100" height="80" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="withdrawn-end_di" bpmnElement="withdrawn-end">
-        <dc:Bounds x="376" y="562" width="36" height="36" />
+        <dc:Bounds x="376" y="572" width="36" height="36" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="fraud-investigation_di" bpmnElement="fraud-investigation" isExpanded="true">
-        <dc:Bounds x="492" y="510" width="332" height="140" />
+        <dc:Bounds x="492" y="520" width="332" height="140" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="fraud-start_di" bpmnElement="fraud-start">
-        <dc:Bounds x="522" y="562" width="36" height="36" />
+        <dc:Bounds x="522" y="572" width="36" height="36" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="investigate-fraud_di" bpmnElement="investigate-fraud">
-        <dc:Bounds x="608" y="540" width="100" height="80" />
+        <dc:Bounds x="608" y="550" width="100" height="80" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="fraud-end_di" bpmnElement="fraud-end">
-        <dc:Bounds x="758" y="562" width="36" height="36" />
+        <dc:Bounds x="758" y="572" width="36" height="36" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="claim-expired_di" bpmnElement="claim-expired" isExpanded="true">
-        <dc:Bounds x="874" y="510" width="332" height="140" />
+        <dc:Bounds x="874" y="520" width="332" height="140" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="expired-start_di" bpmnElement="expired-start">
-        <dc:Bounds x="904" y="562" width="36" height="36" />
+        <dc:Bounds x="904" y="572" width="36" height="36" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="close-expired-claim_di" bpmnElement="close-expired-claim">
-        <dc:Bounds x="990" y="540" width="100" height="80" />
+        <dc:Bounds x="990" y="550" width="100" height="80" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="expired-end_di" bpmnElement="expired-end">
-        <dc:Bounds x="1140" y="562" width="36" height="36" />
+        <dc:Bounds x="1140" y="572" width="36" height="36" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="customer-contact_di" bpmnElement="customer-contact" isExpanded="true">
-        <dc:Bounds x="1256" y="510" width="332" height="140" />
+        <dc:Bounds x="1256" y="520" width="332" height="140" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="customer-called_di" bpmnElement="customer-called">
-        <dc:Bounds x="1286" y="562" width="36" height="36" />
+        <dc:Bounds x="1286" y="572" width="36" height="36" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="call-customer-back_di" bpmnElement="call-customer-back">
-        <dc:Bounds x="1372" y="540" width="100" height="80" />
+        <dc:Bounds x="1372" y="550" width="100" height="80" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="contact-end_di" bpmnElement="contact-end">
-        <dc:Bounds x="1522" y="562" width="36" height="36" />
+        <dc:Bounds x="1522" y="572" width="36" height="36" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNEdge id="flow-registered-1_di" bpmnElement="flow-registered-1">
-        <di:waypoint x="262" y="270" />
-        <di:waypoint x="312" y="270" />
+        <di:waypoint x="262" y="230" />
+        <di:waypoint x="312" y="230" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="flow-registered-2_di" bpmnElement="flow-registered-2">
-        <di:waypoint x="412" y="270" />
-        <di:waypoint x="462" y="270" />
+        <di:waypoint x="412" y="230" />
+        <di:waypoint x="462" y="230" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="flow-fraud_di" bpmnElement="flow-fraud">
-        <di:waypoint x="512" y="270" />
-        <di:waypoint x="537" y="270" />
-        <di:waypoint x="537" y="232" />
-        <di:waypoint x="562" y="232" />
+        <di:waypoint x="512" y="230" />
+        <di:waypoint x="537" y="230" />
+        <di:waypoint x="537" y="192" />
+        <di:waypoint x="562" y="192" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="flow-no-fraud_di" bpmnElement="flow-no-fraud">
-        <di:waypoint x="512" y="270" />
-        <di:waypoint x="537" y="270" />
-        <di:waypoint x="537" y="308" />
-        <di:waypoint x="562" y="308" />
+        <di:waypoint x="512" y="230" />
+        <di:waypoint x="537" y="230" />
+        <di:waypoint x="537" y="268" />
+        <di:waypoint x="562" y="268" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="flow-quotes-1_di" bpmnElement="flow-quotes-1">
-        <di:waypoint x="1060" y="330" />
-        <di:waypoint x="1110" y="330" />
+        <di:waypoint x="1060" y="290" />
+        <di:waypoint x="1110" y="290" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="flow-quotes-2_di" bpmnElement="flow-quotes-2">
-        <di:waypoint x="1210" y="330" />
-        <di:waypoint x="1260" y="330" />
+        <di:waypoint x="1210" y="290" />
+        <di:waypoint x="1260" y="290" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="flow-draft-1_di" bpmnElement="flow-draft-1">
-        <di:waypoint x="1658" y="270" />
-        <di:waypoint x="1708" y="270" />
+        <di:waypoint x="1658" y="230" />
+        <di:waypoint x="1708" y="230" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="flow-draft-2_di" bpmnElement="flow-draft-2">
-        <di:waypoint x="1808" y="270" />
-        <di:waypoint x="1858" y="270" />
+        <di:waypoint x="1808" y="230" />
+        <di:waypoint x="1858" y="230" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="flow-report-1_di" bpmnElement="flow-report-1">
-        <di:waypoint x="1542" y="270" />
-        <di:waypoint x="1592" y="270" />
+        <di:waypoint x="1542" y="230" />
+        <di:waypoint x="1592" y="230" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="flow-report-2_di" bpmnElement="flow-report-2">
-        <di:waypoint x="1924" y="270" />
-        <di:waypoint x="1974" y="270" />
+        <di:waypoint x="1924" y="230" />
+        <di:waypoint x="1974" y="230" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="flow-report-3_di" bpmnElement="flow-report-3">
-        <di:waypoint x="2074" y="270" />
-        <di:waypoint x="2124" y="270" />
+        <di:waypoint x="2074" y="230" />
+        <di:waypoint x="2124" y="230" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="flow-expert-1_di" bpmnElement="flow-expert-1">
-        <di:waypoint x="844" y="270" />
-        <di:waypoint x="894" y="270" />
+        <di:waypoint x="844" y="230" />
+        <di:waypoint x="894" y="230" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="flow-expert-inspect_di" bpmnElement="flow-expert-inspect">
-        <di:waypoint x="944" y="270" />
-        <di:waypoint x="1027" y="270" />
-        <di:waypoint x="1027" y="180" />
-        <di:waypoint x="1110" y="180" />
+        <di:waypoint x="944" y="230" />
+        <di:waypoint x="1027" y="230" />
+        <di:waypoint x="1027" y="140" />
+        <di:waypoint x="1110" y="140" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="flow-expert-quotes_di" bpmnElement="flow-expert-quotes">
-        <di:waypoint x="944" y="270" />
-        <di:waypoint x="969" y="270" />
-        <di:waypoint x="969" y="330" />
-        <di:waypoint x="994" y="330" />
+        <di:waypoint x="944" y="230" />
+        <di:waypoint x="969" y="230" />
+        <di:waypoint x="969" y="290" />
+        <di:waypoint x="994" y="290" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="flow-inspect-join_di" bpmnElement="flow-inspect-join">
-        <di:waypoint x="1210" y="180" />
-        <di:waypoint x="1293" y="180" />
-        <di:waypoint x="1293" y="270" />
-        <di:waypoint x="1376" y="270" />
+        <di:waypoint x="1210" y="140" />
+        <di:waypoint x="1293" y="140" />
+        <di:waypoint x="1293" y="230" />
+        <di:waypoint x="1376" y="230" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="flow-quotes-join_di" bpmnElement="flow-quotes-join">
-        <di:waypoint x="1326" y="330" />
-        <di:waypoint x="1351" y="330" />
-        <di:waypoint x="1351" y="270" />
-        <di:waypoint x="1376" y="270" />
+        <di:waypoint x="1326" y="290" />
+        <di:waypoint x="1351" y="290" />
+        <di:waypoint x="1351" y="230" />
+        <di:waypoint x="1376" y="230" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="flow-expert-report_di" bpmnElement="flow-expert-report">
-        <di:waypoint x="1426" y="270" />
-        <di:waypoint x="1476" y="270" />
+        <di:waypoint x="1426" y="230" />
+        <di:waypoint x="1476" y="230" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="flow-expert-end_di" bpmnElement="flow-expert-end">
-        <di:waypoint x="2190" y="270" />
-        <di:waypoint x="2240" y="270" />
+        <di:waypoint x="2190" y="230" />
+        <di:waypoint x="2240" y="230" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="flow-decision-1_di" bpmnElement="flow-decision-1">
-        <di:waypoint x="3082" y="270" />
-        <di:waypoint x="3132" y="270" />
+        <di:waypoint x="3082" y="230" />
+        <di:waypoint x="3132" y="230" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="flow-decision-2_di" bpmnElement="flow-decision-2">
-        <di:waypoint x="3232" y="270" />
-        <di:waypoint x="3282" y="270" />
+        <di:waypoint x="3232" y="230" />
+        <di:waypoint x="3282" y="230" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="flow-payout-1_di" bpmnElement="flow-payout-1">
-        <di:waypoint x="3564" y="308" />
-        <di:waypoint x="3614" y="308" />
+        <di:waypoint x="3564" y="268" />
+        <di:waypoint x="3614" y="268" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="flow-payout-2_di" bpmnElement="flow-payout-2">
-        <di:waypoint x="3714" y="308" />
-        <di:waypoint x="3764" y="308" />
+        <di:waypoint x="3714" y="268" />
+        <di:waypoint x="3764" y="268" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="flow-to-registered_di" bpmnElement="flow-to-registered">
-        <di:waypoint x="146" y="270" />
-        <di:waypoint x="196" y="270" />
+        <di:waypoint x="146" y="230" />
+        <di:waypoint x="196" y="230" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="flow-to-routing_di" bpmnElement="flow-to-routing">
-        <di:waypoint x="628" y="270" />
-        <di:waypoint x="678" y="270" />
+        <di:waypoint x="628" y="230" />
+        <di:waypoint x="678" y="230" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="flow-to-expert_di" bpmnElement="flow-to-expert">
-        <di:waypoint x="728" y="270" />
-        <di:waypoint x="778" y="270" />
+        <di:waypoint x="728" y="230" />
+        <di:waypoint x="778" y="230" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="flow-skip-expert_di" bpmnElement="flow-skip-expert">
-        <di:waypoint x="703" y="295" />
-        <di:waypoint x="703" y="450" />
-        <di:waypoint x="2661" y="450" />
-        <di:waypoint x="2661" y="340" />
+        <di:waypoint x="703" y="255" />
+        <di:waypoint x="703" y="410" />
+        <di:waypoint x="2661" y="410" />
+        <di:waypoint x="2661" y="300" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="flow-expert-to-coverage_di" bpmnElement="flow-expert-to-coverage">
-        <di:waypoint x="2306" y="270" />
-        <di:waypoint x="2356" y="270" />
+        <di:waypoint x="2306" y="230" />
+        <di:waypoint x="2356" y="230" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="flow-to-decision_di" bpmnElement="flow-to-decision">
-        <di:waypoint x="2966" y="270" />
-        <di:waypoint x="3016" y="270" />
+        <di:waypoint x="2966" y="230" />
+        <di:waypoint x="3016" y="230" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="flow-to-decision-routing_di" bpmnElement="flow-to-decision-routing">
-        <di:waypoint x="3348" y="270" />
-        <di:waypoint x="3398" y="270" />
+        <di:waypoint x="3348" y="230" />
+        <di:waypoint x="3398" y="230" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="flow-approved_di" bpmnElement="flow-approved">
-        <di:waypoint x="3448" y="270" />
-        <di:waypoint x="3473" y="270" />
-        <di:waypoint x="3473" y="308" />
-        <di:waypoint x="3498" y="308" />
+        <di:waypoint x="3448" y="230" />
+        <di:waypoint x="3473" y="230" />
+        <di:waypoint x="3473" y="268" />
+        <di:waypoint x="3498" y="268" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="flow-need-more-info_di" bpmnElement="flow-need-more-info">
-        <di:waypoint x="3423" y="245" />
-        <di:waypoint x="3423" y="90" />
-        <di:waypoint x="2661" y="90" />
-        <di:waypoint x="2661" y="200" />
+        <di:waypoint x="3423" y="255" />
+        <di:waypoint x="3423" y="430" />
+        <di:waypoint x="2676" y="430" />
+        <di:waypoint x="2676" y="300" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="flow-rejected_di" bpmnElement="flow-rejected">
-        <di:waypoint x="3448" y="270" />
-        <di:waypoint x="3547" y="270" />
-        <di:waypoint x="3547" y="180" />
-        <di:waypoint x="3646" y="180" />
+        <di:waypoint x="3448" y="230" />
+        <di:waypoint x="3547" y="230" />
+        <di:waypoint x="3547" y="140" />
+        <di:waypoint x="3646" y="140" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="flow-to-paid_di" bpmnElement="flow-to-paid">
-        <di:waypoint x="3830" y="308" />
-        <di:waypoint x="3855" y="308" />
-        <di:waypoint x="3855" y="270" />
-        <di:waypoint x="3880" y="270" />
+        <di:waypoint x="3830" y="268" />
+        <di:waypoint x="3855" y="268" />
+        <di:waypoint x="3855" y="230" />
+        <di:waypoint x="3880" y="230" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="flow-withdrawn-1_di" bpmnElement="flow-withdrawn-1">
-        <di:waypoint x="176" y="580" />
-        <di:waypoint x="226" y="580" />
+        <di:waypoint x="176" y="590" />
+        <di:waypoint x="226" y="590" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="flow-withdrawn-2_di" bpmnElement="flow-withdrawn-2">
-        <di:waypoint x="326" y="580" />
-        <di:waypoint x="376" y="580" />
+        <di:waypoint x="326" y="590" />
+        <di:waypoint x="376" y="590" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="flow-fraud-1_di" bpmnElement="flow-fraud-1">
-        <di:waypoint x="558" y="580" />
-        <di:waypoint x="608" y="580" />
+        <di:waypoint x="558" y="590" />
+        <di:waypoint x="608" y="590" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="flow-fraud-2_di" bpmnElement="flow-fraud-2">
-        <di:waypoint x="708" y="580" />
-        <di:waypoint x="758" y="580" />
+        <di:waypoint x="708" y="590" />
+        <di:waypoint x="758" y="590" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="flow-expired-1_di" bpmnElement="flow-expired-1">
-        <di:waypoint x="940" y="580" />
-        <di:waypoint x="990" y="580" />
+        <di:waypoint x="940" y="590" />
+        <di:waypoint x="990" y="590" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="flow-expired-2_di" bpmnElement="flow-expired-2">
-        <di:waypoint x="1090" y="580" />
-        <di:waypoint x="1140" y="580" />
+        <di:waypoint x="1090" y="590" />
+        <di:waypoint x="1140" y="590" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="flow-contact-1_di" bpmnElement="flow-contact-1">
-        <di:waypoint x="1322" y="580" />
-        <di:waypoint x="1372" y="580" />
+        <di:waypoint x="1322" y="590" />
+        <di:waypoint x="1372" y="590" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="flow-contact-2_di" bpmnElement="flow-contact-2">
-        <di:waypoint x="1472" y="580" />
-        <di:waypoint x="1522" y="580" />
+        <di:waypoint x="1472" y="590" />
+        <di:waypoint x="1522" y="590" />
       </bpmndi:BPMNEdge>
     </bpmndi:BPMNPlane>
   </bpmndi:BPMNDiagram>

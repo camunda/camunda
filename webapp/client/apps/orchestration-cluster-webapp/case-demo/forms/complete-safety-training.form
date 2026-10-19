@@ -1,0 +1,27 @@
+{
+  "executionPlatform": "Camunda Cloud",
+  "executionPlatformVersion": "8.11.0",
+  "exporter": {
+    "name": "Camunda Modeler",
+    "version": "5.40.0"
+  },
+  "schemaVersion": 18,
+  "id": "complete-safety-training",
+  "type": "default",
+  "components": [
+    {
+      "type": "text",
+      "text": "### Step 1 of 3: complete the safety training",
+      "id": "Text_335"
+    },
+    {
+      "type": "checkbox",
+      "key": "safetyTrainingPassed",
+      "label": "The employee passed the safety training",
+      "id": "Field_safetyTrainingPassed_336",
+      "validate": {
+        "required": true
+      }
+    }
+  ]
+}
