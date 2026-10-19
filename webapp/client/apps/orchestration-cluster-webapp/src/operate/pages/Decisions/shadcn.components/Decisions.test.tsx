@@ -65,6 +65,16 @@ describe('<Decisions />', () => {
 		await expect.element(screen.getByRole('heading', {name: 'Decisions'})).toBeInTheDocument();
 	});
 
+	it('should focus the page heading when returning from a decision requirements diagram', async ({worker}) => {
+		worker.use(mockInstances());
+		const screen = await renderWithRouter(DecisionsWithSearch, {path: '/operate-preview/decisions'});
+		await expect.element(screen.getByRole('heading', {name: 'Decisions'})).toBeInTheDocument();
+
+		await screen.router.navigate({to: '.', state: {operateDecisionFocus: 'list'}});
+
+		await expect.element(screen.getByRole('heading', {name: 'Decisions'})).toHaveFocus();
+	});
+
 	it('should render the filters panel with the optional filters menu, the decision panel and the instances table', async ({
 		worker,
 	}) => {
