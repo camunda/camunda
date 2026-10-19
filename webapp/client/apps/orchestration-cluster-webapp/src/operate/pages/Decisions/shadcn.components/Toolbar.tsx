@@ -30,7 +30,7 @@ import {endpoints} from '#/shared/http/endpoints';
 import {notificationsStore} from '#/shared/notifications/notifications.store';
 import {formatOperationType} from '#/operate/shared/utils/formatOperationType';
 import {handleOperationError} from '#/operate/shared/utils/handleOperationError';
-import {buildInstanceKeyCriterion, type DecisionInstancesFilter} from '../decisionsFilter';
+import {applyInstanceSelection, type DecisionInstancesFilter} from '../decisionsFilter';
 
 type Props = {
 	selectedCount: number;
@@ -40,21 +40,6 @@ type Props = {
 	onDeleted: () => void;
 	onDiscard: () => void;
 };
-
-type KeyCriterion = {$eq?: string; $in?: string[]; $notIn?: string[]};
-
-// Spreading alone would let a selection's $in/$notIn replace the filter's, so combine them instead.
-function mergeKeyCriteria(base: KeyCriterion | undefined, selection: KeyCriterion): KeyCriterion {
-	const merged = {...base, ...selection};
-	if (base?.$in && selection.$in) {
-		const baseIds = new Set(base.$in);
-		merged.$in = selection.$in.filter((id) => baseIds.has(id));
-	}
-	if (base?.$notIn && selection.$notIn) {
-		merged.$notIn = [...new Set([...base.$notIn, ...selection.$notIn])];
-	}
-	return merged;
-}
 
 const Toolbar: React.FC<Props> = ({selectedCount, includedIds, excludedIds, filter, onDeleted, onDiscard}) => {
 	const {t} = useTranslation();
@@ -70,13 +55,7 @@ const Toolbar: React.FC<Props> = ({selectedCount, includedIds, excludedIds, filt
 		setShowDeleteModal(false);
 		setIsDeleting(true);
 
-		const criterion = buildInstanceKeyCriterion(includedIds, excludedIds);
-		// Merge so exclusions don't drop an active instance-key filter ($in) and widen the deletion scope.
-		const baseKey = filter.decisionEvaluationInstanceKey;
-		const baseCriterion = typeof baseKey === 'string' ? {$eq: baseKey} : baseKey;
-		const requestFilter = criterion
-			? {...filter, decisionEvaluationInstanceKey: mergeKeyCriteria(baseCriterion, criterion)}
-			: filter;
+		const requestFilter = applyInstanceSelection(filter, includedIds, excludedIds);
 
 		const {response, error} = await request(
 			endpoints.createDecisionInstancesDeletionBatchOperation({filter: requestFilter}),
