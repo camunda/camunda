@@ -167,6 +167,62 @@ class OpensearchBackupRepositoryTest {
   }
 
   @Test
+  void shouldPollSnapshotUntilCompletedWhenWaitingRequestFailsWithNonTimeoutIOException()
+      throws IOException {
+    // given
+    final var snapshotName = "camunda_webapps_1_8.7.0_part_1_of_1";
+    final var snapshotRequest =
+        new SnapshotRequest(
+            "repo",
+            snapshotName,
+            new SnapshotIndexCollection(List.of("index-1"), List.of()),
+            new Metadata(1L, "1", 1, 1));
+    // stands in for H2StreamResetException, which an idle HTTP/2 connection fails with
+    when(openSearchAsyncClient.snapshot().create((CreateSnapshotRequest) any()))
+        .thenReturn(
+            CompletableFuture.failedFuture(
+                new IOException("Timeout due to inactivity (30000 MILLISECONDS)")));
+    when(openSearchClient.snapshot().get((GetSnapshotRequest) any()))
+        .thenReturn(snapshotResponse(snapshotName, SnapshotState.IN_PROGRESS))
+        .thenReturn(snapshotResponse(snapshotName, SnapshotState.SUCCESS));
+    final boolean[] onSuccessCalled = {false};
+
+    // when
+    repository.executeSnapshotting(
+        snapshotRequest,
+        () -> onSuccessCalled[0] = true,
+        () -> fail("onFailure should not be called"));
+
+    // then
+    assertThat(onSuccessCalled[0]).isTrue();
+  }
+
+  @Test
+  void shouldCallOnFailureWhenPollingAfterFailedWaitingRequestFails() throws IOException {
+    // given
+    final var snapshotRequest =
+        new SnapshotRequest(
+            "repo",
+            "camunda_webapps_1_8.7.0_part_1_of_1",
+            new SnapshotIndexCollection(List.of("index-1"), List.of()),
+            new Metadata(1L, "1", 1, 1));
+    when(openSearchAsyncClient.snapshot().create((CreateSnapshotRequest) any()))
+        .thenReturn(CompletableFuture.failedFuture(new SocketTimeoutException("read timed out")));
+    when(openSearchClient.snapshot().get((GetSnapshotRequest) any()))
+        .thenThrow(new IOException("connection refused"));
+    final boolean[] onFailureCalled = {false};
+
+    // when
+    repository.executeSnapshotting(
+        snapshotRequest,
+        () -> fail("onSuccess should not be called"),
+        () -> onFailureCalled[0] = true);
+
+    // then
+    assertThat(onFailureCalled[0]).isTrue();
+  }
+
+  @Test
   void shouldCallOnFailureWhenSnapshotNameAlreadyInUse() throws IOException {
     // given
     final var snapshotRequest =
@@ -566,6 +622,18 @@ class OpensearchBackupRepositoryTest {
 
   private GetSnapshotResponse.Builder defaultFields(final GetSnapshotResponse.Builder b) {
     return b.snapshots(List.of());
+  }
+
+  private GetSnapshotResponse snapshotResponse(
+      final String snapshotName, final SnapshotState state) {
+    return GetSnapshotResponse.of(
+        b ->
+            b.snapshots(
+                SnapshotInfo.of(
+                    bi ->
+                        defaultFields(bi, new Metadata(1L, "1", 1, 1))
+                            .snapshot(snapshotName)
+                            .state(state.name()))));
   }
 
   private GetSnapshotResponse emptyResponse() {
