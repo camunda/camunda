@@ -191,4 +191,37 @@ final class DbCheckpointStateTest {
     assertThat(state.getLatestBackupId()).isEqualTo(21L);
     assertThat(state.getLatestBackupPosition()).isEqualTo(28L);
   }
+
+  @Test
+  void shouldHaveNoHandoverBackupInitially() {
+    // when-then
+    assertThat(state.getLatestHandoverBackupId()).isEqualTo(NO_CHECKPOINT);
+    assertThat(state.getLatestHandoverBackupPosition()).isEqualTo(NO_CHECKPOINT);
+  }
+
+  @Test
+  void shouldKeepHandoverBackupWhenLaterBackupsAreConfirmed() {
+    // given
+    state.setLatestHandoverBackupInfo(5L, 10L, 100L);
+
+    // when
+    state.setLatestBackupInfo(6L, 20L, 200L, CheckpointType.SCHEDULED_BACKUP, 1L);
+
+    // then
+    assertThat(state.getLatestHandoverBackupId()).isEqualTo(5L);
+    assertThat(state.getLatestHandoverBackupPosition()).isEqualTo(10L);
+    assertThat(state.getLatestBackupId()).isEqualTo(6L);
+  }
+
+  @Test
+  void shouldClearHandoverBackupInfo() {
+    // given
+    state.setLatestHandoverBackupInfo(5L, 10L, 100L);
+
+    // when
+    state.clearLatestHandoverBackupInfo();
+
+    // then
+    assertThat(state.getLatestHandoverBackupId()).isEqualTo(NO_CHECKPOINT);
+  }
 }

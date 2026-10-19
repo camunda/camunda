@@ -58,6 +58,7 @@ final class LogArchiveEventApplier {
       case LOG_ARCHIVED -> applyLogArchived(event);
       case SNAPSHOT_ARCHIVED -> applySnapshotArchived(event);
       case INDEX_SEALED -> applyIndexSealed(event);
+      case HANDOVER_COMPLETED -> applyHandoverCompleted(event);
       case PUBLISHED -> {
         applyPublished(event);
         return null;
@@ -186,6 +187,14 @@ final class LogArchiveEventApplier {
         .forEach(open -> state.deleteOpenObject(open.object().getFirstIndex()));
     state.insertChunk(chunk);
     meta.setNextChunkNo(chunk.getChunkNo() + 1).setNextSeq(event.getSeq() + 1);
+    store(meta, event);
+  }
+
+  private void applyHandoverCompleted(final LogArchiveRecord event) {
+    final var meta = state.meta();
+    meta.setHandoverCheckpointId(event.getHandoverCheckpointId())
+        .setHandoverPosition(event.getHandoverPosition())
+        .setNextSeq(event.getSeq() + 1);
     store(meta, event);
   }
 

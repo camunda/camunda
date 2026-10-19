@@ -7,10 +7,15 @@
  */
 package io.camunda.zeebe.backup.logarchive.processing;
 
+import io.camunda.zeebe.backup.logarchive.model.CommitEntry;
+import io.camunda.zeebe.backup.logarchive.model.HandoverJson;
 import io.camunda.zeebe.backup.logarchive.model.LogArchiveJson;
 import io.camunda.zeebe.backup.logarchive.model.LogArchiveKeys;
 import io.camunda.zeebe.backup.logarchive.state.DbLogArchiveState;
 import io.camunda.zeebe.backup.logarchive.state.LogArchiveMeta;
+import io.camunda.zeebe.backup.logarchive.state.OutboxRow;
+import io.camunda.zeebe.backup.processing.state.CheckpointState;
+import io.camunda.zeebe.backup.processing.state.DbCheckpointState;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.value.management.ArchivedSnapshot;
 import io.camunda.zeebe.protocol.impl.record.value.management.LogArchiveRecord;
@@ -62,6 +67,9 @@ public final class LogArchiveRecordsProcessor
   private DbLogArchiveState state;
 
   @SuppressWarnings("NullAway.Init")
+  private CheckpointState checkpointState;
+
+  @SuppressWarnings("NullAway.Init")
   private LogArchiveEventApplier applier;
 
   public LogArchiveRecordsProcessor(final LogArchiveProcessorConfig config) {
@@ -90,6 +98,7 @@ public final class LogArchiveRecordsProcessor
   @Override
   public void init(final RecordProcessorContext context) {
     state = new DbLogArchiveState(context.getZeebeDb(), context.getTransactionContext());
+    checkpointState = new DbCheckpointState(context.getZeebeDb(), context.getTransactionContext());
     applier = new LogArchiveEventApplier(config.partitionId(), state);
     context.addLifecycleListeners(List.of(this));
   }
@@ -135,6 +144,7 @@ public final class LogArchiveRecordsProcessor
           case ARCHIVE_SNAPSHOT -> validateArchiveSnapshot(command, meta);
           case SEAL_INDEX -> validateSealIndex(command, meta);
           case CONFIRM_PUBLISHED -> validateConfirmPublished(command, meta);
+          case COMPLETE_HANDOVER -> validateCompleteHandover(command, meta);
           default ->
               throw new IllegalArgumentException(
                   "Unknown log archive intent %s".formatted(record.getIntent()));
@@ -188,7 +198,8 @@ public final class LogArchiveRecordsProcessor
     final var outbox = state.outboxAfter(meta.getLastPublishedSeq());
     for (final var row : outbox) {
       currentPublication.publish(
-          new PublishRequest(timelineId, row.seq(), row.commitEntryJson(), null, null));
+          new PublishRequest(
+              timelineId, row.seq(), row.commitEntryJson(), null, null, handoverOf(meta, row)));
     }
 
     final long rootSeq = meta.getNextSeq() - 1;
@@ -198,6 +209,19 @@ public final class LogArchiveRecordsProcessor
       currentPublication.publish(
           new PublishRequest(timelineId, rootJson != null ? rootSeq : -1, null, rootJson, seal));
     }
+  }
+
+  /**
+   * The handover of an outbox row if it is the handover commit entry, which the publisher writes to
+   * the old backups. Only the one row that follows the recorded handover can be that entry, so
+   * nothing is parsed unless a handover is recorded.
+   */
+  private static @Nullable HandoverJson handoverOf(final LogArchiveMeta meta, final OutboxRow row) {
+    if (!meta.hasHandover()) {
+      return null;
+    }
+    final var entry = LogArchiveJson.read(row.commitEntryJson(), CommitEntry.class);
+    return entry.type() == CommitEntry.Type.HANDOVER ? entry.handover() : null;
   }
 
   // ---------------------------------------------------------------------------------------------
@@ -211,7 +235,14 @@ public final class LogArchiveRecordsProcessor
       final LogArchiveMeta meta,
       final ProcessingResultBuilder resultBuilder) {
     final var eventIntent = eventIntentOf(intent);
-    final var event = new LogArchiveRecord().setTimelineId(commandValue.getTimelineId());
+    // a handover is requested without knowing the timeline: it is always recorded on the current
+    // one
+    final var event =
+        new LogArchiveRecord()
+            .setTimelineId(
+                intent == LogArchiveIntent.COMPLETE_HANDOVER
+                    ? meta.getTimelineId()
+                    : commandValue.getTimelineId());
 
     switch (intent) {
       case START_TIMELINE ->
@@ -227,6 +258,12 @@ public final class LogArchiveRecordsProcessor
           event.setSeq(meta.getNextSeq()).setSnapshot(commandValue.getSnapshot());
       case SEAL_INDEX -> event.setSeq(meta.getNextSeq()).setChunk(commandValue.getChunk());
       case CONFIRM_PUBLISHED -> event.setPublishedSeq(commandValue.getPublishedSeq());
+      case COMPLETE_HANDOVER ->
+          // the position is that of the confirmed handover backup, validated to match the command
+          event
+              .setSeq(meta.getNextSeq())
+              .setHandoverCheckpointId(commandValue.getHandoverCheckpointId())
+              .setHandoverPosition(checkpointState.getLatestHandoverBackupPosition());
       default -> throw new IllegalStateException("Unexpected intent " + intent);
     }
 
@@ -290,7 +327,11 @@ public final class LogArchiveRecordsProcessor
     }
     final long seq = event.getSeq();
     final boolean sealed = eventIntent == LogArchiveIntent.INDEX_SEALED;
-    final byte[] rootJson = sealed || seq % config.rootEvery() == 0 ? rootJson(meta, seq) : null;
+    // the handover always gets a root: it carries the handover and confirms the publication, which
+    // removes the outbox row that drives the write of the old-side handover file
+    final boolean handover = eventIntent == LogArchiveIntent.HANDOVER_COMPLETED;
+    final byte[] rootJson =
+        sealed || handover || seq % config.rootEvery() == 0 ? rootJson(meta, seq) : null;
     // A full chunk is requested once when it becomes due; the publisher keeps it pending until the
     // SEAL_INDEX is processed. Asking on every LOG_ARCHIVED would repeat the same seal.
     final boolean crossedThreshold =
@@ -298,7 +339,15 @@ public final class LogArchiveRecordsProcessor
             && openObjectsBefore < config.chunkSize()
             && state.openObjectCount() >= config.chunkSize();
     final var seal = sealed || crossedThreshold ? pendingSeal(meta) : null;
-    return new PublishRequest(event.getTimelineId(), seq, commitEntryJson, rootJson, seal);
+    return new PublishRequest(
+        event.getTimelineId(),
+        seq,
+        commitEntryJson,
+        rootJson,
+        seal,
+        handover
+            ? new HandoverJson(event.getHandoverCheckpointId(), event.getHandoverPosition())
+            : null);
   }
 
   private byte[] rootJson(final LogArchiveMeta meta, final long seq) {
@@ -331,6 +380,7 @@ public final class LogArchiveRecordsProcessor
       case ARCHIVE_SNAPSHOT -> LogArchiveIntent.SNAPSHOT_ARCHIVED;
       case SEAL_INDEX -> LogArchiveIntent.INDEX_SEALED;
       case CONFIRM_PUBLISHED -> LogArchiveIntent.PUBLISHED;
+      case COMPLETE_HANDOVER -> LogArchiveIntent.HANDOVER_COMPLETED;
       default -> throw new IllegalArgumentException("Not a command: " + command);
     };
   }
@@ -560,6 +610,39 @@ public final class LogArchiveRecordsProcessor
       return invalidState(
           "Expected a published seq greater than %d and less than %d, but got %d"
               .formatted(meta.getLastPublishedSeq(), meta.getNextSeq(), publishedSeq));
+    }
+    return null;
+  }
+
+  /**
+   * Spec section 18.2. The timeline id of the command is not checked: the request for a handover
+   * comes from outside the log archive and cannot know it.
+   */
+  private @Nullable Rejection validateCompleteHandover(
+      final LogArchiveRecord command, final LogArchiveMeta meta) {
+    if (meta.getTimelineId().isEmpty()) {
+      return invalidState("Expected to complete the handover, but no timeline was started yet");
+    }
+    final long checkpointId = command.getHandoverCheckpointId();
+    if (checkpointId <= 0) {
+      return invalidArgument(
+          "Expected a handover checkpoint id greater than 0, but got " + checkpointId);
+    }
+    if (meta.hasHandover()) {
+      return invalidState(
+          "Expected no handover, but the handover at checkpoint %d is already recorded"
+              .formatted(meta.getHandoverCheckpointId()));
+    }
+    if (checkpointState.getLatestHandoverBackupId() != checkpointId) {
+      return invalidState(
+          "Expected checkpoint %d to be a confirmed backup of type HANDOVER, but the latest confirmed one is %d"
+              .formatted(checkpointId, checkpointState.getLatestHandoverBackupId()));
+    }
+    final long handoverPosition = checkpointState.getLatestHandoverBackupPosition();
+    if (meta.getArchivedPosition() < handoverPosition) {
+      return invalidState(
+          "Expected the archived position to have reached the handover position %d, but it is %d"
+              .formatted(handoverPosition, meta.getArchivedPosition()));
     }
     return null;
   }
