@@ -9,7 +9,7 @@
 import type {FormApi} from 'final-form';
 import {useEffect, useMemo, useRef, useState} from 'react';
 import {useTranslation} from 'react-i18next';
-import {useNavigate, useSearch} from '@tanstack/react-router';
+import {useNavigate} from '@tanstack/react-router';
 import {Form} from 'react-final-form';
 import {Heading, PageLayout, Separator, Text} from '@camunda/design-system';
 import {cn} from '#/shared/cn';
@@ -20,10 +20,13 @@ import type {DecisionsSearch} from '../decisionsFilter';
 import type {OptionalFilter, OptionalFilterValues} from '../optionalFilters';
 import {OptionalFiltersFormGroup} from './OptionalFiltersFormGroup';
 
-const Decisions: React.FC = () => {
+type Props = {
+	search: DecisionsSearch;
+};
+
+const Decisions: React.FC<Props> = ({search}) => {
 	const {t} = useTranslation();
 	const navigate = useNavigate();
-	const search: Partial<DecisionsSearch> = useSearch({strict: false});
 	const [visibleFilters, setVisibleFilters] = useState<OptionalFilter[]>([]);
 	const preservingFormRef = useRef<FormApi<OptionalFilterValues> | null>(null);
 	const {decisionEvaluationInstanceKey, processInstanceKey, businessId, evaluationDateFrom, evaluationDateTo} = search;
@@ -32,8 +35,8 @@ const Decisions: React.FC = () => {
 		[decisionEvaluationInstanceKey, processInstanceKey, businessId, evaluationDateFrom, evaluationDateTo],
 	);
 	const isResetDisabled =
-		(search.evaluated ?? true) &&
-		(search.failed ?? true) &&
+		search.evaluated &&
+		search.failed &&
 		!search.decisionDefinitionId &&
 		search.decisionDefinitionVersion === undefined &&
 		search.tenantId === undefined &&
