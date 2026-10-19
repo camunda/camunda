@@ -213,7 +213,6 @@ final class ClusterConfigurationInitializerTest {
         Map.of(uninitializedMember, uninitializedResponse, initializedMember, initializedResponse);
     final var initializer =
         new SyncInitializer(
-            Duration.ofSeconds(5),
             new TestClusterConfigurationNotifier(),
             () -> List.of(uninitializedMember, initializedMember),
             new TestConcurrencyControl(true),
@@ -241,7 +240,6 @@ final class ClusterConfigurationInitializerTest {
     final var bootstrapTimeout = Duration.ofSeconds(1);
     final var initializer =
         new SyncInitializer(
-            Duration.ofSeconds(1),
             new TestClusterConfigurationNotifier(),
             () -> List.of(unresponsiveMember),
             concurrencyControl,
@@ -260,7 +258,8 @@ final class ClusterConfigurationInitializerTest {
     // there's no easy way to verify that a future does not terminates, so we fail the future
     // with an exception that we check later.
     concurrencyControl.schedule(
-        testTimeout, () -> initializeFuture.completeExceptionally(new Exception("expected")));
+        Duration.ofMillis(testTimeout),
+        () -> initializeFuture.completeExceptionally(new Exception("expected")));
     concurrencyControl.runAll();
 
     // then - falls back to uninitialized so the coordinator can use static initialization
@@ -279,7 +278,6 @@ final class ClusterConfigurationInitializerTest {
     final var syncResponses = Map.of(unresponsiveMember, uninitializedResponse);
     final var initializer =
         new SyncInitializer(
-            Duration.ofSeconds(5),
             new TestClusterConfigurationNotifier(),
             () -> List.of(unresponsiveMember),
             concurrencyControl,
@@ -319,7 +317,6 @@ final class ClusterConfigurationInitializerTest {
     final var concurrencyControl = new TestConcurrencyControl(true);
     final var initializer =
         new SyncInitializer(
-            Duration.ofSeconds(5),
             new TestClusterConfigurationNotifier(),
             () -> List.of(unreachableMember, recoveringMember),
             concurrencyControl,
