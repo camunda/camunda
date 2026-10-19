@@ -9,6 +9,7 @@ package io.camunda.zeebe.it.logarchive;
 
 import static io.camunda.zeebe.it.logarchive.LogArchiveBucket.TIMELINE;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.awaitility.Awaitility.await;
 
 import io.camunda.client.CamundaClient;
@@ -308,46 +309,30 @@ final class LogArchiveHandoverRestoreIT {
   }
 
   @Test
-  void shouldRestoreATimeRangeOverTheHandoverThatEndsBeforeIt() {
-    // given -- a completed handover, and a time range from before the first old backup to the
-    // old backup before H (checkpoint ids are the time they were taken)
+  void shouldRejectATimeRangeWithoutRdbmsLikeContinuousBackup() {
+    // given -- a completed handover; the restore has no RDBMS to read exported positions from
     final var from = Instant.now();
     final var scenario = runSourceThroughHandover(false);
     source.stop();
-    final var to = Instant.ofEpochMilli(scenario.old());
 
-    // when / then -- the closest checkpoint is an old backup, restored from the old backups even
-    // without exported positions to resolve the range with
-    assertRestore(
-        "range-before",
-        app -> app.withTimeRange(from, to),
-        TIMELINE + ".b" + scenario.old(),
-        Map.of("a", PHASE_SIZE));
-  }
-
-  @Test
-  void shouldRestoreATimeRangeAcrossTheHandover() {
-    // given -- a completed handover, and a time range from before the first old backup on
-    final var from = Instant.now();
-    final var scenario = runSourceThroughHandover(false);
-    source.stop();
-    final var to = Instant.now();
-
-    // when / then -- the checkpoint closest to the end of the range is an archive checkpoint
-    final var data = testDirectory.resolve("range-data");
-    final var rangeBucket = copyBucket("range");
-    restore(rangeBucket, data, app -> app.withTimeRange(from, to));
-    final var timeline = timelineOf(data, 1);
-    assertThat(timeline).startsWith(TIMELINE + ".r");
-    assertThat(Long.parseLong(timeline.substring((TIMELINE + ".r").length())))
-        .isGreaterThanOrEqualTo(scenario.archived());
-    IntStream.rangeClosed(1, PARTITIONS)
-        .forEach(partition -> assertThat(timelineOf(data, partition)).isEqualTo(timeline));
-    try (final var restored = startBroker(rangeBucket, data, null);
-        final var client = restored.newClientBuilder().build()) {
-      assertThat(activateAll(client, 3 * PHASE_SIZE))
-          .isEqualTo(Map.of("a", PHASE_SIZE, "b", PHASE_SIZE, "c", PHASE_SIZE));
-    }
+    // when / then -- a range that ends before the handover and one across it are rejected as
+    // continuous backup rejects them, before anything is restored
+    final var ranges =
+        Map.of(
+            "range-before", new Instant[] {from, Instant.ofEpochMilli(scenario.old())},
+            "range-across", new Instant[] {from, Instant.now()});
+    ranges.forEach(
+        (name, range) -> {
+          final var data = testDirectory.resolve(name + "-data");
+          assertThatThrownBy(
+                  () ->
+                      restore(copyBucket(name), data, app -> app.withTimeRange(range[0], range[1])))
+              .as("restore of %s", name)
+              .hasStackTraceContaining(
+                  "Cannot resolve a restore point: no backupId was specified and no"
+                      + " exported-position data is available");
+          assertThat(data.resolve("default/partitions")).doesNotExist();
+        });
   }
 
   /**

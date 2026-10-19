@@ -97,8 +97,11 @@ public final class RestoreValidator
     return Either.right(resolvedRequest);
   }
 
-  @VisibleForTesting
-  void validateParameters(final RestoreRequest request) {
+  /**
+   * Rejects a request whose parameters the restore does not support, before anything is resolved:
+   * e.g. a time range or no backup id without exported positions to resolve it with.
+   */
+  public void validateParameters(final RestoreRequest request) {
     final var parameters = request.arguments().parameters();
     final var instantFrom = parseTimestamp(parameters.from(), "from");
     final var instantTo = parseTimestamp(parameters.to(), "to");
@@ -217,10 +220,9 @@ public final class RestoreValidator
     // Exported positions are mandatory for a range restore: validateParameters rejects the request
     // without a way to read them, and they are what the partitions to restore are taken from.
     final var exportedPositions =
-        requireExportedPositions(
-            exportedPositions(
-                requireNonNull(exportedPositionSupplier, "Exported positions are required"),
-                partitionCount));
+        rangeRestoreExportedPositions(
+            requireNonNull(exportedPositionSupplier, "Exported positions are required"),
+            partitionCount);
     LOG.info("Exported positions for all partitions: {}", exportedPositions);
     final var metadataByPartition = loadMetadataForAllPartitions(exportedPositions.size());
     final var restorableBackups =
@@ -287,12 +289,21 @@ public final class RestoreValidator
   }
 
   /**
+   * The exported positions a range restore resolves with, which are also the partitions it
+   * restores: see {@link #exportedPositions}. Rejects an RDBMS without any.
+   */
+  public static Map<Integer, Long> rangeRestoreExportedPositions(
+      final IntFunction<@Nullable Long> positionSupplier, final int partitionCount) {
+    return requireExportedPositions(exportedPositions(positionSupplier, partitionCount));
+  }
+
+  /**
    * The exported positions of the partitions the RDBMS holds, which are the partitions of the
    * backup to restore: partitions 1 up to the first one without an exported position. Partitions
    * without one after that are fine, e.g. those a scale-up added after the database was restored to
    * the backups, but a position after a missing one means the database is inconsistent.
    */
-  private Map<Integer, Long> exportedPositions(
+  private static Map<Integer, Long> exportedPositions(
       final IntFunction<@Nullable Long> positionSupplier, final int partitionCount) {
     final var positions = new HashMap<Integer, Long>();
     var firstMissing = 0;
