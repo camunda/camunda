@@ -75,6 +75,12 @@ final class LogArchiveEventApplier {
   }
 
   private void applyTimelineStarted(final LogArchiveRecord event) {
+    // The handover belongs to the branch, not to the timeline: a new timeline after a restore past
+    // H or a fork after a rollback continues a branch whose old backups have already ended. A
+    // restore to before H brings back a state without a handover, so nothing is carried then.
+    final var previous = state.meta();
+    final long handoverCheckpointId = previous.getHandoverCheckpointId();
+    final long handoverPosition = previous.getHandoverPosition();
     state.clearAll();
     final var meta =
         new LogArchiveMeta()
@@ -82,7 +88,9 @@ final class LogArchiveEventApplier {
             .setParentTimelineId(event.getParentTimelineId())
             .setStartIndex(event.getStartIndex())
             .setArchivedIndex(event.getStartIndex() - 1)
-            .setNextSeq(event.getSeq() + 1);
+            .setNextSeq(event.getSeq() + 1)
+            .setHandoverCheckpointId(handoverCheckpointId)
+            .setHandoverPosition(handoverPosition);
     store(meta, event);
   }
 

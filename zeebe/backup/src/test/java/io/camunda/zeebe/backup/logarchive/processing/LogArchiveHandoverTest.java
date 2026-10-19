@@ -248,19 +248,31 @@ final class LogArchiveHandoverTest {
   }
 
   @Test
-  void shouldForgetHandoverWhenANewTimelineStarts() {
+  void shouldKeepHandoverWhenANewTimelineStarts() {
     // given
     archiveUpToAndConfirmHandover();
     harness.accept(LogArchiveIntent.COMPLETE_HANDOVER, completeHandover());
+    final var handoverPosition = harness.state().meta().getHandoverPosition();
 
     // when
     harness.accept(LogArchiveIntent.START_TIMELINE, startTimeline("tl-1", 100));
 
     // then
     final var meta = harness.state().meta();
-    assertThat(meta.hasHandover()).isFalse();
-    assertThat(meta.getHandoverCheckpointId()).isEqualTo(-1);
-    assertThat(meta.getHandoverPosition()).isEqualTo(-1);
+    assertThat(meta.getTimelineId()).isEqualTo("tl-1");
+    assertThat(meta.getHandoverCheckpointId()).isEqualTo(HANDOVER_ID);
+    assertThat(meta.getHandoverPosition()).isEqualTo(handoverPosition);
+  }
+
+  @Test
+  void shouldRejectSecondHandoverOnANewTimelineOfTheSameBranch() {
+    // given
+    archiveUpToAndConfirmHandover();
+    harness.accept(LogArchiveIntent.COMPLETE_HANDOVER, completeHandover());
+    harness.accept(LogArchiveIntent.START_TIMELINE, startTimeline("tl-1", 100));
+
+    // when + then
+    assertRejected(completeHandover(), RejectionType.INVALID_STATE);
   }
 
   // ---- rejecting ------------------------------------------------------------------------------
