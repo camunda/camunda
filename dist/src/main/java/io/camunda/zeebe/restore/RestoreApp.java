@@ -29,6 +29,7 @@ import io.camunda.zeebe.restore.ClusterRestore.PhysicalTenantRestoreTarget;
 import io.camunda.zeebe.restore.PhysicalTenantRestoreConfigurations.PhysicalTenantBrokerConfigurations;
 import io.camunda.zeebe.restore.PhysicalTenantRestoreConfigurations.PhysicalTenantRestoreEnvironments;
 import io.camunda.zeebe.restore.RestoreArguments.LogArchiveSelection;
+import io.camunda.zeebe.restore.logarchive.HandoverRestoreRequest;
 import io.camunda.zeebe.restore.validation.RestoreValidator;
 import io.camunda.zeebe.util.VisibleForTesting;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -152,6 +153,9 @@ public class RestoreApp implements ApplicationRunner {
     }
     final var selectionPerTenant =
         arguments.selectionPerPhysicalTenant(physicalTenantConfigurations.physicalTenantIds());
+    if (restoreAcrossHandover(selectionPerTenant)) {
+      return;
+    }
     final var backupIdsPerTenant = validateParameters(selectionPerTenant);
     final var restoredPartitionCounts = partitionCounts(backupIdsPerTenant);
     final var recreatesTopology =
@@ -193,6 +197,85 @@ public class RestoreApp implements ApplicationRunner {
     // because in some cases, like when using dynamic node ids, we need to wait for other nodes to
     // complete restore.
     postRestoreAction.restored(postRestoreActionContext);
+  }
+
+  /**
+   * Restores the default physical tenant across the handover from the old backups to the log
+   * archive (PoC), if it uses the log archive and the restore point is not entirely in the old
+   * backups. Otherwise leaves the restore to the existing path, unchanged.
+   *
+   * @return whether the restore was handled here
+   */
+  private boolean restoreAcrossHandover(final Map<String, RestoreSelection> selectionPerTenant)
+      throws Exception {
+    final var tenantId = PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
+    final var explicitTimeline = arguments.explicitLogArchiveTimeline();
+    if (!selectionPerTenant.keySet().equals(Set.of(tenantId))) {
+      if (explicitTimeline.isPresent()) {
+        throw new IllegalArgumentException(
+            "--logArchive.timeline only supports the default physical tenant");
+      }
+      return false;
+    }
+    final var tenantConfiguration = physicalTenantConfigurations.forPhysicalTenant(tenantId);
+    if (!tenantConfiguration.getData().getBackup().getLogArchive().isEnabled()
+        && explicitTimeline.isEmpty()) {
+      return false;
+    }
+    final var selection = Objects.requireNonNull(selectionPerTenant.get(tenantId));
+    final var partitionCount = tenantConfiguration.getCluster().getPartitionsCount();
+    final var request =
+        selection.hasBackupIds()
+            ? HandoverRestoreRequest.ofBackupIds(selection.backupIds())
+            : HandoverRestoreRequest.ofTimeRange(
+                selection.from(), selection.to(), exportedPositions(tenantId, partitionCount));
+    try (final var restore =
+        new HandoverClusterRestore(
+            tenantConfiguration, backupStores.forPhysicalTenant(tenantId), meterRegistry)) {
+      final var plan = restore.resolve(request, explicitTimeline);
+      if (plan.allFromOldBackups()) {
+        LOG.info(
+            "Checkpoint {} is restored from old backups on every partition; restoring as without"
+                + " the log archive",
+            plan.checkpointId());
+        return false;
+      }
+      final var restoreId = getRestoreId(selectionPerTenant);
+      final var nodeId = configuration.getCluster().getNodeId();
+      final var preResult = preRestoreAction.beforeRestore(restoreId, nodeId);
+      if (!preResult.skipRestore()) {
+        restore.restore(
+            plan,
+            restoreConfiguration.validateConfig(),
+            restoreConfiguration.ignoreFilesInTarget());
+      } else {
+        LOG.info("Skipping restore: {}", preResult.message());
+      }
+      postRestoreAction.restored(
+          new PostRestoreActionContext(
+              restoreId,
+              nodeId,
+              preResult.skipRestore(),
+              Set.of(tenantId),
+              Map.of(tenantId, plan.partitions().size()),
+              true));
+      return true;
+    }
+  }
+
+  /** The RDBMS exported positions of the tenant's partitions that have one; empty without RDBMS. */
+  private Map<Integer, Long> exportedPositions(final String tenantId, final int partitionCount) {
+    final var supplier = exportedPositionSupplier(tenantId);
+    final var positions = new TreeMap<Integer, Long>();
+    if (supplier != null) {
+      for (int partition = 1; partition <= partitionCount; partition++) {
+        final var position = supplier.apply(partition);
+        if (position != null) {
+          positions.put(partition, position);
+        }
+      }
+    }
+    return positions;
   }
 
   private void restoreFromLogArchive(final LogArchiveSelection selection) throws Exception {
