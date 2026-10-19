@@ -47,9 +47,23 @@ its own job, so a failure in one does not hide the result of another.
 
 ## When a release run fails
 
-- **`wait-for-scan` times out.** The scan for that tag revision is missing or still running. Check
-  the `check-licenses.yml` run for the tag SHA. The FOSSA CLI can hang, so re-run the scan if needed,
-  then re-run the failed job. Release artifacts are already published at that point.
+- **`wait-for-scan` times out.** The scan for that tag revision is missing, failed or still running.
+  Release artifacts are already published at that point, so only the scan and the failed job need a
+  re-run:
+  1. Find the `check-licenses.yml` runs for the tag SHA. A release starts two of them, one for the
+     `release-X.Y.Z` branch push and one for the tag push. `wait-for-scan` looks up the revision by
+     project and SHA only, so either run is enough.
+
+     ```bash
+     gh api "repos/camunda/camunda/actions/workflows/check-licenses.yml/runs?head_sha=$(git rev-list -n1 <tag>)" \
+       --jq '.workflow_runs[] | "\(.id) \(.head_branch) \(.conclusion)"'
+     ```
+  2. If the `Analyze <project> dependencies` job is red, use "Re-run failed jobs" on that run.
+     `check-licenses.yml` has no `workflow_dispatch`, so a re-run is the only way to scan an existing
+     tag again. If the scan is still running, wait for it to finish.
+  3. Once the scan is green, use "Re-run job" on the failed `fossa-release*` job in the release run.
+     That job and the notify jobs that depend on it run again, the rest of the release keeps its
+     results.
 - **Other failures.** The failed job triggers `notify-if-failed`. The release manager dispatches it
   to Engineering Operations for plumbing issues. Wrong report content goes through the license
   triage process.
