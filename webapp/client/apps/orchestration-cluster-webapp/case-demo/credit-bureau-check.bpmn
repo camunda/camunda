@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="credit-bureau-check-definitions" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.40.0" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.11.0">
+  <bpmn:process id="credit-bureau-check" name="Credit bureau check" isExecutable="true">
+    <bpmn:startEvent id="credit-bureau-start">
+      <bpmn:outgoing>credit-bureau-flow-1</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:userTask id="record-bureau-score" name="Record the bureau score">
+      <bpmn:extensionElements>
+        <zeebe:userTask />
+        <zeebe:formDefinition formId="credit-score" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>credit-bureau-flow-1</bpmn:incoming>
+      <bpmn:outgoing>credit-bureau-flow-2</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:endEvent id="credit-bureau-end">
+      <bpmn:incoming>credit-bureau-flow-2</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="credit-bureau-flow-1" sourceRef="credit-bureau-start" targetRef="record-bureau-score" />
+    <bpmn:sequenceFlow id="credit-bureau-flow-2" sourceRef="record-bureau-score" targetRef="credit-bureau-end" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="credit-bureau-check-diagram">
+    <bpmndi:BPMNPlane id="credit-bureau-check-plane" bpmnElement="credit-bureau-check">
+      <bpmndi:BPMNShape id="credit-bureau-start_di" bpmnElement="credit-bureau-start">
+        <dc:Bounds x="100" y="102" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="record-bureau-score_di" bpmnElement="record-bureau-score">
+        <dc:Bounds x="180" y="80" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="credit-bureau-end_di" bpmnElement="credit-bureau-end">
+        <dc:Bounds x="330" y="102" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="credit-bureau-flow-1_di" bpmnElement="credit-bureau-flow-1">
+        <di:waypoint x="136" y="120" />
+        <di:waypoint x="180" y="120" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="credit-bureau-flow-2_di" bpmnElement="credit-bureau-flow-2">
+        <di:waypoint x="280" y="120" />
+        <di:waypoint x="330" y="120" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

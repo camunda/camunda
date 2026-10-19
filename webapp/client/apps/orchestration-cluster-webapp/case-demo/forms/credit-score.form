@@ -1,0 +1,30 @@
+{
+  "executionPlatform": "Camunda Cloud",
+  "executionPlatformVersion": "8.11.0",
+  "exporter": {
+    "name": "Camunda Modeler",
+    "version": "5.40.0"
+  },
+  "schemaVersion": 18,
+  "id": "credit-score",
+  "type": "default",
+  "components": [
+    {
+      "type": "number",
+      "key": "creditScore",
+      "label": "Credit score",
+      "id": "Field_creditScore_18",
+      "validate": {
+        "required": true,
+        "min": 300,
+        "max": 850
+      }
+    },
+    {
+      "type": "textarea",
+      "key": "creditNotes",
+      "label": "Notes",
+      "id": "Field_creditNotes_19"
+    }
+  ]
+}

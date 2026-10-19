@@ -1,0 +1,48 @@
+{
+  "executionPlatform": "Camunda Cloud",
+  "executionPlatformVersion": "8.11.0",
+  "exporter": {
+    "name": "Camunda Modeler",
+    "version": "5.40.0"
+  },
+  "schemaVersion": 18,
+  "id": "review-application",
+  "type": "default",
+  "components": [
+    {
+      "type": "text",
+      "text": "### Review the application\nCheck that the application is complete before the documents are checked.",
+      "id": "Text_9"
+    },
+    {
+      "type": "textfield",
+      "key": "applicantName",
+      "label": "Applicant",
+      "id": "Field_applicantName_10",
+      "readonly": true
+    },
+    {
+      "type": "number",
+      "key": "loanAmount",
+      "label": "Loan amount (EUR)",
+      "id": "Field_loanAmount_11",
+      "readonly": true
+    },
+    {
+      "type": "textfield",
+      "key": "loanPurpose",
+      "label": "Loan purpose",
+      "id": "Field_loanPurpose_12",
+      "readonly": true
+    },
+    {
+      "type": "checkbox",
+      "key": "applicationComplete",
+      "label": "The application is complete",
+      "id": "Field_applicationComplete_13",
+      "validate": {
+        "required": true
+      }
+    }
+  ]
+}
