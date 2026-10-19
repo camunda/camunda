@@ -1368,6 +1368,22 @@
 					"heading": "403 - Sie haben keine Berechtigung, diese Informationen anzuzeigen",
 					"description": "Wenden Sie sich an Ihren Administrator, um Zugriff zu erhalten.",
 					"learnMoreLink": "Mehr über Berechtigungen erfahren"
+				},
+				"variables": {
+					"search": "Variablen nach Namen suchen",
+					"list": "Variablenliste",
+					"name": "Name",
+					"value": "Wert",
+					"empty": "Das Element hat keine Variablen",
+					"noSearchResults": "Keine Variablen entsprechen Ihrer Suche",
+					"multiInstance": "Um die Variablen anzuzeigen, wählen Sie eine einzelne Elementinstanz im Instanzverlauf aus.",
+					"error": "Variablen konnten nicht abgerufen werden",
+					"forbidden": "Fehlende Berechtigungen für den Zugriff auf Variablen",
+					"forbiddenInfo": "Wenden Sie sich an den Eigentümer oder Administrator Ihrer Organisation, um die erforderlichen Berechtigungen für den Zugriff auf Variablen zu erhalten",
+					"showAll": "Alles anzeigen",
+					"open": "Variable öffnen",
+					"openDescription": "Öffnen",
+					"fullValueTitle": "Vollständiger Wert von {{name}}"
 				}
 			},
 			"operations": {

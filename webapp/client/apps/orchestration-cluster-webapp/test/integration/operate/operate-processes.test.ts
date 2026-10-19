@@ -34,6 +34,7 @@ import {
 	mockQueryProcessInstanceIncidentsEndpoint,
 	mockDeleteResourceEndpoint,
 	mockQueryElementInstancesEndpoint,
+	mockQueryVariablesEndpoint,
 } from '#/shared-test-modules/mock-handlers';
 import {createCurrentUser} from '#/shared-test-modules/api-mocks/current-user';
 import {createLicense} from '#/shared-test-modules/api-mocks/license';
@@ -86,6 +87,7 @@ function getProcessInstanceShellHandlers({
 		}),
 		mockGetProcessDefinitionXmlEndpoint({successResponse: HttpResponse.text(PROCESS_INSTANCE_XML)}),
 		mockQueryElementInstancesEndpoint({successResponse: HttpResponse.json(createPaginatedResponse())}),
+		mockQueryVariablesEndpoint({successResponse: HttpResponse.json(createPaginatedResponse())}),
 	] as const;
 }
 

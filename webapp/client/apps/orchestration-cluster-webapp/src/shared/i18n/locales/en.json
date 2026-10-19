@@ -1380,6 +1380,22 @@
 					"heading": "403 - You do not have permission to view this information",
 					"description": "Contact your administrator to get access.",
 					"learnMoreLink": "Learn more about permissions"
+				},
+				"variables": {
+					"search": "Search variables by name",
+					"list": "Variable List",
+					"name": "Name",
+					"value": "Value",
+					"empty": "The element has no variables",
+					"noSearchResults": "No variables match your search",
+					"multiInstance": "To view the variables, select a single element instance in the instance history.",
+					"error": "Variables could not be fetched",
+					"forbidden": "Missing permissions to access Variables",
+					"forbiddenInfo": "Contact your organization owner or admin to give you the necessary permissions to access variables",
+					"showAll": "Show all",
+					"open": "Open variable",
+					"openDescription": "Open",
+					"fullValueTitle": "Full value of {{name}}"
 				}
 			},
 			"operations": {

@@ -33,6 +33,7 @@ import {
 	mockQueryProcessInstancesEndpoint,
 	mockQueryElementInstancesEndpoint,
 	mockQueryBatchOperationItemsEndpoint,
+	mockQueryVariablesEndpoint,
 } from './mock-handlers';
 
 function processInstanceHeaderHandlers(instance: ProcessInstance) {
@@ -66,6 +67,7 @@ function processInstanceHeaderHandlers(instance: ProcessInstance) {
 		mockQueryAgentInstancesEndpoint({successResponse: empty()}),
 		mockQueryElementInstancesEndpoint({successResponse: empty()}),
 		mockQueryBatchOperationItemsEndpoint({successResponse: empty()}),
+		mockQueryVariablesEndpoint({successResponse: empty()}),
 	];
 }
 

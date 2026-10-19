@@ -1371,6 +1371,22 @@
 					"heading": "403 - Vous n'avez pas la permission de consulter ces informations",
 					"description": "Contactez votre administrateur pour obtenir l'accès.",
 					"learnMoreLink": "En savoir plus sur les autorisations"
+				},
+				"variables": {
+					"search": "Rechercher des variables par nom",
+					"list": "Liste des variables",
+					"name": "Nom",
+					"value": "Valeur",
+					"empty": "L'élément n'a pas de variables",
+					"noSearchResults": "Aucune variable ne correspond à votre recherche",
+					"multiInstance": "Pour afficher les variables, sélectionnez une seule instance d'élément dans l'historique de l'instance.",
+					"error": "Impossible de récupérer les variables",
+					"forbidden": "Autorisations manquantes pour accéder aux variables",
+					"forbiddenInfo": "Contactez le propriétaire ou l'administrateur de votre organisation pour obtenir les autorisations nécessaires pour accéder aux variables",
+					"showAll": "Tout afficher",
+					"open": "Ouvrir la variable",
+					"openDescription": "Ouvrir",
+					"fullValueTitle": "Valeur complète de {{name}}"
 				}
 			},
 			"operations": {
