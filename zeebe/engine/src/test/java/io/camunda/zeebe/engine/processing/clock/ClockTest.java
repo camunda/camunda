@@ -22,6 +22,7 @@ import io.camunda.zeebe.protocol.record.intent.ClockIntent;
 import io.camunda.zeebe.stream.api.StreamClock.ControllableStreamClock.Modification;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import org.awaitility.Awaitility;
@@ -228,6 +229,42 @@ public final class ClockTest {
     inOrder
         .verify(ENGINE.getCommandResponseWriter(), timeout(1000).times(1))
         .intent(ClockIntent.FETCHED);
+    inOrder
+        .verify(ENGINE.getCommandResponseWriter(), timeout(1000).times(1))
+        .tryWriteResponse(1, 1L);
+  }
+
+  @Test
+  public void shouldOffsetClock() {
+    // given
+    final var pinnedAt = Instant.now().minusSeconds(180).truncatedTo(ChronoUnit.MILLIS);
+    ENGINE.awaitProcessingOf(clockClient.pinAt(pinnedAt));
+    final var actorClockTime = Instant.now().truncatedTo(ChronoUnit.MILLIS);
+    ENGINE.getClock().setCurrentTime(actorClockTime);
+    final var offset = Duration.ofMinutes(10);
+
+    // when
+    final var record = clockClient.offsetBy(offset);
+
+    // then
+    Assertions.assertThat(record).hasIntent(ClockIntent.OFFSETTED);
+    assertThat(record.getValue().getTime()).isEqualTo(offset.toMillis());
+    assertThat(clockClient.fetch().getValue().getTime())
+        .describedAs("the offset replaces the pin and the clock runs from the system time")
+        .isEqualTo(actorClockTime.plus(offset).toEpochMilli());
+  }
+
+  @Test
+  public void shouldRespondToOffsetClock() {
+    // when
+    ENGINE.awaitProcessingOf(
+        clockClient.requestId(1L).requestStreamId(1).offsetBy(Duration.ofMinutes(10)));
+
+    // then
+    final var inOrder = Mockito.inOrder(ENGINE.getCommandResponseWriter());
+    inOrder
+        .verify(ENGINE.getCommandResponseWriter(), timeout(1000).times(1))
+        .intent(ClockIntent.OFFSETTED);
     inOrder
         .verify(ENGINE.getCommandResponseWriter(), timeout(1000).times(1))
         .tryWriteResponse(1, 1L);

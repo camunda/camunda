@@ -39,5 +39,10 @@ public final class ClockProcessors {
         ValueType.CLOCK,
         ClockIntent.FETCH,
         new ClockFetchProcessor(writers, keyGenerator, clock, cslCheck));
+    typedRecordProcessors.onCommand(
+        ValueType.CLOCK,
+        ClockIntent.OFFSET,
+        new ClockOffsetProcessor(
+            writers, keyGenerator, clock, commandDistributionBehavior, cslCheck));
   }
 }

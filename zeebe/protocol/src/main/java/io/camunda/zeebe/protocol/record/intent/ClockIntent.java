@@ -21,7 +21,9 @@ public enum ClockIntent implements Intent {
   RESET((short) 2, false),
   RESETTED((short) 3, true),
   FETCH((short) 4, false),
-  FETCHED((short) 5, true);
+  FETCHED((short) 5, true),
+  OFFSET((short) 6, false),
+  OFFSETTED((short) 7, true);
 
   private final short value;
   private final boolean isEvent;
@@ -49,6 +51,10 @@ public enum ClockIntent implements Intent {
         return FETCH;
       case 5:
         return FETCHED;
+      case 6:
+        return OFFSET;
+      case 7:
+        return OFFSETTED;
       default:
         return Intent.UNKNOWN;
     }

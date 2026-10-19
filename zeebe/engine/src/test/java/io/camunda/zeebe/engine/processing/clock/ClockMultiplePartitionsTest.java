@@ -15,12 +15,16 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ClockIntent;
 import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
+import io.camunda.zeebe.protocol.record.value.ClockRecordValue;
 import io.camunda.zeebe.protocol.record.value.CommandDistributionRecordValue;
 import io.camunda.zeebe.stream.api.StreamClock.ControllableStreamClock.Modification;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.List;
+import java.util.stream.IntStream;
 import org.awaitility.Awaitility;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -135,5 +139,45 @@ public class ClockMultiplePartitionsTest {
       assertThat(ENGINE.getProcessingState(partitionId).getClockState().getModification())
           .isEqualTo(Modification.none());
     }
+  }
+
+  @Test
+  public void shouldOffsetClockOnAllPartitions() {
+    // given
+    final var offset = Duration.ofMinutes(10);
+
+    // when
+    final var record = clockClient.offsetBy(offset);
+
+    // then
+    final var events = awaitOnAllPartitions(record, ClockIntent.OFFSETTED);
+    assertThat(events)
+        .extracting(event -> event.getValue().getTime())
+        .containsOnly(offset.toMillis());
+    awaitClockOnAllPartitions(Modification.offsetBy(offset));
+  }
+
+  /** Returns the event with the key of the given record from each partition. */
+  private static List<Record<ClockRecordValue>> awaitOnAllPartitions(
+      final Record<ClockRecordValue> record, final ClockIntent intent) {
+    return IntStream.rangeClosed(1, PARTITION_COUNT)
+        .mapToObj(
+            partitionId ->
+                RecordingExporter.clockRecords(intent)
+                    .withPartitionId(partitionId)
+                    .withRecordKey(record.getKey())
+                    .getFirst())
+        .toList();
+  }
+
+  private static void awaitClockOnAllPartitions(final Modification expected) {
+    // the clock changes in a side effect, which can run shortly after the event is exported
+    Awaitility.await("until the clock of every partition is " + expected)
+        .untilAsserted(
+            () ->
+                assertThat(
+                        IntStream.rangeClosed(1, PARTITION_COUNT)
+                            .mapToObj(id -> ENGINE.getStreamClock(id).currentModification()))
+                    .containsOnly(expected));
   }
 }

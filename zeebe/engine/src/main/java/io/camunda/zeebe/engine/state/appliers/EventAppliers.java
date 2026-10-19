@@ -1002,6 +1002,7 @@ public final class EventAppliers implements EventApplier {
     register(ClockIntent.PINNED, new ClockPinnedApplier(state.getClockState()));
     register(ClockIntent.RESETTED, new ClockResettedApplier(state.getClockState()));
     register(ClockIntent.FETCHED, NOOP_EVENT_APPLIER);
+    register(ClockIntent.OFFSETTED, new ClockOffsettedApplier(state.getClockState()));
   }
 
   private void registerRoleAppliers(final MutableProcessingState state) {

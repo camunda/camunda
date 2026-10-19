@@ -22,6 +22,7 @@ import io.camunda.zeebe.engine.processing.batchoperation.BatchOperationLifecycle
 import io.camunda.zeebe.engine.processing.batchoperation.BatchOperationLifecycleManagementSuspendProcessor;
 import io.camunda.zeebe.engine.processing.batchoperation.BatchOperationPartitionLifecycleCompletePartitionProcessor;
 import io.camunda.zeebe.engine.processing.batchoperation.BatchOperationPartitionLifecycleFailPartitionProcessor;
+import io.camunda.zeebe.engine.processing.clock.ClockOffsetProcessor;
 import io.camunda.zeebe.engine.processing.clock.ClockPinProcessor;
 import io.camunda.zeebe.engine.processing.clock.ClockResetProcessor;
 import io.camunda.zeebe.engine.processing.clustervariable.ClusterVariableCreateProcessor;
@@ -367,6 +368,20 @@ public class CommandDistributionIdempotencyTest {
                   return record;
                 }),
             ClockPinProcessor.class
+          },
+          {
+            "Clock.OFFSET is idempotent",
+            new Scenario(
+                ValueType.CLOCK,
+                ClockIntent.OFFSET,
+                () -> {
+                  // a small offset, so the reset below does not delay scheduled tasks like the
+                  // retry of this distribution
+                  final var record = ENGINE.clock().offsetBy(Duration.ofMillis(1));
+                  ENGINE.clock().reset(); // reset immediately to avoid timing issues
+                  return record;
+                }),
+            ClockOffsetProcessor.class
           },
           {
             "Clock.RESET is idempotent",
