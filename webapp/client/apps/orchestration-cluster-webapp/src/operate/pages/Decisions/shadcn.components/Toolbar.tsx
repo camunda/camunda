@@ -103,6 +103,7 @@ const Toolbar: React.FC<Props> = ({selectedCount, includedIds, excludedIds, filt
 				cancelLabel={t('operate.decisions.toolbar.deleteModalCancel')}
 				isDestructive
 				onOpenChange={setShowDeleteModal}
+				onCancel={onDiscard}
 				onConfirm={() => void handleDelete()}
 			/>
 		</>
