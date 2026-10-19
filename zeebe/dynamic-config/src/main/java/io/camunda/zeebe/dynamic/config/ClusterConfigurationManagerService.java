@@ -41,7 +41,10 @@ import io.micrometer.core.instrument.MeterRegistry;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Optional;
+import java.util.function.Supplier;
+import java.util.stream.Stream;
 
 public final class ClusterConfigurationManagerService
     implements ClusterConfigurationUpdateNotifier, AsyncClosable {
@@ -62,6 +65,8 @@ public final class ClusterConfigurationManagerService
   private final ClusterChangeExecutor clusterChangeExecutor;
   private final TopologyMetrics topologyMetrics;
   private final TopologyManagerMetrics topologyManagerMetrics;
+  private final ClusterMembershipService membershipService;
+  private final MemberId localMemberId;
 
   public ClusterConfigurationManagerService(
       final Path dataRootDirectory,
@@ -80,7 +85,8 @@ public final class ClusterConfigurationManagerService
       throw new UncheckedIOException("Failed to create data directory", e);
     }
 
-    final MemberId localMemberId = memberShipService.getLocalMember().id();
+    membershipService = memberShipService;
+    localMemberId = memberShipService.getLocalMember().id();
     configurationFile = dataRootDirectory.resolve(TOPOLOGY_FILE_NAME);
     persistedClusterConfiguration =
         PersistedClusterConfiguration.ofFile(configurationFile, new ProtoBufSerializer());
@@ -115,10 +121,7 @@ public final class ClusterConfigurationManagerService
 
   private ClusterConfigurationInitializer getNonCoordinatorInitializer(
       final StaticConfiguration staticConfiguration) {
-    final var otherKnownMembers =
-        staticConfiguration.clusterMembers().stream()
-            .filter(m -> !m.equals(staticConfiguration.localMemberId()))
-            .toList();
+    final Supplier<List<MemberId>> otherKnownMembers = initializationMembers(staticConfiguration);
     return new FileInitializer(configurationFile, new ProtoBufSerializer())
         // Recover via sync to ensure that we don't gossip an uninitialized configuration.
         // This is important so that we don't silently revert to uninitialized configuration when
@@ -151,10 +154,7 @@ public final class ClusterConfigurationManagerService
 
   private ClusterConfigurationInitializer getCoordinatorInitializer(
       final StaticConfiguration staticConfiguration) {
-    final var otherKnownMembers =
-        staticConfiguration.clusterMembers().stream()
-            .filter(m -> !m.equals(staticConfiguration.localMemberId()))
-            .toList();
+    final Supplier<List<MemberId>> otherKnownMembers = initializationMembers(staticConfiguration);
     return new FileInitializer(configurationFile, new ProtoBufSerializer())
         .orThen(
             new SyncInitializer(
@@ -172,6 +172,17 @@ public final class ClusterConfigurationManagerService
                 true))
         .andThen(new RoutingStateInitializer())
         .andThen(new ClusterIdInitializer(staticConfiguration.clusterId()));
+  }
+
+  private Supplier<List<MemberId>> initializationMembers(
+      final StaticConfiguration staticConfiguration) {
+    return () ->
+        Stream.concat(
+                staticConfiguration.clusterMembers().stream(),
+                membershipService.getMembers().stream().map(member -> member.id()))
+            .filter(memberId -> !memberId.equals(localMemberId))
+            .distinct()
+            .toList();
   }
 
   /** Starts ClusterConfigurationManager which initializes ClusterConfiguration */
