@@ -183,15 +183,20 @@ const EvidenceCard: React.FC<EvidenceCardProps> = ({
             />
           </Card>
           <Card data-testid="evidence-server-tools-configured">
-            <CardTitle>Provider-run server tools</CardTitle>
-            <Rows rows={[
+            <CardTitle>Provider capabilities</CardTitle>
+            <Rows
+              rows={[
                 [
                   'Configured',
                   list(
-                    configuredServerTools(serverTools, evidence.documentParsing),
+                    configuredServerTools(
+                      serverTools,
+                      evidence.documentParsing,
+                    ),
                   ),
                 ],
-              ]} />
+              ]}
+            />
           </Card>
           {isRecord(evidence.documentParsing) && (
             <PdfParsingCard parsing={evidence.documentParsing} />
@@ -206,7 +211,7 @@ const EvidenceCard: React.FC<EvidenceCardProps> = ({
       return (
         <Card data-testid="evidence-server-tools-used">
           <CardTitle>
-            Server tools used
+            Provider capability used
             <Tag size="sm" type="purple">
               provider-run
             </Tag>
