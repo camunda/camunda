@@ -53,8 +53,11 @@ final class SqliteColumnFamily<
   /** The same limit as RocksDB's, which has two prefix buffers per column family. */
   private static final int MAX_NESTED_ITERATIONS = 2;
 
-  private static final int INITIAL_BATCH_SIZE = 16;
+  private static final int INITIAL_BATCH_SIZE = 1;
   private static final int MAX_BATCH_SIZE = 256;
+
+  /** A batch stops growing once it holds this many bytes, however few rows that is. */
+  private static final int MAX_BATCH_BYTES = 1 << 20;
 
   private final SqliteDb<?> db;
   private final ColumnFamilyType columnFamily;
@@ -638,10 +641,11 @@ final class SqliteColumnFamily<
    * <p>A reader keeps its snapshot across the batches, so an iteration that does not write sees the
    * committed state as of its start, like a SQLite cursor does.
    *
-   * <p>The memory held is one batch: at most {@link #MAX_BATCH_SIZE} rows. The batch starts small
-   * and doubles while the visitor does not modify the table, so a scan that stops early reads
-   * little, and it falls back to a single row after a modification, so a visitor that writes in
-   * every visit does not read rows ahead only to drop them.
+   * <p>The memory held is one batch: at most {@link #MAX_BATCH_SIZE} rows, and at most {@link
+   * #MAX_BATCH_BYTES} bytes plus the row that crosses the limit. The batch starts with one row and
+   * doubles while the visitor does not modify the table, so a scan that stops early reads little,
+   * and it falls back to a single row after a modification, so a visitor that writes in every visit
+   * does not read rows ahead only to drop them.
    */
   private void scanInBatches(
       final @Nullable Cursor cursor,
@@ -698,6 +702,7 @@ final class SqliteColumnFamily<
       final int limit = resuming ? batchSize + 1 : batchSize;
 
       final long modifications = context.modifications();
+      boolean fullBatch = false;
       final var keys = new ArrayList<byte[]>();
       final var values = new ArrayList<byte[]>();
       final var connection = context.read();
@@ -714,17 +719,26 @@ final class SqliteColumnFamily<
         }
         statement.setInt(limitParameter, limit);
         try (final var rows = statement.executeQuery()) {
+          long bytes = 0;
           while (rows.next()) {
-            keys.add(layout.readKey(rows, 1));
+            final var key = layout.readKey(rows, 1);
+            keys.add(key);
+            bytes += key.length;
             if (withValue) {
-              values.add(rows.getBytes(keyColumns + 1));
+              final var value = rows.getBytes(keyColumns + 1);
+              values.add(value);
+              bytes += value.length;
+            }
+            if (bytes >= MAX_BATCH_BYTES) {
+              fullBatch = true;
+              break;
             }
           }
         }
       } finally {
         connection.releaseCursorStatement(sql, statement);
       }
-      exhausted = keys.size() < limit;
+      exhausted = !fullBatch && keys.size() < limit;
 
       int index = 0;
       if (resuming && !keys.isEmpty() && Arrays.equals(keys.get(0), start)) {
