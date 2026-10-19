@@ -18,7 +18,7 @@ The Event Plane keeps a copy of every partition's journal in object storage. A r
 same Raft indexes and record positions again, with other records, and its backup can come from an
 older history than the one it replaces. Consumers need to know which of the records they read
 still count. The Event Plane's side is
-[History manifests](https://github.com/camunda/event-plane/blob/b001616b7fa1f9a0d294613c36a948b1d50f9fc0/docs/14-history-manifests.md),
+[History manifests](https://github.com/camunda/event-plane/blob/9302e3892d5f7d94b016b33821e1322daed29914/docs/14-history-manifests.md),
 proposed in [camunda/event-plane#88](https://github.com/camunda/event-plane/pull/88).
 
 ## Decision
