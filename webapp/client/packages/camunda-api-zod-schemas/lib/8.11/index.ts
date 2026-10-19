@@ -107,6 +107,7 @@ import {
 	updateUserTask,
 } from './user-task';
 import {getVariable, queryVariables} from './variable';
+import {getForm, getLatestFormByFormId} from './form';
 import {queryJobs, activateJobs, failJob, throwJobError, completeJob, updateJob} from './job';
 import {
 	getProcessDefinition,
@@ -273,6 +274,8 @@ const endpoints = {
 	createProcessInstance,
 	getVariable,
 	queryVariables,
+	getForm,
+	getLatestFormByFormId,
 	queryJobs,
 	activateJobs,
 	failJob,
