@@ -308,6 +308,24 @@ final class LogArchiveHandoverRestoreIT {
   }
 
   @Test
+  void shouldRestoreATimeRangeOverTheHandoverThatEndsBeforeIt() {
+    // given -- a completed handover, and a time range from before the first old backup to the
+    // old backup before H (checkpoint ids are the time they were taken)
+    final var from = Instant.now();
+    final var scenario = runSourceThroughHandover(false);
+    source.stop();
+    final var to = Instant.ofEpochMilli(scenario.old());
+
+    // when / then -- the closest checkpoint is an old backup, restored from the old backups even
+    // without exported positions to resolve the range with
+    assertRestore(
+        "range-before",
+        app -> app.withTimeRange(from, to),
+        TIMELINE + ".b" + scenario.old(),
+        Map.of("a", PHASE_SIZE));
+  }
+
+  @Test
   void shouldRestoreATimeRangeAcrossTheHandover() {
     // given -- a completed handover, and a time range from before the first old backup on
     final var from = Instant.now();

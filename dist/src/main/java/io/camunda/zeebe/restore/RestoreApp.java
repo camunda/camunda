@@ -155,10 +155,14 @@ public class RestoreApp implements ApplicationRunner {
     }
     final var selectionPerTenant =
         arguments.selectionPerPhysicalTenant(physicalTenantConfigurations.physicalTenantIds());
-    if (restoreAcrossHandover(selectionPerTenant)) {
+    final var handover = restoreAcrossHandover(selectionPerTenant);
+    if (handover.restored()) {
       return;
     }
-    final var backupIdsPerTenant = validateParameters(selectionPerTenant);
+    final var backupIdsPerTenant =
+        handover.oldBackups() != null
+            ? handover.oldBackups()
+            : validateParameters(selectionPerTenant);
     final var restoredPartitionCounts = partitionCounts(backupIdsPerTenant);
     final var recreatesTopology =
         ClusterRestore.shouldRewriteTopologyFile(
@@ -206,10 +210,11 @@ public class RestoreApp implements ApplicationRunner {
    * archive (PoC), if it uses the log archive and the restore point is not entirely in the old
    * backups. Otherwise leaves the restore to the existing path, unchanged.
    *
-   * @return whether the restore was handled here
+   * @return whether the restore was handled here, or the old backups it resolved for the existing
+   *     path to restore
    */
-  private boolean restoreAcrossHandover(final Map<String, RestoreSelection> selectionPerTenant)
-      throws Exception {
+  private HandoverOutcome restoreAcrossHandover(
+      final Map<String, RestoreSelection> selectionPerTenant) throws Exception {
     final var tenantId = PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
     final var explicitTimeline = arguments.explicitLogArchiveTimeline();
     if (!selectionPerTenant.keySet().equals(Set.of(tenantId))) {
@@ -217,14 +222,14 @@ public class RestoreApp implements ApplicationRunner {
         throw new IllegalArgumentException(
             "--logArchive.timeline only supports the default physical tenant");
       }
-      return false;
+      return HandoverOutcome.NOT_RESTORED;
     }
     final var tenantConfiguration = physicalTenantConfigurations.forPhysicalTenant(tenantId);
     final var partitionCount = tenantConfiguration.getCluster().getPartitionsCount();
     final var logArchive = tenantConfiguration.getData().getBackup().getLogArchive();
     if (!logArchive.isEnabled() && explicitTimeline.isEmpty()) {
       if (!hasHandoverRecords(tenantId, partitionCount)) {
-        return false;
+        return HandoverOutcome.NOT_RESTORED;
       }
       // The bucket, not this configuration, says whether the cluster handed over: a restore run
       // with an outdated configuration would otherwise miss every restore point after H, and the
@@ -250,7 +255,11 @@ public class RestoreApp implements ApplicationRunner {
             "Checkpoint {} is restored from old backups on every partition; restoring as without"
                 + " the log archive",
             plan.checkpointId());
-        return false;
+        // A time range was resolved here, across both sides; the existing path would resolve it
+        // again from the old backups alone, which it refuses without exported positions.
+        return selection.hasBackupIds()
+            ? HandoverOutcome.NOT_RESTORED
+            : HandoverOutcome.restoreOldBackups(Map.of(tenantId, plan.oldBackupIds()));
       }
       final var restoreId = getRestoreId(selectionPerTenant);
       final var nodeId = configuration.getCluster().getNodeId();
@@ -271,7 +280,21 @@ public class RestoreApp implements ApplicationRunner {
               Set.of(tenantId),
               Map.of(tenantId, plan.partitions().size()),
               true));
-      return true;
+      return HandoverOutcome.RESTORED;
+    }
+  }
+
+  /**
+   * What the handover-aware restore did: restored the tenant itself, or resolved old backups for
+   * the existing path to restore ({@code oldBackups}, by tenant and partition), or neither.
+   */
+  private record HandoverOutcome(
+      boolean restored, @Nullable Map<String, Map<Integer, long[]>> oldBackups) {
+    static final HandoverOutcome RESTORED = new HandoverOutcome(true, null);
+    static final HandoverOutcome NOT_RESTORED = new HandoverOutcome(false, null);
+
+    static HandoverOutcome restoreOldBackups(final Map<String, Map<Integer, long[]>> oldBackups) {
+      return new HandoverOutcome(false, oldBackups);
     }
   }
 
