@@ -1,4 +1,7 @@
-plugins { id("buildlogic.server-conventions") }
+plugins {
+  id("buildlogic.server-conventions")
+  id("buildlogic.test-jar-conventions")
+}
 
 dependencies {
   api(project(":camunda-cluster"))
@@ -12,6 +15,8 @@ dependencies {
   implementation(libs.tools.jackson.core.jackson.core)
   implementation(libs.tools.jackson.core.jackson.databind)
   implementation(libs.com.fasterxml.jackson.core.jackson.annotations)
+  testImplementation(libs.net.jqwik.jqwik)
+  testImplementation(libs.net.jqwik.jqwik.api)
 }
 
 description = "Zeebe Dynamic Cluster Configuration API"

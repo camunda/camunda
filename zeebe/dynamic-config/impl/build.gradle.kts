@@ -9,12 +9,10 @@ dependencies {
   api(project(":zeebe-cluster-config-api"))
   implementation(project(":camunda-cluster"))
   implementation(libs.org.jspecify.jspecify)
-  implementation(libs.tools.jackson.core.jackson.databind)
   implementation(project(":zeebe-scheduler"))
   implementation(project(":zeebe-atomix-cluster"))
   implementation(libs.com.google.protobuf.protobuf.java)
   implementation(libs.org.slf4j.slf4j.api)
-  implementation(libs.com.google.guava.guava)
   implementation(libs.org.agrona.agrona)
   implementation(project(":zeebe-atomix-utils"))
   implementation(project(":zeebe-util"))
@@ -27,6 +25,8 @@ dependencies {
   testImplementation(libs.org.mockito.mockito.core)
   testImplementation(libs.net.jqwik.jqwik)
   testImplementation(libs.net.jqwik.jqwik.api)
+  testImplementation(libs.com.google.guava.guava)
+  testImplementation(projectArtifact(":zeebe-cluster-config-api", ArtifactKind.TESTS))
 }
 
 description = "Zeebe Dynamic Cluster Configuration"
