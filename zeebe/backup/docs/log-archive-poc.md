@@ -689,13 +689,15 @@ the unchanged old restore code on unchanged data.
   in the checkpoint state; `archivedPosition ≥ H.position`; no handover recorded yet (a repeat for
   the same H is rejected and harmless).
 - **Applier of `HANDOVER_COMPLETED`:** records `handoverCheckpointId` and `handoverPosition` in the log
-  archive meta and in the checkpoint state. Post-commit: write the old side's handover file (below).
-- **Old side: `metadata/<partition>/handover.json`**, a new file next to `metadata.json`, written
-  once per partition: `{formatVersion, partitionId, checkpointId, checkpointPosition,
-  logArchiveTimeline}`. `metadata.json` itself keeps exactly today's format and content, so any
-  existing restore tool reads it as before. Writing `handover.json` is idempotent (same content for
-  the same H); a missing file means "no handover yet".
-- **New side:** the `HANDOVER` commit entry in the archive (above).
+  archive meta and in the checkpoint state, and adds the old-side file write to the outbox.
+- **Old side: `metadata/<partition>/handover/<H>.json`**, a new file next to `metadata.json`:
+  `{formatVersion, partitionId, checkpointId, checkpointPosition, logArchiveTimeline}`. Keyed by H
+  because a restore to a point before H leads to a second handover on the new branch, and the first
+  record must stay. `metadata.json` itself keeps exactly today's format and content, so any existing
+  restore tool reads it as before. The outbox retries the write after a leader change until it
+  exists; the write is idempotent (same bytes for the same H).
+- **New side:** the `HANDOVER` commit entry in the archive (above), repeated in every later root.
+  It is the source of truth; the old-side file is a pointer and may briefly be missing.
 - **Compaction pin release:** once a handover is recorded on the partition, `DbPositionSupplier`
   ignores the old backup position (treats it as `Long.MAX_VALUE`) and caps at F only.
 
@@ -718,26 +720,33 @@ The checkpoint scheduler, per physical tenant, on its backup tick:
    `COMPLETE_HANDOVER(H)` to every partition.
 4. Else, if on every partition the timeline is started, `archivedPosition ≥` the last confirmed old
    backup's position, and an archived snapshot exists: take the next backup as type `HANDOVER`
-   instead of `SCHEDULED_BACKUP`.
+   instead of `SCHEDULED_BACKUP`. The snapshot precondition is what makes every target after H
+   restorable from the archive alone (18.5).
 5. Else: take a normal scheduled backup, as today.
 
 All decisions are derived from the query, never from scheduler memory, so they survive the
 scheduler moving to another broker.
 
+Partitions added after the handover (scale-up) have no old history: they start archive-only and
+count as handed over in steps 2 and 3.
+
 ### 18.5 Restore across the handover (H5)
 
-Per target checkpoint T and partition, using `metadata/<partition>/handover.json` and the archive
-view (`HANDOVER` commit entry); the old side is read only through the existing old restore code:
+Per target checkpoint T and partition, using `metadata/<partition>/handover/` and the archive view
+(`HANDOVER` commit entry); the old side is read only through the existing old restore code:
 
 | Target | Path |
 |---|---|
-| no handover, or T ≤ H | old restore, unchanged |
-| T > H and an archived snapshot qualifies for T | shortcut: archive only (existing `LogArchiveRestore`) |
-| T > H otherwise | handover restore: old restore up to H (backups of the chain ending at H), then append archived frames from the entry after H's checkpoint record up to T, on the same journal |
+| no handover, or T ≤ H (H itself is an old backup) | old restore, unchanged |
+| T > H | archive only (existing `LogArchiveRestore`) in the timeline named by the handover, or a timeline forked from it that covers T |
+| T in neither | fail, naming the partition and the newest restorable checkpoint on each side |
 
-The handover restore must produce the same journal as the shortcut would (same indexes, same
-records). After any restore, the new timeline's parent is the source: the archive timeline, or
-`legacy:<H>`.
+There is no combined path (old backup H + archived log): the snapshot precondition in 18.4 step 4
+guarantees an archived snapshot ≤ H for every T > H. If the old-side file is missing (leader died
+before the outbox wrote it), the restore also checks the configured archive timeline for a
+`HANDOVER` entry, and the archive wins. "latest" means the newest checkpoint restorable on every
+partition, comparing both sides. After a restore from old backups the new timeline's parent is
+`legacy:<backupId>`.
 
 Restore entry point: `restore-standalone` gets a log archive mode (timeline, target checkpoint id or
 "latest") that picks the path automatically.
@@ -750,6 +759,10 @@ Once a handover is recorded on a partition:
   no old-style backup is uploaded for them.
 - Backup status (`GET /actuator/backups/{id}`) for such a checkpoint is `COMPLETED` once the
   partition's `archivedPosition ≥` the checkpoint position, `IN_PROGRESS` before.
+- Listing backups returns old backups and archive checkpoints together, ordered by id.
+- Old backups keep their own retention; only restore points ≤ H depend on them.
+- Disabling the log archive after a handover is refused at startup (continuous backup would need a
+  fresh full chain; out of scope).
 
 This keeps `POST /actuator/backups` + `GET /actuator/backups/{id}` usable as "give me a restore
 point and tell me when it is safe" in tests and locally.
@@ -758,19 +771,21 @@ point and tell me when it is safe" in tests and locally.
 
 - Integration tests: upgrade simulation (start with continuous backup only, enable the log archive,
   observe activation, H, `HANDOVER_COMPLETED`, old backups stop, pin released); gate stays closed
-  with one broker advertising an older version; restore before H, across H (handover restore), after
-  H (shortcut); manual backup after handover reports `COMPLETED` once archived.
-- `zeebe/backup/docs/log-archive-local.md`: how to run it locally (filesystem or MinIO config, take a
-  backup, check status, restore).
+  with one broker advertising an older version; restore before, at and after H; restore before H
+  followed by a second handover; missing old-side file; `COMPLETE_HANDOVER` reaching only some
+  partitions; manual backup after handover reports `COMPLETED` once archived.
+- Manual test scenario G (brownfield upgrade) in `log-archive-manual-test.md` and its scripts.
 
 ### 18.8 Workstreams
 
 | WS | Owns | Model | Depends on |
 |----|------|-------|-----------|
 | H1 gate + activation | scheduler gate, `ACTIVATE_LOG_ARCHIVE` request + handler, archiver waits for activation, version test hook | Opus | spec |
-| H2 handover state + query | `CheckpointType.HANDOVER`, `COMPLETE_HANDOVER`/`HANDOVER_COMPLETED` intents + applier + commit entry type, checkpoint state + meta fields, `handover.json` on the old side, pin release, `logArchiveStates` query group | Sonnet | spec |
-| H3 handover decision | scheduler steps 1–5, `COMPLETE_HANDOVER` request | Opus | H1, H2 |
-| H5 restore | planner paths, journal stitching, `restore-standalone` mode | Opus (planner + stitching), Sonnet (CLI) | H2 |
-| H6 backups after handover | skip old upload, status from F | Sonnet | H2 |
-| H7 integration tests | scenarios in 18.7 | Sonnet | all |
-| H8 local runbook | `log-archive-local.md` | Haiku | H6 |
+| H2 handover state + query | `CheckpointType.HANDOVER`, `COMPLETE_HANDOVER`/`HANDOVER_COMPLETED` intents + applier + commit entry type (also in roots), checkpoint state + meta fields, outbox write of `handover/<H>.json` on the old side, pin release, `logArchiveStates` query group | Sonnet | spec |
+| H3 handover decision | scheduler steps 1–5, `COMPLETE_HANDOVER` request, scale-up partitions count as handed over | Opus | H1, H2 |
+| H4 restore | per-partition path choice, handover lookup on both sides, archive fallback for a missing file, "latest" across both sides, restore app wiring | Sonnet | H2 |
+| H5 backups after handover | skip old upload, status from F, list merges both sides, refuse disabling the archive | Sonnet | H2 |
+| H6 integration tests | scenarios in 18.7 | Sonnet | all |
+| H7 manual scenario G | brownfield upgrade in the manual test scripts | Haiku | H5 |
+
+Critical path: H2 → H3 → H6. The combined restore with journal stitching is no longer planned.
