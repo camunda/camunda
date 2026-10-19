@@ -1,0 +1,45 @@
+{
+  "executionPlatform": "Camunda Cloud",
+  "executionPlatformVersion": "8.11.0",
+  "exporter": {
+    "name": "Camunda Modeler",
+    "version": "5.40.0"
+  },
+  "schemaVersion": 18,
+  "id": "investigate-fraud",
+  "type": "default",
+  "components": [
+    {
+      "type": "textarea",
+      "key": "claimDescription",
+      "label": "Description",
+      "id": "Field_claimDescription_141",
+      "readonly": true
+    },
+    {
+      "type": "radio",
+      "key": "investigationOutcome",
+      "label": "Outcome",
+      "id": "Field_investigationOutcome_142",
+      "validate": {
+        "required": true
+      },
+      "values": [
+        {
+          "value": "fraudConfirmed",
+          "label": "Fraud confirmed"
+        },
+        {
+          "value": "noFraud",
+          "label": "No fraud"
+        }
+      ]
+    },
+    {
+      "type": "textarea",
+      "key": "investigationNotes",
+      "label": "Notes",
+      "id": "Field_investigationNotes_143"
+    }
+  ]
+}

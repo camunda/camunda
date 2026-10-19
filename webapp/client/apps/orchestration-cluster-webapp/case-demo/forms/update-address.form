@@ -1,0 +1,35 @@
+{
+  "executionPlatform": "Camunda Cloud",
+  "executionPlatformVersion": "8.11.0",
+  "exporter": {
+    "name": "Camunda Modeler",
+    "version": "5.40.0"
+  },
+  "schemaVersion": 18,
+  "id": "update-address",
+  "type": "default",
+  "components": [
+    {
+      "type": "textfield",
+      "key": "customerName",
+      "label": "Customer",
+      "id": "Field_customerName_148",
+      "readonly": true
+    },
+    {
+      "type": "textarea",
+      "key": "newAddress",
+      "label": "New address",
+      "id": "Field_newAddress_149",
+      "validate": {
+        "required": true
+      }
+    },
+    {
+      "type": "checkbox",
+      "key": "addressConfirmed",
+      "label": "The customer confirmed the address",
+      "id": "Field_addressConfirmed_150"
+    }
+  ]
+}

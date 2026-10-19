@@ -1,0 +1,22 @@
+{
+  "executionPlatform": "Camunda Cloud",
+  "executionPlatformVersion": "8.11.0",
+  "exporter": {
+    "name": "Camunda Modeler",
+    "version": "5.40.0"
+  },
+  "schemaVersion": 18,
+  "id": "confirm-withdrawal",
+  "type": "default",
+  "components": [
+    {
+      "type": "textarea",
+      "key": "withdrawalReason",
+      "label": "Reason of the withdrawal",
+      "id": "Field_withdrawalReason_140",
+      "validate": {
+        "required": true
+      }
+    }
+  ]
+}

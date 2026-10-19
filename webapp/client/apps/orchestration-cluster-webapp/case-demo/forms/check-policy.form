@@ -1,0 +1,32 @@
+{
+  "executionPlatform": "Camunda Cloud",
+  "executionPlatformVersion": "8.11.0",
+  "exporter": {
+    "name": "Camunda Modeler",
+    "version": "5.40.0"
+  },
+  "schemaVersion": 18,
+  "id": "check-policy",
+  "type": "default",
+  "components": [
+    {
+      "type": "textfield",
+      "key": "policyNumber",
+      "label": "Policy number",
+      "id": "Field_policyNumber_126",
+      "readonly": true
+    },
+    {
+      "type": "checkbox",
+      "key": "policyValid",
+      "label": "The policy covers the claim",
+      "id": "Field_policyValid_127"
+    },
+    {
+      "type": "textarea",
+      "key": "policyNotes",
+      "label": "Notes",
+      "id": "Field_policyNotes_128"
+    }
+  ]
+}

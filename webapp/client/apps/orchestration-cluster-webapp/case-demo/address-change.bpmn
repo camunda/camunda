@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="address-change-definitions" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.40.0" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.11.0">
+  <bpmn:process id="address-change" name="Address change" isExecutable="true">
+    <bpmn:startEvent id="address-change-requested" name="Address change requested">
+      <bpmn:outgoing>address-flow-1</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:userTask id="update-address" name="Update the address">
+      <bpmn:extensionElements>
+        <zeebe:userTask />
+        <zeebe:formDefinition formId="update-address" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>address-flow-1</bpmn:incoming>
+      <bpmn:outgoing>address-flow-2</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:endEvent id="address-changed" name="Address changed">
+      <bpmn:incoming>address-flow-2</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="address-flow-1" sourceRef="address-change-requested" targetRef="update-address" />
+    <bpmn:sequenceFlow id="address-flow-2" sourceRef="update-address" targetRef="address-changed" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="address-change-diagram">
+    <bpmndi:BPMNPlane id="address-change-plane" bpmnElement="address-change">
+      <bpmndi:BPMNShape id="address-change-requested_di" bpmnElement="address-change-requested">
+        <dc:Bounds x="110" y="92" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="update-address_di" bpmnElement="update-address">
+        <dc:Bounds x="196" y="70" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="address-changed_di" bpmnElement="address-changed">
+        <dc:Bounds x="346" y="92" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="address-flow-1_di" bpmnElement="address-flow-1">
+        <di:waypoint x="146" y="110" />
+        <di:waypoint x="196" y="110" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="address-flow-2_di" bpmnElement="address-flow-2">
+        <di:waypoint x="296" y="110" />
+        <di:waypoint x="346" y="110" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>
+

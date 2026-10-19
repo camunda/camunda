@@ -1,0 +1,27 @@
+{
+  "executionPlatform": "Camunda Cloud",
+  "executionPlatformVersion": "8.11.0",
+  "exporter": {
+    "name": "Camunda Modeler",
+    "version": "5.40.0"
+  },
+  "schemaVersion": 18,
+  "id": "close-expired-claim",
+  "type": "default",
+  "components": [
+    {
+      "type": "text",
+      "text": "The deadline of the claim passed before a decision.",
+      "id": "Text_144"
+    },
+    {
+      "type": "textarea",
+      "key": "expiryNote",
+      "label": "Note to the customer",
+      "id": "Field_expiryNote_145",
+      "validate": {
+        "required": true
+      }
+    }
+  ]
+}

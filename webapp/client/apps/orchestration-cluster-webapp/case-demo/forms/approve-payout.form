@@ -1,0 +1,29 @@
+{
+  "executionPlatform": "Camunda Cloud",
+  "executionPlatformVersion": "8.11.0",
+  "exporter": {
+    "name": "Camunda Modeler",
+    "version": "5.40.0"
+  },
+  "schemaVersion": 18,
+  "id": "approve-payout",
+  "type": "default",
+  "components": [
+    {
+      "type": "number",
+      "key": "payoutAmount",
+      "label": "Payout (EUR)",
+      "id": "Field_payoutAmount_138",
+      "readonly": true
+    },
+    {
+      "type": "checkbox",
+      "key": "payoutApproved",
+      "label": "The payout is approved",
+      "id": "Field_payoutApproved_139",
+      "validate": {
+        "required": true
+      }
+    }
+  ]
+}
