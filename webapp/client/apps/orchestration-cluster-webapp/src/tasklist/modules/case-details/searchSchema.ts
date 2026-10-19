@@ -6,15 +6,10 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {createFileRoute, notFound} from '@tanstack/react-router';
-import {ENABLE_CASE_MANAGEMENT} from '#/shared/feature-flags';
+import {z} from 'zod';
 
-const Route = createFileRoute('/_shadcn/_auth/tasklist/cases')({
-	beforeLoad: () => {
-		if (!ENABLE_CASE_MANAGEMENT) {
-			throw notFound({routeId: '/_shadcn/_auth/tasklist'});
-		}
-	},
+const caseDetailsSearchSchema = z.object({
+	task: z.string().optional(),
 });
 
-export {Route};
+export {caseDetailsSearchSchema};

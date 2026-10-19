@@ -1,0 +1,126 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+
+import {useTranslation} from 'react-i18next';
+import type {StageProgress, StageState} from '@camunda/case-management-sdk';
+import {Circle, CircleAlert, CircleCheck, CircleDot, CircleMinus, CircleX} from '@camunda/design-system/icons';
+import {cn} from '#/shared/cn';
+import {formatISODateTime} from '#/tasklist/modules/dates/formatDateRelative';
+
+// The design system's precompiled stylesheet only ships the token utilities it uses itself,
+// so the action colors are referenced through their CSS variables.
+const STATE_MAPPINGS = {
+	done: {
+		icon: CircleCheck,
+		iconClassName: 'text-[color:var(--success-action-default)]',
+		labelClassName: 'text-neutral-foreground-strong',
+		statusClassName: 'text-neutral-foreground-subtle',
+		labelKey: 'tasklist.caseStageDone',
+	},
+	inProgress: {
+		icon: CircleDot,
+		iconClassName: 'text-[color:var(--info-action-default)]',
+		labelClassName: 'font-semibold text-[color:var(--info-action-default)]',
+		statusClassName: 'text-[color:var(--info-action-default)]',
+		labelKey: 'tasklist.caseStageInProgress',
+	},
+	incident: {
+		icon: CircleAlert,
+		iconClassName: 'text-[color:var(--danger-action-default)]',
+		labelClassName: 'font-semibold text-neutral-foreground-strong',
+		statusClassName: 'text-[color:var(--danger-action-default)]',
+		labelKey: 'tasklist.caseStageIncident',
+	},
+	cancelled: {
+		icon: CircleX,
+		iconClassName: 'text-neutral-foreground-subtle',
+		labelClassName: 'text-neutral-foreground-subtle',
+		statusClassName: 'text-neutral-foreground-subtle',
+		labelKey: 'tasklist.caseStageCancelled',
+	},
+	skipped: {
+		icon: CircleMinus,
+		iconClassName: 'text-neutral-foreground-subtle',
+		labelClassName: 'text-neutral-foreground-subtle line-through',
+		statusClassName: 'text-neutral-foreground-subtle',
+		labelKey: 'tasklist.caseStageSkipped',
+	},
+	ahead: {
+		icon: Circle,
+		iconClassName: 'text-neutral-foreground-subtle',
+		labelClassName: 'text-neutral-foreground-subtle',
+		statusClassName: 'text-neutral-foreground-subtle',
+		labelKey: 'tasklist.caseStageAhead',
+	},
+} as const satisfies Record<
+	StageState,
+	{icon: unknown; iconClassName: string; labelClassName: string; statusClassName: string; labelKey: string}
+>;
+
+const REACHED_STATES = new Set<StageState>(['done', 'skipped', 'cancelled', 'inProgress', 'incident']);
+const PASSED_STATES = new Set<StageState>(['done', 'skipped', 'cancelled']);
+const REACHED_CONNECTOR = 'bg-[color:var(--success-action-default)]';
+const PENDING_CONNECTOR = 'bg-border';
+
+function getTime(isoDate: string | null): string | null {
+	return isoDate === null ? null : (formatISODateTime(isoDate)?.relative.text ?? null);
+}
+
+type Props = {
+	progress: StageProgress[];
+};
+
+const StageLine: React.FC<Props> = ({progress}) => {
+	const {t} = useTranslation();
+
+	return (
+		<ol className="flex items-start" aria-label={t('tasklist.caseStagesLabel')}>
+			{progress.map(({stage, state, startDate, endDate}, index) => {
+				const {icon: Icon, iconClassName, labelClassName, statusClassName, labelKey} = STATE_MAPPINGS[state];
+				const previous = progress[index - 1];
+				const isFirst = index === 0;
+				const isLast = index === progress.length - 1;
+				const isReachedFromPrevious =
+					previous !== undefined && PASSED_STATES.has(previous.state) && REACHED_STATES.has(state);
+				const time = state === 'done' ? getTime(endDate) : getTime(startDate);
+
+				return (
+					<li
+						key={stage.id}
+						className="flex min-w-0 flex-1 flex-col items-center gap-1.5 text-center"
+						aria-current={state === 'inProgress' || state === 'incident' ? 'step' : undefined}
+					>
+						<div className="flex w-full items-center" aria-hidden>
+							<span
+								className={cn(
+									'h-0.5 flex-1 rounded-full',
+									isFirst ? 'bg-transparent' : isReachedFromPrevious ? REACHED_CONNECTOR : PENDING_CONNECTOR,
+								)}
+							/>
+							<Icon className={cn('mx-1.5 size-6 shrink-0', iconClassName)} />
+							<span
+								className={cn(
+									'h-0.5 flex-1 rounded-full',
+									isLast ? 'bg-transparent' : PASSED_STATES.has(state) ? REACHED_CONNECTOR : PENDING_CONNECTOR,
+								)}
+							/>
+						</div>
+						<span className={cn('max-w-full truncate px-2 text-sm', labelClassName)} title={stage.name}>
+							{stage.name}
+						</span>
+						<span className={cn('max-w-full truncate px-2 text-xs', statusClassName)}>
+							{state === 'done' && time !== null ? time : t(labelKey)}
+						</span>
+					</li>
+				);
+			})}
+		</ol>
+	);
+};
+
+export {StageLine};

@@ -7,15 +7,28 @@
  */
 
 import {useEffect, useLayoutEffect, useRef, useState} from 'react';
+import {cn} from '#/shared/cn';
 import {BpmnJS} from './BpmnJS';
 import {DiagramControls} from './DiagramControls';
+
+type DiagramMarker = {
+	elementId: string;
+	variant: 'active' | 'completed' | 'incident';
+};
 
 type Props = {
 	xml: string;
 	highlightActivity?: string;
+	markers?: DiagramMarker[];
 };
 
-const BPMNDiagram: React.FC<Props> = ({xml, highlightActivity}) => {
+const MARKER_CLASS_NAMES = {
+	active: 'tasklist-active-element',
+	completed: 'tasklist-completed-element',
+	incident: 'tasklist-incident-element',
+} as const satisfies Record<DiagramMarker['variant'], string>;
+
+const BPMNDiagram: React.FC<Props> = ({xml, highlightActivity, markers}) => {
 	const diagramCanvasRef = useRef<HTMLDivElement | null>(null);
 	const [viewer] = useState(() => new BpmnJS());
 	const [isDiagramRendered, setIsDiagramRendered] = useState(false);
@@ -35,6 +48,10 @@ const BPMNDiagram: React.FC<Props> = ({xml, highlightActivity}) => {
 				viewer.addMarker(highlightActivity, 'tasklist-highlighted-activity');
 			}
 
+			for (const {elementId, variant} of markers ?? []) {
+				viewer.addMarker(elementId, MARKER_CLASS_NAMES[variant]);
+			}
+
 			if (isMounted) {
 				setIsDiagramRendered(true);
 			}
@@ -45,7 +62,7 @@ const BPMNDiagram: React.FC<Props> = ({xml, highlightActivity}) => {
 		return () => {
 			isMounted = false;
 		};
-	}, [xml, highlightActivity, viewer]);
+	}, [xml, highlightActivity, markers, viewer]);
 
 	useEffect(() => {
 		return () => {
@@ -56,7 +73,12 @@ const BPMNDiagram: React.FC<Props> = ({xml, highlightActivity}) => {
 	return (
 		<div className="bpmn-io-shadcn-theme relative min-h-0 w-full flex-1" data-testid="diagram">
 			<div
-				className="absolute inset-0 [&_.bjs-powered-by]:hidden [&_.djs-container>svg:focus]:outline-none [&_.djs-element.tasklist-highlighted-activity>.djs-outline]:visible [&_.djs-element.tasklist-highlighted-activity>.djs-outline]:[stroke:var(--info-action-default)] [&_.djs-element.tasklist-highlighted-activity>.djs-outline]:[stroke-width:2px]"
+				className={cn(
+					'absolute inset-0 [&_.bjs-powered-by]:hidden [&_.djs-container>svg:focus]:outline-none [&_.djs-element.tasklist-highlighted-activity>.djs-outline]:visible [&_.djs-element.tasklist-highlighted-activity>.djs-outline]:[stroke:var(--info-action-default)] [&_.djs-element.tasklist-highlighted-activity>.djs-outline]:[stroke-width:2px]',
+					'[&_.djs-element.tasklist-active-element>.djs-outline]:visible [&_.djs-element.tasklist-active-element>.djs-outline]:[stroke:var(--info-action-default)] [&_.djs-element.tasklist-active-element>.djs-outline]:[stroke-width:2px]',
+					'[&_.djs-element.tasklist-completed-element>.djs-outline]:visible [&_.djs-element.tasklist-completed-element>.djs-outline]:[stroke:var(--success-action-default)] [&_.djs-element.tasklist-completed-element>.djs-outline]:[stroke-width:1px]',
+					'[&_.djs-element.tasklist-incident-element>.djs-outline]:visible [&_.djs-element.tasklist-incident-element>.djs-outline]:[stroke:var(--danger-action-default)] [&_.djs-element.tasklist-incident-element>.djs-outline]:[stroke-width:2px]',
+				)}
 				ref={diagramCanvasRef}
 			/>
 			{isDiagramRendered ? (
@@ -67,3 +89,4 @@ const BPMNDiagram: React.FC<Props> = ({xml, highlightActivity}) => {
 };
 
 export {BPMNDiagram};
+export type {DiagramMarker};
