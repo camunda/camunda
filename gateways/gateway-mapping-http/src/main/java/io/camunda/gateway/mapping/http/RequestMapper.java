@@ -9,6 +9,7 @@ package io.camunda.gateway.mapping.http;
 
 import static io.camunda.gateway.mapping.http.util.KeyUtil.keyToLongOrNull;
 import static io.camunda.gateway.mapping.http.validator.AdHocSubProcessActivityRequestValidator.validateAdHocSubProcessActivationRequest;
+import static io.camunda.gateway.mapping.http.validator.ClockValidator.validateClockAddRequest;
 import static io.camunda.gateway.mapping.http.validator.ClockValidator.validateClockPinRequest;
 import static io.camunda.gateway.mapping.http.validator.ConditionalEvaluationRequestValidator.validateConditionalEvaluationRequest;
 import static io.camunda.gateway.mapping.http.validator.DocumentValidator.validateDocumentLinkParams;
@@ -41,6 +42,7 @@ import io.camunda.gateway.mapping.http.validator.DocumentValidator;
 import io.camunda.gateway.protocol.model.AdHocSubProcessActivateActivitiesInstruction;
 import io.camunda.gateway.protocol.model.CamundaProblemDetail;
 import io.camunda.gateway.protocol.model.Changeset;
+import io.camunda.gateway.protocol.model.ClockAddRequest;
 import io.camunda.gateway.protocol.model.ClockPinRequest;
 import io.camunda.gateway.protocol.model.ConditionalEvaluationInstruction;
 import io.camunda.gateway.protocol.model.DecisionEvaluationById;
@@ -198,6 +200,12 @@ public class RequestMapper {
 
   public static Either<ProblemDetail, Long> getPinnedEpoch(final ClockPinRequest pinRequest) {
     return getResult(validateClockPinRequest(pinRequest), pinRequest::getTimestamp);
+  }
+
+  public static Either<ProblemDetail, Long> getClockOffset(final ClockAddRequest addRequest) {
+    return getResult(
+        validateClockAddRequest(addRequest),
+        () -> Duration.parse(addRequest.getOffset()).toMillis());
   }
 
   public static Either<ProblemDetail, ActivateJobsRequest> toJobsActivationRequest(

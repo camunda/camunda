@@ -152,6 +152,8 @@ paths:
   # Clock endpoints
   /clock:
     $ref: 'clock.yaml#/paths/~1clock'
+  /clock/add:
+    $ref: 'clock.yaml#/paths/~1clock~1add'
   /clock/reset:
     $ref: 'clock.yaml#/paths/~1clock~1reset'
 
