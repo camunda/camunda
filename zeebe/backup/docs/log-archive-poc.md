@@ -737,14 +737,18 @@ Per target checkpoint T and partition, using `metadata/<partition>/handover/` an
 
 | Target | Path |
 |---|---|
-| no handover, or T ≤ H (H itself is an old backup) | old restore, unchanged |
-| T > H | archive only (existing `LogArchiveRestore`) in the timeline named by the handover, or a timeline forked from it that covers T |
-| T in neither | fail, naming the partition and the newest restorable checkpoint on each side |
+| an old backup T exists on the partition | old restore, unchanged |
+| no old backup T | archive only (existing `LogArchiveRestore`) in the timeline that covers T, searched among the timelines named by `handover/<H>.json` records and their forks |
+| T covered by more than one timeline | the operator names the timeline (manual ids can repeat across branches) |
+| T nowhere | fail, naming the partition and the newest restorable checkpoint on each side |
+
+The decision is by where T exists, not by comparing T with H: after a restore to a point before H,
+the new branch (`<tl>.b<T>`) takes old backups again until its own handover H2, and those come after
+H in time.
 
 There is no combined path (old backup H + archived log): the snapshot precondition in 18.4 step 4
 guarantees an archived snapshot ≤ H for every T > H. If the old-side file is missing (leader died
-before the outbox wrote it), the restore also checks the configured archive timeline for a
-`HANDOVER` entry, and the archive wins. "latest" means the newest checkpoint restorable on every
+before the outbox wrote it), the restore also searches the configured archive timeline. "latest" means the newest checkpoint restorable on every
 partition, comparing both sides. After a restore from old backups the new timeline's parent is
 `legacy:<backupId>`.
 
