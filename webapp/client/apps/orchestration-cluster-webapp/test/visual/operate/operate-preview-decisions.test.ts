@@ -27,10 +27,6 @@ import {
 	createDecisionDefinition,
 	createQueryDecisionDefinitionsResponse,
 } from '#/shared-test-modules/api-mocks/decision-definitions';
-import {
-	createDecisionInstance,
-	createQueryDecisionInstancesResponse,
-} from '#/shared-test-modules/api-mocks/decision-instances';
 import {DMN_XML} from '#/shared-test-modules/api-mocks/decision-definition-xmls';
 
 test.beforeEach(({network}) => {
