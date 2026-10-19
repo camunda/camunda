@@ -11,6 +11,11 @@ import styled from 'styled-components';
 const TabNav = styled.nav`
 	border-bottom: 1px solid var(--cds-border-subtle);
 
+	.cds--tabs__nav-link {
+		display: flex;
+		align-items: center;
+	}
+
 	.cds--tabs__nav-item-label:not(:last-child) {
 		margin-right: var(--cds-spacing-02);
 	}
