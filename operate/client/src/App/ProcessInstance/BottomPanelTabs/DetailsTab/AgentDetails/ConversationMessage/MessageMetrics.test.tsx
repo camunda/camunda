@@ -102,7 +102,6 @@ describe('<MessageMetrics />', () => {
 
     await user.hover(screen.getByTestId('message-token-metric'));
     const tooltip = await screen.findByRole('tooltip');
-    expect(tooltip).toHaveTextContent('Input: 12,345Output: 456');
     expect(tooltip.textContent).toBe('Input: 12,345Output: 456');
     expect(tooltip.querySelectorAll('br')).toHaveLength(1);
   });
