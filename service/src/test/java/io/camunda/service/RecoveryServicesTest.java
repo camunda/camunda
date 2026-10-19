@@ -9,6 +9,7 @@ package io.camunda.service;
 
 import static java.time.Duration.ofSeconds;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.catchThrowable;
 import static org.assertj.core.api.InstanceOfAssertFactories.type;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -17,6 +18,8 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.camunda.search.exception.CamundaSearchException;
+import io.camunda.search.exception.CamundaSearchException.Reason;
 import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.api.model.authz.AuthorizationResourceType;
 import io.camunda.security.api.model.authz.PermissionType;
@@ -450,5 +453,25 @@ public class RecoveryServicesTest {
               assertThat(exception.getStatus()).isEqualTo(Status.FORBIDDEN);
               assertThat(exception.getMessage()).isEqualTo(expectedMessage);
             });
+  }
+
+  @Test
+  public void shouldFailWithInternalErrorWhenPermissionSearchFails() {
+    // given
+    authorizationsConfig.setEnabled(true);
+    when(authorizationChecker.collectPermissionTypes(any(), any(), any()))
+        .thenThrow(
+            new CamundaSearchException(
+                "Failed to execute findAll query", Reason.SEARCH_SERVER_FAILED));
+
+    // when
+    final var error =
+        catchThrowable(() -> services.changeMode(Mode.RECOVERING, false, authentication));
+
+    // then
+    assertThat(error)
+        .isInstanceOfSatisfying(
+            ServiceException.class, e -> assertThat(e.getStatus()).isEqualTo(Status.INTERNAL));
+    verify(clusterConfigurationRequestSender, never()).modeChange(any());
   }
 }
