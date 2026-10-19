@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="generator" content="Docusaurus v3.10.2">
 <title data-rh="true">Each life of a physical tenant is a history | Camunda Platform</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:url" content="https://camunda.github.io/camunda/pr-preview/pr-66425/adr/management/event-plane-history-manifests/"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-adr-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-adr-current"><meta data-rh="true" property="og:title" content="Each life of a physical tenant is a history | Camunda Platform"><meta data-rh="true" name="description" content="DRI: Lena Schönburg"><meta data-rh="true" property="og:description" content="DRI: Lena Schönburg"><link data-rh="true" rel="icon" href="/camunda/pr-preview/pr-66425/img/black-C.png"><link data-rh="true" rel="canonical" href="https://camunda.github.io/camunda/pr-preview/pr-66425/adr/management/event-plane-history-manifests/"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-66425/adr/management/event-plane-history-manifests/" hreflang="en"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-66425/adr/management/event-plane-history-manifests/" hreflang="x-default"><link rel="stylesheet" href="/camunda/pr-preview/pr-66425/assets/css/styles.44533d03.css">
-<script src="/camunda/pr-preview/pr-66425/assets/js/runtime~main.de34d8fd.js" defer="defer"></script>
-<script src="/camunda/pr-preview/pr-66425/assets/js/main.3a04a74a.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-66425/assets/js/runtime~main.da3207da.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-66425/assets/js/main.89593ebf.js" defer="defer"></script>
 </head>
 <body>
 <svg style="display: none;"><defs>
@@ -26,7 +26,7 @@ histories apart after a restore or a purge.</p>
 same Raft indexes and record positions again, with other records, and its backup can come from an
 older history than the one it replaces. Consumers need to know which of the records they read
 still count. The Event Plane&#x27;s side is
-<a href="https://github.com/camunda/event-plane/blob/b001616b7fa1f9a0d294613c36a948b1d50f9fc0/docs/14-history-manifests.md" target="_blank" rel="noopener noreferrer" class="">History manifests</a>,
+<a href="https://github.com/camunda/event-plane/blob/9302e3892d5f7d94b016b33821e1322daed29914/docs/14-history-manifests.md" target="_blank" rel="noopener noreferrer" class="">History manifests</a>,
 proposed in <a href="https://github.com/camunda/event-plane/pull/88" target="_blank" rel="noopener noreferrer" class="">camunda/event-plane#88</a>.</p>
 <h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="decision">Decision<a href="#decision" class="hash-link" aria-label="Direct link to Decision" title="Direct link to Decision" translate="no">​</a></h2>
 <p><strong>D1. Each life of a physical tenant is a history, named by a random id.</strong> A new tenant, a purge
