@@ -610,6 +610,10 @@ Accept: application/json
 
 ###
 # @name process-definition-search-authorized
+< {%
+  import {wait} from "../http/js/wait"
+  wait(3)
+%}
 POST {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/process-definitions/search
 Authorization: Basic {{BASIC_AUTH_TOKEN}}
 Content-Type: application/json
