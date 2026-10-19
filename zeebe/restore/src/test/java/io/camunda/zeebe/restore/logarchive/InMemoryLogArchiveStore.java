@@ -78,6 +78,17 @@ final class InMemoryLogArchiveStore implements LogArchiveStore {
   }
 
   @Override
+  public CompletableFuture<List<String>> listChildPrefixes(final String prefix) {
+    return CompletableFuture.completedFuture(
+        objects.subMap(prefix, true, prefix + Character.MAX_VALUE, false).keySet().stream()
+            .map(key -> key.substring(prefix.length()))
+            .filter(rest -> rest.contains("/"))
+            .map(rest -> rest.substring(0, rest.indexOf('/')))
+            .distinct()
+            .toList());
+  }
+
+  @Override
   public CompletableFuture<Void> closeAsync() {
     return CompletableFuture.completedFuture(null);
   }

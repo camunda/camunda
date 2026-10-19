@@ -42,5 +42,19 @@ public interface LogArchiveStore {
   /** Returns all keys starting with {@code prefix}, sorted lexicographically. */
   CompletableFuture<List<String>> list(String prefix);
 
+  /**
+   * Returns the names of the "folders" directly below {@code prefix}, sorted lexicographically: the
+   * distinct first path segments of the keys that start with {@code prefix}, without the prefix and
+   * without the trailing {@code /}. Objects directly below the prefix (without a further {@code /})
+   * are not returned. Implementations list with a delimiter and never enumerate the objects below
+   * the folders.
+   *
+   * <p>For {@code log-archive/} and keys {@code log-archive/tl-0/p1/_latest.json} and {@code
+   * log-archive/tl-0.r5/p1/_latest.json} this returns {@code [tl-0, tl-0.r5]}.
+   *
+   * @param prefix must end with {@code /}
+   */
+  CompletableFuture<List<String>> listChildPrefixes(String prefix);
+
   CompletableFuture<Void> closeAsync();
 }

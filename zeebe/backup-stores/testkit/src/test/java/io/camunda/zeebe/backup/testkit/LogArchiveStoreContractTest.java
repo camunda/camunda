@@ -219,4 +219,54 @@ public abstract class LogArchiveStoreContractTest {
     // then
     assertThat(listed).containsExactlyElementsOf(expected);
   }
+
+  @Test
+  void shouldListChildPrefixesWithoutNestedKeys() {
+    // given
+    final var prefix = newPrefix();
+    final var other = newPrefix();
+    store().put(prefix + "tl-0.r5/p1/_latest.json", new byte[1]).join();
+    store().put(prefix + "tl-0/p1/data/1.rec", new byte[1]).join();
+    store().put(prefix + "tl-0/p2/data/2.rec", new byte[1]).join();
+    store().put(prefix + "tl-1/p1/commits/1.json", new byte[1]).join();
+    store().put(prefix + "file.json", new byte[1]).join();
+    store().put(other + "tl-9/p1/x", new byte[1]).join();
+
+    // when
+    final var children = store().listChildPrefixes(prefix).join();
+    final var nested = store().listChildPrefixes(prefix + "tl-0/").join();
+
+    // then
+    assertThat(children).containsExactly("tl-0", "tl-0.r5", "tl-1");
+    assertThat(nested).containsExactly("p1", "p2");
+  }
+
+  @Test
+  void shouldListNoChildPrefixesForUnknownPrefix() {
+    assertThat(store().listChildPrefixes(newPrefix()).join()).isEmpty();
+  }
+
+  @Test
+  void shouldListMoreChildPrefixesThanOnePage() {
+    // given
+    final var prefix = newPrefix();
+    final var expected = new ArrayList<String>();
+    final var futures =
+        IntStream.range(0, 1100)
+            .mapToObj(
+                i -> {
+                  final var name = "tl-%05d".formatted(i);
+                  expected.add(name);
+                  return store().put(prefix + name + "/p1/_latest.json", new byte[] {1});
+                })
+            .toList();
+    futures.forEach(java.util.concurrent.CompletableFuture::join);
+    Collections.sort(expected);
+
+    // when
+    final var children = store().listChildPrefixes(prefix).join();
+
+    // then
+    assertThat(children).containsExactlyElementsOf(expected);
+  }
 }
