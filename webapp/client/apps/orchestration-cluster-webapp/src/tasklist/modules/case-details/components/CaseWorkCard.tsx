@@ -21,7 +21,7 @@ import {
 	Text,
 } from '@camunda/design-system';
 import {ArrowRight, Check, CircleCheck, CirclePlay, LoaderCircle, UserRound} from '@camunda/design-system/icons';
-import type {UserTask} from '@camunda/camunda-api-zod-schemas/8.11';
+import type {ProcessInstance, UserTask} from '@camunda/camunda-api-zod-schemas/8.11';
 import {cn} from '#/shared/cn';
 import type {ActivityStatus, StageActivity, StageWork} from '#/tasklist/modules/case-details/getStageWork';
 import type {StageCompletionStatus} from '#/tasklist/modules/case-details/useStageCompletion';
@@ -78,6 +78,7 @@ const WorkRow: React.FC<TaskRowProps> = ({name, description, icon, isDone, actio
 );
 
 type Props = {
+	caseState: ProcessInstance['state'];
 	stageName: string | null;
 	work: StageWork;
 	currentUsername: string;
@@ -89,6 +90,7 @@ type Props = {
 };
 
 const CaseWorkCard: React.FC<Props> = ({
+	caseState,
 	stageName,
 	work,
 	currentUsername,
@@ -159,6 +161,19 @@ const CaseWorkCard: React.FC<Props> = ({
 			</Button>
 		);
 	};
+
+	if (caseState === 'COMPLETED' || caseState === 'TERMINATED') {
+		return (
+			<Card>
+				<CardHeader>
+					<CardTitle className="text-lg">
+						{caseState === 'COMPLETED' ? t('tasklist.caseClosedCompleted') : t('tasklist.caseClosedCancelled')}
+					</CardTitle>
+					<CardDescription>{t('tasklist.caseClosedDescription')}</CardDescription>
+				</CardHeader>
+			</Card>
+		);
+	}
 
 	return (
 		<Card>

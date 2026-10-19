@@ -9,6 +9,7 @@
 import {useTranslation} from 'react-i18next';
 import {Link} from '@tanstack/react-router';
 import type {CaseHeaderEntry} from '@camunda/case-management-sdk';
+import type {ProcessInstance} from '@camunda/camunda-api-zod-schemas/8.11';
 import {Button, Card, CardContent, Heading, Text} from '@camunda/design-system';
 import {ChevronLeft} from '@camunda/design-system/icons';
 import {DateLabel} from '#/tasklist/modules/available-tasks/components/DateLabel';
@@ -19,12 +20,13 @@ type Props = {
 	title: string;
 	processName: string;
 	caseId: string;
+	state: ProcessInstance['state'];
 	hasIncident: boolean;
 	startDate: string;
 	header: CaseHeaderEntry[];
 };
 
-const CaseHeader: React.FC<Props> = ({title, processName, caseId, hasIncident, startDate, header}) => {
+const CaseHeader: React.FC<Props> = ({title, processName, caseId, state, hasIncident, startDate, header}) => {
 	const {t} = useTranslation();
 	const formattedStartDate = formatISODateTime(startDate);
 
@@ -46,7 +48,7 @@ const CaseHeader: React.FC<Props> = ({title, processName, caseId, hasIncident, s
 					</Heading>
 					<div className="flex flex-wrap items-center gap-2 text-sm text-neutral-foreground-subtle">
 						{title === processName ? null : <span>{processName}</span>}
-						<CaseStatusBadge hasIncident={hasIncident} />
+						<CaseStatusBadge state={state} hasIncident={hasIncident} />
 						{formattedStartDate === null ? null : (
 							<DateLabel
 								date={formattedStartDate}
