@@ -16,6 +16,7 @@ import io.camunda.zeebe.backup.logarchive.leader.SnapshotUploader;
 import io.camunda.zeebe.backup.logarchive.processing.LogArchiveListener;
 import io.camunda.zeebe.backup.logarchive.processing.LogArchiveProcessorConfig;
 import io.camunda.zeebe.backup.logarchive.processing.LogArchiveRecordsProcessor;
+import io.camunda.zeebe.backup.logarchive.state.DbLogArchiveState;
 import io.camunda.zeebe.backup.logarchive.state.LogArchiveMeta;
 import io.camunda.zeebe.backup.logarchive.store.LogArchiveStore;
 import io.camunda.zeebe.broker.system.configuration.backup.LogArchiveCfg;
@@ -78,7 +79,7 @@ public final class LogArchiveTransitionStep implements PartitionTransitionStep {
       final PartitionTransitionContext context, final long term, final Role targetRole) {
     final LogArchiveCfg cfg = context.getBrokerCfg().getData().getBackup().getLogArchive();
     if (!cfg.isEnabled()) {
-      return CompletableActorFuture.completed(null);
+      return refuseDisabledAfterHandover(context);
     }
     if (!shouldInstallOnTransition(targetRole, context.getCurrentRole())
         && (context.getLogArchiveProcessor() != null || targetRole == Role.INACTIVE)) {
@@ -99,6 +100,29 @@ public final class LogArchiveTransitionStep implements PartitionTransitionStep {
   @Override
   public String getName() {
     return "LogArchive";
+  }
+
+  /**
+   * After the handover the old backups end at H and the log archive carries on. Turning it off
+   * would leave a gap that continuous backup cannot close without a fresh full chain.
+   */
+  private static ActorFuture<Void> refuseDisabledAfterHandover(
+      final PartitionTransitionContext context) {
+    final var zeebeDb = context.getZeebeDb();
+    if (zeebeDb == null) {
+      return CompletableActorFuture.completed(null);
+    }
+    final var meta = new DbLogArchiveState(zeebeDb, zeebeDb.createContext()).meta();
+    if (!meta.hasHandover()) {
+      return CompletableActorFuture.completed(null);
+    }
+    return CompletableActorFuture.completedExceptionally(
+        new IllegalStateException(
+            ("Partition %d handed over from continuous backup to the log archive at checkpoint %d,"
+                    + " but the log archive is disabled. The log archive cannot be disabled after"
+                    + " the handover: continuous backup would need a fresh full chain. Enable the log"
+                    + " archive again.")
+                .formatted(context.getPartitionId(), meta.getHandoverCheckpointId())));
   }
 
   private ActorFuture<Void> installLeaderComponents(

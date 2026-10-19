@@ -24,6 +24,7 @@ import io.camunda.zeebe.backup.api.BackupManager;
 import io.camunda.zeebe.backup.api.BackupRange;
 import io.camunda.zeebe.backup.common.BackupDescriptorImpl;
 import io.camunda.zeebe.backup.logarchive.state.DbLogArchiveState;
+import io.camunda.zeebe.backup.logarchive.state.LogArchiveMeta;
 import io.camunda.zeebe.backup.processing.MockProcessingResult.Event;
 import io.camunda.zeebe.backup.processing.MockProcessingResult.MockProcessingResultBuilder;
 import io.camunda.zeebe.backup.processing.state.CheckpointState;
@@ -939,6 +940,112 @@ final class CheckpointRecordsProcessorTest {
         .containsExactly(
             tuple(301L, CheckpointType.MARKER), tuple(302L, CheckpointType.MANUAL_BACKUP));
     assertThat(checkpointMetadataState.getCheckpoint(302L)).isNull();
+  }
+
+  @Test
+  void shouldNotTakeBackupAfterHandoverButStillCreateAndRecordCheckpoint() {
+    // given
+    final var processorWithLogArchive = processorWithHandover(100L);
+    final var command =
+        new CheckpointRecord()
+            .setCheckpointId(101L)
+            .setCheckpointPosition(1010L)
+            .setCheckpointType(CheckpointType.MANUAL_BACKUP);
+
+    // when
+    processorWithLogArchive.process(
+        new MockTypedCheckpointRecord(
+            1010L, 0, CheckpointIntent.CREATE, RecordType.COMMAND, command),
+        resultBuilder);
+
+    // then
+    verify(backupManager, never()).takeBackup(anyLong(), any());
+    verify(backupManager, never()).createFailedBackup(anyLong(), any(), any());
+    assertThat(state.getLatestCheckpointId()).isEqualTo(101L);
+    assertThat(
+            new DbLogArchiveState(zeebedb, zeebedb.createContext())
+                .pendingCheckpointsUpTo(Long.MAX_VALUE))
+        .extracting(CoveredCheckpoint::getCheckpointId)
+        .containsExactly(101L);
+  }
+
+  @Test
+  void shouldNotMarkBackupAsFailedAfterHandoverWhenScalingInProgress() {
+    // given
+    final var processorWithLogArchive = processorWithHandover(100L);
+    scalingInProgress.set(true);
+    final var command =
+        new CheckpointRecord()
+            .setCheckpointId(101L)
+            .setCheckpointPosition(1010L)
+            .setCheckpointType(CheckpointType.SCHEDULED_BACKUP);
+
+    // when
+    processorWithLogArchive.process(
+        new MockTypedCheckpointRecord(
+            1010L, 0, CheckpointIntent.CREATE, RecordType.COMMAND, command),
+        resultBuilder);
+
+    // then
+    verify(backupManager, never()).createFailedBackup(anyLong(), any(), any());
+  }
+
+  @Test
+  void shouldTakeBackupForHandoverCheckpointAndEarlierOnesWhenHandoverIsRecorded() {
+    // given
+    final var processorWithLogArchive = processorWithHandover(100L);
+
+    // when: the handover checkpoint itself is created, as is an older id after a restore
+    processorWithLogArchive.process(
+        new MockTypedCheckpointRecord(
+            1000L,
+            0,
+            CheckpointIntent.CREATE,
+            RecordType.COMMAND,
+            new CheckpointRecord()
+                .setCheckpointId(100L)
+                .setCheckpointPosition(1000L)
+                .setCheckpointType(CheckpointType.HANDOVER)),
+        resultBuilder);
+
+    // then
+    verify(backupManager).takeBackup(eq(100L), any());
+  }
+
+  @Test
+  void shouldNotTrackMarkerInBackupMetadataAfterHandover() {
+    // given
+    final var processorWithLogArchive = processorWithHandover(100L);
+    final var marker =
+        new CheckpointRecord()
+            .setCheckpointId(101L)
+            .setCheckpointPosition(1010L)
+            .setCheckpointType(CheckpointType.MARKER);
+
+    // when
+    processorWithLogArchive.process(
+        new MockTypedCheckpointRecord(
+            1010L, 0, CheckpointIntent.CREATE, RecordType.COMMAND, marker),
+        resultBuilder);
+
+    // then
+    assertThat(state.getLatestCheckpointId()).isEqualTo(101L);
+    assertThat(checkpointMetadataState.getCheckpoint(101L)).isNull();
+  }
+
+  private CheckpointRecordsProcessor processorWithHandover(final long handoverCheckpointId) {
+    final RecordProcessorContextImpl context = createContext(executor, zeebedb);
+    final var logArchiveProcessor =
+        new CheckpointRecordsProcessor(backupManager, context.getMeterRegistry(), true, true);
+    logArchiveProcessor.setScalingInProgressSupplier(scalingInProgress::get);
+    logArchiveProcessor.setPartitionCountSupplier(dynamicPartitionCount::get);
+    logArchiveProcessor.init(context);
+    new DbLogArchiveState(zeebedb, zeebedb.createContext())
+        .setMeta(
+            new LogArchiveMeta()
+                .setHandoverCheckpointId(handoverCheckpointId)
+                .setHandoverPosition(handoverCheckpointId * 10));
+    return logArchiveProcessor;
   }
 
   @Test

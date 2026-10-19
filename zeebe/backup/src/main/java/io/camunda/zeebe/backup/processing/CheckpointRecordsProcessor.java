@@ -127,13 +127,14 @@ public final class CheckpointRecordsProcessor
     if (partitionCountSupplier == null) {
       throw new IllegalStateException("Partition count supplier is not initialized.");
     }
+    final var logArchiveState =
+        new DbLogArchiveState(
+            recordProcessorContext.getZeebeDb(), recordProcessorContext.getTransactionContext());
     checkpointCreatedEventApplier =
         new CheckpointCreatedEventApplier(
             checkpointState,
             checkpointMetadataState,
-            new DbLogArchiveState(
-                recordProcessorContext.getZeebeDb(),
-                recordProcessorContext.getTransactionContext()),
+            logArchiveState,
             checkpointListeners,
             trackBackupMetadata,
             trackLogArchiveCheckpoints);
@@ -154,7 +155,8 @@ public final class CheckpointRecordsProcessor
             scalingInProgressSupplier,
             partitionCountSupplier,
             metrics,
-            checkpointCreatedEventApplier);
+            checkpointCreatedEventApplier,
+            logArchiveState);
 
     checkpointConfirmBackupProcessor =
         new CheckpointConfirmBackupProcessor(
