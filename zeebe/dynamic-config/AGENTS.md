@@ -15,7 +15,27 @@ REST controller (dist/)
                       └─ ConfigurationChangeAppliersImpl       per-op applier executes on broker
 ```
 
+## Modules
+
+The code is split into two Maven/Gradle modules that share the `io.camunda.zeebe.dynamic.config`
+package root:
+
+- `api/` (`zeebe-cluster-config-api`) — contracts and the data model: `state/`, request/response
+  types, request sender, executor interfaces, serializer interfaces, the JSON serializer, the
+  partition distributors and reassigners. Modules that only read or send configuration depend on
+  this module.
+- `impl/` (`zeebe-cluster-config-impl`) — behavior: coordinator, appliers, transformers, request
+  server and handler, gossiper, initializers, `ProtoBufSerializer` and the protobuf sources.
+  Composition roots (broker, `dist/`, restore, tests) depend on it and construct the
+  implementations directly.
+
+A new type belongs in `api/` when consumers outside the module must reference it. Otherwise put it
+in `impl/`. `api/` must not depend on `impl/`. Shared test fixtures such as `ClusterTopologyDomain`
+live in `api/src/test` and are shared with `impl/` through the `api` test-jar.
+
 ## Package breakdown
+
+Several packages (`api/`, `changes/`, `serializer/`, `util/`, `gossip/`) exist in both modules. The interfaces and types live in `api/`, the implementations in `impl/`.
 
 |    Package    |                                                                                                               What lives here                                                                                                                |
 |---------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|

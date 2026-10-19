@@ -11,7 +11,7 @@ dependencies {
   implementation(project(":operate-common"))
   implementation(project(":zeebe-gateway"))
   implementation(project(":zeebe-broker"))
-  implementation(project(":zeebe-cluster-config"))
+  implementation(project(":zeebe-cluster-config-api"))
   implementation(project(":zeebe-scheduler"))
   implementation(project(":zeebe-backup-store-azure"))
   implementation(project(":zeebe-db"))
