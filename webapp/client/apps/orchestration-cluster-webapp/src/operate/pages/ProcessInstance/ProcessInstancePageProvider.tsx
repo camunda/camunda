@@ -11,16 +11,19 @@ import {ProcessInstanceContext} from './useProcessInstancePage';
 import {ElementSelectionContext, useResolvedSelection} from './useProcessInstanceElementSelection';
 import {InstanceHistoryContext, useHistoryController} from './useInstanceHistory';
 import {getProcessInstanceSelection, type ProcessInstanceSearch} from './processInstanceSearch';
+import {ProcessInstanceModificationContext, type ModificationController} from './useProcessInstanceModification';
 
 function ProcessInstancePageProvider({
 	processInstanceId,
 	processInstance,
 	search,
+	modification,
 	children,
 }: {
 	processInstanceId: string;
 	processInstance: ProcessInstance;
 	search: ProcessInstanceSearch;
+	modification?: ModificationController;
 	children: React.ReactNode;
 }) {
 	const history = useHistoryController(processInstance);
@@ -30,7 +33,27 @@ function ProcessInstancePageProvider({
 			value={{processInstanceId, processInstance, search, selection: getProcessInstanceSelection(search)}}
 		>
 			<ElementSelectionContext value={selection}>
-				<InstanceHistoryContext value={history}>{children}</InstanceHistoryContext>
+				<InstanceHistoryContext value={history}>
+					{modification === undefined ? (
+						children
+					) : (
+						<ProcessInstanceModificationContext
+							value={{
+								...modification,
+								enterModificationMode: () => {
+									modification.dispatch({type: 'enableModificationMode'});
+									selection.clearSelection();
+								},
+								discardModifications: () => {
+									modification.dispatch({type: 'reset'});
+									selection.clearSelection();
+								},
+							}}
+						>
+							{children}
+						</ProcessInstanceModificationContext>
+					)}
+				</InstanceHistoryContext>
 			</ElementSelectionContext>
 		</ProcessInstanceContext>
 	);

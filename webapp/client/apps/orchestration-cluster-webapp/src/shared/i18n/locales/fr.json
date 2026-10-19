@@ -1387,6 +1387,31 @@
 					"open": "Ouvrir la variable",
 					"openDescription": "Ouvrir",
 					"fullValueTitle": "Valeur complète de {{name}}"
+				},
+				"modification": {
+					"pageHeading": "Operate Instance de processus - Mode de modification",
+					"frameTitle": "Mode de modification de l'instance de processus",
+					"modify": "Modifier",
+					"discardAll": "Tout abandonner",
+					"review": "Vérifier les modifications",
+					"discardTitle": "Abandonner les modifications",
+					"discard": "Abandonner",
+					"discardDescription": "Toutes les modifications ajoutées pour l'instance {{processInstanceKey}} vont être abandonnées.",
+					"discardHint": "Cliquez sur « Abandonner » pour continuer.",
+					"leaveTitle": "Quitter le mode de modification",
+					"stay": "Rester",
+					"leave": "Quitter",
+					"leaveDescription": "En quittant cette page, toutes les modifications planifiées seront abandonnées.",
+					"helperIntro": "Le mode de modification de l'instance de processus vous permet de planifier plusieurs modifications sur une instance de processus.",
+					"helperSelect": "En cliquant sur un élément, vous pouvez sélectionner l'une des modifications suivantes, le cas échéant :",
+					"add": "Ajouter",
+					"cancel": "Annuler",
+					"move": "Déplacer",
+					"helperAdd": "une seule instance d'élément",
+					"helperCancel": "toutes les instances d'élément en cours",
+					"helperMove": "toutes les instances d'élément en cours vers un autre élément cible du diagramme",
+					"helperVariables": "Vous pouvez également ajouter ou modifier des variables en sélectionnant la portée de l'élément dans le panneau Historique de l'instance.",
+					"helperReview": "Un récapitulatif de toutes les modifications planifiées s'affiche après avoir cliqué sur « Vérifier les modifications ». La modification est appliquée après la confirmation du récapitulatif."
 				}
 			},
 			"operations": {

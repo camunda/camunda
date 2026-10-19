@@ -31,6 +31,8 @@ import {storeStateLocally} from '#/shared/browser-storage/local-storage';
 import {Notifications} from '#/shared/notifications/components/Notifications';
 import {ProcessInstanceContext} from '#/operate/pages/ProcessInstance/useProcessInstancePage';
 import {processInstanceQuery} from '#/operate/pages/ProcessInstance/processInstance.queries';
+import {ProcessInstanceModificationContext} from '../useProcessInstanceModification';
+import {initialModificationState} from '../modifications/modificationReducer';
 import {ProcessInstanceOperations} from './ProcessInstanceOperations';
 
 const ACTIONS = [
@@ -72,6 +74,13 @@ const ACTIONS = [
 ] as const;
 
 function renderOperations(instance: ProcessInstance, {isModificationModeEnabled = false, basepath = ''} = {}) {
+	const modification = {
+		state: initialModificationState,
+		isModificationModeEnabled,
+		dispatch: () => {},
+		enterModificationMode: () => {},
+		discardModifications: () => {},
+	};
 	function Preview() {
 		const {data} = useQuery({
 			...processInstanceQuery(instance.processInstanceKey),
@@ -83,7 +92,9 @@ function renderOperations(instance: ProcessInstance, {isModificationModeEnabled 
 			<ProcessInstanceContext
 				value={{processInstanceId: instance.processInstanceKey, processInstance: data, search: {}, selection: {}}}
 			>
-				<ProcessInstanceOperations isModificationModeEnabled={isModificationModeEnabled} />
+				<ProcessInstanceModificationContext value={modification}>
+					<ProcessInstanceOperations />
+				</ProcessInstanceModificationContext>
 				<Notifications />
 			</ProcessInstanceContext>
 		);
@@ -147,8 +158,8 @@ describe('<ProcessInstanceOperations />', () => {
 	});
 
 	it.for([
-		{state: 'ACTIVE', hasIncident: true, actions: ['Retry', 'Suspend', 'Cancel', 'Migrate']},
-		{state: 'ACTIVE', hasIncident: false, actions: ['Suspend', 'Cancel', 'Migrate']},
+		{state: 'ACTIVE', hasIncident: true, actions: ['Retry', 'Suspend', 'Cancel', 'Modify', 'Migrate']},
+		{state: 'ACTIVE', hasIncident: false, actions: ['Suspend', 'Cancel', 'Modify', 'Migrate']},
 		{state: 'SUSPENDED', hasIncident: true, actions: ['Resume', 'Cancel']},
 		{state: 'SUSPENDED', hasIncident: false, actions: ['Resume', 'Cancel']},
 		{state: 'COMPLETED', hasIncident: true, actions: ['Delete']},
@@ -161,7 +172,7 @@ describe('<ProcessInstanceOperations />', () => {
 			mockViewport(false);
 			const instance = createInstance(state, hasIncident);
 			const screen = await renderOperations(instance);
-			for (const action of [...ACTIONS.map(({action}) => action), 'Migrate']) {
+			for (const action of [...ACTIONS.map(({action}) => action), 'Modify', 'Migrate']) {
 				const button = screen.getByRole('button', {name: `${action} Instance ${instance.processInstanceKey}`});
 				if (actions.some((name) => name === action)) {
 					await expect.element(button).toBeEnabled();
@@ -169,7 +180,6 @@ describe('<ProcessInstanceOperations />', () => {
 					await expect.element(button).not.toBeInTheDocument();
 				}
 			}
-			await expect.element(screen.getByRole('button', {name: /Modify/})).not.toBeInTheDocument();
 		},
 	);
 

@@ -39,6 +39,7 @@ import {formatTimestamp} from '#/operate/shared/utils/formatTimestamp';
 import {useDiagramXml} from '#/operate/pages/Processes/useDiagramXml';
 import {useProcessInstancePage} from './useProcessInstancePage';
 import {useProcessInstanceElementSelection} from './useProcessInstanceElementSelection';
+import {useProcessInstanceModification} from './useProcessInstanceModification';
 import {useInstanceHistory} from './useInstanceHistory';
 import {instanceRequest} from './processInstance.queries';
 import {ElementInstanceIcon} from './ElementInstanceIcon';
@@ -93,6 +94,7 @@ function InstanceHistory({showHeader = true}: {showHeader?: boolean}) {
 	const {processInstance, processInstanceId} = useProcessInstancePage();
 	const {t} = useTranslation();
 	const history = useInstanceHistory();
+	const {isModificationModeEnabled} = useProcessInstanceModification();
 	const selection = useProcessInstanceElementSelection();
 	const xml = useDiagramXml(processInstance.processDefinitionKey);
 	const scrollRef = useRef<HTMLDivElement>(null);
@@ -210,26 +212,27 @@ function InstanceHistory({showHeader = true}: {showHeader?: boolean}) {
 			{showHeader && (
 				<HistoryHeader>
 					<h2>{t('operate.processInstance.history.title')}</h2>
-					{(['timestamps', 'executionCount'] as const).map((control) => {
-						const label = t(
-							control === 'timestamps'
-								? 'operate.processInstance.history.timestamps'
-								: 'operate.processInstance.history.executionCount',
-						);
-						return (
-							<Toggle
-								key={control}
-								id={`history-${control}`}
-								aria-label={label}
-								labelA={label}
-								labelB={label}
-								size="sm"
-								toggled={history[control]}
-								disabled={!xml.isSuccess}
-								onToggle={control === 'timestamps' ? history.setTimestamps : history.setExecutionCount}
-							/>
-						);
-					})}
+					{!isModificationModeEnabled &&
+						(['timestamps', 'executionCount'] as const).map((control) => {
+							const label = t(
+								control === 'timestamps'
+									? 'operate.processInstance.history.timestamps'
+									: 'operate.processInstance.history.executionCount',
+							);
+							return (
+								<Toggle
+									key={control}
+									id={`history-${control}`}
+									aria-label={label}
+									labelA={label}
+									labelB={label}
+									size="sm"
+									toggled={history[control]}
+									disabled={!xml.isSuccess}
+									onToggle={control === 'timestamps' ? history.setTimestamps : history.setExecutionCount}
+								/>
+							);
+						})}
 				</HistoryHeader>
 			)}
 			{forbidden ? (
@@ -296,6 +299,7 @@ function HistoryNode({
 }) {
 	const history = useInstanceHistory();
 	const selection = useProcessInstanceElementSelection();
+	const {isModificationModeEnabled} = useProcessInstanceModification();
 	const {t} = useTranslation();
 	const key = item.elementInstanceKey;
 	const id = nodeId(key);
@@ -325,7 +329,8 @@ function HistoryNode({
 			);
 		}
 	}
-	const showMetadata = (root && migrationDate) || (history.timestamps && item.endDate);
+	const isTimestampVisible = history.timestamps && !isModificationModeEnabled && item.endDate;
+	const showMetadata = (root && migrationDate) || isTimestampVisible;
 	const treeItem = (
 		<HistoryTreeItem
 			id={id}
@@ -347,9 +352,7 @@ function HistoryNode({
 									{t('operate.processInstance.history.migrated', {date: formatTimestamp(migrationDate)})}
 								</Tag>
 							)}
-							{history.timestamps && item.endDate && (
-								<HistoryTimestamp>{formatTimestamp(item.endDate)}</HistoryTimestamp>
-							)}
+							{isTimestampVisible && <HistoryTimestamp>{formatTimestamp(item.endDate)}</HistoryTimestamp>}
 						</HistoryMetadata>
 					)}
 				</HistoryBar>
