@@ -81,6 +81,9 @@ final class LogArchiveEventApplier {
     final var previous = state.meta();
     final long handoverCheckpointId = previous.getHandoverCheckpointId();
     final long handoverPosition = previous.getHandoverPosition();
+    // The backup checkpoints are kept for the same reason: they belong to the branch's history,
+    // which the new timeline continues. After a restore the state only holds the ones up to the
+    // restore point anyway.
     state.clearAll();
     final var meta =
         new LogArchiveMeta()
@@ -162,6 +165,9 @@ final class LogArchiveEventApplier {
                     meta.getArchivedPosition()));
       }
       attached.get(objectIndex).add(checkpoint);
+      if (checkpoint.getCheckpointType().shouldCreateBackup()) {
+        state.insertBackupCheckpoint(checkpoint);
+      }
       covered.add(checkpoint);
     }
     return covered;

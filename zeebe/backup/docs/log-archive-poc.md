@@ -140,6 +140,7 @@ New partition-local column families in `ZbColumnFamilies` (next free numbers):
 | `LOG_ARCHIVE_SNAPSHOTS` | archive `seq` (long) | `ArchivedSnapshot` |
 | `LOG_ARCHIVE_OUTBOX` | `seq` (long) | commit entry JSON bytes (section 9.2) |
 | `LOG_ARCHIVE_PENDING_CHECKPOINTS` | `checkpointId` (long) | `checkpointPosition`, `checkpointType` |
+| `LOG_ARCHIVE_BACKUP_CHECKPOINTS` | `checkpointId` (long) | `checkpointPosition`, `checkpointType`, `checkpointTimestamp` |
 
 `LogArchiveMeta` fields: `timelineId`, `parentTimelineId`, `startIndex`, `archivedIndex` (F index,
 `startIndex - 1` initially), `archivedPosition` (F position, -1 until the first application entry is
@@ -152,6 +153,14 @@ archived), `nextSeq` (starts at 1), `lastPublishedSeq` (0), `nextChunkNo` (1),
 checkpoint, of any type, when processing and when replaying. It does not depend on the
 `CHECKPOINTS` column family of the old backup mechanism, which holds a backup checkpoint only once
 its backup is confirmed.
+
+`LOG_ARCHIVE_BACKUP_CHECKPOINTS` holds every covered checkpoint whose type creates a backup
+(`CheckpointType.shouldCreateBackup()`: `SCHEDULED_BACKUP`, `MANUAL_BACKUP`, `HANDOVER`; markers are
+not stored). The `LOG_ARCHIVED` applier inserts a row when it covers a pending checkpoint, whether or
+not a handover exists. Open objects keep their covered checkpoints only until they are sealed into a
+chunk, whose state row is a summary, so this column family is what keeps a backup visible to status
+and listing (section 18.6) after its chunk is sealed. Restore does not read it: it reads the chunk
+files in the bucket.
 
 `DbLogArchiveState` exposes read methods (used by appliers, the processor, the compaction cap) and
 mutation methods (used only by appliers). The compaction cap opens its own read-only instance on the
@@ -174,7 +183,9 @@ into the event record. The applier also stores the commit entry JSON for that se
 
 - Valid when `timelineId` is non-empty and differs from `meta.timelineId`, and `startIndex > 0`.
 - Applier: clear all log archive column families except `LOG_ARCHIVE_PENDING_CHECKPOINTS` (a checkpoint
-  created before the start can still lie in the archived range; older ones are dropped later), then
+  created before the start can still lie in the archived range; older ones are dropped later) and
+  `LOG_ARCHIVE_BACKUP_CHECKPOINTS` (the backups belong to the branch's history, which the new
+  timeline continues; after a restore the state only holds those up to the restore point), then
   set meta to the new timeline: `startIndex`, `archivedIndex = startIndex - 1`,
   `archivedPosition = -1`, `nextSeq = 1`, `lastPublishedSeq = 0`, `nextChunkNo = 1`,
   `firstArchivedPosition = -1`. Then take seq 1 for this event.
@@ -195,7 +206,8 @@ into the event record. The applier also stores the commit entry JSON for that se
   event that contains its position (`firstPosition <= checkpointPosition <= lastPosition`). Commands
   are processed in log order, so a checkpoint's `CREATED` event always precedes the `LOG_ARCHIVED`
   event that archives its position, and such an object always exists. If none does, an invariant is
-  broken: the applier throws instead of silently not listing the checkpoint.
+  broken: the applier throws instead of silently not listing the checkpoint. A covered checkpoint
+  whose type creates a backup is also inserted into `LOG_ARCHIVE_BACKUP_CHECKPOINTS`.
 - Sealing trigger: if the open chunk now holds at least `chunkSize` objects, the processor's
   post-commit task also hands the chunk to the publisher (section 8.3).
 
@@ -616,6 +628,8 @@ Integration tests (broker, filesystem store first, then MinIO):
 - The root lists every archived snapshot and the state keeps every snapshot descriptor. Without
   retention both grow without bound (about 17,500 snapshots a year at one every 30 minutes).
   Retention, or chunking snapshots like log objects, must cover this.
+- `LOG_ARCHIVE_BACKUP_CHECKPOINTS` grows by one row per backup checkpoint and is never pruned, as
+  retention is out of scope.
 - A new leader learns only the newest archived snapshot on recovery
   (`onNewestArchivedSnapshotRecovered`), which is all the uploader needs.
 
@@ -793,7 +807,9 @@ Once a handover is recorded on a partition:
 - `SCHEDULED_BACKUP` and `MANUAL_BACKUP` checkpoints are still created (they are restore points), but
   no old-style backup is uploaded for them.
 - Backup status (`GET /actuator/backups/{id}`) for such a checkpoint is `COMPLETED` once the
-  partition's `archivedPosition ≥` the checkpoint position, `IN_PROGRESS` before.
+  partition's `archivedPosition ≥` the checkpoint position, `IN_PROGRESS` before. Status and listing
+  come from the pending checkpoints (`IN_PROGRESS`) and `LOG_ARCHIVE_BACKUP_CHECKPOINTS` (covered,
+  with position and timestamp), so a backup stays visible after its index chunk is sealed.
 - Listing backups returns old backups and archive checkpoints together, ordered by id.
 - Old backups keep their own retention; only restore points ≤ H depend on them.
 - Disabling the log archive after a handover is refused at startup (continuous backup would need a

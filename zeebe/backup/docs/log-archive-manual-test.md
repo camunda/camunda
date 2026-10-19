@@ -231,9 +231,9 @@ cd zeebe/backup/docs/log-archive-manual && source ./env.sh
 - Handover files have `formatVersion` 1. The scheduler took H about 40 s after the upgrade, after
   p3. Timeline files after restore: `tl-0.b<H>` (b), `tl-0.r<C>` (c), `tl-0.b<O>` (a).
 - Results: (a) 60 jobs (p1, p2), (b) 90 (p1–p3), (c) 120 (p1–p4), p5 never.
-- Known gap: archive checkpoints in a sealed index chunk drop out of `/actuator/backups` (and
-  their status becomes DOES_NOT_EXIST). In the run, C and the scheduled backup after H were gone
-  from the listing about two minutes after H.
+- Fixed gap: in this run, archive checkpoints in a sealed index chunk dropped out of
+  `/actuator/backups` (status DOES_NOT_EXIST) about two minutes after H. They are now kept in
+  `LOG_ARCHIVE_BACKUP_CHECKPOINTS` and stay listed and `COMPLETED`.
 
 ## 4. What we record
 

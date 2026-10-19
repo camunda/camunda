@@ -411,7 +411,9 @@ public enum ZbColumnFamilies implements EnumValue, ScopedColumnFamily {
   // seq -> commit entry JSON bytes that are not yet confirmed as published
   LOG_ARCHIVE_OUTBOX(170, PARTITION_LOCAL),
   // checkpointId -> checkpoint created but not yet covered by a LOG_ARCHIVED event
-  LOG_ARCHIVE_PENDING_CHECKPOINTS(171, PARTITION_LOCAL);
+  LOG_ARCHIVE_PENDING_CHECKPOINTS(171, PARTITION_LOCAL),
+  // checkpointId -> backup checkpoint covered by a LOG_ARCHIVED event; answers backup status/list
+  LOG_ARCHIVE_BACKUP_CHECKPOINTS(172, PARTITION_LOCAL);
 
   private final int value;
   private final ColumnFamilyScope columnFamilyScope;

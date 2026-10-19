@@ -17,12 +17,9 @@ import io.camunda.zeebe.db.impl.rocksdb.RocksDbConfiguration;
 import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.management.CoveredCheckpoint;
-import io.camunda.zeebe.protocol.impl.record.value.management.IndexChunk;
-import io.camunda.zeebe.protocol.impl.record.value.management.LogObject;
 import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.nio.file.Path;
-import java.util.List;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -66,15 +63,14 @@ final class DbLogArchiveStateTest {
   }
 
   @Test
-  void shouldFindCheckpointCoveredByOpenObject() {
+  void shouldFindBackupCheckpointWithPosition() {
     // given
-    state.insertOpenObject(
-        new LogObject().setFirstIndex(1L),
-        List.of(
-            new CoveredCheckpoint()
-                .setCheckpointId(20L)
-                .setCheckpointPosition(200L)
-                .setCheckpointType(CheckpointType.SCHEDULED_BACKUP)));
+    state.insertBackupCheckpoint(
+        new CoveredCheckpoint()
+            .setCheckpointId(20L)
+            .setCheckpointPosition(200L)
+            .setCheckpointType(CheckpointType.SCHEDULED_BACKUP)
+            .setCheckpointTimestamp(7L));
 
     // when
     final var found = state.findCheckpoint(20L);
@@ -82,20 +78,8 @@ final class DbLogArchiveStateTest {
     // then
     assertThat(found).isPresent();
     assertThat(found.get().getCheckpointPosition()).isEqualTo(200L);
+    assertThat(found.get().getCheckpointTimestamp()).isEqualTo(7L);
     assertThat(found.get().getCheckpointType()).isEqualTo(CheckpointType.SCHEDULED_BACKUP);
-  }
-
-  @Test
-  void shouldFindBoundaryCheckpointOfSealedChunkWithoutPosition() {
-    // given
-    state.insertChunk(
-        new IndexChunk().setChunkNo(1L).setFirstCheckpointId(30L).setLastCheckpointId(32L));
-
-    // then
-    assertThat(state.findCheckpoint(30L)).isPresent();
-    assertThat(state.findCheckpoint(32L)).isPresent();
-    assertThat(state.findCheckpoint(30L).get().getCheckpointPosition()).isEqualTo(-1L);
-    assertThat(state.findCheckpoint(31L)).isEmpty();
   }
 
   @Test
@@ -104,15 +88,14 @@ final class DbLogArchiveStateTest {
   }
 
   @Test
-  void shouldListPendingAndOpenObjectCheckpointsAfterIdInIdOrder() {
+  void shouldListPendingAndBackupCheckpointsAfterIdInIdOrder() {
     // given
     state.insertPendingCheckpoint(12L, 120L, CheckpointType.MANUAL_BACKUP, 1L);
     state.insertPendingCheckpoint(5L, 50L, CheckpointType.MANUAL_BACKUP, 1L);
-    state.insertOpenObject(
-        new LogObject().setFirstIndex(1L),
-        List.of(
-            new CoveredCheckpoint().setCheckpointId(8L).setCheckpointPosition(80L),
-            new CoveredCheckpoint().setCheckpointId(3L).setCheckpointPosition(30L)));
+    state.insertBackupCheckpoint(
+        new CoveredCheckpoint().setCheckpointId(8L).setCheckpointPosition(80L));
+    state.insertBackupCheckpoint(
+        new CoveredCheckpoint().setCheckpointId(3L).setCheckpointPosition(30L));
 
     // when
     final var checkpoints = state.checkpointsAfter(4L);

@@ -17,6 +17,7 @@ import static io.camunda.zeebe.backup.logarchive.processing.LogArchiveHarness.sn
 import static io.camunda.zeebe.backup.logarchive.processing.LogArchiveHarness.startTimeline;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.tuple;
 
 import io.camunda.zeebe.backup.logarchive.model.CommitEntry;
 import io.camunda.zeebe.backup.logarchive.model.IndexChunkFile;
@@ -510,6 +511,91 @@ final class LogArchiveRecordsProcessorTest {
     // then
     assertThat(event.getCheckpoints()).extracting("checkpointId").containsExactly(10L);
     assertThat(harness.state().pendingCheckpointsUpTo(Long.MAX_VALUE)).isEmpty();
+  }
+
+  @Test
+  void shouldKeepBackupCheckpointsButNotMarkersOnceCovered() {
+    // given
+    harness.accept(LogArchiveIntent.START_TIMELINE, startTimeline(TIMELINE, 1));
+    harness.createCheckpoint(1, 1, CheckpointType.MARKER);
+    harness.createCheckpoint(2, 2, CheckpointType.MANUAL_BACKUP);
+    harness.createCheckpoint(3, 3, CheckpointType.SCHEDULED_BACKUP);
+    harness.createCheckpoint(4, 4, CheckpointType.HANDOVER);
+    harness.createCheckpoint(5, 20, CheckpointType.MANUAL_BACKUP);
+
+    // when
+    harness.accept(LogArchiveIntent.ARCHIVE_LOG, archiveLog(object(1, 4, 1, 4)));
+
+    // then: the covered backup checkpoints, with position and timestamp; the pending one stays
+    assertThat(harness.state().checkpointsAfter(-1))
+        .extracting("checkpointId", "checkpointPosition", "checkpointType")
+        .containsExactly(
+            tuple(2L, 2L, CheckpointType.MANUAL_BACKUP),
+            tuple(3L, 3L, CheckpointType.SCHEDULED_BACKUP),
+            tuple(4L, 4L, CheckpointType.HANDOVER),
+            tuple(5L, 20L, CheckpointType.MANUAL_BACKUP));
+    assertThat(harness.state().findCheckpoint(2).orElseThrow().getCheckpointTimestamp())
+        .isEqualTo(LogArchiveHarness.timestampOf(2));
+    assertThat(harness.state().findCheckpoint(1)).isEmpty();
+    assertThat(harness.state().pendingCheckpointsUpTo(Long.MAX_VALUE))
+        .extracting("checkpointId")
+        .containsExactly(5L);
+  }
+
+  @Test
+  void shouldKeepBackupCheckpointOnceItsIndexChunkIsSealed() {
+    // given
+    harness.accept(LogArchiveIntent.START_TIMELINE, startTimeline(TIMELINE, 1));
+    harness.createCheckpoint(10, 2, CheckpointType.MANUAL_BACKUP);
+    harness.accept(LogArchiveIntent.ARCHIVE_LOG, archiveLog(object(1)));
+    harness.accept(LogArchiveIntent.ARCHIVE_LOG, archiveLog(object(2)));
+    harness.accept(LogArchiveIntent.ARCHIVE_LOG, archiveLog(object(3)));
+
+    // when
+    harness.accept(LogArchiveIntent.SEAL_INDEX, sealIndex(firstSealRequest().chunk()));
+
+    // then
+    assertThat(harness.state().chunks()).hasSize(1);
+    assertThat(harness.state().openObjects()).isEmpty();
+    final var found = harness.state().findCheckpoint(10);
+    assertThat(found).isPresent();
+    assertThat(found.get().getCheckpointPosition()).isEqualTo(2);
+    assertThat(harness.state().checkpointsAfter(0)).extracting("checkpointId").containsExactly(10L);
+  }
+
+  @Test
+  void shouldKeepBackupCheckpointsOnStartTimeline() {
+    // given
+    harness.accept(LogArchiveIntent.START_TIMELINE, startTimeline(TIMELINE, 1));
+    harness.createCheckpoint(10, 1, CheckpointType.MANUAL_BACKUP);
+    harness.accept(LogArchiveIntent.ARCHIVE_LOG, archiveLog(object(1)));
+
+    // when
+    harness.accept(LogArchiveIntent.START_TIMELINE, startTimeline("tl-0.r7", 1));
+
+    // then
+    assertThat(harness.state().openObjects()).isEmpty();
+    assertThat(harness.state().findCheckpoint(10)).isPresent();
+  }
+
+  @Test
+  void shouldReplayBackupCheckpointsToTheSameState() {
+    // given
+    harness.accept(LogArchiveIntent.START_TIMELINE, startTimeline(TIMELINE, 1));
+    harness.createCheckpoint(1, 1, CheckpointType.MARKER);
+    harness.createCheckpoint(2, 2, CheckpointType.MANUAL_BACKUP);
+    harness.accept(LogArchiveIntent.ARCHIVE_LOG, archiveLog(object(1, 2, 1, 2)));
+
+    // when
+    try (final var replica = new LogArchiveHarness(replicaDirectory.toFile(), CONFIG)) {
+      replica.replayLog(harness.log);
+
+      // then
+      assertThat(replica.state().findCheckpoint(2)).isPresent();
+      assertThat(replica.fingerprint()).isEqualTo(harness.fingerprint());
+    } catch (final Exception e) {
+      throw new AssertionError(e);
+    }
   }
 
   // ---- ARCHIVE_SNAPSHOT -------------------------------------------------------------------------

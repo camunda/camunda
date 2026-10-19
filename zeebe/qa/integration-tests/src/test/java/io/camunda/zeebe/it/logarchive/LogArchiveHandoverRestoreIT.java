@@ -238,13 +238,38 @@ final class LogArchiveHandoverRestoreIT {
         .untilAsserted(
             () -> assertThat(backups.status(backupId).getState()).isEqualTo(StateCode.COMPLETED));
 
-    // and -- the listing holds it next to the old backups, newest first like the old listing; it
-    // leaves out archive checkpoints that already lie in a sealed index chunk (DbLogArchiveState
-    // #checkpointsAfter), so only the fresh one is asserted
-    final var listed = backups.list().stream().map(BackupInfo::getBackupId).toList();
-    assertThat(listed)
-        .contains(scenario.old(), scenario.handover(), backupId)
+    // and -- the backup of the scenario, an older one after H, stays visible once the index chunk
+    // holding it is sealed
+    final long older = scenario.archived();
+    takeBackup(backups);
+    await("the index chunk holding the older backup is sealed on every partition")
+        .atMost(Duration.ofSeconds(60))
+        .untilAsserted(
+            () ->
+                IntStream.rangeClosed(1, PARTITIONS)
+                    .forEach(
+                        partition ->
+                            assertThat(bucket.tryView(TIMELINE, partition))
+                                .hasValueSatisfying(
+                                    view ->
+                                        assertThat(view.chunks())
+                                            .anyMatch(chunk -> chunk.lastCheckpointId() > older))));
+    final var olderStatus = backups.status(older);
+    assertThat(olderStatus.getState()).isEqualTo(StateCode.COMPLETED);
+    assertThat(olderStatus.getDetails())
+        .isNotEmpty()
+        .allSatisfy(detail -> assertThat(detail.getCheckpointPosition()).isPositive());
+
+    // and -- the listing holds all of them next to the old backups, newest first like the old
+    // listing
+    final var listed = backups.list();
+    assertThat(listed.stream().map(BackupInfo::getBackupId))
+        .contains(scenario.old(), scenario.handover(), older, backupId)
         .isSortedAccordingTo(Comparator.reverseOrder());
+    assertThat(listed)
+        .filteredOn(info -> info.getBackupId() == older)
+        .isNotEmpty()
+        .allSatisfy(info -> assertThat(info.getState()).isEqualTo(StateCode.COMPLETED));
 
     // and -- no old-style backup files were written for it
     source.stop();
