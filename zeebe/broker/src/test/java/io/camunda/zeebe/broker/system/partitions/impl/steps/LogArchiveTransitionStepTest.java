@@ -7,6 +7,18 @@
  */
 package io.camunda.zeebe.broker.system.partitions.impl.steps;
 
+import org.junit.jupiter.api.AfterEach;
+import java.util.ArrayList;
+import java.time.Duration;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import io.camunda.zeebe.protocol.ZbColumnFamilies;
+import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
+import io.camunda.zeebe.db.impl.rocksdb.RocksDbConfiguration;
+import io.camunda.zeebe.db.ZeebeDb;
+import io.camunda.zeebe.db.ConsistencyChecksSettings;
+import io.camunda.zeebe.db.AccessMetricsConfiguration.Kind;
+import io.camunda.zeebe.db.AccessMetricsConfiguration;
+import io.camunda.zeebe.backup.logarchive.state.DbLogArchiveState;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
@@ -53,6 +65,7 @@ final class LogArchiveTransitionStepTest {
   private final ActorSchedulingService actorSchedulingService = mock(ActorSchedulingService.class);
   private final AtomixLogStorage logStorage = mock(AtomixLogStorage.class);
   private final LogArchiveTransitionStep step = new LogArchiveTransitionStep();
+  private final List<ZeebeDb<ZbColumnFamilies>> dbs = new ArrayList<>();
 
   @BeforeEach
   void setUp() {
@@ -91,6 +104,60 @@ final class LogArchiveTransitionStepTest {
     // then
     assertThat(context.getLogArchiveProcessor()).isNull();
     verifyNoInteractions(actorSchedulingService);
+  }
+
+  @Test
+  void shouldRefuseToStartWhenDisabledAfterHandover() {
+    // given
+    brokerCfg.getData().getBackup().getLogArchive().setEnabled(false);
+    final var zeebeDb = createDb();
+    new DbLogArchiveState(zeebeDb, zeebeDb.createContext())
+        .setMeta(new LogArchiveMeta().setHandoverCheckpointId(42L).setHandoverPosition(420L));
+    context.setZeebeDb(zeebeDb);
+
+    // when
+    final var future = step.transitionTo(context, 1, Role.FOLLOWER);
+
+    // then
+    assertThat(future)
+        .failsWithin(Duration.ofSeconds(5))
+        .withThrowableThat()
+        .withCauseInstanceOf(IllegalStateException.class)
+        .withMessageContaining("cannot be disabled after the handover")
+        .withMessageContaining("42");
+  }
+
+  @Test
+  void shouldStartWhenDisabledAndNoHandoverWasRecorded() {
+    // given
+    brokerCfg.getData().getBackup().getLogArchive().setEnabled(false);
+    context.setZeebeDb(createDb());
+
+    // when
+    final var future = step.transitionTo(context, 1, Role.LEADER);
+
+    // then
+    assertThat(future.isCompletedExceptionally()).isFalse();
+    assertThat(context.getLogArchiveProcessor()).isNull();
+  }
+
+  private ZeebeDb<ZbColumnFamilies> createDb() {
+    final var zeebeDb =
+        new ZeebeRocksDbFactory<ZbColumnFamilies>(
+                new RocksDbConfiguration(),
+                new ConsistencyChecksSettings(true, true),
+                new AccessMetricsConfiguration(Kind.NONE),
+                SimpleMeterRegistry::new)
+            .createDb(partitionDirectory.resolve("db").toFile());
+    dbs.add(zeebeDb);
+    return zeebeDb;
+  }
+
+  @AfterEach
+  void closeDbs() throws Exception {
+    for (final var db : dbs) {
+      db.close();
+    }
   }
 
   @Test
