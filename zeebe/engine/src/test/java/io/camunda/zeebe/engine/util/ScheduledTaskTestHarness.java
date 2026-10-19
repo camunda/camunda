@@ -96,9 +96,15 @@ public final class ScheduledTaskTestHarness {
   /** A writer that accepts all writes, unless it is told to fail them. */
   public static final class FailingLogStreamWriter implements LogStreamWriter {
     private final AtomicInteger attempts = new AtomicInteger();
+    private final AtomicInteger maxEventsPerBatch = new AtomicInteger(Integer.MAX_VALUE);
     private final List<Intent> writtenIntents = new CopyOnWriteArrayList<>();
     private final AtomicReference<IntFunction<@Nullable WriteFailure>> failure =
         new AtomicReference<>(attempt -> null);
+
+    /** Lets a batch hold at most the given number of events, so a task can't add more to it. */
+    public void limitBatchTo(final int eventCount) {
+      maxEventsPerBatch.set(eventCount);
+    }
 
     /** Fails every write with the given failure until {@link #stopFailing()} is called. */
     public void failWith(final @NonNull WriteFailure writeFailure) {
@@ -129,6 +135,11 @@ public final class ScheduledTaskTestHarness {
     /** The intents of the accepted entries, in the order they were written. */
     public List<Intent> writtenIntents() {
       return writtenIntents;
+    }
+
+    @Override
+    public boolean canWriteEvents(final int eventCount, final int batchSize) {
+      return eventCount <= maxEventsPerBatch.get();
     }
 
     @Override
