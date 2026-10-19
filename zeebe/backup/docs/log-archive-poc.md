@@ -755,6 +755,26 @@ partition, comparing both sides. After a restore from old backups the new timeli
 Restore entry point: `restore-standalone` gets a log archive mode (timeline, target checkpoint id or
 "latest") that picks the path automatically.
 
+### 18.5a Time-range restore (RDBMS) across the handover (H4)
+
+`--from`/`--to` restores pick T by time. With RDBMS as secondary storage, T's position must be
+≥ E (the position the RDBMS already exported) on every partition, and the restored journal must
+contain the log from E + 1 so the exporter resumes without a gap. One resolver covers both sides:
+
+1. Candidates per partition: old checkpoints from `metadata.json` and archive checkpoints (covered
+   checkpoints, which carry `checkpointTimestamp`), each tagged with its side.
+2. A candidate counts on a partition only if that partition can restore it: old — today's
+   `RestorePointResolver` rules; archive — position ≥ E, an archived snapshot ≤ T exists, and the
+   archived log reaches back to E + 1.
+3. T = a checkpoint valid on every partition, from `--from`, closest to `--to` (latest if absent).
+4. Per partition, the path by where T exists (18.5). The archive restore starts the journal at
+   min(E + 1, snapshot index) instead of the snapshot.
+
+The archive normally reaches back to E + 1: compaction waits for exporters, and the archive starts
+at the first index on disk at activation. If the RDBMS was reset to an older state (E before the
+archive start), no archive candidate qualifies; the resolver falls back to the newest old
+checkpoint that does, logging why, or fails naming E and both sides' coverage. No combined path.
+
 ### 18.6 Backups after the handover (H6)
 
 Once a handover is recorded on a partition:
