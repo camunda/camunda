@@ -13,11 +13,6 @@ name: Aurora Async Replication Test
 on:
   workflow_call:
     inputs:
-      deployment_references_ref:
-        description: 'Ref of camunda/camunda-deployment-references to use'
-        type: string
-        required: false
-        default: 'main'
       db_engine:
         description: 'Aurora engine to provision (postgresql or mysql)'
         type: string
@@ -29,11 +24,6 @@ on:
         default: false
   workflow_dispatch:
     inputs:
-      deployment_references_ref:
-        description: 'Ref of camunda/camunda-deployment-references to use'
-        type: string
-        required: false
-        default: 'main'
       db_engine:
         description: 'Aurora engine to provision'
         type: choice
@@ -96,13 +86,6 @@ jobs:
           test_owner: '@camunda/zeebe-distributed-platform'
           test_product: zeebe
           test_type: integration
-
-      - name: Checkout camunda-deployment-references
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          repository: camunda/camunda-deployment-references
-          ref: ${{ inputs.deployment_references_ref || 'main' }}
-          path: camunda-deployment-references
 
       - name: Import secrets from Vault
         id: secrets
@@ -355,7 +338,7 @@ jobs:
                   "type": "section",
                   "text": {
                     "type": "mrkdwn",
-                    "text": "@distributed-systems-medic Aurora infrastructure `${{ steps.tfvars.outputs.name_prefix }}` was NOT destroyed. Please clean it up manually.\nRun: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+                    "text": "@distributed-systems-medic Aurora infrastructure `${{ steps.tfvars.outputs.name_prefix }}` was NOT destroyed. Please clean it up manually.\nRun: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}\nRunbook: ${{ github.server_url }}/${{ github.repository }}/blob/main/.github/terraform/aurora-replication-it/README.md\nFrom `.github/terraform/aurora-replication-it/`: `./cleanup.sh ${{ github.run_id }} ${{ inputs.db_engine || 'postgresql' }}`"
                   }
                 }
               ]
