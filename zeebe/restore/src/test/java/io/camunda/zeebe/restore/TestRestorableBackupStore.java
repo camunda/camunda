@@ -32,7 +32,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.stream.Collectors;
 
-final class TestRestorableBackupStore implements BackupStore {
+public final class TestRestorableBackupStore implements BackupStore {
 
   final Map<BackupIdentifier, Backup> backups = new ConcurrentHashMap<>();
   final Map<BackupIdentifier, CompletableFuture<Backup>> waiters = new ConcurrentHashMap<>();

@@ -63,6 +63,47 @@ public class RestorePointResolver {
     return restorableBackups;
   }
 
+  /**
+   * The checkpoints of one partition that a restore could end at by the rules of {@link #resolve}:
+   * those in the restorable range for {@code from} and {@code exportedPosition}, at or after the
+   * exported position. Lets a caller that also considers other restore sources pick the restore
+   * point itself, and then get the backups with {@link #resolveBackups}.
+   *
+   * @return the restorable checkpoints in id order, empty if no range of the partition fits
+   */
+  public static @NonNull List<CheckpointEntry> restorableCheckpoints(
+      @NonNull final BackupMetadata metadata,
+      @Nullable final Instant from,
+      @Nullable final Long exportedPosition) {
+    final List<CheckpointEntry> checkpoints;
+    try {
+      checkpoints =
+          findRestorableCheckpointsForPartition(from, exportedPosition, metadata).checkpoints();
+    } catch (final IllegalStateException e) {
+      LOG.atDebug()
+          .addKeyValue("partition", metadata.partitionId())
+          .log("No restorable checkpoints: {}", e.getMessage());
+      return List.of();
+    }
+    return checkpoints.stream()
+        .filter(c -> exportedPosition == null || c.checkpointPosition() >= exportedPosition)
+        .toList();
+  }
+
+  /**
+   * The backups that restore the given partitions to a checkpoint chosen by the caller, e.g. from
+   * {@link #restorableCheckpoints}, with the same rules as {@link #resolve}.
+   */
+  public static @NonNull RestorableBackups resolveBackups(
+      @NonNull final List<BackupMetadata> metadataByPartition,
+      final long checkpointId,
+      @Nullable final Instant from,
+      @Nullable final Map<Integer, Long> exportedPositions) {
+    final var restorableCheckpoints =
+        findRestorableCheckpointsForPartition(metadataByPartition, from, exportedPositions);
+    return findRequiredBackups(restorableCheckpoints, checkpointId, from, exportedPositions);
+  }
+
   /** Finds all backup-type checkpoints that are required to cover the common checkpoint. */
   private static @NonNull RestorableBackups findRequiredBackups(
       @NonNull final List<RestorableCheckpoints> allRestorableCheckpoints,

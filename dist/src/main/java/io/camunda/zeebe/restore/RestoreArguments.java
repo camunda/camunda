@@ -35,6 +35,8 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  *   --override.tenanta.backupId=31    tenanta restores from 31 instead of the cluster-wide selection
  *   --logArchive.timeline=t1          (PoC) restore the default tenant from the log archive timeline
  *   --logArchive.checkpointId=27      (PoC, optional) restore to that checkpoint, default: latest
+ *   --backupId=27 --logArchive.timeline=t1.r5
+ *                                     (PoC) across the handover: search only that archive timeline
  * </pre>
  *
  * <p>Bound rather than read with {@code @Value} so every flag accepts the relaxed spellings Spring
@@ -54,8 +56,10 @@ public class RestoreArguments {
   private LogArchive logArchive = new LogArchive();
 
   /**
-   * The log archive restore requested with {@code --logArchive.timeline}, if any (PoC). It is
-   * exclusive with the backup selection and limited to the default physical tenant.
+   * The log archive restore requested with {@code --logArchive.timeline} alone, if any (PoC). It is
+   * limited to the default physical tenant. Combined with {@code --backupId}, {@code --from} or
+   * {@code --to}, the timeline only names where to look in the log archive, see {@link
+   * #explicitLogArchiveTimeline()}.
    *
    * @throws IllegalArgumentException if it is combined with options it cannot be combined with
    */
@@ -67,17 +71,40 @@ public class RestoreArguments {
       }
       return Optional.empty();
     }
-    if (backupId != null || from != null || to != null || !override.isEmpty()) {
+    if (!override.isEmpty()) {
       throw new IllegalArgumentException(
-          "--logArchive.timeline cannot be combined with --backupId, --from, --to or --override.*");
+          "--logArchive.timeline cannot be combined with --override.*");
     }
     if (tenantId != null || allTenantsRequested()) {
       throw new IllegalArgumentException(
           "--logArchive.timeline only supports the default physical tenant, so --tenantId and"
               + " --allTenants are not allowed");
     }
+    if (backupId != null || from != null || to != null) {
+      if (logArchive.checkpointId != null) {
+        throw new IllegalArgumentException(
+            "--logArchive.checkpointId cannot be combined with --backupId, --from or --to");
+      }
+      return Optional.empty();
+    }
     return Optional.of(
         new LogArchiveSelection(logArchive.timeline, Optional.ofNullable(logArchive.checkpointId)));
+  }
+
+  /**
+   * The log archive timeline named with {@code --logArchive.timeline} next to {@code --backupId},
+   * {@code --from} or {@code --to}: a restore across the handover then searches only this timeline
+   * in the log archive, e.g. because the target checkpoint is covered by more than one.
+   *
+   * @throws IllegalArgumentException if it is combined with options it cannot be combined with
+   */
+  public Optional<String> explicitLogArchiveTimeline() {
+    if (logArchiveSelection().isPresent()
+        || logArchive.timeline == null
+        || logArchive.timeline.isBlank()) {
+      return Optional.empty();
+    }
+    return Optional.of(logArchive.timeline);
   }
 
   /**

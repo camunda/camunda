@@ -561,7 +561,8 @@ public final class BackupEndpoint {
   private CheckpointType toCheckpointType(
       final io.camunda.zeebe.protocol.record.value.management.CheckpointType checkpointType) {
     return switch (checkpointType) {
-      case SCHEDULED_BACKUP -> CheckpointType.SCHEDULED_BACKUP;
+      // the handover is taken like a scheduled backup; the REST API has no type for it yet
+      case SCHEDULED_BACKUP, HANDOVER -> CheckpointType.SCHEDULED_BACKUP;
       case MANUAL_BACKUP -> CheckpointType.MANUAL_BACKUP;
       case MARKER -> CheckpointType.MARKER;
       case null -> null;
@@ -572,7 +573,7 @@ public final class BackupEndpoint {
       final io.camunda.zeebe.protocol.record.value.management.CheckpointType checkpointType) {
     return switch (checkpointType) {
       case MANUAL_BACKUP -> BackupType.MANUAL_BACKUP;
-      case SCHEDULED_BACKUP -> BackupType.SCHEDULED_BACKUP;
+      case SCHEDULED_BACKUP, HANDOVER -> BackupType.SCHEDULED_BACKUP;
       case MARKER -> null;
       case null -> null;
     };

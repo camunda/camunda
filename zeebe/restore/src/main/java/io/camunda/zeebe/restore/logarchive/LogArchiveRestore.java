@@ -10,6 +10,7 @@ package io.camunda.zeebe.restore.logarchive;
 import io.camunda.zeebe.backup.logarchive.format.DecodedLogObject;
 import io.camunda.zeebe.backup.logarchive.format.LogObjectDecoder;
 import io.camunda.zeebe.backup.logarchive.model.ArchivedSnapshotJson;
+import io.camunda.zeebe.backup.logarchive.model.CoveredCheckpointJson;
 import io.camunda.zeebe.backup.logarchive.model.LogArchiveJson;
 import io.camunda.zeebe.backup.logarchive.model.LogArchiveKeys;
 import io.camunda.zeebe.backup.logarchive.model.LogObjectJson;
@@ -123,6 +124,24 @@ public final class LogArchiveRestore {
    */
   public LogArchivePartitionRestoreResult restorePartition(
       final LogArchiveView view, final long checkpointId, final LogArchiveRestoreTarget target) {
+    return restorePartition(view, checkpointId, target, Optional.empty());
+  }
+
+  /**
+   * Like {@link #restorePartition(LogArchiveView, long, LogArchiveRestoreTarget)}, but the rebuilt
+   * journal also contains the log after {@code exportedPosition}, so a secondary storage that
+   * exported up to it resumes exporting without a gap. The journal then starts at the object
+   * holding {@code exportedPosition + 1} if that is below the snapshot, see {@link
+   * LogArchiveRestorePlanner#plan(LogArchiveView, CoveredCheckpointJson, Optional)}.
+   *
+   * @param exportedPosition the position the secondary storage exported up to, empty to start the
+   *     journal at the snapshot
+   */
+  public LogArchivePartitionRestoreResult restorePartition(
+      final LogArchiveView view,
+      final long checkpointId,
+      final LogArchiveRestoreTarget target,
+      final Optional<Long> exportedPosition) {
     if (view.partitionId() != target.partitionId()) {
       throw new IllegalArgumentException(
           "View of partition %d cannot restore partition %d"
@@ -135,7 +154,7 @@ public final class LogArchiveRestore {
                     new LogArchiveRestoreException(
                         "Checkpoint %d is not covered by the log archive of partition %d (timeline '%s')"
                             .formatted(checkpointId, view.partitionId(), view.timelineId())));
-    final var plan = LogArchiveRestorePlanner.plan(view, checkpoint);
+    final var plan = LogArchiveRestorePlanner.plan(view, checkpoint, exportedPosition);
     LOG.info(
         "Restoring partition {} to checkpoint {} at position {}: snapshot {}, objects {} to {}",
         plan.partitionId(),

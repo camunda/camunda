@@ -76,22 +76,40 @@ final class RestoreArgumentsTest {
     }
 
     @Test
-    void shouldRejectCombiningWithABackupId() {
+    void shouldNameTheTimelineOfARestoreByBackupId() {
       // given
       final var arguments = logArchive();
       arguments.setBackupId(List.of(1L));
 
       // when / then
-      assertThatThrownBy(arguments::logArchiveSelection)
-          .isInstanceOf(IllegalArgumentException.class)
-          .hasMessageContaining("cannot be combined with --backupId");
+      assertThat(arguments.logArchiveSelection()).isEmpty();
+      assertThat(arguments.explicitLogArchiveTimeline()).contains("t1");
     }
 
     @Test
-    void shouldRejectCombiningWithATimeRange() {
+    void shouldNameTheTimelineOfATimeRangeRestore() {
       // given
       final var arguments = logArchive();
       arguments.setFrom(Instant.parse("2026-01-01T00:00:00Z"));
+
+      // when / then
+      assertThat(arguments.logArchiveSelection()).isEmpty();
+      assertThat(arguments.explicitLogArchiveTimeline()).contains("t1");
+    }
+
+    @Test
+    void shouldNotNameATimelineForTheLogArchiveRestore() {
+      // when / then
+      assertThat(logArchive().explicitLogArchiveTimeline()).isEmpty();
+      assertThat(arguments().explicitLogArchiveTimeline()).isEmpty();
+    }
+
+    @Test
+    void shouldRejectCombiningTheCheckpointIdWithABackupId() {
+      // given
+      final var arguments = logArchive();
+      arguments.setBackupId(List.of(1L));
+      arguments.getLogArchive().setCheckpointId(9L);
 
       // when / then
       assertThatThrownBy(arguments::logArchiveSelection)

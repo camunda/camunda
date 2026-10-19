@@ -19,6 +19,7 @@ import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Optional;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.Test;
@@ -181,6 +182,104 @@ final class LogArchiveRestorePlannerTest {
     assertThatThrownBy(() -> LogArchiveRestorePlanner.plan(view, checkpoint))
         .isInstanceOf(LogArchiveRestoreException.class)
         .hasMessageContaining("is not covered by the archived position 2");
+  }
+
+  @Test
+  void shouldStartAtExportedPositionBelowTheSnapshot() {
+    // given
+    startArchive(1);
+    archive.appendAll(1, 2, 3, 4, 5, 6, 7, 8);
+    archive.checkpoint(10, 8);
+    archive.archive(2);
+    archive.archive(4);
+    archive.seal(2);
+    archive.archive(6);
+    archive.archive(8);
+    archive.archiveSnapshot(snapshot("6-1-6-6-1", 6, 6, 6, 6));
+    final var view = LogArchiveView.read(store, TIMELINE, 1);
+
+    // when - the RDBMS exported up to position 2, so the journal must start at position 3
+    final var plan = LogArchiveRestorePlanner.plan(view, checkpoint(view, 10), Optional.of(2L));
+
+    // then
+    assertThat(plan.snapshotIndex()).isEqualTo(6);
+    assertThat(plan.firstIndex()).isEqualTo(3).isLessThanOrEqualTo(plan.snapshotIndex() + 1);
+    assertThat(plan.objects())
+        .extracting(o -> o.firstIndex() + "-" + o.lastIndex())
+        .containsExactly("3-4", "5-6", "7-8");
+  }
+
+  @Test
+  void shouldStartAtTheSnapshotWhenTheExportedPositionIsAfterIt() {
+    // given
+    startArchive(1);
+    archive.appendAll(1, 2, 3, 4, 5, 6, 7, 8);
+    archive.checkpoint(10, 8);
+    archive.archive(2);
+    archive.archive(4);
+    archive.archive(6);
+    archive.archive(8);
+    archive.archiveSnapshot(snapshot("4-1-4-4-1", 4, 4, 4, 4));
+    final var view = LogArchiveView.read(store, TIMELINE, 1);
+
+    // when
+    final var plan = LogArchiveRestorePlanner.plan(view, checkpoint(view, 10), Optional.of(6L));
+
+    // then
+    assertThat(plan.firstIndex()).isEqualTo(3);
+  }
+
+  @Test
+  void shouldStartAtPositionOneWhenNothingWasExported() {
+    // given
+    startArchive(1);
+    archive.appendAll(1, 2, 3, 4);
+    archive.checkpoint(10, 4);
+    archive.archive(2);
+    archive.archive(4);
+    archive.archiveSnapshot(snapshot("3-1-3-3-1", 3, 3, 3, 3));
+    final var view = LogArchiveView.read(store, TIMELINE, 1);
+
+    // when
+    final var plan = LogArchiveRestorePlanner.plan(view, checkpoint(view, 10), Optional.of(-1L));
+
+    // then
+    assertThat(plan.firstIndex()).isOne();
+  }
+
+  @Test
+  void shouldFailWhenTheArchiveStartsAfterTheExportedPosition() {
+    // given
+    startArchive(5);
+    archive.resetSource(5);
+    archive.appendAll(5, 6, 7);
+    archive.checkpoint(10, 7);
+    archive.archive(7);
+    archive.archiveSnapshot(snapshot("5-1-5-5-1", 5, 5, 5, 5));
+    final var view = LogArchiveView.read(store, TIMELINE, 1);
+    final var checkpoint = checkpoint(view, 10);
+
+    // when - then
+    assertThatThrownBy(() -> LogArchiveRestorePlanner.plan(view, checkpoint, Optional.of(3L)))
+        .isInstanceOf(LogArchiveRestoreException.class)
+        .hasMessageContaining("the archive starts at position 5")
+        .hasMessageContaining("after the exported position 3 + 1");
+  }
+
+  @Test
+  void shouldFailWhenTheCheckpointIsBelowTheExportedPosition() {
+    // given
+    startArchive(1);
+    archive.appendAll(1, 2, 3, 4);
+    archive.checkpoint(10, 3);
+    archive.archive(4);
+    final var view = LogArchiveView.read(store, TIMELINE, 1);
+    final var checkpoint = checkpoint(view, 10);
+
+    // when - then
+    assertThatThrownBy(() -> LogArchiveRestorePlanner.plan(view, checkpoint, Optional.of(4L)))
+        .isInstanceOf(LogArchiveRestoreException.class)
+        .hasMessageContaining("is below the exported position 4");
   }
 
   private void startArchive(final long startIndex) {
