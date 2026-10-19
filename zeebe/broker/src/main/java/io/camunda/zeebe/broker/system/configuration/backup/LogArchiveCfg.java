@@ -10,6 +10,7 @@ package io.camunda.zeebe.broker.system.configuration.backup;
 import io.camunda.zeebe.broker.system.configuration.ConfigurationEntry;
 import java.time.Duration;
 import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 import org.springframework.util.unit.DataSize;
 
 /**
@@ -30,6 +31,7 @@ public class LogArchiveCfg implements ConfigurationEntry {
   private Duration snapshotUploadInterval = Duration.ofMinutes(30);
   private int chunkSize = 1000;
   private int rootEvery = 100;
+  private @Nullable String testOnlyAdvertisedVersion;
 
   public boolean isEnabled() {
     return enabled;
@@ -101,6 +103,19 @@ public class LogArchiveCfg implements ConfigurationEntry {
     this.rootEvery = rootEvery;
   }
 
+  /**
+   * TEST ONLY. If set, the broker gossips this version in its broker info instead of its own, so
+   * that an integration test can make a broker look like it was not upgraded yet and keep the log
+   * archive's upgrade gate closed (spec section 18.1). Never set this in a real deployment.
+   */
+  public @Nullable String getTestOnlyAdvertisedVersion() {
+    return testOnlyAdvertisedVersion;
+  }
+
+  public void setTestOnlyAdvertisedVersion(final @Nullable String testOnlyAdvertisedVersion) {
+    this.testOnlyAdvertisedVersion = testOnlyAdvertisedVersion;
+  }
+
   @Override
   public String toString() {
     return "LogArchiveCfg{"
@@ -121,6 +136,8 @@ public class LogArchiveCfg implements ConfigurationEntry {
         + chunkSize
         + ", rootEvery="
         + rootEvery
+        + ", testOnlyAdvertisedVersion="
+        + testOnlyAdvertisedVersion
         + '}';
   }
 }
