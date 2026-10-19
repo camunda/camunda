@@ -666,6 +666,15 @@ Integration tests (broker, filesystem store first, then MinIO):
   partitions to restore from the configured partition count: it must hold every partition of the
   target (after a dynamic scale-up, configure the scaled count); higher partitions are not looked
   at. The log archive only restore mode (`--logArchive.*`) does not leave out partitions added later.
+- The bridged restore (18.5a) only bridges to a timeline that records the handover itself. A
+  timeline that descends from it (restored `.r<T>` or forked) and starts after E + 1 is not bridged,
+  even though its log up to the fork equals its parent's; the restore falls back to the old backups.
+  The overlap check holds the asqn and checksum of every old entry from A on in memory (16 bytes per
+  entry up to the old chain's last checkpoint).
+- A time range with `--from` inherits the old restore's trimming of backups before `from`: it rejects
+  the chain if the first remaining backup's checkpoint lies after E, even when its log starts before
+  E (`RestorePointResolver.discardUnnecessaryBackupsBeforeTimestamp`). This affects the old path and
+  the bridge alike; restoring with `--to` only avoids it.
 
 ## 16. Working rules for workstreams
 
@@ -897,8 +906,10 @@ The restore app takes this path when the log archive is enabled in its configura
 timeline is named, or when the old store has handover files for any partition: the bucket, not
 the configuration, says whether the cluster handed over.
 
-There is no combined path (old backup H + archived log): the snapshot precondition in 18.4 step 4
-guarantees an archived snapshot ≤ H for every T > H. If the old-side file is missing (leader died
+A restore by checkpoint id never combines the sides on one partition: the snapshot precondition in
+18.4 step 4 guarantees an archived snapshot ≤ H for every T > H, so the archive alone restores every
+T > H. Only an RDBMS time range whose exported position lies before the archive combines them (the
+bridged restore, 18.5a). If the old-side file is missing (leader died
 before the outbox wrote it), the restore also searches the configured archive timeline. "latest" means the newest checkpoint restorable on every
 partition, comparing both sides. After a restore from old backups the new timeline's parent is
 `legacy:<backupId>`.
@@ -922,9 +933,51 @@ contain the log from E + 1 so the exporter resumes without a gap. One resolver c
    min(E + 1, snapshot index) instead of the snapshot.
 
 The archive normally reaches back to E + 1: compaction waits for exporters, and the archive starts
-at the first index on disk at activation. If the RDBMS was reset to an older state (E before the
-archive start), no archive candidate qualifies; the resolver falls back to the newest old
-checkpoint that does, logging why, or fails naming E and both sides' coverage. No combined path.
+at the first index on disk at activation. If the RDBMS was reset to an older state, or its exporter
+was disabled and stopped holding compaction before the log archive was enabled, E + 1 lies before
+the archive start A. Such a partition is restored **bridged**: one journal from two sources of the
+same branch, the old backups for the indexes up to A − 1 and the archive from A up to T.
+
+**Plan** (`BridgedFromArchive`: old backup ids, timeline, T, E, switch index = A). The resolver
+plans it for an archive candidate whose plain plan fails only because the archive starts after
+E + 1 (`startIndex > 1` and `firstArchivedPosition > max(E + 1, 1)`), if:
+
+- the timeline records a handover H (its `HANDOVER` commit entry), and H is an old checkpoint at
+  the same position among the old checkpoints restorable for E (`RestorePointResolver`'s range that
+  covers E). This is the same-branch check: a range of old backups is one continuous log, and H
+  links it to this timeline. A timeline without a handover (e.g. one restored from the archive,
+  `.r<T>`) or whose H lies in another range is never bridged;
+- the archive part plans: an archived snapshot ≤ T and contiguous objects from the first object of
+  the timeline to T (`LogArchiveRestorePlanner.planBridged`); T ≥ E;
+- the old chain is `RestorePointResolver.resolveBackups` up to the first backup (≤ H) whose position
+  is ≥ the archive's first position, so the chain reaches into the archive and the two overlap; it
+  starts at the last backup at or below E, and its first log position is ≤ E + 1. Every backup of it
+  is completed.
+
+Sound because compaction was pinned to the old backups until H, so their chain has no gaps up to H,
+and the archive started before H (A ≤ index of H), so the chain covers E + 1 … A − 1. Bridging
+comes after the plain archive path and before the fallback: with it, the latest restore point after
+H is restorable; the fallback to the newest old checkpoint (logging why) or the failure naming E and
+both sides' coverage remains for partitions where even the bridge is impossible.
+
+**Restore** (`HandoverClusterRestore`, then `LogArchiveRestore.restoreBridgedPartition`):
+
+1. `PartitionRestoreService.restoreLog` restores the old chain's segments into the partition's
+   journal as the old restore does, without installing any old snapshot.
+2. Seam checks on the opened journal, before anything is appended: it starts before A and holds at
+   least index A (overlap); its first application entry before A has asqn ≤ E + 1. The asqns and
+   checksums of the old entries from A on are recorded.
+3. Truncate after A − 1 (`deleteAfter`), then append the archived frames from A up to the checkpoint
+   frame of T with `Journal.append(checksum, serializedRecord)`, as the archive restore does. Every
+   frame the old journal also held must have the same asqn and checksum (the checksum covers index,
+   asqn and data, so equal checksums mean equal entries); the first archived application entry's
+   asqn must lie after the last old asqn before A. Any mismatch fails the restore.
+4. Install the archived snapshot, verify as for archive restores (first index ≤ snapshot index + 1,
+   last asqn = T's position), and write the timeline file `<source>.r<T>`.
+
+Processing replays from the archived snapshot; the RDBMS exporter re-exports from E + 1. The restore
+app needs no flag: the time-range resolution picks the bridge, and the restore logs "Restoring
+partition N bridged: old backups … up to index A − 1, log archive timeline … from switch index A".
 
 ### 18.6 Backups after the handover (H6)
 
@@ -952,7 +1005,10 @@ point and tell me when it is safe" in tests and locally.
   followed by a second handover; missing old-side file; `COMPLETE_HANDOVER` reaching only some
   partitions; manual backup after handover reports `COMPLETED` once archived; a scale-up after the
   handover (`LogArchiveScaleUpIT`: the new partition is activated and records H from its start,
-  scheduled backups go on without old-style uploads, restores after and before the scale-up).
+  scheduled backups go on without old-style uploads, restores after and before the scale-up); an
+  RDBMS behind the archive start (`LogArchiveBridgedRdbmsRestoreIT`: compaction past E + 1 before
+  the log archive is enabled, bridged restore to a checkpoint after H, gap-free re-export from
+  E + 1).
 - Manual test scenario G (brownfield upgrade) in `log-archive-manual-test.md` and its scripts.
 
 ### 18.8 Workstreams
@@ -967,4 +1023,4 @@ point and tell me when it is safe" in tests and locally.
 | H6 integration tests | scenarios in 18.7 | Sonnet | all |
 | H7 manual scenario G | brownfield upgrade in the manual test scripts | Haiku | H5 |
 
-Critical path: H2 → H3 → H6. The combined restore with journal stitching is no longer planned.
+Critical path: H2 → H3 → H6. Journal stitching is limited to the bridged RDBMS restore (18.5a).

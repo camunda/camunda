@@ -84,6 +84,22 @@ public class PartitionRestoreService {
    */
   public void restore(final long[] backupIds, final BackupValidator validator)
       throws IOException, FlushException {
+    restore(backupIds, validator, true);
+  }
+
+  /**
+   * Like {@link #restore(long[], BackupValidator)}, but restores only the log of the backups, not
+   * the snapshot: for a bridged restore, which takes the state and the rest of the log from the log
+   * archive (spec section 18.5a).
+   */
+  public void restoreLog(final long[] backupIds, final BackupValidator validator)
+      throws IOException, FlushException {
+    restore(backupIds, validator, false);
+  }
+
+  private void restore(
+      final long[] backupIds, final BackupValidator validator, final boolean installSnapshot)
+      throws IOException, FlushException {
     validateAndSortBackupIds(backupIds);
 
     try (final var restoredJournal =
@@ -98,7 +114,7 @@ public class PartitionRestoreService {
             rootDirectory.resolve("restoring-partition" + partitionId + "-backup-" + backupId);
         FileUtil.ensureDirectoryExists(restoreTarget);
         final var backup = download(backupId, restoreTarget, validator);
-        if (previousBackup == null) {
+        if (previousBackup == null && installSnapshot) {
           // Only take the first snapshot, all others are redundant because we have the full log.
           moveSnapshotFiles(backup);
         }

@@ -11,6 +11,7 @@ import io.camunda.zeebe.backup.common.BackupMetadata;
 import io.camunda.zeebe.backup.common.BackupMetadata.CheckpointEntry;
 import io.camunda.zeebe.backup.logarchive.model.CoveredCheckpointJson;
 import io.camunda.zeebe.restore.RestorePointResolver;
+import io.camunda.zeebe.restore.logarchive.HandoverRestorePlan.BridgedFromArchive;
 import io.camunda.zeebe.restore.logarchive.HandoverRestorePlan.FromArchive;
 import io.camunda.zeebe.restore.logarchive.HandoverRestorePlan.OldBackups;
 import io.camunda.zeebe.restore.logarchive.HandoverRestorePlan.PartitionPlan;
@@ -46,7 +47,9 @@ import org.slf4j.LoggerFactory;
  * RestorePointResolver} does among old ones: T must be restorable on every partition, the one
  * closest to {@code to}, or the latest without {@code to}. With RDBMS, an archive checkpoint is
  * only restorable if it is at or after the exported position E and the archive reaches back to E +
- * 1. Old and archive data are never combined on one partition.
+ * 1. If the archive starts after E + 1, the partition is restored "bridged": the old backups of the
+ * same branch provide the log from E + 1 up to the start of the archive, the archive the rest and
+ * the snapshot (see {@link BridgedFromArchive}).
  *
  * <p>Without any log archive or handover, this is exactly today's restore: backup ids are restored
  * as given, and a time range is resolved by {@link RestorePointResolver#resolve}.
@@ -279,7 +282,7 @@ public final class HandoverRestoreResolver {
     private final HandoverRestoreRequest request;
     private final @Nullable Long exportedPosition;
     private final Map<String, LogArchiveView> timelinesById = new LinkedHashMap<>();
-    private final Map<Long, Optional<FromArchive>> archiveDecisions = new HashMap<>();
+    private final Map<Long, Optional<PartitionPlan>> archiveDecisions = new HashMap<>();
     private final Map<Long, String> rejections = new HashMap<>();
     private @Nullable TreeMap<Long, CheckpointEntry> oldRestorable;
 
@@ -318,7 +321,7 @@ public final class HandoverRestoreResolver {
         // placeholder; the backups are resolved once the checkpoint is chosen
         return Optional.of(new OldBackups(List.of(checkpointId)));
       }
-      return fromArchive(checkpointId).map(PartitionPlan.class::cast);
+      return fromArchive(checkpointId);
     }
 
     /**
@@ -376,11 +379,12 @@ public final class HandoverRestoreResolver {
     }
 
     /**
-     * Where the archive restores the checkpoint on this partition, empty if no timeline can.
+     * Where the archive restores the checkpoint on this partition, alone or bridged with old
+     * backups; empty if no timeline can.
      *
      * @throws LogArchiveRestoreException if more than one history covers the checkpoint
      */
-    Optional<FromArchive> fromArchive(final long checkpointId) {
+    Optional<PartitionPlan> fromArchive(final long checkpointId) {
       final var cached = archiveDecisions.get(checkpointId);
       if (cached != null) {
         return cached;
@@ -390,7 +394,7 @@ public final class HandoverRestoreResolver {
       return decision;
     }
 
-    private Optional<FromArchive> decideArchive(final long checkpointId) {
+    private Optional<PartitionPlan> decideArchive(final long checkpointId) {
       final var occurrences = new LinkedHashMap<LogArchiveView, CoveredCheckpointJson>();
       for (final var view : timelinesById.values()) {
         view.findCheckpoint(checkpointId)
@@ -414,8 +418,115 @@ public final class HandoverRestoreResolver {
           reasons.add(e.getMessage());
         }
       }
+      for (final var view : newestFirst) {
+        final var bridged = bridge(view, Objects.requireNonNull(occurrences.get(view)), reasons);
+        if (bridged.isPresent()) {
+          return Optional.of(bridged.get());
+        }
+      }
       rejections.put(checkpointId, String.join("; ", reasons));
       return Optional.empty();
+    }
+
+    /**
+     * The bridged restore of the checkpoint from the timeline (spec section 18.5a), if the archive
+     * alone cannot restore it only because it starts after E + 1: the old backups of the branch
+     * that handed over to this timeline provide the log from E + 1 up to the start of the archive.
+     *
+     * <p>Same branch: the timeline records the handover H, and H is an old checkpoint at the same
+     * position in the old backups' range that also covers E. Compaction was pinned to the old
+     * backups until H, so they hold that branch's log without gaps up to H, and the archive started
+     * before H. Old backups and archive then hold the same journal entries where they overlap.
+     *
+     * @param reasons collects why the bridge is impossible, for errors
+     */
+    private Optional<BridgedFromArchive> bridge(
+        final LogArchiveView view,
+        final CoveredCheckpointJson checkpoint,
+        final List<String> reasons) {
+      if (exportedPosition == null || !startsAfterExported(view, exportedPosition)) {
+        return Optional.empty();
+      }
+      final var handover = view.handover();
+      final var metadata = source.oldMetadata();
+      if (handover.isEmpty() || metadata.isEmpty()) {
+        reasons.add(
+            "no bridge from old backups to timeline '%s': %s"
+                .formatted(
+                    view.timelineId(),
+                    handover.isEmpty()
+                        ? "it records no handover"
+                        : "the partition has no old backups"));
+        return Optional.empty();
+      }
+      final long handoverId = handover.get().checkpointId();
+      final var handoverEntry = oldRestorable().get(handoverId);
+      if (handoverEntry == null
+          || handoverEntry.checkpointPosition() != handover.get().checkpointPosition()) {
+        reasons.add(
+            ("no bridge from old backups to timeline '%s': its handover checkpoint %d at position"
+                    + " %d is no old backup restorable from the exported position %d on the same"
+                    + " branch")
+                .formatted(
+                    view.timelineId(),
+                    handoverId,
+                    handover.get().checkpointPosition(),
+                    exportedPosition));
+        return Optional.empty();
+      }
+      // the first old backup that reaches into the archive, so that the two overlap at the seam
+      final long firstArchived = view.firstArchivedPosition();
+      final var last =
+          oldRestorable().headMap(handoverId, true).values().stream()
+              .filter(entry -> entry.checkpointType().shouldCreateBackup())
+              .filter(entry -> entry.checkpointPosition() >= firstArchived)
+              .findFirst()
+              .orElse(handoverEntry);
+      final List<Long> backupIds;
+      try {
+        LogArchiveRestorePlanner.planBridged(view, checkpoint, exportedPosition);
+        final var backups =
+            Objects.requireNonNull(
+                RestorePointResolver.resolveBackups(
+                        List.of(metadata.get()),
+                        last.checkpointId(),
+                        request.from(),
+                        Map.of(id(), exportedPosition))
+                    .backupsByPartitionId()
+                    .get(id()));
+        final long required = Math.max(exportedPosition + 1, FIRST_LOG_POSITION);
+        if (backups.getFirst().getFirstLogPositionOrDefault() > required) {
+          throw new IllegalStateException(
+              "the old backup %d starts at position %d, after the exported position %d + 1"
+                  .formatted(
+                      backups.getFirst().checkpointId(),
+                      backups.getFirst().getFirstLogPositionOrDefault(),
+                      exportedPosition));
+        }
+        backupIds = checkpointIds(backups);
+      } catch (final LogArchiveRestoreException | IllegalStateException e) {
+        reasons.add(
+            "no bridge from old backups to timeline '%s': %s"
+                .formatted(view.timelineId(), e.getMessage()));
+        return Optional.empty();
+      }
+      final var missing =
+          backupIds.stream().filter(id -> !source.completedOldBackups().contains(id)).toList();
+      if (!missing.isEmpty()) {
+        reasons.add(
+            "no bridge from old backups to timeline '%s': old backups %s are not completed"
+                .formatted(view.timelineId(), missing));
+        return Optional.empty();
+      }
+      return Optional.of(
+          new BridgedFromArchive(backupIds, view, checkpoint, exportedPosition, view.startIndex()));
+    }
+
+    /** Whether the timeline starts after the position after E, so it alone cannot fill the gap. */
+    private static boolean startsAfterExported(final LogArchiveView view, final long exported) {
+      final long firstArchived = view.firstArchivedPosition();
+      return view.startIndex() > 1
+          && (firstArchived < 0 || firstArchived > Math.max(exported + 1, FIRST_LOG_POSITION));
     }
 
     /**
