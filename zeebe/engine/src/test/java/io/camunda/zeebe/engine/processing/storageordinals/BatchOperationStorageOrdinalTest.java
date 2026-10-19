@@ -22,6 +22,7 @@ import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.intent.BatchOperationChunkIntent;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationExecutionIntent;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 import io.camunda.zeebe.protocol.record.value.BatchOperationCreationRecordValue;
@@ -182,6 +183,32 @@ public final class BatchOperationStorageOrdinalTest {
             .withIntent(BatchOperationIntent.INITIALIZING)
             .getFirst();
     assertThat(initializing.getValue().getStorageOrdinal()).isEqualTo(FIXED_ORDINAL);
+  }
+
+  @Test
+  public void shouldCarryOrdinalToChunkRecords() {
+    // given
+    stubProcessInstanceSearch(Set.of(1L, 2L, 3L));
+
+    // when
+    final long batchOperationKey = createBatchOperation();
+
+    // then
+    for (int partitionId = 1; partitionId <= PARTITION_COUNT; partitionId++) {
+      final var records =
+          RecordingExporter.batchOperationChunkRecords()
+              .withBatchOperationKey(batchOperationKey)
+              .withPartitionId(partitionId)
+              .limit(record -> record.getIntent() == BatchOperationChunkIntent.CREATED)
+              .collect(Collectors.toList());
+
+      assertThat(records)
+          .extracting(Record::getIntent)
+          .containsExactly(BatchOperationChunkIntent.CREATE, BatchOperationChunkIntent.CREATED);
+      assertThat(records)
+          .extracting(record -> record.getValue().getStorageOrdinal())
+          .containsOnly(FIXED_ORDINAL);
+    }
   }
 
   @Test
