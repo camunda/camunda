@@ -68,6 +68,22 @@ const citation = (value: unknown) => {
   return [value.title, value.url].filter(Boolean).join(' — ');
 };
 
+const configuredServerTools = (
+  serverTools: Record<string, unknown>,
+  parsing: unknown,
+) => {
+  const configured = Array.isArray(serverTools.configured)
+    ? serverTools.configured.map(String)
+    : [];
+  if (isRecord(parsing) && parsing.plugin) {
+    const engine = text(parsing.pdfEngine);
+    configured.push(
+      `${text(parsing.plugin)} (plugin${engine ? `, engine ${engine}` : ''})`,
+    );
+  }
+  return configured;
+};
+
 const documentNames = (value: unknown) =>
   Array.isArray(value) && value.length > 0
     ? value
@@ -168,7 +184,14 @@ const EvidenceCard: React.FC<EvidenceCardProps> = ({
           </Card>
           <Card data-testid="evidence-server-tools-configured">
             <CardTitle>Provider-run server tools</CardTitle>
-            <Rows rows={[['Configured', list(serverTools.configured)]]} />
+            <Rows rows={[
+                [
+                  'Configured',
+                  list(
+                    configuredServerTools(serverTools, evidence.documentParsing),
+                  ),
+                ],
+              ]} />
           </Card>
           {isRecord(evidence.documentParsing) && (
             <PdfParsingCard parsing={evidence.documentParsing} />

@@ -209,4 +209,29 @@ describe('<EvidenceCards />', () => {
       }),
     ).toBe(false);
   });
+
+  it('should list the file-parser plugin under provider-run server tools', () => {
+    render(
+      <EvidenceCards
+        content={[
+          {
+            contentType: 'OBJECT',
+            object: {
+              evidence: {
+                kind: 'configuration',
+                serverTools: {configured: []},
+                documentParsing: {plugin: 'file-parser', pdfEngine: 'native'},
+              },
+            },
+          },
+        ]}
+      />,
+    );
+
+    expect(
+      within(screen.getByTestId('evidence-server-tools-configured')).getByText(
+        'file-parser (plugin, engine native)',
+      ),
+    ).toBeInTheDocument();
+  });
 });
