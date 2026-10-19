@@ -137,16 +137,78 @@ final class DbPositionSupplierTest {
     assertThat(supplier.getHighestBackupPosition()).isEqualTo(42);
   }
 
+  @Test
+  void shouldIgnoreBackupPositionOnceAHandoverIsRecorded() {
+    // given - the old backup would pin compaction at 10
+    setBackupPosition(10);
+    setArchivedPosition(50, 7);
+    final var supplier = new DbPositionSupplier(zeebeDb, true, true);
+
+    // when
+    final long position = supplier.getHighestBackupPosition();
+
+    // then
+    assertThat(position).isEqualTo(50);
+  }
+
+  @Test
+  void shouldStillPinCompactionAtBackupPositionBeforeTheHandover() {
+    // given
+    setBackupPosition(10);
+    setArchivedPosition(50);
+    final var supplier = new DbPositionSupplier(zeebeDb, true, true);
+
+    // when
+    final long position = supplier.getHighestBackupPosition();
+
+    // then
+    assertThat(position).isEqualTo(10);
+  }
+
+  @Test
+  void shouldFollowArchivedPositionAfterTheHandoverIsRecorded() {
+    // given
+    setBackupPosition(10);
+    setArchivedPosition(5);
+    final var supplier = new DbPositionSupplier(zeebeDb, true, true);
+    assertThat(supplier.getHighestBackupPosition()).isEqualTo(5);
+
+    // when
+    setArchivedPosition(60, 7);
+
+    // then
+    assertThat(supplier.getHighestBackupPosition()).isEqualTo(60);
+  }
+
+  @Test
+  void shouldKeepHoldingBackWhileNothingIsArchivedAfterTheHandover() {
+    // given
+    setBackupPosition(10);
+    setArchivedPosition(-1, 7);
+    final var supplier = new DbPositionSupplier(zeebeDb, true, true);
+
+    // when
+    final long position = supplier.getHighestBackupPosition();
+
+    // then
+    assertThat(position).isEqualTo(-1);
+  }
+
   private void setBackupPosition(final long position) {
     checkpointState.setLatestBackupInfo(1, position, 1, CheckpointType.MANUAL_BACKUP, 1);
   }
 
   private void setArchivedPosition(final long position) {
+    setArchivedPosition(position, -1);
+  }
+
+  private void setArchivedPosition(final long position, final long handoverCheckpointId) {
     logArchiveState.setMeta(
         new LogArchiveMeta()
             .setTimelineId("tl-0")
             .setStartIndex(1)
             .setArchivedIndex(position < 0 ? 0 : 3)
-            .setArchivedPosition(position));
+            .setArchivedPosition(position)
+            .setHandoverCheckpointId(handoverCheckpointId));
   }
 }
