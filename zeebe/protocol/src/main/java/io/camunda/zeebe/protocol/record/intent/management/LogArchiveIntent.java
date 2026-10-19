@@ -27,7 +27,9 @@ public enum LogArchiveIntent implements Intent {
   SEAL_INDEX(6),
   INDEX_SEALED(7),
   CONFIRM_PUBLISHED(8),
-  PUBLISHED(9);
+  PUBLISHED(9),
+  COMPLETE_HANDOVER(10),
+  HANDOVER_COMPLETED(11);
 
   private final short value;
 
@@ -48,6 +50,7 @@ public enum LogArchiveIntent implements Intent {
       case SNAPSHOT_ARCHIVED:
       case INDEX_SEALED:
       case PUBLISHED:
+      case HANDOVER_COMPLETED:
         return true;
       default:
         return false;
@@ -76,6 +79,10 @@ public enum LogArchiveIntent implements Intent {
         return CONFIRM_PUBLISHED;
       case 9:
         return PUBLISHED;
+      case 10:
+        return COMPLETE_HANDOVER;
+      case 11:
+        return HANDOVER_COMPLETED;
       default:
         return UNKNOWN;
     }

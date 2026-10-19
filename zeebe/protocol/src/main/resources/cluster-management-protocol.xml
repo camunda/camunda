@@ -29,6 +29,8 @@
       <validValue name="QUERY_RANGES">5</validValue>
       <validValue name="SYNC_METADATA">6</validValue>
       <validValue name="CLEAR_STATE">7</validValue>
+      <validValue name="ACTIVATE_LOG_ARCHIVE">8</validValue>
+      <validValue name="COMPLETE_HANDOVER">9</validValue>
     </enum>
 
     <enum name="BackupStatusCode" encodingType="uint8">

@@ -20,7 +20,12 @@ import org.jspecify.annotations.Nullable;
 public enum CheckpointType {
   MARKER((short) 0),
   SCHEDULED_BACKUP((short) 1),
-  MANUAL_BACKUP((short) 2);
+  MANUAL_BACKUP((short) 2),
+  /**
+   * The last old-style backup of a partition before it hands over to the log archive. Taken like a
+   * scheduled backup; see the handover plan in zeebe/backup/docs/log-archive-poc.md.
+   */
+  HANDOVER((short) 3);
 
   private final short value;
 
@@ -46,6 +51,10 @@ public enum CheckpointType {
         {
           return MANUAL_BACKUP;
         }
+      case 3:
+        {
+          return HANDOVER;
+        }
       default:
         {
           return null;
@@ -54,7 +63,7 @@ public enum CheckpointType {
   }
 
   public boolean shouldCreateBackup() {
-    return this == SCHEDULED_BACKUP || this == MANUAL_BACKUP;
+    return this == SCHEDULED_BACKUP || this == MANUAL_BACKUP || this == HANDOVER;
   }
 
   public boolean isManual() {
