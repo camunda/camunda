@@ -53,3 +53,23 @@ test('should match the resized decisions panels snapshot after dragging the resi
 		.toBeLessThan(50);
 	await expect(page).toHaveScreenshot();
 });
+
+test('should match the filters panel snapshot with populated optional filters', async ({page}) => {
+	await page.goto(
+		'/operate-preview/decisions?evaluated=true&failed=true&businessId=eq_order-1&processInstanceKey=2251799813685249&evaluationDateFrom=2024-01-01T00:00:00.000Z&evaluationDateTo=2024-01-02T00:00:00.000Z',
+	);
+	const filtersPanel = page.getByRole('region', {name: 'Filter', exact: true});
+	await expect(page.getByLabel('Business ID', {exact: true})).toHaveValue('order-1');
+
+	await expect(filtersPanel).toHaveScreenshot();
+});
+
+test('should match the date range dialog snapshot', async ({operatePreviewDecisionsPage, page}) => {
+	await operatePreviewDecisionsPage.goto();
+	await operatePreviewDecisionsPage.moreFiltersButton.click();
+	await page.getByRole('menuitem', {name: 'Evaluation Date Range'}).click();
+	const dialog = page.getByTestId('date-range-modal');
+	await expect(dialog).toBeVisible();
+
+	await expect(dialog).toHaveScreenshot();
+});
