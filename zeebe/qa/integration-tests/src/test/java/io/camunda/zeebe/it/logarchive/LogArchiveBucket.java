@@ -23,7 +23,7 @@ import io.camunda.zeebe.backup.logarchive.model.LogArchiveKeys;
 import io.camunda.zeebe.backup.logarchive.model.LogObjectJson;
 import io.camunda.zeebe.backup.logarchive.model.RootFile;
 import io.camunda.zeebe.backup.logarchive.store.LogArchiveStore;
-import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
+import io.camunda.zeebe.qa.util.cluster.TestSpringApplication;
 import io.camunda.zeebe.restore.logarchive.LogArchiveRestoreException;
 import io.camunda.zeebe.restore.logarchive.LogArchiveView;
 import java.nio.file.Path;
@@ -62,7 +62,7 @@ final class LogArchiveBucket implements AutoCloseable {
    * Enables the log archive with small limits, so that objects are cut, chunks sealed and roots
    * written within seconds. The log archive settings have no unified configuration yet.
    */
-  static TestStandaloneBroker enableLogArchive(final TestStandaloneBroker broker) {
+  static <T extends TestSpringApplication<T>> T enableLogArchive(final T broker) {
     final var prefix = "zeebe.broker.data.backup.logArchive.";
     return broker
         .withProperty(prefix + "enabled", true)
