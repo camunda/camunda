@@ -7,9 +7,11 @@
  */
 package io.camunda.zeebe.backup.logarchive.leader;
 
+import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.backup.logarchive.model.LatestHint;
 import io.camunda.zeebe.backup.logarchive.model.LogArchiveJson;
 import io.camunda.zeebe.backup.logarchive.model.LogArchiveKeys;
+import io.camunda.zeebe.backup.logarchive.processing.LogArchiveJsonMapper;
 import io.camunda.zeebe.backup.logarchive.processing.LogArchiveListener;
 import io.camunda.zeebe.backup.logarchive.processing.LogArchivePublication;
 import io.camunda.zeebe.backup.logarchive.processing.PublishRequest;
@@ -34,6 +36,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Queue;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Supplier;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
@@ -68,6 +71,8 @@ public final class LogArchivePublisher extends Actor
   private final LogArchiveStore store;
   private final LogStreamWriter writer;
   private final LogArchiveRecoveryListener recoveryListener;
+  // the store of the old backups, null if they are not configured
+  private final @Nullable BackupStore backupStore;
 
   // all fields below are only accessed on the actor thread
   private final Queue<PublishRequest> queue = new ArrayDeque<>();
@@ -83,14 +88,25 @@ public final class LogArchivePublisher extends Actor
   // the recovered timeline if the bucket is ahead of the state; requests for it are dropped
   private @Nullable String divergedTimelineId;
 
-  /**
-   * @param recoveryListener receives the outcome of the recovery check
-   */
   public LogArchivePublisher(
       final int partitionId,
       final LogArchiveStore store,
       final LogStreamWriter writer,
       final LogArchiveRecoveryListener recoveryListener) {
+    this(partitionId, store, writer, recoveryListener, null);
+  }
+
+  /**
+   * @param recoveryListener receives the outcome of the recovery check
+   * @param backupStore the store of the old backups, which receives the handover file; null if old
+   *     backups are not configured, in which case that file is not written
+   */
+  public LogArchivePublisher(
+      final int partitionId,
+      final LogArchiveStore store,
+      final LogStreamWriter writer,
+      final LogArchiveRecoveryListener recoveryListener,
+      final @Nullable BackupStore backupStore) {
     super(
         buildActorName("LogArchivePublisher", partitionId),
         null,
@@ -99,6 +115,7 @@ public final class LogArchivePublisher extends Actor
     this.store = store;
     this.writer = writer;
     this.recoveryListener = recoveryListener;
+    this.backupStore = backupStore;
   }
 
   @Override
@@ -266,6 +283,7 @@ public final class LogArchivePublisher extends Actor
           put(prefix + LogArchiveKeys.commitKey(seq), json);
         }
       }
+      case HANDOVER -> writeHandover(request);
       case ROOT -> {
         final var json = request.rootJson();
         if (json == null) {
@@ -318,6 +336,33 @@ public final class LogArchivePublisher extends Actor
     }
   }
 
+  /**
+   * Writes the handover file to the store of the old backups, before the root that confirms the
+   * publication, so that the outbox row stays until the file exists (spec section 18.2).
+   */
+  private void writeHandover(final PublishRequest request) {
+    final var handover = request.handover();
+    if (handover == null) {
+      advance();
+      return;
+    }
+    final var oldStore = backupStore;
+    if (oldStore == null) {
+      LOG.debug(
+          "Partition {}: not writing the handover file of checkpoint {}, the old backups are not configured",
+          partitionId,
+          handover.checkpointId());
+      advance();
+      return;
+    }
+    final var content =
+        LogArchiveJson.write(
+            LogArchiveJsonMapper.handoverFile(partitionId, request.timelineId(), handover));
+    await(
+        "the handover file of checkpoint " + handover.checkpointId(),
+        () -> oldStore.storeHandoverRecord(partitionId, handover.checkpointId(), content));
+  }
+
   private void writeSeal(final String timelineId, final SealRequest seal) {
     final var record =
         new LogArchiveRecord()
@@ -331,10 +376,15 @@ public final class LogArchivePublisher extends Actor
   }
 
   private void put(final String key, final byte[] content) {
+    await("PUT " + key, () -> store.put(key, content));
+  }
+
+  /** Advances once the write completed, retries the current step with backoff if it failed. */
+  private void await(final String description, final Supplier<CompletableFuture<Void>> write) {
     final long expected = generation;
     CompletableFuture<Void> future;
     try {
-      future = store.put(key, content);
+      future = write.get();
     } catch (final RuntimeException e) {
       future = CompletableFuture.failedFuture(e);
     }
@@ -349,9 +399,9 @@ public final class LogArchivePublisher extends Actor
                     advance();
                   } else {
                     LOG.warn(
-                        "Partition {}: failed to PUT {}, retrying in {}",
+                        "Partition {}: failed to write {}, retrying in {}",
                         partitionId,
-                        key,
+                        description,
                         backoff,
                         error);
                     retryLater(this::execute);
@@ -405,6 +455,7 @@ public final class LogArchivePublisher extends Actor
 
   private enum Step {
     COMMIT,
+    HANDOVER,
     ROOT,
     LATEST,
     CONFIRM,

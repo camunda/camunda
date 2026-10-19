@@ -11,6 +11,7 @@ import java.nio.file.Path;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
+import java.util.SortedMap;
 import java.util.concurrent.CompletableFuture;
 
 /** A store where the backup is stored * */
@@ -71,6 +72,31 @@ public interface BackupStore {
    * @return the serialized metadata content, or empty if not found
    */
   CompletableFuture<Optional<byte[]>> loadBackupMetadata(int partitionId);
+
+  /**
+   * Stores the handover record of the partition for the given handover checkpoint, at {@code
+   * metadata/<partitionId>/handover/<checkpointId>.json}. It is a new object next to the backup
+   * metadata and never changes the metadata or any backup. The content is an opaque byte array
+   * (JSON).
+   *
+   * <p>Idempotent: storing the same checkpoint again replaces the record, which is fine as long as
+   * the content is the same.
+   *
+   * @param partitionId the partition the handover belongs to
+   * @param checkpointId the id of the handover checkpoint
+   * @param content the serialized handover record
+   */
+  CompletableFuture<Void> storeHandoverRecord(int partitionId, long checkpointId, byte[] content);
+
+  /**
+   * Loads all handover records of the partition. There can be more than one if a restore to a point
+   * before a handover led to another handover on a new branch.
+   *
+   * @param partitionId the partition the handover records belong to
+   * @return the serialized handover records by handover checkpoint id, ascending; empty if there is
+   *     none
+   */
+  CompletableFuture<SortedMap<Long, byte[]>> loadHandoverRecords(int partitionId);
 
   CompletableFuture<Void> closeAsync();
 

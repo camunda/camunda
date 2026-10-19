@@ -49,6 +49,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.Set;
+import java.util.SortedMap;
+import java.util.TreeMap;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
@@ -109,6 +111,7 @@ public final class S3BackupStore implements BackupStore {
   static final String SEGMENTS_PREFIX = "segments/";
   static final String MANIFEST_OBJECT_KEY = "manifest.json";
   static final String METADATA_OBJECT_NAME = "metadata.json";
+  private static final String HANDOVER_OBJECT_SUFFIX = ".json";
   private static final Logger LOG = LoggerFactory.getLogger(S3BackupStore.class);
   private static final int SCAN_PARALLELISM = 16;
   private static final int LIST_PAGE_SIZE = 1000;
@@ -390,6 +393,50 @@ public final class S3BackupStore implements BackupStore {
   }
 
   @Override
+  public CompletableFuture<Void> storeHandoverRecord(
+      final int partitionId, final long checkpointId, final byte[] content) {
+    return client
+        .putObject(
+            req -> req.bucket(config.bucketName()).key(handoverKey(partitionId, checkpointId)),
+            AsyncRequestBody.fromBytes(content))
+        .thenApply(resp -> null);
+  }
+
+  @Override
+  public CompletableFuture<SortedMap<Long, byte[]>> loadHandoverRecords(final int partitionId) {
+    final var prefix = handoverPrefix(partitionId);
+    return listBackupObjects(prefix)
+        .thenCompose(
+            objects -> {
+              final var records = new TreeMap<Long, CompletableFuture<byte[]>>();
+              for (final var object : objects) {
+                final var key = object.key();
+                final var name = key.substring(prefix.length());
+                if (!name.endsWith(HANDOVER_OBJECT_SUFFIX)) {
+                  continue;
+                }
+                final var checkpointId =
+                    Long.parseLong(
+                        name.substring(0, name.length() - HANDOVER_OBJECT_SUFFIX.length()));
+                records.put(
+                    checkpointId,
+                    client
+                        .getObject(
+                            req -> req.bucket(config.bucketName()).key(key),
+                            AsyncResponseTransformer.toBytes())
+                        .thenApply(response -> response.asByteArray()));
+              }
+              return CompletableFuture.allOf(records.values().toArray(CompletableFuture[]::new))
+                  .thenApply(
+                      ignored -> {
+                        final SortedMap<Long, byte[]> loaded = new TreeMap<>();
+                        records.forEach((id, content) -> loaded.put(id, content.join()));
+                        return loaded;
+                      });
+            });
+  }
+
+  @Override
   public CompletableFuture<Void> closeAsync() {
     return CompletableFuture.runAsync(
         () -> {
@@ -417,6 +464,15 @@ public final class S3BackupStore implements BackupStore {
             config.basePath().map(base -> base + "/").orElse(""),
             partitionId,
             METADATA_OBJECT_NAME);
+  }
+
+  private String handoverPrefix(final int partitionId) {
+    return "%smetadata/%d/handover/"
+        .formatted(config.basePath().map(base -> base + "/").orElse(""), partitionId);
+  }
+
+  private String handoverKey(final int partitionId, final long checkpointId) {
+    return handoverPrefix(partitionId) + checkpointId + HANDOVER_OBJECT_SUFFIX;
   }
 
   private CompletableFuture<List<ObjectIdentifier>> listObjects(

@@ -36,6 +36,8 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.SortedMap;
+import java.util.TreeMap;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -62,6 +64,7 @@ public final class GcsBackupStore implements BackupStore {
 
   private static final Logger LOG = LoggerFactory.getLogger(GcsBackupStore.class);
   private static final String METADATA_OBJECT_NAME = "metadata.json";
+  private static final String HANDOVER_OBJECT_SUFFIX = ".json";
 
   private final ExecutorService executor;
   private final Semaphore deleteConcurrencyLimit = new Semaphore(DELETE_PARALLELISM);
@@ -285,6 +288,39 @@ public final class GcsBackupStore implements BackupStore {
   }
 
   @Override
+  public CompletableFuture<Void> storeHandoverRecord(
+      final int partitionId, final long checkpointId, final byte[] content) {
+    return CompletableFuture.runAsync(
+        () -> {
+          final var blobInfo =
+              BlobInfo.newBuilder(bucketInfo, handoverKey(partitionId, checkpointId)).build();
+          client.create(blobInfo, content);
+        },
+        executor);
+  }
+
+  @Override
+  public CompletableFuture<SortedMap<Long, byte[]>> loadHandoverRecords(final int partitionId) {
+    return CompletableFuture.supplyAsync(
+        () -> {
+          final var prefix = handoverPrefix(partitionId);
+          final SortedMap<Long, byte[]> records = new TreeMap<>();
+          for (final var blob :
+              client.list(bucketInfo.getName(), BlobListOption.prefix(prefix)).iterateAll()) {
+            final var name = blob.getName().substring(prefix.length());
+            if (name.endsWith(HANDOVER_OBJECT_SUFFIX)) {
+              final var checkpointId =
+                  Long.parseLong(
+                      name.substring(0, name.length() - HANDOVER_OBJECT_SUFFIX.length()));
+              records.put(checkpointId, blob.getContent());
+            }
+          }
+          return records;
+        },
+        executor);
+  }
+
+  @Override
   public CompletableFuture<Void> closeAsync() {
     return CompletableFuture.runAsync(
         () -> {
@@ -332,6 +368,14 @@ public final class GcsBackupStore implements BackupStore {
                   "Failed to connect to GCS with the provided configuration '%s'".formatted(config),
                   error);
             });
+  }
+
+  private String handoverPrefix(final int partitionId) {
+    return "%smetadata/%d/handover/".formatted(basePath, partitionId);
+  }
+
+  private String handoverKey(final int partitionId, final long checkpointId) {
+    return handoverPrefix(partitionId) + checkpointId + HANDOVER_OBJECT_SUFFIX;
   }
 
   private BlobInfo backupMetadataBlobInfo(final int partitionId) {

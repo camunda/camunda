@@ -9,9 +9,13 @@ package io.camunda.zeebe.backup.logarchive.leader;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import io.camunda.zeebe.backup.api.BackupStore;
+import io.camunda.zeebe.backup.logarchive.model.HandoverJson;
 import io.camunda.zeebe.backup.logarchive.model.LatestHint;
 import io.camunda.zeebe.backup.logarchive.model.LogArchiveJson;
 import io.camunda.zeebe.backup.logarchive.model.LogArchiveKeys;
@@ -56,6 +60,8 @@ final class LogArchivePublisherTest {
   private final LogStreamWriter writer = mock(LogStreamWriter.class);
   private final List<RecoveryCheck> recoveryChecks = new ArrayList<>();
   private int failWrites;
+  private int failHandoverWrites;
+  private byte[] handoverContent;
   private LogArchivePublisher publisher;
 
   @BeforeEach
@@ -399,7 +405,138 @@ final class LogArchivePublisherTest {
             "PUT " + PREFIX + LogArchiveKeys.commitKey(3));
   }
 
+  @Test
+  void shouldWriteHandoverFileAfterCommitEntryAndBeforeRoot() {
+    // given
+    final var handover = startPublisherWithBackupStore();
+
+    // when
+    handover.publish(handoverRequest(6));
+    scheduler.workUntilDone();
+
+    // then
+    assertThat(events)
+        .containsExactly(
+            "PUT " + PREFIX + LogArchiveKeys.commitKey(6),
+            "HANDOVER 7",
+            "PUT " + PREFIX + LogArchiveKeys.rootKey(6),
+            "PUT " + PREFIX + LogArchiveKeys.latestKey(),
+            "CONFIRM 6");
+    assertThat(new String(handoverContent, StandardCharsets.UTF_8))
+        .isEqualTo(
+            "{\"formatVersion\":1,\"partitionId\":1,\"checkpointId\":7,"
+                + "\"checkpointPosition\":15,\"logArchiveTimeline\":\"tl-0\"}");
+  }
+
+  @Test
+  void shouldRetryHandoverFileUntilItIsWrittenAndOnlyThenConfirm() {
+    // given
+    final var handover = startPublisherWithBackupStore();
+    failHandoverWrites = 2;
+
+    // when
+    handover.publish(handoverRequest(6));
+    scheduler.workUntilDone();
+
+    // then - blocked on the old-side file: no root and no confirmation yet
+    assertThat(events)
+        .containsExactly("PUT " + PREFIX + LogArchiveKeys.commitKey(6), "HANDOVER-FAILED 7");
+
+    // when
+    scheduler.updateClock(Duration.ofSeconds(1));
+    scheduler.workUntilDone();
+    scheduler.updateClock(Duration.ofSeconds(1));
+    scheduler.workUntilDone();
+
+    // then
+    assertThat(events)
+        .containsExactly(
+            "PUT " + PREFIX + LogArchiveKeys.commitKey(6),
+            "HANDOVER-FAILED 7",
+            "HANDOVER-FAILED 7",
+            "HANDOVER 7",
+            "PUT " + PREFIX + LogArchiveKeys.rootKey(6),
+            "PUT " + PREFIX + LogArchiveKeys.latestKey(),
+            "CONFIRM 6");
+  }
+
+  @Test
+  void shouldWriteSameHandoverFileWhenRepublishedByANewLeader() {
+    // given
+    final var first = startPublisherWithBackupStore();
+    first.publish(handoverRequest(6));
+    scheduler.workUntilDone();
+    final var firstContent = handoverContent;
+
+    // when
+    final var second = startPublisherWithBackupStore();
+    second.publish(handoverRequest(6));
+    scheduler.workUntilDone();
+
+    // then
+    assertThat(handoverContent).isEqualTo(firstContent);
+  }
+
+  @Test
+  void shouldSkipHandoverFileWithoutBackupStore() {
+    // when - the publisher of setUp has no store of old backups
+    publisher.publish(handoverRequest(6));
+    scheduler.workUntilDone();
+
+    // then
+    assertThat(events)
+        .containsExactly(
+            "PUT " + PREFIX + LogArchiveKeys.commitKey(6),
+            "PUT " + PREFIX + LogArchiveKeys.rootKey(6),
+            "PUT " + PREFIX + LogArchiveKeys.latestKey(),
+            "CONFIRM 6");
+  }
+
+  @Test
+  void shouldNotTouchBackupStoreForRequestsWithoutHandover() {
+    // given
+    final var handover = startPublisherWithBackupStore();
+
+    // when
+    handover.publish(new PublishRequest(TIMELINE, 5, bytes("c5"), bytes("r5"), null));
+    scheduler.workUntilDone();
+
+    // then
+    assertThat(events).doesNotContain("HANDOVER 7");
+  }
+
+  private static PublishRequest handoverRequest(final long seq) {
+    return new PublishRequest(
+        TIMELINE, seq, bytes("c" + seq), bytes("r" + seq), null, new HandoverJson(7, 15));
+  }
+
+  private LogArchivePublisher startPublisherWithBackupStore() {
+    final var backupStore = mock(BackupStore.class);
+    when(backupStore.storeHandoverRecord(anyInt(), anyLong(), any()))
+        .thenAnswer(
+            invocation -> {
+              final long checkpointId = invocation.getArgument(1);
+              assertThat((int) invocation.getArgument(0)).isEqualTo(PARTITION);
+              if (failHandoverWrites > 0) {
+                failHandoverWrites--;
+                events.add("HANDOVER-FAILED " + checkpointId);
+                return CompletableFuture.failedFuture(new RuntimeException("boom"));
+              }
+              events.add("HANDOVER " + checkpointId);
+              handoverContent = invocation.getArgument(2);
+              return CompletableFuture.completedFuture(null);
+            });
+    final var started = startPublisher(backupStore);
+    started.onRecovered(new LogArchiveMeta());
+    scheduler.workUntilDone();
+    return started;
+  }
+
   private LogArchivePublisher startPublisher() {
+    return startPublisher(null);
+  }
+
+  private LogArchivePublisher startPublisher(final BackupStore backupStore) {
     final var started =
         new LogArchivePublisher(
             PARTITION,
@@ -407,7 +544,8 @@ final class LogArchivePublisherTest {
             writer,
             (meta, bucketAhead) ->
                 recoveryChecks.add(
-                    new RecoveryCheck(meta.getTimelineId(), meta.getNextSeq(), bucketAhead)));
+                    new RecoveryCheck(meta.getTimelineId(), meta.getNextSeq(), bucketAhead)),
+            backupStore);
     scheduler.submitActor(started);
     scheduler.workUntilDone();
     recoveryChecks.clear();

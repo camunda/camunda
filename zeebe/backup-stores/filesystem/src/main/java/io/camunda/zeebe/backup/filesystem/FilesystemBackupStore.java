@@ -26,9 +26,12 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
 import java.util.List;
 import java.util.Optional;
+import java.util.SortedMap;
+import java.util.TreeMap;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -57,6 +60,8 @@ public final class FilesystemBackupStore implements BackupStore {
   private static final String RANGES_PATH = "ranges";
   private static final String METADATA_PATH = "metadata";
   private static final String METADATA_FILE = "metadata.json";
+  private static final String HANDOVER_PATH = "handover";
+  private static final String HANDOVER_FILE_SUFFIX = ".json";
 
   private final ExecutorService executor;
   private final FileSetManager fileSetManager;
@@ -241,6 +246,67 @@ public final class FilesystemBackupStore implements BackupStore {
           }
         },
         executor);
+  }
+
+  @Override
+  public CompletableFuture<Void> storeHandoverRecord(
+      final int partitionId, final long checkpointId, final byte[] content) {
+    return CompletableFuture.runAsync(
+        () -> {
+          final var handoverDir = handoverDir(partitionId);
+          final var handoverPath = handoverDir.resolve(checkpointId + HANDOVER_FILE_SUFFIX);
+          try {
+            FileUtil.ensureDirectoryExists(handoverDir);
+            // a reader must never see a partially written record
+            final var temporaryPath = handoverDir.resolve(checkpointId + ".tmp");
+            Files.write(
+                temporaryPath,
+                content,
+                StandardOpenOption.CREATE,
+                StandardOpenOption.SYNC,
+                StandardOpenOption.TRUNCATE_EXISTING);
+            Files.move(
+                temporaryPath,
+                handoverPath,
+                StandardCopyOption.ATOMIC_MOVE,
+                StandardCopyOption.REPLACE_EXISTING);
+            FileUtil.flushDirectory(handoverDir);
+          } catch (final IOException e) {
+            throw new UncheckedIOException(e);
+          }
+        },
+        executor);
+  }
+
+  @Override
+  public CompletableFuture<SortedMap<Long, byte[]>> loadHandoverRecords(final int partitionId) {
+    return CompletableFuture.supplyAsync(
+        () -> {
+          final var handoverDir = handoverDir(partitionId);
+          final var records = new TreeMap<Long, byte[]>();
+          if (!Files.isDirectory(handoverDir)) {
+            return records;
+          }
+          try (final var files = Files.list(handoverDir)) {
+            for (final var file : files.toList()) {
+              final var name = file.getFileName().toString();
+              if (!name.endsWith(HANDOVER_FILE_SUFFIX)) {
+                continue;
+              }
+              final var checkpointId =
+                  Long.parseLong(name.substring(0, name.length() - HANDOVER_FILE_SUFFIX.length()));
+              records.put(checkpointId, Files.readAllBytes(file));
+            }
+          } catch (final IOException e) {
+            throw new UncheckedIOException(e);
+          }
+          return records;
+        },
+        executor);
+  }
+
+  private Path handoverDir(final int partitionId) {
+    return metadataBaseDir.resolve(String.valueOf(partitionId)).resolve(HANDOVER_PATH);
   }
 
   @Override

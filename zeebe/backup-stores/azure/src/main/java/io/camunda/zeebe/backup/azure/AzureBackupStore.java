@@ -37,6 +37,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.SortedMap;
+import java.util.TreeMap;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -61,6 +63,7 @@ public final class AzureBackupStore implements BackupStore {
   public static final String SNAPSHOT_FILESET_NAME = "snapshot";
   public static final String SEGMENTS_FILESET_NAME = "segments";
   public static final String METADATA_OBJECT_NAME = "metadata.json";
+  private static final String HANDOVER_OBJECT_SUFFIX = ".json";
   static final int MAX_CONCURRENT_FILE_OPERATIONS = 128;
 
   /**
@@ -333,6 +336,43 @@ public final class AzureBackupStore implements BackupStore {
   }
 
   @Override
+  public CompletableFuture<Void> storeHandoverRecord(
+      final int partitionId, final long checkpointId, final byte[] content) {
+    return CompletableFuture.runAsync(
+        () -> {
+          assureContainerCreated();
+          final var blobClient =
+              blobContainerClient.getBlobClient(handoverPath(partitionId, checkpointId));
+          blobClient.upload(BinaryData.fromBytes(content), true);
+        },
+        executor);
+  }
+
+  @Override
+  public CompletableFuture<SortedMap<Long, byte[]>> loadHandoverRecords(final int partitionId) {
+    return CompletableFuture.supplyAsync(
+        () -> {
+          assureContainerCreated();
+          final var prefix = handoverPrefix(partitionId);
+          final SortedMap<Long, byte[]> records = new TreeMap<>();
+          for (final var blob :
+              blobContainerClient.listBlobs(new ListBlobsOptions().setPrefix(prefix), null)) {
+            final var name = blob.getName().substring(prefix.length());
+            if (name.endsWith(HANDOVER_OBJECT_SUFFIX)) {
+              final var checkpointId =
+                  Long.parseLong(
+                      name.substring(0, name.length() - HANDOVER_OBJECT_SUFFIX.length()));
+              records.put(
+                  checkpointId,
+                  blobContainerClient.getBlobClient(blob.getName()).downloadContent().toBytes());
+            }
+          }
+          return records;
+        },
+        executor);
+  }
+
+  @Override
   public CompletableFuture<Void> closeAsync() {
     return CompletableFuture.runAsync(
         () -> {
@@ -375,6 +415,14 @@ public final class AzureBackupStore implements BackupStore {
               throw new ConfigurationException(
                   "Failed to connect to Azure Blob Storage with the provided configuration", error);
             });
+  }
+
+  private String handoverPrefix(final int partitionId) {
+    return "metadata/%d/handover/".formatted(partitionId);
+  }
+
+  private String handoverPath(final int partitionId, final long checkpointId) {
+    return handoverPrefix(partitionId) + checkpointId + HANDOVER_OBJECT_SUFFIX;
   }
 
   private String backupMetadataPath(final int partitionId) {
