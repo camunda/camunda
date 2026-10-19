@@ -24,8 +24,8 @@ import io.camunda.zeebe.protocol.record.value.ImmutableAgentInstanceDefinitionVa
 import io.camunda.zeebe.protocol.record.value.ImmutableAgentInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableDocumentReferenceMetadataValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableDocumentReferenceValue;
+import io.camunda.zeebe.protocol.record.value.ImmutableElementInstanceWalkRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableProcessInstanceRecordValue;
-import io.camunda.zeebe.protocol.record.value.ImmutableSuspensionBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableUsageMetricRecordValue;
 import io.camunda.zeebe.protocol.record.value.UsageMetricRecordValue.EventType;
 import io.camunda.zeebe.protocol.record.value.UsageMetricRecordValue.IntervalType;
@@ -69,13 +69,13 @@ class CompactRecordLoggerTest {
   class CompactSummaryTest {
 
     @Test
-    void shouldSummarizeSuspensionBatchRecord() {
+    void shouldSummarizeElementInstanceWalkRecord() {
       // given
       final var record =
           ImmutableRecord.builder()
-              .withValueType(ValueType.SUSPENSION_BATCH)
+              .withValueType(ValueType.ELEMENT_INSTANCE_WALK)
               .withValue(
-                  ImmutableSuspensionBatchRecordValue.builder()
+                  ImmutableElementInstanceWalkRecordValue.builder()
                       .withProcessInstanceKey(123L)
                       .withProcessDefinitionKey(234L)
                       .withElementInstanceKey(456L)
@@ -86,7 +86,7 @@ class CompactRecordLoggerTest {
               .build();
 
       // when
-      final var summary = compactRecordLogger.summarizeSuspensionBatch(record);
+      final var summary = compactRecordLogger.summarizeElementInstanceWalk(record);
 
       // then
       assertThat(summary).isEqualTo("PI:K123 EI:K456 parent:K345 idx:K567");

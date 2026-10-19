@@ -32,5 +32,6 @@ The skill's role is to surface the iron rules above, not to replace the handbook
 ## Canonical docs
 
 - `docs/zeebe/developer_handbook.md` — new and extended record walkthroughs.
+- `docs/zeebe/rolling_updates.md` — rolling-update implications of adding new records, commands and events.
 - `zeebe/engine/README.md` § "Record values are data objects that are often reused across different records of the same value type" — when to introduce a sub-record-value type.
 

@@ -132,7 +132,7 @@
     <version.zeebe-test-container>3.6.9</version.zeebe-test-container>
     <version.feel-scala>1.22.1</version.feel-scala>
     <version.dmn-scala>1.12.5</version.dmn-scala>
-    <version.rest-assured>6.1.0</version.rest-assured>
+    <version.rest-assured>6.2.0</version.rest-assured>
     <version.spring>7.0.9</version.spring>
     <version.spring-security>7.1.1</version.spring-security>
     <version.spring-boot>4.1.1</version.spring-boot>
@@ -2584,12 +2584,6 @@
             <failIfNoTests>false</failIfNoTests>
             <trimStackTrace>false</trimStackTrace>
             <redirectTestOutputToFile>true</redirectTestOutputToFile>
-            <systemPropertyVariables>
-              <!-- use two dollar signs to prevent maven properties resolution, surefire will resolve
-              the property later. If only ${surefire.forkNumber} is used maven will fail to resolve it
-              and don't set the system property -->
-              <testForkNumber>$${surefire.forkNumber}</testForkNumber>
-            </systemPropertyVariables>
             <properties>
               <property>
                 <name>listener</name>
@@ -2627,12 +2621,6 @@
             <failIfNoTests>false</failIfNoTests>
             <trimStackTrace>false</trimStackTrace>
             <redirectTestOutputToFile>true</redirectTestOutputToFile>
-            <systemPropertyVariables>
-              <!-- use two dollar signs to prevent maven properties resolution, surefire will resolve
-              the property later. If only ${surefire.forkNumber} is used maven will fail to resolve it
-              and don't set the system property -->
-              <testForkNumber>$${surefire.forkNumber}</testForkNumber>
-            </systemPropertyVariables>
             <properties>
               <property>
                 <name>listener</name>

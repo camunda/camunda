@@ -14,20 +14,20 @@ import static org.assertj.core.api.Assertions.tuple;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.engine.util.RecordToWrite;
 import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ElementInstanceWalkRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
-import io.camunda.zeebe.protocol.impl.record.value.processinstance.SuspensionBatchRecord;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.ElementInstanceWalkIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
-import io.camunda.zeebe.protocol.record.intent.SuspensionBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
+import io.camunda.zeebe.protocol.record.value.ElementInstanceWalkRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
-import io.camunda.zeebe.protocol.record.value.SuspensionBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;
 import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
@@ -380,7 +380,7 @@ public final class SuspendProcessInstanceTest {
     final var walkRecords =
         RecordingExporter.records()
             .limit(r -> r.getIntent() == SUSPENDED && r.getKey() == processInstanceKey)
-            .filter(r -> r.getValueType() == ValueType.SUSPENSION_BATCH)
+            .filter(r -> r.getValueType() == ValueType.ELEMENT_INSTANCE_WALK)
             .toList();
     // root(descend), a(descend), a(suspend)+move to b, b(suspend)+ascend to root, root(suspend):
     // 4 commands, 3 events
@@ -454,7 +454,7 @@ public final class SuspendProcessInstanceTest {
         .await();
 
     // when - the process instance is marked SUSPENDING directly (bypassing the real walk), and a
-    // crafted SUSPEND_ELEMENT_INSTANCE command targets the removed element instance, with the
+    // crafted ElementInstanceWalk.SUSPEND command targets the removed element instance, with the
     // subprocess (which still exists) as its declared parent
     ENGINE.pauseProcessing(1);
     ENGINE.stop();
@@ -464,9 +464,9 @@ public final class SuspendProcessInstanceTest {
             .processInstance(ProcessInstanceIntent.SUSPENDING, new ProcessInstanceRecord()),
         RecordToWrite.command()
             .key(processInstanceKey)
-            .suspensionBatch(
-                SuspensionBatchIntent.SUSPEND_ELEMENT_INSTANCE,
-                new SuspensionBatchRecord()
+            .elementInstanceWalk(
+                ElementInstanceWalkIntent.SUSPEND,
+                new ElementInstanceWalkRecord()
                     .setProcessInstanceKey(processInstanceKey)
                     .setElementInstanceKey(removedElementInstanceKey)
                     .setParentKey(subProcessKey)
@@ -484,24 +484,24 @@ public final class SuspendProcessInstanceTest {
             tuple(processInstanceKey, -1L, subProcessKey));
     assertThat(suspendedUserTasks(processInstanceKey)).containsExactly(remainingElementInstanceKey);
 
-    // and - UserTask.SUSPENDED for the remaining task, then ELEMENT_INSTANCE_SUSPENDED for it,
+    // and - UserTask.SUSPENDED for the remaining task, then ElementInstanceWalk.SUSPENDED for it,
     // then for the subprocess, then for the root, then ProcessInstance.SUSPENDED, in that order
     final var userTaskSuspended =
         RecordingExporter.userTaskRecords(UserTaskIntent.SUSPENDED)
             .withProcessInstanceKey(processInstanceKey)
             .getFirst();
     final var taskSuspended =
-        RecordingExporter.suspensionBatchRecords(SuspensionBatchIntent.ELEMENT_INSTANCE_SUSPENDED)
+        RecordingExporter.elementInstanceWalkRecords(ElementInstanceWalkIntent.SUSPENDED)
             .withProcessInstanceKey(processInstanceKey)
             .withElementInstanceKey(remainingElementInstanceKey)
             .getFirst();
     final var subProcessSuspended =
-        RecordingExporter.suspensionBatchRecords(SuspensionBatchIntent.ELEMENT_INSTANCE_SUSPENDED)
+        RecordingExporter.elementInstanceWalkRecords(ElementInstanceWalkIntent.SUSPENDED)
             .withProcessInstanceKey(processInstanceKey)
             .withElementInstanceKey(subProcessKey)
             .getFirst();
     final var rootSuspended =
-        RecordingExporter.suspensionBatchRecords(SuspensionBatchIntent.ELEMENT_INSTANCE_SUSPENDED)
+        RecordingExporter.elementInstanceWalkRecords(ElementInstanceWalkIntent.SUSPENDED)
             .withProcessInstanceKey(processInstanceKey)
             .withElementInstanceKey(processInstanceKey)
             .getFirst();
@@ -572,7 +572,7 @@ public final class SuspendProcessInstanceTest {
         .await();
 
     // when - the process instance is marked SUSPENDING directly (bypassing the real walk), and a
-    // crafted SUSPEND_ELEMENT_INSTANCE command targets the removed inner task, whose declared
+    // crafted ElementInstanceWalk.SUSPEND command targets the removed inner task, whose declared
     // parent (the subprocess) is also gone
     ENGINE.pauseProcessing(1);
     ENGINE.stop();
@@ -582,9 +582,9 @@ public final class SuspendProcessInstanceTest {
             .processInstance(ProcessInstanceIntent.SUSPENDING, new ProcessInstanceRecord()),
         RecordToWrite.command()
             .key(processInstanceKey)
-            .suspensionBatch(
-                SuspensionBatchIntent.SUSPEND_ELEMENT_INSTANCE,
-                new SuspensionBatchRecord()
+            .elementInstanceWalk(
+                ElementInstanceWalkIntent.SUSPEND,
+                new ElementInstanceWalkRecord()
                     .setProcessInstanceKey(processInstanceKey)
                     .setElementInstanceKey(innerElementInstanceKey)
                     .setParentKey(subProcessKey)
@@ -623,15 +623,15 @@ public final class SuspendProcessInstanceTest {
   private static List<Tuple> suspensionWalk(final long processInstanceKey) {
     return RecordingExporter.records()
         .limit(r -> r.getIntent() == SUSPENDED && r.getKey() == processInstanceKey)
-        .filter(r -> r.getValueType() == ValueType.SUSPENSION_BATCH)
+        .filter(r -> r.getValueType() == ValueType.ELEMENT_INSTANCE_WALK)
         .filter(r -> r.getRecordType() == RecordType.COMMAND)
         .filter(
             r ->
-                ((SuspensionBatchRecordValue) r.getValue()).getProcessInstanceKey()
+                ((ElementInstanceWalkRecordValue) r.getValue()).getProcessInstanceKey()
                     == processInstanceKey)
         .map(
             r -> {
-              final var value = (SuspensionBatchRecordValue) r.getValue();
+              final var value = (ElementInstanceWalkRecordValue) r.getValue();
               return tuple(value.getElementInstanceKey(), value.getParentKey(), value.getIndex());
             })
         .toList();

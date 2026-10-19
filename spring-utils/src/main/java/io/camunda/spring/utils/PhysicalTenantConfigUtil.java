@@ -9,6 +9,7 @@ package io.camunda.spring.utils;
 
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.regex.Pattern;
@@ -77,12 +78,12 @@ public final class PhysicalTenantConfigUtil {
                     // only the physical-tenants prefix, no tenant id segment
                     return;
                   }
-                  final String tenantId = name.getElement(tenantIdIndex, Form.UNIFORM);
+                  final String tenantId = name.getElement(tenantIdIndex, Form.ORIGINAL);
                   if (tenantId == null || tenantId.isEmpty()) {
                     // never surface a blank tenant id
                     return;
                   }
-                  validateTenantId(tenantId);
+                  validateDeclaredTenantId(tenantId, name.getElement(tenantIdIndex, Form.UNIFORM));
                   consumer.accept(tenantId, name.subName(tenantIdIndex + 1));
                 });
       }
@@ -130,32 +131,58 @@ public final class PhysicalTenantConfigUtil {
   }
 
   /**
+   * Validates a tenant id as written in the config. Earlier versions registered an id that is only
+   * valid once Spring normalizes it ({@code tenant-a}, {@code TenantA}) under the normalized id, so
+   * the error then names that id.
+   */
+  private static void validateDeclaredTenantId(final String declaredId, final String uniformId) {
+    final Optional<String> violation = tenantIdViolation(declaredId);
+    if (violation.isPresent()) {
+      throw new InvalidPhysicalTenantIdException(
+          tenantIdViolation(uniformId).isPresent()
+              ? violation.get()
+              : violation.get()
+                  + " Rename it to '%s', the id earlier versions registered it under."
+                      .formatted(uniformId));
+    }
+  }
+
+  /**
    * Validates a single tenant id against the format ({@code [a-z0-9]+}) and length ({@code <=}
    * {@value #MAX_TENANT_ID_LENGTH}) rules.
    *
    * @throws InvalidPhysicalTenantIdException if the id is invalid
    */
   public static void validateTenantId(final String tenantId) {
+    tenantIdViolation(tenantId)
+        .ifPresent(
+            violation -> {
+              throw new InvalidPhysicalTenantIdException(violation);
+            });
+  }
+
+  private static Optional<String> tenantIdViolation(final String tenantId) {
     if (tenantId == null) {
-      throw new InvalidPhysicalTenantIdException(
+      return Optional.of(
           String.format(
               "Invalid physical tenant id under '%s.*'. Tenant ids must not be null.",
               PHYSICAL_TENANTS_PREFIX));
     }
     if (tenantId.length() > MAX_TENANT_ID_LENGTH) {
-      throw new InvalidPhysicalTenantIdException(
+      return Optional.of(
           String.format(
               "Invalid physical tenant id under '%s.*'. "
                   + "Tenant ids must not exceed %d characters (was %d).",
               PHYSICAL_TENANTS_PREFIX, MAX_TENANT_ID_LENGTH, tenantId.length()));
     }
     if (!VALID_TENANT_ID.matcher(tenantId).matches()) {
-      throw new InvalidPhysicalTenantIdException(
+      return Optional.of(
           String.format(
               "Invalid physical tenant id '%s' under '%s.*'. "
                   + "Tenant ids must be lowercase alphanumeric (matching %s) — no dashes, so "
                   + "yaml and environment-variable forms resolve to the same tenant.",
               tenantId, PHYSICAL_TENANTS_PREFIX, VALID_TENANT_ID.pattern()));
     }
+    return Optional.empty();
   }
 }
