@@ -99,7 +99,7 @@ const CasesTable: React.FC<Props> = ({cases, totalItems, search}) => {
 			{
 				id: 'status',
 				header: t('tasklist.casesColumnStatus'),
-				cell: ({row}) => <CaseStatusBadge hasIncident={row.original.hasIncident} />,
+				cell: ({row}) => <CaseStatusBadge state={row.original.state} hasIncident={row.original.hasIncident} />,
 				enableSorting: false,
 			},
 		],

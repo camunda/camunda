@@ -905,7 +905,13 @@
 			"caseNoOpenWorkInCase": "Aucun travail en cours dans ce dossier",
 			"caseStageClosing": "Clôture de l’étape…",
 			"caseStageWaitingForNext": "Étape clôturée. En attente de l’étape suivante…",
-			"caseStageDoneSlow": "L’étape est clôturée. L’étape suivante met plus de temps que d’habitude à s’afficher."
+			"caseStageDoneSlow": "L’étape est clôturée. L’étape suivante met plus de temps que d’habitude à s’afficher.",
+			"casesStatusCompleted": "Terminé",
+			"casesStatusCancelled": "Annulé",
+			"casesStatusSuspended": "Suspendu",
+			"caseClosedCompleted": "Ce dossier est terminé",
+			"caseClosedCancelled": "Ce dossier a été annulé",
+			"caseClosedDescription": "Il n’y a plus de travail dans ce dossier."
 		},
 		"operate": {
 			"dashboard": {

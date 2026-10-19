@@ -8,18 +8,25 @@
 
 import {useTranslation} from 'react-i18next';
 import {Badge} from '@camunda/design-system';
+import type {ProcessInstance} from '@camunda/camunda-api-zod-schemas/8.11';
 
-type Props = {
-	hasIncident: boolean;
-};
+const STATE_MAPPINGS = {
+	ACTIVE: {variant: 'success', labelKey: 'tasklist.casesStatusActive'},
+	SUSPENDED: {variant: 'warning', labelKey: 'tasklist.casesStatusSuspended'},
+	COMPLETED: {variant: 'neutral', labelKey: 'tasklist.casesStatusCompleted'},
+	TERMINATED: {variant: 'neutral', labelKey: 'tasklist.casesStatusCancelled'},
+} as const satisfies Record<ProcessInstance['state'], {variant: string; labelKey: string}>;
 
-const CaseStatusBadge: React.FC<Props> = ({hasIncident}) => {
+type Props = Pick<ProcessInstance, 'state' | 'hasIncident'>;
+
+const CaseStatusBadge: React.FC<Props> = ({state, hasIncident}) => {
 	const {t} = useTranslation();
+	const {variant, labelKey} = STATE_MAPPINGS[state];
 
-	return hasIncident ? (
+	return hasIncident && state === 'ACTIVE' ? (
 		<Badge variant="danger">{t('tasklist.casesStatusIncident')}</Badge>
 	) : (
-		<Badge variant="success">{t('tasklist.casesStatusActive')}</Badge>
+		<Badge variant={variant}>{t(labelKey)}</Badge>
 	);
 };
 

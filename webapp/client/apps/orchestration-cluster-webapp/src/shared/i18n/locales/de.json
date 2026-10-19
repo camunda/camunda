@@ -902,7 +902,13 @@
 			"caseNoOpenWorkInCase": "Keine offene Arbeit in diesem Fall",
 			"caseStageClosing": "Phase wird geschlossen…",
 			"caseStageWaitingForNext": "Phase geschlossen. Warten auf die nächste Phase…",
-			"caseStageDoneSlow": "Die Phase ist geschlossen. Die nächste Phase erscheint später als üblich."
+			"caseStageDoneSlow": "Die Phase ist geschlossen. Die nächste Phase erscheint später als üblich.",
+			"casesStatusCompleted": "Abgeschlossen",
+			"casesStatusCancelled": "Abgebrochen",
+			"casesStatusSuspended": "Angehalten",
+			"caseClosedCompleted": "Dieser Fall ist abgeschlossen",
+			"caseClosedCancelled": "Dieser Fall wurde abgebrochen",
+			"caseClosedDescription": "In diesem Fall gibt es keine Arbeit mehr."
 		},
 		"operate": {
 			"dashboard": {

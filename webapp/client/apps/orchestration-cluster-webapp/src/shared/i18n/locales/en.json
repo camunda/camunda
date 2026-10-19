@@ -914,7 +914,13 @@
 			"caseNoOpenWorkInCase": "No open work in this case",
 			"caseStageClosing": "Closing the stage…",
 			"caseStageWaitingForNext": "Stage closed. Waiting for the next stage…",
-			"caseStageDoneSlow": "The stage is closed. The next stage takes longer to show than usual."
+			"caseStageDoneSlow": "The stage is closed. The next stage takes longer to show than usual.",
+			"casesStatusCompleted": "Completed",
+			"casesStatusCancelled": "Cancelled",
+			"casesStatusSuspended": "Suspended",
+			"caseClosedCompleted": "This case is completed",
+			"caseClosedCancelled": "This case was cancelled",
+			"caseClosedDescription": "There is no more work in this case."
 		},
 		"operate": {
 			"dashboard": {

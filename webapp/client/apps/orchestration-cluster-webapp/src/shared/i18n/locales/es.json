@@ -902,7 +902,13 @@
 			"caseNoOpenWorkInCase": "No hay trabajo pendiente en este caso",
 			"caseStageClosing": "Cerrando la etapa…",
 			"caseStageWaitingForNext": "Etapa cerrada. Esperando la siguiente etapa…",
-			"caseStageDoneSlow": "La etapa está cerrada. La siguiente etapa tarda más de lo habitual en aparecer."
+			"caseStageDoneSlow": "La etapa está cerrada. La siguiente etapa tarda más de lo habitual en aparecer.",
+			"casesStatusCompleted": "Completado",
+			"casesStatusCancelled": "Cancelado",
+			"casesStatusSuspended": "Suspendido",
+			"caseClosedCompleted": "Este caso está completado",
+			"caseClosedCancelled": "Este caso fue cancelado",
+			"caseClosedDescription": "No hay más trabajo en este caso."
 		},
 		"operate": {
 			"dashboard": {

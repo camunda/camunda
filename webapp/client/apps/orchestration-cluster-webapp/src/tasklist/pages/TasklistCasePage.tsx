@@ -49,6 +49,7 @@ const TasklistCasePage: React.FC<Props> = ({caseFormSchema, children, ...caseDat
 					title={title}
 					processName={processName}
 					caseId={processInstance.businessId ?? processInstance.processInstanceKey}
+					state={processInstance.state}
 					hasIncident={processInstance.hasIncident}
 					startDate={processInstance.startDate}
 					header={isSimplifiedView ? [] : header}
