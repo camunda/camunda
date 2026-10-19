@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.OptionalLong;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
 import org.jspecify.annotations.Nullable;
@@ -53,6 +54,10 @@ import org.slf4j.LoggerFactory;
 public final class HandoverRestoreResolver {
 
   private static final Logger LOG = LoggerFactory.getLogger(HandoverRestoreResolver.class);
+
+  /** The position of the first record of every partition's log. */
+  private static final long FIRST_LOG_POSITION = 1L;
+
   private static final String NAME_THE_TIMELINE =
       "name the timeline to restore from with --logArchive.timeline";
 
@@ -103,13 +108,18 @@ public final class HandoverRestoreResolver {
       final List<Partition> partitions, final HandoverRestoreRequest request) {
     final long target = request.targetBackupId();
     final var plans = new TreeMap<Integer, PartitionPlan>();
+    final var absent = new ArrayList<Integer>();
     for (final var partition : partitions) {
       if (partition.source.completedOldBackups().contains(target)) {
         plans.put(partition.id(), new OldBackups(request.backupIds()));
         continue;
       }
       final var archived = partition.fromArchive(target);
-      if (archived.isEmpty()) {
+      if (archived.isPresent()) {
+        plans.put(partition.id(), archived.get());
+      } else if (partition.didNotExistAt(target)) {
+        absent.add(partition.id());
+      } else {
         throw new LogArchiveRestoreException(
             "Checkpoint %d cannot be restored on partition %d: it is no completed old backup and no restorable log archive checkpoint (%s). %s"
                 .formatted(
@@ -118,11 +128,51 @@ public final class HandoverRestoreResolver {
                     partition.rejection(target),
                     partition.describeNewest()));
       }
-      plans.put(partition.id(), archived.get());
+    }
+    final var rejection = absentNotLast(target, plans, absent);
+    if (rejection != null) {
+      throw new LogArchiveRestoreException(rejection);
     }
     final var plan = new HandoverRestorePlan(target, plans);
-    LOG.info("Restoring to checkpoint {}: {}", target, plan.partitions());
+    logPlan(plan, absent);
     return plan;
+  }
+
+  /**
+   * Partitions that did not exist at the checkpoint are left out of the restore, as the old restore
+   * leaves out the partitions a backup does not hold: a scale-up only adds partitions after the
+   * existing ones. One below a partition that holds the checkpoint means something else is wrong.
+   *
+   * @return why the checkpoint cannot be restored, null if it can
+   */
+  private static @Nullable String absentNotLast(
+      final long checkpointId,
+      final TreeMap<Integer, PartitionPlan> plans,
+      final List<Integer> absent) {
+    if (absent.isEmpty()) {
+      return null;
+    }
+    if (plans.isEmpty()) {
+      return "Checkpoint %d is restorable on no partition".formatted(checkpointId);
+    }
+    if (absent.getFirst() > plans.lastKey()) {
+      return null;
+    }
+    return ("Checkpoint %d cannot be restored: partitions %s did not exist at it, but partition %d"
+            + " after them holds it; only the partitions added last can be missing")
+        .formatted(checkpointId, absent, plans.lastKey());
+  }
+
+  private static void logPlan(final HandoverRestorePlan plan, final List<Integer> absent) {
+    if (absent.isEmpty()) {
+      LOG.info("Restoring to checkpoint {}: {}", plan.checkpointId(), plan.partitions());
+    } else {
+      LOG.info(
+          "Restoring to checkpoint {}: {}; partitions {} did not exist at it and are left out",
+          plan.checkpointId(),
+          plan.partitions(),
+          absent);
+    }
   }
 
   private static HandoverRestorePlan resolveTimeRange(
@@ -131,16 +181,23 @@ public final class HandoverRestoreResolver {
     final var rejected = new LinkedHashMap<Long, String>();
     for (final var candidate : reference.candidates()) {
       final var plans = new TreeMap<Integer, PartitionPlan>();
+      final var absent = new ArrayList<Integer>();
       @Nullable String rejection = null;
       for (final var partition : partitions) {
         final var plan = partition.plan(candidate.checkpointId());
-        if (plan.isEmpty()) {
+        if (plan.isPresent()) {
+          plans.put(partition.id(), plan.get());
+        } else if (partition.didNotExistAt(candidate.checkpointId())) {
+          absent.add(partition.id());
+        } else {
           rejection =
               "partition %d: %s"
                   .formatted(partition.id(), partition.rejection(candidate.checkpointId()));
           break;
         }
-        plans.put(partition.id(), plan.get());
+      }
+      if (rejection == null) {
+        rejection = absentNotLast(candidate.checkpointId(), plans, absent);
       }
       if (rejection != null) {
         rejected.put(candidate.checkpointId(), rejection);
@@ -152,7 +209,7 @@ public final class HandoverRestoreResolver {
             candidate.checkpointId(),
             rejected);
       }
-      return withOldBackups(candidate.checkpointId(), plans, partitions, request);
+      return withOldBackups(candidate.checkpointId(), plans, partitions, request, absent);
     }
     throw new LogArchiveRestoreException(
         "No checkpoint in [%s, %s] can be restored on every partition. %s"
@@ -167,7 +224,8 @@ public final class HandoverRestoreResolver {
       final long checkpointId,
       final TreeMap<Integer, PartitionPlan> plans,
       final List<Partition> partitions,
-      final HandoverRestoreRequest request) {
+      final HandoverRestoreRequest request,
+      final List<Integer> absent) {
     final var oldPartitions =
         partitions.stream().filter(p -> plans.get(p.id()) instanceof OldBackups).toList();
     if (!oldPartitions.isEmpty()) {
@@ -190,7 +248,7 @@ public final class HandoverRestoreResolver {
           .forEach((id, entries) -> plans.put(id, new OldBackups(checkpointIds(entries))));
     }
     final var plan = new HandoverRestorePlan(checkpointId, plans);
-    LOG.info("Restoring to checkpoint {}: {}", checkpointId, plan.partitions());
+    logPlan(plan, absent);
     return plan;
   }
 
@@ -410,6 +468,36 @@ public final class HandoverRestoreResolver {
           .filter(
               other -> LogArchiveTimelines.descendsFrom(view, other.timelineId(), timelinesById))
           .count();
+    }
+
+    /**
+     * Whether the partition was added by a scale-up after the checkpoint (spec section 18.4), given
+     * that it cannot restore it: a timeline of it holds its whole log from the first record on, and
+     * every checkpoint it knows, on both sides, is newer. Checkpoint ids only grow on a partition,
+     * and a partition that existed at the checkpoint holds it in its log, so such a partition did
+     * not exist yet. One that knows no checkpoint at all may only lag behind, so it does not count.
+     */
+    boolean didNotExistAt(final long checkpointId) {
+      final var oldBackups = source.completedOldBackups();
+      if (!oldBackups.isEmpty() && oldBackups.first() <= checkpointId) {
+        return false;
+      }
+      return timelinesById.values().stream()
+          .filter(view -> view.firstArchivedPosition() == FIRST_LOG_POSITION)
+          .anyMatch(
+              view ->
+                  oldestCheckpointId(view).isPresent()
+                      && oldestCheckpointId(view).getAsLong() > checkpointId);
+    }
+
+    /** The id of the oldest checkpoint the timeline covers, from the chunks' id ranges. */
+    private static OptionalLong oldestCheckpointId(final LogArchiveView view) {
+      for (final var chunk : view.chunks()) {
+        if (chunk.firstCheckpointId() >= 0) {
+          return OptionalLong.of(chunk.firstCheckpointId());
+        }
+      }
+      return view.checkpoints().stream().mapToLong(CoveredCheckpointJson::checkpointId).min();
     }
 
     String rejection(final long checkpointId) {

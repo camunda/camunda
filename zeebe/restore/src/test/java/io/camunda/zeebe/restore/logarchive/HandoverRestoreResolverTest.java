@@ -397,6 +397,120 @@ final class HandoverRestoreResolverTest {
         .hasMessageContaining("'tl' positions 25..74");
   }
 
+  // ---- partitions added after the handover (scale-up) -----------------------------------------
+
+  @Test
+  void shouldRestoreAPartitionAddedAfterTheHandoverFromItsArchive() {
+    // given
+    final var sources = Map.of(1, brownfield(1), 2, brownfield(2), 3, addedAfterHandover(3));
+
+    // when
+    final var plan = HandoverRestoreResolver.resolve(sources, byBackupId(7));
+
+    // then
+    assertThat(plan.partitions()).containsOnlyKeys(1, 2, 3);
+    assertThat(plan.partitions().get(3))
+        .isInstanceOfSatisfying(
+            FromArchive.class,
+            archived -> {
+              assertThat(archived.timelineId()).isEqualTo(TIMELINE);
+              assertThat(archived.checkpoint().checkpointPosition()).isEqualTo(10);
+            });
+  }
+
+  @Test
+  void shouldLeaveOutAPartitionAddedAfterTheCheckpoint() {
+    // given
+    final var sources = Map.of(1, brownfield(1), 2, brownfield(2), 3, addedAfterHandover(3));
+
+    // when
+    final var plan = HandoverRestoreResolver.resolve(sources, byBackupId(6));
+
+    // then
+    assertThat(plan.partitions()).containsOnlyKeys(1, 2);
+    assertThat(plan.partitions().values()).allMatch(FromArchive.class::isInstance);
+  }
+
+  @Test
+  void shouldRestoreOldBackupsWithoutAPartitionAddedAfterThem() {
+    // given
+    final var sources = Map.of(1, brownfield(1), 2, brownfield(2), 3, addedAfterHandover(3));
+
+    // when
+    final var plan = HandoverRestoreResolver.resolve(sources, byBackupId(3));
+
+    // then
+    assertThat(plan.partitions()).containsOnlyKeys(1, 2);
+    assertThat(plan.allFromOldBackups()).isTrue();
+  }
+
+  @Test
+  void shouldLeaveOutAPartitionAddedAfterTheCheckpointPickedInATimeRange() {
+    // given
+    final var sources = Map.of(1, brownfield(1), 2, brownfield(2), 3, addedAfterHandover(3));
+    final var to = Instant.ofEpochMilli(timestamp(6));
+
+    // when
+    final var plan =
+        HandoverRestoreResolver.resolve(
+            sources, HandoverRestoreRequest.ofTimeRange(null, to, Map.of()));
+
+    // then
+    assertThat(plan.checkpointId()).isEqualTo(6);
+    assertThat(plan.partitions()).containsOnlyKeys(1, 2);
+  }
+
+  @Test
+  void shouldPickTheLatestCheckpointWithAPartitionAddedAfterTheHandover() {
+    // given
+    final var sources = Map.of(1, brownfield(1), 2, brownfield(2), 3, addedAfterHandover(3));
+
+    // when
+    final var plan =
+        HandoverRestoreResolver.resolve(
+            sources, HandoverRestoreRequest.ofTimeRange(null, null, Map.of()));
+
+    // then
+    assertThat(plan.checkpointId()).isEqualTo(7);
+    assertThat(plan.partitions()).containsOnlyKeys(1, 2, 3);
+  }
+
+  @Test
+  void shouldFailWhenAPartitionMissesTheCheckpointThatAPartitionAfterItHolds() {
+    // given - partition 2 looks added later, but partition 3 holds checkpoint 6
+    final var sources = Map.of(1, brownfield(1), 2, addedAfterHandover(2), 3, brownfield(3));
+
+    // when / then
+    assertThatThrownBy(() -> HandoverRestoreResolver.resolve(sources, byBackupId(6)))
+        .isInstanceOf(LogArchiveRestoreException.class)
+        .hasMessageContaining("partitions [2] did not exist at it")
+        .hasMessageContaining("partition 3");
+  }
+
+  @Test
+  void shouldFailWhenAPartitionWithoutItsWholeHistoryInTheArchiveMissesTheCheckpoint() {
+    // given - partition 3 knows only newer checkpoints, but its archive starts late, so its older
+    // history is unknown
+    final var partition3 =
+        new PartitionRestoreSources(
+            3,
+            Optional.empty(),
+            new TreeSet<>(),
+            List.of(),
+            List.of(
+                TimelineFixture.start(store, TIMELINE, 3, 50, "")
+                    .archive(55)
+                    .snapshot(52)
+                    .archive(64, checkpoint(7, 60))
+                    .view()));
+    final var sources = Map.of(1, brownfield(1), 2, brownfield(2), 3, partition3);
+
+    // when / then
+    assertThatThrownBy(() -> HandoverRestoreResolver.resolve(sources, byBackupId(6)))
+        .isInstanceOf(LogArchiveRestoreException.class)
+        .hasMessageContaining("partition 3");
+  }
+
   private PartitionRestoreSources brownfield(final int partitionId) {
     return new PartitionRestoreSources(
         partitionId,
@@ -458,6 +572,25 @@ final class HandoverRestoreResolverTest {
         completed,
         handovers,
         LogArchiveTimelines.select(List.of(original, branch), seeds));
+  }
+
+  /**
+   * A partition added by a scale-up after checkpoint 6: its archive holds its log from the first
+   * record on and a snapshot, records H = 5 from its start, and covers checkpoint 7 at position 10.
+   */
+  private PartitionRestoreSources addedAfterHandover(final int partitionId) {
+    return new PartitionRestoreSources(
+        partitionId,
+        Optional.empty(),
+        new TreeSet<>(),
+        List.of(new HandoverFile(1, partitionId, 5, 0, TIMELINE)),
+        List.of(
+            TimelineFixture.start(store, TIMELINE, partitionId, 1, "")
+                .archive(5)
+                .snapshot(3)
+                .handover(5, 0)
+                .archive(12, checkpoint(7, 10))
+                .view()));
   }
 
   private static PartitionRestoreSources withTimelines(
