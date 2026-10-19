@@ -7,13 +7,13 @@
  */
 
 import {useMemo} from 'react';
-import {useTranslation} from 'react-i18next';
-import {toast} from '@camunda/design-system';
 import type {CaseData} from '#/tasklist/modules/case-details/caseData';
 import {CaseWorkCard} from '#/tasklist/modules/case-details/components/CaseWorkCard';
 import {getCaseView} from '#/tasklist/modules/case-details/getCaseView';
-import {useActivateActivity} from '#/tasklist/modules/case-details/useCaseActions';
-import {useStageCompletion} from '#/tasklist/modules/case-details/useStageCompletion';
+import {useCaseWork} from '#/tasklist/modules/case-details/useCaseWork';
+
+// Activities that create user tasks: the case worker opens the task after the activation.
+const ACTIVITIES_WITH_TASKS = new Set(['userTask', 'subProcess', 'adHocSubProcess']);
 
 type Props = CaseData & {
 	onOpenTask: (userTaskKey: string) => void;
@@ -28,14 +28,12 @@ const TasklistCaseTasksPage: React.FC<Props> = ({
 	userTasks,
 	rootVariables,
 }) => {
-	const {t} = useTranslation();
 	const {model, currentStage, work} = useMemo(
 		() => getCaseView({processInstance, xml, elementInstances, userTasks, rootVariables}),
 		[processInstance, xml, elementInstances, userTasks, rootVariables],
 	);
 	const stageInstanceKey = currentStage?.elementInstanceKey ?? null;
-	const activateActivity = useActivateActivity(stageInstanceKey);
-	const stageCompletion = useStageCompletion(processInstance);
+	const caseWork = useCaseWork({caseRef: processInstance, onOpenTask});
 
 	return (
 		<CaseWorkCard
@@ -43,17 +41,23 @@ const TasklistCaseTasksPage: React.FC<Props> = ({
 			stageName={currentStage?.stage.name ?? null}
 			work={work}
 			currentUsername={currentUser.username}
-			startingElementId={activateActivity.isPending ? (activateActivity.variables ?? null) : null}
-			stageCompletionStatus={stageCompletion.status}
+			caseWorkStatus={caseWork.status}
+			openingElementId={caseWork.openingElementId}
 			onOpenTask={onOpenTask}
-			onStartActivity={(elementId) =>
-				activateActivity.mutate(elementId, {
-					onError: () => toast.error(t('tasklist.caseActivityStartFailed')),
-				})
-			}
+			onOpenActivity={(elementId) => {
+				if (stageInstanceKey !== null) {
+					caseWork.openActivity({
+						stageInstanceKey,
+						elementId,
+						expectsUserTask: ACTIVITIES_WITH_TASKS.has(model.elementTypes.get(elementId) ?? ''),
+						knownTaskKeys: userTasks.map(({userTaskKey}) => userTaskKey),
+						knownElementInstanceKeys: elementInstances.map(({elementInstanceKey}) => elementInstanceKey),
+					});
+				}
+			}}
 			onCompleteStage={() => {
 				if (work.completion !== null && stageInstanceKey !== null) {
-					stageCompletion.completeStage({
+					caseWork.completeStage({
 						stageInstanceKey,
 						stageIds: model.stages.map(({id}) => id),
 						completion: work.completion,

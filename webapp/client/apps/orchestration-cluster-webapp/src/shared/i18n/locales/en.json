@@ -893,7 +893,6 @@
 			"caseActivityActive": "Running",
 			"caseActivityCompleted": "Done",
 			"caseActivityNotStarted": "Not used yet",
-			"caseActivityStart": "Start",
 			"caseActivityStartAgain": "Again",
 			"caseActivityStartFailed": "The activity could not be started",
 			"caseStageDoneButton": "Done",
@@ -920,7 +919,8 @@
 			"casesStatusSuspended": "Suspended",
 			"caseClosedCompleted": "This case is completed",
 			"caseClosedCancelled": "This case was cancelled",
-			"caseClosedDescription": "There is no more work in this case."
+			"caseClosedDescription": "There is no more work in this case.",
+			"caseActivitySlow": "The activity started. Its task takes longer to show than usual."
 		},
 		"operate": {
 			"dashboard": {

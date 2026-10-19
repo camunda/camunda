@@ -884,7 +884,6 @@
 			"caseActivityActive": "En cours",
 			"caseActivityCompleted": "Terminée",
 			"caseActivityNotStarted": "Pas encore utilisée",
-			"caseActivityStart": "Démarrer",
 			"caseActivityStartAgain": "Relancer",
 			"caseActivityStartFailed": "L'activité n'a pas pu être démarrée",
 			"caseStageDoneButton": "Terminé",
@@ -911,7 +910,8 @@
 			"casesStatusSuspended": "Suspendu",
 			"caseClosedCompleted": "Ce dossier est terminé",
 			"caseClosedCancelled": "Ce dossier a été annulé",
-			"caseClosedDescription": "Il n’y a plus de travail dans ce dossier."
+			"caseClosedDescription": "Il n’y a plus de travail dans ce dossier.",
+			"caseActivitySlow": "L’activité a démarré. Sa tâche met plus de temps que d’habitude à s’afficher."
 		},
 		"operate": {
 			"dashboard": {

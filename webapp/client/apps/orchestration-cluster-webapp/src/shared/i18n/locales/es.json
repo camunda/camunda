@@ -881,7 +881,6 @@
 			"caseActivityActive": "En ejecución",
 			"caseActivityCompleted": "Hecha",
 			"caseActivityNotStarted": "Aún no usada",
-			"caseActivityStart": "Iniciar",
 			"caseActivityStartAgain": "De nuevo",
 			"caseActivityStartFailed": "No se pudo iniciar la actividad",
 			"caseStageDoneButton": "Hecho",
@@ -908,7 +907,8 @@
 			"casesStatusSuspended": "Suspendido",
 			"caseClosedCompleted": "Este caso está completado",
 			"caseClosedCancelled": "Este caso fue cancelado",
-			"caseClosedDescription": "No hay más trabajo en este caso."
+			"caseClosedDescription": "No hay más trabajo en este caso.",
+			"caseActivitySlow": "La actividad se inició. Su tarea tarda más de lo habitual en aparecer."
 		},
 		"operate": {
 			"dashboard": {
