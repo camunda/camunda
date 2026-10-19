@@ -164,6 +164,11 @@ const mockQueryProcessInstanceIncidentsEndpoint = createEndpointMock({
 	method: endpoints.queryProcessInstanceIncidents.method,
 });
 
+const mockQueryElementInstanceIncidentsEndpoint = createEndpointMock({
+	endpoint: endpoints.queryElementInstanceIncidents.getUrl({elementInstanceKey: ':elementInstanceKey'}),
+	method: endpoints.queryElementInstanceIncidents.method,
+});
+
 const mockQueryDecisionDefinitionsEndpoint = createEndpointMock({
 	endpoint: endpoints.queryDecisionDefinitions.getUrl(),
 	method: endpoints.queryDecisionDefinitions.method,
@@ -242,6 +247,11 @@ const mockQueryVariablesByUserTaskEndpoint = createEndpointMock({
 const mockGetVariableEndpoint = createEndpointMock({
 	endpoint: endpoints.getVariable.getUrl({variableKey: ':variableKey'}),
 	method: endpoints.getVariable.method,
+});
+
+const mockQueryVariablesEndpoint = createEndpointMock({
+	endpoint: endpoints.queryVariables.getUrl(),
+	method: endpoints.queryVariables.method,
 });
 
 const mockGetProcessDefinitionXmlEndpoint = createEndpointMock({
@@ -598,6 +608,7 @@ export {
 	mockGetUserTaskFormEndpoint,
 	mockQueryVariablesByUserTaskEndpoint,
 	mockGetVariableEndpoint,
+	mockQueryVariablesEndpoint,
 	mockGetProcessDefinitionXmlEndpoint,
 	mockGetProcessDefinitionXmlByKeyEndpoint,
 	mockGetProcessDefinitionStatisticsEndpoint,
@@ -625,6 +636,7 @@ export {
 	mockQueryAgentInstancesEndpoint,
 	mockGetProcessInstanceEndpoint,
 	mockQueryProcessInstanceIncidentsEndpoint,
+	mockQueryElementInstanceIncidentsEndpoint,
 	mockQueryBatchOperationItemsEndpoint,
 	mockGetBatchOperationEndpoint,
 	mockSuspendBatchOperationEndpoint,

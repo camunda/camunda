@@ -1368,6 +1368,22 @@
 					"heading": "403 - No tiene permiso para ver esta información",
 					"description": "Póngase en contacto con su administrador para obtener acceso.",
 					"learnMoreLink": "Más información sobre los permisos"
+				},
+				"variables": {
+					"search": "Buscar variables por nombre",
+					"list": "Lista de variables",
+					"name": "Nombre",
+					"value": "Valor",
+					"empty": "El elemento no tiene variables",
+					"noSearchResults": "Ninguna variable coincide con tu búsqueda",
+					"multiInstance": "Para ver las variables, selecciona una única instancia de elemento en el historial de la instancia.",
+					"error": "No se pudieron obtener las variables",
+					"forbidden": "Faltan permisos para acceder a las variables",
+					"forbiddenInfo": "Ponte en contacto con el propietario o el administrador de tu organización para obtener los permisos necesarios para acceder a las variables",
+					"showAll": "Mostrar todo",
+					"open": "Abrir variable",
+					"openDescription": "Abrir",
+					"fullValueTitle": "Valor completo de {{name}}"
 				}
 			},
 			"operations": {

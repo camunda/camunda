@@ -71,6 +71,43 @@ function processInstanceIncidentsCountQuery({
 	});
 }
 
+function selectionIncidentsCountQuery({
+	processInstanceKey,
+	elementId,
+	elementInstanceKey,
+}: {
+	processInstanceKey: string;
+	elementId?: string;
+	elementInstanceKey?: string;
+}) {
+	return queryOptions({
+		queryKey:
+			elementId === undefined && elementInstanceKey === undefined
+				? (['processInstanceIncidentsCount', processInstanceKey] as const)
+				: (['selectionIncidentsCount', processInstanceKey, elementId, elementInstanceKey] as const),
+		queryFn: async (): Promise<number> => {
+			const {response, error} = await request(
+				elementInstanceKey === undefined
+					? endpoints.queryProcessInstanceIncidents(processInstanceKey, {
+							filter: {state: 'ACTIVE', elementId},
+							page: {limit: 0},
+						})
+					: endpoints.queryElementInstanceIncidents(elementInstanceKey, {
+							filter: {state: 'ACTIVE'},
+							page: {limit: 0},
+						}),
+			);
+			if (error !== null) {
+				throw mapQueryError(error);
+			}
+			const result: QueryProcessInstanceIncidentsResponseBody = await response.json();
+			return result.page.totalItems;
+		},
+		staleTime: POLLING_INTERVAL_MS,
+		refetchInterval: POLLING_INTERVAL_MS,
+	});
+}
+
 function processInstanceWaitStateStatisticsQuery(processInstanceKey: string) {
 	return queryOptions({
 		queryKey: ['processInstanceWaitStateStatistics', processInstanceKey] as const,
@@ -114,6 +151,7 @@ export {
 	instanceRequest,
 	processInstanceQuery,
 	processInstanceIncidentsCountQuery,
+	selectionIncidentsCountQuery,
 	processInstanceWaitStateStatisticsQuery,
 	useProcessInstance,
 	useProcessInstanceWaitStateStatistics,

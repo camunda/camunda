@@ -7,17 +7,14 @@
  */
 
 import {useEffect, useRef, useState} from 'react';
-import {Link} from '@tanstack/react-router';
-import {useTranslation} from 'react-i18next';
 import {ResizablePanel, SplitDirection} from '#/operate/shared/ResizablePanel/ResizablePanel';
 import {useMatchMedia, isWidthAboveBreakpoint} from '#/operate/shared/useMatchMedia';
-import {useProcessInstancePage} from './useProcessInstancePage';
 import {InstanceHistory} from './InstanceHistory';
 import {ProcessInstanceDefaultTabRedirect} from './ProcessInstanceDefaultTabRedirect';
+import {ProcessInstanceTabs} from './ProcessInstanceTabs';
 import {BottomPanel, TabPanel} from './instanceHistory.styled';
+import {TabContent} from './processInstanceTabs.styled';
 function ProcessInstanceBottomPanel({children}: {children: React.ReactNode}) {
-	const {processInstanceId} = useProcessInstancePage();
-	const {t} = useTranslation();
 	const mobile = !useMatchMedia(isWidthAboveBreakpoint('lg'));
 	const ref = useRef<HTMLDivElement>(null);
 	const [width, setWidth] = useState(0);
@@ -32,24 +29,8 @@ function ProcessInstanceBottomPanel({children}: {children: React.ReactNode}) {
 	}, []);
 	const tabs = (
 		<TabPanel>
-			<nav aria-label={t('operate.processInstance.history.tabs')}>
-				{mobile && (
-					<Link to="/operate/processes/$processInstanceId/history" params={{processInstanceId}} search={true}>
-						{t('operate.processInstance.history.title')}
-					</Link>
-				)}
-				{(['variables', 'incidents', 'details'] as const).map((tab) => (
-					<Link
-						key={tab}
-						to={`/operate/processes/$processInstanceId/${tab}`}
-						params={{processInstanceId}}
-						search={true}
-					>
-						{t(`operate.processInstance.history.${tab}`)}
-					</Link>
-				))}
-			</nav>
-			<div>{children}</div>
+			<ProcessInstanceTabs isHistoryTabVisible={mobile} />
+			<TabContent>{children}</TabContent>
 		</TabPanel>
 	);
 	return (
