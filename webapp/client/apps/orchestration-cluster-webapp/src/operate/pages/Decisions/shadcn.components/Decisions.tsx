@@ -9,9 +9,9 @@
 import type {FormApi} from 'final-form';
 import {useEffect, useMemo, useRef, useState} from 'react';
 import {useTranslation} from 'react-i18next';
-import {useNavigate} from '@tanstack/react-router';
+import {useLocation, useNavigate} from '@tanstack/react-router';
 import {Form} from 'react-final-form';
-import {Heading, PageLayout} from '@camunda/design-system';
+import {Heading, PageLayout, Separator} from '@camunda/design-system';
 import {FilterSidebar} from '#/operate/shared/FilterSidebar/shadcn.components/FilterSidebar';
 import {ResizablePanel, SplitDirection} from '#/operate/shared/ResizablePanel/shadcn.components/ResizablePanel';
 import {AutoSubmit} from '#/operate/shared/AutoSubmit/AutoSubmit';
@@ -33,6 +33,15 @@ type Props = {
 const Decisions: React.FC<Props> = ({search}) => {
 	const {t} = useTranslation();
 	const navigate = useNavigate();
+	const {state} = useLocation();
+	const headingRef = useRef<HTMLHeadingElement>(null);
+	const didFocusFromDrd = useRef(false);
+	useEffect(() => {
+		if (state.operateDecisionFocus === 'list' && !didFocusFromDrd.current) {
+			headingRef.current?.focus();
+			didFocusFromDrd.current = true;
+		}
+	}, [state.operateDecisionFocus]);
 	const [visibleFilters, setVisibleFilters] = useState<OptionalFilter[]>([]);
 	const preservingFormRef = useRef<FormApi<OptionalFilterValues> | null>(null);
 	const selection = useDecisionDefinitionSelection({
@@ -74,7 +83,7 @@ const Decisions: React.FC<Props> = ({search}) => {
 	return (
 		<PageLayout id="main-content" tabIndex={-1} padding="none" width="full" className="h-full">
 			<div className="flex h-full min-h-0 flex-1 overflow-hidden">
-				<Heading as="h1" className="sr-only">
+				<Heading as="h1" className="sr-only" ref={headingRef} tabIndex={-1}>
 					{t('operate.decisions.title')}
 				</Heading>
 				<Form<FilterFormValues>
@@ -117,6 +126,7 @@ const Decisions: React.FC<Props> = ({search}) => {
 										evaluated={search.evaluated}
 										failed={search.failed}
 									/>
+									<Separator />
 									<OptionalFiltersFormGroup
 										filters={optionalFilterValues}
 										visibleFilters={visibleFilters}
@@ -143,7 +153,7 @@ const Decisions: React.FC<Props> = ({search}) => {
 				</Form>
 				<div ref={containerRef} className="min-h-0 min-w-0 flex-1 overflow-hidden">
 					<ResizablePanel
-						panelId="decisions-instances-vertical-panel"
+						panelId="decision-instances-vertical-panel"
 						direction={SplitDirection.Vertical}
 						minHeights={[panelMinHeight, panelMinHeight]}
 					>
