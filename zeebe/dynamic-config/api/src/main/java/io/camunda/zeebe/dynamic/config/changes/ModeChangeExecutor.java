@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.dynamic.config.changes;
 
+import static io.camunda.zeebe.util.Unit.unit;
+
 import io.camunda.zeebe.dynamic.config.state.Mode;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
@@ -54,12 +56,12 @@ public interface ModeChangeExecutor {
   final class NoopModeChangeExecutor implements ModeChangeExecutor {
     @Override
     public ActorFuture<Void> enterRecovery() {
-      return CompletableActorFuture.completed(null);
+      return CompletableActorFuture.completed(unit());
     }
 
     @Override
     public ActorFuture<Void> exitRecovery() {
-      return CompletableActorFuture.completed(null);
+      return CompletableActorFuture.completed(unit());
     }
 
     @Override
