@@ -400,6 +400,7 @@ log-archive/tl-0/p1/
   index/00000000000002600001-00000000000002731000.json
   root/00000000000000004100.json
   _latest.json
+  timeline.json
 ```
 
 ### 9.1 Deterministic JSON
@@ -443,6 +444,23 @@ only object that is ever overwritten with different content.
 
 The `ArchivedSnapshot` fields plus `files`: the sorted list of file names.
 
+### 9.6 Timeline registry `timeline.json`
+
+`{"formatVersion":1,"timelineId":"tl-0.r5","partitionId":1,"parentTimelineId":"tl-0","startIndex":2731001,"startedSeq":1}`
+
+One small file per timeline and partition, at `log-archive/<timeline>/p<partition>/timeline.json`. It
+holds what the `TIMELINE_STARTED` commit entry holds (`startedSeq` is its seq), so the bytes are a pure
+function of that event and a republish writes the same bytes. It exists so that restore can find the
+timelines and their parents with one delimiter listing of `log-archive/` and one GET per timeline,
+instead of listing every data object (section 18.5).
+
+The publisher writes it in the same request as the `TIMELINE_STARTED` commit entry, right after
+`commits/<seq>.json` and before the root: a `timeline.json` therefore only exists for a timeline whose
+`TIMELINE_STARTED` entry exists. The outbox row of that entry stays until `PUBLISHED`, so a crash or a
+leader change between the two PUTs is repaired by the republish on recovery (8.4), which writes the same
+bytes. It is never overwritten with different content. Timelines written before the registry existed
+have no such file (18.5 describes how restore treats them).
+
 ## 10. Log object format v1
 
 Big-endian.
@@ -483,9 +501,15 @@ public interface LogArchiveStore {
   CompletableFuture<byte[]> getRange(String key, long offset, int length);
   CompletableFuture<Void> getToFile(String key, Path target);
   CompletableFuture<List<String>> list(String prefix);
+  CompletableFuture<List<String>> listChildPrefixes(String prefix);
   CompletableFuture<Void> closeAsync();
 }
 ```
+
+`listChildPrefixes("log-archive/")` returns the names of the folders directly below the prefix
+(`["tl-0", "tl-0.r123", …]`), sorted, without the prefix and the trailing `/`; the prefix must end with
+`/`. S3 lists with delimiter `/` and reads `CommonPrefixes`, the filesystem store lists directories; neither
+enumerates the objects below the folders.
 
 Keys are relative to the store's base path; the `log-archive/` prefix is part of the key. Implementations
 in the S3 and filesystem backup store modules, created from the existing store config. No conditional

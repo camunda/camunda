@@ -37,6 +37,7 @@ final class LogArchiveJsonTest {
         Arguments.of("index-chunk-file.json", BucketJsonFixtures.indexChunkFile()),
         Arguments.of("root-file.json", BucketJsonFixtures.rootFile()),
         Arguments.of("latest-hint.json", BucketJsonFixtures.latestHint()),
+        Arguments.of("timeline-file.json", BucketJsonFixtures.timelineFile()),
         Arguments.of("snapshot-descriptor.json", BucketJsonFixtures.snapshotDescriptor()));
   }
 

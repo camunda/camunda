@@ -18,6 +18,7 @@ import io.camunda.zeebe.backup.logarchive.model.LogArchiveJson;
 import io.camunda.zeebe.backup.logarchive.model.LogArchiveKeys;
 import io.camunda.zeebe.backup.logarchive.model.LogObjectJson;
 import io.camunda.zeebe.backup.logarchive.model.RootFile;
+import io.camunda.zeebe.backup.logarchive.model.TimelineFile;
 import io.camunda.zeebe.backup.logarchive.state.DbLogArchiveState.OpenObject;
 import io.camunda.zeebe.backup.logarchive.state.LogArchiveMeta;
 import io.camunda.zeebe.protocol.impl.record.value.management.ArchivedSnapshot;
@@ -96,6 +97,28 @@ public final class LogArchiveJsonMapper {
       final long recordTimestamp) {
     return LogArchiveJson.write(
         commitEntry(partitionId, eventIntent, event, recordPosition, recordTimestamp));
+  }
+
+  /** The registry file of the timeline that the {@code TIMELINE_STARTED} event starts. */
+  public static TimelineFile timelineFile(final int partitionId, final LogArchiveRecord event) {
+    return new TimelineFile(
+        LogArchiveJson.FORMAT_VERSION,
+        event.getTimelineId(),
+        partitionId,
+        event.getParentTimelineId(),
+        event.getStartIndex(),
+        event.getSeq());
+  }
+
+  /** The registry file as {@link #timelineFile(int, LogArchiveRecord)} would write it. */
+  public static TimelineFile timelineFile(final CommitEntry entry) {
+    return new TimelineFile(
+        LogArchiveJson.FORMAT_VERSION,
+        entry.timelineId(),
+        entry.partitionId(),
+        entry.parentTimelineId() == null ? "" : entry.parentTimelineId(),
+        entry.startIndex() == null ? -1 : entry.startIndex(),
+        entry.seq());
   }
 
   /** The handover file for the store of the old backups. */

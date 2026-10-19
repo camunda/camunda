@@ -156,6 +156,10 @@ final class BucketJsonFixtures {
     return new LatestHint(1, "tl-0", 1, 4100);
   }
 
+  static TimelineFile timelineFile() {
+    return new TimelineFile(1, "tl-0.r5", 1, "tl-0", 2731001, 1);
+  }
+
   static SnapshotDescriptorFile snapshotDescriptor() {
     // Deliberately unsorted: the record sorts the files, so the golden file shows them sorted.
     return new SnapshotDescriptorFile(

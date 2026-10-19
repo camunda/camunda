@@ -19,6 +19,7 @@ import io.camunda.zeebe.backup.logarchive.model.HandoverJson;
 import io.camunda.zeebe.backup.logarchive.model.LatestHint;
 import io.camunda.zeebe.backup.logarchive.model.LogArchiveJson;
 import io.camunda.zeebe.backup.logarchive.model.LogArchiveKeys;
+import io.camunda.zeebe.backup.logarchive.model.TimelineFile;
 import io.camunda.zeebe.backup.logarchive.processing.PublishRequest;
 import io.camunda.zeebe.backup.logarchive.processing.SealRequest;
 import io.camunda.zeebe.backup.logarchive.state.LogArchiveMeta;
@@ -222,6 +223,56 @@ final class LogArchivePublisherTest {
             store.objects.get(PREFIX + LogArchiveKeys.latestKey()), LatestHint.class);
     assertThat(latest)
         .isEqualTo(new LatestHint(LogArchiveJson.FORMAT_VERSION, TIMELINE, PARTITION, 5));
+  }
+
+  @Test
+  void shouldPutTimelineFileAfterCommitEntryOfTimelineStarted() {
+    // when
+    publisher.publish(timelineStarted(1));
+    scheduler.workUntilDone();
+
+    // then
+    assertThat(events)
+        .containsExactly(
+            "PUT " + PREFIX + LogArchiveKeys.commitKey(1),
+            "PUT " + PREFIX + LogArchiveKeys.timelineKey(),
+            "PUT " + PREFIX + LogArchiveKeys.rootKey(1),
+            "PUT " + PREFIX + LogArchiveKeys.latestKey(),
+            "CONFIRM 1");
+    final var file =
+        LogArchiveJson.read(
+            store.objects.get(PREFIX + LogArchiveKeys.timelineKey()), TimelineFile.class);
+    assertThat(file).isEqualTo(timelineFile());
+  }
+
+  @Test
+  void shouldNotPutTimelineFileForOtherCommitEntries() {
+    // when
+    publisher.publish(commit(2));
+    scheduler.workUntilDone();
+
+    // then
+    assertThat(store.objects).doesNotContainKey(PREFIX + LogArchiveKeys.timelineKey());
+  }
+
+  @Test
+  void shouldWriteIdenticalTimelineFileWhenRepublishedByNewLeader() {
+    // given - the timeline file was put once
+    publisher.publish(timelineStarted(1));
+    scheduler.workUntilDone();
+    final var first = store.objects.get(PREFIX + LogArchiveKeys.timelineKey());
+    events.clear();
+    store.objects.remove(PREFIX + LogArchiveKeys.timelineKey());
+
+    // when - a new leader republishes the outbox row
+    publisher.onRecovered(
+        new LogArchiveMeta().setTimelineId(TIMELINE).setNextSeq(2).setLastPublishedSeq(0));
+    publisher.publish(timelineStarted(1));
+    scheduler.workUntilDone();
+
+    // then - the same bytes are written again
+    assertThat(events).contains("PUT " + PREFIX + LogArchiveKeys.timelineKey());
+    assertThat(store.objects.get(PREFIX + LogArchiveKeys.timelineKey())).isEqualTo(first);
   }
 
   @Test
@@ -554,6 +605,15 @@ final class LogArchivePublisherTest {
 
   private static PublishRequest commit(final long seq) {
     return new PublishRequest(TIMELINE, seq, bytes("c" + seq), null, null);
+  }
+
+  private static TimelineFile timelineFile() {
+    return new TimelineFile(LogArchiveJson.FORMAT_VERSION, TIMELINE, PARTITION, "parent", 501, 1);
+  }
+
+  private static PublishRequest timelineStarted(final long seq) {
+    return new PublishRequest(
+        TIMELINE, seq, bytes("c" + seq), bytes("r" + seq), null, null, timelineFile());
   }
 
   private static SealRequest seal(final IndexChunk chunk) {
