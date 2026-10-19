@@ -36,6 +36,10 @@
 #   --platform-helm-values VALUE  Extra --set args for the platform Helm chart
 #   --load-test-setup-helm-values VALUE  Extra --set args for the load-test-setup Helm chart
 #   --scenario SCENARIO           Workload scenario to run
+#   --dual-region-zone ZONE       Make the namespace one half of a dual region cluster: region-a or
+#                                 region-b. Needs the next two options; see generate-dual-region-values.sh
+#   --dual-region-peer-namespace NAMESPACE  Namespace of the other region
+#   --dual-region-cluster-name NAME         Cluster name shared by both regions
 
 set -euo pipefail
 
@@ -62,6 +66,9 @@ load_test_load=""
 platform_helm_values=""
 load_test_setup_helm_values=""
 scenario=""
+dual_region_zone=""
+dual_region_peer_namespace=""
+dual_region_cluster_name=""
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -73,6 +80,9 @@ while [[ $# -gt 0 ]]; do
     --platform-helm-values) platform_helm_values="$2"; shift 2 ;;
     --load-test-setup-helm-values) load_test_setup_helm_values="$2"; shift 2 ;;
     --scenario) scenario="$2"; shift 2 ;;
+    --dual-region-zone) dual_region_zone="$2"; shift 2 ;;
+    --dual-region-peer-namespace) dual_region_peer_namespace="$2"; shift 2 ;;
+    --dual-region-cluster-name) dual_region_cluster_name="$2"; shift 2 ;;
     *) echo "::error::Unknown argument: $1" >&2; exit 1 ;;
   esac
 done
@@ -149,10 +159,24 @@ if [[ "${metrics_exporter_built}" == "true" ]]; then
   additional_load_test_setup_configuration+=" --set metricsExporter.image.tag=${image_tag}"
 fi
 
-make "${install_target}" \
-  scenario="${scenario}" \
-  chaos="${enable_chaos}" \
-  physical_tenant_count="${physical_tenant_count}" \
-  additional_platform_configuration="$additional_platform_config" \
-  additional_load_test_configuration="$load_test_config" \
+make_args=(
+  "${install_target}"
+  scenario="${scenario}"
+  chaos="${enable_chaos}"
+  physical_tenant_count="${physical_tenant_count}"
+  additional_platform_configuration="$additional_platform_config"
+  additional_load_test_configuration="$load_test_config"
   additional_load_test_setup_configuration="$additional_load_test_setup_configuration"
+)
+
+# common.mk validates the dual region settings, so a missing peer or cluster name fails there.
+if [[ -n "${dual_region_zone}" ]]; then
+  make_args+=(
+    dual_region=true
+    dual_region_zone="${dual_region_zone}"
+    dual_region_peer_namespace="${dual_region_peer_namespace}"
+    dual_region_cluster_name="${dual_region_cluster_name}"
+  )
+fi
+
+make "${make_args[@]}"
