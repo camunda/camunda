@@ -1409,6 +1409,15 @@
 					"helperMove": "alle laufenden Elementinstanzen zu einem anderen Zielelement im Diagramm",
 					"helperVariables": "Zusätzlich können Sie Variablen hinzufügen oder bearbeiten, indem Sie den Elementbereich im Bereich „Instanzverlauf“ auswählen.",
 					"helperReview": "Eine Zusammenfassung aller geplanten Änderungen wird nach dem Klicken auf „Änderungen prüfen“ angezeigt. Die Änderung wird nach Bestätigung der Zusammenfassung angewendet."
+				},
+				"helper": {
+					"title": "Das hat sich in Operate geändert",
+					"gotIt": "Verstanden",
+					"intro": "Wir haben einige Änderungen an der Seite der Prozessinstanz vorgenommen.",
+					"incidents": "<strong>Incidents</strong> haben jetzt einen eigenen Tab, der sich automatisch öffnet, wenn welche vorhanden sind",
+					"details": "Klicken Sie auf ein beliebiges Element im Diagramm, um seine Details im Tab <strong>Details</strong> anzuzeigen",
+					"callActivity": "Doppelklicken Sie auf eine <strong>Call Activity</strong>, um direkt zur aufgerufenen Instanz zu springen.",
+					"imageAlt": "Detailseite der Prozessinstanz mit Incidents-Tab und Diagramm"
 				}
 			},
 			"operations": {

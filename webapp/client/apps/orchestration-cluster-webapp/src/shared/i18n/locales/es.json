@@ -1409,6 +1409,15 @@
 					"helperMove": "todas las instancias de elemento en ejecución a otro elemento de destino del diagrama",
 					"helperVariables": "Además, puedes añadir o editar variables seleccionando el ámbito del elemento en el panel Historial de la instancia.",
 					"helperReview": "Se mostrará un resumen de todas las modificaciones planificadas tras hacer clic en «Revisar modificaciones». La modificación se aplicará tras confirmar el resumen."
+				},
+				"helper": {
+					"title": "Esto es lo que ha cambiado en Operate",
+					"gotIt": "Entendido",
+					"intro": "Hemos hecho algunos cambios en la página de la instancia de proceso.",
+					"incidents": "Los <strong>incidentes</strong> ahora tienen su propia pestaña, que se abre automáticamente cuando los hay",
+					"details": "Haz clic en cualquier elemento del diagrama para ver sus detalles en la pestaña <strong>Detalles</strong>",
+					"callActivity": "Haz doble clic en una <strong>call activity</strong> para ir directamente a la instancia llamada.",
+					"imageAlt": "Página de detalles de la instancia de proceso con la pestaña de incidentes y el diagrama"
 				}
 			},
 			"operations": {

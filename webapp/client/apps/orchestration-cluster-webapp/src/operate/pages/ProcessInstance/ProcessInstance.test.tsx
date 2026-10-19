@@ -150,6 +150,7 @@ describe('<ProcessInstance />', () => {
 			dispatchEvent: vi.fn(),
 		}));
 		sessionStorage.setItem('clientConfig', JSON.stringify(createSystemConfiguration()));
+		localStorage.setItem('operate.hideProcessInstanceHelperModal', 'true');
 	});
 
 	afterEach(async () => {
@@ -584,6 +585,39 @@ describe('<ProcessInstance />', () => {
 			await userEvent.click(screen.getByRole('button', {name: modifyButton}));
 
 			await expect.element(screen.getByRole('button', {name: 'Discard All'})).toBeVisible();
+		});
+	});
+
+	describe('helper modal', () => {
+		beforeEach(() => {
+			localStorage.removeItem('operate.hideProcessInstanceHelperModal');
+		});
+
+		it('should show what moved on the first visit and not again once dismissed', async ({worker}) => {
+			worker.use(...getProcessInstancePageHandlers());
+			const screen = await renderPage();
+
+			const helper = screen.getByRole('dialog', {name: "Here's what moved in Operate"});
+			await expect.element(helper).toBeVisible();
+			await userEvent.click(helper.getByRole('button', {name: 'Got it'}));
+			await expect.element(helper).not.toBeInTheDocument();
+
+			await screen.unmount();
+			const nextVisit = await renderPage();
+
+			await expect.element(nextVisit.getByRole('heading', {name: 'Operate Process Instance'})).toBeInTheDocument();
+			await expect
+				.element(nextVisit.getByRole('dialog', {name: "Here's what moved in Operate"}))
+				.not.toBeInTheDocument();
+		});
+
+		it('should not show what moved when it was dismissed in legacy Operate', async ({worker}) => {
+			localStorage.setItem('sharedState', JSON.stringify({hideProcessInstanceHelperModal: true}));
+			worker.use(...getProcessInstancePageHandlers());
+			const screen = await renderPage();
+
+			await expect.element(screen.getByRole('heading', {name: 'Operate Process Instance'})).toBeInTheDocument();
+			await expect.element(screen.getByRole('dialog', {name: "Here's what moved in Operate"})).not.toBeInTheDocument();
 		});
 	});
 });

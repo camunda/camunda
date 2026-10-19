@@ -9,7 +9,10 @@
 import {z} from 'zod';
 
 type LegacySharedStateFlag =
-	'hideMoveModificationHelperModal' | 'hideMigrationHelperModal' | 'hideModificationHelperModal';
+	| 'hideMoveModificationHelperModal'
+	| 'hideMigrationHelperModal'
+	| 'hideModificationHelperModal'
+	| 'hideProcessInstanceHelperModal';
 
 function getLegacySharedStateFlag(key: LegacySharedStateFlag) {
 	try {
