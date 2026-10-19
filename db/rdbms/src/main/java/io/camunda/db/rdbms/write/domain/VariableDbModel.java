@@ -15,6 +15,7 @@ import io.camunda.db.rdbms.write.util.TruncateUtil;
 import io.camunda.search.entities.ValueTypeEnum;
 import io.camunda.util.ObjectBuilder;
 import io.camunda.util.ValueTypeUtil;
+import java.util.Arrays;
 import java.util.Set;
 import java.util.function.Function;
 
@@ -124,12 +125,7 @@ public record VariableDbModel(
     }
 
     public static ProtectionModeDbModel fromCode(final int code) {
-      for (final ProtectionModeDbModel mode : values()) {
-        if (mode.code == code) {
-          return mode;
-        }
-      }
-      return null;
+      return Arrays.stream(values()).filter(mode -> mode.code == code).findFirst().orElse(null);
     }
   }
 
