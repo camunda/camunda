@@ -262,7 +262,8 @@ final class ClusterConfigurationInitializerTest {
     // there's no easy way to verify that a future does not terminates, so we fail the future
     // with an exception that we check later.
     concurrencyControl.schedule(
-        testTimeout, () -> initializeFuture.completeExceptionally(new Exception("expected")));
+        Duration.ofMillis(testTimeout),
+        () -> initializeFuture.completeExceptionally(new Exception("expected")));
     concurrencyControl.runAll();
 
     // then - falls back to uninitialized so the coordinator can use static initialization
