@@ -65,11 +65,12 @@ import org.jspecify.annotations.Nullable;
  *
  * <p>A partition added by a scale-up after the handover is first activated (row 1 until then; it
  * takes old-style backups meanwhile), then matches row 3s until it recorded H, then row 2. Row 3s
- * tells such a partition apart by its first archived position only: the partitions that took part
- * in the handover started their timeline at activation, after their first record, unless they were
- * activated before anything was compacted. Such a partition still records H by its HANDOVER backup,
- * which later backups do not hide from it: it checks its latest HANDOVER backup, not its latest
- * backup. A partition that has archived nothing yet matches row 3a until its first cut, seconds.
+ * tells such a partition apart by its first archived position and by its last confirmed backup: a
+ * partition that took part in the handover has H as its last confirmed backup while it only missed
+ * the request, even if its archive starts at its first record because it was activated before
+ * anything was compacted. Such a partition still records H by its HANDOVER backup, which later
+ * backups do not hide from it: it checks its latest HANDOVER backup, not its latest backup. A
+ * partition that has archived nothing yet matches row 3a until its first cut, seconds.
  */
 record HandoverDecision(Action action, long checkpointId) {
 
@@ -126,9 +127,12 @@ record HandoverDecision(Action action, long checkpointId) {
     if (recordedHandovers.size() == 1) {
       final long recorded = recordedHandovers.iterator().next();
       final boolean onlyAddedAfterTheHandover =
-          archives.values().stream()
-              .filter(archive -> archive.handoverCheckpointId() == NO_CHECKPOINT)
-              .allMatch(archive -> archive.firstArchivedPosition() == FIRST_LOG_POSITION);
+          archives.entrySet().stream()
+              .filter(entry -> entry.getValue().handoverCheckpointId() == NO_CHECKPOINT)
+              .allMatch(
+                  entry ->
+                      entry.getValue().firstArchivedPosition() == FIRST_LOG_POSITION
+                          && !tookPartIn(recorded, backups.get(entry.getKey())));
       return new HandoverDecision(
           onlyAddedAfterTheHandover
               ? Action.COMPLETE_HANDOVER_AND_BACKUP
@@ -153,6 +157,18 @@ record HandoverDecision(Action action, long checkpointId) {
                         && hasArchivedLastBackup(archive, backups));
     // 5
     return readyForHandover ? HANDOVER : SCHEDULED;
+  }
+
+  /**
+   * Whether the partition's last confirmed backup is the HANDOVER backup H: it took part in the
+   * handover and only missed the request, even if its archive starts at its first record (a cluster
+   * that activated the archive before anything was compacted).
+   */
+  private static boolean tookPartIn(
+      final long handover, final @Nullable PartitionCheckpointState lastBackup) {
+    return lastBackup != null
+        && lastBackup.checkpointType() == CheckpointType.HANDOVER
+        && lastBackup.checkpointId() == handover;
   }
 
   /** The id of the HANDOVER backup that is the last confirmed backup of every partition, if any. */

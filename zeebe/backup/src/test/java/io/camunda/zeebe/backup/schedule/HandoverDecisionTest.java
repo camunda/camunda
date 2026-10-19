@@ -288,6 +288,24 @@ final class HandoverDecisionTest {
   }
 
   @Test
+  void shouldOnlyCompleteHandoverWhenALaggingPartitionTookPartEvenIfItsArchiveStartsAtItsStart() {
+    // given - partition 1 recorded H; partition 2 took part (H is its last confirmed backup) and
+    // only missed the request; its archive starts at its first record because the cluster
+    // activated the archive before anything was compacted
+    archive(1, true, 100, 10, HANDOVER);
+    addedAfterHandover(2, 90, 20);
+    backup(1, HANDOVER, CheckpointType.HANDOVER, 80);
+    backup(2, HANDOVER, CheckpointType.HANDOVER, 85);
+
+    // when
+    final var decision = HandoverDecision.decide(state, true);
+
+    // then - no backup meanwhile: it could not complete while partition 2 lags behind
+    assertThat(decision).isEqualTo(new HandoverDecision(Action.COMPLETE_HANDOVER, HANDOVER));
+    assertThat(decision.takesBackup()).isFalse();
+  }
+
+  @Test
   void shouldKeepTakingBackupsWhileThePartitionAddedAfterTheHandoverHasNoSnapshotArchived() {
     // given - partition 3 cannot record H before a snapshot is archived; backups go on meanwhile
     archive(1, true, 100, 10, HANDOVER);
