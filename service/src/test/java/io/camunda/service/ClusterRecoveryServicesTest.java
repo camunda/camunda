@@ -165,37 +165,28 @@ final class ClusterRecoveryServicesTest {
   }
 
   @Test
-  void shouldDropAnOverrideForAPhysicalTenantTheClusterDoesNotKnow() {
-    // given — a cluster-wide restore whose override names a tenant this cluster has no environment
-    // for; only the known tenants are ever restored, so the unknown override is simply not carried
-    // into the request rather than surfacing as an error. Rejecting it belongs with the
-    // cluster-wide
-    // fan-out that ClusterRestoreRequestTransformer does not implement yet — it rejects every
-    // multi-tenant restore an override could apply to.
-    givenRestoreAccepted();
-    final var defaultParameters = new RestoreParameters(List.of(1L), null, null);
+  void shouldRejectAClusterWideRestoreWithAnOverrideForAnUnknownPhysicalTenant() {
+    // given — a misspelled override would otherwise silently restore the intended tenant from the
+    // top-level backup selection, which cannot be undone
+    final var overrides =
+        Map.of(
+            TENANT_B,
+            new RestoreParameters(List.of(2L), null, null),
+            "unknown-tenant",
+            new RestoreParameters(List.of(3L), null, null));
 
     // when
-    services
-        .restore(
-            Optional.empty(),
-            defaultParameters,
-            Map.of("unknown-tenant", new RestoreParameters(List.of(2L), null, null)),
-            false)
-        .join();
+    final var result =
+        services
+            .restore(
+                Optional.empty(), new RestoreParameters(List.of(1L), null, null), overrides, true)
+            .join();
 
     // then
-    verify(sender)
-        .clusterRestore(
-            new ClusterRestoreRequest(
-                Map.of(
-                    DEFAULT_TENANT,
-                    new TenantRestoreArguments(defaultParameters, "elasticsearch", false),
-                    TENANT_B,
-                    new TenantRestoreArguments(defaultParameters, "rdbms", true),
-                    TENANT_C,
-                    new TenantRestoreArguments(defaultParameters, "opensearch", false)),
-                false));
+    assertThat(result.isLeft()).isTrue();
+    assertThat(result.getLeft().code()).isEqualTo(ErrorCode.NOT_FOUND);
+    assertThat(result.getLeft().message()).contains("unknown-tenant");
+    verify(sender, never()).clusterRestore(any());
   }
 
   @Test
