@@ -55,18 +55,6 @@ public record BackupDescriptorImpl(
         Optional.empty());
   }
 
-  public BackupDescriptorImpl withHistoryId(final UUID id) {
-    return new BackupDescriptorImpl(
-        snapshotId,
-        firstLogPosition,
-        checkpointPosition,
-        numberOfPartitions,
-        brokerVersion,
-        checkpointTimestamp,
-        checkpointType,
-        Optional.of(id));
-  }
-
   public BackupDescriptorImpl(
       final String snapshotId,
       final long checkpointPosition,
@@ -98,6 +86,18 @@ public record BackupDescriptorImpl(
         brokerVersion,
         checkpointTimestamp,
         checkpointType);
+  }
+
+  public BackupDescriptorImpl withHistoryId(final UUID id) {
+    return new BackupDescriptorImpl(
+        snapshotId,
+        firstLogPosition,
+        checkpointPosition,
+        numberOfPartitions,
+        brokerVersion,
+        checkpointTimestamp,
+        checkpointType,
+        Optional.of(id));
   }
 
   public static BackupDescriptorImpl from(final BackupDescriptor descriptor) {
