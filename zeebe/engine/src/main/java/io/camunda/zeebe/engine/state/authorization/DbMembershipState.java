@@ -153,6 +153,10 @@ public final class DbMembershipState implements MutableMembershipState {
     final long visible = visibleVersion(commandVersion);
     versionedEntityKey.wrappedKey().setAll(entityType, entityId, relationType, relationId);
     versionedEntityKey.version().wrapLong(visible);
+    if (visible == 0) {
+      final var membership = relationsByEntity.get(versionedEntityKey);
+      return membership != null && membership.getValue() == MembershipStatus.ACTIVE;
+    }
     final var active = new boolean[1];
     relationsByEntity.whileTrueReverse(
         versionedEntityKey,

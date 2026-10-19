@@ -131,6 +131,14 @@ public class DbMappingRuleState implements MutableMappingRuleState {
     final long visible = visibleVersion(commandVersion);
     this.mappingRuleId.wrapString(id);
     policyVersion.wrapLong(visible);
+    if (visible == 0) {
+      final var fk = claimByIdColumnFamily.get(idKey);
+      if (fk == null) {
+        return Optional.empty();
+      }
+      final var target = fk.inner().wrappedKey();
+      return rowAt(target.first().toString(), target.second().toString(), 0);
+    }
     final var found = new Object[3];
     claimByIdColumnFamily.whileTrueReverse(
         idKey,
@@ -159,6 +167,9 @@ public class DbMappingRuleState implements MutableMappingRuleState {
   public Optional<PersistedMappingRule> get(
       final String claimName, final String claimValue, final long commandVersion) {
     final long visible = visibleVersion(commandVersion);
+    if (visible == 0) {
+      return rowAt(claimName, claimValue, 0);
+    }
     this.claimName.wrapString(claimName);
     this.claimValue.wrapString(claimValue);
     policyVersion.wrapLong(visible);

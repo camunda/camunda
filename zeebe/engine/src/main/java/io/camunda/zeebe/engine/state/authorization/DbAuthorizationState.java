@@ -210,6 +210,14 @@ public class DbAuthorizationState implements MutableAuthorizationState {
   private Optional<PersistedAuthorization> authorizationAt(final long key, final long version) {
     authorizationKey.wrapLong(key);
     authorizationVersion.wrapLong(version);
+    if (version == 0) {
+      final var authorization =
+          authorizationByAuthorizationKeyColumnFamily.get(
+              versionedAuthorizationKey, PersistedAuthorization::new);
+      return authorization == null || authorization.isDeleted()
+          ? Optional.empty()
+          : Optional.of(authorization);
+    }
     final var found = new PersistedAuthorization[1];
     authorizationByAuthorizationKeyColumnFamily.whileTrueReverse(
         versionedAuthorizationKey,
@@ -235,6 +243,13 @@ public class DbAuthorizationState implements MutableAuthorizationState {
     keysOwnerId.wrapString(ownerId);
     keysVersion.wrapLong(version);
     final var found = new AuthorizationKeys();
+    if (version == 0) {
+      final var keys = authorizationKeysByOwnerColumnFamily.get(versionedOwner);
+      if (keys != null) {
+        found.copyFrom(keys);
+      }
+      return found;
+    }
     authorizationKeysByOwnerColumnFamily.whileTrueReverse(
         versionedOwner,
         (entryKey, value) -> {
@@ -258,6 +273,13 @@ public class DbAuthorizationState implements MutableAuthorizationState {
     permissionsResourceType.wrapString(resourceType);
     permissionsVersion.wrapLong(version);
     final var found = new Permissions();
+    if (version == 0) {
+      final var permissions = permissionsColumnFamily.get(versionedOwnerAndResourceType);
+      if (permissions != null) {
+        found.copyFrom(permissions);
+      }
+      return found;
+    }
     permissionsColumnFamily.whileTrueReverse(
         versionedOwnerAndResourceType,
         (entryKey, value) -> {

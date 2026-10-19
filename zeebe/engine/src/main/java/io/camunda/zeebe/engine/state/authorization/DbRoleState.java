@@ -63,6 +63,10 @@ public class DbRoleState implements MutableRoleState {
     final long current = Math.max(currentVersion.getAsLong(), commandVersion);
     this.roleId.wrapString(roleId);
     policyVersion.wrapLong(current);
+    if (current == 0) {
+      final var role = roleColumnFamily.get(versionedKey, PersistedRole::new);
+      return role == null || role.isDeleted() ? Optional.empty() : Optional.of(role);
+    }
     final var found = new PersistedRole[1];
     roleColumnFamily.whileTrueReverse(
         versionedKey,

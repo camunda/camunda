@@ -96,6 +96,10 @@ public class DbGroupState implements MutableGroupState {
     final long visible = visibleVersion(commandVersion);
     this.groupId.wrapString(groupId);
     policyVersion.wrapLong(visible);
+    if (visible == 0) {
+      final var group = groupColumnFamily.get(versionedKey, PersistedGroup::new);
+      return group == null || group.isDeleted() ? Optional.empty() : Optional.of(group);
+    }
     final var found = new PersistedGroup[1];
     groupColumnFamily.whileTrueReverse(
         versionedKey,

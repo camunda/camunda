@@ -99,6 +99,10 @@ public class DbTenantState implements MutableTenantState {
     final long current = Math.max(currentVersion.getAsLong(), commandVersion);
     this.tenantId.wrapString(tenantId);
     policyVersion.wrapLong(current);
+    if (current == 0) {
+      final var tenant = tenantsColumnFamily.get(versionedKey, PersistedTenant::new);
+      return tenant == null || tenant.isDeleted() ? Optional.empty() : Optional.of(tenant);
+    }
     final var found = new PersistedTenant[1];
     tenantsColumnFamily.whileTrueReverse(
         versionedKey,
