@@ -145,7 +145,7 @@ public final class VariableFixtures extends CommonFixtures {
     try (final var connection = testApplication.bean(DataSource.class).getConnection();
         final var statement =
             connection.prepareStatement(
-                "SELECT PROTECTION_MODE FROM VARIABLE_PROTECTION_MODES WHERE VAR_KEY = ?")) {
+                "SELECT PROTECTION_MODE FROM VARIABLE_PROTECTION_MODE WHERE VAR_KEY = ?")) {
       statement.setLong(1, variableKey);
       try (final var resultSet = statement.executeQuery()) {
         while (resultSet.next()) {
@@ -161,7 +161,7 @@ public final class VariableFixtures extends CommonFixtures {
       throws SQLException {
     return queryLong(
         testApplication,
-        "SELECT COUNT(*) FROM VARIABLE_PROTECTION_MODES WHERE VAR_KEY = ?",
+        "SELECT COUNT(*) FROM VARIABLE_PROTECTION_MODE WHERE VAR_KEY = ?",
         variableKey);
   }
 

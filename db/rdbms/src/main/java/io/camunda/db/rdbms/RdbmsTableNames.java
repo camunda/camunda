@@ -73,7 +73,7 @@ public final class RdbmsTableNames {
           "USER_TASK",
           "USER_",
           "PROCESS_DEF_VAR_NAME_LOOKUP",
-          "VARIABLE_PROTECTION_MODES",
+          "VARIABLE_PROTECTION_MODE",
           "VARIABLE",
           "WAIT_STATE",
           "WEB_SESSION",

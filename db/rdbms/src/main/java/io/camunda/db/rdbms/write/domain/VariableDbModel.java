@@ -107,7 +107,7 @@ public record VariableDbModel(
   }
 
   /**
-   * Protection modes as persisted in VARIABLE_PROTECTION_MODES. The code is stored, so codes must
+   * Protection modes as persisted in VARIABLE_PROTECTION_MODE. The code is stored, so codes must
    * never be changed or reused.
    */
   public enum ProtectionModeDbModel {

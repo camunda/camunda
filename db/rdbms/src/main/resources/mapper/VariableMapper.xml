@@ -174,7 +174,7 @@
   </insert>
 
   <insert id="insertProtectionModes" parameterType="io.camunda.db.rdbms.sql.VariableMapper$ProtectionModeDto">
-    INSERT INTO ${prefix}VARIABLE_PROTECTION_MODES (VAR_KEY, PROTECTION_MODE)
+    INSERT INTO ${prefix}VARIABLE_PROTECTION_MODE (VAR_KEY, PROTECTION_MODE)
     VALUES (
       #{variableKey},
       #{mode, typeHandler=io.camunda.db.rdbms.sql.typehandler.ProtectionModeTypeHandler}
