@@ -56,6 +56,8 @@ import { Route as ShadcnAuthAdminUsersUsernameRouteImport } from './routes/_shad
 import { Route as ShadcnAuthOperatePreviewDecisionsIndexRouteImport } from './routes/_shadcn/_auth/operate-preview/decisions/index'
 import { Route as ShadcnAuthTasklistTasksIndexRouteImport } from './routes/_shadcn/_auth/tasklist/_tasks/index'
 import { Route as ShadcnAuthTasklistTasksUserTaskKeyRouteRouteImport } from './routes/_shadcn/_auth/tasklist/_tasks/$userTaskKey/route'
+import { Route as ShadcnAuthTasklistCasesIndexRouteImport } from './routes/_shadcn/_auth/tasklist/cases/index'
+import { Route as ShadcnAuthTasklistCasesProcessInstanceKeyRouteImport } from './routes/_shadcn/_auth/tasklist/cases/$processInstanceKey'
 import { Route as CarbonAuthOperateProcessesProcessInstanceIdIndexRouteImport } from './routes/_carbon/_auth/operate/processes/$processInstanceId/index'
 import { Route as CarbonAuthOperateProcessesProcessInstanceIdSplatRouteImport } from './routes/_carbon/_auth/operate/processes/$processInstanceId/$'
 import { Route as CarbonAuthOperateProcessesProcessInstanceIdDetailsRouteImport } from './routes/_carbon/_auth/operate/processes/$processInstanceId/details'
@@ -329,6 +331,18 @@ const ShadcnAuthTasklistTasksUserTaskKeyRouteRoute =
     path: '/$userTaskKey',
     getParentRoute: () => ShadcnAuthTasklistTasksRouteRoute,
   } as any)
+const ShadcnAuthTasklistCasesIndexRoute =
+  ShadcnAuthTasklistCasesIndexRouteImport.update({
+    id: '/cases/',
+    path: '/cases/',
+    getParentRoute: () => ShadcnAuthTasklistRouteRoute,
+  } as any)
+const ShadcnAuthTasklistCasesProcessInstanceKeyRoute =
+  ShadcnAuthTasklistCasesProcessInstanceKeyRouteImport.update({
+    id: '/cases/$processInstanceKey',
+    path: '/cases/$processInstanceKey',
+    getParentRoute: () => ShadcnAuthTasklistRouteRoute,
+  } as any)
 const CarbonAuthOperateProcessesProcessInstanceIdIndexRoute =
   CarbonAuthOperateProcessesProcessInstanceIdIndexRouteImport.update({
     id: '/',
@@ -436,6 +450,7 @@ export interface FileRoutesByFullPath {
   '/operate/decisions/$decisionInstanceId': typeof CarbonAuthOperateDecisionsDecisionInstanceIdRoute
   '/admin/roles/$roleId': typeof ShadcnAuthAdminRolesRoleIdRoute
   '/admin/users/$username': typeof ShadcnAuthAdminUsersUsernameRoute
+  '/tasklist/cases/$processInstanceKey': typeof ShadcnAuthTasklistCasesProcessInstanceKeyRoute
   '/operate/batch-operations/': typeof CarbonAuthOperateBatchOperationsIndexRoute
   '/operate/decisions/': typeof CarbonAuthOperateDecisionsIndexRoute
   '/admin/authorizations/': typeof ShadcnAuthAdminAuthorizationsIndexRoute
@@ -450,6 +465,7 @@ export interface FileRoutesByFullPath {
   '/admin/users/': typeof ShadcnAuthAdminUsersIndexRoute
   '/operate-preview/decisions/': typeof ShadcnAuthOperatePreviewDecisionsIndexRoute
   '/tasklist/': typeof ShadcnAuthTasklistTasksIndexRoute
+  '/tasklist/cases/': typeof ShadcnAuthTasklistCasesIndexRoute
   '/tasklist/$userTaskKey/history': typeof ShadcnAuthTasklistTasksUserTaskKeyHistoryRouteRouteWithChildren
   '/operate/processes/$processInstanceId/$': typeof CarbonAuthOperateProcessesProcessInstanceIdSplatRoute
   '/operate/processes/$processInstanceId/details': typeof CarbonAuthOperateProcessesProcessInstanceIdDetailsRoute
@@ -484,6 +500,7 @@ export interface FileRoutesByTo {
   '/operate/decisions/$decisionInstanceId': typeof CarbonAuthOperateDecisionsDecisionInstanceIdRoute
   '/admin/roles/$roleId': typeof ShadcnAuthAdminRolesRoleIdRoute
   '/admin/users/$username': typeof ShadcnAuthAdminUsersUsernameRoute
+  '/tasklist/cases/$processInstanceKey': typeof ShadcnAuthTasklistCasesProcessInstanceKeyRoute
   '/operate/batch-operations': typeof CarbonAuthOperateBatchOperationsIndexRoute
   '/operate/decisions': typeof CarbonAuthOperateDecisionsIndexRoute
   '/admin/authorizations': typeof ShadcnAuthAdminAuthorizationsIndexRoute
@@ -497,6 +514,7 @@ export interface FileRoutesByTo {
   '/admin/tenants': typeof ShadcnAuthAdminTenantsIndexRoute
   '/admin/users': typeof ShadcnAuthAdminUsersIndexRoute
   '/operate-preview/decisions': typeof ShadcnAuthOperatePreviewDecisionsIndexRoute
+  '/tasklist/cases': typeof ShadcnAuthTasklistCasesIndexRoute
   '/tasklist/$userTaskKey/history': typeof ShadcnAuthTasklistTasksUserTaskKeyHistoryRouteRouteWithChildren
   '/operate/processes/$processInstanceId/$': typeof CarbonAuthOperateProcessesProcessInstanceIdSplatRoute
   '/operate/processes/$processInstanceId/details': typeof CarbonAuthOperateProcessesProcessInstanceIdDetailsRoute
@@ -545,6 +563,7 @@ export interface FileRoutesById {
   '/_carbon/_auth/operate/decisions/$decisionInstanceId': typeof CarbonAuthOperateDecisionsDecisionInstanceIdRoute
   '/_shadcn/_auth/admin/roles/$roleId': typeof ShadcnAuthAdminRolesRoleIdRoute
   '/_shadcn/_auth/admin/users/$username': typeof ShadcnAuthAdminUsersUsernameRoute
+  '/_shadcn/_auth/tasklist/cases/$processInstanceKey': typeof ShadcnAuthTasklistCasesProcessInstanceKeyRoute
   '/_carbon/_auth/operate/batch-operations/': typeof CarbonAuthOperateBatchOperationsIndexRoute
   '/_carbon/_auth/operate/decisions/': typeof CarbonAuthOperateDecisionsIndexRoute
   '/_shadcn/_auth/admin/authorizations/': typeof ShadcnAuthAdminAuthorizationsIndexRoute
@@ -559,6 +578,7 @@ export interface FileRoutesById {
   '/_shadcn/_auth/admin/users/': typeof ShadcnAuthAdminUsersIndexRoute
   '/_shadcn/_auth/operate-preview/decisions/': typeof ShadcnAuthOperatePreviewDecisionsIndexRoute
   '/_shadcn/_auth/tasklist/_tasks/': typeof ShadcnAuthTasklistTasksIndexRoute
+  '/_shadcn/_auth/tasklist/cases/': typeof ShadcnAuthTasklistCasesIndexRoute
   '/_shadcn/_auth/tasklist/_tasks/$userTaskKey/history': typeof ShadcnAuthTasklistTasksUserTaskKeyHistoryRouteRouteWithChildren
   '/_carbon/_auth/operate/processes/$processInstanceId/$': typeof CarbonAuthOperateProcessesProcessInstanceIdSplatRoute
   '/_carbon/_auth/operate/processes/$processInstanceId/details': typeof CarbonAuthOperateProcessesProcessInstanceIdDetailsRoute
@@ -603,6 +623,7 @@ export interface FileRouteTypes {
     | '/operate/decisions/$decisionInstanceId'
     | '/admin/roles/$roleId'
     | '/admin/users/$username'
+    | '/tasklist/cases/$processInstanceKey'
     | '/operate/batch-operations/'
     | '/operate/decisions/'
     | '/admin/authorizations/'
@@ -617,6 +638,7 @@ export interface FileRouteTypes {
     | '/admin/users/'
     | '/operate-preview/decisions/'
     | '/tasklist/'
+    | '/tasklist/cases/'
     | '/tasklist/$userTaskKey/history'
     | '/operate/processes/$processInstanceId/$'
     | '/operate/processes/$processInstanceId/details'
@@ -651,6 +673,7 @@ export interface FileRouteTypes {
     | '/operate/decisions/$decisionInstanceId'
     | '/admin/roles/$roleId'
     | '/admin/users/$username'
+    | '/tasklist/cases/$processInstanceKey'
     | '/operate/batch-operations'
     | '/operate/decisions'
     | '/admin/authorizations'
@@ -664,6 +687,7 @@ export interface FileRouteTypes {
     | '/admin/tenants'
     | '/admin/users'
     | '/operate-preview/decisions'
+    | '/tasklist/cases'
     | '/tasklist/$userTaskKey/history'
     | '/operate/processes/$processInstanceId/$'
     | '/operate/processes/$processInstanceId/details'
@@ -711,6 +735,7 @@ export interface FileRouteTypes {
     | '/_carbon/_auth/operate/decisions/$decisionInstanceId'
     | '/_shadcn/_auth/admin/roles/$roleId'
     | '/_shadcn/_auth/admin/users/$username'
+    | '/_shadcn/_auth/tasklist/cases/$processInstanceKey'
     | '/_carbon/_auth/operate/batch-operations/'
     | '/_carbon/_auth/operate/decisions/'
     | '/_shadcn/_auth/admin/authorizations/'
@@ -725,6 +750,7 @@ export interface FileRouteTypes {
     | '/_shadcn/_auth/admin/users/'
     | '/_shadcn/_auth/operate-preview/decisions/'
     | '/_shadcn/_auth/tasklist/_tasks/'
+    | '/_shadcn/_auth/tasklist/cases/'
     | '/_shadcn/_auth/tasklist/_tasks/$userTaskKey/history'
     | '/_carbon/_auth/operate/processes/$processInstanceId/$'
     | '/_carbon/_auth/operate/processes/$processInstanceId/details'
@@ -1075,6 +1101,20 @@ declare module '@tanstack/react-router' {
       fullPath: '/tasklist/$userTaskKey'
       preLoaderRoute: typeof ShadcnAuthTasklistTasksUserTaskKeyRouteRouteImport
       parentRoute: typeof ShadcnAuthTasklistTasksRouteRoute
+    }
+    '/_shadcn/_auth/tasklist/cases/': {
+      id: '/_shadcn/_auth/tasklist/cases/'
+      path: '/cases'
+      fullPath: '/tasklist/cases/'
+      preLoaderRoute: typeof ShadcnAuthTasklistCasesIndexRouteImport
+      parentRoute: typeof ShadcnAuthTasklistRouteRoute
+    }
+    '/_shadcn/_auth/tasklist/cases/$processInstanceKey': {
+      id: '/_shadcn/_auth/tasklist/cases/$processInstanceKey'
+      path: '/cases/$processInstanceKey'
+      fullPath: '/tasklist/cases/$processInstanceKey'
+      preLoaderRoute: typeof ShadcnAuthTasklistCasesProcessInstanceKeyRouteImport
+      parentRoute: typeof ShadcnAuthTasklistRouteRoute
     }
     '/_carbon/_auth/operate/processes/$processInstanceId/': {
       id: '/_carbon/_auth/operate/processes/$processInstanceId/'
@@ -1469,6 +1509,8 @@ interface ShadcnAuthTasklistRouteRouteChildren {
   ShadcnAuthTasklistTasksRouteRoute: typeof ShadcnAuthTasklistTasksRouteRouteWithChildren
   ShadcnAuthTasklistProcessesRouteRoute: typeof ShadcnAuthTasklistProcessesRouteRouteWithChildren
   ShadcnAuthTasklistSplatRoute: typeof ShadcnAuthTasklistSplatRoute
+  ShadcnAuthTasklistCasesProcessInstanceKeyRoute: typeof ShadcnAuthTasklistCasesProcessInstanceKeyRoute
+  ShadcnAuthTasklistCasesIndexRoute: typeof ShadcnAuthTasklistCasesIndexRoute
 }
 
 const ShadcnAuthTasklistRouteRouteChildren: ShadcnAuthTasklistRouteRouteChildren =
@@ -1478,6 +1520,9 @@ const ShadcnAuthTasklistRouteRouteChildren: ShadcnAuthTasklistRouteRouteChildren
     ShadcnAuthTasklistProcessesRouteRoute:
       ShadcnAuthTasklistProcessesRouteRouteWithChildren,
     ShadcnAuthTasklistSplatRoute: ShadcnAuthTasklistSplatRoute,
+    ShadcnAuthTasklistCasesProcessInstanceKeyRoute:
+      ShadcnAuthTasklistCasesProcessInstanceKeyRoute,
+    ShadcnAuthTasklistCasesIndexRoute: ShadcnAuthTasklistCasesIndexRoute,
   }
 
 const ShadcnAuthTasklistRouteRouteWithChildren =

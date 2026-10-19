@@ -18,6 +18,8 @@ import {
 	type GetIncidentProcessInstanceStatisticsByDefinitionRequestBody,
 	type QueryProcessInstancesRequestBody,
 	type QueryElementInstancesRequestBody,
+	type ActivateActivityWithinAdHocSubProcessRequestBody,
+	type CorrelateMessageRequestBody,
 	type QueryAgentInstancesRequestBody,
 	type QueryProcessInstanceIncidentsRequestBody,
 	type QueryElementInstanceIncidentsRequestBody,
@@ -371,6 +373,34 @@ const endpoints = {
 			headers: {'Content-Type': 'application/json'},
 		}),
 
+	activateAdHocSubProcessActivities: ({
+		adHocSubProcessInstanceKey,
+		...body
+	}: {adHocSubProcessInstanceKey: string} & ActivateActivityWithinAdHocSubProcessRequestBody) =>
+		new Request(
+			getFullURL(unifiedAPIEndpoints.activateAdHocSubProcessActivities.getUrl({adHocSubProcessInstanceKey})),
+			{
+				...BASE_REQUEST_OPTIONS,
+				method: unifiedAPIEndpoints.activateAdHocSubProcessActivities.method,
+				body: JSON.stringify(body),
+				headers: {'Content-Type': 'application/json'},
+			},
+		),
+
+	correlateMessage: (body: CorrelateMessageRequestBody) =>
+		new Request(getFullURL(unifiedAPIEndpoints.correlateMessage.getUrl()), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.correlateMessage.method,
+			body: JSON.stringify(body),
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	getLatestFormByFormId: ({formId, tenantId}: {formId: string; tenantId?: string}) =>
+		new Request(getFullURL(unifiedAPIEndpoints.getLatestFormByFormId.getUrl({formId, tenantId})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.getLatestFormByFormId.method,
+		}),
+
 	getElementInstance: (elementInstanceKey: string) =>
 		new Request(getFullURL(unifiedAPIEndpoints.getElementInstance.getUrl({elementInstanceKey})), {
 			...BASE_REQUEST_OPTIONS,
@@ -573,8 +603,8 @@ const endpoints = {
 			headers: {'Content-Type': 'application/json'},
 		}),
 
-	queryVariables: (body: QueryVariablesRequestBody) =>
-		new Request(getFullURL(unifiedAPIEndpoints.queryVariables.getUrl()), {
+	queryVariables: (body: QueryVariablesRequestBody, {truncateValues}: {truncateValues?: boolean} = {}) =>
+		new Request(getFullURL(unifiedAPIEndpoints.queryVariables.getUrl({truncateValues})), {
 			...BASE_REQUEST_OPTIONS,
 			method: unifiedAPIEndpoints.queryVariables.method,
 			body: JSON.stringify(body),

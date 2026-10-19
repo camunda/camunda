@@ -64,6 +64,13 @@ import type {
 	QueryClientsByRoleResponseBody,
 	QueryGroupsRequestBody,
 	QueryGroupsResponseBody,
+	QueryProcessInstancesRequestBody,
+	QueryProcessInstancesResponseBody,
+	ProcessInstance,
+	QueryElementInstancesRequestBody,
+	QueryElementInstancesResponseBody,
+	QueryVariablesRequestBody,
+	QueryVariablesResponseBody,
 } from '@camunda/camunda-api-zod-schemas/8.11';
 import {request} from './request';
 import {endpoints} from './endpoints';
@@ -130,6 +137,13 @@ const queryKeys = {
 		['roleMembers', roleId, 'clients', body] as const,
 	queryGroups: (body: QueryGroupsRequestBody) => ['queryGroups', body] as const,
 	adminClientConfig: () => ['adminClientConfig'] as const,
+	queryProcessInstances: (body: QueryProcessInstancesRequestBody) => ['queryProcessInstances', body] as const,
+	processInstance: (processInstanceKey: string) => ['processInstance', processInstanceKey] as const,
+	queryElementInstances: (body: QueryElementInstancesRequestBody) => ['queryElementInstances', body] as const,
+	queryVariables: (body: QueryVariablesRequestBody, truncateValues?: boolean) =>
+		['queryVariables', body, truncateValues] as const,
+	userTasksPage: (body: QueryUserTasksRequestBody) => ['userTasks', 'page', body] as const,
+	latestFormByFormId: (formId: string, tenantId?: string) => ['latestFormByFormId', formId, tenantId] as const,
 };
 
 const queries = {
@@ -713,6 +727,80 @@ const queries = {
 					throw mapQueryError(error);
 				}
 				return parseAdminClientConfig(await response.text());
+			},
+		}),
+
+	queryProcessInstances: (body: QueryProcessInstancesRequestBody) =>
+		queryOptions({
+			queryKey: queryKeys.queryProcessInstances(body),
+			queryFn: async (): Promise<QueryProcessInstancesResponseBody> => {
+				const {response, error} = await request(endpoints.queryProcessInstances(body));
+				if (error !== null) {
+					throw mapQueryError(error);
+				}
+				return response.json();
+			},
+		}),
+
+	getProcessInstance: (processInstanceKey: string) =>
+		queryOptions({
+			queryKey: queryKeys.processInstance(processInstanceKey),
+			queryFn: async (): Promise<ProcessInstance> => {
+				const {response, error} = await request(endpoints.getProcessInstance(processInstanceKey));
+				if (error !== null) {
+					throw mapQueryError(error);
+				}
+				return response.json();
+			},
+		}),
+
+	queryElementInstances: (body: QueryElementInstancesRequestBody) =>
+		queryOptions({
+			queryKey: queryKeys.queryElementInstances(body),
+			queryFn: async (): Promise<QueryElementInstancesResponseBody> => {
+				const {response, error} = await request(endpoints.queryElementInstances(body));
+				if (error !== null) {
+					throw mapQueryError(error);
+				}
+				return response.json();
+			},
+		}),
+
+	queryVariables: (body: QueryVariablesRequestBody, options?: {truncateValues?: boolean}) =>
+		queryOptions({
+			queryKey: queryKeys.queryVariables(body, options?.truncateValues),
+			queryFn: async (): Promise<QueryVariablesResponseBody> => {
+				const {response, error} = await request(
+					endpoints.queryVariables(body, {truncateValues: options?.truncateValues}),
+				);
+				if (error !== null) {
+					throw mapQueryError(error);
+				}
+				return response.json();
+			},
+		}),
+
+	queryUserTasksPage: (body: QueryUserTasksRequestBody) =>
+		queryOptions({
+			queryKey: queryKeys.userTasksPage(body),
+			queryFn: async (): Promise<QueryUserTasksResponseBody> => {
+				const {response, error} = await request(endpoints.queryUserTasks(body));
+				if (error !== null) {
+					throw mapQueryError(error);
+				}
+				return response.json();
+			},
+		}),
+
+	getLatestFormByFormId: ({formId, tenantId}: {formId: string; tenantId?: string}) =>
+		queryOptions({
+			queryKey: queryKeys.latestFormByFormId(formId, tenantId),
+			queryFn: async (): Promise<Form> => {
+				const {response, error} = await request(endpoints.getLatestFormByFormId({formId, tenantId}));
+				if (error !== null) {
+					throw mapQueryError(error);
+				}
+				return response.json();
 			},
 		}),
 } as const;
