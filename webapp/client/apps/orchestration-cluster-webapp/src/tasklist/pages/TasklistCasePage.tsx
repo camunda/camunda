@@ -28,19 +28,19 @@ type Props = CaseData & {
 
 const TasklistCasePage: React.FC<Props> = ({caseFormSchema, children, ...caseData}) => {
 	const {t} = useTranslation();
-	const {processInstance, xml, elementInstances, userTasks, rootVariables} = caseData;
+	const {processInstance, xml, elementInstances, userTasks, caseVariables, documentVariables} = caseData;
 	const {model, isSimplifiedView, progress} = useMemo(
-		() => getCaseView({processInstance, xml, elementInstances, userTasks, rootVariables}),
-		[processInstance, xml, elementInstances, userTasks, rootVariables],
+		() => getCaseView({processInstance, xml, elementInstances, userTasks, caseVariables}),
+		[processInstance, xml, elementInstances, userTasks, caseVariables],
 	);
 	const processName = processInstance.processDefinitionName || processInstance.processDefinitionId;
-	const title = getCaseTitle(rootVariables.find(({name}) => name === model.caseMarker?.titleVariable)) ?? processName;
-	const header = getCaseHeader(rootVariables.find(({name}) => name === CASE_HEADER_VARIABLE)) ?? [];
-	const documents = useMemo(() => getDocumentReferences(rootVariables), [rootVariables]);
+	const title = getCaseTitle(caseVariables.find(({name}) => name === model.caseMarker?.titleVariable)) ?? processName;
+	const header = getCaseHeader(caseVariables.find(({name}) => name === CASE_HEADER_VARIABLE)) ?? [];
+	const documents = useMemo(() => getDocumentReferences(documentVariables), [documentVariables]);
 	const caseFormVariables = useMemo(() => {
 		const names = new Set(caseFormSchema === null ? [] : extractVariablesFromFormSchema(caseFormSchema));
-		return rootVariables.filter(({name}) => names.has(name));
-	}, [caseFormSchema, rootVariables]);
+		return caseVariables.filter(({name}) => names.has(name));
+	}, [caseFormSchema, caseVariables]);
 
 	return (
 		<PageLayout>

@@ -26,11 +26,11 @@ const TasklistCaseTasksPage: React.FC<Props> = ({
 	xml,
 	elementInstances,
 	userTasks,
-	rootVariables,
+	caseVariables,
 }) => {
 	const {model, currentStage, work} = useMemo(
-		() => getCaseView({processInstance, xml, elementInstances, userTasks, rootVariables}),
-		[processInstance, xml, elementInstances, userTasks, rootVariables],
+		() => getCaseView({processInstance, xml, elementInstances, userTasks, caseVariables}),
+		[processInstance, xml, elementInstances, userTasks, caseVariables],
 	);
 	const stageInstanceKey = currentStage?.elementInstanceKey ?? null;
 	const caseWork = useCaseWork({caseRef: processInstance, onOpenTask});

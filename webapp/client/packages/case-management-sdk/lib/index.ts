@@ -10,5 +10,12 @@ export {parseCaseModel, STAGE_DONE_JOB_TYPE} from './parseCaseModel';
 export type {AdHocSettings, CaseMarker, CaseModel, ManualCompletion, Stage, StageKind} from './parseCaseModel';
 export {getCaseProgress, getCurrentStage} from './getCaseProgress';
 export type {ElementInstanceLike, ProcessInstanceState, StageProgress, StageState} from './getCaseProgress';
-export {CASE_HEADER_VARIABLE, getCaseHeader, getCaseTitle, getDocumentReferences} from './caseData';
+export {
+	CASE_HEADER_VARIABLE,
+	getCaseHeader,
+	getCaseTitle,
+	getCaseVariableNames,
+	getDocumentReferences,
+	getVariableReference,
+} from './caseData';
 export type {CaseHeaderEntry, DocumentReference, VariableLike} from './caseData';

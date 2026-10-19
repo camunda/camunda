@@ -7,6 +7,7 @@
  */
 
 import {useSuspenseQuery, type QueryClient} from '@tanstack/react-query';
+import {getCaseVariableNames, parseCaseModel} from '@camunda/case-management-sdk';
 import type {
 	CurrentUser,
 	ElementInstance,
@@ -20,7 +21,8 @@ import {requestErrorSchema} from '#/shared/http/request';
 import {
 	getCaseElementInstancesRequestBody,
 	getCaseUserTasksRequestBody,
-	getRootVariablesRequestBody,
+	getCaseVariablesRequestBody,
+	getDocumentVariablesRequestBody,
 } from '#/tasklist/modules/case-details/getCaseRequestBodies';
 import {extractVariablesFromFormSchema} from '#/tasklist/modules/form-js/extractVariablesFromFormSchema';
 import {getSelectedVariablesRequestBody} from '#/tasklist/modules/task-details-form/getSelectedVariablesRequestBody';
@@ -33,7 +35,15 @@ type CaseData = {
 	xml: string;
 	elementInstances: ElementInstance[];
 	userTasks: UserTask[];
-	rootVariables: Variable[];
+	/** The variables that the BPMN and the case form name, see getCaseVariableNames. */
+	caseVariables: Variable[];
+	/** The root-scope variables that hold document references. */
+	documentVariables: Variable[];
+};
+
+type CaseRouteData = {
+	caseFormSchema: string | null;
+	variableNames: string[];
 };
 
 type CaseTaskData = {
@@ -58,34 +68,48 @@ async function returnNullIfNotFound<T>(promise: Promise<T>): Promise<T | null> {
 	}
 }
 
-/** Prefetches the data that every route of a case reads. Returns `null` when the case does not exist. */
-async function loadCaseData(queryClient: QueryClient, processInstanceKey: string): Promise<CaseData | null> {
+/**
+ * Prefetches the data that every route of a case reads, and derives the variable names to request from
+ * the BPMN and the case form. Returns `null` when the case does not exist.
+ */
+async function loadCaseData(queryClient: QueryClient, processInstanceKey: string): Promise<CaseRouteData | null> {
 	const processInstance = await returnNullIfNotFound(queryClient.query(queries.getProcessInstance(processInstanceKey)));
 
 	if (processInstance === null) {
 		return null;
 	}
 
-	const [currentUser, xml, elementInstances, userTasks, rootVariables] = await Promise.all([
+	const xml = await queryClient.query(queries.getProcessDefinitionXml(processInstance.processDefinitionKey));
+	const model = parseCaseModel(xml, processInstance.processDefinitionId);
+	const caseFormSchema = await loadCaseForm(
+		queryClient,
+		model.caseMarker?.caseFormId ?? null,
+		processInstance.tenantId,
+	);
+	const variableNames = [
+		...new Set([
+			...getCaseVariableNames(model),
+			...(caseFormSchema === null ? [] : extractVariablesFromFormSchema(caseFormSchema)),
+		]),
+	];
+
+	await Promise.all([
 		queryClient.query(queries.getCurrentUser()),
-		queryClient.query(queries.getProcessDefinitionXml(processInstance.processDefinitionKey)),
 		queryClient.query(queries.queryElementInstances(getCaseElementInstancesRequestBody(processInstanceKey))),
 		queryClient.query(queries.queryUserTasksPage(getCaseUserTasksRequestBody(processInstanceKey))),
-		queryClient.query(queries.queryVariables(getRootVariablesRequestBody(processInstanceKey), {truncateValues: false})),
+		queryClient.query(
+			queries.queryVariables(getCaseVariablesRequestBody(processInstanceKey, variableNames), {truncateValues: false}),
+		),
+		queryClient.query(
+			queries.queryVariables(getDocumentVariablesRequestBody(processInstanceKey), {truncateValues: false}),
+		),
 	]);
 
-	return {
-		currentUser,
-		processInstance,
-		xml,
-		elementInstances: elementInstances.items,
-		userTasks: userTasks.items,
-		rootVariables: rootVariables.items,
-	};
+	return {caseFormSchema, variableNames};
 }
 
 /** Reads the case data that the loader prefetched, and keeps it fresh. */
-function useCaseData(processInstanceKey: string): CaseData {
+function useCaseData(processInstanceKey: string, variableNames: string[]): CaseData {
 	const {data: currentUser} = useSuspenseQuery(queries.getCurrentUser());
 	const {data: processInstance} = useSuspenseQuery({
 		...queries.getProcessInstance(processInstanceKey),
@@ -100,8 +124,14 @@ function useCaseData(processInstanceKey: string): CaseData {
 		...queries.queryUserTasksPage(getCaseUserTasksRequestBody(processInstanceKey)),
 		refetchInterval: REFETCH_INTERVAL,
 	});
-	const {data: rootVariables} = useSuspenseQuery({
-		...queries.queryVariables(getRootVariablesRequestBody(processInstanceKey), {truncateValues: false}),
+	const {data: caseVariables} = useSuspenseQuery({
+		...queries.queryVariables(getCaseVariablesRequestBody(processInstanceKey, variableNames), {
+			truncateValues: false,
+		}),
+		refetchInterval: REFETCH_INTERVAL,
+	});
+	const {data: documentVariables} = useSuspenseQuery({
+		...queries.queryVariables(getDocumentVariablesRequestBody(processInstanceKey), {truncateValues: false}),
 		refetchInterval: REFETCH_INTERVAL,
 	});
 
@@ -111,7 +141,8 @@ function useCaseData(processInstanceKey: string): CaseData {
 		xml,
 		elementInstances: elementInstances.items,
 		userTasks: userTasks.items,
-		rootVariables: rootVariables.items,
+		caseVariables: caseVariables.items,
+		documentVariables: documentVariables.items,
 	};
 }
 
@@ -165,5 +196,5 @@ async function loadCaseForm(
 	return form?.schema ?? null;
 }
 
-export {loadCaseData, loadCaseForm, loadCaseTask, useCaseData};
+export {loadCaseData, loadCaseTask, useCaseData};
 export type {CaseData};
