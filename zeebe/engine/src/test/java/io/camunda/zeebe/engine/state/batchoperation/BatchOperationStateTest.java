@@ -417,6 +417,39 @@ public class BatchOperationStateTest {
   }
 
   @Test
+  void shouldKeepChunkOrdinalAfterPartialRemoval() {
+    // given
+    final var batchOperationKey = 1L;
+    state.create(batchOperationKey, createRecord(batchOperationKey));
+    state.addChunk(10L, batchOperationKey, 7, Set.of(1L, 2L, 3L));
+
+    // when
+    state.removeItemKeys(batchOperationKey, Set.of(1L));
+
+    // then
+    final var next = state.getNextItems(batchOperationKey, 5);
+    assertThat(next.batchItemsStorageOrdinal()).isEqualTo(7);
+    assertThat(next.itemKeys()).containsExactlyInAnyOrder(2L, 3L);
+  }
+
+  @Test
+  void shouldReturnOrdinalOfNextChunkAfterFirstIsDrained() {
+    // given two chunks under different ordinals
+    final var batchOperationKey = 1L;
+    state.create(batchOperationKey, createRecord(batchOperationKey));
+    state.addChunk(10L, batchOperationKey, 7, Set.of(1L));
+    state.addChunk(11L, batchOperationKey, 9, Set.of(2L));
+
+    // when the first chunk is drained
+    state.removeItemKeys(batchOperationKey, Set.of(1L));
+
+    // then
+    final var next = state.getNextItems(batchOperationKey, 5);
+    assertThat(next.batchItemsStorageOrdinal()).isEqualTo(9);
+    assertThat(next.itemKeys()).containsExactly(2L);
+  }
+
+  @Test
   void shouldStoreOrdinalZeroForChunkAddedWithoutOrdinal() {
     // given
     final var batchOperationKey = 1L;

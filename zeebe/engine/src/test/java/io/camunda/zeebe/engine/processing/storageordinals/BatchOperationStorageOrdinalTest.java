@@ -569,6 +569,8 @@ public final class BatchOperationStorageOrdinalTest {
     final var commands =
         RecordingExporter.processInstanceRecords()
             .withIntent(ProcessInstanceIntent.CANCEL)
+            .onlyCommands()
+            .withPartitionId(1)
             .filter(record -> record.getBatchOperationReference() == batchOperationKey)
             .limit(3)
             .collect(Collectors.toList());
