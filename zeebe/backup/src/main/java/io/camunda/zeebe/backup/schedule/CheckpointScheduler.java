@@ -33,7 +33,8 @@ import org.slf4j.LoggerFactory;
  * different backup configurations never interfere with each other.
  *
  * <p>If the log archive is enabled, it also activates the log archive once every broker is upgraded
- * (spec section 18.1), in a separate loop that ends once every partition has started its timeline.
+ * (spec section 18.1), in a separate loop that goes idle once every partition has started its
+ * timeline, and starts over when the topology shows a partition it has not activated (scale-up).
  * The backup loop then hands over from continuous backup to the log archive, as decided by {@link
  * HandoverDecision} on each tick (spec section 18.4).
  */
@@ -42,6 +43,7 @@ public class CheckpointScheduler extends Actor implements AutoCloseable {
   private static final long BACKOFF_MAX_DELAY_MS = 10_000;
   private static final long ACTIVATION_INITIAL_DELAY_MS = 1000;
   private static final long ACTIVATION_MAX_DELAY_MS = 10_000;
+  private static final Duration ACTIVATION_WATCH_INTERVAL = Duration.ofSeconds(10);
 
   private static final Logger LOG = LoggerFactory.getLogger(CheckpointScheduler.class);
   private final String physicalTenantId;
@@ -58,6 +60,7 @@ public class CheckpointScheduler extends Actor implements AutoCloseable {
   private final boolean activateLogArchive;
   private long activationDelayMs;
   private final ExponentialBackoff activationStrategy;
+  private Set<Integer> activatedPartitions = Set.of();
 
   public CheckpointScheduler(
       final String physicalTenantId,
@@ -157,10 +160,21 @@ public class CheckpointScheduler extends Actor implements AutoCloseable {
   private ActorFuture<ExecutionResult> backupOrCompleteHandover(
       final CheckpointStateResponse state) {
     final var decision = HandoverDecision.decide(state, activateLogArchive);
-    if (decision.action() == HandoverDecision.Action.COMPLETE_HANDOVER) {
+    if (!decision.takesBackup()) {
       return completeHandover(decision.checkpointId());
     }
-    return checkpointIfNeeded(determineNextBackup(state.getBackupStates()), decision.backupType());
+    final var backup =
+        checkpointIfNeeded(determineNextBackup(state.getBackupStates()), decision.backupType());
+    if (!decision.completesHandover()) {
+      return backup;
+    }
+    // partitions added after the handover record it while backups go on (row 3s); the backup is
+    // taken first, so a partition that cannot be reached yet does not hold it up
+    return backup.andThen(
+        result ->
+            completeHandover(decision.checkpointId())
+                .thenApply(ignored -> result.withHandoverPending(), this),
+        this);
   }
 
   /**
@@ -184,13 +198,15 @@ public class CheckpointScheduler extends Actor implements AutoCloseable {
 
   /**
    * Activates the log archive of every partition once every broker runs at least the current minor
-   * version (spec section 18.1), and stops once every partition reports a started timeline. Until
-   * then it checks again with backoff; a request that reaches only some partitions, or a partition
-   * that has not started its timeline yet, simply leads to another round, as activation is
-   * idempotent.
+   * version (spec section 18.1), until every partition reports a started timeline. Until then it
+   * checks again with backoff; a request that reaches only some partitions, or a partition that has
+   * not started its timeline yet, simply leads to another round, as activation is idempotent.
    *
-   * <p>Nothing is remembered between rounds, so after a restart or a move of the scheduler to
-   * another broker the loop starts over, and ends after one round if every timeline is started.
+   * <p>Then it only watches the topology: a partition added by a scale-up starts another round, so
+   * it is archive-only as early as possible (spec section 18.4a). The watch is a local check every
+   * {@link #ACTIVATION_WATCH_INTERVAL}, no request. The activated partitions are only remembered
+   * for it: after a restart or a move of the scheduler to another broker the loop starts over, and
+   * goes idle after one round if every timeline is started.
    */
   private void logArchiveActivationTask() {
     if (topologyManager.isRecovering(physicalTenantId)) {
@@ -213,11 +229,34 @@ public class CheckpointScheduler extends Actor implements AutoCloseable {
                     "timelines not started on every partition yet: " + timelineStartedByPartition);
               } else {
                 LOG.info(
-                    "Log archive activated on every partition of physical tenant {}",
+                    "Log archive activated on partitions {} of physical tenant {}",
+                    timelineStartedByPartition.keySet(),
                     physicalTenantId);
+                activatedPartitions = Set.copyOf(timelineStartedByPartition.keySet());
+                activationDelayMs = 0;
+                schedule(ACTIVATION_WATCH_INTERVAL, this::watchForPartitionsToActivate);
               }
             },
             this);
+  }
+
+  /** Starts another activation round once the topology holds a partition not activated yet. */
+  private void watchForPartitionsToActivate() {
+    final var topology = topologyManager.getTopology(physicalTenantId);
+    if (topology != null
+        && (topology.getPartitionsCount() > activatedPartitions.size()
+            || !activatedPartitions.containsAll(topology.getPartitions()))) {
+      LOG.info(
+          "Physical tenant {} has partitions {} of {}, but the log archive is activated on {} only;"
+              + " activating it",
+          physicalTenantId,
+          topology.getPartitions(),
+          topology.getPartitionsCount(),
+          activatedPartitions);
+      logArchiveActivationTask();
+      return;
+    }
+    schedule(ACTIVATION_WATCH_INTERVAL, this::watchForPartitionsToActivate);
   }
 
   private void retryLogArchiveActivation(final String reason) {
@@ -349,23 +388,28 @@ public class CheckpointScheduler extends Actor implements AutoCloseable {
     if (error != null) {
       delay = backOff(String.valueOf(error.getMessage()), type);
     } else if (result.handoverPending) {
-      delay = backOff("handover at checkpoint %d pending".formatted(result.checkpointId), type);
+      recordTakenCheckpoint(result, type);
+      delay = backOff("handover pending", type);
     } else {
       if (type == CheckpointType.MARKER) {
         markerErrorDelayMs = 0;
       } else {
         backupErrorDelayMs = 0;
       }
-      if (result.checkpointTaken) {
-        metrics.recordLastCheckpointId(result.checkpointId, type);
-        metrics.recordLastCheckpointTime(result.checkpointTime, type);
-      }
+      recordTakenCheckpoint(result, type);
       delay = computeNextDelay(result, type);
     }
     LOG.debug("Next {} checkpoint scheduled in {} ms", type, delay);
     final Runnable task =
         type == CheckpointType.MARKER ? this::markerSchedulingTask : this::backupSchedulingTask;
     schedule(Duration.ofMillis(delay), task);
+  }
+
+  private void recordTakenCheckpoint(final ExecutionResult result, final CheckpointType type) {
+    if (result.checkpointTaken) {
+      metrics.recordLastCheckpointId(result.checkpointId, type);
+      metrics.recordLastCheckpointTime(result.checkpointTime, type);
+    }
   }
 
   private long computeNextDelay(final ExecutionResult result, final CheckpointType type) {
@@ -417,8 +461,8 @@ public class CheckpointScheduler extends Actor implements AutoCloseable {
   }
 
   /**
-   * @param handoverPending whether COMPLETE_HANDOVER was sent instead of a checkpoint, so the tick
-   *     is repeated with backoff until the handover is recorded everywhere
+   * @param handoverPending whether COMPLETE_HANDOVER was sent, instead of or after a checkpoint, so
+   *     the tick is repeated with backoff until the handover is recorded everywhere
    */
   record ExecutionResult(
       long checkpointId,
@@ -430,6 +474,11 @@ public class CheckpointScheduler extends Actor implements AutoCloseable {
     static ExecutionResult handoverPending(final long checkpointId) {
       return new ExecutionResult(
           checkpointId, CheckpointType.HANDOVER, ActorClock.currentInstant(), false, true);
+    }
+
+    /** This result, with the tick repeated with backoff until the handover is recorded. */
+    ExecutionResult withHandoverPending() {
+      return new ExecutionResult(checkpointId, type, checkpointTime, checkpointTaken, true);
     }
   }
 }

@@ -137,6 +137,7 @@
       <field name="archivedPosition" id="3" type="int64"/>
       <field name="newestArchivedSnapshotProcessedPosition" id="4" type="int64"/>
       <field name="handoverCheckpointId" id="5" type="int64"/>
+      <field name="firstArchivedPosition" id="6" type="int64"/>
     </group>
   </sbe:message>
 

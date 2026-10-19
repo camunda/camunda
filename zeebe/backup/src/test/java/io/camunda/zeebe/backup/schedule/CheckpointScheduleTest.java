@@ -638,6 +638,36 @@ public class CheckpointScheduleTest {
   }
 
   @Test
+  void shouldActivateLogArchiveOfAPartitionAddedLater() {
+    // given - every timeline is started, then a scale-up adds partition 2
+    givenBrokerVersions(VersionUtil.getVersion());
+    doReturn(CompletableFuture.completedFuture(Map.of(1, true)))
+        .doReturn(CompletableFuture.completedFuture(Map.of(1, true, 2, true)))
+        .when(backupRequestHandler)
+        .activateLogArchive(DEFAULT_PHYSICAL_TENANT_ID);
+    checkpointScheduler = createLogArchiveActivationScheduler();
+    actorScheduler.submitActor(checkpointScheduler);
+    actorScheduler.workUntilDone();
+    for (int i = 0; i < 3; i++) {
+      actorScheduler.updateClock(Duration.ofSeconds(10));
+      actorScheduler.workUntilDone();
+    }
+    verify(backupRequestHandler, times(1)).activateLogArchive(DEFAULT_PHYSICAL_TENANT_ID);
+
+    // when
+    final var topology = topologyManager.getTopology(DEFAULT_PHYSICAL_TENANT_ID);
+    when(topology.getPartitionsCount()).thenReturn(2);
+    when(topology.getPartitions()).thenReturn(List.of(1, 2));
+    for (int i = 0; i < 6; i++) {
+      actorScheduler.updateClock(Duration.ofSeconds(10));
+      actorScheduler.workUntilDone();
+    }
+
+    // then - activated once more, then idle again
+    verify(backupRequestHandler, times(2)).activateLogArchive(DEFAULT_PHYSICAL_TENANT_ID);
+  }
+
+  @Test
   void shouldNotActivateLogArchiveWhenDisabled() {
     // given
     givenBrokerVersions(VersionUtil.getVersion());
@@ -727,6 +757,37 @@ public class CheckpointScheduleTest {
     // then
     verify(backupRequestHandler, times(1)).completeHandover(DEFAULT_PHYSICAL_TENANT_ID, 7L);
     verify(backupRequestHandler, times(1))
+        .checkpoint(DEFAULT_PHYSICAL_TENANT_ID, CheckpointType.SCHEDULED_BACKUP);
+    verify(backupRequestHandler, never())
+        .checkpoint(DEFAULT_PHYSICAL_TENANT_ID, CheckpointType.HANDOVER);
+  }
+
+  @Test
+  void shouldKeepTakingBackupsWhileAPartitionAddedAfterTheHandoverRecordsIt() {
+    // given - partition 1 recorded H, partition 2 was added later and archived from its start
+    final var now = actorScheduler.getClock().getCurrentTime().toEpochMilli();
+    final var state = backupState(now, 7L, CheckpointType.HANDOVER, 50);
+    state.setLogArchiveStates(
+        Set.of(
+            new PartitionLogArchiveState(1, true, 60, 10, 7L),
+            new PartitionLogArchiveState(2, true, 30, 5, -1, 1)));
+    givenCheckpointState(state);
+    doReturn(CompletableFuture.completedFuture(null))
+        .when(backupRequestHandler)
+        .completeHandover(DEFAULT_PHYSICAL_TENANT_ID, 7L);
+    checkpointScheduler = createHandoverScheduler();
+
+    // when - past the next scheduled backup
+    actorScheduler.submitActor(checkpointScheduler);
+    actorScheduler.workUntilDone();
+    for (int i = 0; i < 6; i++) {
+      actorScheduler.updateClock(Duration.ofSeconds(5));
+      actorScheduler.workUntilDone();
+    }
+
+    // then - the handover is sent and retried, and the scheduled backup is taken meanwhile
+    verify(backupRequestHandler, atLeast(3)).completeHandover(DEFAULT_PHYSICAL_TENANT_ID, 7L);
+    verify(backupRequestHandler, atLeast(1))
         .checkpoint(DEFAULT_PHYSICAL_TENANT_ID, CheckpointType.SCHEDULED_BACKUP);
     verify(backupRequestHandler, never())
         .checkpoint(DEFAULT_PHYSICAL_TENANT_ID, CheckpointType.HANDOVER);

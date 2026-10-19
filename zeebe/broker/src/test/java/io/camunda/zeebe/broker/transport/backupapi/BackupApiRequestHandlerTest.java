@@ -869,6 +869,7 @@ class BackupApiRequestHandlerTest {
             new LogArchiveMeta()
                 .setTimelineId("tl-0")
                 .setArchivedPosition(500)
+                .setFirstArchivedPosition(1)
                 .setHandoverCheckpointId(42));
     when(logArchiveState.snapshots())
         .thenReturn(
@@ -887,7 +888,7 @@ class BackupApiRequestHandlerTest {
     // then
     assertThat(responseFuture).succeedsWithin(Duration.ofMinutes(1)).matches(Either::isRight);
     assertThat(stateResponse.getLogArchiveStates())
-        .containsExactly(new PartitionLogArchiveState(1, true, 500, 300, 42));
+        .containsExactly(new PartitionLogArchiveState(1, true, 500, 300, 42, 1));
   }
 
   @Test
