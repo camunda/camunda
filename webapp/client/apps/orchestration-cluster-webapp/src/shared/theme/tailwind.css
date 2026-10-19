@@ -48,7 +48,7 @@
 	}
 
 	.powered-by {
-		display: none;
+		display: none !important;
 	}
 
 	.dmn-decision-table-container {
@@ -67,12 +67,12 @@
 	}
 
 	.decision-table-properties {
-		border-width: 2px 2px 1px 2px;
+		border-width: 2px 2px 1px 2px !important;
 	}
 
 	.tjs-table-container {
 		background-color: var(--viewer-layer) !important;
-		border-width: 2px 2px 1px 2px;
+		border-width: 2px 2px 1px 2px !important;
 	}
 
 	.dmn-literal-expression-container {
@@ -84,27 +84,27 @@
 		--literal-expression-properties-color: var(--foreground) !important;
 
 		table {
-			border-collapse: unset;
-			padding: 0;
+			border-collapse: unset !important;
+			padding: 0 !important;
 		}
 	}
 
 	.decision-properties {
 		background-color: var(--viewer-layer) !important;
 		border-color: var(--neutral-foreground-subtle) !important;
-		border-width: 2px 2px 1px 2px;
+		border-width: 2px 2px 1px 2px !important;
 	}
 
 	.textarea {
 		background-color: var(--viewer-layer) !important;
 		border-color: var(--neutral-foreground-subtle) !important;
-		min-height: 0;
-		border-width: 1px 2px;
+		min-height: 0 !important;
+		border-width: 1px 2px !important;
 	}
 
 	.literal-expression-properties {
 		background-color: var(--viewer-layer) !important;
 		border-color: var(--neutral-foreground-subtle) !important;
-		border-width: 1px 2px 2px 2px;
+		border-width: 1px 2px 2px 2px !important;
 	}
 }
