@@ -67,6 +67,7 @@ public final class LogArchiveTransitionStep implements PartitionTransitionStep {
         processor.setPublication(null);
         context.setLogArchiveProcessor(null);
       }
+      context.setLogArchiveActivation(null);
       return closeLeaderComponents(context);
     }
     return CompletableActorFuture.completed(null);
@@ -124,7 +125,7 @@ public final class LogArchiveTransitionStep implements PartitionTransitionStep {
             store,
             logStream.newLogStreamWriter(),
             new LogArchiverRaftEntrySource(context.getRaftPartition().getServer().openReader()),
-            () -> LogArchiverTimeline.resolve(partitionDirectory, cfg.getTimeline()),
+            () -> LogArchiverTimeline.resolveEffective(partitionDirectory, cfg.getTimeline()),
             cfg.getCutMaxBytes().toBytes(),
             cfg.getCutInterval(),
             cfg.getIdleCutInterval());
@@ -162,6 +163,7 @@ public final class LogArchiveTransitionStep implements PartitionTransitionStep {
           processor.setListener(new FanOutListener(List.of(archiver, uploader, publisher)));
           processor.setPublication(publisher);
           context.getLogStorage().addCommitListener(archiver);
+          context.setLogArchiveActivation(archiver);
           LOG.info("Partition {}: started the log archive in term {}", partitionId, term);
           installed.complete(null);
         },

@@ -99,6 +99,8 @@ class BackupApiRequestHandlerTest {
   @Mock PersistedSnapshot freshSnapshot;
   @Mock SnapshotTrigger snapshotTrigger;
   BackupApiRequestHandler handler;
+  private int logArchiveActivations;
+  private boolean logArchiveTimelineStarted;
   private ActorFuture<PersistedSnapshot> takenSnapshot =
       CompletableActorFuture.completedExceptionally(new IllegalStateException("not configured"));
   private ResponseReader serverOutput;
@@ -121,7 +123,11 @@ class BackupApiRequestHandlerTest {
             snapshotStore,
             snapshotTrigger,
             new PartitionId(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, 1),
-            true);
+            true,
+            () -> {
+              logArchiveActivations++;
+              return CompletableActorFuture.completed(logArchiveTimelineStarted);
+            });
     scheduler.submitActor(handler);
     scheduler.workUntilDone();
 
@@ -153,6 +159,44 @@ class BackupApiRequestHandlerTest {
         .extracting(Either::getLeft)
         .extracting(ErrorResponse::getErrorCode)
         .isEqualTo(ErrorCode.UNSUPPORTED_MESSAGE);
+  }
+
+  @Test
+  void shouldActivateLogArchiveAndReportPendingTimeline() {
+    // given
+    final var request =
+        new BackupRequest().setType(BackupRequestType.ACTIVATE_LOG_ARCHIVE).setPartitionId(1);
+    final BackupStatusResponse statusResponse = new BackupStatusResponse();
+    serverOutput.setResponseObject(statusResponse);
+
+    // when
+    handleRequest(request);
+
+    // then
+    assertThat(responseFuture).succeedsWithin(Duration.ofMinutes(1)).matches(Either::isRight);
+    assertThat(logArchiveActivations).isOne();
+    assertThat(statusResponse)
+        .returns(1, BackupStatusResponse::getPartitionId)
+        .returns(BackupStatusCode.IN_PROGRESS, BackupStatusResponse::getStatus);
+  }
+
+  @Test
+  void shouldReportStartedLogArchiveTimeline() {
+    // given
+    logArchiveTimelineStarted = true;
+    final var request =
+        new BackupRequest().setType(BackupRequestType.ACTIVATE_LOG_ARCHIVE).setPartitionId(1);
+    final BackupStatusResponse statusResponse = new BackupStatusResponse();
+    serverOutput.setResponseObject(statusResponse);
+
+    // when
+    handleRequest(request);
+
+    // then
+    assertThat(responseFuture).succeedsWithin(Duration.ofMinutes(1)).matches(Either::isRight);
+    assertThat(statusResponse)
+        .returns(1, BackupStatusResponse::getPartitionId)
+        .returns(BackupStatusCode.COMPLETED, BackupStatusResponse::getStatus);
   }
 
   @Test

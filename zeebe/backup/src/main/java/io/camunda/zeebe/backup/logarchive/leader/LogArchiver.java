@@ -10,6 +10,7 @@ package io.camunda.zeebe.backup.logarchive.leader;
 import io.camunda.zeebe.backup.logarchive.format.EncodedLogObject;
 import io.camunda.zeebe.backup.logarchive.format.LogArchiveFrame;
 import io.camunda.zeebe.backup.logarchive.format.LogObjectEncoder;
+import io.camunda.zeebe.backup.logarchive.leader.LogArchiverTimeline.Effective;
 import io.camunda.zeebe.backup.logarchive.model.LogArchiveKeys;
 import io.camunda.zeebe.backup.logarchive.processing.LogArchiveListener;
 import io.camunda.zeebe.backup.logarchive.state.LogArchiveMeta;
@@ -27,6 +28,7 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.management.LogArchiveIntent;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.clock.ActorClock;
+import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.util.Either;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -54,13 +56,23 @@ import org.slf4j.LoggerFactory;
  * is only started under an id that has nothing in the bucket yet, so that no history is ever
  * overwritten.
  *
+ * <p>The very first timeline of a partition (no timeline in the state, no timeline file) is not
+ * started on recovery, but only once {@link #activate()} is called (spec section 18.1): during a
+ * rolling upgrade, brokers that are not upgraded yet cannot apply a {@code LOG_ARCHIVE} record.
+ * Activation is not persisted; once {@code START_TIMELINE} is applied, the state holds a timeline
+ * and later leaders resume it. A timeline file is only written by a restore, which runs on upgraded
+ * brokers, so a timeline from it starts without activation.
+ *
  * <p>All state lives on the actor thread. Listener callbacks and commit wake-ups arrive on other
  * threads and hop onto the actor. Every asynchronous continuation (store PUT, retry timer) captures
  * the current {@code epoch} and is dropped if the cursor was reset in the meantime, so a late
  * completion can never act on a stale range.
  */
 public final class LogArchiver extends Actor
-    implements LogArchiveListener, LogArchiveRecoveryListener, CommitListener {
+    implements LogArchiveListener,
+        LogArchiveRecoveryListener,
+        CommitListener,
+        LogArchiveActivation {
 
   private static final Logger LOG = LoggerFactory.getLogger(LogArchiver.class);
   private static final Duration INITIAL_BACKOFF = Duration.ofMillis(100);
@@ -75,7 +87,7 @@ public final class LogArchiver extends Actor
   private final LogArchiveStore store;
   private final LogStreamWriter writer;
   private final LogArchiverEntrySource source;
-  private final Supplier<String> timelineResolver;
+  private final Supplier<Effective> timelineResolver;
   private final long cutMaxBytes;
   private final Duration cutInterval;
   private final Duration idleCutInterval;
@@ -87,6 +99,12 @@ public final class LogArchiver extends Actor
   private String prefix = "";
   private long startIndex = -1;
   private String parentTimelineId = "";
+  // whether the replicated state holds a timeline, as far as this archiver knows
+  private boolean stateHasTimeline;
+  // set by activate(); lets the first timeline start once recovery finds none
+  private boolean activated;
+  // the effective timeline to start once activated, while in AWAIT_ACTIVATION
+  private String awaitedTimelineId = "";
   // A: the last index known to be archived (F as far as this archiver knows)
   private long archivedIndex = -1;
   private long nextReadIndex = -1;
@@ -102,8 +120,8 @@ public final class LogArchiver extends Actor
   /**
    * @param term the leader's term; written into the object key and header
    * @param source committed entries; owned and closed by the archiver
-   * @param timelineResolver returns the effective timeline (timeline file, else configuration);
-   *     called on the actor when recovering
+   * @param timelineResolver returns the effective timeline (timeline file, else configuration) and
+   *     whether it comes from the timeline file; called on the actor when recovering
    * @param cutMaxBytes cut an object once the pending entries reach this size
    * @param cutInterval cut an object at least this often while entries are pending
    * @param idleCutInterval cut an object at least this often while all pending entries are the log
@@ -115,7 +133,7 @@ public final class LogArchiver extends Actor
       final LogArchiveStore store,
       final LogStreamWriter writer,
       final LogArchiverEntrySource source,
-      final Supplier<String> timelineResolver,
+      final Supplier<Effective> timelineResolver,
       final long cutMaxBytes,
       final Duration cutInterval,
       final Duration idleCutInterval) {
@@ -180,9 +198,28 @@ public final class LogArchiver extends Actor
   }
 
   @Override
+  public ActorFuture<Boolean> activate() {
+    return actor.call(
+        () -> {
+          if (state == State.CLOSED) {
+            return false;
+          }
+          if (!activated) {
+            LOG.info("Partition {}: log archive activated", partitionId);
+          }
+          activated = true;
+          if (state == State.AWAIT_ACTIVATION) {
+            startFirstTimeline(awaitedTimelineId);
+          }
+          return stateHasTimeline;
+        });
+  }
+
+  @Override
   public void onTimelineStarted(final String startedTimelineId) {
     actor.run(
         () -> {
+          stateHasTimeline = true;
           if (state == State.AWAIT_TIMELINE && startedTimelineId.equals(timelineId)) {
             LOG.info(
                 "Partition {}: started log archive timeline {} at index {}",
@@ -237,10 +274,23 @@ public final class LogArchiver extends Actor
     inFlight = null;
     clearPending();
     backoff = INITIAL_BACKOFF;
-    final var effectiveTimelineId = timelineResolver.get();
+    final var effective = timelineResolver.get();
+    final var effectiveTimelineId = effective.timelineId();
     final var recoveredTimelineId = meta.getTimelineId();
+    stateHasTimeline = !recoveredTimelineId.isEmpty();
 
-    if (!continuesTimeline(recoveredTimelineId, effectiveTimelineId)) {
+    if (!stateHasTimeline && !effective.fromTimelineFile()) {
+      if (activated) {
+        startFirstTimeline(effectiveTimelineId);
+      } else {
+        LOG.info(
+            "Partition {}: no log archive timeline yet; waiting for activation to start '{}'",
+            partitionId,
+            effectiveTimelineId);
+        awaitedTimelineId = effectiveTimelineId;
+        state = State.AWAIT_ACTIVATION;
+      }
+    } else if (!continuesTimeline(recoveredTimelineId, effectiveTimelineId)) {
       LOG.info(
           "Partition {}: log archive timeline is '{}', but the effective timeline is '{}'; starting it",
           partitionId,
@@ -272,6 +322,19 @@ public final class LogArchiver extends Actor
           meta.getArchivedIndex());
       resetTo(meta.getArchivedIndex());
     }
+  }
+
+  /** Starts the configured timeline as the partition's first one, from the first index on disk. */
+  private void startFirstTimeline(final String effectiveTimelineId) {
+    LOG.info(
+        "Partition {}: log archive is activated; starting the first timeline '{}'",
+        partitionId,
+        effectiveTimelineId);
+    startTimeline(
+        attempt ->
+            attempt == 0 ? effectiveTimelineId : forkTimelineId(effectiveTimelineId, 1, attempt),
+        0,
+        "");
   }
 
   /**
@@ -525,6 +588,7 @@ public final class LogArchiver extends Actor
   private void logArchived(final long newArchivedIndex) {
     if (state == State.CLOSED
         || state == State.AWAIT_RECOVERY
+        || state == State.AWAIT_ACTIVATION
         || state == State.RESOLVE_TIMELINE
         || state == State.AWAIT_TIMELINE) {
       return;
@@ -618,6 +682,11 @@ public final class LogArchiver extends Actor
   enum State {
     /** Waiting for the processor to deliver the replicated meta. */
     AWAIT_RECOVERY,
+    /**
+     * The state holds no timeline and there is no timeline file: waiting for {@link #activate()}
+     * before starting the configured timeline. Nothing is written in this state.
+     */
+    AWAIT_ACTIVATION,
     /** A timeline must be started; looking for an id that has nothing in the bucket yet. */
     RESOLVE_TIMELINE,
     /** START_TIMELINE written, waiting for TIMELINE_STARTED. */
