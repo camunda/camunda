@@ -1,0 +1,81 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.zeebe.backup.azure;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.TimeUnit;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+final class AzureBackupStoreCredentialExecutorTest {
+
+  private ExecutorService executor;
+
+  @BeforeEach
+  void setUp() {
+    executor = AzureBackupStore.newCredentialExecutor();
+  }
+
+  @AfterEach
+  void tearDown() {
+    executor.shutdownNow();
+  }
+
+  @Test
+  void shouldRunTasksOnDaemonPlatformThreads() {
+    // given
+    final var thread = new CompletableFuture<Thread>();
+
+    // when
+    executor.execute(() -> thread.complete(Thread.currentThread()));
+
+    // then
+    assertThat(thread)
+        .succeedsWithin(10, TimeUnit.SECONDS)
+        .satisfies(
+            t -> {
+              assertThat(t.isVirtual()).isFalse();
+              assertThat(t.isDaemon()).isTrue();
+              assertThat(t.getName()).startsWith("zeebe-backup-azure-credential-");
+            });
+  }
+
+  @Test
+  void shouldRunMultipleTasksConcurrently() {
+    // given
+    final var concurrentTasks = 4;
+    final var allStarted = new CountDownLatch(concurrentTasks);
+    final var futures = new CompletableFuture<?>[concurrentTasks];
+
+    // when
+    for (int i = 0; i < concurrentTasks; i++) {
+      futures[i] =
+          CompletableFuture.runAsync(
+              () -> {
+                allStarted.countDown();
+                try {
+                  if (!allStarted.await(10, TimeUnit.SECONDS)) {
+                    throw new IllegalStateException("Tasks did not run concurrently");
+                  }
+                } catch (final InterruptedException e) {
+                  Thread.currentThread().interrupt();
+                  throw new IllegalStateException(e);
+                }
+              },
+              executor);
+    }
+
+    // then
+    assertThat(CompletableFuture.allOf(futures)).succeedsWithin(15, TimeUnit.SECONDS);
+  }
+}

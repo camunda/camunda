@@ -33,6 +33,7 @@ import io.camunda.zeebe.backup.common.Manifest;
 import io.camunda.zeebe.backup.common.Manifest.StatusCode;
 import io.camunda.zeebe.backup.common.SemaphoreLeasedScheduler;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -40,7 +41,9 @@ import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.Semaphore;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.locks.ReentrantLock;
@@ -71,6 +74,8 @@ public final class AzureBackupStore implements BackupStore {
    */
   static final int DELETE_PARALLELISM = 16;
 
+  private static final int CREDENTIAL_EXECUTOR_THREADS = 8;
+  private static final Duration CREDENTIAL_EXECUTOR_KEEP_ALIVE = Duration.ofSeconds(60);
   private static final Logger LOG = LoggerFactory.getLogger(AzureBackupStore.class);
   private final ExecutorService executor;
   private final Semaphore deleteConcurrencyLimit = new Semaphore(DELETE_PARALLELISM);
@@ -131,9 +136,25 @@ public final class AzureBackupStore implements BackupStore {
           "No connection string, sas token or account credentials are configured, using DefaultAzureCredentialBuilder for authentication.");
       return builder
           .endpoint(config.endpoint())
-          .credential(new DefaultAzureCredentialBuilder().build())
+          .credential(
+              new DefaultAzureCredentialBuilder().executorService(newCredentialExecutor()).build())
           .buildClient();
     }
+  }
+
+  // The SDK shared pool runs token tasks on virtual threads, which can deadlock when all carriers
+  // are pinned: https://github.com/Azure/azure-sdk-for-java/issues/46231
+  static ExecutorService newCredentialExecutor() {
+    final var executor =
+        new ThreadPoolExecutor(
+            CREDENTIAL_EXECUTOR_THREADS,
+            CREDENTIAL_EXECUTOR_THREADS,
+            CREDENTIAL_EXECUTOR_KEEP_ALIVE.toSeconds(),
+            TimeUnit.SECONDS,
+            new LinkedBlockingQueue<>(),
+            Thread.ofPlatform().daemon().name("zeebe-backup-azure-credential-", 0).factory());
+    executor.allowCoreThreadTimeOut(true);
+    return executor;
   }
 
   BlobContainerClient getContainerClient(
