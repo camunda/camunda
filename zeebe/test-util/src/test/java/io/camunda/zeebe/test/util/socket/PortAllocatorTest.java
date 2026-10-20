@@ -143,8 +143,27 @@ final class PortAllocatorTest {
     child.destroyForcibly().waitFor();
 
     // then
-    final var afterDeath = new PortAllocator(lockDir, MIN, MIN + 3);
-    assertThatCode(afterDeath::nextPort).doesNotThrowAnyException();
+    assertThatCode(allocator::nextPort).doesNotThrowAnyException();
+  }
+
+  @Test
+  void shouldKeepPortsReservedWhenAnotherAllocatorInTheSameJvmProbesThem() throws Exception {
+    // given
+    final var first = new PortAllocator(lockDir, MIN, MIN + 3);
+    final var second = new PortAllocator(lockDir, MIN, MIN + 3);
+    final var ports = new HashSet<Integer>();
+    ports.add(first.nextPort());
+    ports.add(first.nextPort());
+    ports.add(second.nextPort());
+
+    // when - the second allocator probes the ports of the first one
+    assertThatThrownBy(second::nextPort).isInstanceOf(IllegalStateException.class);
+
+    // then
+    assertThat(ports).hasSize(3);
+    final var child = startChild(MIN, MIN + 3, 1);
+    assertThat(child.waitFor(30, TimeUnit.SECONDS)).isTrue();
+    assertThat(child.exitValue()).isNotZero();
   }
 
   private Process startChild(final int min, final int max, final int count) throws IOException {
