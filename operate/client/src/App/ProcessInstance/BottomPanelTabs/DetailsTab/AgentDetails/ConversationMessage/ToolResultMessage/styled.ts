@@ -49,6 +49,11 @@ const ToolLabel = styled(ActorLabel)`
   text-transform: initial;
 `;
 
+const ToolAttachments = styled.div`
+  grid-column: 1 / -1;
+  min-inline-size: 0;
+`;
+
 const ResultPreview = styled.p`
   grid-area: content;
   font-size: var(--cds-body-compact-01-font-size);
@@ -62,4 +67,11 @@ const ResultPreview = styled.p`
   max-inline-size: 100ch;
 `;
 
-export {Container, ToolHeader, ToolLabel, ToolActions, ResultPreview};
+export {
+  Container,
+  ToolHeader,
+  ToolLabel,
+  ToolActions,
+  ResultPreview,
+  ToolAttachments,
+};

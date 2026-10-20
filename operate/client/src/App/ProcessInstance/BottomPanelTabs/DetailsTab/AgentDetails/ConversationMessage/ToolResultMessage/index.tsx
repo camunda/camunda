@@ -18,18 +18,21 @@ import {
   ToolActions,
   ToolHeader,
   ToolLabel,
+  ToolAttachments,
 } from './styled';
 import {Button} from '@carbon/react';
 import {getResultPreview, type ContentItem} from './getRenderableResult';
 import {ToolResultModal} from './ToolResultModal';
 import {DocumentContent} from '../MessageAttachments/DocumentContent';
 import {EvidenceCards} from '../EvidenceCard';
+import {DocumentProcessing} from '../MessageAttachments/DocumentProcessing';
 
 type ToolResultMessageProps = {
   availableTools: AgentTool[];
   toolCalls: AgentInstanceToolCall[];
   content: ContentItem[];
   onExpand?: () => void;
+  parsingInput?: ContentItem[];
 };
 
 const ToolResultMessage: React.FC<ToolResultMessageProps> = ({
@@ -37,6 +40,7 @@ const ToolResultMessage: React.FC<ToolResultMessageProps> = ({
   toolCalls,
   content,
   onExpand,
+  parsingInput,
 }) => {
   // According to the API, the tool call is a single entry in the tool calls list on a TOOL_RESULT message.
   const toolCall = toolCalls[0];
@@ -66,8 +70,16 @@ const ToolResultMessage: React.FC<ToolResultMessageProps> = ({
         <ToolLabel>{toolCall.toolName}</ToolLabel>
       </ToolHeader>
       {resultPreview !== null && <ResultPreview>{resultPreview}</ResultPreview>}
-      <EvidenceCards content={content} />
-      <DocumentContent content={content} modalTitleSuffix="tool result" />
+      {parsingInput ? (
+        <ToolAttachments>
+          <DocumentProcessing input={parsingInput} output={content} />
+        </ToolAttachments>
+      ) : (
+        <>
+          <EvidenceCards content={content} />
+          <DocumentContent content={content} modalTitleSuffix="tool result" />
+        </>
+      )}
       <ToolActions>
         <Button
           kind="ghost"
@@ -86,6 +98,7 @@ const ToolResultMessage: React.FC<ToolResultMessageProps> = ({
           description={description}
           input={toolCall.arguments}
           content={content}
+          parsingInput={parsingInput}
           onClose={() => setIsExpanded(false)}
         />
       )}

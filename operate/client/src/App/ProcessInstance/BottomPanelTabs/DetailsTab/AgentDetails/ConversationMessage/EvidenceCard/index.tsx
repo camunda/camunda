@@ -184,11 +184,17 @@ const EvidenceCard: React.FC<EvidenceCardProps> = ({evidence}) => {
 
 const EvidenceCards: React.FC<{
   content: ContentItem[];
-}> = ({content}) => (
+  hideDocumentParsing?: boolean;
+}> = ({content, hideDocumentParsing = false}) => (
   <>
-    {getContentEvidence(content).map((evidence, index) => (
-      <EvidenceCard key={index} evidence={evidence} />
-    ))}
+    {getContentEvidence(content)
+      .filter(
+        (evidence) =>
+          !hideDocumentParsing || evidence.kind !== 'documentParsing',
+      )
+      .map((evidence, index) => (
+        <EvidenceCard key={index} evidence={evidence} />
+      ))}
   </>
 );
 

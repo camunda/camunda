@@ -26,6 +26,7 @@ import {mockServer} from 'modules/mock-server/node';
 import {http} from 'msw';
 import {
   endpoints,
+  type AgentInstanceHistoryItem,
   type QueryAgentInstanceHistoryRequestBody,
 } from '@camunda/camunda-api-zod-schemas/8.10';
 
@@ -47,6 +48,113 @@ function createWrapper() {
 }
 
 describe('<ConversationHistory />', () => {
+  it('groups provider PDF input and CSV export in the real export tool card and expanded view', async () => {
+    const document = (
+      id: string,
+      fileName: string,
+      contentType: string,
+    ): AgentInstanceHistoryItem['content'][number] => ({
+      contentType: 'DOCUMENT',
+      documentReference: {
+        'camunda.document.type': 'camunda',
+        documentId: id,
+        storeId: 'default',
+        contentHash: 'hash',
+        metadata: {
+          fileName,
+          contentType,
+          size: 123,
+          expiresAt: null,
+          processDefinitionId: null,
+          processInstanceKey: null,
+          customProperties: {},
+        },
+      },
+    });
+    const source = mockAgentInstanceHistoryItem({
+      historyItemKey: '1',
+      role: 'USER',
+      content: [
+        document('pdf', 'statement.pdf', 'application/pdf'),
+        {
+          contentType: 'OBJECT',
+          object: {
+            evidence: {
+              kind: 'documentParsing',
+              plugin: 'file-parser',
+              pdfEngine: 'native',
+              documents: [{documentId: 'pdf', fileName: 'statement.pdf'}],
+            },
+          },
+        },
+      ],
+      producedAt: '2026-10-19T10:00:00Z',
+    });
+    const exported = mockAgentInstanceHistoryItem({
+      historyItemKey: '2',
+      role: 'TOOL_RESULT',
+      toolCalls: [
+        {
+          toolCallId: 'export',
+          toolName: 'sandbox_export_document',
+          elementId: 'sandbox',
+          arguments: {path: '/statement.csv'},
+        },
+      ],
+      content: [document('csv', 'statement.csv', 'text/csv')],
+      producedAt: '2026-10-19T10:00:01Z',
+    });
+    mockSearchAgentInstanceHistory().withSuccess(
+      searchResult([exported, source]),
+    );
+    const {user} = render(
+      <ConversationHistory
+        agentInstanceKey={AGENT_INSTANCE_KEY}
+        availableTools={[]}
+        agentInstanceStatus="COMPLETED"
+        isVisible
+        selectedElementInstanceKey={null}
+        agentsElementInstanceKeys={[]}
+      />,
+      {wrapper: createWrapper()},
+    );
+    const card = within(
+      await screen.findByRole('article', {
+        name: 'Result for "sandbox_export_document" tool call',
+      }),
+    );
+    const group = within(
+      card.getByRole('region', {name: 'PDF parsing and CSV export'}),
+    );
+    expect(group.getByRole('region', {name: 'PDF input'})).toHaveTextContent(
+      'statement.pdf',
+    );
+    expect(group.getByRole('region', {name: 'CSV output'})).toHaveTextContent(
+      'statement.csv',
+    );
+    expect(group.queryByRole('status')).not.toBeInTheDocument();
+    expect(
+      screen.queryByTestId('evidence-document-parsing'),
+    ).not.toBeInTheDocument();
+    await user.click(card.getByRole('button', {name: 'Expand'}));
+    const dialog = within(screen.getByRole('dialog'));
+    expect(
+      dialog.getByRole('heading', {
+        name: /^Tool call: sandbox_export_document/,
+      }),
+    ).toBeInTheDocument();
+    expect(dialog.getByRole('region', {name: 'PDF input'})).toHaveTextContent(
+      'statement.pdf',
+    );
+    expect(dialog.getByRole('region', {name: 'CSV output'})).toHaveTextContent(
+      'statement.csv',
+    );
+    expect(dialog.getByText('file-parser (provider-run)')).toBeVisible();
+    expect(dialog.getByTestId('tool-call-input')).toHaveTextContent(
+      '/statement.csv',
+    );
+  });
+
   it('should walk every card chronologically in one maximized dialog, regardless of list order', async () => {
     const call = {
       toolCallId: 'tc-story',
