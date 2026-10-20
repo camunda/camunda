@@ -117,8 +117,7 @@ const HistoryContents = forwardRef<HTMLElement, Props>(function HistoryContents(
                 <span className="number">{index + 1}</span>
                 <Icon size={16} aria-hidden />
                 <span className="text">
-                  <span className="kind">{step.kind}</span>
-                  <span>{step.label}</span>
+                  <span className="title">{step.title}</span>
                   {step.detail && <span className="detail">{step.detail}</span>}
                 </span>
               </ContentsStep>

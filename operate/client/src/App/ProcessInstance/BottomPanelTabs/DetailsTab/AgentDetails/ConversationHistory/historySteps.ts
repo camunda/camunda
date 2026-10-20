@@ -11,8 +11,7 @@ import type {AgentInstanceHistoryItem} from '@camunda/camunda-api-zod-schemas/8.
 type HistoryStep = {
   key: string;
   role: 'USER' | 'ASSISTANT' | 'TOOL_RESULT';
-  kind: string;
-  label: string;
+  title: string;
   detail: string;
 };
 
@@ -26,26 +25,17 @@ const getHistorySteps = (items: AgentInstanceHistoryItem[]): HistoryStep[] => {
   return items.flatMap((item): HistoryStep[] => {
     const {historyItemKey: key, toolCalls} = item;
     if (item.role === 'USER') {
-      return [
-        {
-          key,
-          role: 'USER',
-          kind: 'User input',
-          label: 'User message',
-          detail: '',
-        },
-      ];
+      return [{key, role: 'USER', title: 'User message', detail: ''}];
     }
     if (item.role === 'ASSISTANT') {
       return [
         {
           key,
           role: 'ASSISTANT',
-          kind: `Model response ${++modelResponses}`,
-          label: toolCalls.length
-            ? `Requests ${toolCalls.length} tool call${toolCalls.length === 1 ? '' : 's'}`
-            : 'Assistant message',
-          detail: toolCalls.map(({toolName}) => toolName).join(', '),
+          title: `Model response ${++modelResponses}`,
+          detail: toolCalls.length
+            ? `${toolCalls.length} request${toolCalls.length === 1 ? '' : 's'}`
+            : '',
         },
       ];
     }
@@ -55,8 +45,7 @@ const getHistorySteps = (items: AgentInstanceHistoryItem[]): HistoryStep[] => {
         {
           key,
           role: 'TOOL_RESULT',
-          kind: 'Tool result',
-          label: toolCall?.toolName ?? 'Tool result',
+          title: toolCall?.toolName ?? 'Tool result',
           detail: basename(toolCall?.arguments?.['path']),
         },
       ];

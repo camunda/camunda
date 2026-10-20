@@ -221,7 +221,7 @@ const ContentsStep = styled.button<{$role: keyof typeof STEP_COLORS}>`
     font-size: var(--cds-body-compact-01-font-size);
   }
 
-  .kind {
+  .title {
     color: ${({$role}) => STEP_COLORS[$role]};
     font-size: var(--cds-label-01-font-size);
   }
