@@ -26,6 +26,7 @@ import {
 	type QueryElementInstanceIncidentsRequestBody,
 	type UpdateElementInstanceVariablesRequestBody,
 	type UpdateJobRequestBody,
+	type QueryElementInstanceEffectiveVariablesRequestBody,
 	type CancelProcessInstanceRequestBody,
 	type DeleteProcessInstanceRequestBody,
 	type ModifyProcessInstanceRequestBody,
@@ -515,6 +516,22 @@ const endpoints = {
 			body: JSON.stringify(body),
 			headers: {'Content-Type': 'application/json'},
 		}),
+
+	queryElementInstanceEffectiveVariables: (
+		{elementInstanceKey, truncateValues}: {elementInstanceKey: string; truncateValues?: boolean},
+		body: QueryElementInstanceEffectiveVariablesRequestBody,
+	) =>
+		new Request(
+			getFullURL(
+				unifiedAPIEndpoints.queryElementInstanceEffectiveVariables.getUrl({elementInstanceKey, truncateValues}),
+			),
+			{
+				...BASE_REQUEST_OPTIONS,
+				method: unifiedAPIEndpoints.queryElementInstanceEffectiveVariables.method,
+				body: JSON.stringify(body),
+				headers: {'Content-Type': 'application/json'},
+			},
+		),
 
 	activateAdHocSubProcessActivities: ({
 		adHocSubProcessInstanceKey,

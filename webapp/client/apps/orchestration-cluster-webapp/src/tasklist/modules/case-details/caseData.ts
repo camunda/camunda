@@ -6,23 +6,27 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useSuspenseQuery, type QueryClient} from '@tanstack/react-query';
-import {getCaseVariableNames, parseCaseModel} from '@camunda/case-management-sdk';
+import {keepPreviousData, queryOptions, useQuery, useSuspenseQuery, type QueryClient} from '@tanstack/react-query';
+import {getCaseProgress, getCaseVariableNames, getCurrentStage, parseCaseModel} from '@camunda/case-management-sdk';
 import type {
 	CurrentUser,
 	ElementInstance,
 	ProcessInstance,
+	QueryVariablesResponseBody,
 	UserTask,
 	Variable,
 } from '@camunda/camunda-api-zod-schemas/8.11';
 import {TruncatedVariableError} from '#/shared/errors';
 import {queries} from '#/shared/http/queries';
-import {requestErrorSchema} from '#/shared/http/request';
+import {endpoints} from '#/shared/http/endpoints';
+import {mapQueryError} from '#/shared/http/mapQueryError';
+import {request, requestErrorSchema} from '#/shared/http/request';
 import {
 	getCaseElementInstancesRequestBody,
 	getCaseUserTasksRequestBody,
 	getCaseVariablesRequestBody,
 	getDocumentVariablesRequestBody,
+	getStageCaseVariablesRequestBody,
 } from '#/tasklist/modules/case-details/getCaseRequestBodies';
 import {extractVariablesFromFormSchema} from '#/tasklist/modules/form-js/extractVariablesFromFormSchema';
 import {getSelectedVariablesRequestBody} from '#/tasklist/modules/task-details-form/getSelectedVariablesRequestBody';
@@ -69,6 +73,47 @@ async function returnNullIfNotFound<T>(promise: Promise<T>): Promise<T | null> {
 }
 
 /**
+ * Case data lives in the root scope, but a running stage can shadow it with an input mapping (CASE_DATA.md).
+ * So the case reads its variables as the running stage sees them, and from the root scope otherwise.
+ */
+function getCaseVariablesQuery({
+	processInstance,
+	xml,
+	elementInstances,
+	variableNames,
+}: {
+	processInstance: ProcessInstance;
+	xml: string;
+	elementInstances: ElementInstance[];
+	variableNames: string[];
+}) {
+	const model = parseCaseModel(xml, processInstance.processDefinitionId);
+	const stageKey =
+		getCurrentStage(getCaseProgress(model, elementInstances, processInstance.state))?.elementInstanceKey ?? null;
+
+	return queryOptions({
+		// The "queryVariables" prefix lets a case action refresh these variables with the other variable searches.
+		queryKey: ['queryVariables', 'case', stageKey ?? processInstance.processInstanceKey, [...variableNames].sort()],
+		queryFn: async (): Promise<QueryVariablesResponseBody> => {
+			const {response, error} = await request(
+				stageKey === null
+					? endpoints.queryVariables(getCaseVariablesRequestBody(processInstance.processInstanceKey, variableNames), {
+							truncateValues: false,
+						})
+					: endpoints.queryElementInstanceEffectiveVariables(
+							{elementInstanceKey: stageKey, truncateValues: false},
+							getStageCaseVariablesRequestBody(variableNames),
+						),
+			);
+			if (error !== null) {
+				throw mapQueryError(error);
+			}
+			return response.json();
+		},
+	});
+}
+
+/**
  * Prefetches the data that every route of a case reads, and derives the variable names to request from
  * the BPMN and the case form. Returns `null` when the case does not exist.
  */
@@ -93,17 +138,18 @@ async function loadCaseData(queryClient: QueryClient, processInstanceKey: string
 		]),
 	];
 
-	await Promise.all([
-		queryClient.query(queries.getCurrentUser()),
+	const [elementInstances] = await Promise.all([
 		queryClient.query(queries.queryElementInstances(getCaseElementInstancesRequestBody(processInstanceKey))),
+		queryClient.query(queries.getCurrentUser()),
 		queryClient.query(queries.queryUserTasksPage(getCaseUserTasksRequestBody(processInstanceKey))),
-		queryClient.query(
-			queries.queryVariables(getCaseVariablesRequestBody(processInstanceKey, variableNames), {truncateValues: false}),
-		),
 		queryClient.query(
 			queries.queryVariables(getDocumentVariablesRequestBody(processInstanceKey), {truncateValues: false}),
 		),
 	]);
+
+	await queryClient.query(
+		getCaseVariablesQuery({processInstance, xml, elementInstances: elementInstances.items, variableNames}),
+	);
 
 	return {caseFormSchema, variableNames};
 }
@@ -124,11 +170,12 @@ function useCaseData(processInstanceKey: string, variableNames: string[]): CaseD
 		...queries.queryUserTasksPage(getCaseUserTasksRequestBody(processInstanceKey)),
 		refetchInterval: REFETCH_INTERVAL,
 	});
-	const {data: caseVariables} = useSuspenseQuery({
-		...queries.queryVariables(getCaseVariablesRequestBody(processInstanceKey, variableNames), {
-			truncateValues: false,
-		}),
+	// The query changes with the running stage; the previous variables stay until the new ones arrive.
+	const {data: caseVariables} = useQuery({
+		...getCaseVariablesQuery({processInstance, xml, elementInstances: elementInstances.items, variableNames}),
 		refetchInterval: REFETCH_INTERVAL,
+		placeholderData: keepPreviousData,
+		throwOnError: true,
 	});
 	const {data: documentVariables} = useSuspenseQuery({
 		...queries.queryVariables(getDocumentVariablesRequestBody(processInstanceKey), {truncateValues: false}),
@@ -141,7 +188,7 @@ function useCaseData(processInstanceKey: string, variableNames: string[]): CaseD
 		xml,
 		elementInstances: elementInstances.items,
 		userTasks: userTasks.items,
-		caseVariables: caseVariables.items,
+		caseVariables: caseVariables?.items ?? [],
 		documentVariables: documentVariables.items,
 	};
 }
