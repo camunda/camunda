@@ -1426,7 +1426,7 @@
 					"title": "Here's what moved in Operate",
 					"gotIt": "Got it",
 					"intro": "We made some changes to the process instance page.",
-					"incidents": "<strong>Incidents</strong> now have their own tab, that opens automatically when present",
+					"incidents": "<strong>Incidents</strong> now have their own tab, which opens automatically when present",
 					"details": "Click any element in the diagram to see its details in the <strong>Details</strong> tab",
 					"callActivity": "Double-click a <strong>call activity</strong> to jump directly into the called instance.",
 					"imageAlt": "Process instance details page with incidents tab and diagram"
