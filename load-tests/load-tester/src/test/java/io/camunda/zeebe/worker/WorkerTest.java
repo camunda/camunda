@@ -91,6 +91,26 @@ class WorkerTest {
     return System.currentTimeMillis() - start;
   }
 
+  @Test
+  void shouldNeitherCompleteNorDelayJobWhenCompleteJobsIsDisabled() {
+    // given
+    final var jobClient = mock(JobClient.class);
+    final var job = mockJob();
+    final var workerProps = new WorkerProperties();
+    workerProps.setCompleteJobs(false);
+    workerProps.setCompletionDelay(COMPLETION_DELAY);
+    final var worker = newWorker(mock(CamundaClient.class), workerProps);
+
+    // when
+    final long elapsed = timeHandleJob(worker, jobClient, job);
+
+    // then
+    verify(jobClient, never()).newCompleteCommand(anyLong());
+    assertThat(elapsed)
+        .describedAs("the handler returns at once, so the job worker can pick up the next job")
+        .isLessThan(COMPLETION_DELAY.toMillis());
+  }
+
   private static ActivatedJob mockJob() {
     final var job = mock(ActivatedJob.class);
     when(job.getKey()).thenReturn(42L);

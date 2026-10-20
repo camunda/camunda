@@ -1,24 +1,24 @@
 ---
-# Source: load-test-setup/templates/timer-burst-starter.yaml
+# Source: load-test-setup/templates/extra-workers.yaml
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: timer-burst-starter
+  name: timeout-probe-worker
   labels:
-    app: timer-burst-starter
+    app: timeout-probe-worker
     camunda.io/created-by: golden-test
     camunda.io/purpose: load-test
 spec:
   selector:
     matchLabels:
-      app: timer-burst-starter
+      app: timeout-probe-worker
   replicas: 1
   template:
     metadata:
       labels:
-        app: timer-burst-starter
+        app: timeout-probe-worker
         # Matches the selector of the `clients` Service and ServiceMonitor of the
-        # load-tester subchart, so Prometheus scrapes this pod like the starter.
+        # load-tester subchart, so Prometheus scrapes this pod like the workers.
         app.kubernetes.io/component: zeebe-client
         camunda.io/created-by: golden-test
         camunda.io/purpose: load-test
@@ -34,8 +34,8 @@ spec:
           operator: Equal
           value: n2-standard-4
       containers:
-        - name: starter
-          image: "registry.camunda.cloud/team-zeebe/starter:SNAPSHOT"
+        - name: timeout-probe-worker
+          image: "registry.camunda.cloud/team-zeebe/worker:SNAPSHOT"
           imagePullPolicy: Always
           env:
             - name: JDK_JAVA_OPTIONS
@@ -97,29 +97,18 @@ spec:
               value: "saas"
             - name: CAMUNDA_CLIENT_AUTH_METHOD
               value: "oidc"
-            # Only generate the timer load, no reads, no data availability checks.
             - name: LOAD_TESTER_PERFORM_READ_BENCHMARKS
               value: "false"
-            - name: LOAD_TESTER_MONITOR_DATA_AVAILABILITY
+            - name: LOAD_TESTER_WORKER_WORKER_NAME
+              value: "timeout-probe"
+            - name: LOAD_TESTER_WORKER_JOB_TYPE
+              value: "timeout-probe"
+            - name: LOAD_TESTER_WORKER_CAPACITY
+              value: "1000"
+            - name: LOAD_TESTER_WORKER_TIMEOUT
+              value: "30s"
+            - name: LOAD_TESTER_WORKER_COMPLETE_JOBS
               value: "false"
-            - name: LOAD_TESTER_OPTIMIZE_ENABLED
-              value: "false"
-            - name: LOAD_TESTER_STARTER_RATE
-              value: "150"
-            - name: LOAD_TESTER_STARTER_RATE_DURATION
-              value: "1s"
-            - name: LOAD_TESTER_STARTER_INSTANCE_LIMIT
-              value: "100000"
-            - name: LOAD_TESTER_STARTER_TIMER_START_DELAY
-              value: "20m"
-            - name: LOAD_TESTER_STARTER_PROCESS_ID
-              value: "timerBurst"
-            - name: LOAD_TESTER_STARTER_BPMN_XML_PATH
-              value: "bpmn/timer_burst.bpmn"
-            - name: LOAD_TESTER_STARTER_BUSINESS_KEY
-              value: "businessKey"
-            - name: LOAD_TESTER_STARTER_PAYLOAD_PATH
-              value: "bpmn/emptyPayload.json"
             - name: LOGGING_LEVEL_IO_CAMUNDA_ZEEBE
               value: "INFO"
           resources:

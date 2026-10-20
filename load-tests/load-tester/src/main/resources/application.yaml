@@ -71,7 +71,8 @@ camunda:
         max-jobs-active: ${LOAD_TESTER_WORKER_CAPACITY:30}
         # Default: completionDelay(300ms) * 6 = 1800ms. The old HOCON app computed
         # this dynamically; here it's static. Update if completionDelay changes.
-        timeout: 1800ms
+        # Override with LOAD_TESTER_WORKER_TIMEOUT, e.g. to let jobs time out regularly.
+        timeout: ${LOAD_TESTER_WORKER_TIMEOUT:1800ms}
 
 # Load tester specific configuration
 # These are application-level properties consumed by Starter.java and Worker.java.
@@ -99,21 +100,24 @@ load-tester:
     # A value <= 0 (the default) means run indefinitely; a positive value stops creation
     # after that many seconds have elapsed, which is useful for time-boxed load test scenarios.
     duration-limit: ${LOAD_TESTER_STARTER_DURATION_LIMIT:0}
-    # Stops creating process instances after this many start requests were submitted.
+    # Stops creating process instances after this many instances were submitted.
     # A value <= 0 (the default) means no limit. Combines with duration-limit: the first limit
     # reached ends the run.
     instance-limit: ${LOAD_TESTER_STARTER_INSTANCE_LIMIT:0}
-    # When positive, the starter computes `now + timer-start-delay` once at startup, truncated to
-    # seconds, and passes it to every instance as the variable `timerStartAt` (ISO-8601 UTC, e.g.
-    # 2026-10-20T14:00:00Z). A process can use it as the start date of a timer cycle, so that all
-    # timers fall due at the same moment. A zero value (the default) adds no variable.
-    timer-start-delay: ${LOAD_TESTER_STARTER_TIMER_START_DELAY:0s}
+    # When true, a rejected or failed start request is retried after 1s, until it succeeds. The
+    # retry keeps its in-flight slot and is counted as
+    # starter.process.instances.submissions{outcome="retried"}, not as a new submission, so
+    # instance-limit counts instances and not attempts. When false (the default), a failed request
+    # is dropped.
+    retry-rejected-starts: ${LOAD_TESTER_STARTER_RETRY_REJECTED_STARTS:false}
     # Bounds the start requests awaiting a response; further scheduled requests are skipped (see
     # starter.process.instances.submissions{outcome="skipped"}).
     # open (default): requests are sent at the rate, even while earlier ones wait for a response,
     #   up to 10 * the rate per second waiting requests.
     # closed: at most 1 * the rate per second requests wait for a response, so a slow cluster
     #   lowers the achieved rate.
+    # burst: every rate duration, rate instances are started back to back. Rate should be a whole
+    #   number. At most 10 * the rate requests wait for a response.
     workload-model: ${LOAD_TESTER_STARTER_WORKLOAD_MODEL:open}
     # Liveness fails when no start request succeeded for this long. Backpressure answers count
     # as success; every other failure does not. Keep it above the interval between two requests.
@@ -125,6 +129,9 @@ load-tester:
   # Connection properties (type, name, threads, capacity, polling, streaming, timeout)
   # are configured via camunda.client.worker.defaults.* above.
   worker:
+    # When false, the handler returns without completing the job, so every job times out and is
+    # activated again. Use it with a short LOAD_TESTER_WORKER_TIMEOUT to cause job timeouts.
+    complete-jobs: ${LOAD_TESTER_WORKER_COMPLETE_JOBS:true}
     completion-delay: ${LOAD_TESTER_WORKER_COMPLETION_DELAY:300ms}
     payload-path: ${LOAD_TESTER_WORKER_PAYLOAD_PATH:bpmn/big_payload.json}
     send-message: ${LOAD_TESTER_WORKER_SEND_MESSAGE:false}

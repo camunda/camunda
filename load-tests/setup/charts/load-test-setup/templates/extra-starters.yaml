@@ -1,42 +1,47 @@
+{{- range $name, $starter := .Values.extraStarters }}
+{{- if and $starter.enabled (index $.Values "load-tester" "enabled") }}
 ---
-# Source: load-test-setup/templates/timer-burst-starter.yaml
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: timer-burst-starter
+  name: {{ $name }}-starter
   labels:
-    app: timer-burst-starter
-    camunda.io/created-by: golden-test
-    camunda.io/purpose: load-test
+    app: {{ $name }}-starter
+    {{- with $.Values.global.commonLabels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
 spec:
   selector:
     matchLabels:
-      app: timer-burst-starter
+      app: {{ $name }}-starter
   replicas: 1
   template:
     metadata:
       labels:
-        app: timer-burst-starter
+        app: {{ $name }}-starter
         # Matches the selector of the `clients` Service and ServiceMonitor of the
         # load-tester subchart, so Prometheus scrapes this pod like the starter.
         app.kubernetes.io/component: zeebe-client
-        camunda.io/created-by: golden-test
-        camunda.io/purpose: load-test
+        {{- with $.Values.global.commonLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
     spec:
+      {{- with $.Values.global.image.pullSecrets }}
       imagePullSecrets:
-        - name: harbor-registry
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with $.Values.global.nodeSelector }}
       nodeSelector:
-        component: benchmark-n2-standard-4
-        topology.kubernetes.io/zone: europe-west1-b
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with $.Values.global.tolerations }}
       tolerations:
-        - effect: NoSchedule
-          key: nodepool
-          operator: Equal
-          value: n2-standard-4
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
       containers:
         - name: starter
-          image: "registry.camunda.cloud/team-zeebe/starter:SNAPSHOT"
-          imagePullPolicy: Always
+          image: "{{ $.Values.global.image.repository }}/starter:{{ $.Values.global.image.tag | default "SNAPSHOT" }}"
+          imagePullPolicy: {{ $.Values.global.image.pullPolicy | default "Always" }}
           env:
             - name: JDK_JAVA_OPTIONS
               value: >-
@@ -78,26 +83,22 @@ spec:
                 secretKeyRef:
                   name: load-test-credentials
                   key: zeebeGrpcAddress
-            - name: LOAD_TESTER_LOG_APPENDER
-              value: "Stackdriver"
-            - name: LOAD_TESTER_LOG_STACKDRIVER_SERVICENAME
-              value: "load-tester"
-            - name: LOAD_TESTER_LOG_STACKDRIVER_SERVICEVERSION
+            {{- range $keyValue := $.Values.global.extraEnvVars }}
+            - name: {{ $keyValue.name }}
+              {{- if $keyValue.valueFrom }}
               valueFrom:
-                fieldRef:
-                  fieldPath: metadata.namespace
-            - name: OPTIMIZE_LOADTEST_CLIENT_SECRET
-              valueFrom:
-                secretKeyRef:
-                  key: identity-optimize-loadtest-client-secret
-                  name: camunda-credentials
+                {{- toYaml $keyValue.valueFrom | nindent 16 }}
+              {{- else }}
+              value: {{ $keyValue.value | quote }}
+              {{- end }}
+            {{- end }}
             - name: CAMUNDA_CLIENT_PREFER_REST_OVER_GRPC
-              value: "true"
+              value: {{ $.Values.global.preferRest.enabled | quote }}
             - name: CAMUNDA_CLIENT_MODE
               value: "saas"
             - name: CAMUNDA_CLIENT_AUTH_METHOD
               value: "oidc"
-            # Only generate the timer load, no reads, no data availability checks.
+            # Only generate the load, no reads, no data availability checks.
             - name: LOAD_TESTER_PERFORM_READ_BENCHMARKS
               value: "false"
             - name: LOAD_TESTER_MONITOR_DATA_AVAILABILITY
@@ -105,21 +106,23 @@ spec:
             - name: LOAD_TESTER_OPTIMIZE_ENABLED
               value: "false"
             - name: LOAD_TESTER_STARTER_RATE
-              value: "150"
+              value: {{ $starter.rate | quote }}
             - name: LOAD_TESTER_STARTER_RATE_DURATION
-              value: "1s"
+              value: {{ $starter.rateDuration | quote }}
             - name: LOAD_TESTER_STARTER_INSTANCE_LIMIT
-              value: "100000"
-            - name: LOAD_TESTER_STARTER_TIMER_START_DELAY
-              value: "20m"
+              value: {{ $starter.instanceLimit | quote }}
+            - name: LOAD_TESTER_STARTER_WORKLOAD_MODEL
+              value: {{ $starter.workloadModel | quote }}
+            - name: LOAD_TESTER_STARTER_RETRY_REJECTED_STARTS
+              value: {{ $starter.retryRejectedStarts | quote }}
             - name: LOAD_TESTER_STARTER_PROCESS_ID
-              value: "timerBurst"
+              value: {{ $starter.processId | quote }}
             - name: LOAD_TESTER_STARTER_BPMN_XML_PATH
-              value: "bpmn/timer_burst.bpmn"
+              value: {{ $starter.bpmnXmlPath | quote }}
             - name: LOAD_TESTER_STARTER_BUSINESS_KEY
               value: "businessKey"
             - name: LOAD_TESTER_STARTER_PAYLOAD_PATH
-              value: "bpmn/emptyPayload.json"
+              value: {{ $starter.payloadPath | quote }}
             - name: LOGGING_LEVEL_IO_CAMUNDA_ZEEBE
               value: "INFO"
           resources:
@@ -138,3 +141,5 @@ spec:
       volumes:
         - name: heap-dumps
           emptyDir: {}
+{{- end }}
+{{- end }}

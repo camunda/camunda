@@ -589,33 +589,77 @@ k6:
       value: n2-standard-4-stable
       effect: NoSchedule
 
-# -- Configuration for an optional second starter that loads many process instances
-# whose timers all fall due at the same moment. The starter first starts `instanceLimit`
-# instances at the configured rate. Each instance gets the variable `timerStartAt`, the
-# same value for all, which the process uses as the start date of its timer cycle. Nothing
-# is due while the instances load, so backpressure cannot cap the timer load. The
-# load-tester subchart renders only one starter, so this one is a separate Deployment named
-# `timer-burst-starter`. It reuses the image, credentials and scheduling settings of the
-# load-tester subchart. It turns off read benchmarks, data availability monitoring and
-# Optimize report evaluation. It is only deployed when `load-tester.enabled` is true as
-# well. Restarting its pod starts another batch with a new `timerStartAt`.
-timerBurstStarter:
-  # -- Set to true to deploy the timer burst starter.
-  enabled: false
-  # -- Number of process instances started per `rateDuration`.
-  rate: 150
-  # -- Duration in which `rate` instances are started.
-  rateDuration: 1s
-  # -- Total number of process instances to start. The starter stops after that many
-  # start requests. 0 means no limit.
-  instanceLimit: 100000
-  # -- Delay from the start of the starter until the timers of all instances are first due.
-  # Keep it above `instanceLimit / rate`, so all instances are loaded before the timers
-  # fall due. Instances that start later fire right away.
-  timerStartDelay: 20m
-  # -- BPMN process id to start.
-  processId: timerBurst
-  # -- Path to the BPMN resource in the starter image.
-  bpmnXmlPath: bpmn/timer_burst.bpmn
-  # -- Path to the variables payload in the starter image.
-  payloadPath: bpmn/emptyPayload.json
+# -- Extra starters, one Deployment `<key>-starter` per entry. The load-tester subchart renders
+# only one starter, so these are separate Deployments. Each reuses the image, credentials and
+# scheduling settings of the load-tester subchart and turns off read benchmarks, data
+# availability monitoring and Optimize report evaluation. A starter is only deployed when its
+# `enabled` is true and `load-tester.enabled` is true as well.
+extraStarters:
+  # Starts a wave of `rate` instances every `rateDuration` until `instanceLimit` instances
+  # were started. Each instance waits on a user task with a non-interrupting timer that fires
+  # every 10 seconds, so the number of timers that fall due together grows with every wave.
+  timer-burst:
+    # -- Set to true to deploy this starter.
+    enabled: false
+    # -- Number of process instances started per `rateDuration`.
+    rate: 200
+    # -- Duration in which `rate` instances are started.
+    rateDuration: 10s
+    # -- How the starter generates load: `open`, `closed` or `burst`.
+    workloadModel: burst
+    # -- Total number of process instances to start, 0 means no limit.
+    instanceLimit: 10000
+    # -- Retry a rejected start request every second until it is accepted, so every wave lands.
+    retryRejectedStarts: true
+    # -- BPMN process id to start.
+    processId: timerBurst
+    # -- Path to the BPMN resource in the starter image.
+    bpmnXmlPath: bpmn/timer_burst.bpmn
+    # -- Path to the variables payload in the starter image.
+    payloadPath: bpmn/emptyPayload.json
+  # Starts `instanceLimit` instances of a process with one service task for the
+  # `timeout-probe` worker, see `extraWorkers`.
+  timeout-probe:
+    # -- Set to true to deploy this starter.
+    enabled: false
+    # -- Number of process instances started per `rateDuration`.
+    rate: 100
+    # -- Duration in which `rate` instances are started.
+    rateDuration: 1s
+    # -- How the starter generates load: `open`, `closed` or `burst`.
+    workloadModel: open
+    # -- Total number of process instances to start, 0 means no limit.
+    instanceLimit: 1000
+    # -- Retry a rejected start request every second until it is accepted.
+    retryRejectedStarts: true
+    # -- BPMN process id to start.
+    processId: timeoutProbe
+    # -- Path to the BPMN resource in the starter image.
+    bpmnXmlPath: bpmn/timeout_probe.bpmn
+    # -- Path to the variables payload in the starter image.
+    payloadPath: bpmn/emptyPayload.json
+
+# -- Extra workers, one Deployment `<key>-worker` per entry. The load-tester subchart cannot set
+# the job timeout or leave jobs uncompleted, so these are separate Deployments. They reuse the
+# image, credentials and scheduling settings of the load-tester subchart. Job streaming stays
+# enabled (the default of the worker image). A worker is only deployed when its `enabled` is
+# true and `load-tester.enabled` is true as well.
+extraWorkers:
+  # Activates the jobs of the `timeout-probe` starter and never completes them. Each job times
+  # out after `timeout` and is activated again, so the engine writes
+  # about `capacity / timeout` JOB TIMED_OUT events per second. A stall of the scheduled tasks
+  # of the partition shows as a drop of that rate.
+  timeout-probe:
+    # -- Set to true to deploy this worker.
+    enabled: false
+    # -- Number of worker pods.
+    replicas: 1
+    # -- Job type to activate.
+    jobType: timeout-probe
+    # -- Maximum number of jobs the worker holds at once. Must be at least `instanceLimit` of
+    # the `timeout-probe` starter.
+    capacity: 1000
+    # -- Job timeout.
+    timeout: 30s
+    # -- Set to false to leave jobs uncompleted, so they time out.
+    completeJobs: false

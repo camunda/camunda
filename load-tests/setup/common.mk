@@ -91,9 +91,13 @@ else ifeq ($(scenario),max)
 ifeq ($(scenario_max_override_key),)
 $(error scenario=max requires scenario_max_override_key to be declared by the version Makefile)
 endif
-# Benchmark reproducer: the steady rate is lowered to 50 and a second starter adds timer bursts, so
-# the rates no longer match load-tests/docs/scripts/optimal.json, which the PR benchmark comment shows.
-_scenario_load_test_flags = --set load-tester.starter.rate=50 --set timerBurstStarter.enabled=true
+# Benchmark reproducer: the steady rate is lowered to 50 and extra starters add growing timer waves
+# and a job timeout probe, so the rates no longer match load-tests/docs/scripts/optimal.json, which
+# the PR benchmark comment shows.
+_scenario_load_test_flags = --set load-tester.starter.rate=50 \
+	--set extraStarters.timer-burst.enabled=true \
+	--set extraStarters.timeout-probe.enabled=true \
+	--set extraWorkers.timeout-probe.enabled=true
 _scenario_platform_flags = --set-file '$(scenario_max_override_key)./camunda-platform-override-values.yaml'
 else ifeq ($(scenario),archiver)
 _scenario_load_test_flags = --set load-tester.starter.rate=1 --set load-tester.starter.rateDuration=10m --set load-tester.starter.processId=multiInstanceElements --set load-tester.starter.bpmnXmlPath=bpmn/multiInstanceElements.bpmn --set load-tester.starter.payloadPath=bpmn/multiInstanceElementsPayload.json --set load-tester.workers.worker.replicas=0
