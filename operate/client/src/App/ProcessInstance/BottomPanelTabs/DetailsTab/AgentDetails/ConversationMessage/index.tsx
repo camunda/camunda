@@ -62,7 +62,7 @@ type ConversationMessageProps = {
   metrics?: Metrics;
   toolCalls?: ToolCall[];
   label?: string;
-  credentialBinding?: string | null;
+  onExpand?: () => void;
 };
 
 const ConversationMessage: React.FC<ConversationMessageProps> = ({
@@ -72,7 +72,7 @@ const ConversationMessage: React.FC<ConversationMessageProps> = ({
   metrics = null,
   toolCalls = [],
   label,
-  credentialBinding,
+  onExpand,
 }) => {
   const [messageDetails, dispatch] = useReducer(
     messageDetailsReducer,
@@ -88,6 +88,17 @@ const ConversationMessage: React.FC<ConversationMessageProps> = ({
       <MessageHeader>
         <ActorLabel>{label ?? labelByActor[actor]}</ActorLabel>
         <MessageMetrics metrics={metrics} />
+        {onExpand && (
+          <Button
+            kind="ghost"
+            size="sm"
+            renderIcon={Maximize}
+            iconDescription="Expand"
+            data-history-expand
+            hasIconOnly
+            onClick={onExpand}
+          />
+        )}
       </MessageHeader>
       {content.map((entry, index) => {
         switch (entry.contentType) {
@@ -104,9 +115,16 @@ const ConversationMessage: React.FC<ConversationMessageProps> = ({
             return (
               <StructuredContent
                 key={index}
+                expanded={onExpand !== undefined}
                 value={entry.object}
                 onExpandClick={() =>
-                  dispatch({type: 'show-object', actor, value: entry.object})
+                  onExpand
+                    ? onExpand()
+                    : dispatch({
+                        type: 'show-object',
+                        actor,
+                        value: entry.object,
+                      })
                 }
               />
             );
@@ -121,9 +139,16 @@ const ConversationMessage: React.FC<ConversationMessageProps> = ({
               return (
                 <StructuredContent
                   key={index}
+                  expanded={onExpand !== undefined}
                   value={structured}
                   onExpandClick={() =>
-                    dispatch({type: 'show-object', actor, value: structured})
+                    onExpand
+                      ? onExpand()
+                      : dispatch({
+                          type: 'show-object',
+                          actor,
+                          value: structured,
+                        })
                   }
                 />
               );
@@ -131,8 +156,13 @@ const ConversationMessage: React.FC<ConversationMessageProps> = ({
             return (
               <MessageContent
                 key={index}
+                expanded={onExpand !== undefined}
                 value={text}
-                onExpandClick={() => dispatch({type: 'show-text', actor, text})}
+                onExpandClick={() =>
+                  onExpand
+                    ? onExpand()
+                    : dispatch({type: 'show-text', actor, text})
+                }
               >
                 <TextContent>
                   <StructuredText content={text} />
@@ -146,7 +176,7 @@ const ConversationMessage: React.FC<ConversationMessageProps> = ({
         content={content}
         modalTitleSuffix="conversation message"
       />
-      <EvidenceCards content={content} credentialBinding={credentialBinding} />
+      <EvidenceCards content={content} />
       <ToolCalls toolCalls={toolCalls} />
       {messageDetails.state === 'visible' && (
         <MessageDetailsModal
@@ -165,25 +195,29 @@ type MessageContentProps = {
   value: string;
   children: React.ReactNode;
   onExpandClick: () => void;
+  expanded?: boolean;
 };
 
 const MessageContent: React.FC<MessageContentProps> = ({
   value,
   children,
   onExpandClick,
+  expanded,
 }) => {
   return (
     <MessageBlock>
       {children}
       <MessageActions>
-        <Button
-          kind="ghost"
-          size="sm"
-          renderIcon={Maximize}
-          iconDescription="Expand"
-          hasIconOnly
-          onClick={onExpandClick}
-        />
+        {!expanded && (
+          <Button
+            kind="ghost"
+            size="sm"
+            renderIcon={Maximize}
+            iconDescription="Expand"
+            hasIconOnly
+            onClick={onExpandClick}
+          />
+        )}
         <CopyButton value={value} hasIconOnly tooltipAlignment="end" />
       </MessageActions>
     </MessageBlock>
@@ -193,15 +227,18 @@ const MessageContent: React.FC<MessageContentProps> = ({
 type StructuredContentProps = {
   value: unknown;
   onExpandClick: () => void;
+  expanded?: boolean;
 };
 
 const StructuredContent: React.FC<StructuredContentProps> = ({
   value,
   onExpandClick,
+  expanded,
 }) => (
   <MessageContent
     value={JSON.stringify(omitEvidence(value), null, 2)}
     onExpandClick={onExpandClick}
+    expanded={expanded}
   >
     <StructuredValue value={value} />
   </MessageContent>

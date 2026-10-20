@@ -15,6 +15,7 @@ const isScalar = (value: unknown) =>
   value === null || (typeof value !== 'object' && typeof value !== 'function');
 
 const DOCUMENT_TAG = /<doc\b[^>]*\/>/g;
+const CODE_DOCUMENT_TAG = /(`+)\s*<doc\b[^>]*\/>\s*\1/g;
 const FENCED_JSON = /^```(?:json)?\s*([\s\S]*?)\s*```$/;
 const ACRONYMS: Record<string, string> = {
   id: 'ID',
@@ -31,7 +32,7 @@ const ACRONYMS: Record<string, string> = {
  * `<doc ... />` markers the connector adds for the model are hidden.
  */
 const stripDocumentTags = (text: string) =>
-  text.replace(DOCUMENT_TAG, '').trim();
+  text.replace(CODE_DOCUMENT_TAG, '').replace(DOCUMENT_TAG, '').trim();
 
 /**
  * Returns the parsed value when a text block is a JSON object or array, so it
@@ -52,8 +53,7 @@ const parseStructuredText = (text: string): StructuredData | null => {
 };
 
 type TextSegment =
-  | {kind: 'text'; text: string}
-  | {kind: 'structured'; value: StructuredData};
+  {kind: 'text'; text: string} | {kind: 'structured'; value: StructuredData};
 
 const FENCED_BLOCK = /```(?:json)?[ \t]*\n([\s\S]*?)\n?```/g;
 

@@ -29,12 +29,14 @@ type ToolResultMessageProps = {
   availableTools: AgentTool[];
   toolCalls: AgentInstanceToolCall[];
   content: ContentItem[];
+  onExpand?: () => void;
 };
 
 const ToolResultMessage: React.FC<ToolResultMessageProps> = ({
   availableTools,
   toolCalls,
   content,
+  onExpand,
 }) => {
   // According to the API, the tool call is a single entry in the tool calls list on a TOOL_RESULT message.
   const toolCall = toolCalls[0];
@@ -72,9 +74,10 @@ const ToolResultMessage: React.FC<ToolResultMessageProps> = ({
           size="sm"
           renderIcon={Maximize}
           iconDescription="Expand"
+          data-history-expand
           tooltipAlignment="end"
           hasIconOnly
-          onClick={() => setIsExpanded(true)}
+          onClick={onExpand ?? (() => setIsExpanded(true))}
         />
       </ToolActions>
       {isExpanded && (

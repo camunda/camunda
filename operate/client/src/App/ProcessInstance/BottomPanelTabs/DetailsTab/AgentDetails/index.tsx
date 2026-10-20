@@ -11,7 +11,7 @@ import type {
   AgentInstance,
   AgentInstanceStatus,
 } from '@camunda/camunda-api-zod-schemas/8.10';
-import {Accordion, AccordionItem, Tag} from '@carbon/react';
+import {Accordion, AccordionItem, Tag, SkeletonText} from '@carbon/react';
 import {
   CircleDash,
   WarningFilled,
@@ -45,20 +45,8 @@ import {ConversationMessage} from './ConversationMessage';
 import {ConversationHistory} from './ConversationHistory';
 import {LatestAgentMessage} from './ConversationHistory/LatestAgentMessage';
 import {AvailableTools} from './AvailableTools';
+import {useAgentToolConfiguration} from './AvailableTools/useAgentToolConfiguration';
 import {useSystemPromptEvidence} from './useSystemPromptEvidence';
-import {useProcessInstanceXml} from 'modules/queries/processDefinitions/useProcessInstanceXml';
-
-const CREDENTIAL_INPUT =
-  /<zeebe:input\s+source="([^"]*)"\s+target="provider\.[^"]*Credential"/;
-
-// The credential binding expression is resolved by the engine before the
-// connector runs, so it is read from the deployed model instead.
-const getCredentialBinding = (xml: string | undefined) => {
-  const match = xml?.match(CREDENTIAL_INPUT);
-  return match
-    ? match[1]!.replaceAll('&#34;', '"').replaceAll('&quot;', '"')
-    : null;
-};
 
 const STATUS_LABELS: Record<AgentInstanceStatus, string> = {
   UNKNOWN: 'Unknown',
@@ -124,12 +112,13 @@ const AgentDetails: React.FC<AgentDetailsProps> = ({
       enabled: agentInstance !== null,
     });
 
-  const {data: processXml} = useProcessInstanceXml({
-    processDefinitionKey: agentInstance?.processDefinitionKey,
-  });
-  const credentialBinding = useMemo(
-    () => getCredentialBinding(processXml?.xml),
-    [processXml?.xml],
+  const {
+    providerTools,
+    resourceKey,
+    status: configurationStatus,
+  } = useAgentToolConfiguration(
+    agentInstance?.agentInstanceKey,
+    agentInstance?.status,
   );
 
   const selectableAgentInstances = useMemo(
@@ -260,7 +249,6 @@ const AgentDetails: React.FC<AgentDetailsProps> = ({
             isVisible={isConversationHistoryOpen}
             selectedElementInstanceKey={selectedElementInstanceKey}
             agentsElementInstanceKeys={agentInstance.elementInstanceKeys}
-            credentialBinding={credentialBinding}
           />
         </AccordionItem>
         <AccordionItem
@@ -286,6 +274,10 @@ const AgentDetails: React.FC<AgentDetailsProps> = ({
               <PromptEvidenceValue>
                 {promptEvidence.version.toLocaleString()}
               </PromptEvidenceValue>
+              <PromptEvidenceLabel>Resource key:</PromptEvidenceLabel>
+              <PromptEvidenceValue>
+                {resourceKey ?? 'Not recorded'}
+              </PromptEvidenceValue>
             </PromptEvidence>
           )}
           {isPromptEvidenceError && (
@@ -300,7 +292,16 @@ const AgentDetails: React.FC<AgentDetailsProps> = ({
             </SectionTitle>
           }
         >
-          <AvailableTools tools={agentInstance.tools} />
+          <AvailableTools
+            tools={agentInstance.tools}
+            providerTools={providerTools}
+          />
+          {configurationStatus === 'pending' && <SkeletonText />}
+          {configurationStatus === 'error' && (
+            <ErrorHint>
+              Unable to load provider capabilities and prompt resource key.
+            </ErrorHint>
+          )}
         </AccordionItem>
         <AccordionItem
           data-testid="agent-model-section"

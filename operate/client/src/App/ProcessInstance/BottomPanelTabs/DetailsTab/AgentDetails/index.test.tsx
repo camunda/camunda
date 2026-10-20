@@ -25,6 +25,8 @@ import {mockAgentInstanceHistoryItem} from 'modules/mocks/mockAgentInstanceHisto
 import {mockAgentInstance} from 'modules/mocks/mockAgentInstance';
 import {mockSearchVariables} from 'modules/mocks/api/v2/variables/searchVariables';
 import {mockGetVariable} from 'modules/mocks/api/v2/variables/getVariable';
+import {mockServer} from 'modules/mock-server/node';
+import {http, HttpResponse} from 'msw';
 
 function createWrapper() {
   const queryClient = getMockQueryClient();
@@ -45,6 +47,14 @@ const agentInstance = mockAgentInstance();
 
 describe('<AgentDetails />', () => {
   beforeEach(() => {
+    mockServer.use(
+      http.post('/v2/agent-instances/:key/history/search', () =>
+        HttpResponse.json(searchResult([])),
+      ),
+      http.get('/v2/process-definitions/:key/xml', () =>
+        HttpResponse.text('<definitions />'),
+      ),
+    );
     mockSearchAgentInstanceHistory().withSuccess(searchResult([]));
     mockSearchVariables().withSuccess(searchResult([]));
   });
@@ -338,6 +348,32 @@ describe('<AgentDetails />', () => {
   });
 
   it('should render persisted system prompt evidence from the agent result variable', async () => {
+    mockServer.use(
+      http.post('/v2/agent-instances/:key/history/search', () =>
+        HttpResponse.json(
+          searchResult([
+            mockAgentInstanceHistoryItem({
+              role: 'CONFIGURATION',
+              content: [
+                {
+                  contentType: 'OBJECT',
+                  object: {
+                    evidence: {
+                      kind: 'configuration',
+                      systemPrompt: {resourceKey: '2251799813779747'},
+                      documentParsing: {
+                        plugin: 'file-parser',
+                        pdfEngine: 'native',
+                      },
+                    },
+                  },
+                },
+              ],
+            }),
+          ]),
+        ),
+      ),
+    );
     const requestBodySpy = vi.fn();
     mockSearchVariables().withSuccess(
       searchResult([
@@ -382,6 +418,14 @@ describe('<AgentDetails />', () => {
     ).toBeInTheDocument();
     expect(within(evidence).getByText('Latest')).toBeInTheDocument();
     expect(within(evidence).getByText('1')).toBeInTheDocument();
+    expect(
+      await within(evidence).findByText('2251799813779747'),
+    ).toBeInTheDocument();
+    expect(
+      within(screen.getByTestId('agent-available-tools-section')).getByText(
+        'file-parser',
+      ),
+    ).toBeInTheDocument();
     expect(
       screen.getByText('Route ambiguous damage descriptions to manual review.'),
     ).toBeInTheDocument();
@@ -541,7 +585,7 @@ describe('<AgentDetails />', () => {
     ).toBeInTheDocument();
   });
 
-  it('should not fetch the conversation history until its accordion item is opened', async () => {
+  it('should fetch tool configuration first and conversation history when opened', async () => {
     const historySpy = vi.fn();
     mockSearchAgentInstanceHistory(agentInstance.agentInstanceKey).withSuccess(
       searchResult([]),
@@ -567,8 +611,12 @@ describe('<AgentDetails />', () => {
     // Flush potentially pending queries otherwise this test cannot break.
     // eslint-disable-next-line testing-library/no-unnecessary-act
     await act(async () => {});
-    expect(historySpy).not.toHaveBeenCalled();
+    expect(historySpy).toHaveBeenCalledTimes(1);
 
+    mockSearchAgentInstanceHistory(agentInstance.agentInstanceKey).withSuccess(
+      searchResult([]),
+      {mockResolverFn: historySpy},
+    );
     await user.click(
       within(section).getByRole('button', {name: 'Conversation history'}),
     );
@@ -577,7 +625,7 @@ describe('<AgentDetails />', () => {
       screen.queryByTestId('conversation-history-skeleton'),
     );
 
-    expect(historySpy).toHaveBeenCalledTimes(1);
+    expect(historySpy).toHaveBeenCalledTimes(2);
   });
 
   it('should display the agent instance key and not render a selector when only one agent exists', () => {

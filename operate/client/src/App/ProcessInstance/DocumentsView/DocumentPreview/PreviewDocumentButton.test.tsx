@@ -14,6 +14,8 @@ import {PreviewDocumentButton} from './PreviewDocumentButton';
 import type {DocumentInfo} from '../documentInfo';
 import {tracking} from 'modules/tracking';
 
+vi.unmock('react-markdown');
+
 const createWrapper = (): React.FC<{children?: React.ReactNode}> => {
   const client = getMockQueryClient();
   return ({children}) => (
@@ -184,6 +186,68 @@ describe('<PreviewDocumentButton />', () => {
       ),
     ).toBeInTheDocument();
     expect(screen.queryByTestId('monaco-editor')).not.toBeInTheDocument();
+  });
+
+  it('should render Markdown headings and lists without executing HTML', async () => {
+    mockDownloadDocument().withSuccess(
+      '# Network rules\n\n- **120 days**\n\n<script>window.alert("unsafe")</script>',
+    );
+    const document: DocumentInfo = {
+      ...textDocument,
+      fileName: 'network-rules.md',
+      contentType: 'text/markdown',
+    };
+    const {user} = render(
+      <PreviewDocumentButton document={document} labelSuffix="rules" />,
+      {wrapper: createWrapper()},
+    );
+
+    await user.click(screen.getByLabelText('Preview document for rules'));
+
+    expect(
+      await screen.findByRole('heading', {name: 'Network rules'}),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('listitem')).toHaveTextContent('120 days');
+    const preview = screen.getByLabelText('network-rules.md');
+    expect(preview.querySelector('script')).toBeNull();
+  });
+
+  it('should render Python as literal plain text', async () => {
+    const content = '# Not a heading\nprint("<script>literal</script>")\n';
+    mockDownloadDocument().withSuccess(content);
+    const document: DocumentInfo = {
+      ...textDocument,
+      fileName: 'deadline.py',
+      contentType: 'text/x-python',
+    };
+    const {user} = render(
+      <PreviewDocumentButton document={document} labelSuffix="script" />,
+      {wrapper: createWrapper()},
+    );
+
+    await user.click(screen.getByLabelText('Preview document for script'));
+
+    const preview = await screen.findByLabelText('deadline.py');
+    expect(preview.tagName).toBe('PRE');
+    expect(preview.textContent).toBe(content);
+    expect(preview.querySelector('script')).toBeNull();
+  });
+
+  it('should report failed Markdown downloads', async () => {
+    mockDownloadDocument().withServerError();
+    const {user} = render(
+      <PreviewDocumentButton
+        document={{...textDocument, fileName: 'SKILL.md'}}
+        labelSuffix="skill"
+      />,
+      {wrapper: createWrapper()},
+    );
+
+    await user.click(screen.getByLabelText('Preview document for skill'));
+
+    expect(
+      await screen.findByText('Failed to load text preview for "SKILL.md".'),
+    ).toBeInTheDocument();
   });
 
   it('should show the file name as the modal heading', async () => {
