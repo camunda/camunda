@@ -17,7 +17,6 @@ import io.camunda.zeebe.config.StarterProperties;
 import io.camunda.zeebe.metrics.ConnectionMonitor;
 import io.camunda.zeebe.metrics.StarterMetricsDoc;
 import io.camunda.zeebe.metrics.StarterMetricsDoc.StarterMetricKeyNames;
-import io.camunda.zeebe.util.PayloadReader;
 import io.micrometer.core.instrument.Tag;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.Test;
@@ -42,9 +41,9 @@ class StarterTest {
         mock(CamundaClientConfiguration.class),
         properties,
         registry,
-        mock(PayloadReader.class),
         mock(ConnectionMonitor.class),
         mock(StarterLivenessIndicator.class),
+        mock(ProcessInstanceCreator.class),
         mock(ApplicationContext.class));
 
     // then
