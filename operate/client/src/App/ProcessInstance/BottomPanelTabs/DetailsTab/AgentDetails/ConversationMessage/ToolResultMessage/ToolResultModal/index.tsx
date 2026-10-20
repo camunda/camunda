@@ -18,6 +18,8 @@ import {StructuredText} from '../../StructuredValue/StructuredText';
 import {StructuredValue} from '../../StructuredValue';
 import {EvidenceCards} from '../../EvidenceCard';
 import {getContentEvidence} from '../../EvidenceCard/evidence';
+import {DocumentContent} from '../../MessageAttachments/DocumentContent';
+import {ModalAttachments} from '../../styled';
 import {
   Description,
   Columns,
@@ -113,6 +115,13 @@ const ToolResultModal: React.FC<ToolResultModalProps> = ({
           )}
         </Column>
       </Columns>
+      <ModalAttachments>
+        <DocumentContent
+          content={content}
+          modalTitleSuffix="tool result"
+          showAll
+        />
+      </ModalAttachments>
     </Modal>
   );
 };

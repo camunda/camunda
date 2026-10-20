@@ -13,6 +13,7 @@ import type {DocumentInfo} from '../documentInfo';
 import {DocumentPreviewModal} from './DocumentPreviewModal';
 import {TooltipTrigger} from './styled';
 import {tracking} from 'modules/tracking';
+import type {ReactNode} from 'react';
 
 function getDisabledTooltipText(document: DocumentInfo): string {
   switch (true) {
@@ -28,9 +29,16 @@ function getDisabledTooltipText(document: DocumentInfo): string {
 type Props = {
   document: DocumentInfo;
   labelSuffix: string;
+  children?: ReactNode;
+  className?: string;
 };
 
-const PreviewDocumentButton: React.FC<Props> = ({document, labelSuffix}) => {
+const PreviewDocumentButton: React.FC<Props> = ({
+  document,
+  labelSuffix,
+  children,
+  className,
+}) => {
   const isDisabled =
     document.link === null || document.isExpired || document.type === 'unknown';
 
@@ -41,10 +49,11 @@ const PreviewDocumentButton: React.FC<Props> = ({document, labelSuffix}) => {
           <Button
             kind="ghost"
             size="sm"
-            hasIconOnly
-            renderIcon={View}
+            className={className}
+            hasIconOnly={!children}
+            renderIcon={children ? undefined : View}
             iconDescription="Preview"
-            tooltipPosition="top"
+            {...(children ? {} : {tooltipPosition: 'top' as const})}
             aria-label={`Preview document for ${labelSuffix}`}
             disabled={isDisabled}
             onClick={() => {
@@ -56,7 +65,9 @@ const PreviewDocumentButton: React.FC<Props> = ({document, labelSuffix}) => {
               });
               setOpen(true);
             }}
-          />
+          >
+            {children}
+          </Button>
         );
 
         if (!isDisabled) {

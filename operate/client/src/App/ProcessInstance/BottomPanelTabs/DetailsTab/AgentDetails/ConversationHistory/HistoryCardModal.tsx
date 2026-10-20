@@ -188,6 +188,7 @@ const HistoryCardModal: React.FC<Props> = ({
           <DocumentContent
             content={item.content}
             modalTitleSuffix="conversation message"
+            showAll
           />
           <EvidenceCards content={item.content} />
           <ToolCalls toolCalls={item.toolCalls} />

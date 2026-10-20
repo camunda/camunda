@@ -89,6 +89,12 @@ const ViewSwitcher = styled(ContentSwitcher)`
   width: 15rem;
 `;
 
+const ModalAttachments = styled.div`
+  margin-block-start: auto;
+  padding-block-start: var(--cds-spacing-05);
+  flex-shrink: 0;
+`;
+
 export {
   Container,
   MessageHeader,
@@ -99,4 +105,5 @@ export {
   ModalContent,
   ModalToolbar,
   ViewSwitcher,
+  ModalAttachments,
 };

@@ -12,7 +12,11 @@ import type {AgentInstanceHistoryItem} from '@camunda/camunda-api-zod-schemas/8.
 
 type ContentItem = AgentInstanceHistoryItem['content'][number];
 
-function createDocumentContent(id: string, fileName: string): ContentItem {
+function createDocumentContent(
+  id: string,
+  fileName: string,
+  contentType = 'application/pdf',
+): Extract<ContentItem, {contentType: 'DOCUMENT'}> {
   return {
     contentType: 'DOCUMENT',
     documentReference: {
@@ -21,7 +25,7 @@ function createDocumentContent(id: string, fileName: string): ContentItem {
       documentId: id,
       storeId: 'default',
       metadata: {
-        contentType: 'text/plain',
+        contentType,
         fileName,
         size: 100,
         expiresAt: null,
@@ -45,7 +49,7 @@ describe('<DocumentContent />', () => {
     expect(container).toBeEmptyDOMElement();
   });
 
-  it('should render a chip for each document entry', () => {
+  it('should render a card with a filename, size, preview and download for each document', () => {
     const doc1 = createDocumentContent('doc-1', 'report.txt');
     const doc2 = createDocumentContent('doc-2', 'screenshot.png');
     render(
@@ -61,9 +65,19 @@ describe('<DocumentContent />', () => {
     expect(
       screen.getByRole('listitem', {name: 'screenshot.png'}),
     ).toBeInTheDocument();
+    const card = within(screen.getByRole('listitem', {name: 'report.txt'}));
+    expect(card.getByText('100 B')).toBeInTheDocument();
+    expect(
+      card.getByRole('button', {name: 'Preview document for report.txt'}),
+    ).toBeEnabled();
+    expect(card.getByRole('link', {name: 'Download'})).toHaveAttribute(
+      'download',
+      'report.txt',
+    );
+    expect(screen.queryByLabelText('View documents')).not.toBeInTheDocument();
   });
 
-  it('should truncate long document filenames in chips', () => {
+  it('should retain the full filename for accessible preview and hover text', () => {
     const doc1 = createDocumentContent(
       'doc-1',
       'a-very-long-document-name.txt',
@@ -75,20 +89,25 @@ describe('<DocumentContent />', () => {
       />,
     );
 
-    const chip = screen.getByRole('listitem', {
-      name: 'a-very-long-document-name.txt',
-    });
-    expect(chip).toHaveTextContent('a-very-lo…-name.txt');
+    expect(
+      screen.getByRole('button', {
+        name: 'Preview document for a-very-long-document-name.txt',
+      }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByTitle('a-very-long-document-name.txt'),
+    ).toHaveTextContent('a-very-long-document-name.txt');
   });
 
-  it('should show at most 3 document chips and indicate the remaining count', () => {
+  it('should limit inline cards and show all documents when expanded', () => {
     const content = [
       createDocumentContent('doc-1', 'first.txt'),
       createDocumentContent('doc-2', 'second.txt'),
       createDocumentContent('doc-3', 'third.txt'),
       createDocumentContent('doc-4', 'fourth.txt'),
+      createDocumentContent('doc-5', 'fifth.txt'),
     ];
-    render(
+    const {rerender} = render(
       <DocumentContent
         content={content}
         modalTitleSuffix="conversation message"
@@ -105,14 +124,26 @@ describe('<DocumentContent />', () => {
       screen.getByRole('listitem', {name: 'third.txt'}),
     ).toBeInTheDocument();
     expect(
-      screen.queryByRole('listitem', {name: 'fourth.txt'}),
+      screen.queryByRole('listitem', {name: 'fifth.txt'}),
     ).not.toBeInTheDocument();
-    expect(screen.getByText('1 more')).toBeInTheDocument();
+    expect(screen.getByText('Documents (4 of 5)')).toBeInTheDocument();
+    expect(screen.queryByText('1 more')).not.toBeInTheDocument();
+    rerender(
+      <DocumentContent
+        content={content}
+        modalTitleSuffix="conversation message"
+        showAll
+      />,
+    );
+    expect(screen.getAllByRole('listitem')).toHaveLength(5);
+    expect(
+      screen.getByRole('listitem', {name: 'fifth.txt'}),
+    ).toBeInTheDocument();
   });
 
-  it('should open the document list modal when the view-documents button is clicked', async () => {
-    const doc1 = createDocumentContent('doc-1', 'report.txt');
-    const doc2 = createDocumentContent('doc-2', 'screenshot.png');
+  it('should open the selected preview with one click and close it again', async () => {
+    const doc1 = createDocumentContent('doc-1', 'report.pdf');
+    const doc2 = createDocumentContent('doc-2', 'screenshot.png', 'image/png');
     const {user} = render(
       <DocumentContent
         content={[doc1, doc2]}
@@ -120,28 +151,75 @@ describe('<DocumentContent />', () => {
       />,
     );
 
-    await user.click(screen.getByLabelText('View documents'));
+    await user.click(
+      screen.getByRole('button', {name: 'Preview document for screenshot.png'}),
+    );
 
     const dialog = within(screen.getByRole('dialog'));
     expect(
       dialog.getByRole('heading', {
-        name: '2 documents in conversation message',
+        name: 'Preview: screenshot.png',
       }),
+    ).toBeInTheDocument();
+    expect(dialog.getByRole('img', {name: 'screenshot.png'})).toHaveAttribute(
+      'src',
+      expect.stringContaining('doc-2'),
+    );
+    await user.click(dialog.getByRole('button', {name: 'Close'}));
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+
+  it('should support keyboard preview activation', async () => {
+    const doc1 = createDocumentContent('doc-1', 'report.pdf');
+    const {user} = render(
+      <DocumentContent content={[doc1]} modalTitleSuffix="tool result" />,
+    );
+
+    await user.tab();
+    await user.keyboard('{Enter}');
+    expect(
+      screen.getByRole('heading', {name: 'Preview: report.pdf'}),
     ).toBeInTheDocument();
   });
 
-  it('should use the modal title suffix in the document list modal heading', async () => {
-    const doc1 = createDocumentContent('doc-1', 'report.txt');
-    const doc2 = createDocumentContent('doc-2', 'screenshot.png');
+  it('should keep download separate from preview', async () => {
     const {user} = render(
-      <DocumentContent content={[doc1, doc2]} modalTitleSuffix="tool result" />,
+      <DocumentContent
+        content={[createDocumentContent('doc-1', 'report.pdf')]}
+        modalTitleSuffix="tool result"
+      />,
     );
+    const download = screen.getByRole('link', {name: 'Download'});
+    download.addEventListener('click', (event) => event.preventDefault());
+    await user.click(download);
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
 
-    await user.click(screen.getByLabelText('View documents'));
-
-    const dialog = within(screen.getByRole('dialog'));
+  it('should explain unsupported previews and retain download and size', () => {
+    render(
+      <DocumentContent
+        content={[
+          createDocumentContent('doc-1', 'archive.zip', 'application/zip'),
+        ]}
+        modalTitleSuffix="tool result"
+      />,
+    );
     expect(
-      dialog.getByRole('heading', {name: '2 documents in tool result'}),
-    ).toBeInTheDocument();
+      screen.getByRole('button', {name: 'Preview document for archive.zip'}),
+    ).toBeDisabled();
+    expect(screen.getByText('Unsupported file type')).toBeInTheDocument();
+    expect(screen.getByRole('link', {name: 'Download'})).toBeInTheDocument();
+    expect(screen.getByText('100 B')).toBeInTheDocument();
+  });
+
+  it('should disable preview and download for expired documents', () => {
+    const doc = createDocumentContent('doc-1', 'expired.pdf');
+    doc.documentReference.metadata.expiresAt = '2000-01-01T00:00:00Z';
+    render(<DocumentContent content={[doc]} modalTitleSuffix="tool result" />);
+    expect(
+      screen.getByRole('button', {name: 'Preview document for expired.pdf'}),
+    ).toBeDisabled();
+    expect(screen.getByRole('button', {name: 'Download'})).toBeDisabled();
+    expect(screen.getAllByText('Document has expired')).toHaveLength(2);
   });
 });

@@ -24,7 +24,24 @@ const ConversationContainer = styled.div`
   }
 
   .agent-history-modal .cds--modal-container {
+    block-size: 84vh;
     max-block-size: 84vh;
+  }
+
+  .agent-history-modal .cds--modal-content {
+    display: flex;
+    flex-direction: column;
+    min-block-size: 0;
+  }
+
+  .agent-history-modal .cds--modal-content > * {
+    flex-shrink: 0;
+  }
+
+  .agent-history-modal .agent-message-content {
+    min-block-size: 0;
+    max-block-size: none;
+    overflow: visible;
   }
 
   .agent-history-heading {
