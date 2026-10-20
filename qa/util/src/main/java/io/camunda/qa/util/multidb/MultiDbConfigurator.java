@@ -152,6 +152,10 @@ public class MultiDbConfigurator {
     // a test and that can really add up when we have a lot of tests
     documentBasedDatabase.getRetry().setMinRetryDelay(Duration.ofMillis(200));
     documentBasedDatabase.getRetry().setMaxRetryDelay(Duration.ofSeconds(2));
+    // reduce timeouts so we spent slightly less time waiting on a slow connection
+    // (defaults are usually 30 seconds)
+    documentBasedDatabase.setConnectionTimeout(Duration.ofSeconds(15));
+    documentBasedDatabase.setSocketTimeout(Duration.ofSeconds(15));
     overrideRefreshInterval(documentBasedDatabase);
   }
 
