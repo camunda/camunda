@@ -15,6 +15,8 @@ import io.camunda.gateway.protocol.model.simple.ProcessInstanceCreationTerminate
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceCreateRequest;
 import io.camunda.zeebe.util.Either;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.ProblemDetail;
@@ -79,6 +81,114 @@ class SimpleRequestMapperTest {
       assertThat(result.getLeft().getTitle()).isEqualTo("INVALID_ARGUMENT");
       assertThat(result.getLeft().getDetail())
           .isEqualTo("processDefinitionVersion can only be set when using processDefinitionId.");
+    }
+
+    @Test
+    void shouldMapByIdAndVersionTag() {
+      // given
+      final var request =
+          new ProcessInstanceCreationInstruction()
+              .processDefinitionId("process-id")
+              .processDefinitionVersionTag("release-1")
+              .variables(Map.of("foo", "bar"))
+              .tenantId("<default>")
+              .operationReference(123L)
+              .startInstructions(
+                  List.of(new ProcessInstanceCreationStartInstruction().elementId("start-element")))
+              .runtimeInstructions(
+                  List.of(
+                      new ProcessInstanceCreationTerminateInstruction()
+                          .afterElementId("after-element")
+                          .type("TERMINATE_PROCESS_INSTANCE")))
+              .awaitCompletion(false)
+              .fetchVariables(List.of("foo"))
+              .requestTimeout(456L)
+              .tags(Set.of("tag1"))
+              .businessId("business-1");
+
+      // when
+      final Either<ProblemDetail, ProcessInstanceCreateRequest> result =
+          SimpleRequestMapper.toCreateProcessInstance(request, false);
+
+      // then
+      assertThat(result.isRight()).isTrue();
+      final var mapped = result.get();
+      assertThat(mapped.bpmnProcessId()).isEqualTo("process-id");
+      assertThat(mapped.versionTag()).isEqualTo("release-1");
+      assertThat(mapped.version()).isEqualTo(-1);
+      assertThat(mapped.processDefinitionKey()).isEqualTo(-1L);
+      assertThat(mapped.variables()).isEqualTo(Map.of("foo", "bar"));
+      assertThat(mapped.tenantId()).isEqualTo("<default>");
+      assertThat(mapped.operationReference()).isEqualTo(123L);
+      assertThat(mapped.startInstructions()).hasSize(1);
+      assertThat(mapped.startInstructions().getFirst().getElementId()).isEqualTo("start-element");
+      assertThat(mapped.runtimeInstructions()).hasSize(1);
+      assertThat(mapped.runtimeInstructions().getFirst().getAfterElementId())
+          .isEqualTo("after-element");
+      assertThat(mapped.awaitCompletion()).isFalse();
+      assertThat(mapped.fetchVariables()).containsExactly("foo");
+      assertThat(mapped.requestTimeout()).isEqualTo(456L);
+      assertThat(mapped.tags()).containsExactly("tag1");
+      assertThat(mapped.businessId()).isEqualTo("business-1");
+    }
+
+    @Test
+    void shouldRejectVersionTagWithoutId() {
+      // given
+      final var request =
+          new ProcessInstanceCreationInstruction()
+              .processDefinitionKey("123")
+              .processDefinitionVersionTag("release-1");
+
+      // when
+      final Either<ProblemDetail, ProcessInstanceCreateRequest> result =
+          SimpleRequestMapper.toCreateProcessInstance(request, false);
+
+      // then
+      assertThat(result.isLeft()).isTrue();
+      assertThat(result.getLeft().getStatus()).isEqualTo(400);
+      assertThat(result.getLeft().getDetail())
+          .isEqualTo("processDefinitionVersionTag can only be set when using processDefinitionId.");
+    }
+
+    @Test
+    void shouldRejectVersionTagTogetherWithVersion() {
+      // given
+      final var request =
+          new ProcessInstanceCreationInstruction()
+              .processDefinitionId("process-id")
+              .processDefinitionVersion(2)
+              .processDefinitionVersionTag("release-1");
+
+      // when
+      final Either<ProblemDetail, ProcessInstanceCreateRequest> result =
+          SimpleRequestMapper.toCreateProcessInstance(request, false);
+
+      // then
+      assertThat(result.isLeft()).isTrue();
+      assertThat(result.getLeft().getStatus()).isEqualTo(400);
+      assertThat(result.getLeft().getDetail())
+          .isEqualTo(
+              "Only one of [processDefinitionVersion, processDefinitionVersionTag] is allowed.");
+    }
+
+    @Test
+    void shouldRejectBlankVersionTag() {
+      // given
+      final var request =
+          new ProcessInstanceCreationInstruction()
+              .processDefinitionId("process-id")
+              .processDefinitionVersionTag(" ");
+
+      // when
+      final Either<ProblemDetail, ProcessInstanceCreateRequest> result =
+          SimpleRequestMapper.toCreateProcessInstance(request, false);
+
+      // then
+      assertThat(result.isLeft()).isTrue();
+      assertThat(result.getLeft().getStatus()).isEqualTo(400);
+      assertThat(result.getLeft().getDetail())
+          .isEqualTo("No processDefinitionVersionTag provided.");
     }
 
     @Test
@@ -156,6 +266,31 @@ class SimpleRequestMapperTest {
       assertThat(result.getLeft().getDetail())
           .isEqualTo(
               "Expected to handle request Create Process Instance with multi-tenancy enabled, but no tenant identifier was provided.");
+    }
+
+    @Test
+    void shouldKeepDefaultsForSharedFieldsSetToNull() {
+      // given
+      final var request =
+          new ProcessInstanceCreationInstruction().processDefinitionId("process-id");
+      request.setVariables(null);
+      request.setAwaitCompletion(null);
+      request.setFetchVariables(null);
+      request.setRequestTimeout(null);
+      request.setTags(null);
+
+      // when
+      final Either<ProblemDetail, ProcessInstanceCreateRequest> result =
+          SimpleRequestMapper.toCreateProcessInstance(request, false);
+
+      // then
+      assertThat(result.isRight()).isTrue();
+      final var mapped = result.get();
+      assertThat(mapped.variables()).isEmpty();
+      assertThat(mapped.awaitCompletion()).isFalse();
+      assertThat(mapped.fetchVariables()).isEmpty();
+      assertThat(mapped.requestTimeout()).isZero();
+      assertThat(mapped.tags()).isEmpty();
     }
 
     @Test

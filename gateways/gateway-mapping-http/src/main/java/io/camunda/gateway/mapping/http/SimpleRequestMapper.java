@@ -10,12 +10,17 @@ package io.camunda.gateway.mapping.http;
 import io.camunda.gateway.mapping.http.mapper.ProcessInstanceMapper;
 import io.camunda.gateway.mapping.http.validator.ProcessInstanceRequestValidator;
 import io.camunda.gateway.protocol.model.ProcessInstanceCreationInstruction;
+import io.camunda.gateway.protocol.model.ProcessInstanceCreationInstructionBase;
 import io.camunda.gateway.protocol.model.ProcessInstanceCreationInstructionById;
 import io.camunda.gateway.protocol.model.ProcessInstanceCreationInstructionByKey;
+import io.camunda.gateway.protocol.model.ProcessInstanceCreationInstructionByVersionTag;
 import io.camunda.gateway.protocol.model.ProcessInstanceCreationStartInstruction;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceCreateRequest;
 import io.camunda.zeebe.util.Either;
 import java.util.List;
+import java.util.function.Consumer;
+import org.apache.commons.lang3.StringUtils;
+import org.jspecify.annotations.Nullable;
 import org.springframework.http.ProblemDetail;
 
 public class SimpleRequestMapper {
@@ -31,46 +36,47 @@ public class SimpleRequestMapper {
       return Either.left(validationError.get());
     }
 
-    if (request.getProcessDefinitionId() != null && !request.getProcessDefinitionId().isBlank()) {
-      return PROCESS_INSTANCE_MAPPER.toCreateProcessInstance(
-          (ProcessInstanceCreationInstruction)
-              ProcessInstanceCreationInstructionById.Builder.create()
+    final ProcessInstanceCreationInstructionBase instruction;
+    if (StringUtils.isNotBlank(request.getProcessDefinitionId())) {
+      instruction =
+          request.getProcessDefinitionVersionTag() != null
+              ? ProcessInstanceCreationInstructionByVersionTag.Builder.create()
+                  .processDefinitionId(request.getProcessDefinitionId())
+                  .processDefinitionVersionTag(request.getProcessDefinitionVersionTag())
+                  .build()
+              : ProcessInstanceCreationInstructionById.Builder.create()
                   .processDefinitionId(request.getProcessDefinitionId())
                   .processDefinitionVersion(request.getProcessDefinitionVersion())
-                  .variables(request.getVariables())
-                  .tenantId(request.getTenantId())
-                  .operationReference(request.getOperationReference())
-                  .startInstructions(
-                      mapCreateProcessInstanceStartInstructions(request.getStartInstructions()))
-                  .runtimeInstructions(
-                      mapCreateProcessInstanceRuntimeInstructions(request.getRuntimeInstructions()))
-                  .awaitCompletion(request.getAwaitCompletion())
-                  .fetchVariables(request.getFetchVariables())
-                  .requestTimeout(request.getRequestTimeout())
-                  .tags(request.getTags())
-                  .businessId(request.getBusinessId())
-                  .build(),
-          multiTenancyEnabled);
+                  .build();
+    } else {
+      instruction =
+          ProcessInstanceCreationInstructionByKey.Builder.create()
+              .processDefinitionKey(request.getProcessDefinitionKey())
+              .build();
     }
 
+    // like the generated constructors, keep the field defaults for values the request leaves null
+    setIfPresent(request.getVariables(), instruction::setVariables);
+    setIfPresent(request.getTenantId(), instruction::setTenantId);
+    setIfPresent(request.getOperationReference(), instruction::setOperationReference);
+    instruction.setStartInstructions(
+        mapCreateProcessInstanceStartInstructions(request.getStartInstructions()));
+    instruction.setRuntimeInstructions(
+        mapCreateProcessInstanceRuntimeInstructions(request.getRuntimeInstructions()));
+    setIfPresent(request.getAwaitCompletion(), instruction::setAwaitCompletion);
+    setIfPresent(request.getFetchVariables(), instruction::setFetchVariables);
+    setIfPresent(request.getRequestTimeout(), instruction::setRequestTimeout);
+    setIfPresent(request.getTags(), instruction::setTags);
+    setIfPresent(request.getBusinessId(), instruction::setBusinessId);
+
     return PROCESS_INSTANCE_MAPPER.toCreateProcessInstance(
-        (ProcessInstanceCreationInstruction)
-            ProcessInstanceCreationInstructionByKey.Builder.create()
-                .processDefinitionKey(request.getProcessDefinitionKey())
-                .variables(request.getVariables())
-                .startInstructions(
-                    mapCreateProcessInstanceStartInstructions(request.getStartInstructions()))
-                .runtimeInstructions(
-                    mapCreateProcessInstanceRuntimeInstructions(request.getRuntimeInstructions()))
-                .tenantId(request.getTenantId())
-                .operationReference(request.getOperationReference())
-                .awaitCompletion(request.getAwaitCompletion())
-                .requestTimeout(request.getRequestTimeout())
-                .fetchVariables(request.getFetchVariables())
-                .tags(request.getTags())
-                .businessId(request.getBusinessId())
-                .build(),
-        multiTenancyEnabled);
+        (ProcessInstanceCreationInstruction) instruction, multiTenancyEnabled);
+  }
+
+  private static <T> void setIfPresent(final @Nullable T value, final Consumer<T> setter) {
+    if (value != null) {
+      setter.accept(value);
+    }
   }
 
   private static List<ProcessInstanceCreationStartInstruction>

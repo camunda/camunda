@@ -331,6 +331,11 @@ public final class RequestMapper extends RequestUtil {
     if (grpcRequest.hasOperationReference()) {
       brokerRequest.setOperationReference(grpcRequest.getOperationReference());
     }
+    if (grpcRequest.hasVersionTag()) {
+      brokerRequest
+          .setVersionTag(ensureVersionTagValid(grpcRequest.getVersionTag()))
+          .setVersion(versionOrLatestIfUnset(grpcRequest.getVersion()));
+    }
 
     return brokerRequest;
   }
@@ -357,6 +362,11 @@ public final class RequestMapper extends RequestUtil {
 
     if (request.hasOperationReference()) {
       brokerRequest.setOperationReference(request.getOperationReference());
+    }
+    if (request.hasVersionTag()) {
+      brokerRequest
+          .setVersionTag(ensureVersionTagValid(request.getVersionTag()))
+          .setVersion(versionOrLatestIfUnset(request.getVersion()));
     }
     return brokerRequest;
   }
@@ -545,6 +555,20 @@ public final class RequestMapper extends RequestUtil {
         .setWithLease(request.getWithLease());
 
     return jobActivationProperties;
+  }
+
+  private static String ensureVersionTagValid(final String versionTag) {
+    if (StringUtils.isBlank(versionTag)) {
+      throw new IllegalArgumentException(
+          "Expected to create process instance with a non-empty version tag, but no version tag was provided");
+    }
+    return versionTag;
+  }
+
+  // proto3 can't leave the version unset, so a request with only a version tag arrives with
+  // version 0, which is never a deployed version; treat it as not set instead of conflicting
+  private static int versionOrLatestIfUnset(final int version) {
+    return version == 0 ? -1 : version;
   }
 
   public static String ensureBusinessIdValid(final String businessId) {

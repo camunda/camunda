@@ -12,6 +12,7 @@ import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESS
 import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_EMPTY_ATTRIBUTE;
 import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_INVALID_ATTRIBUTE_VALUE;
 import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_ONLY_ONE_FIELD;
+import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_VERSION_TAG_REQUIRES_ID;
 import static io.camunda.gateway.mapping.http.validator.RequestValidator.validate;
 import static io.camunda.gateway.mapping.http.validator.RequestValidator.validateBusinessId;
 import static io.camunda.gateway.mapping.http.validator.RequestValidator.validateKeyFormat;
@@ -26,6 +27,7 @@ import io.camunda.gateway.protocol.model.ProcessInstanceBusinessIdAssignmentInst
 import io.camunda.gateway.protocol.model.ProcessInstanceCreationInstruction;
 import io.camunda.gateway.protocol.model.ProcessInstanceCreationInstructionById;
 import io.camunda.gateway.protocol.model.ProcessInstanceCreationInstructionByKey;
+import io.camunda.gateway.protocol.model.ProcessInstanceCreationInstructionByVersionTag;
 import io.camunda.gateway.protocol.model.ProcessInstanceMigrationBatchOperationRequest;
 import io.camunda.gateway.protocol.model.ProcessInstanceMigrationInstruction;
 import io.camunda.gateway.protocol.model.ProcessInstanceModificationActivateInstruction;
@@ -54,6 +56,8 @@ import org.springframework.http.ProblemDetail;
 
 public class ProcessInstanceRequestValidator {
 
+  private static final String PROCESS_DEFINITION_VERSION_TAG = "processDefinitionVersionTag";
+
   private static final List<String> CANCELLABLE_PROCESS_INSTANCE_STATES =
       List.of(ProcessInstanceState.ACTIVE.name(), ProcessInstanceState.SUSPENDED.name());
   private static final List<String> ACTIVE_ONLY_PROCESS_INSTANCE_STATES =
@@ -65,6 +69,9 @@ public class ProcessInstanceRequestValidator {
       final ProcessInstanceCreationInstruction request) {
     if (request instanceof final ProcessInstanceCreationInstructionById byId) {
       return validateById(byId);
+    }
+    if (request instanceof final ProcessInstanceCreationInstructionByVersionTag byVersionTag) {
+      return validateByVersionTag(byVersionTag);
     }
     return validateByKey((ProcessInstanceCreationInstructionByKey) request);
   }
@@ -101,6 +108,20 @@ public class ProcessInstanceRequestValidator {
         });
   }
 
+  private static Optional<ProblemDetail> validateByVersionTag(
+      final ProcessInstanceCreationInstructionByVersionTag request) {
+    return validate(
+        violations -> {
+          validateProcessDefinitionId(request.getProcessDefinitionId(), violations);
+          if (StringUtils.isBlank(request.getProcessDefinitionVersionTag())) {
+            violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted(PROCESS_DEFINITION_VERSION_TAG));
+          }
+          validateOperationReference(request.getOperationReference(), violations);
+          validateBusinessId(request.getBusinessId(), violations);
+          validateTags(request.getTags(), violations);
+        });
+  }
+
   public static Optional<ProblemDetail> validateSimpleCreateProcessInstanceRequest(
       final io.camunda.gateway.protocol.model.simple.ProcessInstanceCreationInstruction request) {
     return validate(
@@ -131,6 +152,20 @@ public class ProcessInstanceRequestValidator {
           if (byKeySet && versionSet) {
             violations.add(
                 "processDefinitionVersion can only be set when using processDefinitionId");
+          }
+
+          final var versionTag = request.getProcessDefinitionVersionTag();
+          if (versionTag != null && versionTag.isBlank()) {
+            violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted(PROCESS_DEFINITION_VERSION_TAG));
+          }
+          final var versionTagSet = StringUtils.isNotBlank(versionTag);
+          if (versionTagSet && !byIdSet) {
+            violations.add(ERROR_MESSAGE_VERSION_TAG_REQUIRES_ID);
+          }
+          if (versionTagSet && versionSet) {
+            violations.add(
+                ERROR_MESSAGE_ONLY_ONE_FIELD.formatted(
+                    List.of("processDefinitionVersion", PROCESS_DEFINITION_VERSION_TAG)));
           }
 
           validateBusinessId(request.getBusinessId(), violations);
