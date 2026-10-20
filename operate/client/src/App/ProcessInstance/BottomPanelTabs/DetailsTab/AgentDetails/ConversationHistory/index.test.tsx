@@ -376,11 +376,11 @@ describe('<ConversationHistory />', () => {
 
       const steps = contents().getAllByRole('listitem');
       expect(steps.map((step) => step.textContent)).toEqual([
-        '1User inputUser message',
-        '2Model response 1Requests 2 tool callsread_file, grep',
-        '3Tool resultread_filepolicy.md',
-        '4Tool resultgrep',
-        '5Model response 2Assistant message',
+        '1User message',
+        '2Model response 12 requests',
+        '3read_filepolicy.md',
+        '4grep',
+        '5Model response 2',
       ]);
       expect(contents().getByText('Steps · 5')).toBeVisible();
     });
