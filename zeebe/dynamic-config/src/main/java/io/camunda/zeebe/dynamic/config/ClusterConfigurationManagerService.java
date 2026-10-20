@@ -39,6 +39,7 @@ import io.micrometer.core.instrument.MeterRegistry;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Supplier;
@@ -53,6 +54,7 @@ public final class ClusterConfigurationManagerService
   private final ClusterConfigurationManagerImpl clusterConfigurationManager;
   private final ClusterConfigurationGossiper clusterConfigurationGossiper;
   private final ClusterMembershipService memberShipService;
+  private final Duration bootstrapTimeout;
   private final boolean isCoordinator;
   private final PersistedClusterConfiguration persistedClusterConfiguration;
   private final Path configurationFile;
@@ -71,6 +73,7 @@ public final class ClusterConfigurationManagerService
       final boolean enablePartitionScaling,
       final MeterRegistry meterRegistry) {
     this.memberShipService = memberShipService;
+    bootstrapTimeout = config.bootstrapTimeout();
     topologyMetrics = new TopologyMetrics(meterRegistry);
     topologyManagerMetrics = new TopologyManagerMetrics(meterRegistry);
     try {
@@ -130,7 +133,8 @@ public final class ClusterConfigurationManagerService
                 clusterConfigurationGossiper,
                 otherKnownMembers,
                 managerActor,
-                clusterConfigurationGossiper::queryClusterConfiguration))
+                clusterConfigurationGossiper::queryClusterConfiguration,
+                bootstrapTimeout))
         .orThen(
             new GossipInitializer(
                 clusterConfigurationGossiper,
@@ -154,7 +158,8 @@ public final class ClusterConfigurationManagerService
                 clusterConfigurationGossiper,
                 otherKnownMembers,
                 managerActor,
-                clusterConfigurationGossiper::queryClusterConfiguration))
+                clusterConfigurationGossiper::queryClusterConfiguration,
+                bootstrapTimeout))
         .orThen(new StaticInitializer(staticConfiguration))
         .andThen(
             new ExporterStateInitializer(
