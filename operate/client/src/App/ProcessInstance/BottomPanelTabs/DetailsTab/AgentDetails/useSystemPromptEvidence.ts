@@ -34,9 +34,11 @@ const parseSystemPromptEvidence = (value: string) => {
   return {
     ...evidence,
     type: 'Linked',
-    binding: {latest: 'Latest', deployment: 'Deployment', versionTag: 'Version tag'}[
-      binding
-    ],
+    binding: {
+      latest: 'Latest',
+      deployment: 'Deployment',
+      versionTag: 'Version tag',
+    }[binding],
   };
 };
 
@@ -49,6 +51,7 @@ const useSystemPromptEvidence = ({
 }) =>
   useQuery({
     queryKey: queryKeys.variables.agentSystemPromptEvidence(processInstanceKey),
+    refetchInterval: 5000,
     queryFn: async () => {
       const {response, error} = await searchVariables({
         filter: {
