@@ -17,6 +17,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.state.distribution.DistributionQueue;
 import io.camunda.zeebe.protocol.impl.record.value.clock.ClockRecord;
 import io.camunda.zeebe.protocol.record.intent.ClockIntent;
 import io.camunda.zeebe.protocol.record.mapper.AuthzModelMapper;
@@ -94,7 +95,10 @@ public final class ClockOffsetProcessor implements DistributedTypedRecordProcess
           eventKey, ClockIntent.OFFSETTED, clockRecord, command);
     }
 
-    commandDistributionBehavior.withKey(eventKey).unordered().distribute(command);
+    commandDistributionBehavior
+        .withKey(eventKey)
+        .inQueue(DistributionQueue.CLOCK)
+        .distribute(command);
   }
 
   @Override
