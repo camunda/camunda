@@ -279,9 +279,7 @@ components:
           allOf:
             - $ref: 'keys.yaml#/components/schemas/ProcessInstanceKey'
         metadata:
-          description: |
-            Metadata describing how this variable is protected. `null` when the variable is not
-            protected.
+          description: Metadata of this variable. `null` when the variable has no metadata.
           nullable: true
           allOf:
             - $ref: '#/components/schemas/VariableMetadata'
@@ -300,7 +298,8 @@ components:
         protectionModes:
           description: |
             The protections applied to the variable. The value of a variable protected with
-            `REDACT` is irrecoverably replaced before it is stored, so it is never readable.
+            `REDACT` is irrecoverably replaced before it is stored in secondary storage, so it is
+            never readable.
           type: array
           items:
             $ref: '#/components/schemas/ProtectionModeEnum'
