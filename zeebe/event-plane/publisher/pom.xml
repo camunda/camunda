@@ -38,6 +38,12 @@
     </dependency>
 
     <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-api</artifactId>
+    </dependency>
+
+    <!-- Test dependencies -->
+    <dependency>
       <groupId>org.junit.jupiter</groupId>
       <artifactId>junit-jupiter-api</artifactId>
       <scope>test</scope>
@@ -48,5 +54,76 @@
       <artifactId>assertj-core</artifactId>
       <scope>test</scope>
     </dependency>
+
+    <dependency>
+      <groupId>net.jqwik</groupId>
+      <artifactId>jqwik</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>net.jqwik</groupId>
+      <artifactId>jqwik-api</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <!-- Tests read the log of what a publisher warns about -->
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-test-util</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.apache.logging.log4j</groupId>
+      <artifactId>log4j-api</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <!-- The entries a publisher reads are written with Zeebe's own journal and Raft entry codecs -->
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-journal</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-atomix-cluster</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-util</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.agrona</groupId>
+      <artifactId>agrona</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>io.micrometer</groupId>
+      <artifactId>micrometer-core</artifactId>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-dependency-plugin</artifactId>
+        <configuration>
+          <usedDependencies>
+            <!-- the jqwik engine, which the tests only use through jqwik-api -->
+            <dependency>net.jqwik:jqwik</dependency>
+          </usedDependencies>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
 </project>
