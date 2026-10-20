@@ -27,6 +27,7 @@ public final class EventPlaneCfg {
   private Duration pollInterval = Duration.ofMillis(500);
   private String serviceUrl;
   private Duration snapshotInterval = Duration.ZERO;
+  private String restoreHistory;
 
   public boolean isEnabled() {
     return enabled;
@@ -98,9 +99,21 @@ public final class EventPlaneCfg {
     this.snapshotInterval = snapshotInterval;
   }
 
+  /**
+   * For a restore only: the id of the history the Event Plane goes on in afterwards. The operator
+   * picks a new UUID and passes the same one to every broker's restore.
+   */
+  public String getRestoreHistory() {
+    return restoreHistory;
+  }
+
+  public void setRestoreHistory(final String restoreHistory) {
+    this.restoreHistory = restoreHistory;
+  }
+
   @Override
   public String toString() {
-    return "EventPlaneCfg{enabled=%s, clusterId=%s, store=%s, cutInterval=%s, maxSegmentSize=%s, pollInterval=%s, serviceUrl=%s, snapshotInterval=%s}"
+    return "EventPlaneCfg{enabled=%s, clusterId=%s, store=%s, cutInterval=%s, maxSegmentSize=%s, pollInterval=%s, serviceUrl=%s, snapshotInterval=%s, restoreHistory=%s}"
         .formatted(
             enabled,
             clusterId,
@@ -109,7 +122,8 @@ public final class EventPlaneCfg {
             maxSegmentSize,
             pollInterval,
             serviceUrl,
-            snapshotInterval);
+            snapshotInterval,
+            restoreHistory);
   }
 
   /** Where segments go: a directory, or an S3 bucket. */
