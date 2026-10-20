@@ -24,6 +24,8 @@ public class StarterProperties {
   private boolean withResults = false;
   private Duration withResultsTimeout = Duration.ofSeconds(60);
   private int durationLimit = 0;
+  private long instanceLimit = 0;
+  private Duration timerStartDelay = Duration.ZERO;
   private boolean startViaMessage = false;
   private String msgName = "msg";
   private WorkloadModel workloadModel = WorkloadModel.OPEN;
@@ -138,6 +140,22 @@ public class StarterProperties {
     this.durationLimit = durationLimit;
   }
 
+  public long getInstanceLimit() {
+    return instanceLimit;
+  }
+
+  public void setInstanceLimit(final long instanceLimit) {
+    this.instanceLimit = instanceLimit;
+  }
+
+  public Duration getTimerStartDelay() {
+    return timerStartDelay;
+  }
+
+  public void setTimerStartDelay(final Duration timerStartDelay) {
+    this.timerStartDelay = timerStartDelay;
+  }
+
   public boolean isStartViaMessage() {
     return startViaMessage;
   }
@@ -172,13 +190,11 @@ public class StarterProperties {
 
   /**
    * Maximum number of start requests awaiting a response: the rate per second for {@link
-   * WorkloadModel#CLOSED}, ten times that for {@link WorkloadModel#OPEN}, and ten times the rate
-   * (ten bursts) for {@link WorkloadModel#BURST}.
+   * WorkloadModel#CLOSED}, ten times that for {@link WorkloadModel#OPEN}.
    */
   public int getMaxInFlightRequests() {
-    final double base = workloadModel == WorkloadModel.BURST ? rate : getRatePerSecond();
     final double factor = workloadModel == WorkloadModel.CLOSED ? 1 : 10;
-    return (int) Math.min(Integer.MAX_VALUE, Math.max(1, Math.ceil(base * factor)));
+    return (int) Math.min(Integer.MAX_VALUE, Math.max(1, Math.ceil(getRatePerSecond() * factor)));
   }
 
   /** How the starter generates load. */
@@ -193,13 +209,6 @@ public class StarterProperties {
      * The number of requests waiting for a response is capped at the configured rate per second. A
      * slow cluster therefore lowers the achieved rate.
      */
-    CLOSED,
-    /**
-     * Every rate duration, the configured rate of requests is sent back to back, then the starter
-     * waits until the rate duration has passed. The number of requests waiting for a response is
-     * capped at ten times the rate, so requests of earlier bursts that wait for a response do not
-     * prevent the next burst. Requests that are rejected are dropped, they are not retried.
-     */
-    BURST
+    CLOSED
   }
 }

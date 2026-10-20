@@ -19,7 +19,6 @@ import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.client.api.search.response.SearchResponse;
 import io.camunda.zeebe.config.LoadTesterProperties;
 import io.camunda.zeebe.config.StarterProperties;
-import io.camunda.zeebe.config.StarterProperties.WorkloadModel;
 import io.camunda.zeebe.metrics.ConnectionMonitor;
 import io.camunda.zeebe.metrics.ProcessInstanceStartMeter;
 import io.camunda.zeebe.metrics.StarterLatencyMetricsDoc;
@@ -76,6 +75,7 @@ public class Starter implements CommandLineRunner {
   private static final Logger THROTTLED_LOGGER =
       new ThrottledLogger(LoggerFactory.getLogger(Starter.class), Duration.ofSeconds(5));
   private static final Logger LOG = LoggerFactory.getLogger(Starter.class);
+  private static final String TIMER_START_AT_VARIABLE = "timerStartAt";
   private static final long NANOS_PER_SECOND = Duration.ofSeconds(1).toNanos();
   private static final TypeReference<HashMap<String, Object>> VARIABLES_TYPE_REF =
       new TypeReference<>() {};
@@ -288,22 +288,23 @@ public class Starter implements CommandLineRunner {
   private ScheduledFuture<?> scheduleProcessInstanceCreation(
       final ScheduledExecutorService executorService, final CountDownLatch countDownLatch) {
 
-    final boolean burst = starterCfg.getWorkloadModel() == WorkloadModel.BURST;
-    final long intervalNanos =
-        burst
-            ? starterCfg.getRateDuration().toNanos()
-            : (long) (NANOS_PER_SECOND / starterCfg.getRatePerSecond());
-    final int requestsPerTick = burst ? (int) starterCfg.getRate() : 1;
+    final long intervalNanos = (long) (NANOS_PER_SECOND / starterCfg.getRatePerSecond());
     LOG.info(
-        "Creating {} instance(s) every {}ns (rate: {} per {})",
-        requestsPerTick,
+        "Creating an instance every {}ns (rate: {} per {})",
         intervalNanos,
         starterCfg.getRate(),
         starterCfg.getRateDuration());
 
     final String variablesString = payloadReader.readPayload(starterCfg.getPayloadPath());
-    final Map<String, Object> baseVariables =
-        Collections.unmodifiableMap(deserializeVariables(variablesString));
+    final Map<String, Object> baseVariables = deserializeVariables(variablesString);
+    final var timerStartDelay = starterCfg.getTimerStartDelay();
+    if (timerStartDelay != null && timerStartDelay.isPositive()) {
+      final var timerStartAt =
+          Instant.now().plus(timerStartDelay).truncatedTo(ChronoUnit.SECONDS).toString();
+      LOG.info("Timers start at {}, passed to every instance as 'timerStartAt'", timerStartAt);
+      baseVariables.put(TIMER_START_AT_VARIABLE, timerStartAt);
+    }
+    final Map<String, Object> startVariables = Collections.unmodifiableMap(baseVariables);
 
     final BooleanSupplier shouldContinue = createContinuationCondition();
     final Semaphore inFlight = new Semaphore(starterCfg.getMaxInFlightRequests());
@@ -320,70 +321,61 @@ public class Starter implements CommandLineRunner {
             return;
           }
 
-          for (int i = 0; i < requestsPerTick && fatalError.get() == null; i++) {
-            sendStartRequest(inFlight, baseVariables, countDownLatch);
+          if (!inFlight.tryAcquire()) {
+            processInstancesSkippedCounter.increment();
+            THROTTLED_LOGGER.debug(
+                "Skipping process instance creation, {} requests are already in flight",
+                starterCfg.getMaxInFlightRequests());
+            return;
           }
+
+          final var startTime = System.nanoTime();
+          final CompletionStage<?> requestFuture;
+          try {
+            final var vars = new HashMap<>(startVariables);
+            vars.put(starterCfg.getBusinessKey(), businessKey.incrementAndGet());
+
+            if (starterCfg.isStartViaMessage()) {
+              requestFuture = startInstanceByMessagePublishing(vars);
+            } else if (starterCfg.isWithResults()) {
+              requestFuture = startInstanceWithAwaitingResult(starterCfg.getProcessId(), vars);
+            } else {
+              requestFuture = startInstance(startTime, starterCfg.getProcessId(), vars);
+            }
+            processInstancesSubmittedCounter.increment();
+          } catch (final Exception e) {
+            inFlight.release();
+            THROTTLED_LOGGER.error("Error on creating new process instance", e);
+            return;
+          } catch (final Error e) {
+            // An Error escaping a scheduleAtFixedRate task silently cancels all future runs, so
+            // stop the starter and fail the application instead.
+            LOG.error("Fatal error on creating new process instance, stopping the starter", e);
+            fatalError.set(e);
+            countDownLatch.countDown();
+            return;
+          }
+
+          requestFuture.whenComplete(
+              (noop, error) -> {
+                inFlight.release();
+                livenessIndicator.recordResult(error);
+                final long durationNanos = System.nanoTime() - startTime;
+                responseLatencyTimer.record(durationNanos, TimeUnit.NANOSECONDS);
+                resultMetrics.record(error);
+                if (error instanceof final StatusRuntimeException statusRuntimeException) {
+                  if (statusRuntimeException.getStatus().getCode() != Code.RESOURCE_EXHAUSTED) {
+                    THROTTLED_LOGGER.warn(
+                        "Error on creating new process instance with business key {}",
+                        businessKey.get(),
+                        error);
+                  }
+                }
+              });
         },
         0,
         intervalNanos,
         TimeUnit.NANOSECONDS);
-  }
-
-  private void sendStartRequest(
-      final Semaphore inFlight,
-      final Map<String, Object> baseVariables,
-      final CountDownLatch countDownLatch) {
-    if (!inFlight.tryAcquire()) {
-      processInstancesSkippedCounter.increment();
-      THROTTLED_LOGGER.debug(
-          "Skipping process instance creation, {} requests are already in flight",
-          starterCfg.getMaxInFlightRequests());
-      return;
-    }
-
-    final var startTime = System.nanoTime();
-    final CompletionStage<?> requestFuture;
-    try {
-      final var vars = new HashMap<>(baseVariables);
-      vars.put(starterCfg.getBusinessKey(), businessKey.incrementAndGet());
-
-      if (starterCfg.isStartViaMessage()) {
-        requestFuture = startInstanceByMessagePublishing(vars);
-      } else if (starterCfg.isWithResults()) {
-        requestFuture = startInstanceWithAwaitingResult(starterCfg.getProcessId(), vars);
-      } else {
-        requestFuture = startInstance(startTime, starterCfg.getProcessId(), vars);
-      }
-      processInstancesSubmittedCounter.increment();
-    } catch (final Exception e) {
-      inFlight.release();
-      THROTTLED_LOGGER.error("Error on creating new process instance", e);
-      return;
-    } catch (final Error e) {
-      // An Error escaping a scheduleAtFixedRate task silently cancels all future runs, so
-      // stop the starter and fail the application instead.
-      LOG.error("Fatal error on creating new process instance, stopping the starter", e);
-      fatalError.set(e);
-      countDownLatch.countDown();
-      return;
-    }
-
-    requestFuture.whenComplete(
-        (noop, error) -> {
-          inFlight.release();
-          livenessIndicator.recordResult(error);
-          final long durationNanos = System.nanoTime() - startTime;
-          responseLatencyTimer.record(durationNanos, TimeUnit.NANOSECONDS);
-          resultMetrics.record(error);
-          if (error instanceof final StatusRuntimeException statusRuntimeException) {
-            if (statusRuntimeException.getStatus().getCode() != Code.RESOURCE_EXHAUSTED) {
-              THROTTLED_LOGGER.warn(
-                  "Error on creating new process instance with business key {}",
-                  businessKey.get(),
-                  error);
-            }
-          }
-        });
   }
 
   private CompletionStage<ProcessInstanceEvent> startInstance(
@@ -498,12 +490,20 @@ public class Starter implements CommandLineRunner {
 
   private BooleanSupplier createContinuationCondition() {
     final int durationLimit = starterCfg.getDurationLimit();
+    final long instanceLimit = starterCfg.getInstanceLimit();
 
+    final BooleanSupplier withinDuration;
     if (durationLimit > 0) {
       final LocalDateTime endTime = LocalDateTime.now().plus(durationLimit, ChronoUnit.SECONDS);
-      return () -> LocalDateTime.now().isBefore(endTime);
+      withinDuration = () -> LocalDateTime.now().isBefore(endTime);
     } else {
-      return () -> true;
+      withinDuration = () -> true;
     }
+
+    if (instanceLimit > 0) {
+      return () ->
+          withinDuration.getAsBoolean() && processInstancesSubmittedCounter.count() < instanceLimit;
+    }
+    return withinDuration;
   }
 }

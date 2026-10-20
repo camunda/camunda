@@ -99,14 +99,21 @@ load-tester:
     # A value <= 0 (the default) means run indefinitely; a positive value stops creation
     # after that many seconds have elapsed, which is useful for time-boxed load test scenarios.
     duration-limit: ${LOAD_TESTER_STARTER_DURATION_LIMIT:0}
+    # Stops creating process instances after this many start requests were submitted.
+    # A value <= 0 (the default) means no limit. Combines with duration-limit: the first limit
+    # reached ends the run.
+    instance-limit: ${LOAD_TESTER_STARTER_INSTANCE_LIMIT:0}
+    # When positive, the starter computes `now + timer-start-delay` once at startup, truncated to
+    # seconds, and passes it to every instance as the variable `timerStartAt` (ISO-8601 UTC, e.g.
+    # 2026-10-20T14:00:00Z). A process can use it as the start date of a timer cycle, so that all
+    # timers fall due at the same moment. A zero value (the default) adds no variable.
+    timer-start-delay: ${LOAD_TESTER_STARTER_TIMER_START_DELAY:0s}
     # Bounds the start requests awaiting a response; further scheduled requests are skipped (see
     # starter.process.instances.submissions{outcome="skipped"}).
     # open (default): requests are sent at the rate, even while earlier ones wait for a response,
     #   up to 10 * the rate per second waiting requests.
     # closed: at most 1 * the rate per second requests wait for a response, so a slow cluster
     #   lowers the achieved rate.
-    # burst: every rate duration, rate instances are started back to back. Rate should be a whole
-    #   number. At most 10 * the rate requests wait for a response.
     workload-model: ${LOAD_TESTER_STARTER_WORKLOAD_MODEL:open}
     # Liveness fails when no start request succeeded for this long. Backpressure answers count
     # as success; every other failure does not. Keep it above the interval between two requests.
