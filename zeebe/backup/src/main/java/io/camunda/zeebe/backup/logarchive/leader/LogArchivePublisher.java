@@ -73,6 +73,8 @@ public final class LogArchivePublisher extends Actor
   private final LogArchiveRecoveryListener recoveryListener;
   // the store of the old backups, null if they are not configured
   private final @Nullable BackupStore backupStore;
+  // tells the event plane about published commit entries, null if it is not configured
+  private final @Nullable LogArchiveAnnouncer announcer;
 
   // all fields below are only accessed on the actor thread
   private final Queue<PublishRequest> queue = new ArrayDeque<>();
@@ -107,6 +109,20 @@ public final class LogArchivePublisher extends Actor
       final LogStreamWriter writer,
       final LogArchiveRecoveryListener recoveryListener,
       final @Nullable BackupStore backupStore) {
+    this(partitionId, store, writer, recoveryListener, backupStore, null);
+  }
+
+  /**
+   * @param announcer told about every commit entry once it is in the bucket and about the outcome
+   *     of the recovery check; null if the event plane is not configured
+   */
+  public LogArchivePublisher(
+      final int partitionId,
+      final LogArchiveStore store,
+      final LogStreamWriter writer,
+      final LogArchiveRecoveryListener recoveryListener,
+      final @Nullable BackupStore backupStore,
+      final @Nullable LogArchiveAnnouncer announcer) {
     super(
         buildActorName("LogArchivePublisher", partitionId),
         null,
@@ -116,6 +132,7 @@ public final class LogArchivePublisher extends Actor
     this.writer = writer;
     this.recoveryListener = recoveryListener;
     this.backupStore = backupStore;
+    this.announcer = announcer;
   }
 
   @Override
@@ -251,6 +268,9 @@ public final class LogArchivePublisher extends Actor
           dropped - queue.size());
     }
     recoveryChecked = true;
+    if (announcer != null) {
+      announcer.onRecoveryChecked(meta, bucketAhead);
+    }
     recoveryListener.onRecoveryChecked(meta, bucketAhead);
     drive();
   }
@@ -293,6 +313,15 @@ public final class LogArchivePublisher extends Actor
         } else {
           put(prefix + LogArchiveKeys.timelineKey(), LogArchiveJson.write(timeline));
         }
+      }
+      case ANNOUNCE -> {
+        // the commit entry (and the timeline file) is in the bucket; the announcer ignores a
+        // repeated seq, so retries of later steps and a republish are harmless
+        final var json = request.commitEntryJson();
+        if (announcer != null && json != null) {
+          announcer.published(request.timelineId(), seq, json);
+        }
+        advance();
       }
       case HANDOVER -> writeHandover(request);
       case ROOT -> {
@@ -467,6 +496,7 @@ public final class LogArchivePublisher extends Actor
   private enum Step {
     COMMIT,
     TIMELINE,
+    ANNOUNCE,
     HANDOVER,
     ROOT,
     LATEST,

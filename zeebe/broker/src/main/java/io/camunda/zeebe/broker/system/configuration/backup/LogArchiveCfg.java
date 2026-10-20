@@ -31,6 +31,7 @@ public class LogArchiveCfg implements ConfigurationEntry {
   private Duration snapshotUploadInterval = Duration.ofMinutes(30);
   private int chunkSize = 1000;
   private int rootEvery = 100;
+  private LogArchiveEventPlaneCfg eventPlane = new LogArchiveEventPlaneCfg();
   private @Nullable String testOnlyAdvertisedVersion;
 
   public boolean isEnabled() {
@@ -103,6 +104,14 @@ public class LogArchiveCfg implements ConfigurationEntry {
     this.rootEvery = rootEvery;
   }
 
+  public LogArchiveEventPlaneCfg getEventPlane() {
+    return eventPlane;
+  }
+
+  public void setEventPlane(final LogArchiveEventPlaneCfg eventPlane) {
+    this.eventPlane = eventPlane;
+  }
+
   /**
    * TEST ONLY. If set, the broker gossips this version in its broker info instead of its own, so
    * that an integration test can make a broker look like it was not upgraded yet and keep the log
@@ -136,6 +145,8 @@ public class LogArchiveCfg implements ConfigurationEntry {
         + chunkSize
         + ", rootEvery="
         + rootEvery
+        + ", eventPlane="
+        + eventPlane
         + ", testOnlyAdvertisedVersion="
         + testOnlyAdvertisedVersion
         + '}';
