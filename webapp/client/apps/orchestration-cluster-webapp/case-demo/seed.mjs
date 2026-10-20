@@ -181,7 +181,7 @@ async function seedLoans(documents) {
 }
 
 // Insurance claims: deep nesting, a skipped stage, a rework loop, three alternative stages,
-// an optional stage (non-interrupting), an incident, a suspended case and a case without business ID.
+// an incident, a suspended case and a case without business ID.
 async function seedClaims(documents) {
 	const claim = (number, claimantName, claimType, label, overrides = {}, businessId = `CL-${RUN_ID}-${number}`) =>
 		startCase(
@@ -217,10 +217,8 @@ async function seedClaims(documents) {
 	await register(expert, 18500);
 	await completeTask(expert, 'request-quote', {quote: 17200});
 
-	const optional = await claim('03', 'Mia Wong', 'vehicle', 'Claim: expert skipped, optional stage running');
-	await register(optional, 3200);
-	await waitForElement(optional, 'coverage-check');
-	await correlate('customer-called', `CL-${RUN_ID}-03`);
+	const skipped = await claim('03', 'Mia Wong', 'vehicle', 'Claim: expert skipped, in Coverage check');
+	await register(skipped, 3200);
 
 	const rework = await claim('04', 'Jonas Berg', 'vehicle', 'Claim: rework loop back to Coverage check');
 	await register(rework, 4100);

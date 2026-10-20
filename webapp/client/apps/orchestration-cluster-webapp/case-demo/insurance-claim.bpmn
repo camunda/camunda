@@ -365,36 +365,8 @@
       <bpmn:sequenceFlow id="flow-expired-1" sourceRef="expired-start" targetRef="close-expired-claim" />
       <bpmn:sequenceFlow id="flow-expired-2" sourceRef="close-expired-claim" targetRef="expired-end" />
     </bpmn:subProcess>
-    <bpmn:subProcess id="customer-contact" name="Customer contact" triggeredByEvent="true">
-      <bpmn:extensionElements>
-        <zeebe:stage />
-      </bpmn:extensionElements>
-      <bpmn:startEvent id="customer-called" name="Customer called" isInterrupting="false">
-        <bpmn:outgoing>flow-contact-1</bpmn:outgoing>
-        <bpmn:messageEventDefinition id="customer-called-definition" messageRef="message-customer-called" />
-      </bpmn:startEvent>
-      <bpmn:userTask id="call-customer-back" name="Call the customer back">
-        <bpmn:extensionElements>
-          <zeebe:userTask />
-          <zeebe:formDefinition formId="call-customer-back" />
-          <zeebe:assignmentDefinition candidateGroups="claim-handlers" />
-        </bpmn:extensionElements>
-        <bpmn:incoming>flow-contact-1</bpmn:incoming>
-        <bpmn:outgoing>flow-contact-2</bpmn:outgoing>
-      </bpmn:userTask>
-      <bpmn:endEvent id="contact-end">
-        <bpmn:incoming>flow-contact-2</bpmn:incoming>
-      </bpmn:endEvent>
-      <bpmn:sequenceFlow id="flow-contact-1" sourceRef="customer-called" targetRef="call-customer-back" />
-      <bpmn:sequenceFlow id="flow-contact-2" sourceRef="call-customer-back" targetRef="contact-end" />
-    </bpmn:subProcess>
   </bpmn:process>
   <bpmn:message id="message-claim-withdrawn" name="claim-withdrawn">
-    <bpmn:extensionElements>
-      <zeebe:subscription correlationKey="=claimId" />
-    </bpmn:extensionElements>
-  </bpmn:message>
-  <bpmn:message id="message-customer-called" name="customer-called">
     <bpmn:extensionElements>
       <zeebe:subscription correlationKey="=claimId" />
     </bpmn:extensionElements>
@@ -563,18 +535,6 @@
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="expired-end_di" bpmnElement="expired-end">
         <dc:Bounds x="1140" y="572" width="36" height="36" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="customer-contact_di" bpmnElement="customer-contact" isExpanded="true">
-        <dc:Bounds x="1256" y="520" width="332" height="140" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="customer-called_di" bpmnElement="customer-called">
-        <dc:Bounds x="1286" y="572" width="36" height="36" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="call-customer-back_di" bpmnElement="call-customer-back">
-        <dc:Bounds x="1372" y="550" width="100" height="80" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="contact-end_di" bpmnElement="contact-end">
-        <dc:Bounds x="1522" y="572" width="36" height="36" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNEdge id="flow-registered-1_di" bpmnElement="flow-registered-1">
         <di:waypoint x="262" y="230" />
@@ -753,14 +713,6 @@
       <bpmndi:BPMNEdge id="flow-expired-2_di" bpmnElement="flow-expired-2">
         <di:waypoint x="1090" y="590" />
         <di:waypoint x="1140" y="590" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="flow-contact-1_di" bpmnElement="flow-contact-1">
-        <di:waypoint x="1322" y="590" />
-        <di:waypoint x="1372" y="590" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="flow-contact-2_di" bpmnElement="flow-contact-2">
-        <di:waypoint x="1472" y="590" />
-        <di:waypoint x="1522" y="590" />
       </bpmndi:BPMNEdge>
     </bpmndi:BPMNPlane>
   </bpmndi:BPMNDiagram>
