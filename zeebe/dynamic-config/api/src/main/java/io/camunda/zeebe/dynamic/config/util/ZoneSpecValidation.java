@@ -18,6 +18,9 @@ import java.util.stream.Collectors;
  * currently {@link ZoneAwarePartitionDistributor} and {@code ZoneAwareAdditivePartitionReassigner}
  * — so the two can never drift apart on what a valid zone configuration or a valid target member
  * set looks like.
+ *
+ * <p>Public only so the zone-aware reassigner in the {@code impl} module can share it; not intended
+ * for use outside dynamic-config.
  */
 public final class ZoneSpecValidation {
 

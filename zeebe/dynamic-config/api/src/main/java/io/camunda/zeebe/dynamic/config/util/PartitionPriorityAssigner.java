@@ -19,6 +19,9 @@ import java.util.Map;
  * broker/replication-factor changes), so they all produce the same failover behavior: the primary
  * gets the highest priority, and which follower gets the second-highest priority alternates across
  * partitions so that leadership loss is spread evenly across followers.
+ *
+ * <p>Public only so the additive reassigner in the {@code impl} module can share it; not intended
+ * for use outside dynamic-config.
  */
 public final class PartitionPriorityAssigner {
 

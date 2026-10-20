@@ -19,7 +19,6 @@ import io.camunda.configuration.Camunda;
 import io.camunda.configuration.Data;
 import io.camunda.configuration.data.primarystorage.PrimaryStorageBackup;
 import io.camunda.configuration.data.primarystorage.PrimaryStorageBackup.BackupStoreType;
-import io.camunda.zeebe.dynamic.config.impl.transformers.ClusterRestoreRequestTransformer;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.qa.util.cluster.PhysicalTenantsITHelper;
 import io.camunda.zeebe.qa.util.cluster.PhysicalTenantsITHelper.Storage;
@@ -58,7 +57,7 @@ import org.junit.jupiter.api.io.TempDir;
  * {@code service} module for coverage of the per-tenant secondary-storage environment that {@code
  * overrides} coexists with).
  *
- * <p>Covers the three shapes {@link ClusterRestoreRequestTransformer} supports: a request naming
+ * <p>Covers the three shapes {@code ClusterRestoreRequestTransformer} supports: a request naming
  * one physical tenant, forcing the restore onto just that tenant while the rest of the cluster is
  * left alone; a request naming every known physical tenant of the cluster — the shape {@code
  * ClusterRecoveryServices} builds when the request omits {@code physicalTenantId} — restoring them
