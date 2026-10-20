@@ -17,7 +17,7 @@
     <bpmn:boundaryEvent id="Timer_every10s" cancelActivity="false" attachedToRef="Task_waiting">
       <bpmn:outgoing>Flow_toTimerEnd</bpmn:outgoing>
       <bpmn:timerEventDefinition>
-        <bpmn:timeCycle xsi:type="bpmn:tFormalExpression">R/PT10S</bpmn:timeCycle>
+        <bpmn:timeCycle xsi:type="bpmn:tFormalExpression">="R/" + timerStartAt + "/PT10S"</bpmn:timeCycle>
       </bpmn:timerEventDefinition>
     </bpmn:boundaryEvent>
     <bpmn:endEvent id="EndEvent_timer">

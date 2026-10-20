@@ -104,12 +104,14 @@ spec:
               value: "false"
             - name: LOAD_TESTER_OPTIMIZE_ENABLED
               value: "false"
-            - name: LOAD_TESTER_STARTER_WORKLOAD_MODEL
-              value: "BURST"
             - name: LOAD_TESTER_STARTER_RATE
-              value: "100"
+              value: "150"
             - name: LOAD_TESTER_STARTER_RATE_DURATION
-              value: "10s"
+              value: "1s"
+            - name: LOAD_TESTER_STARTER_INSTANCE_LIMIT
+              value: "100000"
+            - name: LOAD_TESTER_STARTER_TIMER_START_DELAY
+              value: "20m"
             - name: LOAD_TESTER_STARTER_PROCESS_ID
               value: "timerBurst"
             - name: LOAD_TESTER_STARTER_BPMN_XML_PATH

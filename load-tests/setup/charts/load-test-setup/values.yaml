@@ -589,19 +589,30 @@ k6:
       value: n2-standard-4-stable
       effect: NoSchedule
 
-# -- Configuration for an optional second starter that starts a burst of process
-# instances at a fixed interval. The load-tester subchart renders only one starter,
-# so this one is a separate Deployment named `timer-burst-starter`. It reuses the image,
-# credentials and scheduling settings of the load-tester subchart. It turns off read
-# benchmarks, data availability monitoring and Optimize report evaluation. It is only
-# deployed when `load-tester.enabled` is true as well.
+# -- Configuration for an optional second starter that loads many process instances
+# whose timers all fall due at the same moment. The starter first starts `instanceLimit`
+# instances at the configured rate. Each instance gets the variable `timerStartAt`, the
+# same value for all, which the process uses as the start date of its timer cycle. Nothing
+# is due while the instances load, so backpressure cannot cap the timer load. The
+# load-tester subchart renders only one starter, so this one is a separate Deployment named
+# `timer-burst-starter`. It reuses the image, credentials and scheduling settings of the
+# load-tester subchart. It turns off read benchmarks, data availability monitoring and
+# Optimize report evaluation. It is only deployed when `load-tester.enabled` is true as
+# well. Restarting its pod starts another batch with a new `timerStartAt`.
 timerBurstStarter:
   # -- Set to true to deploy the timer burst starter.
   enabled: false
-  # -- Number of process instances started back to back in each burst.
-  rate: 100
-  # -- Time between the starts of two bursts.
-  rateDuration: 10s
+  # -- Number of process instances started per `rateDuration`.
+  rate: 150
+  # -- Duration in which `rate` instances are started.
+  rateDuration: 1s
+  # -- Total number of process instances to start. The starter stops after that many
+  # start requests. 0 means no limit.
+  instanceLimit: 100000
+  # -- Delay from the start of the starter until the timers of all instances are first due.
+  # Keep it above `instanceLimit / rate`, so all instances are loaded before the timers
+  # fall due. Instances that start later fire right away.
+  timerStartDelay: 20m
   # -- BPMN process id to start.
   processId: timerBurst
   # -- Path to the BPMN resource in the starter image.
