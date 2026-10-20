@@ -10,11 +10,9 @@ package io.camunda.zeebe.starter;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
-import io.camunda.client.CamundaClient;
 import io.camunda.client.CamundaClientConfiguration;
 import io.camunda.zeebe.config.LoadTesterProperties;
 import io.camunda.zeebe.config.StarterProperties;
-import io.camunda.zeebe.metrics.ConnectionMonitor;
 import io.camunda.zeebe.metrics.StarterMetricsDoc;
 import io.camunda.zeebe.metrics.StarterMetricsDoc.StarterMetricKeyNames;
 import io.micrometer.core.instrument.Tag;
@@ -37,12 +35,11 @@ class StarterTest {
 
     // when
     new Starter(
-        mock(CamundaClient.class),
         mock(CamundaClientConfiguration.class),
         properties,
         registry,
-        mock(ConnectionMonitor.class),
         mock(StarterLivenessIndicator.class),
+        mock(ProcessDeployer.class),
         mock(ProcessInstanceCreator.class),
         mock(ApplicationContext.class));
 
