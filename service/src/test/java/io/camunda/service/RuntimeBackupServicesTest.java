@@ -177,43 +177,6 @@ public class RuntimeBackupServicesTest {
   }
 
   @Test
-  public void takeBackupShouldFailWithInternalErrorWhenPermissionSearchFails() {
-    // given
-    authorizationsConfig.setEnabled(true);
-    when(authorizationChecker.collectPermissionTypes(any(), any(), any()))
-        .thenThrow(
-            new CamundaSearchException(
-                "Failed to execute findAll query", Reason.SEARCH_SERVER_FAILED));
-
-    // when
-    final var error = catchThrowable(() -> manualModeServices.takeBackup(42L, authentication));
-
-    // then
-    assertThat(error)
-        .isInstanceOfSatisfying(
-            ServiceException.class, e -> assertThat(e.getStatus()).isEqualTo(Status.INTERNAL));
-    verify(backupApi, never()).takeBackup(any(), any(Long.class));
-  }
-
-  @Test
-  public void takeBackupShouldFailAsUnavailableWhenPermissionSearchCannotConnect() {
-    // given
-    authorizationsConfig.setEnabled(true);
-    when(authorizationChecker.collectPermissionTypes(any(), any(), any()))
-        .thenThrow(
-            new CamundaSearchException(
-                "Failed to execute findAll query", Reason.CONNECTION_FAILED));
-
-    // when
-    final var error = catchThrowable(() -> manualModeServices.takeBackup(42L, authentication));
-
-    // then
-    assertThat(error)
-        .isInstanceOfSatisfying(
-            ServiceException.class, e -> assertThat(e.getStatus()).isEqualTo(Status.UNAVAILABLE));
-  }
-
-  @Test
   public void takeBackupShouldDelegateWhenUserHasCreatePermission() {
     // given
     grantBackupPermissions(PermissionType.CREATE);
@@ -527,5 +490,22 @@ public class RuntimeBackupServicesTest {
     final var exception = catchThrowable(future::join).getCause();
     assertThat(exception).isInstanceOf(ServiceException.class);
     assertThat(((ServiceException) exception).getStatus()).isEqualTo(expectedStatus);
+  }
+
+  @Test
+  public void takeBackupShouldPropagateSearchFailureOfPermissionLookup() {
+    // given - a failed lookup says nothing about the caller's permissions, so it must not be
+    // turned into a denial or a grant
+    authorizationsConfig.setEnabled(true);
+    final var failure =
+        new CamundaSearchException("Failed to execute findAll query", Reason.CONNECTION_FAILED);
+    when(authorizationChecker.collectPermissionTypes(any(), any(), any())).thenThrow(failure);
+
+    // when
+    final var error = catchThrowable(() -> manualModeServices.takeBackup(42L, authentication));
+
+    // then
+    assertThat(error).isSameAs(failure);
+    verify(backupApi, never()).takeBackup(any(), any(Long.class));
   }
 }

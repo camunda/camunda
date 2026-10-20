@@ -13,6 +13,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import io.camunda.document.api.DocumentContent;
@@ -30,8 +31,6 @@ import io.camunda.security.api.model.config.AuthorizationsConfiguration;
 import io.camunda.security.core.authz.AuthorizationChecker;
 import io.camunda.service.DocumentServices.DocumentCreateRequest;
 import io.camunda.service.DocumentServices.DocumentReferenceResponse;
-import io.camunda.service.exception.ServiceException;
-import io.camunda.service.exception.ServiceException.Status;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.util.Either;
@@ -360,21 +359,21 @@ public class DocumentServicesTest {
   }
 
   @Test
-  public void createDocumentShouldFailWithInternalErrorWhenPermissionSearchFails() {
-    // given
+  public void createDocumentShouldPropagateSearchFailureOfPermissionLookup() {
+    // given - a failed lookup says nothing about the caller's permissions, so it must not be
+    // turned into a denial or a grant
     authorizationsConfig.setEnabled(true);
-    when(authorizationChecker.collectPermissionTypes(any(), any(), any()))
-        .thenThrow(
-            new CamundaSearchException(
-                "Failed to execute findAll query", Reason.SEARCH_SERVER_FAILED));
-    final var fileMock = mock(DocumentCreateRequest.class);
+    final var failure =
+        new CamundaSearchException("Failed to execute findAll query", Reason.CONNECTION_FAILED);
+    when(authorizationChecker.collectPermissionTypes(any(), any(), any())).thenThrow(failure);
 
     // when
-    final var error = catchThrowable(() -> services.createDocument(fileMock, authentication));
+    final var error =
+        catchThrowable(
+            () -> services.createDocument(mock(DocumentCreateRequest.class), authentication));
 
     // then
-    assertThat(error)
-        .isInstanceOfSatisfying(
-            ServiceException.class, e -> assertThat(e.getStatus()).isEqualTo(Status.INTERNAL));
+    assertThat(error).isSameAs(failure);
+    verifyNoInteractions(registry);
   }
 }

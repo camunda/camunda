@@ -13,6 +13,8 @@ import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.camunda.search.exception.CamundaSearchException;
+import io.camunda.search.exception.CamundaSearchException.Reason;
 import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.service.RuntimeBackupServices;
 import io.camunda.service.exception.ServiceException;
@@ -106,6 +108,52 @@ public class RuntimeBackupControllerTest extends RestControllerTest {
         .exchange()
         .expectStatus()
         .isBadRequest();
+  }
+
+  @Test
+  void takeBackupShouldReturnInternalServerErrorWhenSearchFailsSynchronously() {
+    // given - e.g. the permission lookup fails before any future exists
+    when(runtimeBackupServices.takeBackup(any(), any()))
+        .thenThrow(
+            new CamundaSearchException(
+                "Failed to execute findAll query", Reason.SEARCH_SERVER_FAILED));
+
+    // when - then
+    webClient
+        .post()
+        .uri(BASE_URL)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue("{\"backupId\": 17}")
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR)
+        .expectBody()
+        .jsonPath("$.detail")
+        .isEqualTo("The search server was unable to process the request");
+  }
+
+  @Test
+  void takeBackupShouldReturnServiceUnavailableWhenSearchIsUnreachableSynchronously() {
+    // given
+    when(runtimeBackupServices.takeBackup(any(), any()))
+        .thenThrow(
+            new CamundaSearchException(
+                "Failed to execute findAll query", Reason.CONNECTION_FAILED));
+
+    // when - then
+    webClient
+        .post()
+        .uri(BASE_URL)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue("{\"backupId\": 17}")
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isEqualTo(HttpStatus.SERVICE_UNAVAILABLE)
+        .expectBody()
+        .jsonPath("$.detail")
+        .isEqualTo("The search client could not connect to the search server");
   }
 
   @Test
