@@ -20,6 +20,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Answers;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.opensearch.client.opensearch._types.ErrorCause;
+import org.opensearch.client.opensearch._types.ErrorResponse;
+import org.opensearch.client.opensearch._types.OpenSearchException;
 
 @ExtendWith(MockitoExtension.class)
 class OpenSearchMetadataServiceTest {
@@ -40,5 +43,28 @@ class OpenSearchMetadataServiceTest {
     assertThatThrownBy(() -> underTest.readMetadata(osClient))
         .isInstanceOf(OptimizeMetadataReadException.class)
         .hasCause(unavailable);
+  }
+
+  @Test
+  void shouldReportUnavailableMetadataShardAsMetadataReadFailure() {
+    // given
+    final OpenSearchException noShardAvailable =
+        new OpenSearchException(
+            new ErrorResponse.Builder()
+                .status(503)
+                .error(
+                    new ErrorCause.Builder()
+                        .type("no_shard_available_action_exception")
+                        .reason("No shard available")
+                        .build())
+                .build());
+    given(osClient.getRichOpenSearchClient().index().indexExists(METADATA_INDEX_NAME))
+        .willThrow(noShardAvailable);
+    final OpenSearchMetadataService underTest = new OpenSearchMetadataService(new ObjectMapper());
+
+    // when / then
+    assertThatThrownBy(() -> underTest.readMetadata(osClient))
+        .isInstanceOf(OptimizeMetadataReadException.class)
+        .hasCause(noShardAvailable);
   }
 }
