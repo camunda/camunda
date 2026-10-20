@@ -1,0 +1,340 @@
+<!doctype html>
+<html lang="en" dir="ltr" class="docs-wrapper plugin-docs plugin-id-adr docs-version-current docs-doc-page docs-doc-id-data-protection/variable-redaction" data-has-hydrated="false">
+<head>
+<meta charset="UTF-8">
+<meta name="generator" content="Docusaurus v3.10.2">
+<title data-rh="true">Variable redaction | Camunda Platform</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:url" content="https://camunda.github.io/camunda/pr-preview/pr-66519/adr/data-protection/variable-redaction/"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-adr-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-adr-current"><meta data-rh="true" property="og:title" content="Variable redaction | Camunda Platform"><meta data-rh="true" name="description" content="DRI: Konstantinos Mylosis"><meta data-rh="true" property="og:description" content="DRI: Konstantinos Mylosis"><link data-rh="true" rel="icon" href="/camunda/pr-preview/pr-66519/img/black-C.png"><link data-rh="true" rel="canonical" href="https://camunda.github.io/camunda/pr-preview/pr-66519/adr/data-protection/variable-redaction/"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-66519/adr/data-protection/variable-redaction/" hreflang="en"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-66519/adr/data-protection/variable-redaction/" hreflang="x-default"><link rel="stylesheet" href="/camunda/pr-preview/pr-66519/assets/css/styles.44533d03.css">
+<script src="/camunda/pr-preview/pr-66519/assets/js/runtime~main.f6c983be.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-66519/assets/js/main.b7493d38.js" defer="defer"></script>
+</head>
+<body>
+<svg style="display: none;"><defs>
+<symbol id="theme-svg-external-link" viewBox="0 0 24 24"><path fill="currentColor" d="M21 13v10h-21v-19h12v2h-10v15h17v-8h2zm3-12h-10.988l4.035 4-6.977 7.07 2.828 2.828 6.977-7.07 4.125 4.172v-11z"/></symbol>
+</defs></svg>
+<script>!function(){var t=function(){try{return new URLSearchParams(window.location.search).get("docusaurus-theme")}catch(t){}}()||function(){try{return window.localStorage.getItem("theme")}catch(t){}}();document.documentElement.setAttribute("data-theme",t||"light"),document.documentElement.setAttribute("data-theme-choice",t||"light")}(),function(){try{const c=new URLSearchParams(window.location.search).entries();for(var[t,e]of c)if(t.startsWith("docusaurus-data-")){var a=t.replace("docusaurus-data-","data-");document.documentElement.setAttribute(a,e)}}catch(t){}}()</script><div id="__docusaurus"><link rel="preload" as="image" href="/camunda/pr-preview/pr-66519/img/black-C.png"><div role="region" aria-label="Skip to main content"><a class="skipToContent_fXgn" href="#__docusaurus_skipToContent_fallback">Skip to main content</a></div><nav aria-label="Main" class="theme-layout-navbar navbar navbar--fixed-top"><div class="navbar__inner"><div class="theme-layout-navbar-left navbar__items"><button aria-label="Toggle navigation bar" aria-expanded="false" class="navbar__toggle clean-btn" type="button"><svg width="30" height="30" viewBox="0 0 30 30" aria-hidden="true"><path stroke="currentColor" stroke-linecap="round" stroke-miterlimit="10" stroke-width="2" d="M4 7h22M4 15h22M4 23h22"></path></svg></button><a class="navbar__brand" href="/camunda/pr-preview/pr-66519/"><div class="navbar__logo"><img src="/camunda/pr-preview/pr-66519/img/black-C.png" alt="Camunda Logo" class="themedComponent_mlkZ themedComponent--light_NVdE"><img src="/camunda/pr-preview/pr-66519/img/black-C.png" alt="Camunda Logo" class="themedComponent_mlkZ themedComponent--dark_xIcU"></div><b class="navbar__title text--truncate">Camunda Platform</b></a></div><div class="theme-layout-navbar-right navbar__items navbar__items--right"><a href="https://github.com/camunda/camunda" target="_blank" rel="noopener noreferrer" class="navbar__item navbar__link">GitHub<svg width="13.5" height="13.5" aria-label="(opens in new tab)" class="iconExternalLink_nPIU"><use href="#theme-svg-external-link"></use></svg></a><div class="toggle_vylO colorModeToggle_DEke"><button class="clean-btn toggleButton_gllP toggleButtonDisabled_aARS" type="button" disabled="" title="system mode" aria-label="Switch between dark and light mode (currently system mode)"><svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" class="toggleIcon_g3eP lightToggleIcon_pyhR"><path fill="currentColor" d="M12,9c1.65,0,3,1.35,3,3s-1.35,3-3,3s-3-1.35-3-3S10.35,9,12,9 M12,7c-2.76,0-5,2.24-5,5s2.24,5,5,5s5-2.24,5-5 S14.76,7,12,7L12,7z M2,13l2,0c0.55,0,1-0.45,1-1s-0.45-1-1-1l-2,0c-0.55,0-1,0.45-1,1S1.45,13,2,13z M20,13l2,0c0.55,0,1-0.45,1-1 s-0.45-1-1-1l-2,0c-0.55,0-1,0.45-1,1S19.45,13,20,13z M11,2v2c0,0.55,0.45,1,1,1s1-0.45,1-1V2c0-0.55-0.45-1-1-1S11,1.45,11,2z M11,20v2c0,0.55,0.45,1,1,1s1-0.45,1-1v-2c0-0.55-0.45-1-1-1C11.45,19,11,19.45,11,20z M5.99,4.58c-0.39-0.39-1.03-0.39-1.41,0 c-0.39,0.39-0.39,1.03,0,1.41l1.06,1.06c0.39,0.39,1.03,0.39,1.41,0s0.39-1.03,0-1.41L5.99,4.58z M18.36,16.95 c-0.39-0.39-1.03-0.39-1.41,0c-0.39,0.39-0.39,1.03,0,1.41l1.06,1.06c0.39,0.39,1.03,0.39,1.41,0c0.39-0.39,0.39-1.03,0-1.41 L18.36,16.95z M19.42,5.99c0.39-0.39,0.39-1.03,0-1.41c-0.39-0.39-1.03-0.39-1.41,0l-1.06,1.06c-0.39,0.39-0.39,1.03,0,1.41 s1.03,0.39,1.41,0L19.42,5.99z M7.05,18.36c0.39-0.39,0.39-1.03,0-1.41c-0.39-0.39-1.03-0.39-1.41,0l-1.06,1.06 c-0.39,0.39-0.39,1.03,0,1.41s1.03,0.39,1.41,0L7.05,18.36z"></path></svg><svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" class="toggleIcon_g3eP darkToggleIcon_wfgR"><path fill="currentColor" d="M9.37,5.51C9.19,6.15,9.1,6.82,9.1,7.5c0,4.08,3.32,7.4,7.4,7.4c0.68,0,1.35-0.09,1.99-0.27C17.45,17.19,14.93,19,12,19 c-3.86,0-7-3.14-7-7C5,9.07,6.81,6.55,9.37,5.51z M12,3c-4.97,0-9,4.03-9,9s4.03,9,9,9s9-4.03,9-9c0-0.46-0.04-0.92-0.1-1.36 c-0.98,1.37-2.58,2.26-4.4,2.26c-2.98,0-5.4-2.42-5.4-5.4c0-1.81,0.89-3.42,2.26-4.4C12.92,3.04,12.46,3,12,3L12,3z"></path></svg><svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" class="toggleIcon_g3eP systemToggleIcon_QzmC"><path fill="currentColor" d="m12 21c4.971 0 9-4.029 9-9s-4.029-9-9-9-9 4.029-9 9 4.029 9 9 9zm4.95-13.95c1.313 1.313 2.05 3.093 2.05 4.95s-0.738 3.637-2.05 4.95c-1.313 1.313-3.093 2.05-4.95 2.05v-14c1.857 0 3.637 0.737 4.95 2.05z"></path></svg></button></div><div class="navbarSearchContainer_Bca1"><div class="navbar__search"><span aria-label="expand searchbar" role="button" class="search-icon" tabindex="0"></span><input id="search_input_react" type="search" placeholder="Loading..." aria-label="Search" class="navbar__search-input search-bar" disabled=""></div></div></div></div><div role="presentation" class="navbar-sidebar__backdrop"></div></nav><div id="__docusaurus_skipToContent_fallback" class="theme-layout-main main-wrapper mainWrapper_z2l0"><div class="docsWrapper_hBAB"><button aria-label="Scroll back to top" class="clean-btn theme-back-to-top-button backToTopButton_sjWU" type="button"></button><div class="docRoot_UBD9"><main class="docMainContainer_TBSr docMainContainerEnhanced_lQrH"><div class="container padding-top--md padding-bottom--lg"><div class="row"><div class="col docItemCol_VOVn"><div class="docItemContainer_Djhp"><article><div class="tocCollapsible_ETCw theme-doc-toc-mobile tocMobile_ITEo"><button type="button" class="clean-btn tocCollapsibleButton_TO0P">On this page</button></div><div class="theme-doc-markdown markdown"><header><h1>Variable redaction</h1></header>
+<p><strong>DRI</strong>: Konstantinos Mylosis</p>
+<p><strong>Status</strong>: Proposal. Every decision below is a current proposal, to be reviewed with the customer
+before it is accepted. Option A (variable metadata) is the chosen way to declare a variable sensitive.
+Option B and both are fallbacks we offer to the customer (D3).</p>
+<p><strong>Deciders</strong></p>
+<ul>
+<li class="">Konstantinos Mylosis</li>
+<li class="">Stephan Epping</li>
+<li class="">Philipp Ossler</li>
+</ul>
+<p><strong>Purpose</strong>: Record how a process variable is declared sensitive, what the engine persists for it,
+where and how its value is redacted, which records and fields are covered in which order, and what
+the feature does and does not guarantee.</p>
+<p><strong>Audience</strong>: Engineers working on the engine variable and mapping behaviors, the exporter pipeline,
+the Camunda and RDBMS exporters, the v2 REST API, Operate and Tasklist; authors of custom exporters;
+AI agents reasoning about why a value is <code>null</code> in secondary storage or still readable somewhere.</p>
+<p><strong>Related</strong>: product-hub epic <a href="https://github.com/camunda/product-hub/issues/3805" target="_blank" rel="noopener noreferrer" class="">#3805</a> (Redact).
+Companion artifacts: the <em>Variable Protection Proposal</em> and the <em>Variable Records Matrix</em>. The
+matrix is the source of truth for which records and fields carry variable data (see D10).</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="context">Context<a href="#context" class="hash-link" aria-label="Direct link to Context" title="Direct link to Context" translate="no">​</a></h2>
+<p>Sensitive data ends up in process variables because the process needs it to route, decide and call
+the next system. Today a variable cannot be declared sensitive, and its value is written in plain
+text to every downstream store: the secondary storage, the raw record indices, Optimize and any
+custom exporter.</p>
+<p>The standing advice to keep sensitive data out of Camunda is a liability for regulated customers
+(card numbers, personal data). They need the value inside the engine, but not in Elasticsearch,
+OpenSearch, RDBMS or the UI.</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="constraints">Constraints<a href="#constraints" class="hash-link" aria-label="Direct link to Constraints" title="Direct link to Constraints" translate="no">​</a></h3>
+<p>The following constraints shape the decisions below:</p>
+<ol>
+<li class=""><strong>The engine needs the real value.</strong> FEEL, conditions, mappings, DMN and job workers all operate
+on it. Destroying it before the log append would break execution.</li>
+<li class=""><strong>A value reaches many places.</strong> One variable lands in a named <code>VARIABLE</code> record, in the
+<code>variables</code> maps of roughly 26 command and event records, in error text that quotes it, and in
+values derived from it.</li>
+<li class=""><strong>Every exporter must be covered</strong>, including customer-built ones. The exporter SPI has no
+&quot;rewrite&quot; hook, only accept or reject.</li>
+<li class=""><strong>Protection modes beyond redaction (mask, encrypt) are planned</strong>, so the declaration must extend
+to them without a new mechanism.</li>
+</ol>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="decision">Decision<a href="#decision" class="hash-link" aria-label="Direct link to Decision" title="Direct link to Decision" translate="no">​</a></h2>
+<p>The decisions follow the path of a protected value, from the principle to the result:</p>
+<table><thead><tr><th>Step</th><th>Decisions</th><th>Topic</th></tr></thead><tbody><tr><td>Principle</td><td>D1</td><td>Redaction applies on export only</td></tr><tr><td>Identify sensitive variables</td><td>D2, D3</td><td>Variable metadata (option A, chosen), with option B and both as fallbacks for the customer</td></tr><tr><td>API</td><td>D4, D5</td><td>Metadata on write endpoints, <code>metadata</code> field on variable search</td></tr><tr><td>Engine</td><td>D6</td><td>Records carry the variable metadata</td></tr><tr><td>Exporter</td><td>D7</td><td>A sanctioned redaction step in the exporter pipeline</td></tr><tr><td>Redact once</td><td>D8</td><td>A single redaction in the <code>ExporterDirector</code></td></tr><tr><td>Result</td><td>D9</td><td>What a redacted value looks like</td></tr><tr><td>Scope and delivery</td><td>D10, D11</td><td>Variable Records Matrix, and milestones</td></tr></tbody></table>
+<p>Variable metadata on the API (D4, D5), on the records (D6), the exporter step (D7) and the single
+redaction (D8) are one proposal. They are delivered together, milestone by milestone (D11).</p>
+<p>The diagram shows the same path at a glance. The plain value stays in primary storage. Only the exported
+copy is redacted.</p>
+<!-- -->
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="d1-redaction-applies-on-export-only-primary-storage-keeps-the-plain-value">D1. Redaction applies on export only; primary storage keeps the plain value<a href="#d1-redaction-applies-on-export-only-primary-storage-keeps-the-plain-value" class="hash-link" aria-label="Direct link to D1. Redaction applies on export only; primary storage keeps the plain value" title="Direct link to D1. Redaction applies on export only; primary storage keeps the plain value" translate="no">​</a></h3>
+<p>The engine processes the real value. The exported copy carries no value. The Raft log, RocksDB,
+snapshots and backups stay plaintext.</p>
+<p><em>Rejected: engine-side destruction before the append.</em> It is the only option that also clears the log
+and state, but:</p>
+<ul>
+<li class="">it destroys the value for execution (FEEL cannot branch on it, workers never receive it), and</li>
+<li class="">it makes the declaration replicated engine state, because the transform must be deterministic across
+replay.</li>
+</ul>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="d2-a-variable-is-declared-sensitive-through-variable-metadata-variablesmetadata">D2. A variable is declared sensitive through variable metadata (<code>variablesMetadata</code>)<a href="#d2-a-variable-is-declared-sensitive-through-variable-metadata-variablesmetadata" class="hash-link" aria-label="Direct link to d2-a-variable-is-declared-sensitive-through-variable-metadata-variablesmetadata" title="Direct link to d2-a-variable-is-declared-sensitive-through-variable-metadata-variablesmetadata" translate="no">​</a></h3>
+<p>Sensitive variables are identified by metadata sent with the variables, not by their names.
+<code>variablesMetadata</code> is the working name of the property on API requests, API responses and records. It
+is keyed by variable name and holds a list of protection modes per variable:</p>
+<div class="language-json codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-json codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token property" style="color:#36acaa">&quot;variablesMetadata&quot;</span><span class="token operator" style="color:#393A34">:</span><span class="token plain"> </span><span class="token punctuation" style="color:#393A34">{</span><span class="token plain"></span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  </span><span class="token property" style="color:#36acaa">&quot;cardNumber&quot;</span><span class="token operator" style="color:#393A34">:</span><span class="token plain"> </span><span class="token punctuation" style="color:#393A34">{</span><span class="token plain"> </span><span class="token property" style="color:#36acaa">&quot;protectionModes&quot;</span><span class="token operator" style="color:#393A34">:</span><span class="token plain"> </span><span class="token punctuation" style="color:#393A34">[</span><span class="token string" style="color:#e3116c">&quot;REDACT&quot;</span><span class="token punctuation" style="color:#393A34">]</span><span class="token plain"> </span><span class="token punctuation" style="color:#393A34">}</span><span class="token plain"></span><br></div><div class="token-line" style="color:#393A34"><span class="token plain"></span><span class="token punctuation" style="color:#393A34">}</span><br></div></code></pre></div></div>
+<ul>
+<li class=""><code>protectionModes</code> is a list so that modes combine. <code>REDACT</code> is the mode delivered first. <code>MASK</code> and
+<code>ENCRYPT</code> are planned and are not part of this decision beyond leaving room for them.</li>
+<li class="">Other metadata fields (the proposal shows <code>propagationBehavior</code> as an example) may be added later.
+Their names and semantics are not decided here.</li>
+<li class="">Protection is sticky. It is stored with the variable, so a later write that omits the metadata does
+not remove it (D6).</li>
+<li class="">The BPMN model can declare protection on input and output mappings, and the engine applies it to the
+mapped variable. The Modeler presentation is illustrative and not yet confirmed.</li>
+</ul>
+<p>This is option A of D3, the chosen one.</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="d3-option-a-variable-metadata-is-the-chosen-way-to-declare-a-variable-sensitive">D3. Option A, variable metadata, is the chosen way to declare a variable sensitive<a href="#d3-option-a-variable-metadata-is-the-chosen-way-to-declare-a-variable-sensitive" class="hash-link" aria-label="Direct link to D3. Option A, variable metadata, is the chosen way to declare a variable sensitive" title="Direct link to D3. Option A, variable metadata, is the chosen way to declare a variable sensitive" translate="no">​</a></h3>
+<p><strong>Decision: option A.</strong> Variables are declared sensitive through variable metadata (D2). It is the better
+product: protection is explicit, per variable, extensible to other modes and visible in the API.</p>
+<p>Option A and its fallbacks end in the same redaction step (D8) and the same redacted result (D9). The
+remaining decisions (D4 to D8) describe option A. Option B reuses D7 to D9.</p>
+<p><strong>Option A: pros and cons</strong></p>
+<table><thead><tr><th>Pros</th><th>Cons</th></tr></thead><tbody><tr><td>Protection is explicit and per variable</td><td>Larger effort: protocol, engine, API, UI and Modeler</td></tr><tr><td>Modes combine, and <code>MASK</code> and <code>ENCRYPT</code> fit later without a new mechanism</td><td>More surface to deliver (D11)</td></tr><tr><td>Visible in the API, because search results return the metadata (D5)</td><td>Every endpoint that carries variables needs the new property (D4)</td></tr><tr><td>Variable names stay as they are, so workers and expressions are unaffected</td><td>The Modeler presentation is still to be designed, and several places change (mappings, forms, variable views)</td></tr></tbody></table>
+<h4 class="anchor anchorTargetStickyNavbar_Vzrq" id="fallbacks-offered-to-the-customer-option-b-or-both">Fallbacks offered to the customer: option B, or both<a href="#fallbacks-offered-to-the-customer-option-b-or-both" class="hash-link" aria-label="Direct link to Fallbacks offered to the customer: option B, or both" title="Direct link to Fallbacks offered to the customer: option B, or both" translate="no">​</a></h4>
+<p>We also put the following to the customer. They do not replace the decision above.</p>
+<p><strong>Option B, a lighter alternative.</strong> If the customer accepts a naming convention, option B (configurable
+name patterns) is the quicker path. It needs no API change and no Modeler work, so the Modeler team does
+not have to touch several places or settle the UX. If the customer is content with it, we can start
+with B.</p>
+<p><strong>Both can ship.</strong> The options do not exclude each other. If both are delivered, each customer chooses
+how it redacts its data: by metadata, by name pattern, or both. In that case a variable is redacted
+when either declaration applies.</p>
+<table><thead><tr><th></th><th>A. Variable metadata (chosen)</th><th>B. Configurable name patterns</th></tr></thead><tbody><tr><td>Declaration</td><td><code>variablesMetadata</code> on the API, in the BPMN mappings and on the records (D2, D4, D6)</td><td>A pattern configured for the cluster, for example <code>redact_.*</code>. A variable whose name matches the pattern is redacted</td></tr><tr><td>Protection modes</td><td>A list per variable, so modes combine and <code>MASK</code> and <code>ENCRYPT</code> fit later</td><td><code>REDACT</code> only. Other modes would need further naming conventions</td></tr><tr><td>API</td><td>New property on every endpoint that carries variables, in requests and responses</td><td>No new property on write endpoints. Search results still return <code>protectionModes</code> (D5)</td></tr><tr><td>Modeler</td><td>Presentation to be designed, and several places to change (mappings, forms, variable views)</td><td>None. The Modeler team has no UX work</td></tr><tr><td>Effort</td><td>Larger: protocol, engine, API, UI, Modeler</td><td>Smaller: configuration and a name match at the redaction point</td></tr><tr><td>Weak points</td><td>More surface to deliver (D11)</td><td>Workers and expressions must use a name that matches the pattern. A typo silently disables protection. The customer owns the naming rule</td></tr></tbody></table>
+<p><strong>Option B: pros and cons</strong></p>
+<table><thead><tr><th>Pros</th><th>Cons</th></tr></thead><tbody><tr><td>Smaller effort: configuration and a name match at the redaction point</td><td><code>REDACT</code> only. Other modes would need further naming conventions</td></tr><tr><td>No API change to declare protection. Search results still return <code>protectionModes</code> (D5)</td><td>Workers and expressions must use a name that matches the pattern</td></tr><tr><td>No Modeler work and no UX decisions for the Modeler team</td><td>A typo silently disables protection</td></tr><tr><td>Quicker to start</td><td>The customer owns the naming rule</td></tr><tr><td></td><td>A variable can match the pattern by accident</td></tr></tbody></table>
+<p><strong>Both options together: pros and cons</strong></p>
+<table><thead><tr><th>Pros</th><th>Cons</th></tr></thead><tbody><tr><td>Each customer chooses how it redacts its data: by metadata, by name pattern, or both</td><td>A variable is redacted when either declaration applies</td></tr><tr><td>The customer can start with B and move to A</td><td>Both mechanisms are delivered, which makes an explicit opt-out necessary (see the edge case below)</td></tr><tr><td>An explicit <code>NONE</code> can opt out a variable that a pattern matches by accident</td><td></td></tr></tbody></table>
+<p><strong>Edge case when both options are chosen: a variable that must stay unprotected (<code>NONE</code>)</strong></p>
+<p>An unintended pattern match can make a variable sensitive. For example, a variable coming from an
+external system has a name that matches the configured pattern and would become sensitive unwantedly.</p>
+<p>When both options are chosen, the protection mode <code>NONE</code> states explicitly that the variable must not
+be protected:</p>
+<div class="language-json codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-json codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token property" style="color:#36acaa">&quot;variablesMetadata&quot;</span><span class="token operator" style="color:#393A34">:</span><span class="token plain"> </span><span class="token punctuation" style="color:#393A34">{</span><span class="token plain"></span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  </span><span class="token property" style="color:#36acaa">&quot;externalOrderId&quot;</span><span class="token operator" style="color:#393A34">:</span><span class="token plain"> </span><span class="token punctuation" style="color:#393A34">{</span><span class="token plain"> </span><span class="token property" style="color:#36acaa">&quot;protectionModes&quot;</span><span class="token operator" style="color:#393A34">:</span><span class="token plain"> </span><span class="token punctuation" style="color:#393A34">[</span><span class="token string" style="color:#e3116c">&quot;NONE&quot;</span><span class="token punctuation" style="color:#393A34">]</span><span class="token plain"> </span><span class="token punctuation" style="color:#393A34">}</span><span class="token plain"></span><br></div><div class="token-line" style="color:#393A34"><span class="token plain"></span><span class="token punctuation" style="color:#393A34">}</span><br></div></code></pre></div></div>
+<p>An explicit <code>NONE</code> takes precedence over a name-pattern match.</p>
+<p><strong>Not decided here:</strong></p>
+<ul>
+<li class="">How option B marks the exported record. The proposal is to set the same <code>REDACT</code> metadata as in D9,
+so that the read APIs and UI behave identically.</li>
+<li class="">Where the patterns are configured.</li>
+</ul>
+<p>Whether the customer takes B instead, or both, is open decision O3.</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="d4-api-variable-metadata-on-every-endpoint-that-writes-variables">D4. API: variable metadata on every endpoint that writes variables<a href="#d4-api-variable-metadata-on-every-endpoint-that-writes-variables" class="hash-link" aria-label="Direct link to D4. API: variable metadata on every endpoint that writes variables" title="Direct link to D4. API: variable metadata on every endpoint that writes variables" translate="no">​</a></h3>
+<p>Every v2 REST endpoint that accepts <code>variables</code> also accepts <code>variablesMetadata</code> next to it. Process
+instance creation is the first one:</p>
+<div class="language-json codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-json codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">POST /process-instances</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain"></span><span class="token punctuation" style="color:#393A34">{</span><span class="token plain"></span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  </span><span class="token property" style="color:#36acaa">&quot;processDefinitionId&quot;</span><span class="token operator" style="color:#393A34">:</span><span class="token plain"> </span><span class="token string" style="color:#e3116c">&quot;order-process&quot;</span><span class="token punctuation" style="color:#393A34">,</span><span class="token plain"></span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  </span><span class="token property" style="color:#36acaa">&quot;variables&quot;</span><span class="token operator" style="color:#393A34">:</span><span class="token plain"> </span><span class="token punctuation" style="color:#393A34">{</span><span class="token plain"> </span><span class="token property" style="color:#36acaa">&quot;cardNumber&quot;</span><span class="token operator" style="color:#393A34">:</span><span class="token plain"> </span><span class="token string" style="color:#e3116c">&quot;4111111111111111&quot;</span><span class="token plain"> </span><span class="token punctuation" style="color:#393A34">}</span><span class="token punctuation" style="color:#393A34">,</span><span class="token plain"></span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  </span><span class="token property" style="color:#36acaa">&quot;variablesMetadata&quot;</span><span class="token operator" style="color:#393A34">:</span><span class="token plain"> </span><span class="token punctuation" style="color:#393A34">{</span><span class="token plain"></span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">    </span><span class="token property" style="color:#36acaa">&quot;cardNumber&quot;</span><span class="token operator" style="color:#393A34">:</span><span class="token plain"> </span><span class="token punctuation" style="color:#393A34">{</span><span class="token plain"> </span><span class="token property" style="color:#36acaa">&quot;protectionModes&quot;</span><span class="token operator" style="color:#393A34">:</span><span class="token plain"> </span><span class="token punctuation" style="color:#393A34">[</span><span class="token string" style="color:#e3116c">&quot;REDACT&quot;</span><span class="token punctuation" style="color:#393A34">]</span><span class="token plain"> </span><span class="token punctuation" style="color:#393A34">}</span><span class="token plain"></span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  </span><span class="token punctuation" style="color:#393A34">}</span><span class="token plain"></span><br></div><div class="token-line" style="color:#393A34"><span class="token plain"></span><span class="token punctuation" style="color:#393A34">}</span><br></div></code></pre></div></div>
+<p>The same property is added to the other endpoints that carry variables:</p>
+<ul>
+<li class="">set variables on an element instance (<code>PUT /element-instances/{elementInstanceKey}/variables</code>)</li>
+<li class="">job completion</li>
+<li class="">user task completion</li>
+<li class="">message publication and correlation</li>
+<li class="">signal broadcast</li>
+<li class="">conditional evaluation</li>
+<li class="">process instance modification</li>
+<li class="">ad-hoc sub-process activation</li>
+<li class="">cluster variables</li>
+</ul>
+<p>The Variable Records Matrix (D10) is the list. The first two endpoints (create instance and set
+variables) ship in M1, the rest in M2 (D11).</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="d5-api-variable-search-introduces-a-metadata-field">D5. API: variable search introduces a <code>metadata</code> field<a href="#d5-api-variable-search-introduces-a-metadata-field" class="hash-link" aria-label="Direct link to d5-api-variable-search-introduces-a-metadata-field" title="Direct link to d5-api-variable-search-introduces-a-metadata-field" translate="no">​</a></h3>
+<p>Today the variable search and get results carry only the value. A redacted value is <code>null</code>, and a
+client cannot tell it from a variable that is genuinely <code>null</code>. The variable results therefore gain a
+<code>metadata</code> field that holds the protection modes of the variable:</p>
+<div class="language-json codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-json codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">POST /variables/search</span><br></div><div class="token-line" style="color:#393A34"><span class="token plain"></span><span class="token punctuation" style="color:#393A34">{</span><span class="token plain"></span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  </span><span class="token property" style="color:#36acaa">&quot;items&quot;</span><span class="token operator" style="color:#393A34">:</span><span class="token plain"> </span><span class="token punctuation" style="color:#393A34">[</span><span class="token plain"></span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">    </span><span class="token punctuation" style="color:#393A34">{</span><span class="token plain"></span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">      </span><span class="token property" style="color:#36acaa">&quot;name&quot;</span><span class="token operator" style="color:#393A34">:</span><span class="token plain"> </span><span class="token string" style="color:#e3116c">&quot;cardNumber&quot;</span><span class="token punctuation" style="color:#393A34">,</span><span class="token plain"></span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">      </span><span class="token property" style="color:#36acaa">&quot;value&quot;</span><span class="token operator" style="color:#393A34">:</span><span class="token plain"> </span><span class="token null keyword" style="color:#00009f">null</span><span class="token punctuation" style="color:#393A34">,</span><span class="token plain"></span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">      </span><span class="token property" style="color:#36acaa">&quot;metadata&quot;</span><span class="token operator" style="color:#393A34">:</span><span class="token plain"> </span><span class="token punctuation" style="color:#393A34">{</span><span class="token plain"> </span><span class="token property" style="color:#36acaa">&quot;protectionModes&quot;</span><span class="token operator" style="color:#393A34">:</span><span class="token plain"> </span><span class="token punctuation" style="color:#393A34">[</span><span class="token string" style="color:#e3116c">&quot;REDACT&quot;</span><span class="token punctuation" style="color:#393A34">]</span><span class="token plain"> </span><span class="token punctuation" style="color:#393A34">}</span><span class="token plain"></span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">    </span><span class="token punctuation" style="color:#393A34">}</span><span class="token plain"></span><br></div><div class="token-line" style="color:#393A34"><span class="token plain">  </span><span class="token punctuation" style="color:#393A34">]</span><span class="token plain"></span><br></div><div class="token-line" style="color:#393A34"><span class="token plain"></span><span class="token punctuation" style="color:#393A34">}</span><br></div></code></pre></div></div>
+<ul>
+<li class="">The field is added to the results of <code>POST /variables/search</code>, <code>GET /variables/{variableKey}</code> and the
+user task variable and effective-variable searches, and later to the decision-instance and incident
+searches. It is empty or absent for a variable that is not protected.</li>
+<li class="">For a redacted variable the value is <code>null</code> and the metadata contains <code>REDACT</code>. Operate and Tasklist
+read it and show <code>[REDACTED]</code> (D9).</li>
+<li class="">The exporters persist the modes with the redacted value, and the search layer returns them. This is
+part of M1 for the Camunda and RDBMS exporters (D7).</li>
+<li class="">Cluster variables already return a generic <code>metadata</code> bag of string and number values. The name is
+kept for consistency. The exact shape for process variables, and how it relates to the cluster
+variable bag, is settled in the protocol work and not here.</li>
+</ul>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="d6-engine-records-carry-the-variable-metadata">D6. Engine: records carry the variable metadata<a href="#d6-engine-records-carry-the-variable-metadata" class="hash-link" aria-label="Direct link to D6. Engine: records carry the variable metadata" title="Direct link to D6. Engine: records carry the variable metadata" translate="no">​</a></h3>
+<p>The metadata is not an API-only concept. The record properties are enhanced with the same
+<code>variablesMetadata</code>, so that the declaration travels with the data through the log and reaches the
+exporter pipeline:</p>
+<ul>
+<li class=""><code>VariableRecord</code> carries the protection modes of the variable it describes (M1).</li>
+<li class="">Records with a <code>variables</code> map (the category B records in D10) carry a <code>variablesMetadata</code> map keyed
+by variable name next to it. The engine propagates the metadata from the command to the
+<code>VariableRecord</code> it produces (M2).</li>
+<li class="">The engine reads and writes the metadata in its Processors and Behaviors and persists it per variable
+in primary storage, which makes protection sticky (D2).</li>
+<li class="">Free text that can quote a value is handled separately, and only if we implement it (D12).</li>
+</ul>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="d7-exporter-a-sanctioned-redaction-step-in-the-broker-exporter-pipeline">D7. Exporter: a sanctioned redaction step in the broker exporter pipeline<a href="#d7-exporter-a-sanctioned-redaction-step-in-the-broker-exporter-pipeline" class="hash-link" aria-label="Direct link to D7. Exporter: a sanctioned redaction step in the broker exporter pipeline" title="Direct link to D7. Exporter: a sanctioned redaction step in the broker exporter pipeline" translate="no">​</a></h3>
+<p>Every exporter must be covered, including customer-built ones, and the exporter SPI has no &quot;rewrite&quot;
+hook, only accept or reject. The broker exporter pipeline therefore gets a sanctioned transform step
+that runs before any exporter sees the record.</p>
+<p>Mutating the record from inside an exporter works in practice, but it is undeclared and
+order-dependent, and is not relied on.</p>
+<p>The Camunda and RDBMS exporters persist the protection modes together with the redacted value (M1), so
+that the read APIs can return them (D5).</p>
+<p><em>Rejected: field replacement inside the Camunda exporter handlers (R1) and inside both of our
+serialization chokepoints (R2).</em> Both miss custom exporters. R1 additionally needs six or more write
+sites kept in step and misses the raw indices Optimize imports.</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="d8-redact-once-in-the-exporterdirector-before-the-export-fan-out">D8. Redact once in the <code>ExporterDirector</code>, before the export fan-out<a href="#d8-redact-once-in-the-exporterdirector-before-the-export-fan-out" class="hash-link" aria-label="Direct link to d8-redact-once-in-the-exporterdirector-before-the-export-fan-out" title="Direct link to d8-redact-once-in-the-exporterdirector-before-the-export-fan-out" translate="no">​</a></h3>
+<p>The record is redacted once, after the engine has processed it and before it is handed to any
+exporter.</p>
+<p><strong>Where.</strong> The redaction runs in the <code>ExporterDirector</code>, at the single point where the logged event is
+decoded once and passed to each exporter in turn (<code>RecordExporter</code>). It does not run in the
+per-exporter dispatch in <code>ExporterContainer</code>, which would run the transform once per exporter over a
+shared mutable record.</p>
+<p><strong>How.</strong> The <code>ExporterDirector</code> replaces the protected values with <code>null</code>, using only the variable
+metadata the record carries (D6). It does not look up engine state. The protection modes stay on the
+exported record so that the exporters, the read APIs and the UI can tell a redacted value from an
+absent one (D9).</p>
+<p><strong>Result.</strong> Every subscriber receives the redacted record: the Camunda exporter, the RDBMS exporter,
+the raw ES/OS exporters (and so Optimize), and custom exporters.</p>
+<p>Consequence: an operator cannot keep a plaintext copy in one destination and a redacted copy in
+another. That is intended.</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="d9-what-a-redacted-value-looks-like-and-where-the-ui-gets-its-text">D9. What a redacted value looks like, and where the UI gets its text<a href="#d9-what-a-redacted-value-looks-like-and-where-the-ui-gets-its-text" class="hash-link" aria-label="Direct link to D9. What a redacted value looks like, and where the UI gets its text" title="Direct link to D9. What a redacted value looks like, and where the UI gets its text" translate="no">​</a></h3>
+<p>A redacted variable is exported with the value <code>null</code> and its protection metadata. Operate and
+Tasklist show <code>[REDACTED]</code> when the value is <code>null</code> and the metadata contains <code>REDACT</code>. The API
+returns the <code>null</code> value together with the metadata so that clients can tell a redacted value from an
+absent one.</p>
+<p>The API examples in the proposal show the value as the string <code>&quot;null&quot;</code>. Whether the wire value is JSON
+<code>null</code> or a marker string is a detail of the API change and is settled in the protocol work, not here.</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="d10-the-variable-records-matrix-defines-scope-four-categories-of-variable-carrying-data">D10. The Variable Records Matrix defines scope: four categories of variable-carrying data<a href="#d10-the-variable-records-matrix-defines-scope-four-categories-of-variable-carrying-data" class="hash-link" aria-label="Direct link to D10. The Variable Records Matrix defines scope: four categories of variable-carrying data" title="Direct link to D10. The Variable Records Matrix defines scope: four categories of variable-carrying data" translate="no">​</a></h3>
+<table><thead><tr><th>Category</th><th>Description</th><th>Examples</th></tr></thead><tbody><tr><td>A</td><td>Named variable</td><td><code>VariableRecord.value</code>, <code>ClusterVariableRecord</code></td></tr><tr><td>B</td><td>Variable list (name → value maps)</td><td><code>variables</code> in the document-carrying records: <code>VARIABLE_DOCUMENT</code>, <code>PROCESS_INSTANCE_CREATION</code>, <code>MESSAGE</code>, <code>SIGNAL</code>, <code>JOB</code> (completion), <code>JOB_BATCH</code> <code>jobs[]</code>, <code>USER_TASK</code> completion, modification, ad-hoc sub-process activation, and the rest</td></tr><tr><td>C</td><td>Free text that can quote a value</td><td><code>Incident.errorMessage</code>, <code>Job.errorMessage</code>, decision <code>evaluationFailureMessage</code>, <code>Expression.warnings</code>, <code>ErrorRecord.exceptionMessage</code> and <code>stacktrace</code>, <code>rejectionReason</code> in the record metadata</td></tr><tr><td>D</td><td>Values derived from a variable</td><td>decision inputs and outputs, <code>Expression.resultValue</code>, <code>correlationKey</code>, <code>MultiInstance.inputCollection</code>, and any field computed by an expression (assignee, job type, timer, signal name and so on)</td></tr></tbody></table>
+<p>The full matrix is the
+<a href="https://claude.ai/artifact/W61sUZygdXqHGqNjsYRM6c?sk=oSutcOlcwpm-XlLq7ThHsg" target="_blank" rel="noopener noreferrer" class="">Variable Records Matrix</a>.
+It lists each record with its category, the scenario and the REST endpoints that write and read it, and
+the variable-carrying field.</p>
+<ul>
+<li class="">Where a record carries more than one kind of data, it is listed once per kind. For example,
+<code>JobRecord</code> is listed as B for <code>variables</code> and as C for <code>errorMessage</code>, and <code>MessageRecord</code> as B for
+<code>variables</code> and as D for <code>correlationKey</code>.</li>
+<li class=""><code>JobRecord.customHeaders</code> is not listed as variable-carrying.</li>
+<li class="">Records that wrap other commands (<code>COMMAND_DISTRIBUTION</code>, <code>BUFFERED_COMMAND</code>) and <code>AGENT_HISTORY</code> are
+tracked as uncategorized in the matrix.</li>
+</ul>
+<p><strong>Priorities</strong></p>
+<ul>
+<li class=""><strong>Must have:</strong> <code>BUFFERED_COMMAND</code>, because it wraps a command that can carry protected variables.</li>
+<li class=""><strong>Nice to have:</strong>
+<ul>
+<li class=""><code>COMMAND_DISTRIBUTION</code> and <code>AGENT_HISTORY</code>.</li>
+<li class="">In category C: <code>INCIDENT</code> <code>errorMessage</code>, <code>JOB</code> <code>errorMessage</code>, and <code>ERROR</code> <code>exceptionMessage</code> and
+<code>stacktrace</code>.</li>
+</ul>
+</li>
+</ul>
+<p>The matrix is maintained as the source of truth. A new record type or field that can carry a value is
+added there before it is protected.</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="d11-delivery-order-follows-the-categories">D11. Delivery order follows the categories<a href="#d11-delivery-order-follows-the-categories" class="hash-link" aria-label="Direct link to D11. Delivery order follows the categories" title="Direct link to D11. Delivery order follows the categories" translate="no">​</a></h3>
+<table><thead><tr><th>Milestone</th><th>Scope</th></tr></thead><tbody><tr><td>M1</td><td>Category A: named variable. Foundation (ADR, <code>REDACT</code> protection mode in the protocol, <code>variablesMetadata</code> on <code>VariableRecord</code>), engine (persist and keep modes, accept metadata on create instance and set variables, input/output mapping), exporter (redact <code>VariableRecord</code> before the fan-out, persist modes in the Camunda and RDBMS exporters), API and UI (return metadata, show <code>[REDACTED]</code> in Operate and Tasklist, Modeler checkbox), verification</td></tr><tr><td>M2</td><td>Category B: variable documents. Metadata on the document-carrying records, propagation from commands to <code>VariableRecord</code>, metadata accepted on the remaining endpoints, redaction of document variables including <code>jobs[]</code> in <code>JOB_BATCH</code> and nested job results, user task variable responses</td></tr><tr><td>M3</td><td>Category C: free text (nice to have). If delivered, the engine redacts the free-text fields that can quote a protected variable when it builds them (D12), incident and decision-instance responses</td></tr></tbody></table>
+<p>Each milestone ships end to end (protocol, engine, exporter, API and UI, tests) before the next starts.
+Category D is not a milestone: it is covered by a limitation (L3).</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="d12-error-messages-nice-to-have-if-implemented-they-are-redacted-at-the-engine">D12. Error messages (nice to have): if implemented, they are redacted at the engine<a href="#d12-error-messages-nice-to-have-if-implemented-they-are-redacted-at-the-engine" class="hash-link" aria-label="Direct link to D12. Error messages (nice to have): if implemented, they are redacted at the engine" title="Direct link to D12. Error messages (nice to have): if implemented, they are redacted at the engine" translate="no">​</a></h3>
+<p>Error messages are a nice to have. If we implement them, the only way to redact them is at the engine.</p>
+<p>Category C free text (incident and job <code>errorMessage</code>, <code>ErrorRecord</code> <code>exceptionMessage</code> and
+<code>stacktrace</code>, decision <code>evaluationFailureMessage</code>, expression <code>warnings</code>, <code>rejectionReason</code>) is built
+from text that can quote a variable value, for example a failed expression that prints the value it
+could not evaluate. The engine redacts it when it builds the message:</p>
+<ul>
+<li class="">The engine knows which variables were read to produce the failure. It cross-checks them against the
+variable state and their stored <code>protectionModes</code> (D2, D6), and removes the value of every variable
+whose modes contain <code>REDACT</code> before the message is written to the record.</li>
+<li class="">The <code>ExporterDirector</code> does not redact free text (D8). It sees a finished string and cannot tell which
+part came from a protected variable. Matching the text against known values would be guesswork and
+would miss any transformed form of the value.</li>
+<li class="">The redacted text is part of the written event, so replay does not recompute it, and every exporter
+and the Raft log receive the redacted message. This is the one exception to D1: for these fields the
+primary storage does not keep the plain value either.</li>
+<li class="">Only values of variables that are protected at that moment are removed. A message that quotes a
+derived value is covered only to the extent L3 allows.</li>
+</ul>
+<p>How much of the text is removed, only the protected values or the whole message, is open decision O1.</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="guarantees">Guarantees<a href="#guarantees" class="hash-link" aria-label="Direct link to Guarantees" title="Direct link to Guarantees" translate="no">​</a></h2>
+<p>For values written after a variable was declared sensitive, in the scope delivered by the milestones
+above:</p>
+<ol>
+<li class=""><strong>Not exported to secondary storage.</strong> A redacted variable is not written to Elasticsearch,
+OpenSearch or RDBMS. Whether category C free text that can quote a value is redacted depends on
+open decision O1.</li>
+<li class=""><strong>Not visible in the UI.</strong> Operate and Tasklist show <code>[REDACTED]</code>.</li>
+<li class=""><strong>Not visible in the API reads served from secondary storage</strong>, that is the search and get
+endpoints (for example <code>POST /variables/search</code>, <code>GET /variables/{variableKey}</code>, user task
+variables, decision instance search, incident search). Endpoints served from primary storage return
+the plain value (L2).</li>
+<li class=""><strong>Not visible in the logs.</strong></li>
+<li class=""><strong>Not visible in the audit log history.</strong> The audit log records only the variable name for a
+variable add or update, never the value.</li>
+<li class=""><strong>Every exporter receives the redacted record</strong>, including custom exporters, because redaction runs
+before the fan-out (D8).</li>
+</ol>
+<p>Redaction is irreversible: once exported as <code>null</code>, nothing can reveal the value.</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="known-limitations">Known limitations<a href="#known-limitations" class="hash-link" aria-label="Direct link to Known limitations" title="Direct link to Known limitations" translate="no">​</a></h2>
+<ul>
+<li class=""><strong>L1. No redaction of nested variables.</strong> A sensitive field inside an object variable is not
+addressed. The whole variable is protected or none of it.</li>
+<li class=""><strong>L2. Primary storage is not protected.</strong> The Raft log, RocksDB, snapshots, backups and every API
+served from primary storage (job activation, process instance result, scoped expression evaluation)
+carry the plain value. Anyone able to register a worker for a task still receives the value of the
+variables it uses.</li>
+<li class=""><strong>L3. Category D derived values are only protected if written to a protected variable.</strong> Copies,
+FEEL transformations, correlation keys and multi-instance values (input collection, input element,
+output element) are not protected by default. This is not retroactive. The matrix still lists these
+records so the gap is visible.</li>
+<li class=""><strong>L4. No backfill.</strong> A declaration protects values written after it is made. Existing data stays as
+it is, which leaves a period of partial compliance.</li>
+<li class=""><strong>L5. Tasklist forms with redacted initial variables cannot be displayed.</strong></li>
+<li class=""><strong>L6. Search by value finds nothing.</strong> A redacted value cannot be matched by a variable-value filter,
+because the stored value is <code>null</code>.</li>
+<li class=""><strong>L7. Correlation keys are persisted by the Camunda and RDBMS exporters</strong> from the message
+subscription records today. They are often derived from a variable (see L3).</li>
+</ul>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="open-decisions">Open decisions<a href="#open-decisions" class="hash-link" aria-label="Direct link to Open decisions" title="Direct link to Open decisions" translate="no">​</a></h2>
+<p>These are deliberately left open and may change without superseding this ADR.</p>
+<ul>
+<li class="">
+<p><strong>O1. Error messages and prompts that may quote a protected value</strong> (incident error messages, job
+error messages, user prompts). Options:</p>
+<ul>
+<li class="">Redact only the protected values inside the text. The rest of the message stays readable.</li>
+<li class="">Keep the text as is. This is easiest to troubleshoot, but a quoted value could be exposed.</li>
+</ul>
+<p>Redacting the whole text was also considered. The property that marks a free-text field as protected
+supports either outcome (D2, M3). Until this is decided, the free-text guarantee in guarantee 1 does
+not hold.</p>
+</li>
+<li class="">
+<p><strong>O2. Updating redacted variables.</strong> Options: not supported, or supported for users holding a special
+permission. A redacted variable has no visible value to correct, which argues for &quot;not supported&quot; in
+Operate.</p>
+</li>
+<li class="">
+<p><strong>O3. Whether the customer needs a fallback to option A (D3).</strong> Option A (variable metadata) is the
+chosen way to declare a variable sensitive. If the customer prefers the smaller scope, we can offer
+option B (configurable name patterns) instead, or both.</p>
+</li>
+</ul>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="alternatives-considered">Alternatives considered<a href="#alternatives-considered" class="hash-link" aria-label="Direct link to Alternatives considered" title="Direct link to Alternatives considered" translate="no">​</a></h2>
+<ul>
+<li class="">Engine-side destruction before the append (D1).</li>
+<li class="">Redaction by exporter handler or exporter serialization hook (D7).</li>
+<li class="">Redacting error messages in the <code>ExporterDirector</code>: rejected for D12 because the exporter sees only
+the finished text and cannot tell which part quotes a protected variable.</li>
+<li class="">Variable-name prefix or suffix patterns: not rejected, offered to the customer as option B (D3). On
+its own it cannot express combined modes without further naming conventions, forces whatever reads
+the variable (workers, expressions) to use the prefixed name, and a typo silently disables
+protection.</li>
+<li class="">Suppressing a redacted variable for Optimize instead of sending the marker: rejected for D8 because
+it needs a second redaction behavior and makes Optimize disagree with Operate about what exists. A
+marker keeps instances visible and countable in reports.</li>
+</ul>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="references">References<a href="#references" class="hash-link" aria-label="Direct link to References" title="Direct link to References" translate="no">​</a></h2>
+<ul>
+<li class="">Epic: <a href="https://github.com/camunda/camunda/issues/64644" target="_blank" rel="noopener noreferrer" class="">camunda/camunda#64644</a></li>
+<li class="">Proposal artifact: <a href="https://claude.ai/artifact/DWp5ryaMBwnugSxTETicKT?sk=O__T2mJJW73ITcHA10JqIw" target="_blank" rel="noopener noreferrer" class="">Variable Protection Proposal</a></li>
+</ul></div><footer class="theme-doc-footer docusaurus-mt-lg"><div class="row margin-top--sm theme-doc-footer-edit-meta-row"><div class="col noPrint_WFHX"><a href="https://github.com/camunda/camunda/edit/main/docs/adr/data-protection/001-variable-redaction.md" target="_blank" rel="noopener noreferrer" class="theme-edit-this-page"><svg fill="currentColor" height="20" width="20" viewBox="0 0 40 40" class="iconEdit_Z9Sw" aria-hidden="true"><g><path d="m34.5 11.7l-3 3.1-6.3-6.3 3.1-3q0.5-0.5 1.2-0.5t1.1 0.5l3.9 3.9q0.5 0.4 0.5 1.1t-0.5 1.2z m-29.5 17.1l18.4-18.5 6.3 6.3-18.4 18.4h-6.3v-6.2z"></path></g></svg>Edit this page</a></div><div class="col lastUpdated_JAkA"></div></div></footer></article><nav class="docusaurus-mt-lg pagination-nav" aria-label="Docs pages"></nav></div></div><div class="col col--3"><div class="tableOfContents_bqdL thin-scrollbar theme-doc-toc-desktop"><ul class="table-of-contents table-of-contents__left-border"><li><a href="#context" class="table-of-contents__link toc-highlight">Context</a><ul><li><a href="#constraints" class="table-of-contents__link toc-highlight">Constraints</a></li></ul></li><li><a href="#decision" class="table-of-contents__link toc-highlight">Decision</a><ul><li><a href="#d1-redaction-applies-on-export-only-primary-storage-keeps-the-plain-value" class="table-of-contents__link toc-highlight">D1. Redaction applies on export only; primary storage keeps the plain value</a></li><li><a href="#d2-a-variable-is-declared-sensitive-through-variable-metadata-variablesmetadata" class="table-of-contents__link toc-highlight">D2. A variable is declared sensitive through variable metadata (<code>variablesMetadata</code>)</a></li><li><a href="#d3-option-a-variable-metadata-is-the-chosen-way-to-declare-a-variable-sensitive" class="table-of-contents__link toc-highlight">D3. Option A, variable metadata, is the chosen way to declare a variable sensitive</a><ul><li><a href="#fallbacks-offered-to-the-customer-option-b-or-both" class="table-of-contents__link toc-highlight">Fallbacks offered to the customer: option B, or both</a></li></ul></li><li><a href="#d4-api-variable-metadata-on-every-endpoint-that-writes-variables" class="table-of-contents__link toc-highlight">D4. API: variable metadata on every endpoint that writes variables</a></li><li><a href="#d5-api-variable-search-introduces-a-metadata-field" class="table-of-contents__link toc-highlight">D5. API: variable search introduces a <code>metadata</code> field</a></li><li><a href="#d6-engine-records-carry-the-variable-metadata" class="table-of-contents__link toc-highlight">D6. Engine: records carry the variable metadata</a></li><li><a href="#d7-exporter-a-sanctioned-redaction-step-in-the-broker-exporter-pipeline" class="table-of-contents__link toc-highlight">D7. Exporter: a sanctioned redaction step in the broker exporter pipeline</a></li><li><a href="#d8-redact-once-in-the-exporterdirector-before-the-export-fan-out" class="table-of-contents__link toc-highlight">D8. Redact once in the <code>ExporterDirector</code>, before the export fan-out</a></li><li><a href="#d9-what-a-redacted-value-looks-like-and-where-the-ui-gets-its-text" class="table-of-contents__link toc-highlight">D9. What a redacted value looks like, and where the UI gets its text</a></li><li><a href="#d10-the-variable-records-matrix-defines-scope-four-categories-of-variable-carrying-data" class="table-of-contents__link toc-highlight">D10. The Variable Records Matrix defines scope: four categories of variable-carrying data</a></li><li><a href="#d11-delivery-order-follows-the-categories" class="table-of-contents__link toc-highlight">D11. Delivery order follows the categories</a></li><li><a href="#d12-error-messages-nice-to-have-if-implemented-they-are-redacted-at-the-engine" class="table-of-contents__link toc-highlight">D12. Error messages (nice to have): if implemented, they are redacted at the engine</a></li></ul></li><li><a href="#guarantees" class="table-of-contents__link toc-highlight">Guarantees</a></li><li><a href="#known-limitations" class="table-of-contents__link toc-highlight">Known limitations</a></li><li><a href="#open-decisions" class="table-of-contents__link toc-highlight">Open decisions</a></li><li><a href="#alternatives-considered" class="table-of-contents__link toc-highlight">Alternatives considered</a></li><li><a href="#references" class="table-of-contents__link toc-highlight">References</a></li></ul></div></div></div></div></main></div></div></div><footer class="theme-layout-footer footer footer--dark"><div class="container container-fluid"><div class="footer__bottom text--center"><div class="footer__copyright">Copyright © 2026 Camunda.</div></div></div></footer></div>
+</body>
+</html>
