@@ -76,6 +76,7 @@
     <module>event-plane/consumer</module>
     <module>event-plane/maintenance</module>
     <module>event-plane/service</module>
+    <module>event-plane/demo</module>
     <module>event-plane/qa</module>
   </modules>
 

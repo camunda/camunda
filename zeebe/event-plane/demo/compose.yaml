@@ -1,0 +1,136 @@
+# The Event Plane in the bucket, by hand: three brokers publish into MinIO, the service passes the
+# uploads on to a consumer group of three workers, and maintenance rolls segments up and applies
+# retention. See README.md.
+name: event-plane-trial
+
+x-broker: &broker
+  image: camunda/camunda:event-plane-trial
+  depends_on:
+    bucket:
+      condition: service_completed_successfully
+  environment: &broker-env
+    SPRING_PROFILES_ACTIVE: broker
+    CAMUNDA_CLUSTER_NAME: event-plane-trial
+    # a generated cluster id doesn't survive a restore that recreates the topology
+    CAMUNDA_CLUSTER_CLUSTERID: event-plane-trial
+    CAMUNDA_CLUSTER_SIZE: "3"
+    CAMUNDA_CLUSTER_REPLICATIONFACTOR: "3"
+    CAMUNDA_CLUSTER_PARTITIONCOUNT: "3"
+    CAMUNDA_CLUSTER_INITIALCONTACTPOINTS: broker-0:26502,broker-1:26502,broker-2:26502
+    CAMUNDA_DATA_SECONDARYSTORAGE_TYPE: none
+    CAMUNDA_DATA_SECONDARYSTORAGE_AUTOCONFIGURECAMUNDAEXPORTER: "false"
+    CAMUNDA_DATA_SNAPSHOTPERIOD: 1m
+    CAMUNDA_DATA_PRIMARYSTORAGE_LOGSTREAM_LOGSEGMENTSIZE: 16MB
+    CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTEDAPI: "true"
+    CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED: "false"
+    ZEEBE_BROKER_EXPERIMENTAL_EVENTPLANE_ENABLED: "true"
+    ZEEBE_BROKER_EXPERIMENTAL_EVENTPLANE_CUTINTERVAL: 5s
+    ZEEBE_BROKER_EXPERIMENTAL_EVENTPLANE_SNAPSHOTINTERVAL: 2m
+    ZEEBE_BROKER_EXPERIMENTAL_EVENTPLANE_SERVICEURL: http://service:8085
+    ZEEBE_BROKER_EXPERIMENTAL_EVENTPLANE_STORE_TYPE: s3
+    ZEEBE_BROKER_EXPERIMENTAL_EVENTPLANE_STORE_BUCKET: event-plane
+    ZEEBE_BROKER_EXPERIMENTAL_EVENTPLANE_STORE_ENDPOINT: http://minio:9000
+    ZEEBE_BROKER_EXPERIMENTAL_EVENTPLANE_STORE_REGION: us-east-1
+    ZEEBE_BROKER_EXPERIMENTAL_EVENTPLANE_STORE_ACCESSKEYID: minio
+    ZEEBE_BROKER_EXPERIMENTAL_EVENTPLANE_STORE_SECRETACCESSKEY: minio-secret
+    ZEEBE_BROKER_EXPERIMENTAL_EVENTPLANE_STORE_FORCEPATHSTYLE: "true"
+
+x-worker: &worker
+  image: event-plane-tools:trial
+  depends_on: [service]
+  environment: &worker-env
+    EVENTPLANE_STORE_TYPE: s3
+    EVENTPLANE_STORE_BUCKET: event-plane
+    EVENTPLANE_STORE_ENDPOINT: http://minio:9000
+    EVENTPLANE_STORE_REGION: us-east-1
+    EVENTPLANE_STORE_ACCESS_KEY_ID: minio
+    EVENTPLANE_STORE_SECRET_ACCESS_KEY: minio-secret
+    EVENTPLANE_STORE_FORCE_PATH_STYLE: "true"
+    EVENTPLANE_GROUP: demo
+    EVENTPLANE_SERVICE_URL: http://service:8085
+
+services:
+  minio:
+    image: pgsty/minio:RELEASE.2026-08-04T00-00-00Z
+    command: server /data --console-address :9001
+    environment:
+      MINIO_ROOT_USER: minio
+      MINIO_ROOT_PASSWORD: minio-secret
+    ports: ["9000:9000", "9001:9001"]
+
+  bucket:
+    image: pgsty/minio:RELEASE.2026-08-04T00-00-00Z
+    depends_on: [minio]
+    entrypoint: >
+      sh -c "until mc alias set local http://minio:9000 minio minio-secret; do sleep 1; done;
+             mc mb -p local/event-plane"
+
+  broker-0:
+    <<: *broker
+    environment:
+      <<: *broker-env
+      CAMUNDA_CLUSTER_NODEID: "0"
+      CAMUNDA_CLUSTER_NETWORK_ADVERTISEDHOST: broker-0
+    ports: ["26500:26500", "8080:8080", "9600:9600"]
+
+  broker-1:
+    <<: *broker
+    environment:
+      <<: *broker-env
+      CAMUNDA_CLUSTER_NODEID: "1"
+      CAMUNDA_CLUSTER_NETWORK_ADVERTISEDHOST: broker-1
+    ports: ["9601:9600"]
+
+  broker-2:
+    <<: *broker
+    environment:
+      <<: *broker-env
+      CAMUNDA_CLUSTER_NODEID: "2"
+      CAMUNDA_CLUSTER_NETWORK_ADVERTISEDHOST: broker-2
+    ports: ["9602:9600"]
+
+  service:
+    image: event-plane-tools:trial
+    command: ["io.camunda.zeebe.eventplane.service.ServiceApp"]
+    depends_on:
+      bucket:
+        condition: service_completed_successfully
+    environment:
+      <<: *worker-env
+    ports: ["8085:8085"]
+
+  maintenance:
+    image: event-plane-tools:trial
+    command: ["io.camunda.zeebe.eventplane.maintenance.MaintenanceApp"]
+    depends_on:
+      bucket:
+        condition: service_completed_successfully
+    environment:
+      EVENTPLANE_STORE_TYPE: s3
+      EVENTPLANE_STORE_BUCKET: event-plane
+      EVENTPLANE_STORE_ENDPOINT: http://minio:9000
+      EVENTPLANE_STORE_REGION: us-east-1
+      EVENTPLANE_STORE_ACCESSKEYID: minio
+      EVENTPLANE_STORE_SECRETACCESSKEY: minio-secret
+      EVENTPLANE_STORE_FORCEPATHSTYLE: "true"
+      EVENTPLANE_MAINTENANCE_INTERVAL: PT30S
+      EVENTPLANE_MAINTENANCE_ROLLUPAGE: PT1M
+      EVENTPLANE_MAINTENANCE_ROLLUPTARGETBYTES: "8388608"
+
+  worker-1:
+    <<: *worker
+    environment:
+      <<: *worker-env
+      EVENTPLANE_WORKER: w-1
+
+  worker-2:
+    <<: *worker
+    environment:
+      <<: *worker-env
+      EVENTPLANE_WORKER: w-2
+
+  worker-3:
+    <<: *worker
+    environment:
+      <<: *worker-env
+      EVENTPLANE_WORKER: w-3
