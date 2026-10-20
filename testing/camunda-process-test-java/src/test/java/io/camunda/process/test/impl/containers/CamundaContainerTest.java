@@ -18,11 +18,15 @@ package io.camunda.process.test.impl.containers;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import java.lang.reflect.Method;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.images.builder.Transferable;
 import org.testcontainers.utility.DockerImageName;
 
 class CamundaContainerTest {
@@ -52,7 +56,7 @@ class CamundaContainerTest {
   }
 
   @Test
-  void shouldProvideClusterSecretsAsFilesInFileStore() {
+  void shouldProvideClusterSecretsAsFilesInFileStore() throws Exception {
     // given
     final CamundaContainer container =
         new CamundaContainer(DockerImageName.parse("camunda/camunda:SNAPSHOT"));
@@ -66,9 +70,11 @@ class CamundaContainerTest {
     // then
     assertThat(container.getEnvMap())
         .containsEntry("CAMUNDA_SECRETS_STORES_FILE_DEFAULT_PATH", "/tmp/camunda-cluster-secrets");
-    assertThat(container.getCopyToFileContainerPathMap().values())
-        .containsExactlyInAnyOrder(
-            "/tmp/camunda-cluster-secrets/MY_API_KEY", "/tmp/camunda-cluster-secrets/OTHER");
+    final Map<String, String> expected = new HashMap<>();
+    expected.put("/tmp/camunda-cluster-secrets/MY_API_KEY", "test-key");
+    expected.put("/tmp/camunda-cluster-secrets/OTHER", "other-value");
+    assertThat(copiedContents(container)).containsExactlyInAnyOrderEntriesOf(expected);
+    assertThat(container.getCopyToFileContainerPathMap()).isEmpty();
   }
 
   @ParameterizedTest
@@ -100,5 +106,25 @@ class CamundaContainerTest {
     // then
     assertThat(container.getEnvMap()).doesNotContainKey("CAMUNDA_SECRETS_STORES_FILE_DEFAULT_PATH");
     assertThat(container.getCopyToFileContainerPathMap()).isEmpty();
+  }
+
+  /**
+   * Testcontainers keeps in-memory copies in a package-private map, so it is read reflectively to
+   * assert what would be written into the container.
+   */
+  @SuppressWarnings("unchecked")
+  private static Map<String, String> copiedContents(final CamundaContainer container)
+      throws ReflectiveOperationException {
+    final Method getter =
+        GenericContainer.class.getDeclaredMethod("getCopyToTransferableContainerPathMap");
+    getter.setAccessible(true);
+
+    final Map<String, String> contentsByPath = new HashMap<>();
+    ((Map<Transferable, String>) getter.invoke(container))
+        .forEach(
+            (transferable, path) ->
+                contentsByPath.put(
+                    path, new String(transferable.getBytes(), StandardCharsets.UTF_8)));
+    return contentsByPath;
   }
 }
