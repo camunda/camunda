@@ -4,6 +4,13 @@ import io.camunda.gradle.pom.SettingsPomResolver
 
 pluginManagement {
   includeBuild("gradle/build-logic")
+
+  // Same mirror-first order as dependencyResolutionManagement below; the plugin portal is kept for
+  // portal-only plugins.
+  repositories {
+    maven("https://maven-central.storage-download.googleapis.com/maven2")
+    gradlePluginPortal()
+  }
 }
 
 plugins {
@@ -93,6 +100,9 @@ dependencyResolutionManagement {
   repositoriesMode = RepositoriesMode.PREFER_SETTINGS
 
   repositories {
+    // Google-hosted Maven Central mirror first: shared CI/sandbox egress IPs get rate limited (HTTP
+    // 429) by repo.maven.apache.org. Central stays as fallback for anything the mirror lacks.
+    maven("https://maven-central.storage-download.googleapis.com/maven2")
     mavenCentral()
 
     ivy {
