@@ -53,6 +53,25 @@ export function normalizeTitle(title, baseRef) {
   return (t.endsWith(suffix) ? t.slice(0, -suffix.length) : t).trim();
 }
 
+/**
+ * True when a normalized title pins a concrete dependency version or digest,
+ * e.g. `… to v4.2.19.Final`, `… to v6`, `… Docker digest to sha256:…`.
+ *
+ * This is the guard against reconciling Renovate *grouped* updates. A grouped
+ * PR (e.g. `Update all non-major dependencies`, `Update definitelyTyped`) keeps
+ * a fixed group name in its title while its actual contents differ per base
+ * branch — two branches can share the title yet update different packages, so
+ * their independently chosen assignees must not be merged. Group titles carry
+ * no concrete version target, so requiring one excludes them. Coherent groups
+ * that do pin a shared version (e.g. `Update react monorepo to v18.3.0`) still
+ * qualify, because at that version the branches really are the same bump.
+ */
+export function hasConcreteVersionTarget(title) {
+  return /\bto\s+`?(v?\d[\w.+-]*|sha256:[0-9a-f]+|[0-9a-f]{7,40})`?\s*$/i.test(
+    (title ?? '').trim(),
+  );
+}
+
 /** Group PRs by normalized title. Returns a Map<key, pr[]>. */
 export function groupSiblings(prs) {
   const groups = new Map();
@@ -66,18 +85,21 @@ export function groupSiblings(prs) {
 }
 
 /**
- * The assignee set every sibling in a group should converge to: the assignees
- * of the lowest-numbered PR that currently has at least one assignee. Returns a
- * sorted array of logins, or [] when no PR in the group is assigned yet (in
- * which case there is nothing to propagate — a later pass handles it once
- * Renovate/Mend has assigned the seed PR).
+ * The single login every sibling in a group should converge to: one assignee of
+ * the lowest-numbered PR that currently has at least one assignee — the first of
+ * that PR's logins in sorted order, so the pick is deterministic even when the
+ * seed PR carries more than one assignee. Returns a one-element array, or [] when
+ * no PR in the group is assigned yet (nothing to propagate — a later pass handles
+ * it once Renovate/Mend has assigned the seed PR). A one-element array keeps the
+ * return shape uniform for computeAssigneeDiff.
  */
 export function computeSeedAssignees(groupPrs) {
   const assigned = groupPrs
     .filter((pr) => (pr.assignees ?? []).length > 0)
     .sort((a, b) => a.number - b.number);
   if (assigned.length === 0) return [];
-  return [...assigned[0].assignees.map((a) => a.login)].sort();
+  const logins = assigned[0].assignees.map((a) => a.login).sort();
+  return [logins[0]];
 }
 
 /** The add/remove needed to turn `current` logins into `desired` logins. */
@@ -138,6 +160,13 @@ async function main() {
 
   for (const [key, groupPrs] of groups) {
     if (groupPrs.length < 2) continue;
+
+    // Skip Renovate grouped updates: a shared group title does not guarantee the
+    // branches update the same packages, so their assignees must not be merged.
+    if (!hasConcreteVersionTarget(key)) {
+      summary.push(`- _${key}_: ${groupPrs.length} PRs, no concrete version — skipped (grouped update)`);
+      continue;
+    }
 
     const seed = computeSeedAssignees(groupPrs);
     if (seed.length === 0) {

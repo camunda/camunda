@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 import {
   isRenovateAuthor,
   normalizeTitle,
+  hasConcreteVersionTarget,
   groupSiblings,
   computeSeedAssignees,
   computeAssigneeDiff,
@@ -26,6 +27,22 @@ test('normalizeTitle strips only the exact trailing base-branch suffix', () => {
   assert.equal(normalizeTitle('Update X (major)', 'main'), 'Update X (major)');
 });
 
+test('hasConcreteVersionTarget distinguishes single-dependency bumps from grouped updates', () => {
+  // Single-dependency bumps pin a concrete version/digest — reconcilable.
+  assert.equal(
+    hasConcreteVersionTarget('deps: Update dependency io.netty:netty-bom to v4.2.19.Final'),
+    true,
+  );
+  assert.equal(hasConcreteVersionTarget('deps: Update dependency eslint to v10.13.0'), true);
+  assert.equal(hasConcreteVersionTarget('deps: Update golang Docker digest to sha256:abc123'), true);
+  // A coherent monorepo group at a shared version is still the same bump.
+  assert.equal(hasConcreteVersionTarget('deps: Update react monorepo to v18.3.0'), true);
+  // Grouped rollups carry no concrete version — must be excluded.
+  assert.equal(hasConcreteVersionTarget('deps: Update all non-major dependencies'), false);
+  assert.equal(hasConcreteVersionTarget('deps: Update definitelyTyped'), false);
+  assert.equal(hasConcreteVersionTarget('deps: Update operate patch dependencies'), false);
+});
+
 test('groupSiblings buckets same-dependency PRs across base branches together', () => {
   const base = 'deps: Update dependency io.netty:netty-bom to v4.2.19.Final';
   const prs = [
@@ -39,11 +56,21 @@ test('groupSiblings buckets same-dependency PRs across base branches together', 
   assert.equal(groups.size, 2);
 });
 
-test('computeSeedAssignees picks the lowest-numbered assigned PR', () => {
+test('computeSeedAssignees picks one deterministic login from the lowest-numbered assigned PR', () => {
   const group = [
     {number: 30, assignees: [{login: 'carol'}]},
     {number: 10, assignees: [{login: 'alice'}]},
     {number: 20, assignees: [{login: 'bob'}]},
+  ];
+  assert.deepEqual(computeSeedAssignees(group), ['alice']);
+});
+
+test('computeSeedAssignees converges on one owner when the seed PR has several', () => {
+  // The lowest-numbered assigned PR carries two assignees; we must not spread
+  // both to the siblings — pick the first sorted login.
+  const group = [
+    {number: 10, assignees: [{login: 'bob'}, {login: 'alice'}]},
+    {number: 20, assignees: [{login: 'carol'}]},
   ];
   assert.deepEqual(computeSeedAssignees(group), ['alice']);
 });
