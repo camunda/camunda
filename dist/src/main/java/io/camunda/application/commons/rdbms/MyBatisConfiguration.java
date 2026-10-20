@@ -229,6 +229,8 @@ public class MyBatisConfiguration {
     p.putAll(databaseProperties.properties());
     factoryBean.setConfigurationProperties(p);
     final var factory = factoryBean.getObject();
+    // The bulk of the memory usage (~50-60%) for MyBatis with high tenant count is coming from the
+    // sql fragments.
     // The <sql> fragments are only needed to resolve <include>s while the mappers are parsed, which
     // is done by now. Each one holds on to the whole parsed mapper DOM, which is otherwise retained
     // for the lifetime of the tenant's factory, once per physical tenant on every node.
