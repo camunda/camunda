@@ -64,7 +64,6 @@ type ConversationMessageProps = {
   toolCalls?: ToolCall[];
   label?: string;
   onExpand?: () => void;
-  hideDocumentParsing?: boolean;
 };
 
 const ConversationMessage: React.FC<ConversationMessageProps> = ({
@@ -75,7 +74,6 @@ const ConversationMessage: React.FC<ConversationMessageProps> = ({
   toolCalls = [],
   label,
   onExpand,
-  hideDocumentParsing,
 }) => {
   const [messageDetails, dispatch] = useReducer(
     messageDetailsReducer,
@@ -187,10 +185,7 @@ const ConversationMessage: React.FC<ConversationMessageProps> = ({
         content={content}
         modalTitleSuffix="conversation message"
       />
-      <EvidenceCards
-        content={content}
-        hideDocumentParsing={hideDocumentParsing}
-      />
+      <EvidenceCards content={content} />
       <ToolCalls toolCalls={toolCalls} />
       {messageDetails.state === 'visible' && (
         <MessageDetailsModal

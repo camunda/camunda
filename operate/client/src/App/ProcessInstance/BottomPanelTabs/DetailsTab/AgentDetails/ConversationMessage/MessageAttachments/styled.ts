@@ -122,38 +122,6 @@ const DocumentFooter = styled.div`
   font-size: var(--cds-label-01-font-size);
 `;
 
-const DocumentProcessingGroup = styled.section`
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--cds-spacing-05);
-  inline-size: 100%;
-
-  > p {
-    flex-basis: 100%;
-    color: var(--cds-text-secondary);
-    font-size: var(--cds-label-01-font-size);
-    line-height: var(--cds-label-01-line-height);
-  }
-
-  > section {
-    display: flex;
-    flex-direction: column;
-    gap: var(--cds-spacing-03);
-    flex: 1 1 10rem;
-    min-inline-size: 0;
-  }
-
-  ${DocumentAttachments} {
-    margin-block-start: auto;
-  }
-
-  h6 {
-    font-size: var(--cds-label-01-font-size);
-    line-height: var(--cds-label-01-line-height);
-    color: var(--cds-text-secondary);
-  }
-`;
-
 export {
   HiddenButton,
   AttachmentsContainer,
@@ -166,5 +134,4 @@ export {
   DocumentPreview,
   DocumentFileName,
   DocumentFooter,
-  DocumentProcessingGroup,
 };

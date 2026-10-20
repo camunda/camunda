@@ -30,7 +30,6 @@ import {ToolResultMessage} from '../ConversationMessage/ToolResultMessage';
 import type {InfiniteData} from '@tanstack/react-query';
 import {isActiveAgentInstanceStatus} from 'modules/queries/agentInstances/agentInstanceStatus';
 import {HistoryCardModal} from './HistoryCardModal';
-import {getDocumentProcessing} from './documentProcessing';
 
 const chronologicalCards = (data: Map<number, AgentInstanceHistoryItem[]>) =>
   Array.from(data.values())
@@ -120,10 +119,6 @@ const ConversationHistory: React.FC<ConversationHistoryProps> = ({
   });
 
   const cards = data ? chronologicalCards(data) : [];
-  const documentProcessing = getDocumentProcessing(cards);
-  const groupedSources = new Set(
-    Array.from(documentProcessing.values(), (group) => group.sourceKey),
-  );
   const selectedIndex =
     selection?.agent === agentInstanceKey && selection.scope === scope
       ? cards.findIndex((item) => item.historyItemKey === selection.key)
@@ -246,9 +241,6 @@ const ConversationHistory: React.FC<ConversationHistoryProps> = ({
                           availableTools={availableTools}
                           toolCalls={item.toolCalls}
                           content={item.content}
-                          parsingInput={
-                            documentProcessing.get(item.historyItemKey)?.input
-                          }
                           onExpand={() => openCard(item.historyItemKey)}
                         />
                       </div>
@@ -271,9 +263,6 @@ const ConversationHistory: React.FC<ConversationHistoryProps> = ({
                               ? 'User · analyst feedback (revise)'
                               : undefined
                           }
-                          hideDocumentParsing={groupedSources.has(
-                            item.historyItemKey,
-                          )}
                         />
                       </div>
                     )}
@@ -294,10 +283,6 @@ const ConversationHistory: React.FC<ConversationHistoryProps> = ({
       {selectedCard && !isPlaceholderData && (
         <HistoryCardModal
           item={selectedCard}
-          parsingInput={
-            documentProcessing.get(selectedCard.historyItemKey)?.input
-          }
-          hideDocumentParsing={groupedSources.has(selectedCard.historyItemKey)}
           availableTools={availableTools}
           position={selectedIndex + 1}
           total={cards.length}

@@ -48,7 +48,7 @@ function createWrapper() {
 }
 
 describe('<ConversationHistory />', () => {
-  it('groups provider PDF input and CSV export in the real export tool card and expanded view', async () => {
+  it('should keep provider PDF parsing on its source message and show only exported documents on the tool', async () => {
     const document = (
       id: string,
       fileName: string,
@@ -123,19 +123,19 @@ describe('<ConversationHistory />', () => {
         name: 'Result for "sandbox_export_document" tool call',
       }),
     );
-    const group = within(
-      card.getByRole('region', {name: 'PDF parsing and CSV export'}),
-    );
-    expect(group.getByRole('region', {name: 'PDF input'})).toHaveTextContent(
-      'statement.pdf',
-    );
-    expect(group.getByRole('region', {name: 'CSV output'})).toHaveTextContent(
-      'statement.csv',
-    );
-    expect(group.queryByRole('status')).not.toBeInTheDocument();
     expect(
-      screen.queryByTestId('evidence-document-parsing'),
+      card.getByRole('listitem', {name: 'statement.csv'}),
+    ).toBeInTheDocument();
+    expect(
+      card.queryByRole('listitem', {name: 'statement.pdf'}),
     ).not.toBeInTheDocument();
+    const userMessage = within(screen.getByTestId('conversation-message-1'));
+    expect(
+      userMessage.getByTestId('evidence-document-parsing'),
+    ).toBeInTheDocument();
+    expect(
+      userMessage.getByRole('listitem', {name: 'statement.pdf'}),
+    ).toBeInTheDocument();
     await user.click(card.getByRole('button', {name: 'Expand'}));
     const dialog = within(screen.getByRole('dialog'));
     expect(
@@ -143,16 +143,22 @@ describe('<ConversationHistory />', () => {
         name: /^Tool call: sandbox_export_document/,
       }),
     ).toBeInTheDocument();
-    expect(dialog.getByRole('region', {name: 'PDF input'})).toHaveTextContent(
-      'statement.pdf',
-    );
-    expect(dialog.getByRole('region', {name: 'CSV output'})).toHaveTextContent(
-      'statement.csv',
-    );
-    expect(dialog.getByText('file-parser (provider-run)')).toBeVisible();
+    expect(
+      dialog.queryByText('file-parser (provider-run)'),
+    ).not.toBeInTheDocument();
+    expect(
+      dialog.queryByRole('listitem', {name: 'statement.pdf'}),
+    ).not.toBeInTheDocument();
+    expect(dialog.getByRole('listitem', {name: 'statement.csv'})).toBeVisible();
     expect(dialog.getByTestId('tool-call-input')).toHaveTextContent(
       '/statement.csv',
     );
+    await user.click(dialog.getByRole('button', {name: 'Previous card'}));
+    expect(
+      within(screen.getByRole('dialog')).getByTestId(
+        'evidence-document-parsing',
+      ),
+    ).toBeVisible();
   });
 
   it('should walk every card chronologically in one maximized dialog, regardless of list order', async () => {

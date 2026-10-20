@@ -121,6 +121,8 @@ describe('<ToolResultModal />', () => {
     expect(input.getByText('camunda')).toBeInTheDocument();
     expect(output.getByText('Tool output here')).toBeInTheDocument();
     expect(screen.queryByTestId('monaco-editor')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('tool-call-documents')).not.toBeInTheDocument();
+    expect(screen.queryByText('Documents')).not.toBeInTheDocument();
   });
 
   it('should render object results as output', async () => {
@@ -204,6 +206,7 @@ describe('<ToolResultModal />', () => {
     expect(
       screen.getByRole('listitem', {name: 'report.pdf'}),
     ).toBeInTheDocument();
+    expect(screen.getByTestId('tool-call-documents')).toBeInTheDocument();
     await user.click(
       screen.getByRole('button', {name: 'Preview document for report.pdf'}),
     );
@@ -222,6 +225,7 @@ describe('<ToolResultModal />', () => {
     expect(
       screen.queryByRole('listitem', {name: 'report.pdf'}),
     ).not.toBeInTheDocument();
+    expect(screen.queryByTestId('tool-call-documents')).not.toBeInTheDocument();
   });
 
   it('should call onClose when the close button is clicked', async () => {

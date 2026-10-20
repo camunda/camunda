@@ -25,14 +25,13 @@ import {getResultPreview, type ContentItem} from './getRenderableResult';
 import {ToolResultModal} from './ToolResultModal';
 import {DocumentContent} from '../MessageAttachments/DocumentContent';
 import {EvidenceCards} from '../EvidenceCard';
-import {DocumentProcessing} from '../MessageAttachments/DocumentProcessing';
+import {getContentEvidence} from '../EvidenceCard/evidence';
 
 type ToolResultMessageProps = {
   availableTools: AgentTool[];
   toolCalls: AgentInstanceToolCall[];
   content: ContentItem[];
   onExpand?: () => void;
-  parsingInput?: ContentItem[];
 };
 
 const ToolResultMessage: React.FC<ToolResultMessageProps> = ({
@@ -40,7 +39,6 @@ const ToolResultMessage: React.FC<ToolResultMessageProps> = ({
   toolCalls,
   content,
   onExpand,
-  parsingInput,
 }) => {
   // According to the API, the tool call is a single entry in the tool calls list on a TOOL_RESULT message.
   const toolCall = toolCalls[0];
@@ -48,6 +46,9 @@ const ToolResultMessage: React.FC<ToolResultMessageProps> = ({
   const [isExpanded, setIsExpanded] = useState(false);
 
   const resultPreview = useMemo(() => getResultPreview(content), [content]);
+  const hasAttachments =
+    content.some((entry) => entry.contentType === 'DOCUMENT') ||
+    getContentEvidence(content).length > 0;
   const description = useMemo(() => {
     const tool = availableTools.find(
       (tool) => tool.name === toolCall?.toolName,
@@ -70,15 +71,11 @@ const ToolResultMessage: React.FC<ToolResultMessageProps> = ({
         <ToolLabel>{toolCall.toolName}</ToolLabel>
       </ToolHeader>
       {resultPreview !== null && <ResultPreview>{resultPreview}</ResultPreview>}
-      {parsingInput ? (
+      {hasAttachments && (
         <ToolAttachments>
-          <DocumentProcessing input={parsingInput} output={content} />
-        </ToolAttachments>
-      ) : (
-        <>
           <EvidenceCards content={content} />
           <DocumentContent content={content} modalTitleSuffix="tool result" />
-        </>
+        </ToolAttachments>
       )}
       <ToolActions>
         <Button
@@ -98,7 +95,6 @@ const ToolResultMessage: React.FC<ToolResultMessageProps> = ({
           description={description}
           input={toolCall.arguments}
           content={content}
-          parsingInput={parsingInput}
           onClose={() => setIsExpanded(false)}
         />
       )}
