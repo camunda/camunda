@@ -147,6 +147,11 @@ public class MultiDbConfigurator {
     documentBasedDatabase.getHistory().setDelayBetweenRuns(Duration.ofMillis(1000));
     documentBasedDatabase.getHistory().setMaxDelayBetweenRuns(Duration.ofMillis(1000));
     documentBasedDatabase.getBulk().setSize(1);
+    // reduce retry delay to make tests run faster, but still allow for some retries in case of
+    // transient errors. the defaults are 0.5 and 10 seconds, so that can add a lot of extra time to
+    // a test and that can really add up when we have a lot of tests
+    documentBasedDatabase.getRetry().setMinRetryDelay(Duration.ofMillis(200));
+    documentBasedDatabase.getRetry().setMaxRetryDelay(Duration.ofSeconds(2));
     overrideRefreshInterval(documentBasedDatabase);
   }
 
