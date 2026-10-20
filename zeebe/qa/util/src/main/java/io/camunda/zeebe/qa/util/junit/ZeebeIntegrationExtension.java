@@ -34,6 +34,7 @@ import java.util.Set;
 import java.util.function.Predicate;
 import org.agrona.CloseHelper;
 import org.awaitility.Awaitility;
+import org.junit.jupiter.api.extension.AfterAllCallback;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
@@ -67,7 +68,11 @@ import org.slf4j.LoggerFactory;
  * <p>See {@link TestZeebe} for annotation parameters.
  */
 final class ZeebeIntegrationExtension
-    implements BeforeAllCallback, BeforeEachCallback, TestWatcher, AfterEachCallback {
+    implements BeforeAllCallback,
+        BeforeEachCallback,
+        TestWatcher,
+        AfterEachCallback,
+        AfterAllCallback {
 
   private static final Logger LOG = LoggerFactory.getLogger(ZeebeIntegrationExtension.class);
 
@@ -102,6 +107,19 @@ final class ZeebeIntegrationExtension
     manageApplications(extensionContext, nodes);
 
     RecordingExporter.reset();
+  }
+
+  /**
+   * {@link TestWatcher} does not see class-level failures, e.g. a startup failure in {@link
+   * #beforeAll} or a failing {@code @AfterAll}, so mark the class group as failed here. This runs
+   * before the group is closed.
+   */
+  @Override
+  public void afterAll(final ExtensionContext context) {
+    final var group = store(context).get(ZeebeResourceGroup.class, ZeebeResourceGroup.class);
+    if (group != null && context.getExecutionException().isPresent()) {
+      group.markFailed();
+    }
   }
 
   @Override
