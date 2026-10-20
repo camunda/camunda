@@ -10,6 +10,7 @@ package io.camunda.zeebe.gateway.impl.broker.request;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.protocol.Protocol;
+import io.camunda.zeebe.protocol.record.ExecuteCommandRequestEncoder;
 import org.junit.jupiter.api.Test;
 
 final class BrokerActivateAdHocSubProcessActivityRequestTest {
@@ -30,5 +31,8 @@ final class BrokerActivateAdHocSubProcessActivityRequestTest {
     assertThat(request.getPartitionId()).isEqualTo(partitionId);
     assertThat(request.getRequestWriter().getAdHocSubProcessInstanceKey())
         .isEqualTo(adHocSubProcessInstanceKey);
+    assertThat(request.getKey())
+        .as("the command key stays unset, the engine uses it as the key of the ACTIVATED event")
+        .isEqualTo(ExecuteCommandRequestEncoder.keyNullValue());
   }
 }

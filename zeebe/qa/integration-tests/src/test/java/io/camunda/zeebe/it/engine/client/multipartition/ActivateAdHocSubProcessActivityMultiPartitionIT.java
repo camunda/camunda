@@ -23,6 +23,8 @@ import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.time.Duration;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
@@ -115,14 +117,19 @@ final class ActivateAdHocSubProcessActivityMultiPartitionIT {
       }
     }
 
-    // and - every activation took effect on the partition owning the ad-hoc sub-process
-    final int activations = INSTANCES * PARTITION_COUNT;
-    assertThat(
-            RecordingExporter.jobRecords(JobIntent.CREATED)
-                .withType(jobType)
-                .limit(activations)
-                .count())
-        .isEqualTo(activations);
+    // and - every activation created a job in the ad-hoc sub-process it was sent for
+    final Map<Long, Long> jobsPerProcessInstance =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withType(jobType)
+            .limit(INSTANCES * PARTITION_COUNT)
+            .collect(
+                Collectors.groupingBy(
+                    job -> job.getValue().getProcessInstanceKey(), Collectors.counting()));
+
+    assertThat(jobsPerProcessInstance)
+        .as("jobs created per process instance")
+        .containsOnlyKeys(processInstanceKeys)
+        .allSatisfy((processInstanceKey, jobs) -> assertThat(jobs).isEqualTo(PARTITION_COUNT));
   }
 
   private long awaitAdHocSubProcessKey(final long processInstanceKey) {
