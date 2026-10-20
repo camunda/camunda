@@ -19,6 +19,7 @@ import java.io.IOException;
 import java.time.Instant;
 import java.util.Optional;
 import java.util.OptionalLong;
+import java.util.UUID;
 
 public record BackupDescriptorImpl(
     Optional<String> snapshotId,
@@ -27,8 +28,32 @@ public record BackupDescriptorImpl(
     int numberOfPartitions,
     String brokerVersion,
     Instant checkpointTimestamp,
-    @JsonDeserialize(using = CheckpointTypeDeserializer.class) CheckpointType checkpointType)
+    @JsonDeserialize(using = CheckpointTypeDeserializer.class) CheckpointType checkpointType,
+    Optional<UUID> historyId)
     implements BackupDescriptor {
+
+  public BackupDescriptorImpl {
+    historyId = historyId == null ? Optional.empty() : historyId;
+  }
+
+  public BackupDescriptorImpl(
+      final Optional<String> snapshotId,
+      final OptionalLong firstLogPosition,
+      final long checkpointPosition,
+      final int numberOfPartitions,
+      final String brokerVersion,
+      final Instant checkpointTimestamp,
+      final CheckpointType checkpointType) {
+    this(
+        snapshotId,
+        firstLogPosition,
+        checkpointPosition,
+        numberOfPartitions,
+        brokerVersion,
+        checkpointTimestamp,
+        checkpointType,
+        Optional.empty());
+  }
 
   public BackupDescriptorImpl(
       final String snapshotId,
@@ -63,6 +88,18 @@ public record BackupDescriptorImpl(
         checkpointType);
   }
 
+  public BackupDescriptorImpl withHistoryId(final UUID id) {
+    return new BackupDescriptorImpl(
+        snapshotId,
+        firstLogPosition,
+        checkpointPosition,
+        numberOfPartitions,
+        brokerVersion,
+        checkpointTimestamp,
+        checkpointType,
+        Optional.of(id));
+  }
+
   public static BackupDescriptorImpl from(final BackupDescriptor descriptor) {
     return new BackupDescriptorImpl(
         descriptor.snapshotId(),
@@ -71,7 +108,8 @@ public record BackupDescriptorImpl(
         descriptor.numberOfPartitions(),
         descriptor.brokerVersion(),
         descriptor.checkpointTimestamp(),
-        descriptor.checkpointType());
+        descriptor.checkpointType(),
+        descriptor.historyId());
   }
 
   public static BackupDescriptorImpl from(

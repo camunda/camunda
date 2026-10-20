@@ -70,10 +70,12 @@ public class PartitionRestoreService {
   /**
    * Downloads a single backup and restores it to the partition's data directory. The backup is
    * truncated to the checkpoint position.
+   *
+   * @return where the restored journal ends
    */
-  public void restore(final long backupId, final BackupValidator validator)
+  public RestoredPartition restore(final long backupId, final BackupValidator validator)
       throws IOException, FlushException {
-    restore(new long[] {backupId}, validator);
+    return restore(new long[] {backupId}, validator);
   }
 
   /**
@@ -81,8 +83,9 @@ public class PartitionRestoreService {
    * checkpoint positions.
    *
    * @param backupIds ids of the backups to restore from
+   * @return where the restored journal ends
    */
-  public void restore(final long[] backupIds, final BackupValidator validator)
+  public RestoredPartition restore(final long[] backupIds, final BackupValidator validator)
       throws IOException, FlushException {
     validateAndSortBackupIds(backupIds);
 
@@ -108,6 +111,15 @@ public class PartitionRestoreService {
         FileUtil.deleteFolder(restoreTarget);
       }
       restoredJournal.flush();
+
+      // The journal ends with the last backup's checkpoint, so up to there it is the journal of the
+      // history that backup was taken in, whichever histories the earlier backups were taken in.
+      final var lastBackup = requireNonNull(previousBackup).descriptor();
+      return new RestoredPartition(
+          partitionId,
+          lastBackup.historyId(),
+          restoredJournal.getLastIndex(),
+          lastBackup.checkpointPosition());
     }
 
     // TODO: As an additional consistency check:

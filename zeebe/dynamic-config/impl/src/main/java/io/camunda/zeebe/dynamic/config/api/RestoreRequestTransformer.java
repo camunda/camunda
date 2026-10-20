@@ -176,12 +176,13 @@ public final class RestoreRequestTransformer implements ConfigurationChangeReque
    *   <li>{@code updateRoutingState} — every wipe and every restore. Routes the group's requests
    *       over the partition count of the backup, so a partition the backup does not hold is only
    *       wiped, and keeps its message correlation.
-   *   <li>{@code modeChange(m)} — {@code updateRoutingState}.
+   *   <li>{@code updateIncarnationNumber} — {@code updateRoutingState}. It writes the group's own
+   *       state, after every restore and before any partition processes again, so that no partition
+   *       processes the restored data under the incarnation it had before.
+   *   <li>{@code modeChange(m)} — {@code updateIncarnationNumber}.
    *   <li>{@code awaitModeChange(m)} — every mode change and <em>every</em> restore. This one is
    *       deliberately a cluster-wide barrier: awaiting the transition observes the group as a
    *       whole, so no broker may start observing while any partition anywhere is still reloading.
-   *   <li>{@code updateIncarnationNumber} — every await. It writes the group's own state, so it is
-   *       ordered after everything by construction.
    * </ul>
    *
    * <p>Scoping the edges is only safe because no two operations that may run concurrently write the
@@ -245,6 +246,10 @@ public final class RestoreRequestTransformer implements ConfigurationChangeReque
                 Optional.of(restoredRoutingState(currentRoutingState, resolved.backups().size()))),
             restoreIo);
 
+    final var updateIncarnation =
+        builder.add(
+            new UpdateIncarnationNumberOperation(partitionsPerMember.firstKey()),
+            Set.of(updateRoutingState));
     final SortedMap<MemberId, OperationId> modeChanges = new TreeMap<>();
     partitionsPerMember.forEach(
         (memberId, partitions) ->
@@ -252,7 +257,7 @@ public final class RestoreRequestTransformer implements ConfigurationChangeReque
                 memberId,
                 builder.add(
                     new ModeChangeOperation(memberId, Mode.PROCESSING),
-                    Set.of(updateRoutingState))));
+                    Set.of(updateIncarnation))));
 
     // Every await waits for every restore, cluster-wide, not only for the ones on its own broker or
     // its own partitions' replicas. Awaiting the transition observes the group as a whole, so a
@@ -260,16 +265,12 @@ public final class RestoreRequestTransformer implements ConfigurationChangeReque
     final Set<OperationId> beforeAwaits = new HashSet<>(modeChanges.values());
     restoresOf.values().forEach(beforeAwaits::addAll);
 
-    final Set<OperationId> awaits = new HashSet<>();
     partitionsPerMember
         .keySet()
         .forEach(
             memberId ->
-                awaits.add(
-                    builder.add(
-                        new AwaitModeChangeOperation(memberId, Mode.PROCESSING), beforeAwaits)));
+                builder.add(new AwaitModeChangeOperation(memberId, Mode.PROCESSING), beforeAwaits));
 
-    builder.add(new UpdateIncarnationNumberOperation(partitionsPerMember.firstKey()), awaits);
     return builder.build();
   }
 

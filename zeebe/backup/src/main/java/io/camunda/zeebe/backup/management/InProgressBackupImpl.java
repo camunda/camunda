@@ -340,7 +340,8 @@ final class InProgressBackupImpl implements InProgressBackup {
             backupDescriptor().numberOfPartitions(),
             VersionUtil.getVersion(),
             backupDescriptor().checkpointTimestamp(),
-            backupDescriptor().checkpointType());
+            backupDescriptor().checkpointType(),
+            backupDescriptor().historyId());
     return new BackupImpl(
         backupId,
         backupDescriptor,

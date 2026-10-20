@@ -91,4 +91,8 @@ ADR for that domain is written.
   Gradle build stays aligned with Maven as the source of truth, with focused
   Gradle checks on relevant changes, a complete CI path selectable by build tool,
   scheduled Gradle tests (full CI).
+- `management/007-event-plane-history-manifests.md` — each life of a physical
+  tenant is a history that the dynamic configuration holds before its
+  partitions start; backups name their history, and restores report where each
+  journal ends.
 

@@ -46,7 +46,9 @@ import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.time.Instant;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -243,6 +245,53 @@ class PartitionRestoreServiceTest {
         .hasMessageContaining("Expected backup to have 2 partitions, but has 1");
   }
 
+  @Test
+  void shouldReportWhereTheRestoredJournalEnds() throws IOException, FlushException {
+    // given - record positions that differ from the entries' indexes
+    appendRecord(100, "data");
+    appendRecord(200, "checkpoint");
+    appendRecord(300, "data");
+    final var history = UUID.randomUUID();
+    takeBackup(1, descriptor(200).withHistoryId(history));
+
+    // when
+    final var restored = restoreService.restore(1, BackupValidator.none());
+
+    // then
+    assertThat(restored)
+        .isEqualTo(new RestoredPartition(partitionId, Optional.of(history), 2, 200));
+  }
+
+  @Test
+  void shouldReportTheHistoryOfTheLastBackup() throws IOException, FlushException {
+    // given - a chain whose first backup was taken in the history the second one's took over
+    appendRecord(100, "first checkpoint");
+    takeBackup(1, descriptor(100).withHistoryId(UUID.randomUUID()));
+    appendRecord(200, "second checkpoint");
+    final var history = UUID.randomUUID();
+    takeBackup(2, descriptor(200).withHistoryId(history));
+
+    // when
+    final var restored = restoreService.restore(new long[] {1, 2}, BackupValidator.none());
+
+    // then
+    assertThat(restored)
+        .isEqualTo(new RestoredPartition(partitionId, Optional.of(history), 2, 200));
+  }
+
+  @Test
+  void shouldReportNoHistoryForABackupThatNamesNone() throws IOException, FlushException {
+    // given
+    appendRecord(100, "checkpoint");
+    takeBackup(1, 100);
+
+    // when
+    final var restored = restoreService.restore(1, BackupValidator.none());
+
+    // then
+    assertThat(restored.historyId()).isEmpty();
+  }
+
   private Set<String> getRegularFiles(final Path directory) throws IOException {
     final Set<String> restoredSegmentFiles;
     try (final var stream = Files.list(directory)) {
@@ -256,17 +305,23 @@ class PartitionRestoreServiceTest {
   }
 
   private Backup takeBackup(final long backupId, final long checkpointPosition) {
+    return takeBackup(backupId, descriptor(checkpointPosition));
+  }
+
+  private Backup takeBackup(final long backupId, final BackupDescriptorImpl descriptor) {
     final var backup =
         backupStore.waitForBackup(new BackupIdentifierImpl(nodeId, partitionId, backupId));
-    final var descriptor =
-        new BackupDescriptorImpl(
-            checkpointPosition,
-            1, // Use partition count of 1 for tests
-            "test",
-            Instant.now(),
-            CheckpointType.MANUAL_BACKUP);
     backupService.takeBackup(backupId, descriptor);
     return backup.orTimeout(30, TimeUnit.SECONDS).join();
+  }
+
+  private static BackupDescriptorImpl descriptor(final long checkpointPosition) {
+    return new BackupDescriptorImpl(
+        checkpointPosition,
+        1, // Use partition count of 1 for tests
+        "test",
+        Instant.now(),
+        CheckpointType.MANUAL_BACKUP);
   }
 
   private void appendRecord(final long asqn, final String data) {

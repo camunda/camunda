@@ -322,7 +322,7 @@ final class RestoreRequestTransformerTest {
     // when
     final var result = plannedOperations(transformer, topology);
 
-    // then - phase-major: all PreRestore, then all Restore, then exit recovery, then incarnation
+    // then - phase-major: all PreRestore, then all Restore, then incarnation, then exit recovery
     EitherAssert.assertThat(result).isRight();
     assertThat(result.get())
         .containsExactly(
@@ -332,11 +332,11 @@ final class RestoreRequestTransformerTest {
             new PartitionRestoreOperation(memberOne, 1, new TreeSet<>(List.of(1L, 2L))),
             new PartitionRestoreOperation(memberTwo, 1, new TreeSet<>(List.of(1L, 2L))),
             routeOver(memberOne, 1),
+            new UpdateIncarnationNumberOperation(memberOne),
             new ModeChangeOperation(memberOne, Mode.PROCESSING),
             new ModeChangeOperation(memberTwo, Mode.PROCESSING),
             new AwaitModeChangeOperation(memberOne, Mode.PROCESSING),
-            new AwaitModeChangeOperation(memberTwo, Mode.PROCESSING),
-            new UpdateIncarnationNumberOperation(memberOne));
+            new AwaitModeChangeOperation(memberTwo, Mode.PROCESSING));
   }
 
   @Test
@@ -371,11 +371,11 @@ final class RestoreRequestTransformerTest {
                     new PartitionRestoreOperation(memberOne, 1, new TreeSet<>(List.of(1L, 2L))),
                     new PartitionRestoreOperation(memberTwo, 1, new TreeSet<>(List.of(1L, 2L))),
                     routeOver(memberOne, 1),
+                    new UpdateIncarnationNumberOperation(memberOne),
                     new ModeChangeOperation(memberOne, Mode.PROCESSING),
                     new ModeChangeOperation(memberTwo, Mode.PROCESSING),
                     new AwaitModeChangeOperation(memberOne, Mode.PROCESSING),
-                    new AwaitModeChangeOperation(memberTwo, Mode.PROCESSING),
-                    new UpdateIncarnationNumberOperation(memberOne))));
+                    new AwaitModeChangeOperation(memberTwo, Mode.PROCESSING))));
   }
 
   @Test
@@ -408,9 +408,9 @@ final class RestoreRequestTransformerTest {
                     new PartitionPreRestoreOperation(memberTwo, 1),
                     new PartitionRestoreOperation(memberTwo, 1, new TreeSet<>(List.of(1L))),
                     routeOver(memberTwo, 1),
+                    new UpdateIncarnationNumberOperation(memberTwo),
                     new ModeChangeOperation(memberTwo, Mode.PROCESSING),
-                    new AwaitModeChangeOperation(memberTwo, Mode.PROCESSING),
-                    new UpdateIncarnationNumberOperation(memberTwo))));
+                    new AwaitModeChangeOperation(memberTwo, Mode.PROCESSING))));
   }
 
   @Test
@@ -687,14 +687,15 @@ final class RestoreRequestTransformerTest {
                 .flatMap(List::stream)
                 .toList());
 
-    // and - every mode change waits for the routing state update, and through it everything else
+    // and - every mode change waits for the incarnation update, after routing and restore I/O
     assertThat(modeChangesByMember(graph).values())
         .hasSize(2)
         .allSatisfy(
             modeChange ->
                 assertThat(graph.operations().get(modeChange).dependsOn())
                     .describedAs("dependencies of a mode change")
-                    .containsExactlyElementsOf(updateRoutingState));
+                    .containsExactlyElementsOf(
+                        idsOf(graph, UpdateIncarnationNumberOperation.class)));
   }
 
   @Test
@@ -840,11 +841,10 @@ final class RestoreRequestTransformerTest {
   }
 
   @Test
-  void shouldOrderTheIncarnationBumpAfterEveryAwait() {
-    // given - two brokers, two partitions. The incarnation number is the group's own state, written
-    // once the restore is done. Bumping it while any broker is still observing its transition would
-    // advertise a recovery that has not finished, so it is ordered behind every await - not just
-    // behind one of them, and not behind the restores alone.
+  void shouldChangeTheIncarnationBeforeAnyPartitionProcessesAgain() {
+    // given - two brokers, two partitions. The incarnation number is the group's own state, and
+    // the Event Plane's publishers read it when a partition starts, so it has to change after every
+    // restore and before any partition processes the restored data.
     final var memberOne = MemberId.from("0");
     final var memberTwo = MemberId.from("1");
     final var transformer =
@@ -864,18 +864,24 @@ final class RestoreRequestTransformerTest {
                     memberOne, recovering(1, 2),
                     memberTwo, recovering(1, 2))));
 
-    // then - one bump, waiting for every await and for nothing else
+    // then - one change, after the routing state, and every mode change waits for it
     EitherAssert.assertThat(result).isRight();
     final var graph = graphOf(result.get());
-    final var awaits = idsOf(graph, AwaitModeChangeOperation.class);
-    assertThat(awaits).hasSize(2);
     assertThat(idsOf(graph, UpdateIncarnationNumberOperation.class))
         .singleElement()
         .satisfies(
-            bump ->
-                assertThat(graph.operations().get(bump).dependsOn())
-                    .describedAs("dependencies of the incarnation bump")
-                    .containsExactlyInAnyOrderElementsOf(awaits));
+            change -> {
+              assertThat(graph.operations().get(change).dependsOn())
+                  .describedAs("dependencies of the incarnation change")
+                  .containsExactlyElementsOf(idsOf(graph, UpdateRoutingState.class));
+              assertThat(idsOf(graph, ModeChangeOperation.class))
+                  .hasSize(2)
+                  .allSatisfy(
+                      modeChange ->
+                          assertThat(graph.operations().get(modeChange).dependsOn())
+                              .describedAs("dependencies of a mode change")
+                              .containsExactly(change));
+            });
   }
 
   private static MemberId memberOf(final OperationGraph graph, final OperationId operationId) {
