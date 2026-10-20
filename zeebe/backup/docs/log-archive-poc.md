@@ -22,7 +22,7 @@ In scope:
 - Runs next to the existing backup. Enabling the log archive does not change the existing backup
   behaviour, except that compaction also respects F.
 
-Out of scope: event plane, holds, retention and deletion of any kind (including the orphan sweeper),
+Out of scope (except section 19, the event plane integration): event plane, holds, retention and deletion of any kind (including the orphan sweeper),
 GCS and Azure, incremental snapshots, merging small objects, migrating existing backups, scaling the
 partition count (except for partitions added after the handover, section 18.4a), metrics beyond
 basic counters.
@@ -1092,3 +1092,160 @@ restore points and the RPO stays at the backup interval.
 | H7 manual scenario G | brownfield upgrade in the manual test scripts | Haiku | H5 |
 
 Critical path: H2 → H3 → H6. Journal stitching is limited to the bridged RDBMS restore (18.5a).
+
+## 19. Event plane integration, step 1: announcing commit entries
+
+Background: the event plane (repository `camunda/event-plane`) serves consumers the log of every
+partition. Agreed direction: one copy of the data, the cluster is the authority for everything
+restore relies on, the event plane is bookkeeping that can be rebuilt from the bucket, and the
+cluster never waits for it. Step 1 is level 1 ("catalog"): the cluster tells the event plane, in a
+deterministic way, what is in the bucket, and the event plane serves readers the objects of a
+partition after a position. Release below the restore floor (level 2) is step 2 and not part of this
+section.
+
+### 19.1 Protocol: the cluster announces, in seq order, until confirmed
+
+Per timeline and partition, the cluster sends every commit entry (section 9.2) to the event plane, in
+seq order, at least once, and resends until the event plane confirms it. The event plane applies
+an entry only if it is the next one it expects, so it ends up with exactly the bucket's sequence,
+gap-free.
+
+```
+POST /v1/log-archive/{clusterId}/{physicalTenantId}/partitions/{partitionId}/timelines/{timelineId}/commits
+Content-Type: application/json
+
+{"entries":[ <commit entry JSON, byte for byte as in commits/<seq>.json>, … ]}   // consecutive seqs, ascending
+```
+
+| Answer | When | Body |
+|---|---|---|
+| `200` | the first entry's seq is the next expected one, or entries overlap what the event plane has (those are skipped, the rest applied) | `{"nextSeq": <the seq the event plane expects next>}` |
+| `409` | the first entry's seq is above the next expected one (a gap), or the timeline is unknown and the batch does not start with seq 1 | `{"nextSeq": <expected>}` |
+| `400` | malformed: entries not consecutive, an entry's `timelineId`/`partitionId` differs from the path, seq 1 is not `TIMELINE_STARTED` | problem detail |
+
+- `nextSeq` of an unknown timeline is 1. The event plane applies a batch in one transaction.
+- Entries are matched by `(clusterId, physicalTenantId, partitionId, timelineId, seq)`. An entry the
+  event plane already has is skipped without comparing bytes (I4: same seq, same bytes).
+- Unknown commit entry types are applied as "seq consumed, nothing else", so new types need no
+  coordinated release.
+- Authentication: whatever the event plane's security chain accepts; the PoC uses basic auth.
+
+### 19.2 Cluster side: `LogArchiveAnnouncer`
+
+A leader-only actor per partition, next to the publisher, started by `LogArchiveTransitionStep` when
+`zeebe.broker.data.backup.logArchive.eventPlane.url` is set.
+
+| Property (`logArchive.eventPlane.*`) | Default | Meaning |
+|---|---|---|
+| `url` | none (off) | Base URL of the event plane, e.g. `http://localhost:8080`. |
+| `clusterId` | `cluster.clusterId`, else `"default"` | The cluster id the event plane knows the cluster by. |
+| `username`, `password` | none | Basic auth; no header if unset. |
+| `maxBatchEntries` | `100` | Entries per request. |
+| `requestTimeout` | `PT10S` | Per request. |
+
+Behaviour:
+
+- **Input.** The publisher calls `announcer.published(timelineId, seq, commitEntryJson)` after the PUT
+  of `commits/<seq>.json` succeeded (and after `timeline.json` for `TIMELINE_STARTED`). The announcer
+  only ever sends seqs that are in the bucket: it tracks the highest published seq per timeline; on
+  leader start that is `meta.lastPublishedSeq` (rows up to it are confirmed in the bucket), raised by
+  every `published` call.
+- **Resume point from the event plane.** The announcer keeps no replicated state. On leader start
+  (and after any error) it does not know the event plane's `nextSeq`; it sends the lowest seq it holds
+  in memory, or `meta.lastPublishedSeq` read from the bucket, and learns `nextSeq` from the answer
+  (`200` or `409`). From then on it sends `nextSeq …` up to the highest published seq, at most
+  `maxBatchEntries` per request, one request in flight.
+- **Bytes.** From a bounded in-memory buffer of recently published entries (1000); a seq not in the
+  buffer is read from the bucket (`commits/<seq>.json`). The bucket is the durable outbox.
+- **Failures.** Connection errors, timeouts and `5xx`: retry with backoff (100 ms doubling to 10 s),
+  same request. `400`: log an error and retry with backoff (a bug; never skip a seq). `409`: continue
+  from its `nextSeq`, immediately; a `nextSeq` above the highest published seq means the event plane
+  is ahead of this leader's view (e.g. a rolled-back state): log a warning and wait for more
+  `published` calls.
+- **Never blocks the cluster.** Nothing waits for the announcer: archiving, compaction, snapshots,
+  publishing and restore go on while the event plane is down; the announcer only lags.
+- **Timelines.** It announces the timeline the publisher publishes. A diverged timeline (section 8.4)
+  is not announced; its fork starts at seq 1 like any timeline. After a timeline change the announcer
+  stops announcing the old timeline (known limit: an unannounced tail of the old timeline reaches the
+  event plane only through a rebuild).
+- **HTTP client:** `java.net.http.HttpClient`, JSON through the existing Jackson mapper. No new
+  dependency.
+
+### 19.3 Timeline start: when and where a timeline takes over its parent
+
+The event plane builds each partition's current path from the timelines: a timeline's own entries,
+before them its parent's up to the takeover point. The commit entry `TIMELINE_STARTED` and
+`timeline.json` (section 9.6) get three fields:
+
+| Field | Value |
+|---|---|
+| `startedAt` | the `TIMELINE_STARTED` event's record timestamp (epoch millis), so the bytes stay a pure function of the event (I4) |
+| `parentIndex` | the Raft index of the last entry this timeline shares with its parent, `-1` if unknown or no parent |
+| `parentPosition` | the position of the last record it shares with its parent (the takeover checkpoint's position), `-1` if unknown or no parent |
+
+- **Restore from the log archive** (section 13, also bridged, 18.5a) knows its target T: it writes,
+  next to `log-archive-timeline`, a file `log-archive-takeover` with
+  `{"parentTimelineId":…,"parentIndex":<index of T's entry>,"parentPosition":<T's position>}`
+  (deterministic JSON, no trailing newline). On `START_TIMELINE` the archiver reads it and sets
+  `parentIndex`/`parentPosition` on the command when the file's `parentTimelineId` equals the command's
+  `parentTimelineId`, otherwise -1.
+- **The first timeline, a fork (`.f<seq>`) and a classic restore (`.b<backupId>`):** -1/-1. The event
+  plane treats a fork as taking over its parent up to the record before the fork's first archived
+  position (known limit: a rolled-back state may have diverged earlier).
+- `LogArchiveRecord` gets `parentIndex`, `parentPosition` (long, default -1) for `START_TIMELINE`/
+  `TIMELINE_STARTED`; the meta does not store them. Commit entry: `startedAt`, `parentIndex`,
+  `parentPosition` only for `TIMELINE_STARTED`, after `parentTimelineId`; `startedAt` is the same
+  value as `recordTimestamp` and is written so that `timeline.json` is self-contained. `timeline.json`:
+  `formatVersion, timelineId, partitionId, parentTimelineId, startIndex, startedSeq, startedAt,
+  parentIndex, parentPosition`. Readers accept files without the new fields (written before).
+
+### 19.4 Event plane side (`camunda/event-plane`, branch `poc/log-archive`)
+
+Code only, no docs in that repository. Fits its conventions (module layout, Liquibase + MyBatis
+catalog, `Catalog` transactions, problem details, security chain, tests on H2).
+
+**Catalog tables** (one Liquibase changeset `log-archive`):
+
+| Table | Key | Columns |
+|---|---|---|
+| `la_timeline` | `cluster_id, physical_tenant_id, partition_id, timeline_id` | `parent_timeline_id` (nullable), `start_index`, `started_at` (timestamp), `parent_index`, `parent_position`, `next_seq` |
+| `la_object` | `cluster_id, physical_tenant_id, partition_id, timeline_id, first_index` | `object_key` (bucket-relative, `log-archive/<tl>/p<n>/data/…`), `last_index`, `first_position`, `last_position` (-1 if no records), `term`, `entry_count`, `size_bytes`, `sha256`, `seq` |
+| `la_checkpoint` | `cluster_id, physical_tenant_id, partition_id, timeline_id, checkpoint_id` | `checkpoint_position`, `checkpoint_type`, `checkpoint_timestamp` (nullable), `seq` |
+| `la_snapshot` | `cluster_id, physical_tenant_id, partition_id, timeline_id, snapshot_id` | `snapshot_index`, `processed_position`, `seq` |
+
+**Applying an entry** (`TIMELINE_STARTED` creates the timeline row with `next_seq = 2`; for the others
+the row is locked first, `select … for update`, and `next_seq` incremented):
+
+- `LOG_ARCHIVED`: insert its objects and checkpoints.
+- `SNAPSHOT_ARCHIVED`: insert the snapshot (step 2 needs it for the restore floor).
+- `INDEX_SEALED`, `HANDOVER`, unknown types: nothing but the seq.
+
+**Read API** — `GET /v1/log-archive/{clusterId}/{physicalTenantId}/partitions/{partitionId}/objects?after={position}`
+
+- Current timeline of a partition: the one with the latest `started_at`, ties broken by the larger
+  `timeline_id` as text (as the event plane's histories).
+- Current path: the current timeline's objects, and before its first archived position its parent's
+  up to the takeover position (`parent_position`, or the record before the child's first archived
+  position if -1), recursively.
+- Answer: `{"objects":[{"timelineId","key","firstIndex","lastIndex","firstPosition","lastPosition","sizeBytes","sha256"}…],"end":{"timelineId","position"}}`:
+  the objects on the path whose `last_position > after` in position order (objects without records
+  are left out), at most 1000; `end` is the last position on the path. Overlaps between a parent's
+  and a child's objects are left in; readers skip positions they have. No objects and `end > after`
+  cannot happen in step 1 (nothing is deleted).
+- Readers fetch the bytes from the bucket themselves (keys, not signed URLs, in step 1).
+
+### 19.5 Tests
+
+- Cluster unit tests: announcer state machine against a fake event plane (in order, batching, `409`
+  resume, retry, bucket fallback for seqs outside the buffer, never beyond the highest published
+  seq, timeline switch); timeline takeover fields (record golden file, JSON golden files, restore
+  writes the takeover file, archiver reads it).
+- Cluster integration test `LogArchiveEventPlaneIT`: brokers with a stub event plane (JDK
+  `HttpServer`, in the test) that implements the seq check; it receives every commit entry from 1,
+  gap-free, through a leader change and an event plane outage (stub down, then up: resumes from its
+  `nextSeq`), and after a restore the new timeline with its takeover point.
+- Event plane tests (H2): apply batches (in order, overlap, gap → 409, unknown timeline, malformed →
+  400, unknown type), current path across a restored timeline, the read API; fixtures are real commit
+  entries produced by the cluster PoC.
+- Manual end to end: local brokers from `log-archive-manual/` with `eventPlane.url` pointing at the
+  event plane server (demo profile, H2), then `curl` the read API; restore and see the path switch.
