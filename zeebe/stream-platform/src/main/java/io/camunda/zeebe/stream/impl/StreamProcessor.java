@@ -82,6 +82,8 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
   public static final long UNSET_POSITION = -1L;
   public static final Duration HEALTH_CHECK_TICK_DURATION = Duration.ofSeconds(5);
 
+  public static final Duration SLOW_ON_RECOVERED_LISTENER_THRESHOLD = Duration.ofSeconds(1);
+
   private static final String ERROR_MESSAGE_RECOVER_FROM_SNAPSHOT_FAILED =
       "Expected to find event with the snapshot position %s in log stream, but nothing was found. Failed to recover '%s'.";
   private static final Logger LOG = Loggers.LOGSTREAMS_LOGGER;
@@ -308,10 +310,27 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
     logStream.registerRecordAvailableListener(this);
 
     // start reading
-    lifecycleAwareListeners.forEach(l -> l.onRecovered(streamProcessorContext));
+    lifecycleAwareListeners.forEach(this::notifyRecovered);
     processingStateMachine.startProcessing(lastProcessingPositions);
     if (!shouldProcess) {
       setStateToPausedAndNotifyListeners();
+    }
+  }
+
+  // Listeners run synchronously on the actor before the first command is read, so a slow one
+  // delays processing without any other trace. Log the ones that exceed the threshold.
+  private void notifyRecovered(final StreamProcessorLifecycleAware listener) {
+    final long startNanos = System.nanoTime();
+    listener.onRecovered(streamProcessorContext);
+    final var duration = Duration.ofNanos(System.nanoTime() - startNanos);
+    if (duration.compareTo(SLOW_ON_RECOVERED_LISTENER_THRESHOLD) > 0) {
+      LOG.warn(
+          "onRecovered listener {} on partition {} took {}, longer than {}; processing is delayed"
+              + " until all listeners return",
+          listener.getClass().getName(),
+          partitionId,
+          duration,
+          SLOW_ON_RECOVERED_LISTENER_THRESHOLD);
     }
   }
 
