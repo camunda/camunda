@@ -1299,6 +1299,7 @@
 					"variables": "Variablen",
 					"incidents": "Vorfälle",
 					"details": "Details",
+					"operationsLog": "Operationsprotokoll",
 					"timestamps": "Enddatum",
 					"executionCount": "Ausführungsanzahl",
 					"multiInstance": " (Multi-Instanz)",
@@ -1368,6 +1369,10 @@
 					"heading": "403 - Sie haben keine Berechtigung, diese Informationen anzuzeigen",
 					"description": "Wenden Sie sich an Ihren Administrator, um Zugriff zu erhalten.",
 					"learnMoreLink": "Mehr über Berechtigungen erfahren"
+				},
+				"operationsLog": {
+					"multiInstance": "Um das Operationsprotokoll anzuzeigen, wählen Sie eine einzelne Elementinstanz im Instanzverlauf aus.",
+					"empty": "Für diese Instanz wurden keine Operationen gefunden"
 				},
 				"variables": {
 					"search": "Variablen nach Namen suchen",

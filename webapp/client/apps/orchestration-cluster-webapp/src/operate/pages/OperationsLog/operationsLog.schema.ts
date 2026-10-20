@@ -57,5 +57,5 @@ const stripLegacyFilters: SearchMiddleware<OperationsLogSearch> = ({search, next
 	return next(withoutAliases);
 };
 
-export {operationsLogSearchSchema, stripLegacyFilters};
+export {commaSeparated, operationsLogSearchSchema, stripLegacyFilters};
 export type {OperationsLogSearch};

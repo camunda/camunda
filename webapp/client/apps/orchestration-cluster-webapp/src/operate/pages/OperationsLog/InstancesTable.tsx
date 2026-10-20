@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useEffect, useMemo, useRef, useState} from 'react';
+import {useEffect, useMemo, useState} from 'react';
 import {useTranslation} from 'react-i18next';
 import {useQueries, useQuery, type UseQueryResult} from '@tanstack/react-query';
 import {Button, DataTableSkeleton, InlineNotification, Stack} from '@carbon/react';
@@ -19,7 +19,6 @@ import {
 import {queries} from '#/shared/http/queries';
 import {createSortSearchParamSchema} from '#/shared/sortSearchParam';
 import {logger} from '#/operate/shared/utils/logger';
-import {notificationsStore} from '#/shared/notifications/notifications.store';
 import {PanelHeader} from '#/operate/shared/PanelHeader/PanelHeader';
 import {PaginatedSortableTable} from '#/operate/shared/PaginatedSortableTable/PaginatedSortableTable';
 import {EmptyMessage} from '#/operate/shared/EmptyMessage/EmptyMessage';
@@ -37,6 +36,7 @@ import {CellEntityKey} from './Cell/CellEntityKey';
 import {CellParentEntity} from './Cell/CellParentEntity';
 import {CellResult} from './Cell/CellResult';
 import {useAuditLogs} from './operationsLog.queries';
+import {useAuditLogsErrorNotification} from './useAuditLogsErrorNotification';
 import {TableContainer} from './styled';
 import {formatToISO} from './utils';
 import type {OperationsLogSearch} from './operationsLog.schema';
@@ -111,25 +111,7 @@ const InstancesTable: React.FC<Props> = ({search, selectedTenantId, selectedDefi
 		fetchNextPage,
 	} = useAuditLogs(requestFilter, [{field: sortField, order: sortOrder}]);
 
-	const isFetchErrorReported = useRef(false);
-	useEffect(() => {
-		isFetchErrorReported.current = false;
-	}, [dataUpdatedAt]);
-	useEffect(() => {
-		if (!error) {
-			return;
-		}
-		logger.error(error);
-		if (isFetchErrorReported.current) {
-			return;
-		}
-		isFetchErrorReported.current = true;
-		notificationsStore.displayNotification({
-			isDismissable: true,
-			kind: 'error',
-			title: t('operate.operationsLog.notifications.fetchFailed'),
-		});
-	}, [error, t]);
+	useAuditLogsErrorNotification(error, dataUpdatedAt);
 
 	const auditLogs = useMemo(() => data?.pages.flatMap((page) => page.items) ?? [], [data]);
 	const processDefinitionKeys = useMemo(

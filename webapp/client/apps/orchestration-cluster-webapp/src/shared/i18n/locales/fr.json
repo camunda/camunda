@@ -1302,6 +1302,7 @@
 					"variables": "Variables",
 					"incidents": "Incidents",
 					"details": "Détails",
+					"operationsLog": "Journal des opérations",
 					"timestamps": "Date de fin",
 					"executionCount": "Nombre d'exécutions",
 					"multiInstance": " (Multi-instance)",
@@ -1371,6 +1372,10 @@
 					"heading": "403 - Vous n'avez pas la permission de consulter ces informations",
 					"description": "Contactez votre administrateur pour obtenir l'accès.",
 					"learnMoreLink": "En savoir plus sur les autorisations"
+				},
+				"operationsLog": {
+					"multiInstance": "Pour afficher le journal des opérations, sélectionnez une seule instance d’élément dans l’historique de l’instance.",
+					"empty": "Aucune opération trouvée pour cette instance"
 				},
 				"variables": {
 					"search": "Rechercher des variables par nom",

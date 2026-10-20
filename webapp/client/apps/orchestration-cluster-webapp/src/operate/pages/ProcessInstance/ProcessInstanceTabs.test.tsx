@@ -91,6 +91,15 @@ describe('<ProcessInstanceTabs />', () => {
 		await expect.element(screen.getByRole('link', {name: 'Instance History'})).not.toBeInTheDocument();
 	});
 
+	it('should always show Operations Log and keep it selected on its own route', async ({worker}) => {
+		worker.use(waitStates());
+		const screen = await renderTabs({initialEntry: 'operations-log'});
+
+		await expect.element(screen.getByRole('link', {name: 'Operations Log'})).toHaveAttribute('aria-current', 'page');
+		await expect.element(screen.getByRole('link', {name: 'Variables'})).not.toHaveAttribute('aria-current');
+		expect(screen.router.state.location.pathname).toBe(`/operate/processes/${PROCESS_INSTANCE_ID}/operations-log`);
+	});
+
 	it('should show Instance History when the layout requests it', async ({worker}) => {
 		worker.use(waitStates());
 		const screen = await renderTabs({initialEntry: 'history', isHistoryTabVisible: true});
