@@ -8,6 +8,8 @@
 package io.camunda.zeebe.broker.system.partitions.impl.steps;
 
 import io.atomix.raft.RaftServer.Role;
+import io.camunda.zeebe.backup.logarchive.leader.HttpLogArchiveEventPlaneClient;
+import io.camunda.zeebe.backup.logarchive.leader.LogArchiveAnnouncer;
 import io.camunda.zeebe.backup.logarchive.leader.LogArchivePublisher;
 import io.camunda.zeebe.backup.logarchive.leader.LogArchiver;
 import io.camunda.zeebe.backup.logarchive.leader.LogArchiverRaftEntrySource;
@@ -160,6 +162,7 @@ public final class LogArchiveTransitionStep implements PartitionTransitionStep {
             context.getPersistedSnapshotStore(),
             logStream.newLogStreamWriter(),
             cfg.getSnapshotUploadInterval());
+    final var announcer = createAnnouncer(context, cfg, store);
     // The publisher checks the bucket against the recovered state before it publishes anything and
     // hands the outcome to the archiver and the uploader, which wait for it (spec section 8.4).
     final var publisher =
@@ -172,8 +175,9 @@ public final class LogArchiveTransitionStep implements PartitionTransitionStep {
               uploader.onRecoveryChecked(meta.copy(), bucketAhead);
             },
             // the old backups receive the handover file; it is not owned (or closed) here
-            context.getBackupStore());
-    final var components = new LeaderComponents(store, archiver, uploader, publisher);
+            context.getBackupStore(),
+            announcer);
+    final var components = new LeaderComponents(store, archiver, uploader, publisher, announcer);
     leaderComponents = components;
 
     final ActorFuture<Void> submitted = context.getConcurrencyControl().createFuture();
@@ -195,6 +199,36 @@ public final class LogArchiveTransitionStep implements PartitionTransitionStep {
         },
         context.getConcurrencyControl());
     return installed;
+  }
+
+  /** Returns null if the event plane is not configured. */
+  private static @Nullable LogArchiveAnnouncer createAnnouncer(
+      final PartitionTransitionContext context,
+      final LogArchiveCfg cfg,
+      final LogArchiveStore store) {
+    final var eventPlane = cfg.getEventPlane();
+    final var url = eventPlane.getUrl();
+    if (url == null || url.isBlank()) {
+      return null;
+    }
+    final var brokerCfg = context.getBrokerCfg();
+    var clusterId = eventPlane.getClusterId();
+    if (clusterId == null || clusterId.isBlank()) {
+      clusterId = brokerCfg.getCluster().getClusterId();
+    }
+    if (clusterId == null || clusterId.isBlank()) {
+      clusterId = "default";
+    }
+    final var client =
+        new HttpLogArchiveEventPlaneClient(
+            url,
+            clusterId,
+            context.partitionId().group(),
+            eventPlane.getUsername(),
+            eventPlane.getPassword(),
+            eventPlane.getRequestTimeout());
+    return new LogArchiveAnnouncer(
+        context.getPartitionId(), store, client, eventPlane.getMaxBatchEntries());
   }
 
   private static void submitAll(
@@ -287,10 +321,15 @@ public final class LogArchiveTransitionStep implements PartitionTransitionStep {
       LogArchiveStore store,
       LogArchiver archiver,
       SnapshotUploader uploader,
-      LogArchivePublisher publisher) {
+      LogArchivePublisher publisher,
+      @Nullable LogArchiveAnnouncer announcer) {
 
     List<Actor> actors() {
-      return List.of(archiver, uploader, publisher);
+      final List<Actor> actors = new ArrayList<>(List.of(archiver, uploader, publisher));
+      if (announcer != null) {
+        actors.add(announcer);
+      }
+      return actors;
     }
   }
 
