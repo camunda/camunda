@@ -29,6 +29,7 @@ import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
+import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.ConditionalEvaluationIntent;
 import io.camunda.zeebe.protocol.record.intent.HistoryDeletionIntent;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
@@ -38,6 +39,7 @@ import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceMigrationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
+import io.camunda.zeebe.protocol.record.intent.ResourceDeletionIntent;
 import io.camunda.zeebe.protocol.record.intent.SignalIntent;
 import io.camunda.zeebe.protocol.record.intent.TimerIntent;
 import io.camunda.zeebe.protocol.record.value.BatchOperationType;
@@ -1140,7 +1142,7 @@ public class DrainingProcessDefinitionTest {
   }
 
   @Test
-  public void shouldPopulateResourceMetadataOnRejectedDeleteWhileDrainingWithoutExplicitType() {
+  public void shouldPopulateMetadataOnAcceptedRepeatDeleteWhileDraining() {
     // given - a definition kept DRAINING by a still-running instance
     final var processId = helper.getBpmnProcessId();
     final var metadata = deployWithJob(processId);
@@ -1153,13 +1155,59 @@ public class DrainingProcessDefinitionTest {
         .await();
 
     // when - the repeated delete carries only the resource key, as the default client path does
-    final var rejection =
-        engine.resourceDeletion().withResourceKey(processDefinitionKey).expectRejection().delete();
+    final var response = engine.resourceDeletion().withResourceKey(processDefinitionKey).delete();
 
-    // then - the processor stamps the resolved metadata onto the rejection
-    assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.INVALID_STATE);
-    assertThat(rejection.getValue().getResourceType()).isEqualTo(ResourceType.PROCESS_DEFINITION);
-    assertThat(rejection.getValue().getResourceId()).isEqualTo(processId);
+    // then - the accepted record carries the resolved metadata, not what the client sent
+    assertThat(response.getValue().getResourceType()).isEqualTo(ResourceType.PROCESS_DEFINITION);
+    assertThat(response.getValue().getResourceId()).isEqualTo(processId);
+  }
+
+  @Test
+  public void shouldAcceptRepeatedDeleteWhileDrainingWithoutChangingState() {
+    // given - a definition kept DRAINING by a still-running instance
+    final var processId = helper.getBpmnProcessId();
+    final var metadata = deployWithJob(processId);
+    final long processDefinitionKey = metadata.getProcessDefinitionKey();
+    engine.processInstance().ofBpmnProcessId(processId).create();
+    engine.resourceDeletion().withResourceKey(processDefinitionKey).delete();
+    RecordingExporter.processRecords()
+        .withIntent(ProcessIntent.DRAINING)
+        .withProcessDefinitionKey(processDefinitionKey)
+        .await();
+
+    // when
+    final var response = engine.resourceDeletion().withResourceKey(processDefinitionKey).delete();
+
+    // then - accepted, but the repeat appends no DELETING and starts no drain
+    assertThat(
+            RecordingExporter.<Boolean>expectNoMatchingRecords(
+                records ->
+                    RecordingExporter.resourceDeletionRecords()
+                        .withIntent(ResourceDeletionIntent.DELETING)
+                        .withRecordKey(response.getKey())
+                        .exists()))
+        .describedAs("a repeated delete on a draining definition must not start a deletion")
+        .isFalse();
+    assertThat(
+            RecordingExporter.<Boolean>expectNoMatchingRecords(
+                records ->
+                    RecordingExporter.commandDistributionRecords()
+                        .withRecordKey(response.getKey())
+                        .withIntent(CommandDistributionIntent.DISTRIBUTING)
+                        .exists()))
+        .describedAs("nothing is distributed, the drain already runs on the instance partitions")
+        .isFalse();
+
+    // and - the definition is not finalized
+    assertThat(
+            RecordingExporter.<Boolean>expectNoMatchingRecords(
+                records ->
+                    RecordingExporter.processRecords()
+                        .withIntent(ProcessIntent.DELETED)
+                        .withProcessDefinitionKey(processDefinitionKey)
+                        .exists()))
+        .describedAs("the definition must stay draining after the repeated delete")
+        .isFalse();
   }
 
   private RecordToWrite drainReport(
