@@ -207,7 +207,9 @@ needs no configuration machinery.
 
 ## Consumer group objects
 
-Written by workers with plain PUTs, read by workers and the service:
+Written by workers with plain PUTs, read by workers and the service. They live in the group's home
+store. The logs a group reads can live elsewhere: clusters that write to stores of their own are
+read from there, and only the group's objects need one place every worker writes to.
 
 ```json
 // _groups/{group}/group.json, written by an admin or the service
