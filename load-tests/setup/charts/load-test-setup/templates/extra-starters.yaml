@@ -1,8 +1,8 @@
 {{- range $name, $starter := .Values.extraStarters }}
 {{- if and $starter.enabled (index $.Values "load-tester" "enabled") }}
 ---
-apiVersion: apps/v1
-kind: Deployment
+apiVersion: batch/v1
+kind: Job
 metadata:
   name: {{ $name }}-starter
   labels:
@@ -11,10 +11,9 @@ metadata:
     {{- toYaml . | nindent 4 }}
     {{- end }}
 spec:
-  selector:
-    matchLabels:
-      app: {{ $name }}-starter
-  replicas: 1
+  # A Job, so an evicted pod is not replaced. A replacement would count instanceLimit from zero
+  # again and overshoot it.
+  backoffLimit: 0
   template:
     metadata:
       labels:
@@ -26,6 +25,7 @@ spec:
         {{- toYaml . | nindent 8 }}
         {{- end }}
     spec:
+      restartPolicy: Never
       {{- with $.Values.global.image.pullSecrets }}
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
