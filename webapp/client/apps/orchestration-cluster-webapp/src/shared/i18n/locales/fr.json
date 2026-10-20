@@ -1887,7 +1887,9 @@
 					"listTitleSingle": "{{amount}} document dans {{label}}",
 					"listTitleMultiple": "{{amount}} documents dans {{label}}",
 					"countSingle": "{{amount}} document",
-					"countMultiple": "{{amount}} documents"
+					"countMultiple": "{{amount}} documents",
+					"pdfPreviewFailed": "Impossible de charger l’aperçu PDF « {{fileName}} ».",
+					"preparingPdfPreview": "Préparation de l’aperçu PDF…"
 				}
 			}
 		}

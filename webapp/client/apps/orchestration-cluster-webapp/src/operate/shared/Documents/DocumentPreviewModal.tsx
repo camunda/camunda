@@ -11,7 +11,7 @@ import {Modal} from '@carbon/react';
 import type {DocumentInfo} from './documentInfo';
 import {PreviewImage} from './PreviewImage';
 import {PreviewJson} from './PreviewJson';
-import {PreviewPdf} from './styled';
+import {PreviewPdf} from './PreviewPdf';
 
 type Props = {
 	document: DocumentInfo;
@@ -27,7 +27,7 @@ const ModalContent: React.FC<{document: DocumentInfo}> = ({document}) => {
 	}
 
 	if (link !== null && type === 'pdf') {
-		return <PreviewPdf src={link} title={fileName} />;
+		return <PreviewPdf src={link} fileName={fileName} />;
 	}
 
 	if (link !== null && type === 'json') {

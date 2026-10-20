@@ -79,6 +79,19 @@ describe('<PreviewDocumentButton />', () => {
 			.toBeVisible();
 	});
 
+	it('should show an error when the PDF preview fails to load', async ({worker}) => {
+		worker.use(mockGetDocumentEndpoint({successResponse: new HttpResponse(null, {status: 404})}));
+		const screen = await renderButton(
+			createDocumentInfo({metadata: {fileName: 'contract.pdf', contentType: 'application/pdf'}}),
+		);
+
+		await userEvent.click(screen.getByRole('button', {name: 'Preview'}));
+
+		const dialog = screen.getByRole('dialog', {name: 'Preview: contract.pdf'});
+		await expect.element(dialog.getByText('Failed to load PDF preview for "contract.pdf".')).toBeVisible();
+		await expect.element(dialog.getByTitle('contract.pdf')).not.toBeInTheDocument();
+	});
+
 	it('should preview a JSON document', async ({worker}) => {
 		worker.use(mockGetDocumentEndpoint({successResponse: HttpResponse.json({amount: 100})}));
 		const screen = await renderButton(

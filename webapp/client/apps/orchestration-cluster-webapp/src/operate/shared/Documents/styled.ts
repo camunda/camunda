@@ -25,7 +25,7 @@ const PreviewImg = styled.img`
 	margin: 0 auto;
 `;
 
-const PreviewPdf = styled.iframe`
+const PreviewPdfFrame = styled.iframe`
 	display: block;
 	width: 100%;
 	height: 80vh;
@@ -95,7 +95,7 @@ const TruncationNotice = styled.p`
 export {
 	TooltipTrigger,
 	PreviewImg,
-	PreviewPdf,
+	PreviewPdfFrame,
 	PreviewJSONContainer,
 	DocumentList,
 	DocumentListItem,
