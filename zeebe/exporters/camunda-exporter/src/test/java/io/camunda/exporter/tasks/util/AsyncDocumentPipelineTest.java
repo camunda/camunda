@@ -466,9 +466,10 @@ class AsyncDocumentPipelineTest {
     // should now be using smaller batch size
     inOrder.verify(batchProcessor).process(DocumentBatch.from(List.of(1, 2), 2));
     inOrder.verify(batchProcessor).process(DocumentBatch.from(List.of(3, 4), 4));
+    inOrder.verify(batchProcessor).process(DocumentBatch.from(List.of(5, 6), 6));
 
     // second retry
-    inOrder.verify(batchProcessor).process(DocumentBatch.from(List.of(5, 6), 6));
+    inOrder.verify(batchProcessor).process(DocumentBatch.from(List.of(7, 8), 8));
     verifyRetryLogged(inOrder.verify(logger));
     inOrder.verify(retryRecorder).run();
 
