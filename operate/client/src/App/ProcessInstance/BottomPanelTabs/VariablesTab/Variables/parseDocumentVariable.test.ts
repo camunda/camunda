@@ -144,7 +144,7 @@ describe('parseDocumentVariable', () => {
         {
           link: '/v2/documents/doc-125?storeId=in-memory&contentHash=sha256%3Aabc',
           fileName: 'c.txt',
-          type: 'unknown',
+          type: 'text',
           contentType: 'text/plain',
           size: 200,
           isExpired: false,
