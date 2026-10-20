@@ -194,11 +194,12 @@ public final class ClusterRestore {
    *
    * <p>{@link TargetDataPolicy#REQUIRE_EMPTY} refuses unless the whole directory is empty — the
    * long-standing behaviour, and the only check that catches a node whose data was left behind
-   * under some other name. It is what a restore of the default tenant or of every tenant gets: both
-   * are recoveries of a node that is meant to start from nothing.
+   * under some other name. It is what a restore of every tenant gets, which is the recovery of a
+   * node that is meant to start from nothing.
    *
    * <p>{@link TargetDataPolicy#REPLACE_SELECTED} instead deletes the named tenants' own partition
-   * group directories. Naming a tenant explicitly is asking to replace that tenant on a node whose
+   * group directories. Restoring only some tenants — naming one explicitly, or leaving the choice
+   * to the default tenant on a multi-tenant cluster — is asking to replace them on a node whose
    * other tenants are live and must keep their data, so an empty-directory requirement could never
    * be satisfied. Only the named tenants' directories are touched, and — same as the
    * whole-directory check above — {@code ignoreFilesInTarget} entries inside them are left alone
@@ -263,11 +264,9 @@ public final class ClusterRestore {
    *       in that case would discard whatever dynamic state the cluster had accumulated outside
    *       partition placement — routing state, exporter state, mode — for a request that named one
    *       tenant, not the cluster.
-   *   <li>{@code targetDataPolicy == REQUIRE_EMPTY} alone is not enough either. The implicit
-   *       default-tenant case is also {@code REQUIRE_EMPTY} (see {@code
-   *       RestoreArguments#targetDataPolicy}), and on a multi-tenant cluster it restores only the
-   *       default tenant — {@code wholeCluster} is what catches that the other tenants were left
-   *       alone and must keep their entry in the topology file.
+   *   <li>{@code targetDataPolicy == REQUIRE_EMPTY} alone is not enough either. A restore that
+   *       covers only some tenants is {@link TargetDataPolicy#REPLACE_SELECTED}, so this condition
+   *       also keeps the other tenants' entries in the topology file.
    * </ul>
    */
   public static boolean shouldRewriteTopologyFile(
