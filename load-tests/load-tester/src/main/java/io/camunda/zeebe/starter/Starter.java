@@ -19,6 +19,7 @@ import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.client.api.search.response.SearchResponse;
 import io.camunda.zeebe.config.LoadTesterProperties;
 import io.camunda.zeebe.config.StarterProperties;
+import io.camunda.zeebe.config.StarterProperties.WorkloadModel;
 import io.camunda.zeebe.metrics.ConnectionMonitor;
 import io.camunda.zeebe.metrics.ProcessInstanceStartMeter;
 import io.camunda.zeebe.metrics.StarterLatencyMetricsDoc;
@@ -287,9 +288,15 @@ public class Starter implements CommandLineRunner {
   private ScheduledFuture<?> scheduleProcessInstanceCreation(
       final ScheduledExecutorService executorService, final CountDownLatch countDownLatch) {
 
-    final long intervalNanos = (long) (NANOS_PER_SECOND / starterCfg.getRatePerSecond());
+    final boolean burst = starterCfg.getWorkloadModel() == WorkloadModel.BURST;
+    final long intervalNanos =
+        burst
+            ? starterCfg.getRateDuration().toNanos()
+            : (long) (NANOS_PER_SECOND / starterCfg.getRatePerSecond());
+    final int requestsPerTick = burst ? (int) starterCfg.getRate() : 1;
     LOG.info(
-        "Creating an instance every {}ns (rate: {} per {})",
+        "Creating {} instance(s) every {}ns (rate: {} per {})",
+        requestsPerTick,
         intervalNanos,
         starterCfg.getRate(),
         starterCfg.getRateDuration());
@@ -313,61 +320,70 @@ public class Starter implements CommandLineRunner {
             return;
           }
 
-          if (!inFlight.tryAcquire()) {
-            processInstancesSkippedCounter.increment();
-            THROTTLED_LOGGER.debug(
-                "Skipping process instance creation, {} requests are already in flight",
-                starterCfg.getMaxInFlightRequests());
-            return;
+          for (int i = 0; i < requestsPerTick && fatalError.get() == null; i++) {
+            sendStartRequest(inFlight, baseVariables, countDownLatch);
           }
-
-          final var startTime = System.nanoTime();
-          final CompletionStage<?> requestFuture;
-          try {
-            final var vars = new HashMap<>(baseVariables);
-            vars.put(starterCfg.getBusinessKey(), businessKey.incrementAndGet());
-
-            if (starterCfg.isStartViaMessage()) {
-              requestFuture = startInstanceByMessagePublishing(vars);
-            } else if (starterCfg.isWithResults()) {
-              requestFuture = startInstanceWithAwaitingResult(starterCfg.getProcessId(), vars);
-            } else {
-              requestFuture = startInstance(startTime, starterCfg.getProcessId(), vars);
-            }
-            processInstancesSubmittedCounter.increment();
-          } catch (final Exception e) {
-            inFlight.release();
-            THROTTLED_LOGGER.error("Error on creating new process instance", e);
-            return;
-          } catch (final Error e) {
-            // An Error escaping a scheduleAtFixedRate task silently cancels all future runs, so
-            // stop the starter and fail the application instead.
-            LOG.error("Fatal error on creating new process instance, stopping the starter", e);
-            fatalError.set(e);
-            countDownLatch.countDown();
-            return;
-          }
-
-          requestFuture.whenComplete(
-              (noop, error) -> {
-                inFlight.release();
-                livenessIndicator.recordResult(error);
-                final long durationNanos = System.nanoTime() - startTime;
-                responseLatencyTimer.record(durationNanos, TimeUnit.NANOSECONDS);
-                resultMetrics.record(error);
-                if (error instanceof final StatusRuntimeException statusRuntimeException) {
-                  if (statusRuntimeException.getStatus().getCode() != Code.RESOURCE_EXHAUSTED) {
-                    THROTTLED_LOGGER.warn(
-                        "Error on creating new process instance with business key {}",
-                        businessKey.get(),
-                        error);
-                  }
-                }
-              });
         },
         0,
         intervalNanos,
         TimeUnit.NANOSECONDS);
+  }
+
+  private void sendStartRequest(
+      final Semaphore inFlight,
+      final Map<String, Object> baseVariables,
+      final CountDownLatch countDownLatch) {
+    if (!inFlight.tryAcquire()) {
+      processInstancesSkippedCounter.increment();
+      THROTTLED_LOGGER.debug(
+          "Skipping process instance creation, {} requests are already in flight",
+          starterCfg.getMaxInFlightRequests());
+      return;
+    }
+
+    final var startTime = System.nanoTime();
+    final CompletionStage<?> requestFuture;
+    try {
+      final var vars = new HashMap<>(baseVariables);
+      vars.put(starterCfg.getBusinessKey(), businessKey.incrementAndGet());
+
+      if (starterCfg.isStartViaMessage()) {
+        requestFuture = startInstanceByMessagePublishing(vars);
+      } else if (starterCfg.isWithResults()) {
+        requestFuture = startInstanceWithAwaitingResult(starterCfg.getProcessId(), vars);
+      } else {
+        requestFuture = startInstance(startTime, starterCfg.getProcessId(), vars);
+      }
+      processInstancesSubmittedCounter.increment();
+    } catch (final Exception e) {
+      inFlight.release();
+      THROTTLED_LOGGER.error("Error on creating new process instance", e);
+      return;
+    } catch (final Error e) {
+      // An Error escaping a scheduleAtFixedRate task silently cancels all future runs, so
+      // stop the starter and fail the application instead.
+      LOG.error("Fatal error on creating new process instance, stopping the starter", e);
+      fatalError.set(e);
+      countDownLatch.countDown();
+      return;
+    }
+
+    requestFuture.whenComplete(
+        (noop, error) -> {
+          inFlight.release();
+          livenessIndicator.recordResult(error);
+          final long durationNanos = System.nanoTime() - startTime;
+          responseLatencyTimer.record(durationNanos, TimeUnit.NANOSECONDS);
+          resultMetrics.record(error);
+          if (error instanceof final StatusRuntimeException statusRuntimeException) {
+            if (statusRuntimeException.getStatus().getCode() != Code.RESOURCE_EXHAUSTED) {
+              THROTTLED_LOGGER.warn(
+                  "Error on creating new process instance with business key {}",
+                  businessKey.get(),
+                  error);
+            }
+          }
+        });
   }
 
   private CompletionStage<ProcessInstanceEvent> startInstance(

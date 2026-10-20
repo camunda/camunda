@@ -588,3 +588,23 @@ k6:
       operator: Equal
       value: n2-standard-4-stable
       effect: NoSchedule
+
+# -- Configuration for an optional second starter that starts a burst of process
+# instances at a fixed interval. The load-tester subchart renders only one starter,
+# so this one is a separate Deployment named `timer-burst-starter`. It reuses the image,
+# credentials and scheduling settings of the load-tester subchart. It turns off read
+# benchmarks, data availability monitoring and Optimize report evaluation. It is only
+# deployed when `load-tester.enabled` is true as well.
+timerBurstStarter:
+  # -- Set to true to deploy the timer burst starter.
+  enabled: false
+  # -- Number of process instances started back to back in each burst.
+  rate: 100
+  # -- Time between the starts of two bursts.
+  rateDuration: 10s
+  # -- BPMN process id to start.
+  processId: timerBurst
+  # -- Path to the BPMN resource in the starter image.
+  bpmnXmlPath: bpmn/timer_burst.bpmn
+  # -- Path to the variables payload in the starter image.
+  payloadPath: bpmn/emptyPayload.json

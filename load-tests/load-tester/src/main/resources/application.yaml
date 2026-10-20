@@ -105,6 +105,8 @@ load-tester:
     #   up to 10 * the rate per second waiting requests.
     # closed: at most 1 * the rate per second requests wait for a response, so a slow cluster
     #   lowers the achieved rate.
+    # burst: every rate duration, rate instances are started back to back. Rate should be a whole
+    #   number. At most 10 * the rate requests wait for a response.
     workload-model: ${LOAD_TESTER_STARTER_WORKLOAD_MODEL:open}
     # Liveness fails when no start request succeeded for this long. Backpressure answers count
     # as success; every other failure does not. Keep it above the interval between two requests.

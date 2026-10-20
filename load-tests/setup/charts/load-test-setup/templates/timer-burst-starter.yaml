@@ -1,0 +1,138 @@
+{{- if and .Values.timerBurstStarter.enabled (index .Values "load-tester" "enabled") }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: timer-burst-starter
+  labels:
+    app: timer-burst-starter
+    {{- with .Values.global.commonLabels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+spec:
+  selector:
+    matchLabels:
+      app: timer-burst-starter
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: timer-burst-starter
+        # Matches the selector of the `clients` Service and ServiceMonitor of the
+        # load-tester subchart, so Prometheus scrapes this pod like the starter.
+        app.kubernetes.io/component: zeebe-client
+        {{- with .Values.global.commonLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      {{- with .Values.global.image.pullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.global.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.global.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: starter
+          image: "{{ .Values.global.image.repository }}/starter:{{ .Values.global.image.tag | default "SNAPSHOT" }}"
+          imagePullPolicy: {{ .Values.global.image.pullPolicy | default "Always" }}
+          env:
+            - name: JDK_JAVA_OPTIONS
+              value: >-
+                -XX:+ExitOnOutOfMemoryError
+                -XX:+HeapDumpOnOutOfMemoryError
+                -XX:HeapDumpPath=/heap-dumps
+            - name: ZEEBE_REST_ADDRESS
+              valueFrom:
+                secretKeyRef:
+                  name: load-test-credentials
+                  key: zeebeRestAddress
+            - name: ZEEBE_CLIENT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: load-test-credentials
+                  key: clientId
+            - name: ZEEBE_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: load-test-credentials
+                  key: clientSecret
+            - name: ZEEBE_AUTHORIZATION_SERVER_URL
+              valueFrom:
+                secretKeyRef:
+                  name: load-test-credentials
+                  key: authServer
+            - name: ZEEBE_TOKEN_AUDIENCE
+              valueFrom:
+                secretKeyRef:
+                  name: load-test-credentials
+                  key: authorizationAudience
+            - name: ZEEBE_AUTH_TYPE
+              valueFrom:
+                secretKeyRef:
+                  name: load-test-credentials
+                  key: authType
+            - name: ZEEBE_GRPC_ADDRESS
+              valueFrom:
+                secretKeyRef:
+                  name: load-test-credentials
+                  key: zeebeGrpcAddress
+            {{- range $keyValue := .Values.global.extraEnvVars }}
+            - name: {{ $keyValue.name }}
+              {{- if $keyValue.valueFrom }}
+              valueFrom:
+                {{- toYaml $keyValue.valueFrom | nindent 16 }}
+              {{- else }}
+              value: {{ $keyValue.value | quote }}
+              {{- end }}
+            {{- end }}
+            - name: CAMUNDA_CLIENT_PREFER_REST_OVER_GRPC
+              value: {{ .Values.global.preferRest.enabled | quote }}
+            - name: CAMUNDA_CLIENT_MODE
+              value: "saas"
+            - name: CAMUNDA_CLIENT_AUTH_METHOD
+              value: "oidc"
+            # Only generate the timer load, no reads, no data availability checks.
+            - name: LOAD_TESTER_PERFORM_READ_BENCHMARKS
+              value: "false"
+            - name: LOAD_TESTER_MONITOR_DATA_AVAILABILITY
+              value: "false"
+            - name: LOAD_TESTER_OPTIMIZE_ENABLED
+              value: "false"
+            - name: LOAD_TESTER_STARTER_WORKLOAD_MODEL
+              value: "BURST"
+            - name: LOAD_TESTER_STARTER_RATE
+              value: {{ .Values.timerBurstStarter.rate | quote }}
+            - name: LOAD_TESTER_STARTER_RATE_DURATION
+              value: {{ .Values.timerBurstStarter.rateDuration | quote }}
+            - name: LOAD_TESTER_STARTER_PROCESS_ID
+              value: {{ .Values.timerBurstStarter.processId | quote }}
+            - name: LOAD_TESTER_STARTER_BPMN_XML_PATH
+              value: {{ .Values.timerBurstStarter.bpmnXmlPath | quote }}
+            - name: LOAD_TESTER_STARTER_BUSINESS_KEY
+              value: "businessKey"
+            - name: LOAD_TESTER_STARTER_PAYLOAD_PATH
+              value: {{ .Values.timerBurstStarter.payloadPath | quote }}
+            - name: LOGGING_LEVEL_IO_CAMUNDA_ZEEBE
+              value: "INFO"
+          resources:
+            limits:
+              cpu: 250m
+              memory: 2Gi
+            requests:
+              cpu: 250m
+              memory: 2Gi
+          ports:
+            - containerPort: 9600
+              name: "http"
+          volumeMounts:
+            - name: heap-dumps
+              mountPath: /heap-dumps
+      volumes:
+        - name: heap-dumps
+          emptyDir: {}
+{{- end }}
