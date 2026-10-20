@@ -9,27 +9,65 @@
 /* global process, Buffer */
 
 // Deploys the demo case models and starts cases in different situations.
-// Usage: node seed.mjs [--deploy-only] [--only=loan|claim|onboarding|supplier|address]
-// Environment: CAMUNDA_URL (default http://localhost:8080), CAMUNDA_USER / CAMUNDA_PASSWORD (default demo / demo)
+// Usage: node seed.mjs [--deploy-only] [--single] [--only=loan|claim|onboarding|supplier|address]
+//   --single starts one case per diagram instead of every situation.
+// Environment:
+//   CAMUNDA_URL (or CAMUNDA_REST_ADDRESS / ZEEBE_REST_ADDRESS; default http://localhost:8080)
+//   CAMUNDA_USER / CAMUNDA_PASSWORD for basic auth (default demo / demo), or for a SaaS cluster
+//   CAMUNDA_CLIENT_ID, CAMUNDA_CLIENT_SECRET, CAMUNDA_OAUTH_URL and CAMUNDA_TOKEN_AUDIENCE
 
 import {readFile, readdir} from 'node:fs/promises';
 import {basename, dirname, join} from 'node:path';
 import {fileURLToPath} from 'node:url';
 
-const CAMUNDA_URL = process.env.CAMUNDA_URL ?? 'http://localhost:8080';
+const CAMUNDA_URL =
+	process.env.CAMUNDA_URL ??
+	process.env.CAMUNDA_REST_ADDRESS ??
+	process.env.ZEEBE_REST_ADDRESS ??
+	'http://localhost:8080';
 const BASE_URL = `${CAMUNDA_URL}/v2`;
 const WEBAPP_URL = process.env.WEBAPP_URL ?? 'http://localhost:3000';
-const AUTHORIZATION = `Basic ${Buffer.from(`${process.env.CAMUNDA_USER ?? 'demo'}:${process.env.CAMUNDA_PASSWORD ?? 'demo'}`).toString('base64')}`;
+const BASIC_AUTHORIZATION = `Basic ${Buffer.from(`${process.env.CAMUNDA_USER ?? 'demo'}:${process.env.CAMUNDA_PASSWORD ?? 'demo'}`).toString('base64')}`;
 const DIRECTORY = dirname(fileURLToPath(import.meta.url));
 const RUN_ID = Date.now().toString(36).slice(-4).toUpperCase();
 const ONLY = process.argv.find((argument) => argument.startsWith('--only='))?.slice('--only='.length);
+const SINGLE = process.argv.includes('--single');
+
+/** Basic auth for a local cluster; a client credentials token for a SaaS cluster. */
+async function getAuthorization() {
+	const clientId = process.env.CAMUNDA_CLIENT_ID;
+
+	if (clientId === undefined) {
+		return BASIC_AUTHORIZATION;
+	}
+
+	const response = await fetch(process.env.CAMUNDA_OAUTH_URL ?? 'https://login.cloud.camunda.io/oauth/token', {
+		method: 'POST',
+		headers: {'content-type': 'application/x-www-form-urlencoded'},
+		body: new URLSearchParams({
+			grant_type: 'client_credentials',
+			client_id: clientId,
+			client_secret: process.env.CAMUNDA_CLIENT_SECRET ?? '',
+			audience: process.env.CAMUNDA_TOKEN_AUDIENCE ?? 'zeebe.camunda.io',
+		}),
+	});
+
+	if (!response.ok) {
+		throw new Error(`Fetching an access token failed with ${response.status}: ${await response.text()}`);
+	}
+
+	const {access_token: accessToken} = await response.json();
+	return `Bearer ${accessToken}`;
+}
+
+let authorization = BASIC_AUTHORIZATION;
 
 async function api(method, path, body) {
 	const isForm = body instanceof FormData;
 	const response = await fetch(`${BASE_URL}${path}`, {
 		method,
 		headers: {
-			authorization: AUTHORIZATION,
+			authorization,
 			...(body === undefined || isForm ? {} : {'content-type': 'application/json'}),
 		},
 		body: body === undefined ? undefined : isForm ? body : JSON.stringify(body),
@@ -98,10 +136,21 @@ async function uploadDocument(fileName, content) {
 }
 
 async function startCase(processDefinitionId, businessId, variables, label) {
-	const {processInstanceKey} = await api('POST', '/process-instances', {
-		processDefinitionId,
-		...(businessId === null ? {} : {businessId}),
-		variables,
+	// A cluster with several partitions knows a new deployment on every partition only shortly after.
+	const {processInstanceKey} = await poll(`process definition ${processDefinitionId}`, async () => {
+		try {
+			return await api('POST', '/process-instances', {
+				processDefinitionId,
+				...(businessId === null ? {} : {businessId}),
+				variables,
+			});
+		} catch (error) {
+			if (/failed with 404/.test(error.message)) {
+				return undefined;
+			}
+
+			throw error;
+		}
 	});
 	console.log(
 		`${(businessId ?? '(no business ID)').padEnd(16)} ${label.padEnd(70)} ${WEBAPP_URL}/tasklist/cases/${processInstanceKey}`,
@@ -194,6 +243,19 @@ async function seedLoans(documents) {
 			label,
 		);
 
+	if (SINGLE) {
+		const credit = await loan('01', 'Sara Connor', 365000, 30, 'Home', 9800, documents, 'Loan: ad-hoc stage with Done');
+		await completeTask(credit, 'review-application', {applicationComplete: true});
+		await completeTask(credit, 'check-documents', {identityVerified: true, incomeVerified: true});
+		await startCase(
+			'loan-with-credit-bureau',
+			`LA-${RUN_ID}-02`,
+			{caseId: `LA-${RUN_ID}-02`, loanTitle: 'Loan for Priya Nandra — 480,000 EUR', loanAmount: 480000},
+			'Loan: call activity (simplified view)',
+		);
+		return;
+	}
+
 	await loan('01', 'Jane Doe', 25000, 5, 'Car', 4200, documents, 'Loan: new, first stage');
 
 	const credit = await loan('02', 'Sara Connor', 365000, 30, 'Home', 9800, documents, 'Loan: ad-hoc stage with Done');
@@ -262,6 +324,13 @@ async function seedClaims(documents) {
 		await completeTask(key, 'check-policy', {policyValid: true});
 		await completeTask(key, 'check-deductible', {deductible: 500});
 	};
+
+	if (SINGLE) {
+		const expert = await claim('01', 'Omar Haddad', 'property', 'Claim: expert stage, nested and multi-instance tasks');
+		await register(expert, 18500);
+		await completeTask(expert, 'request-quote', {quote: 17200});
+		return;
+	}
 
 	await claim('01', 'Lena Fischer', 'vehicle', 'Claim: new, first stage');
 
@@ -344,6 +413,19 @@ async function seedOnboardings() {
 		await completeTask(key, 'shadow-colleague', {buddy: 'Ana Silva', shadowingNotes: 'Release process'});
 		await completeTask(key, 'sign-off-training', {trainingSignedOff: true});
 	};
+
+	if (SINGLE) {
+		const handOver = await onboarding(
+			'01',
+			'Lukas Weber',
+			'Frontend engineer',
+			'Platform',
+			'Onboarding: First day, step 2 of 3',
+		);
+		await prepare(handOver);
+		await completeTask(handOver, 'welcome-employee', {welcomeNotes: 'Office tour done.'});
+		return;
+	}
 
 	await onboarding('01', 'Hannah Schulz', 'Backend engineer', 'Platform', 'Onboarding: new, step 1 of Preparation');
 
@@ -453,6 +535,19 @@ async function seedSuppliers() {
 		await waitForElement(key, 'contract-countersigned');
 		await correlate('contract-countersigned', supplierIds.get(key));
 	};
+
+	if (SINGLE) {
+		const diligence = await supplier(
+			'01',
+			'Atlas Metals SA',
+			'Spain',
+			'Raw materials',
+			640000,
+			'Supplier: Due diligence, credit report running (rules: high risk)',
+		);
+		await registration(diligence, 'Atlas Metals SA');
+		return;
+	}
 
 	await supplier('01', 'Nordwerk GmbH', 'Germany', 'Packaging', 45000, 'Supplier: new, Registration step 1');
 
@@ -589,6 +684,7 @@ async function seedAddressChange() {
 }
 
 async function main() {
+	authorization = await getAuthorization();
 	await deploy();
 
 	if (process.argv.includes('--deploy-only')) {
