@@ -411,7 +411,7 @@ public final class AsyncDocumentPipeline<DocType, SearchAfterFieldType> {
         throw new IllegalArgumentException("Min batch size must be greater than 0");
       }
       configuredBatchSize = batchSize;
-      configuredMinBatchSize = Math.min(minBatchSize, batchSize);
+      configuredMinBatchSize = minBatchSize;
       currentBatchSize = new AtomicInteger(configuredBatchSize);
     }
 
@@ -437,8 +437,9 @@ public final class AsyncDocumentPipeline<DocType, SearchAfterFieldType> {
 
     public int reduce() {
       final var prevSize = currentBatchSize.get();
+      final var minBatchSize = Math.min(configuredBatchSize, configuredMinBatchSize);
       final var nextBatchSize =
-          (int) Math.max(configuredMinBatchSize, prevSize * BATCH_SIZE_REDUCTION_FACTOR);
+          (int) Math.max(minBatchSize, prevSize * BATCH_SIZE_REDUCTION_FACTOR);
       currentBatchSize.set(nextBatchSize);
       return prevSize;
     }

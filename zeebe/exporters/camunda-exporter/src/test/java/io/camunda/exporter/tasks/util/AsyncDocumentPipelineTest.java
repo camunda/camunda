@@ -35,6 +35,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -729,4 +730,190 @@ class AsyncDocumentPipelineTest {
   static class RetryableException extends RuntimeException {}
 
   static class BatchReductionException extends RuntimeException {}
+
+  @Nested
+  class AdaptiveBatchSizeTest {
+
+    @Test
+    void shouldStartAtTheConfiguredBatchSize() {
+      // given / when
+      final var batchSize = new AsyncDocumentPipeline.AdaptiveBatchSize(100, 10);
+
+      // then
+      assertThat(batchSize.current()).isEqualTo(100);
+      assertThat(batchSize.getConfiguredBatchSize()).isEqualTo(100);
+      assertThat(batchSize.getConfiguredMinBatchSize()).isEqualTo(10);
+      assertThat(batchSize.atMinimumSize()).isFalse();
+    }
+
+    @Test
+    void shouldHalveBatchSizeOnReduce() {
+      // given
+      final var batchSize = new AsyncDocumentPipeline.AdaptiveBatchSize(100, 1);
+
+      // when
+      final var previousSize = batchSize.reduce();
+
+      // then - the previous size is returned so callers can log what changed
+      assertThat(previousSize).isEqualTo(100);
+      assertThat(batchSize.current()).isEqualTo(50);
+    }
+
+    @Test
+    void shouldKeepHalvingOnEveryReduce() {
+      // given
+      final var batchSize = new AsyncDocumentPipeline.AdaptiveBatchSize(100, 1);
+
+      // when
+      batchSize.reduce();
+      batchSize.reduce();
+      batchSize.reduce();
+
+      // then
+      assertThat(batchSize.current()).isEqualTo(12);
+    }
+
+    @Test
+    void shouldRoundDownWhenHalvingAnOddBatchSize() {
+      // given
+      final var batchSize = new AsyncDocumentPipeline.AdaptiveBatchSize(5, 1);
+
+      // when
+      batchSize.reduce();
+
+      // then
+      assertThat(batchSize.current()).isEqualTo(2);
+    }
+
+    @Test
+    void shouldNotReduceBelowTheMinimumBatchSize() {
+      // given
+      final var batchSize = new AsyncDocumentPipeline.AdaptiveBatchSize(100, 30);
+
+      // when - a store that refuses every write drives the size all the way down
+      IntStream.range(0, 10).forEach(ignored -> batchSize.reduce());
+
+      // then
+      assertThat(batchSize.current()).isEqualTo(30);
+      assertThat(batchSize.atMinimumSize()).isTrue();
+    }
+
+    @Test
+    void shouldReportAtMinimumSizeOnceReducedToTheMinimum() {
+      // given
+      final var batchSize = new AsyncDocumentPipeline.AdaptiveBatchSize(100, 50);
+
+      // when
+      batchSize.reduce();
+
+      // then - the pipeline uses this to stop trying to make failing writes smaller
+      assertThat(batchSize.current()).isEqualTo(50);
+      assertThat(batchSize.atMinimumSize()).isTrue();
+    }
+
+    @Test
+    void shouldNotReduceBelowTheConfiguredBatchSizeWhenMinimumIsLarger() {
+      // given - a misconfiguration where the minimum exceeds the batch size
+      final var batchSize = new AsyncDocumentPipeline.AdaptiveBatchSize(5, 10);
+
+      // when
+      final var previousSize = batchSize.reduce();
+
+      // then - the batch size is already as small as it is allowed to get
+      assertThat(previousSize).isEqualTo(5);
+      assertThat(batchSize.current()).isEqualTo(5);
+      assertThat(batchSize.atMinimumSize()).isTrue();
+    }
+
+    @Test
+    void shouldReturnToTheConfiguredBatchSizeOnReset() {
+      // given
+      final var batchSize = new AsyncDocumentPipeline.AdaptiveBatchSize(100, 1);
+      batchSize.reduce();
+      batchSize.reduce();
+
+      // when
+      batchSize.reset();
+
+      // then
+      assertThat(batchSize.current()).isEqualTo(100);
+      assertThat(batchSize.atMinimumSize()).isFalse();
+    }
+
+    @Test
+    void shouldReduceAgainAfterAReset() {
+      // given
+      final var batchSize = new AsyncDocumentPipeline.AdaptiveBatchSize(100, 1);
+      batchSize.reduce();
+      batchSize.reset();
+
+      // when
+      batchSize.reduce();
+
+      // then
+      assertThat(batchSize.current()).isEqualTo(50);
+    }
+
+    @Test
+    void shouldKeepConfiguredValuesWhenReducing() {
+      // given
+      final var batchSize = new AsyncDocumentPipeline.AdaptiveBatchSize(100, 10);
+
+      // when
+      batchSize.reduce();
+
+      // then - the configured size is what a later reset has to restore
+      assertThat(batchSize.getConfiguredBatchSize()).isEqualTo(100);
+      assertThat(batchSize.getConfiguredMinBatchSize()).isEqualTo(10);
+    }
+
+    @Test
+    void shouldAllowTheMaximumBatchSize() {
+      // given / when
+      final var batchSize = new AsyncDocumentPipeline.AdaptiveBatchSize(10_000, 1);
+
+      // then
+      assertThat(batchSize.current()).isEqualTo(10_000);
+    }
+
+    @Test
+    void shouldRejectBatchSizeAboveTheMaximum() {
+      // given / when / then
+      assertThatThrownBy(() -> new AsyncDocumentPipeline.AdaptiveBatchSize(10_001, 1))
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessage("Batch size cannot be greater than 10000");
+    }
+
+    @Test
+    void shouldRejectZeroBatchSize() {
+      // given / when / then
+      assertThatThrownBy(() -> new AsyncDocumentPipeline.AdaptiveBatchSize(0, 1))
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessage("Batch size must be greater than zero");
+    }
+
+    @Test
+    void shouldRejectNegativeBatchSize() {
+      // given / when / then
+      assertThatThrownBy(() -> new AsyncDocumentPipeline.AdaptiveBatchSize(-1, 1))
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessage("Batch size must be greater than zero");
+    }
+
+    @Test
+    void shouldRejectZeroMinBatchSize() {
+      // given / when / then
+      assertThatThrownBy(() -> new AsyncDocumentPipeline.AdaptiveBatchSize(100, 0))
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessage("Min batch size must be greater than 0");
+    }
+
+    @Test
+    void shouldRejectNegativeMinBatchSize() {
+      // given / when / then
+      assertThatThrownBy(() -> new AsyncDocumentPipeline.AdaptiveBatchSize(100, -1))
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessage("Min batch size must be greater than 0");
+    }
+  }
 }
