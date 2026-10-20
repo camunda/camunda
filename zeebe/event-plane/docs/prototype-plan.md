@@ -139,6 +139,26 @@ reads the rest from the bucket.
 4. **Snapshots (stretch).** Read a snapshot's files while it is in use, with the snapshot store's
    reservations.
 
+### What the spikes found
+
+1. **Yes, and then not needed.** An id that no exporter feeds worked as an "external position" of
+   the exporter director. On request, the floor then got a column family of its own
+   (`EVENT_PLANE_FLOOR`), its own distribution to followers (`FloorDistribution`), and a place next
+   to the exporters in `DbPositionSupplier`; the exporter director is untouched. Followers hold
+   compaction until the leader's first floor arrives. `PublishIT` checks that a snapshot's
+   exported position is the last uploaded record's.
+2. **Yes, with protocol-impl and logstreams**, no broker: the application entry's data, read by hand
+   (`Entry.applicationData()`), is a run of `LoggedEventImpl`s; `RecordMetadata`,
+   `UnifiedRecordValue.fromValueType` and `CopiedRecord` make records of them (`RecordDecoder`). The
+   catch: Zeebe's buffers (Agrona) need `--add-opens java.base/jdk.internal.misc=ALL-UNNAMED`.
+3. **Yes.** The committed reader seeks to the floor's index + 1; if the journal starts later, the
+   publisher warns and starts at its first entry. A new leader repeats what the old one uploaded
+   after the floor it last sent. `LeaderChangeIT` shows it resumes; with followers that ignore the
+   floor, every entry came twice.
+4. **Yes.** `SnapshotUploader` reserves the snapshot while it uploads its files, then releases it.
+   A restore must choose its snapshot by every position the snapshot holds, not only the processed
+   one, or the restored state points past the end of the restored journal.
+
 ## Order
 
 | Phase | What | Rough time |
