@@ -16,11 +16,14 @@ import {StructuredList} from '#/operate/shared/StructuredList/StructuredList';
 import {useDiagramXml} from '#/operate/pages/Processes/useDiagramXml';
 import {isCamundaUserTask, isMessageEventElement} from '#/operate/shared/utils/elements';
 import {isInstanceRunning} from '#/operate/shared/utils/processInstance';
+import {AgentDetails} from './AgentDetails/AgentDetails';
 import {
+	POLLING_INTERVAL_MS,
 	calledDecisionInstanceQuery,
 	calledProcessInstancesQuery,
 	elementJobQuery,
 	elementMessageSubscriptionQuery,
+	elementAgentInstancesQuery,
 	elementUserTaskQuery,
 	waitStatesQuery,
 } from './details.queries';
@@ -51,7 +54,9 @@ const ProcessInstanceDetails: React.FC = () => {
 		hasSelection,
 		resolvedElementInstance,
 		selectedElementId,
+		selectedElementInstanceKey,
 		selectedElementInstanceCount,
+		isSelectedInstanceMultiInstanceBody,
 		anchorElementId,
 		isFetchingElement,
 	} = useProcessInstanceElementSelection();
@@ -59,7 +64,8 @@ const ProcessInstanceDetails: React.FC = () => {
 
 	const isProcessScope = !hasSelection;
 	const isRunning = isInstanceRunning(processInstance);
-	const businessObject = diagram?.businessObjects[anchorElementId ?? selectedElementId ?? ''];
+	const effectiveElementId = anchorElementId ?? selectedElementId;
+	const businessObject = diagram?.businessObjects[effectiveElementId ?? ''];
 	const elementInstanceKey = resolvedElementInstance?.elementInstanceKey;
 	const resolvedElementType = resolvedElementInstance?.type;
 
@@ -95,6 +101,20 @@ const ProcessInstanceDetails: React.FC = () => {
 		...elementMessageSubscriptionQuery(key),
 		enabled: key !== '' && isMessageElement,
 	});
+	const {
+		data: agentInstances,
+		isLoading: isAgentInstancesLoading,
+		isError: isAgentInstancesError,
+	} = useQuery({
+		...elementAgentInstancesQuery({
+			processInstanceKey: processInstance.processInstanceKey,
+			elementId: effectiveElementId ?? '',
+			elementInstanceKey: isSelectedInstanceMultiInstanceBody ? null : selectedElementInstanceKey,
+		}),
+		enabled: Boolean(effectiveElementId),
+		refetchInterval: isRunning ? POLLING_INTERVAL_MS : false,
+	});
+	const showAgentInstance = (agentInstances !== undefined && agentInstances.items.length > 0) || isAgentInstancesError;
 
 	if (isProcessScope) {
 		return (
@@ -106,7 +126,7 @@ const ProcessInstanceDetails: React.FC = () => {
 
 	const hasMultipleInstances = selectedElementInstanceCount !== null && selectedElementInstanceCount > 1;
 
-	if (resolvedElementInstance === null && !isFetchingElement) {
+	if (resolvedElementInstance === null && !isFetchingElement && !isAgentInstancesLoading && !showAgentInstance) {
 		return (
 			<Container $isEmpty role="region" aria-label={t('operate.processInstance.details.title')}>
 				<EmptyMessageContainer>
@@ -311,7 +331,15 @@ const ProcessInstanceDetails: React.FC = () => {
 					subtitle={t('operate.processInstance.details.deprecatedUserTaskHint')}
 				/>
 			)}
-			<ProcessInstanceWaitingStatus waitStates={waitStates} />
+			{showAgentInstance && (
+				<AgentDetails
+					agentInstances={agentInstances?.items ?? []}
+					totalAgentsCount={agentInstances?.page.totalItems ?? 0}
+					hasMoreTotalItems={agentInstances?.page.hasMoreTotalItems ?? false}
+					isError={isAgentInstancesError}
+				/>
+			)}
+			{!showAgentInstance && <ProcessInstanceWaitingStatus waitStates={waitStates} />}
 			<SectionContainer>
 				<SectionHeading>{t('operate.processInstance.details.elementInstance')}</SectionHeading>
 				{isFetchingElement ? (
