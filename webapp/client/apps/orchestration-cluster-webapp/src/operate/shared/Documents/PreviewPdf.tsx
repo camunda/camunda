@@ -16,6 +16,8 @@ type Props = {
 	fileName: string;
 };
 
+const PDF_CONTENT_TYPE = 'application/pdf';
+
 type PdfState = {status: 'loading'} | {status: 'error'} | {status: 'loaded'; url: string};
 
 const PreviewPdf: React.FC<Props> = ({src, fileName}) => {
@@ -31,7 +33,10 @@ const PreviewPdf: React.FC<Props> = ({src, fileName}) => {
 				if (!response.ok) {
 					throw new Error(`Failed to load document (status ${response.status})`);
 				}
-				url = URL.createObjectURL(await response.blob());
+				if (response.headers.get('Content-Type')?.split(';')[0]?.trim().toLowerCase() !== PDF_CONTENT_TYPE) {
+					throw new Error('Document is not a PDF');
+				}
+				url = URL.createObjectURL(new Blob([await response.arrayBuffer()], {type: PDF_CONTENT_TYPE}));
 				setState({status: 'loaded', url});
 			})
 			.catch(() => {
