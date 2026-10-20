@@ -1204,7 +1204,8 @@
 			"caseAutomationEvent": "Event",
 			"caseAutomationWaiting": "Waiting",
 			"caseAutomationIncident": "Incident",
-			"caseAutomationInstances": "{{count}} instances"
+			"caseAutomationInstances": "{{count}} instances",
+			"caseActivityStart": "Start"
 		},
 		"operate": {
 			"dashboard": {
