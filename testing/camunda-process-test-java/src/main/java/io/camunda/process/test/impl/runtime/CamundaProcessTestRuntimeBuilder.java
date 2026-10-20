@@ -81,6 +81,8 @@ public class CamundaProcessTestRuntimeBuilder {
   private final Map<String, String> connectorsSecrets =
       new HashMap<>(CamundaProcessTestRuntimeDefaults.CONNECTORS_SECRETS);
 
+  private final Map<String, String> clusterSecrets = new HashMap<>();
+
   private final List<CamundaProcessTestContainerProvider> containerProviders = new ArrayList<>();
   private boolean containerProvidersServiceLoaderEnabled = true;
 
@@ -240,6 +242,16 @@ public class CamundaProcessTestRuntimeBuilder {
 
   public CamundaProcessTestRuntimeBuilder withConnectorsSecrets(final Map<String, String> secrets) {
     connectorsSecrets.putAll(secrets);
+    return this;
+  }
+
+  public CamundaProcessTestRuntimeBuilder withClusterSecret(final String name, final String value) {
+    clusterSecrets.put(name, value);
+    return this;
+  }
+
+  public CamundaProcessTestRuntimeBuilder withClusterSecrets(final Map<String, String> secrets) {
+    clusterSecrets.putAll(secrets);
     return this;
   }
 
@@ -426,6 +438,10 @@ public class CamundaProcessTestRuntimeBuilder {
 
   public boolean isMultiTenancyEnabled() {
     return isMultiTenancyEnabled;
+  }
+
+  public Map<String, String> getClusterSecrets() {
+    return clusterSecrets;
   }
 
   public Map<String, String> getConnectorsSecrets() {
