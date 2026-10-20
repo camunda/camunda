@@ -69,4 +69,21 @@ class StarterPropertiesTest {
     // then
     assertThat(maxInFlight).isEqualTo(500);
   }
+
+  @Test
+  void shouldAllowTenBurstsInFlightInBurstWorkloadModel() {
+    // given
+    final var properties = new StarterProperties();
+    properties.setRate(100);
+    properties.setRateDuration(Duration.ofSeconds(10));
+    properties.setWorkloadModel(WorkloadModel.BURST);
+
+    // when
+    final var maxInFlight = properties.getMaxInFlightRequests();
+
+    // then
+    assertThat(maxInFlight)
+        .describedAs("ten times the rate, not the rate per second, which is only 10")
+        .isEqualTo(1000);
+  }
 }

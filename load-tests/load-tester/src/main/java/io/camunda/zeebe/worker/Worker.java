@@ -61,8 +61,9 @@ public class Worker {
     responseChecker.start();
     connectionMonitor.awaitAndPrintTopology();
     LOGGER.info(
-        "Worker config: completionDelay={}, sendMessage={}, messageName={}, "
+        "Worker config: completeJobs={}, completionDelay={}, sendMessage={}, messageName={}, "
             + "correlationKeyVariable={}, payloadPath={}",
+        workerCfg.isCompleteJobs(),
         workerCfg.getCompletionDelay(),
         workerCfg.isSendMessage(),
         workerCfg.getMessageName(),
@@ -85,6 +86,11 @@ public class Worker {
 
   @JobWorker(autoComplete = false)
   public void handleJob(final JobClient jobClient, final ActivatedJob job) {
+    if (!workerCfg.isCompleteJobs()) {
+      // Return right away without completing, so the job times out and is activated again.
+      return;
+    }
+
     final long startHandlingTime = System.currentTimeMillis();
 
     if (workerCfg.isSendMessage()) {

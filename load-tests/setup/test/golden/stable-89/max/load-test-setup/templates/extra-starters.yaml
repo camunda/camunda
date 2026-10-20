@@ -1,0 +1,285 @@
+---
+# Source: load-test-setup/templates/extra-starters.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: timeout-probe-starter
+  labels:
+    app: timeout-probe-starter
+    camunda.io/created-by: golden-test
+    camunda.io/purpose: load-test
+spec:
+  selector:
+    matchLabels:
+      app: timeout-probe-starter
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: timeout-probe-starter
+        # Matches the selector of the `clients` Service and ServiceMonitor of the
+        # load-tester subchart, so Prometheus scrapes this pod like the starter.
+        app.kubernetes.io/component: zeebe-client
+        camunda.io/created-by: golden-test
+        camunda.io/purpose: load-test
+    spec:
+      imagePullSecrets:
+        - name: harbor-registry
+      nodeSelector:
+        component: benchmark-n2-standard-4
+        topology.kubernetes.io/zone: europe-west1-c
+      tolerations:
+        - effect: NoSchedule
+          key: nodepool
+          operator: Equal
+          value: n2-standard-4
+      containers:
+        - name: starter
+          image: "registry.camunda.cloud/team-zeebe/starter:SNAPSHOT"
+          imagePullPolicy: Always
+          env:
+            - name: JDK_JAVA_OPTIONS
+              value: >-
+                -XX:+ExitOnOutOfMemoryError
+                -XX:+HeapDumpOnOutOfMemoryError
+                -XX:HeapDumpPath=/heap-dumps
+            - name: ZEEBE_REST_ADDRESS
+              valueFrom:
+                secretKeyRef:
+                  name: load-test-credentials
+                  key: zeebeRestAddress
+            - name: ZEEBE_CLIENT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: load-test-credentials
+                  key: clientId
+            - name: ZEEBE_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: load-test-credentials
+                  key: clientSecret
+            - name: ZEEBE_AUTHORIZATION_SERVER_URL
+              valueFrom:
+                secretKeyRef:
+                  name: load-test-credentials
+                  key: authServer
+            - name: ZEEBE_TOKEN_AUDIENCE
+              valueFrom:
+                secretKeyRef:
+                  name: load-test-credentials
+                  key: authorizationAudience
+            - name: ZEEBE_AUTH_TYPE
+              valueFrom:
+                secretKeyRef:
+                  name: load-test-credentials
+                  key: authType
+            - name: ZEEBE_GRPC_ADDRESS
+              valueFrom:
+                secretKeyRef:
+                  name: load-test-credentials
+                  key: zeebeGrpcAddress
+            - name: LOAD_TESTER_LOG_APPENDER
+              value: "Stackdriver"
+            - name: LOAD_TESTER_LOG_STACKDRIVER_SERVICENAME
+              value: "load-tester"
+            - name: LOAD_TESTER_LOG_STACKDRIVER_SERVICEVERSION
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: OPTIMIZE_LOADTEST_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  key: identity-optimize-loadtest-client-secret
+                  name: camunda-credentials
+            - name: CAMUNDA_CLIENT_PREFER_REST_OVER_GRPC
+              value: "true"
+            - name: CAMUNDA_CLIENT_MODE
+              value: "saas"
+            - name: CAMUNDA_CLIENT_AUTH_METHOD
+              value: "oidc"
+            # Only generate the load, no reads, no data availability checks.
+            - name: LOAD_TESTER_PERFORM_READ_BENCHMARKS
+              value: "false"
+            - name: LOAD_TESTER_MONITOR_DATA_AVAILABILITY
+              value: "false"
+            - name: LOAD_TESTER_OPTIMIZE_ENABLED
+              value: "false"
+            - name: LOAD_TESTER_STARTER_RATE
+              value: "100"
+            - name: LOAD_TESTER_STARTER_RATE_DURATION
+              value: "1s"
+            - name: LOAD_TESTER_STARTER_INSTANCE_LIMIT
+              value: "1000"
+            - name: LOAD_TESTER_STARTER_WORKLOAD_MODEL
+              value: "open"
+            - name: LOAD_TESTER_STARTER_RETRY_REJECTED_STARTS
+              value: "true"
+            - name: LOAD_TESTER_STARTER_PROCESS_ID
+              value: "timeoutProbe"
+            - name: LOAD_TESTER_STARTER_BPMN_XML_PATH
+              value: "bpmn/timeout_probe.bpmn"
+            - name: LOAD_TESTER_STARTER_BUSINESS_KEY
+              value: "businessKey"
+            - name: LOAD_TESTER_STARTER_PAYLOAD_PATH
+              value: "bpmn/emptyPayload.json"
+            - name: LOGGING_LEVEL_IO_CAMUNDA_ZEEBE
+              value: "INFO"
+          resources:
+            limits:
+              cpu: 250m
+              memory: 2Gi
+            requests:
+              cpu: 250m
+              memory: 2Gi
+          ports:
+            - containerPort: 9600
+              name: "http"
+          volumeMounts:
+            - name: heap-dumps
+              mountPath: /heap-dumps
+      volumes:
+        - name: heap-dumps
+          emptyDir: {}
+
+---
+# Source: load-test-setup/templates/extra-starters.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: timer-burst-starter
+  labels:
+    app: timer-burst-starter
+    camunda.io/created-by: golden-test
+    camunda.io/purpose: load-test
+spec:
+  selector:
+    matchLabels:
+      app: timer-burst-starter
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: timer-burst-starter
+        # Matches the selector of the `clients` Service and ServiceMonitor of the
+        # load-tester subchart, so Prometheus scrapes this pod like the starter.
+        app.kubernetes.io/component: zeebe-client
+        camunda.io/created-by: golden-test
+        camunda.io/purpose: load-test
+    spec:
+      imagePullSecrets:
+        - name: harbor-registry
+      nodeSelector:
+        component: benchmark-n2-standard-4
+        topology.kubernetes.io/zone: europe-west1-c
+      tolerations:
+        - effect: NoSchedule
+          key: nodepool
+          operator: Equal
+          value: n2-standard-4
+      containers:
+        - name: starter
+          image: "registry.camunda.cloud/team-zeebe/starter:SNAPSHOT"
+          imagePullPolicy: Always
+          env:
+            - name: JDK_JAVA_OPTIONS
+              value: >-
+                -XX:+ExitOnOutOfMemoryError
+                -XX:+HeapDumpOnOutOfMemoryError
+                -XX:HeapDumpPath=/heap-dumps
+            - name: ZEEBE_REST_ADDRESS
+              valueFrom:
+                secretKeyRef:
+                  name: load-test-credentials
+                  key: zeebeRestAddress
+            - name: ZEEBE_CLIENT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: load-test-credentials
+                  key: clientId
+            - name: ZEEBE_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: load-test-credentials
+                  key: clientSecret
+            - name: ZEEBE_AUTHORIZATION_SERVER_URL
+              valueFrom:
+                secretKeyRef:
+                  name: load-test-credentials
+                  key: authServer
+            - name: ZEEBE_TOKEN_AUDIENCE
+              valueFrom:
+                secretKeyRef:
+                  name: load-test-credentials
+                  key: authorizationAudience
+            - name: ZEEBE_AUTH_TYPE
+              valueFrom:
+                secretKeyRef:
+                  name: load-test-credentials
+                  key: authType
+            - name: ZEEBE_GRPC_ADDRESS
+              valueFrom:
+                secretKeyRef:
+                  name: load-test-credentials
+                  key: zeebeGrpcAddress
+            - name: LOAD_TESTER_LOG_APPENDER
+              value: "Stackdriver"
+            - name: LOAD_TESTER_LOG_STACKDRIVER_SERVICENAME
+              value: "load-tester"
+            - name: LOAD_TESTER_LOG_STACKDRIVER_SERVICEVERSION
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: OPTIMIZE_LOADTEST_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  key: identity-optimize-loadtest-client-secret
+                  name: camunda-credentials
+            - name: CAMUNDA_CLIENT_PREFER_REST_OVER_GRPC
+              value: "true"
+            - name: CAMUNDA_CLIENT_MODE
+              value: "saas"
+            - name: CAMUNDA_CLIENT_AUTH_METHOD
+              value: "oidc"
+            # Only generate the load, no reads, no data availability checks.
+            - name: LOAD_TESTER_PERFORM_READ_BENCHMARKS
+              value: "false"
+            - name: LOAD_TESTER_MONITOR_DATA_AVAILABILITY
+              value: "false"
+            - name: LOAD_TESTER_OPTIMIZE_ENABLED
+              value: "false"
+            - name: LOAD_TESTER_STARTER_RATE
+              value: "200"
+            - name: LOAD_TESTER_STARTER_RATE_DURATION
+              value: "10s"
+            - name: LOAD_TESTER_STARTER_INSTANCE_LIMIT
+              value: "10000"
+            - name: LOAD_TESTER_STARTER_WORKLOAD_MODEL
+              value: "burst"
+            - name: LOAD_TESTER_STARTER_RETRY_REJECTED_STARTS
+              value: "true"
+            - name: LOAD_TESTER_STARTER_PROCESS_ID
+              value: "timerBurst"
+            - name: LOAD_TESTER_STARTER_BPMN_XML_PATH
+              value: "bpmn/timer_burst.bpmn"
+            - name: LOAD_TESTER_STARTER_BUSINESS_KEY
+              value: "businessKey"
+            - name: LOAD_TESTER_STARTER_PAYLOAD_PATH
+              value: "bpmn/emptyPayload.json"
+            - name: LOGGING_LEVEL_IO_CAMUNDA_ZEEBE
+              value: "INFO"
+          resources:
+            limits:
+              cpu: 250m
+              memory: 2Gi
+            requests:
+              cpu: 250m
+              memory: 2Gi
+          ports:
+            - containerPort: 9600
+              name: "http"
+          volumeMounts:
+            - name: heap-dumps
+              mountPath: /heap-dumps
+      volumes:
+        - name: heap-dumps
+          emptyDir: {}

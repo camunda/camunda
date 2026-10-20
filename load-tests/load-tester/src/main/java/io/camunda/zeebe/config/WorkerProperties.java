@@ -17,6 +17,7 @@ public class WorkerProperties {
   // by Worker.java are kept here.
 
   private Duration completionDelay = Duration.ofMillis(300);
+  private boolean completeJobs = true;
   private String payloadPath = "bpmn/big_payload.json";
   private boolean sendMessage = false;
   private String messageName = "messageName";
@@ -28,6 +29,14 @@ public class WorkerProperties {
 
   public void setCompletionDelay(final Duration completionDelay) {
     this.completionDelay = completionDelay;
+  }
+
+  public boolean isCompleteJobs() {
+    return completeJobs;
+  }
+
+  public void setCompleteJobs(final boolean completeJobs) {
+    this.completeJobs = completeJobs;
   }
 
   public String getPayloadPath() {

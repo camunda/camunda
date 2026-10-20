@@ -19,6 +19,7 @@ import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.client.api.search.response.SearchResponse;
 import io.camunda.zeebe.config.LoadTesterProperties;
 import io.camunda.zeebe.config.StarterProperties;
+import io.camunda.zeebe.config.StarterProperties.WorkloadModel;
 import io.camunda.zeebe.metrics.ConnectionMonitor;
 import io.camunda.zeebe.metrics.ProcessInstanceStartMeter;
 import io.camunda.zeebe.metrics.StarterLatencyMetricsDoc;
@@ -49,6 +50,7 @@ import java.util.UUID;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.Semaphore;
@@ -75,7 +77,7 @@ public class Starter implements CommandLineRunner {
   private static final Logger THROTTLED_LOGGER =
       new ThrottledLogger(LoggerFactory.getLogger(Starter.class), Duration.ofSeconds(5));
   private static final Logger LOG = LoggerFactory.getLogger(Starter.class);
-  private static final String TIMER_START_AT_VARIABLE = "timerStartAt";
+  private static final Duration RETRY_DELAY = Duration.ofSeconds(1);
   private static final long NANOS_PER_SECOND = Duration.ofSeconds(1).toNanos();
   private static final TypeReference<HashMap<String, Object>> VARIABLES_TYPE_REF =
       new TypeReference<>() {};
@@ -102,6 +104,7 @@ public class Starter implements CommandLineRunner {
   private Timer responseLatencyTimer;
   private Counter processInstancesSubmittedCounter;
   private Counter processInstancesSkippedCounter;
+  private Counter processInstancesRetriedCounter;
   private StarterResultMetrics resultMetrics;
   private ScheduledExecutorService executorService;
   private ProcessInstanceStartMeter processInstanceStartMeter;
@@ -153,6 +156,7 @@ public class Starter implements CommandLineRunner {
 
     processInstancesSubmittedCounter = registerSubmissionCounter("submitted");
     processInstancesSkippedCounter = registerSubmissionCounter("skipped");
+    processInstancesRetriedCounter = registerSubmissionCounter("retried");
     resultMetrics = new StarterResultMetrics(registry);
 
     Gauge.builder(StarterMetricsDoc.RUN_FINISHED.getName(), runFinished, AtomicInteger::doubleValue)
@@ -288,23 +292,22 @@ public class Starter implements CommandLineRunner {
   private ScheduledFuture<?> scheduleProcessInstanceCreation(
       final ScheduledExecutorService executorService, final CountDownLatch countDownLatch) {
 
-    final long intervalNanos = (long) (NANOS_PER_SECOND / starterCfg.getRatePerSecond());
+    final boolean burst = starterCfg.getWorkloadModel() == WorkloadModel.BURST;
+    final long intervalNanos =
+        burst
+            ? starterCfg.getRateDuration().toNanos()
+            : (long) (NANOS_PER_SECOND / starterCfg.getRatePerSecond());
+    final int requestsPerTick = burst ? (int) starterCfg.getRate() : 1;
     LOG.info(
-        "Creating an instance every {}ns (rate: {} per {})",
+        "Creating {} instance(s) every {}ns (rate: {} per {})",
+        requestsPerTick,
         intervalNanos,
         starterCfg.getRate(),
         starterCfg.getRateDuration());
 
     final String variablesString = payloadReader.readPayload(starterCfg.getPayloadPath());
-    final Map<String, Object> baseVariables = deserializeVariables(variablesString);
-    final var timerStartDelay = starterCfg.getTimerStartDelay();
-    if (timerStartDelay != null && timerStartDelay.isPositive()) {
-      final var timerStartAt =
-          Instant.now().plus(timerStartDelay).truncatedTo(ChronoUnit.SECONDS).toString();
-      LOG.info("Timers start at {}, passed to every instance as 'timerStartAt'", timerStartAt);
-      baseVariables.put(TIMER_START_AT_VARIABLE, timerStartAt);
-    }
-    final Map<String, Object> startVariables = Collections.unmodifiableMap(baseVariables);
+    final Map<String, Object> baseVariables =
+        Collections.unmodifiableMap(deserializeVariables(variablesString));
 
     final BooleanSupplier shouldContinue = createContinuationCondition();
     final Semaphore inFlight = new Semaphore(starterCfg.getMaxInFlightRequests());
@@ -321,61 +324,112 @@ public class Starter implements CommandLineRunner {
             return;
           }
 
-          if (!inFlight.tryAcquire()) {
-            processInstancesSkippedCounter.increment();
-            THROTTLED_LOGGER.debug(
-                "Skipping process instance creation, {} requests are already in flight",
-                starterCfg.getMaxInFlightRequests());
-            return;
+          for (int i = 0;
+              i < requestsPerTick && fatalError.get() == null && shouldContinue.getAsBoolean();
+              i++) {
+            sendStartRequest(executorService, inFlight, baseVariables, countDownLatch);
           }
-
-          final var startTime = System.nanoTime();
-          final CompletionStage<?> requestFuture;
-          try {
-            final var vars = new HashMap<>(startVariables);
-            vars.put(starterCfg.getBusinessKey(), businessKey.incrementAndGet());
-
-            if (starterCfg.isStartViaMessage()) {
-              requestFuture = startInstanceByMessagePublishing(vars);
-            } else if (starterCfg.isWithResults()) {
-              requestFuture = startInstanceWithAwaitingResult(starterCfg.getProcessId(), vars);
-            } else {
-              requestFuture = startInstance(startTime, starterCfg.getProcessId(), vars);
-            }
-            processInstancesSubmittedCounter.increment();
-          } catch (final Exception e) {
-            inFlight.release();
-            THROTTLED_LOGGER.error("Error on creating new process instance", e);
-            return;
-          } catch (final Error e) {
-            // An Error escaping a scheduleAtFixedRate task silently cancels all future runs, so
-            // stop the starter and fail the application instead.
-            LOG.error("Fatal error on creating new process instance, stopping the starter", e);
-            fatalError.set(e);
-            countDownLatch.countDown();
-            return;
-          }
-
-          requestFuture.whenComplete(
-              (noop, error) -> {
-                inFlight.release();
-                livenessIndicator.recordResult(error);
-                final long durationNanos = System.nanoTime() - startTime;
-                responseLatencyTimer.record(durationNanos, TimeUnit.NANOSECONDS);
-                resultMetrics.record(error);
-                if (error instanceof final StatusRuntimeException statusRuntimeException) {
-                  if (statusRuntimeException.getStatus().getCode() != Code.RESOURCE_EXHAUSTED) {
-                    THROTTLED_LOGGER.warn(
-                        "Error on creating new process instance with business key {}",
-                        businessKey.get(),
-                        error);
-                  }
-                }
-              });
         },
         0,
         intervalNanos,
         TimeUnit.NANOSECONDS);
+  }
+
+  private void sendStartRequest(
+      final ScheduledExecutorService executorService,
+      final Semaphore inFlight,
+      final Map<String, Object> baseVariables,
+      final CountDownLatch countDownLatch) {
+    if (!inFlight.tryAcquire()) {
+      processInstancesSkippedCounter.increment();
+      THROTTLED_LOGGER.debug(
+          "Skipping process instance creation, {} requests are already in flight",
+          starterCfg.getMaxInFlightRequests());
+      return;
+    }
+
+    final var vars = new HashMap<>(baseVariables);
+    vars.put(starterCfg.getBusinessKey(), businessKey.incrementAndGet());
+    if (attemptStart(executorService, inFlight, vars, countDownLatch)) {
+      processInstancesSubmittedCounter.increment();
+    }
+  }
+
+  /**
+   * Sends one start request. The caller holds an in-flight permit. It is released when the request
+   * is answered, or kept while a rejected request is retried.
+   *
+   * @return whether the request was sent
+   */
+  private boolean attemptStart(
+      final ScheduledExecutorService executorService,
+      final Semaphore inFlight,
+      final HashMap<String, Object> vars,
+      final CountDownLatch countDownLatch) {
+    final var startTime = System.nanoTime();
+    final CompletionStage<?> requestFuture;
+    try {
+      if (starterCfg.isStartViaMessage()) {
+        requestFuture = startInstanceByMessagePublishing(vars);
+      } else if (starterCfg.isWithResults()) {
+        requestFuture = startInstanceWithAwaitingResult(starterCfg.getProcessId(), vars);
+      } else {
+        requestFuture = startInstance(startTime, starterCfg.getProcessId(), vars);
+      }
+    } catch (final Exception e) {
+      inFlight.release();
+      THROTTLED_LOGGER.error("Error on creating new process instance", e);
+      return false;
+    } catch (final Error e) {
+      // An Error escaping a scheduleAtFixedRate task silently cancels all future runs, so
+      // stop the starter and fail the application instead.
+      LOG.error("Fatal error on creating new process instance, stopping the starter", e);
+      fatalError.set(e);
+      countDownLatch.countDown();
+      return false;
+    }
+
+    requestFuture.whenComplete(
+        (noop, error) -> {
+          livenessIndicator.recordResult(error);
+          final long durationNanos = System.nanoTime() - startTime;
+          responseLatencyTimer.record(durationNanos, TimeUnit.NANOSECONDS);
+          resultMetrics.record(error);
+          if (error != null && scheduleRetry(executorService, inFlight, vars, countDownLatch)) {
+            return;
+          }
+          inFlight.release();
+          if (error instanceof final StatusRuntimeException statusRuntimeException) {
+            if (statusRuntimeException.getStatus().getCode() != Code.RESOURCE_EXHAUSTED) {
+              THROTTLED_LOGGER.warn(
+                  "Error on creating new process instance with business key {}",
+                  businessKey.get(),
+                  error);
+            }
+          }
+        });
+    return true;
+  }
+
+  private boolean scheduleRetry(
+      final ScheduledExecutorService executorService,
+      final Semaphore inFlight,
+      final HashMap<String, Object> vars,
+      final CountDownLatch countDownLatch) {
+    if (!starterCfg.isRetryRejectedStarts()) {
+      return false;
+    }
+    try {
+      executorService.schedule(
+          () -> attemptStart(executorService, inFlight, vars, countDownLatch),
+          RETRY_DELAY.toMillis(),
+          TimeUnit.MILLISECONDS);
+      processInstancesRetriedCounter.increment();
+      return true;
+    } catch (final RejectedExecutionException e) {
+      // the starter is shutting down
+      return false;
+    }
   }
 
   private CompletionStage<ProcessInstanceEvent> startInstance(

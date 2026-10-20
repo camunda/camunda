@@ -23,6 +23,7 @@ import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.zeebe.config.LoadTesterProperties;
 import io.camunda.zeebe.config.StarterProperties;
+import io.camunda.zeebe.config.StarterProperties.WorkloadModel;
 import io.camunda.zeebe.metrics.ConnectionMonitor;
 import io.camunda.zeebe.metrics.StarterMetricsDoc;
 import io.camunda.zeebe.metrics.StarterMetricsDoc.StarterMetricKeyNames;
@@ -30,7 +31,7 @@ import io.camunda.zeebe.util.PayloadReader;
 import io.micrometer.core.instrument.Tag;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Duration;
-import java.time.Instant;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -155,63 +156,107 @@ class StarterTest {
 
   @Test
   @Timeout(value = 30, unit = TimeUnit.SECONDS)
-  void shouldPassTheSameTimerStartAtToEveryInstance() {
+  void shouldStartTheWholeRateAtOnceEachRateDurationInBurstWorkloadModel() {
     // given
     final var loaderClient = mockLoaderClient();
+    // the first burst is sent right away, the run ends when the second burst is due
     final var starterProperties = new StarterProperties();
-    starterProperties.setInstanceLimit(3);
-    starterProperties.setTimerStartDelay(Duration.ofMinutes(20));
+    starterProperties.setWorkloadModel(WorkloadModel.BURST);
+    starterProperties.setRate(5);
+    starterProperties.setRateDuration(Duration.ofSeconds(2));
+    starterProperties.setDurationLimit(1);
+    final var registry = new SimpleMeterRegistry();
 
     // when
-    final var before = Instant.now();
-    newStarter(loaderClient, starterProperties, new SimpleMeterRegistry()).run();
-    final var after = Instant.now();
+    newStarter(loaderClient, starterProperties, registry).run();
 
     // then
-    final var timerStartAts = capturedVariables(loaderClient);
-    assertThat(timerStartAts).hasSize(3);
-    assertThat(timerStartAts)
-        .describedAs("every instance gets the same value")
-        .allSatisfy(variables -> assertThat(variables).containsKey("timerStartAt"))
-        .extracting(variables -> variables.get("timerStartAt"))
-        .containsOnly(timerStartAts.get(0).get("timerStartAt"));
-    final var timerStartAt = Instant.parse((String) timerStartAts.get(0).get("timerStartAt"));
-    assertThat(timerStartAt)
-        .describedAs("the value is the start time plus the delay, truncated to seconds")
-        .isBetween(
-            before.plus(Duration.ofMinutes(20)).minusSeconds(1),
-            after.plus(Duration.ofMinutes(20)));
-    assertThat(timerStartAt.getNano()).isZero();
+    assertThat(submissions(registry, "submitted"))
+        .describedAs("only the first burst is sent before the run ends")
+        .isEqualTo(5);
   }
 
   @Test
   @Timeout(value = 30, unit = TimeUnit.SECONDS)
-  void shouldNotPassTimerStartAtWithoutTimerStartDelay() {
+  void shouldRetryRejectedStartUntilItIsAcceptedAndCountInstancesNotAttempts() {
     // given
-    final var loaderClient = mockLoaderClient();
+    final var loaderClient = mockLoaderClient(rejected(), CompletedFuture.of(acceptedInstance()));
     final var starterProperties = new StarterProperties();
-    starterProperties.setInstanceLimit(1);
+    starterProperties.setInstanceLimit(2);
+    starterProperties.setRetryRejectedStarts(true);
+    final var registry = new SimpleMeterRegistry();
 
     // when
-    newStarter(loaderClient, starterProperties, new SimpleMeterRegistry()).run();
+    newStarter(loaderClient, starterProperties, registry).run();
 
     // then
+    assertThat(submissions(registry, "submitted"))
+        .describedAs("a retry is not a new instance, so the limit counts the first attempts")
+        .isEqualTo(2);
+    assertThat(submissions(registry, "retried"))
+        .describedAs("the rejected start is retried once, then accepted")
+        .isEqualTo(1);
     assertThat(capturedVariables(loaderClient))
-        .allSatisfy(variables -> assertThat(variables).doesNotContainKey("timerStartAt"));
+        .describedAs("three attempts for two instances, the retry reuses the business key")
+        .hasSize(3)
+        .extracting(variables -> variables.get("businessKey"))
+        .containsOnly(1L, 2L);
   }
 
-  private static CamundaClient mockLoaderClient() {
-    final var loaderClient = mock(CamundaClient.class, RETURNS_DEEP_STUBS);
+  @Test
+  @Timeout(value = 30, unit = TimeUnit.SECONDS)
+  void shouldDropRejectedStartByDefault() {
+    // given
+    final var loaderClient = mockLoaderClient(rejected());
+    final var starterProperties = new StarterProperties();
+    starterProperties.setInstanceLimit(1);
+    final var registry = new SimpleMeterRegistry();
+
+    // when
+    newStarter(loaderClient, starterProperties, registry).run();
+
+    // then
+    assertThat(submissions(registry, "retried")).isZero();
+    assertThat(capturedVariables(loaderClient)).describedAs("only one attempt").hasSize(1);
+  }
+
+  private static ProcessInstanceEvent acceptedInstance() {
     final var instance = mock(ProcessInstanceEvent.class);
     when(instance.getProcessInstanceKey()).thenReturn(1L);
+    return instance;
+  }
+
+  private static CompletedFuture<ProcessInstanceEvent> rejected() {
+    return CompletedFuture.failed(new RuntimeException("rejected"));
+  }
+
+  private static double submissions(final SimpleMeterRegistry registry, final String outcome) {
+    final var counter =
+        registry
+            .find(StarterMetricsDoc.PROCESS_INSTANCES_SUBMISSIONS.getName())
+            .tag(StarterMetricKeyNames.OUTCOME.asString(), outcome)
+            .counter();
+    assertThat(counter).isNotNull();
+    return counter.count();
+  }
+
+  /** Answers the start requests in order, the last answer repeats. */
+  @SafeVarargs
+  private static CamundaClient mockLoaderClient(
+      final CompletedFuture<ProcessInstanceEvent>... answers) {
+    final var loaderClient = mock(CamundaClient.class, RETURNS_DEEP_STUBS);
     when(loaderClient
             .newCreateInstanceCommand()
             .bpmnProcessId(anyString())
             .latestVersion()
             .variables(any(Map.class))
             .send())
-        .thenReturn(CompletedFuture.of(instance));
+        .thenReturn(answers[0], Arrays.copyOfRange(answers, 1, answers.length));
     return loaderClient;
+  }
+
+  private static CamundaClient mockLoaderClient() {
+    return mockLoaderClient(CompletedFuture.of(acceptedInstance()));
   }
 
   private static Starter newStarter(
@@ -257,6 +302,12 @@ class StarterTest {
     static <T> CompletedFuture<T> of(final T value) {
       final var future = new CompletedFuture<T>();
       future.complete(value);
+      return future;
+    }
+
+    static <T> CompletedFuture<T> failed(final Throwable error) {
+      final var future = new CompletedFuture<T>();
+      future.completeExceptionally(error);
       return future;
     }
 
