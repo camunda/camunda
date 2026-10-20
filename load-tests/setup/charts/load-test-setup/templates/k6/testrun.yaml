@@ -22,7 +22,7 @@ spec:
     - namespace={{ $root.Release.Namespace }}
 
   starter:
-    image: europe-west1-docker.pkg.dev/camunda-benchmark/ghcrio/grafana/k6-operator:starter-v1.6.0
+    image: europe-west1-docker.pkg.dev/camunda-benchmark/ghcrio/grafana/k6-operator:starter-v1.7.0
     imagePullPolicy: IfNotPresent
 
   runner:
