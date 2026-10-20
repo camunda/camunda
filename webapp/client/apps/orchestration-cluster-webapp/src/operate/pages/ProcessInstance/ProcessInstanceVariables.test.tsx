@@ -555,6 +555,64 @@ describe('<ProcessInstanceVariables />', () => {
 			await expect.element(screen.getByText('There are no document variables')).not.toBeInTheDocument();
 		});
 
+		it('should keep loading documents while the filtered page is underfilled', async ({worker}) => {
+			worker.use(
+				mockQueryVariablesEndpoint({
+					schema: z.object({page: z.object({after: z.literal('cursor-1')})}),
+					successResponse: variablesResponse([
+						createVariable({name: 'second', value: JSON.stringify(documentReference('doc-2'))}),
+					]),
+					failureResponse: variablesResponse(
+						[
+							createVariable({name: 'first', value: JSON.stringify(documentReference('doc-1'))}),
+							...Array.from({length: 49}, (_, index) =>
+								createVariable({
+									name: `decoy-${String(index).padStart(2, '0')}`,
+									value: JSON.stringify('mentions camunda.document.type'),
+									variableKey: `${index}`,
+								}),
+							),
+						],
+						{totalItems: 50, hasMoreTotalItems: true, endCursor: 'cursor-1'},
+					),
+				}),
+			);
+			const screen = await renderVariables();
+			await expect.element(screen.getByTestId('variable-decoy-00')).toBeVisible();
+
+			await userEvent.click(screen.getByRole('button', {name: 'Documents'}));
+
+			await expect.element(screen.getByTestId('variable-first')).toBeVisible();
+			await expect.element(screen.getByTestId('variable-second')).toBeVisible();
+			await expect.element(screen.getByTestId('variable-decoy-00')).not.toBeInTheDocument();
+		});
+
+		it('should show an error when loading more document candidates fails', async ({worker}) => {
+			worker.use(
+				mockQueryVariablesEndpoint({
+					schema: z.object({page: z.object({after: z.literal('cursor-1')})}),
+					successResponse: HttpResponse.json(createProblemDetails({status: 500}), {status: 500}),
+					failureResponse: variablesResponse(
+						Array.from({length: 50}, (_, index) =>
+							createVariable({
+								name: `decoy-${String(index).padStart(2, '0')}`,
+								value: JSON.stringify('mentions camunda.document.type'),
+								variableKey: `${index}`,
+							}),
+						),
+						{totalItems: 50, hasMoreTotalItems: true, endCursor: 'cursor-1'},
+					),
+				}),
+			);
+			const screen = await renderVariables();
+			await expect.element(screen.getByTestId('variable-decoy-00')).toBeVisible();
+
+			await userEvent.click(screen.getByRole('button', {name: 'Documents'}));
+
+			await expect.element(screen.getByText('Variables could not be fetched')).toBeVisible();
+			await expect.element(screen.getByText('There are no document variables')).not.toBeInTheDocument();
+		});
+
 		it('should list the documents of a complete list instead of a previously fetched value', async ({worker}) => {
 			worker.use(
 				mockQueryVariablesEndpoint({

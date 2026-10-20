@@ -21,7 +21,7 @@ import {useDebouncedValue} from '#/shared/hooks/useDebouncedValue';
 import {useProcessInstanceElementSelection} from './useProcessInstanceElementSelection';
 import {useProcessInstancePage} from './useProcessInstancePage';
 import {useProcessInstanceModification} from './useProcessInstanceModification';
-import {variableQuery, variablesQuery} from './variables.queries';
+import {VARIABLES_PAGE_SIZE, variableQuery, variablesQuery} from './variables.queries';
 import {ViewFullVariableButton} from './ViewFullVariableButton';
 import {parseDocumentVariable} from './parseDocumentVariable';
 import {DocumentValueCell} from './DocumentValueCell';
@@ -81,13 +81,14 @@ const VariablesTable: React.FC<{processInstanceKey: string; scopeKey: string}> =
 		[data, documentsOnly],
 	);
 	const hasSearchTerm = searchTerm.trim() !== '';
-	const hasHiddenCandidates = documentsOnly && variables.length === 0 && hasNextPage;
+	const shouldLoadMoreDocuments =
+		documentsOnly && hasNextPage && error === null && variables.length < VARIABLES_PAGE_SIZE;
 
 	useEffect(() => {
-		if (hasHiddenCandidates && !isFetchingNextPage && !isPlaceholderData) {
+		if (shouldLoadMoreDocuments && !isFetchingNextPage && !isPlaceholderData) {
 			void fetchNextPage();
 		}
-	}, [hasHiddenCandidates, isFetchingNextPage, isPlaceholderData, fetchNextPage]);
+	}, [shouldLoadMoreDocuments, isFetchingNextPage, isPlaceholderData, fetchNextPage]);
 
 	return (
 		<>
@@ -124,7 +125,7 @@ const VariablesTable: React.FC<{processInstanceKey: string; scopeKey: string}> =
 			<DimmableResults $dimmed={isPlaceholderData}>
 				{error !== null ? (
 					<VariablesError error={error} />
-				) : !isLoading && !hasHiddenCandidates && (documentsOnly || hasSearchTerm) && variables.length === 0 ? (
+				) : !isLoading && !shouldLoadMoreDocuments && (documentsOnly || hasSearchTerm) && variables.length === 0 ? (
 					<EmptyMessageContainer>
 						<EmptyMessage
 							message={t(

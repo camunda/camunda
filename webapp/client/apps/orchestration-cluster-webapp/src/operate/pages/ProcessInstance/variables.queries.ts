@@ -63,4 +63,4 @@ function variableQuery(variableKey: string) {
 	});
 }
 
-export {variablesQuery, variableQuery};
+export {VARIABLES_PAGE_SIZE, variablesQuery, variableQuery};
