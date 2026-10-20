@@ -132,9 +132,19 @@ webapp/client/apps/orchestration-cluster-webapp/case-demo/start-camunda.sh
 # 3. Seed the demo data (run it again for more cases)
 node webapp/client/apps/orchestration-cluster-webapp/case-demo/seed.mjs
 
+# Or one case per diagram
+node webapp/client/apps/orchestration-cluster-webapp/case-demo/seed.mjs --single
+
 # 4. Start the webapp and open http://localhost:3000/tasklist/cases (user demo / demo)
 cd webapp/client && npm run dev:oc
 ```
+
+### A SaaS cluster
+
+The seed talks to a SaaS cluster with the client credentials of an API client. Set `CAMUNDA_URL` to the REST
+address of the cluster (`CAMUNDA_REST_ADDRESS` and `ZEEBE_REST_ADDRESS` work too), `CAMUNDA_CLIENT_ID`,
+`CAMUNDA_CLIENT_SECRET`, `CAMUNDA_OAUTH_URL` and `CAMUNDA_TOKEN_AUDIENCE`, then run the seed. `WEBAPP_URL` sets
+the base of the printed case links.
 
 ## Prototype conventions and deviations from the design
 
