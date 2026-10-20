@@ -18,7 +18,9 @@ import io.camunda.gateway.protocol.model.ProcessInstanceCreationStartInstruction
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceCreateRequest;
 import io.camunda.zeebe.util.Either;
 import java.util.List;
+import java.util.function.Consumer;
 import org.apache.commons.lang3.StringUtils;
+import org.jspecify.annotations.Nullable;
 import org.springframework.http.ProblemDetail;
 
 public class SimpleRequestMapper {
@@ -53,21 +55,28 @@ public class SimpleRequestMapper {
               .build();
     }
 
-    instruction.setVariables(request.getVariables());
-    instruction.setTenantId(request.getTenantId());
-    instruction.setOperationReference(request.getOperationReference());
+    // like the generated constructors, keep the field defaults for values the request leaves null
+    setIfPresent(request.getVariables(), instruction::setVariables);
+    setIfPresent(request.getTenantId(), instruction::setTenantId);
+    setIfPresent(request.getOperationReference(), instruction::setOperationReference);
     instruction.setStartInstructions(
         mapCreateProcessInstanceStartInstructions(request.getStartInstructions()));
     instruction.setRuntimeInstructions(
         mapCreateProcessInstanceRuntimeInstructions(request.getRuntimeInstructions()));
-    instruction.setAwaitCompletion(request.getAwaitCompletion());
-    instruction.setFetchVariables(request.getFetchVariables());
-    instruction.setRequestTimeout(request.getRequestTimeout());
-    instruction.setTags(request.getTags());
-    instruction.setBusinessId(request.getBusinessId());
+    setIfPresent(request.getAwaitCompletion(), instruction::setAwaitCompletion);
+    setIfPresent(request.getFetchVariables(), instruction::setFetchVariables);
+    setIfPresent(request.getRequestTimeout(), instruction::setRequestTimeout);
+    setIfPresent(request.getTags(), instruction::setTags);
+    setIfPresent(request.getBusinessId(), instruction::setBusinessId);
 
     return PROCESS_INSTANCE_MAPPER.toCreateProcessInstance(
         (ProcessInstanceCreationInstruction) instruction, multiTenancyEnabled);
+  }
+
+  private static <T> void setIfPresent(final @Nullable T value, final Consumer<T> setter) {
+    if (value != null) {
+      setter.accept(value);
+    }
   }
 
   private static List<ProcessInstanceCreationStartInstruction>

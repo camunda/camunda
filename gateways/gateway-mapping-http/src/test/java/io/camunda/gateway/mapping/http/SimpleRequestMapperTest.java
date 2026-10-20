@@ -269,6 +269,31 @@ class SimpleRequestMapperTest {
     }
 
     @Test
+    void shouldKeepDefaultsForSharedFieldsSetToNull() {
+      // given
+      final var request =
+          new ProcessInstanceCreationInstruction().processDefinitionId("process-id");
+      request.setVariables(null);
+      request.setAwaitCompletion(null);
+      request.setFetchVariables(null);
+      request.setRequestTimeout(null);
+      request.setTags(null);
+
+      // when
+      final Either<ProblemDetail, ProcessInstanceCreateRequest> result =
+          SimpleRequestMapper.toCreateProcessInstance(request, false);
+
+      // then
+      assertThat(result.isRight()).isTrue();
+      final var mapped = result.get();
+      assertThat(mapped.variables()).isEmpty();
+      assertThat(mapped.awaitCompletion()).isFalse();
+      assertThat(mapped.fetchVariables()).isEmpty();
+      assertThat(mapped.requestTimeout()).isZero();
+      assertThat(mapped.tags()).isEmpty();
+    }
+
+    @Test
     void shouldMapById() {
       // given
       final var request =
