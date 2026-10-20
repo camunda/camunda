@@ -116,7 +116,7 @@ spec:
             - name: CAMUNDA_CLIENT_AUTH_METHOD
               value: "oidc"
             - name: LOAD_TESTER_STARTER_RATE
-              value: "300"
+              value: "50"
             - name: LOAD_TESTER_STARTER_PROCESS_ID
               value: "benchmark"
             - name: LOAD_TESTER_STARTER_BPMN_XML_PATH
