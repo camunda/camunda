@@ -110,7 +110,10 @@ const ProcessInstanceDetails: React.FC = () => {
 		...elementAgentInstancesQuery({
 			processInstanceKey: processInstance.processInstanceKey,
 			elementId: agentElementId ?? '',
-			elementInstanceKey: isSelectedInstanceMultiInstanceBody ? null : selectedElementInstanceKey,
+			elementInstanceKey:
+				isSelectedInstanceMultiInstanceBody || resolvedElementType === 'MULTI_INSTANCE_BODY'
+					? null
+					: selectedElementInstanceKey,
 		}),
 		enabled: Boolean(agentElementId),
 		refetchInterval: isRunning ? POLLING_INTERVAL_MS : false,

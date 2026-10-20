@@ -370,6 +370,26 @@ describe('<ProcessInstanceDetails />', () => {
 			await expect.element(screen.getByText(ELEMENT_INSTANCE_KEY)).toBeVisible();
 		});
 
+		it('should filter on the element id only for a multi-instance body selected by its key', async ({worker}) => {
+			worker.use(
+				mockQueryAgentInstancesEndpoint({
+					schema: agentRequestSchema(),
+					successResponse: agentsResponse(),
+					failureResponse: emptyResponse(),
+				}),
+				...handlers({
+					elementInstance: createElementInstance({
+						elementInstanceKey: ELEMENT_INSTANCE_KEY,
+						elementId: 'service-task',
+						type: 'MULTI_INSTANCE_BODY',
+					}),
+				}),
+			);
+			const screen = await renderDetails({search: `?elementInstanceKey=${ELEMENT_INSTANCE_KEY}`});
+
+			await expect.element(screen.getByRole('heading', {name: 'Agent Instance'})).toBeVisible();
+		});
+
 		it('should show the agent details when several element instances are selected', async ({worker}) => {
 			worker.use(
 				mockQueryElementInstancesEndpoint({
