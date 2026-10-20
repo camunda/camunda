@@ -93,7 +93,7 @@ JSON of a part, as in docs/14-history-manifests.md:
 
 ```json
 {"version":1,"clusterId":"c","physicalTenantId":"default","historyId":"…","createdAt":"2026-10-20T12:00:00Z",
- "partitions":{"3":{"sourceHistoryId":null,"index":0,"position":0}}}
+ "partitions":{"3":{"sourceHistoryId":null,"index":0,"position":-1}}}
 ```
 
 ## The upload floor
@@ -116,6 +116,44 @@ compaction stops at it.
 - Publishers `POST` it to the service's `/v1/uploads`, best effort.
 - Workers read `GET /v1/notifications?log={cluster}/{tenant}/{partition}&log=…` as server-sent events:
   `event: upload` with the notice as `data`.
+
+## Segments in the store
+
+- A publisher's segments of one history don't overlap, but two leaders can upload the same
+  entries: a new leader resumes after the floor it knows, which can lag the old leader's uploads.
+  Both start at the same index, as the floor only ever stands at a segment's last index, and hold
+  the same bytes for the same index, as both read committed entries.
+- A rollup (level 1) holds the entries of consecutive level-0 segments, from the first one's first
+  index to the last one's last index. Maintenance writes it, then deletes every level-0 segment of
+  that history within its range. If two rollups overlap, it deletes the one with the later ULID.
+- So a reader looking for the entry at index `n` takes, among the segments that contain `n`, the
+  one with the highest level, then the highest last index. A segment can disappear while a reader
+  reads it; the reader lists again.
+- The ULID in a name holds the upload time, which ages a segment.
+
+## Retention markers
+
+`{cluster}/{tenant}/{partition}/retention/{ulid}.json`, written by maintenance before it deletes
+anything; the latest by ULID applies:
+
+```json
+{"version":1,"history":"…","firstIndex":1096704,"firstPosition":1052032,"createdAt":"2026-10-20T12:00:00Z"}
+```
+
+It names the first entry that is kept, in the then current history. A reader that needs an earlier
+entry on the same path reports a gap up to it, and goes on from it.
+
+## Service
+
+A plain JDK `HttpServer` with JSON bodies. This deviates from the plan's Spring Boot: the service
+needs no configuration machinery.
+
+| Endpoint | What |
+|---|---|
+| `POST /v1/uploads` | An `UploadNotice`. Passes it on to the workers subscribed to its log, and to the configured peers unless the request has the header `X-Event-Plane-Forwarded: true`. Answers 202. |
+| `GET /v1/notifications?log={c}/{t}/{p}&log=…` | Server-sent events: `event: upload`, with the notice's JSON on one `data:` line. A comment line `: keep-alive` every 15 seconds. |
+| `GET /v1/groups/{group}` | `{"group":"g","workers":[{"worker":"w-…","beat":42}],"cursors":[{"log":"c/t/p","history":"…","index":1,"position":1,"worker":"w-…","newestIndex":40,"lag":39}]}`. `newestIndex` is the last index of the newest segment of the cursor's history that the service knows of, from notices or a listing. |
+| `GET /v1/credentials` | A stub: the store's configuration, as a worker would use it. |
 
 ## Consumer group objects
 
@@ -140,8 +178,19 @@ Written by workers with plain PUTs, read by workers and the service:
 publisher on its first start:
 
 ```json
-{"history":"…","createdAt":"2026-10-20T12:00:00Z","source":"…","index":1096704,"position":1052032}
+{"history":"…","createdAt":"2026-10-20T12:00:00Z","source":null,"index":1096704,"position":1052032}
 ```
+
+- The operator names the new history (`zeebe.broker.experimental.eventPlane.restoreHistory`), so
+  that every broker's restore agrees on it. Index and position are the checkpoint's: the last
+  restored entry, which holds the checkpoint record alone.
+- A restore from a backup doesn't know the source, the history the backup was taken in, and leaves
+  it null. The publisher then takes it from the restored floor, the upload floor in the backup's
+  snapshot. Without a floor, the source is the tenant's first history if it has a part for the
+  partition, and else there is none (`Base.NOTHING`). A restore from the bucket knows the source,
+  and names it.
+- Once the floor names the new history, the publisher reads the history's part from the store, as
+  it does without a file.
 
 ## Conventions for whoever writes code
 
