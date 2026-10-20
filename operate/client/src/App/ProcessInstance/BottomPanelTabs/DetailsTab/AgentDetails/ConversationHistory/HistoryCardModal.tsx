@@ -6,9 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Button} from '@carbon/react';
-import {useEffect, useRef, useState} from 'react';
-import {ArrowLeft, ArrowRight} from '@carbon/react/icons';
+import {useEffect, useMemo, useRef, useState} from 'react';
 import type {
   AgentInstanceHistoryItem,
   AgentTool,
@@ -23,11 +21,13 @@ import {
 } from '../ConversationMessage/StructuredValue/format';
 import {ToolResultModal} from '../ConversationMessage/ToolResultMessage/ToolResultModal';
 import {MessageDetailsModal} from '../ConversationMessage/MessageDetailsModal';
-import {HistoryNavigation} from './styled';
+import {HistoryContents} from './HistoryContents';
+import {getHistorySteps} from './historySteps';
 import type {ModalView} from '../ConversationMessage/ModalView';
 
 type Props = {
   item: AgentInstanceHistoryItem;
+  cards: AgentInstanceHistoryItem[];
   availableTools: AgentTool[];
   position: number;
   total: number;
@@ -36,6 +36,7 @@ type Props = {
   loading: boolean;
   loadError: boolean;
   moreUnloaded: boolean;
+  onSelect: (key: string) => void;
   onPrevious: () => void;
   onNext: () => void;
   onClose: () => void;
@@ -43,6 +44,7 @@ type Props = {
 
 const HistoryCardModal: React.FC<Props> = ({
   item,
+  cards,
   availableTools,
   position,
   total,
@@ -51,6 +53,7 @@ const HistoryCardModal: React.FC<Props> = ({
   loading,
   loadError,
   moreUnloaded,
+  onSelect,
   onPrevious,
   onNext,
   onClose,
@@ -82,14 +85,17 @@ const HistoryCardModal: React.FC<Props> = ({
           'input, textarea, select, [contenteditable="true"], .monaco-editor',
         ) ||
         (target !== document.body &&
-          target.closest('[role="dialog"]') !== dialog)
+          target.closest('[role="dialog"]') !== dialog) ||
+        // Content regions keep Arrow Up/Down for scrolling.
+        (target.closest('.cds--modal-content') &&
+          !target.closest('[aria-label="History contents"]'))
       ) {
         return;
       }
-      if (event.key === 'ArrowLeft' && hasEarlier) {
+      if (event.key === 'ArrowUp' && hasEarlier) {
         event.preventDefault();
         onPrevious();
-      } else if (event.key === 'ArrowRight' && hasLater) {
+      } else if (event.key === 'ArrowDown' && hasLater) {
         event.preventDefault();
         onNext();
       }
@@ -103,37 +109,23 @@ const HistoryCardModal: React.FC<Props> = ({
     : item.role === 'USER'
       ? 'User message'
       : 'Assistant message';
-  const navigation = (
-    <HistoryNavigation
+  const steps = useMemo(() => getHistorySteps(cards), [cards]);
+  const contents = (
+    <HistoryContents
       ref={contentRef}
-      aria-label="Conversation navigation"
-      data-modal-primary-focus
-      tabIndex={-1}
-    >
-      <Button
-        kind="ghost"
-        size="sm"
-        aria-label="Previous card"
-        disabled={!hasEarlier || loading}
-        onClick={onPrevious}
-      >
-        <ArrowLeft />
-      </Button>
-      <span role="status">
-        {loading
-          ? 'Loading history…'
-          : `${position} / ${total}${moreUnloaded ? '+' : ''}`}
-      </span>
-      <Button
-        kind="ghost"
-        size="sm"
-        aria-label="Next card"
-        disabled={!hasLater || loading}
-        onClick={onNext}
-      >
-        <ArrowRight />
-      </Button>
-    </HistoryNavigation>
+      steps={steps}
+      selectedKey={item.historyItemKey}
+      position={position}
+      total={total}
+      moreUnloaded={moreUnloaded}
+      hasEarlier={hasEarlier}
+      hasLater={hasLater}
+      loading={loading}
+      loadError={loadError}
+      onSelect={onSelect}
+      onPrevious={onPrevious}
+      onNext={onNext}
+    />
   );
   if (toolCall) {
     return (
@@ -148,16 +140,7 @@ const HistoryCardModal: React.FC<Props> = ({
         input={toolCall.arguments}
         content={item.content}
         onClose={onClose}
-        navigation={
-          <>
-            {navigation}
-            {loadError && (
-              <span role="alert">
-                Could not load more history. Use the arrow to retry.
-              </span>
-            )}
-          </>
-        }
+        contents={contents}
       />
     );
   }
@@ -181,16 +164,7 @@ const HistoryCardModal: React.FC<Props> = ({
       language="markdown"
       content={content}
       onClose={onClose}
-      navigation={
-        <>
-          {navigation}
-          {loadError && (
-            <span role="alert">
-              Could not load more history. Use the arrow to retry.
-            </span>
-          )}
-        </>
-      }
+      contents={contents}
       attachments={
         <>
           <DocumentContent

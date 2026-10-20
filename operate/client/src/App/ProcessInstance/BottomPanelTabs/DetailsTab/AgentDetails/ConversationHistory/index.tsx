@@ -283,6 +283,7 @@ const ConversationHistory: React.FC<ConversationHistoryProps> = ({
       {selectedCard && !isPlaceholderData && (
         <HistoryCardModal
           item={selectedCard}
+          cards={cards}
           availableTools={availableTools}
           position={selectedIndex + 1}
           total={cards.length}
@@ -296,6 +297,7 @@ const ConversationHistory: React.FC<ConversationHistoryProps> = ({
           loading={isFetchingNextPage}
           loadError={isFetchNextPageError}
           moreUnloaded={hasNextPage}
+          onSelect={openCard}
           onPrevious={() => navigate(-1)}
           onNext={() => navigate(1)}
           onClose={closeCard}

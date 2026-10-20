@@ -8,6 +8,7 @@
 
 import styled from 'styled-components';
 import {Modal} from '@carbon/react';
+import {ContentsPane} from '../../styled';
 
 const EDITOR_BASIS = '400px';
 const COLUMN_GAP = '1rem'; // --cds-spacing-05
@@ -66,7 +67,7 @@ const ToolModal = styled(Modal)`
     min-block-size: 0;
   }
 
-  .cds--modal-content > ${Columns} {
+  .cds--modal-content > ${Columns}, ${ContentsPane} > ${Columns} {
     flex: 1 1 0;
   }
 `;

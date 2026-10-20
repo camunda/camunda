@@ -121,7 +121,102 @@ const HistoryNavigation = styled.nav`
   }
 `;
 
+const STEP_COLORS = {
+  USER: 'var(--cds-status-blue)',
+  ASSISTANT: 'var(--cds-status-purple)',
+  TOOL_RESULT: 'var(--cds-text-secondary)',
+};
+
+const ContentsRail = styled.nav`
+  display: flex;
+  flex-direction: column;
+  min-inline-size: 0;
+  max-block-size: 70vh;
+  border-inline-end: 1px solid var(--cds-border-subtle-01);
+`;
+
+const ContentsHeader = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--cds-spacing-02);
+  padding-block-end: var(--cds-spacing-03);
+  padding-inline-end: var(--cds-spacing-03);
+  font-size: var(--cds-label-01-font-size);
+`;
+
+const ContentsList = styled.ol`
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  min-block-size: 0;
+  overflow-y: auto;
+`;
+
+const ContentsStep = styled.button<{$role: keyof typeof STEP_COLORS}>`
+  display: grid;
+  grid-template-columns: 1.5rem 1rem minmax(0, 1fr);
+  gap: var(--cds-spacing-03);
+  align-items: start;
+  inline-size: 100%;
+  padding: var(--cds-spacing-03) var(--cds-spacing-03);
+  border: 0;
+  border-inline-start: 3px solid transparent;
+  background: transparent;
+  color: var(--cds-text-primary);
+  text-align: start;
+  cursor: pointer;
+
+  &:hover {
+    background: var(--cds-layer-hover-01);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--cds-focus);
+    outline-offset: -2px;
+  }
+
+  &[aria-current='step'] {
+    background: var(--cds-layer-selected-01);
+    border-inline-start-color: ${({$role}) => STEP_COLORS[$role]};
+  }
+
+  svg {
+    color: ${({$role}) => STEP_COLORS[$role]};
+    margin-block-start: 2px;
+  }
+
+  .number {
+    color: var(--cds-text-secondary);
+    font-size: var(--cds-label-01-font-size);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .text {
+    display: flex;
+    flex-direction: column;
+    min-inline-size: 0;
+    overflow-wrap: anywhere;
+    font-size: var(--cds-body-compact-01-font-size);
+  }
+
+  .kind {
+    color: ${({$role}) => STEP_COLORS[$role]};
+    font-size: var(--cds-label-01-font-size);
+  }
+
+  .detail {
+    color: var(--cds-text-secondary);
+    font-size: var(--cds-label-01-font-size);
+  }
+`;
+
 export {
+  ContentsHeader,
+  ContentsList,
+  ContentsRail,
+  ContentsStep,
   HistoryNavigation,
   ConversationContainer,
   Messages,

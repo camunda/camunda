@@ -18,7 +18,12 @@ import {StructuredValue} from '../../StructuredValue';
 import {EvidenceCards} from '../../EvidenceCard';
 import {getContentEvidence} from '../../EvidenceCard/evidence';
 import {DocumentContent} from '../../MessageAttachments/DocumentContent';
-import {ModalAttachments, ModalToolbar} from '../../styled';
+import {
+  ContentsLayout,
+  ContentsPane,
+  ModalAttachments,
+  ModalToolbar,
+} from '../../styled';
 import {
   ModalViewSwitcher,
   SourceEditor,
@@ -42,6 +47,7 @@ type ToolResultModalProps = ModalViewProps & {
   content: ContentItem[];
   onClose: () => void;
   navigation?: ReactNode;
+  contents?: ReactNode;
 };
 
 const ToolResultModal: React.FC<ToolResultModalProps> = ({
@@ -51,6 +57,7 @@ const ToolResultModal: React.FC<ToolResultModalProps> = ({
   content,
   onClose,
   navigation,
+  contents,
   view,
   onViewChange,
 }) => {
@@ -68,24 +75,8 @@ const ToolResultModal: React.FC<ToolResultModalProps> = ({
     ? JSON.stringify(content, null, 2)
     : result?.copyValue;
 
-  return (
-    <ToolModal
-      open
-      size="lg"
-      passiveModal
-      onRequestClose={onClose}
-      modalHeading={
-        navigation ? (
-          <span className="agent-history-heading">
-            <span>{`Tool call: ${toolName}`}</span>
-            {navigation}
-          </span>
-        ) : (
-          `Tool call: ${toolName}`
-        )
-      }
-      className={navigation ? 'agent-history-modal' : undefined}
-    >
+  const body = (
+    <>
       <ModalToolbar>
         <ModalViewSwitcher view={modalView} onChange={setModalView} />
       </ModalToolbar>
@@ -159,6 +150,35 @@ const ToolResultModal: React.FC<ToolResultModalProps> = ({
             showAll
           />
         </ModalAttachments>
+      )}
+    </>
+  );
+
+  return (
+    <ToolModal
+      open
+      size="lg"
+      passiveModal
+      onRequestClose={onClose}
+      modalHeading={
+        navigation ? (
+          <span className="agent-history-heading">
+            <span>{`Tool call: ${toolName}`}</span>
+            {navigation}
+          </span>
+        ) : (
+          `Tool call: ${toolName}`
+        )
+      }
+      className={navigation || contents ? 'agent-history-modal' : undefined}
+    >
+      {contents ? (
+        <ContentsLayout>
+          {contents}
+          <ContentsPane>{body}</ContentsPane>
+        </ContentsLayout>
+      ) : (
+        body
       )}
     </ToolModal>
   );
