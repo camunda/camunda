@@ -1179,7 +1179,7 @@ before them its parent's up to the takeover point. The commit entry `TIMELINE_ST
 
 | Field | Value |
 |---|---|
-| `startedAt` | the `TIMELINE_STARTED` event's record timestamp (epoch millis), so the bytes stay a pure function of the event (I4) |
+| `startedAt` | the archiver's clock (epoch millis) when it wrote `START_TIMELINE`, carried by the command and copied into the event, so it is replicated and the bytes stay a pure function of the event (I4); the event's own record timestamp cannot be used, as the processor does not know it (`recordTimestamp` of commit entries is -1) |
 | `parentIndex` | the Raft index of the last entry this timeline shares with its parent, `-1` if unknown or no parent |
 | `parentPosition` | the position of the last record it shares with its parent (the takeover checkpoint's position), `-1` if unknown or no parent |
 
@@ -1192,10 +1192,10 @@ before them its parent's up to the takeover point. The commit entry `TIMELINE_ST
 - **The first timeline, a fork (`.f<seq>`) and a classic restore (`.b<backupId>`):** -1/-1. The event
   plane treats a fork as taking over its parent up to the record before the fork's first archived
   position (known limit: a rolled-back state may have diverged earlier).
-- `LogArchiveRecord` gets `parentIndex`, `parentPosition` (long, default -1) for `START_TIMELINE`/
-  `TIMELINE_STARTED`; the meta does not store them. Commit entry: `startedAt`, `parentIndex`,
-  `parentPosition` only for `TIMELINE_STARTED`, after `parentTimelineId`; `startedAt` is the same
-  value as `recordTimestamp` and is written so that `timeline.json` is self-contained. `timeline.json`:
+- `LogArchiveRecord` gets `startedAt`, `parentIndex`, `parentPosition` (long, default -1) for
+  `START_TIMELINE`/`TIMELINE_STARTED`; the meta does not store them. A command without `startedAt`
+  (-1) stays valid. Commit entry: `startedAt`, `parentIndex`,
+  `parentPosition` only for `TIMELINE_STARTED`, after `parentTimelineId`. `timeline.json`:
   `formatVersion, timelineId, partitionId, parentTimelineId, startIndex, startedSeq, startedAt,
   parentIndex, parentPosition`. Readers accept files without the new fields (written before).
 
