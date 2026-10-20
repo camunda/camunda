@@ -55,6 +55,7 @@ public final class ClusterConfigurationManagerService
   private final ClusterConfigurationManagerImpl clusterConfigurationManager;
   private final ClusterConfigurationGossiper clusterConfigurationGossiper;
   private final ClusterMembershipService memberShipService;
+  private final ClusterConfigurationGossiperConfig gossiperConfig;
   private final boolean isCoordinator;
   private final PersistedClusterConfiguration persistedClusterConfiguration;
   private final Path configurationFile;
@@ -75,6 +76,7 @@ public final class ClusterConfigurationManagerService
       final MeterRegistry meterRegistry) {
     this.clusterChangeExecutor = clusterChangeExecutor;
     this.memberShipService = memberShipService;
+    gossiperConfig = config;
     topologyMetrics = new TopologyMetrics(meterRegistry);
     topologyManagerMetrics = new TopologyManagerMetrics(meterRegistry);
     try {
@@ -131,7 +133,8 @@ public final class ClusterConfigurationManagerService
                 clusterConfigurationGossiper,
                 otherKnownMembers,
                 managerActor,
-                clusterConfigurationGossiper::queryClusterConfiguration))
+                clusterConfigurationGossiper::queryClusterConfiguration,
+                gossiperConfig.bootstrapTimeout()))
         .orThen(
             new GossipInitializer(
                 clusterConfigurationGossiper,
@@ -156,7 +159,8 @@ public final class ClusterConfigurationManagerService
                 clusterConfigurationGossiper,
                 otherKnownMembers,
                 managerActor,
-                clusterConfigurationGossiper::queryClusterConfiguration))
+                clusterConfigurationGossiper::queryClusterConfiguration,
+                gossiperConfig.bootstrapTimeout()))
         .orThen(new StaticInitializer(staticConfiguration))
         .andThen(
             new ExporterStateInitializer(

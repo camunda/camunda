@@ -50,7 +50,10 @@ final class SnapshotAfterScalingTest {
                 final ConfigManagerCfg configManagerCfg =
                     new ConfigManagerCfg(
                         new ClusterConfigurationGossiperConfig(
-                            Duration.ofSeconds(1), DEFAULT_SYNC_REQUEST_TIMEOUT, 3));
+                            Duration.ofSeconds(1),
+                            DEFAULT_SYNC_REQUEST_TIMEOUT,
+                            3,
+                            Duration.ofSeconds(5)));
                 final ClusterCfg clusterCfg = broker.brokerConfig().getCluster();
                 clusterCfg.setConfigManager(configManagerCfg);
               })

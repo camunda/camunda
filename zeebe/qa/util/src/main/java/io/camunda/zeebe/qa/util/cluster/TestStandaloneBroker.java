@@ -26,7 +26,9 @@ import io.camunda.security.configuration.ConfiguredUser;
 import io.camunda.security.configuration.InitializationConfiguration;
 import io.camunda.security.entity.AuthenticationMethod;
 import io.camunda.zeebe.broker.BrokerModuleConfiguration;
+import io.camunda.zeebe.broker.system.configuration.ConfigManagerCfg;
 import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
+import io.camunda.zeebe.dynamic.config.gossip.ClusterConfigurationGossiperConfig;
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.camunda.zeebe.qa.util.actuator.BrokerHealthActuator;
 import io.camunda.zeebe.qa.util.actuator.GatewayHealthActuator;
@@ -80,6 +82,13 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
     config.getCluster().getMembership().setFailureTimeout(Duration.ofSeconds(5));
     config.getCluster().getMembership().setProbeInterval(Duration.ofMillis(100));
     config.getCluster().getMembership().setSyncInterval(Duration.ofMillis(500));
+
+    config
+        .getCluster()
+        .setConfigManager(
+            new ConfigManagerCfg(
+                new ClusterConfigurationGossiperConfig(
+                    Duration.ofMillis(500), null, null, Duration.ofSeconds(5))));
 
     config.getExperimental().getConsistencyChecks().setEnableForeignKeyChecks(true);
     config.getExperimental().getConsistencyChecks().setEnablePreconditions(true);
