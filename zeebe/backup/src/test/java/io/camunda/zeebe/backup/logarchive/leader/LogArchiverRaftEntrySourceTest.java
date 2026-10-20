@@ -29,6 +29,8 @@ import org.junit.jupiter.api.Test;
 
 final class LogArchiverRaftEntrySourceTest {
 
+  private static final long TIMESTAMP = 1_700_000_000_123L;
+
   private final RaftLogReader reader = mock(RaftLogReader.class);
   private final LogArchiverRaftEntrySource source = new LogArchiverRaftEntrySource(reader);
 
@@ -90,6 +92,36 @@ final class LogArchiverRaftEntrySourceTest {
     assertThat(next.frame().asqn()).isEqualTo(-1);
   }
 
+  @Test
+  void shouldReadTheLatestRecordTimestampOfApplicationEntries() {
+    // given - the batch's records are all written with the batch's timestamp
+    final var entry = applicationEntry(ValueType.JOB, ValueType.LOG_ARCHIVE);
+    when(reader.next()).thenReturn(entry);
+
+    // when
+    final var next = source.next();
+
+    // then
+    assertThat(next.latestTimestamp()).isEqualTo(TIMESTAMP);
+  }
+
+  @Test
+  void shouldHaveNoTimestampForNonApplicationEntries() {
+    // given
+    final var entry = mock(IndexedRaftLogEntry.class);
+    when(entry.index()).thenReturn(5L);
+    when(entry.term()).thenReturn(2L);
+    when(entry.isApplicationEntry()).thenReturn(false);
+    when(entry.getReplicatableJournalRecord()).thenReturn(journalRecord(5, 2));
+    when(reader.next()).thenReturn(entry);
+
+    // when
+    final var next = source.next();
+
+    // then
+    assertThat(next.latestTimestamp()).isEqualTo(-1);
+  }
+
   private static IndexedRaftLogEntry applicationEntry(final ValueType... valueTypes) {
     final List<LogAppendEntry> records =
         Arrays.stream(valueTypes)
@@ -105,7 +137,7 @@ final class LogArchiverRaftEntrySourceTest {
     final long firstPosition = 100;
     final var data =
         SequencedBatchSerializer.serializeBatch(
-            new SequencedBatch(1L, firstPosition, -1L, records));
+            new SequencedBatch(TIMESTAMP, firstPosition, -1L, records));
     final var entry = mock(IndexedRaftLogEntry.class);
     when(entry.index()).thenReturn(7L);
     when(entry.term()).thenReturn(3L);

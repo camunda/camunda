@@ -14,7 +14,9 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import io.camunda.zeebe.backup.logarchive.format.LogArchiveFrame;
-import io.camunda.zeebe.backup.logarchive.format.LogObjectDecoder;
+import io.camunda.zeebe.backup.logarchive.format.SegmentIdentity;
+import io.camunda.zeebe.backup.logarchive.format.SegmentV1Decoder;
+import io.camunda.zeebe.backup.logarchive.format.TestJournalRecords;
 import io.camunda.zeebe.backup.logarchive.leader.LogArchiverTimeline.Effective;
 import io.camunda.zeebe.backup.logarchive.model.LogArchiveKeys;
 import io.camunda.zeebe.backup.logarchive.state.LogArchiveMeta;
@@ -34,7 +36,6 @@ import java.nio.file.Path;
 import java.security.MessageDigest;
 import java.time.Duration;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.HexFormat;
 import java.util.LinkedHashMap;
@@ -54,10 +55,12 @@ final class LogArchiverTest {
 
   private static final int PARTITION = 2;
   private static final long TERM = 7;
+  private static final String CLUSTER_ID = "cluster-1";
+  private static final String TENANT_ID = "tenant-1";
   private static final String TIMELINE = "tl-0";
   private static final String PREFIX = LogArchiveKeys.partitionPrefix(TIMELINE, PARTITION);
   private static final int RECORD_BYTES = 100;
-  private static final int FRAME_BYTES = 6 * Long.BYTES + Integer.BYTES + RECORD_BYTES;
+  private static final int FRAME_BYTES = 1 + 2 * Long.BYTES + Integer.BYTES + RECORD_BYTES;
   private static final Duration CUT_INTERVAL = Duration.ofSeconds(2);
   private static final Duration IDLE_CUT_INTERVAL = Duration.ofSeconds(60);
 
@@ -304,11 +307,19 @@ final class LogArchiverTest {
     assertThat(object.getSizeBytes()).isEqualTo(bytes.length);
     assertThat(object.getSha256()).isEqualTo(sha256(bytes));
 
-    final var decoded = LogObjectDecoder.decode(bytes);
-    assertThat(decoded.header().timelineId()).isEqualTo(TIMELINE);
-    assertThat(decoded.header().partitionId()).isEqualTo(PARTITION);
-    assertThat(decoded.header().term()).isEqualTo(TERM);
-    assertThat(decoded.frames()).containsExactly(source.frame(1), source.frame(2), source.frame(3));
+    assertThat(key).endsWith(".seg");
+    assertThat(object.getBodyLength()).isPositive().isLessThan(bytes.length);
+
+    final var decoded = SegmentV1Decoder.decode(bytes);
+    assertThat(decoded.identity()).isEqualTo(new SegmentIdentity(CLUSTER_ID, TENANT_ID, PARTITION));
+    assertThat(decoded.footer().bodyLength()).isEqualTo(object.getBodyLength());
+    assertThat(decoded.footer().latestTimestamp()).isEqualTo(1_003);
+    assertThat(decoded.frames())
+        .extracting(f -> f.index(), f -> f.asqn(), f -> f.checksum(), f -> f.serializedRecord())
+        .containsExactly(
+            tuple(1L, 10L, 1L, source.frame(1).serializedRecord()),
+            tuple(2L, 20L, 2L, source.frame(2).serializedRecord()),
+            tuple(3L, 30L, 3L, source.frame(3).serializedRecord()));
   }
 
   @Test
@@ -911,6 +922,8 @@ final class LogArchiverTest {
     archiver =
         new LogArchiver(
             PARTITION,
+            CLUSTER_ID,
+            TENANT_ID,
             TERM,
             store,
             writer,
@@ -1015,9 +1028,8 @@ final class LogArchiverTest {
     }
 
     LogArchiveFrame frame(final long index) {
-      final var bytes = new byte[RECORD_BYTES];
-      Arrays.fill(bytes, (byte) index);
       final long lowest = index * 10;
+      final var bytes = TestJournalRecords.recordData(index, lowest, RECORD_BYTES, (byte) index);
       return new LogArchiveFrame(index, TERM - 1, lowest, lowest, lowest + 2, index, bytes);
     }
 
@@ -1039,7 +1051,7 @@ final class LogArchiverTest {
     @Override
     public LogArchiverEntry next() {
       final long index = nextIndex++;
-      return new LogArchiverEntry(frame(index), ownIndexes.contains(index));
+      return new LogArchiverEntry(frame(index), ownIndexes.contains(index), 1_000 + index);
     }
 
     @Override

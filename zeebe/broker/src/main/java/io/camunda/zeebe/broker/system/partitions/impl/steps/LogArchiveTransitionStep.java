@@ -147,6 +147,8 @@ public final class LogArchiveTransitionStep implements PartitionTransitionStep {
     final var archiver =
         new LogArchiver(
             partitionId,
+            resolveClusterId(context, cfg),
+            context.partitionId().group(),
             term,
             store,
             logStream.newLogStreamWriter(),
@@ -201,6 +203,24 @@ public final class LogArchiveTransitionStep implements PartitionTransitionStep {
     return installed;
   }
 
+  /**
+   * The cluster id of the event plane's announcements and of the identity in every log object:
+   * {@code logArchive.eventPlane.clusterId}, else {@code cluster.clusterId}, else {@code
+   * "default"}. Resolved the same way whether or not the event plane is configured.
+   */
+  static String resolveClusterId(
+      final PartitionTransitionContext context, final LogArchiveCfg cfg) {
+    final var configured = cfg.getEventPlane().getClusterId();
+    if (configured != null && !configured.isBlank()) {
+      return configured;
+    }
+    final var cluster = context.getBrokerCfg().getCluster().getClusterId();
+    if (cluster != null && !cluster.isBlank()) {
+      return cluster;
+    }
+    return "default";
+  }
+
   /** Returns null if the event plane is not configured. */
   private static @Nullable LogArchiveAnnouncer createAnnouncer(
       final PartitionTransitionContext context,
@@ -211,18 +231,10 @@ public final class LogArchiveTransitionStep implements PartitionTransitionStep {
     if (url == null || url.isBlank()) {
       return null;
     }
-    final var brokerCfg = context.getBrokerCfg();
-    var clusterId = eventPlane.getClusterId();
-    if (clusterId == null || clusterId.isBlank()) {
-      clusterId = brokerCfg.getCluster().getClusterId();
-    }
-    if (clusterId == null || clusterId.isBlank()) {
-      clusterId = "default";
-    }
     final var client =
         new HttpLogArchiveEventPlaneClient(
             url,
-            clusterId,
+            resolveClusterId(context, cfg),
             context.partitionId().group(),
             eventPlane.getUsername(),
             eventPlane.getPassword(),

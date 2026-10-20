@@ -140,6 +140,12 @@ public interface LogArchiveRecordValue extends RecordValue {
      * @return the lowercase hex SHA-256 of the whole object
      */
     String getSha256();
+
+    /**
+     * @return the length of the body (everything before the metadata) of a {@code .seg} object, or
+     *     -1 for a {@code .rec} object
+     */
+    long getBodyLength();
   }
 
   @Value.Immutable
