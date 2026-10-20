@@ -8,8 +8,84 @@
 
 import {render, screen, within} from 'modules/testing-library';
 import {ToolResultModal} from './index';
+import type {ContentItem} from '../getRenderableResult';
 
 describe('<ToolResultModal />', () => {
+  it('should show and copy every recorded content block without preview transformations', async () => {
+    const input = {
+      document: '<doc id="source-document" />',
+      duplicateConfirmed: true,
+    };
+    const content: ContentItem[] = [
+      {contentType: 'TEXT', text: 'Original <doc id="source-document" />'},
+      {
+        contentType: 'OBJECT',
+        object: {
+          duplicateConfirmed: true,
+          evidence: {kind: 'sandbox', operation: 'sandbox_bash'},
+        },
+      },
+      {contentType: 'TEXT', text: 'Second text block'},
+    ];
+    const {user} = render(
+      <ToolResultModal
+        toolName="reconcile"
+        description={null}
+        input={input}
+        content={content}
+        onClose={vi.fn()}
+      />,
+    );
+
+    await user.click(screen.getByRole('tab', {name: 'Source'}));
+
+    const inputColumn = within(screen.getByTestId('tool-call-input'));
+    const outputColumn = within(screen.getByTestId('tool-call-output'));
+    expect(await inputColumn.findByRole('textbox')).toHaveValue(
+      JSON.stringify(input, null, 2),
+    );
+    expect(await outputColumn.findByRole('textbox')).toHaveValue(
+      JSON.stringify(content, null, 2),
+    );
+    await user.click(
+      outputColumn.getByRole('button', {name: 'Copy to clipboard'}),
+    );
+    expect(await navigator.clipboard.readText()).toBe(
+      JSON.stringify(content, null, 2),
+    );
+    await user.click(screen.getByRole('tab', {name: 'Preview'}));
+    expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
+    expect(outputColumn.getByText('Original')).toBeInTheDocument();
+  });
+
+  it.each([null, {}])(
+    'should preserve empty input %j and output in source',
+    async (input) => {
+      const {user} = render(
+        <ToolResultModal
+          toolName="empty"
+          description={null}
+          input={input}
+          content={[]}
+          onClose={vi.fn()}
+        />,
+      );
+
+      await user.click(screen.getByRole('tab', {name: 'Source'}));
+
+      expect(
+        await within(screen.getByTestId('tool-call-input')).findByRole(
+          'textbox',
+        ),
+      ).toHaveValue(JSON.stringify(input, null, 2));
+      expect(
+        await within(screen.getByTestId('tool-call-output')).findByRole(
+          'textbox',
+        ),
+      ).toHaveValue('[]');
+    },
+  );
+
   it('should render the tool name as the modal heading and tool description', () => {
     render(
       <ToolResultModal
@@ -134,6 +210,18 @@ describe('<ToolResultModal />', () => {
     expect(
       screen.getByRole('heading', {name: 'Preview: report.pdf'}),
     ).toBeInTheDocument();
+    await user.click(
+      within(
+        screen.getByRole('dialog', {name: 'Preview: report.pdf'}),
+      ).getByRole('button', {name: 'Close'}),
+    );
+    await user.click(screen.getByRole('tab', {name: 'Source'}));
+    expect(await outputColumn.findByRole('textbox')).toHaveDisplayValue(
+      /"documentId": "doc-1"/,
+    );
+    expect(
+      screen.queryByRole('listitem', {name: 'report.pdf'}),
+    ).not.toBeInTheDocument();
   });
 
   it('should call onClose when the close button is clicked', async () => {
