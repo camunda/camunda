@@ -37,9 +37,11 @@ public final class LogArchiveRecord extends UnifiedRecordValue implements LogArc
   private final LongProperty handoverCheckpointIdProperty =
       new LongProperty("handoverCheckpointId", -1L);
   private final LongProperty handoverPositionProperty = new LongProperty("handoverPosition", -1L);
+  private final LongProperty parentIndexProperty = new LongProperty("parentIndex", -1L);
+  private final LongProperty parentPositionProperty = new LongProperty("parentPosition", -1L);
 
   public LogArchiveRecord() {
-    super(13);
+    super(15);
     declareProperty(timelineIdProperty)
         .declareProperty(seqProperty)
         .declareProperty(startIndexProperty)
@@ -52,7 +54,9 @@ public final class LogArchiveRecord extends UnifiedRecordValue implements LogArc
         .declareProperty(archivedPositionProperty)
         .declareProperty(checkpointsProperty)
         .declareProperty(handoverCheckpointIdProperty)
-        .declareProperty(handoverPositionProperty);
+        .declareProperty(handoverPositionProperty)
+        .declareProperty(parentIndexProperty)
+        .declareProperty(parentPositionProperty);
   }
 
   @Override
@@ -192,6 +196,26 @@ public final class LogArchiveRecord extends UnifiedRecordValue implements LogArc
 
   public LogArchiveRecord setHandoverPosition(final long handoverPosition) {
     handoverPositionProperty.setValue(handoverPosition);
+    return this;
+  }
+
+  @Override
+  public long getParentIndex() {
+    return parentIndexProperty.getValue();
+  }
+
+  public LogArchiveRecord setParentIndex(final long parentIndex) {
+    parentIndexProperty.setValue(parentIndex);
+    return this;
+  }
+
+  @Override
+  public long getParentPosition() {
+    return parentPositionProperty.getValue();
+  }
+
+  public LogArchiveRecord setParentPosition(final long parentPosition) {
+    parentPositionProperty.setValue(parentPosition);
     return this;
   }
 }

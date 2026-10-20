@@ -89,6 +89,18 @@ public interface LogArchiveRecordValue extends RecordValue {
    */
   long getHandoverPosition();
 
+  /**
+   * @return the Raft index of the last entry a started timeline shares with its parent (on {@code
+   *     START_TIMELINE} and {@code TIMELINE_STARTED}), or -1 if unknown or there is no parent
+   */
+  long getParentIndex();
+
+  /**
+   * @return the position of the last record a started timeline shares with its parent (on {@code
+   *     START_TIMELINE} and {@code TIMELINE_STARTED}), or -1 if unknown or there is no parent
+   */
+  long getParentPosition();
+
   @Value.Immutable
   @ImmutableProtocol(builder = ImmutableLogObjectValue.Builder.class)
   interface LogObjectValue {
