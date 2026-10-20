@@ -51,7 +51,7 @@ final class LogArchiveKeysTest {
     final String key = LogArchiveKeys.dataKey(firstIndex, lastIndex, term);
 
     // then
-    assertThat(key).isEqualTo("data/00000000000002731001-00000000000002731480-t7.rec");
+    assertThat(key).isEqualTo("data/00000000000002731001-00000000000002731480-t7.seg");
   }
 
   @Test

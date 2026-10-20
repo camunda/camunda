@@ -61,7 +61,8 @@ public final class LogArchiverRaftEntrySource implements LogArchiverEntrySource 
   @Override
   public LogArchiverEntry next() {
     final var entry = reader.next();
-    return new LogArchiverEntry(toFrame(entry), isArchiveOwn(entry));
+    final var scan = scan(entry);
+    return new LogArchiverEntry(toFrame(entry), scan.archiveOwn(), scan.latestTimestamp());
   }
 
   @Override
@@ -70,28 +71,31 @@ public final class LogArchiverRaftEntrySource implements LogArchiverEntrySource 
   }
 
   /**
-   * Returns true if the entry is not an application entry, or if every record in it has the value
-   * type {@code LOG_ARCHIVE}. Anything that cannot be decoded counts as not the archive's own, so
-   * that it is archived eagerly, as before.
+   * Reads every record of an application entry. The entry counts as the archive's own if it is not
+   * an application entry, or if every record in it has the value type {@code LOG_ARCHIVE}. Anything
+   * that cannot be decoded counts as not the archive's own, so that it is archived eagerly, as
+   * before, and has no timestamp.
    */
-  boolean isArchiveOwn(final IndexedRaftLogEntry entry) {
+  Scan scan(final IndexedRaftLogEntry entry) {
     if (!entry.isApplicationEntry()) {
-      return true;
+      return new Scan(true, NONE);
     }
     if (!(entry.getApplicationEntry() instanceof final SerializedApplicationEntry serialized)) {
-      return false;
+      return new Scan(false, NONE);
     }
     try {
-      return containsOnlyLogArchiveRecords(serialized.data());
+      return scan(serialized.data());
     } catch (final RuntimeException e) {
-      return false;
+      return new Scan(false, NONE);
     }
   }
 
-  private boolean containsOnlyLogArchiveRecords(final DirectBuffer data) {
+  private Scan scan(final DirectBuffer data) {
     if (data.capacity() == 0) {
-      return false;
+      return new Scan(false, NONE);
     }
+    boolean onlyLogArchive = true;
+    long latestTimestamp = NONE;
     int offset = 0;
     while (offset < data.capacity()) {
       event.wrap(data, offset);
@@ -102,17 +106,22 @@ public final class LogArchiverRaftEntrySource implements LogArchiverEntrySource 
           metadataOffset + headerDecoder.encodedLength(),
           headerDecoder.blockLength(),
           headerDecoder.version());
-      if (metadataDecoder.valueType() != ValueType.LOG_ARCHIVE) {
-        return false;
-      }
+      onlyLogArchive &= metadataDecoder.valueType() == ValueType.LOG_ARCHIVE;
+      latestTimestamp = Math.max(latestTimestamp, event.getTimestamp());
       final int length = event.getLength();
       if (length <= 0) {
-        return false;
+        return new Scan(false, NONE);
       }
       offset += length;
     }
-    return true;
+    return new Scan(onlyLogArchive, latestTimestamp);
   }
+
+  /**
+   * @param archiveOwn see {@link LogArchiverEntry#archiveOwn()}
+   * @param latestTimestamp the highest record timestamp of the entry, -1 if it has no records
+   */
+  record Scan(boolean archiveOwn, long latestTimestamp) {}
 
   static LogArchiveFrame toFrame(final IndexedRaftLogEntry entry) {
     final var record = entry.getReplicatableJournalRecord();

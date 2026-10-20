@@ -25,6 +25,7 @@ final class LogArchiveJsonTest {
   static Stream<Arguments> bucketObjects() {
     return Stream.of(
         Arguments.of("log-object.json", BucketJsonFixtures.logObject()),
+        Arguments.of("log-object-legacy.json", BucketJsonFixtures.legacyLogObject()),
         Arguments.of("archived-snapshot.json", BucketJsonFixtures.archivedSnapshot()),
         Arguments.of("index-chunk.json", BucketJsonFixtures.indexChunk()),
         Arguments.of("covered-checkpoint.json", BucketJsonFixtures.coveredCheckpoint()),

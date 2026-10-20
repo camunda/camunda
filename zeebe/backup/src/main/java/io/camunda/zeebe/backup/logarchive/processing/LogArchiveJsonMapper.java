@@ -248,7 +248,8 @@ public final class LogArchiveJsonMapper {
         object.getLastPosition(),
         (int) object.getEntryCount(),
         object.getSizeBytes(),
-        object.getSha256());
+        object.getSha256(),
+        object.getBodyLength());
   }
 
   public static CoveredCheckpointJson checkpoint(final CoveredCheckpointValue checkpoint) {

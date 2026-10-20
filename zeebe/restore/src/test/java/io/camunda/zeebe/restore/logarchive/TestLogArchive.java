@@ -9,6 +9,8 @@ package io.camunda.zeebe.restore.logarchive;
 
 import io.camunda.zeebe.backup.logarchive.format.LogArchiveFrame;
 import io.camunda.zeebe.backup.logarchive.format.LogObjectEncoder;
+import io.camunda.zeebe.backup.logarchive.format.SegmentIdentity;
+import io.camunda.zeebe.backup.logarchive.format.SegmentV1Encoder;
 import io.camunda.zeebe.backup.logarchive.model.ArchivedSnapshotJson;
 import io.camunda.zeebe.backup.logarchive.model.CommitEntry;
 import io.camunda.zeebe.backup.logarchive.model.CoveredCheckpointJson;
@@ -139,23 +141,54 @@ final class TestLogArchive implements AutoCloseable {
     commit(CommitEntry.Type.HANDOVER, null, null, List.of(), List.of(), null, null);
   }
 
-  /** Archives all source entries after F up to and including {@code lastIndex} as one object. */
+  /**
+   * Archives all source entries after F up to and including {@code lastIndex} as one object in
+   * segment format v1 ({@code .seg}).
+   */
   LogObjectJson archive(final long lastIndex) {
+    return archive(lastIndex, false);
+  }
+
+  /** Archives like {@link #archive(long)}, in the {@code ZLA1} format ({@code .rec}) if legacy. */
+  LogObjectJson archive(final long lastIndex, final boolean legacy) {
     final var frames = frames(archivedIndex + 1, lastIndex);
-    final var encoded = LogObjectEncoder.encode(timelineId, partitionId, TERM, frames);
-    final var header = encoded.header();
-    final var object =
-        new LogObjectJson(
-            LogArchiveKeys.dataKey(header.firstIndex(), header.lastIndex(), TERM),
-            TERM,
-            header.firstIndex(),
-            header.lastIndex(),
-            header.firstPosition(),
-            header.lastPosition(),
-            header.entryCount(),
-            encoded.bytes().length,
-            encoded.sha256());
-    store.put(prefix + object.key(), encoded.bytes()).join();
+    final LogObjectJson object;
+    final byte[] bytes;
+    if (legacy) {
+      final var encoded = LogObjectEncoder.encode(timelineId, partitionId, TERM, frames);
+      final var header = encoded.header();
+      bytes = encoded.bytes();
+      object =
+          new LogObjectJson(
+              LogArchiveKeys.legacyDataKey(header.firstIndex(), header.lastIndex(), TERM),
+              TERM,
+              header.firstIndex(),
+              header.lastIndex(),
+              header.firstPosition(),
+              header.lastPosition(),
+              header.entryCount(),
+              bytes.length,
+              encoded.sha256());
+    } else {
+      final var encoded =
+          SegmentV1Encoder.encode(
+              new SegmentIdentity("cluster-1", "default", partitionId), timelineId, frames, -1);
+      final var footer = encoded.footer();
+      bytes = encoded.bytes();
+      object =
+          new LogObjectJson(
+              LogArchiveKeys.dataKey(footer.firstIndex(), footer.lastIndex(), TERM),
+              TERM,
+              footer.firstIndex(),
+              footer.lastIndex(),
+              footer.firstPosition(),
+              footer.lastPosition(),
+              footer.entryCount(),
+              bytes.length,
+              encoded.sha256(),
+              footer.bodyLength());
+    }
+    store.put(prefix + object.key(), bytes).join();
 
     openObjects.add(object);
     archivedIndex = object.lastIndex();

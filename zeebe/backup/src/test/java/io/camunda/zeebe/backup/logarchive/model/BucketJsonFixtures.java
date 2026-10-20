@@ -22,6 +22,21 @@ final class BucketJsonFixtures {
 
   static LogObjectJson logObject() {
     return new LogObjectJson(
+        "data/00000000000002731001-00000000000002731480-t7.seg",
+        7,
+        2731001,
+        2731480,
+        4930950,
+        4931877,
+        480,
+        3412880,
+        SHA256,
+        3411000);
+  }
+
+  /** An object written before segment format v1: a {@code .rec} without a body length. */
+  static LogObjectJson legacyLogObject() {
+    return new LogObjectJson(
         "data/00000000000002731001-00000000000002731480-t7.rec",
         7,
         2731001,

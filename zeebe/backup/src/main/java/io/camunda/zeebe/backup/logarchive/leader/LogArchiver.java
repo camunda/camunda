@@ -7,9 +7,10 @@
  */
 package io.camunda.zeebe.backup.logarchive.leader;
 
-import io.camunda.zeebe.backup.logarchive.format.EncodedLogObject;
+import io.camunda.zeebe.backup.logarchive.format.EncodedSegment;
 import io.camunda.zeebe.backup.logarchive.format.LogArchiveFrame;
-import io.camunda.zeebe.backup.logarchive.format.LogObjectEncoder;
+import io.camunda.zeebe.backup.logarchive.format.SegmentIdentity;
+import io.camunda.zeebe.backup.logarchive.format.SegmentV1Encoder;
 import io.camunda.zeebe.backup.logarchive.leader.LogArchiverTimeline.Effective;
 import io.camunda.zeebe.backup.logarchive.leader.LogArchiverTimeline.Takeover;
 import io.camunda.zeebe.backup.logarchive.model.LogArchiveKeys;
@@ -79,11 +80,14 @@ public final class LogArchiver extends Actor
   private static final Duration INITIAL_BACKOFF = Duration.ofMillis(100);
   private static final Duration MAX_BACKOFF = Duration.ofSeconds(10);
   // fixed part of a frame in the log object format: six longs and the record length
-  private static final int FRAME_OVERHEAD_BYTES = 6 * Long.BYTES + Integer.BYTES;
+  // what the journal adds to a serialized record: frame version byte and RecordMetadata
+  private static final int FRAME_OVERHEAD_BYTES = 1 + 8 + 8 + 4;
   // one or more fork suffixes as produced by forkTimelineId, e.g. ".f51" or ".f51-2.f7"
   private static final Pattern FORK_SUFFIXES = Pattern.compile("(\\.f\\d+(-\\d+)?)+");
 
   private final int partitionId;
+  private final String clusterId;
+  private final String physicalTenantId;
   private final long term;
   private final LogArchiveStore store;
   private final LogStreamWriter writer;
@@ -114,6 +118,7 @@ public final class LogArchiver extends Actor
   private long nextReadIndex = -1;
   private final List<LogArchiveFrame> pending = new ArrayList<>();
   private long pendingBytes;
+  private long pendingLatestTimestamp = -1;
   // true once a pending entry carries a record of another value type than LOG_ARCHIVE
   private boolean pendingHasForeignEntry;
   private @Nullable InFlight inFlight;
@@ -122,6 +127,8 @@ public final class LogArchiver extends Actor
   private Duration backoff = INITIAL_BACKOFF;
 
   /**
+   * @param clusterId the cluster id written into the identity of every object
+   * @param physicalTenantId the physical tenant id written into the identity of every object
    * @param term the leader's term; written into the object key and header
    * @param source committed entries; owned and closed by the archiver
    * @param timelineResolver returns the effective timeline (timeline file, else configuration) and
@@ -133,6 +140,8 @@ public final class LogArchiver extends Actor
    */
   public LogArchiver(
       final int partitionId,
+      final String clusterId,
+      final String physicalTenantId,
       final long term,
       final LogArchiveStore store,
       final LogStreamWriter writer,
@@ -156,6 +165,8 @@ public final class LogArchiver extends Actor
           "idleCutInterval must be positive, but was " + idleCutInterval);
     }
     this.partitionId = partitionId;
+    this.clusterId = clusterId;
+    this.physicalTenantId = physicalTenantId;
     this.term = term;
     this.store = store;
     this.writer = writer;
@@ -499,6 +510,7 @@ public final class LogArchiver extends Actor
       pending.add(frame);
       pendingBytes += FRAME_OVERHEAD_BYTES + frame.serializedRecord().length;
       pendingHasForeignEntry |= !entry.archiveOwn();
+      pendingLatestTimestamp = Math.max(pendingLatestTimestamp, entry.latestTimestamp());
       nextReadIndex++;
     }
 
@@ -518,9 +530,14 @@ public final class LogArchiver extends Actor
   }
 
   private void cut() {
-    final EncodedLogObject encoded;
+    final EncodedSegment encoded;
     try {
-      encoded = LogObjectEncoder.encode(timelineId, partitionId, term, pending);
+      encoded =
+          SegmentV1Encoder.encode(
+              new SegmentIdentity(clusterId, physicalTenantId, partitionId),
+              timelineId,
+              pending,
+              pendingLatestTimestamp);
     } catch (final RuntimeException e) {
       LOG.error(
           "Partition {}: failed to encode log object for indexes [{}, {}]; retrying in {}",
@@ -535,19 +552,20 @@ public final class LogArchiver extends Actor
       retryLater(() -> resetTo(resumeAfter));
       return;
     }
-    final var header = encoded.header();
-    final var relativeKey = LogArchiveKeys.dataKey(header.firstIndex(), header.lastIndex(), term);
+    final var footer = encoded.footer();
+    final var relativeKey = LogArchiveKeys.dataKey(footer.firstIndex(), footer.lastIndex(), term);
     final var object =
         new LogObject()
             .setKey(relativeKey)
             .setTerm(term)
-            .setFirstIndex(header.firstIndex())
-            .setLastIndex(header.lastIndex())
-            .setFirstPosition(header.firstPosition())
-            .setLastPosition(header.lastPosition())
-            .setEntryCount(header.entryCount())
+            .setFirstIndex(footer.firstIndex())
+            .setLastIndex(footer.lastIndex())
+            .setFirstPosition(footer.firstPosition())
+            .setLastPosition(footer.lastPosition())
+            .setEntryCount(footer.entryCount())
             .setSizeBytes(encoded.bytes().length)
-            .setSha256(encoded.sha256());
+            .setSha256(encoded.sha256())
+            .setBodyLength(footer.bodyLength());
     inFlight = new InFlight(prefix + relativeKey, encoded.bytes(), object);
     lastCutMillis = ActorClock.currentTimeMillis();
     state = State.UPLOADING;
@@ -691,6 +709,7 @@ public final class LogArchiver extends Actor
   private void clearPending() {
     pending.clear();
     pendingBytes = 0;
+    pendingLatestTimestamp = -1;
     pendingHasForeignEntry = false;
   }
 

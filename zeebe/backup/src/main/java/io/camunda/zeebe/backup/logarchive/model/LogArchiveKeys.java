@@ -39,9 +39,22 @@ public final class LogArchiveKeys {
     return "log-archive/" + timelineId + "/p" + partitionId + "/";
   }
 
-  /** {@code data/<firstIndex>-<lastIndex>-t<term>.rec} */
+  /**
+   * {@code data/<firstIndex>-<lastIndex>-t<term>.seg}: a log object in the event plane's segment
+   * format v1. Objects written before that format have the extension {@code .rec} ({@code ZLA1}).
+   */
   public static String dataKey(final long firstIndex, final long lastIndex, final long term) {
+    return "data/" + pad(firstIndex) + "-" + pad(lastIndex) + "-t" + term + ".seg";
+  }
+
+  /** {@code data/<firstIndex>-<lastIndex>-t<term>.rec}: the {@code ZLA1} key of earlier objects. */
+  public static String legacyDataKey(final long firstIndex, final long lastIndex, final long term) {
     return "data/" + pad(firstIndex) + "-" + pad(lastIndex) + "-t" + term + ".rec";
+  }
+
+  /** True for a segment format v1 object, false for a {@code ZLA1} ({@code .rec}) object. */
+  public static boolean isSegmentKey(final String key) {
+    return key.endsWith(".seg");
   }
 
   /** {@code commits/<seq>.json} */

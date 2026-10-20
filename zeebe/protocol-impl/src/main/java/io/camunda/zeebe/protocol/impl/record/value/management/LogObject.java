@@ -30,9 +30,10 @@ public final class LogObject extends ObjectValue implements LogObjectValue {
   private final LongProperty entryCountProperty = new LongProperty("entryCount", 0L);
   private final LongProperty sizeBytesProperty = new LongProperty("sizeBytes", 0L);
   private final StringProperty sha256Property = new StringProperty("sha256", "");
+  private final LongProperty bodyLengthProperty = new LongProperty("bodyLength", -1L);
 
   public LogObject() {
-    super(9);
+    super(10);
     declareProperty(keyProperty)
         .declareProperty(termProperty)
         .declareProperty(firstIndexProperty)
@@ -41,7 +42,8 @@ public final class LogObject extends ObjectValue implements LogObjectValue {
         .declareProperty(lastPositionProperty)
         .declareProperty(entryCountProperty)
         .declareProperty(sizeBytesProperty)
-        .declareProperty(sha256Property);
+        .declareProperty(sha256Property)
+        .declareProperty(bodyLengthProperty);
   }
 
   @Override
@@ -89,6 +91,11 @@ public final class LogObject extends ObjectValue implements LogObjectValue {
     return BufferUtil.bufferAsString(sha256Property.getValue());
   }
 
+  @Override
+  public long getBodyLength() {
+    return bodyLengthProperty.getValue();
+  }
+
   public LogObject setKey(final String key) {
     keyProperty.setValue(key);
     return this;
@@ -134,6 +141,11 @@ public final class LogObject extends ObjectValue implements LogObjectValue {
     return this;
   }
 
+  public LogObject setBodyLength(final long bodyLength) {
+    bodyLengthProperty.setValue(bodyLength);
+    return this;
+  }
+
   public LogObject copy(final LogObjectValue object) {
     setKey(object.getKey());
     setTerm(object.getTerm());
@@ -144,6 +156,7 @@ public final class LogObject extends ObjectValue implements LogObjectValue {
     setEntryCount(object.getEntryCount());
     setSizeBytes(object.getSizeBytes());
     setSha256(object.getSha256());
+    setBodyLength(object.getBodyLength());
     return this;
   }
 

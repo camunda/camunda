@@ -37,6 +37,8 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 @Timeout(60)
 final class LogArchiveRestoreTest {
@@ -110,6 +112,47 @@ final class LogArchiveRestoreTest {
         .isRegularFile();
     assertThat(target.dataDirectory())
         .isDirectoryNotContaining("glob:**/restoring-log-archive-snapshot-*");
+  }
+
+  @ParameterizedTest(name = "legacy objects: {0}")
+  @CsvSource({
+    "false,false,false,false",
+    "true,true,true,true",
+    "true,true,false,false",
+    "false,false,true,true",
+    "true,false,true,false"
+  })
+  void shouldRestoreFromObjectsOfEitherFormat(
+      final boolean first, final boolean second, final boolean third, final boolean fourth)
+      throws IOException {
+    // given - a timeline that may have started with .rec objects and carried on with .seg objects
+    final var archive = archive(1);
+    archive.appendAll(1, 2);
+    archive.append(-1);
+    archive.appendAll(5, 6);
+    archive.append(-1);
+    archive.appendAll(9, 12);
+    archive.append(-1);
+    archive.appendAll(13, 14);
+    archive.checkpoint(1_000L, 12);
+    final var objects =
+        List.of(
+            archive.archive(3, first),
+            archive.archive(6, second),
+            archive.archive(9, third),
+            archive.archive(11, fourth));
+    final var target = target(1);
+
+    // when
+    restore.restorePartition(LogArchiveView.read(store, TIMELINE, 1), 1_000L, target);
+
+    // then
+    final var expected =
+        archive.sourceFrames().stream().filter(frame -> frame.index() <= 8).toList();
+    assertThat(readJournal(target)).containsExactlyElementsOf(expected);
+    assertThat(objects)
+        .extracting(o -> o.key().endsWith(".rec"))
+        .containsExactly(first, second, third, fourth);
   }
 
   @Test
