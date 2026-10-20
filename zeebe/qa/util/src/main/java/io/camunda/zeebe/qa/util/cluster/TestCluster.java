@@ -397,12 +397,13 @@ public final class TestCluster implements CloseableSilently {
 
   @Override
   public void close() {
-    try {
-      //noinspection resource
-      shutdown();
-    } finally {
-      nodes().values().forEach(TestApplication::close);
-    }
+    //noinspection resource
+    shutdown();
+  }
+
+  /** Makes the ports of all nodes available to other applications again. */
+  public void releasePorts() {
+    nodes().values().forEach(TestApplication::releasePorts);
   }
 
   private boolean isReady(final TestApplication<?> node) {

@@ -384,6 +384,7 @@ final class ZeebeIntegrationExtension
           error ->
               LOG.warn("Failed to close cluster {}, leaking resources", cluster().name(), error),
           cluster());
+      cluster().releasePorts();
     }
 
     @Override
@@ -433,6 +434,7 @@ final class ZeebeIntegrationExtension
       CloseHelper.close(
           error -> LOG.warn("Failed to close test app {}, leaking resources", app().nodeId()),
           app());
+      app().releasePorts();
     }
 
     @Override

@@ -154,20 +154,16 @@ public abstract class TestSpringApplication<T extends TestSpringApplication<T>>
   }
 
   /**
-   * Stops the application and makes its ports available to other applications again. The ports stay
-   * reserved across {@link #stop()}, so a stopped application can be restarted on the same ports;
-   * after {@code close()} it should not be started again.
+   * Makes the ports of this application available to other applications again. The ports stay
+   * reserved across {@link #stop()} and {@link #close()}, so a closed application can still be
+   * restarted on the same ports; after this it should not be started again.
    */
   @Override
-  public void close() {
-    try {
-      stop();
-    } finally {
-      ports.close();
-    }
+  public void releasePorts() {
+    ports.close();
   }
 
-  /** Returns a free port that stays reserved for this application until it is closed. */
+  /** Returns a free port that stays reserved for this application until {@link #releasePorts()}. */
   protected final int reservePort() {
     return ports.nextPort();
   }
