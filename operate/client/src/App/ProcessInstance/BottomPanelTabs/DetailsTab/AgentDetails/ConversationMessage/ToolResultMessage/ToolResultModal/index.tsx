@@ -20,6 +20,7 @@ import {EvidenceCards} from '../../EvidenceCard';
 import {getContentEvidence} from '../../EvidenceCard/evidence';
 import {DocumentContent} from '../../MessageAttachments/DocumentContent';
 import {ModalAttachments} from '../../styled';
+import {DocumentProcessing} from '../../MessageAttachments/DocumentProcessing';
 import {
   Description,
   Columns,
@@ -36,6 +37,7 @@ type ToolResultModalProps = {
   content: ContentItem[];
   onClose: () => void;
   navigation?: ReactNode;
+  parsingInput?: ContentItem[];
 };
 
 const ToolResultModal: React.FC<ToolResultModalProps> = ({
@@ -45,6 +47,7 @@ const ToolResultModal: React.FC<ToolResultModalProps> = ({
   content,
   onClose,
   navigation,
+  parsingInput,
 }) => {
   const hasInput = input !== null && Object.keys(input).length > 0;
   const result = getToolCallResult(content);
@@ -116,11 +119,15 @@ const ToolResultModal: React.FC<ToolResultModalProps> = ({
         </Column>
       </Columns>
       <ModalAttachments>
-        <DocumentContent
-          content={content}
-          modalTitleSuffix="tool result"
-          showAll
-        />
+        {parsingInput ? (
+          <DocumentProcessing input={parsingInput} output={content} showAll />
+        ) : (
+          <DocumentContent
+            content={content}
+            modalTitleSuffix="tool result"
+            showAll
+          />
+        )}
       </ModalAttachments>
     </Modal>
   );
