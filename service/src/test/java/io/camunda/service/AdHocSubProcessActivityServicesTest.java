@@ -228,7 +228,7 @@ public class AdHocSubProcessActivityServicesTest {
         .thenReturn(CompletableFuture.completedFuture(DEFAULT_BROKER_RESPONSE));
 
     // when
-    services.activateActivities(request, authentication).join();
+    services.activateActivities(request).join();
 
     // then
     assertThat(requestCaptor.getValue().getPartitionId()).isEqualTo(partitionId);

@@ -54,7 +54,7 @@ final class ActivateAdHocSubProcessActivityMultiPartitionIT {
       new TestStandaloneBroker()
           .withRecordingExporter(true)
           .withUnauthenticatedAccess()
-          .withClusterConfig(cluster -> cluster.setPartitionCount(PARTITION_COUNT));
+          .withBrokerConfig(cfg -> cfg.getCluster().setPartitionsCount(PARTITION_COUNT));
 
   @AutoClose
   private final CamundaClient client =
