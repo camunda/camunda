@@ -416,6 +416,65 @@ describe('<AgentDetails />', () => {
     ).not.toBeInTheDocument();
   });
 
+  it('should restore recorded prompt metadata when the agent result arrives after the panel opens', async () => {
+    let searches = 0;
+    mockServer.use(
+      http.post('/v2/variables/search', () => {
+        searches++;
+        return HttpResponse.json(
+          searchResult(
+            searches === 1
+              ? []
+              : [
+                  createVariable({
+                    name: 'agent',
+                    scopeKey: agentInstance.processInstanceKey,
+                    processInstanceKey: agentInstance.processInstanceKey,
+                    value: JSON.stringify({
+                      systemPrompt: {
+                        type: 'linked',
+                        promptId: 'dispute-compliance-policy.md',
+                        binding: 'latest',
+                        version: 82,
+                        prompt: 'Recorded compliance instructions.',
+                      },
+                    }),
+                  }),
+                ],
+          ),
+        );
+      }),
+    );
+    render(
+      <AgentDetails
+        agentInstances={[{...agentInstance, status: 'IDLE'}]}
+        totalAgentsCount={1}
+        hasMoreTotalItems={false}
+        isError={false}
+        selectedElementInstanceKey={null}
+      />,
+      {wrapper: createWrapper()},
+    );
+
+    expect(
+      screen.queryByLabelText('System prompt evidence'),
+    ).not.toBeInTheDocument();
+
+    const evidence = await screen.findByLabelText(
+      'System prompt evidence',
+      {},
+      {timeout: 7000},
+    );
+    expect(
+      within(evidence).getByText('dispute-compliance-policy.md'),
+    ).toBeInTheDocument();
+    expect(within(evidence).getByText('Latest')).toBeInTheDocument();
+    expect(within(evidence).getByText('82')).toBeInTheDocument();
+    expect(
+      screen.getByText('Recorded compliance instructions.'),
+    ).toBeInTheDocument();
+  }, 10000);
+
   it('should fetch the complete agent result when its variable is truncated', async () => {
     const truncatedVariable = createVariable({
       name: 'agent',
