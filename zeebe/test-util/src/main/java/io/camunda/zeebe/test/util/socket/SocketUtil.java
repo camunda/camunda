@@ -30,10 +30,8 @@ public final class SocketUtil {
 
   private SocketUtil() {}
 
-  public static synchronized InetSocketAddress getNextAddress() {
-    final int port = PORT_ALLOCATOR.nextPort();
-    LOG.info("Choosing next port {}", port);
-    return new InetSocketAddress(DEFAULT_HOST, port);
+  public static InetSocketAddress getNextAddress() {
+    return new InetSocketAddress(DEFAULT_HOST, reserveNextPort().port());
   }
 
   /**

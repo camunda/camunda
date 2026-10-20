@@ -50,7 +50,7 @@ public interface TestApplication<T extends TestApplication<T>> extends AutoClose
    * should not be started afterwards. Ports of an application that never calls this stay reserved
    * until the JVM exits.
    */
-  default void releasePorts() {}
+  void releasePorts();
 
   /** Convenience method to return the appropriate concrete type */
   T self();
