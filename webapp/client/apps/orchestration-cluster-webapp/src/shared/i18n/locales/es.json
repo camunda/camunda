@@ -1299,6 +1299,7 @@
 					"variables": "Variables",
 					"incidents": "Incidentes",
 					"details": "Detalles",
+					"operationsLog": "Registro de operaciones",
 					"timestamps": "Fecha de finalización",
 					"executionCount": "Número de ejecuciones",
 					"multiInstance": " (Multiinstancia)",
@@ -1368,6 +1369,10 @@
 					"heading": "403 - No tiene permiso para ver esta información",
 					"description": "Póngase en contacto con su administrador para obtener acceso.",
 					"learnMoreLink": "Más información sobre los permisos"
+				},
+				"operationsLog": {
+					"multiInstance": "Para ver el registro de operaciones, seleccione una única instancia de elemento en el historial de la instancia.",
+					"empty": "No se encontraron operaciones para esta instancia"
 				},
 				"variables": {
 					"search": "Buscar variables por nombre",

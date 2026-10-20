@@ -1311,6 +1311,7 @@
 					"variables": "Variables",
 					"incidents": "Incidents",
 					"details": "Details",
+					"operationsLog": "Operations Log",
 					"timestamps": "End date",
 					"executionCount": "Execution count",
 					"multiInstance": " (Multi Instance)",
@@ -1380,6 +1381,10 @@
 					"heading": "403 - You do not have permission to view this information",
 					"description": "Contact your administrator to get access.",
 					"learnMoreLink": "Learn more about permissions"
+				},
+				"operationsLog": {
+					"multiInstance": "To view the Operations Log, select a single Element Instance in the Instance History.",
+					"empty": "No operations found for this instance"
 				},
 				"variables": {
 					"search": "Search variables by name",

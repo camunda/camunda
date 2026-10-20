@@ -24,6 +24,7 @@ const TAB_PATHS = {
 	incidents: '/operate/processes/$processInstanceId/incidents',
 	details: '/operate/processes/$processInstanceId/details',
 	variables: '/operate/processes/$processInstanceId/variables',
+	'operations-log': '/operate/processes/$processInstanceId/operations-log',
 } as const;
 
 type TabKey = keyof typeof TAB_PATHS;
@@ -68,6 +69,7 @@ const ProcessInstanceTabs: React.FC<{isHistoryTabVisible: boolean}> = ({isHistor
 			visible: hasSelection || isProcessLevelWaiting,
 		},
 		{key: 'variables', label: t('operate.processInstance.history.variables'), visible: true},
+		{key: 'operations-log', label: t('operate.processInstance.history.operationsLog'), visible: true},
 	];
 
 	const selectedTab = tabs.find(({key}) => matchRoute({to: TAB_PATHS[key]}));
