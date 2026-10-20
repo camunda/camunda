@@ -125,7 +125,7 @@ compaction stops at it.
   the same bytes for the same index, as both read committed entries.
 - A rollup (level 1) holds the entries of consecutive level-0 segments, from the first one's first
   index to the last one's last index. Maintenance writes it, then deletes every level-0 segment of
-  that history within its range. If two rollups overlap, it deletes the one with the later ULID.
+  that history within its range. If a rollup lies within another's range, it deletes the one with the later ULID; two that only overlap both stay, as each may hold entries no level-0 segment holds any more.
 - So a reader looking for the entry at index `n` takes, among the segments that contain `n`, the
   one with the highest level, then the highest last index. A segment can disappear while a reader
   reads it; the reader lists again.

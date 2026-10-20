@@ -1,0 +1,297 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.zeebe.eventplane.maintenance;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+import io.camunda.zeebe.eventplane.history.HistoryManifest.Base;
+import java.nio.charset.StandardCharsets;
+import java.time.Duration;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+final class RetentionTest extends StoreTestCase {
+
+  private static final UUID RESTORED = UUID.fromString("0a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c4d");
+  private static final UUID OTHER = UUID.fromString("c0ffee00-1234-4abc-8def-0123456789ab");
+  private static final Duration RETENTION = Duration.ofDays(7);
+  private static final Duration TEN_DAYS = Duration.ofDays(10);
+  private static final Duration THREE_DAYS = Duration.ofDays(3);
+  private static final Duration ONE_DAY = Duration.ofDays(1);
+
+  @BeforeEach
+  void putTheFirstHistory() throws Exception {
+    segments.putHistory(HISTORY, Duration.ofDays(30), Base.NOTHING);
+  }
+
+  /** Retention only: a rollup would need segments older than ten years. */
+  private Maintenance maintenance() {
+    return new Maintenance(
+        store, new MaintenanceConfig(Duration.ofDays(3650), 1 << 20, RETENTION), clock);
+  }
+
+  @Test
+  void shouldWriteTheMarkerBeforeItDeletesTheOldSegmentsBelowTheCutoff() throws Exception {
+    // given
+    final var first = segments.put(HISTORY, 0, TEN_DAYS, entries(1, 3));
+    final var second = segments.put(HISTORY, 0, Duration.ofDays(9), entries(4, 6));
+    segments.put(HISTORY, 0, THREE_DAYS, entries(7, 9));
+    segments.put(HISTORY, 0, ONE_DAY, entries(10, 12));
+
+    // when
+    final var report = maintenance().runOnce();
+
+    // then
+    assertThat(report).isEqualTo(new MaintenanceReport(0, 2, 1));
+    assertThat(segments.segments(HISTORY)).containsExactly("7-9 L0", "10-12 L0");
+    final var markers = segments.markers();
+    assertThat(markers).hasSize(1);
+    assertThat(store.writes()).hasSize(3).first().isEqualTo("PUT " + markers.getFirst());
+    assertThat(store.writes())
+        .containsExactlyInAnyOrder(
+            "PUT " + markers.getFirst(), "DELETE " + first, "DELETE " + second);
+  }
+
+  @Test
+  void shouldNameTheCurrentHistoryAndTheFirstEntryThatIsKept() throws Exception {
+    // given: entry 7 holds the positions 13 and 14
+    segments.put(HISTORY, 0, TEN_DAYS, entries(1, 6));
+    segments.put(HISTORY, 0, THREE_DAYS, entries(7, 9));
+
+    // when
+    maintenance().runOnce();
+
+    // then
+    final var marker = store.get(segments.markers().getFirst()).orElseThrow();
+    assertThat(new String(marker, StandardCharsets.UTF_8))
+        .isEqualTo(
+            "{\"version\":1,\"history\":\"%s\",\"firstIndex\":7,\"firstPosition\":13,\"createdAt\":\"%s\"}"
+                .formatted(HISTORY, clock.instant()));
+  }
+
+  @Test
+  void shouldOnlyDeleteSegmentsBelowTheCutoff() throws Exception {
+    // given: the segment of 7 to 9 is old, but not below the first young one, which starts at 4
+    segments.put(HISTORY, 0, TEN_DAYS, entries(1, 3));
+    segments.put(HISTORY, 0, ONE_DAY, entries(4, 6));
+    segments.put(HISTORY, 0, TEN_DAYS, entries(7, 9));
+
+    // when
+    final var report = maintenance().runOnce();
+
+    // then
+    assertThat(report).isEqualTo(new MaintenanceReport(0, 1, 1));
+    assertThat(segments.segments(HISTORY)).containsExactly("4-6 L0", "7-9 L0");
+  }
+
+  @Test
+  void shouldKeepASegmentThatHoldsEntriesAboveTheCutoff() throws Exception {
+    // given: the old segment of 1 to 6 reaches the cutoff at 4
+    segments.put(HISTORY, 0, TEN_DAYS, entries(1, 6));
+    segments.put(HISTORY, 0, ONE_DAY, entries(4, 9));
+
+    // when
+    final var report = maintenance().runOnce();
+
+    // then
+    assertThat(report).isEqualTo(MaintenanceReport.NONE);
+    assertThat(segments.segments(HISTORY)).containsExactly("1-6 L0", "4-9 L0");
+    assertThat(segments.markers()).isEmpty();
+  }
+
+  @Test
+  void shouldKeepEverythingWhileNoSegmentIsYoungerThanTheRetention() throws Exception {
+    // given: a log that stopped uploading
+    segments.put(HISTORY, 0, TEN_DAYS, entries(1, 3));
+    segments.put(HISTORY, 0, Duration.ofDays(9), entries(4, 6));
+
+    // when
+    final var report = maintenance().runOnce();
+
+    // then
+    assertThat(report).isEqualTo(MaintenanceReport.NONE);
+    assertThat(segments.segments(HISTORY)).containsExactly("1-3 L0", "4-6 L0");
+    assertThat(segments.markers()).isEmpty();
+  }
+
+  @Test
+  void shouldNameMinusOneAsTheFirstPositionOfASegmentWithoutRecords() throws Exception {
+    // given: the segment at the cutoff holds one entry that has no records
+    final var withoutRecords = List.of(journal.initial());
+    segments.put(HISTORY, 0, TEN_DAYS, entries(1, 15));
+    segments.put(HISTORY, 0, ONE_DAY, withoutRecords);
+
+    // when
+    maintenance().runOnce();
+
+    // then
+    final var marker = store.get(segments.markers().getFirst()).orElseThrow();
+    assertThat(new String(marker, StandardCharsets.UTF_8))
+        .contains("\"firstIndex\":16,\"firstPosition\":-1,");
+  }
+
+  @Test
+  void shouldDeleteSegmentsOfAHistoryOffThePathByAge() throws Exception {
+    // given: another history that the current one doesn't descend from
+    segments.putHistory(OTHER, Duration.ofDays(40), Base.NOTHING);
+    segments.put(HISTORY, 0, TWO_DAYS, entries(1, 3));
+    segments.put(HISTORY, 0, ONE_DAY, entries(4, 6));
+    segments.put(OTHER, 0, TEN_DAYS, entries(1, 3));
+    segments.put(OTHER, 0, ONE_DAY, entries(4, 6));
+
+    // when
+    final var report = maintenance().runOnce();
+
+    // then: no marker, as nothing on the path goes
+    assertThat(report).isEqualTo(new MaintenanceReport(0, 1, 0));
+    assertThat(segments.segments(OTHER)).containsExactly("4-6 L0");
+    assertThat(segments.segments(HISTORY)).containsExactly("1-3 L0", "4-6 L0");
+    assertThat(segments.markers()).isEmpty();
+  }
+
+  @Test
+  void shouldFollowThePathThroughARestoredHistory() throws Exception {
+    // given: a restore at entry 6, position 12, so the first history's entries from 7 on are off
+    // the path, and the restored history is the current one
+    segments.putHistory(RESTORED, Duration.ofDays(5), new Base(HISTORY, 6, 12));
+    segments.put(HISTORY, 0, TEN_DAYS, entries(1, 3));
+    segments.put(HISTORY, 0, TEN_DAYS, entries(4, 6));
+    segments.put(HISTORY, 0, TEN_DAYS, entries(7, 9));
+    segments.put(HISTORY, 0, ONE_DAY, entries(10, 12));
+    segments.put(RESTORED, 0, THREE_DAYS, entries(7, 9));
+    segments.put(RESTORED, 0, ONE_DAY, entries(10, 12));
+
+    // when
+    final var report = maintenance().runOnce();
+
+    // then: the old segments of the path go, and the old one that it left
+    assertThat(report).isEqualTo(new MaintenanceReport(0, 3, 1));
+    assertThat(segments.segments(HISTORY)).containsExactly("10-12 L0");
+    assertThat(segments.segments(RESTORED)).containsExactly("7-9 L0", "10-12 L0");
+    final var marker = store.get(segments.markers().getFirst()).orElseThrow();
+    assertThat(new String(marker, StandardCharsets.UTF_8))
+        .contains("\"history\":\"" + RESTORED + "\",\"firstIndex\":7,\"firstPosition\":13,");
+  }
+
+  @Test
+  void shouldKeepOnlyTheNewestMarker() throws Exception {
+    // given
+    segments.putMarker(THREE_DAYS);
+    segments.putMarker(TWO_DAYS);
+    segments.put(HISTORY, 0, TEN_DAYS, entries(1, 3));
+    segments.put(HISTORY, 0, ONE_DAY, entries(4, 6));
+
+    // when
+    final var report = maintenance().runOnce();
+
+    // then
+    assertThat(report).isEqualTo(new MaintenanceReport(0, 1, 1));
+    final var markers = segments.markers();
+    assertThat(markers).hasSize(1);
+    final var written = store.writes().stream().filter(write -> write.startsWith("PUT ")).toList();
+    assertThat(written).containsExactly("PUT " + markers.getFirst());
+  }
+
+  @Test
+  void shouldDeleteOlderMarkersEvenWhenItWritesNone() throws Exception {
+    // given
+    segments.putMarker(THREE_DAYS);
+    final var newest = segments.putMarker(TWO_DAYS);
+    segments.put(HISTORY, 0, ONE_DAY, entries(1, 3));
+
+    // when
+    final var report = maintenance().runOnce();
+
+    // then
+    assertThat(report).isEqualTo(MaintenanceReport.NONE);
+    assertThat(segments.markers()).containsExactly(newest);
+  }
+
+  @Test
+  void shouldChangeNothingTheSecondTime() throws Exception {
+    // given
+    segments.put(HISTORY, 0, TEN_DAYS, entries(1, 3));
+    segments.put(HISTORY, 0, ONE_DAY, entries(4, 6));
+    maintenance().runOnce();
+    final var writesAfterTheFirst = store.writes().size();
+
+    // when
+    final var second = maintenance().runOnce();
+
+    // then
+    assertThat(second).isEqualTo(MaintenanceReport.NONE);
+    assertThat(store.writes()).hasSize(writesAfterTheFirst);
+    assertThat(segments.markers()).hasSize(1);
+  }
+
+  @Test
+  void shouldDeleteMoreAsTheTimePasses() throws Exception {
+    // given
+    segments.put(HISTORY, 0, Duration.ofDays(6), entries(1, 3));
+    segments.put(HISTORY, 0, Duration.ofDays(2), entries(4, 6));
+    segments.put(HISTORY, 0, ONE_DAY, entries(7, 9));
+    assertThat(maintenance().runOnce()).isEqualTo(MaintenanceReport.NONE);
+
+    // when
+    clock.advance(Duration.ofDays(3));
+    final var report = maintenance().runOnce();
+
+    // then: the first is 9 days old now, the second 5
+    assertThat(report).isEqualTo(new MaintenanceReport(0, 1, 1));
+    assertThat(segments.segments(HISTORY)).containsExactly("4-6 L0", "7-9 L0");
+  }
+
+  @Test
+  void shouldKeepEverythingWithoutARetention() throws Exception {
+    // given
+    segments.put(HISTORY, 0, TEN_DAYS, entries(1, 3));
+    segments.put(HISTORY, 0, ONE_DAY, entries(4, 6));
+    final var keepAll =
+        new Maintenance(store, new MaintenanceConfig(Duration.ofDays(3650), 1 << 20, null), clock);
+
+    // when
+    final var report = keepAll.runOnce();
+
+    // then
+    assertThat(report).isEqualTo(MaintenanceReport.NONE);
+    assertThat(segments.segments(HISTORY)).containsExactly("1-3 L0", "4-6 L0");
+  }
+
+  @Test
+  void shouldNotApplyRetentionToALogThatTheCurrentHistoryLeavesOut() throws Exception {
+    // given: the current history has partition 2 only, so far
+    segments.putHistory(RESTORED, Duration.ofDays(5), Map.of(2, Base.NOTHING));
+    segments.put(HISTORY, 0, TEN_DAYS, entries(1, 3));
+    segments.put(HISTORY, 0, TEN_DAYS, entries(4, 6));
+
+    // when
+    final var report = maintenance().runOnce();
+
+    // then
+    assertThat(report).isEqualTo(MaintenanceReport.NONE);
+    assertThat(segments.segments(HISTORY)).containsExactly("1-3 L0", "4-6 L0");
+  }
+
+  @Test
+  void shouldNotApplyRetentionWhileAManifestIsMissing() throws Exception {
+    // given: the current history takes over one whose manifest isn't there
+    segments.putHistory(RESTORED, Duration.ofDays(5), new Base(OTHER, 6, 12));
+    segments.put(HISTORY, 0, TEN_DAYS, entries(1, 3));
+    segments.put(RESTORED, 0, ONE_DAY, entries(7, 9));
+
+    // when
+    final var report = maintenance().runOnce();
+
+    // then
+    assertThat(report).isEqualTo(MaintenanceReport.NONE);
+    assertThat(segments.segments(HISTORY)).containsExactly("1-3 L0");
+  }
+}
