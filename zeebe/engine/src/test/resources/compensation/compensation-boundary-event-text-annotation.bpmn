@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" id="Definitions_compensation_text_annotation" targetNamespace="http://bpmn.io/schema/bpmn">
+  <bpmn:process id="compensation-process" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_1">
+      <bpmn:outgoing>Flow_to_subprocess</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:sequenceFlow id="Flow_to_subprocess" sourceRef="StartEvent_1" targetRef="CompensableSubprocess" />
+    <bpmn:subProcess id="CompensableSubprocess">
+      <bpmn:incoming>Flow_to_subprocess</bpmn:incoming>
+      <bpmn:outgoing>Flow_to_throw_event</bpmn:outgoing>
+      <bpmn:startEvent id="SubprocessStartEvent">
+        <bpmn:outgoing>Flow_to_subprocess_end</bpmn:outgoing>
+      </bpmn:startEvent>
+      <bpmn:sequenceFlow id="Flow_to_subprocess_end" sourceRef="SubprocessStartEvent" targetRef="SubprocessEndEvent" />
+      <bpmn:endEvent id="SubprocessEndEvent">
+        <bpmn:incoming>Flow_to_subprocess_end</bpmn:incoming>
+      </bpmn:endEvent>
+    </bpmn:subProcess>
+    <bpmn:sequenceFlow id="Flow_to_throw_event" sourceRef="CompensableSubprocess" targetRef="compensation-throw-event" />
+    <bpmn:intermediateThrowEvent id="compensation-throw-event">
+      <bpmn:incoming>Flow_to_throw_event</bpmn:incoming>
+      <bpmn:outgoing>Flow_to_end</bpmn:outgoing>
+      <bpmn:compensateEventDefinition id="CompensateEventDefinition_throw" />
+    </bpmn:intermediateThrowEvent>
+    <bpmn:sequenceFlow id="Flow_to_end" sourceRef="compensation-throw-event" targetRef="EndEvent_1" />
+    <bpmn:endEvent id="EndEvent_1">
+      <bpmn:incoming>Flow_to_end</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:boundaryEvent id="CompensationBoundaryEvent" attachedToRef="CompensableSubprocess">
+      <bpmn:compensateEventDefinition id="CompensateEventDefinition_boundary" />
+    </bpmn:boundaryEvent>
+    <bpmn:serviceTask id="CompensationHandler" name="undo subprocess" isForCompensation="true">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="compensationHandler" />
+      </bpmn:extensionElements>
+    </bpmn:serviceTask>
+    <bpmn:textAnnotation id="TextAnnotation_1">
+      <bpmn:text>undo the subprocess</bpmn:text>
+    </bpmn:textAnnotation>
+    <bpmn:association id="Association_to_text_annotation" sourceRef="CompensationBoundaryEvent" targetRef="TextAnnotation_1" />
+    <bpmn:association id="Association_to_handler" associationDirection="One" sourceRef="CompensationBoundaryEvent" targetRef="CompensationHandler" />
+  </bpmn:process>
+</bpmn:definitions>
