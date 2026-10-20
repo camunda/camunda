@@ -115,10 +115,48 @@ final class LogReaderTest {
     assertThat(wholeListings(directory) - before).isZero();
   }
 
+  @Test
+  void shouldLookForHistoriesAndMarkersOnlyEveryIntervalAtTheHead() throws IOException {
+    // given a reader that read everything there is
+    log.upload(HISTORY, entries(1, 24));
+    final var reader =
+        new LogReader(
+            store,
+            LOG,
+            Start.EARLIEST,
+            listener,
+            Duration.ofSeconds(10),
+            Duration.ofMinutes(1),
+            clock::get);
+    reader.poll(handler);
+    final var histories = ObjectNames.historiesPrefix("c", "default");
+    final var markers = ObjectNames.retentionPrefix("c", "default", 1);
+    final long historiesBefore = listings(histories);
+    final long markersBefore = listings(markers);
+
+    // when it polls at the head within the interval
+    for (int poll = 0; poll < 10; poll++) {
+      clock.addAndGet(Duration.ofSeconds(1).toNanos());
+      reader.poll(handler);
+    }
+
+    // then it doesn't look again, until the interval is over
+    assertThat(listings(histories)).isEqualTo(historiesBefore);
+    assertThat(listings(markers)).isEqualTo(markersBefore);
+    clock.addAndGet(Duration.ofMinutes(1).toNanos());
+    reader.poll(handler);
+    assertThat(listings(histories)).isEqualTo(historiesBefore + 1);
+    assertThat(listings(markers)).isEqualTo(markersBefore + 1);
+  }
+
   private long wholeListings(final String directory) {
     return store.listings().stream()
         .filter(listing -> listing.prefix().equals(directory) && listing.startAfter() == null)
         .count();
+  }
+
+  private long listings(final String prefix) {
+    return store.listings().stream().filter(listing -> listing.prefix().equals(prefix)).count();
   }
 
   @Test
@@ -479,7 +517,8 @@ final class LogReaderTest {
   }
 
   private LogReader reader(final StartFrom from) {
-    return new LogReader(store, LOG, from, listener, Duration.ofSeconds(10), clock::get);
+    return new LogReader(
+        store, LOG, from, listener, Duration.ofSeconds(10), Duration.ZERO, clock::get);
   }
 
   /** The journal's entries from index {@code first} to {@code last}. */

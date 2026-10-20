@@ -40,6 +40,7 @@ final class Notifications implements AutoCloseable {
 
   private final String service;
   private final Consumer<UploadNotice> onUpload;
+  private final Runnable onConnected;
   private final long retryNanos;
   private final HttpClient client;
   private final ScheduledExecutorService scheduler;
@@ -49,11 +50,19 @@ final class Notifications implements AutoCloseable {
   private @Nullable Connection connection;
   private boolean closed;
 
+  /**
+   * @param onConnected runs whenever a stream opens: the uploads announced while there was none are
+   *     lost, so a worker reads what it may have missed
+   */
   Notifications(
-      final URI service, final Consumer<UploadNotice> onUpload, final Duration retryDelay) {
+      final URI service,
+      final Consumer<UploadNotice> onUpload,
+      final Runnable onConnected,
+      final Duration retryDelay) {
     final var base = service.toString();
     this.service = base.endsWith("/") ? base.substring(0, base.length() - 1) : base;
     this.onUpload = onUpload;
+    this.onConnected = onConnected;
     retryNanos = retryDelay.toNanos();
     client =
         HttpClient.newBuilder()
@@ -104,11 +113,14 @@ final class Notifications implements AutoCloseable {
     client
         .sendAsync(
             request,
-            info ->
-                info.statusCode() == 200
-                    ? BodySubscribers.<Connection, Void>fromLineSubscriber(
-                        opened, ignored -> null, StandardCharsets.UTF_8, null)
-                    : refused(info.statusCode()))
+            info -> {
+              if (info.statusCode() != 200) {
+                return refused(info.statusCode());
+              }
+              onConnected.run();
+              return BodySubscribers.<Connection, Void>fromLineSubscriber(
+                  opened, ignored -> null, StandardCharsets.UTF_8, null);
+            })
         .whenComplete((response, error) -> ended(opened, error));
   }
 

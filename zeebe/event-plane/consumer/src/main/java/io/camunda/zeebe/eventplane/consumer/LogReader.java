@@ -41,6 +41,8 @@ public final class LogReader {
   /** How long a hole without a retention marker lasts before a reader reports it as a gap. */
   public static final Duration DEFAULT_HOLE_GRACE = Duration.ofMinutes(1);
 
+  static final Duration DEFAULT_METADATA_INTERVAL = Duration.ofMinutes(1);
+
   private static final Logger LOG = LoggerFactory.getLogger(LogReader.class);
   private static final int PAGE_SIZE = 1000;
   private static final long NONE = -1;
@@ -65,6 +67,10 @@ public final class LogReader {
   private List<String> lineageKeys = List.of();
   // The directory and index for which a whole listing found no segment, and nothing after it.
   private @Nullable String listedWholeFor;
+  private final long metadataIntervalNanos;
+  // long ago, on any monotonic clock
+  private long lineageListedAt = Long.MIN_VALUE / 2;
+  private long markersListedAt = Long.MIN_VALUE / 2;
 
   public LogReader(final ObjectStore store, final LogId log, final StartFrom from) {
     this(store, log, from, ConsumerListener.NONE);
@@ -92,20 +98,27 @@ public final class LogReader {
       final StartFrom from,
       final ConsumerListener listener,
       final Duration holeGrace) {
-    this(store, log, from, listener, holeGrace, MonotonicClock.SYSTEM);
+    this(store, log, from, listener, holeGrace, DEFAULT_METADATA_INTERVAL, MonotonicClock.SYSTEM);
   }
 
+  /**
+   * @param metadataInterval how often a reader at the head of its log looks again for new histories
+   *     and retention markers, which change rarely; a reader that misses an entry, with a later one
+   *     in the store, looks at once
+   */
   LogReader(
       final ObjectStore store,
       final LogId log,
       final StartFrom from,
       final ConsumerListener listener,
       final Duration holeGrace,
+      final Duration metadataInterval,
       final MonotonicClock clock) {
     this.store = store;
     this.log = log;
     this.listener = listener;
     holeGraceNanos = holeGrace.toNanos();
+    metadataIntervalNanos = metadataInterval.toNanos();
     this.clock = clock;
     retentionPrefix = ObjectNames.retentionPrefix(log.cluster(), log.tenant(), log.partition());
     historiesPrefix = ObjectNames.historiesPrefix(log.cluster(), log.tenant());
@@ -176,6 +189,11 @@ public final class LogReader {
    * lineage is read again only when the listing of the parts changed.
    */
   private HistoryLineage lineage() throws IOException {
+    final long now = clock.nanoTime();
+    if (lineage != null && now - lineageListedAt < metadataIntervalNanos) {
+      return lineage;
+    }
+    lineageListedAt = now;
     final var keys = new ArrayList<String>();
     String after = null;
     while (true) {
@@ -276,7 +294,13 @@ public final class LogReader {
    * show a hole, which the reader reports once it has lasted the grace period on its own clock.
    */
   private Step missing(final LogPath path, final long next, final long later) throws IOException {
-    final var retention = newestMarker();
+    // at the head, nothing is missing yet, and a marker only matters once it moved past the head
+    final long now = clock.nanoTime();
+    final boolean listMarkers = later != NONE || now - markersListedAt >= metadataIntervalNanos;
+    if (listMarkers) {
+      markersListedAt = now;
+    }
+    final var retention = listMarkers ? newestMarker() : marker;
     if (retention != null) {
       long gapEnd = retention.firstIndex() - 1;
       long gapEndPosition = retention.firstPosition() - 1;
@@ -298,7 +322,6 @@ public final class LogReader {
       holeIndex = NONE;
       return Step.IDLE;
     }
-    final long now = clock.nanoTime();
     if (holeIndex != next) {
       LOG.debug(
           "Log {} has no segment with index {}, but one from {}; waiting for it", log, next, later);

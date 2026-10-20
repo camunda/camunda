@@ -119,6 +119,10 @@ final class EventPlaneConsumerTest {
               assertEveryRecordDelivered();
               assertThat(killed.heldLogs()).isEqualTo(expected.get("w-x"));
               assertCursorsAtTheEnd(LOGS);
+              // w-y may have held them first; w-x names itself once it wrote its first cursors
+              for (final var log : expected.get("w-x")) {
+                assertThat(cursor(log).worker()).isEqualTo("w-x");
+              }
             });
     deliveries.clear();
 

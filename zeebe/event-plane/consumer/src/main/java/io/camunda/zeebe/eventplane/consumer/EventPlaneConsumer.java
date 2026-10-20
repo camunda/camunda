@@ -155,7 +155,8 @@ public final class EventPlaneConsumer implements AutoCloseable {
               .formatted(workerId));
     }
     if (service != null) {
-      notifications = new Notifications(service, this::onUpload, Duration.ofSeconds(1));
+      notifications =
+          new Notifications(service, this::onUpload, this::wakeAll, Duration.ofSeconds(1));
     }
     final var executor =
         Executors.newSingleThreadScheduledExecutor(
@@ -230,6 +231,11 @@ public final class EventPlaneConsumer implements AutoCloseable {
     if (heldLog != null) {
       heldLog.wake();
     }
+  }
+
+  /** Reads every held log at once, as after a stream of notifications opened again. */
+  private void wakeAll() {
+    held.values().forEach(HeldLog::wake);
   }
 
   /** One round of the coordinator: heartbeat, liveness, logs, assignment and cursors. */
@@ -415,7 +421,8 @@ public final class EventPlaneConsumer implements AutoCloseable {
     final StartFrom from = cursor == null ? start : cursor.cursor();
     final var logStore =
         logLocations.getOrDefault(log, logStores.getOrDefault(log.cluster(), store));
-    final var reader = new LogReader(logStore, log, from, listener, holeGrace, clock);
+    final var reader =
+        new LogReader(logStore, log, from, listener, holeGrace, listingInterval, clock);
     final var heldLog = new HeldLog(store, group, workerId, reader, handler, listingInterval);
     releasing.remove(log);
     held.put(log, heldLog);
