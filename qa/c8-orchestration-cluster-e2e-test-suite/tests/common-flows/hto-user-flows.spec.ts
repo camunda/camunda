@@ -53,7 +53,8 @@ test.describe('HTO User Flow Tests', () => {
     },
   });
 
-  test('User Task Editing Variables Flow', async ({
+  // Skipped due to bug #66364: https://github.com/camunda/camunda/issues/66364
+  test.skip('User Task Editing Variables Flow', async ({
     page,
     operateHomePage,
     operateProcessesPage,
