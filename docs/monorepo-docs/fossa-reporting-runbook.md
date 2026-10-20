@@ -65,6 +65,19 @@ its own job, so a failure in one does not hide the result of another.
   3. Once the scan is green, use "Re-run job" on the failed `fossa-release*` job in the release run.
      That job and the notify jobs that depend on it run again, the rest of the release keeps its
      results.
+- **`fossa/release` fails partway.** The step makes four calls in order: attribution release, SBOM
+  release, attribution report, SBOM report. It does no lookup or rollback, so a re-run always starts
+  again from the first call. Check the job log to see how far it got:
+  - **No release created** (the first call failed): fix the cause, then re-run the job.
+  - **Some releases created:** the log prints each created release ID. Make only the missing calls
+    locally with those IDs, as for a backfill. Do not re-run the job, it would create duplicate
+    releases.
+  - **Fails again:** check the HTTP status in the log. 401/403 means the API key or group rights,
+    404 a wrong group ID, 5xx a FOSSA outage. A re-run only helps for 5xx.
+  - **If this happens again:** make the local
+    [`fossa-release-project`](../../.github/actions/fossa-release-project/action.yml) action look
+    up each release by title before creating it, so a re-run skips the calls that already
+    succeeded. Not done yet, as no partial failure has been seen so far.
 - **Other failures.** The failed job triggers `notify-if-failed`. The release manager dispatches it
   to Engineering Operations for plumbing issues. Wrong report content goes through the license
   triage process.
