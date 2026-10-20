@@ -95,7 +95,39 @@ const ModalAttachments = styled.div`
   flex-shrink: 0;
 `;
 
+const ContentsLayout = styled.div`
+  display: grid;
+  grid-template-columns: minmax(11rem, 16rem) minmax(0, 1fr);
+  gap: var(--cds-spacing-05);
+  flex: 1 1 auto;
+  min-block-size: 0;
+
+  & > nav {
+    position: sticky;
+    inset-block-start: 0;
+    align-self: start;
+  }
+
+  @media (max-width: 40rem) {
+    grid-template-columns: minmax(8rem, 11rem) minmax(0, 1fr);
+    gap: var(--cds-spacing-03);
+  }
+`;
+
+const ContentsPane = styled.div`
+  display: flex;
+  flex-direction: column;
+  min-block-size: 0;
+  min-inline-size: 0;
+
+  & > * {
+    flex-shrink: 0;
+  }
+`;
+
 export {
+  ContentsLayout,
+  ContentsPane,
   Container,
   MessageHeader,
   MessageBlock,

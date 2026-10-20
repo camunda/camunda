@@ -316,13 +316,13 @@ describe('<ConversationHistory />', () => {
     let dialog = within(screen.getByRole('dialog'));
     expect(dialog.getByText('3 / 4')).toBeVisible();
     expect(
-      dialog.getByRole('navigation', {name: 'Conversation navigation'}),
+      dialog.getByRole('navigation', {name: 'History contents'}),
     ).toHaveFocus();
     expect(dialog.getByText('echo hello')).toBeVisible();
     await user.click(dialog.getByRole('button', {name: 'Previous card'}));
     dialog = within(screen.getByRole('dialog'));
     expect(dialog.getByText('2 / 4')).toBeVisible();
-    expect(dialog.getByText('sandbox_bash')).toBeVisible();
+    expect(dialog.getAllByText('sandbox_bash').length).toBeGreaterThan(0);
     expect(dialog.getByRole('tab', {name: 'Preview'})).toBeVisible();
     expect(dialog.getByRole('button', {name: 'Next card'})).not.toHaveAttribute(
       'aria-describedby',
@@ -341,18 +341,18 @@ describe('<ConversationHistory />', () => {
     dialog = within(screen.getByRole('dialog'));
     expect(dialog.getByText('Final answer')).toBeVisible();
     expect(dialog.getByRole('button', {name: 'Next card'})).toBeDisabled();
-    await user.keyboard('{ArrowLeft}');
+    await user.keyboard('{ArrowUp}');
     expect(within(screen.getByRole('dialog')).getByText('3 / 4')).toBeVisible();
     expect(
       within(screen.getByRole('dialog')).getByRole('navigation', {
-        name: 'Conversation navigation',
+        name: 'History contents',
       }),
     ).toHaveFocus();
-    await user.keyboard('{ArrowRight}');
+    await user.keyboard('{ArrowDown}');
     expect(within(screen.getByRole('dialog')).getByText('4 / 4')).toBeVisible();
     expect(
       within(screen.getByRole('dialog')).getByRole('navigation', {
-        name: 'Conversation navigation',
+        name: 'History contents',
       }),
     ).toHaveFocus();
     expect(screen.getAllByRole('dialog')).toHaveLength(1);
@@ -392,6 +392,162 @@ describe('<ConversationHistory />', () => {
         ),
       ).toHaveFocus(),
     );
+  });
+
+  describe('history contents', () => {
+    const readCall = (id: string, path: string) => ({
+      toolCallId: id,
+      toolName: 'read_file',
+      elementId: null,
+      arguments: {path},
+    });
+    const grepCall = {
+      toolCallId: 'grep-1',
+      toolName: 'grep',
+      elementId: null,
+      arguments: {pattern: 'x'},
+    };
+    const renderHistory = async () => {
+      mockSearchAgentInstanceHistory().withSuccess(
+        searchResult([
+          mockAgentInstanceHistoryItem({
+            historyItemKey: '5',
+            role: 'ASSISTANT',
+            content: [{contentType: 'TEXT', text: 'Final answer'}],
+          }),
+          mockAgentInstanceHistoryItem({
+            historyItemKey: '4',
+            role: 'TOOL_RESULT',
+            toolCalls: [grepCall],
+            content: [{contentType: 'TEXT', text: 'no matches'}],
+          }),
+          mockAgentInstanceHistoryItem({
+            historyItemKey: '3',
+            role: 'TOOL_RESULT',
+            toolCalls: [readCall('read-1', '/policies/dispute/policy.md')],
+            content: [{contentType: 'TEXT', text: 'policy text'}],
+          }),
+          mockAgentInstanceHistoryItem({
+            historyItemKey: '2',
+            role: 'ASSISTANT',
+            content: [],
+            toolCalls: [
+              readCall('read-1', '/policies/dispute/policy.md'),
+              grepCall,
+            ],
+          }),
+          mockAgentInstanceHistoryItem({
+            historyItemKey: '1',
+            role: 'USER',
+            content: [{contentType: 'TEXT', text: 'Investigate this claim'}],
+          }),
+        ]),
+      );
+      const view = render(
+        <ConversationHistory
+          agentInstanceKey={AGENT_INSTANCE_KEY}
+          availableTools={[]}
+          agentInstanceStatus="COMPLETED"
+          isVisible
+          selectedElementInstanceKey={null}
+          agentsElementInstanceKeys={[]}
+        />,
+        {wrapper: createWrapper()},
+      );
+      await view.user.click(
+        (await screen.findAllByRole('button', {name: 'Expand'}))[0]!,
+      );
+      return view;
+    };
+    const contents = () =>
+      within(
+        within(screen.getByRole('dialog')).getByRole('navigation', {
+          name: 'History contents',
+        }),
+      );
+
+    it('should list deterministic labels in chronological order', async () => {
+      await renderHistory();
+
+      const steps = contents().getAllByRole('listitem');
+      expect(steps.map((step) => step.textContent)).toEqual([
+        '1User inputUser message',
+        '2Model response 1Requests 2 tool callsread_file, grep',
+        '3Tool resultread_filepolicy.md',
+        '4Tool resultgrep',
+        '5Model response 2Assistant message',
+      ]);
+      expect(contents().getByText('Steps · 5')).toBeVisible();
+    });
+
+    it('should open a selected step and keep Source view and bounds', async () => {
+      const {user} = await renderHistory();
+
+      await user.click(
+        within(screen.getByRole('dialog')).getByRole('tab', {name: 'Source'}),
+      );
+      await user.click(contents().getByRole('button', {name: /policy\.md/}));
+
+      let dialog = within(screen.getByRole('dialog'));
+      expect(screen.getAllByRole('dialog')).toHaveLength(1);
+      expect(dialog.getByText('Tool call: read_file')).toBeVisible();
+      expect(dialog.getByText('3 / 5')).toBeVisible();
+      expect(
+        dialog.getByRole('tab', {name: 'Source', selected: true}),
+      ).toBeInTheDocument();
+      expect(
+        contents().getByRole('button', {name: /policy\.md/}),
+      ).toHaveAttribute('aria-current', 'step');
+
+      await user.click(contents().getByRole('button', {name: /User message/}));
+      dialog = within(screen.getByRole('dialog'));
+      expect(dialog.getByText('1 / 5')).toBeVisible();
+      expect(
+        dialog.getByRole('button', {name: 'Previous card'}),
+      ).toBeDisabled();
+      await user.keyboard('{ArrowUp}');
+      expect(dialog.getByText('1 / 5')).toBeVisible();
+      await user.keyboard('{ArrowDown}');
+      expect(
+        within(screen.getByRole('dialog')).getByText('2 / 5'),
+      ).toBeVisible();
+      expect(
+        within(screen.getByRole('dialog')).getByRole('tab', {
+          name: 'Source',
+          selected: true,
+        }),
+      ).toBeInTheDocument();
+    });
+
+    it('should stop at the last step and ignore Left/Right', async () => {
+      const {user} = await renderHistory();
+
+      await user.click(
+        contents().getByRole('button', {name: /Model response 2/}),
+      );
+      await user.keyboard('{ArrowDown}');
+      expect(
+        within(screen.getByRole('dialog')).getByText('5 / 5'),
+      ).toBeVisible();
+      await user.keyboard('{ArrowLeft}');
+      expect(
+        within(screen.getByRole('dialog')).getByText('5 / 5'),
+      ).toBeVisible();
+    });
+
+    it('should not navigate while the source editor or content has focus', async () => {
+      const {user} = await renderHistory();
+
+      await user.click(
+        within(screen.getByRole('dialog')).getByRole('tab', {name: 'Source'}),
+      );
+      await user.click(await screen.findByRole('textbox'));
+      const position = within(screen.getByRole('dialog')).getByRole('status');
+      const before = position.textContent;
+      await user.keyboard('{ArrowUp}');
+      await user.keyboard('{ArrowDown}');
+      expect(position).toHaveTextContent(before!);
+    });
   });
 
   it('should load earlier cards across a page boundary from the previous arrow', async () => {

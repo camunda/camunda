@@ -11,7 +11,13 @@ import {Modal} from '@carbon/react';
 import {CopyButton} from 'modules/components/CopyButton';
 import {StructuredText} from './StructuredValue/StructuredText';
 import {StructuredValue} from './StructuredValue';
-import {ModalContent, ModalToolbar, ModalAttachments} from './styled';
+import {
+  ContentsLayout,
+  ContentsPane,
+  ModalContent,
+  ModalToolbar,
+  ModalAttachments,
+} from './styled';
 
 import {
   ModalViewSwitcher,
@@ -28,6 +34,7 @@ type MessageDetailsModalProps = ModalViewProps & {
   value?: unknown;
   onClose: () => void;
   navigation?: ReactNode;
+  contents?: ReactNode;
   attachments?: ReactNode;
 };
 
@@ -38,6 +45,7 @@ const MessageDetailsModal: React.FC<MessageDetailsModalProps> = ({
   value,
   onClose,
   navigation,
+  contents,
   attachments,
   view,
   onViewChange,
@@ -46,24 +54,8 @@ const MessageDetailsModal: React.FC<MessageDetailsModalProps> = ({
   const modalView = view ?? localView;
   const setModalView = onViewChange ?? setLocalView;
 
-  return (
-    <Modal
-      open
-      modalHeading={
-        navigation ? (
-          <span className="agent-history-heading">
-            <span>{title}</span>
-            {navigation}
-          </span>
-        ) : (
-          title
-        )
-      }
-      onRequestClose={onClose}
-      size="lg"
-      passiveModal
-      className={navigation ? 'agent-history-modal' : undefined}
-    >
+  const body = (
+    <>
       {language === 'markdown' ? (
         <>
           <ModalToolbar>
@@ -91,6 +83,35 @@ const MessageDetailsModal: React.FC<MessageDetailsModalProps> = ({
             <StructuredValue value={value} />
           </ModalContent>
         </>
+      )}
+    </>
+  );
+
+  return (
+    <Modal
+      open
+      modalHeading={
+        navigation ? (
+          <span className="agent-history-heading">
+            <span>{title}</span>
+            {navigation}
+          </span>
+        ) : (
+          title
+        )
+      }
+      onRequestClose={onClose}
+      size="lg"
+      passiveModal
+      className={navigation || contents ? 'agent-history-modal' : undefined}
+    >
+      {contents ? (
+        <ContentsLayout>
+          {contents}
+          <ContentsPane>{body}</ContentsPane>
+        </ContentsLayout>
+      ) : (
+        body
       )}
     </Modal>
   );
