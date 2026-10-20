@@ -7,6 +7,7 @@
  */
 
 import type {
+	QueryElementInstanceEffectiveVariablesRequestBody,
 	QueryElementInstancesRequestBody,
 	QueryUserTasksRequestBody,
 	QueryVariablesRequestBody,
@@ -31,12 +32,23 @@ function getCaseUserTasksRequestBody(processInstanceKey: string): QueryUserTasks
 }
 
 /**
- * Case data lives in the root scope (CASE_DATA.md). The search requests the named variables only: the
- * names come from the BPMN and the case form, never all variables of the case.
+ * Reads case data from the root scope, for a case without a running stage. The search requests the
+ * named variables only: the names come from the BPMN and the case form, never all variables of the case.
  */
 function getCaseVariablesRequestBody(processInstanceKey: string, names: string[]): QueryVariablesRequestBody {
 	return {
 		filter: {processInstanceKey, scopeKey: processInstanceKey, name: {$in: [...names].sort()}},
+		page: {limit: MAX_ITEMS},
+	};
+}
+
+/**
+ * Reads case data as the running stage sees it: an input mapping of the stage can shadow a root
+ * variable, such as caseHeader, and the tasks of the stage then change the stage-local copy.
+ */
+function getStageCaseVariablesRequestBody(names: string[]): QueryElementInstanceEffectiveVariablesRequestBody {
+	return {
+		filter: {name: {$in: [...names].sort()}},
 		page: {limit: MAX_ITEMS},
 	};
 }
@@ -54,4 +66,5 @@ export {
 	getCaseUserTasksRequestBody,
 	getCaseVariablesRequestBody,
 	getDocumentVariablesRequestBody,
+	getStageCaseVariablesRequestBody,
 };
