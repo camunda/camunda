@@ -31,6 +31,7 @@ import io.camunda.gateway.mapping.http.converters.DecisionInstanceStateConverter
 import io.camunda.gateway.mapping.http.converters.ProcessInstanceStateConverter;
 import io.camunda.gateway.mapping.http.mapper.ClusterVariableMapper;
 import io.camunda.gateway.mapping.http.validator.TagsValidator;
+import io.camunda.gateway.protocol.model.AdvancedProtectionModeFilter;
 import io.camunda.gateway.protocol.model.BaseProcessInstanceFilterFields;
 import io.camunda.gateway.protocol.model.ClusterVariableSearchQueryFilterRequest;
 import io.camunda.gateway.protocol.model.ElementInstanceFilterFields;
@@ -40,6 +41,8 @@ import io.camunda.gateway.protocol.model.IncidentProcessInstanceStatisticsByDefi
 import io.camunda.gateway.protocol.model.MappingRuleFilterFields;
 import io.camunda.gateway.protocol.model.ProcessDefinitionVariableNameFilter;
 import io.camunda.gateway.protocol.model.ProcessInstanceFilterFields;
+import io.camunda.gateway.protocol.model.ProtectionModeEnum;
+import io.camunda.gateway.protocol.model.ProtectionModeFilterProperty;
 import io.camunda.gateway.protocol.model.ResourceFilter;
 import io.camunda.gateway.protocol.model.RoleFilterFields;
 import io.camunda.gateway.protocol.model.RoleUserFilterRequest;
@@ -54,6 +57,7 @@ import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeType;
 import io.camunda.search.entities.GlobalListenerType;
 import io.camunda.search.entities.IncidentEntity.IncidentState;
 import io.camunda.search.entities.ProcessDefinitionEntity.ProcessDefinitionState;
+import io.camunda.search.entities.VariableEntity.ProtectionMode;
 import io.camunda.search.filter.AgentDefinitionFilter;
 import io.camunda.search.filter.AgentInstanceFilter;
 import io.camunda.search.filter.AgentInstanceHistoryFilter;
@@ -367,10 +371,21 @@ public class SearchQueryFilterMapper {
     ofNullable(filter.getIsTruncated()).ifPresent(builder::isTruncated);
     ofNullable(filter.getName()).map(mapToStringOperations()).ifPresent(builder::nameOperations);
     ofNullable(filter.getValue()).map(mapToStringOperations()).ifPresent(builder::valueOperations);
+    ofNullable(filter.getProtectionMode())
+        .map(SearchQueryFilterMapper::toProtectionModes)
+        .ifPresent(builder::protectionModes);
 
     return validationErrors.isEmpty()
         ? Either.right(builder.build())
         : Either.left(validationErrors);
+  }
+
+  private static List<ProtectionMode> toProtectionModes(final ProtectionModeFilterProperty filter) {
+    final var modes =
+        filter instanceof final AdvancedProtectionModeFilter advanced
+            ? advanced.get$In()
+            : List.<ProtectionModeEnum>of();
+    return modes.stream().map(mode -> convertEnum(mode, ProtectionMode.class)).toList();
   }
 
   static Either<List<String>, VariableFilter> toVariableNameFilter(
