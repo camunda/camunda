@@ -23,6 +23,7 @@ import java.util.Map;
 import java.util.TreeMap;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 /**
  * A worker of a consumer group for trying the Event Plane out: it counts what it reads per log, and
@@ -55,15 +56,25 @@ public final class WorkerApp {
     if (service != null && !service.isBlank()) {
       builder.service(URI.create(service));
     }
-    final var stopped = new CountDownLatch(1);
-    try (final var consumer = builder.build()) {
-      Runtime.getRuntime().addShutdownHook(new Thread(stopped::countDown));
-      consumer.start();
-      while (!stopped.await(10, java.util.concurrent.TimeUnit.SECONDS)) {
-        stats.print();
-      }
-    } finally {
-      store.close();
+    final var consumer = builder.build();
+    // The JVM waits for its shutdown hooks, but not for the main thread: closing here writes the
+    // final cursors and deletes the heartbeat, so that the worker's logs move at once.
+    final var closed = new CountDownLatch(1);
+    Runtime.getRuntime()
+        .addShutdownHook(
+            new Thread(
+                () -> {
+                  consumer.close();
+                  try {
+                    store.close();
+                  } catch (final Exception e) {
+                    System.err.println("Failed to close the store: " + e);
+                  }
+                  closed.countDown();
+                }));
+    consumer.start();
+    while (!closed.await(10, TimeUnit.SECONDS)) {
+      stats.print();
     }
   }
 

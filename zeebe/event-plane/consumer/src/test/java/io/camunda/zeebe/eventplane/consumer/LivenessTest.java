@@ -47,6 +47,19 @@ final class LivenessTest {
   }
 
   @Test
+  void shouldTellWhichWorkersHaveBeenDeadForLong() {
+    // given
+    liveness.observe(Set.of("w-1", "w-2"), Map.of("w-1", 1L, "w-2", 1L), 0);
+
+    // when
+    liveness.observe(Set.of("w-1", "w-2"), Map.of("w-1", 1L, "w-2", 2L), 200 * SECOND);
+
+    // then
+    assertThat(liveness.deadFor(Duration.ofMinutes(5), 299 * SECOND)).isEmpty();
+    assertThat(liveness.deadFor(Duration.ofMinutes(5), 300 * SECOND)).containsExactly("w-1");
+  }
+
+  @Test
   void shouldKeepAWorkerLiveWhileItsBeatChanges() {
     // given
     liveness.observe(Set.of("w-1"), Map.of("w-1", 1L), 0);

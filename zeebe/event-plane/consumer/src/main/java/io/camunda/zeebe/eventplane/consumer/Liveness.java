@@ -63,5 +63,17 @@ final class Liveness {
     return live;
   }
 
+  /** The workers whose heartbeat hasn't changed for this long, on this worker's own clock. */
+  Set<String> deadFor(final Duration time, final long now) {
+    final var dead = new TreeSet<String>();
+    seen.forEach(
+        (worker, last) -> {
+          if (now - last.changedAt() >= time.toNanos()) {
+            dead.add(worker);
+          }
+        });
+    return dead;
+  }
+
   private record Seen(long beat, long changedAt) {}
 }

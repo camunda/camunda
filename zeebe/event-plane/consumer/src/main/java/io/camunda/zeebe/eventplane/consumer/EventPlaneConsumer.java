@@ -59,6 +59,7 @@ public final class EventPlaneConsumer implements AutoCloseable {
 
   private static final Logger LOG = LoggerFactory.getLogger(EventPlaneConsumer.class);
   private static final int PAGE_SIZE = 1000;
+  private static final int DEAD_HEARTBEAT_LEASES = 10;
 
   private final ObjectStore store;
   private final Map<String, ObjectStore> logStores;
@@ -312,6 +313,16 @@ public final class EventPlaneConsumer implements AutoCloseable {
       return;
     }
     liveness.observe(listed, beats, now);
+    // A worker that died without closing leaves its heartbeat, which everyone would read every
+    // round from then on. Long dead, it goes; a worker that was only cut off writes it again.
+    for (final var dead : liveness.deadFor(lease.multipliedBy(DEAD_HEARTBEAT_LEASES), now)) {
+      try {
+        store.delete(ObjectNames.worker(group, dead));
+        LOG.info("Worker {} deleted the heartbeat of worker {}, dead for long", workerId, dead);
+      } catch (final IOException e) {
+        LOG.debug("Failed to delete the heartbeat of worker {}", dead, e);
+      }
+    }
   }
 
   private static void readBeat(
