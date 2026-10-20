@@ -162,7 +162,6 @@ public final class CamundaExporterConfigurationApplier {
     final HistoryConfiguration target = exporterConfiguration.getHistory();
     target.setProcessInstanceEnabled(source.getHistory().isProcessInstanceEnabled());
     target.setProcessInstanceRetentionMode(source.getHistory().getProcessInstanceRetentionMode());
-    target.setArchiveByIdEnabled(source.getHistory().isArchiveByIdEnabled());
     target.getRetention().setPolicyName(source.getHistory().getPolicyName());
     target.setElsRolloverDateFormat(source.getHistory().getElsRolloverDateFormat());
     target.setRolloverInterval(source.getHistory().getRolloverInterval());
