@@ -1157,7 +1157,6 @@
 			"caseTaskAssignedToYou": "Assigned to you",
 			"caseTaskUnassigned": "Unassigned",
 			"caseOpenTask": "Open",
-			"caseActivitiesLabel": "Activities",
 			"caseActivitiesCount": "{{completed}} of {{total}} done",
 			"caseActivityRequired": "Required",
 			"caseActivityOptional": "Optional",

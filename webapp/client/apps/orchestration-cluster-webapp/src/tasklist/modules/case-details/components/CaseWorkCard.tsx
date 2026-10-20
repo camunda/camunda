@@ -23,7 +23,7 @@ import {
 import {ArrowRight, Check, CircleCheck, CirclePlay, LoaderCircle, UserRound} from '@camunda/design-system/icons';
 import type {ProcessInstance, UserTask} from '@camunda/camunda-api-zod-schemas/8.11';
 import {cn} from '#/shared/cn';
-import type {ActivityStatus, StageActivity, StageWork} from '#/tasklist/modules/case-details/getStageWork';
+import type {StageTask, StageWork, TaskStatus} from '#/tasklist/modules/case-details/getStageWork';
 import type {CaseWorkStatus} from '#/tasklist/modules/case-details/useCaseWork';
 
 function useAssignmentLabel() {
@@ -49,7 +49,7 @@ const ACTIVITY_STATUS_KEYS = {
 	active: 'tasklist.caseActivityActive',
 	completed: 'tasklist.caseActivityCompleted',
 	notStarted: 'tasklist.caseActivityNotStarted',
-} as const satisfies Record<ActivityStatus, string>;
+} as const satisfies Record<TaskStatus, string>;
 
 type TaskRowProps = {
 	name: string;
@@ -84,10 +84,10 @@ type Props = {
 	work: StageWork;
 	currentUsername: string;
 	caseWorkStatus: CaseWorkStatus;
-	/** The optional activity that the case worker opens, while the case starts it. */
+	/** The optional task that the case worker opens, while the case starts it. */
 	openingElementId: string | null;
 	onOpenTask: (userTaskKey: string) => void;
-	onOpenActivity: (elementId: string) => void;
+	onStartTask: (elementId: string) => void;
 	onCompleteStage: () => void;
 };
 
@@ -100,16 +100,16 @@ const CaseWorkCard: React.FC<Props> = ({
 	caseWorkStatus,
 	openingElementId,
 	onOpenTask,
-	onOpenActivity,
+	onStartTask,
 	onCompleteStage,
 }) => {
 	const {t} = useTranslation();
 	const getAssignmentLabel = useAssignmentLabel();
-	const {activities, openTasks, completion} = work;
+	const {tasks, isAdHoc, completion} = work;
 	const isBusy = caseWorkStatus !== 'idle';
 	const isClosingStage = caseWorkStatus === 'completingStage' || caseWorkStatus === 'waitingForNextStage';
-	const completedCount = activities.filter((activity) => activity.completedCount > 0).length;
-	const hasWork = activities.length > 0 || openTasks.length > 0;
+	const adHocTasks = tasks.filter(({isAdHocTask}) => isAdHocTask);
+	const completedCount = adHocTasks.filter((task) => task.completedCount > 0).length;
 
 	// The searches can show the next stage before the stage completion settles, so the footer stays
 	// until the state machine is idle again.
@@ -140,20 +140,34 @@ const CaseWorkCard: React.FC<Props> = ({
 		</Button>
 	);
 
-	const getActivityDescription = ({isRequired, status, completedCount: timesCompleted}: StageActivity): string =>
+	const getTaskDescription = (task: StageTask): string =>
 		[
-			isRequired ? t('tasklist.caseActivityRequired') : t('tasklist.caseActivityOptional'),
-			status === 'completed' && timesCompleted > 1
-				? t('tasklist.caseActivityCompletedTimes', {count: timesCompleted})
-				: t(ACTIVITY_STATUS_KEYS[status]),
-			status !== 'completed' && timesCompleted > 0
-				? t('tasklist.caseActivityCompletedBefore', {count: timesCompleted})
+			task.isRequired ? t('tasklist.caseActivityRequired') : t('tasklist.caseActivityOptional'),
+			task.userTask !== null
+				? getAssignmentLabel(task.userTask, currentUsername)
+				: task.status === 'completed' && task.completedCount > 1
+					? t('tasklist.caseActivityCompletedTimes', {count: task.completedCount})
+					: t(ACTIVITY_STATUS_KEYS[task.status]),
+			task.status !== 'completed' && task.completedCount > 0
+				? t('tasklist.caseActivityCompletedBefore', {count: task.completedCount})
 				: null,
 		]
 			.filter((part) => part !== null)
 			.join(' · ');
 
-	const renderActivityAction = ({elementId, isRequired, status, userTask}: StageActivity) => {
+	const getTaskIcon = ({completedCount: timesCompleted, userTask}: StageTask) => {
+		if (timesCompleted > 0) {
+			return <CircleCheck className="size-4 shrink-0 text-[color:var(--success-action-default)]" aria-hidden />;
+		}
+
+		return userTask === null ? (
+			<CirclePlay className="size-4 shrink-0 text-neutral-foreground-subtle" aria-hidden />
+		) : (
+			<UserRound className="size-4 shrink-0 text-[color:var(--info-action-default)]" aria-hidden />
+		);
+	};
+
+	const renderTaskAction = ({elementId, canStart, status, userTask}: StageTask) => {
 		if (userTask !== null) {
 			return renderOpenButton(userTask);
 		}
@@ -162,7 +176,7 @@ const CaseWorkCard: React.FC<Props> = ({
 			return <LoaderCircle className="size-4 animate-spin text-neutral-foreground-subtle" aria-hidden />;
 		}
 
-		if (isRequired) {
+		if (!canStart) {
 			return null;
 		}
 
@@ -172,7 +186,7 @@ const CaseWorkCard: React.FC<Props> = ({
 				size="sm"
 				disabled={isBusy}
 				aria-busy={openingElementId === elementId}
-				onClick={() => onOpenActivity(elementId)}
+				onClick={() => onStartTask(elementId)}
 			>
 				{status === 'completed' ? t('tasklist.caseActivityStartAgain') : t('tasklist.caseOpenTask')}
 				{openingElementId === elementId ? <Spinner /> : <ArrowRight aria-hidden />}
@@ -202,7 +216,7 @@ const CaseWorkCard: React.FC<Props> = ({
 				<CardTitle className="text-lg">{stageName ?? t('tasklist.caseAllOpenTasks')}</CardTitle>
 			</CardHeader>
 			<CardContent className="flex flex-col gap-5">
-				{hasWork ? null : (
+				{tasks.length === 0 ? (
 					<EmptyState
 						size="sm"
 						heading={
@@ -213,59 +227,29 @@ const CaseWorkCard: React.FC<Props> = ({
 									: t('tasklist.caseNoOpenWork')
 						}
 					/>
-				)}
-
-				{openTasks.length === 0 ? null : (
+				) : (
 					<section className="flex flex-col gap-2" aria-label={t('tasklist.caseTasksLabel')}>
-						<Heading as="h3" variant="label-sm" className="tracking-wide text-neutral-foreground-subtle uppercase">
-							{t('tasklist.caseTasksLabel')}
-						</Heading>
-						<ul className="flex flex-col gap-2">
-							{openTasks.map((userTask) => (
-								<WorkRow
-									key={userTask.userTaskKey}
-									name={userTask.name || userTask.elementId}
-									description={[
-										work.optionalStageNames[userTask.userTaskKey],
-										getAssignmentLabel(userTask, currentUsername),
-									]
-										.filter(Boolean)
-										.join(' · ')}
-									icon={<UserRound className="size-4 shrink-0 text-[color:var(--info-action-default)]" aria-hidden />}
-									action={renderOpenButton(userTask)}
-								/>
-							))}
-						</ul>
-					</section>
-				)}
-
-				{activities.length === 0 ? null : (
-					<section className="flex flex-col gap-2" aria-label={t('tasklist.caseActivitiesLabel')}>
 						<Heading
 							as="h3"
 							variant="label-sm"
 							className="flex items-baseline gap-2 tracking-wide text-neutral-foreground-subtle uppercase"
 						>
-							{t('tasklist.caseActivitiesLabel')}
-							<span className="font-normal tracking-normal normal-case">
-								{t('tasklist.caseActivitiesCount', {completed: completedCount, total: activities.length})}
-							</span>
+							{t('tasklist.caseTasksLabel')}
+							{isAdHoc ? (
+								<span className="font-normal tracking-normal normal-case">
+									{t('tasklist.caseActivitiesCount', {completed: completedCount, total: adHocTasks.length})}
+								</span>
+							) : null}
 						</Heading>
 						<ul className="flex flex-col gap-2">
-							{activities.map((activity) => (
+							{tasks.map((task) => (
 								<WorkRow
-									key={activity.elementId}
-									name={activity.name}
-									description={getActivityDescription(activity)}
-									icon={
-										activity.completedCount > 0 ? (
-											<CircleCheck className="size-4 shrink-0 text-[color:var(--success-action-default)]" aria-hidden />
-										) : (
-											<CirclePlay className="size-4 shrink-0 text-neutral-foreground-subtle" aria-hidden />
-										)
-									}
-									isDone={activity.status === 'completed'}
-									action={renderActivityAction(activity)}
+									key={task.key}
+									name={task.name}
+									description={getTaskDescription(task)}
+									icon={getTaskIcon(task)}
+									isDone={task.status === 'completed'}
+									action={renderTaskAction(task)}
 								/>
 							))}
 						</ul>

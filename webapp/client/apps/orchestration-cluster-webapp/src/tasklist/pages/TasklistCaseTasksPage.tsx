@@ -45,7 +45,7 @@ const TasklistCaseTasksPage: React.FC<Props> = ({
 			caseWorkStatus={caseWork.status}
 			openingElementId={caseWork.openingElementId}
 			onOpenTask={onOpenTask}
-			onOpenActivity={(elementId) => {
+			onStartTask={(elementId) => {
 				if (stageInstanceKey !== null) {
 					caseWork.openActivity({
 						stageInstanceKey,

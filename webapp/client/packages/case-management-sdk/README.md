@@ -27,14 +27,14 @@ never all variables of a case. The BPMN does not name the document variables: se
 
 ## Stage kinds
 
-| Kind          | BPMN                               | On the line                                                             |
-| ------------- | ---------------------------------- | ----------------------------------------------------------------------- |
-| `subProcess`  | Embedded sub-process               | Yes, in the order of the sequence flows                                 |
-| `adHoc`       | Ad-hoc sub-process                 | Yes                                                                     |
-| `alternative` | Interrupting event sub-process     | Only once the case enters it; it replaces the stages that did not start |
-| `optional`    | Non-interrupting event sub-process | No: the design has no model for optional stages yet (GAP-001)           |
+| Kind          | BPMN                           | On the line                                                             |
+| ------------- | ------------------------------ | ----------------------------------------------------------------------- |
+| `subProcess`  | Embedded sub-process           | Yes, in the order of the sequence flows                                 |
+| `adHoc`       | Ad-hoc sub-process             | Yes                                                                     |
+| `alternative` | Interrupting event sub-process | Only once the case enters it; it replaces the stages that did not start |
 
-A stage marker below the top level is ignored. A loop back to an earlier stage (rework) runs it again: the stages
+A stage marker below the top level is ignored. Optional stages are not supported (GAP-001): a stage marker on a
+non-interrupting event sub-process is ignored. A loop back to an earlier stage (rework) runs it again: the stages
 after it that ended before the new run read as ahead.
 
 ## Prototype conventions
