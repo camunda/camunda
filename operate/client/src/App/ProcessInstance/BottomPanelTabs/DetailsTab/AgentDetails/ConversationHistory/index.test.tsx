@@ -351,6 +351,28 @@ describe('<ConversationHistory />', () => {
     ).toHaveFocus();
     expect(screen.getAllByRole('dialog')).toHaveLength(1);
     await user.click(
+      within(screen.getByRole('dialog')).getByRole('tab', {name: 'Source'}),
+    );
+    expect(await screen.findByRole('textbox')).toHaveValue('Final answer');
+    await user.click(
+      within(screen.getByRole('dialog')).getByRole('button', {
+        name: 'Previous card',
+      }),
+    );
+    dialog = within(screen.getByRole('dialog'));
+    expect(
+      dialog.getByRole('tab', {name: 'Source', selected: true}),
+    ).toBeInTheDocument();
+    expect(
+      await within(dialog.getByTestId('tool-call-input')).findByRole('textbox'),
+    ).toHaveValue(JSON.stringify(call.arguments, null, 2));
+    await user.click(dialog.getByRole('button', {name: 'Next card'}));
+    dialog = within(screen.getByRole('dialog'));
+    expect(
+      dialog.getByRole('tab', {name: 'Source', selected: true}),
+    ).toBeInTheDocument();
+    expect(await dialog.findByRole('textbox')).toHaveValue('Final answer');
+    await user.click(
       within(screen.getByRole('dialog')).getByRole('button', {name: 'Close'}),
     );
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();

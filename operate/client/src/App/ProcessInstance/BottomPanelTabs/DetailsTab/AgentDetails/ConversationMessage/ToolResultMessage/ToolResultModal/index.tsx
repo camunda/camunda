@@ -7,7 +7,7 @@
  */
 
 import {Modal} from '@carbon/react';
-import type {ReactNode} from 'react';
+import {useState, type ReactNode} from 'react';
 import {CopyButton} from 'modules/components/CopyButton';
 import {
   EMPTY_RESULT_MESSAGE,
@@ -19,7 +19,13 @@ import {StructuredValue} from '../../StructuredValue';
 import {EvidenceCards} from '../../EvidenceCard';
 import {getContentEvidence} from '../../EvidenceCard/evidence';
 import {DocumentContent} from '../../MessageAttachments/DocumentContent';
-import {ModalAttachments} from '../../styled';
+import {ModalAttachments, ModalToolbar} from '../../styled';
+import {
+  ModalViewSwitcher,
+  SourceEditor,
+  type ModalView,
+  type ModalViewProps,
+} from '../../ModalView';
 import {DocumentProcessing} from '../../MessageAttachments/DocumentProcessing';
 import {
   Description,
@@ -30,7 +36,7 @@ import {
   EmptyHint,
 } from './styled';
 
-type ToolResultModalProps = {
+type ToolResultModalProps = ModalViewProps & {
   toolName: string;
   description: string | null;
   input: Record<string, unknown> | null;
@@ -48,10 +54,19 @@ const ToolResultModal: React.FC<ToolResultModalProps> = ({
   onClose,
   navigation,
   parsingInput,
+  view,
+  onViewChange,
 }) => {
+  const [localView, setLocalView] = useState<ModalView>('preview');
+  const modalView = view ?? localView;
+  const setModalView = onViewChange ?? setLocalView;
+  const isSource = modalView === 'source';
   const hasInput = input !== null && Object.keys(input).length > 0;
   const result = getToolCallResult(content);
   const hasEvidence = getContentEvidence(content).length > 0;
+  const outputCopyValue = isSource
+    ? JSON.stringify(content, null, 2)
+    : result?.copyValue;
 
   return (
     <Modal
@@ -71,18 +86,28 @@ const ToolResultModal: React.FC<ToolResultModalProps> = ({
       }
       className={navigation ? 'agent-history-modal' : undefined}
     >
+      <ModalToolbar>
+        <ModalViewSwitcher view={modalView} onChange={setModalView} />
+      </ModalToolbar>
       {description && <Description>{description}</Description>}
       <Columns>
         <Column aria-label="Input" data-testid="tool-call-input">
           <ColumnLabel>Input</ColumnLabel>
-          {hasInput && (
+          {(isSource || hasInput) && (
             <CopyButton
               value={JSON.stringify(input, null, 2)}
               hasIconOnly
               tooltipAlignment="end"
             />
           )}
-          {hasInput ? (
+          {isSource ? (
+            <ResultContainer>
+              <SourceEditor
+                value={JSON.stringify(input, null, 2)}
+                height="40vh"
+              />
+            </ResultContainer>
+          ) : hasInput ? (
             <ResultContainer>
               <StructuredValue value={input} />
             </ResultContainer>
@@ -92,22 +117,30 @@ const ToolResultModal: React.FC<ToolResultModalProps> = ({
         </Column>
         <Column aria-label="Output" data-testid="tool-call-output">
           <ColumnLabel>Output</ColumnLabel>
-          {result !== null && (
+          {outputCopyValue !== undefined && (
             <CopyButton
-              value={result.copyValue}
+              value={outputCopyValue}
               hasIconOnly
               tooltipAlignment="end"
             />
           )}
-          {result === null && hasEvidence && (
+          {isSource && (
+            <ResultContainer>
+              <SourceEditor
+                value={JSON.stringify(content, null, 2)}
+                height="40vh"
+              />
+            </ResultContainer>
+          )}
+          {!isSource && result === null && hasEvidence && (
             <ResultContainer>
               <EvidenceCards content={content} />
             </ResultContainer>
           )}
-          {result === null && !hasEvidence && (
+          {!isSource && result === null && !hasEvidence && (
             <EmptyHint>{EMPTY_RESULT_MESSAGE}</EmptyHint>
           )}
-          {result !== null && (
+          {!isSource && result !== null && (
             <ResultContainer>
               {result.kind === 'structured' ? (
                 <StructuredValue value={result.value} />
@@ -118,17 +151,19 @@ const ToolResultModal: React.FC<ToolResultModalProps> = ({
           )}
         </Column>
       </Columns>
-      <ModalAttachments>
-        {parsingInput ? (
-          <DocumentProcessing input={parsingInput} output={content} showAll />
-        ) : (
-          <DocumentContent
-            content={content}
-            modalTitleSuffix="tool result"
-            showAll
-          />
-        )}
-      </ModalAttachments>
+      {!isSource && (
+        <ModalAttachments>
+          {parsingInput ? (
+            <DocumentProcessing input={parsingInput} output={content} showAll />
+          ) : (
+            <DocumentContent
+              content={content}
+              modalTitleSuffix="tool result"
+              showAll
+            />
+          )}
+        </ModalAttachments>
+      )}
     </Modal>
   );
 };

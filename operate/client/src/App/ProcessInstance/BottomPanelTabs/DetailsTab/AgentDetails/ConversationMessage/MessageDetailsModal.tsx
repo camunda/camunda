@@ -6,30 +6,21 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {lazy, Suspense, useState, type ReactNode} from 'react';
-import {Modal, Switch} from '@carbon/react';
+import {useState, type ReactNode} from 'react';
+import {Modal} from '@carbon/react';
 import {CopyButton} from 'modules/components/CopyButton';
 import {StructuredText} from './StructuredValue/StructuredText';
 import {StructuredValue} from './StructuredValue';
+import {ModalContent, ModalToolbar, ModalAttachments} from './styled';
+
 import {
-  ModalContent,
-  ModalToolbar,
-  ViewSwitcher,
-  ModalAttachments,
-} from './styled';
+  ModalViewSwitcher,
+  SourceEditor,
+  type ModalView,
+  type ModalViewProps,
+} from './ModalView';
 
-const RichTextEditor = lazy(async () => {
-  const [{loadMonaco}, {RichTextEditor}] = await Promise.all([
-    import('modules/loadMonaco'),
-    import('modules/components/RichTextEditor'),
-  ]);
-
-  loadMonaco();
-
-  return {default: RichTextEditor};
-});
-
-type MessageDetailsModalProps = {
+type MessageDetailsModalProps = ModalViewProps & {
   title: string;
   language: 'markdown' | 'structured';
   /** Markdown source, or the copy value for structured content. */
@@ -48,8 +39,12 @@ const MessageDetailsModal: React.FC<MessageDetailsModalProps> = ({
   onClose,
   navigation,
   attachments,
+  view,
+  onViewChange,
 }) => {
-  const [modalView, setModalView] = useState<'preview' | 'source'>('preview');
+  const [localView, setLocalView] = useState<ModalView>('preview');
+  const modalView = view ?? localView;
+  const setModalView = onViewChange ?? setLocalView;
 
   return (
     <Modal
@@ -72,14 +67,7 @@ const MessageDetailsModal: React.FC<MessageDetailsModalProps> = ({
       {language === 'markdown' ? (
         <>
           <ModalToolbar>
-            <ViewSwitcher
-              size="sm"
-              onChange={({name}) => setModalView(name as 'preview' | 'source')}
-              selectedIndex={modalView === 'preview' ? 0 : 1}
-            >
-              <Switch name="preview" text="Preview" />
-              <Switch name="source" text="Source" />
-            </ViewSwitcher>
+            <ModalViewSwitcher view={modalView} onChange={setModalView} />
             <CopyButton value={content} />
           </ModalToolbar>
           {modalView === 'preview' ? (
@@ -87,11 +75,11 @@ const MessageDetailsModal: React.FC<MessageDetailsModalProps> = ({
               <StructuredText content={content} />
             </ModalContent>
           ) : (
-            <Suspense>
-              <RichTextEditor value={content} readOnly language="markdown" />
-            </Suspense>
+            <SourceEditor value={content} language="markdown" />
           )}
-          {attachments && <ModalAttachments>{attachments}</ModalAttachments>}
+          {modalView === 'preview' && attachments && (
+            <ModalAttachments>{attachments}</ModalAttachments>
+          )}
         </>
       ) : (
         <>

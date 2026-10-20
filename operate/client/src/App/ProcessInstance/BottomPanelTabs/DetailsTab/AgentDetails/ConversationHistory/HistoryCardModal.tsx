@@ -7,7 +7,7 @@
  */
 
 import {Button} from '@carbon/react';
-import {useEffect, useRef} from 'react';
+import {useEffect, useRef, useState} from 'react';
 import {ArrowLeft, ArrowRight} from '@carbon/react/icons';
 import type {
   AgentInstanceHistoryItem,
@@ -24,6 +24,7 @@ import {
 import {ToolResultModal} from '../ConversationMessage/ToolResultMessage/ToolResultModal';
 import {MessageDetailsModal} from '../ConversationMessage/MessageDetailsModal';
 import {HistoryNavigation} from './styled';
+import type {ModalView} from '../ConversationMessage/ModalView';
 
 type Props = {
   item: AgentInstanceHistoryItem;
@@ -59,6 +60,7 @@ const HistoryCardModal: React.FC<Props> = ({
   hideDocumentParsing,
 }) => {
   const contentRef = useRef<HTMLElement>(null);
+  const [view, setView] = useState<ModalView>('preview');
   useEffect(() => {
     const content = contentRef.current
       ?.closest('[role="dialog"]')
@@ -80,7 +82,9 @@ const HistoryCardModal: React.FC<Props> = ({
         loading ||
         !dialog ||
         !(target instanceof HTMLElement) ||
-        target.closest('input, textarea, select, [contenteditable="true"]') ||
+        target.closest(
+          'input, textarea, select, [contenteditable="true"], .monaco-editor',
+        ) ||
         (target !== document.body &&
           target.closest('[role="dialog"]') !== dialog)
       ) {
@@ -138,6 +142,8 @@ const HistoryCardModal: React.FC<Props> = ({
   if (toolCall) {
     return (
       <ToolResultModal
+        view={view}
+        onViewChange={setView}
         toolName={toolCall.toolName}
         description={
           availableTools.find((tool) => tool.name === toolCall.toolName)
@@ -174,6 +180,8 @@ const HistoryCardModal: React.FC<Props> = ({
     .join('\n\n');
   return (
     <MessageDetailsModal
+      view={view}
+      onViewChange={setView}
       title={title}
       language="markdown"
       content={content}
