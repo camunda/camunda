@@ -26,12 +26,15 @@ public final class CoveredCheckpoint extends ObjectValue implements CoveredCheck
       new LongProperty("checkpointPosition", -1L);
   private final EnumProperty<CheckpointType> checkpointTypeProperty =
       new EnumProperty<>("checkpointType", CheckpointType.class, CheckpointType.MANUAL_BACKUP);
+  private final LongProperty checkpointTimestampProperty =
+      new LongProperty("checkpointTimestamp", -1L);
 
   public CoveredCheckpoint() {
-    super(3);
+    super(4);
     declareProperty(checkpointIdProperty)
         .declareProperty(checkpointPositionProperty)
-        .declareProperty(checkpointTypeProperty);
+        .declareProperty(checkpointTypeProperty)
+        .declareProperty(checkpointTimestampProperty);
   }
 
   @Override
@@ -47,6 +50,16 @@ public final class CoveredCheckpoint extends ObjectValue implements CoveredCheck
   @Override
   public CheckpointType getCheckpointType() {
     return checkpointTypeProperty.getValue();
+  }
+
+  @Override
+  public long getCheckpointTimestamp() {
+    return checkpointTimestampProperty.getValue();
+  }
+
+  public CoveredCheckpoint setCheckpointTimestamp(final long checkpointTimestamp) {
+    checkpointTimestampProperty.setValue(checkpointTimestamp);
+    return this;
   }
 
   public CoveredCheckpoint setCheckpointId(final long checkpointId) {
@@ -68,6 +81,7 @@ public final class CoveredCheckpoint extends ObjectValue implements CoveredCheck
     setCheckpointId(object.getCheckpointId());
     setCheckpointPosition(object.getCheckpointPosition());
     setCheckpointType(object.getCheckpointType());
+    setCheckpointTimestamp(object.getCheckpointTimestamp());
     return this;
   }
 

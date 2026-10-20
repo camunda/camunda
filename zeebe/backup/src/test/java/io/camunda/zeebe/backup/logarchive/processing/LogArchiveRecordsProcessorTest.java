@@ -123,8 +123,59 @@ final class LogArchiveRecordsProcessorTest {
     // then
     assertThat(harness.published).hasSize(2);
     assertThat(harness.published.get(0).timeline())
-        .isEqualTo(new TimelineFile(1, TIMELINE, 1, "parent", 1, 1));
+        .isEqualTo(new TimelineFile(1, TIMELINE, 1, "parent", 1, 1, -1, -1, -1));
     assertThat(harness.published.get(1).timeline()).isNull();
+  }
+
+  @Test
+  void shouldWriteTakeoverPointOfTimelineStartedIntoCommitEntryAndTimelineFile() {
+    // given
+    final var command =
+        startTimeline(TIMELINE, 1)
+            .setParentIndex(77)
+            .setParentPosition(910)
+            .setStartedAt(1_792_137_600_500L);
+
+    // when
+    harness.accept(LogArchiveIntent.START_TIMELINE, command);
+
+    // then
+    final var request = harness.published.getFirst();
+    final var entry = LogArchiveJson.read(request.commitEntryJson(), CommitEntry.class);
+    assertThat(entry.startedAt()).isEqualTo(1_792_137_600_500L);
+    assertThat(entry.parentIndex()).isEqualTo(77L);
+    assertThat(entry.parentPosition()).isEqualTo(910L);
+    assertThat(request.timeline())
+        .isEqualTo(new TimelineFile(1, TIMELINE, 1, "parent", 1, 1, 1_792_137_600_500L, 77, 910));
+  }
+
+  @Test
+  void shouldWriteUnknownTakeoverPointWhenTimelineStartedCarriesNone() {
+    // when
+    harness.accept(LogArchiveIntent.START_TIMELINE, startTimeline(TIMELINE, 1));
+
+    // then
+    final var entry =
+        LogArchiveJson.read(harness.published.getFirst().commitEntryJson(), CommitEntry.class);
+    assertThat(entry.startedAt()).isEqualTo(-1L);
+    assertThat(entry.parentIndex()).isEqualTo(-1L);
+    assertThat(entry.parentPosition()).isEqualTo(-1L);
+  }
+
+  @Test
+  void shouldOmitTakeoverFieldsFromCommitEntriesOtherThanTimelineStarted() {
+    // given
+    harness.accept(LogArchiveIntent.START_TIMELINE, startTimeline(TIMELINE, 1));
+
+    // when
+    harness.accept(LogArchiveIntent.ARCHIVE_LOG, archiveLog(object(1)));
+
+    // then
+    final var entry =
+        LogArchiveJson.read(harness.published.get(1).commitEntryJson(), CommitEntry.class);
+    assertThat(entry.startedAt()).isNull();
+    assertThat(entry.parentIndex()).isNull();
+    assertThat(entry.parentPosition()).isNull();
   }
 
   @Test
@@ -1222,6 +1273,29 @@ final class LogArchiveRecordsProcessorTest {
         assertThat(replicaOutbox.get(i).commitEntryJson())
             .isEqualTo(leaderOutbox.get(i).commitEntryJson());
       }
+    }
+  }
+
+  @Test
+  void shouldWriteSameTimelineStartedBytesWhenReplayingTheEvent() throws Exception {
+    // given
+    harness.accept(
+        LogArchiveIntent.START_TIMELINE,
+        startTimeline(TIMELINE, 1)
+            .setParentIndex(77)
+            .setParentPosition(910)
+            .setStartedAt(1_792_137_600_500L));
+    final var published = harness.published.getFirst().commitEntryJson();
+
+    // when
+    try (final var replica = new LogArchiveHarness(replicaDirectory.toFile(), CONFIG)) {
+      replica.replayLog(harness.log);
+
+      // then
+      final var replayed = replica.state().outboxAfter(0).getFirst().commitEntryJson();
+      assertThat(replayed).isEqualTo(published);
+      assertThat(LogArchiveJson.read(replayed, CommitEntry.class).startedAt())
+          .isEqualTo(1_792_137_600_500L);
     }
   }
 

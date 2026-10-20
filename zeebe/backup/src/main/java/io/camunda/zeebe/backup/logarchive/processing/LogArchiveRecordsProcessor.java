@@ -272,7 +272,10 @@ public final class LogArchiveRecordsProcessor
           event
               .setSeq(1)
               .setStartIndex(commandValue.getStartIndex())
-              .setParentTimelineId(commandValue.getParentTimelineId());
+              .setParentTimelineId(commandValue.getParentTimelineId())
+              .setParentIndex(commandValue.getParentIndex())
+              .setParentPosition(commandValue.getParentPosition())
+              .setStartedAt(commandValue.getStartedAt());
       case ARCHIVE_LOG -> {
         event.setSeq(meta.getNextSeq());
         commandValue.getObjects().forEach(event::addObject);

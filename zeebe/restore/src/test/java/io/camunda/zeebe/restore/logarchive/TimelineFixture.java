@@ -68,7 +68,10 @@ final class TimelineFixture {
                     partitionId,
                     parentTimelineId,
                     startIndex,
-                    1)))
+                    1,
+                    -1,
+                    -1,
+                    -1)))
         .join();
     return fixture;
   }
@@ -148,6 +151,9 @@ final class TimelineFixture {
             0,
             archivedIndex,
             archivedIndex,
+            null,
+            null,
+            null,
             null,
             null,
             List.of(),

@@ -75,6 +75,9 @@ public final class LogArchiveJsonMapper {
         event.getArchivedPosition(),
         timeline ? event.getStartIndex() : null,
         timeline ? event.getParentTimelineId() : null,
+        timeline ? event.getStartedAt() : null,
+        timeline ? event.getParentIndex() : null,
+        timeline ? event.getParentPosition() : null,
         logArchived
             ? event.getObjects().stream().map(LogArchiveJsonMapper::logObject).toList()
             : List.of(),
@@ -107,7 +110,10 @@ public final class LogArchiveJsonMapper {
         partitionId,
         event.getParentTimelineId(),
         event.getStartIndex(),
-        event.getSeq());
+        event.getSeq(),
+        event.getStartedAt(),
+        event.getParentIndex(),
+        event.getParentPosition());
   }
 
   /** The registry file as {@link #timelineFile(int, LogArchiveRecord)} would write it. */
@@ -118,7 +124,10 @@ public final class LogArchiveJsonMapper {
         entry.partitionId(),
         entry.parentTimelineId() == null ? "" : entry.parentTimelineId(),
         entry.startIndex() == null ? -1 : entry.startIndex(),
-        entry.seq());
+        entry.seq(),
+        entry.startedAt() == null ? -1 : entry.startedAt(),
+        entry.parentIndex() == null ? -1 : entry.parentIndex(),
+        entry.parentPosition() == null ? -1 : entry.parentPosition());
   }
 
   /** The handover file for the store of the old backups. */

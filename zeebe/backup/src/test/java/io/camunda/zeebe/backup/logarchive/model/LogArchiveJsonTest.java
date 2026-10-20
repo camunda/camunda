@@ -111,6 +111,53 @@ final class LogArchiveJsonTest {
   }
 
   @Test
+  void shouldReadTimelineFileWithoutTakeoverFieldsAsUnknown() {
+    // given - as written before startedAt, parentIndex and parentPosition existed
+    final String json =
+        "{\"formatVersion\":1,\"timelineId\":\"tl-0.r5\",\"partitionId\":1,"
+            + "\"parentTimelineId\":\"tl-0\",\"startIndex\":2731001,\"startedSeq\":1}";
+
+    // when
+    final var file = LogArchiveJson.read(json.getBytes(StandardCharsets.UTF_8), TimelineFile.class);
+
+    // then
+    assertThat(file).isEqualTo(new TimelineFile(1, "tl-0.r5", 1, "tl-0", 2731001, 1, -1, -1, -1));
+  }
+
+  @Test
+  void shouldReadTimelineFileWithZeroTakeoverFieldsAsGiven() {
+    // given
+    final String json =
+        "{\"formatVersion\":1,\"timelineId\":\"t\",\"partitionId\":1,\"parentTimelineId\":\"\","
+            + "\"startIndex\":1,\"startedSeq\":1,\"startedAt\":0,\"parentIndex\":0,"
+            + "\"parentPosition\":0}";
+
+    // when
+    final var file = LogArchiveJson.read(json.getBytes(StandardCharsets.UTF_8), TimelineFile.class);
+
+    // then
+    assertThat(file).isEqualTo(new TimelineFile(1, "t", 1, "", 1, 1, 0, 0, 0));
+  }
+
+  @Test
+  void shouldReadCommitEntryWithoutTakeoverFieldsAsNull() {
+    // given - as written before the fields existed
+    final String json =
+        "{\"formatVersion\":1,\"timelineId\":\"tl-0\",\"partitionId\":1,\"seq\":1,"
+            + "\"type\":\"TIMELINE_STARTED\",\"recordPosition\":4100,\"recordTimestamp\":-1,"
+            + "\"archivedIndex\":0,\"archivedPosition\":-1,\"startIndex\":1,"
+            + "\"parentTimelineId\":\"\"}";
+
+    // when
+    final var entry = LogArchiveJson.read(json.getBytes(StandardCharsets.UTF_8), CommitEntry.class);
+
+    // then
+    assertThat(entry.startedAt()).isNull();
+    assertThat(entry.parentIndex()).isNull();
+    assertThat(entry.parentPosition()).isNull();
+  }
+
+  @Test
   void shouldOmitOptionalPartsOfCommitEntryThatDoNotApply() {
     // given
     final CommitEntry timelineStarted = BucketJsonFixtures.commitTimelineStarted();
@@ -119,7 +166,9 @@ final class LogArchiveJsonTest {
     final Map<String, Object> json = readAsMap(LogArchiveJson.write(timelineStarted));
 
     // then
-    assertThat(json).containsKeys("startIndex", "parentTimelineId");
+    assertThat(json)
+        .containsKeys(
+            "startIndex", "parentTimelineId", "startedAt", "parentIndex", "parentPosition");
     assertThat(json).doesNotContainKeys("objects", "checkpoints", "snapshot", "chunk");
   }
 

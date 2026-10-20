@@ -282,6 +282,7 @@ public class RestoreManager implements CloseableSilently {
     LogArchiveRestore.writeTimelineFile(
         dataDirectory,
         LogArchiveRestore.classicRestoredTimelineId(logArchive.getTimeline(), lastBackupId));
+    LogArchiveRestore.deleteTakeoverFile(dataDirectory);
   }
 
   private void restorePartition(

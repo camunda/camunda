@@ -26,6 +26,7 @@ import io.camunda.zeebe.protocol.impl.record.value.management.LogArchiveRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.management.LogArchiveIntent;
 import io.camunda.zeebe.protocol.record.value.management.LogArchiveRecordValue.LogObjectValue;
+import io.camunda.zeebe.scheduler.clock.ActorClock;
 import io.camunda.zeebe.scheduler.testing.ControlledActorSchedulerExtension;
 import io.camunda.zeebe.util.Either;
 import java.nio.file.Files;
@@ -688,6 +689,138 @@ final class LogArchiverTest {
     assertThat(command.intent()).isEqualTo(LogArchiveIntent.START_TIMELINE);
     assertThat(command.record().getTimelineId()).isEqualTo("tl-0.r42");
     assertThat(command.record().getParentTimelineId()).isEqualTo(TIMELINE);
+  }
+
+  @Test
+  void shouldSetTakeoverPointOnStartTimelineWhenTakeoverParentMatches(@TempDir final Path dir)
+      throws Exception {
+    // given - a restore from the log archive of tl-0 wrote both files
+    Files.writeString(dir.resolve(LogArchiverTimeline.TIMELINE_FILE_NAME), "tl-0.r42");
+    Files.writeString(
+        dir.resolve(LogArchiverTimeline.TAKEOVER_FILE_NAME),
+        "{\"parentTimelineId\":\"tl-0\",\"parentIndex\":17,\"parentPosition\":230}");
+    startArchiverWith(3 * FRAME_BYTES, () -> LogArchiverTimeline.resolveEffective(dir, TIMELINE));
+
+    // when
+    recover(TIMELINE, 0);
+
+    // then
+    final var record = written.getFirst().record();
+    assertThat(record.getParentTimelineId()).isEqualTo(TIMELINE);
+    assertThat(record.getParentIndex()).isEqualTo(17);
+    assertThat(record.getParentPosition()).isEqualTo(230);
+  }
+
+  @Test
+  void shouldNotSetTakeoverPointWhenTakeoverParentDiffers(@TempDir final Path dir)
+      throws Exception {
+    // given - the takeover file is of another timeline than the recovered one
+    Files.writeString(dir.resolve(LogArchiverTimeline.TIMELINE_FILE_NAME), "tl-0.r42");
+    Files.writeString(
+        dir.resolve(LogArchiverTimeline.TAKEOVER_FILE_NAME),
+        "{\"parentTimelineId\":\"other\",\"parentIndex\":17,\"parentPosition\":230}");
+    startArchiverWith(3 * FRAME_BYTES, () -> LogArchiverTimeline.resolveEffective(dir, TIMELINE));
+
+    // when
+    recover(TIMELINE, 0);
+
+    // then
+    final var record = written.getFirst().record();
+    assertThat(record.getParentIndex()).isEqualTo(-1);
+    assertThat(record.getParentPosition()).isEqualTo(-1);
+  }
+
+  @Test
+  void shouldNotSetTakeoverPointOnFork(@TempDir final Path dir) throws Exception {
+    // given - a takeover file naming the parent of the fork
+    Files.writeString(
+        dir.resolve(LogArchiverTimeline.TAKEOVER_FILE_NAME),
+        "{\"parentTimelineId\":\"tl-0\",\"parentIndex\":17,\"parentPosition\":230}");
+    startArchiverWith(3 * FRAME_BYTES, () -> LogArchiverTimeline.resolveEffective(dir, TIMELINE));
+    source.commit(30);
+
+    // when
+    recoverBehindBucket(TIMELINE, 20, 51);
+
+    // then
+    final var record = written.getFirst().record();
+    assertThat(record.getTimelineId()).isEqualTo("tl-0.f51");
+    assertThat(record.getParentIndex()).isEqualTo(-1);
+    assertThat(record.getParentPosition()).isEqualTo(-1);
+  }
+
+  @Test
+  void shouldSetStartedAtFromClockOnStartTimeline() {
+    // given
+    startArchiver(3 * FRAME_BYTES, () -> TIMELINE);
+    source.commit(3);
+    archiver.onRecoveryChecked(new LogArchiveMeta(), false);
+    scheduler.workUntilDone();
+
+    final long before = ActorClock.currentTimeMillis();
+
+    // when
+    activate();
+
+    // then
+    assertThat(written.getFirst().record().getStartedAt())
+        .isBetween(before, ActorClock.currentTimeMillis());
+  }
+
+  @Test
+  void shouldNotSetTakeoverPointOnFirstTimeline() {
+    // given
+    startArchiver(3 * FRAME_BYTES, () -> TIMELINE);
+    source.commit(3);
+    archiver.onRecoveryChecked(new LogArchiveMeta(), false);
+    scheduler.workUntilDone();
+
+    // when
+    activate();
+
+    // then
+    final var record = written.getFirst().record();
+    assertThat(record.getParentIndex()).isEqualTo(-1);
+    assertThat(record.getParentPosition()).isEqualTo(-1);
+  }
+
+  @Test
+  void shouldIgnoreInvalidTakeoverFile(@TempDir final Path dir) throws Exception {
+    // given
+    Files.writeString(dir.resolve(LogArchiverTimeline.TIMELINE_FILE_NAME), "tl-0.r42");
+    Files.writeString(dir.resolve(LogArchiverTimeline.TAKEOVER_FILE_NAME), "{not json");
+    startArchiverWith(3 * FRAME_BYTES, () -> LogArchiverTimeline.resolveEffective(dir, TIMELINE));
+
+    // when
+    recover(TIMELINE, 0);
+
+    // then - the timeline starts without a takeover point
+    final var record = written.getFirst().record();
+    assertThat(record.getTimelineId()).isEqualTo("tl-0.r42");
+    assertThat(record.getParentIndex()).isEqualTo(-1);
+    assertThat(record.getParentPosition()).isEqualTo(-1);
+  }
+
+  @Test
+  void shouldReadNoTakeoverWithoutTakeoverFile(@TempDir final Path dir) {
+    // when
+    final var takeover = LogArchiverTimeline.readTakeover(dir);
+
+    // then
+    assertThat(takeover).isNull();
+  }
+
+  @Test
+  void shouldIgnoreTakeoverFileWithMissingFields(@TempDir final Path dir) throws Exception {
+    // given
+    Files.writeString(
+        dir.resolve(LogArchiverTimeline.TAKEOVER_FILE_NAME), "{\"parentTimelineId\":\"tl-0\"}");
+
+    // when
+    final var takeover = LogArchiverTimeline.readTakeover(dir);
+
+    // then
+    assertThat(takeover).isNull();
   }
 
   @Test
