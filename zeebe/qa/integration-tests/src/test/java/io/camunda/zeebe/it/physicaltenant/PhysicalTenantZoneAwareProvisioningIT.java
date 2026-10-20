@@ -32,8 +32,9 @@ import org.junit.jupiter.api.Timeout;
 /**
  * Verifies that a new physical tenant added to the static configuration after a zone-aware cluster
  * has already bootstrapped is provisioned additively: its partitions are placed per the cluster's
- * zone layout ({@link io.camunda.zeebe.dynamic.config.util.ZoneAwareAdditivePartitionReassigner}),
- * without moving any replica of a physical tenant that already existed.
+ * zone layout ({@link
+ * io.camunda.zeebe.dynamic.config.impl.util.ZoneAwareAdditivePartitionReassigner}), without moving
+ * any replica of a physical tenant that already existed.
  *
  * <p>See {@code PhysicalTenantProvisioningIT} for the equivalent single-zone scenario, including
  * coverage of the restart strategy matrix (full/rolling) - this test focuses on the zone-layout

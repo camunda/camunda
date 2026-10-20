@@ -15,6 +15,7 @@ dependencies {
   implementation(libs.tools.jackson.core.jackson.core)
   implementation(libs.tools.jackson.core.jackson.databind)
   implementation(libs.com.fasterxml.jackson.core.jackson.annotations)
+  testImplementation(libs.org.mockito.mockito.core)
   testImplementation(libs.net.jqwik.jqwik)
   testImplementation(libs.net.jqwik.jqwik.api)
 }

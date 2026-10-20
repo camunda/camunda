@@ -767,8 +767,8 @@ public record CurrentClusterConfiguration(
    * RestoreManager} writes one {@link UpdateRoutingState} per group into a single phase, and {@link
    * #applyPhase} activates every one of them. Constraining this to a single group would silently
    * report {@code false} for a multi-tenant restore, switching off the post-restore handling in
-   * {@link io.camunda.zeebe.dynamic.config.PartitionGroupExporterStateInitializer} exactly when it
-   * is needed most — with no error and no log.
+   * {@code PartitionGroupExporterStateInitializer} exactly when it is needed most — with no error
+   * and no log.
    */
   public boolean isAfterRestore() {
     return phasedChangeState.pending().values().stream().anyMatch(this::isRestorePlan);
@@ -807,9 +807,9 @@ public record CurrentClusterConfiguration(
   /**
    * A view of this configuration with every disabled partition group (see {@link
    * #activePartitionGroups()}) removed, leaving {@link #version()}, {@link #globalConfiguration()}
-   * and {@link #phasedChangeState()} unchanged. Intended for {@link
-   * io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeCoordinator.ConfigurationChangeRequest#phases}
-   * implementations that enumerate all physical tenants and must not target a disabled one.
+   * and {@link #phasedChangeState()} unchanged. Intended for {@code
+   * ConfigurationChangeCoordinator.ConfigurationChangeRequest#phases} implementations that
+   * enumerate all physical tenants and must not target a disabled one.
    */
   public CurrentClusterConfiguration withoutDisabledPartitionGroups() {
     return new CurrentClusterConfiguration(

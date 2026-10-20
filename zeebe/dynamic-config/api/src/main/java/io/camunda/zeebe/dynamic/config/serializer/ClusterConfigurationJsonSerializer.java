@@ -35,7 +35,7 @@ import tools.jackson.databind.ser.std.ToStringSerializer;
  * when a mapped response from the other cluster endpoints looks wrong, this shows whether the
  * configuration or the mapping is at fault.
  *
- * <p>This is the readable counterpart to {@link ProtoBufSerializer}, which produces the encoding
+ * <p>This is the readable counterpart to {@code ProtoBufSerializer}, which produces the encoding
  * the cluster gossips and persists. JSON is not a wire format here - nothing in the cluster
  * exchanges it - but reading is offered alongside writing, because a document that reads back
  * unchanged is a document that demonstrably lost nothing. That is what {@code
