@@ -87,7 +87,8 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
         .getCluster()
         .setConfigManager(
             new ConfigManagerCfg(
-                new ClusterConfigurationGossiperConfig(null, null, null, Duration.ofSeconds(5))));
+                new ClusterConfigurationGossiperConfig(
+                    Duration.ofMillis(500), null, null, Duration.ofSeconds(5))));
 
     config.getExperimental().getConsistencyChecks().setEnableForeignKeyChecks(true);
     config.getExperimental().getConsistencyChecks().setEnablePreconditions(true);
