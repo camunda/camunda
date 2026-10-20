@@ -14,14 +14,16 @@ import io.camunda.db.rdbms.sql.ExporterPositionMapper;
 import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.backup.common.BackupMetadata;
 import io.camunda.zeebe.backup.management.BackupMetadataSyncer;
+import io.camunda.zeebe.broker.eventplane.EventPlaneStores;
 import io.camunda.zeebe.broker.partitioning.startup.RaftPartitionFactory;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDBSnapshotFileInfoProvider;
 import io.camunda.zeebe.eventplane.history.RestoredHistory;
+import io.camunda.zeebe.eventplane.store.ObjectNames;
+import io.camunda.zeebe.eventplane.store.ObjectStore;
 import io.camunda.zeebe.journal.CheckedJournalException.FlushException;
 import io.camunda.zeebe.restore.PartitionRestoreService.BackupValidator;
 import io.camunda.zeebe.util.CloseableSilently;
-import io.camunda.zeebe.util.VisibleForTesting;
 import io.camunda.zeebe.util.concurrency.FuturesUtil;
 import io.camunda.zeebe.util.micrometer.MicrometerUtil;
 import io.camunda.zeebe.util.micrometer.PartitionKeyNames;
@@ -58,6 +60,10 @@ import org.slf4j.LoggerFactory;
  *
  * <p>Restoring a whole cluster — every physical tenant, plus the shared data directory and the
  * cluster configuration file that are not any one tenant's — is {@link ClusterRestore}'s job.
+ *
+ * <p>With {@code zeebe.broker.experimental.eventPlane.restoreFromBucket}, it restores the
+ * partitions from the Event Plane's bucket instead, and needs no backup store: see {@link
+ * #restoreFromBucket()}.
  */
 @NullMarked
 public class RestoreManager implements CloseableSilently {
@@ -66,17 +72,21 @@ public class RestoreManager implements CloseableSilently {
   private final String physicalTenantId;
   private final BrokerCfg physicalTenantConfiguration;
   private final Set<PartitionMetadata> partitions;
-  private final BackupStore backupStore;
-  private final BackupMetadataSyncer metadataSyncer;
+  private final @Nullable BackupStore backupStore;
+  private final @Nullable BackupMetadataSyncer metadataSyncer;
   private final MeterRegistry meterRegistry;
   @Nullable private final ExporterPositionMapper exporterPositionMapper;
   private final ExecutorService executor;
 
-  /** Restores the default physical tenant, configured by {@code configuration} itself. */
-  @VisibleForTesting
-  RestoreManager(
+  /**
+   * Restores the default physical tenant, configured by {@code configuration} itself.
+   *
+   * @param backupStore the backups to restore from, or null to restore from the Event Plane's
+   *     bucket only
+   */
+  public RestoreManager(
       final BrokerCfg configuration,
-      final BackupStore backupStore,
+      final @Nullable BackupStore backupStore,
       final MeterRegistry meterRegistry) {
     this(
         configuration,
@@ -96,7 +106,7 @@ public class RestoreManager implements CloseableSilently {
       final String physicalTenantId,
       final BrokerCfg physicalTenantConfiguration,
       final Set<PartitionMetadata> partitions,
-      final BackupStore backupStore,
+      final @Nullable BackupStore backupStore,
       @Nullable final ExporterPositionMapper exporterPositionMapper,
       final MeterRegistry meterRegistry) {
     this.configuration = configuration;
@@ -104,7 +114,8 @@ public class RestoreManager implements CloseableSilently {
     this.physicalTenantConfiguration = physicalTenantConfiguration;
     this.partitions = Set.copyOf(partitions);
     this.backupStore = backupStore;
-    metadataSyncer = new BackupMetadataSyncer(backupStore, meterRegistry);
+    metadataSyncer =
+        backupStore == null ? null : new BackupMetadataSyncer(backupStore, meterRegistry);
     this.exporterPositionMapper = exporterPositionMapper;
     this.meterRegistry = meterRegistry;
     executor =
@@ -237,6 +248,9 @@ public class RestoreManager implements CloseableSilently {
    * them. Verifying the data directory per tenant would fail the second tenant on the first
    * tenant's freshly restored partitions, and emptying it on failure would discard them.
    *
+   * <p>With the Event Plane's {@code restoreFromBucket}, it restores these partitions from the
+   * bucket instead, and ignores the backup IDs.
+   *
    * @param backupIdsByPartition map from partition ID to the backup IDs to restore for that
    *     partition
    * @param validateConfig whether to validate the backup configuration
@@ -244,6 +258,10 @@ public class RestoreManager implements CloseableSilently {
   public void restore(final Map<Integer, long[]> backupIdsByPartition, final boolean validateConfig)
       throws IOException, ExecutionException, InterruptedException {
     final var partitionCount = backupIdsByPartition.size();
+    if (configuration.getExperimental().getEventPlane().isRestoreFromBucket()) {
+      restoreFromBucket(partitionCount);
+      return;
+    }
     final var partitionsToRestore = collectPartitions(partitionCount);
     final var tasks = new ArrayList<Callable<Void>>(partitionsToRestore.size());
     for (final var partition : partitionsToRestore) {
@@ -265,6 +283,102 @@ public class RestoreManager implements CloseableSilently {
     }
   }
 
+  /**
+   * Restores the tenant's local partitions from the Event Plane's bucket, each to {@code
+   * zeebe.broker.experimental.eventPlane.restoreTo} or to the latest the bucket holds, and leaves
+   * each the history it goes on in: the one the operator names in {@code restoreHistory}, taking
+   * over the bucket's current history at the restored checkpoint.
+   */
+  public void restoreFromBucket() throws IOException, ExecutionException, InterruptedException {
+    restoreFromBucket(physicalTenantConfiguration.getCluster().getPartitionsCount());
+  }
+
+  private void restoreFromBucket(final int partitionCount)
+      throws IOException, ExecutionException, InterruptedException {
+    final var eventPlane = configuration.getExperimental().getEventPlane();
+    final var history = restoreHistory();
+    final var target =
+        eventPlane.getRestoreTo() == null ? BucketRestoreService.LATEST : eventPlane.getRestoreTo();
+    final var tasks = new ArrayList<Callable<Void>>();
+    for (final var partition : collectPartitions(partitionCount)) {
+      tasks.add(
+          () -> {
+            restorePartitionFromBucket(partition, history, target);
+            return null;
+          });
+    }
+    for (final var result : executor.invokeAll(tasks)) {
+      result.get(); // throw exception if any of the tasks failed
+    }
+  }
+
+  private void restorePartitionFromBucket(
+      final InstrumentedRaftPartition partition, final UUID history, final long target)
+      throws IOException, FlushException {
+    final var raftPartition = partition.partition();
+    final var eventPlane = configuration.getExperimental().getEventPlane();
+    try (final var store = EventPlaneStores.open(eventPlane.getStore())) {
+      final var restored =
+          new BucketRestoreService(
+                  store,
+                  bucketClusterId(store),
+                  raftPartition,
+                  configuration.getCluster().getNodeId(),
+                  new RocksDBSnapshotFileInfoProvider(),
+                  partition.registry())
+              .restore(target);
+      LOG.info(
+          "Successfully restored partition {} from the Event Plane's bucket: {}",
+          raftPartition.id().number(),
+          restored);
+      // the Event Plane goes on in a new history, which takes the bucket's current one over
+      new RestoredHistory(
+              history,
+              Instant.now(),
+              restored.history(),
+              restored.checkpoint().index(),
+              restored.checkpoint().position())
+          .writeTo(raftPartition.dataDirectory().toPath());
+    } finally {
+      MicrometerUtil.close(partition.registry());
+    }
+  }
+
+  /**
+   * The cluster id in the bucket's object names: the configured one, else the only cluster the
+   * bucket has, as the cluster's generated id isn't known before its topology is restored.
+   */
+  private String bucketClusterId(final ObjectStore store) throws IOException {
+    final var configured = configuration.getExperimental().getEventPlane().getClusterId();
+    if (configured != null) {
+      return configured;
+    }
+    final var clusters = new ArrayList<String>();
+    for (final var prefix : store.listPrefixes("")) {
+      final var name = ObjectNames.decode(prefix.substring(0, prefix.length() - 1));
+      if (!name.startsWith("_")) {
+        clusters.add(name);
+      }
+    }
+    if (clusters.size() != 1) {
+      throw new IllegalArgumentException(
+          "Expected zeebe.broker.experimental.eventPlane.clusterId, or a bucket of one cluster, but got none and the clusters %s"
+              .formatted(clusters));
+    }
+    return clusters.getFirst();
+  }
+
+  /** The history the Event Plane goes on in after a restore from the bucket. */
+  private UUID restoreHistory() {
+    final var restoreHistory = configuration.getExperimental().getEventPlane().getRestoreHistory();
+    if (restoreHistory == null) {
+      throw new IllegalArgumentException(
+          "Expected the Event Plane's history after the restore, in"
+              + " zeebe.broker.experimental.eventPlane.restoreHistory, but got none");
+    }
+    return UUID.fromString(restoreHistory);
+  }
+
   private void restorePartition(
       final InstrumentedRaftPartition partition,
       final long[] backupIds,
@@ -284,7 +398,7 @@ public class RestoreManager implements CloseableSilently {
     final var registry = partition.registry();
     final var restoreService =
         new PartitionRestoreService(
-            backupStore,
+            requireBackups(backupStore),
             partition.partition(),
             configuration.getCluster().getNodeId(),
             new RocksDBSnapshotFileInfoProvider(),
@@ -365,7 +479,7 @@ public class RestoreManager implements CloseableSilently {
     return FuturesUtil.parTraverse(
         IntStream.rangeClosed(1, partitionCount).boxed().toList(),
         partition ->
-            metadataSyncer
+            requireBackups(metadataSyncer)
                 .load(partition)
                 .thenApply(
                     opt ->
@@ -375,11 +489,25 @@ public class RestoreManager implements CloseableSilently {
                                     "No backup metadata found for partition " + partition))));
   }
 
+  /** What restoring from backups needs, which a restore from the bucket alone doesn't have. */
+  private static <T> T requireBackups(final @Nullable T backups) {
+    if (backups == null) {
+      throw new IllegalStateException(
+          "Expected a backup store to restore from, but got none: this restore is from the Event"
+              + " Plane's bucket");
+    }
+    return backups;
+  }
+
   @Override
   public void close() {
     try {
-      backupStore.closeAsync().join();
-      metadataSyncer.close();
+      if (backupStore != null) {
+        backupStore.closeAsync().join();
+      }
+      if (metadataSyncer != null) {
+        metadataSyncer.close();
+      }
       executor.shutdown();
       if (!executor.awaitTermination(30, TimeUnit.SECONDS)) {
         executor.shutdownNow();

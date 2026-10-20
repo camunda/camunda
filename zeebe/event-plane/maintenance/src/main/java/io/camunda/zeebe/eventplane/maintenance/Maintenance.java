@@ -13,6 +13,7 @@ import io.camunda.zeebe.eventplane.history.HistoryManifest;
 import io.camunda.zeebe.eventplane.history.InconsistentHistoryException;
 import io.camunda.zeebe.eventplane.history.InvalidHistoryJsonException;
 import io.camunda.zeebe.eventplane.history.MissingManifestException;
+import io.camunda.zeebe.eventplane.snapshot.InvalidSnapshotDescriptorException;
 import io.camunda.zeebe.eventplane.store.ObjectStore;
 import java.io.IOException;
 import java.time.InstantSource;
@@ -106,6 +107,9 @@ public final class Maintenance {
       return retention.run(log, resolved.current(), resolved.lineage());
     } catch (final MissingManifestException | InconsistentHistoryException e) {
       LOG.warn("Not applying retention to {}, as its histories are not as expected", log, e);
+      return MaintenanceReport.NONE;
+    } catch (final InvalidSnapshotDescriptorException e) {
+      LOG.warn("Not applying retention to {}, as a snapshot descriptor is not valid", log, e);
       return MaintenanceReport.NONE;
     }
   }

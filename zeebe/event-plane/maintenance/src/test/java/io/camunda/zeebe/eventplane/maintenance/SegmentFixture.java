@@ -15,6 +15,9 @@ import io.camunda.zeebe.eventplane.segment.EntryReader;
 import io.camunda.zeebe.eventplane.segment.Footer;
 import io.camunda.zeebe.eventplane.segment.Level;
 import io.camunda.zeebe.eventplane.segment.SegmentWriter;
+import io.camunda.zeebe.eventplane.snapshot.SnapshotArchive;
+import io.camunda.zeebe.eventplane.snapshot.SnapshotDescriptor;
+import io.camunda.zeebe.eventplane.snapshot.SnapshotDescriptor.SnapshotFile;
 import io.camunda.zeebe.eventplane.store.ObjectNames;
 import io.camunda.zeebe.eventplane.store.ObjectStore;
 import io.camunda.zeebe.eventplane.store.StoredObject;
@@ -93,6 +96,45 @@ final class SegmentFixture {
             LOG.cluster(), LOG.tenant(), LOG.partition(), ulid(clock.instant().minus(age)));
     store.put(key, "{\"version\":1}".getBytes(StandardCharsets.UTF_8));
     return key;
+  }
+
+  /**
+   * Puts a snapshot of partition 1 at an index, uploaded {@code age} ago, the way a publisher does:
+   * a file, then the descriptor. It relies on the positions up to the entry after its index, {@code
+   * 2 * (index + 1)}. Returns its id.
+   */
+  String putSnapshot(final UUID history, final Duration age, final long index) throws IOException {
+    final var id = "%d-1-%d-%d-0-x".formatted(index, 2 * index + 1, 2 * index + 1);
+    final var state = ("state at " + index).getBytes(StandardCharsets.UTF_8);
+    store.put(
+        ObjectNames.snapshotFile(LOG.cluster(), LOG.tenant(), LOG.partition(), id, "state"), state);
+    final var descriptor =
+        new SnapshotDescriptor(
+            1,
+            id,
+            index,
+            1,
+            2 * index + 1,
+            2 * index + 1,
+            2 * index + 2,
+            2 * index + 2,
+            history,
+            List.of(new SnapshotFile("state", state.length)),
+            clock.instant().minus(age));
+    store.put(
+        ObjectNames.snapshotDescriptor(LOG.cluster(), LOG.tenant(), LOG.partition(), id),
+        descriptor.toJson());
+    return id;
+  }
+
+  /** The ids of partition 1's snapshots that have a descriptor, sorted. */
+  List<String> snapshots() throws IOException {
+    return SnapshotArchive.list(store, LOG.cluster(), LOG.tenant(), LOG.partition())
+        .complete()
+        .stream()
+        .map(SnapshotDescriptor::snapshotId)
+        .sorted()
+        .toList();
   }
 
   /** Puts the part of a history's manifest that lists partition 1, created {@code age} ago. */

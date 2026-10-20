@@ -8,20 +8,15 @@
 package io.camunda.zeebe.broker.eventplane;
 
 import io.atomix.raft.RaftServer.Role;
-import io.camunda.zeebe.broker.system.configuration.EventPlaneCfg.StoreCfg;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionContext;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionStep;
 import io.camunda.zeebe.eventplane.publisher.Announcer;
 import io.camunda.zeebe.eventplane.publisher.CutPolicy;
 import io.camunda.zeebe.eventplane.publisher.HttpAnnouncer;
 import io.camunda.zeebe.eventplane.segment.Identity;
-import io.camunda.zeebe.eventplane.store.ObjectStores;
-import io.camunda.zeebe.eventplane.store.S3StoreConfig;
-import io.camunda.zeebe.eventplane.store.StoreConfig;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import java.net.URI;
-import java.nio.file.Path;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -72,13 +67,15 @@ public final class EventPlanePartitionTransitionStep implements PartitionTransit
             log,
             clusterKey,
             raftPartition.dataDirectory().toPath(),
-            ObjectStores.open(storeConfig(config.getStore())),
+            EventPlaneStores.open(config.getStore()),
             new RaftEntrySource(raftPartition.getServer().openReader()),
             new ExporterStateFloorStore(context.getExporterDirector()),
             config.getServiceUrl() != null
                 ? new HttpAnnouncer(URI.create(config.getServiceUrl()))
                 : Announcer.NONE,
-            new CutPolicy(config.getMaxSegmentSize().toBytes(), config.getCutInterval()));
+            new CutPolicy(config.getMaxSegmentSize().toBytes(), config.getCutInterval()),
+            context.getPersistedSnapshotStore(),
+            config.getSnapshotInterval());
     publisher.start(config.getPollInterval());
     return CompletableActorFuture.completed(null);
   }
@@ -86,25 +83,5 @@ public final class EventPlanePartitionTransitionStep implements PartitionTransit
   @Override
   public String getName() {
     return "EventPlane";
-  }
-
-  private static StoreConfig storeConfig(final StoreCfg store) {
-    return switch (store.getType()) {
-      case "filesystem" -> StoreConfig.filesystem(Path.of(store.getPath()));
-      case "s3" ->
-          StoreConfig.s3(
-              new S3StoreConfig(
-                  store.getBucket(),
-                  store.getBasePath(),
-                  store.getRegion(),
-                  store.getEndpoint() != null ? URI.create(store.getEndpoint()) : null,
-                  store.getAccessKeyId(),
-                  store.getSecretAccessKey(),
-                  store.isForcePathStyle()));
-      default ->
-          throw new IllegalArgumentException(
-              "Expected an Event Plane store of type 'filesystem' or 's3', but got '%s'"
-                  .formatted(store.getType()));
-    };
   }
 }

@@ -10,6 +10,7 @@ package io.camunda.zeebe.eventplane.maintenance;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.eventplane.history.HistoryManifest.Base;
+import io.camunda.zeebe.eventplane.store.ObjectNames;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.List;
@@ -293,5 +294,125 @@ final class RetentionTest extends StoreTestCase {
     // then
     assertThat(report).isEqualTo(MaintenanceReport.NONE);
     assertThat(segments.segments(HISTORY)).containsExactly("1-3 L0");
+  }
+
+  @Test
+  void shouldKeepTheSegmentsAfterTheOldestKeptSnapshot() throws Exception {
+    // given: a young snapshot at index 5 needs entries from 6 on, which the old 4-6 holds
+    segments.put(HISTORY, 0, TEN_DAYS, entries(1, 3));
+    segments.put(HISTORY, 0, Duration.ofDays(9), entries(4, 6));
+    segments.put(HISTORY, 0, Duration.ofDays(9), entries(7, 9));
+    segments.put(HISTORY, 0, ONE_DAY, entries(10, 12));
+    segments.putSnapshot(HISTORY, THREE_DAYS, 5);
+
+    // when
+    final var report = maintenance().runOnce();
+
+    // then
+    assertThat(report).isEqualTo(new MaintenanceReport(0, 1, 1, 0));
+    assertThat(segments.segments(HISTORY)).containsExactly("4-6 L0", "7-9 L0", "10-12 L0");
+    final var marker = store.get(segments.markers().getFirst()).orElseThrow();
+    assertThat(new String(marker, StandardCharsets.UTF_8))
+        .contains("\"firstIndex\":4,\"firstPosition\":7,");
+  }
+
+  @Test
+  void shouldDeleteOldSnapshotsBeforeTheSegmentsTheyNeeded() throws Exception {
+    // given
+    segments.put(HISTORY, 0, TEN_DAYS, entries(1, 3));
+    segments.put(HISTORY, 0, Duration.ofDays(9), entries(4, 6));
+    segments.put(HISTORY, 0, Duration.ofDays(9), entries(7, 9));
+    segments.put(HISTORY, 0, ONE_DAY, entries(10, 12));
+    final var oldest = segments.putSnapshot(HISTORY, TEN_DAYS, 2);
+    final var older = segments.putSnapshot(HISTORY, Duration.ofDays(9), 5);
+    final var young = segments.putSnapshot(HISTORY, ONE_DAY, 8);
+
+    // when
+    final var report = maintenance().runOnce();
+
+    // then: the young snapshot needs 9 on, which 7-9 holds
+    assertThat(report).isEqualTo(new MaintenanceReport(0, 2, 1, 2));
+    assertThat(segments.snapshots()).containsExactly(young);
+    assertThat(segments.segments(HISTORY)).containsExactly("7-9 L0", "10-12 L0");
+    assertThat(store.writes().subList(0, 5))
+        .describedAs("the snapshots go first, each descriptor before its files")
+        .containsExactly(
+            "DELETE " + descriptorKey(oldest),
+            "DELETE " + fileKey(oldest),
+            "DELETE " + descriptorKey(older),
+            "DELETE " + fileKey(older),
+            "PUT " + segments.markers().getFirst());
+  }
+
+  @Test
+  void shouldKeepTheNewestSnapshotOfThePathWhateverItsAge() throws Exception {
+    // given: both snapshots are older than the retention
+    segments.put(HISTORY, 0, TEN_DAYS, entries(1, 3));
+    segments.put(HISTORY, 0, TEN_DAYS, entries(4, 6));
+    segments.put(HISTORY, 0, ONE_DAY, entries(7, 9));
+    segments.putSnapshot(HISTORY, TEN_DAYS, 2);
+    final var newest = segments.putSnapshot(HISTORY, Duration.ofDays(9), 5);
+
+    // when
+    final var report = maintenance().runOnce();
+
+    // then: the newest needs entries from 6 on
+    assertThat(report).isEqualTo(new MaintenanceReport(0, 1, 1, 1));
+    assertThat(segments.snapshots()).containsExactly(newest);
+    assertThat(segments.segments(HISTORY)).containsExactly("4-6 L0", "7-9 L0");
+  }
+
+  @Test
+  void shouldNotKeepASnapshotThatIsOffThePath() throws Exception {
+    // given: a restore at entry 6, position 12; the old history's snapshot at 8 relies on position
+    // 18, past the checkpoint, and the one at 3 on position 8, before it
+    segments.putHistory(RESTORED, Duration.ofDays(5), new Base(HISTORY, 6, 12));
+    segments.put(HISTORY, 0, TEN_DAYS, entries(1, 3));
+    segments.put(HISTORY, 0, TEN_DAYS, entries(4, 6));
+    segments.put(RESTORED, 0, ONE_DAY, entries(7, 9));
+    final var beforeTheCheckpoint = segments.putSnapshot(HISTORY, TEN_DAYS, 3);
+    segments.putSnapshot(HISTORY, Duration.ofDays(9), 8);
+
+    // when
+    final var report = maintenance().runOnce();
+
+    // then: the kept one needs entries from 4 on
+    assertThat(report).isEqualTo(new MaintenanceReport(0, 1, 1, 1));
+    assertThat(segments.snapshots()).containsExactly(beforeTheCheckpoint);
+    assertThat(segments.segments(HISTORY)).containsExactly("4-6 L0");
+  }
+
+  @Test
+  void shouldDeleteTheFilesOfASnapshotWithoutDescriptorOnceTheyAreOld() throws Exception {
+    // given: an upload that stopped before its descriptor
+    final var key = fileKey("5-1-11-11-0-x");
+    store.put(key, new byte[] {1, 2, 3});
+    segments.put(HISTORY, 0, ONE_DAY, entries(1, 3));
+    assertThat(maintenance().runOnce().snapshotsDeleted()).isZero();
+
+    // when
+    clock.advance(Duration.ofDays(8));
+    final var report = maintenance().runOnce();
+
+    // then
+    assertThat(report.snapshotsDeleted()).isOne();
+    assertThat(store.get(key)).isEmpty();
+  }
+
+  private static String descriptorKey(final String snapshotId) {
+    return ObjectNames.snapshotDescriptor(
+        SegmentFixture.LOG.cluster(),
+        SegmentFixture.LOG.tenant(),
+        SegmentFixture.LOG.partition(),
+        snapshotId);
+  }
+
+  private static String fileKey(final String snapshotId) {
+    return ObjectNames.snapshotFile(
+        SegmentFixture.LOG.cluster(),
+        SegmentFixture.LOG.tenant(),
+        SegmentFixture.LOG.partition(),
+        snapshotId,
+        "state");
   }
 }

@@ -166,7 +166,9 @@ final class PublisherServiceTest {
             new EmptySource(),
             floors,
             Announcer.NONE,
-            CutPolicy.live());
+            CutPolicy.live(),
+            null,
+            Duration.ZERO);
     service.start(Duration.ofMillis(10));
   }
 

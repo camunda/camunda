@@ -28,6 +28,8 @@ public final class EventPlaneCfg {
   private String serviceUrl;
   private Duration snapshotInterval = Duration.ZERO;
   private String restoreHistory;
+  private boolean restoreFromBucket = false;
+  private Long restoreTo;
 
   public boolean isEnabled() {
     return enabled;
@@ -111,9 +113,33 @@ public final class EventPlaneCfg {
     this.restoreHistory = restoreHistory;
   }
 
+  /**
+   * For a restore only: whether to restore the partitions from the store's snapshots and segments,
+   * instead of from backups.
+   */
+  public boolean isRestoreFromBucket() {
+    return restoreFromBucket;
+  }
+
+  public void setRestoreFromBucket(final boolean restoreFromBucket) {
+    this.restoreFromBucket = restoreFromBucket;
+  }
+
+  /**
+   * For a restore from the bucket only: the position to restore to, the last record's at most; null
+   * to restore everything the store holds.
+   */
+  public Long getRestoreTo() {
+    return restoreTo;
+  }
+
+  public void setRestoreTo(final Long restoreTo) {
+    this.restoreTo = restoreTo;
+  }
+
   @Override
   public String toString() {
-    return "EventPlaneCfg{enabled=%s, clusterId=%s, store=%s, cutInterval=%s, maxSegmentSize=%s, pollInterval=%s, serviceUrl=%s, snapshotInterval=%s, restoreHistory=%s}"
+    return "EventPlaneCfg{enabled=%s, clusterId=%s, store=%s, cutInterval=%s, maxSegmentSize=%s, pollInterval=%s, serviceUrl=%s, snapshotInterval=%s, restoreHistory=%s, restoreFromBucket=%s, restoreTo=%s}"
         .formatted(
             enabled,
             clusterId,
@@ -123,7 +149,9 @@ public final class EventPlaneCfg {
             pollInterval,
             serviceUrl,
             snapshotInterval,
-            restoreHistory);
+            restoreHistory,
+            restoreFromBucket,
+            restoreTo);
   }
 
   /** Where segments go: a directory, or an S3 bucket. */

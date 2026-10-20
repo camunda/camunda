@@ -14,16 +14,26 @@ package io.camunda.zeebe.eventplane.maintenance;
  * @param segmentsDeleted the segments it deleted: rollups' inputs, segments that a rollup already
  *     covers, rollups that an earlier one covers, and segments that retention dropped
  * @param markersWritten the retention markers it PUT
+ * @param snapshotsDeleted the snapshots that retention dropped, and the snapshot directories
+ *     without a descriptor that it cleaned up
  */
-public record MaintenanceReport(int rollupsWritten, int segmentsDeleted, int markersWritten) {
+public record MaintenanceReport(
+    int rollupsWritten, int segmentsDeleted, int markersWritten, int snapshotsDeleted) {
 
-  public static final MaintenanceReport NONE = new MaintenanceReport(0, 0, 0);
+  public static final MaintenanceReport NONE = new MaintenanceReport(0, 0, 0, 0);
+
+  /** A report of a run that deleted no snapshot. */
+  public MaintenanceReport(
+      final int rollupsWritten, final int segmentsDeleted, final int markersWritten) {
+    this(rollupsWritten, segmentsDeleted, markersWritten, 0);
+  }
 
   /** The two reports' counts added up. */
   public MaintenanceReport plus(final MaintenanceReport other) {
     return new MaintenanceReport(
         rollupsWritten + other.rollupsWritten,
         segmentsDeleted + other.segmentsDeleted,
-        markersWritten + other.markersWritten);
+        markersWritten + other.markersWritten,
+        snapshotsDeleted + other.snapshotsDeleted);
   }
 }

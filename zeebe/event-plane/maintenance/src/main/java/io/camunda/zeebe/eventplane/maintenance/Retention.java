@@ -32,7 +32,9 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Deletes the segments that are older than the retention period, after it writes a retention marker
- * that tells readers where what is kept starts.
+ * that tells readers where what is kept starts. It keeps what a restore from the bucket needs: the
+ * newest snapshot of the path, whatever its age, and every segment from the oldest kept snapshot
+ * on.
  */
 final class Retention {
 
@@ -43,6 +45,7 @@ final class Retention {
   private final StoreLayout layout;
   private final Duration retention;
   private final InstantSource clock;
+  private final SnapshotRetention snapshots;
 
   Retention(
       final ObjectStore store,
@@ -53,6 +56,7 @@ final class Retention {
     this.layout = layout;
     this.retention = retention;
     this.clock = clock;
+    snapshots = new SnapshotRetention(store);
   }
 
   /**
@@ -89,7 +93,10 @@ final class Retention {
       }
     }
 
-    var report = trimPath(log, current, onPath, threshold);
+    // snapshots first: a snapshot that outlives the segments after it couldn't be restored
+    final var kept = snapshots.run(log, path, threshold);
+    var report = new MaintenanceReport(0, 0, 0, kept.deleted());
+    report = report.plus(trimPath(log, current, onPath, threshold, kept.bound()));
     for (final var segment : offPath) {
       if (segment.isUploadedBefore(threshold)) {
         store.delete(segment.key());
@@ -102,19 +109,25 @@ final class Retention {
 
   /**
    * Of the segments on the path, deletes those below the cutoff that are old: the cutoff is the
-   * first index of the earliest segment that is young. With no young segment there is no cutoff,
-   * and nothing is deleted, so that a log that stopped is not lost. Writes the retention marker
-   * first.
+   * first index of the earliest segment that is young or holds an entry at or after the snapshot
+   * bound, which the oldest kept snapshot needs. With no young segment there is no cutoff, and
+   * nothing is deleted, so that a log that stopped is not lost. Writes the retention marker first.
    */
   private MaintenanceReport trimPath(
       final LogId log,
       final HistoryManifest current,
       final List<StoredSegment> onPath,
-      final Instant threshold)
+      final Instant threshold,
+      final long snapshotBound)
       throws IOException {
+    if (onPath.stream().allMatch(segment -> segment.isUploadedBefore(threshold))) {
+      return MaintenanceReport.NONE;
+    }
     final var atCutoff =
         onPath.stream()
-            .filter(segment -> !segment.isUploadedBefore(threshold))
+            .filter(
+                segment ->
+                    !segment.isUploadedBefore(threshold) || segment.lastIndex() >= snapshotBound)
             .min(Comparator.comparingLong(StoredSegment::firstIndex));
     if (atCutoff.isEmpty()) {
       return MaintenanceReport.NONE;

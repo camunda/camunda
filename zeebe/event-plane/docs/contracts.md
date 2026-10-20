@@ -9,7 +9,7 @@ then in the code.
 | Module | Package | Depends on |
 |---|---|---|
 | `zeebe/event-plane/segment` | `io.camunda.zeebe.eventplane.segment` | zstd-jni |
-| `zeebe/event-plane/common` | `io.camunda.zeebe.eventplane.store`, `.history`, `.notification` | Jackson, AWS SDK v2 (S3) |
+| `zeebe/event-plane/common` | `io.camunda.zeebe.eventplane.store`, `.history`, `.notification`, `.snapshot` | Jackson, AWS SDK v2 (S3) |
 | `zeebe/event-plane/publisher` | `io.camunda.zeebe.eventplane.publisher` | segment, common |
 | `zeebe/event-plane/consumer` | `io.camunda.zeebe.eventplane.consumer` | segment, common, zeebe-protocol-impl, zeebe-logstreams |
 | `zeebe/event-plane/maintenance` | `io.camunda.zeebe.eventplane.maintenance` | segment, common |
@@ -142,6 +142,56 @@ anything; the latest by ULID applies:
 
 It names the first entry that is kept, in the then current history. A reader that needs an earlier
 entry on the same path reports a gap up to it, and goes on from it.
+
+## Snapshots
+
+With `zeebe.broker.experimental.eventPlane.snapshotInterval` above zero, the leader's publisher
+thread uploads the partition's latest snapshot at most once per interval, unless its descriptor is
+in the store already. It reserves the snapshot while it uploads, and PUTs every file of
+`PersistedSnapshot.files()` (the checksum file `{snapshotId}.checksum` among them, as backups carry
+it), then the descriptor last. `io.camunda.zeebe.eventplane.snapshot.SnapshotDescriptor`, at
+`{cluster}/{tenant}/{partition}/snapshots/{snapshotId}/descriptor.json`:
+
+```json
+{"version":1,"snapshotId":"…","index":1096000,"term":3,"processedPosition":1051900,
+ "exportedPosition":1051800,"maxExportedPosition":1052032,"lastFollowupEventPosition":1052010,
+ "history":"…","files":[{"name":"000123.sst","size":4096}],"createdAt":"2026-10-20T12:00:00Z"}
+```
+
+- `exportedPosition` is the lowest exporter position, `maxExportedPosition` the highest, the upload
+  floor's included. `history` is the one the uploading leader publishes in. Readers skip fields they
+  don't know.
+- **A descriptor means every file is there:** it is written after the files and deleted before
+  them. Files without a descriptor are an upload in progress, or what a stopped upload or deletion
+  left; maintenance deletes them once all are older than the retention.
+- **What a snapshot relies on:** its required position is the highest of its four positions. A
+  journal restored from it must reach that position, or the state would hold what the journal
+  doesn't. A snapshot serves a path if its history is on it and, for a history that isn't the
+  path's own, its required position is at or before the checkpoint where the next history took
+  over.
+- **Retention** deletes snapshots older than the retention, but always keeps the newest one that
+  serves the current path, and keeps every segment of the path from the oldest kept snapshot's
+  index + 1 on: the cutoff is the first index of the earliest segment that is young or holds an
+  entry at or after that bound. Snapshots go before segments.
+
+## Restore from the bucket
+
+`io.camunda.zeebe.restore.BucketRestoreService` restores one partition, and `RestoreManager` uses it
+for every local partition when `zeebe.broker.experimental.eventPlane.restoreFromBucket` is true,
+without a backup store. `restoreTo` is the position to restore to, unset for everything the bucket
+holds; `restoreHistory` names the history that goes on, as for a backup. The cluster id is
+`clusterId` if set, else the bucket's only cluster.
+
+- It follows the tenant's current history's path, and takes the newest snapshot that serves it and
+  whose required position is at or before the target.
+- It resets the journal to the snapshot's index + 1, the first entry Raft needs, and appends the
+  path's entries from there with `Journal.append(checksum, serializedRecord)`, up to the first entry
+  with a record past the target: entries without records before it are restored too. Each entry
+  comes from a segment that serves it, the highest level, then the highest last index.
+- If the restored journal doesn't reach the snapshot's required position, it takes the next older
+  snapshot; without any, the journal from index 1. A target past the bucket's last record fails.
+- It leaves the history file with the current history as `source`, the last restored entry as
+  `index`, and the last record's position at or before it as `position`.
 
 ## Service
 

@@ -22,6 +22,7 @@ import io.camunda.zeebe.eventplane.publisher.UploadFloor;
 import io.camunda.zeebe.eventplane.segment.Identity;
 import io.camunda.zeebe.eventplane.store.ObjectNames;
 import io.camunda.zeebe.eventplane.store.ObjectStore;
+import io.camunda.zeebe.snapshots.PersistedSnapshotStore;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -41,7 +42,8 @@ import org.slf4j.LoggerFactory;
 /**
  * Publishes one partition while its broker leads it, on a thread of its own: the uploads block, and
  * so does the floor, which waits on the exporter director. A failed poll is tried again on the next
- * one; the publisher keeps the segment it couldn't upload.
+ * one; the publisher keeps the segment it couldn't upload. If configured, it also uploads the
+ * partition's latest snapshot, at most once per snapshot interval.
  */
 final class PublisherService implements AutoCloseable {
 
@@ -55,8 +57,13 @@ final class PublisherService implements AutoCloseable {
   private final FloorStore floors;
   private final Announcer announcer;
   private final CutPolicy policy;
+  private final @Nullable SnapshotUploader snapshotUploader;
+  private final Duration snapshotInterval;
+  private final InstantSource clock = InstantSource.system();
   private final ScheduledExecutorService executor;
   private @Nullable PartitionPublisher publisher;
+  private @Nullable UUID publishedHistory;
+  private Instant nextSnapshotUpload = Instant.MIN;
 
   PublisherService(
       final Identity log,
@@ -66,7 +73,9 @@ final class PublisherService implements AutoCloseable {
       final EntrySource source,
       final FloorStore floors,
       final Announcer announcer,
-      final CutPolicy policy) {
+      final CutPolicy policy,
+      final @Nullable PersistedSnapshotStore snapshots,
+      final Duration snapshotInterval) {
     this.log = log;
     this.clusterKey = clusterKey;
     this.partitionDirectory = partitionDirectory;
@@ -75,6 +84,11 @@ final class PublisherService implements AutoCloseable {
     this.floors = floors;
     this.announcer = announcer;
     this.policy = policy;
+    this.snapshotInterval = snapshotInterval;
+    snapshotUploader =
+        snapshots == null || !snapshotInterval.isPositive()
+            ? null
+            : new SnapshotUploader(log, store, snapshots, clock);
     executor =
         Executors.newSingleThreadScheduledExecutor(
             runnable ->
@@ -127,6 +141,21 @@ final class PublisherService implements AutoCloseable {
     } catch (final Exception e) {
       LOG.warn("Failed to publish {}, trying again", log, e);
     }
+    uploadSnapshotIfDue();
+  }
+
+  /** Uploads the latest snapshot once the interval has passed since the last attempt. */
+  private void uploadSnapshotIfDue() {
+    final var now = clock.instant();
+    if (snapshotUploader == null || publishedHistory == null || now.isBefore(nextSnapshotUpload)) {
+      return;
+    }
+    nextSnapshotUpload = now.plus(snapshotInterval);
+    try {
+      snapshotUploader.uploadLatest(publishedHistory);
+    } catch (final Exception e) {
+      LOG.warn("Failed to upload the latest snapshot of {}, trying again later", log, e);
+    }
   }
 
   private PartitionPublisher open() throws IOException {
@@ -135,6 +164,7 @@ final class PublisherService implements AutoCloseable {
         new PartitionPublisher(
             log, manifest, source, store, floors, announcer, policy, InstantSource.system());
     opened.start();
+    publishedHistory = manifest.historyId();
     LOG.info("Publishing {} in history {}", log, manifest.historyId());
     return opened;
   }
