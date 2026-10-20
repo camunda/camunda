@@ -181,6 +181,37 @@ public record Entry(long checksum, byte[] serializedRecord) {
     return firstPosition() != NO_POSITION;
   }
 
+  /**
+   * The application entry's data, the log stream's batch of records, read-only: the {@code
+   * applicationData} field of Raft's {@code ApplicationEntry}.
+   *
+   * @throws IllegalStateException if the entry holds no records
+   * @throws InvalidEntry.Malformed if the data's length runs past the entry's end
+   */
+  public ByteBuffer applicationData() {
+    if (!hasRecords()) {
+      throw new IllegalStateException(
+          "Expected an entry with records, but entry %d holds none".formatted(index()));
+    }
+    final var raft = raftEntry();
+    final int application = SBE_HEADER_LENGTH + Short.toUnsignedInt(raft.getShort(0));
+    final int lengthOffset =
+        application + SBE_HEADER_LENGTH + Short.toUnsignedInt(raft.getShort(application));
+    final int dataOffset = lengthOffset + 4;
+    if (dataOffset > raft.limit()) {
+      throw new InvalidEntry.Malformed(
+          "Expected journal entry %d's application data to start by byte %d, but it starts at %d"
+              .formatted(index(), raft.limit(), dataOffset));
+    }
+    final long length = Integer.toUnsignedLong(raft.getInt(lengthOffset));
+    if (length > raft.limit() - dataOffset) {
+      throw new InvalidEntry.Malformed(
+          "Expected journal entry %d's application data to be at most %d bytes, but it says %d"
+              .formatted(index(), raft.limit() - dataOffset, length));
+    }
+    return raft.slice(dataOffset, (int) length).order(ByteOrder.LITTLE_ENDIAN);
+  }
+
   /** The Raft entry, a {@code RaftLogEntry} message and the entry after it, read-only. */
   public ByteBuffer raftEntry() {
     final var record = record();

@@ -9,6 +9,7 @@ package io.camunda.zeebe.eventplane.segment;
 
 import static io.camunda.zeebe.eventplane.segment.Entry.NO_POSITION;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.atomix.raft.storage.serializer.ApplicationEntryDecoder;
 import io.atomix.raft.storage.serializer.EntryType;
@@ -44,13 +45,38 @@ final class EntryTest {
         final var raftEntry = new byte[entry.raftEntry().remaining()];
         entry.raftEntry().get(raftEntry);
         assertThat(raftEntry).isEqualTo(c8.raftEntry());
+        if (entry.hasRecords()) {
+          final var data = entry.applicationData();
+          assertThat(data.isReadOnly()).isTrue();
+          final var applicationData = new byte[data.remaining()];
+          data.get(applicationData);
+          assertThat(applicationData).isEqualTo(c8.applicationData());
+        }
       }
+    }
+  }
+
+  @Test
+  void shouldRefuseApplicationDataOfAnEntryWithoutRecords() {
+    try (var journal = new RaftJournal(directory)) {
+      // given
+      final var entry = journal.initial();
+
+      // when / then
+      assertThatThrownBy(entry::applicationData)
+          .isInstanceOf(IllegalStateException.class)
+          .hasMessage("Expected an entry with records, but entry 1 holds none");
     }
   }
 
   /** An entry's fields, as C8's decoders read them. */
   private record C8Entry(
-      long index, long asqn, EntryType type, long highestPosition, byte[] raftEntry) {
+      long index,
+      long asqn,
+      EntryType type,
+      long highestPosition,
+      byte[] raftEntry,
+      byte[] applicationData) {
 
     static C8Entry decode(byte[] serializedRecord) {
       final var record = new UnsafeBuffer(serializedRecord);
@@ -78,19 +104,22 @@ final class EntryTest {
                   raft, raftHeader.encodedLength(), raftHeader.blockLength(), raftHeader.version());
       final var type = logEntry.type();
       long highestPosition = NO_POSITION;
+      var applicationData = new byte[0];
       if (type == EntryType.ApplicationEntry) {
         final int offset = raftHeader.encodedLength() + logEntry.encodedLength();
         raftHeader.wrap(raft, offset);
-        highestPosition =
+        final var application =
             new ApplicationEntryDecoder()
                 .wrap(
                     raft,
                     offset + raftHeader.encodedLength(),
                     raftHeader.blockLength(),
-                    raftHeader.version())
-                .highestAsqn();
+                    raftHeader.version());
+        highestPosition = application.highestAsqn();
+        applicationData = new byte[application.applicationDataLength()];
+        application.getApplicationData(applicationData, 0, applicationData.length);
       }
-      return new C8Entry(index, asqn, type, highestPosition, raftEntry);
+      return new C8Entry(index, asqn, type, highestPosition, raftEntry, applicationData);
     }
   }
 }
