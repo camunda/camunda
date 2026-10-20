@@ -920,7 +920,8 @@
 			"caseAutomationEvent": "Ereignis",
 			"caseAutomationWaiting": "Wartet",
 			"caseAutomationIncident": "Vorfall",
-			"caseAutomationInstances": "{{count}} Instanzen"
+			"caseAutomationInstances": "{{count}} Instanzen",
+			"caseActivityStart": "Starten"
 		},
 		"operate": {
 			"dashboard": {

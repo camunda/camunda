@@ -30,6 +30,7 @@ import {
 	Cog,
 	LoaderCircle,
 	Mail,
+	Play,
 	Radio,
 	Split,
 	Table,
@@ -269,8 +270,18 @@ const CaseWorkCard: React.FC<Props> = ({
 				aria-busy={openingElementId === elementId}
 				onClick={() => onStartTask(elementId)}
 			>
-				{status === 'completed' ? t('tasklist.caseActivityStartAgain') : t('tasklist.caseOpenTask')}
-				{openingElementId === elementId ? <Spinner /> : <ArrowRight aria-hidden />}
+				{status === 'completed'
+					? t('tasklist.caseActivityStartAgain')
+					: automation === null
+						? t('tasklist.caseOpenTask')
+						: t('tasklist.caseActivityStart')}
+				{openingElementId === elementId ? (
+					<Spinner />
+				) : automation === null ? (
+					<ArrowRight aria-hidden />
+				) : (
+					<Play aria-hidden />
+				)}
 			</Button>
 		);
 	};
