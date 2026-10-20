@@ -1147,6 +1147,7 @@ jobs:
           persist-credentials: false
       - uses: ./.github/actions/setup-build
         with:
+          locale: C.UTF-8
           maven-cache-key-modifier: ut-general-unit-tests
           skip-maven-cache: ${{ needs.detect-changes.outputs.build-tool == 'gradle' }}
           vault-address: ${{ secrets.VAULT_ADDR }}
@@ -1274,6 +1275,7 @@ jobs:
           test_owner: "${{ matrix.owner }}"
       - uses: ./.github/actions/setup-build
         with:
+          locale: C.UTF-8
           maven-cache-key-modifier: ut-zeebe
           skip-maven-cache: ${{ needs.detect-changes.outputs.build-tool == 'gradle' }}
           vault-address: ${{ secrets.VAULT_ADDR }}
@@ -1637,6 +1639,7 @@ jobs:
       # See build-distball.
       - uses: ./.github/actions/setup-build
         with:
+          locale: C.UTF-8
           dockerhub-readonly: true
           maven-cache-key-modifier: it-rdbms
           skip-maven-cache: ${{ needs.detect-changes.outputs.build-tool == 'gradle' }}
@@ -1750,6 +1753,7 @@ jobs:
       # See build-distball.
       - uses: ./.github/actions/setup-build
         with:
+          locale: C.UTF-8
           dockerhub-readonly: true
           maven-cache-key-modifier: it-async-repl
           vault-address: ${{ secrets.VAULT_ADDR }}
@@ -1896,6 +1900,7 @@ jobs:
       # The GCS build-cache auth step below authenticates gcloud for the download below.
       - uses: ./.github/actions/setup-build
         with:
+          locale: C.UTF-8
           dockerhub-readonly: true
           maven-cache-key-modifier: build-shared
           vault-address: ${{ secrets.VAULT_ADDR }}
@@ -2089,6 +2094,7 @@ jobs:
         uses: ./.github/actions/print-metadata
       - uses: ./.github/actions/setup-build
         with:
+          locale: C.UTF-8
           maven-cache-key-modifier: archunit-tests
           vault-address: ${{ secrets.VAULT_ADDR }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
@@ -2180,6 +2186,7 @@ jobs:
           sarif_file: ./hadolint.sarif
       - uses: ./.github/actions/setup-build
         with:
+          locale: C.UTF-8
           maven-cache-key-modifier: build-shared
           dockerhub-readonly: true
           vault-address: ${{ secrets.VAULT_ADDR }}
