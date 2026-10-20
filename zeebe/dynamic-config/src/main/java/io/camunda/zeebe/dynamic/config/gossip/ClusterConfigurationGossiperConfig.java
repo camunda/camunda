@@ -10,4 +10,23 @@ package io.camunda.zeebe.dynamic.config.gossip;
 import java.time.Duration;
 
 public record ClusterConfigurationGossiperConfig(
-    boolean enableSync, Duration syncDelay, Duration syncRequestTimeout, int gossipFanout) {}
+    boolean enableSync,
+    Duration syncDelay,
+    Duration syncRequestTimeout,
+    int gossipFanout,
+    Duration bootstrapTimeout) {
+
+  public static final Duration DEFAULT_BOOTSTRAP_TIMEOUT = Duration.ofSeconds(30);
+
+  public static final ClusterConfigurationGossiperConfig DEFAULT =
+      new ClusterConfigurationGossiperConfig(
+          true, Duration.ofSeconds(10), Duration.ofSeconds(2), 2, DEFAULT_BOOTSTRAP_TIMEOUT);
+
+  public ClusterConfigurationGossiperConfig(
+      final boolean enableSync,
+      final Duration syncDelay,
+      final Duration syncRequestTimeout,
+      final int gossipFanout) {
+    this(enableSync, syncDelay, syncRequestTimeout, gossipFanout, DEFAULT_BOOTSTRAP_TIMEOUT);
+  }
+}

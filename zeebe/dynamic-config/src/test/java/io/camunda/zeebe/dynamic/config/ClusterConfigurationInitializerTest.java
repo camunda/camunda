@@ -38,15 +38,18 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.io.TempDir;
 import org.mockito.Mockito;
 
+@Timeout(120)
 final class ClusterConfigurationInitializerTest {
   @TempDir Path rootDir;
   private final ClusterConfiguration initialClusterConfiguration =
@@ -152,8 +155,8 @@ final class ClusterConfigurationInitializerTest {
     final var initializer =
         new SyncInitializer(
             new TestClusterConfigurationNotifier(),
-            knownMembers,
-            new TestConcurrencyControl(),
+            () -> knownMembers,
+            new TestConcurrencyControl(true),
             syncRequester);
 
     // when
@@ -178,22 +181,240 @@ final class ClusterConfigurationInitializerTest {
     final ActorFuture<ClusterConfiguration> syncResponseFuture = new TestActorFuture<>();
     final Function<MemberId, ActorFuture<ClusterConfiguration>> syncRequester =
         id -> syncResponseFuture;
+    final var concurrencyControl = new TestConcurrencyControl(true);
     final var initializer =
         new SyncInitializer(
             new TestClusterConfigurationNotifier(),
-            knownMembers,
-            new TestConcurrencyControl(),
+            () -> knownMembers,
+            concurrencyControl,
             syncRequester);
 
     // when
     final var initializeFuture = initializer.initialize();
     assertThat(initializeFuture.isDone()).isFalse();
     syncResponseFuture.complete(ClusterConfiguration.uninitialized());
+    concurrencyControl.runAll();
 
     // Simulate gossip received
     persistedClusterConfiguration.update(initialClusterConfiguration);
 
     // then
+    assertThatClusterTopology(initializeFuture.join()).isUninitialized();
+  }
+
+  @Test
+  void shouldPreferInitializedTopologyWhenAnotherMemberIsUninitialized() {
+    // given
+    final var uninitializedMember = MemberId.from("1");
+    final var initializedMember = MemberId.from("2");
+    final var uninitializedResponse = new TestActorFuture<ClusterConfiguration>();
+    final var initializedResponse = new TestActorFuture<ClusterConfiguration>();
+    final var syncResponses =
+        Map.of(uninitializedMember, uninitializedResponse, initializedMember, initializedResponse);
+    final var initializer =
+        new SyncInitializer(
+            new TestClusterConfigurationNotifier(),
+            () -> List.of(uninitializedMember, initializedMember),
+            new TestConcurrencyControl(true),
+            syncResponses::get);
+
+    // when
+    final var initializeFuture = initializer.initialize();
+    uninitializedResponse.complete(ClusterConfiguration.uninitialized());
+
+    // then
+    assertThat(initializeFuture.isDone()).isFalse();
+
+    // when
+    initializedResponse.complete(initialClusterConfiguration);
+
+    // then
+    assertThatClusterTopology(initializeFuture.join()).isInitialized();
+  }
+
+  @Test
+  void shouldNotFallBackToUninitializedAfterBootstrapTimeoutWhenNoMemberIsReachable() {
+    // given - a member that never responds to sync requests
+    final var unresponsiveMember = MemberId.from("1");
+    final var concurrencyControl = new TestConcurrencyControl(true);
+    final var bootstrapTimeout = Duration.ofSeconds(1);
+    final var initializer =
+        new SyncInitializer(
+            new TestClusterConfigurationNotifier(),
+            () -> List.of(unresponsiveMember),
+            concurrencyControl,
+            ignored -> new TestActorFuture<>(),
+            bootstrapTimeout);
+
+    // when
+    final var initializeFuture = initializer.initialize();
+
+    // then - stays pending while no member has replied
+    assertThat(initializeFuture.isDone()).isFalse();
+
+    // when - the bootstrap timeout elapses
+    concurrencyControl.runAll();
+    final var testTimeout = bootstrapTimeout.toMillis() * 5;
+    // there's no easy way to verify that a future does not terminates, so we fail the future
+    // with an exception that we check later.
+    concurrencyControl.schedule(
+        Duration.ofMillis(testTimeout),
+        () -> initializeFuture.completeExceptionally(new Exception("expected")));
+    concurrencyControl.runAll();
+
+    // then - falls back to uninitialized so the coordinator can use static initialization
+    assertThat(initializeFuture)
+        .failsWithin(Duration.ofMillis(testTimeout + 1000))
+        .withThrowableThat()
+        .withMessageContaining("expected");
+  }
+
+  @Test
+  void shouldFallBackToUninitializedAfterBootstrapTimeoutAfterOneUninitializedReturns() {
+    // given - a member that never responds to sync requests
+    final var unresponsiveMember = MemberId.from("1");
+    final var concurrencyControl = new TestConcurrencyControl(true);
+    final var uninitializedResponse = new TestActorFuture<ClusterConfiguration>();
+    final var syncResponses = Map.of(unresponsiveMember, uninitializedResponse);
+    final var initializer =
+        new SyncInitializer(
+            new TestClusterConfigurationNotifier(),
+            () -> List.of(unresponsiveMember),
+            concurrencyControl,
+            m -> syncResponses.getOrDefault(m, new TestActorFuture<>()),
+            Duration.ofSeconds(1));
+
+    // when
+    final var initializeFuture = initializer.initialize();
+
+    // then - stays pending while no member has replied
+    assertThat(initializeFuture.isDone()).isFalse();
+
+    // when - the bootstrap timeout elapses
+    uninitializedResponse.complete(ClusterConfiguration.uninitialized());
+    concurrencyControl.runAll();
+
+    // then - falls back to uninitialized so the coordinator can use static initialization
+    assertThatClusterTopology(initializeFuture.join()).isUninitialized();
+  }
+
+  @Test
+  void shouldInitializeWhenMemberBecomesInitializedOnRetry() {
+    // given
+    final var unreachableMember = MemberId.from("1");
+    final var recoveringMember = MemberId.from("2");
+    final var recoveringMemberCalls = new AtomicInteger();
+    final Function<MemberId, ActorFuture<ClusterConfiguration>> syncRequester =
+        id -> {
+          if (id.equals(unreachableMember)) {
+            return TestActorFuture.failedFuture(new RuntimeException("unreachable"));
+          }
+          // uninitialized on the first query, then a valid configuration once re-queried
+          return recoveringMemberCalls.getAndIncrement() == 0
+              ? CompletableActorFuture.completed(ClusterConfiguration.uninitialized())
+              : CompletableActorFuture.completed(initialClusterConfiguration);
+        };
+    final var concurrencyControl = new TestConcurrencyControl(true);
+    final var initializer =
+        new SyncInitializer(
+            new TestClusterConfigurationNotifier(),
+            () -> List.of(unreachableMember, recoveringMember),
+            concurrencyControl,
+            syncRequester);
+
+    // when - first round: one member fails, the other is uninitialized -> stays pending
+    final var initializeFuture = initializer.initialize();
+    assertThat(initializeFuture.isDone()).isFalse();
+
+    // when - retry re-queries the members and the recovering member now returns a configuration
+    concurrencyControl.runAll();
+
+    // then
+    assertThatClusterTopology(initializeFuture.join()).isInitialized();
+  }
+
+  @Test
+  void shouldCompleteImmediatelyWithNoKnownMembersToSync() {
+    // given - a single-node cluster: the coordinator has no other members to sync with
+    final var initializer =
+        new SyncInitializer(
+            new TestClusterConfigurationNotifier(),
+            List::of,
+            new TestConcurrencyControl(),
+            id -> {
+              throw new AssertionError("should not query any member when the cluster has none");
+            });
+
+    // when
+    final var initializeFuture = initializer.initialize();
+
+    // then - completes immediately as uninitialized so the coordinator falls back to
+    // StaticInitializer, without waiting on anyone (including itself)
+    assertThat(initializeFuture.isDone()).isTrue();
+    assertThatClusterTopology(initializeFuture.join()).isUninitialized();
+  }
+
+  @Test
+  void shouldFallBackToUninitializedAfterBootstrapTimeoutWhenMemberOnlyEverReturnsNull() {
+    // given - a member that always answers with null, e.g. a gateway member which is part of
+    // cluster membership but never gossips an explicit uninitialized configuration
+    final var nullRespondingMember = MemberId.from("gateway-0");
+    final var concurrencyControl = new TestConcurrencyControl(true);
+    final var bootstrapTimeout = Duration.ofSeconds(1);
+    final var initializer =
+        new SyncInitializer(
+            new TestClusterConfigurationNotifier(),
+            () -> List.of(nullRespondingMember),
+            concurrencyControl,
+            ignored -> CompletableActorFuture.completed(null),
+            bootstrapTimeout);
+
+    // when
+    final var initializeFuture = initializer.initialize();
+
+    // then - stays pending while only null responses are received
+    assertThat(initializeFuture.isDone()).isFalse();
+
+    // when - retries run and the bootstrap timeout elapses
+    concurrencyControl.runAll();
+
+    // then - falls back to uninitialized instead of polling forever, since a member that only
+    // ever returns null never contributes to the "all members confirmed uninitialized" check
+    assertThatClusterTopology(initializeFuture.join()).isUninitialized();
+  }
+
+  @Test
+  void shouldConvergeQuicklyWhenAllMembersEventuallyConfirmUninitialized() {
+    // given - a 3-node cluster (this member + 2 peers); one peer hasn't yet reached the gossip
+    // stage on the first poll (returns null), the other already confirms uninitialized
+    final var slowMember = MemberId.from("1");
+    final var fastMember = MemberId.from("2");
+    final var slowMemberCalls = new AtomicInteger();
+    final Function<MemberId, ActorFuture<ClusterConfiguration>> syncRequester =
+        id -> {
+          if (id.equals(slowMember)) {
+            return slowMemberCalls.getAndIncrement() == 0
+                ? CompletableActorFuture.completed(null)
+                : CompletableActorFuture.completed(ClusterConfiguration.uninitialized());
+          }
+          return CompletableActorFuture.completed(ClusterConfiguration.uninitialized());
+        };
+    final var concurrencyControl = new TestConcurrencyControl(true);
+    final var bootstrapTimeout = Duration.ofSeconds(30);
+    final var initializer =
+        new SyncInitializer(
+            new TestClusterConfigurationNotifier(),
+            () -> List.of(slowMember, fastMember),
+            concurrencyControl,
+            syncRequester,
+            bootstrapTimeout);
+
+    // when
+    final var initializeFuture = initializer.initialize();
+    assertThat(initializeFuture.isDone()).isFalse();
+
+    // then - converges within a single retry round, well before the 30s bootstrap timeout
+    concurrencyControl.runAll();
     assertThatClusterTopology(initializeFuture.join()).isUninitialized();
   }
 
@@ -321,8 +542,8 @@ final class ClusterConfigurationInitializerTest {
       final var syncInitializer =
           new SyncInitializer(
               new TestClusterConfigurationNotifier(),
-              knownMembers,
-              new TestConcurrencyControl(),
+              () -> knownMembers,
+              new TestConcurrencyControl(true),
               syncRequester);
 
       final var initializer =
@@ -346,11 +567,12 @@ final class ClusterConfigurationInitializerTest {
       final ActorFuture<ClusterConfiguration> syncResponseFuture = new TestActorFuture<>();
       final Function<MemberId, ActorFuture<ClusterConfiguration>> syncRequester =
           id -> syncResponseFuture;
+      final var concurrencyControl = new TestConcurrencyControl(true);
       final var syncInitializer =
           new SyncInitializer(
               new TestClusterConfigurationNotifier(),
-              knownMembers,
-              new TestConcurrencyControl(),
+              () -> knownMembers,
+              concurrencyControl,
               syncRequester);
 
       final var initializer =
@@ -364,6 +586,7 @@ final class ClusterConfigurationInitializerTest {
 
       // Simulate gossip received
       syncResponseFuture.complete(ClusterConfiguration.uninitialized());
+      concurrencyControl.runAll();
 
       // then
       assertThatClusterTopology(initializeFuture.join()).isInitialized();

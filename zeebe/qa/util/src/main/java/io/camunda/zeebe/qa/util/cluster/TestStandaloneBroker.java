@@ -13,8 +13,10 @@ import io.camunda.application.commons.CommonsModuleConfiguration;
 import io.camunda.application.commons.configuration.BrokerBasedConfiguration.BrokerBasedProperties;
 import io.camunda.application.commons.configuration.WorkingDirectoryConfiguration.WorkingDirectory;
 import io.camunda.zeebe.broker.BrokerModuleConfiguration;
+import io.camunda.zeebe.broker.system.configuration.ConfigManagerCfg;
 import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
 import io.camunda.zeebe.client.ZeebeClientBuilder;
+import io.camunda.zeebe.dynamic.config.gossip.ClusterConfigurationGossiperConfig;
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.camunda.zeebe.qa.util.actuator.BrokerHealthActuator;
 import io.camunda.zeebe.qa.util.actuator.GatewayHealthActuator;
@@ -55,6 +57,19 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
     config.getCluster().getMembership().setFailureTimeout(Duration.ofSeconds(5));
     config.getCluster().getMembership().setProbeInterval(Duration.ofMillis(100));
     config.getCluster().getMembership().setSyncInterval(Duration.ofMillis(500));
+
+    // the default 30s bootstrap timeout would delay every cluster start where a member (e.g. a
+    // standalone gateway) never reports a configuration
+    config
+        .getCluster()
+        .setConfigManager(
+            new ConfigManagerCfg(
+                new ClusterConfigurationGossiperConfig(
+                    true,
+                    Duration.ofMillis(500),
+                    Duration.ofMillis(500),
+                    2,
+                    Duration.ofSeconds(5))));
 
     config.getExperimental().getConsistencyChecks().setEnableForeignKeyChecks(true);
     config.getExperimental().getConsistencyChecks().setEnablePreconditions(true);
