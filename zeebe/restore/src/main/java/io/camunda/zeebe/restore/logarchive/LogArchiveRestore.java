@@ -7,8 +7,9 @@
  */
 package io.camunda.zeebe.restore.logarchive;
 
-import io.camunda.zeebe.backup.logarchive.format.DecodedLogObject;
+import io.camunda.zeebe.backup.logarchive.format.LogArchiveFrame;
 import io.camunda.zeebe.backup.logarchive.format.LogObjectDecoder;
+import io.camunda.zeebe.backup.logarchive.format.SegmentV1Decoder;
 import io.camunda.zeebe.backup.logarchive.leader.LogArchiverTimeline;
 import io.camunda.zeebe.backup.logarchive.leader.LogArchiverTimeline.Takeover;
 import io.camunda.zeebe.backup.logarchive.model.ArchivedSnapshotJson;
@@ -35,6 +36,7 @@ import java.nio.file.StandardCopyOption;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.TreeMap;
@@ -320,7 +322,7 @@ public final class LogArchiveRestore {
       long expectedIndex = switchIndex;
       boolean continued = false;
       for (final var object : plan.objects()) {
-        for (final var frame : download(view, object).frames()) {
+        for (final var frame : download(view, object)) {
           if (frame.index() != expectedIndex) {
             throw failure(
                 plan,
@@ -526,7 +528,7 @@ public final class LogArchiveRestore {
       journal.reset(plan.firstIndex());
       long expectedIndex = plan.firstIndex();
       for (final var object : plan.objects()) {
-        for (final var frame : download(view, object).frames()) {
+        for (final var frame : download(view, object)) {
           if (frame.index() != expectedIndex) {
             throw failure(
                 plan,
@@ -587,7 +589,11 @@ public final class LogArchiveRestore {
         .build();
   }
 
-  private DecodedLogObject download(final LogArchiveView view, final LogObjectJson object) {
+  /**
+   * Downloads, verifies and decodes an object, by its key's extension: {@code .seg} or {@code
+   * .rec}.
+   */
+  private List<LogArchiveFrame> download(final LogArchiveView view, final LogObjectJson object) {
     final var key = view.partitionPrefix() + object.key();
     final var bytes =
         store
@@ -601,17 +607,37 @@ public final class LogArchiveRestore {
           "Log object %s does not match its size %d and sha256 %s"
               .formatted(key, object.sizeBytes(), object.sha256()));
     }
-    final var decoded = LogObjectDecoder.decode(bytes);
-    final var header = decoded.header();
-    if (header.firstIndex() != object.firstIndex()
-        || header.lastIndex() != object.lastIndex()
-        || header.partitionId() != view.partitionId()) {
+    final long firstIndex;
+    final long lastIndex;
+    final int partitionId;
+    final List<LogArchiveFrame> frames;
+    if (LogArchiveKeys.isSegmentKey(object.key())) {
+      final var segment = SegmentV1Decoder.decode(bytes);
+      firstIndex = segment.footer().firstIndex();
+      lastIndex = segment.footer().lastIndex();
+      partitionId = segment.identity().partitionId();
+      frames = segment.frames();
+      if (object.bodyLength() >= 0 && object.bodyLength() != segment.footer().bodyLength()) {
+        throw new LogArchiveRestoreException(
+            "Log object %s has a body of %d bytes, but is described as %s"
+                .formatted(key, segment.footer().bodyLength(), object));
+      }
+    } else {
+      final var decoded = LogObjectDecoder.decode(bytes);
+      final var header = decoded.header();
+      firstIndex = header.firstIndex();
+      lastIndex = header.lastIndex();
+      partitionId = header.partitionId();
+      frames = decoded.frames();
+    }
+    if (firstIndex != object.firstIndex()
+        || lastIndex != object.lastIndex()
+        || partitionId != view.partitionId()) {
       throw new LogArchiveRestoreException(
           "Log object %s holds indexes %d to %d of partition %d, but is described as %s"
-              .formatted(
-                  key, header.firstIndex(), header.lastIndex(), header.partitionId(), object));
+              .formatted(key, firstIndex, lastIndex, partitionId, object));
     }
-    return decoded;
+    return frames;
   }
 
   /**
