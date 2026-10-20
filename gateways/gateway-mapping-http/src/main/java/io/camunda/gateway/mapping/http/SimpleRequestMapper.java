@@ -10,6 +10,7 @@ package io.camunda.gateway.mapping.http;
 import io.camunda.gateway.mapping.http.mapper.ProcessInstanceMapper;
 import io.camunda.gateway.mapping.http.validator.ProcessInstanceRequestValidator;
 import io.camunda.gateway.protocol.model.ProcessInstanceCreationInstruction;
+import io.camunda.gateway.protocol.model.ProcessInstanceCreationInstructionBase;
 import io.camunda.gateway.protocol.model.ProcessInstanceCreationInstructionById;
 import io.camunda.gateway.protocol.model.ProcessInstanceCreationInstructionByKey;
 import io.camunda.gateway.protocol.model.ProcessInstanceCreationInstructionByVersionTag;
@@ -33,66 +34,40 @@ public class SimpleRequestMapper {
       return Either.left(validationError.get());
     }
 
-    final var startInstructions =
-        mapCreateProcessInstanceStartInstructions(request.getStartInstructions());
-    final var runtimeInstructions =
-        mapCreateProcessInstanceRuntimeInstructions(request.getRuntimeInstructions());
-
+    final ProcessInstanceCreationInstructionBase instruction;
     if (StringUtils.isNotBlank(request.getProcessDefinitionId())) {
-      if (request.getProcessDefinitionVersionTag() != null) {
-        return PROCESS_INSTANCE_MAPPER.toCreateProcessInstance(
-            (ProcessInstanceCreationInstruction)
-                ProcessInstanceCreationInstructionByVersionTag.Builder.create()
-                    .processDefinitionId(request.getProcessDefinitionId())
-                    .processDefinitionVersionTag(request.getProcessDefinitionVersionTag())
-                    .variables(request.getVariables())
-                    .tenantId(request.getTenantId())
-                    .operationReference(request.getOperationReference())
-                    .startInstructions(startInstructions)
-                    .runtimeInstructions(runtimeInstructions)
-                    .awaitCompletion(request.getAwaitCompletion())
-                    .fetchVariables(request.getFetchVariables())
-                    .requestTimeout(request.getRequestTimeout())
-                    .tags(request.getTags())
-                    .businessId(request.getBusinessId())
-                    .build(),
-            multiTenancyEnabled);
-      }
-      return PROCESS_INSTANCE_MAPPER.toCreateProcessInstance(
-          (ProcessInstanceCreationInstruction)
-              ProcessInstanceCreationInstructionById.Builder.create()
+      instruction =
+          request.getProcessDefinitionVersionTag() != null
+              ? ProcessInstanceCreationInstructionByVersionTag.Builder.create()
+                  .processDefinitionId(request.getProcessDefinitionId())
+                  .processDefinitionVersionTag(request.getProcessDefinitionVersionTag())
+                  .build()
+              : ProcessInstanceCreationInstructionById.Builder.create()
                   .processDefinitionId(request.getProcessDefinitionId())
                   .processDefinitionVersion(request.getProcessDefinitionVersion())
-                  .variables(request.getVariables())
-                  .tenantId(request.getTenantId())
-                  .operationReference(request.getOperationReference())
-                  .startInstructions(startInstructions)
-                  .runtimeInstructions(runtimeInstructions)
-                  .awaitCompletion(request.getAwaitCompletion())
-                  .fetchVariables(request.getFetchVariables())
-                  .requestTimeout(request.getRequestTimeout())
-                  .tags(request.getTags())
-                  .businessId(request.getBusinessId())
-                  .build(),
-          multiTenancyEnabled);
+                  .build();
+    } else {
+      instruction =
+          ProcessInstanceCreationInstructionByKey.Builder.create()
+              .processDefinitionKey(request.getProcessDefinitionKey())
+              .build();
     }
 
+    instruction.setVariables(request.getVariables());
+    instruction.setTenantId(request.getTenantId());
+    instruction.setOperationReference(request.getOperationReference());
+    instruction.setStartInstructions(
+        mapCreateProcessInstanceStartInstructions(request.getStartInstructions()));
+    instruction.setRuntimeInstructions(
+        mapCreateProcessInstanceRuntimeInstructions(request.getRuntimeInstructions()));
+    instruction.setAwaitCompletion(request.getAwaitCompletion());
+    instruction.setFetchVariables(request.getFetchVariables());
+    instruction.setRequestTimeout(request.getRequestTimeout());
+    instruction.setTags(request.getTags());
+    instruction.setBusinessId(request.getBusinessId());
+
     return PROCESS_INSTANCE_MAPPER.toCreateProcessInstance(
-        (ProcessInstanceCreationInstruction)
-            ProcessInstanceCreationInstructionByKey.Builder.create()
-                .processDefinitionKey(request.getProcessDefinitionKey())
-                .variables(request.getVariables())
-                .startInstructions(startInstructions)
-                .runtimeInstructions(runtimeInstructions)
-                .tenantId(request.getTenantId())
-                .operationReference(request.getOperationReference())
-                .awaitCompletion(request.getAwaitCompletion())
-                .requestTimeout(request.getRequestTimeout())
-                .fetchVariables(request.getFetchVariables())
-                .tags(request.getTags())
-                .businessId(request.getBusinessId())
-                .build(),
-        multiTenancyEnabled);
+        (ProcessInstanceCreationInstruction) instruction, multiTenancyEnabled);
   }
 
   private static List<ProcessInstanceCreationStartInstruction>
