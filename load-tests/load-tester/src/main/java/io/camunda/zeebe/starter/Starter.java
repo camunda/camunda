@@ -7,32 +7,22 @@
  */
 package io.camunda.zeebe.starter;
 
-import io.camunda.client.CamundaClient;
-import io.camunda.client.CamundaClientConfiguration;
-import io.camunda.client.api.CamundaFuture;
-import io.camunda.client.api.search.response.ProcessInstance;
-import io.camunda.client.api.search.response.SearchResponse;
 import io.camunda.zeebe.config.LoadTesterProperties;
 import io.camunda.zeebe.config.StarterProperties;
 import io.camunda.zeebe.metrics.ProcessInstanceStartMeter;
 import io.camunda.zeebe.metrics.StarterMetricsDoc;
 import io.camunda.zeebe.metrics.StarterMetricsDoc.StarterMetricKeyNames;
 import io.camunda.zeebe.read.DataReadMeter;
-import io.camunda.zeebe.read.DataReadMeterQueryProvider;
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
 import jakarta.annotation.PreDestroy;
-import java.time.Instant;
-import java.time.temporal.ChronoUnit;
+import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicReference;
-import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.CommandLineRunner;
@@ -47,40 +37,37 @@ public class Starter implements CommandLineRunner {
 
   private static final Logger LOG = LoggerFactory.getLogger(Starter.class);
 
-  private final CamundaClientConfiguration clientConfiguration;
   private final ApplicationContext applicationContext;
-  private final LoadTesterProperties properties;
   private final StarterProperties starterCfg;
   private final MeterRegistry registry;
   private final StarterLivenessIndicator livenessIndicator;
   private final ProcessDeployer processDeployer;
   private final ProcessInstanceCreator processInstanceCreator;
-  private final AtomicLong lastProcessInstanceKey = new AtomicLong(0);
   private final AtomicInteger runFinished = new AtomicInteger(0);
-  private final AtomicReference<Instant> lastProcessInstanceKeyTimestamp =
-      new AtomicReference<>(Instant.now());
+
+  // Temporary: Starter starts and stops these meters until they react to application events.
+  private final Optional<ProcessInstanceStartMeter> processInstanceStartMeter;
+  private final Optional<DataReadMeter> dataReadMeter;
 
   private ScheduledExecutorService executorService;
-  private ProcessInstanceStartMeter processInstanceStartMeter;
-  private DataReadMeter dataReadMeter;
-  private CamundaClient queryClient;
 
   public Starter(
-      final CamundaClientConfiguration clientConfiguration,
       final LoadTesterProperties properties,
       final MeterRegistry registry,
       final StarterLivenessIndicator livenessIndicator,
       final ProcessDeployer processDeployer,
       final ProcessInstanceCreator processInstanceCreator,
+      final Optional<ProcessInstanceStartMeter> processInstanceStartMeter,
+      final Optional<DataReadMeter> dataReadMeter,
       final ApplicationContext applicationContext) {
-    this.clientConfiguration = clientConfiguration;
     this.applicationContext = applicationContext;
-    this.properties = properties;
     starterCfg = properties.getStarter();
     this.registry = registry;
     this.livenessIndicator = livenessIndicator;
     this.processDeployer = processDeployer;
     this.processInstanceCreator = processInstanceCreator;
+    this.processInstanceStartMeter = processInstanceStartMeter;
+    this.dataReadMeter = dataReadMeter;
 
     // Expose the client information early: these are only static values which are not supposed to
     // be affected by the current state of the client (whether it successfully connects to the
@@ -100,26 +87,16 @@ public class Starter implements CommandLineRunner {
         .description(StarterMetricsDoc.RUN_FINISHED.getDescription())
         .register(registry);
 
-    if (properties.isMonitorDataAvailability() || properties.isPerformReadBenchmarks()) {
-      // Has its own connections, but shares the executor service of the configuration and shuts it
-      // down on close, so the starter must not run in the same JVM as job workers.
-      queryClient = CamundaClient.newClient(clientConfiguration);
-    }
-
-    if (properties.isMonitorDataAvailability()) {
-      setupDataAvailabilityMeter();
-    }
-
-    if (properties.isPerformReadBenchmarks()) {
-      setupDataReadMeter();
-    }
+    processInstanceStartMeter.ifPresent(ProcessInstanceStartMeter::start);
 
     final long processDefinitionKey = processDeployer.deploy();
 
-    if (properties.isPerformReadBenchmarks()) {
-      dataReadMeter.setContextProcessDefinitionKey(processDefinitionKey);
-      dataReadMeter.start();
-    }
+    dataReadMeter.ifPresent(
+        meter -> {
+          // Temporary: the meter receives the key from Starter until the deployer blocks startup.
+          meter.setContextProcessDefinitionKey(processDefinitionKey);
+          meter.start();
+        });
 
     final CountDownLatch countDownLatch = new CountDownLatch(1);
     executorService = Executors.newScheduledThreadPool(starterCfg.getThreads());
@@ -156,70 +133,7 @@ public class Starter implements CommandLineRunner {
         LOG.error("Shutdown executor service was interrupted", e);
       }
     }
-    if (processInstanceStartMeter != null) {
-      processInstanceStartMeter.close();
-    }
-    if (dataReadMeter != null) {
-      dataReadMeter.close();
-    }
-    if (queryClient != null) {
-      queryClient.close();
-    }
-  }
-
-  private void setupDataAvailabilityMeter() {
-    LOG.info("Monitor data availability of started process instances");
-    processInstanceStartMeter =
-        new ProcessInstanceStartMeter(
-            System::nanoTime,
-            registry,
-            Executors.newScheduledThreadPool(1),
-            properties.getMonitorDataAvailabilityInterval(),
-            (listOfStartedInstances) -> {
-              final CamundaFuture<SearchResponse<ProcessInstance>> send =
-                  queryClient
-                      .newProcessInstanceSearchRequest()
-                      .filter((f) -> f.processInstanceKey(key -> key.in(listOfStartedInstances)))
-                      .sort(s -> s.startDate().asc())
-                      .page(p -> p.limit(2500))
-                      .send();
-
-              return send.thenApply(
-                  processInstanceSearchResponse ->
-                      processInstanceSearchResponse.items().stream()
-                          .map(ProcessInstance::getProcessInstanceKey)
-                          .toList());
-            });
-    processInstanceCreator.addStartListener(
-        (processInstanceKey, startTime) ->
-            processInstanceStartMeter.recordProcessInstanceStart(processInstanceKey, startTime));
-    processInstanceStartMeter.start();
-  }
-
-  private void setupDataReadMeter() {
-    LOG.info("Starting read benchmark queries");
-    dataReadMeter =
-        new DataReadMeter(
-            registry,
-            Executors.newScheduledThreadPool(2),
-            queryClient,
-            DataReadMeterQueryProvider.getDefaultQueries(properties.getDisabledQueriesList()));
-    dataReadMeter.setContextProcessDefinitionId(starterCfg.getProcessId());
-    dataReadMeter.setContextBusinessKeySupplier(
-        () ->
-            Pair.of(
-                starterCfg.getBusinessKey(),
-                processInstanceCreator.currentBusinessKey()
-                    - (long) (starterCfg.getRatePerSecond() * 60.0)));
-    processInstanceCreator.addStartListener(
-        (processInstanceKey, startTime) -> recordReadContextProcessInstance(processInstanceKey));
-  }
-
-  private void recordReadContextProcessInstance(final long processInstanceKey) {
-    if (lastProcessInstanceKeyTimestamp.get().plus(1, ChronoUnit.MINUTES).isBefore(Instant.now())) {
-      lastProcessInstanceKeyTimestamp.set(Instant.now());
-      final var oldValue = lastProcessInstanceKey.getAndSet(processInstanceKey);
-      dataReadMeter.setContextProcessInstanceKey(oldValue == 0 ? processInstanceKey : oldValue);
-    }
+    processInstanceStartMeter.ifPresent(ProcessInstanceStartMeter::close);
+    dataReadMeter.ifPresent(DataReadMeter::close);
   }
 }
