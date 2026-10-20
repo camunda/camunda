@@ -6,54 +6,24 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {isHexColor, toHexColor, type HexColor} from '#/tasklist/modules/theme-editor/colorRamp';
-import type {PresetOption} from '#/tasklist/modules/theme-editor/presets';
+import {Text} from '@camunda/design-system';
+import type {HexColor} from '#/tasklist/modules/theme-editor/colorRamp';
 import {HexField} from './HexField';
-import {ThemePicker} from './ThemePicker';
 
-type Props<Value extends string> = {
+type Props = {
 	label: string;
 	hexLabel: string;
-	customLabel: string;
-	value: Value | HexColor;
-	options: PresetOption<Value>[];
-	onSelect: (value: Value | HexColor) => void;
-	onPreview: (value: Value) => void;
-	onPreviewEnd: () => void;
+	hex: HexColor;
+	onChange: (hex: HexColor) => void;
 };
 
-/** The presets first. Choosing "Custom" starts from the current color and shows the hex field. */
-function ColorField<Value extends string>({
-	label,
-	hexLabel,
-	customLabel,
-	value,
-	options,
-	onSelect,
-	onPreview,
-	onPreviewEnd,
-}: Props<Value>) {
-	const isCustom = isHexColor(value);
-
-	return (
-		<>
-			<ThemePicker
-				label={label}
-				value={value}
-				options={options}
-				customLabel={customLabel}
-				onSelect={onSelect}
-				onSelectCustom={() => {
-					if (!isCustom) {
-						onSelect(toHexColor(options.find((option) => option.value === value)?.swatch ?? '') ?? '#000000');
-					}
-				}}
-				onPreview={onPreview}
-				onPreviewEnd={onPreviewEnd}
-			/>
-			{isCustom ? <HexField label={hexLabel} hex={value} onChange={onSelect} /> : null}
-		</>
-	);
-}
+const ColorField: React.FC<Props> = ({label, hexLabel, hex, onChange}) => (
+	<div className="flex flex-col gap-1.5">
+		<Text as="span" variant="helper" className="text-neutral-foreground-subtle">
+			{label}
+		</Text>
+		<HexField label={hexLabel} hex={hex} onChange={onChange} />
+	</div>
+);
 
 export {ColorField};

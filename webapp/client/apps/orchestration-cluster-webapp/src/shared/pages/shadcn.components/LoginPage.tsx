@@ -77,7 +77,7 @@ const LoginPage: React.FC<Props> = ({title}) => {
 							<Card>
 								<CardContent className="flex flex-col gap-4">
 									<div className="flex justify-center pt-2">
-										<AppLogo className="size-12" />
+										<AppLogo size="login" />
 									</div>
 									<Heading as="h1" variant="heading-lg" className="mb-2 pb-2 text-center">
 										{title}

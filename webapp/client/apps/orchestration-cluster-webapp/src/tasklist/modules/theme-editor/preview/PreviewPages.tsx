@@ -16,10 +16,12 @@ import {
 	type NavBreadcrumbDescriptor,
 } from '@camunda/design-system';
 import {Link, Outlet, useParams, useSearch} from '@tanstack/react-router';
-import {useMemo} from 'react';
+import {useMemo, useState} from 'react';
 import {useTranslation} from 'react-i18next';
 import {useSidebarNavigation} from '#/shared/header/useSidebarNavigation.shadcn';
+import {PreviewEnvironmentTag} from '#/tasklist/modules/theme-editor/components/PreviewEnvironmentTag';
 import {PreviewLogo} from '#/tasklist/modules/theme-editor/components/PreviewLogo';
+import {getBreadcrumbOffset} from '#/tasklist/modules/theme-editor/logoLayout';
 import {AsyncActionButton} from '#/tasklist/modules/task-details/components/AsyncActionButton';
 import {TaskDetailsForm} from '#/tasklist/modules/task-details-form/components/TaskDetailsForm';
 import {TaskDetailsVariables} from '#/tasklist/modules/task-details-variables/components/TaskDetailsVariables';
@@ -59,6 +61,7 @@ function usePreviewTask() {
 
 const PreviewShell: React.FC = () => {
 	const {t} = useTranslation();
+	const [logoWidth, setLogoWidth] = useState(0);
 	const {ariaLabel, items} = useSidebarNavigation(PREVIEW_USER);
 
 	return (
@@ -73,16 +76,19 @@ const PreviewShell: React.FC = () => {
 					showSidebarTrigger={false}
 					logo={
 						<Link aria-label={t('loginLogoLabel')} className="flex items-center" to="/tasklist">
-							<PreviewLogo />
+							<PreviewLogo onWidthChange={setLogoWidth} />
 						</Link>
 					}
 					breadcrumb={
-						<NavBreadcrumbSwitcher
-							items={BREADCRUMBS}
-							activeItemKey="app"
-							linkComponent={Link}
-							aria-label={t('headerContextLabel')}
-						/>
+						<div className="flex items-center gap-3" style={{paddingLeft: getBreadcrumbOffset(logoWidth)}}>
+							<NavBreadcrumbSwitcher
+								items={BREADCRUMBS}
+								activeItemKey="app"
+								linkComponent={Link}
+								aria-label={t('headerContextLabel')}
+							/>
+							<PreviewEnvironmentTag />
+						</div>
 					}
 					actions={<Avatar name={PREVIEW_USER.displayName} size="sm" />}
 				/>

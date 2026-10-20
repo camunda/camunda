@@ -31,7 +31,7 @@ const RadiusSlider: React.FC<Props> = ({label, value, onChange}) => {
 				className="min-w-0 flex-1"
 				style={{accentColor: 'var(--primary-action-default)'}}
 			/>
-			<Text as="span" variant="label-md-strong" className="w-10 shrink-0 text-right">
+			<Text as="span" variant="label-md" className="w-10 shrink-0 text-right">
 				{percent}%
 			</Text>
 		</div>

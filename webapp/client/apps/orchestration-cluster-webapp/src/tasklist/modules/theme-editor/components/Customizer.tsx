@@ -28,9 +28,10 @@ import {ArrowLeft} from '@camunda/design-system/icons';
 import {Link} from '@tanstack/react-router';
 import {observer} from 'mobx-react-lite';
 import {useTranslation} from 'react-i18next';
-import {ACCENT_COLOR_OPTIONS, BASE_COLOR_OPTIONS, PRIMARY_COLOR_OPTIONS} from '#/tasklist/modules/theme-editor/presets';
+import {getDisplayHex} from '#/tasklist/modules/theme-editor/presets';
 import {themeEditorStore} from '#/tasklist/modules/theme-editor/themeEditorStore';
 import {ColorField} from './ColorField';
+import {EnvironmentField} from './EnvironmentField';
 import {ExportDialog} from './ExportDialog';
 import {LogoField} from './LogoField';
 import {RadiusSlider} from './RadiusSlider';
@@ -43,8 +44,7 @@ type Props = {
 
 const Customizer: React.FC<Props> = observer(({isResetDialogOpen, onResetDialogOpenChange}) => {
 	const {t} = useTranslation();
-	const {config, isDefault, hasUnappliedChanges, setConfig, setOverride, clearOverride, applyTheme, reset} =
-		themeEditorStore;
+	const {config, isDefault, hasUnappliedChanges, setConfig, applyTheme, reset} = themeEditorStore;
 
 	return (
 		<Card size="sm" className="flex max-h-full min-h-0 flex-col self-start">
@@ -62,38 +62,28 @@ const Customizer: React.FC<Props> = observer(({isResetDialogOpen, onResetDialogO
 			<CardContent className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto py-1">
 				<LogoField onChange={(logo) => setConfig({logo})} />
 				<Separator className="my-1" />
-				<div className="flex flex-col gap-2">
-					<ColorField
-						label={t('tasklist.themeEditorBase')}
-						hexLabel={t('tasklist.themeEditorHexLabel', {color: t('tasklist.themeEditorBase')})}
-						customLabel={t('tasklist.themeEditorCustom')}
-						value={config.base}
-						options={BASE_COLOR_OPTIONS}
-						onSelect={(base) => setConfig({base})}
-						onPreview={(base) => setOverride({base})}
-						onPreviewEnd={clearOverride}
-					/>
-					<ColorField
-						label={t('tasklist.themeEditorPrimary')}
-						hexLabel={t('tasklist.themeEditorHexLabel', {color: t('tasklist.themeEditorPrimary')})}
-						customLabel={t('tasklist.themeEditorCustom')}
-						value={config.primary}
-						options={PRIMARY_COLOR_OPTIONS}
-						onSelect={(primary) => setConfig({primary})}
-						onPreview={(primary) => setOverride({primary})}
-						onPreviewEnd={clearOverride}
-					/>
-					<ColorField
-						label={t('tasklist.themeEditorAccent')}
-						hexLabel={t('tasklist.themeEditorHexLabel', {color: t('tasklist.themeEditorAccent')})}
-						customLabel={t('tasklist.themeEditorCustom')}
-						value={config.accent}
-						options={ACCENT_COLOR_OPTIONS}
-						onSelect={(accent) => setConfig({accent})}
-						onPreview={(accent) => setOverride({accent})}
-						onPreviewEnd={clearOverride}
-					/>
-				</div>
+				<Section title={t('tasklist.themeEditorColors')}>
+					<div className="flex flex-col gap-3">
+						<ColorField
+							label={t('tasklist.themeEditorBase')}
+							hexLabel={t('tasklist.themeEditorHexLabel', {color: t('tasklist.themeEditorBase')})}
+							hex={getDisplayHex(config.base)}
+							onChange={(base) => setConfig({base})}
+						/>
+						<ColorField
+							label={t('tasklist.themeEditorPrimary')}
+							hexLabel={t('tasklist.themeEditorHexLabel', {color: t('tasklist.themeEditorPrimary')})}
+							hex={getDisplayHex(config.primary)}
+							onChange={(primary) => setConfig({primary})}
+						/>
+						<ColorField
+							label={t('tasklist.themeEditorAccent')}
+							hexLabel={t('tasklist.themeEditorHexLabel', {color: t('tasklist.themeEditorAccent')})}
+							hex={getDisplayHex(config.accent)}
+							onChange={(accent) => setConfig({accent})}
+						/>
+					</div>
+				</Section>
 				<Separator className="my-1" />
 				<Section title={t('tasklist.themeEditorRadius')}>
 					<RadiusSlider
@@ -102,8 +92,12 @@ const Customizer: React.FC<Props> = observer(({isResetDialogOpen, onResetDialogO
 						onChange={(radius) => setConfig({radius})}
 					/>
 				</Section>
+				<Separator className="my-1" />
+				<EnvironmentField environment={config.environment} onChange={(environment) => setConfig({environment})} />
 			</CardContent>
-			<CardFooter className="flex flex-col gap-2 pb-3!">
+			{/* The footer's own full-width border is replaced by an inset separator like the ones above. */}
+			<CardFooter className="flex flex-col gap-2 border-t-0 pt-3! pb-3!">
+				<Separator className="mb-2" />
 				<Button
 					type="button"
 					variant="secondary"

@@ -11,6 +11,8 @@ import {themeEditorStore} from '#/tasklist/modules/theme-editor/themeEditorStore
 import {AppLogo} from './AppLogo';
 
 /** The header logo in the preview, which follows the draft theme instead of the applied one. */
-const PreviewLogo: React.FC = observer(() => <AppLogo logo={themeEditorStore.previewConfig.logo} />);
+const PreviewLogo: React.FC<{onWidthChange: (width: number) => void}> = observer(({onWidthChange}) => (
+	<AppLogo logo={themeEditorStore.config.logo} onWidthChange={onWidthChange} />
+));
 
 export {PreviewLogo};

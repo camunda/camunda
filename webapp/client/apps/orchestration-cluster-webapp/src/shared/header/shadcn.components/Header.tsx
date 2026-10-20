@@ -18,12 +18,14 @@ import {getBootConfig} from '#/shared/config/getBootConfig';
 import {getClientConfig} from '#/shared/config/getClientConfig';
 import {queries} from '#/shared/http/queries';
 import {useSidebarNavigation} from '#/shared/header/useSidebarNavigation.shadcn';
+import {AppEnvironmentTag} from '#/tasklist/modules/theme-editor/components/AppEnvironmentTag';
 import {AppLogo} from '#/tasklist/modules/theme-editor/components/AppLogo';
+import {getBreadcrumbOffset} from '#/tasklist/modules/theme-editor/logoLayout';
 import {AccountMenu} from './AccountMenu';
 import {Breadcrumbs} from './Breadcrumbs';
 import {HelpMenu} from './HelpMenu';
 import {LicenseBadges} from './LicenseBadges';
-import {useCallback, useMemo} from 'react';
+import {useCallback, useMemo, useState} from 'react';
 
 const SIDEBAR_COLLAPSED_WIDTH = '3.5rem';
 const SIDEBAR_EXPANDED_WIDTH = '12.25rem';
@@ -49,6 +51,7 @@ const Header: React.FC<Props> = ({children, currentApp, initialSaasToken}) => {
 	const {organizationId, clusterId} = getBootConfig();
 	const isSaas = organizationId !== null && clusterId !== null;
 	const isBelowLg = useMediaQuery('(width < 64rem)');
+	const [logoWidth, setLogoWidth] = useState(0);
 	const breadcrumb =
 		currentApp === undefined ? undefined : <Breadcrumbs currentApp={currentApp} webappLinks={currentUser.c8Links} />;
 	const globalActions = useMemo(
@@ -102,10 +105,15 @@ const Header: React.FC<Props> = ({children, currentApp, initialSaasToken}) => {
 						skipToContentTargetId="main-content"
 						logo={
 							<Link aria-label={t('loginLogoLabel')} className="flex items-center" to={homeRoute}>
-								<AppLogo />
+								<AppLogo onWidthChange={setLogoWidth} />
 							</Link>
 						}
-						breadcrumb={breadcrumb}
+						breadcrumb={
+							<div className="flex items-center gap-3" style={{paddingLeft: getBreadcrumbOffset(logoWidth)}}>
+								{breadcrumb}
+								<AppEnvironmentTag />
+							</div>
+						}
 						trailing={isBelowLg ? undefined : <LicenseBadges license={license} />}
 						globalActions={globalActions}
 						actions={

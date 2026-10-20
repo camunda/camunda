@@ -26,7 +26,7 @@ const HexField: React.FC<Props> = ({label, hex, onChange}) => {
 	const isInvalid = typed !== null && normalizeHex(typed) === null;
 
 	return (
-		<div className="flex items-center gap-2 pb-1">
+		<div className="flex items-center gap-2">
 			<input
 				type="color"
 				aria-label={`${label} picker`}

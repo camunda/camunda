@@ -73,9 +73,9 @@ const ExportDialog: React.FC = observer(() => {
 						<Text variant="body-sm" className="text-neutral-foreground-subtle">
 							{t('tasklist.themeEditorExportRestart')}
 						</Text>
-						{config.logo === null ? null : (
+						{config.logo === null && config.environment === null ? null : (
 							<Text variant="body-sm" className="text-neutral-foreground-subtle">
-								{t('tasklist.themeEditorExportLogoNote')}
+								{t('tasklist.themeEditorExportBrowserOnlyNote')}
 							</Text>
 						)}
 					</div>

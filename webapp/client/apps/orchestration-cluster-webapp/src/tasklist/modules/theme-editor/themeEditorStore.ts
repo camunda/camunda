@@ -22,31 +22,21 @@ class ThemeEditorStore {
 	/** The theme applied to the app in this browser, or `null` for the default theme. */
 	applied: ThemeConfig | null = getAppliedTheme();
 	config: ThemeConfig = {...(this.applied ?? DEFAULT_THEME_CONFIG)};
-	/** Temporary selection while hovering over a picker option. Never exported. */
-	override: Partial<ThemeConfig> | null = null;
 	dataset: PreviewDataset = 'sample';
 
 	constructor() {
 		makeObservable(this, {
 			applied: observable,
 			config: observable,
-			override: observable,
 			dataset: observable,
-			previewConfig: computed,
 			isDefault: computed,
 			hasUnappliedChanges: computed,
 			previewCss: computed,
 			customCss: computed,
 			setConfig: action,
-			setOverride: action,
-			clearOverride: action,
 			applyTheme: action,
 			reset: action,
 		});
-	}
-
-	get previewConfig(): ThemeConfig {
-		return this.override === null ? this.config : {...this.config, ...this.override};
 	}
 
 	get isDefault() {
@@ -58,7 +48,7 @@ class ThemeEditorStore {
 	}
 
 	get previewCss() {
-		return toPreviewCss(buildAllTokens(this.previewConfig));
+		return toPreviewCss(buildAllTokens(this.config));
 	}
 
 	get customCss() {
@@ -67,15 +57,6 @@ class ThemeEditorStore {
 
 	setConfig = (config: Partial<ThemeConfig>) => {
 		this.config = {...this.config, ...config};
-		this.override = null;
-	};
-
-	setOverride = (override: Partial<ThemeConfig>) => {
-		this.override = override;
-	};
-
-	clearOverride = () => {
-		this.override = null;
 	};
 
 	applyTheme = () => {
