@@ -70,6 +70,13 @@
     <module>dynamic-config</module>
     <module>rebalance</module>
     <module>dynamic-node-id-provider</module>
+    <module>event-plane/segment</module>
+    <module>event-plane/common</module>
+    <module>event-plane/publisher</module>
+    <module>event-plane/consumer</module>
+    <module>event-plane/maintenance</module>
+    <module>event-plane/service</module>
+    <module>event-plane/qa</module>
   </modules>
 
   <profiles>
