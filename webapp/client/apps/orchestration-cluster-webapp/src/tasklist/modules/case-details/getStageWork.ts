@@ -12,8 +12,21 @@ import {tryParseJSON} from '#/tasklist/modules/json/tryParseJSON';
 
 type TaskStatus = 'open' | 'active' | 'completed' | 'notStarted';
 
+/** What a step that no person works on does: the stage waits for a system, a decision or an event. */
+type AutomationKind = 'automated' | 'decision' | 'calledProcess' | 'timer' | 'message' | 'signal' | 'event';
+
+type Automation = {
+	kind: AutomationKind;
+	/** How many instances of the step run now, for example of a multi-instance service task. */
+	runningCount: number;
+	hasIncident: boolean;
+};
+
 type StageTask = {
-	/** Unique in the list: the element ID of an ad-hoc task, the user task key of any other open task. */
+	/**
+	 * Unique in the list: the element ID of an ad-hoc task, the user task key of any other open task, or
+	 * `automated-<element ID>` for a running step that no person works on.
+	 */
 	key: string;
 	elementId: string;
 	name: string;
@@ -28,6 +41,8 @@ type StageTask = {
 	completedCount: number;
 	/** The open user task, if there is one. */
 	userTask: UserTask | null;
+	/** Set for a step that no person works on. */
+	automation: Automation | null;
 };
 
 type StageCompletion = {
@@ -39,7 +54,10 @@ type StageCompletion = {
 };
 
 type StageWork = {
-	/** The tasks of the stage: required first, then optional. */
+	/**
+	 * The work of the stage: required activities, then open tasks and running steps in the order they
+	 * started, then optional activities.
+	 */
 	tasks: StageTask[];
 	isAdHoc: boolean;
 	completion: StageCompletion | null;
@@ -61,6 +79,44 @@ function resolveCorrelationKey(expression: string | null, caseVariables: Variabl
 	const value = variable === undefined ? undefined : tryParseJSON(variable.value);
 
 	return typeof value === 'string' || typeof value === 'number' ? String(value) : null;
+}
+
+const AUTOMATION_KINDS_BY_ELEMENT_TYPE: Record<string, AutomationKind> = {
+	serviceTask: 'automated',
+	sendTask: 'automated',
+	scriptTask: 'automated',
+	businessRuleTask: 'decision',
+	callActivity: 'calledProcess',
+	receiveTask: 'message',
+	eventBasedGateway: 'event',
+};
+
+const AUTOMATION_KINDS_BY_EVENT_TRIGGER: Record<string, AutomationKind> = {
+	timer: 'timer',
+	message: 'message',
+	signal: 'signal',
+};
+
+function getAutomationKind(model: CaseModel, elementId: string): AutomationKind | null {
+	const elementType = model.elementTypes.get(elementId) ?? '';
+
+	if (elementType === 'intermediateCatchEvent') {
+		return AUTOMATION_KINDS_BY_EVENT_TRIGGER[model.eventTriggers.get(elementId) ?? ''] ?? 'event';
+	}
+
+	return AUTOMATION_KINDS_BY_ELEMENT_TYPE[elementType] ?? null;
+}
+
+function getAutomation(model: CaseModel, elementId: string, stageInstances: ElementInstance[]): Automation | null {
+	const kind = getAutomationKind(model, elementId);
+
+	if (kind === null) {
+		return null;
+	}
+
+	const running = stageInstances.filter((instance) => instance.elementId === elementId && instance.state === 'ACTIVE');
+
+	return {kind, runningCount: running.length, hasIncident: running.some(({hasIncident}) => hasIncident)};
 }
 
 /**
@@ -115,6 +171,7 @@ function getStageWork({
 		status: 'open',
 		completedCount: 0,
 		userTask,
+		automation: null,
 	});
 	const stage = currentStage?.stage;
 
@@ -146,6 +203,7 @@ function getStageWork({
 		isAdHocTask: true,
 		...getActivityState(elementId, stageInstances, stageTaskHistory),
 		userTask: openTasksByElementId.get(elementId) ?? null,
+		automation: getAutomation(model, elementId, stageInstances),
 	});
 	const requiredTasks = (adHoc?.requiredElementIds ?? []).map((elementId) => toAdHocTask(elementId, true));
 	const optionalTasks = (adHoc?.optionalElementIds ?? []).map((elementId) => toAdHocTask(elementId, false));
@@ -153,10 +211,52 @@ function getStageWork({
 	// Any other open task of the stage: the tasks of a sequential stage, or the tasks inside an activated
 	// sub-process of an ad-hoc stage.
 	const otherOpenTasks = stageTasks.filter(({elementId}) => !adHocElementIds.has(elementId)).map(toOpenTask);
+	// The steps that the stage waits for and no person works on: a service task, a decision, a timer, a message.
+	const runningStepIds = [
+		...new Set(
+			stageInstances
+				.filter(({elementId, state}) => state === 'ACTIVE' && !adHocElementIds.has(elementId))
+				.map(({elementId}) => elementId),
+		),
+	];
+	const automatedSteps = runningStepIds.flatMap((elementId): StageTask[] => {
+		const automation = getAutomation(model, elementId, stageInstances);
+
+		return automation === null
+			? []
+			: [
+					{
+						key: `automated-${elementId}`,
+						elementId,
+						name: model.elementNames.get(elementId) ?? elementId,
+						isRequired: true,
+						canStart: false,
+						isAdHocTask: false,
+						status: 'active',
+						completedCount: 0,
+						userTask: null,
+						automation,
+					},
+				];
+	});
+	const startTimes = new Map([
+		...stageTasks.map((task): [string, number] => [task.userTaskKey, Date.parse(task.creationDate) || 0]),
+		...automatedSteps.map(({key, elementId}): [string, number] => [
+			key,
+			Math.min(
+				...stageInstances
+					.filter((instance) => instance.elementId === elementId && instance.state === 'ACTIVE')
+					.map(({startDate}) => Date.parse(startDate) || 0),
+			),
+		]),
+	]);
+	const otherWork = [...otherOpenTasks, ...automatedSteps].sort(
+		(first, second) => (startTimes.get(first.key) ?? 0) - (startTimes.get(second.key) ?? 0),
+	);
 	const manualCompletion = stage.manualCompletion;
 
 	return {
-		tasks: [...requiredTasks, ...otherOpenTasks, ...optionalTasks],
+		tasks: [...requiredTasks, ...otherWork, ...optionalTasks],
 		isAdHoc: adHoc !== null,
 		completion:
 			manualCompletion === null
@@ -171,4 +271,4 @@ function getStageWork({
 }
 
 export {getStageWork};
-export type {StageCompletion, StageTask, StageWork, TaskStatus};
+export type {AutomationKind, StageCompletion, StageTask, StageWork, TaskStatus};

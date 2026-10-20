@@ -20,10 +20,25 @@ import {
 	Spinner,
 	Text,
 } from '@camunda/design-system';
-import {ArrowRight, Check, CircleCheck, CirclePlay, LoaderCircle, UserRound} from '@camunda/design-system/icons';
+import {
+	ArrowRight,
+	Check,
+	CircleAlert,
+	CircleCheck,
+	CirclePlay,
+	Clock,
+	Cog,
+	LoaderCircle,
+	Mail,
+	Radio,
+	Split,
+	Table,
+	UserRound,
+	Workflow,
+} from '@camunda/design-system/icons';
 import type {ProcessInstance, UserTask} from '@camunda/camunda-api-zod-schemas/8.11';
 import {cn} from '#/shared/cn';
-import type {StageTask, StageWork, TaskStatus} from '#/tasklist/modules/case-details/getStageWork';
+import type {AutomationKind, StageTask, StageWork, TaskStatus} from '#/tasklist/modules/case-details/getStageWork';
 import type {CaseWorkStatus} from '#/tasklist/modules/case-details/useCaseWork';
 
 function useAssignmentLabel() {
@@ -50,6 +65,29 @@ const ACTIVITY_STATUS_KEYS = {
 	completed: 'tasklist.caseActivityCompleted',
 	notStarted: 'tasklist.caseActivityNotStarted',
 } as const satisfies Record<TaskStatus, string>;
+
+const AUTOMATION_KIND_KEYS = {
+	automated: 'tasklist.caseAutomationAutomated',
+	decision: 'tasklist.caseAutomationDecision',
+	calledProcess: 'tasklist.caseAutomationCalledProcess',
+	timer: 'tasklist.caseAutomationTimer',
+	message: 'tasklist.caseAutomationMessage',
+	signal: 'tasklist.caseAutomationSignal',
+	event: 'tasklist.caseAutomationEvent',
+} as const satisfies Record<AutomationKind, string>;
+
+const AUTOMATION_ICONS = {
+	automated: Cog,
+	decision: Table,
+	calledProcess: Workflow,
+	timer: Clock,
+	message: Mail,
+	signal: Radio,
+	event: Split,
+} as const satisfies Record<AutomationKind, React.ComponentType<{className?: string}>>;
+
+/** A step that waits for an event, rather than doing work. */
+const WAITING_KINDS = new Set<AutomationKind>(['timer', 'message', 'signal', 'event']);
 
 type TaskRowProps = {
 	name: string;
@@ -140,14 +178,39 @@ const CaseWorkCard: React.FC<Props> = ({
 		</Button>
 	);
 
+	const getStatusLabel = (task: StageTask): string => {
+		if (task.userTask !== null) {
+			return getAssignmentLabel(task.userTask, currentUsername);
+		}
+
+		if (task.status === 'active' && task.automation !== null) {
+			if (task.automation.hasIncident) {
+				return t('tasklist.caseAutomationIncident');
+			}
+
+			return WAITING_KINDS.has(task.automation.kind)
+				? t('tasklist.caseAutomationWaiting')
+				: t(ACTIVITY_STATUS_KEYS.active);
+		}
+
+		return task.status === 'completed' && task.completedCount > 1
+			? t('tasklist.caseActivityCompletedTimes', {count: task.completedCount})
+			: t(ACTIVITY_STATUS_KEYS[task.status]);
+	};
+
+	// A running step of a sequential stage is not required or optional: the stage simply waits for it.
 	const getTaskDescription = (task: StageTask): string =>
 		[
-			task.isRequired ? t('tasklist.caseActivityRequired') : t('tasklist.caseActivityOptional'),
-			task.userTask !== null
-				? getAssignmentLabel(task.userTask, currentUsername)
-				: task.status === 'completed' && task.completedCount > 1
-					? t('tasklist.caseActivityCompletedTimes', {count: task.completedCount})
-					: t(ACTIVITY_STATUS_KEYS[task.status]),
+			task.automation === null || task.isAdHocTask
+				? task.isRequired
+					? t('tasklist.caseActivityRequired')
+					: t('tasklist.caseActivityOptional')
+				: null,
+			task.automation === null ? null : t(AUTOMATION_KIND_KEYS[task.automation.kind]),
+			getStatusLabel(task),
+			task.status === 'active' && task.automation !== null && task.automation.runningCount > 1
+				? t('tasklist.caseAutomationInstances', {count: task.automation.runningCount})
+				: null,
 			task.status !== 'completed' && task.completedCount > 0
 				? t('tasklist.caseActivityCompletedBefore', {count: task.completedCount})
 				: null,
@@ -155,7 +218,21 @@ const CaseWorkCard: React.FC<Props> = ({
 			.filter((part) => part !== null)
 			.join(' · ');
 
-	const getTaskIcon = ({completedCount: timesCompleted, userTask}: StageTask) => {
+	const getTaskIcon = ({completedCount: timesCompleted, userTask, automation, status}: StageTask) => {
+		if (timesCompleted > 0 && status !== 'active') {
+			return <CircleCheck className="size-4 shrink-0 text-[color:var(--success-action-default)]" aria-hidden />;
+		}
+
+		if (automation !== null) {
+			if (status === 'active' && automation.hasIncident) {
+				return <CircleAlert className="size-4 shrink-0 text-[color:var(--danger-border-strong)]" aria-hidden />;
+			}
+
+			const AutomationIcon = AUTOMATION_ICONS[automation.kind];
+
+			return <AutomationIcon className="size-4 shrink-0 text-neutral-foreground-subtle" aria-hidden />;
+		}
+
 		if (timesCompleted > 0) {
 			return <CircleCheck className="size-4 shrink-0 text-[color:var(--success-action-default)]" aria-hidden />;
 		}
@@ -167,9 +244,13 @@ const CaseWorkCard: React.FC<Props> = ({
 		);
 	};
 
-	const renderTaskAction = ({elementId, canStart, status, userTask}: StageTask) => {
+	const renderTaskAction = ({elementId, canStart, status, userTask, automation}: StageTask) => {
 		if (userTask !== null) {
 			return renderOpenButton(userTask);
+		}
+
+		if (status === 'active' && automation?.hasIncident === true) {
+			return null;
 		}
 
 		if (status === 'active') {
