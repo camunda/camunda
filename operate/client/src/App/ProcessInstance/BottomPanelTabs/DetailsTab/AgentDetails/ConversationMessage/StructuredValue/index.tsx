@@ -63,14 +63,17 @@ const Node: React.FC<NodeProps> = ({value, fieldName}) => {
 
   return (
     <Fields>
-      {entries.map(([key, entry]) => (
-        <Fragment key={key}>
-          <Label>{humanizeKey(key)}</Label>
-          <Value>
-            <Node value={entry} fieldName={key} />
-          </Value>
-        </Fragment>
-      ))}
+      {entries.map(([key, entry]) => {
+        const isNested = !isScalar(entry) && getDocumentName(entry) === null;
+        return (
+          <Fragment key={key}>
+            <Label $fullWidth={isNested}>{humanizeKey(key)}</Label>
+            <Value $fullWidth={isNested}>
+              <Node value={entry} fieldName={key} />
+            </Value>
+          </Fragment>
+        );
+      })}
     </Fields>
   );
 };
