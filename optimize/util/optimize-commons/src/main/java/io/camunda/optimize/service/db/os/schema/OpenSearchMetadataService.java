@@ -26,6 +26,7 @@ import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import org.opensearch.client.json.JsonData;
+import org.opensearch.client.opensearch._types.OpenSearchException;
 import org.opensearch.client.opensearch._types.Refresh;
 import org.opensearch.client.opensearch._types.Result;
 import org.opensearch.client.opensearch.core.UpdateRequest;
@@ -66,7 +67,7 @@ public class OpenSearchMetadataService extends DatabaseMetadataService<OptimizeO
             "Optimize Metadata index exists but no metadata doc was found, thus no metadata available.");
       }
       return metadata;
-    } catch (final OptimizeRuntimeException e) {
+    } catch (final OptimizeRuntimeException | OpenSearchException e) {
       throw new OptimizeMetadataReadException(ERROR_MESSAGE_READING_METADATA_DOC, e);
     }
   }
