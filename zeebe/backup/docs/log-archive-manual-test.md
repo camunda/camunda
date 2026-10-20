@@ -270,6 +270,71 @@ range and at or before the backup that covers E (one second off either way fails
 | H5 | `h-handover`: E frozen before the upgrade, handover H, C after H | `--to=<C's time>` | archive path (`.r`); the restored journal starts at or before E+1, before H (the archive's log reaches back before H); rows 30 → 120 across H, nothing after C; 120 jobs |
 | H5b | `h-compacted`: 300 × 10 KB with the exporter on (it holds compaction back), compaction, `upgrade` (archive starts at index 351/284), E frozen right after activation, handover H, C | `--to=<C's time>` | archive path; the restored journal starts at E+1 (index 633/487), after the archive start and before H; rows 300 → 360; 360 jobs |
 
+### I. Event plane (log archive on, commit entries announced)
+
+The brokers announce every commit entry to the event plane server (spec section 19). Scenario
+`i-eventplane` is the log archive of C plus `ZEEBE_BROKER_DATA_BACKUP_LOGARCHIVE_EVENTPLANE_URL`
+(`http://localhost:8090`, basic auth `demo`/`demo`). The event plane runs from a checkout of
+`camunda/event-plane` (`EP_DIR`, default `~/Development/projects/event-plane`, jar built with
+`./mvnw -o install -DskipTests`) on port 8090, because broker 0 serves REST on 8080. Its demo profile
+keeps the catalog in memory, so every start is an empty catalog. It reads the bucket itself (the
+filesystem store of the scenario) to show records. `event-plane.sh` starts and stops it and compares it
+with the store; `bucket.sh i-eventplane` shows the store.
+
+```bash
+cd zeebe/backup/docs/log-archive-manual && source ./env.sh
+./cluster.sh stop; ./cluster.sh wipe; rm -rf "$WORK/store/i-eventplane"
+./event-plane.sh start
+./cluster.sh start i-eventplane && ./api.sh deploy
+```
+
+`./event-plane.sh check [seconds]` passes when, for every timeline the event plane knows, `nextSeq - 1`
+equals the newest `commits/<seq>.json` of that timeline in the store (retrying for a few seconds).
+`./event-plane.sh objects <p>` reads `GET /v1/log-archive/default/default/partitions/<p>/objects?after=0`
+and checks that objects follow each other without an index gap within a timeline and in position order.
+`./event-plane.sh overview` prints `GET /v1/log-archive` as lines.
+
+1. **I1, fresh cluster.** `./api.sh load 100 e1`, `./api.sh complete 50`, then `check` and `objects 1`,
+   `objects 2`. **Pass:** `check` passes on both partitions; the objects of the current path equal the
+   `data/` objects of the store (`bucket.sh` prints the count; none is empty here); no gap.
+2. **I2, event plane down.** `./event-plane.sh kill`, `curl` on the event plane gives a connection error
+   (not 503), `./api.sh load 150 e2`, `./api.sh complete 50`. **Pass:** the newest commit seq in the
+   store grows meanwhile (the log archive does not wait), the brokers log
+   `failed to announce to the event plane, retrying in PT..` (backoff up to 10 s). Then
+   `./event-plane.sh start` (empty catalog) and `check 60`. **Pass:** caught up from seq 1 for every
+   partition, `objects` has no gap and as many objects as the store.
+3. **I3, leader kill.** `L=$(./cluster.sh leader 1)`, `NODE=<another broker> ./cluster.sh kill $L`,
+   keep loading through the other broker (`NODE=1 ./api.sh load 100 e3`), restart with
+   `./cluster.sh restart $L i-eventplane`, load more. **Pass:** `check` passes, `objects` has no gap, the
+   store has objects of a higher term (`-t2.rec`).
+4. **I4, restore.** Take a checkpoint (the id must be given when continuous backup is off):
+   `C=$(date +%s); ./api.sh backup $C`, wait for `./api.sh status $C` `COMPLETED` and for C in the
+   `checkpoints` of the commit entries of both partitions (`overview` shows `checkpoints=1`). Load 60 more,
+   `check`. Stop the brokers (the event plane keeps running), `./cluster.sh wipe`,
+   `./restore.sh i-eventplane --logArchive.timeline=tl-0 --logArchive.checkpointId=$C`, start the brokers
+   again, load 40 more. **Pass:** `overview` shows per partition `tl-0.r<C>` as current with
+   `parent=tl-0` and `takeover(index=<C's index>,position=<C's position>)` equal to the
+   `log-archive-takeover` file in `$WORK/broker-*/data/default/partitions/*/`; `check` passes for both
+   timelines; `objects <p>` lists the parent's objects up to the takeover and then the new timeline's: the
+   last parent object has `lastPosition` equal to the takeover position, below its `objectLastPosition`
+   when the object goes beyond it. The new timeline's first object overlaps the parent's last objects
+   (the restore archives again from the snapshot's index); readers skip the positions they have.
+   `./api.sh jobs` equals the jobs at C plus those created after the restore.
+5. **I5, UI.** `http://localhost:8090/log-archive-ui` needs no login for the page, but its API calls do
+   and a headless browser cannot answer the prompt. Put a tiny proxy in front that adds the basic auth
+   header (any 20 lines of Python), and take screenshots with
+   `chrome --headless --virtual-time-budget=6000 --window-size=1400,1000 --screenshot=<png> <url>`:
+   overview `#/`, timeline `#/t/default/default/1/tl-0.r<C>`, records
+   `#/r/default/default/1/tl-0/<url-encoded object key>` (the slashes of the key as `%2F`).
+   **Pass:** the overview shows both timelines per partition, the restored one current with "takes over
+   from tl-0 after position .."; the timeline page shows objects, checkpoint C and the snapshot; the
+   records page shows decoded `PROCESS_INSTANCE` rows.
+
+**Confirmed on the first run (2026-10-20):** I1 to I5 pass. Counts: I1 11 objects and 13 commits per
+partition on both sides; I2 19/18 commits, caught up from an empty catalog; I3 24/25 commits, objects of
+term 2; I4 `tl-0.r<C>` with takeover (929, 5230) on partition 1 and (980, 6491) on partition 2, the path
+cuts the parent at the takeover position; 380 jobs after the restore.
+
 ### Snapshot checks (S)
 
 - **Snapshot choice**, for every archive restore: take "Restoring partition N to checkpoint … at

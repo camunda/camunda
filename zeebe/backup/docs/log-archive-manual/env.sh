@@ -8,6 +8,8 @@ export BROKERS=3
 export PARTITIONS=${PARTITIONS:-2}
 export REST_BASE=8080   # broker i serves REST on 8080+i
 export MGMT_BASE=9600   # broker i serves the management API on 9600+i
+export EP_PORT=${EP_PORT:-8090}   # the event plane server (scenario i-eventplane), 8080 is broker 0
+export EP_DIR=${EP_DIR:-$HOME/Development/projects/event-plane}
 
 # The store folder of a scenario. STORE_OVERRIDE=<dir> points a run at another folder, e.g. a copy
 # of a store that a restore may write into.
@@ -51,6 +53,13 @@ broker_env() {
             "CAMUNDA_DATA_PRIMARYSTORAGE_BACKUP_RETENTION_CLEANUPSCHEDULE=PT1H") ;;
   esac
   case "$scenario" in
+    i-eventplane)
+      # announce every commit entry to the event plane (event-plane.sh start)
+      env+=("ZEEBE_BROKER_DATA_BACKUP_LOGARCHIVE_EVENTPLANE_URL=http://localhost:$EP_PORT"
+            "ZEEBE_BROKER_DATA_BACKUP_LOGARCHIVE_EVENTPLANE_USERNAME=demo"
+            "ZEEBE_BROKER_DATA_BACKUP_LOGARCHIVE_EVENTPLANE_PASSWORD=demo") ;;
+  esac
+  case "$scenario" in
     h-*)
       env+=("CAMUNDA_DATA_SECONDARYSTORAGE_TYPE=rdbms"
             "CAMUNDA_DATA_SECONDARYSTORAGE_RDBMS_URL=$(h2_url "$scenario")"
@@ -65,7 +74,7 @@ broker_env() {
             "CAMUNDA_CLUSTER_NETWORK_MAXMESSAGESIZE=512KB") ;;
   esac
   case "$scenario" in
-    c-archive|d-both|e-kill|f-outage|g-brownfield|h-handover|h-compacted)
+    c-archive|d-both|e-kill|f-outage|g-brownfield|h-handover|h-compacted|i-eventplane)
       # g-brownfield and h-handover/h-compacted start without the log archive (the old cluster);
       # LOG_ARCHIVE=on enables it for the upgraded cluster, see cluster.sh upgrade.
       if [ "${scenario#g-}" = "$scenario" ] && [ "${scenario#h-}" = "$scenario" ] || [ "${LOG_ARCHIVE:-off}" = on ]; then

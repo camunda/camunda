@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Usage: api.sh deploy | load <n> [tag] [payloadBytes] | jobs | backup [id] | status <id> | backups
+# Usage: api.sh deploy | load <n> [tag] [payloadBytes] | jobs | complete [max] | backup [id] | status <id> | backups
 source "$(dirname "$0")/env.sh"
 N=${NODE:-0}; R=localhost:$((REST_BASE + N)); M=localhost:$((MGMT_BASE + N))
 case "$1" in
@@ -21,6 +21,14 @@ case "$1" in
     done
     echo "activatable jobs: $(jq length <<<"$all")"
     jq -r 'group_by(.) | .[] | "  tag \(.[0]): \(length)"' <<<"$all" ;;
+  complete)
+    # activates and completes up to <max> jobs (default 100): more records for the archive
+    done_=0; for k in $(seq 1 "${2:-100}"); do
+      key=$(curl -sf -X POST $R/v2/jobs/activation -H 'Content-Type: application/json' \
+        -d '{"type":"la-job","maxJobsToActivate":1,"timeout":600000,"worker":"manual"}' | jq -r '.jobs[0].jobKey // empty')
+      [ -z "$key" ] && break
+      curl -sf -X POST $R/v2/jobs/$key/completion -H 'Content-Type: application/json' -d '{}' >/dev/null && done_=$((done_+1))
+    done; echo "completed $done_ jobs" ;;
   backup)
     if [ -n "$2" ]; then curl -s -X POST $M/actuator/backups -H 'Content-Type: application/json' -d "{\"backupId\":$2}";
     else curl -s -X POST $M/actuator/backups -H 'Content-Type: application/json' -d '{}'; fi; echo ;;
