@@ -12,42 +12,38 @@ import java.io.UncheckedIOException;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.nio.channels.FileChannel;
+import java.nio.channels.FileLock;
+import java.nio.channels.OverlappingFileLockException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
-import org.agrona.CloseHelper;
 
 /**
  * Hands out TCP ports such that no two callers sharing the same lock directory get the same port,
  * even across JVMs. The OS cannot reserve a port for a component that binds it later, so
- * cooperating callers reserve ports by holding an exclusive file lock per port.
+ * cooperating callers reserve ports by holding an exclusive lock on one byte of a shared lock file,
+ * where the byte offset is the port number.
  *
- * <p>A reservation lasts until the JVM exits. The OS releases the file locks then, also if the JVM
- * crashes, so no stale reservations are left behind. The lock files themselves are never deleted,
- * as deleting one would let another process lock a new file under the same name.
+ * <p>All reservations of an allocator share one file descriptor that stays open until the JVM
+ * exits, so the number of reservations does not affect descriptor usage. A reservation lasts until
+ * it is {@linkplain PortReservation#close() closed} or the JVM exits. The OS releases the locks
+ * when the JVM exits, also if it crashes, so no stale reservations are left behind. Ports whose
+ * {@link PortReservation} is dropped without closing it stay reserved until then.
  *
  * <p>Processes that do not use this class are only avoided if they already listen on the port when
  * it is chosen.
  */
 final class PortAllocator {
-  // Lock files claimed by any allocator in this JVM. Opening and then closing a second channel
-  // for a lock file this JVM already holds can release the OS lock on some platforms, so such files
-  // must not be opened at all.
-  private static final Set<Path> CLAIMED_LOCK_FILES = ConcurrentHashMap.newKeySet();
-
   private final Path lockDir;
   private final int minPort;
   private final int portCount;
-  // keeps the channels, and thereby their locks, open until the JVM exits
-  private final List<FileChannel> reservations = new ArrayList<>();
 
   private int cursor;
-  private boolean lockDirCreated;
+  // never closed: closing a channel drops all the locks this process holds on the file on some
+  // platforms. The JVM rejects overlapping locks on the same file even across channels, so
+  // allocators of this JVM that share a lock directory still exclude each other.
+  private FileChannel channel;
 
   /**
    * @param lockDir directory shared by all allocators that must not hand out the same port
@@ -62,21 +58,23 @@ final class PortAllocator {
     cursor = ThreadLocalRandom.current().nextInt(portCount);
   }
 
-  synchronized int nextPort() {
-    if (!lockDirCreated) {
-      try {
-        Files.createDirectories(lockDir);
-      } catch (final IOException e) {
-        throw new UncheckedIOException("Failed to create port lock directory " + lockDir, e);
-      }
-      lockDirCreated = true;
+  /** Reserves a port until the JVM exits. */
+  int nextPort() {
+    return reserve().port();
+  }
+
+  /** Reserves a port until the returned reservation is closed or the JVM exits. */
+  synchronized PortReservation reserve() {
+    if (channel == null) {
+      channel = openChannel();
     }
 
     for (int i = 0; i < portCount; i++) {
       final int port = minPort + cursor;
       cursor = (cursor + 1) % portCount;
-      if (tryReserve(port)) {
-        return port;
+      final var reservation = tryReserve(port);
+      if (reservation != null) {
+        return reservation;
       }
     }
 
@@ -84,31 +82,36 @@ final class PortAllocator {
         "No free port left in range [%d, %d)".formatted(minPort, minPort + portCount));
   }
 
-  private boolean tryReserve(final int port) {
-    final var lockFile = lockDir.resolve(port + ".lock").toAbsolutePath().normalize();
-    // claiming the file keeps other allocators in this JVM away while we probe it; the file I/O and
-    // the bind check happen outside the monitor so that probing does not block them
-    if (!CLAIMED_LOCK_FILES.add(lockFile)) {
-      return false;
-    }
-
-    boolean reserved = false;
-    FileChannel channel = null;
+  private PortReservation tryReserve(final int port) {
+    final FileLock lock;
     try {
-      channel = FileChannel.open(lockFile, StandardOpenOption.CREATE, StandardOpenOption.WRITE);
-      if (channel.tryLock() != null && isBindable(port)) {
-        reservations.add(channel);
-        reserved = true;
-      }
+      lock = channel.tryLock(port, 1, false);
+    } catch (final OverlappingFileLockException e) {
+      // reserved by this JVM
+      return null;
     } catch (final IOException e) {
       throw new UncheckedIOException("Failed to reserve port " + port, e);
-    } finally {
-      if (!reserved) {
-        CloseHelper.quietClose(channel);
-        CLAIMED_LOCK_FILES.remove(lockFile);
-      }
     }
-    return reserved;
+    if (lock == null) {
+      // reserved by another process
+      return null;
+    }
+
+    if (!isBindable(port)) {
+      new PortReservation(port, lock).close();
+      return null;
+    }
+    return new PortReservation(port, lock);
+  }
+
+  private FileChannel openChannel() {
+    try {
+      Files.createDirectories(lockDir);
+      return FileChannel.open(
+          lockDir.resolve("ports.lock"), StandardOpenOption.CREATE, StandardOpenOption.WRITE);
+    } catch (final IOException e) {
+      throw new UncheckedIOException("Failed to open port lock file in " + lockDir, e);
+    }
   }
 
   private static boolean isBindable(final int port) {

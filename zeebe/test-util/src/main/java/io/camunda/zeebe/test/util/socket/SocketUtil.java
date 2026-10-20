@@ -35,4 +35,14 @@ public final class SocketUtil {
     LOG.info("Choosing next port {}", port);
     return new InetSocketAddress(DEFAULT_HOST, port);
   }
+
+  /**
+   * Like {@link #getNextAddress()}, but the port is handed out again once the returned reservation
+   * is closed, instead of when the JVM exits.
+   */
+  public static PortReservation reserveNextPort() {
+    final var reservation = PORT_ALLOCATOR.reserve();
+    LOG.info("Choosing next port {}", reservation.port());
+    return reservation;
+  }
 }

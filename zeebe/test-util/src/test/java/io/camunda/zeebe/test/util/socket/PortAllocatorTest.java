@@ -26,6 +26,8 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledOnOs;
+import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.io.TempDir;
 
 final class PortAllocatorTest {
@@ -164,6 +166,56 @@ final class PortAllocatorTest {
     final var child = startChild(MIN, MIN + 3, 1);
     assertThat(child.waitFor(30, TimeUnit.SECONDS)).isTrue();
     assertThat(child.exitValue()).isNotZero();
+  }
+
+  @Test
+  void shouldReuseAPortOnceItsReservationIsClosed() {
+    // given
+    final var allocator = new PortAllocator(lockDir, MIN, MIN + 1);
+    final var reservation = allocator.reserve();
+    assertThatThrownBy(allocator::reserve).isInstanceOf(IllegalStateException.class);
+
+    // when
+    reservation.close();
+
+    // then
+    assertThat(allocator.reserve().port()).isEqualTo(reservation.port());
+  }
+
+  @Test
+  void shouldKeepAPortReservedWhenItsReservationIsDroppedWithoutClosing() {
+    // given
+    final var allocator = new PortAllocator(lockDir, MIN, MIN + 1);
+    allocator.reserve();
+
+    // when - the handle is garbage collected
+    System.gc();
+
+    // then
+    assertThatThrownBy(allocator::reserve).isInstanceOf(IllegalStateException.class);
+  }
+
+  @Test
+  @DisabledOnOs(OS.WINDOWS) // counts descriptors through a Unix-only MXBean
+  void shouldNotOpenMoreFileDescriptorsPerReservation() {
+    // given
+    final var allocator = new PortAllocator(lockDir, MIN, MAX);
+    allocator.nextPort();
+    final long before = openFileDescriptors();
+
+    // when
+    for (int i = 0; i < 200; i++) {
+      allocator.nextPort();
+    }
+
+    // then
+    assertThat(openFileDescriptors()).isEqualTo(before);
+  }
+
+  private static long openFileDescriptors() {
+    return ((com.sun.management.UnixOperatingSystemMXBean)
+            java.lang.management.ManagementFactory.getOperatingSystemMXBean())
+        .getOpenFileDescriptorCount();
   }
 
   private Process startChild(final int min, final int max, final int count) throws IOException {
