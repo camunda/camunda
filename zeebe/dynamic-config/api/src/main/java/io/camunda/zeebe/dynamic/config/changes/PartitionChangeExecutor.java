@@ -13,6 +13,7 @@ import io.camunda.zeebe.dynamic.config.state.ExportingState;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import java.util.Collection;
 import java.util.Map;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Represents the executor that executes the actual process to start or start. The concrete
@@ -142,7 +143,7 @@ public interface PartitionChangeExecutor {
    * @return a future that completes when the exporter is enabled
    */
   ActorFuture<Void> enableExporter(
-      int partitionId, String exporterId, long metadataVersion, String initializeFrom);
+      int partitionId, String exporterId, long metadataVersion, @Nullable String initializeFrom);
 
   /**
    * Sets the overall exporting state for every partition owned by this member, pausing,

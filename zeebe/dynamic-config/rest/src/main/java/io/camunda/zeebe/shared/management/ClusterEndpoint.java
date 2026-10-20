@@ -597,7 +597,7 @@ public class ClusterEndpoint {
 
   @PatchMapping(path = "/routing-state", consumes = "application/json")
   public ResponseEntity<?> updateRoutingState(
-      @RequestBody(required = false) final RoutingState routingState,
+      @RequestBody(required = false) final @Nullable RoutingState routingState,
       @RequestParam(defaultValue = "false") final boolean dryRun,
       @RequestParam(required = false) final @Nullable String physicalTenant) {
     final Optional<String> tenant = nonBlank(physicalTenant);

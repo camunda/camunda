@@ -177,13 +177,13 @@ final class ClusterApiUtils {
   }
 
   static ResponseEntity<?> mapOperationResponse(
-      final Either<ErrorResponse, ClusterConfigurationChangeResponse> response,
-      final Throwable throwable) {
+      final @Nullable Either<ErrorResponse, ClusterConfigurationChangeResponse> response,
+      final @Nullable Throwable throwable) {
     if (throwable != null) {
       return ClusterApiUtils.mapError(throwable);
     }
 
-    return ClusterApiUtils.mapOperationResponse(response);
+    return ClusterApiUtils.mapOperationResponse(requireNonNull(response));
   }
 
   static ResponseEntity<?> mapClusterTopologyResponse(
