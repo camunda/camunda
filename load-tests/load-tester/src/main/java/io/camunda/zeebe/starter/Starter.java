@@ -20,6 +20,7 @@ import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.client.api.search.response.SearchResponse;
 import io.camunda.zeebe.config.LoadTesterProperties;
 import io.camunda.zeebe.config.StarterProperties;
+<<<<<<< HEAD
 import io.camunda.zeebe.metrics.ConnectionMonitor;
 import io.camunda.zeebe.metrics.ProcessInstanceStartMeter;
 import io.camunda.zeebe.metrics.StarterLatencyMetricsDoc;
@@ -62,13 +63,28 @@ import org.slf4j.LoggerFactory;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.context.ApplicationContext;
+=======
+import io.camunda.zeebe.metrics.StarterMetricsDoc;
+import io.camunda.zeebe.metrics.StarterMetricsDoc.StarterMetricKeyNames;
+import io.micrometer.core.instrument.Gauge;
+import io.micrometer.core.instrument.MeterRegistry;
+import java.time.Instant;
+import java.util.concurrent.atomic.AtomicInteger;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.ApplicationEventPublisher;
+>>>>>>> e477398e (refactor: start the starter components from application events)
 import org.springframework.context.annotation.Profile;
+import org.springframework.context.event.EventListener;
+import org.springframework.scheduling.TaskScheduler;
+import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.stereotype.Component;
 
 @Component
 @Profile("starter")
-public class Starter implements CommandLineRunner {
+@EnableScheduling
+public class Starter {
 
+<<<<<<< HEAD
   private static final Logger THROTTLED_LOGGER =
       new ThrottledLogger(LoggerFactory.getLogger(Starter.class), Duration.ofSeconds(5));
   private static final Logger LOG = LoggerFactory.getLogger(Starter.class);
@@ -88,11 +104,18 @@ public class Starter implements CommandLineRunner {
   private final StarterLivenessIndicator livenessIndicator;
   private final AtomicLong businessKey = new AtomicLong(0);
   private final AtomicLong lastProcessInstanceKey = new AtomicLong(0);
+=======
+  private final StarterProperties starterCfg;
+  private final StarterLivenessIndicator livenessIndicator;
+  private final TaskScheduler scheduler;
+  private final ApplicationEventPublisher eventPublisher;
+>>>>>>> e477398e (refactor: start the starter components from application events)
   private final AtomicInteger runFinished = new AtomicInteger(0);
   private final AtomicReference<Error> fatalError = new AtomicReference<>();
   private final AtomicReference<Instant> lastProcessInstanceKeyTimestamp =
       new AtomicReference<>(Instant.now());
 
+<<<<<<< HEAD
   private Timer responseLatencyTimer;
   private Counter processInstancesSubmittedCounter;
   private Counter processInstancesSkippedCounter;
@@ -102,6 +125,8 @@ public class Starter implements CommandLineRunner {
   private DataReadMeter dataReadMeter;
   private CamundaClient queryClient;
 
+=======
+>>>>>>> e477398e (refactor: start the starter components from application events)
   public Starter(
       final CamundaClient client,
       final CamundaClientConfiguration clientConfiguration,
@@ -110,6 +135,7 @@ public class Starter implements CommandLineRunner {
       final PayloadReader payloadReader,
       final ConnectionMonitor connectionMonitor,
       final StarterLivenessIndicator livenessIndicator,
+<<<<<<< HEAD
       final ApplicationContext applicationContext) {
     this.client = client;
     this.clientConfiguration = clientConfiguration;
@@ -120,6 +146,14 @@ public class Starter implements CommandLineRunner {
     this.payloadReader = payloadReader;
     this.connectionMonitor = connectionMonitor;
     this.livenessIndicator = livenessIndicator;
+=======
+      final TaskScheduler scheduler,
+      final ApplicationEventPublisher eventPublisher) {
+    starterCfg = properties.getStarter();
+    this.livenessIndicator = livenessIndicator;
+    this.scheduler = scheduler;
+    this.eventPublisher = eventPublisher;
+>>>>>>> e477398e (refactor: start the starter components from application events)
 
     // Expose the client information early: these are only static values which are not supposed to
     // be affected by the current state of the client (whether it successfully connects to the
@@ -131,8 +165,8 @@ public class Starter implements CommandLineRunner {
         .tag(StarterMetricKeyNames.PROCESS_ID.asString(), starterCfg.getProcessId())
         .tag(StarterMetricKeyNames.NB_THREADS.asString(), String.valueOf(starterCfg.getThreads()))
         .register(registry);
-  }
 
+<<<<<<< HEAD
   @Override
   public void run(final String... args) {
     connectionMonitor.awaitAndPrintTopology();
@@ -145,10 +179,14 @@ public class Starter implements CommandLineRunner {
     processInstancesSkippedCounter = registerSubmissionCounter("skipped");
     resultMetrics = new StarterResultMetrics(registry);
 
+=======
+>>>>>>> e477398e (refactor: start the starter components from application events)
     Gauge.builder(StarterMetricsDoc.RUN_FINISHED.getName(), runFinished, AtomicInteger::doubleValue)
         .description(StarterMetricsDoc.RUN_FINISHED.getDescription())
         .register(registry);
+  }
 
+<<<<<<< HEAD
     if (properties.isMonitorDataAvailability() || properties.isPerformReadBenchmarks()) {
       // Has its own connections, but shares the executor service of the configuration and shuts it
       // down on close, so the starter must not run in the same JVM as job workers.
@@ -183,10 +221,20 @@ public class Starter implements CommandLineRunner {
     if (fatalError.get() != null) {
       scheduledTask.cancel(true);
       System.exit(SpringApplication.exit(applicationContext, () -> 1));
+=======
+  @EventListener(ApplicationReadyEvent.class)
+  void scheduleFinish() {
+    final int durationLimit = starterCfg.getDurationLimit();
+    if (durationLimit > 0) {
+      scheduler.schedule(this::finish, Instant.now().plusSeconds(durationLimit));
+>>>>>>> e477398e (refactor: start the starter components from application events)
     }
+  }
 
+  private void finish() {
     runFinished.set(1);
     livenessIndicator.recordFinished();
+<<<<<<< HEAD
     LOG.info(
         "Starter finished. Total process instance start requests submitted: {}",
         processInstancesSubmittedCounter == null
@@ -469,5 +517,8 @@ public class Starter implements CommandLineRunner {
     } else {
       return () -> true;
     }
+=======
+    eventPublisher.publishEvent(new StarterFinished());
+>>>>>>> e477398e (refactor: start the starter components from application events)
   }
 }
