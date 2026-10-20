@@ -44,6 +44,7 @@ import {
 	getElementInstance,
 	updateElementInstanceVariables,
 	queryElementInstanceIncidents,
+	queryElementInstanceEffectiveVariables,
 } from './element-instance';
 import {queryElementInstanceInspection} from './element-instance-inspection';
 import {
@@ -231,6 +232,7 @@ const endpoints = {
 	createDocumentLink,
 	queryElementInstances,
 	queryElementInstanceIncidents,
+	queryElementInstanceEffectiveVariables,
 	queryElementInstanceInspection,
 	getElementInstance,
 	updateElementInstanceVariables,
@@ -619,6 +621,7 @@ export {
 	elementInstanceFilterSchema,
 	queryElementInstanceIncidentsRequestBodySchema,
 	queryElementInstanceIncidentsResponseBodySchema,
+	queryElementInstanceEffectiveVariablesRequestBodySchema,
 	type ElementInstanceState,
 	type ElementInstanceType,
 	type ElementInstance,
@@ -628,6 +631,7 @@ export {
 	type UpdateElementInstanceVariablesRequestBody,
 	type QueryElementInstanceIncidentsRequestBody,
 	type QueryElementInstanceIncidentsResponseBody,
+	type QueryElementInstanceEffectiveVariablesRequestBody,
 } from './element-instance';
 export {
 	waitStateTypeSchema,

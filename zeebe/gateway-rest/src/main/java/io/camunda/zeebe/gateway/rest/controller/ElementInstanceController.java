@@ -12,6 +12,7 @@ import static io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper.mapErrorToRes
 import io.camunda.gateway.mapping.http.RequestMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryRequestMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper;
+import io.camunda.gateway.protocol.model.ElementInstanceEffectiveVariableSearchQueryRequest;
 import io.camunda.gateway.protocol.model.ElementInstanceResult;
 import io.camunda.gateway.protocol.model.ElementInstanceSearchQuery;
 import io.camunda.gateway.protocol.model.ElementInstanceSearchQueryResult;
@@ -19,10 +20,12 @@ import io.camunda.gateway.protocol.model.ElementInstanceWaitStateQueryResult;
 import io.camunda.gateway.protocol.model.IncidentSearchQuery;
 import io.camunda.gateway.protocol.model.IncidentSearchQueryResult;
 import io.camunda.gateway.protocol.model.SetVariableRequest;
+import io.camunda.gateway.protocol.model.VariableSearchQueryResult;
 import io.camunda.search.entities.FlowNodeInstanceEntity;
 import io.camunda.search.query.ElementInstanceWaitStateQuery;
 import io.camunda.search.query.FlowNodeInstanceQuery;
 import io.camunda.search.query.IncidentQuery;
+import io.camunda.search.query.VariableQuery;
 import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.service.ElementInstanceServices.SetVariablesRequest;
 import io.camunda.service.registry.ServiceRegistry;
@@ -39,6 +42,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 
 @CamundaRestController
 @RequestMapping("/v2/element-instances")
@@ -65,6 +69,41 @@ public class ElementInstanceController {
         .fold(
             RestErrorMapper::mapProblemToCompletedResponse,
             mapped -> setVariables(physicalTenantId, mapped));
+  }
+
+  @RequiresSecondaryStorage
+  @CamundaPostMapping(path = "/{elementInstanceKey}/effective-variables/search")
+  public ResponseEntity<VariableSearchQueryResult> searchEffectiveVariables(
+      @PhysicalTenantId final String physicalTenantId,
+      @PathVariable final long elementInstanceKey,
+      @RequestBody(required = false)
+          final ElementInstanceEffectiveVariableSearchQueryRequest request,
+      @RequestParam(name = "truncateValues", required = false, defaultValue = "true")
+          final boolean truncateValues) {
+    return SearchQueryRequestMapper.toElementInstanceEffectiveVariableQuery(request)
+        .fold(
+            RestErrorMapper::mapProblemToResponse,
+            query ->
+                searchEffectiveVariables(
+                    physicalTenantId, elementInstanceKey, query, truncateValues));
+  }
+
+  private ResponseEntity<VariableSearchQueryResult> searchEffectiveVariables(
+      final String physicalTenantId,
+      final long elementInstanceKey,
+      final VariableQuery query,
+      final boolean truncateValues) {
+    try {
+      final var result =
+          serviceRegistry
+              .elementInstanceServices(physicalTenantId)
+              .searchEffectiveVariables(
+                  elementInstanceKey, query, authenticationProvider.getCamundaAuthentication());
+      return ResponseEntity.ok(
+          SearchQueryResponseMapper.toVariableSearchQueryResponse(result, truncateValues));
+    } catch (final Exception e) {
+      return mapErrorToResponse(e);
+    }
   }
 
   private CompletableFuture<ResponseEntity<Object>> setVariables(

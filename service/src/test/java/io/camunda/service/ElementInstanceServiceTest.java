@@ -70,6 +70,7 @@ public final class ElementInstanceServiceTest {
             waitStateSearchClient,
             processCache,
             incidentServices,
+            mock(VariableServices.class),
             mock(ApiServicesExecutorProvider.class),
             null);
 

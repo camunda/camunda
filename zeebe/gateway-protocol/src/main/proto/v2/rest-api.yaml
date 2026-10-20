@@ -226,6 +226,8 @@ paths:
     $ref: 'element-instances.yaml#/paths/~1element-instances~1search'
   /element-instances/{elementInstanceKey}:
     $ref: 'element-instances.yaml#/paths/~1element-instances~1{elementInstanceKey}'
+  /element-instances/{elementInstanceKey}/effective-variables/search:
+    $ref: 'element-instances.yaml#/paths/~1element-instances~1{elementInstanceKey}~1effective-variables~1search'
   /element-instances/{elementInstanceKey}/incidents/search:
     $ref: 'element-instances.yaml#/paths/~1element-instances~1{elementInstanceKey}~1incidents~1search'
   /element-instances/{elementInstanceKey}/variables:

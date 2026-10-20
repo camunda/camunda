@@ -7,6 +7,7 @@
  */
 
 import {API_VERSION, type Endpoint} from './common';
+import {elementInstanceEffectiveVariableSearchQueryRequestSchema} from './gen/zod/elementInstanceEffectiveVariableSearchQueryRequestSchema';
 import {elementInstanceFilterFieldsSchema} from './gen/zod/elementInstanceFilterFieldsSchema';
 import {elementInstanceResultSchema} from './gen/zod/elementInstanceResultSchema';
 import {elementInstanceSearchQueryResultSchema} from './gen/zod/elementInstanceSearchQueryResultSchema';
@@ -16,6 +17,7 @@ import {getElementInstanceStatus200Schema} from './gen/zod/getElementInstanceSch
 import {incidentSearchQueryResultSchema} from './gen/zod/incidentSearchQueryResultSchema';
 import {incidentSearchQuerySchema} from './gen/zod/incidentSearchQuerySchema';
 import {setVariableRequestSchema} from './gen/zod/setVariableRequestSchema';
+import type {ElementInstanceEffectiveVariableSearchQueryRequest} from './gen/types/ElementInstanceEffectiveVariableSearchQueryRequest';
 import type {ElementInstanceResult, ElementInstanceResultTypeEnumKey} from './gen/types/ElementInstanceResult';
 import type {ElementInstanceSearchQuery} from './gen/types/ElementInstanceSearchQuery';
 import type {ElementInstanceSearchQueryResult} from './gen/types/ElementInstanceSearchQueryResult';
@@ -78,6 +80,16 @@ const updateElementInstanceVariables = {
 	},
 } as const satisfies Endpoint<Pick<ElementInstance, 'elementInstanceKey'>>;
 
+const queryElementInstanceEffectiveVariablesRequestBodySchema =
+	elementInstanceEffectiveVariableSearchQueryRequestSchema;
+type QueryElementInstanceEffectiveVariablesRequestBody = ElementInstanceEffectiveVariableSearchQueryRequest;
+
+const queryElementInstanceEffectiveVariables = {
+	method: 'POST',
+	getUrl: ({elementInstanceKey, truncateValues}) =>
+		`/${API_VERSION}/element-instances/${elementInstanceKey}/effective-variables/search${truncateValues !== undefined ? `?truncateValues=${truncateValues}` : ''}` as const,
+} as const satisfies Endpoint<Pick<ElementInstance, 'elementInstanceKey'> & {truncateValues?: boolean}>;
+
 const queryElementInstanceIncidents = {
 	method: 'POST',
 	getUrl: ({elementInstanceKey}) => `/${API_VERSION}/element-instances/${elementInstanceKey}/incidents/search` as const,
@@ -98,9 +110,12 @@ export {
 	queryElementInstanceIncidentsRequestBodySchema,
 	queryElementInstanceIncidentsResponseBodySchema,
 	queryElementInstanceIncidents,
+	queryElementInstanceEffectiveVariablesRequestBodySchema,
+	queryElementInstanceEffectiveVariables,
 };
 
 export type {
+	QueryElementInstanceEffectiveVariablesRequestBody,
 	ElementInstanceState,
 	ElementInstanceType,
 	ElementInstance,
