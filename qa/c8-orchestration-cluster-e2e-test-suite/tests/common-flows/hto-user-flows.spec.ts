@@ -12,6 +12,7 @@ import {createInstances, deploy} from 'utils/zeebeClient';
 import {completeTaskWithRetry, navigateToApp} from '@pages/UtilitiesPage';
 import {sleep} from 'utils/sleep';
 import {captureScreenshot, captureFailureVideo} from '@setup';
+import {waitForAssertion} from 'utils/waitForAssertion';
 
 test.beforeAll(async () => {
   await deploy([
@@ -130,10 +131,22 @@ test.describe('HTO User Flow Tests', () => {
         timeout: 120000,
       });
 
-      await expect(page.getByText('"testValue"')).not.toBeVisible({
-        timeout: 90000,
+      // The edit is accepted by the engine (PUT returns 204) but the variables
+      // list does not poll, so it only reflects the new value once the change
+      // has propagated through the secondary-storage indexer AND the list is
+      // re-fetched. Reload to force a fresh fetch until the updated value shows
+      // rather than racing the indexer against a single in-place fetch.
+      await waitForAssertion({
+        assertion: async () => {
+          await expect(page.getByText('"updatedValue"')).toBeVisible({
+            timeout: 30000,
+          });
+          await expect(page.getByText('"testValue"')).toBeHidden();
+        },
+        onFailure: async () => {
+          await page.reload();
+        },
       });
-      await expect(page.getByText('"updatedValue"')).toBeVisible();
       await sleep(10000);
 
       await navigateToApp(page, 'tasklist');

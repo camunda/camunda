@@ -8,7 +8,11 @@
 
 import {test} from '@fixtures';
 import {expect} from '@playwright/test';
-import {deploy, createInstances} from 'utils/zeebeClient';
+import {
+  deploy,
+  createInstances,
+  cancelProcessInstance,
+} from 'utils/zeebeClient';
 import {captureScreenshot, captureFailureVideo} from '@setup';
 import {
   navigateToApp,
@@ -37,6 +41,20 @@ test.beforeAll(async () => {
   );
 
   await sleep(2000);
+});
+
+// Cancel this run's instances so a Playwright retry starts from a clean state.
+// Without this, a retry re-runs beforeAll and creates another ten instances
+// while the previous attempt's instances are still active at checkPayment, so
+// the "10 results" assertion in the first step sees a polluted, non-deterministic
+// count (observed as "16 results"). ignoreNotFound tolerates instances that were
+// already moved on to shipArticles or completed.
+test.afterAll(async () => {
+  for (const instance of processInstances) {
+    await cancelProcessInstance(instance.processInstanceKey, {
+      ignoreNotFound: true,
+    });
+  }
 });
 
 test.describe('Process Instance Batch Modification', () => {
