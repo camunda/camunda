@@ -22,7 +22,6 @@ import io.camunda.exporter.tasks.archiver.ArchiverRepository;
 import io.camunda.exporter.tasks.archiver.BatchOperationArchiverJob;
 import io.camunda.exporter.tasks.archiver.ElasticsearchArchiverRepository;
 import io.camunda.exporter.tasks.archiver.OpenSearchArchiverRepository;
-import io.camunda.exporter.tasks.archiver.ProcessInstanceArchiverJob;
 import io.camunda.exporter.tasks.archiver.ProcessInstanceByIdArchiverJob;
 import io.camunda.exporter.tasks.archiver.ProcessInstanceToBeArchivedCountJob;
 import io.camunda.exporter.tasks.archiver.StandaloneDecisionArchiverJob;
@@ -62,10 +61,8 @@ import org.opensearch.client.opensearch.generic.OpenSearchGenericClient;
 import org.slf4j.Logger;
 
 public final class BackgroundTaskManagerFactory {
-  /* This should be kept in sync with HistoryConfiguration.DEFAULT_HISTORY_ARCHIVE_BY_ID_ROLLOVER_BATCH_SIZE */
-  private static final int DEFAULT_HISTORY_ARCHIVE_BY_ID_ROLLOVER_BATCH_SIZE = 500;
   /* This should be kept in sync with HistoryConfiguration.DEFAULT_HISTORY_ROLLOVER_BATCH_SIZE */
-  private static final int DEFAULT_HISTORY_ROLLOVER_BATCH_SIZE = 100;
+  private static final int DEFAULT_HISTORY_ROLLOVER_BATCH_SIZE = 500;
 
   private final int partitionId;
   private final String exporterId;
@@ -339,44 +336,23 @@ public final class BackgroundTaskManagerFactory {
         .forEach(dependantTemplates::add);
 
     final HistoryConfiguration history = config.getHistory();
-    final ProcessInstanceArchiverJob piArchiverJob;
-    if (history.isArchiveByIdEnabled()) {
-      if (history.getRolloverBatchSize() < DEFAULT_HISTORY_ARCHIVE_BY_ID_ROLLOVER_BATCH_SIZE) {
-        logger.warn(
-            "Creating process instance archiver job with a roll-over batch size lower than "
-                + "recommended (recommended minimum: {}, configured batch size:{}) ",
-            DEFAULT_HISTORY_ARCHIVE_BY_ID_ROLLOVER_BATCH_SIZE,
-            history.getRolloverBatchSize());
-      }
-
-      piArchiverJob =
-          new ProcessInstanceByIdArchiverJob(
-              history,
-              archiverRepository,
-              resourceProvider.getIndexTemplateDescriptor(ListViewTemplate.class),
-              dependantTemplates,
-              metrics,
-              logger,
-              executor);
-    } else {
-      if (history.getRolloverBatchSize() > DEFAULT_HISTORY_ROLLOVER_BATCH_SIZE) {
-        logger.warn(
-            "Creating process instance archiver job with a roll-over batch size higher than "
-                + "recommended (recommended: {}, configured batch size:{}) ",
-            DEFAULT_HISTORY_ROLLOVER_BATCH_SIZE,
-            history.getRolloverBatchSize());
-      }
-
-      piArchiverJob =
-          new ProcessInstanceArchiverJob(
-              history,
-              archiverRepository,
-              resourceProvider.getIndexTemplateDescriptor(ListViewTemplate.class),
-              dependantTemplates,
-              metrics,
-              logger,
-              executor);
+    if (history.getRolloverBatchSize() < DEFAULT_HISTORY_ROLLOVER_BATCH_SIZE) {
+      logger.warn(
+          "Creating process instance archiver job with a roll-over batch size lower than "
+              + "recommended (recommended minimum: {}, configured batch size:{}) ",
+          DEFAULT_HISTORY_ROLLOVER_BATCH_SIZE,
+          history.getRolloverBatchSize());
     }
+
+    final var piArchiverJob =
+        new ProcessInstanceByIdArchiverJob(
+            history,
+            archiverRepository,
+            resourceProvider.getIndexTemplateDescriptor(ListViewTemplate.class),
+            dependantTemplates,
+            metrics,
+            logger,
+            executor);
     return buildReschedulingArchiverTask(piArchiverJob);
   }
 
