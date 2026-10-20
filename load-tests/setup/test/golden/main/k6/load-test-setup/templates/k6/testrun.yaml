@@ -19,7 +19,7 @@ spec:
     - namespace=c8-golden-main-k6
 
   starter:
-    image: europe-west1-docker.pkg.dev/camunda-benchmark/ghcrio/grafana/k6-operator:starter-v1.6.0
+    image: europe-west1-docker.pkg.dev/camunda-benchmark/ghcrio/grafana/k6-operator:starter-v1.7.0
     imagePullPolicy: IfNotPresent
 
   runner:
@@ -138,7 +138,7 @@ spec:
     - namespace=c8-golden-main-k6
 
   starter:
-    image: europe-west1-docker.pkg.dev/camunda-benchmark/ghcrio/grafana/k6-operator:starter-v1.6.0
+    image: europe-west1-docker.pkg.dev/camunda-benchmark/ghcrio/grafana/k6-operator:starter-v1.7.0
     imagePullPolicy: IfNotPresent
 
   runner:
