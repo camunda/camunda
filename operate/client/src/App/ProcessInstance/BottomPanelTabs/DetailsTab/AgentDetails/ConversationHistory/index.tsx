@@ -30,6 +30,7 @@ import {ToolResultMessage} from '../ConversationMessage/ToolResultMessage';
 import type {InfiniteData} from '@tanstack/react-query';
 import {isActiveAgentInstanceStatus} from 'modules/queries/agentInstances/agentInstanceStatus';
 import {HistoryCardModal} from './HistoryCardModal';
+import {CompactionEvent} from './CompactionEvent';
 
 const chronologicalCards = (data: Map<number, AgentInstanceHistoryItem[]>) =>
   Array.from(data.values())
@@ -231,6 +232,9 @@ const ConversationHistory: React.FC<ConversationHistoryProps> = ({
                 {sortOrder === 'asc' && loopIterationNode}
                 {items.map((item) => (
                   <Fragment key={item.historyItemKey}>
+                    {sortOrder === 'desc' && (
+                      <CompactionEvent content={item.content} />
+                    )}
                     {item.role === 'CONFIGURATION' ? null : item.role ===
                       'TOOL_RESULT' ? (
                       <div
@@ -265,6 +269,9 @@ const ConversationHistory: React.FC<ConversationHistoryProps> = ({
                           }
                         />
                       </div>
+                    )}
+                    {sortOrder === 'asc' && (
+                      <CompactionEvent content={item.content} />
                     )}
                   </Fragment>
                 ))}

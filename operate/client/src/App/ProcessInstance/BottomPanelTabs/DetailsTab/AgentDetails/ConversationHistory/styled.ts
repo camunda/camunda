@@ -101,6 +101,26 @@ const ShowMoreButton = styled(Button)`
   align-self: center;
 `;
 
+const CompactionContainer = styled.article`
+  border-inline-start: 2px solid var(--cds-border-strong-01);
+  padding: var(--cds-spacing-03) var(--cds-spacing-05);
+  color: var(--cds-text-secondary);
+`;
+
+const CompactionHeading = styled.h4`
+  font-size: var(--cds-label-01-font-size);
+  line-height: var(--cds-label-01-line-height);
+  font-weight: var(--cds-label-01-font-weight);
+`;
+
+const CompactionMessage = styled.p`
+  margin-block-start: var(--cds-spacing-02);
+  font-size: var(--cds-body-compact-01-font-size);
+  line-height: var(--cds-body-compact-01-line-height);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+`;
+
 const HistoryNavigation = styled.nav`
   display: inline-flex;
   align-items: center;
@@ -217,6 +237,9 @@ export {
   ContentsList,
   ContentsRail,
   ContentsStep,
+  CompactionContainer,
+  CompactionHeading,
+  CompactionMessage,
   HistoryNavigation,
   ConversationContainer,
   Messages,
