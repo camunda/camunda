@@ -66,6 +66,14 @@ class OperateProcessInstancePage extends BasePage {
 		return this.page.getByRole('switch', {name: 'Execution count', exact: true});
 	}
 
+	variableRow(name: string) {
+		return this.page.getByTestId(`variable-${name}`);
+	}
+
+	dialog(name: string) {
+		return this.page.getByRole('dialog', {name, exact: true});
+	}
+
 	get historyRetry() {
 		return this.page.getByRole('button', {name: 'Try again', exact: true});
 	}
