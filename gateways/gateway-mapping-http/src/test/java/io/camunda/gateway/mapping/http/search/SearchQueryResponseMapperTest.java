@@ -24,6 +24,7 @@ import io.camunda.gateway.protocol.model.JobListenerEventTypeEnum;
 import io.camunda.gateway.protocol.model.JobSearchQueryResult;
 import io.camunda.gateway.protocol.model.JobWaitStateDetails;
 import io.camunda.gateway.protocol.model.ProcessInstanceWaitStateStatisticsResult;
+import io.camunda.gateway.protocol.model.ProtectionModeEnum;
 import io.camunda.search.entities.AgentDefinitionEntity;
 import io.camunda.search.entities.AgentInstanceEntity;
 import io.camunda.search.entities.AgentInstanceHistoryEntity;
@@ -75,6 +76,7 @@ import io.camunda.search.entities.TenantEntity;
 import io.camunda.search.entities.UserTaskEntity;
 import io.camunda.search.entities.UserTaskEntity.UserTaskState;
 import io.camunda.search.entities.VariableEntity;
+import io.camunda.search.entities.VariableEntity.ProtectionMode;
 import io.camunda.search.entities.WaitStateConditionDetails;
 import io.camunda.search.entities.WaitStateEntity;
 import io.camunda.search.entities.WaitStateJobDetails;
@@ -84,6 +86,7 @@ import io.camunda.security.api.model.user.CamundaUserDTO;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
@@ -541,6 +544,86 @@ class SearchQueryResponseMapperTest {
 
     // then
     assertThat(response.getRootProcessInstanceKey()).isEqualTo("999");
+  }
+
+  @Test
+  void shouldMapProtectionModesToMetadataForVariableItem() {
+    // given
+    final var entity =
+        new VariableEntity(
+            123L,
+            "cardNumber",
+            "null",
+            null,
+            false,
+            456L,
+            789L,
+            null,
+            "processDefinitionId",
+            "tenant",
+            Set.of(ProtectionMode.REDACT));
+
+    // when
+    final var response = SearchQueryResponseMapper.toVariableItem(entity);
+
+    // then
+    assertThat(response.getMetadata()).isNotNull();
+    assertThat(response.getMetadata().getProtectionModes())
+        .containsExactly(ProtectionModeEnum.REDACT);
+  }
+
+  @Test
+  void shouldMapProtectionModesToMetadataForVariableSearchResult() {
+    // given
+    final var entity =
+        new VariableEntity(
+            123L,
+            "cardNumber",
+            "null",
+            null,
+            false,
+            456L,
+            789L,
+            null,
+            "processDefinitionId",
+            "tenant",
+            Set.of(ProtectionMode.REDACT));
+
+    // when
+    final var response =
+        SearchQueryResponseMapper.toVariableSearchQueryResponse(
+            new SearchQueryResult<>(1, false, List.of(entity), null, null), true);
+
+    // then
+    assertThat(response.getItems())
+        .singleElement()
+        .satisfies(
+            item ->
+                assertThat(item.getMetadata().getProtectionModes())
+                    .containsExactly(ProtectionModeEnum.REDACT));
+  }
+
+  @Test
+  void shouldOmitMetadataForUnprotectedVariable() {
+    // given
+    final var entity =
+        new VariableEntity(
+            123L,
+            "varName",
+            "value",
+            null,
+            false,
+            456L,
+            789L,
+            null,
+            "processDefinitionId",
+            "tenant");
+
+    // when
+    final var response = SearchQueryResponseMapper.toVariableItem(entity);
+
+    // then
+    assertThat(response.getMetadata()).isNull();
   }
 
   @Test
