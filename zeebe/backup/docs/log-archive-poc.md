@@ -1227,7 +1227,9 @@ the row is locked first, `select … for update`, and `next_seq` incremented):
 - Current path: the current timeline's objects, and before its first archived position its parent's
   up to the takeover position (`parent_position`, or the record before the child's first archived
   position if -1), recursively.
-- Answer: `{"objects":[{"timelineId","key","firstIndex","lastIndex","firstPosition","lastPosition","sizeBytes","sha256"}…],"end":{"timelineId","position"}}`:
+- Answer: `{"objects":[{"timelineId","key","firstIndex","lastIndex","firstPosition","lastPosition","objectLastPosition","sizeBytes","sha256"}…],"end":{"timelineId","position"}}`:
+  `lastPosition` is the object's last position on the current path, earlier than its own end
+  (`objectLastPosition`) where the path leaves a parent inside the object; readers stop there;
   the objects on the path whose `last_position > after` in position order (objects without records
   are left out), at most 1000; `end` is the last position on the path. Overlaps between a parent's
   and a child's objects are left in; readers skip positions they have. No objects and `end > after`
