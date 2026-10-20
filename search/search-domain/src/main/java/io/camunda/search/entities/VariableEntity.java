@@ -69,21 +69,6 @@ public record VariableEntity(
     protectionModes = protectionModes == null ? new HashSet<>() : protectionModes;
   }
 
-  public VariableEntity withProtectionModes(final Set<ProtectionMode> protectionModes) {
-    return new VariableEntity(
-        variableKey,
-        name,
-        value,
-        fullValue,
-        isPreview,
-        scopeKey,
-        processInstanceKey,
-        rootProcessInstanceKey,
-        processDefinitionId,
-        tenantId,
-        protectionModes);
-  }
-
   public enum ProtectionMode {
     REDACT
   }

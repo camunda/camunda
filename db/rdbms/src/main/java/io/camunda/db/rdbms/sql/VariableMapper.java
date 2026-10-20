@@ -14,7 +14,6 @@ import io.camunda.db.rdbms.write.domain.VariableDbModel;
 import io.camunda.db.rdbms.write.domain.VariableDbModel.ProtectionModeDbModel;
 import io.camunda.db.rdbms.write.queue.BatchInsertDto;
 import io.camunda.search.entities.VariableEntity;
-import io.camunda.search.entities.VariableEntity.ProtectionMode;
 import io.camunda.util.ObjectBuilder;
 import java.util.List;
 import java.util.Set;
@@ -43,9 +42,6 @@ public interface VariableMapper extends ProcessInstanceDependantMapper {
   /** Inserts the protection modes of the variable. */
   void insertProtectionModes(ProtectionModesDto protectionModes);
 
-  /** Returns the protection modes of the given variables. Unprotected variables have no row. */
-  List<ProtectionModeRow> findProtectionModes(@Param("variableKeys") List<Long> variableKeys);
-
   /** Deletes all protection modes of the variable. */
   void deleteProtectionModes(Long variableKey);
 
@@ -60,8 +56,6 @@ public interface VariableMapper extends ProcessInstanceDependantMapper {
 
   /** Deletes all lookup entries for the given process definition keys. */
   void deleteLookupByProcessDefinitionKeys(List<Long> processDefinitionKeys, int limit);
-
-  record ProtectionModeRow(Long variableKey, ProtectionMode mode) {}
 
   record ProtectionModesDto(Long variableKey, Set<ProtectionModeDbModel> modes) {}
 
