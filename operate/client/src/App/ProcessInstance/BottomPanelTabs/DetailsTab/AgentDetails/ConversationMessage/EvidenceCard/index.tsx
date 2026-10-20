@@ -102,12 +102,7 @@ const EvidenceCard: React.FC<EvidenceCardProps> = ({evidence}) => {
         : [];
       return (
         <Card data-testid="evidence-server-tools-used">
-          <CardTitle>
-            Server tools used
-            <Tag size="sm" type="purple">
-              provider-run
-            </Tag>
-          </CardTitle>
+          <CardTitle>Provider capability used</CardTitle>
           <Rows
             rows={[
               ['Used', list(evidence.used)],
