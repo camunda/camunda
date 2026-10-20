@@ -12,6 +12,7 @@ import {useMemo} from 'react';
 import {useTranslation} from 'react-i18next';
 import {useTaskAssignment, type AssignmentStatus} from '#/tasklist/modules/task-details/useTaskAssignment';
 import {AsyncActionButton} from './AsyncActionButton';
+import {SuspendedActionTooltip} from './SuspendedActionTooltip';
 
 const getAssignmentToggleDescription = (status: AssignmentStatus): string | undefined => {
 	if (status === 'assigning') {
@@ -29,10 +30,11 @@ type Props = {
 	userTaskKey: string;
 	assignee: string | null;
 	taskState: UserTask['state'];
+	isSuspended: boolean;
 	currentUser: string | null;
 };
 
-const AssignButton: React.FC<Props> = ({userTaskKey, assignee, taskState, currentUser}) => {
+const AssignButton: React.FC<Props> = ({userTaskKey, assignee, taskState, isSuspended, currentUser}) => {
 	const {t} = useTranslation();
 	const isAssigned = typeof assignee === 'string' && taskState !== 'ASSIGNING';
 	const {status, isBusy, toggle} = useTaskAssignment({
@@ -56,17 +58,19 @@ const AssignButton: React.FC<Props> = ({userTaskKey, assignee, taskState, curren
 				size: 'sm',
 				type: 'button',
 				onClick: toggle,
-				disabled: isBusy,
+				disabled: isBusy || isSuspended,
 				autoFocus: true,
 				id: 'main-content',
 			}) as const,
-		[isAssigned, toggle, isBusy],
+		[isAssigned, toggle, isBusy, isSuspended],
 	);
 
 	return (
-		<AsyncActionButton {...loadingProps} buttonProps={buttonProps} status={isBusy ? 'active' : 'inactive'}>
-			{isAssigned ? t('tasklist.taskDetailsUnassign') : t('tasklist.taskDetailsAssignToMe')}
-		</AsyncActionButton>
+		<SuspendedActionTooltip isSuspended={isSuspended}>
+			<AsyncActionButton {...loadingProps} buttonProps={buttonProps} status={isBusy ? 'active' : 'inactive'}>
+				{isAssigned ? t('tasklist.taskDetailsUnassign') : t('tasklist.taskDetailsAssignToMe')}
+			</AsyncActionButton>
+		</SuspendedActionTooltip>
 	);
 };
 

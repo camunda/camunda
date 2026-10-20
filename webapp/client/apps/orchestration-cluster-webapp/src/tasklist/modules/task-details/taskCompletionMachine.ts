@@ -26,18 +26,20 @@ type MachineInput = {
 	currentUser: string;
 	initialTaskState: UserTask['state'];
 	initialAssignee: string | null;
+	initialIsSuspended: boolean;
 };
 
-type MachineContext = Omit<MachineInput, 'initialTaskState' | 'initialAssignee'> & {
+type MachineContext = Omit<MachineInput, 'initialTaskState' | 'initialAssignee' | 'initialIsSuspended'> & {
 	initialTaskState: UserTask['state'] | null;
 	taskState: UserTask['state'];
 	assignee: string | null;
+	isSuspended: boolean;
 	pollRetryCount: number;
 };
 
 type TaskCompletionEvent =
 	| {type: 'task.complete'; variables?: Record<string, unknown>}
-	| {type: 'task.updated'; taskState: UserTask['state']; assignee: string | null};
+	| {type: 'task.updated'; taskState: UserTask['state']; assignee: string | null; isSuspended: boolean};
 
 type TaskCompletionStatusTag = 'status:completing' | 'status:completion_successful' | 'status:completion_failed';
 
@@ -105,7 +107,8 @@ const taskCompletionMachine = setup({
 		isTimeout: (_, params: {error: CompletionFailure | undefined}) => params.error?.reason === 'timeout',
 		isTaskCompleted: (_, params: {task: UserTask | undefined}) => params.task?.state === 'COMPLETED',
 		isInitiallyCompleting: ({context}) => context.initialTaskState === 'COMPLETING',
-		canCompleteTask: ({context}) => context.currentUser === context.assignee && context.taskState === 'CREATED',
+		canCompleteTask: ({context}) =>
+			context.currentUser === context.assignee && context.taskState === 'CREATED' && !context.isSuspended,
 	},
 	actions: {
 		updateTask: assign(({event}) =>
@@ -113,6 +116,7 @@ const taskCompletionMachine = setup({
 				? {
 						taskState: event.taskState,
 						assignee: event.assignee,
+						isSuspended: event.isSuspended,
 					}
 				: {},
 		),
@@ -176,6 +180,7 @@ const taskCompletionMachine = setup({
 		initialTaskState: input.initialTaskState,
 		taskState: input.initialTaskState,
 		assignee: input.initialAssignee,
+		isSuspended: input.initialIsSuspended,
 		pollRetryCount: 0,
 	}),
 	initial: 'Idle',
