@@ -155,6 +155,7 @@ public class CamundaExporter implements Exporter {
 
       writer = createBatchWriter();
       controller.readMetadata().ifPresent(metadata::deserialize);
+      metadata.setLastFlushedPosition(controller.getLastExportedRecordPosition());
       taskManager.start();
       final long now = context.clock().millis();
       lastFlushTimestamp = now;
@@ -390,6 +391,7 @@ public class CamundaExporter implements Exporter {
     // If the synchronous flush fails then the exporter will be invoked with the same record again.
     lastFlushTimestamp = context.clock().millis();
     updateLastExportedPosition(lastPosition);
+    metadata.setLastFlushedPosition(Math.max(metadata.getLastFlushedPosition(), lastPosition));
   }
 
   private void updateLastExportedPosition(final long lastPosition) {
