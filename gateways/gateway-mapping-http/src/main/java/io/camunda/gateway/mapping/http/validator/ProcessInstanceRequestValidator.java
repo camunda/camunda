@@ -56,6 +56,8 @@ import org.springframework.http.ProblemDetail;
 
 public class ProcessInstanceRequestValidator {
 
+  private static final String PROCESS_DEFINITION_VERSION_TAG = "processDefinitionVersionTag";
+
   private static final List<String> CANCELLABLE_PROCESS_INSTANCE_STATES =
       List.of(ProcessInstanceState.ACTIVE.name(), ProcessInstanceState.SUSPENDED.name());
   private static final List<String> ACTIVE_ONLY_PROCESS_INSTANCE_STATES =
@@ -112,7 +114,7 @@ public class ProcessInstanceRequestValidator {
         violations -> {
           validateProcessDefinitionId(request.getProcessDefinitionId(), violations);
           if (StringUtils.isBlank(request.getProcessDefinitionVersionTag())) {
-            violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("processDefinitionVersionTag"));
+            violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted(PROCESS_DEFINITION_VERSION_TAG));
           }
           validateOperationReference(request.getOperationReference(), violations);
           validateBusinessId(request.getBusinessId(), violations);
@@ -152,17 +154,18 @@ public class ProcessInstanceRequestValidator {
                 "processDefinitionVersion can only be set when using processDefinitionId");
           }
 
-          final var versionTagSet = request.getProcessDefinitionVersionTag() != null;
-          if (versionTagSet && StringUtils.isBlank(request.getProcessDefinitionVersionTag())) {
-            violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("processDefinitionVersionTag"));
+          final var versionTag = request.getProcessDefinitionVersionTag();
+          if (versionTag != null && versionTag.isBlank()) {
+            violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted(PROCESS_DEFINITION_VERSION_TAG));
           }
+          final var versionTagSet = StringUtils.isNotBlank(versionTag);
           if (versionTagSet && !byIdSet) {
             violations.add(ERROR_MESSAGE_VERSION_TAG_REQUIRES_ID);
           }
           if (versionTagSet && versionSet) {
             violations.add(
                 ERROR_MESSAGE_ONLY_ONE_FIELD.formatted(
-                    List.of("processDefinitionVersion", "processDefinitionVersionTag")));
+                    List.of("processDefinitionVersion", PROCESS_DEFINITION_VERSION_TAG)));
           }
 
           validateBusinessId(request.getBusinessId(), violations);

@@ -340,6 +340,82 @@ class ProcessInstanceRequestValidatorTest {
   }
 
   @Test
+  @DisplayName("Should reject version tag combined with version in simple API")
+  void shouldRejectVersionTagCombinedWithVersionSimpleApi() {
+    // given
+    final var request =
+        new io.camunda.gateway.protocol.model.simple.ProcessInstanceCreationInstruction();
+    request.setProcessDefinitionId("process-id");
+    request.setProcessDefinitionVersion(2);
+    request.setProcessDefinitionVersionTag("release-1");
+
+    // when
+    final Optional<ProblemDetail> result =
+        ProcessInstanceRequestValidator.validateSimpleCreateProcessInstanceRequest(request);
+
+    // then
+    assertThat(result).isPresent();
+    assertThat(result.get().getDetail())
+        .isEqualTo(
+            "Only one of [processDefinitionVersion, processDefinitionVersionTag] is allowed.");
+  }
+
+  @Test
+  @DisplayName("Should accept version tag with latest version in simple API")
+  void shouldAcceptVersionTagWithLatestVersionSimpleApi() {
+    // given
+    final var request =
+        new io.camunda.gateway.protocol.model.simple.ProcessInstanceCreationInstruction();
+    request.setProcessDefinitionId("process-id");
+    request.setProcessDefinitionVersion(-1);
+    request.setProcessDefinitionVersionTag("release-1");
+
+    // when
+    final Optional<ProblemDetail> result =
+        ProcessInstanceRequestValidator.validateSimpleCreateProcessInstanceRequest(request);
+
+    // then
+    assertThat(result).isEmpty();
+  }
+
+  @Test
+  @DisplayName("Should only report blank version tag when combined with version in simple API")
+  void shouldOnlyReportBlankVersionTagWhenCombinedWithVersionSimpleApi() {
+    // given
+    final var request =
+        new io.camunda.gateway.protocol.model.simple.ProcessInstanceCreationInstruction();
+    request.setProcessDefinitionId("process-id");
+    request.setProcessDefinitionVersion(2);
+    request.setProcessDefinitionVersionTag(" ");
+
+    // when
+    final Optional<ProblemDetail> result =
+        ProcessInstanceRequestValidator.validateSimpleCreateProcessInstanceRequest(request);
+
+    // then
+    assertThat(result).isPresent();
+    assertThat(result.get().getDetail()).isEqualTo("No processDefinitionVersionTag provided.");
+  }
+
+  @Test
+  @DisplayName("Should only report blank version tag when used without id in simple API")
+  void shouldOnlyReportBlankVersionTagWithoutIdSimpleApi() {
+    // given
+    final var request =
+        new io.camunda.gateway.protocol.model.simple.ProcessInstanceCreationInstruction();
+    request.setProcessDefinitionKey("123");
+    request.setProcessDefinitionVersionTag(" ");
+
+    // when
+    final Optional<ProblemDetail> result =
+        ProcessInstanceRequestValidator.validateSimpleCreateProcessInstanceRequest(request);
+
+    // then
+    assertThat(result).isPresent();
+    assertThat(result.get().getDetail()).isEqualTo("No processDefinitionVersionTag provided.");
+  }
+
+  @Test
   @DisplayName("Should reject businessId exceeding max length in simple API")
   void shouldRejectBusinessIdExceedingMaxLengthSimpleApi() {
     final var request =
