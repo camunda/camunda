@@ -33,7 +33,7 @@ const VariableDocumentListModal: React.FC<Props & {onClose: () => void}> = ({
 }) => {
 	const {t} = useTranslation();
 	const {data, isError, isLoading} = useQuery({...variableQuery(variableKey), enabled: isLowerBound});
-	const fullResult = data === undefined ? null : parseDocumentVariable(data.value, false);
+	const fullResult = !isLowerBound || data === undefined ? null : parseDocumentVariable(data.value, false);
 	const resolvedDocuments =
 		fullResult === null ? documents : fullResult.type === 'list' ? fullResult.documents : [fullResult.document];
 

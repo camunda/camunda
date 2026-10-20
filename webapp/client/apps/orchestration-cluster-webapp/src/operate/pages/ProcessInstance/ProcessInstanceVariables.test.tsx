@@ -6,6 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import {useState} from 'react';
 import {afterEach, describe, expect, vi} from 'vitest';
 import {userEvent} from 'vitest/browser';
 import {cleanup} from 'vitest-browser-react';
@@ -50,11 +51,15 @@ function variablesResponse(
 	return HttpResponse.json(createQueryVariablesByUserTaskResponse({items, page}));
 }
 
-function renderVariables(search = '', {isModificationModeEnabled = false} = {}) {
+function renderVariables(search = '', {isModificationModeEnabled: initialModificationMode = false} = {}) {
 	function Variables() {
 		const routeSearch = useRouterState({select: (state) => state.location.search});
+		const [isModificationModeEnabled, setIsModificationModeEnabled] = useState(initialModificationMode);
 		return (
 			<div style={{height: '400px', display: 'flex', flexDirection: 'column'}}>
+				<button type="button" onClick={() => setIsModificationModeEnabled(true)}>
+					Enter modification mode
+				</button>
 				<ProcessInstancePageProvider
 					processInstanceId={PROCESS_INSTANCE_ID}
 					processInstance={createProcessInstance({processInstanceKey: PROCESS_INSTANCE_ID})}
@@ -487,12 +492,99 @@ describe('<ProcessInstanceVariables />', () => {
 			await expect.element(screen.getByTestId('variable-nestedDecoy')).not.toBeInTheDocument();
 		});
 
-		it('should hide the document filter in modification mode', async ({worker}) => {
+		it('should hide the search and document filter in modification mode', async ({worker}) => {
 			worker.use(mockQueryVariablesEndpoint({successResponse: variablesResponse([createVariable({name: 'amount'})])}));
 			const screen = await renderVariables('', {isModificationModeEnabled: true});
 
 			await expect.element(screen.getByTestId('variable-amount')).toBeVisible();
 			await expect.element(screen.getByRole('group', {name: 'Variable filter'})).not.toBeInTheDocument();
+			await expect.element(screen.getByRole('searchbox')).not.toBeInTheDocument();
+		});
+
+		it('should stop filtering by documents when entering modification mode', async ({worker}) => {
+			worker.use(
+				mockQueryVariablesEndpoint({
+					schema: documentsOnlySchema,
+					successResponse: variablesResponse([
+						createVariable({name: 'invoice', value: JSON.stringify(documentReference('doc-1'))}),
+					]),
+					failureResponse: variablesResponse([
+						createVariable({name: 'amount'}),
+						createVariable({name: 'invoice', value: JSON.stringify(documentReference('doc-1'))}),
+					]),
+				}),
+			);
+			const screen = await renderVariables();
+			await expect.element(screen.getByTestId('variable-amount')).toBeVisible();
+			await userEvent.click(screen.getByRole('button', {name: 'Documents'}));
+			await expect.element(screen.getByTestId('variable-amount')).not.toBeInTheDocument();
+
+			await userEvent.click(screen.getByRole('button', {name: 'Enter modification mode'}));
+
+			await expect.element(screen.getByTestId('variable-amount')).toBeVisible();
+			await expect.element(screen.getByTestId('variable-invoice')).toBeVisible();
+			await expect.element(screen.getByRole('group', {name: 'Variable filter'})).not.toBeInTheDocument();
+		});
+
+		it('should keep loading document candidates when a page has no documents', async ({worker}) => {
+			worker.use(
+				mockQueryVariablesEndpoint({
+					schema: z.object({page: z.object({after: z.literal('cursor-1')})}),
+					successResponse: variablesResponse([
+						createVariable({name: 'invoice', value: JSON.stringify(documentReference('doc-1'))}),
+					]),
+					failureResponse: variablesResponse(
+						Array.from({length: 50}, (_, index) =>
+							createVariable({
+								name: `decoy-${String(index).padStart(2, '0')}`,
+								value: JSON.stringify('mentions camunda.document.type'),
+								variableKey: `${index}`,
+							}),
+						),
+						{totalItems: 50, hasMoreTotalItems: true, endCursor: 'cursor-1'},
+					),
+				}),
+			);
+			const screen = await renderVariables();
+			await expect.element(screen.getByTestId('variable-decoy-00')).toBeVisible();
+
+			await userEvent.click(screen.getByRole('button', {name: 'Documents'}));
+
+			await expect.element(screen.getByTestId('variable-invoice')).toBeVisible();
+			await expect.element(screen.getByTestId('variable-decoy-00')).not.toBeInTheDocument();
+			await expect.element(screen.getByText('There are no document variables')).not.toBeInTheDocument();
+		});
+
+		it('should list the documents of a complete list instead of a previously fetched value', async ({worker}) => {
+			worker.use(
+				mockQueryVariablesEndpoint({
+					successResponse: variablesResponse([
+						createVariable({name: 'files', value: documentListValue, variableKey: '5'}),
+					]),
+				}),
+				mockGetVariableEndpoint({
+					successResponse: HttpResponse.json(
+						createVariable({
+							name: 'files',
+							value: JSON.stringify([documentReference('old-1'), documentReference('old-2')]),
+							variableKey: '5',
+						}),
+					),
+				}),
+			);
+			const screen = await renderVariables();
+			const row = screen.getByTestId('variable-files');
+			await userEvent.click(row.getByRole('button', {name: 'Open'}));
+			const fullValue = screen.getByRole('dialog', {name: 'Full value of files'});
+			await expect.element(fullValue).toBeVisible();
+			await userEvent.click(fullValue.getByRole('button', {name: 'Close'}).first());
+			await expect.element(fullValue).not.toBeInTheDocument();
+
+			await userEvent.click(row.getByRole('button', {name: 'View documents'}));
+
+			const dialog = screen.getByRole('dialog', {name: '3 documents in files'});
+			await expect.element(dialog.getByRole('listitem', {name: 'doc-3.pdf'})).toBeVisible();
+			await expect.element(dialog.getByRole('listitem', {name: 'old-1.pdf'})).not.toBeInTheDocument();
 		});
 
 		it('should preview a document from the variables list', async ({worker}) => {

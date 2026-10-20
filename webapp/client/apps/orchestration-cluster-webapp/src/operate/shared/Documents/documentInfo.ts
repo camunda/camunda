@@ -52,7 +52,10 @@ function isDocumentReference(value: unknown): value is DocumentReference {
 
 function toDocumentInfo({documentId, storeId, contentHash, metadata}: DocumentReference): DocumentInfo {
 	return {
-		link: contentHash === null ? null : endpoints.getDocument({documentId, storeId, contentHash}).url,
+		link:
+			contentHash === null
+				? null
+				: endpoints.getDocument({documentId: encodeURIComponent(documentId), storeId, contentHash}).url,
 		fileName: metadata.fileName,
 		type: MIME_TYPE_MAP[metadata.contentType] ?? 'unknown',
 		contentType: metadata.contentType,

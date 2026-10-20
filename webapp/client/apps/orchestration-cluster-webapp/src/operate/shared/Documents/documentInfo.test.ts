@@ -35,6 +35,12 @@ describe('toDocumentInfo', () => {
 		});
 	});
 
+	it('should encode the document id in the link', () => {
+		expect(toDocumentInfo(createDocumentReference({documentId: 'a/b#c?d'})).link).toBe(
+			`${window.location.origin}/v2/documents/a%2Fb%23c%3Fd?storeId=in-memory&contentHash=sha256-xyz`,
+		);
+	});
+
 	it('should have no link when the content hash is missing', () => {
 		expect(toDocumentInfo(createDocumentReference({contentHash: null})).link).toBeNull();
 	});

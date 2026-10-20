@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useMemo, useState} from 'react';
+import {useEffect, useMemo, useState} from 'react';
 import {keepPreviousData, useInfiniteQuery, useQueryClient} from '@tanstack/react-query';
 import {useTranslation} from 'react-i18next';
 import {Loading, Search} from '@carbon/react';
@@ -65,9 +65,11 @@ const VariablesTable: React.FC<{processInstanceKey: string; scopeKey: string}> =
 	const {isModificationModeEnabled} = useProcessInstanceModification();
 	const [searchValue, setSearchValue] = useState('');
 	const [showDocumentsOnly, setShowDocumentsOnly] = useState(false);
-	const searchTerm = useDebouncedValue(searchValue, SEARCH_DEBOUNCE_MS);
+	const debouncedSearchValue = useDebouncedValue(searchValue, SEARCH_DEBOUNCE_MS);
+	const searchTerm = isModificationModeEnabled ? '' : debouncedSearchValue;
+	const documentsOnly = showDocumentsOnly && !isModificationModeEnabled;
 	const {data, error, isLoading, isPlaceholderData, hasNextPage, isFetchingNextPage, fetchNextPage} = useInfiniteQuery({
-		...variablesQuery({processInstanceKey, scopeKey, searchTerm, documentsOnly: showDocumentsOnly}),
+		...variablesQuery({processInstanceKey, scopeKey, searchTerm, documentsOnly}),
 		placeholderData: keepPreviousData,
 		refetchOnMount: false,
 	});
@@ -75,25 +77,32 @@ const VariablesTable: React.FC<{processInstanceKey: string; scopeKey: string}> =
 		() =>
 			(data?.pages.flatMap((page) => page.items) ?? [])
 				.map((variable) => ({...variable, documentResult: parseDocumentVariable(variable.value, variable.isTruncated)}))
-				.filter(({documentResult}) => !showDocumentsOnly || documentResult !== null),
-		[data, showDocumentsOnly],
+				.filter(({documentResult}) => !documentsOnly || documentResult !== null),
+		[data, documentsOnly],
 	);
 	const hasSearchTerm = searchTerm.trim() !== '';
+	const hasHiddenCandidates = documentsOnly && variables.length === 0 && hasNextPage;
+
+	useEffect(() => {
+		if (hasHiddenCandidates && !isFetchingNextPage && !isPlaceholderData) {
+			void fetchNextPage();
+		}
+	}, [hasHiddenCandidates, isFetchingNextPage, isPlaceholderData, fetchNextPage]);
 
 	return (
 		<>
-			<FilterSwitcherContainer>
-				<VariablesSearch>
-					<Search
-						size="sm"
-						labelText={t('operate.processInstance.variables.search')}
-						placeholder={t('operate.processInstance.variables.search')}
-						value={searchValue}
-						onChange={(event) => setSearchValue(event.target.value)}
-						onClear={() => setSearchValue('')}
-					/>
-				</VariablesSearch>
-				{!isModificationModeEnabled && (
+			{!isModificationModeEnabled && (
+				<FilterSwitcherContainer>
+					<VariablesSearch>
+						<Search
+							size="sm"
+							labelText={t('operate.processInstance.variables.search')}
+							placeholder={t('operate.processInstance.variables.search')}
+							value={searchValue}
+							onChange={(event) => setSearchValue(event.target.value)}
+							onClear={() => setSearchValue('')}
+						/>
+					</VariablesSearch>
 					<FilterSwitcher role="group" aria-label={t('operate.processInstance.variables.filter')}>
 						<FilterSwitcherButton
 							type="button"
@@ -110,12 +119,12 @@ const VariablesTable: React.FC<{processInstanceKey: string; scopeKey: string}> =
 							{t('operate.processInstance.variables.filterDocuments')}
 						</FilterSwitcherButton>
 					</FilterSwitcher>
-				)}
-			</FilterSwitcherContainer>
+				</FilterSwitcherContainer>
+			)}
 			<DimmableResults $dimmed={isPlaceholderData}>
 				{error !== null ? (
 					<VariablesError error={error} />
-				) : !isLoading && (showDocumentsOnly || hasSearchTerm) && variables.length === 0 ? (
+				) : !isLoading && !hasHiddenCandidates && (documentsOnly || hasSearchTerm) && variables.length === 0 ? (
 					<EmptyMessageContainer>
 						<EmptyMessage
 							message={t(
