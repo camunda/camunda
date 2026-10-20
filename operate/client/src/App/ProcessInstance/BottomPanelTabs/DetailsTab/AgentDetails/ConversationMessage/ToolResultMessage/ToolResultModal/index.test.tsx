@@ -88,7 +88,7 @@ describe('<ToolResultModal />', () => {
   });
 
   it('should not show an output editor when no renderable content was provided', async () => {
-    render(
+    const {user} = render(
       <ToolResultModal
         toolName="search"
         description="Searches the web."
@@ -102,8 +102,8 @@ describe('<ToolResultModal />', () => {
               documentId: 'doc-1',
               storeId: 'default',
               metadata: {
-                contentType: 'text/plain',
-                fileName: 'report.txt',
+                contentType: 'application/pdf',
+                fileName: 'report.pdf',
                 size: 1234,
                 expiresAt: null,
                 processDefinitionId: null,
@@ -125,6 +125,15 @@ describe('<ToolResultModal />', () => {
     expect(
       outputColumn.queryByRole('button', {name: 'Copy to clipboard'}),
     ).not.toBeInTheDocument();
+    expect(
+      screen.getByRole('listitem', {name: 'report.pdf'}),
+    ).toBeInTheDocument();
+    await user.click(
+      screen.getByRole('button', {name: 'Preview document for report.pdf'}),
+    );
+    expect(
+      screen.getByRole('heading', {name: 'Preview: report.pdf'}),
+    ).toBeInTheDocument();
   });
 
   it('should call onClose when the close button is clicked', async () => {

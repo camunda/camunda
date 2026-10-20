@@ -11,7 +11,12 @@ import {Modal, Switch} from '@carbon/react';
 import {CopyButton} from 'modules/components/CopyButton';
 import {StructuredText} from './StructuredValue/StructuredText';
 import {StructuredValue} from './StructuredValue';
-import {ModalContent, ModalToolbar, ViewSwitcher} from './styled';
+import {
+  ModalContent,
+  ModalToolbar,
+  ViewSwitcher,
+  ModalAttachments,
+} from './styled';
 
 const RichTextEditor = lazy(async () => {
   const [{loadMonaco}, {RichTextEditor}] = await Promise.all([
@@ -78,7 +83,7 @@ const MessageDetailsModal: React.FC<MessageDetailsModalProps> = ({
             <CopyButton value={content} />
           </ModalToolbar>
           {modalView === 'preview' ? (
-            <ModalContent>
+            <ModalContent className="agent-message-content">
               <StructuredText content={content} />
             </ModalContent>
           ) : (
@@ -86,7 +91,7 @@ const MessageDetailsModal: React.FC<MessageDetailsModalProps> = ({
               <RichTextEditor value={content} readOnly language="markdown" />
             </Suspense>
           )}
-          {attachments}
+          {attachments && <ModalAttachments>{attachments}</ModalAttachments>}
         </>
       ) : (
         <>

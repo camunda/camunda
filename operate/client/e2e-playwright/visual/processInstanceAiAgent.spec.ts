@@ -289,7 +289,10 @@ test.describe('AI agent details', () => {
     await expect(page).toHaveScreenshot();
   });
 
-  test('conversation document lists', async ({page, processInstancePage}) => {
+  test('expanded conversation documents', async ({
+    page,
+    processInstancePage,
+  }) => {
     await page.route(
       URL_API_PATTERN,
       agentMockResponses(agentProcessWithOneActiveInstance),
@@ -309,18 +312,18 @@ test.describe('AI agent details', () => {
       ),
     ).toBeVisible();
 
-    const viewDocumentsButton =
+    const expandMessageButton =
       processInstancePage.aiAgentDetails.conversationHistorySection
         .getByLabel('User message')
-        .getByRole('button', {name: 'View documents'});
+        .getByRole('button', {name: 'Expand'});
 
     await processInstancePage.aiAgentDetails.conversationHistorySectionTrigger.click();
-    await viewDocumentsButton.scrollIntoViewIfNeeded();
-    await viewDocumentsButton.focus();
-    await viewDocumentsButton.click();
+    await expandMessageButton.scrollIntoViewIfNeeded();
+    await expandMessageButton.focus();
+    await expandMessageButton.click();
 
     const modal = page.getByRole('dialog', {
-      name: '4 documents in conversation message',
+      name: 'User message',
     });
     await expect(modal).toBeVisible();
     await expect(modal.getByText('test_image.png')).toBeVisible();

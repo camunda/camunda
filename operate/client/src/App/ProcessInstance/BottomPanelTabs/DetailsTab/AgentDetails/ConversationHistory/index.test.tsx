@@ -799,7 +799,7 @@ describe('<ConversationHistory />', () => {
       ]),
     );
 
-    render(
+    const {user} = render(
       <ConversationHistory
         agentInstanceKey={AGENT_INSTANCE_KEY}
         availableTools={[]}
@@ -822,6 +822,19 @@ describe('<ConversationHistory />', () => {
     ).toBeInTheDocument();
     expect(
       message.getByRole('listitem', {name: 'screenshot.png'}),
+    ).toBeInTheDocument();
+    await user.click(message.getByRole('button', {name: 'Expand'}));
+    const expanded = within(screen.getByRole('dialog'));
+    expect(
+      expanded.getByRole('listitem', {name: 'screenshot.png'}),
+    ).toBeInTheDocument();
+    await user.click(
+      expanded.getByRole('button', {
+        name: 'Preview document for screenshot.png',
+      }),
+    );
+    expect(
+      screen.getByRole('heading', {name: 'Preview: screenshot.png'}),
     ).toBeInTheDocument();
   });
 
