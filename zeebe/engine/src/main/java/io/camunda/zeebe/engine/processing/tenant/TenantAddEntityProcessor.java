@@ -107,7 +107,7 @@ public class TenantAddEntityProcessor implements DistributedTypedRecordProcessor
 
     final var entityId = record.getEntityId();
     final var entityType = record.getEntityType();
-    if (!isEntityPresent(entityType, entityId)) {
+    if (!isEntityPresent(entityType, entityId, record.getPolicyVersion())) {
       createEntityNotExistRejectCommand(command, entityId, entityType, tenantId);
       return;
     }
@@ -156,19 +156,20 @@ public class TenantAddEntityProcessor implements DistributedTypedRecordProcessor
   private Either<String, PersistedTenant> getPersistedTenant(final TenantRecord record) {
     final var tenantId = record.getTenantId();
     return tenantState
-        .getTenantById(tenantId)
+        .getTenantById(tenantId, record.getPolicyVersion())
         .<Either<String, PersistedTenant>>map(Either::right)
         .orElseGet(() -> Either.left(TENANT_NOT_FOUND_ERROR_MESSAGE.formatted(tenantId)));
   }
 
-  private boolean isEntityPresent(final EntityType entityType, final String entityId) {
+  private boolean isEntityPresent(
+      final EntityType entityType, final String entityId, final long policyVersion) {
     final boolean localUserEnabled = securityConfig.getAuthentication().isCamundaUsersEnabled();
     final boolean localGroupEnabled = securityConfig.getAuthentication().isCamundaGroupsEnabled();
     return switch (entityType) {
-      case GROUP -> !localGroupEnabled || groupState.get(entityId).isPresent();
+      case GROUP -> !localGroupEnabled || groupState.get(entityId, policyVersion).isPresent();
       case USER -> !localUserEnabled || userState.getUser(entityId).isPresent();
       case CLIENT -> true;
-      case MAPPING_RULE -> mappingRuleState.get(entityId).isPresent();
+      case MAPPING_RULE -> mappingRuleState.get(entityId, policyVersion).isPresent();
       case ROLE -> roleState.getRole(entityId).isPresent();
       default -> false;
     };
@@ -176,7 +177,11 @@ public class TenantAddEntityProcessor implements DistributedTypedRecordProcessor
 
   private boolean isEntityAssigned(final TenantRecord record) {
     return membershipState.hasRelation(
-        record.getEntityType(), record.getEntityId(), RelationType.TENANT, record.getTenantId());
+        record.getEntityType(),
+        record.getEntityId(),
+        RelationType.TENANT,
+        record.getTenantId(),
+        record.getPolicyVersion());
   }
 
   private void createEntityNotExistRejectCommand(

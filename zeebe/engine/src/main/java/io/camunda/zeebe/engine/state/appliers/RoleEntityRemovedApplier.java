@@ -25,6 +25,10 @@ public class RoleEntityRemovedApplier implements TypedEventApplier<RoleIntent, R
   @Override
   public void applyState(final long key, final RoleRecord value) {
     membershipState.deleteRelation(
-        value.getEntityType(), value.getEntityId(), RelationType.ROLE, value.getRoleId());
+        value.getEntityType(),
+        value.getEntityId(),
+        RelationType.ROLE,
+        value.getRoleId(),
+        value.getPolicyVersion());
   }
 }

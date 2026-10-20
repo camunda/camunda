@@ -91,7 +91,8 @@ public class MappingRuleCreateProcessor
     }
 
     final var persistedMappingRuleWithSameClaim =
-        mappingRuleState.get(record.getClaimName(), record.getClaimValue());
+        mappingRuleState.get(
+            record.getClaimName(), record.getClaimValue(), record.getPolicyVersion());
     if (persistedMappingRuleWithSameClaim.isPresent()) {
       final var errorMessage =
           MAPPING_RULE_SAME_CLAIM_ALREADY_EXISTS_ERROR_MESSAGE.formatted(
@@ -102,7 +103,8 @@ public class MappingRuleCreateProcessor
       return;
     }
 
-    final var persistedMappingRuleWithSameId = mappingRuleState.get(record.getMappingRuleId());
+    final var persistedMappingRuleWithSameId =
+        mappingRuleState.get(record.getMappingRuleId(), record.getPolicyVersion());
     if (persistedMappingRuleWithSameId.isPresent()) {
       final var errorMessage =
           MAPPING_RULE_SAME_ID_ALREADY_EXISTS_ERROR_MESSAGE.formatted(record.getMappingRuleId());

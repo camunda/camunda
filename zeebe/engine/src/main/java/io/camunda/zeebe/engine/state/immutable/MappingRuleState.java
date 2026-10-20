@@ -13,9 +13,22 @@ import java.util.Optional;
 
 public interface MappingRuleState {
 
-  Optional<PersistedMappingRule> get(final String mappingRuleId);
+  /** Returns the mapping rule visible to a command outside of a policy update. */
+  default Optional<PersistedMappingRule> get(final String mappingRuleId) {
+    return get(mappingRuleId, 0);
+  }
 
-  Optional<PersistedMappingRule> get(final String claimName, final String claimValue);
+  /**
+   * Returns the mapping rule visible to a command of the given policy version. The command sees the
+   * current version and its own version, so a policy update reads its own writes.
+   */
+  Optional<PersistedMappingRule> get(String mappingRuleId, long commandVersion);
+
+  default Optional<PersistedMappingRule> get(final String claimName, final String claimValue) {
+    return get(claimName, claimValue, 0);
+  }
+
+  Optional<PersistedMappingRule> get(String claimName, String claimValue, long commandVersion);
 
   Collection<PersistedMappingRule> getAll();
 }

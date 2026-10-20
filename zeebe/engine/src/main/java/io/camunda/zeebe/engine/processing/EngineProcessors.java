@@ -77,6 +77,7 @@ import io.camunda.zeebe.engine.processing.message.MessageEventProcessors;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.metrics.job.JobMetricsProcessors;
 import io.camunda.zeebe.engine.processing.metrics.usage.UsageMetricsProcessors;
+import io.camunda.zeebe.engine.processing.policy.PolicyUpdateProcessors;
 import io.camunda.zeebe.engine.processing.resource.ProcessDeleteCompleteProcessor;
 import io.camunda.zeebe.engine.processing.resource.ResourceDeletionDeleteProcessor;
 import io.camunda.zeebe.engine.processing.resource.ResourceFetchProcessor;
@@ -633,6 +634,9 @@ public final class EngineProcessors {
         commandDistributionBehavior,
         securityConfig,
         membershipStateAdapter);
+
+    PolicyUpdateProcessors.addPolicyUpdateProcessors(
+        typedRecordProcessors, processingState, keyGenerator, writers, commandDistributionBehavior);
 
     MappingRuleProcessors.addMappingRuleProcessors(
         typedRecordProcessors,

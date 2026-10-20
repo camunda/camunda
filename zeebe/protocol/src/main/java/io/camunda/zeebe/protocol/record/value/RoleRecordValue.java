@@ -40,4 +40,10 @@ public interface RoleRecordValue extends RecordValue {
 
   /** The type of the entity to assign/remove from a role. */
   EntityType getEntityType();
+
+  /** The policy version the record was written with, 0 if it is not part of a policy update. */
+  @Value.Default
+  default long getPolicyVersion() {
+    return 0;
+  }
 }

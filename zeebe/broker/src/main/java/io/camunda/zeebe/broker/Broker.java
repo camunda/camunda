@@ -12,6 +12,8 @@ import io.camunda.zeebe.broker.bootstrap.BrokerContext;
 import io.camunda.zeebe.broker.bootstrap.BrokerStartupContextImpl;
 import io.camunda.zeebe.broker.bootstrap.BrokerStartupProcess;
 import io.camunda.zeebe.broker.clustering.ClusterServicesImpl;
+import io.camunda.zeebe.broker.policy.PolicyChangeSetSplitter;
+import io.camunda.zeebe.broker.policy.PolicyUpdateInPort;
 import io.camunda.zeebe.broker.system.SystemContext;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
@@ -31,6 +33,9 @@ import org.slf4j.Logger;
 
 public final class Broker implements AutoCloseable {
 
+  private static final int DEFAULT_CHUNK_BUDGET_BYTES =
+      PolicyChangeSetSplitter.DEFAULT_CHUNK_BUDGET_BYTES;
+
   public static final Logger LOG = Loggers.SYSTEM_LOGGER;
 
   private final SystemContext systemContext;
@@ -41,6 +46,8 @@ public final class Broker implements AutoCloseable {
 
   // TODO make Broker class itself the actor
   private final BrokerStartupActor brokerStartupActor;
+
+  private final PolicyUpdateInPort policyUpdateInPort;
   private BrokerContext brokerContext;
 
   public Broker(
@@ -60,6 +67,11 @@ public final class Broker implements AutoCloseable {
             new HealthTreeMetrics(
                 systemContext.getMeterRegistry(), PartitionKeyNames.noPartition()),
             systemContext.getPhysicalTenantIds().known());
+
+    policyUpdateInPort =
+        new PolicyUpdateInPort(
+            new PolicyChangeSetSplitter(DEFAULT_CHUNK_BUDGET_BYTES),
+            () -> brokerContext == null ? null : brokerContext.getPartitionManager());
 
     final var startupContext =
         new BrokerStartupContextImpl(
@@ -180,6 +192,11 @@ public final class Broker implements AutoCloseable {
   }
 
   // only used for tests
+  /** The entry point for policy updates; it writes only while this broker leads partition 1. */
+  public PolicyUpdateInPort getPolicyUpdateInPort() {
+    return policyUpdateInPort;
+  }
+
   public SystemContext getSystemContext() {
     return systemContext;
   }

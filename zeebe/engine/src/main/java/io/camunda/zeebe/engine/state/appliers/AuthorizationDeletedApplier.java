@@ -23,6 +23,6 @@ public class AuthorizationDeletedApplier
 
   @Override
   public void applyState(final long key, final AuthorizationRecord value) {
-    authorizationState.delete(key);
+    authorizationState.delete(key, value.getPolicyVersion());
   }
 }

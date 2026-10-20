@@ -23,8 +23,6 @@ public class GroupDeletedApplier implements TypedEventApplier<GroupIntent, Group
 
   @Override
   public void applyState(final long key, final GroupRecord value) {
-    final var groupId = value.getGroupId();
-    // delete group from group state
-    groupState.delete(groupId);
+    groupState.delete(value);
   }
 }

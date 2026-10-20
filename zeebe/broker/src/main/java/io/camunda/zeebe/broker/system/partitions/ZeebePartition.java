@@ -19,6 +19,7 @@ import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageListener;
 import io.camunda.zeebe.broker.system.monitoring.HealthMetrics;
 import io.camunda.zeebe.broker.system.partitions.impl.RecoverablePartitionTransitionException;
 import io.camunda.zeebe.dynamic.config.state.ExportingState;
+import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.rebalance.ClusterConfigurationCoordinatorCheck;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ScheduledTimer;
@@ -41,6 +42,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeoutException;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 
 public final class ZeebePartition extends Actor
@@ -135,6 +137,11 @@ public final class ZeebePartition extends Actor
 
   public PartitionAdminAccess getAdminAccess() {
     return adminAccess;
+  }
+
+  /** The log stream of this partition, or {@code null} if the partition has none yet. */
+  public @Nullable LogStream getLogStream() {
+    return context.getLogStream();
   }
 
   @Override

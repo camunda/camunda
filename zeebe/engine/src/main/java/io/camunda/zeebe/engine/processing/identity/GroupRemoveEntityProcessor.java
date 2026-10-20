@@ -82,7 +82,7 @@ public class GroupRemoveEntityProcessor implements DistributedTypedRecordProcess
       return;
     }
 
-    final var persistedRecord = groupState.get(groupId);
+    final var persistedRecord = groupState.get(groupId, record.getPolicyVersion());
     if (persistedRecord.isEmpty()) {
       final var errorMessage =
           "Expected to update group with ID '%s', but a group with this ID does not exist."
@@ -94,7 +94,7 @@ public class GroupRemoveEntityProcessor implements DistributedTypedRecordProcess
 
     final var entityId = record.getEntityId();
     final var entityType = record.getEntityType();
-    if (!isEntityPresent(entityId, entityType)) {
+    if (!isEntityPresent(entityId, entityType, record.getPolicyVersion())) {
       final var errorMessage =
           "Expected to remove an entity with ID '%s' and type '%s' from group with ID '%s', but the entity does not exist."
               .formatted(entityId, entityType, groupId);
@@ -154,14 +154,19 @@ public class GroupRemoveEntityProcessor implements DistributedTypedRecordProcess
 
   private boolean isEntityAssigned(final GroupRecord record) {
     return membershipState.hasRelation(
-        record.getEntityType(), record.getEntityId(), RelationType.GROUP, record.getGroupId());
+        record.getEntityType(),
+        record.getEntityId(),
+        RelationType.GROUP,
+        record.getGroupId(),
+        record.getPolicyVersion());
   }
 
-  private boolean isEntityPresent(final String entityId, final EntityType entityType) {
+  private boolean isEntityPresent(
+      final String entityId, final EntityType entityType, final long policyVersion) {
     return switch (entityType) {
       case USER, CLIENT ->
           true; // With simple mapping rules, any username or client id can be assigned
-      case MAPPING_RULE -> mappingRuleState.get(entityId).isPresent();
+      case MAPPING_RULE -> mappingRuleState.get(entityId, policyVersion).isPresent();
       default -> false;
     };
   }

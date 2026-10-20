@@ -16,5 +16,5 @@ public interface MutableMappingRuleState extends MappingRuleState {
 
   void update(MappingRuleRecord mappingRuleRecord);
 
-  void delete(final String id);
+  void delete(final MappingRuleRecord mappingRuleRecord);
 }

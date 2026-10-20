@@ -26,6 +26,7 @@ public class GroupEntityAddedApplier implements TypedEventApplier<GroupIntent, G
     final var entityId = value.getEntityId();
     final var entityType = value.getEntityType();
     final var groupId = value.getGroupId();
-    membershipState.insertRelation(entityType, entityId, RelationType.GROUP, groupId);
+    membershipState.insertRelation(
+        entityType, entityId, RelationType.GROUP, groupId, value.getPolicyVersion());
   }
 }

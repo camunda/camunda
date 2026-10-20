@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.state.authorization;
 
 import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.msgpack.UnpackedObject;
+import io.camunda.zeebe.msgpack.property.BooleanProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
@@ -20,13 +21,15 @@ public class PersistedRole extends UnpackedObject implements DbValue {
   private final StringProperty roleIdProp = new StringProperty("roleId");
   private final StringProperty descriptionProp = new StringProperty("description");
   private final StringProperty nameProp = new StringProperty("name");
+  private final BooleanProperty deletedProp = new BooleanProperty("deleted", false);
 
   public PersistedRole() {
-    super(4);
+    super(5);
     declareProperty(roleKeyProp)
         .declareProperty(roleIdProp)
         .declareProperty(nameProp)
-        .declareProperty(descriptionProp);
+        .declareProperty(descriptionProp)
+        .declareProperty(deletedProp);
   }
 
   public long getRoleKey() {
@@ -57,6 +60,16 @@ public class PersistedRole extends UnpackedObject implements DbValue {
 
   public PersistedRole setDescription(final String description) {
     descriptionProp.setValue(description);
+    return this;
+  }
+
+  /** Whether this version of the role is a tombstone, that is, the role is deleted. */
+  public boolean isDeleted() {
+    return deletedProp.getValue();
+  }
+
+  public PersistedRole setDeleted(final boolean deleted) {
+    deletedProp.setValue(deleted);
     return this;
   }
 

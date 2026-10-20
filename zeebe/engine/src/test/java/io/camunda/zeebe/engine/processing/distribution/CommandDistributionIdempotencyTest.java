@@ -49,6 +49,7 @@ import io.camunda.zeebe.engine.processing.identity.RoleDeleteProcessor;
 import io.camunda.zeebe.engine.processing.identity.RoleRemoveEntityProcessor;
 import io.camunda.zeebe.engine.processing.identity.RoleUpdateProcessor;
 import io.camunda.zeebe.engine.processing.message.MessageSubscriptionMigrateProcessor;
+import io.camunda.zeebe.engine.processing.policy.PolicyUpdateSwitchVersionProcessor;
 import io.camunda.zeebe.engine.processing.resource.ProcessDeleteCompleteProcessor;
 import io.camunda.zeebe.engine.processing.resource.ResourceDeletionDeleteProcessor;
 import io.camunda.zeebe.engine.processing.scaling.ScaleMarkPartitionBootstrappedProcessor;
@@ -64,6 +65,7 @@ import io.camunda.zeebe.engine.processing.user.UserCreateProcessor;
 import io.camunda.zeebe.engine.processing.user.UserDeleteProcessor;
 import io.camunda.zeebe.engine.processing.user.UserUpdateProcessor;
 import io.camunda.zeebe.engine.util.EngineRule;
+import io.camunda.zeebe.engine.util.RecordToWrite;
 import io.camunda.zeebe.engine.util.TestInterPartitionCommandSender.CommandInterceptor;
 import io.camunda.zeebe.engine.util.client.BatchOperationClient;
 import io.camunda.zeebe.model.bpmn.Bpmn;
@@ -72,6 +74,7 @@ import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessRecord;
 import io.camunda.zeebe.protocol.impl.record.value.globallistener.GlobalListenerRecord;
+import io.camunda.zeebe.protocol.impl.record.value.policyupdate.PolicyUpdateRecord;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
@@ -86,6 +89,7 @@ import io.camunda.zeebe.protocol.record.intent.GroupIntent;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.MappingRuleIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
+import io.camunda.zeebe.protocol.record.intent.PolicyUpdateIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.protocol.record.intent.ResourceDeletionIntent;
 import io.camunda.zeebe.protocol.record.intent.RoleIntent;
@@ -372,6 +376,14 @@ public class CommandDistributionIdempotencyTest {
             "Clock.RESET is idempotent",
             new Scenario(ValueType.CLOCK, ClockIntent.RESET, () -> ENGINE.clock().reset()),
             ClockResetProcessor.class
+          },
+          {
+            "PolicyUpdate.SWITCH_VERSION is idempotent",
+            new Scenario(
+                ValueType.POLICY_UPDATE,
+                PolicyUpdateIntent.SWITCH_VERSION,
+                CommandDistributionIdempotencyTest::switchPolicyVersion),
+            PolicyUpdateSwitchVersionProcessor.class
           },
           {
             "Deployment.CREATE is idempotent",
@@ -1243,6 +1255,28 @@ public class CommandDistributionIdempotencyTest {
         return Optional.empty();
       }
     }
+  }
+
+  /**
+   * Applies an empty policy update, which ends with the switch to its version. The returned event
+   * is the coordinator's switch, whose source is the distributed command.
+   */
+  private static Record<?> switchPolicyVersion() {
+    ENGINE.writeRecordsOnPartition(
+        1,
+        RecordToWrite.command()
+            .policyUpdate(
+                PolicyUpdateIntent.APPEND_CHUNK,
+                new PolicyUpdateRecord()
+                    .setEnvelopeId(UUID.randomUUID().toString())
+                    .setPolicyVersion(1)
+                    .setChunkCount(1)
+                    .setChunkIndex(0)));
+    return RecordingExporter.records()
+        .withValueType(ValueType.POLICY_UPDATE)
+        .withIntent(PolicyUpdateIntent.VERSION_SWITCHED)
+        .withPartitionId(1)
+        .getFirst();
   }
 
   @FunctionalInterface

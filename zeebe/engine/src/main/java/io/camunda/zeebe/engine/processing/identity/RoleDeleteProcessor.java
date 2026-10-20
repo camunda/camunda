@@ -119,7 +119,7 @@ public class RoleDeleteProcessor implements DistributedTypedRecordProcessor<Role
   public void processDistributedCommand(final TypedRecord<RoleRecord> command) {
     final var record = command.getValue();
     roleState
-        .getRole(record.getRoleId())
+        .getRole(record.getRoleId(), record.getPolicyVersion())
         .ifPresentOrElse(
             role -> {
               removeMembers(command.getValue());
@@ -140,25 +140,33 @@ public class RoleDeleteProcessor implements DistributedTypedRecordProcessor<Role
     membershipState.forEachMember(
         RelationType.ROLE,
         roleId,
+        record.getPolicyVersion(),
         (entityType, entityId) -> {
           stateWriter.appendFollowUpEvent(
               record.getRoleKey(),
               RoleIntent.ENTITY_REMOVED,
-              new RoleRecord().setRoleId(roleId).setEntityId(entityId).setEntityType(entityType));
+              new RoleRecord()
+                  .setRoleId(roleId)
+                  .setEntityId(entityId)
+                  .setEntityType(entityType)
+                  .setPolicyVersion(record.getPolicyVersion()));
+          return true;
         });
   }
 
   private void deleteAuthorizations(final RoleRecord record) {
     final var roleId = record.getRoleId();
     final var authorizationKeysForRole =
-        authorizationState.getAuthorizationKeysForOwner(AuthorizationOwnerType.ROLE, roleId);
+        authorizationState.getAuthorizationKeysForOwner(
+            AuthorizationOwnerType.ROLE, roleId, record.getPolicyVersion());
 
     authorizationKeysForRole.forEach(
         authorizationKey -> {
           final var authorization =
               new AuthorizationRecord()
                   .setAuthorizationKey(authorizationKey)
-                  .setResourceMatcher(AuthorizationResourceMatcher.UNSPECIFIED);
+                  .setResourceMatcher(AuthorizationResourceMatcher.UNSPECIFIED)
+                  .setPolicyVersion(record.getPolicyVersion());
           stateWriter.appendFollowUpEvent(
               authorizationKey, AuthorizationIntent.DELETED, authorization);
         });

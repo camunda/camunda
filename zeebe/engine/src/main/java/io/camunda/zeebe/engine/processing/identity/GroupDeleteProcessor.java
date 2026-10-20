@@ -78,7 +78,7 @@ public class GroupDeleteProcessor implements DistributedTypedRecordProcessor<Gro
       return;
     }
 
-    final var persistedRecord = groupState.get(groupId);
+    final var persistedRecord = groupState.get(groupId, record.getPolicyVersion());
     if (persistedRecord.isEmpty()) {
       final var errorMessage = GROUP_NOT_FOUND_ERROR_MESSAGE.formatted(groupId);
       rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, errorMessage);
@@ -127,6 +127,7 @@ public class GroupDeleteProcessor implements DistributedTypedRecordProcessor<Gro
     membershipState.forEachMember(
         RelationType.GROUP,
         groupId,
+        record.getPolicyVersion(),
         (entityType, entityId) -> {
           stateWriter.appendFollowUpEvent(
               record.getGroupKey(),
@@ -134,21 +135,25 @@ public class GroupDeleteProcessor implements DistributedTypedRecordProcessor<Gro
               new GroupRecord()
                   .setGroupId(groupId)
                   .setEntityType(entityType)
-                  .setEntityId(entityId));
+                  .setEntityId(entityId)
+                  .setPolicyVersion(record.getPolicyVersion()));
+          return true;
         });
   }
 
   private void deleteAuthorizations(final GroupRecord record) {
     final var groupId = record.getGroupId();
     final var authorizationKeysForGroup =
-        authorizationState.getAuthorizationKeysForOwner(AuthorizationOwnerType.GROUP, groupId);
+        authorizationState.getAuthorizationKeysForOwner(
+            AuthorizationOwnerType.GROUP, groupId, record.getPolicyVersion());
 
     authorizationKeysForGroup.forEach(
         authorizationKey -> {
           final var authorization =
               new AuthorizationRecord()
                   .setAuthorizationKey(authorizationKey)
-                  .setResourceMatcher(AuthorizationResourceMatcher.UNSPECIFIED);
+                  .setResourceMatcher(AuthorizationResourceMatcher.UNSPECIFIED)
+                  .setPolicyVersion(record.getPolicyVersion());
           stateWriter.appendFollowUpEvent(
               authorizationKey, AuthorizationIntent.DELETED, authorization);
         });

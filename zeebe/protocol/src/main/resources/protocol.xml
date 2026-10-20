@@ -103,6 +103,7 @@
       <validValue name="AGENT_DEFINITION">77</validValue>
       <validValue name="AGENT_HISTORY_BATCH">78</validValue>
       <validValue name="SUSPENSION_BATCH">79</validValue>
+      <validValue name="POLICY_UPDATE">80</validValue>
 
       <!-- Management records / record not related to process automation -->
       <!-- value 252 was used for "REDISTRIBUTION, do not use-->

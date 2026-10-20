@@ -145,7 +145,7 @@ public class MappingRuleStateTest {
     mappingRuleState.create(mappingRule);
 
     // when
-    mappingRuleState.delete(mappingRuleId);
+    mappingRuleState.delete(new MappingRuleRecord().setMappingRuleId(mappingRuleId));
 
     // then
     assertThat(mappingRuleState.get(mappingRuleId)).isEmpty();

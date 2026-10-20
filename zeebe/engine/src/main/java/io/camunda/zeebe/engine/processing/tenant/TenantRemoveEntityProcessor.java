@@ -134,11 +134,17 @@ public class TenantRemoveEntityProcessor implements DistributedTypedRecordProces
       final TypedRecord<TenantRecord> command, final String tenantId) {
     final var entityType = command.getValue().getEntityType();
     final var entityId = command.getValue().getEntityId();
-    if (!isEntityPresent(command.getAuthorizations(), entityType, entityId)) {
+    if (!isEntityPresent(
+        command.getAuthorizations(), entityType, entityId, command.getValue().getPolicyVersion())) {
       createEntityNotExistRejectCommand(command, entityId, entityType, tenantId);
       return false;
     }
-    if (!membershipState.hasRelation(entityType, entityId, RelationType.TENANT, tenantId)) {
+    if (!membershipState.hasRelation(
+        entityType,
+        entityId,
+        RelationType.TENANT,
+        tenantId,
+        command.getValue().getPolicyVersion())) {
       createNotAssignedRejectCommand(command, entityId, entityType, tenantId);
       return false;
     }
@@ -148,8 +154,9 @@ public class TenantRemoveEntityProcessor implements DistributedTypedRecordProces
   private boolean isEntityPresent(
       final Map<String, Object> authorizations,
       final EntityType entityType,
-      final String entityId) {
-    return entityType != MAPPING_RULE || mappingRuleState.get(entityId).isPresent();
+      final String entityId,
+      final long policyVersion) {
+    return entityType != MAPPING_RULE || mappingRuleState.get(entityId, policyVersion).isPresent();
   }
 
   private void createEntityNotExistRejectCommand(

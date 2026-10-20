@@ -53,7 +53,7 @@ public class PermissionStateCorrectionMigrationTest {
 
   @BeforeEach
   void setup() {
-    state = new DbAuthorizationState(zeebeDb, transactionContext);
+    state = new DbAuthorizationState(zeebeDb, transactionContext, () -> 0L);
 
     ownerType = new DbString();
     ownerId = new DbString();
@@ -207,6 +207,28 @@ public class PermissionStateCorrectionMigrationTest {
             permissionsAfterMigration.getPermissions().get(PermissionType.DELETE_PROCESS_INSTANCE))
         .isNotEmpty()
         .containsExactly(AuthorizationScope.of(authorizationRecord1.getResourceId()));
+  }
+
+  @Test
+  void shouldNotMigrateVersionedAuthorizations() {
+    // given
+    final var authorizationRecord =
+        generateAuthorizationRecord(
+            3L, "process-definition-3", Set.of(PermissionType.CREATE_PROCESS_INSTANCE));
+    authorizationRecord.setPolicyVersion(1);
+    state.create(3L, authorizationRecord);
+
+    // when
+    final var context = new MigrationTaskContextImpl(new ClusterContextImpl(1), processingState);
+    sut.runMigration(context);
+
+    // then
+    ownerType.wrapString(authorizationRecord.getOwnerType().name());
+    ownerId.wrapString(authorizationRecord.getOwnerId());
+    resourceType.wrapString(authorizationRecord.getResourceType().name());
+    assertThat(permissionsColumnFamily.exists(ownerTypeOwnerIdAndResourceType))
+        .describedAs("the version 0 permissions must not receive a versioned authorization")
+        .isFalse();
   }
 
   private AuthorizationRecord createAuthorization(

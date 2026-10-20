@@ -13,7 +13,16 @@ import java.util.Optional;
 
 public interface GroupState {
 
-  Optional<PersistedGroup> get(String groupId);
+  /** Returns the group visible to a command outside of a policy update. */
+  default Optional<PersistedGroup> get(final String groupId) {
+    return get(groupId, 0);
+  }
+
+  /**
+   * Returns the group visible to a command of the given policy version. The command sees the
+   * current version and its own version, so a policy update reads its own writes.
+   */
+  Optional<PersistedGroup> get(String groupId, long commandVersion);
 
   /**
    * Finds groups by ID or name. First attempts to resolve {@code value} as a group ID. If no group
@@ -23,5 +32,10 @@ public interface GroupState {
    * @return list of matching groups: empty if none found, a single group when matched by ID or a
    *     unique name, or multiple groups when several groups share the same name
    */
-  List<PersistedGroup> findByIdOrName(String value);
+  default List<PersistedGroup> findByIdOrName(final String value) {
+    return findByIdOrName(value, 0);
+  }
+
+  /** Like {@link #findByIdOrName(String)}, but reads the groups visible to the command version. */
+  List<PersistedGroup> findByIdOrName(String value, long commandVersion);
 }

@@ -116,6 +116,9 @@ public interface MutableProcessingState extends ProcessingState {
   MutableRoleState getRoleState();
 
   @Override
+  MutablePolicyUpdateState getPolicyUpdateState();
+
+  @Override
   MutableGroupState getGroupState();
 
   @Override

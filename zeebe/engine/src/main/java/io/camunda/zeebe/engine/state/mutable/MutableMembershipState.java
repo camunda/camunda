@@ -13,9 +13,36 @@ import io.camunda.zeebe.protocol.record.value.EntityType;
 
 public interface MutableMembershipState extends MembershipState {
 
-  void insertRelation(
-      EntityType entityType, String entityId, RelationType relationType, String relationId);
+  /** Adds a membership outside of a policy update, which writes at version 0. */
+  default void insertRelation(
+      final EntityType entityType,
+      final String entityId,
+      final RelationType relationType,
+      final String relationId) {
+    insertRelation(entityType, entityId, relationType, relationId, 0);
+  }
 
+  void insertRelation(
+      EntityType entityType,
+      String entityId,
+      RelationType relationType,
+      String relationId,
+      long policyVersion);
+
+  /** Removes a membership outside of a policy update, which writes at version 0. */
+  default void deleteRelation(
+      final EntityType entityType,
+      final String entityId,
+      final RelationType relationType,
+      final String relationId) {
+    deleteRelation(entityType, entityId, relationType, relationId, 0);
+  }
+
+  /** Writes a tombstone for the relation at the given policy version. */
   void deleteRelation(
-      EntityType entityType, String entityId, RelationType relationType, String relationId);
+      EntityType entityType,
+      String entityId,
+      RelationType relationType,
+      String relationId,
+      long policyVersion);
 }

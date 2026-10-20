@@ -13,6 +13,7 @@ import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.impl.DbCompositeKey;
 import io.camunda.zeebe.db.impl.DbLong;
 import io.camunda.zeebe.db.impl.DbString;
+import io.camunda.zeebe.db.impl.DbVersionedKey;
 import io.camunda.zeebe.engine.state.authorization.Permissions;
 import io.camunda.zeebe.engine.state.authorization.PersistedAuthorization;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
@@ -26,12 +27,13 @@ public class DbPermissionMigrationState {
   private final DbString resourceType;
   private final DbCompositeKey<DbCompositeKey<DbString, DbString>, DbString>
       ownerTypeOwnerIdAndResourceType;
-  // owner type + owner id + resource type -> permissions
+  // owner type + owner id + resource type -> permissions. Without a version suffix, this is the
+  // version 0 row of the versioned layout in DbAuthorizationState.
   private final ColumnFamily<
           DbCompositeKey<DbCompositeKey<DbString, DbString>, DbString>, Permissions>
       permissionsColumnFamily;
 
-  private final ColumnFamily<DbLong, PersistedAuthorization>
+  private final ColumnFamily<DbVersionedKey<DbLong>, PersistedAuthorization>
       authorizationByAuthorizationKeyColumnFamily;
 
   public DbPermissionMigrationState(
@@ -49,8 +51,8 @@ public class DbPermissionMigrationState {
             ownerTypeOwnerIdAndResourceType,
             new Permissions());
 
-    // authorization key -> authorization
-    final DbLong authorizationKey = new DbLong();
+    // authorization key + version -> authorization
+    final var authorizationKey = new DbVersionedKey<>(new DbLong(), new DbLong());
     authorizationByAuthorizationKeyColumnFamily =
         zeebeDb.createColumnFamily(
             ZbColumnFamilies.AUTHORIZATIONS,
@@ -61,38 +63,42 @@ public class DbPermissionMigrationState {
 
   public void migrateMissingPermissionsForAuthorizations() {
     authorizationByAuthorizationKeyColumnFamily.forEach(
-        (key, authorization) ->
-            authorization
-                .getPermissionTypes()
-                .forEach(
-                    permissionType -> {
-                      ownerType.wrapString(authorization.getOwnerType().name());
-                      ownerId.wrapString(authorization.getOwnerId());
-                      resourceType.wrapString(authorization.getResourceType().name());
+        (key, authorization) -> {
+          // only unversioned data predates the permission layout this migration corrects
+          if (key.version().getValue() != 0 || authorization.isDeleted()) {
+            return;
+          }
+          authorization
+              .getPermissionTypes()
+              .forEach(
+                  permissionType -> {
+                    ownerType.wrapString(authorization.getOwnerType().name());
+                    ownerId.wrapString(authorization.getOwnerId());
+                    resourceType.wrapString(authorization.getResourceType().name());
 
-                      final var existingPermissionsForOwner =
-                          permissionsColumnFamily.get(
-                              ownerTypeOwnerIdAndResourceType, Permissions::new);
+                    final var existingPermissionsForOwner =
+                        permissionsColumnFamily.get(
+                            ownerTypeOwnerIdAndResourceType, Permissions::new);
 
-                      if (existingPermissionsForOwner.getPermissions().get(permissionType)
-                          == null) {
-                        final var permissionsToStore =
-                            buildPermissionsToStore(
-                                existingPermissionsForOwner, authorization, permissionType);
+                    if (existingPermissionsForOwner.getPermissions().get(permissionType) == null) {
+                      final var permissionsToStore =
+                          buildPermissionsToStore(
+                              existingPermissionsForOwner, authorization, permissionType);
 
-                        permissionsColumnFamily.upsert(
-                            ownerTypeOwnerIdAndResourceType, permissionsToStore);
-                      } else if (!resourceMatchersContainAuthorizationScope(
-                          authorization,
-                          existingPermissionsForOwner.getPermissions().get(permissionType))) {
+                      permissionsColumnFamily.upsert(
+                          ownerTypeOwnerIdAndResourceType, permissionsToStore);
+                    } else if (!resourceMatchersContainAuthorizationScope(
+                        authorization,
+                        existingPermissionsForOwner.getPermissions().get(permissionType))) {
 
-                        final var permissionsToStore =
-                            buildPermissionsToStore(
-                                existingPermissionsForOwner, authorization, permissionType);
-                        permissionsColumnFamily.upsert(
-                            ownerTypeOwnerIdAndResourceType, permissionsToStore);
-                      }
-                    }));
+                      final var permissionsToStore =
+                          buildPermissionsToStore(
+                              existingPermissionsForOwner, authorization, permissionType);
+                      permissionsColumnFamily.upsert(
+                          ownerTypeOwnerIdAndResourceType, permissionsToStore);
+                    }
+                  });
+        });
   }
 
   private boolean resourceMatchersContainAuthorizationScope(
