@@ -101,6 +101,12 @@ public interface LogArchiveRecordValue extends RecordValue {
    */
   long getParentPosition();
 
+  /**
+   * @return the time the archiver started the timeline in epoch millis (on {@code START_TIMELINE}
+   *     and {@code TIMELINE_STARTED}), or -1 if unknown
+   */
+  long getStartedAt();
+
   @Value.Immutable
   @ImmutableProtocol(builder = ImmutableLogObjectValue.Builder.class)
   interface LogObjectValue {

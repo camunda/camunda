@@ -274,7 +274,8 @@ public final class LogArchiveRecordsProcessor
               .setStartIndex(commandValue.getStartIndex())
               .setParentTimelineId(commandValue.getParentTimelineId())
               .setParentIndex(commandValue.getParentIndex())
-              .setParentPosition(commandValue.getParentPosition());
+              .setParentPosition(commandValue.getParentPosition())
+              .setStartedAt(commandValue.getStartedAt());
       case ARCHIVE_LOG -> {
         event.setSeq(meta.getNextSeq());
         commandValue.getObjects().forEach(event::addObject);
@@ -378,7 +379,7 @@ public final class LogArchiveRecordsProcessor
             ? new HandoverJson(event.getHandoverCheckpointId(), event.getHandoverPosition())
             : null,
         eventIntent == LogArchiveIntent.TIMELINE_STARTED
-            ? LogArchiveJsonMapper.timelineFile(config.partitionId(), event, NO_RECORD_TIMESTAMP)
+            ? LogArchiveJsonMapper.timelineFile(config.partitionId(), event)
             : null);
   }
 

@@ -455,7 +455,8 @@ public final class LogArchiver extends Actor
             .setStartIndex(startIndex)
             .setParentTimelineId(parentTimelineId)
             .setParentIndex(parentIndex)
-            .setParentPosition(parentPosition);
+            .setParentPosition(parentPosition)
+            .setStartedAt(ActorClock.currentTimeMillis());
     if (!write(LogArchiveIntent.START_TIMELINE, record)) {
       retryLater(this::writeStartTimeline);
     }

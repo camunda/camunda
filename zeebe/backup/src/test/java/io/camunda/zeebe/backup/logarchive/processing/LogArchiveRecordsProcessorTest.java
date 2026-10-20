@@ -130,7 +130,11 @@ final class LogArchiveRecordsProcessorTest {
   @Test
   void shouldWriteTakeoverPointOfTimelineStartedIntoCommitEntryAndTimelineFile() {
     // given
-    final var command = startTimeline(TIMELINE, 1).setParentIndex(77).setParentPosition(910);
+    final var command =
+        startTimeline(TIMELINE, 1)
+            .setParentIndex(77)
+            .setParentPosition(910)
+            .setStartedAt(1_792_137_600_500L);
 
     // when
     harness.accept(LogArchiveIntent.START_TIMELINE, command);
@@ -138,12 +142,11 @@ final class LogArchiveRecordsProcessorTest {
     // then
     final var request = harness.published.getFirst();
     final var entry = LogArchiveJson.read(request.commitEntryJson(), CommitEntry.class);
-    assertThat(entry.startedAt()).isEqualTo(entry.recordTimestamp());
+    assertThat(entry.startedAt()).isEqualTo(1_792_137_600_500L);
     assertThat(entry.parentIndex()).isEqualTo(77L);
     assertThat(entry.parentPosition()).isEqualTo(910L);
     assertThat(request.timeline())
-        .isEqualTo(
-            new TimelineFile(1, TIMELINE, 1, "parent", 1, 1, entry.recordTimestamp(), 77, 910));
+        .isEqualTo(new TimelineFile(1, TIMELINE, 1, "parent", 1, 1, 1_792_137_600_500L, 77, 910));
   }
 
   @Test
@@ -154,6 +157,7 @@ final class LogArchiveRecordsProcessorTest {
     // then
     final var entry =
         LogArchiveJson.read(harness.published.getFirst().commitEntryJson(), CommitEntry.class);
+    assertThat(entry.startedAt()).isEqualTo(-1L);
     assertThat(entry.parentIndex()).isEqualTo(-1L);
     assertThat(entry.parentPosition()).isEqualTo(-1L);
   }
@@ -1269,6 +1273,29 @@ final class LogArchiveRecordsProcessorTest {
         assertThat(replicaOutbox.get(i).commitEntryJson())
             .isEqualTo(leaderOutbox.get(i).commitEntryJson());
       }
+    }
+  }
+
+  @Test
+  void shouldWriteSameTimelineStartedBytesWhenReplayingTheEvent() throws Exception {
+    // given
+    harness.accept(
+        LogArchiveIntent.START_TIMELINE,
+        startTimeline(TIMELINE, 1)
+            .setParentIndex(77)
+            .setParentPosition(910)
+            .setStartedAt(1_792_137_600_500L));
+    final var published = harness.published.getFirst().commitEntryJson();
+
+    // when
+    try (final var replica = new LogArchiveHarness(replicaDirectory.toFile(), CONFIG)) {
+      replica.replayLog(harness.log);
+
+      // then
+      final var replayed = replica.state().outboxAfter(0).getFirst().commitEntryJson();
+      assertThat(replayed).isEqualTo(published);
+      assertThat(LogArchiveJson.read(replayed, CommitEntry.class).startedAt())
+          .isEqualTo(1_792_137_600_500L);
     }
   }
 

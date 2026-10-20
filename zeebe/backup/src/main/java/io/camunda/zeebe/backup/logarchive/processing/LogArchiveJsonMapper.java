@@ -75,7 +75,7 @@ public final class LogArchiveJsonMapper {
         event.getArchivedPosition(),
         timeline ? event.getStartIndex() : null,
         timeline ? event.getParentTimelineId() : null,
-        timeline ? recordTimestamp : null,
+        timeline ? event.getStartedAt() : null,
         timeline ? event.getParentIndex() : null,
         timeline ? event.getParentPosition() : null,
         logArchived
@@ -102,14 +102,8 @@ public final class LogArchiveJsonMapper {
         commitEntry(partitionId, eventIntent, event, recordPosition, recordTimestamp));
   }
 
-  /**
-   * The registry file of the timeline that the {@code TIMELINE_STARTED} event starts.
-   *
-   * @param recordTimestamp the value of the commit entry's {@code startedAt}, see {@link
-   *     LogArchiveRecordsProcessor#NO_RECORD_TIMESTAMP}
-   */
-  public static TimelineFile timelineFile(
-      final int partitionId, final LogArchiveRecord event, final long recordTimestamp) {
+  /** The registry file of the timeline that the {@code TIMELINE_STARTED} event starts. */
+  public static TimelineFile timelineFile(final int partitionId, final LogArchiveRecord event) {
     return new TimelineFile(
         LogArchiveJson.FORMAT_VERSION,
         event.getTimelineId(),
@@ -117,12 +111,12 @@ public final class LogArchiveJsonMapper {
         event.getParentTimelineId(),
         event.getStartIndex(),
         event.getSeq(),
-        recordTimestamp,
+        event.getStartedAt(),
         event.getParentIndex(),
         event.getParentPosition());
   }
 
-  /** The registry file as {@link #timelineFile(int, LogArchiveRecord, long)} would write it. */
+  /** The registry file as {@link #timelineFile(int, LogArchiveRecord)} would write it. */
   public static TimelineFile timelineFile(final CommitEntry entry) {
     return new TimelineFile(
         LogArchiveJson.FORMAT_VERSION,
