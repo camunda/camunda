@@ -21,7 +21,8 @@ import {useDebouncedValue} from '#/shared/hooks/useDebouncedValue';
 import {useProcessInstanceElementSelection} from './useProcessInstanceElementSelection';
 import {useProcessInstancePage} from './useProcessInstancePage';
 import {useProcessInstanceModification} from './useProcessInstanceModification';
-import {VARIABLES_PAGE_SIZE, variableQuery, variablesQuery} from './variables.queries';
+import {variableQuery, variablesQuery} from './variables.queries';
+import {needsMoreDocuments} from './needsMoreDocuments';
 import {ViewFullVariableButton} from './ViewFullVariableButton';
 import {parseDocumentVariable} from './parseDocumentVariable';
 import {DocumentValueCell} from './DocumentValueCell';
@@ -73,16 +74,23 @@ const VariablesTable: React.FC<{processInstanceKey: string; scopeKey: string}> =
 		placeholderData: keepPreviousData,
 		refetchOnMount: false,
 	});
-	const variables = useMemo(
+	const pages = useMemo(
 		() =>
-			(data?.pages.flatMap((page) => page.items) ?? [])
-				.map((variable) => ({...variable, documentResult: parseDocumentVariable(variable.value, variable.isTruncated)}))
-				.filter(({documentResult}) => !documentsOnly || documentResult !== null),
-		[data, documentsOnly],
+			(data?.pages ?? []).map((page) =>
+				page.items.map((variable) => ({
+					...variable,
+					documentResult: parseDocumentVariable(variable.value, variable.isTruncated),
+				})),
+			),
+		[data],
 	);
+	const variables = pages.flat().filter(({documentResult}) => !documentsOnly || documentResult !== null);
 	const hasSearchTerm = searchTerm.trim() !== '';
 	const shouldLoadMoreDocuments =
-		documentsOnly && hasNextPage && error === null && variables.length < VARIABLES_PAGE_SIZE;
+		documentsOnly &&
+		hasNextPage &&
+		error === null &&
+		needsMoreDocuments(pages.map((items) => items.filter(({documentResult}) => documentResult !== null).length));
 
 	useEffect(() => {
 		if (shouldLoadMoreDocuments && !isFetchingNextPage && !isPlaceholderData) {
