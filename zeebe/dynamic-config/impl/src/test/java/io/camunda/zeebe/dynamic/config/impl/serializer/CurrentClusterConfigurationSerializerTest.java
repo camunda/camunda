@@ -13,7 +13,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import com.google.protobuf.Timestamp;
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.gossip.ClusterConfigurationGossipState;
-import io.camunda.zeebe.dynamic.config.protocol.Topology;
+import io.camunda.zeebe.dynamic.config.impl.protocol.Topology;
 import io.camunda.zeebe.dynamic.config.serializer.DecodingFailed;
 import io.camunda.zeebe.dynamic.config.state.BrokerPartitionState;
 import io.camunda.zeebe.dynamic.config.state.BrokerState;

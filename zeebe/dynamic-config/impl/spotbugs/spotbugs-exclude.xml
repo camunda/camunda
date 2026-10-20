@@ -14,15 +14,15 @@
 
   <Match>
     <Or>
-      <Class name="io.camunda.zeebe.dynamic.config.protocol.Requests" />
-      <Class name="~io\.camunda\.zeebe\.dynamic\.config\.protocol\.Requests\$.*" />
+      <Class name="io.camunda.zeebe.dynamic.config.impl.protocol.Requests" />
+      <Class name="~io\.camunda\.zeebe\.dynamic\.config\.impl\.protocol\.Requests\$.*" />
     </Or>
   </Match>
 
   <Match>
     <Or>
-      <Class name="io.camunda.zeebe.dynamic.config.protocol.Topology" />
-      <Class name="~io\.camunda\.zeebe\.dynamic\.config\.protocol\.Topology\$.*" />
+      <Class name="io.camunda.zeebe.dynamic.config.impl.protocol.Topology" />
+      <Class name="~io\.camunda\.zeebe\.dynamic\.config\.impl\.protocol\.Topology\$.*" />
     </Or>
   </Match>
 
