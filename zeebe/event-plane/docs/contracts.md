@@ -152,7 +152,7 @@ needs no configuration machinery.
 |---|---|
 | `POST /v1/uploads` | An `UploadNotice`. Passes it on to the workers subscribed to its log, and to the configured peers unless the request has the header `X-Event-Plane-Forwarded: true`. Answers 202. |
 | `GET /v1/notifications?log={c}/{t}/{p}&log=…` | Server-sent events: `event: upload`, with the notice's JSON on one `data:` line. A comment line `: keep-alive` every 15 seconds. |
-| `GET /v1/groups/{group}` | `{"group":"g","workers":[{"worker":"w-…","beat":42}],"cursors":[{"log":"c/t/p","history":"…","index":1,"position":1,"worker":"w-…","newestIndex":40,"lag":39}]}`. `newestIndex` is the last index of the newest segment of the cursor's history that the service knows of, from notices or a listing. |
+| `GET /v1/groups/{group}` | `{"group":"g","workers":[{"worker":"w-…","beat":42}],"cursors":[{"log":"c/t/p","history":"…","index":1,"position":1,"worker":"w-…","newestIndex":40,"lag":39}]}`. `newestIndex` is the last index of the newest segment of the cursor's history that the service knows of, from notices or a listing, or null, with a lag of 0, if it knows of none. |
 | `GET /v1/credentials` | A stub: the store's configuration, as a worker would use it. |
 
 ## Consumer group objects
