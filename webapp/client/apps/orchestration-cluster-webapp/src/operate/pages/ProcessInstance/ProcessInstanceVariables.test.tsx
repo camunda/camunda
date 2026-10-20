@@ -613,6 +613,35 @@ describe('<ProcessInstanceVariables />', () => {
 			await expect.element(screen.getByText('There are no document variables')).not.toBeInTheDocument();
 		});
 
+		it('should not report a failed full value fetch for a complete document list', async ({worker}) => {
+			worker.use(
+				mockQueryVariablesEndpoint({
+					successResponse: variablesResponse([
+						createVariable({name: 'files', value: documentListValue, variableKey: '5'}),
+					]),
+				}),
+				mockGetVariableEndpoint({
+					successResponse: HttpResponse.json(createProblemDetails({status: 500}), {status: 500}),
+				}),
+			);
+			const screen = await renderVariables();
+			const row = screen.getByTestId('variable-files');
+			await userEvent.click(row.getByRole('button', {name: 'Open'}));
+			await expect
+				.poll(() => notificationsStore.notifications.map(({title}) => title))
+				.toContain('Failed to fetch full files');
+
+			await userEvent.click(row.getByRole('button', {name: 'View documents'}));
+
+			const dialog = screen.getByRole('dialog', {name: '3 documents in files'});
+			await expect.element(dialog.getByRole('listitem', {name: 'doc-3.pdf'})).toBeVisible();
+			await expect
+				.element(
+					dialog.getByText('Failed to load the full variable value. More documents may exist for this variable.'),
+				)
+				.not.toBeInTheDocument();
+		});
+
 		it('should list the documents of a complete list instead of a previously fetched value', async ({worker}) => {
 			worker.use(
 				mockQueryVariablesEndpoint({

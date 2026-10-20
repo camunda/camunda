@@ -42,8 +42,8 @@ const VariableDocumentListModal: React.FC<Props & {onClose: () => void}> = ({
 			documents={resolvedDocuments}
 			labelSuffix={variableName}
 			onClose={onClose}
-			loadingHint={isLoading ? t('operate.processInstance.variables.documentsLoadingHint') : undefined}
-			errorHint={isError ? t('operate.processInstance.variables.documentsErrorHint') : undefined}
+			loadingHint={isLowerBound && isLoading ? t('operate.processInstance.variables.documentsLoadingHint') : undefined}
+			errorHint={isLowerBound && isError ? t('operate.processInstance.variables.documentsErrorHint') : undefined}
 		/>
 	);
 };
