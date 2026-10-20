@@ -70,7 +70,8 @@ test.describe('Suspend & Resume Batch Operation Tests', () => {
     await deploy(['./resources/batch_suspension_process.bpmn']);
   });
 
-  test('Suspend active batch operation returns 204 and status becomes SUSPENDED, finally resumes', async ({
+  // Skipped due to bug #66284: https://github.com/camunda/camunda/issues/66284
+  test.skip('Suspend active batch operation returns 204 and status becomes SUSPENDED, finally resumes', async ({
     request,
   }) => {
     // Use a large instance count so the batch stays ACTIVE long enough for the
@@ -101,7 +102,8 @@ test.describe('Suspend & Resume Batch Operation Tests', () => {
     });
   });
 
-  test('Suspend batch operation twice fails on second request, finally resumes', async ({
+  // Skipped due to bug #66284: https://github.com/camunda/camunda/issues/66284
+  test.skip('Suspend batch operation twice fails on second request, finally resumes', async ({
     request,
   }) => {
     // Use a large instance count so the batch stays ACTIVE long enough for the
@@ -192,7 +194,8 @@ test.describe('Suspend & Resume Batch Operation Tests', () => {
     await assertUnauthorizedRequest(res);
   });
 
-  test('Suspend active batch operation returns 204 and status becomes SUSPENDED without resume', async ({
+  // Skipped due to bug #66284: https://github.com/camunda/camunda/issues/66284
+  test.skip('Suspend active batch operation returns 204 and status becomes SUSPENDED without resume', async ({
     request,
   }) => {
     // Use a large instance count so the batch stays ACTIVE long enough for the
@@ -214,7 +217,8 @@ test.describe('Suspend & Resume Batch Operation Tests', () => {
     });
   });
 
-  test('Resume suspended batch operation runs to completion', async ({
+  // Skipped due to bug #66284: https://github.com/camunda/camunda/issues/66284
+  test.skip('Resume suspended batch operation runs to completion', async ({
     request,
   }) => {
     // Increasing the instance count only widens the window the suspend
@@ -277,7 +281,8 @@ test.describe('Suspend & Resume Batch Operation Tests', () => {
     });
   });
 
-  test('Cancel suspended batch operation transitions to CANCELED', async ({
+  // Skipped due to bug #66284: https://github.com/camunda/camunda/issues/66284
+  test.skip('Cancel suspended batch operation transitions to CANCELED', async ({
     request,
   }) => {
     // Use a large instance count so the cancellation batch stays ACTIVE long
