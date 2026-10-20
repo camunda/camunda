@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {lazy, Suspense, useState} from 'react';
+import {lazy, Suspense, useState, type ReactNode} from 'react';
 import {Modal, Switch} from '@carbon/react';
 import {CopyButton} from 'modules/components/CopyButton';
 import {StructuredText} from './StructuredValue/StructuredText';
@@ -31,6 +31,8 @@ type MessageDetailsModalProps = {
   content: string;
   value?: unknown;
   onClose: () => void;
+  navigation?: ReactNode;
+  attachments?: ReactNode;
 };
 
 const MessageDetailsModal: React.FC<MessageDetailsModalProps> = ({
@@ -39,16 +41,28 @@ const MessageDetailsModal: React.FC<MessageDetailsModalProps> = ({
   content,
   value,
   onClose,
+  navigation,
+  attachments,
 }) => {
   const [modalView, setModalView] = useState<'preview' | 'source'>('preview');
 
   return (
     <Modal
       open
-      modalHeading={title}
+      modalHeading={
+        navigation ? (
+          <span className="agent-history-heading">
+            <span>{title}</span>
+            {navigation}
+          </span>
+        ) : (
+          title
+        )
+      }
       onRequestClose={onClose}
       size="lg"
       passiveModal
+      className={navigation ? 'agent-history-modal' : undefined}
     >
       {language === 'markdown' ? (
         <>
@@ -72,6 +86,7 @@ const MessageDetailsModal: React.FC<MessageDetailsModalProps> = ({
               <RichTextEditor value={content} readOnly language="markdown" />
             </Suspense>
           )}
+          {attachments}
         </>
       ) : (
         <>

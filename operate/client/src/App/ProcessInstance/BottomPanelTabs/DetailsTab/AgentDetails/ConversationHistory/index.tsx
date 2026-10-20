@@ -27,9 +27,23 @@ import {
 } from './styled';
 import {flattenPaginatedPages} from 'modules/queries/flattenPaginatedPages';
 import {ToolResultMessage} from '../ConversationMessage/ToolResultMessage';
-import {getContentEvidence} from '../ConversationMessage/EvidenceCard/evidence';
 import type {InfiniteData} from '@tanstack/react-query';
 import {isActiveAgentInstanceStatus} from 'modules/queries/agentInstances/agentInstanceStatus';
+import {HistoryCardModal} from './HistoryCardModal';
+
+const chronologicalCards = (data: Map<number, AgentInstanceHistoryItem[]>) =>
+  Array.from(data.values())
+    .flat()
+    .filter(
+      (item) =>
+        item.role !== 'CONFIGURATION' &&
+        (item.role !== 'TOOL_RESULT' || item.toolCalls.length > 0),
+    )
+    .sort(
+      (a, b) =>
+        Date.parse(a.producedAt) - Date.parse(b.producedAt) ||
+        (BigInt(a.historyItemKey) < BigInt(b.historyItemKey) ? -1 : 1),
+    );
 
 function mapIntoLoopIterationChunks(
   pages: InfiniteData<QueryAgentInstanceHistoryResponseBody>,
@@ -52,7 +66,6 @@ type ConversationHistoryProps = {
   isVisible: boolean;
   selectedElementInstanceKey: string | null;
   agentsElementInstanceKeys: string[];
-  credentialBinding?: string | null;
 };
 
 const ConversationHistory: React.FC<ConversationHistoryProps> = ({
@@ -62,13 +75,29 @@ const ConversationHistory: React.FC<ConversationHistoryProps> = ({
   isVisible,
   selectedElementInstanceKey,
   agentsElementInstanceKeys,
-  credentialBinding = null,
 }) => {
   const canBeScoped =
     agentsElementInstanceKeys.length > 1 && selectedElementInstanceKey !== null;
 
   const [sortOrder, setSortOrder] = useState<QuerySortOrder>('desc');
   const [isScoped, setIsScoped] = useState(true);
+  const [selection, setSelection] = useState<{
+    agent: string;
+    scope: string | null;
+    key: string;
+  } | null>(null);
+  const messagesRef = useRef<HTMLDivElement>(null);
+  const navigationVersion = useRef(0);
+  const scope = canBeScoped && isScoped ? selectedElementInstanceKey : null;
+  useEffect(() => {
+    navigationVersion.current++;
+  }, [agentInstanceKey, scope]);
+  if (
+    selection &&
+    (selection.agent !== agentInstanceKey || selection.scope !== scope)
+  ) {
+    setSelection(null);
+  }
 
   const {
     data,
@@ -79,6 +108,7 @@ const ConversationHistory: React.FC<ConversationHistoryProps> = ({
     hasNextPage,
     fetchNextPage,
     isFetchingNextPage,
+    isFetchNextPageError,
   } = useAgentInstanceHistory(agentInstanceKey, {
     enabled: isVisible,
     enablePeriodicRefetch: isActiveAgentInstanceStatus(agentInstanceStatus),
@@ -87,6 +117,58 @@ const ConversationHistory: React.FC<ConversationHistoryProps> = ({
       canBeScoped && isScoped ? selectedElementInstanceKey : null,
     select: mapIntoLoopIterationChunks,
   });
+
+  const cards = data ? chronologicalCards(data) : [];
+  const selectedIndex =
+    selection?.agent === agentInstanceKey && selection.scope === scope
+      ? cards.findIndex((item) => item.historyItemKey === selection.key)
+      : -1;
+  const selectedCard = cards[selectedIndex];
+  const openCard = (key: string) =>
+    setSelection({agent: agentInstanceKey, scope, key});
+  const navigate = async (direction: -1 | 1) => {
+    if (!selectedCard) {
+      return;
+    }
+    const version = navigationVersion.current;
+    let loadedCards = cards;
+    let index = selectedIndex;
+    let more = hasNextPage;
+    while (!loadedCards[index + direction] && more) {
+      const result = await fetchNextPage();
+      if (navigationVersion.current !== version) {
+        return;
+      }
+      if (result.isError || !result.data) {
+        return;
+      }
+      loadedCards = chronologicalCards(result.data);
+      index = loadedCards.findIndex(
+        (item) => item.historyItemKey === selectedCard.historyItemKey,
+      );
+      more = result.hasNextPage;
+    }
+    const neighbor = loadedCards[index + direction];
+    if (neighbor) {
+      openCard(neighbor.historyItemKey);
+    }
+  };
+  const closeCard = () => {
+    navigationVersion.current++;
+    const key = selectedCard?.historyItemKey;
+    setSelection(null);
+    if (key) {
+      requestAnimationFrame(() => {
+        const card = messagesRef.current?.querySelector(
+          `[data-history-card="${key}"]`,
+        );
+        card?.scrollIntoView?.({block: 'nearest'});
+        card
+          ?.querySelector<HTMLButtonElement>('[data-history-expand]')
+          ?.focus();
+      });
+    }
+  };
 
   const lastAgentStatus = useRef(agentInstanceStatus);
   useEffect(() => {
@@ -107,26 +189,6 @@ const ConversationHistory: React.FC<ConversationHistoryProps> = ({
           .find((item) => item.role === 'USER')?.historyItemKey
       : undefined;
 
-  // The connector records the configuration on creation and on each turn
-  // start; only show it when it changed.
-  const visibleConfigurationKeys = new Set<string>();
-  if (status === 'success') {
-    let previous: string | null = null;
-    for (const item of Array.from(data.entries())
-      .sort(([a], [b]) => a - b)
-      .flatMap(([, items]) => items)
-      .filter((item) => item.role === 'CONFIGURATION')
-      .sort((a, b) =>
-        BigInt(a.historyItemKey) < BigInt(b.historyItemKey) ? -1 : 1,
-      )) {
-      const current = JSON.stringify(item.content);
-      if (current !== previous && getContentEvidence(item.content).length > 0) {
-        visibleConfigurationKeys.add(item.historyItemKey);
-      }
-      previous = current;
-    }
-  }
-
   if (status === 'pending') {
     return (
       <div data-testid="conversation-history-skeleton">
@@ -135,7 +197,7 @@ const ConversationHistory: React.FC<ConversationHistoryProps> = ({
     );
   }
 
-  if (status === 'error') {
+  if (status === 'error' && !data) {
     return <StatusHint>Failed to load conversation history.</StatusHint>;
   }
 
@@ -150,7 +212,7 @@ const ConversationHistory: React.FC<ConversationHistoryProps> = ({
         }
         onToggleScope={() => setIsScoped((prev) => !prev)}
       />
-      <Messages data-dimmed={isPlaceholderData}>
+      <Messages ref={messagesRef} data-dimmed={isPlaceholderData}>
         {data.size === 0 ? (
           <StatusHint>
             {canBeScoped && isScoped
@@ -167,43 +229,45 @@ const ConversationHistory: React.FC<ConversationHistoryProps> = ({
             return (
               <Fragment key={iteration}>
                 {sortOrder === 'asc' && loopIterationNode}
-                {items.map((item) =>
-                  item.role === 'CONFIGURATION' ? (
-                    visibleConfigurationKeys.has(item.historyItemKey) ? (
-                      <ConversationMessage
+                {items.map((item) => (
+                  <Fragment key={item.historyItemKey}>
+                    {item.role === 'CONFIGURATION' ? null : item.role ===
+                      'TOOL_RESULT' ? (
+                      <div
                         key={item.historyItemKey}
-                        historyItemKey={item.historyItemKey}
-                        actor="SYSTEM"
-                        label="Agent configuration"
-                        content={item.content}
-                        credentialBinding={credentialBinding}
-                      />
-                    ) : null
-                  ) : item.role === 'TOOL_RESULT' ? (
-                    <ToolResultMessage
-                      key={item.historyItemKey}
-                      availableTools={availableTools}
-                      toolCalls={item.toolCalls}
-                      content={item.content}
-                    />
-                  ) : (
-                    <ConversationMessage
-                      key={item.historyItemKey}
-                      historyItemKey={item.historyItemKey}
-                      actor={item.role}
-                      content={item.content}
-                      toolCalls={item.toolCalls}
-                      metrics={item.metrics}
-                      label={
-                        item.role === 'USER' &&
-                        firstUserMessageKey !== undefined &&
-                        item.historyItemKey !== firstUserMessageKey
-                          ? 'User · analyst feedback (revise)'
-                          : undefined
-                      }
-                    />
-                  ),
-                )}
+                        data-history-card={item.historyItemKey}
+                      >
+                        <ToolResultMessage
+                          availableTools={availableTools}
+                          toolCalls={item.toolCalls}
+                          content={item.content}
+                          onExpand={() => openCard(item.historyItemKey)}
+                        />
+                      </div>
+                    ) : (
+                      <div
+                        key={item.historyItemKey}
+                        data-history-card={item.historyItemKey}
+                      >
+                        <ConversationMessage
+                          historyItemKey={item.historyItemKey}
+                          actor={item.role}
+                          content={item.content}
+                          toolCalls={item.toolCalls}
+                          metrics={item.metrics}
+                          onExpand={() => openCard(item.historyItemKey)}
+                          label={
+                            item.role === 'USER' &&
+                            firstUserMessageKey !== undefined &&
+                            item.historyItemKey !== firstUserMessageKey
+                              ? 'User · analyst feedback (revise)'
+                              : undefined
+                          }
+                        />
+                      </div>
+                    )}
+                  </Fragment>
+                ))}
                 {sortOrder === 'desc' && loopIterationNode}
               </Fragment>
             );
@@ -215,6 +279,27 @@ const ConversationHistory: React.FC<ConversationHistoryProps> = ({
         <ShowMoreButton kind="ghost" size="sm" onClick={() => fetchNextPage()}>
           Show more
         </ShowMoreButton>
+      )}
+      {selectedCard && !isPlaceholderData && (
+        <HistoryCardModal
+          item={selectedCard}
+          availableTools={availableTools}
+          position={selectedIndex + 1}
+          total={cards.length}
+          hasEarlier={
+            selectedIndex > 0 || (hasNextPage && sortOrder === 'desc')
+          }
+          hasLater={
+            selectedIndex < cards.length - 1 ||
+            (hasNextPage && sortOrder === 'asc')
+          }
+          loading={isFetchingNextPage}
+          loadError={isFetchNextPageError}
+          moreUnloaded={hasNextPage}
+          onPrevious={() => navigate(-1)}
+          onNext={() => navigate(1)}
+          onClose={closeCard}
+        />
       )}
     </ConversationContainer>
   );

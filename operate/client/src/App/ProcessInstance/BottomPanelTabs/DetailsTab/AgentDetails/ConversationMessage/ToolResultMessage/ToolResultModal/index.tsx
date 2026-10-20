@@ -7,6 +7,7 @@
  */
 
 import {Modal} from '@carbon/react';
+import type {ReactNode} from 'react';
 import {CopyButton} from 'modules/components/CopyButton';
 import {
   EMPTY_RESULT_MESSAGE,
@@ -32,6 +33,7 @@ type ToolResultModalProps = {
   input: Record<string, unknown> | null;
   content: ContentItem[];
   onClose: () => void;
+  navigation?: ReactNode;
 };
 
 const ToolResultModal: React.FC<ToolResultModalProps> = ({
@@ -40,6 +42,7 @@ const ToolResultModal: React.FC<ToolResultModalProps> = ({
   input,
   content,
   onClose,
+  navigation,
 }) => {
   const hasInput = input !== null && Object.keys(input).length > 0;
   const result = getToolCallResult(content);
@@ -48,10 +51,20 @@ const ToolResultModal: React.FC<ToolResultModalProps> = ({
   return (
     <Modal
       open
-      modalHeading={`Tool call: ${toolName}`}
-      onRequestClose={onClose}
       size="lg"
       passiveModal
+      onRequestClose={onClose}
+      modalHeading={
+        navigation ? (
+          <span className="agent-history-heading">
+            <span>{`Tool call: ${toolName}`}</span>
+            {navigation}
+          </span>
+        ) : (
+          `Tool call: ${toolName}`
+        )
+      }
+      className={navigation ? 'agent-history-modal' : undefined}
     >
       {description && <Description>{description}</Description>}
       <Columns>

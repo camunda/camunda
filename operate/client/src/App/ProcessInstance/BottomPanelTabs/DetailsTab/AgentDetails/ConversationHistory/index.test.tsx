@@ -47,6 +47,244 @@ function createWrapper() {
 }
 
 describe('<ConversationHistory />', () => {
+  it('should walk every card chronologically in one maximized dialog, regardless of list order', async () => {
+    const call = {
+      toolCallId: 'tc-story',
+      toolName: 'sandbox_bash',
+      elementId: null,
+      arguments: {command: 'echo hello'},
+    };
+    mockSearchAgentInstanceHistory().withSuccess(
+      searchResult([
+        mockAgentInstanceHistoryItem({
+          historyItemKey: '5',
+          role: 'ASSISTANT',
+          loopIteration: 2,
+          content: [{contentType: 'TEXT', text: 'Final answer'}],
+        }),
+        mockAgentInstanceHistoryItem({
+          historyItemKey: '4',
+          role: 'TOOL_RESULT',
+          loopIteration: 2,
+          toolCalls: [call],
+          content: [{contentType: 'TEXT', text: 'hello'}],
+        }),
+        mockAgentInstanceHistoryItem({
+          historyItemKey: '3',
+          role: 'ASSISTANT',
+          content: [],
+          toolCalls: [call],
+        }),
+        mockAgentInstanceHistoryItem({
+          historyItemKey: '2',
+          role: 'USER',
+          content: [{contentType: 'TEXT', text: 'Investigate this claim'}],
+        }),
+        mockAgentInstanceHistoryItem({
+          historyItemKey: '1',
+          role: 'CONFIGURATION',
+        }),
+      ]),
+    );
+    const {user} = render(
+      <ConversationHistory
+        agentInstanceKey={AGENT_INSTANCE_KEY}
+        availableTools={[]}
+        agentInstanceStatus="COMPLETED"
+        isVisible
+        selectedElementInstanceKey={null}
+        agentsElementInstanceKeys={[]}
+      />,
+      {wrapper: createWrapper()},
+    );
+    await screen.findByTestId('tool-call-result-tc-story');
+    await user.click(
+      within(screen.getByTestId('tool-call-result-tc-story')).getByRole(
+        'button',
+        {name: 'Expand'},
+      ),
+    );
+    let dialog = within(screen.getByRole('dialog'));
+    expect(dialog.getByText('3 / 4')).toBeVisible();
+    expect(
+      dialog.getByRole('navigation', {name: 'Conversation navigation'}),
+    ).toHaveFocus();
+    expect(dialog.getByText('echo hello')).toBeVisible();
+    await user.click(dialog.getByRole('button', {name: 'Previous card'}));
+    dialog = within(screen.getByRole('dialog'));
+    expect(dialog.getByText('2 / 4')).toBeVisible();
+    expect(dialog.getByText('sandbox_bash')).toBeVisible();
+    expect(dialog.getByRole('tab', {name: 'Preview'})).toBeVisible();
+    expect(dialog.getByRole('button', {name: 'Next card'})).not.toHaveAttribute(
+      'aria-describedby',
+    );
+    await user.click(dialog.getByRole('button', {name: 'Previous card'}));
+    dialog = within(screen.getByRole('dialog'));
+    expect(dialog.getByText('Investigate this claim')).toBeVisible();
+    expect(dialog.getByRole('button', {name: 'Previous card'})).toBeDisabled();
+    for (let i = 0; i < 3; i++) {
+      await user.click(
+        within(screen.getByRole('dialog')).getByRole('button', {
+          name: 'Next card',
+        }),
+      );
+    }
+    dialog = within(screen.getByRole('dialog'));
+    expect(dialog.getByText('Final answer')).toBeVisible();
+    expect(dialog.getByRole('button', {name: 'Next card'})).toBeDisabled();
+    await user.keyboard('{ArrowLeft}');
+    expect(within(screen.getByRole('dialog')).getByText('3 / 4')).toBeVisible();
+    expect(
+      within(screen.getByRole('dialog')).getByRole('navigation', {
+        name: 'Conversation navigation',
+      }),
+    ).toHaveFocus();
+    await user.keyboard('{ArrowRight}');
+    expect(within(screen.getByRole('dialog')).getByText('4 / 4')).toBeVisible();
+    expect(
+      within(screen.getByRole('dialog')).getByRole('navigation', {
+        name: 'Conversation navigation',
+      }),
+    ).toHaveFocus();
+    expect(screen.getAllByRole('dialog')).toHaveLength(1);
+    await user.click(
+      within(screen.getByRole('dialog')).getByRole('button', {name: 'Close'}),
+    );
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    await waitFor(() =>
+      expect(
+        within(screen.getByTestId('conversation-message-5')).getByRole(
+          'button',
+          {
+            name: 'Expand',
+          },
+        ),
+      ).toHaveFocus(),
+    );
+  });
+
+  it('should load earlier cards across a page boundary from the previous arrow', async () => {
+    mockSearchAgentInstanceHistory().withSuccess(
+      searchResult(
+        [
+          mockAgentInstanceHistoryItem({
+            historyItemKey: '1',
+            role: 'USER',
+            content: [{contentType: 'TEXT', text: 'Earlier card'}],
+          }),
+        ],
+        2,
+      ),
+    );
+    mockSearchAgentInstanceHistory().withSuccess(
+      searchResult(
+        [
+          mockAgentInstanceHistoryItem({
+            historyItemKey: '2',
+            role: 'ASSISTANT',
+            content: [{contentType: 'TEXT', text: 'Latest card'}],
+          }),
+        ],
+        2,
+      ),
+    );
+    const {user} = render(
+      <ConversationHistory
+        agentInstanceKey={AGENT_INSTANCE_KEY}
+        availableTools={[]}
+        agentInstanceStatus="COMPLETED"
+        isVisible
+        selectedElementInstanceKey={null}
+        agentsElementInstanceKeys={[]}
+      />,
+      {wrapper: createWrapper()},
+    );
+    await screen.findByTestId('conversation-message-2');
+    await user.click(
+      within(screen.getByTestId('conversation-message-2')).getByRole('button', {
+        name: 'Expand',
+      }),
+    );
+    await user.click(
+      within(screen.getByRole('dialog')).getByRole('button', {
+        name: 'Previous card',
+      }),
+    );
+    const dialog = within(screen.getByRole('dialog'));
+    expect(await dialog.findByText('Earlier card')).toBeVisible();
+    expect(dialog.getByText('1 / 2')).toBeVisible();
+    expect(dialog.getByRole('button', {name: 'Previous card'})).toBeDisabled();
+    await user.click(dialog.getByRole('button', {name: 'Next card'}));
+    expect(
+      within(screen.getByRole('dialog')).getByText('Latest card'),
+    ).toBeVisible();
+  });
+
+  it('should keep the current card on a page-load error and allow retry', async () => {
+    mockSearchAgentInstanceHistory().withSuccess(
+      searchResult(
+        [
+          mockAgentInstanceHistoryItem({
+            historyItemKey: '2',
+            role: 'ASSISTANT',
+            content: [{contentType: 'TEXT', text: 'Latest card'}],
+          }),
+        ],
+        2,
+      ),
+    );
+    const {user} = render(
+      <ConversationHistory
+        agentInstanceKey={AGENT_INSTANCE_KEY}
+        availableTools={[]}
+        agentInstanceStatus="COMPLETED"
+        isVisible
+        selectedElementInstanceKey={null}
+        agentsElementInstanceKeys={[]}
+      />,
+      {wrapper: createWrapper()},
+    );
+    await screen.findByTestId('conversation-message-2');
+    await user.click(
+      within(screen.getByTestId('conversation-message-2')).getByRole('button', {
+        name: 'Expand',
+      }),
+    );
+    mockSearchAgentInstanceHistory().withServerError();
+    await user.click(
+      within(screen.getByRole('dialog')).getByRole('button', {
+        name: 'Previous card',
+      }),
+    );
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Could not load more history',
+    );
+    expect(
+      within(screen.getByRole('dialog')).getByText('Latest card'),
+    ).toBeVisible();
+    mockSearchAgentInstanceHistory().withSuccess(
+      searchResult(
+        [
+          mockAgentInstanceHistoryItem({
+            historyItemKey: '1',
+            role: 'USER',
+            content: [{contentType: 'TEXT', text: 'Earlier card'}],
+          }),
+        ],
+        2,
+      ),
+    );
+    await user.click(
+      within(screen.getByRole('dialog')).getByRole('button', {
+        name: 'Previous card',
+      }),
+    );
+    expect(
+      await within(screen.getByRole('dialog')).findByText('Earlier card'),
+    ).toBeVisible();
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  });
+
   it('should render skeleton while loading', () => {
     mockSearchAgentInstanceHistory().withDelay(searchResult([]));
 
@@ -65,6 +303,79 @@ describe('<ConversationHistory />', () => {
     expect(
       screen.getByTestId('conversation-history-skeleton'),
     ).toBeInTheDocument();
+  });
+
+  it('should load later cards from the next arrow when the list is oldest first', async () => {
+    mockSearchAgentInstanceHistory().withSuccess(
+      searchResult([
+        mockAgentInstanceHistoryItem({
+          historyItemKey: '2',
+          role: 'ASSISTANT',
+          content: [{contentType: 'TEXT', text: 'Latest card'}],
+        }),
+      ]),
+    );
+    const {user} = render(
+      <ConversationHistory
+        agentInstanceKey={AGENT_INSTANCE_KEY}
+        availableTools={[]}
+        agentInstanceStatus="COMPLETED"
+        isVisible
+        selectedElementInstanceKey={null}
+        agentsElementInstanceKeys={[]}
+      />,
+      {wrapper: createWrapper()},
+    );
+    await screen.findByTestId('conversation-message-2');
+    mockSearchAgentInstanceHistory().withSuccess(
+      searchResult(
+        [
+          mockAgentInstanceHistoryItem({
+            historyItemKey: '1',
+            role: 'USER',
+            content: [{contentType: 'TEXT', text: 'Earlier card'}],
+          }),
+        ],
+        2,
+      ),
+    );
+    await user.click(screen.getByRole('button', {name: 'Latest first'}));
+    await screen.findByTestId('conversation-message-1');
+    await user.click(
+      within(screen.getByTestId('conversation-message-1')).getByRole('button', {
+        name: 'Expand',
+      }),
+    );
+    expect(
+      within(screen.getByRole('dialog')).getByRole('button', {
+        name: 'Previous card',
+      }),
+    ).toBeDisabled();
+    mockSearchAgentInstanceHistory().withSuccess(
+      searchResult(
+        [
+          mockAgentInstanceHistoryItem({
+            historyItemKey: '2',
+            role: 'ASSISTANT',
+            content: [{contentType: 'TEXT', text: 'Latest card'}],
+          }),
+        ],
+        2,
+      ),
+    );
+    await user.click(
+      within(screen.getByRole('dialog')).getByRole('button', {
+        name: 'Next card',
+      }),
+    );
+    expect(
+      await within(screen.getByRole('dialog')).findByText('Latest card'),
+    ).toBeVisible();
+    expect(
+      within(screen.getByRole('dialog')).getByRole('button', {
+        name: 'Next card',
+      }),
+    ).toBeDisabled();
   });
 
   it('should render an error message when loading fails', async () => {

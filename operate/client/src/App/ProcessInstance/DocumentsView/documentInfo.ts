@@ -45,6 +45,10 @@ const MIME_TYPE_MAP: Record<string, DocumentType> = {
   'application/pdf': 'pdf',
   'application/json': 'json',
   'text/plain': 'text',
+  'text/markdown': 'text',
+  'text/x-markdown': 'text',
+  'text/x-python': 'text',
+  'application/x-python-code': 'text',
   'text/csv': 'text',
   'application/csv': 'text',
 };
@@ -54,6 +58,9 @@ const EXTENSION_TYPE_MAP: Record<string, DocumentType> = {
   json: 'json',
   txt: 'text',
   csv: 'text',
+  md: 'text',
+  markdown: 'text',
+  py: 'text',
 };
 
 function getDocumentType(contentType: string, fileName?: string): DocumentType {

@@ -70,16 +70,15 @@ const PdfParsingCard: React.FC<{parsing: Record<string, unknown>}> = ({
   parsing,
 }) => (
   <Card data-testid="evidence-document-parsing">
-    <CardTitle>
-      PDF parsing
-      <Tag size="sm" type={parsing.plugin ? 'purple' : 'gray'}>
-        {parsing.plugin
-          ? `${text(parsing.plugin)} plugin, provider-run`
-          : 'provider default'}
-      </Tag>
-    </CardTitle>
+    <CardTitle>PDF parsing</CardTitle>
     <Rows
       rows={[
+        [
+          'Plugin',
+          parsing.plugin
+            ? `${text(parsing.plugin)} (provider-run)`
+            : 'provider default',
+        ],
         ['Engine', parsing.pdfEngine],
         ['Sent as', parsing.sentAs],
         ['Configured via', parsing.configuredVia, true],
@@ -91,76 +90,12 @@ const PdfParsingCard: React.FC<{parsing: Record<string, unknown>}> = ({
 
 type EvidenceCardProps = {
   evidence: Evidence;
-  credentialBinding?: string | null;
 };
 
-const EvidenceCard: React.FC<EvidenceCardProps> = ({
-  evidence,
-  credentialBinding,
-}) => {
+const EvidenceCard: React.FC<EvidenceCardProps> = ({evidence}) => {
   switch (evidence.kind) {
-    case 'configuration': {
-      const prompt = isRecord(evidence.systemPrompt)
-        ? evidence.systemPrompt
-        : {};
-      const credential = isRecord(evidence.credential)
-        ? evidence.credential
-        : {};
-      const serverTools = isRecord(evidence.serverTools)
-        ? evidence.serverTools
-        : {};
-      return (
-        <>
-          <Card data-testid="evidence-system-prompt">
-            <CardTitle>
-              System prompt
-              <Tag size="sm" type={prompt.type === 'linked' ? 'blue' : 'gray'}>
-                {prompt.type === 'linked' ? 'Linked resource' : 'Inline'}
-              </Tag>
-            </CardTitle>
-            <Rows
-              rows={[
-                ['Prompt ID', prompt.promptId],
-                ['Version', prompt.version],
-                ['Binding', prompt.binding],
-                ['Resource key', prompt.resourceKey],
-              ]}
-            />
-          </Card>
-          <Card data-testid="evidence-credential">
-            <CardTitle>
-              Model credential
-              <Tag
-                size="sm"
-                type={credential.mode === 'saved credential' ? 'green' : 'gray'}
-              >
-                {text(credential.mode) ?? 'unknown'}
-              </Tag>
-            </CardTitle>
-            <Rows
-              rows={[
-                ['Credential binding', credentialBinding, true],
-                ['Template', credential.template],
-                ['Bound to', credential.boundTo, true],
-                [
-                  'Secret fields',
-                  Array.isArray(credential.secretFields)
-                    ? `${credential.secretFields.join(', ')} (resolved at runtime, never recorded)`
-                    : null,
-                ],
-              ]}
-            />
-          </Card>
-          <Card data-testid="evidence-server-tools-configured">
-            <CardTitle>Provider-run server tools</CardTitle>
-            <Rows rows={[['Configured', list(serverTools.configured)]]} />
-          </Card>
-          {isRecord(evidence.documentParsing) && (
-            <PdfParsingCard parsing={evidence.documentParsing} />
-          )}
-        </>
-      );
-    }
+    case 'configuration':
+      return null;
     case 'serverTools': {
       const citations = Array.isArray(evidence.citations)
         ? evidence.citations
@@ -191,9 +126,11 @@ const EvidenceCard: React.FC<EvidenceCardProps> = ({
         <Card data-testid="evidence-sandbox">
           <CardTitle>
             Sandbox
-            <Tag size="sm" type={fallback ? 'red' : 'green'}>
-              {fallback ? 'In-process fallback, no sandbox' : 'Daytona'}
-            </Tag>
+            {fallback && (
+              <Tag size="sm" type="red">
+                In-process fallback, no sandbox
+              </Tag>
+            )}
           </CardTitle>
           <Rows
             rows={[
@@ -214,19 +151,11 @@ const EvidenceCard: React.FC<EvidenceCardProps> = ({
     case 'a2a':
       return (
         <Card data-testid="evidence-a2a">
-          <CardTitle>
-            Remote A2A agent
-            <Tag size="sm" type="teal">
-              {text(evidence.authScheme) ?? 'no auth'}
-            </Tag>
-          </CardTitle>
+          <CardTitle>Remote A2A agent</CardTitle>
           <Rows
             rows={[
               ['Agent URL', evidence.agentUrl, true],
-              [
-                'Auth scheme',
-                `${text(evidence.authScheme)} (token never recorded)`,
-              ],
+              ['Auth scheme', text(evidence.authScheme)],
               ['Task ID', evidence.taskId, true],
               ['Task state', evidence.state],
               ['Polls', evidence.polls],
@@ -255,15 +184,10 @@ const EvidenceCard: React.FC<EvidenceCardProps> = ({
 
 const EvidenceCards: React.FC<{
   content: ContentItem[];
-  credentialBinding?: string | null;
-}> = ({content, credentialBinding}) => (
+}> = ({content}) => (
   <>
     {getContentEvidence(content).map((evidence, index) => (
-      <EvidenceCard
-        key={index}
-        evidence={evidence}
-        credentialBinding={credentialBinding}
-      />
+      <EvidenceCard key={index} evidence={evidence} />
     ))}
   </>
 );

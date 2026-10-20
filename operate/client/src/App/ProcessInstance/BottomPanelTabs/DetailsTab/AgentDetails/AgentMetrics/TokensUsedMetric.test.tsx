@@ -71,7 +71,7 @@ describe('<TokensUsedMetric />', () => {
     ).toBeNull();
   });
 
-  it('should hide reasoning and cache breakdown rows when they are 0', () => {
+  it('should show zero cache counts while hiding zero reasoning tokens', () => {
     render(
       <TokensUsedMetric
         inputTokens={4}
@@ -85,10 +85,9 @@ describe('<TokensUsedMetric />', () => {
 
     const container = screen.getByRole('article', {name: 'Tokens Used'});
     expect(within(container).queryByText('Reasoning')).not.toBeInTheDocument();
-    expect(within(container).queryByText('Cache read')).not.toBeInTheDocument();
-    expect(
-      within(container).queryByText('Cache write'),
-    ).not.toBeInTheDocument();
+    expect(within(container).getByText('Cache read')).toBeInTheDocument();
+    expect(within(container).getByText('Cache write')).toBeInTheDocument();
+    expect(within(container).getAllByText('0')).toHaveLength(2);
   });
 
   it('should show reasoning and cache breakdown rows when they are greater than 0', () => {

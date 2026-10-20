@@ -17,6 +17,23 @@ const ConversationContainer = styled.div`
   .cds--btn-set > .cds--btn {
     inline-size: auto;
   }
+
+  .agent-history-modal {
+    align-items: flex-start;
+    padding-block-start: 8vh;
+  }
+
+  .agent-history-modal .cds--modal-container {
+    max-block-size: 84vh;
+  }
+
+  .agent-history-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--cds-spacing-05);
+    margin-inline-end: var(--cds-spacing-07);
+  }
 `;
 
 const Messages = styled.div`
@@ -66,7 +83,28 @@ const ShowMoreButton = styled(Button)`
   align-self: center;
 `;
 
+const HistoryNavigation = styled.nav`
+  display: inline-flex;
+  align-items: center;
+  gap: var(--cds-spacing-02);
+  color: var(--cds-text-secondary);
+  font-size: var(--cds-label-01-font-size);
+  font-weight: var(--cds-label-01-font-weight);
+  white-space: nowrap;
+
+  [role='status'] {
+    min-inline-size: 4rem;
+    text-align: center;
+  }
+
+  button {
+    min-inline-size: 2rem;
+    padding: var(--cds-spacing-03);
+  }
+`;
+
 export {
+  HistoryNavigation,
   ConversationContainer,
   Messages,
   StatusHint,

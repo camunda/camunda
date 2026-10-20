@@ -10,6 +10,7 @@ import {useQuery} from '@tanstack/react-query';
 import {InlineLoading, InlineNotification} from '@carbon/react';
 import {queryKeys} from 'modules/queries/queryKeys';
 import {PreviewTextContent} from './styled';
+import {MarkdownMessage} from '../../BottomPanelTabs/DetailsTab/AgentDetails/ConversationMessage/MarkdownMessage';
 
 type PreviewTextProps = {
   src: string;
@@ -44,6 +45,14 @@ const PreviewText: React.FC<PreviewTextProps> = ({src, fileName}) => {
         hideCloseButton
         lowContrast
       />
+    );
+  }
+
+  if (/\.(md|markdown)$/i.test(fileName)) {
+    return (
+      <div aria-label={fileName}>
+        <MarkdownMessage content={data} />
+      </div>
     );
   }
 

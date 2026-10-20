@@ -160,6 +160,25 @@ describe('toDocumentInfo', () => {
     expect(result.type).toBe('text');
   });
 
+  it.each([
+    ['text/markdown', 'network-rules.md'],
+    ['text/x-markdown', 'SKILL.md'],
+    ['text/plain', 'SKILL.md'],
+    ['text/x-python', 'deadline.py'],
+    ['application/x-python-code', 'deadline.py'],
+    ['application/octet-stream', 'network-rules.MD'],
+    ['application/octet-stream', 'skill.markdown'],
+    ['application/octet-stream', 'deadline.PY'],
+  ])('should preview %s (%s) as text', (contentType, fileName) => {
+    const result = toDocumentInfo(
+      makeDocRef({
+        metadata: {...makeDocRef().metadata, contentType, fileName},
+      }),
+    );
+
+    expect(result.type).toBe('text');
+  });
+
   it('should map an unrecognized contentType to the unknown document type', () => {
     const result = toDocumentInfo(
       makeDocRef({

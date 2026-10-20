@@ -32,6 +32,21 @@ describe('StructuredValue format', () => {
     expect(parseStructuredText('{not json')).toBeNull();
   });
 
+  it('should remove document-only code wrappers without leaving empty backticks', () => {
+    expect(
+      stripDocumentTags(
+        'Investigate the claim.\n`<doc id="1" fileName="statement.pdf" />`\n`<doc id="2" fileName="SKILL.md" />`',
+      ),
+    ).toBe('Investigate the claim.');
+    expect(stripDocumentTags('``<doc id="1" />``')).toBe('');
+    expect(
+      stripDocumentTags('Use `deadline.py` with <doc id="1" /> here'),
+    ).toBe('Use `deadline.py` with  here');
+    expect(stripDocumentTags('`Keep <doc id="1" /> this text`')).toBe(
+      '`Keep  this text`',
+    );
+  });
+
   it('should humanize keys', () => {
     expect(humanizeKey('refundAmount')).toBe('Refund amount');
     expect(humanizeKey('taskId')).toBe('Task ID');

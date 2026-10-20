@@ -39,17 +39,14 @@ describe('<EvidenceCards />', () => {
     );
 
     const card = within(screen.getByTestId('evidence-document-parsing'));
-    expect(
-      card.getByText('file-parser plugin, provider-run'),
-    ).toBeInTheDocument();
+    expect(card.getByText('file-parser (provider-run)')).toBeInTheDocument();
     expect(card.getByText('native')).toBeInTheDocument();
     expect(card.getByText('statement-2026-09.pdf (doc-1)')).toBeInTheDocument();
   });
 
-  it('should render linked prompt, credential and server tool configuration', () => {
+  it('should not render modeling-time configuration as instance evidence', () => {
     render(
       <EvidenceCards
-        credentialBinding="=camunda.vars.env.cardDisputeLlm"
         content={[
           {
             contentType: 'OBJECT',
@@ -76,21 +73,13 @@ describe('<EvidenceCards />', () => {
       />,
     );
 
-    const prompt = within(screen.getByTestId('evidence-system-prompt'));
-    expect(prompt.getByText('card-dispute-analyst')).toBeInTheDocument();
-    expect(prompt.getByText('2251799813690001')).toBeInTheDocument();
-    const credential = within(screen.getByTestId('evidence-credential'));
     expect(
-      credential.getByText('=camunda.vars.env.cardDisputeLlm'),
-    ).toBeInTheDocument();
+      screen.queryByTestId('evidence-system-prompt'),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByTestId('evidence-credential')).not.toBeInTheDocument();
     expect(
-      credential.getByText('apiKey (resolved at runtime, never recorded)'),
-    ).toBeInTheDocument();
-    expect(
-      within(screen.getByTestId('evidence-server-tools-configured')).getByText(
-        'none',
-      ),
-    ).toBeInTheDocument();
+      screen.queryByTestId('evidence-server-tools-configured'),
+    ).not.toBeInTheDocument();
   });
 
   it('should flag the in-process sandbox fallback', () => {
@@ -146,7 +135,8 @@ describe('<EvidenceCards />', () => {
     const a2a = within(screen.getByTestId('evidence-a2a'));
     expect(a2a.getByText('task-1')).toBeInTheDocument();
     expect(a2a.getByText('TASK_STATE_COMPLETED')).toBeInTheDocument();
-    expect(a2a.getByText('bearer (token never recorded)')).toBeInTheDocument();
+    expect(a2a.getAllByText('bearer')).toHaveLength(1);
+    expect(a2a.queryByText(/never recorded/)).not.toBeInTheDocument();
   });
 
   it('should only treat evidence wrappers as evidence-only content', () => {
@@ -159,5 +149,31 @@ describe('<EvidenceCards />', () => {
         object: {answer: 'yes', evidence: {kind: 'a2a'}},
       }),
     ).toBe(false);
+  });
+
+  it('should not duplicate configured provider capabilities in conversation cards', () => {
+    render(
+      <EvidenceCards
+        content={[
+          {
+            contentType: 'OBJECT',
+            object: {
+              evidence: {
+                kind: 'configuration',
+                serverTools: {configured: []},
+                documentParsing: {plugin: 'file-parser', pdfEngine: 'native'},
+              },
+            },
+          },
+        ]}
+      />,
+    );
+
+    expect(
+      screen.queryByTestId('evidence-server-tools-configured'),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByTestId('evidence-document-parsing'),
+    ).not.toBeInTheDocument();
   });
 });
