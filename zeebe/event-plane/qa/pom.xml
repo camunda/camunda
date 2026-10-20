@@ -36,6 +36,24 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
+      <artifactId>zeebe-event-plane-consumer</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-event-plane-maintenance</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-event-plane-service</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
       <artifactId>zeebe-qa-util</artifactId>
       <scope>test</scope>
     </dependency>
