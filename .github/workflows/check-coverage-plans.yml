@@ -17,8 +17,10 @@ on:
   pull_request:
     paths:
       - 'qa/**'
+      - 'configuration/src/main/**'
       - 'configuration/src/test/**'
       - 'operate/client/**'
+      - 'service/src/main/**'
       - 'service/src/test/**'
       - 'webapp/client/**'
       - '.github/scripts/coverage-plan-check/**'
@@ -46,6 +48,15 @@ on:
   # Kept deliberately broad: `webapp/client/**` rather than the
   # `webapp/client/apps/**` the paths strictly imply. Narrowing to exactly
   # what today's plans reference buys nothing and misses the next one.
+  #
+  # The `src/main/**` entries are NOT referenced by any plan, and are here
+  # anyway. The planned-case report below matches a Maven test package against
+  # the main package it mirrors, so the pull request it most wants to speak to
+  # -- one that changes AuditLog.java and has no test yet -- touches only main
+  # sources. Deriving this list from the plans alone left that pull request
+  # starting no run at all, so the report advertised a match it could never
+  # make. Whatever a plan points at under `<module>/src/test/`, the matching
+  # `<module>/src/main/` belongs here too.
   push:
     branches:
       - main
@@ -134,6 +145,52 @@ jobs:
               echo 'as fact.'
             fi
           } >> "$GITHUB_STEP_SUMMARY"
+
+      # Reporting, not gating. The validator above fails a pull request that
+      # claims coverage it does not have; this says the opposite thing -- here
+      # is coverage a reviewed plan asks for and nobody has written yet, in
+      # files you are touching right now.
+      #
+      # It exists because of WHEN generation fires. A plan is only drafted once
+      # its epic reaches Validate, and tests are only generated once a person
+      # merges that plan -- both after the code was written. A unit or
+      # component case then lands in a generated pull request weeks later,
+      # against a file whose author has moved on. Those two levels are the ones
+      # the author should write, because they wrote the code; this tells them
+      # while they still have the change in their head.
+      #
+      # Pull-request runs only. On push, schedule and dispatch there is no
+      # changed-file set to be relevant to, and a section listing every
+      # outstanding case in the repository is the noise that gets a check
+      # muted.
+      - name: List the planned cases this pull request's files own
+        if: github.event_name == 'pull_request'
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          # `git diff --name-only` over the merge base rather than the GitHub
+          # API: the checkout is already here, it needs no token, and it does
+          # not page at 300 files the way the files endpoint does.
+          #
+          # actions/checkout fetches one commit by default, so neither sha is
+          # necessarily present. Fetch both and let the diff find their merge
+          # base; a shallow clone can lack one, which is why the fallback
+          # below reports nothing rather than diffing against the wrong tree.
+          git fetch --no-tags --depth=100 origin "$BASE_SHA" "$HEAD_SHA" 2>/dev/null || true
+          if ! base=$(git merge-base "$BASE_SHA" "$HEAD_SHA" 2>/dev/null); then
+            echo "::notice::could not find the merge base, so no planned-case report"
+            exit 0
+          fi
+          git diff --name-only "$base" "$HEAD_SHA" > "$RUNNER_TEMP/changed.txt"
+          echo "Changed files: $(wc -l < "$RUNNER_TEMP/changed.txt")"
+
+          # Never fails the job. A plan is a plan, not a contract, and a case
+          # may be deliberately deferred -- gating on one would be answered by
+          # deleting the line from the plan, which is the opposite of what the
+          # plan is for.
+          node "$CHECK_DIR/planned-for-paths.mjs" qa/coverage "$RUNNER_TEMP/changed.txt" \
+            >> "$GITHUB_STEP_SUMMARY"
 
       - name: Observe build status
         if: always()
