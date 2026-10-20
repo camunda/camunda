@@ -60,9 +60,9 @@ public class EmbeddedOptimizeExtension
 
   private static final ObjectMapper configObjectMapper =
       new ObjectMapper().registerModules(new JavaTimeModule(), new Jdk8Module());
-  private static String serializedDefaultConfiguration;
   private static final Logger LOG =
       org.slf4j.LoggerFactory.getLogger(EmbeddedOptimizeExtension.class);
+  private String serializedDefaultConfiguration;
   private final boolean beforeAllMode;
   private ApplicationContext applicationContext;
   private OptimizeRequestExecutor requestExecutor;
@@ -83,15 +83,15 @@ public class EmbeddedOptimizeExtension
   @Override
   public void beforeAll(final ExtensionContext extensionContext) {
     setApplicationContext(SpringExtension.getApplicationContext(extensionContext));
-    if (serializedDefaultConfiguration == null) {
-      // store the default configuration to restore it later
-      try {
-        serializedDefaultConfiguration =
-            configObjectMapper.writeValueAsString(getConfigurationService());
-      } catch (final JsonProcessingException e) {
-        throw new OptimizeRuntimeException(e);
-      }
+
+    // store the default configuration to restore it later
+    try {
+      serializedDefaultConfiguration =
+          configObjectMapper.writeValueAsString(getConfigurationService());
+    } catch (final JsonProcessingException e) {
+      throw new OptimizeRuntimeException(e);
     }
+
     if (beforeAllMode) {
       setupOptimize();
     }
