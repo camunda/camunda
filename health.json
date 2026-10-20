@@ -12,12 +12,5 @@
       "start_day": "2026-10-16",
       "alerted_at": 1792396770
     }
-  },
-  "c8-orchestration-cluster-nightly-main-api-rdbms.yml": {
-    "streak": {
-      "start_run": "38991944895",
-      "start_day": "2026-10-17",
-      "alerted_at": 1792396770
-    }
   }
 }
