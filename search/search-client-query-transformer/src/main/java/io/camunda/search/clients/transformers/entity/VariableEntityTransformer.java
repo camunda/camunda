@@ -9,6 +9,11 @@ package io.camunda.search.clients.transformers.entity;
 
 import io.camunda.search.clients.transformers.ServiceTransformer;
 import io.camunda.search.entities.VariableEntity;
+import io.camunda.search.entities.VariableEntity.ProtectionMode;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 public class VariableEntityTransformer
     implements ServiceTransformer<
@@ -26,6 +31,17 @@ public class VariableEntityTransformer
         source.getProcessInstanceKey(),
         source.getRootProcessInstanceKey(),
         source.getBpmnProcessId(),
-        source.getTenantId());
+        source.getTenantId(),
+        toProtectionModes(source.getProtectionModes()));
+  }
+
+  private static Set<ProtectionMode> toProtectionModes(
+      final Collection<? extends Enum<?>> sourceModes) {
+    if (sourceModes == null) {
+      return null;
+    }
+    return sourceModes.stream()
+        .map(mode -> ProtectionMode.valueOf(mode.name()))
+        .collect(Collectors.toCollection(HashSet::new));
   }
 }
