@@ -138,7 +138,7 @@ public class ResourceDeletionRejectionTest {
   }
 
   @Test
-  public void shouldRejectSecondDeletionOfDrainingProcess() {
+  public void shouldAcceptSecondDeletionOfDrainingProcessWithoutRestartingIt() {
     // given - a definition that is draining because it still has a running instance
     final var processId = helper.getBpmnProcessId();
     final var processDefinitionKey = deployProcess(processId);
@@ -150,16 +150,29 @@ public class ResourceDeletionRejectionTest {
         .await();
 
     // when - the same definition is deleted a second time while still draining
-    final var rejection =
-        engine.resourceDeletion().withResourceKey(processDefinitionKey).expectRejection().delete();
+    final var repeat = engine.resourceDeletion().withResourceKey(processDefinitionKey).delete();
 
-    // then - the repeated deletion is rejected as already-being-deleted, not re-marked draining
-    assertThat(rejection)
-        .describedAs("a draining definition reports it is already being deleted")
-        .hasRejectionType(RejectionType.INVALID_STATE)
-        .hasRejectionReason(
-            "Expected to delete process definition with key `%d`, but it is already being deleted."
-                .formatted(processDefinitionKey));
+    // then - accepted without effect: no deletion is started for the repeat and the definition is
+    // not finalized, so it stays draining until its instance ends
+    assertThat(repeat.getIntent()).isEqualTo(ResourceDeletionIntent.DELETED);
+    assertThat(
+            RecordingExporter.<Boolean>expectNoMatchingRecords(
+                records ->
+                    RecordingExporter.resourceDeletionRecords()
+                        .withIntent(ResourceDeletionIntent.DELETING)
+                        .withRecordKey(repeat.getKey())
+                        .exists()))
+        .describedAs("a repeated delete on a draining definition must not start a deletion")
+        .isFalse();
+    assertThat(
+            RecordingExporter.<Boolean>expectNoMatchingRecords(
+                records ->
+                    RecordingExporter.processRecords()
+                        .withIntent(ProcessIntent.DELETED)
+                        .withProcessDefinitionKey(processDefinitionKey)
+                        .exists()))
+        .describedAs("the definition must stay draining after the repeated delete")
+        .isFalse();
   }
 
   private long deployProcess(final String processId) {
