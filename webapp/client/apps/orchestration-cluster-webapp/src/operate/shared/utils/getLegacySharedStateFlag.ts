@@ -12,7 +12,9 @@ type LegacySharedStateFlag =
 	| 'hideMoveModificationHelperModal'
 	| 'hideMigrationHelperModal'
 	| 'hideModificationHelperModal'
-	| 'hideProcessInstanceHelperModal';
+	| 'hideProcessInstanceHelperModal'
+	| 'hideInputMappingsHelperBanner'
+	| 'hideOutputMappingsHelperBanner';
 
 function getLegacySharedStateFlag(key: LegacySharedStateFlag) {
 	try {

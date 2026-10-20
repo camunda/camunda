@@ -24,6 +24,9 @@ const TAB_PATHS = {
 	incidents: '/operate/processes/$processInstanceId/incidents',
 	details: '/operate/processes/$processInstanceId/details',
 	variables: '/operate/processes/$processInstanceId/variables',
+	inputMappings: '/operate/processes/$processInstanceId/input-mappings',
+	outputMappings: '/operate/processes/$processInstanceId/output-mappings',
+	listeners: '/operate/processes/$processInstanceId/listeners',
 	'operations-log': '/operate/processes/$processInstanceId/operations-log',
 } as const;
 
@@ -72,6 +75,9 @@ const ProcessInstanceTabs: React.FC<{isHistoryTabVisible: boolean}> = ({isHistor
 			visible: hasSelection || isProcessLevelWaiting,
 		},
 		{key: 'variables', label: t('operate.processInstance.history.variables'), visible: true},
+		{key: 'inputMappings', label: t('operate.processInstance.history.inputMappings'), visible: hasSelection},
+		{key: 'outputMappings', label: t('operate.processInstance.history.outputMappings'), visible: hasSelection},
+		{key: 'listeners', label: t('operate.processInstance.history.listeners'), visible: true},
 		{key: 'operations-log', label: t('operate.processInstance.history.operationsLog'), visible: true},
 	];
 

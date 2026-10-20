@@ -48,4 +48,19 @@ function createQueryJobsResponse(items: Job[] = []): QueryJobsResponseBody {
 	});
 }
 
-export {createJob, createQueryJobsResponse};
+function createListenerJob(overrides?: Partial<Job>): Job {
+	return createJob({
+		type: 'io.camunda:execution-listener',
+		state: 'COMPLETED',
+		kind: 'EXECUTION_LISTENER',
+		listenerEventType: 'START',
+		elementId: 'user-task',
+		worker: 'worker-1',
+		priority: 0,
+		isDenied: false,
+		endTime: '2026-01-15T10:05:00.000Z',
+		...overrides,
+	});
+}
+
+export {createJob, createListenerJob, createQueryJobsResponse};

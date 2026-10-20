@@ -204,6 +204,39 @@ describe('<ProcessInstanceTabs />', () => {
 		expect(screen.router.state.location.search).toEqual({tenant: 'tenant-a'});
 	});
 
+	it('should show Listeners but hide the mappings tabs when no element is selected', async ({worker}) => {
+		worker.use(waitStates());
+		const screen = await renderTabs({initialEntry: 'listeners'});
+
+		await expect.element(screen.getByRole('link', {name: 'Listeners'})).toHaveAttribute('aria-current', 'page');
+		await expect.element(screen.getByRole('link', {name: 'Input Mappings'})).not.toBeInTheDocument();
+		await expect.element(screen.getByRole('link', {name: 'Output Mappings'})).not.toBeInTheDocument();
+	});
+
+	it('should show the mappings tabs when an element is selected', async ({worker}) => {
+		worker.use(
+			waitStates(),
+			mockQueryElementInstancesEndpoint({
+				successResponse: HttpResponse.json(createQueryElementInstancesResponse([], 2)),
+			}),
+		);
+		const screen = await renderTabs({initialEntry: 'input-mappings?elementId=user-task'});
+
+		await expect.element(screen.getByRole('link', {name: 'Input Mappings'})).toHaveAttribute('aria-current', 'page');
+		await expect.element(screen.getByRole('link', {name: 'Output Mappings'})).toBeVisible();
+		await expect.element(screen.getByRole('link', {name: 'Listeners'})).toBeVisible();
+	});
+
+	it('should redirect hidden mappings tabs to Variables', async ({worker}) => {
+		worker.use(waitStates());
+		const screen = await renderTabs({initialEntry: 'output-mappings?tenant=tenant-a'});
+
+		await expect
+			.poll(() => screen.router.state.location.pathname)
+			.toBe(`/operate/processes/${PROCESS_INSTANCE_ID}/variables`);
+		expect(screen.router.state.location.search).toEqual({tenant: 'tenant-a'});
+	});
+
 	it('should redirect a hidden Incidents tab to Details when the process is waiting', async ({worker}) => {
 		const processInstance = createProcessInstance({processInstanceKey: PROCESS_INSTANCE_ID, hasIncident: true});
 		worker.use(
