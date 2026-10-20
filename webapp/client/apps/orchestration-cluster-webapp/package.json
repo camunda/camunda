@@ -61,13 +61,13 @@
 		"react-error-boundary": "6.1.6",
 		"react-final-form": "7.0.1",
 		"react-final-form-arrays": "5.0.0",
-		"react-i18next": "17.0.20",
+		"react-i18next": "17.0.21",
 		"react-transition-group": "4.4.5",
 		"sass": "1.105.2",
 		"styled-components": "6.5.3",
 		"tailwind-merge": "3.7.0",
 		"tailwindcss": "4.3.3",
-		"xstate": "5.33.2",
+		"xstate": "5.33.3",
 		"zod": "4.6.7"
 	},
 	"devDependencies": {
