@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="https://www.omg.org/spec/DMN/20191111/MODEL/" xmlns:dmndi="https://www.omg.org/spec/DMN/20191111/DMNDI/" xmlns:dc="http://www.omg.org/spec/DMN/20180521/DC/" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="supplier-risk-definitions" name="Supplier risk" namespace="http://camunda.org/schema/1.0/dmn" exporter="Camunda Modeler" exporterVersion="5.40.0" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.11.0">
+  <decision id="supplier-risk" name="Classify the supplier risk">
+    <decisionTable id="supplier-risk-table" hitPolicy="FIRST">
+      <input id="input-annual-spend" label="Annual spend (EUR)">
+        <inputExpression id="input-annual-spend-expression" typeRef="number">
+          <text>annualSpend</text>
+        </inputExpression>
+      </input>
+      <input id="input-category" label="Category">
+        <inputExpression id="input-category-expression" typeRef="string">
+          <text>category</text>
+        </inputExpression>
+      </input>
+      <output id="output-risk-level" label="Risk level" name="riskLevel" typeRef="string" />
+      <rule id="rule-large-spend">
+        <description>Any supplier with a large spend</description>
+        <inputEntry id="rule-large-spend-spend"><text>&gt;= 1000000</text></inputEntry>
+        <inputEntry id="rule-large-spend-category"><text>-</text></inputEntry>
+        <outputEntry id="rule-large-spend-output"><text>"high"</text></outputEntry>
+      </rule>
+      <rule id="rule-critical-category">
+        <description>Critical supply chain categories</description>
+        <inputEntry id="rule-critical-category-spend"><text>&gt;= 100000</text></inputEntry>
+        <inputEntry id="rule-critical-category-category"><text>"Raw materials","Logistics"</text></inputEntry>
+        <outputEntry id="rule-critical-category-output"><text>"high"</text></outputEntry>
+      </rule>
+      <rule id="rule-medium-spend">
+        <inputEntry id="rule-medium-spend-spend"><text>&gt;= 100000</text></inputEntry>
+        <inputEntry id="rule-medium-spend-category"><text>-</text></inputEntry>
+        <outputEntry id="rule-medium-spend-output"><text>"medium"</text></outputEntry>
+      </rule>
+      <rule id="rule-default">
+        <inputEntry id="rule-default-spend"><text>-</text></inputEntry>
+        <inputEntry id="rule-default-category"><text>-</text></inputEntry>
+        <outputEntry id="rule-default-output"><text>"low"</text></outputEntry>
+      </rule>
+    </decisionTable>
+  </decision>
+  <dmndi:DMNDI>
+    <dmndi:DMNDiagram id="supplier-risk-diagram">
+      <dmndi:DMNShape id="supplier-risk-shape" dmnElementRef="supplier-risk">
+        <dc:Bounds height="80" width="180" x="160" y="100" />
+      </dmndi:DMNShape>
+    </dmndi:DMNDiagram>
+  </dmndi:DMNDI>
+</definitions>

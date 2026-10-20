@@ -1,0 +1,41 @@
+{
+  "executionPlatform": "Camunda Cloud",
+  "executionPlatformVersion": "8.11.0",
+  "exporter": {
+    "name": "Camunda Modeler",
+    "version": "5.40.0"
+  },
+  "schemaVersion": 18,
+  "id": "estimate-credit-risk",
+  "type": "default",
+  "components": [
+    {
+      "type": "text",
+      "text": "### The credit report did not arrive in time: estimate the credit risk",
+      "id": "Text_411"
+    },
+    {
+      "type": "textfield",
+      "key": "supplierName",
+      "label": "Supplier",
+      "id": "Field_supplierName_412",
+      "readonly": true
+    },
+    {
+      "type": "number",
+      "key": "creditLimit",
+      "label": "Credit limit (EUR)",
+      "id": "Field_creditLimit_413",
+      "validate": {
+        "required": true,
+        "min": 0
+      }
+    },
+    {
+      "type": "textarea",
+      "key": "creditNotes",
+      "label": "How you estimated it",
+      "id": "Field_creditNotes_414"
+    }
+  ]
+}

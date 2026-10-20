@@ -9,7 +9,7 @@
 /* global process, Buffer */
 
 // Deploys the demo case models and starts cases in different situations.
-// Usage: node seed.mjs [--deploy-only] [--only=loan|claim|onboarding|address]
+// Usage: node seed.mjs [--deploy-only] [--only=loan|claim|onboarding|supplier|address]
 // Environment: CAMUNDA_URL (default http://localhost:8080), CAMUNDA_USER / CAMUNDA_PASSWORD (default demo / demo)
 
 import {readFile, readdir} from 'node:fs/promises';
@@ -60,18 +60,29 @@ async function poll(description, check) {
 }
 
 async function deploy() {
+	const models = await readdir(DIRECTORY);
+	// The forms and decisions go first, so the processes that use them find them.
 	const files = [
-		...(await readdir(DIRECTORY)).filter((file) => file.endsWith('.bpmn')).map((file) => join(DIRECTORY, file)),
 		...(await readdir(join(DIRECTORY, 'forms'))).map((file) => join(DIRECTORY, 'forms', file)),
+		...models.filter((file) => file.endsWith('.dmn')).map((file) => join(DIRECTORY, file)),
+		...models.filter((file) => file.endsWith('.bpmn')).map((file) => join(DIRECTORY, file)),
 	];
-	const form = new FormData();
+	// The server rejects a request with too many parts, so the seed deploys in batches.
+	const BATCH_SIZE = 25;
+	let count = 0;
 
-	for (const file of files) {
-		form.append('resources', new Blob([await readFile(file)]), basename(file));
+	for (let start = 0; start < files.length; start += BATCH_SIZE) {
+		const form = new FormData();
+
+		for (const file of files.slice(start, start + BATCH_SIZE)) {
+			form.append('resources', new Blob([await readFile(file)]), basename(file));
+		}
+
+		const {deployments} = await api('POST', '/deployments', form);
+		count += deployments.length;
 	}
 
-	const {deployments} = await api('POST', '/deployments', form);
-	console.log(`Deployed ${deployments.length} resources`);
+	console.log(`Deployed ${count} resources`);
 }
 
 async function uploadDocument(fileName, content) {
@@ -93,7 +104,7 @@ async function startCase(processDefinitionId, businessId, variables, label) {
 		variables,
 	});
 	console.log(
-		`${(businessId ?? '(no business ID)').padEnd(16)} ${label.padEnd(58)} ${WEBAPP_URL}/tasklist/cases/${processInstanceKey}`,
+		`${(businessId ?? '(no business ID)').padEnd(16)} ${label.padEnd(70)} ${WEBAPP_URL}/tasklist/cases/${processInstanceKey}`,
 	);
 	return processInstanceKey;
 }
@@ -120,6 +131,47 @@ async function waitForElement(processInstanceKey, elementId) {
 }
 
 const correlate = (name, correlationKey) => api('POST', '/messages/correlation', {name, correlationKey});
+
+/**
+ * Plays the job worker for one case: activates jobs of the type until it gets the one of this case. Jobs of
+ * other cases come back after the short timeout, so a case that should wait for a system keeps its job.
+ */
+async function activateJob(processInstanceKey, type) {
+	return poll(`job ${type} in ${processInstanceKey}`, async () => {
+		const {jobs} = await api('POST', '/jobs/activation', {
+			type,
+			worker: 'case-demo-seed',
+			timeout: 2000,
+			maxJobsToActivate: 50,
+			requestTimeout: 500,
+		});
+		return jobs.find((job) => job.processInstanceKey === processInstanceKey);
+	});
+}
+
+const leaseOf = ({jobLeaseToken}) => (jobLeaseToken ? {jobLeaseToken} : {});
+
+async function completeJob(processInstanceKey, type, variables = {}) {
+	const job = await activateJob(processInstanceKey, type);
+	await api('POST', `/jobs/${job.jobKey}/completion`, {variables, ...leaseOf(job)});
+}
+
+async function throwJobError(processInstanceKey, type, errorCode, errorMessage) {
+	const job = await activateJob(processInstanceKey, type);
+	await api('POST', `/jobs/${job.jobKey}/error`, {errorCode, errorMessage, ...leaseOf(job)});
+}
+
+async function failJob(processInstanceKey, type, errorMessage) {
+	const job = await activateJob(processInstanceKey, type);
+	await api('POST', `/jobs/${job.jobKey}/failure`, {retries: 0, errorMessage, ...leaseOf(job)});
+}
+
+async function activateAdHocActivity(processInstanceKey, stageElementId, elementId) {
+	const stage = await waitForElement(processInstanceKey, stageElementId);
+	await api('POST', `/element-instances/ad-hoc-activities/${stage.elementInstanceKey}/activation`, {
+		elements: [{elementId}],
+	});
+}
 
 // Loan cases: one case marker, five stages, an ad-hoc stage with manual completion, an alternative stage.
 async function seedLoans(documents) {
@@ -354,6 +406,178 @@ async function seedOnboardings() {
 	await correlate('offer-declined', `ON-${RUN_ID}-07`);
 }
 
+// Supplier onboarding: stages that mix people and automation. The seed plays the job workers, so each
+// case stops where a system or a timer holds it.
+async function seedSuppliers() {
+	const supplierIds = new Map();
+	const supplier = async (number, supplierName, country, category, annualSpend, label, overrides = {}) => {
+		const supplierId = `SO-${RUN_ID}-${number}`;
+		const key = await startCase(
+			'supplier-onboarding',
+			supplierId,
+			{
+				supplierId,
+				supplierTitle: `Supplier ${supplierName}, ${category}`,
+				supplierName,
+				country,
+				category,
+				annualSpend,
+				requester: 'demo',
+				creditReportTimeout: 'P2D',
+				signatureReminder: 'P3D',
+				firstOrderWait: 'P14D',
+				...overrides,
+			},
+			label,
+		);
+		supplierIds.set(key, supplierId);
+		return key;
+	};
+	const register = (key, name) =>
+		completeTask(key, 'register-supplier', {
+			vatNumber: `DE${Math.floor(100000000 + Math.random() * 899999999)}`,
+			contactEmail: `orders@${name.toLowerCase().replace(/\W+/g, '-')}.example.com`,
+			servicesDescription: 'Supplies parts for the assembly line.',
+		});
+	const registration = async (key, name) => {
+		await register(key, name);
+		await completeJob(key, 'sanctions-check', {sanctionsChecked: true});
+	};
+	const dueDiligence = async (key) => {
+		await completeTask(key, 'review-risk', {riskAccepted: 'accepted', riskNotes: 'Known supplier in the region.'});
+		await completeJob(key, 'credit-report', {creditLimit: 250000});
+	};
+	const contract = async (key) => {
+		await completeTask(key, 'negotiate-terms', {paymentTerms: 'net-60', discountPercent: 3});
+		await completeTask(key, 'sign-contract', {contractSigned: true});
+		await waitForElement(key, 'contract-countersigned');
+		await correlate('contract-countersigned', supplierIds.get(key));
+	};
+
+	await supplier('01', 'Nordwerk GmbH', 'Germany', 'Packaging', 45000, 'Supplier: new, Registration step 1');
+
+	const sanctions = await supplier(
+		'02',
+		'Baltic Freight AS',
+		'Estonia',
+		'Logistics',
+		320000,
+		'Supplier: waiting on the sanctions check (service task)',
+	);
+	await register(sanctions, 'Baltic Freight AS');
+
+	const blocked = await supplier(
+		'03',
+		'Orion Trading Ltd',
+		'Cyprus',
+		'Electronics',
+		80000,
+		'Supplier: sanctions hit (alternative stage from a BPMN error)',
+	);
+	await register(blocked, 'Orion Trading Ltd');
+	await throwJobError(blocked, 'sanctions-check', 'SANCTIONS_HIT', 'The supplier is on the EU sanctions list.');
+
+	const diligence = await supplier(
+		'04',
+		'Atlas Metals SA',
+		'Spain',
+		'Raw materials',
+		640000,
+		'Supplier: Due diligence, credit report running (rules: high risk)',
+	);
+	await registration(diligence, 'Atlas Metals SA');
+
+	const timeout = await supplier(
+		'05',
+		'Lumen Print Oy',
+		'Finland',
+		'Marketing',
+		30000,
+		'Supplier: credit report times out after 1 minute (boundary timer)',
+		{creditReportTimeout: 'PT1M'},
+	);
+	await registration(timeout, 'Lumen Print Oy');
+
+	const esg = await supplier(
+		'06',
+		'Verde Energia SpA',
+		'Italy',
+		'Energy',
+		1200000,
+		'Supplier: optional ESG rating running (ad-hoc service task)',
+	);
+	await registration(esg, 'Verde Energia SpA');
+	// The ad-hoc stage completes once nothing runs in it, so the optional activity starts first.
+	await activateAdHocActivity(esg, 'due-diligence', 'request-esg-rating');
+	await dueDiligence(esg);
+
+	const reminder = await supplier(
+		'07',
+		'Kestrel Tools BV',
+		'Netherlands',
+		'Tools',
+		150000,
+		'Supplier: Contract, reminder after 1 minute (non-interrupting timer)',
+		{signatureReminder: 'PT1M'},
+	);
+	await registration(reminder, 'Kestrel Tools BV');
+	await dueDiligence(reminder);
+	await completeTask(reminder, 'negotiate-terms', {paymentTerms: 'net-30', discountPercent: 0});
+
+	const countersign = await supplier(
+		'08',
+		'Fjord Textiles AS',
+		'Norway',
+		'Textiles',
+		95000,
+		'Supplier: waiting for the countersigned contract (message)',
+	);
+	await registration(countersign, 'Fjord Textiles AS');
+	await dueDiligence(countersign);
+	await completeTask(countersign, 'negotiate-terms', {paymentTerms: 'net-60', discountPercent: 2});
+	await completeTask(countersign, 'sign-contract', {contractSigned: true});
+
+	const firstOrder = await supplier(
+		'09',
+		'Helios Components Kft',
+		'Hungary',
+		'Electronics',
+		210000,
+		'Supplier: Activation, waiting 14 days for the first order (timer)',
+	);
+	await registration(firstOrder, 'Helios Components Kft');
+	await dueDiligence(firstOrder);
+	await contract(firstOrder);
+	await completeJob(firstOrder, 'erp-create-supplier', {erpSupplierNumber: 'V-100481'});
+
+	const erpIncident = await supplier(
+		'10',
+		'Pacific Rim Plastics Ltd',
+		'Ireland',
+		'Plastics',
+		180000,
+		'Supplier: incident, the ERP rejected the supplier (failed job)',
+	);
+	await registration(erpIncident, 'Pacific Rim Plastics Ltd');
+	await dueDiligence(erpIncident);
+	await contract(erpIncident);
+	await failJob(erpIncident, 'erp-create-supplier', 'ERP: the VAT number is already assigned to vendor V-099120.');
+
+	const ordered = await supplier(
+		'11',
+		'Alpine Coffee AG',
+		'Switzerland',
+		'Catering',
+		24000,
+		'Supplier: first order due after 1 minute, then Review the first order',
+		{firstOrderWait: 'PT1M'},
+	);
+	await registration(ordered, 'Alpine Coffee AG');
+	await dueDiligence(ordered);
+	await contract(ordered);
+	await completeJob(ordered, 'erp-create-supplier', {erpSupplierNumber: 'V-100502'});
+}
+
 // A process without a case marker: the case page shows it without stages.
 async function seedAddressChange() {
 	await startCase(
@@ -388,6 +612,10 @@ async function main() {
 
 	if (ONLY === undefined || ONLY === 'onboarding') {
 		await seedOnboardings();
+	}
+
+	if (ONLY === undefined || ONLY === 'supplier') {
+		await seedSuppliers();
 	}
 
 	if (ONLY === undefined || ONLY === 'address') {

@@ -1,0 +1,38 @@
+{
+  "executionPlatform": "Camunda Cloud",
+  "executionPlatformVersion": "8.11.0",
+  "exporter": {
+    "name": "Camunda Modeler",
+    "version": "5.40.0"
+  },
+  "schemaVersion": 18,
+  "id": "remind-supplier",
+  "type": "default",
+  "components": [
+    {
+      "type": "text",
+      "text": "### The supplier has not countersigned yet: remind them",
+      "id": "Text_427"
+    },
+    {
+      "type": "textfield",
+      "key": "supplierName",
+      "label": "Supplier",
+      "id": "Field_supplierName_428",
+      "readonly": true
+    },
+    {
+      "type": "textfield",
+      "key": "contactEmail",
+      "label": "Contact email",
+      "id": "Field_contactEmail_429",
+      "readonly": true
+    },
+    {
+      "type": "textarea",
+      "key": "reminderNotes",
+      "label": "What you told the supplier",
+      "id": "Field_reminderNotes_430"
+    }
+  ]
+}
