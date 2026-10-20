@@ -21,6 +21,7 @@ import {
 	type QueryAgentInstancesRequestBody,
 	type QueryProcessInstanceIncidentsRequestBody,
 	type QueryElementInstanceIncidentsRequestBody,
+	type UpdateJobRequestBody,
 	type CancelProcessInstanceRequestBody,
 	type DeleteProcessInstanceRequestBody,
 	type SuspendProcessInstanceRequestBody,
@@ -415,6 +416,26 @@ const endpoints = {
 		new Request(getFullURL(unifiedAPIEndpoints.queryElementInstanceIncidents.getUrl({elementInstanceKey})), {
 			...BASE_REQUEST_OPTIONS,
 			method: unifiedAPIEndpoints.queryElementInstanceIncidents.method,
+			body: JSON.stringify(body),
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	resolveIncident: (incidentKey: string) =>
+		new Request(getFullURL(unifiedAPIEndpoints.resolveIncident.getUrl({incidentKey})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.resolveIncident.method,
+		}),
+
+	getIncident: (incidentKey: string) =>
+		new Request(getFullURL(unifiedAPIEndpoints.getIncident.getUrl({incidentKey})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.getIncident.method,
+		}),
+
+	updateJob: (jobKey: string, body: UpdateJobRequestBody) =>
+		new Request(getFullURL(unifiedAPIEndpoints.updateJob.getUrl({jobKey})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.updateJob.method,
 			body: JSON.stringify(body),
 			headers: {'Content-Type': 'application/json'},
 		}),

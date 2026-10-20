@@ -196,6 +196,21 @@ const mockQueryDecisionDefinitionsEndpoint = createEndpointMock({
 	method: endpoints.queryDecisionDefinitions.method,
 });
 
+const mockResolveIncidentEndpoint = createEndpointMock({
+	endpoint: endpoints.resolveIncident.getUrl({incidentKey: ':incidentKey'}),
+	method: endpoints.resolveIncident.method,
+});
+
+const mockGetIncidentEndpoint = createEndpointMock({
+	endpoint: endpoints.getIncident.getUrl({incidentKey: ':incidentKey'}),
+	method: endpoints.getIncident.method,
+});
+
+const mockUpdateJobEndpoint = createEndpointMock({
+	endpoint: endpoints.updateJob.getUrl({jobKey: ':jobKey'}),
+	method: endpoints.updateJob.method,
+});
+
 const mockQueryDecisionInstancesEndpoint = createEndpointMock({
 	endpoint: endpoints.queryDecisionInstances.getUrl(),
 	method: endpoints.queryDecisionInstances.method,
@@ -675,6 +690,9 @@ export {
 	mockGetDecisionInstanceEndpoint,
 	mockQueryDecisionDefinitionsEndpoint,
 	mockQueryDecisionInstancesEndpoint,
+	mockResolveIncidentEndpoint,
+	mockGetIncidentEndpoint,
+	mockUpdateJobEndpoint,
 	mockCreateDecisionInstancesDeletionBatchOperationEndpoint,
 	mockGetDecisionDefinitionXmlEndpoint,
 	mockDeleteResourceEndpoint,

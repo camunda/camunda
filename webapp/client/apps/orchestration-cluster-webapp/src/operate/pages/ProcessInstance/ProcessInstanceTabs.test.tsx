@@ -168,6 +168,32 @@ describe('<ProcessInstanceTabs />', () => {
 		await expect.element(screen.getByRole('link', {name: 'Details'})).toBeVisible();
 	});
 
+	it('should keep Incidents for a selected element whose incident is in a child instance', async ({worker}) => {
+		const elementInstance = createElementInstance({
+			elementInstanceKey: '2251799813685299',
+			type: 'CALL_ACTIVITY',
+			hasIncident: true,
+		});
+		worker.use(
+			waitStates(),
+			mockGetElementInstanceEndpoint({successResponse: HttpResponse.json(elementInstance)}),
+			mockQueryElementInstanceIncidentsEndpoint({successResponse: incidentsCount(0)}),
+			mockQueryProcessInstanceIncidentsEndpoint({successResponse: incidentsCount(5)}),
+		);
+		const screen = await renderTabs({
+			initialEntry: `incidents?elementId=call&elementInstanceKey=${elementInstance.elementInstanceKey}`,
+			processInstance: createProcessInstance({processInstanceKey: PROCESS_INSTANCE_ID, hasIncident: true}),
+		});
+
+		await expect.element(screen.getByRole('link', {name: 'Details'})).toBeVisible();
+		await expect(
+			expect
+				.poll(() => screen.router.state.location.pathname, {timeout: 1000})
+				.toBe(`/operate/processes/${PROCESS_INSTANCE_ID}/details`),
+		).rejects.toThrow();
+		await expect.element(screen.getByRole('link', {name: 'Incidents 0'})).toHaveAttribute('aria-current', 'page');
+	});
+
 	it('should redirect a hidden Details tab to Variables', async ({worker}) => {
 		worker.use(waitStates());
 		const screen = await renderTabs({initialEntry: 'details?tenant=tenant-a'});

@@ -50,7 +50,7 @@ const ProcessInstanceTabs: React.FC<{isHistoryTabVisible: boolean}> = ({isHistor
 	const matchRoute = useMatchRoute();
 	const navigate = useNavigate();
 	const {processInstanceId, processInstance} = useProcessInstancePage();
-	const {hasSelection} = useProcessInstanceElementSelection();
+	const {hasSelection, resolvedElementInstance} = useProcessInstanceElementSelection();
 	const {data: waitStateStatistics} = useProcessInstanceWaitStateStatistics(processInstance);
 	const incidentsCount = useSelectionIncidentsCount(processInstance);
 	const isProcessLevelWaiting = hasProcessLevelWaitState(waitStateStatistics, processInstance.processDefinitionId);
@@ -60,7 +60,10 @@ const ProcessInstanceTabs: React.FC<{isHistoryTabVisible: boolean}> = ({isHistor
 		{
 			key: 'incidents',
 			label: t('operate.processInstance.history.incidents'),
-			visible: processInstance.hasIncident && (incidentsCount === undefined || incidentsCount > 0),
+			// A call activity or business rule task can have no incident of its own while the incident is below it.
+			visible:
+				processInstance.hasIncident &&
+				(incidentsCount === undefined || incidentsCount > 0 || resolvedElementInstance?.hasIncident === true),
 			tag: incidentsCount ?? 0,
 		},
 		{

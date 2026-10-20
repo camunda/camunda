@@ -20,6 +20,8 @@ import {endpoints} from '#/shared/http/endpoints';
 import {isInstanceRunning, shouldPollProcessInstance} from '#/operate/shared/utils/processInstance';
 
 const POLLING_INTERVAL_MS = 5000;
+const PROCESS_INSTANCE_INCIDENTS_COUNT_KEY = 'processInstanceIncidentsCount';
+const SELECTION_INCIDENTS_COUNT_KEY = 'selectionIncidentsCount';
 const historySort = [
 	{field: 'startDate', order: 'DESC'},
 	{field: 'elementInstanceKey', order: 'DESC'},
@@ -53,7 +55,7 @@ function processInstanceIncidentsCountQuery({
 	hasIncident,
 }: Pick<ProcessInstance, 'processInstanceKey' | 'hasIncident'>) {
 	return queryOptions({
-		queryKey: ['processInstanceIncidentsCount', processInstanceKey] as const,
+		queryKey: [PROCESS_INSTANCE_INCIDENTS_COUNT_KEY, processInstanceKey] as const,
 		enabled: hasIncident,
 		queryFn: async (): Promise<number> => {
 			const {response, error} = await request(
@@ -83,8 +85,8 @@ function selectionIncidentsCountQuery({
 	return queryOptions({
 		queryKey:
 			elementId === undefined && elementInstanceKey === undefined
-				? (['processInstanceIncidentsCount', processInstanceKey] as const)
-				: (['selectionIncidentsCount', processInstanceKey, elementId, elementInstanceKey] as const),
+				? ([PROCESS_INSTANCE_INCIDENTS_COUNT_KEY, processInstanceKey] as const)
+				: ([SELECTION_INCIDENTS_COUNT_KEY, processInstanceKey, elementId, elementInstanceKey] as const),
 		queryFn: async (): Promise<number> => {
 			const {response, error} = await request(
 				elementInstanceKey === undefined
@@ -147,6 +149,9 @@ function useProcessInstanceWaitStateStatistics(processInstance: ProcessInstance)
 }
 
 export {
+	POLLING_INTERVAL_MS,
+	PROCESS_INSTANCE_INCIDENTS_COUNT_KEY,
+	SELECTION_INCIDENTS_COUNT_KEY,
 	historySort,
 	instanceRequest,
 	processInstanceQuery,
