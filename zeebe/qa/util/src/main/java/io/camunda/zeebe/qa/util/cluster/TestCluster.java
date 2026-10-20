@@ -397,8 +397,12 @@ public final class TestCluster implements CloseableSilently {
 
   @Override
   public void close() {
-    //noinspection resource
-    shutdown();
+    try {
+      //noinspection resource
+      shutdown();
+    } finally {
+      nodes().values().forEach(TestApplication::close);
+    }
   }
 
   private boolean isReady(final TestApplication<?> node) {
