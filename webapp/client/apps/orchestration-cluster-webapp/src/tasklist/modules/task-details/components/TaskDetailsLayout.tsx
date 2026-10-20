@@ -82,6 +82,7 @@ const TaskDetailsLayout: React.FC<Props> = ({task, currentUser, assignButton, ch
 						processName={task.processName ?? task.processDefinitionId}
 						assignee={task.assignee ?? null}
 						taskState={task.state}
+						isSuspended={task.isSuspended}
 						user={currentUser}
 						assignButton={assignButton}
 						detailsButton={

@@ -55,9 +55,10 @@ const TaskDetailsTaskPage: React.FC<Props> = ({
 		currentUser: currentUser.username,
 		taskState: task.state,
 		assignee: task.assignee ?? null,
+		isSuspended: task.isSuspended,
 		onComplete,
 	});
-	const isEditingAllowed = currentUser.username === task.assignee && task.state === 'CREATED';
+	const isEditingAllowed = currentUser.username === task.assignee && task.state === 'CREATED' && !task.isSuspended;
 
 	if (formSchema !== null) {
 		return (
@@ -67,6 +68,7 @@ const TaskDetailsTaskPage: React.FC<Props> = ({
 				completionStatus={status}
 				isCompletionAllowed={isCompletionAllowed}
 				isHidden={isHidden}
+				isSuspended={task.isSuspended}
 				onSubmit={complete}
 			/>
 		);
@@ -82,6 +84,7 @@ const TaskDetailsTaskPage: React.FC<Props> = ({
 			isCompleted={task.state === 'COMPLETED'}
 			completionStatus={status}
 			isCompletionHidden={isHidden}
+			isSuspended={task.isSuspended}
 			hasNextPage={hasNextVariablesPage}
 			isFetchingNextPage={isFetchingNextVariablesPage}
 			isNextPageError={isNextVariablesPageError}

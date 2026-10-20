@@ -103,6 +103,24 @@ describe('<TaskDetailsTaskPage />', () => {
 		await expect.element(screen.getByRole('button', {name: 'Complete Task'})).toBeDisabled();
 	});
 
+	it('should disable completion and variable editing for a task of a suspended process instance', async () => {
+		const screen = await renderWithRouter(
+			() => (
+				<TaskDetailsTaskPage
+					formSchema={null}
+					variables={[]}
+					task={createUserTask({assignee: currentUser.username, state: 'CREATED', isSuspended: true})}
+					currentUser={currentUser}
+					search={search}
+				/>
+			),
+			{path: '/tasklist/$userTaskKey', initialEntry: `/tasklist/${USER_TASK_KEY}`},
+		);
+
+		await expect.element(screen.getByRole('button', {name: 'Complete Task'})).toBeDisabled();
+		await expect.element(screen.getByRole('button', {name: 'Add Variable'})).toBeDisabled();
+	});
+
 	it('should hide completion for a completed task', async () => {
 		const screen = await renderWithRouter(
 			() => (

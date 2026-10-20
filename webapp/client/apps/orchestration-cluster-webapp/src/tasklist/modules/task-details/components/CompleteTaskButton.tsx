@@ -11,6 +11,7 @@ import {useMemo} from 'react';
 import {useTranslation} from 'react-i18next';
 import type {CompletionStatus} from '#/tasklist/modules/task-details/useTaskCompletion';
 import {AsyncActionButton} from './AsyncActionButton';
+import {SuspendedActionTooltip} from './SuspendedActionTooltip';
 
 const getCompletionButtonDescription = (status: CompletionStatus): string | undefined => {
 	if (status === 'active') {
@@ -32,10 +33,11 @@ type Props = {
 	status: CompletionStatus;
 	isDisabled: boolean;
 	isHidden: boolean;
+	isSuspended: boolean;
 	onClick?: () => void;
 };
 
-const CompleteTaskButton: React.FC<Props> = ({status, isDisabled, isHidden, onClick}) => {
+const CompleteTaskButton: React.FC<Props> = ({status, isDisabled, isHidden, isSuspended, onClick}) => {
 	const {t} = useTranslation();
 	const loadingProps = useMemo(
 		() =>
@@ -49,17 +51,19 @@ const CompleteTaskButton: React.FC<Props> = ({status, isDisabled, isHidden, onCl
 		() =>
 			({
 				type: 'submit',
-				disabled: status === 'active' || isDisabled,
+				disabled: status === 'active' || isDisabled || isSuspended,
 				onClick,
-				title: isDisabled ? t('tasklist.taskDetailsDisabledCompleteButtonTitle') : undefined,
+				title: isDisabled && !isSuspended ? t('tasklist.taskDetailsDisabledCompleteButtonTitle') : undefined,
 			}) as const,
-		[status, isDisabled, onClick, t],
+		[status, isDisabled, isSuspended, onClick, t],
 	);
 
 	return (
-		<AsyncActionButton {...loadingProps} buttonProps={buttonProps} status={status} isHidden={isHidden}>
-			{t('tasklist.taskDetailsCompleteTaskButtonLabel')}
-		</AsyncActionButton>
+		<SuspendedActionTooltip isSuspended={isSuspended && !isHidden}>
+			<AsyncActionButton {...loadingProps} buttonProps={buttonProps} status={status} isHidden={isHidden}>
+				{t('tasklist.taskDetailsCompleteTaskButtonLabel')}
+			</AsyncActionButton>
+		</SuspendedActionTooltip>
 	);
 };
 

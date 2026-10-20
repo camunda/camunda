@@ -60,6 +60,7 @@ type Props = {
 	isCompleted: boolean;
 	completionStatus: CompletionStatus;
 	isCompletionHidden: boolean;
+	isSuspended: boolean;
 	hasNextPage: boolean;
 	isFetchingNextPage: boolean;
 	isNextPageError: boolean;
@@ -76,6 +77,7 @@ const TaskDetailsVariables: React.FC<Props> = ({
 	isCompleted,
 	completionStatus,
 	isCompletionHidden,
+	isSuspended,
 	hasNextPage,
 	isFetchingNextPage,
 	isNextPageError,
@@ -167,7 +169,7 @@ const TaskDetailsVariables: React.FC<Props> = ({
 									size="sm"
 									onClick={() => form.mutators.push?.('newVariables')}
 									disabled={!isEditingAllowed || isCompletionBusy}
-									title={isEditingAllowed ? undefined : t('tasklist.variablesAddVariableTooltip')}
+									title={isEditingAllowed || isSuspended ? undefined : t('tasklist.variablesAddVariableTooltip')}
 								>
 									<Plus aria-hidden />
 									{t('tasklist.taskVariablesAddVariable')}
@@ -254,6 +256,7 @@ const TaskDetailsVariables: React.FC<Props> = ({
 										<CompleteTaskButton
 											status={completionStatus}
 											isHidden={isCompletionHidden}
+											isSuspended={isSuspended}
 											isDisabled={
 												submitting || hasValidationErrors || validating || hasEmptyNewVariable || !isCompletionAllowed
 											}
