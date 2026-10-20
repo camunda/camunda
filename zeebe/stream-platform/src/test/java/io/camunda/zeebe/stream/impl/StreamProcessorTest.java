@@ -71,6 +71,7 @@ import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.LockSupport;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 import org.agrona.IoUtil;
@@ -119,6 +120,28 @@ public final class StreamProcessorTest {
     inOrder.verify(mockProcessorLifecycleAware, TIMEOUT).onResumed();
     inOrder.verify(mockProcessorLifecycleAware, TIMEOUT).onClose();
     inOrder.verifyNoMoreInteractions();
+  }
+
+  @Test
+  public void shouldStartProcessingAfterSlowOnRecoveredListener() throws Exception {
+    // given
+    // A listener slower than the WARN threshold must not prevent recovery from completing. The
+    // WARN log itself is not asserted here because the module has no log-capture test dependency.
+    final var mockProcessorLifecycleAware = streamPlatform.getMockProcessorLifecycleAware();
+    final var slowBy = StreamProcessor.SLOW_ON_RECOVERED_LISTENER_THRESHOLD.plusMillis(100);
+    doAnswer(
+            invocation -> {
+              LockSupport.parkNanos(slowBy.toNanos());
+              return null;
+            })
+        .when(mockProcessorLifecycleAware)
+        .onRecovered(any());
+
+    // when
+    streamPlatform.startStreamProcessor();
+
+    // then
+    verify(mockProcessorLifecycleAware, TIMEOUT).onRecovered(any());
   }
 
   @Test
