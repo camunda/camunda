@@ -107,7 +107,8 @@ class AsyncDocumentPipelineTest {
     inOrder.verify(batchProcessor).process(DocumentBatch.from(List.of(4, 5, 6), 6));
     inOrder.verify(batchProcessor).process(DocumentBatch.from(List.of(7, 8, 9), 9));
     inOrder.verify(batchProcessor).process(DocumentBatch.from(List.of(10), 10));
-    inOrder.verifyNoMoreInteractions();
+
+    verifyNoMoreInteractions(batchProcessor);
   }
 
   @Test
@@ -165,11 +166,12 @@ class AsyncDocumentPipelineTest {
     inOrder.verify(batchProcessor).process(DocumentBatch.from(List.of(4, 5, 6), 6));
     inOrder.verify(batchSupplier).supply(6, 3);
     inOrder.verify(batchProcessor).process(DocumentBatch.from(List.of(7, 8), 8));
-    inOrder.verifyNoMoreInteractions();
+
+    verifyNoMoreInteractions(batchSupplier, batchProcessor);
   }
 
   @Test
-  void shouldNotCompleteLastBatchIfRetryableErrorOccursInProcessing() {
+  void shouldCompleteLastBatchIfRetryableErrorOccursInProcessing() {
     final BatchProcessor<Integer, Integer> batchProcessor = mock(BatchProcessor.class);
     when(batchProcessor.process(any()))
         .then(returnBatchSize())
@@ -205,8 +207,10 @@ class AsyncDocumentPipelineTest {
     inOrder.verify(batchSupplier).supply(6, 3);
     inOrder.verify(batchProcessor).process(DocumentBatch.from(List.of(7, 8), 8));
     inOrder.verify(retryRecorder).run();
+    inOrder.verify(batchSupplier).supply(6, 3);
     inOrder.verify(batchProcessor).process(DocumentBatch.from(List.of(7, 8), 8));
-    inOrder.verifyNoMoreInteractions();
+
+    verifyNoMoreInteractions(batchSupplier, batchProcessor, retryRecorder);
   }
 
   @Test
@@ -286,7 +290,8 @@ class AsyncDocumentPipelineTest {
 
     inOrder.verify(batchSupplier).supply(9, 3);
     inOrder.verify(batchProcessor).process(DocumentBatch.from(List.of(10), 10));
-    inOrder.verifyNoMoreInteractions();
+
+    verifyNoMoreInteractions(batchSupplier, batchProcessor, retryRecorder);
   }
 
   @Test
@@ -307,9 +312,8 @@ class AsyncDocumentPipelineTest {
         .havingRootCause()
         .withMessage("simulated error");
 
-    final var inOrder = Mockito.inOrder(batchProcessor);
-    inOrder.verify(batchProcessor).process(DocumentBatch.from(List.of(1, 2, 3), 3));
-    inOrder.verifyNoMoreInteractions();
+    verify(batchProcessor).process(DocumentBatch.from(List.of(1, 2, 3), 3));
+    verifyNoMoreInteractions(batchProcessor);
   }
 
   @ParameterizedTest
@@ -355,7 +359,8 @@ class AsyncDocumentPipelineTest {
     inOrder.verify(batchProcessor).process(DocumentBatch.from(List.of(7, 8, 9), 9));
 
     inOrder.verify(batchProcessor).process(DocumentBatch.from(List.of(10), 10));
-    inOrder.verifyNoMoreInteractions();
+
+    verifyNoMoreInteractions(batchProcessor, retryRecorder);
   }
 
   @Test
@@ -399,7 +404,8 @@ class AsyncDocumentPipelineTest {
     inOrder.verify(batchProcessor).process(DocumentBatch.from(List.of(7, 8, 9), 9));
     inOrder.verify(retryRecorder).run();
     inOrder.verify(batchProcessor).process(DocumentBatch.from(List.of(7, 8, 9), 9));
-    inOrder.verifyNoMoreInteractions();
+
+    verifyNoMoreInteractions(batchProcessor, retryRecorder);
   }
 
   @Test
@@ -479,7 +485,7 @@ class AsyncDocumentPipelineTest {
     inOrder.verify(batchProcessor).process(DocumentBatch.from(List.of(9), 9));
     inOrder.verify(batchProcessor).process(DocumentBatch.from(List.of(10), 10));
 
-    inOrder.verifyNoMoreInteractions();
+    verifyNoMoreInteractions(batchProcessor, retryRecorder);
   }
 
   @Test
@@ -522,7 +528,7 @@ class AsyncDocumentPipelineTest {
     inOrder.verify(retryRecorder).run();
     inOrder.verify(batchProcessor).process(DocumentBatch.from(List.of(1, 2), 2));
 
-    inOrder.verifyNoMoreInteractions();
+    verifyNoMoreInteractions(batchProcessor, retryRecorder);
   }
 
   @Test
@@ -615,7 +621,7 @@ class AsyncDocumentPipelineTest {
     inOrder.verify(retryRecorder).run();
     inOrder.verify(batchProcessor).process(DocumentBatch.from(List.of(10), 10));
 
-    inOrder.verifyNoMoreInteractions();
+    verifyNoMoreInteractions(batchProcessor, retryRecorder);
   }
 
   @Test
