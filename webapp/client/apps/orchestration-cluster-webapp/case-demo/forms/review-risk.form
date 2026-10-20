@@ -1,0 +1,57 @@
+{
+  "executionPlatform": "Camunda Cloud",
+  "executionPlatformVersion": "8.11.0",
+  "exporter": {
+    "name": "Camunda Modeler",
+    "version": "5.40.0"
+  },
+  "schemaVersion": 18,
+  "id": "review-risk",
+  "type": "default",
+  "components": [
+    {
+      "type": "text",
+      "text": "### Review the risk assessment",
+      "id": "Text_406"
+    },
+    {
+      "type": "textfield",
+      "key": "supplierName",
+      "label": "Supplier",
+      "id": "Field_supplierName_407",
+      "readonly": true
+    },
+    {
+      "type": "textfield",
+      "key": "riskLevel",
+      "label": "Risk level from the rules",
+      "id": "Field_riskLevel_408",
+      "readonly": true
+    },
+    {
+      "type": "select",
+      "key": "riskAccepted",
+      "label": "Decision",
+      "id": "Field_riskAccepted_409",
+      "validate": {
+        "required": true
+      },
+      "values": [
+        {
+          "value": "accepted",
+          "label": "Accept the risk"
+        },
+        {
+          "value": "mitigate",
+          "label": "Accept with mitigations"
+        }
+      ]
+    },
+    {
+      "type": "textarea",
+      "key": "riskNotes",
+      "label": "Notes",
+      "id": "Field_riskNotes_410"
+    }
+  ]
+}

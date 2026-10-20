@@ -1,0 +1,454 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="supplier-onboarding-definitions" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.40.0" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.11.0">
+  <bpmn:process id="supplier-onboarding" name="Supplier onboarding" isExecutable="true">
+    <bpmn:extensionElements>
+      <zeebe:case title="supplierTitle" caseForm="supplier-case-details" />
+    </bpmn:extensionElements>
+    <bpmn:startEvent id="supplier-requested" name="Supplier requested">
+      <bpmn:extensionElements>
+        <zeebe:ioMapping>
+          <zeebe:output source="=[{label: &#34;Supplier&#34;, value: supplierName}, {label: &#34;Country&#34;, value: country}, {label: &#34;Category&#34;, value: category}, {label: &#34;Annual spend (EUR)&#34;, value: string(annualSpend)}, {label: &#34;Requester&#34;, value: requester}]" target="caseHeader" />
+        </zeebe:ioMapping>
+      </bpmn:extensionElements>
+      <bpmn:outgoing>flow-to-registration</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:sequenceFlow id="flow-to-registration" sourceRef="supplier-requested" targetRef="registration" />
+    <bpmn:subProcess id="registration" name="Registration">
+      <bpmn:extensionElements>
+        <zeebe:stage />
+        <zeebe:ioMapping>
+          <zeebe:output source="=append(caseHeader, {label: &#34;Risk level&#34;, value: riskLevel})" target="caseHeader" />
+        </zeebe:ioMapping>
+      </bpmn:extensionElements>
+      <bpmn:incoming>flow-to-registration</bpmn:incoming>
+      <bpmn:outgoing>flow-to-due-diligence</bpmn:outgoing>
+      <bpmn:startEvent id="registration-start">
+        <bpmn:outgoing>registration-flow-1</bpmn:outgoing>
+      </bpmn:startEvent>
+      <bpmn:userTask id="register-supplier" name="Register the supplier">
+        <bpmn:extensionElements>
+          <zeebe:userTask />
+          <zeebe:formDefinition formId="register-supplier" />
+          <zeebe:assignmentDefinition candidateGroups="procurement" />
+        </bpmn:extensionElements>
+        <bpmn:incoming>registration-flow-1</bpmn:incoming>
+        <bpmn:outgoing>registration-flow-2</bpmn:outgoing>
+      </bpmn:userTask>
+      <bpmn:serviceTask id="check-sanctions" name="Check the sanctions list">
+        <bpmn:extensionElements>
+          <zeebe:taskDefinition type="sanctions-check" retries="3" />
+        </bpmn:extensionElements>
+        <bpmn:incoming>registration-flow-2</bpmn:incoming>
+        <bpmn:outgoing>registration-flow-3</bpmn:outgoing>
+      </bpmn:serviceTask>
+      <bpmn:businessRuleTask id="classify-risk" name="Classify the supplier risk">
+        <bpmn:extensionElements>
+          <zeebe:calledDecision decisionId="supplier-risk" resultVariable="riskLevel" />
+        </bpmn:extensionElements>
+        <bpmn:incoming>registration-flow-3</bpmn:incoming>
+        <bpmn:outgoing>registration-flow-4</bpmn:outgoing>
+      </bpmn:businessRuleTask>
+      <bpmn:endEvent id="registration-end">
+        <bpmn:incoming>registration-flow-4</bpmn:incoming>
+      </bpmn:endEvent>
+      <bpmn:sequenceFlow id="registration-flow-1" sourceRef="registration-start" targetRef="register-supplier" />
+      <bpmn:sequenceFlow id="registration-flow-2" sourceRef="register-supplier" targetRef="check-sanctions" />
+      <bpmn:sequenceFlow id="registration-flow-3" sourceRef="check-sanctions" targetRef="classify-risk" />
+      <bpmn:sequenceFlow id="registration-flow-4" sourceRef="classify-risk" targetRef="registration-end" />
+    </bpmn:subProcess>
+    <bpmn:sequenceFlow id="flow-to-due-diligence" sourceRef="registration" targetRef="due-diligence" />
+    <bpmn:adHocSubProcess id="due-diligence" name="Due diligence">
+      <bpmn:extensionElements>
+        <zeebe:stage />
+        <zeebe:adHoc activeElementsCollection="=[&#34;review-risk&#34;, &#34;request-credit-report&#34;]" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>flow-to-due-diligence</bpmn:incoming>
+      <bpmn:outgoing>flow-to-contract</bpmn:outgoing>
+      <bpmn:userTask id="review-risk" name="Review the risk assessment">
+        <bpmn:extensionElements>
+          <zeebe:userTask />
+          <zeebe:formDefinition formId="review-risk" />
+          <zeebe:assignmentDefinition candidateGroups="risk" />
+        </bpmn:extensionElements>
+      </bpmn:userTask>
+      <bpmn:serviceTask id="request-credit-report" name="Request the credit report">
+        <bpmn:extensionElements>
+          <zeebe:taskDefinition type="credit-report" retries="3" />
+        </bpmn:extensionElements>
+      </bpmn:serviceTask>
+      <bpmn:boundaryEvent id="credit-report-timeout" name="No report in time" attachedToRef="request-credit-report">
+        <bpmn:outgoing>due-diligence-flow-timeout</bpmn:outgoing>
+        <bpmn:timerEventDefinition id="credit-report-timeout-definition">
+          <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">=creditReportTimeout</bpmn:timeDuration>
+        </bpmn:timerEventDefinition>
+      </bpmn:boundaryEvent>
+      <bpmn:userTask id="estimate-credit-risk" name="Estimate the credit risk">
+        <bpmn:extensionElements>
+          <zeebe:userTask />
+          <zeebe:formDefinition formId="estimate-credit-risk" />
+          <zeebe:assignmentDefinition candidateGroups="risk" />
+        </bpmn:extensionElements>
+        <bpmn:incoming>due-diligence-flow-timeout</bpmn:incoming>
+      </bpmn:userTask>
+      <bpmn:userTask id="visit-supplier" name="Visit the supplier">
+        <bpmn:extensionElements>
+          <zeebe:userTask />
+          <zeebe:formDefinition formId="visit-supplier" />
+          <zeebe:assignmentDefinition candidateGroups="procurement" />
+        </bpmn:extensionElements>
+      </bpmn:userTask>
+      <bpmn:serviceTask id="request-esg-rating" name="Request the ESG rating">
+        <bpmn:extensionElements>
+          <zeebe:taskDefinition type="esg-rating" retries="3" />
+        </bpmn:extensionElements>
+      </bpmn:serviceTask>
+      <bpmn:sequenceFlow id="due-diligence-flow-timeout" sourceRef="credit-report-timeout" targetRef="estimate-credit-risk" />
+    </bpmn:adHocSubProcess>
+    <bpmn:sequenceFlow id="flow-to-contract" sourceRef="due-diligence" targetRef="contract" />
+    <bpmn:subProcess id="contract" name="Contract">
+      <bpmn:extensionElements>
+        <zeebe:stage />
+        <zeebe:ioMapping>
+          <zeebe:input source="=append(caseHeader, {label: &#34;Contract owner&#34;, value: requester})" target="caseHeader" />
+        </zeebe:ioMapping>
+      </bpmn:extensionElements>
+      <bpmn:incoming>flow-to-contract</bpmn:incoming>
+      <bpmn:outgoing>flow-to-activation</bpmn:outgoing>
+      <bpmn:startEvent id="contract-start">
+        <bpmn:outgoing>contract-flow-1</bpmn:outgoing>
+      </bpmn:startEvent>
+      <bpmn:userTask id="negotiate-terms" name="Negotiate the terms">
+        <bpmn:extensionElements>
+          <zeebe:userTask />
+          <zeebe:formDefinition formId="negotiate-terms" />
+          <zeebe:assignmentDefinition candidateGroups="procurement" />
+        </bpmn:extensionElements>
+        <bpmn:incoming>contract-flow-1</bpmn:incoming>
+        <bpmn:outgoing>contract-flow-2</bpmn:outgoing>
+      </bpmn:userTask>
+      <bpmn:userTask id="sign-contract" name="Sign the contract">
+        <bpmn:extensionElements>
+          <zeebe:userTask />
+          <zeebe:formDefinition formId="sign-contract" />
+          <zeebe:assignmentDefinition candidateGroups="legal" />
+        </bpmn:extensionElements>
+        <bpmn:incoming>contract-flow-2</bpmn:incoming>
+        <bpmn:outgoing>contract-flow-3</bpmn:outgoing>
+      </bpmn:userTask>
+      <bpmn:intermediateCatchEvent id="contract-countersigned" name="Countersigned contract received">
+        <bpmn:incoming>contract-flow-3</bpmn:incoming>
+        <bpmn:outgoing>contract-flow-4</bpmn:outgoing>
+        <bpmn:messageEventDefinition id="contract-countersigned-definition" messageRef="message-contract-countersigned" />
+      </bpmn:intermediateCatchEvent>
+      <bpmn:endEvent id="contract-end">
+        <bpmn:incoming>contract-flow-4</bpmn:incoming>
+      </bpmn:endEvent>
+      <bpmn:boundaryEvent id="signature-reminder" name="Reminder due" cancelActivity="false" attachedToRef="sign-contract">
+        <bpmn:outgoing>contract-flow-reminder</bpmn:outgoing>
+        <bpmn:timerEventDefinition id="signature-reminder-definition">
+          <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">=signatureReminder</bpmn:timeDuration>
+        </bpmn:timerEventDefinition>
+      </bpmn:boundaryEvent>
+      <bpmn:userTask id="remind-supplier" name="Remind the supplier">
+        <bpmn:extensionElements>
+          <zeebe:userTask />
+          <zeebe:formDefinition formId="remind-supplier" />
+          <zeebe:assignmentDefinition candidateGroups="procurement" />
+        </bpmn:extensionElements>
+        <bpmn:incoming>contract-flow-reminder</bpmn:incoming>
+        <bpmn:outgoing>contract-flow-reminder-sent</bpmn:outgoing>
+      </bpmn:userTask>
+      <bpmn:endEvent id="reminder-sent" name="Reminder sent">
+        <bpmn:incoming>contract-flow-reminder-sent</bpmn:incoming>
+      </bpmn:endEvent>
+      <bpmn:sequenceFlow id="contract-flow-1" sourceRef="contract-start" targetRef="negotiate-terms" />
+      <bpmn:sequenceFlow id="contract-flow-2" sourceRef="negotiate-terms" targetRef="sign-contract" />
+      <bpmn:sequenceFlow id="contract-flow-3" sourceRef="sign-contract" targetRef="contract-countersigned" />
+      <bpmn:sequenceFlow id="contract-flow-4" sourceRef="contract-countersigned" targetRef="contract-end" />
+      <bpmn:sequenceFlow id="contract-flow-reminder" sourceRef="signature-reminder" targetRef="remind-supplier" />
+      <bpmn:sequenceFlow id="contract-flow-reminder-sent" sourceRef="remind-supplier" targetRef="reminder-sent" />
+    </bpmn:subProcess>
+    <bpmn:sequenceFlow id="flow-to-activation" sourceRef="contract" targetRef="activation" />
+    <bpmn:subProcess id="activation" name="Activation">
+      <bpmn:extensionElements>
+        <zeebe:stage />
+        <zeebe:ioMapping>
+          <zeebe:output source="=append(caseHeader, {label: &#34;ERP supplier number&#34;, value: erpSupplierNumber})" target="caseHeader" />
+        </zeebe:ioMapping>
+      </bpmn:extensionElements>
+      <bpmn:incoming>flow-to-activation</bpmn:incoming>
+      <bpmn:outgoing>flow-to-active</bpmn:outgoing>
+      <bpmn:startEvent id="activation-start">
+        <bpmn:outgoing>activation-flow-1</bpmn:outgoing>
+      </bpmn:startEvent>
+      <bpmn:serviceTask id="create-erp-supplier" name="Create the supplier in the ERP">
+        <bpmn:extensionElements>
+          <zeebe:taskDefinition type="erp-create-supplier" retries="3" />
+        </bpmn:extensionElements>
+        <bpmn:incoming>activation-flow-1</bpmn:incoming>
+        <bpmn:outgoing>activation-flow-2</bpmn:outgoing>
+      </bpmn:serviceTask>
+      <bpmn:intermediateCatchEvent id="wait-first-order" name="Wait for the first order">
+        <bpmn:incoming>activation-flow-2</bpmn:incoming>
+        <bpmn:outgoing>activation-flow-3</bpmn:outgoing>
+        <bpmn:timerEventDefinition id="wait-first-order-definition">
+          <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">=firstOrderWait</bpmn:timeDuration>
+        </bpmn:timerEventDefinition>
+      </bpmn:intermediateCatchEvent>
+      <bpmn:userTask id="review-first-order" name="Review the first order">
+        <bpmn:extensionElements>
+          <zeebe:userTask />
+          <zeebe:formDefinition formId="review-first-order" />
+          <zeebe:assignmentDefinition candidateGroups="procurement" />
+        </bpmn:extensionElements>
+        <bpmn:incoming>activation-flow-3</bpmn:incoming>
+        <bpmn:outgoing>activation-flow-4</bpmn:outgoing>
+      </bpmn:userTask>
+      <bpmn:endEvent id="activation-end">
+        <bpmn:incoming>activation-flow-4</bpmn:incoming>
+      </bpmn:endEvent>
+      <bpmn:sequenceFlow id="activation-flow-1" sourceRef="activation-start" targetRef="create-erp-supplier" />
+      <bpmn:sequenceFlow id="activation-flow-2" sourceRef="create-erp-supplier" targetRef="wait-first-order" />
+      <bpmn:sequenceFlow id="activation-flow-3" sourceRef="wait-first-order" targetRef="review-first-order" />
+      <bpmn:sequenceFlow id="activation-flow-4" sourceRef="review-first-order" targetRef="activation-end" />
+    </bpmn:subProcess>
+    <bpmn:sequenceFlow id="flow-to-active" sourceRef="activation" targetRef="supplier-active" />
+    <bpmn:endEvent id="supplier-active" name="Supplier active">
+      <bpmn:incoming>flow-to-active</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:subProcess id="supplier-blocked" name="Supplier blocked" triggeredByEvent="true">
+      <bpmn:extensionElements>
+        <zeebe:stage />
+      </bpmn:extensionElements>
+      <bpmn:startEvent id="sanctions-hit" name="Sanctions hit">
+        <bpmn:outgoing>flow-blocked-1</bpmn:outgoing>
+        <bpmn:errorEventDefinition id="sanctions-hit-definition" errorRef="error-sanctions-hit" />
+      </bpmn:startEvent>
+      <bpmn:userTask id="notify-requester" name="Notify the requester">
+        <bpmn:extensionElements>
+          <zeebe:userTask />
+          <zeebe:formDefinition formId="notify-requester" />
+          <zeebe:assignmentDefinition candidateGroups="procurement" />
+        </bpmn:extensionElements>
+        <bpmn:incoming>flow-blocked-1</bpmn:incoming>
+        <bpmn:outgoing>flow-blocked-2</bpmn:outgoing>
+      </bpmn:userTask>
+      <bpmn:endEvent id="supplier-blocked-end">
+        <bpmn:incoming>flow-blocked-2</bpmn:incoming>
+      </bpmn:endEvent>
+      <bpmn:sequenceFlow id="flow-blocked-1" sourceRef="sanctions-hit" targetRef="notify-requester" />
+      <bpmn:sequenceFlow id="flow-blocked-2" sourceRef="notify-requester" targetRef="supplier-blocked-end" />
+    </bpmn:subProcess>
+  </bpmn:process>
+  <bpmn:message id="message-contract-countersigned" name="contract-countersigned">
+    <bpmn:extensionElements>
+      <zeebe:subscription correlationKey="=supplierId" />
+    </bpmn:extensionElements>
+  </bpmn:message>
+  <bpmn:error id="error-sanctions-hit" name="Sanctions hit" errorCode="SANCTIONS_HIT" />
+  <bpmndi:BPMNDiagram id="supplier-onboarding-diagram">
+    <bpmndi:BPMNPlane id="supplier-onboarding-plane" bpmnElement="supplier-onboarding">
+      <bpmndi:BPMNShape id="supplier-requested_di" bpmnElement="supplier-requested">
+        <dc:Bounds x="110" y="197" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="registration_di" bpmnElement="registration" isExpanded="true">
+        <dc:Bounds x="196" y="145" width="632" height="140" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="registration-start_di" bpmnElement="registration-start">
+        <dc:Bounds x="226" y="197" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="register-supplier_di" bpmnElement="register-supplier">
+        <dc:Bounds x="312" y="175" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="check-sanctions_di" bpmnElement="check-sanctions">
+        <dc:Bounds x="462" y="175" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="classify-risk_di" bpmnElement="classify-risk">
+        <dc:Bounds x="612" y="175" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="registration-end_di" bpmnElement="registration-end">
+        <dc:Bounds x="762" y="197" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="due-diligence_di" bpmnElement="due-diligence" isExpanded="true">
+        <dc:Bounds x="878" y="70" width="610" height="290" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="review-risk_di" bpmnElement="review-risk">
+        <dc:Bounds x="908" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="request-credit-report_di" bpmnElement="request-credit-report">
+        <dc:Bounds x="1058" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="estimate-credit-risk_di" bpmnElement="estimate-credit-risk">
+        <dc:Bounds x="1208" y="100" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="visit-supplier_di" bpmnElement="visit-supplier">
+        <dc:Bounds x="1208" y="220" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="request-esg-rating_di" bpmnElement="request-esg-rating">
+        <dc:Bounds x="1358" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="credit-report-timeout_di" bpmnElement="credit-report-timeout">
+        <dc:Bounds x="1112" y="222" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="contract_di" bpmnElement="contract" isExpanded="true">
+        <dc:Bounds x="1538" y="92" width="632" height="246" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="contract-start_di" bpmnElement="contract-start">
+        <dc:Bounds x="1568" y="182" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="negotiate-terms_di" bpmnElement="negotiate-terms">
+        <dc:Bounds x="1654" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="sign-contract_di" bpmnElement="sign-contract">
+        <dc:Bounds x="1804" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="contract-countersigned_di" bpmnElement="contract-countersigned">
+        <dc:Bounds x="1986" y="122" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="remind-supplier_di" bpmnElement="remind-supplier">
+        <dc:Bounds x="1954" y="198" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="contract-end_di" bpmnElement="contract-end">
+        <dc:Bounds x="2104" y="144" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="reminder-sent_di" bpmnElement="reminder-sent">
+        <dc:Bounds x="2104" y="220" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="signature-reminder_di" bpmnElement="signature-reminder">
+        <dc:Bounds x="1858" y="222" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="activation_di" bpmnElement="activation" isExpanded="true">
+        <dc:Bounds x="2220" y="145" width="568" height="140" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="activation-start_di" bpmnElement="activation-start">
+        <dc:Bounds x="2250" y="197" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="create-erp-supplier_di" bpmnElement="create-erp-supplier">
+        <dc:Bounds x="2336" y="175" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="wait-first-order_di" bpmnElement="wait-first-order">
+        <dc:Bounds x="2486" y="197" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="review-first-order_di" bpmnElement="review-first-order">
+        <dc:Bounds x="2572" y="175" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="activation-end_di" bpmnElement="activation-end">
+        <dc:Bounds x="2722" y="197" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="supplier-active_di" bpmnElement="supplier-active">
+        <dc:Bounds x="2838" y="197" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="supplier-blocked_di" bpmnElement="supplier-blocked" isExpanded="true">
+        <dc:Bounds x="110" y="440" width="332" height="140" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="sanctions-hit_di" bpmnElement="sanctions-hit">
+        <dc:Bounds x="140" y="492" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="notify-requester_di" bpmnElement="notify-requester">
+        <dc:Bounds x="226" y="470" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="supplier-blocked-end_di" bpmnElement="supplier-blocked-end">
+        <dc:Bounds x="376" y="492" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="registration-flow-1_di" bpmnElement="registration-flow-1">
+        <di:waypoint x="262" y="215" />
+        <di:waypoint x="312" y="215" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="registration-flow-2_di" bpmnElement="registration-flow-2">
+        <di:waypoint x="412" y="215" />
+        <di:waypoint x="462" y="215" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="registration-flow-3_di" bpmnElement="registration-flow-3">
+        <di:waypoint x="562" y="215" />
+        <di:waypoint x="612" y="215" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="registration-flow-4_di" bpmnElement="registration-flow-4">
+        <di:waypoint x="712" y="215" />
+        <di:waypoint x="762" y="215" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="due-diligence-flow-timeout_di" bpmnElement="due-diligence-flow-timeout">
+        <di:waypoint x="1130" y="258" />
+        <di:waypoint x="1130" y="278" />
+        <di:waypoint x="1188" y="278" />
+        <di:waypoint x="1188" y="140" />
+        <di:waypoint x="1208" y="140" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="contract-flow-1_di" bpmnElement="contract-flow-1">
+        <di:waypoint x="1604" y="200" />
+        <di:waypoint x="1654" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="contract-flow-2_di" bpmnElement="contract-flow-2">
+        <di:waypoint x="1754" y="200" />
+        <di:waypoint x="1804" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="contract-flow-3_di" bpmnElement="contract-flow-3">
+        <di:waypoint x="1904" y="200" />
+        <di:waypoint x="1945" y="200" />
+        <di:waypoint x="1945" y="140" />
+        <di:waypoint x="1986" y="140" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="contract-flow-4_di" bpmnElement="contract-flow-4">
+        <di:waypoint x="2022" y="140" />
+        <di:waypoint x="2063" y="140" />
+        <di:waypoint x="2063" y="162" />
+        <di:waypoint x="2104" y="162" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="contract-flow-reminder_di" bpmnElement="contract-flow-reminder">
+        <di:waypoint x="1876" y="258" />
+        <di:waypoint x="1876" y="278" />
+        <di:waypoint x="1934" y="278" />
+        <di:waypoint x="1934" y="238" />
+        <di:waypoint x="1954" y="238" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="contract-flow-reminder-sent_di" bpmnElement="contract-flow-reminder-sent">
+        <di:waypoint x="2054" y="238" />
+        <di:waypoint x="2104" y="238" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="activation-flow-1_di" bpmnElement="activation-flow-1">
+        <di:waypoint x="2286" y="215" />
+        <di:waypoint x="2336" y="215" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="activation-flow-2_di" bpmnElement="activation-flow-2">
+        <di:waypoint x="2436" y="215" />
+        <di:waypoint x="2486" y="215" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="activation-flow-3_di" bpmnElement="activation-flow-3">
+        <di:waypoint x="2522" y="215" />
+        <di:waypoint x="2572" y="215" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="activation-flow-4_di" bpmnElement="activation-flow-4">
+        <di:waypoint x="2672" y="215" />
+        <di:waypoint x="2722" y="215" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="flow-to-registration_di" bpmnElement="flow-to-registration">
+        <di:waypoint x="146" y="215" />
+        <di:waypoint x="196" y="215" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="flow-to-due-diligence_di" bpmnElement="flow-to-due-diligence">
+        <di:waypoint x="828" y="215" />
+        <di:waypoint x="878" y="215" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="flow-to-contract_di" bpmnElement="flow-to-contract">
+        <di:waypoint x="1488" y="215" />
+        <di:waypoint x="1538" y="215" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="flow-to-activation_di" bpmnElement="flow-to-activation">
+        <di:waypoint x="2170" y="215" />
+        <di:waypoint x="2220" y="215" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="flow-to-active_di" bpmnElement="flow-to-active">
+        <di:waypoint x="2788" y="215" />
+        <di:waypoint x="2838" y="215" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="flow-blocked-1_di" bpmnElement="flow-blocked-1">
+        <di:waypoint x="176" y="510" />
+        <di:waypoint x="226" y="510" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="flow-blocked-2_di" bpmnElement="flow-blocked-2">
+        <di:waypoint x="326" y="510" />
+        <di:waypoint x="376" y="510" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>
+

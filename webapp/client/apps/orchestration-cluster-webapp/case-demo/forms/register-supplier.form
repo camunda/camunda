@@ -1,0 +1,49 @@
+{
+  "executionPlatform": "Camunda Cloud",
+  "executionPlatformVersion": "8.11.0",
+  "exporter": {
+    "name": "Camunda Modeler",
+    "version": "5.40.0"
+  },
+  "schemaVersion": 18,
+  "id": "register-supplier",
+  "type": "default",
+  "components": [
+    {
+      "type": "text",
+      "text": "### Register the supplier",
+      "id": "Text_401"
+    },
+    {
+      "type": "textfield",
+      "key": "supplierName",
+      "label": "Supplier",
+      "id": "Field_supplierName_402",
+      "readonly": true
+    },
+    {
+      "type": "textfield",
+      "key": "vatNumber",
+      "label": "VAT number",
+      "id": "Field_vatNumber_403",
+      "validate": {
+        "required": true
+      }
+    },
+    {
+      "type": "textfield",
+      "key": "contactEmail",
+      "label": "Contact email",
+      "id": "Field_contactEmail_404",
+      "validate": {
+        "required": true
+      }
+    },
+    {
+      "type": "textarea",
+      "key": "servicesDescription",
+      "label": "What the supplier delivers",
+      "id": "Field_servicesDescription_405"
+    }
+  ]
+}

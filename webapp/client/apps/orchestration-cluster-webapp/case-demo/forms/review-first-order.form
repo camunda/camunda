@@ -1,0 +1,55 @@
+{
+  "executionPlatform": "Camunda Cloud",
+  "executionPlatformVersion": "8.11.0",
+  "exporter": {
+    "name": "Camunda Modeler",
+    "version": "5.40.0"
+  },
+  "schemaVersion": 18,
+  "id": "review-first-order",
+  "type": "default",
+  "components": [
+    {
+      "type": "text",
+      "text": "### Review the first order",
+      "id": "Text_431"
+    },
+    {
+      "type": "textfield",
+      "key": "supplierName",
+      "label": "Supplier",
+      "id": "Field_supplierName_432",
+      "readonly": true
+    },
+    {
+      "type": "textfield",
+      "key": "erpSupplierNumber",
+      "label": "ERP supplier number",
+      "id": "Field_erpSupplierNumber_433",
+      "readonly": true
+    },
+    {
+      "type": "select",
+      "key": "firstOrderRating",
+      "label": "How did the first order go?",
+      "id": "Field_firstOrderRating_434",
+      "validate": {
+        "required": true
+      },
+      "values": [
+        {
+          "value": "good",
+          "label": "Good"
+        },
+        {
+          "value": "issues",
+          "label": "With issues"
+        },
+        {
+          "value": "bad",
+          "label": "Bad"
+        }
+      ]
+    }
+  ]
+}

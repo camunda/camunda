@@ -1,0 +1,41 @@
+{
+  "executionPlatform": "Camunda Cloud",
+  "executionPlatformVersion": "8.11.0",
+  "exporter": {
+    "name": "Camunda Modeler",
+    "version": "5.40.0"
+  },
+  "schemaVersion": 18,
+  "id": "sign-contract",
+  "type": "default",
+  "components": [
+    {
+      "type": "text",
+      "text": "### Sign the contract",
+      "id": "Text_423"
+    },
+    {
+      "type": "textfield",
+      "key": "supplierName",
+      "label": "Supplier",
+      "id": "Field_supplierName_424",
+      "readonly": true
+    },
+    {
+      "type": "textfield",
+      "key": "paymentTerms",
+      "label": "Payment terms",
+      "id": "Field_paymentTerms_425",
+      "readonly": true
+    },
+    {
+      "type": "checkbox",
+      "key": "contractSigned",
+      "label": "Contract signed and sent to the supplier",
+      "id": "Field_contractSigned_426",
+      "validate": {
+        "required": true
+      }
+    }
+  ]
+}

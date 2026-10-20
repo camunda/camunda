@@ -1,0 +1,85 @@
+{
+  "executionPlatform": "Camunda Cloud",
+  "executionPlatformVersion": "8.11.0",
+  "exporter": {
+    "name": "Camunda Modeler",
+    "version": "5.40.0"
+  },
+  "schemaVersion": 18,
+  "id": "supplier-case-details",
+  "type": "default",
+  "components": [
+    {
+      "type": "textfield",
+      "key": "supplierName",
+      "label": "Supplier",
+      "id": "Field_supplierName_439"
+    },
+    {
+      "type": "textfield",
+      "key": "country",
+      "label": "Country",
+      "id": "Field_country_440"
+    },
+    {
+      "type": "textfield",
+      "key": "category",
+      "label": "Category",
+      "id": "Field_category_441"
+    },
+    {
+      "type": "number",
+      "key": "annualSpend",
+      "label": "Annual spend (EUR)",
+      "id": "Field_annualSpend_442"
+    },
+    {
+      "type": "textfield",
+      "key": "requester",
+      "label": "Requester",
+      "id": "Field_requester_443"
+    },
+    {
+      "type": "textfield",
+      "key": "vatNumber",
+      "label": "VAT number",
+      "id": "Field_vatNumber_444"
+    },
+    {
+      "type": "textfield",
+      "key": "contactEmail",
+      "label": "Contact email",
+      "id": "Field_contactEmail_445"
+    },
+    {
+      "type": "textfield",
+      "key": "riskLevel",
+      "label": "Risk level",
+      "id": "Field_riskLevel_446"
+    },
+    {
+      "type": "number",
+      "key": "creditLimit",
+      "label": "Credit limit (EUR)",
+      "id": "Field_creditLimit_447"
+    },
+    {
+      "type": "number",
+      "key": "esgScore",
+      "label": "ESG score",
+      "id": "Field_esgScore_448"
+    },
+    {
+      "type": "textfield",
+      "key": "paymentTerms",
+      "label": "Payment terms",
+      "id": "Field_paymentTerms_449"
+    },
+    {
+      "type": "textfield",
+      "key": "erpSupplierNumber",
+      "label": "ERP supplier number",
+      "id": "Field_erpSupplierNumber_450"
+    }
+  ]
+}
