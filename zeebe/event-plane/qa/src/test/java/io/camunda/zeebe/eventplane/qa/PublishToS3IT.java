@@ -88,11 +88,15 @@ final class PublishToS3IT {
             .until(() -> Bucket.readLog(store, log.getFirst()), read -> read.lastPosition() > 0);
     assertThat(segments.indexesAreContiguous()).isTrue();
     assertThat(segments.positionsIncrease()).isTrue();
-    await("the floor reaches the uploaded records")
+    // a snapshot's exported position, the floor's without exporters, bounds compaction
+    final var partitions = PartitionsActuator.of(broker);
+    await("snapshots stop at the uploaded records")
         .timeout(Duration.ofSeconds(30))
         .untilAsserted(
-            () ->
-                assertThat(PartitionsActuator.of(broker).query().get(1).exportedPosition())
-                    .isEqualTo(Bucket.readLog(store, log.getFirst()).lastPosition()));
+            () -> {
+              partitions.takeSnapshot();
+              assertThat(partitions.query().get(1).exportedPositionInSnapshot())
+                  .isEqualTo(Bucket.readLog(store, log.getFirst()).lastPosition());
+            });
   }
 }

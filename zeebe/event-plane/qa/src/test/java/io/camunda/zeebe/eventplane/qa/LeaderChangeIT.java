@@ -72,6 +72,9 @@ final class LeaderChangeIT {
     assertThat(after.indexesAreContiguous()).isTrue();
     assertThat(after.positionsIncrease()).isTrue();
     assertThat(after.histories()).containsExactly(before.history());
+    assertThat(after.duplicateEntries())
+        .describedAs("the new leader resumes after the floor it got, not from the start")
+        .isLessThan(before.entries());
   }
 
   private void publishMessages(final int count) {

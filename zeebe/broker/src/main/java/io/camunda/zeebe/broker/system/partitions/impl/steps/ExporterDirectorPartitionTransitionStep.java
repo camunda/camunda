@@ -17,7 +17,6 @@ import io.camunda.zeebe.broker.exporter.stream.ExporterDirectorContext;
 import io.camunda.zeebe.broker.exporter.stream.ExporterDirectorContext.ExporterMode;
 import io.camunda.zeebe.broker.exporter.stream.ExporterPhase;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
-import io.camunda.zeebe.broker.system.configuration.EventPlaneCfg;
 import io.camunda.zeebe.broker.system.configuration.ExportingCfg;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionContext;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionStep;
@@ -140,11 +139,8 @@ public final class ExporterDirectorPartitionTransitionStep implements PartitionT
                     .orElse(""))
             .licenseKey(brokerCfg.getLicenseKey())
             .tenantName(tenantName)
-            .receiveOnLegacySubject(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID.equals(tenantName))
-            .externalPositionIds(
-                brokerCfg.getExperimental().getEventPlane().isEnabled()
-                    ? Set.of(EventPlaneCfg.FLOOR_ID)
-                    : Set.of());
+            .receiveOnLegacySubject(
+                PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID.equals(tenantName));
 
     final ExporterDirector director =
         exporterDirectorBuilder.apply(exporterCtx, exporterPhase(context));

@@ -16,9 +16,6 @@ import org.springframework.util.unit.DataSize;
  */
 public final class EventPlaneCfg {
 
-  /** The exporter id under which the upload floor lives in the exporter state. */
-  public static final String FLOOR_ID = "event-plane";
-
   private boolean enabled = false;
   private String clusterId;
   private StoreCfg store = new StoreCfg();

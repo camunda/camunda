@@ -15,7 +15,7 @@ import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.function.Consumer;
 
-final class SimplePartitionMessageService implements PartitionMessagingService {
+public final class SimplePartitionMessageService implements PartitionMessagingService {
 
   public final Map<String, Tuple<Executor, Consumer<ByteBuffer>>> consumers = new HashMap<>();
 

@@ -18,7 +18,6 @@ import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Duration;
 import java.time.InstantSource;
 import java.util.Map;
-import java.util.Set;
 import org.jspecify.annotations.Nullable;
 
 public final class ExporterDirectorContext {
@@ -42,24 +41,9 @@ public final class ExporterDirectorContext {
   private @Nullable String licenseKey;
   private String tenantName;
   private boolean receiveOnLegacySubject = true;
-  private Set<String> externalPositionIds = Set.of();
 
   public int getId() {
     return id;
-  }
-
-  /**
-   * Ids whose positions live in the exporter state without an exporter: something else on the
-   * leader sets them, and the director keeps them, sends them to followers, and lets them bound
-   * compaction like an exporter's.
-   */
-  public Set<String> getExternalPositionIds() {
-    return externalPositionIds;
-  }
-
-  public ExporterDirectorContext externalPositionIds(final Set<String> externalPositionIds) {
-    this.externalPositionIds = Set.copyOf(externalPositionIds);
-    return this;
   }
 
   public LogStream getLogStream() {

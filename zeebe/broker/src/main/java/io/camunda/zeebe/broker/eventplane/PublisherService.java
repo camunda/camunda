@@ -41,9 +41,9 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Publishes one partition while its broker leads it, on a thread of its own: the uploads block, and
- * so does the floor, which waits on the exporter director. A failed poll is tried again on the next
- * one; the publisher keeps the segment it couldn't upload. If configured, it also uploads the
- * partition's latest snapshot, at most once per snapshot interval.
+ * the floor writes to the partition's state. A failed poll is tried again on the next one; the
+ * publisher keeps the segment it couldn't upload. If configured, it also uploads the partition's
+ * latest snapshot, at most once per snapshot interval.
  */
 final class PublisherService implements AutoCloseable {
 

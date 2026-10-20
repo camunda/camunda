@@ -78,14 +78,23 @@ final class RestoreFromBucketIT {
     instances.addAll(createInstances(10));
     final var log = await("the first segments").until(() -> Bucket.logs(store), l -> !l.isEmpty());
     final var cluster = log.getFirst().clusterId();
-    // a snapshot keeps every entry after the floor, so it is taken once the floor has moved on
-    awaitTheWholeJournalInTheBucket(store, log.getFirst());
+    // a snapshot keeps every entry after the floor, so it is taken once the floor has moved on: its
+    // exported position, the floor's without exporters, is the bucket's last record's
+    final var uploaded = awaitTheWholeJournalInTheBucket(store, log.getFirst());
     final var partitions = PartitionsActuator.of(broker);
-    partitions.takeSnapshot();
     final var snapshotId =
-        await("a snapshot")
+        await("a snapshot at the floor")
             .timeout(Duration.ofSeconds(60))
-            .until(() -> partitions.query().get(1).snapshotId(), Objects::nonNull);
+            .until(
+                () -> {
+                  partitions.takeSnapshot();
+                  return partitions.query().get(1);
+                },
+                status ->
+                    status.snapshotId() != null
+                        && Objects.equals(
+                            status.exportedPositionInSnapshot(), uploaded.lastPosition()))
+            .snapshotId();
     await("the snapshot in the bucket")
         .timeout(Duration.ofSeconds(60))
         .until(
@@ -239,7 +248,7 @@ final class RestoreFromBucketIT {
 
   /**
    * Waits until the publisher has uploaded every entry: the bucket's last entry stays the same for
-   * longer than a segment's cut interval, and the floor stands at its last record.
+   * longer than a segment's cut interval, and holds the last processed record.
    */
   private Bucket.LogRead awaitTheWholeJournalInTheBucket(
       final FileSystemStore store, final Bucket.LogRef log) {
@@ -255,8 +264,7 @@ final class RestoreFromBucketIT {
               final var status = partitions.query().get(1);
               return last == lastIndex.getAndSet(last)
                   && status.processedPosition() != null
-                  && read.lastPosition() >= status.processedPosition()
-                  && Objects.equals(status.exportedPosition(), read.lastPosition());
+                  && read.lastPosition() >= status.processedPosition();
             });
   }
 

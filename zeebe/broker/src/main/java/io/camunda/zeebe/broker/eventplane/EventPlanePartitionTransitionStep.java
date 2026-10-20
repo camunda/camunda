@@ -10,10 +10,13 @@ package io.camunda.zeebe.broker.eventplane;
 import io.atomix.raft.RaftServer.Role;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionContext;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionStep;
+import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.eventplane.publisher.Announcer;
 import io.camunda.zeebe.eventplane.publisher.CutPolicy;
 import io.camunda.zeebe.eventplane.publisher.HttpAnnouncer;
 import io.camunda.zeebe.eventplane.segment.Identity;
+import io.camunda.zeebe.protocol.ZbColumnFamilies;
+import io.camunda.zeebe.scheduler.ScheduledTimer;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import java.net.URI;
@@ -22,8 +25,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Publishes the partition's journal into the Event Plane's store while this broker leads it, if the
- * Event Plane is on. Comes after the exporter director, which keeps the upload floor.
+ * Keeps the upload floor in the partition's state on every replica while the Event Plane is on, and
+ * deletes it while it is off. On the leader, it publishes the partition's journal into the Event
+ * Plane's store and sends the floor to the followers; on a follower, it stores the floors it gets.
  */
 public final class EventPlanePartitionTransitionStep implements PartitionTransitionStep {
 
@@ -31,10 +35,20 @@ public final class EventPlanePartitionTransitionStep implements PartitionTransit
       LoggerFactory.getLogger(EventPlanePartitionTransitionStep.class);
 
   private @Nullable PublisherService publisher;
+  private @Nullable ScheduledTimer floorResend;
+  private @Nullable FloorReceiver floorReceiver;
 
   @Override
   public ActorFuture<Void> prepareTransition(
       final PartitionTransitionContext context, final long term, final Role targetRole) {
+    if (floorResend != null) {
+      floorResend.cancel();
+      floorResend = null;
+    }
+    if (floorReceiver != null) {
+      floorReceiver.close();
+      floorReceiver = null;
+    }
     if (publisher == null) {
       return CompletableActorFuture.completed(null);
     }
@@ -51,8 +65,29 @@ public final class EventPlanePartitionTransitionStep implements PartitionTransit
   @Override
   public ActorFuture<Void> transitionTo(
       final PartitionTransitionContext context, final long term, final Role targetRole) {
+    @SuppressWarnings("unchecked")
+    final ZeebeDb<ZbColumnFamilies> zeebeDb = context.getZeebeDb();
+    if (zeebeDb == null || targetRole == Role.INACTIVE) {
+      return CompletableActorFuture.completed(null);
+    }
     final var config = context.getBrokerCfg().getExperimental().getEventPlane();
-    if (!config.isEnabled() || targetRole != Role.LEADER || publisher != null) {
+    final var floors = new FloorState(zeebeDb, zeebeDb.createContext());
+    if (!config.isEnabled()) {
+      // a floor left from when the Event Plane was on would stop compaction for good
+      floors.delete();
+      return CompletableActorFuture.completed(null);
+    }
+    // Until the leader stores a floor, compaction stops where it is; on followers too, as one of
+    // them may become the leader that still needs the entries.
+    floors.holdIfAbsent();
+    final var distribution =
+        new FloorDistribution(context.getMessagingService(), context.partitionId());
+    if (targetRole != Role.LEADER) {
+      floorReceiver = new FloorReceiver(floors, distribution);
+      floorReceiver.open(context.getConcurrencyControl());
+      return CompletableActorFuture.completed(null);
+    }
+    if (publisher != null) {
       return CompletableActorFuture.completed(null);
     }
     final var configuredId =
@@ -77,6 +112,9 @@ public final class EventPlanePartitionTransitionStep implements PartitionTransit
     final var log =
         new Identity(clusterKey, context.partitionId().group(), context.getPartitionId());
     final var raftPartition = context.getRaftPartition();
+    // the publisher's thread has a transaction context of its own
+    final var floorStore =
+        new ReplicatedFloorStore(new FloorState(zeebeDb, zeebeDb.createContext()), distribution);
     publisher =
         new PublisherService(
             log,
@@ -84,7 +122,7 @@ public final class EventPlanePartitionTransitionStep implements PartitionTransit
             raftPartition.dataDirectory().toPath(),
             EventPlaneStores.open(config.getStore()),
             new RaftEntrySource(raftPartition.getServer().openReader()),
-            new ExporterStateFloorStore(context.getExporterDirector()),
+            floorStore,
             config.getServiceUrl() != null
                 ? new HttpAnnouncer(URI.create(config.getServiceUrl()))
                 : Announcer.NONE,
@@ -92,6 +130,11 @@ public final class EventPlanePartitionTransitionStep implements PartitionTransit
             context.getPersistedSnapshotStore(),
             config.getSnapshotInterval());
     publisher.start(config.getPollInterval());
+    floorResend =
+        context
+            .getConcurrencyControl()
+            .runAtFixedRate(
+                context.getBrokerCfg().getExporting().distributionInterval(), floorStore::resend);
     return CompletableActorFuture.completed(null);
   }
 

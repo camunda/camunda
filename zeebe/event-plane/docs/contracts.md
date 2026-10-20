@@ -98,11 +98,14 @@ JSON of a part, as in docs/14-history-manifests.md:
 
 ## The upload floor
 
-The floor is an entry in the broker's exporter state, under the exporter id `event-plane`, which the
-exporter director treats as configured whenever the Event Plane is on. Its position is the last
-uploaded record's position, or -1 before any upload. Its metadata is JSON:
-`{"history":"…","index":1096704}`. The exporter director persists it, sends it to followers, and
-compaction stops at it.
+The floor is the partition's entry in the column family `EVENT_PLANE_FLOOR` (`FloorState`): the
+history, the last uploaded index, and the last uploaded record's position, or -1 if no upload held
+a record yet. Every replica keeps one while the Event Plane is on, held at -1 until the first
+upload, and snapshots carry it; while the Event Plane is off, the broker deletes it. Its position
+never goes back, and compaction stops at it as at an exporter's (`DbPositionSupplier`). The leader
+sends each floor it stores, and the latest again every exporting distribution interval, on the
+subject `event-plane-floor-{tenant}-{partition}` (history, index, position: four longs); a
+follower stores those ahead of its own.
 
 ## Upload notifications
 

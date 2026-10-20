@@ -58,14 +58,17 @@ final class PublishIT {
                     log.getFirst().clusterId(), "default", segments.history(), 1)))
         .isPresent();
 
-    // the floor follows the uploads, and compaction stops there
+    // the floor follows the uploads, and compaction stops there: a snapshot's exported position,
+    // the floor's without exporters, bounds what the journal may compact
     final var partitions = PartitionsActuator.of(broker);
-    await("the floor reaches the uploaded records")
+    await("snapshots stop at the uploaded records")
         .timeout(Duration.ofSeconds(30))
         .untilAsserted(
-            () ->
-                assertThat(partitions.query().get(1).exportedPosition())
-                    .isEqualTo(Bucket.readLog(store, log.getFirst()).lastPosition()));
+            () -> {
+              partitions.takeSnapshot();
+              assertThat(partitions.query().get(1).exportedPositionInSnapshot())
+                  .isEqualTo(Bucket.readLog(store, log.getFirst()).lastPosition());
+            });
   }
 
   @Test
@@ -77,7 +80,7 @@ final class PublishIT {
     final var before =
         await("records in the bucket")
             .until(() -> Bucket.readLog(store, log.getFirst()), read -> read.lastPosition() > 0);
-    // the floor lives in the exporter state, which survives a restart in a snapshot
+    // the floor lives in the partition's state, which survives a restart in a snapshot
     PartitionsActuator.of(broker).takeSnapshot();
     await("a snapshot")
         .until(() -> PartitionsActuator.of(broker).query().get(1).snapshotId() != null);

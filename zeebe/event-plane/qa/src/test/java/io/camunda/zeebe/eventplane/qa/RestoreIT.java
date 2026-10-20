@@ -147,11 +147,21 @@ final class RestoreIT {
     config.getData().getSecondaryStorage().setAutoconfigureCamundaExporter(false);
   }
 
-  /** Takes a backup after a snapshot, and returns its checkpoint position. */
+  /**
+   * Takes a backup after a snapshot that holds an upload floor, which names the history the backup
+   * is taken in, and returns its checkpoint position. Without exporters, a snapshot's exported
+   * position is the floor's, and 0 while the floor is held.
+   */
   private static long takeBackup(final TestStandaloneBroker broker) {
     final var partitions = PartitionsActuator.of(broker);
-    partitions.takeSnapshot();
-    await("a snapshot").until(() -> partitions.query().get(1).snapshotId() != null);
+    await("a snapshot with the floor")
+        .timeout(Duration.ofSeconds(30))
+        .until(
+            () -> {
+              partitions.takeSnapshot();
+              return partitions.query().get(1).exportedPositionInSnapshot();
+            },
+            exported -> exported != null && exported > 0);
     final var backups = BackupActuator.of(broker);
     backups.take(BACKUP_ID);
     await("the backup")
