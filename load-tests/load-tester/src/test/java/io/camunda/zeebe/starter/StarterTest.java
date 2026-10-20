@@ -8,6 +8,7 @@
 package io.camunda.zeebe.starter;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
@@ -29,13 +30,21 @@ import io.camunda.zeebe.metrics.StarterMetricsDoc.StarterMetricKeyNames;
 import io.camunda.zeebe.util.PayloadReader;
 import io.micrometer.core.instrument.Tag;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import java.time.Duration;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
+<<<<<<< HEAD
 import org.springframework.context.ApplicationContext;
 import org.springframework.web.reactive.function.client.WebClient;
+=======
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.context.ConfigurableApplicationContext;
+import org.springframework.scheduling.TaskScheduler;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
+>>>>>>> e477398ed (refactor: start the starter components from application events)
 
 class StarterTest {
 
@@ -59,9 +68,14 @@ class StarterTest {
         mock(PayloadReader.class),
         mock(ConnectionMonitor.class),
         mock(StarterLivenessIndicator.class),
+<<<<<<< HEAD
         mock(WebClient.Builder.class),
         new ObjectMapper(),
         mock(ApplicationContext.class));
+=======
+        mock(TaskScheduler.class),
+        mock(ApplicationEventPublisher.class));
+>>>>>>> e477398ed (refactor: start the starter components from application events)
 
     // then
     final var gauge = registry.find(StarterMetricsDoc.CLIENT_INFO.getName()).gauge();
@@ -100,11 +114,32 @@ class StarterTest {
     final var payloadReader = mock(PayloadReader.class);
     when(payloadReader.readPayload(any())).thenReturn("{}");
 
+<<<<<<< HEAD
+=======
+    final var scheduler = new ThreadPoolTaskScheduler();
+    scheduler.initialize();
+    final var registry = new SimpleMeterRegistry();
+    final var livenessIndicator = mock(StarterLivenessIndicator.class);
+    final var deployer =
+        new ProcessDeployer(
+            loaderClient, properties, mock(ConnectionMonitor.class), livenessIndicator);
+    final var creator =
+        new ProcessInstanceCreator(
+            loaderClient,
+            properties,
+            registry,
+            payloadReader,
+            livenessIndicator,
+            mock(ConfigurableApplicationContext.class));
+    final var availabilityMeter =
+        new ProcessInstanceStartMeter(registry, properties, queryClient, creator);
+>>>>>>> e477398ed (refactor: start the starter components from application events)
     final var starter =
         new Starter(
             loaderClient,
             queryClient,
             properties,
+<<<<<<< HEAD
             new SimpleMeterRegistry(),
             payloadReader,
             mock(ConnectionMonitor.class),
@@ -112,11 +147,30 @@ class StarterTest {
             mock(WebClient.Builder.class),
             new ObjectMapper(),
             mock(ApplicationContext.class));
+=======
+            registry,
+            livenessIndicator,
+            scheduler,
+            event -> {
+              creator.close();
+              availabilityMeter.close();
+            });
+>>>>>>> e477398ed (refactor: start the starter components from application events)
 
     // when
-    starter.run();
+    availabilityMeter.start();
+    creator.start();
+    starter.scheduleFinish();
 
     // then
+    await()
+        .atMost(Duration.ofSeconds(20))
+        .until(
+            () -> {
+              final var gauge = registry.find(StarterMetricsDoc.RUN_FINISHED.getName()).gauge();
+              return gauge != null && gauge.value() == 1.0;
+            });
+    scheduler.shutdown();
     verify(loaderClient, atLeastOnce()).newCreateInstanceCommand();
     verify(loaderClient, never()).newProcessInstanceSearchRequest();
     verify(queryClient, atLeastOnce()).newProcessInstanceSearchRequest();

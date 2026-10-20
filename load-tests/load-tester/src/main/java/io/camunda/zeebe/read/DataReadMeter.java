@@ -13,6 +13,12 @@ import io.camunda.zeebe.metrics.ErrorType;
 import io.camunda.zeebe.metrics.StarterLatencyMetricsDoc;
 import io.camunda.zeebe.metrics.StarterLatencyMetricsDoc.StarterLatencyMetricKeyNames;
 import io.camunda.zeebe.metrics.StarterMetricsDoc.StarterMetricKeyNames;
+<<<<<<< HEAD
+=======
+import io.camunda.zeebe.starter.ProcessDeployer;
+import io.camunda.zeebe.starter.ProcessInstanceCreator;
+import io.camunda.zeebe.starter.StarterFinished;
+>>>>>>> e477398ed (refactor: start the starter components from application events)
 import io.camunda.zeebe.util.micrometer.MicrometerUtil;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
@@ -29,6 +35,16 @@ import java.util.function.Supplier;
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+<<<<<<< HEAD
+=======
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.annotation.Profile;
+import org.springframework.context.event.EventListener;
+import org.springframework.stereotype.Component;
+>>>>>>> e477398ed (refactor: start the starter components from application events)
 
 public class DataReadMeter implements AutoCloseable {
 
@@ -45,6 +61,35 @@ public class DataReadMeter implements AutoCloseable {
   private final AtomicReference<ReadQueryContext> queryContext =
       new AtomicReference<>(new ReadQueryContext(0L, "", 0L, () -> Pair.of("foo", 0L)));
 
+<<<<<<< HEAD
+=======
+  @Autowired
+  public DataReadMeter(
+      final MeterRegistry meterRegistry,
+      @Qualifier("queryCamundaClient") final CamundaClient client,
+      final LoadTesterProperties properties,
+      final ProcessInstanceCreator processInstanceCreator,
+      final ProcessDeployer processDeployer) {
+    this(
+        meterRegistry,
+        Executors.newScheduledThreadPool(2),
+        client,
+        DataReadMeterQueryProvider.getDefaultQueries(properties.getDisabledQueriesList()));
+    final var starterCfg = properties.getStarter();
+    setContextProcessDefinitionId(starterCfg.getProcessId());
+    setContextProcessDefinitionKey(processDeployer.processDefinitionKey());
+    setContextBusinessKeySupplier(
+        () ->
+            Pair.of(
+                starterCfg.getBusinessKey(),
+                processInstanceCreator.currentBusinessKey()
+                    - (long) (starterCfg.getRatePerSecond() * 60.0)));
+    processInstanceCreator.addStartListener(
+        (processInstanceKey, startTimeNanos) -> recordProcessInstanceStart(processInstanceKey));
+  }
+
+  // Could be merged with the constructor above if the executor and the queries were beans.
+>>>>>>> e477398ed (refactor: start the starter components from application events)
   public DataReadMeter(
       final MeterRegistry meterRegistry,
       final ScheduledExecutorService scheduledExecutorService,
@@ -61,6 +106,7 @@ public class DataReadMeter implements AutoCloseable {
    * scheduled once the previous one completed, so there is at most one in-flight execution per
    * query and slow queries neither pile up nor block the scheduler threads.
    */
+  @EventListener(ApplicationReadyEvent.class)
   public void start() {
     for (final ReadQuery query : queries) {
       timer(query, OUTCOME_SUCCESS, NO_ERROR);
@@ -134,6 +180,7 @@ public class DataReadMeter implements AutoCloseable {
   }
 
   @Override
+  @EventListener(StarterFinished.class)
   public void close() {
     closed = true;
     executorService.shutdownNow();
