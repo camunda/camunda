@@ -7,6 +7,7 @@
  */
 
 import {useId} from 'react';
+import {useTranslation} from 'react-i18next';
 import {IconButton} from '@carbon/react';
 import {Information} from '@carbon/react/icons';
 import {MetricCardContainer, MetricCardTitle, MetricCardValue, MetricCardValueRow} from './agentDetails.styled';
@@ -19,13 +20,14 @@ type MetricCardProps = {
 };
 
 const MetricCard: React.FC<MetricCardProps> = ({title, value, valueInfo, children}) => {
+	const {i18n} = useTranslation();
 	const id = useId();
 
 	return (
 		<MetricCardContainer aria-labelledby={id}>
 			<MetricCardTitle id={id}>{title}</MetricCardTitle>
 			<MetricCardValueRow>
-				<MetricCardValue>{value.toLocaleString()}</MetricCardValue>
+				<MetricCardValue>{value.toLocaleString(i18n.resolvedLanguage)}</MetricCardValue>
 				{valueInfo !== undefined && (
 					<IconButton kind="ghost" size="xs" label={valueInfo} align="bottom">
 						<Information />

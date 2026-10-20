@@ -68,7 +68,7 @@ type AgentDetailsProps = {
 };
 
 const AgentDetails: React.FC<AgentDetailsProps> = ({agentInstances, totalAgentsCount, hasMoreTotalItems, isError}) => {
-	const {t} = useTranslation();
+	const {t, i18n} = useTranslation();
 	const headingId = useId();
 	const [selectedAgentInstanceKey, setSelectedAgentInstanceKey] = useState<string | null>(null);
 
@@ -130,10 +130,14 @@ const AgentDetails: React.FC<AgentDetailsProps> = ({agentInstances, totalAgentsC
 						<AgentSectionTitle icon={<MeterAlt size={16} />}>
 							{t('operate.processInstance.details.agent.usage')}
 							<Tag type="gray" size="sm">
-								{t('operate.processInstance.details.agent.modelCallsTag', {value: metrics.modelCalls.toLocaleString()})}
+								{t('operate.processInstance.details.agent.modelCallsTag', {
+									value: metrics.modelCalls.toLocaleString(i18n.resolvedLanguage),
+								})}
 							</Tag>
 							<Tag type="gray" size="sm">
-								{t('operate.processInstance.details.agent.tokensTag', {value: totalTokens.toLocaleString()})}
+								{t('operate.processInstance.details.agent.tokensTag', {
+									value: totalTokens.toLocaleString(i18n.resolvedLanguage),
+								})}
 							</Tag>
 						</AgentSectionTitle>
 					}

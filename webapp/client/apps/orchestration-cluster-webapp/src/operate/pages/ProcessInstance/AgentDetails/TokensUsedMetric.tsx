@@ -29,7 +29,7 @@ const TokensUsedMetric: React.FC<TokensUsedMetricProps> = ({
 	reasoningTokens,
 	maxTokens,
 }) => {
-	const {t} = useTranslation();
+	const {t, i18n} = useTranslation();
 	const totalTokens = getTotalTokens({
 		inputTokens,
 		outputTokens,
@@ -48,16 +48,16 @@ const TokensUsedMetric: React.FC<TokensUsedMetricProps> = ({
 				<TokenBreakdownColumn>
 					<TokenBreakdown $dotColor="var(--cds-interactive)">
 						<span>{t('operate.processInstance.details.agent.input')}</span>
-						<span>{inputTokens.toLocaleString()}</span>
+						<span>{inputTokens.toLocaleString(i18n.resolvedLanguage)}</span>
 					</TokenBreakdown>
 					<TokenBreakdown $dotColor="var(--cds-support-warning)">
 						<span>{t('operate.processInstance.details.agent.output')}</span>
-						<span>{outputTokens.toLocaleString()}</span>
+						<span>{outputTokens.toLocaleString(i18n.resolvedLanguage)}</span>
 					</TokenBreakdown>
 					{reasoningTokens > 0 && (
 						<TokenBreakdown $dotColor="var(--cds-status-gray)">
 							<span>{t('operate.processInstance.details.agent.reasoning')}</span>
-							<span>{reasoningTokens.toLocaleString()}</span>
+							<span>{reasoningTokens.toLocaleString(i18n.resolvedLanguage)}</span>
 						</TokenBreakdown>
 					)}
 				</TokenBreakdownColumn>
@@ -65,11 +65,11 @@ const TokensUsedMetric: React.FC<TokensUsedMetricProps> = ({
 					<TokenBreakdownColumn>
 						<TokenBreakdown $dotColor="var(--cds-status-gray)">
 							<span>{t('operate.processInstance.details.agent.cacheRead')}</span>
-							<span>{cacheReadTokens.toLocaleString()}</span>
+							<span>{cacheReadTokens.toLocaleString(i18n.resolvedLanguage)}</span>
 						</TokenBreakdown>
 						<TokenBreakdown $dotColor="var(--cds-status-gray)">
 							<span>{t('operate.processInstance.details.agent.cacheWrite')}</span>
-							<span>{cacheCreationTokens.toLocaleString()}</span>
+							<span>{cacheCreationTokens.toLocaleString(i18n.resolvedLanguage)}</span>
 						</TokenBreakdown>
 					</TokenBreakdownColumn>
 				)}

@@ -6,7 +6,8 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {describe, expect} from 'vitest';
+import i18n from 'i18next';
+import {afterEach, describe, expect} from 'vitest';
 import {userEvent} from 'vitest/browser';
 import {render} from 'vitest-browser-react';
 import type {AgentInstance} from '@camunda/camunda-api-zod-schemas/8.11';
@@ -36,6 +37,10 @@ function renderAgentDetails({
 }
 
 describe('<AgentDetails />', () => {
+	afterEach(async () => {
+		await i18n.changeLanguage('en');
+	});
+
 	it.for([
 		['UNKNOWN', 'Unknown'],
 		['INITIALIZING', 'Initializing'],
@@ -160,6 +165,39 @@ describe('<AgentDetails />', () => {
 		await expect.element(tokensUsed.getByRole('meter')).toHaveAttribute('aria-valuetext', '200 of 400 limit (50%)');
 		await expect.element(toolsCalled).toBeVisible();
 		await expect.element(toolsCalled.getByRole('meter')).not.toBeInTheDocument();
+	});
+
+	it('should format numbers in the selected application language', async () => {
+		await i18n.changeLanguage('de');
+		const screen = await renderAgentDetails({
+			agentInstances: [
+				createAgentInstance({
+					metrics: {
+						inputTokens: 1000,
+						outputTokens: 500,
+						reasoningTokenCount: 0,
+						cacheCreationTokenCount: 0,
+						cacheReadTokenCount: 0,
+						modelCalls: 1234,
+						toolCalls: 0,
+					},
+					limits: {maxModelCalls: 2000, maxToolCalls: -1, maxTokens: -1},
+				}),
+			],
+		});
+		const usage = screen.getByRole('button', {name: 'Nutzung'});
+
+		await expect.element(usage).toMatchTextContent('1.234 Modellaufrufe');
+		await expect.element(usage).toMatchTextContent(/1\.500\sTokens/);
+
+		await userEvent.click(usage);
+
+		const modelCalls = screen.getByRole('article', {name: 'Modellaufrufe'});
+		await expect.element(modelCalls).toMatchTextContent('1.234');
+		await expect.element(modelCalls).toMatchTextContent('von 2.000 Limit');
+		await expect
+			.element(modelCalls.getByRole('meter'))
+			.toHaveAttribute('aria-valuetext', '1.234 von 2.000 Limit (62 %)');
 	});
 
 	it('should render the available tools sorted by name', async () => {

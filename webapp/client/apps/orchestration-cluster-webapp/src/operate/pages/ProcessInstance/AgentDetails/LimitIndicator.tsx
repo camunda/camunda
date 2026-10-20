@@ -15,7 +15,7 @@ type LimitIndicatorProps = {
 };
 
 const LimitIndicator: React.FC<LimitIndicatorProps> = ({current, limit}) => {
-	const {t} = useTranslation();
+	const {t, i18n} = useTranslation();
 
 	if (limit < 0) {
 		return null;
@@ -34,13 +34,13 @@ const LimitIndicator: React.FC<LimitIndicatorProps> = ({current, limit}) => {
 				aria-valuemax={100}
 				aria-valuenow={clampedUsage}
 				aria-valuetext={t('operate.processInstance.details.agent.usageLimitValue', {
-					current: String(current),
-					limit: String(limit),
+					current: current.toLocaleString(i18n.resolvedLanguage),
+					limit: limit.toLocaleString(i18n.resolvedLanguage),
 					percent: usage.toFixed(0),
 				})}
 			/>
 			<MetricHelperText aria-hidden="true">
-				{t('operate.processInstance.details.agent.ofLimit', {limit: limit.toLocaleString()})}
+				{t('operate.processInstance.details.agent.ofLimit', {limit: limit.toLocaleString(i18n.resolvedLanguage)})}
 			</MetricHelperText>
 		</LimitMeterContainer>
 	);
