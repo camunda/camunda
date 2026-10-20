@@ -1115,6 +1115,11 @@
                 "type": "string",
                 "description": "The key of the process instance of this variable."
               },
+              "protectionMode": {
+                "type": "string",
+                "const": "REDACT",
+                "description": "The protection applied to the variable. A variable matches when it has at least one of the given protection modes. "
+              },
               "scopeKey": {
                 "type": "string",
                 "description": "The key of the scope that defines where this variable is directly defined. This can be a process instance key (for process-level variables) or an element instance key (for local variables scoped to tasks, subprocesses, gateways, events, etc.). Use this filter to find variables directly defined in specific scopes. Note that this does not include variables from parent scopes that would be visible through the scope hierarchy. "

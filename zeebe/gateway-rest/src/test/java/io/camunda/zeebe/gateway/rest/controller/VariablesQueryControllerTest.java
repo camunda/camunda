@@ -16,6 +16,7 @@ import static org.mockito.Mockito.when;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
 
 import io.camunda.search.entities.VariableEntity;
+import io.camunda.search.entities.VariableEntity.ProtectionMode;
 import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.search.filter.VariableFilter;
 import io.camunda.search.query.SearchQueryResult;
@@ -442,6 +443,46 @@ public class VariablesQueryControllerTest extends RestControllerTest {
   }
 
   @Test
+  void shouldInvalidateVariableSearchQueryWithUnknownProtectionMode() {
+    // given
+    final var request =
+        """
+            {
+                "filter": {
+                    "protectionMode": "UNKNOWN"
+                }
+            }""";
+    final var expectedResponse =
+        String.format(
+            """
+                {
+                  "type": "about:blank",
+                  "title": "Bad Request",
+                  "status": 400,
+                  "detail": "Unexpected value 'UNKNOWN' for enum field 'protectionMode'. Use any of the following values: [REDACT]",
+                  "instance": "%s"
+                }""",
+            VARIABLE_TASKS_SEARCH_URL);
+
+    // when / then
+    webClient
+        .post()
+        .uri(VARIABLE_TASKS_SEARCH_URL)
+        .accept(APPLICATION_JSON)
+        .contentType(APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedResponse, JsonCompareMode.STRICT);
+
+    verify(variableServices, never()).search(any(VariableQuery.class), any());
+  }
+
+  @Test
   void shouldGetVariableByKey() {
     // when / then
     webClient
@@ -516,6 +557,23 @@ public class VariablesQueryControllerTest extends RestControllerTest {
         streamBuilder, "name", ops -> new VariableFilter.Builder().nameOperations(ops).build());
     stringOperationTestCases(
         streamBuilder, "value", ops -> new VariableFilter.Builder().valueOperations(ops).build());
+    streamBuilder.add(
+        Arguments.of(
+            "{\"protectionMode\": \"REDACT\"}",
+            new VariableFilter.Builder().protectionModes(ProtectionMode.REDACT).build()));
+    streamBuilder.add(
+        Arguments.of(
+            "{\"protectionMode\": {\"$in\": [\"REDACT\"]}}",
+            new VariableFilter.Builder().protectionModes(ProtectionMode.REDACT).build()));
+    streamBuilder.add(
+        Arguments.of("{\"protectionMode\": {\"$in\": []}}", new VariableFilter.Builder().build()));
+    streamBuilder.add(
+        Arguments.of(
+            "{\"name\": \"ssn\", \"protectionMode\": \"REDACT\"}",
+            new VariableFilter.Builder()
+                .names("ssn")
+                .protectionModes(ProtectionMode.REDACT)
+                .build()));
 
     return streamBuilder.build();
   }
