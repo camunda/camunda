@@ -1251,3 +1251,58 @@ the row is locked first, `select … for update`, and `next_seq` incremented):
   entries produced by the cluster PoC.
 - Manual end to end: local brokers from `log-archive-manual/` with `eventPlane.url` pointing at the
   event plane server (demo profile, H2), then `curl` the read API; restore and see the path switch.
+
+### 19.6 One object format: the event plane's segment format v1
+
+The cluster writes new log objects in the event plane's segment format v1 (`camunda/event-plane`
+`docs/12-segment-format.md` at commit `5b80c38`), so that one format serves restore, the event
+plane's readers and later its rollups. It replaces the `ZLA1` format of section 10 for new objects;
+readers (restore, the event plane) read both.
+
+**Bytes** (little-endian throughout, as in the event plane's document):
+
+```
+body      zstd frames; a log object written by the cluster is ONE frame holding all its entries
+          entry = the journal's bytes for one entry:
+                  frame version (1 byte, 1)
+                | RecordMetadata: SBE header (8) | CRC32C checksum (8) | RecordData length (4)
+                | RecordData:     SBE header (8) | Raft index (8) | asqn (8) | Raft entry: length (4) + bytes
+metadata  key-value entries, then a directory: per entry key (u16) | offset from metadata start (u32)
+          | length (u32), then the entry count (u32)
+            key 1 identity:    clusterId (u16 length + UTF-8) | physicalTenantId (u16 length + UTF-8)
+                               | partitionId (u32)
+            key 2 frame index: per frame: first position in the frame or -1 (i64) | frame offset (u64)
+footer    66 bytes: history (16) | firstIndex (8) | lastIndex (8) | firstPosition (8) | lastPosition (8)
+          | latest record timestamp, epoch ms, -1 if no records (8) | body length (8) | level (1, 0)
+          | format version (1, 1)
+```
+
+- **Entry bytes = what the journal writes.** The checksum and the `RecordData` message are exactly
+  `IndexedRaftLogEntry.getReplicatableJournalRecord()`'s checksum and serialized record; the
+  `RecordMetadata` header is rebuilt with the journal's own SBE serializer. Restore appends them
+  unchanged with `Journal.append(checksum, serializedRecord)`, as before (byte-identical journal).
+- **History** (16 bytes): `UUID.nameUUIDFromBytes(("log-archive:" + timelineId).getBytes(UTF_8))`,
+  written as the UUID's 16 bytes in RFC 4122 order (most significant byte first). Readers take the
+  timeline from the commit entry or the key, not from this field; whether timelines and the event
+  plane's histories become one concept is open.
+- **Identity:** the cluster id as the announcer resolves it (`logArchive.eventPlane.clusterId`, else
+  `cluster.clusterId`, else `"default"`), the physical tenant id and the partition id. Resolved once
+  and passed to the archiver, whether or not the event plane is configured.
+- **Determinism (I4):** zstd-jni (`com.github.luben:zstd-jni`, already a managed dependency), level 3,
+  window log 23 (8 MiB, the event plane's decoder bound), content size in the frame header, no zstd
+  checksum, no dictionary. The same entries give the same bytes with the same library version. Keys
+  hold the term, so only the same leader re-uploads a key.
+- **Latest record timestamp:** the highest record timestamp of the object's application entries (the
+  Raft adapter reads it next to the value types), -1 without records.
+- **Key and model:** `data/<firstIndex>-<lastIndex>-t<term>.seg` (20-digit zero padding as before).
+  `LogObject` (record, JSON) gets `bodyLength` (long, -1 for `ZLA1` objects; omitted in JSON when -1),
+  needed by readers that read the tail first. `sizeBytes` and `sha256` cover the whole object as
+  before.
+- **Reading:** the format follows from the key's extension: `.rec` is `ZLA1` (section 10), `.seg` is
+  segment v1. Restore decompresses the body (one frame) and appends every entry; ranged reads are not
+  needed, objects are at most `cutMaxBytes` before compression.
+- **Not used yet:** several frames per object and level 1 (rollups) are the event plane's (level 2);
+  the cluster always writes one frame and level 0.
+
+**Event plane side:** its decoder reads both formats (by extension); `la_object` gets `body_length`
+(nullable), the objects and timeline APIs return `bodyLength` when known; the UI shows the format.
