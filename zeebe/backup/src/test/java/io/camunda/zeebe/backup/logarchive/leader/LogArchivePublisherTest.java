@@ -561,6 +561,77 @@ final class LogArchivePublisherTest {
         TIMELINE, seq, bytes("c" + seq), bytes("r" + seq), null, new HandoverJson(7, 15));
   }
 
+  @Test
+  void shouldAnnounceCommitEntryOnlyAfterItsPutAndTimelineFile() {
+    // given
+    final var announced = new ArrayList<String>();
+    final var fresh = startPublisherWithAnnouncer(announced);
+    store.failNext(1);
+
+    // when
+    fresh.publish(timelineStarted(1));
+    scheduler.workUntilDone();
+
+    // then - the failed PUT of the commit entry blocks the announcement
+    assertThat(announced).isEmpty();
+
+    // when
+    scheduler.updateClock(Duration.ofMillis(100));
+    scheduler.workUntilDone();
+
+    // then
+    assertThat(announced).containsExactly(TIMELINE + " 1");
+    assertThat(events.indexOf("PUT " + PREFIX + LogArchiveKeys.timelineKey()))
+        .isGreaterThanOrEqualTo(0);
+  }
+
+  @Test
+  void shouldNotAnnounceBeforeRecoveryCheck() {
+    // given
+    final var announced = new ArrayList<String>();
+    final var fresh = startPublisherWithAnnouncer(announced);
+    store.failNextGets(1);
+    fresh.onRecovered(new LogArchiveMeta().setTimelineId(TIMELINE).setNextSeq(2));
+
+    // when
+    fresh.publish(commit(2));
+    scheduler.workUntilDone();
+
+    // then
+    assertThat(announced).isEmpty();
+
+    // when
+    scheduler.updateClock(Duration.ofMillis(100));
+    scheduler.workUntilDone();
+
+    // then
+    assertThat(announced).containsExactly(TIMELINE + " 2");
+  }
+
+  private LogArchivePublisher startPublisherWithAnnouncer(final List<String> announced) {
+    final var announcer =
+        new LogArchiveAnnouncer(
+            PARTITION,
+            store,
+            (partitionId, timelineId, entries) -> {
+              announced.add(
+                  timelineId
+                      + " "
+                      + new String(entries.get(0), StandardCharsets.UTF_8).substring(1));
+              return CompletableFuture.completedFuture(
+                  new LogArchiveEventPlaneClient.Answer(200, 1000));
+            },
+            10);
+    scheduler.submitActor(announcer);
+    final var started =
+        new LogArchivePublisher(
+            PARTITION, store, writer, (meta, bucketAhead) -> {}, null, announcer);
+    scheduler.submitActor(started);
+    started.onRecovered(new LogArchiveMeta());
+    scheduler.workUntilDone();
+    return started;
+  }
+
   private LogArchivePublisher startPublisherWithBackupStore() {
     final var backupStore = mock(BackupStore.class);
     when(backupStore.storeHandoverRecord(anyInt(), anyLong(), any()))
