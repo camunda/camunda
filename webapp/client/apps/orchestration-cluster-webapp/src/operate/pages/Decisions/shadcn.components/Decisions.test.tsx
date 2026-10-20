@@ -79,6 +79,84 @@ describe('<Decisions />', () => {
 		await expect.poll(() => screen.router.state.location.search).toEqual({tenantId: 'tenant-a', failed: false});
 	});
 
+	it('should clear a removed filter from the URL even when another filter field is invalid', async () => {
+		const screen = await renderWithRouter(Decisions, {
+			path: '/operate-preview/decisions',
+			initialEntry: '/operate-preview/decisions?businessId=eq_order-1&processInstanceKey=123',
+		});
+
+		await userEvent.fill(screen.getByLabelText('Process Instance Key', {exact: true}), 'abc');
+		await expect
+			.element(screen.getByLabelText('Process Instance Key', {exact: true}))
+			.toHaveAttribute('aria-invalid', 'true');
+		(screen.getByRole('button', {name: 'Remove Business ID Filter'}).element() as HTMLElement).click();
+
+		await expect.element(screen.getByLabelText('Business ID', {exact: true})).not.toBeInTheDocument();
+		await expect.poll(() => screen.router.state.location.search).not.toHaveProperty('businessId');
+	});
+
+	it('should keep unrelated edits when another filter is removed', async () => {
+		const screen = await renderWithRouter(Decisions, {
+			path: '/operate-preview/decisions',
+			initialEntry: '/operate-preview/decisions?businessId=eq_order-1&processInstanceKey=%22123%22',
+		});
+
+		await userEvent.fill(screen.getByLabelText('Process Instance Key', {exact: true}), 'abc');
+		(screen.getByRole('button', {name: 'Remove Business ID Filter'}).element() as HTMLElement).click();
+
+		await expect.element(screen.getByLabelText('Business ID', {exact: true})).not.toBeInTheDocument();
+		await expect.element(screen.getByLabelText('Process Instance Key', {exact: true})).toHaveValue('abc');
+	});
+	it('should restore URL values when navigating back with a pending draft', async () => {
+		const screen = await renderWithRouter(Decisions, {
+			path: '/operate-preview/decisions',
+			initialEntry: '/operate-preview/decisions?businessId=eq_order-1',
+		});
+		await expect.element(screen.getByLabelText('Business ID', {exact: true})).toHaveValue('order-1');
+		await screen.router.navigate({to: '.', search: (prev) => ({...prev, businessId: 'eq_order-2'})});
+		await expect.element(screen.getByLabelText('Business ID', {exact: true})).toHaveValue('order-2');
+
+		await userEvent.fill(screen.getByLabelText('Business ID', {exact: true}), 'order-3');
+		screen.router.history.back();
+
+		await expect.element(screen.getByLabelText('Business ID', {exact: true})).toHaveValue('order-1');
+		await expect.poll(() => screen.router.state.location.search).toHaveProperty('businessId', 'eq_order-1');
+	});
+
+	it('should discard an invalid draft when resetting after removing an empty filter', async () => {
+		const screen = await renderWithRouter(Decisions, {path: '/operate-preview/decisions'});
+
+		(screen.getByRole('button', {name: 'More Filters'}).element() as HTMLElement).focus();
+		await userEvent.keyboard('{Enter}');
+		await userEvent.click(screen.getByRole('menuitem', {name: 'Process Instance Key'}));
+		await userEvent.fill(screen.getByLabelText('Process Instance Key', {exact: true}), 'abc');
+		(screen.getByRole('button', {name: 'More Filters'}).element() as HTMLElement).focus();
+		await userEvent.keyboard('{Enter}');
+		await userEvent.click(screen.getByRole('menuitem', {name: 'Business ID'}));
+		(screen.getByRole('button', {name: 'Remove Business ID Filter'}).element() as HTMLElement).click();
+		(screen.getByRole('button', {name: 'Reset filters'}).element() as HTMLElement).click();
+		(screen.getByRole('button', {name: 'More Filters'}).element() as HTMLElement).focus();
+		await userEvent.keyboard('{Enter}');
+		await userEvent.click(screen.getByRole('menuitem', {name: 'Process Instance Key'}));
+
+		await expect.element(screen.getByLabelText('Process Instance Key', {exact: true})).toHaveValue('');
+	});
+
+	it('should discard an invalid draft when resetting', async () => {
+		const screen = await renderWithRouter(Decisions, {path: '/operate-preview/decisions'});
+
+		(screen.getByRole('button', {name: 'More Filters'}).element() as HTMLElement).focus();
+		await userEvent.keyboard('{Enter}');
+		await userEvent.click(screen.getByRole('menuitem', {name: 'Process Instance Key'}));
+		await userEvent.fill(screen.getByLabelText('Process Instance Key', {exact: true}), 'abc');
+		(screen.getByRole('button', {name: 'Reset filters'}).element() as HTMLElement).click();
+		(screen.getByRole('button', {name: 'More Filters'}).element() as HTMLElement).focus();
+		await userEvent.keyboard('{Enter}');
+		await userEvent.click(screen.getByRole('menuitem', {name: 'Process Instance Key'}));
+
+		await expect.element(screen.getByLabelText('Process Instance Key', {exact: true})).toHaveValue('');
+	});
+
 	it('should remove active optional filters when resetting', async () => {
 		const screen = await renderWithRouter(Decisions, {
 			path: '/operate-preview/decisions',
