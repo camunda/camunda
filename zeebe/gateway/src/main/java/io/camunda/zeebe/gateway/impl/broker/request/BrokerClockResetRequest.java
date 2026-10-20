@@ -8,6 +8,7 @@
 package io.camunda.zeebe.gateway.impl.broker.request;
 
 import io.camunda.zeebe.broker.client.api.dto.BrokerExecuteCommand;
+import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.value.clock.ClockRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ClockIntent;
@@ -20,6 +21,7 @@ public class BrokerClockResetRequest extends BrokerExecuteCommand<ClockRecord> {
 
   public BrokerClockResetRequest() {
     super(ValueType.CLOCK, ClockIntent.RESET);
+    setPartitionId(Protocol.DEPLOYMENT_PARTITION);
   }
 
   @Override

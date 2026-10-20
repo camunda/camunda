@@ -45,6 +45,10 @@ import org.jspecify.annotations.NullMarked;
  * other partitions receive the result instead: a {@link ClockIntent#PIN} command with the new
  * pinned time, or a {@link ClockIntent#OFFSET} command with the new total offset. This way, a
  * partition that receives the command twice does not add the duration twice.
+ *
+ * <p>The new total offset is only right if this partition has seen every earlier clock change. So
+ * the gateway sends all clock changes to the deployment partition, and they reach the other
+ * partitions in the same order through the {@link DistributionQueue#CLOCK} queue.
  */
 @NullMarked
 public final class ClockAddProcessor implements TypedRecordProcessor<ClockRecord> {
