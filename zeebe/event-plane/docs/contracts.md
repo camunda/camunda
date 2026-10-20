@@ -152,7 +152,8 @@ With `zeebe.broker.experimental.eventPlane.snapshotInterval` above zero, the lea
 thread uploads the partition's latest snapshot at most once per interval, unless its descriptor is
 in the store already. It reserves the snapshot while it uploads, and PUTs every file of
 `PersistedSnapshot.files()` (the checksum file `{snapshotId}.checksum` among them, as backups carry
-it), then the descriptor last. `io.camunda.zeebe.eventplane.snapshot.SnapshotDescriptor`, at
+it), then the descriptor last. It skips a bootstrap snapshot and one at index 0, which saves a
+restore nothing. `io.camunda.zeebe.eventplane.snapshot.SnapshotDescriptor`, at
 `{cluster}/{tenant}/{partition}/snapshots/{snapshotId}/descriptor.json`:
 
 ```json

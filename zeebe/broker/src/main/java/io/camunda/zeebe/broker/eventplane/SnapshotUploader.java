@@ -57,8 +57,10 @@ final class SnapshotUploader {
   }
 
   /**
-   * Uploads the latest snapshot, unless there is none, it is a bootstrap snapshot, or its
-   * descriptor is in the store already.
+   * Uploads the latest snapshot, unless there is none, it is a bootstrap snapshot, it is at index
+   * 0, or its descriptor is in the store already. A restore from the bucket needs the segments
+   * after a snapshot's index, and at index 0 that is the whole log, which it restores without a
+   * snapshot.
    *
    * @param history the history the leader publishes in, which the descriptor names
    * @return the descriptor of the snapshot it uploaded, if it uploaded one
@@ -69,6 +71,10 @@ final class SnapshotUploader {
       return Optional.empty();
     }
     final var snapshot = latest.get();
+    if (snapshot.getIndex() == 0) {
+      LOG.debug("Not uploading snapshot {} of {}, which is at index 0", snapshot.getId(), log);
+      return Optional.empty();
+    }
     final var descriptorKey =
         ObjectNames.snapshotDescriptor(
             log.clusterId(), log.tenantId(), log.partition(), snapshot.getId());

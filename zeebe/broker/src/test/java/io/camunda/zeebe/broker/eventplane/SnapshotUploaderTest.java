@@ -156,6 +156,32 @@ final class SnapshotUploaderTest {
         .containsExactlyInAnyOrder(first.getId(), second.getId());
   }
 
+  @Test
+  void shouldNotUploadASnapshotAtIndexZeroButALaterOne() throws IOException {
+    // given
+    takeSnapshot(0, 5, 3, 7, 4);
+
+    // when
+    final var atZero = uploader.uploadLatest(HISTORY);
+
+    // then
+    assertThat(atZero).isEmpty();
+    assertThat(store.listPrefixes("")).isEmpty();
+
+    // given
+    final var later = takeSnapshot(10, 40, 30, 42, 35);
+
+    // when
+    final var uploaded = uploader.uploadLatest(HISTORY);
+
+    // then
+    assertThat(uploaded)
+        .hasValueSatisfying(d -> assertThat(d.snapshotId()).isEqualTo(later.getId()));
+    assertThat(SnapshotArchive.list(store, "c", "default", 1).complete())
+        .extracting(SnapshotDescriptor::snapshotId)
+        .containsExactly(later.getId());
+  }
+
   private PersistedSnapshot takeSnapshot(
       final long index,
       final long processedPosition,
