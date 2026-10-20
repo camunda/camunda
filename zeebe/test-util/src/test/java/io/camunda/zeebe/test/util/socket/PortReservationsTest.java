@@ -15,31 +15,35 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 final class PortReservationsTest {
+  // wide enough that ports in use by other processes on the machine cannot exhaust the range
   private static final int MIN = 20_000;
+  private static final int MAX = MIN + 1_000;
 
   @TempDir private Path lockDir;
 
   @Test
   void shouldReleaseAllPortsWhenClosed() {
-    // given - an allocator with exactly as many ports as are reserved
-    final var allocator = new PortAllocator(lockDir, MIN, MIN + 2);
-    final var ports = new PortReservations(allocator::reserve);
-    ports.nextPort();
-    ports.nextPort();
-    assertThatThrownBy(allocator::reserve).isInstanceOf(IllegalStateException.class);
+    // given - reserved ports that a single-port allocator cannot reserve
+    final var ports = new PortReservations(new PortAllocator(lockDir, MIN, MAX)::reserve);
+    final int firstPort = ports.nextPort();
+    final int secondPort = ports.nextPort();
+    final var first = new PortAllocator(lockDir, firstPort, firstPort + 1);
+    final var second = new PortAllocator(lockDir, secondPort, secondPort + 1);
+    assertThatThrownBy(first::reserve).isInstanceOf(IllegalStateException.class);
+    assertThatThrownBy(second::reserve).isInstanceOf(IllegalStateException.class);
 
     // when
     ports.close();
 
     // then
-    assertThat(allocator.reserve().port()).isBetween(MIN, MIN + 1);
-    assertThat(allocator.reserve().port()).isBetween(MIN, MIN + 1);
+    assertThat(first.reserve().port()).isEqualTo(firstPort);
+    assertThat(second.reserve().port()).isEqualTo(secondPort);
   }
 
   @Test
   void shouldAllowClosingTwice() {
     // given
-    final var ports = new PortReservations(new PortAllocator(lockDir, MIN, MIN + 1)::reserve);
+    final var ports = new PortReservations(new PortAllocator(lockDir, MIN, MAX)::reserve);
     ports.nextPort();
     ports.close();
 
