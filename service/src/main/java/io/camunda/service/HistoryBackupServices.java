@@ -11,7 +11,6 @@ import static io.camunda.service.authorization.Authorizations.BACKUP_CREATE_AUTH
 import static io.camunda.service.authorization.Authorizations.BACKUP_DELETE_AUTHORIZATION;
 import static io.camunda.service.authorization.Authorizations.BACKUP_READ_AUTHORIZATION;
 
-import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.api.model.authz.AuthorizationScope;
 import io.camunda.security.api.model.config.AuthorizationsConfiguration;
@@ -163,15 +162,9 @@ public final class HistoryBackupServices {
       return true;
     }
 
-    try {
-      return authorizationChecker
-          .collectPermissionTypes(
-              AuthorizationScope.WILDCARD_CHAR,
-              requiredAuthorization.resourceType(),
-              authentication)
-          .contains(requiredAuthorization.permissionType());
-    } catch (final CamundaSearchException e) {
-      throw ErrorMapper.mapSearchError(e);
-    }
+    return authorizationChecker
+        .collectPermissionTypes(
+            AuthorizationScope.WILDCARD_CHAR, requiredAuthorization.resourceType(), authentication)
+        .contains(requiredAuthorization.permissionType());
   }
 }

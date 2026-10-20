@@ -308,20 +308,19 @@ public class HistoryBackupServicesTest {
   }
 
   @Test
-  public void shouldFailTakeWithInternalErrorWhenPermissionSearchFails() {
-    // given
+  public void shouldPropagateSearchFailureOfPermissionLookup() {
+    // given - a failed lookup says nothing about the caller's permissions, so it must not be
+    // turned into a denial or a grant
     authorizationsConfig.setEnabled(true);
-    when(authorizationChecker.collectPermissionTypes(any(), any(), any()))
-        .thenThrow(
-            new CamundaSearchException(
-                "Failed to execute findAll query", Reason.SEARCH_SERVER_FAILED));
+    final var failure =
+        new CamundaSearchException("Failed to execute findAll query", Reason.CONNECTION_FAILED);
+    when(authorizationChecker.collectPermissionTypes(any(), any(), any())).thenThrow(failure);
 
     // when
-    final var error = catchThrowable(() -> services.takeBackup(42L, authentication));
+    final var error = catchThrowable(() -> services.getBackupState(42L, authentication));
 
     // then
-    assertThat(error)
-        .isInstanceOfSatisfying(
-            ServiceException.class, e -> assertThat(e.getStatus()).isEqualTo(Status.INTERNAL));
+    assertThat(error).isSameAs(failure);
+    verify(api, never()).getBackupState(anyString(), anyLong());
   }
 }
