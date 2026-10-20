@@ -151,7 +151,7 @@ needs no configuration machinery.
 | Endpoint | What |
 |---|---|
 | `POST /v1/uploads` | An `UploadNotice`. Passes it on to the workers subscribed to its log, and to the configured peers unless the request has the header `X-Event-Plane-Forwarded: true`. Answers 202. |
-| `GET /v1/notifications?log={c}/{t}/{p}&log=…` | Server-sent events: `event: upload`, with the notice's JSON on one `data:` line. A comment line `: keep-alive` every 15 seconds. |
+| `GET /v1/notifications?log={c}/{t}/{p}&log=…` | Server-sent events: `event: upload`, with the notice's JSON on one `data:` line. A comment line `: keep-alive` every 15 seconds. Each `log` value is URL-encoded (`c%2Fdefault%2F1`), and the service decodes it. |
 | `GET /v1/groups/{group}` | `{"group":"g","workers":[{"worker":"w-…","beat":42}],"cursors":[{"log":"c/t/p","history":"…","index":1,"position":1,"worker":"w-…","newestIndex":40,"lag":39}]}`. `newestIndex` is the last index of the newest segment of the cursor's history that the service knows of, from notices or a listing, or null, with a lag of 0, if it knows of none. |
 | `GET /v1/credentials` | A stub: the store's configuration, as a worker would use it. |
 
@@ -169,8 +169,13 @@ Written by workers with plain PUTs, read by workers and the service:
 ```
 
 - A worker is live while its heartbeat object keeps changing (`beat` counts up), timed on the
-  reader's own clock. No reader compares timestamps written by someone else.
-- Readers skip fields they don't know.
+  reader's own clock. No reader compares timestamps written by someone else. A worker whose
+  heartbeat object is gone is dead at once: a closed worker deletes its own.
+- A log's owner is the live worker with the highest rendezvous hash: the first 8 bytes of SHA-256
+  of `"{worker}\n{c}/{t}/{p}"`, compared as unsigned; a tie goes to the larger worker id. Every
+  worker must hash alike, so this is part of the contract.
+- Readers skip fields they don't know. The consumer module holds the codecs of these objects and
+  of the retention marker.
 
 ## The history file after a restore
 
