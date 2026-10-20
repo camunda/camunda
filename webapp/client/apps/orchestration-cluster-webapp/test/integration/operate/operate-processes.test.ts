@@ -31,6 +31,7 @@ import {
 	mockGetProcessInstanceCallHierarchyEndpoint,
 	mockGetProcessInstanceEndpoint,
 	mockGetProcessInstanceWaitStateStatisticsEndpoint,
+	mockQueryElementInstanceInspectionEndpoint,
 	mockQueryProcessInstanceIncidentsEndpoint,
 	mockDeleteResourceEndpoint,
 	mockQueryElementInstancesEndpoint,
@@ -129,6 +130,9 @@ test.beforeEach(({network}) => {
 			),
 		}),
 		mockGetProcessInstanceWaitStateStatisticsEndpoint({
+			successResponse: HttpResponse.json(createPaginatedResponse()),
+		}),
+		mockQueryElementInstanceInspectionEndpoint({
 			successResponse: HttpResponse.json(createPaginatedResponse()),
 		}),
 	);

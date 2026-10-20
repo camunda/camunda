@@ -10,7 +10,9 @@ import {http, HttpResponse} from 'msw';
 import {
 	endpoints,
 	queryProcessDefinitionsRequestBodySchema,
+	queryElementInstanceInspectionRequestBodySchema,
 	type QueryProcessDefinitionsRequestBody,
+	type QueryElementInstanceInspectionRequestBody,
 } from '@camunda/camunda-api-zod-schemas/8.11';
 import {createEndpointMock} from './mock-endpoint';
 
@@ -43,6 +45,26 @@ const mockQueryMessageSubscriptionsEndpoint = createEndpointMock({
 	endpoint: endpoints.queryMessageSubscriptions.getUrl(),
 	method: endpoints.queryMessageSubscriptions.method,
 });
+
+const mockQueryJobsEndpoint = createEndpointMock({
+	endpoint: endpoints.queryJobs.getUrl(),
+	method: endpoints.queryJobs.method,
+});
+
+const mockQueryElementInstanceInspectionEndpoint = createEndpointMock({
+	endpoint: endpoints.queryElementInstanceInspection.getUrl(),
+	method: endpoints.queryElementInstanceInspection.method,
+});
+
+const mockQueryElementInstanceInspectionByFilterEndpoint = ({
+	getResponse,
+}: {
+	getResponse: (filter: QueryElementInstanceInspectionRequestBody['filter']) => Response;
+}) =>
+	http.post(endpoints.queryElementInstanceInspection.getUrl(), async ({request}) => {
+		const {filter} = queryElementInstanceInspectionRequestBodySchema.parse(await request.json());
+		return getResponse(filter);
+	});
 
 const mockGetProcessDefinitionEndpoint = createEndpointMock({
 	endpoint: endpoints.getProcessDefinition.getUrl({processDefinitionKey: ':processDefinitionKey'}),
@@ -621,6 +643,9 @@ export {
 	mockQueryProcessDefinitionsEndpoint,
 	mockQueryProcessDefinitionsByFilterEndpoint,
 	mockQueryMessageSubscriptionsEndpoint,
+	mockQueryJobsEndpoint,
+	mockQueryElementInstanceInspectionEndpoint,
+	mockQueryElementInstanceInspectionByFilterEndpoint,
 	mockGetProcessDefinitionEndpoint,
 	mockGetProcessStartFormEndpoint,
 	mockCreateProcessInstanceEndpoint,
