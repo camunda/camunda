@@ -1297,6 +1297,9 @@
 					"title": "Instanzhistorie",
 					"tabs": "Prozessinstanz-Registerkarten",
 					"variables": "Variablen",
+					"inputMappings": "Eingabezuordnungen",
+					"outputMappings": "Ausgabezuordnungen",
+					"listeners": "Listener",
 					"incidents": "Vorfälle",
 					"details": "Details",
 					"operationsLog": "Operationsprotokoll",
@@ -1440,6 +1443,36 @@
 						"userTask": "Wartet auf Abschluss der Aufgabe",
 						"generic": "Wartet"
 					}
+				},
+				"mappings": {
+					"inputTitle": "Eingabezuordnungen werden beim Modellieren des Diagramms definiert.",
+					"inputSubtitle": "Eingabezuordnungen werden verwendet, um neue lokale Variablen im Elementbereich mit der angegebenen Zuweisung zu erstellen.",
+					"outputTitle": "Ausgabezuordnungen werden beim Modellieren des Diagramms definiert.",
+					"outputSubtitle": "Ausgabezuordnungen steuern die Weitergabe von Variablen aus dem Elementbereich. Prozessvariablen in den übergeordneten Bereichen werden mit der angegebenen Zuweisung erstellt bzw. aktualisiert.",
+					"learnMore": "Mehr erfahren",
+					"close": "Schließen",
+					"noInput": "Keine Eingabezuordnungen definiert",
+					"noOutput": "Keine Ausgabezuordnungen definiert",
+					"localVariableName": "Name der lokalen Variable",
+					"processVariableName": "Name der Prozessvariable",
+					"assignmentValue": "Wert der Variablenzuweisung"
+				},
+				"listeners": {
+					"filter": {
+						"all": "Alle Listener",
+						"execution": "Ausführungs-Listener",
+						"task": "Benutzeraufgaben-Listener"
+					},
+					"list": "Listener-Liste",
+					"listenerType": "Listener-Typ",
+					"listenerKey": "Listener-Schlüssel",
+					"state": "Status",
+					"jobType": "Job-Typ",
+					"event": "Ereignis",
+					"time": "Zeit",
+					"emptyAll": "Dieses Element hat weder Ausführungs-Listener noch Benutzeraufgaben-Listener",
+					"emptyTask": "Dieses Element hat keine Benutzeraufgaben-Listener",
+					"emptyExecution": "Dieses Element hat keine Ausführungs-Listener"
 				},
 				"modification": {
 					"pageHeading": "Operate Prozessinstanz - Änderungsmodus",

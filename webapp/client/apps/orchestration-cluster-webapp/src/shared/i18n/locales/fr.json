@@ -1300,6 +1300,9 @@
 					"title": "Historique de l’instance",
 					"tabs": "Onglets de l’instance de processus",
 					"variables": "Variables",
+					"inputMappings": "Mappages d’entrée",
+					"outputMappings": "Mappages de sortie",
+					"listeners": "Écouteurs",
 					"incidents": "Incidents",
 					"details": "Détails",
 					"operationsLog": "Journal des opérations",
@@ -1443,6 +1446,36 @@
 						"userTask": "En attente de la fin de la tâche",
 						"generic": "En attente"
 					}
+				},
+				"mappings": {
+					"inputTitle": "Les mappages d’entrée sont définis lors de la modélisation du diagramme.",
+					"inputSubtitle": "Les mappages d’entrée servent à créer de nouvelles variables locales dans la portée de l’élément avec l’affectation spécifiée.",
+					"outputTitle": "Les mappages de sortie sont définis lors de la modélisation du diagramme.",
+					"outputSubtitle": "Les mappages de sortie servent à contrôler la propagation des variables depuis la portée de l’élément. Les variables de processus des portées parentes sont créées ou mises à jour avec l’affectation spécifiée.",
+					"learnMore": "En savoir plus",
+					"close": "Fermer",
+					"noInput": "Aucun mappage d’entrée défini",
+					"noOutput": "Aucun mappage de sortie défini",
+					"localVariableName": "Nom de la variable locale",
+					"processVariableName": "Nom de la variable de processus",
+					"assignmentValue": "Valeur d’affectation de la variable"
+				},
+				"listeners": {
+					"filter": {
+						"all": "Tous les écouteurs",
+						"execution": "Écouteurs d’exécution",
+						"task": "Écouteurs de tâche utilisateur"
+					},
+					"list": "Liste des écouteurs",
+					"listenerType": "Type d’écouteur",
+					"listenerKey": "Clé de l’écouteur",
+					"state": "État",
+					"jobType": "Type de job",
+					"event": "Événement",
+					"time": "Heure",
+					"emptyAll": "Cet élément n’a ni écouteur d’exécution ni écouteur de tâche utilisateur",
+					"emptyTask": "Cet élément n’a aucun écouteur de tâche utilisateur",
+					"emptyExecution": "Cet élément n’a aucun écouteur d’exécution"
 				},
 				"modification": {
 					"pageHeading": "Operate Instance de processus - Mode de modification",

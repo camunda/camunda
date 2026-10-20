@@ -1309,6 +1309,9 @@
 					"title": "Instance History",
 					"tabs": "Process instance tabs",
 					"variables": "Variables",
+					"inputMappings": "Input Mappings",
+					"outputMappings": "Output Mappings",
+					"listeners": "Listeners",
 					"incidents": "Incidents",
 					"details": "Details",
 					"operationsLog": "Operations Log",
@@ -1452,6 +1455,36 @@
 						"userTask": "Waiting for task completion",
 						"generic": "Waiting"
 					}
+				},
+				"mappings": {
+					"inputTitle": "Input mappings are defined while modelling the diagram.",
+					"inputSubtitle": "Input mappings are used to create new local variables inside the element scope with the specified assignment.",
+					"outputTitle": "Output mappings are defined while modelling the diagram.",
+					"outputSubtitle": "Output mappings are used to control the variable propagation from the element scope. Process variables in the parent scopes are created/updated with the specified assignment.",
+					"learnMore": "Learn more",
+					"close": "Close",
+					"noInput": "No Input Mappings defined",
+					"noOutput": "No Output Mappings defined",
+					"localVariableName": "Local Variable Name",
+					"processVariableName": "Process Variable Name",
+					"assignmentValue": "Variable Assignment Value"
+				},
+				"listeners": {
+					"filter": {
+						"all": "All listeners",
+						"execution": "Execution listeners",
+						"task": "User task listeners"
+					},
+					"list": "Listeners List",
+					"listenerType": "Listener type",
+					"listenerKey": "Listener key",
+					"state": "State",
+					"jobType": "Job type",
+					"event": "Event",
+					"time": "Time",
+					"emptyAll": "This element has no execution listeners nor user task listeners",
+					"emptyTask": "This element has no user task listeners",
+					"emptyExecution": "This element has no execution listeners"
 				},
 				"modification": {
 					"pageHeading": "Operate Process Instance - Modification Mode",

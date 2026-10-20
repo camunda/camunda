@@ -61,7 +61,10 @@ import { Route as CarbonAuthOperateProcessesProcessInstanceIdSplatRouteImport } 
 import { Route as CarbonAuthOperateProcessesProcessInstanceIdDetailsRouteImport } from './routes/_carbon/_auth/operate/processes/$processInstanceId/details'
 import { Route as CarbonAuthOperateProcessesProcessInstanceIdHistoryRouteImport } from './routes/_carbon/_auth/operate/processes/$processInstanceId/history'
 import { Route as CarbonAuthOperateProcessesProcessInstanceIdIncidentsRouteImport } from './routes/_carbon/_auth/operate/processes/$processInstanceId/incidents'
+import { Route as CarbonAuthOperateProcessesProcessInstanceIdInputMappingsRouteImport } from './routes/_carbon/_auth/operate/processes/$processInstanceId/input-mappings'
+import { Route as CarbonAuthOperateProcessesProcessInstanceIdListenersRouteImport } from './routes/_carbon/_auth/operate/processes/$processInstanceId/listeners'
 import { Route as CarbonAuthOperateProcessesProcessInstanceIdOperationsLogRouteImport } from './routes/_carbon/_auth/operate/processes/$processInstanceId/operations-log'
+import { Route as CarbonAuthOperateProcessesProcessInstanceIdOutputMappingsRouteImport } from './routes/_carbon/_auth/operate/processes/$processInstanceId/output-mappings'
 import { Route as CarbonAuthOperateProcessesProcessInstanceIdVariablesRouteImport } from './routes/_carbon/_auth/operate/processes/$processInstanceId/variables'
 import { Route as CarbonAuthOperateProcessesListIndexRouteImport } from './routes/_carbon/_auth/operate/processes/_list/index'
 import { Route as ShadcnAuthTasklistTasksUserTaskKeyIndexRouteImport } from './routes/_shadcn/_auth/tasklist/_tasks/$userTaskKey/index'
@@ -360,10 +363,28 @@ const CarbonAuthOperateProcessesProcessInstanceIdIncidentsRoute =
     path: '/incidents',
     getParentRoute: () => CarbonAuthOperateProcessesProcessInstanceIdRouteRoute,
   } as any)
+const CarbonAuthOperateProcessesProcessInstanceIdInputMappingsRoute =
+  CarbonAuthOperateProcessesProcessInstanceIdInputMappingsRouteImport.update({
+    id: '/input-mappings',
+    path: '/input-mappings',
+    getParentRoute: () => CarbonAuthOperateProcessesProcessInstanceIdRouteRoute,
+  } as any)
+const CarbonAuthOperateProcessesProcessInstanceIdListenersRoute =
+  CarbonAuthOperateProcessesProcessInstanceIdListenersRouteImport.update({
+    id: '/listeners',
+    path: '/listeners',
+    getParentRoute: () => CarbonAuthOperateProcessesProcessInstanceIdRouteRoute,
+  } as any)
 const CarbonAuthOperateProcessesProcessInstanceIdOperationsLogRoute =
   CarbonAuthOperateProcessesProcessInstanceIdOperationsLogRouteImport.update({
     id: '/operations-log',
     path: '/operations-log',
+    getParentRoute: () => CarbonAuthOperateProcessesProcessInstanceIdRouteRoute,
+  } as any)
+const CarbonAuthOperateProcessesProcessInstanceIdOutputMappingsRoute =
+  CarbonAuthOperateProcessesProcessInstanceIdOutputMappingsRouteImport.update({
+    id: '/output-mappings',
+    path: '/output-mappings',
     getParentRoute: () => CarbonAuthOperateProcessesProcessInstanceIdRouteRoute,
   } as any)
 const CarbonAuthOperateProcessesProcessInstanceIdVariablesRoute =
@@ -462,7 +483,10 @@ export interface FileRoutesByFullPath {
   '/operate/processes/$processInstanceId/details': typeof CarbonAuthOperateProcessesProcessInstanceIdDetailsRoute
   '/operate/processes/$processInstanceId/history': typeof CarbonAuthOperateProcessesProcessInstanceIdHistoryRoute
   '/operate/processes/$processInstanceId/incidents': typeof CarbonAuthOperateProcessesProcessInstanceIdIncidentsRoute
+  '/operate/processes/$processInstanceId/input-mappings': typeof CarbonAuthOperateProcessesProcessInstanceIdInputMappingsRoute
+  '/operate/processes/$processInstanceId/listeners': typeof CarbonAuthOperateProcessesProcessInstanceIdListenersRoute
   '/operate/processes/$processInstanceId/operations-log': typeof CarbonAuthOperateProcessesProcessInstanceIdOperationsLogRoute
+  '/operate/processes/$processInstanceId/output-mappings': typeof CarbonAuthOperateProcessesProcessInstanceIdOutputMappingsRoute
   '/operate/processes/$processInstanceId/variables': typeof CarbonAuthOperateProcessesProcessInstanceIdVariablesRoute
   '/tasklist/$userTaskKey/process': typeof ShadcnAuthTasklistTasksUserTaskKeyProcessRoute
   '/tasklist/processes/$processDefinitionKey/start': typeof ShadcnAuthTasklistProcessesProcessDefinitionKeyStartRoute
@@ -510,7 +534,10 @@ export interface FileRoutesByTo {
   '/operate/processes/$processInstanceId/details': typeof CarbonAuthOperateProcessesProcessInstanceIdDetailsRoute
   '/operate/processes/$processInstanceId/history': typeof CarbonAuthOperateProcessesProcessInstanceIdHistoryRoute
   '/operate/processes/$processInstanceId/incidents': typeof CarbonAuthOperateProcessesProcessInstanceIdIncidentsRoute
+  '/operate/processes/$processInstanceId/input-mappings': typeof CarbonAuthOperateProcessesProcessInstanceIdInputMappingsRoute
+  '/operate/processes/$processInstanceId/listeners': typeof CarbonAuthOperateProcessesProcessInstanceIdListenersRoute
   '/operate/processes/$processInstanceId/operations-log': typeof CarbonAuthOperateProcessesProcessInstanceIdOperationsLogRoute
+  '/operate/processes/$processInstanceId/output-mappings': typeof CarbonAuthOperateProcessesProcessInstanceIdOutputMappingsRoute
   '/operate/processes/$processInstanceId/variables': typeof CarbonAuthOperateProcessesProcessInstanceIdVariablesRoute
   '/tasklist/$userTaskKey/process': typeof ShadcnAuthTasklistTasksUserTaskKeyProcessRoute
   '/tasklist/processes/$processDefinitionKey/start': typeof ShadcnAuthTasklistProcessesProcessDefinitionKeyStartRoute
@@ -573,7 +600,10 @@ export interface FileRoutesById {
   '/_carbon/_auth/operate/processes/$processInstanceId/details': typeof CarbonAuthOperateProcessesProcessInstanceIdDetailsRoute
   '/_carbon/_auth/operate/processes/$processInstanceId/history': typeof CarbonAuthOperateProcessesProcessInstanceIdHistoryRoute
   '/_carbon/_auth/operate/processes/$processInstanceId/incidents': typeof CarbonAuthOperateProcessesProcessInstanceIdIncidentsRoute
+  '/_carbon/_auth/operate/processes/$processInstanceId/input-mappings': typeof CarbonAuthOperateProcessesProcessInstanceIdInputMappingsRoute
+  '/_carbon/_auth/operate/processes/$processInstanceId/listeners': typeof CarbonAuthOperateProcessesProcessInstanceIdListenersRoute
   '/_carbon/_auth/operate/processes/$processInstanceId/operations-log': typeof CarbonAuthOperateProcessesProcessInstanceIdOperationsLogRoute
+  '/_carbon/_auth/operate/processes/$processInstanceId/output-mappings': typeof CarbonAuthOperateProcessesProcessInstanceIdOutputMappingsRoute
   '/_carbon/_auth/operate/processes/$processInstanceId/variables': typeof CarbonAuthOperateProcessesProcessInstanceIdVariablesRoute
   '/_shadcn/_auth/tasklist/_tasks/$userTaskKey/process': typeof ShadcnAuthTasklistTasksUserTaskKeyProcessRoute
   '/_shadcn/_auth/tasklist/processes/$processDefinitionKey/start': typeof ShadcnAuthTasklistProcessesProcessDefinitionKeyStartRoute
@@ -632,7 +662,10 @@ export interface FileRouteTypes {
     | '/operate/processes/$processInstanceId/details'
     | '/operate/processes/$processInstanceId/history'
     | '/operate/processes/$processInstanceId/incidents'
+    | '/operate/processes/$processInstanceId/input-mappings'
+    | '/operate/processes/$processInstanceId/listeners'
     | '/operate/processes/$processInstanceId/operations-log'
+    | '/operate/processes/$processInstanceId/output-mappings'
     | '/operate/processes/$processInstanceId/variables'
     | '/tasklist/$userTaskKey/process'
     | '/tasklist/processes/$processDefinitionKey/start'
@@ -680,7 +713,10 @@ export interface FileRouteTypes {
     | '/operate/processes/$processInstanceId/details'
     | '/operate/processes/$processInstanceId/history'
     | '/operate/processes/$processInstanceId/incidents'
+    | '/operate/processes/$processInstanceId/input-mappings'
+    | '/operate/processes/$processInstanceId/listeners'
     | '/operate/processes/$processInstanceId/operations-log'
+    | '/operate/processes/$processInstanceId/output-mappings'
     | '/operate/processes/$processInstanceId/variables'
     | '/tasklist/$userTaskKey/process'
     | '/tasklist/processes/$processDefinitionKey/start'
@@ -742,7 +778,10 @@ export interface FileRouteTypes {
     | '/_carbon/_auth/operate/processes/$processInstanceId/details'
     | '/_carbon/_auth/operate/processes/$processInstanceId/history'
     | '/_carbon/_auth/operate/processes/$processInstanceId/incidents'
+    | '/_carbon/_auth/operate/processes/$processInstanceId/input-mappings'
+    | '/_carbon/_auth/operate/processes/$processInstanceId/listeners'
     | '/_carbon/_auth/operate/processes/$processInstanceId/operations-log'
+    | '/_carbon/_auth/operate/processes/$processInstanceId/output-mappings'
     | '/_carbon/_auth/operate/processes/$processInstanceId/variables'
     | '/_shadcn/_auth/tasklist/_tasks/$userTaskKey/process'
     | '/_shadcn/_auth/tasklist/processes/$processDefinitionKey/start'
@@ -1124,11 +1163,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CarbonAuthOperateProcessesProcessInstanceIdIncidentsRouteImport
       parentRoute: typeof CarbonAuthOperateProcessesProcessInstanceIdRouteRoute
     }
+    '/_carbon/_auth/operate/processes/$processInstanceId/input-mappings': {
+      id: '/_carbon/_auth/operate/processes/$processInstanceId/input-mappings'
+      path: '/input-mappings'
+      fullPath: '/operate/processes/$processInstanceId/input-mappings'
+      preLoaderRoute: typeof CarbonAuthOperateProcessesProcessInstanceIdInputMappingsRouteImport
+      parentRoute: typeof CarbonAuthOperateProcessesProcessInstanceIdRouteRoute
+    }
+    '/_carbon/_auth/operate/processes/$processInstanceId/listeners': {
+      id: '/_carbon/_auth/operate/processes/$processInstanceId/listeners'
+      path: '/listeners'
+      fullPath: '/operate/processes/$processInstanceId/listeners'
+      preLoaderRoute: typeof CarbonAuthOperateProcessesProcessInstanceIdListenersRouteImport
+      parentRoute: typeof CarbonAuthOperateProcessesProcessInstanceIdRouteRoute
+    }
     '/_carbon/_auth/operate/processes/$processInstanceId/operations-log': {
       id: '/_carbon/_auth/operate/processes/$processInstanceId/operations-log'
       path: '/operations-log'
       fullPath: '/operate/processes/$processInstanceId/operations-log'
       preLoaderRoute: typeof CarbonAuthOperateProcessesProcessInstanceIdOperationsLogRouteImport
+      parentRoute: typeof CarbonAuthOperateProcessesProcessInstanceIdRouteRoute
+    }
+    '/_carbon/_auth/operate/processes/$processInstanceId/output-mappings': {
+      id: '/_carbon/_auth/operate/processes/$processInstanceId/output-mappings'
+      path: '/output-mappings'
+      fullPath: '/operate/processes/$processInstanceId/output-mappings'
+      preLoaderRoute: typeof CarbonAuthOperateProcessesProcessInstanceIdOutputMappingsRouteImport
       parentRoute: typeof CarbonAuthOperateProcessesProcessInstanceIdRouteRoute
     }
     '/_carbon/_auth/operate/processes/$processInstanceId/variables': {
@@ -1195,7 +1255,10 @@ interface CarbonAuthOperateProcessesProcessInstanceIdRouteRouteChildren {
   CarbonAuthOperateProcessesProcessInstanceIdDetailsRoute: typeof CarbonAuthOperateProcessesProcessInstanceIdDetailsRoute
   CarbonAuthOperateProcessesProcessInstanceIdHistoryRoute: typeof CarbonAuthOperateProcessesProcessInstanceIdHistoryRoute
   CarbonAuthOperateProcessesProcessInstanceIdIncidentsRoute: typeof CarbonAuthOperateProcessesProcessInstanceIdIncidentsRoute
+  CarbonAuthOperateProcessesProcessInstanceIdInputMappingsRoute: typeof CarbonAuthOperateProcessesProcessInstanceIdInputMappingsRoute
+  CarbonAuthOperateProcessesProcessInstanceIdListenersRoute: typeof CarbonAuthOperateProcessesProcessInstanceIdListenersRoute
   CarbonAuthOperateProcessesProcessInstanceIdOperationsLogRoute: typeof CarbonAuthOperateProcessesProcessInstanceIdOperationsLogRoute
+  CarbonAuthOperateProcessesProcessInstanceIdOutputMappingsRoute: typeof CarbonAuthOperateProcessesProcessInstanceIdOutputMappingsRoute
   CarbonAuthOperateProcessesProcessInstanceIdVariablesRoute: typeof CarbonAuthOperateProcessesProcessInstanceIdVariablesRoute
   CarbonAuthOperateProcessesProcessInstanceIdIndexRoute: typeof CarbonAuthOperateProcessesProcessInstanceIdIndexRoute
 }
@@ -1210,8 +1273,14 @@ const CarbonAuthOperateProcessesProcessInstanceIdRouteRouteChildren: CarbonAuthO
       CarbonAuthOperateProcessesProcessInstanceIdHistoryRoute,
     CarbonAuthOperateProcessesProcessInstanceIdIncidentsRoute:
       CarbonAuthOperateProcessesProcessInstanceIdIncidentsRoute,
+    CarbonAuthOperateProcessesProcessInstanceIdInputMappingsRoute:
+      CarbonAuthOperateProcessesProcessInstanceIdInputMappingsRoute,
+    CarbonAuthOperateProcessesProcessInstanceIdListenersRoute:
+      CarbonAuthOperateProcessesProcessInstanceIdListenersRoute,
     CarbonAuthOperateProcessesProcessInstanceIdOperationsLogRoute:
       CarbonAuthOperateProcessesProcessInstanceIdOperationsLogRoute,
+    CarbonAuthOperateProcessesProcessInstanceIdOutputMappingsRoute:
+      CarbonAuthOperateProcessesProcessInstanceIdOutputMappingsRoute,
     CarbonAuthOperateProcessesProcessInstanceIdVariablesRoute:
       CarbonAuthOperateProcessesProcessInstanceIdVariablesRoute,
     CarbonAuthOperateProcessesProcessInstanceIdIndexRoute:

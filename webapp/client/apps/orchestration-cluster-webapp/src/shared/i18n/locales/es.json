@@ -1297,6 +1297,9 @@
 					"title": "Historial de la instancia",
 					"tabs": "Pestañas de la instancia de proceso",
 					"variables": "Variables",
+					"inputMappings": "Mapeos de entrada",
+					"outputMappings": "Mapeos de salida",
+					"listeners": "Listeners",
 					"incidents": "Incidentes",
 					"details": "Detalles",
 					"operationsLog": "Registro de operaciones",
@@ -1440,6 +1443,36 @@
 						"userTask": "Esperando la finalización de la tarea",
 						"generic": "Esperando"
 					}
+				},
+				"mappings": {
+					"inputTitle": "Los mapeos de entrada se definen al modelar el diagrama.",
+					"inputSubtitle": "Los mapeos de entrada se utilizan para crear nuevas variables locales dentro del ámbito del elemento con la asignación especificada.",
+					"outputTitle": "Los mapeos de salida se definen al modelar el diagrama.",
+					"outputSubtitle": "Los mapeos de salida se utilizan para controlar la propagación de variables desde el ámbito del elemento. Las variables de proceso de los ámbitos superiores se crean o actualizan con la asignación especificada.",
+					"learnMore": "Más información",
+					"close": "Cerrar",
+					"noInput": "No hay mapeos de entrada definidos",
+					"noOutput": "No hay mapeos de salida definidos",
+					"localVariableName": "Nombre de la variable local",
+					"processVariableName": "Nombre de la variable de proceso",
+					"assignmentValue": "Valor de asignación de la variable"
+				},
+				"listeners": {
+					"filter": {
+						"all": "Todos los listeners",
+						"execution": "Listeners de ejecución",
+						"task": "Listeners de tareas de usuario"
+					},
+					"list": "Lista de listeners",
+					"listenerType": "Tipo de listener",
+					"listenerKey": "Clave del listener",
+					"state": "Estado",
+					"jobType": "Tipo de job",
+					"event": "Evento",
+					"time": "Hora",
+					"emptyAll": "Este elemento no tiene listeners de ejecución ni listeners de tareas de usuario",
+					"emptyTask": "Este elemento no tiene listeners de tareas de usuario",
+					"emptyExecution": "Este elemento no tiene listeners de ejecución"
 				},
 				"modification": {
 					"pageHeading": "Operate Instancia de proceso - Modo de modificación",
