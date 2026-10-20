@@ -28,7 +28,6 @@ import io.camunda.zeebe.protocol.impl.record.value.management.LogArchiveRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.management.LogArchiveIntent;
 import io.camunda.zeebe.protocol.record.value.management.LogArchiveRecordValue.LogObjectValue;
-import io.camunda.zeebe.scheduler.clock.ActorClock;
 import io.camunda.zeebe.scheduler.testing.ControlledActorSchedulerExtension;
 import io.camunda.zeebe.util.Either;
 import java.nio.file.Files;
@@ -767,15 +766,13 @@ final class LogArchiverTest {
     source.commit(3);
     archiver.onRecoveryChecked(new LogArchiveMeta(), false);
     scheduler.workUntilDone();
-
-    final long before = ActorClock.currentTimeMillis();
+    final long now = scheduler.getClock().getTimeMillis();
 
     // when
     activate();
 
     // then
-    assertThat(written.getFirst().record().getStartedAt())
-        .isBetween(before, ActorClock.currentTimeMillis());
+    assertThat(written.getFirst().record().getStartedAt()).isEqualTo(now);
   }
 
   @Test
