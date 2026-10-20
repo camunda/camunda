@@ -142,6 +142,7 @@ public final class BpmnBufferedMessageStartEventBehavior {
     final var bpmnProcessId = BufferUtil.cloneBuffer(origin.getBpmnProcessIdBuffer());
     final var correlationKey = BufferUtil.cloneBuffer(origin.getCorrelationKeyBuffer());
     final var tenantId = BufferUtil.bufferAsString(origin.getTenantIdBuffer());
+    final int storageOrdinal = origin.getStorageOrdinal();
     // the buffered message key's partition bits address P_K; synthesize the RELEASE's routing
     // envelope from them (raw key 0: it is a partition address, not an event or request key)
     final long requestKey =
@@ -154,7 +155,8 @@ public final class BpmnBufferedMessageStartEventBehavior {
             .setProcessInstanceKey(processInstanceKey)
             .setBpmnProcessId(bpmnProcessId)
             .setCorrelationKey(correlationKey)
-            .setTenantId(tenantId);
+            .setTenantId(tenantId)
+            .setStorageOrdinal(storageOrdinal);
 
     stateWriter.appendFollowUpEvent(
         processInstanceKey, MessageStartCorrelationKeyLockReleaseIntent.PUSHED, record);

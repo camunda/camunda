@@ -16,6 +16,7 @@ import io.camunda.zeebe.engine.util.ProcessingStateExtension;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageStartProcessInstanceRequestRecord;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
+import java.util.ArrayList;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -50,15 +51,38 @@ final class MessageStartProcessInstanceStartedV2ApplierTest {
     final long holderKey = Protocol.encodePartitionId(P_B, RAW_HOLDER_KEY);
 
     // when the cross-partition STARTED is applied
-    applier.applyState(1L, startedRecord(holderKey, CORRELATION_KEY, BUSINESS_ID));
+    applier.applyState(
+        1L, startedRecord(holderKey, CORRELATION_KEY, BUSINESS_ID).setStorageOrdinal(1234));
 
-    // then the holder-origin entry is written with the lock coordinates and addressing messageKey
+    // then the holder-origin entry is written with the lock coordinates, addressing messageKey and
+    // the holder's storage ordinal
     final var origin = messageState.getCrossPartitionStartHolderOrigin(holderKey);
     assertThat(origin).isNotNull();
     assertThat(origin.getBpmnProcessIdBuffer()).isEqualTo(wrapString(BPMN_PROCESS_ID));
     assertThat(origin.getCorrelationKeyBuffer()).isEqualTo(wrapString(CORRELATION_KEY));
     assertThat(origin.getTenantIdBuffer()).isEqualTo(wrapString(TENANT));
     assertThat(origin.getMessageKey()).isEqualTo(MESSAGE_KEY);
+    assertThat(origin.getStorageOrdinal()).isEqualTo(1234);
+  }
+
+  @Test
+  public void shouldStoreStorageOrdinalOnCrossPartitionLockOnLockPartition() {
+    // given the applier runs on P_K and the correlation-key lock is already held locally (the
+    // CORRELATED applier wrote it before STARTED)
+    final var applier = applierForPartition(P_K);
+    final long holderKey = Protocol.encodePartitionId(P_B, RAW_HOLDER_KEY);
+    messageState.putActiveProcessInstance(wrapString(BPMN_PROCESS_ID), wrapString(CORRELATION_KEY));
+
+    // when the cross-partition STARTED is applied
+    applier.applyState(
+        1L, startedRecord(holderKey, CORRELATION_KEY, BUSINESS_ID).setStorageOrdinal(1234));
+
+    // then the lock entry records the holder's storage ordinal
+    final var ordinals = new ArrayList<Integer>();
+    messageState.visitCrossPartitionStartLocks(
+        (bpmnProcessId, correlationKey, holder, tenantId, storageOrdinal) ->
+            ordinals.add(storageOrdinal));
+    assertThat(ordinals).containsExactly(1234);
   }
 
   @Test
