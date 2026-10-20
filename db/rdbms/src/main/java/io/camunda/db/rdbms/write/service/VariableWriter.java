@@ -25,6 +25,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.UnaryOperator;
 
 public class VariableWriter extends ProcessInstanceDependant implements RdbmsWriter {
 
@@ -131,19 +132,16 @@ public class VariableWriter extends ProcessInstanceDependant implements RdbmsWri
    * foreign key from the modes to the variable.
    */
   private void insertProtectionModes(final VariableDbModel variable) {
+    final var variableKey = variable.variableKey();
     final var protectionModes = variable.protectionModes();
     if (protectionModes == null || protectionModes.isEmpty()) {
       return;
     }
 
     executionQueue.executeInQueue(
-        new QueueItem(
-            ContextType.VARIABLE,
+        modesInsertItem(
             WriteStatementType.INSERT,
-            variable.variableKey(),
-            INSERT_PROTECTION_MODES_STATEMENT,
-            new VariableMapper.ProtectionModesDto(variable.variableKey(), protectionModes),
-            INSERT_PROTECTION_MODES_ORDER));
+            new VariableMapper.ProtectionModesDto(variableKey, protectionModes)));
   }
 
   /**
@@ -170,42 +168,58 @@ public class VariableWriter extends ProcessInstanceDependant implements RdbmsWri
             variableKey,
             DELETE_PROTECTION_MODES_ORDER));
 
+    final var modes = new VariableMapper.ProtectionModesDto(variableKey, protectionModes);
     final var wasMerged =
         executionQueue.tryMergeWithExistingQueueItem(
-            new QueueItemMerger() {
-              @Override
-              public boolean canBeMerged(final QueueItem queueItem) {
-                return queueItem.contextType() == ContextType.VARIABLE
-                    && queueItem.statementType() == WriteStatementType.UPDATE
-                    && queueItem.order() == INSERT_PROTECTION_MODES_ORDER
-                    && queueItem.id().equals(variableKey);
-              }
-
-              @Override
-              public QueueItem merge(final QueueItem originalItem) {
-                return protectionModes.isEmpty()
-                    ? originalItem.copy(
-                        b ->
-                            b.statementId(DELETE_PROTECTION_MODES_STATEMENT).parameter(variableKey))
-                    : originalItem.copy(
-                        b ->
-                            b.statementId(INSERT_PROTECTION_MODES_STATEMENT)
-                                .parameter(
-                                    new VariableMapper.ProtectionModesDto(
-                                        variableKey, protectionModes)));
-              }
-            });
+            modesInsertMerger(
+                WriteStatementType.UPDATE,
+                variableKey,
+                queued ->
+                    protectionModes.isEmpty()
+                        ? queued.copy(
+                            b ->
+                                b.statementId(DELETE_PROTECTION_MODES_STATEMENT)
+                                    .parameter(variableKey))
+                        : queued.copy(
+                            b ->
+                                b.statementId(INSERT_PROTECTION_MODES_STATEMENT)
+                                    .parameter(modes))));
 
     if (!wasMerged && !protectionModes.isEmpty()) {
-      executionQueue.executeInQueue(
-          new QueueItem(
-              ContextType.VARIABLE,
-              WriteStatementType.UPDATE,
-              variableKey,
-              INSERT_PROTECTION_MODES_STATEMENT,
-              new VariableMapper.ProtectionModesDto(variableKey, protectionModes),
-              INSERT_PROTECTION_MODES_ORDER));
+      executionQueue.executeInQueue(modesInsertItem(WriteStatementType.UPDATE, modes));
     }
+  }
+
+  private static QueueItem modesInsertItem(
+      final WriteStatementType statementType, final VariableMapper.ProtectionModesDto modes) {
+    return new QueueItem(
+        ContextType.VARIABLE,
+        statementType,
+        modes.variableKey(),
+        INSERT_PROTECTION_MODES_STATEMENT,
+        modes,
+        INSERT_PROTECTION_MODES_ORDER);
+  }
+
+  /** Matches the queued modes item of the variable and rewrites it with {@code merge}. */
+  private static QueueItemMerger modesInsertMerger(
+      final WriteStatementType statementType,
+      final Long variableKey,
+      final UnaryOperator<QueueItem> merge) {
+    return new QueueItemMerger() {
+      @Override
+      public boolean canBeMerged(final QueueItem queueItem) {
+        return queueItem.contextType() == ContextType.VARIABLE
+            && queueItem.statementType() == statementType
+            && queueItem.order() == INSERT_PROTECTION_MODES_ORDER
+            && queueItem.id().equals(variableKey);
+      }
+
+      @Override
+      public QueueItem merge(final QueueItem originalItem) {
+        return merge.apply(originalItem);
+      }
+    };
   }
 
   public void deleteLookupByProcessDefinitionKeys(
