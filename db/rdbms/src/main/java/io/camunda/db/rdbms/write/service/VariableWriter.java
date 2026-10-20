@@ -130,6 +130,10 @@ public class VariableWriter extends ProcessInstanceDependant implements RdbmsWri
    * <p>The insert shares the INSERT type with the batched variable insert, which has the default
    * order. It uses a higher order, so it is executed after the variable insert and satisfies the
    * foreign key from the modes to the variable.
+   *
+   * <p>A variable has at most one modes insert queued per flush. The variable insert merger drops a
+   * re-enqueued CREATED event for a variable already in the batch, so a second modes insert would
+   * collide with the first on the primary key. It adds its modes to the queued insert instead.
    */
   private void insertProtectionModes(final VariableDbModel variable) {
     final var variableKey = variable.variableKey();
@@ -138,10 +142,17 @@ public class VariableWriter extends ProcessInstanceDependant implements RdbmsWri
       return;
     }
 
-    executionQueue.executeInQueue(
-        modesInsertItem(
-            WriteStatementType.INSERT,
-            new VariableMapper.ProtectionModesDto(variableKey, protectionModes)));
+    final var modes = new VariableMapper.ProtectionModesDto(variableKey, protectionModes);
+    final var wasMerged =
+        executionQueue.tryMergeWithExistingQueueItem(
+            modesInsertMerger(
+                WriteStatementType.INSERT,
+                variableKey,
+                queued -> queued.copy(b -> b.parameter(withModesOf(queued, modes)))));
+
+    if (!wasMerged) {
+      executionQueue.executeInQueue(modesInsertItem(WriteStatementType.INSERT, modes));
+    }
   }
 
   /**
@@ -188,6 +199,17 @@ public class VariableWriter extends ProcessInstanceDependant implements RdbmsWri
     if (!wasMerged && !protectionModes.isEmpty()) {
       executionQueue.executeInQueue(modesInsertItem(WriteStatementType.UPDATE, modes));
     }
+  }
+
+  /**
+   * The queued modes plus the new ones, so a repeated mode is inserted once and others are kept.
+   */
+  private static VariableMapper.ProtectionModesDto withModesOf(
+      final QueueItem queued, final VariableMapper.ProtectionModesDto modes) {
+    final var union =
+        new HashSet<>(((VariableMapper.ProtectionModesDto) queued.parameter()).modes());
+    union.addAll(modes.modes());
+    return new VariableMapper.ProtectionModesDto(modes.variableKey(), union);
   }
 
   private static QueueItem modesInsertItem(
