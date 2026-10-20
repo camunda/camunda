@@ -873,7 +873,6 @@
 			"caseTaskAssignedToYou": "Ihnen zugewiesen",
 			"caseTaskUnassigned": "Nicht zugewiesen",
 			"caseOpenTask": "Öffnen",
-			"caseActivitiesLabel": "Aktivitäten",
 			"caseActivitiesCount": "{{completed}} von {{total}} erledigt",
 			"caseActivityRequired": "Erforderlich",
 			"caseActivityOptional": "Optional",

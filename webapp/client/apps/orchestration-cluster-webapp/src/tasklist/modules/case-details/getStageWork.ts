@@ -10,17 +10,23 @@ import {getVariableReference, type CaseModel, type StageProgress} from '@camunda
 import type {ElementInstance, UserTask, Variable} from '@camunda/camunda-api-zod-schemas/8.11';
 import {tryParseJSON} from '#/tasklist/modules/json/tryParseJSON';
 
-type ActivityStatus = 'open' | 'active' | 'completed' | 'notStarted';
+type TaskStatus = 'open' | 'active' | 'completed' | 'notStarted';
 
-type StageActivity = {
+type StageTask = {
+	/** Unique in the list: the element ID of an ad-hoc task, the user task key of any other open task. */
+	key: string;
 	elementId: string;
 	name: string;
 	isRequired: boolean;
+	/** An optional task of an ad-hoc stage: the case worker starts it through the activation API. */
+	canStart: boolean;
+	/** A task of the ad-hoc stage's list, which counts towards "x of y done". */
+	isAdHocTask: boolean;
 	/** The current state: an open task or a running instance wins over earlier completions. */
-	status: ActivityStatus;
-	/** How often the activity completed in this run of the stage, also while it runs again. */
+	status: TaskStatus;
+	/** How often the task completed in this run of the stage, also while it runs again. */
 	completedCount: number;
-	/** The open user task of this activity, if it has one. */
+	/** The open user task, if there is one. */
 	userTask: UserTask | null;
 };
 
@@ -33,12 +39,9 @@ type StageCompletion = {
 };
 
 type StageWork = {
-	/** Activities of an ad-hoc stage: required first, then optional. */
-	activities: StageActivity[];
-	/** Open user tasks of the stage that are not an activity of the list above, and of optional stages. */
-	openTasks: UserTask[];
-	/** The optional stage of an open task, by user task key: it runs next to the active stage (GAP-001). */
-	optionalStageNames: Record<string, string>;
+	/** The tasks of the stage: required first, then optional. */
+	tasks: StageTask[];
+	isAdHoc: boolean;
 	completion: StageCompletion | null;
 };
 
@@ -68,7 +71,7 @@ function getActivityState(
 	elementId: string,
 	stageInstances: ElementInstance[],
 	stageTasks: UserTask[],
-): Pick<StageActivity, 'status' | 'completedCount'> {
+): Pick<StageTask, 'status' | 'completedCount'> {
 	const instances = stageInstances.filter((instance) => instance.elementId === elementId);
 	const tasks = stageTasks.filter((task) => task.elementId === elementId);
 	const completedKeys = new Set([
@@ -102,26 +105,26 @@ function getStageWork({
 	caseVariables: Variable[];
 }): StageWork {
 	const openTasks = userTasks.filter(({state}) => state === 'CREATED');
-	const stagesById = new Map(model.stages.map((stage) => [stage.id, stage]));
-	const getOptionalStage = ({elementId}: UserTask) => {
-		const stage = stagesById.get(model.stageIdByElementId.get(elementId) ?? '');
-		return stage?.kind === 'optional' ? stage : undefined;
-	};
-	const optionalStageNames = Object.fromEntries(
-		openTasks.flatMap((task) => {
-			const optionalStage = getOptionalStage(task);
-			return optionalStage === undefined ? [] : [[task.userTaskKey, optionalStage.name]];
-		}),
-	);
+	const toOpenTask = (userTask: UserTask): StageTask => ({
+		key: userTask.userTaskKey,
+		elementId: userTask.elementId,
+		name: userTask.name || userTask.elementId,
+		isRequired: true,
+		canStart: false,
+		isAdHocTask: false,
+		status: 'open',
+		completedCount: 0,
+		userTask,
+	});
 	const stage = currentStage?.stage;
 
 	if (stage === undefined || currentStage === null) {
-		return {activities: [], openTasks, optionalStageNames, completion: null};
+		return {tasks: openTasks.map(toOpenTask), isAdHoc: false, completion: null};
 	}
 
 	const stageTasks = openTasks.filter((task) => {
 		const stageId = model.stageIdByElementId.get(task.elementId);
-		return stageId === undefined || stageId === stage.id || getOptionalStage(task) !== undefined;
+		return stageId === undefined || stageId === stage.id;
 	});
 	// The element instance search returns UTC dates and the user task search dates with an offset, so the
 	// run window compares timestamps, not strings.
@@ -134,21 +137,27 @@ function getStageWork({
 		({elementId, creationDate}) => stage.elementIds.includes(elementId) && Date.parse(creationDate) >= runStart,
 	);
 	const adHoc = stage.adHoc;
-	const activityIds = adHoc === null ? [] : [...adHoc.requiredElementIds, ...adHoc.optionalElementIds];
-	const activities = activityIds.map((elementId) => ({
+	const toAdHocTask = (elementId: string, isRequired: boolean): StageTask => ({
+		key: elementId,
 		elementId,
 		name: model.elementNames.get(elementId) ?? elementId,
-		isRequired: adHoc?.requiredElementIds.includes(elementId) ?? false,
+		isRequired,
+		canStart: !isRequired,
+		isAdHocTask: true,
 		...getActivityState(elementId, stageInstances, stageTaskHistory),
 		userTask: openTasksByElementId.get(elementId) ?? null,
-	}));
+	});
+	const requiredTasks = (adHoc?.requiredElementIds ?? []).map((elementId) => toAdHocTask(elementId, true));
+	const optionalTasks = (adHoc?.optionalElementIds ?? []).map((elementId) => toAdHocTask(elementId, false));
+	const adHocElementIds = new Set([...requiredTasks, ...optionalTasks].map(({elementId}) => elementId));
+	// Any other open task of the stage: the tasks of a sequential stage, or the tasks inside an activated
+	// sub-process of an ad-hoc stage.
+	const otherOpenTasks = stageTasks.filter(({elementId}) => !adHocElementIds.has(elementId)).map(toOpenTask);
 	const manualCompletion = stage.manualCompletion;
-	const requiredActivities = activities.filter(({isRequired}) => isRequired);
 
 	return {
-		activities,
-		openTasks: stageTasks.filter(({elementId}) => !activityIds.includes(elementId)),
-		optionalStageNames,
+		tasks: [...requiredTasks, ...otherOpenTasks, ...optionalTasks],
+		isAdHoc: adHoc !== null,
 		completion:
 			manualCompletion === null
 				? null
@@ -156,10 +165,10 @@ function getStageWork({
 						messageName: manualCompletion.messageName,
 						doneElementId: manualCompletion.doneElementId,
 						correlationKey: resolveCorrelationKey(manualCompletion.correlationKey, caseVariables),
-						isAllowed: requiredActivities.every(({completedCount}) => completedCount > 0),
+						isAllowed: requiredTasks.every(({completedCount}) => completedCount > 0),
 					},
 	};
 }
 
 export {getStageWork};
-export type {ActivityStatus, StageActivity, StageCompletion, StageWork};
+export type {StageCompletion, StageTask, StageWork, TaskStatus};

@@ -876,7 +876,6 @@
 			"caseTaskAssignedToYou": "Assignée à vous",
 			"caseTaskUnassigned": "Non assignée",
 			"caseOpenTask": "Ouvrir",
-			"caseActivitiesLabel": "Activités",
 			"caseActivitiesCount": "{{completed}} sur {{total}} terminées",
 			"caseActivityRequired": "Obligatoire",
 			"caseActivityOptional": "Facultative",
