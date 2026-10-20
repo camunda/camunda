@@ -35,11 +35,14 @@ import io.camunda.zeebe.protocol.record.intent.ProcessInstanceRelatedIntent;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRelated;
 import io.camunda.zeebe.stream.api.ProcessingResult;
 import io.camunda.zeebe.stream.api.ProcessingResultBuilder;
+import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.stream.api.RecordProcessor;
 import io.camunda.zeebe.stream.api.RecordProcessorContext;
+import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.stream.api.records.ExceededBatchRecordSizeException;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import java.util.EnumSet;
+import java.util.List;
 import java.util.Objects;
 import java.util.function.Supplier;
 import org.slf4j.Logger;
@@ -141,12 +144,21 @@ public class Engine implements RecordProcessor {
     bufferingBehavior =
         new CommandBufferingBehavior(processingState.getKeyGenerator(), writers, suspensionMetrics);
 
+    // Replay only rebuilds the state, so the clock is set from the state once replay is done.
+    // This listener is added first, so the other listeners already see this clock when they
+    // schedule their first tasks.
+    final var clock = recordProcessorContext.getClock();
+    final var clockState = processingState.getClockState();
+    recordProcessorContext.addLifecycleListeners(
+        List.of(
+            new StreamProcessorLifecycleAware() {
+              @Override
+              public void onRecovered(final ReadonlyStreamProcessorContext context) {
+                clock.applyModification(clockState.getModification());
+              }
+            }));
     recordProcessorContext.addLifecycleListeners(typedRecordProcessors.getLifecycleListeners());
     recordProcessorMap = typedRecordProcessors.getRecordProcessorMap();
-
-    recordProcessorContext
-        .getClock()
-        .applyModification(processingState.getClockState().getModification());
   }
 
   @Override
