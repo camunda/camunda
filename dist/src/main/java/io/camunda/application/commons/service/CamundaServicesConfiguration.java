@@ -252,6 +252,7 @@ public class CamundaServicesConfiguration {
                       search,
                       processCache,
                       incident,
+                      variable,
                       executor,
                       converter);
               final var processDefinition =
