@@ -161,6 +161,101 @@ describe('<ConversationHistory />', () => {
     ).toBeVisible();
   });
 
+  it('should place compaction events in history without treating them as transcript cards', async () => {
+    const items = [
+      mockAgentInstanceHistoryItem({
+        historyItemKey: '4',
+        role: 'ASSISTANT',
+        content: [{contentType: 'TEXT', text: 'After compaction'}],
+        producedAt: '2026-10-19T10:00:03Z',
+      }),
+      mockAgentInstanceHistoryItem({
+        historyItemKey: '3',
+        role: 'ASSISTANT',
+        content: [
+          {contentType: 'TEXT', text: 'Turn that compacted context'},
+          {
+            contentType: 'OBJECT',
+            object: {
+              evidence: {
+                kind: 'compaction',
+                savedTokens: 1200,
+                message: 'Masked tools A, B, C',
+              },
+            },
+          },
+        ],
+        producedAt: '2026-10-19T10:00:02Z',
+      }),
+      mockAgentInstanceHistoryItem({
+        historyItemKey: '2',
+        role: 'USER',
+        content: [{contentType: 'TEXT', text: 'Before compaction'}],
+        producedAt: '2026-10-19T10:00:01Z',
+      }),
+      mockAgentInstanceHistoryItem({
+        historyItemKey: '1',
+        role: 'CONFIGURATION',
+        content: [
+          {
+            contentType: 'OBJECT',
+            object: {evidence: {kind: 'configuration'}},
+          },
+        ],
+        producedAt: '2026-10-19T10:00:00Z',
+      }),
+    ];
+    mockSearchAgentInstanceHistory().withSuccess(
+      searchResult([...items].reverse()),
+    );
+    mockSearchAgentInstanceHistory().withSuccess(searchResult(items));
+    const {user} = render(
+      <ConversationHistory
+        agentInstanceKey={AGENT_INSTANCE_KEY}
+        availableTools={[]}
+        agentInstanceStatus="COMPLETED"
+        isVisible
+        selectedElementInstanceKey={null}
+        agentsElementInstanceKeys={[]}
+      />,
+      {wrapper: createWrapper()},
+    );
+    const event = await screen.findByRole('article', {
+      name: 'Context compacted',
+    });
+    expect(event).toHaveTextContent('Saved 1,200 tokens');
+    expect(within(event).getByText('Masked tools A, B, C')).toBeVisible();
+    expect(screen.getByTestId('conversation-message-4')).toAppearBefore(event);
+    expect(event).toAppearBefore(screen.getByTestId('conversation-message-3'));
+    expect(screen.getByTestId('conversation-message-3')).toAppearBefore(
+      screen.getByTestId('conversation-message-2'),
+    );
+    await user.click(
+      within(screen.getByTestId('conversation-message-4')).getByRole('button', {
+        name: 'Expand',
+      }),
+    );
+    expect(within(screen.getByRole('dialog')).getByText('3 / 3')).toBeVisible();
+    await user.click(
+      within(screen.getByRole('dialog')).getByRole('button', {name: 'Close'}),
+    );
+    await user.click(screen.getByRole('button', {name: 'Latest first'}));
+    await waitFor(() => {
+      const oldestFirstEvent = screen.getByRole('article', {
+        name: 'Context compacted',
+      });
+      expect(screen.getByTestId('conversation-message-2')).toAppearBefore(
+        oldestFirstEvent,
+      );
+      expect(screen.getByTestId('conversation-message-3')).toAppearBefore(
+        oldestFirstEvent,
+      );
+      expect(oldestFirstEvent).toAppearBefore(
+        screen.getByTestId('conversation-message-4'),
+      );
+    });
+  });
+
   it('should walk every card chronologically in one maximized dialog, regardless of list order', async () => {
     const call = {
       toolCallId: 'tc-story',
