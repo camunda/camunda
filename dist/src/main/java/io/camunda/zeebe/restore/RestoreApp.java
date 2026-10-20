@@ -25,6 +25,7 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest
 import io.camunda.zeebe.dynamic.nodeid.NodeIdProvider;
 import io.camunda.zeebe.dynamic.nodeid.fs.DataDirectoryProvider;
 import io.camunda.zeebe.restore.ClusterRestore.PhysicalTenantRestoreTarget;
+import io.camunda.zeebe.restore.ClusterRestore.TargetDataPolicy;
 import io.camunda.zeebe.restore.PhysicalTenantRestoreConfigurations.PhysicalTenantBrokerConfigurations;
 import io.camunda.zeebe.restore.PhysicalTenantRestoreConfigurations.PhysicalTenantRestoreEnvironments;
 import io.camunda.zeebe.restore.validation.RestoreValidator;
@@ -147,9 +148,11 @@ public class RestoreApp implements ApplicationRunner {
         arguments.selectionPerPhysicalTenant(physicalTenantConfigurations.physicalTenantIds());
     final var backupIdsPerTenant = validateParameters(selectionPerTenant);
     final var restoredPartitionCounts = partitionCounts(backupIdsPerTenant);
+    final var targetDataPolicy =
+        arguments.targetDataPolicy(physicalTenantConfigurations.physicalTenantIds().size() > 1);
     final var recreatesTopology =
         ClusterRestore.shouldRewriteTopologyFile(
-            arguments.targetDataPolicy(),
+            targetDataPolicy,
             selectionPerTenant
                 .keySet()
                 .containsAll(physicalTenantConfigurations.physicalTenantIds()));
@@ -162,7 +165,7 @@ public class RestoreApp implements ApplicationRunner {
 
     final PostRestoreActionContext postRestoreActionContext;
     if (!preRestoreActionResult.skipRestore()) {
-      restore(clusterRestore, backupIdsPerTenant);
+      restore(clusterRestore, backupIdsPerTenant, targetDataPolicy);
       postRestoreActionContext =
           new PostRestoreActionContext(
               restoreId,
@@ -227,7 +230,8 @@ public class RestoreApp implements ApplicationRunner {
 
   private void restore(
       final ClusterRestore clusterRestore,
-      final Map<String, Map<Integer, long[]>> backupIdsPerTenant)
+      final Map<String, Map<Integer, long[]>> backupIdsPerTenant,
+      final TargetDataPolicy targetDataPolicy)
       throws IOException, ExecutionException, InterruptedException {
     LOG.info(
         "Starting to restore physical tenants {} with the following configuration: {}",
@@ -235,7 +239,7 @@ public class RestoreApp implements ApplicationRunner {
         restoreConfiguration);
     clusterRestore.restore(
         backupIdsPerTenant,
-        arguments.targetDataPolicy(),
+        targetDataPolicy,
         restoreConfiguration.validateConfig(),
         restoreConfiguration.ignoreFilesInTarget());
     LOG.info("Successfully restored physical tenants {}", backupIdsPerTenant.keySet());
