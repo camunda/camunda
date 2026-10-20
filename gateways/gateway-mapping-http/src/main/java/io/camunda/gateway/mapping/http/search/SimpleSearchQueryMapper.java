@@ -18,6 +18,7 @@ import io.camunda.gateway.protocol.model.AdvancedIncidentErrorTypeFilter;
 import io.camunda.gateway.protocol.model.AdvancedIncidentStateFilter;
 import io.camunda.gateway.protocol.model.AdvancedIntegerFilter;
 import io.camunda.gateway.protocol.model.AdvancedProcessInstanceStateFilter;
+import io.camunda.gateway.protocol.model.AdvancedProtectionModeFilter;
 import io.camunda.gateway.protocol.model.AdvancedStringFilter;
 import io.camunda.gateway.protocol.model.BasicStringFilter;
 import io.camunda.gateway.protocol.model.BasicStringFilterProperty;
@@ -338,6 +339,9 @@ public class SimpleSearchQueryMapper {
       ofNullable(filter.getProcessInstanceKey())
           .map(SimpleSearchQueryMapper::getBasicStringFilter)
           .ifPresent(filterModel::processInstanceKey);
+      ofNullable(filter.getProtectionMode())
+          .map(mode -> AdvancedProtectionModeFilter.Builder.create().$in(List.of(mode)).build())
+          .ifPresent(filterModel::protectionMode);
     }
     return filterModel;
   }

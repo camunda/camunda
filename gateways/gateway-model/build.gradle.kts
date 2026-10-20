@@ -122,6 +122,7 @@ val openApiGenerateSimple =
           "io.camunda.gateway.protocol.model.MessageSubscriptionTypeEnum",
         "ProcessInstanceStateFilterProperty" to
           "io.camunda.gateway.protocol.model.ProcessInstanceStateEnum",
+        "ProtectionModeFilterProperty" to "io.camunda.gateway.protocol.model.ProtectionModeEnum",
         "OperationTypeFilterProperty" to
           "io.camunda.gateway.protocol.model.AuditLogOperationTypeEnum",
         "UserTaskStateFilterProperty" to "io.camunda.gateway.protocol.model.UserTaskStateEnum",

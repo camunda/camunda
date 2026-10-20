@@ -47,6 +47,7 @@ import io.camunda.gateway.protocol.model.OperationTypeFilterProperty;
 import io.camunda.gateway.protocol.model.ProcessInstanceCreationInstruction;
 import io.camunda.gateway.protocol.model.ProcessInstanceModificationTerminateInstruction;
 import io.camunda.gateway.protocol.model.ProcessInstanceStateFilterProperty;
+import io.camunda.gateway.protocol.model.ProtectionModeFilterProperty;
 import io.camunda.gateway.protocol.model.SearchQueryPageRequest;
 import io.camunda.gateway.protocol.model.StringFilterProperty;
 import io.camunda.gateway.protocol.model.UserTaskStateFilterProperty;
@@ -83,6 +84,7 @@ import io.camunda.zeebe.gateway.rest.deserializer.MessageSubscriptionTypePropert
 import io.camunda.zeebe.gateway.rest.deserializer.ProcessInstanceCreationInstructionDeserializer;
 import io.camunda.zeebe.gateway.rest.deserializer.ProcessInstanceModificationTerminateInstructionDeserializer;
 import io.camunda.zeebe.gateway.rest.deserializer.ProcessInstanceStateFilterPropertyDeserializer;
+import io.camunda.zeebe.gateway.rest.deserializer.ProtectionModeFilterPropertyDeserializer;
 import io.camunda.zeebe.gateway.rest.deserializer.SearchQueryPageRequestDeserializer;
 import io.camunda.zeebe.gateway.rest.deserializer.StringFilterPropertyDeserializer;
 import io.camunda.zeebe.gateway.rest.deserializer.UserTaskStateFilterPropertyDeserializer;
@@ -107,6 +109,8 @@ public class JacksonConfig {
     module.addDeserializer(
         ProcessInstanceStateFilterProperty.class,
         new ProcessInstanceStateFilterPropertyDeserializer());
+    module.addDeserializer(
+        ProtectionModeFilterProperty.class, new ProtectionModeFilterPropertyDeserializer());
     module.addDeserializer(
         ElementInstanceStateFilterProperty.class,
         new ElementInstanceStateFilterPropertyDeserializer());

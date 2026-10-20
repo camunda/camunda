@@ -16,6 +16,7 @@ import static io.camunda.it.rdbms.db.fixtures.VariableFixtures.createAndSaveVari
 import static io.camunda.it.rdbms.db.fixtures.VariableFixtures.findProtectionModeCodes;
 import static io.camunda.it.rdbms.db.fixtures.VariableFixtures.prepareRandomVariablesAndReturnOne;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
 
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.read.service.VariableDbReader;
@@ -28,6 +29,7 @@ import io.camunda.it.rdbms.db.fixtures.VariableFixtures;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
 import io.camunda.search.entities.VariableEntity;
+import io.camunda.search.entities.VariableEntity.ProtectionMode;
 import io.camunda.search.filter.VariableFilter;
 import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.query.VariableQuery;
@@ -37,6 +39,7 @@ import java.sql.SQLException;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -114,6 +117,180 @@ public class VariableIT {
 
     // when / then
     assertThat(findProtectionModeCodes(testApplication, variable.variableKey())).isEmpty();
+  }
+
+  @TestTemplate
+  public void shouldFindProtectionModes(final CamundaRdbmsTestApplication testApplication) {
+    // given
+    final var rdbmsService = testApplication.getRdbmsService();
+    final var variable =
+        createAndSaveVariable(
+            rdbmsService, b -> b.protectionModes(Set.of(ProtectionModeDbModel.REDACT)));
+
+    // when
+    final var instance = rdbmsService.getVariableReader().findOne(variable.variableKey());
+
+    // then
+    assertThat(instance).isNotNull();
+    assertThat(instance.protectionModes()).containsExactly(ProtectionMode.REDACT);
+  }
+
+  @TestTemplate
+  public void shouldFindNoProtectionModesForUnprotectedVariable(
+      final CamundaRdbmsTestApplication testApplication) {
+    // given
+    final var variable = prepareRandomVariablesAndReturnOne(testApplication);
+
+    // when
+    final var instance =
+        testApplication.getRdbmsService().getVariableReader().findOne(variable.variableKey());
+
+    // then
+    assertThat(instance).isNotNull();
+    assertThat(instance.protectionModes()).isEmpty();
+  }
+
+  @TestTemplate
+  public void shouldFindProtectionModesOfEachVariableInSearch(
+      final CamundaRdbmsTestApplication testApplication) {
+    // given
+    final var rdbmsService = testApplication.getRdbmsService();
+    final var name = "var-name-" + nextStringId();
+    final var protectedVariable1 =
+        VariableFixtures.createRandomized(
+            b -> b.name(name).protectionModes(Set.of(ProtectionModeDbModel.REDACT)));
+    final var unprotectedVariable = VariableFixtures.createRandomized(b -> b.name(name));
+    final var protectedVariable2 =
+        VariableFixtures.createRandomized(
+            b -> b.name(name).protectionModes(Set.of(ProtectionModeDbModel.REDACT)));
+    createAndSaveVariables(
+        rdbmsService, List.of(protectedVariable1, unprotectedVariable, protectedVariable2));
+
+    // when
+    final var searchResult =
+        rdbmsService
+            .getVariableReader()
+            .search(
+                new VariableQuery(
+                    new VariableFilter.Builder().names(name).build(),
+                    VariableSort.of(b -> b),
+                    SearchQueryPage.of(b -> b.from(0).size(10))));
+
+    // then
+    assertThat(searchResult.total()).isEqualTo(3);
+    assertThat(searchResult.items())
+        .extracting(VariableEntity::variableKey, VariableEntity::protectionModes)
+        .containsExactlyInAnyOrder(
+            tuple(protectedVariable1.variableKey(), Set.of(ProtectionMode.REDACT)),
+            tuple(unprotectedVariable.variableKey(), Set.of()),
+            tuple(protectedVariable2.variableKey(), Set.of(ProtectionMode.REDACT)));
+  }
+
+  @TestTemplate
+  public void shouldPageProtectedVariablesWithoutLosingItems(
+      final CamundaRdbmsTestApplication testApplication) {
+    // given
+    final var rdbmsService = testApplication.getRdbmsService();
+    final var name = "var-name-" + nextStringId();
+    VariableFixtures.createAndSaveRandomVariables(
+        rdbmsService, 5, b -> b.name(name).protectionModes(Set.of(ProtectionModeDbModel.REDACT)));
+
+    // when
+    final var searchResult =
+        rdbmsService
+            .getVariableReader()
+            .search(
+                new VariableQuery(
+                    new VariableFilter.Builder().names(name).build(),
+                    VariableSort.of(b -> b),
+                    SearchQueryPage.of(b -> b.from(0).size(2))));
+
+    // then
+    assertThat(searchResult.total()).isEqualTo(5);
+    assertThat(searchResult.items()).hasSize(2);
+    assertThat(searchResult.items())
+        .allSatisfy(
+            item -> assertThat(item.protectionModes()).containsExactly(ProtectionMode.REDACT));
+  }
+
+  @TestTemplate
+  public void shouldFilterByProtectionModeBeforePaging(
+      final CamundaRdbmsTestApplication testApplication) {
+    // given
+    final var rdbmsService = testApplication.getRdbmsService();
+    final var name = "var-name-" + nextStringId();
+    final var unprotected =
+        VariableFixtures.createAndSaveRandomVariables(rdbmsService, 6, b -> b.name(name));
+    final var protectedVariables =
+        VariableFixtures.createAndSaveRandomVariables(
+            rdbmsService,
+            3,
+            b -> b.name(name).protectionModes(Set.of(ProtectionModeDbModel.REDACT)));
+    final var filter =
+        new VariableFilter.Builder().names(name).protectionModes(ProtectionMode.REDACT).build();
+
+    // when
+    final var firstPage =
+        rdbmsService
+            .getVariableReader()
+            .search(
+                new VariableQuery(
+                    filter, VariableSort.of(b -> b), SearchQueryPage.of(b -> b.from(0).size(2))));
+    final var secondPage =
+        rdbmsService
+            .getVariableReader()
+            .search(
+                new VariableQuery(
+                    filter, VariableSort.of(b -> b), SearchQueryPage.of(b -> b.from(2).size(2))));
+
+    // then
+    assertThat(unprotected).hasSize(6);
+    assertThat(firstPage.total()).isEqualTo(3);
+    assertThat(firstPage.items()).hasSize(2);
+    assertThat(secondPage.total()).isEqualTo(3);
+    assertThat(secondPage.items()).hasSize(1);
+    assertThat(
+            Stream.concat(firstPage.items().stream(), secondPage.items().stream())
+                .map(VariableEntity::variableKey))
+        .containsExactlyInAnyOrderElementsOf(
+            protectedVariables.stream().map(VariableDbModel::variableKey).toList());
+  }
+
+  @TestTemplate
+  public void shouldCombineProtectionModeFilterWithOtherFilters(
+      final CamundaRdbmsTestApplication testApplication) {
+    // given
+    final var rdbmsService = testApplication.getRdbmsService();
+    final var name = "var-name-" + nextStringId();
+    final var otherName = "var-name-" + nextStringId();
+    final var matching =
+        VariableFixtures.createRandomized(
+            b -> b.name(name).protectionModes(Set.of(ProtectionModeDbModel.REDACT)));
+    final var protectedWithOtherName =
+        VariableFixtures.createRandomized(
+            b -> b.name(otherName).protectionModes(Set.of(ProtectionModeDbModel.REDACT)));
+    final var unprotectedWithName = VariableFixtures.createRandomized(b -> b.name(name));
+    createAndSaveVariables(
+        rdbmsService, List.of(matching, protectedWithOtherName, unprotectedWithName));
+
+    // when
+    final var searchResult =
+        rdbmsService
+            .getVariableReader()
+            .search(
+                new VariableQuery(
+                    new VariableFilter.Builder()
+                        .names(name)
+                        .protectionModes(ProtectionMode.REDACT)
+                        .build(),
+                    VariableSort.of(b -> b),
+                    SearchQueryPage.of(b -> b.from(0).size(10))));
+
+    // then
+    assertThat(searchResult.total()).isEqualTo(1);
+    assertThat(searchResult.items())
+        .extracting(VariableEntity::variableKey)
+        .containsExactly(matching.variableKey());
   }
 
   @TestTemplate

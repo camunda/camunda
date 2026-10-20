@@ -15,6 +15,7 @@ import io.camunda.db.rdbms.PerTenantSchemaConfig;
 import io.camunda.db.rdbms.RdbmsSchemaManagers;
 import io.camunda.db.rdbms.RdbmsSchemaMigrationStatusProvider;
 import io.camunda.db.rdbms.config.VendorDatabaseProperties;
+import io.camunda.db.rdbms.sql.typehandler.EntityProtectionModeTypeHandler;
 import io.camunda.db.rdbms.write.RdbmsMapperBundle;
 import io.camunda.zeebe.broker.Broker;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
@@ -213,6 +214,7 @@ public class MyBatisConfiguration {
     final var configuration = new org.apache.ibatis.session.Configuration();
     configuration.setJdbcTypeForNull(JdbcType.NULL);
     configuration.getTypeHandlerRegistry().register(OffsetDateTimeTypeHandler.class);
+    configuration.getTypeHandlerRegistry().register(EntityProtectionModeTypeHandler.class);
     // Which vendor's mapper statements apply is already settled in the vendor properties, so it is
     // set here rather than handed to a DatabaseIdProvider that would look it up over a connection
     // a second time. SqlSessionFactoryBean would only call setDatabaseId on this same object.

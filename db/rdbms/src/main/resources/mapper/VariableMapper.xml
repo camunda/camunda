@@ -23,6 +23,20 @@
     resultMap="io.camunda.db.rdbms.sql.VariableMapper.searchResultMap">
     SELECT * FROM (
     SELECT
+      v.VAR_KEY,
+      v.PROCESS_INSTANCE_KEY,
+      v.ROOT_PROCESS_INSTANCE_KEY,
+      v.SCOPE_KEY,
+      v.VAR_NAME,
+      v.VAR_VALUE,
+      v.VAR_FULL_VALUE,
+      v.TENANT_ID,
+      v.IS_PREVIEW,
+      v.PROCESS_DEFINITION_ID,
+      pm.PROTECTION_MODE AS PROTECTION_MODE
+    FROM (
+    SELECT * FROM (
+    SELECT
       VAR_KEY,
       PROCESS_INSTANCE_KEY,
       ROOT_PROCESS_INSTANCE_KEY,
@@ -39,6 +53,15 @@
     <include refid="io.camunda.db.rdbms.sql.Commons.keySetPageFilter"/>
     <include refid="io.camunda.db.rdbms.sql.Commons.orderBy"/>
     <include refid="io.camunda.db.rdbms.sql.Commons.paging"/>
+    ) v
+    LEFT JOIN ${prefix}VARIABLE_PROTECTION_MODE pm ON (pm.VAR_KEY = v.VAR_KEY)
+    <include refid="io.camunda.db.rdbms.sql.Commons.orderBy"/>
+    <if test="_databaseId == 'mssql'">
+      <!-- MSSQL needs an OFFSET when sorting in subselects -->
+      OFFSET 0 ROWS
+    </if>
+    ) sorted
+    <include refid="io.camunda.db.rdbms.sql.Commons.orderBy"/>
   </select>
 
   <sql id="searchFilter">
@@ -92,6 +115,16 @@
       </if>
       <if test="filter.isTruncated != null">
         AND IS_PREVIEW = #{filter.isTruncated}
+      </if>
+      <if test="filter.protectionModes != null and !filter.protectionModes.isEmpty()">
+        AND EXISTS (
+          SELECT 1 FROM ${prefix}VARIABLE_PROTECTION_MODE PM
+          WHERE PM.VAR_KEY = ${prefix}VARIABLE.VAR_KEY
+          AND PM.PROTECTION_MODE IN
+          <foreach collection="filter.protectionModes" item="mode" open="(" separator="," close=")">
+            #{mode, typeHandler=io.camunda.db.rdbms.sql.typehandler.EntityProtectionModeTypeHandler}
+          </foreach>
+        )
       </if>
       <!-- advanced filters on variable name / values -->
       <if test="filter.valueOperations != null and !filter.valueOperations.isEmpty()">
@@ -148,6 +181,13 @@
         typeHandler="io.camunda.db.rdbms.sql.typehandler.NullToEmptyStringTypeHandler"
         name="tenantId"/>
     </constructor>
+    <collection property="protectionModes"
+      ofType="io.camunda.search.entities.VariableEntity$ProtectionMode"
+      javaType="java.util.Set">
+      <id column="PROTECTION_MODE"
+        javaType="io.camunda.search.entities.VariableEntity$ProtectionMode"
+        typeHandler="io.camunda.db.rdbms.sql.typehandler.EntityProtectionModeTypeHandler"/>
+    </collection>
   </resultMap>
 
   <insert id="insert" parameterType="io.camunda.db.rdbms.write.queue.BatchInsertDto">
