@@ -27,7 +27,8 @@ import org.springframework.stereotype.Component;
  * the configured age, so that Kubernetes restarts the pod. An answer that signals backpressure
  * counts as a success, as the cluster is responding. Every other failure does not, whatever its
  * cause: rejected credentials, a stopped request scheduler and an unreachable cluster all end in
- * the same state, a starter that creates no process instances.
+ * the same state, a starter that creates no process instances. A fatal error reports DOWN
+ * immediately.
  */
 @Component("starterLiveness")
 @Profile("starter")
@@ -37,6 +38,7 @@ public class StarterLivenessIndicator implements HealthIndicator {
   private final InstantSource clock;
   private final AtomicReference<@Nullable Instant> lastSuccess = new AtomicReference<>();
   private final AtomicBoolean finished = new AtomicBoolean();
+  private final AtomicReference<@Nullable Throwable> fatalError = new AtomicReference<>();
 
   @Autowired
   public StarterLivenessIndicator(final LoadTesterProperties properties) {
@@ -65,8 +67,17 @@ public class StarterLivenessIndicator implements HealthIndicator {
     finished.set(true);
   }
 
+  /** Records an error after which the starter cannot create process instances any more. */
+  void recordFatal(final Throwable cause) {
+    fatalError.set(cause);
+  }
+
   @Override
   public Health health() {
+    final var fatal = fatalError.get();
+    if (fatal != null) {
+      return Health.down().withDetail("fatalError", String.valueOf(fatal)).build();
+    }
     final var success = lastSuccess.get();
     if (!finished.get() && success != null) {
       final var age = Duration.between(success, clock.instant());

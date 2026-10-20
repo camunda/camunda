@@ -34,8 +34,14 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
+<<<<<<< HEAD
 import org.springframework.context.ApplicationContext;
 import org.springframework.web.reactive.function.client.WebClient;
+=======
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.scheduling.TaskScheduler;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
+>>>>>>> 47764c537 (fix: report a fatal creation error as not live instead of exiting)
 
 class StarterTest {
 
@@ -100,6 +106,21 @@ class StarterTest {
     final var payloadReader = mock(PayloadReader.class);
     when(payloadReader.readPayload(any())).thenReturn("{}");
 
+<<<<<<< HEAD
+=======
+    final var scheduler = new ThreadPoolTaskScheduler();
+    scheduler.initialize();
+    final var registry = new SimpleMeterRegistry();
+    final var livenessIndicator = mock(StarterLivenessIndicator.class);
+    final var deployer =
+        new ProcessDeployer(
+            loaderClient, properties, mock(ConnectionMonitor.class), livenessIndicator);
+    final var creator =
+        new ProcessInstanceCreator(
+            loaderClient, properties, registry, payloadReader, livenessIndicator);
+    final var availabilityMeter =
+        new ProcessInstanceStartMeter(registry, properties, queryClient, creator);
+>>>>>>> 47764c537 (fix: report a fatal creation error as not live instead of exiting)
     final var starter =
         new Starter(
             loaderClient,
