@@ -116,6 +116,7 @@ const Header: React.FC<Props> = ({children, currentApp, initialSaasToken}) => {
 										canLogout={canLogout}
 										onLogout={handleLogout}
 										onOpenCookiePreferences={handleCookiePreferences}
+										showThemeEditorLink={currentApp === 'tasklist'}
 									/>
 								) : (
 									<AccountMenu
@@ -123,6 +124,7 @@ const Header: React.FC<Props> = ({children, currentApp, initialSaasToken}) => {
 										canLogout={canLogout}
 										onLogout={handleLogout}
 										onOpenCookiePreferences={handleCookiePreferences}
+										showThemeEditorLink={currentApp === 'tasklist'}
 									/>
 								)}
 							</>

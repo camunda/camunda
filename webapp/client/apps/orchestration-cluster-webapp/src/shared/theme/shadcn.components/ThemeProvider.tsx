@@ -18,7 +18,7 @@ type Props = {
 };
 
 const ThemeProvider: React.FC<Props> = observer(({children}) => {
-	const {resolvedTheme} = useTheme(themeStore.selectedTheme);
+	const {resolvedTheme} = useTheme(themeStore.previewTheme ?? themeStore.selectedTheme);
 	const {i18n} = useTranslation();
 	const locale = getC4Locale(i18n.resolvedLanguage);
 
