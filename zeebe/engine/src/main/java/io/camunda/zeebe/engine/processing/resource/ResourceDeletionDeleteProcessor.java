@@ -138,14 +138,18 @@ public class ResourceDeletionDeleteProcessor
     final var result = tryDeleteResources(command, eventKey);
 
     stateWriter.appendFollowUpEvent(eventKey, ResourceDeletionIntent.DELETED, value);
-    commandDistributionBehavior
-        .withKey(eventKey)
-        .inQueue(DistributionQueue.DEPLOYMENT)
-        .forPartitions(
-            result.distributionPartitions.isEmpty()
-                ? routingInfo.desiredPartitions()
-                : result.distributionPartitions())
-        .distribute(command);
+    // A repeat on a definition that is already draining has no drain to start, so nothing is
+    // distributed; the drain already runs on the instance partitions.
+    if (!result.alreadyDraining) {
+      commandDistributionBehavior
+          .withKey(eventKey)
+          .inQueue(DistributionQueue.DEPLOYMENT)
+          .forPartitions(
+              result.distributionPartitions.isEmpty()
+                  ? routingInfo.desiredPartitions()
+                  : result.distributionPartitions())
+          .distribute(command);
+    }
     responseWriter.writeAcceptedResponseOnCommand(
         eventKey, ResourceDeletionIntent.DELETED, value, command);
   }
@@ -368,7 +372,7 @@ public class ResourceDeletionDeleteProcessor
       final TypedRecord<ResourceDeletionRecord> command,
       final long eventKey,
       final DeployedProcess process) {
-    // Stamp metadata before the not-ACTIVE bail-out so a repeat-delete rejection carries the
+    // Stamp metadata before the not-ACTIVE bail-out so a repeat-delete response carries the
     // resolved type/id/tenant, not whatever the client sent.
     command
         .getValue()
@@ -376,7 +380,18 @@ public class ResourceDeletionDeleteProcessor
         .setResourceId(process.getBpmnProcessId())
         .setTenantId(process.getTenantId());
     if (!process.isActive()) {
-      throw new ResourceDeletionInProgressException(process.getKey());
+      // A history deletion cannot run until the drain ends, and a distributed command has no
+      // caller to answer. Any other repeat is accepted without effect.
+      if (command.getValue().isDeleteHistory() || command.isCommandDistributed()) {
+        throw new ResourceDeletionInProgressException(process.getKey());
+      }
+      checkAuthorization(
+          command,
+          AuthorizationResourceType.RESOURCE,
+          PermissionType.DELETE_PROCESS,
+          bufferAsString(process.getBpmnProcessId()),
+          process.getTenantId());
+      return DeletionResult.ALREADY_DRAINING;
     }
     return authorizeAndDelete(
         command,
@@ -642,12 +657,14 @@ public class ResourceDeletionDeleteProcessor
    * Whether the resource was deleted, and the partitions to distribute the deletion to; empty
    * partitions distribute to all.
    */
-  private record DeletionResult(boolean resourceDeleted, Set<Integer> distributionPartitions) {
-    private static final DeletionResult DELETED = new DeletionResult(true, Set.of());
-    private static final DeletionResult NOT_DELETED = new DeletionResult(false, Set.of());
+  private record DeletionResult(
+      boolean resourceDeleted, Set<Integer> distributionPartitions, boolean alreadyDraining) {
+    private static final DeletionResult DELETED = new DeletionResult(true, Set.of(), false);
+    private static final DeletionResult NOT_DELETED = new DeletionResult(false, Set.of(), false);
+    private static final DeletionResult ALREADY_DRAINING = new DeletionResult(true, Set.of(), true);
 
     private static DeletionResult deletedOn(final Set<Integer> distributionPartitions) {
-      return new DeletionResult(true, distributionPartitions);
+      return new DeletionResult(true, distributionPartitions, false);
     }
   }
 
