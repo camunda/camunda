@@ -6,7 +6,6 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Modal} from '@carbon/react';
 import {useState, type ReactNode} from 'react';
 import {CopyButton} from 'modules/components/CopyButton';
 import {
@@ -26,7 +25,6 @@ import {
   type ModalView,
   type ModalViewProps,
 } from '../../ModalView';
-import {DocumentProcessing} from '../../MessageAttachments/DocumentProcessing';
 import {
   Description,
   Columns,
@@ -34,6 +32,7 @@ import {
   ColumnLabel,
   ResultContainer,
   EmptyHint,
+  ToolModal,
 } from './styled';
 
 type ToolResultModalProps = ModalViewProps & {
@@ -43,7 +42,6 @@ type ToolResultModalProps = ModalViewProps & {
   content: ContentItem[];
   onClose: () => void;
   navigation?: ReactNode;
-  parsingInput?: ContentItem[];
 };
 
 const ToolResultModal: React.FC<ToolResultModalProps> = ({
@@ -53,7 +51,6 @@ const ToolResultModal: React.FC<ToolResultModalProps> = ({
   content,
   onClose,
   navigation,
-  parsingInput,
   view,
   onViewChange,
 }) => {
@@ -64,12 +61,15 @@ const ToolResultModal: React.FC<ToolResultModalProps> = ({
   const hasInput = input !== null && Object.keys(input).length > 0;
   const result = getToolCallResult(content);
   const hasEvidence = getContentEvidence(content).length > 0;
+  const hasDocuments = content.some(
+    (entry) => entry.contentType === 'DOCUMENT',
+  );
   const outputCopyValue = isSource
     ? JSON.stringify(content, null, 2)
     : result?.copyValue;
 
   return (
-    <Modal
+    <ToolModal
       open
       size="lg"
       passiveModal
@@ -104,7 +104,7 @@ const ToolResultModal: React.FC<ToolResultModalProps> = ({
             <ResultContainer>
               <SourceEditor
                 value={JSON.stringify(input, null, 2)}
-                height="40vh"
+                height="100%"
               />
             </ResultContainer>
           ) : hasInput ? (
@@ -128,7 +128,7 @@ const ToolResultModal: React.FC<ToolResultModalProps> = ({
             <ResultContainer>
               <SourceEditor
                 value={JSON.stringify(content, null, 2)}
-                height="40vh"
+                height="100%"
               />
             </ResultContainer>
           )}
@@ -151,20 +151,16 @@ const ToolResultModal: React.FC<ToolResultModalProps> = ({
           )}
         </Column>
       </Columns>
-      {!isSource && (
-        <ModalAttachments>
-          {parsingInput ? (
-            <DocumentProcessing input={parsingInput} output={content} showAll />
-          ) : (
-            <DocumentContent
-              content={content}
-              modalTitleSuffix="tool result"
-              showAll
-            />
-          )}
+      {!isSource && hasDocuments && (
+        <ModalAttachments data-testid="tool-call-documents">
+          <DocumentContent
+            content={content}
+            modalTitleSuffix="tool result"
+            showAll
+          />
         </ModalAttachments>
       )}
-    </Modal>
+    </ToolModal>
   );
 };
 

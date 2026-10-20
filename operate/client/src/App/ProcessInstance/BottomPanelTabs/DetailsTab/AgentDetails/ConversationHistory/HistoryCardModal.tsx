@@ -39,8 +39,6 @@ type Props = {
   onPrevious: () => void;
   onNext: () => void;
   onClose: () => void;
-  parsingInput?: AgentInstanceHistoryItem['content'];
-  hideDocumentParsing?: boolean;
 };
 
 const HistoryCardModal: React.FC<Props> = ({
@@ -56,8 +54,6 @@ const HistoryCardModal: React.FC<Props> = ({
   onPrevious,
   onNext,
   onClose,
-  parsingInput,
-  hideDocumentParsing,
 }) => {
   const contentRef = useRef<HTMLElement>(null);
   const [view, setView] = useState<ModalView>('preview');
@@ -151,7 +147,6 @@ const HistoryCardModal: React.FC<Props> = ({
         }
         input={toolCall.arguments}
         content={item.content}
-        parsingInput={parsingInput}
         onClose={onClose}
         navigation={
           <>
@@ -203,10 +198,7 @@ const HistoryCardModal: React.FC<Props> = ({
             modalTitleSuffix="conversation message"
             showAll
           />
-          <EvidenceCards
-            content={item.content}
-            hideDocumentParsing={hideDocumentParsing}
-          />
+          <EvidenceCards content={item.content} />
           <ToolCalls toolCalls={item.toolCalls} />
         </>
       }
