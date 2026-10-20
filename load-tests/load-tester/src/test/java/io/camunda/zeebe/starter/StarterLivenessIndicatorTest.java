@@ -35,6 +35,20 @@ class StarterLivenessIndicatorTest {
   }
 
   @Test
+  void shouldBeDownImmediatelyAfterAFatalError() {
+    // given
+    final var indicator = indicator();
+    indicator.recordStarted();
+    indicator.recordResult(null);
+
+    // when
+    indicator.recordFatal(new OutOfMemoryError("boom"));
+
+    // then
+    assertThat(indicator.health().getStatus()).isEqualTo(Status.DOWN);
+  }
+
+  @Test
   void shouldBeUpBeforeTheStarterIsConnected() {
     // given
     final var indicator = indicator();
