@@ -448,6 +448,43 @@ public class ResourceDeletionMultiPartitionTest {
   }
 
   @Test
+  public void shouldAcceptRepeatedDeleteWithoutRedistributingWhileDeploymentPartitionDrains() {
+    // given - the deployment partition itself holds the draining copy, because the instance runs
+    // there
+    final var processId = Strings.newRandomValidBpmnId();
+    final long processDefinitionKey = deployServiceTaskProcess(processId);
+    final long instanceKey =
+        engine.processInstance().ofBpmnProcessId(processId).onPartition(1).create();
+    awaitJobCreated(instanceKey);
+    engine.resourceDeletion().withResourceKey(processDefinitionKey).delete();
+    RecordingExporter.processRecords()
+        .withIntent(ProcessIntent.DRAINING)
+        .withPartitionId(1)
+        .withProcessDefinitionKey(processDefinitionKey)
+        .await();
+
+    // when
+    final var repeat = engine.resourceDeletion().withResourceKey(processDefinitionKey).delete();
+
+    // then - accepted, and the other partitions are not asked again, they drain from the original
+    // distribution
+    assertThat(repeat.getKey()).isPositive();
+    assertThat(
+            RecordingExporter.<Boolean>expectNoMatchingRecords(
+                records ->
+                    RecordingExporter.commandDistributionRecords()
+                        .withRecordKey(repeat.getKey())
+                        .withIntent(CommandDistributionIntent.DISTRIBUTING)
+                        .exists()))
+        .describedAs("a repeat while the deployment partition drains is not redistributed")
+        .isFalse();
+
+    // and - the instance is not terminated and the drain completes with it
+    engine.job().ofInstance(instanceKey).withType(JOB_TYPE).complete();
+    assertFullyDeleted(processDefinitionKey);
+  }
+
+  @Test
   public void shouldRecoverOrphanedDeletionOnPendingPartitions() {
     // given - deleted on the deployment partition, but stuck in PENDING_DELETION on the others
     final var metadata = deployOnAllPartitions(Strings.newRandomValidBpmnId());
