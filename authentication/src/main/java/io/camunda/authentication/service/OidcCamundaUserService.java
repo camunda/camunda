@@ -15,6 +15,7 @@ import io.camunda.search.entities.TenantEntity;
 import io.camunda.search.query.TenantQuery;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
+import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.entity.AuthenticationMethod;
 import io.camunda.security.entity.ClusterMetadata.AppName;
 import io.camunda.security.reader.ResourceAccessProvider;
@@ -54,18 +55,21 @@ public class OidcCamundaUserService implements CamundaUserService {
   private final TenantServices tenantServices;
   private final OAuth2AuthorizedClientRepository authorizedClientRepository;
   private final HttpServletRequest request;
+  private final SecurityConfiguration securityConfiguration;
 
   public OidcCamundaUserService(
       final CamundaAuthenticationProvider authenticationProvider,
       final ResourceAccessProvider resourceAccessProvider,
       final TenantServices tenantServices,
       final OAuth2AuthorizedClientRepository authorizedClientRepository,
-      final HttpServletRequest request) {
+      final HttpServletRequest request,
+      final SecurityConfiguration securityConfiguration) {
     this.authenticationProvider = authenticationProvider;
     this.resourceAccessProvider = resourceAccessProvider;
     this.tenantServices = tenantServices;
     this.authorizedClientRepository = authorizedClientRepository;
     this.request = request;
+    this.securityConfiguration = securityConfiguration;
   }
 
   @Override
@@ -130,7 +134,8 @@ public class OidcCamundaUserService implements CamundaUserService {
         roles,
         SALES_PLAN_TYPE,
         C8_LINKS,
-        true);
+        // when operating in SaaS we don't have the logout option.
+        !securityConfiguration.getSaas().isConfigured());
   }
 
   protected StandardClaimAccessor getUser() {
