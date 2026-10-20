@@ -66,6 +66,7 @@ const ProcessInstanceDetails: React.FC = () => {
 	const isRunning = isInstanceRunning(processInstance);
 	const effectiveElementId = anchorElementId ?? selectedElementId;
 	const businessObject = diagram?.businessObjects[effectiveElementId ?? ''];
+	const agentElementId = effectiveElementId ?? resolvedElementInstance?.elementId;
 	const elementInstanceKey = resolvedElementInstance?.elementInstanceKey;
 	const resolvedElementType = resolvedElementInstance?.type;
 
@@ -108,10 +109,10 @@ const ProcessInstanceDetails: React.FC = () => {
 	} = useQuery({
 		...elementAgentInstancesQuery({
 			processInstanceKey: processInstance.processInstanceKey,
-			elementId: effectiveElementId ?? '',
+			elementId: agentElementId ?? '',
 			elementInstanceKey: isSelectedInstanceMultiInstanceBody ? null : selectedElementInstanceKey,
 		}),
-		enabled: Boolean(effectiveElementId),
+		enabled: Boolean(agentElementId),
 		refetchInterval: isRunning ? POLLING_INTERVAL_MS : false,
 	});
 	const showAgentInstance = (agentInstances !== undefined && agentInstances.items.length > 0) || isAgentInstancesError;

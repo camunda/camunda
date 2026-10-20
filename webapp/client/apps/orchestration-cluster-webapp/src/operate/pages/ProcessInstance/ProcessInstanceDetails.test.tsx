@@ -334,6 +334,21 @@ describe('<ProcessInstanceDetails />', () => {
 			await expect.element(screen.getByText('Waiting for message: payment-received')).not.toBeInTheDocument();
 		});
 
+		it('should show the agent details when only an element instance key is selected', async ({worker}) => {
+			worker.use(
+				mockQueryAgentInstancesEndpoint({
+					schema: agentRequestSchema({elementInstanceKeys: z.tuple([z.literal(ELEMENT_INSTANCE_KEY)])}),
+					successResponse: agentsResponse(),
+					failureResponse: emptyResponse(),
+				}),
+				...handlers(),
+			);
+			const screen = await renderDetails({search: `?elementInstanceKey=${ELEMENT_INSTANCE_KEY}`});
+
+			await expect.element(screen.getByRole('heading', {name: 'Agent Instance'})).toBeVisible();
+			await expect.element(screen.getByRole('button', {name: 'Status: Calling tools'})).toBeVisible();
+		});
+
 		it('should filter on the element id only for a multi-instance body', async ({worker}) => {
 			worker.use(
 				mockQueryAgentInstancesEndpoint({
