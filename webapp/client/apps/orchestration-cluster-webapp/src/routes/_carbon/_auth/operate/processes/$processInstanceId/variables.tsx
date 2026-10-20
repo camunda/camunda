@@ -7,10 +7,10 @@
  */
 
 import {createFileRoute} from '@tanstack/react-router';
-import {ProcessInstanceTabOutlet} from '#/operate/pages/ProcessInstance/ProcessInstanceTabOutlet';
+import {ProcessInstanceVariables} from '#/operate/pages/ProcessInstance/ProcessInstanceVariables';
 
 const Route = createFileRoute('/_carbon/_auth/operate/processes/$processInstanceId/variables')({
-	component: ProcessInstanceTabOutlet,
+	component: ProcessInstanceVariables,
 });
 
 export {Route};

@@ -26,7 +26,7 @@ import io.camunda.client.api.search.enums.BatchOperationType;
 import io.camunda.client.api.search.enums.MessageSubscriptionType;
 import io.camunda.client.api.search.enums.ProcessDefinitionState;
 import io.camunda.client.api.search.enums.ProcessInstanceState;
-import io.camunda.configuration.HistoryDeletion;
+import io.camunda.configuration.data.HistoryDeletion;
 import io.camunda.qa.util.multidb.CamundaMultiDBExtension;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;

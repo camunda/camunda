@@ -148,12 +148,20 @@ export class OperateProcessInstanceViewModificationModePage {
       name: this.page
         .getByTestId(`variable-newVariables[${index}]`)
         .locator(`[id="newVariables[${index}].name"]`),
+      // Operate's inline variable editor migrated from Monaco to CodeMirror
+      // (#62782): a new variable's value no longer renders a separate
+      // read-only display, and reading the `new-variable-value` group's text
+      // now picks up the visually hidden "Value" label. Target the CodeMirror
+      // content textbox instead -- it holds just the value and is focused by
+      // clicking it, exactly as the old read-only display was.
       readModeValue: this.page
         .getByTestId(`variable-newVariables[${index}]`)
-        .getByTestId('new-variable-value-readonly'),
+        .getByTestId('new-variable-value')
+        .getByRole('textbox'),
       writeModeValue: this.page
         .getByTestId(`variable-newVariables[${index}]`)
-        .getByTestId('new-variable-value'),
+        .getByTestId('new-variable-value')
+        .getByRole('textbox'),
       jsonEditorButton: this.page
         .getByTestId(`variable-newVariables[${index}]`)
         .getByRole('button', {name: 'Open'}),
@@ -504,9 +512,15 @@ export class OperateProcessInstanceViewModificationModePage {
   };
 
   getEditVariableFieldSelector(variableName: string) {
+    // After the inline editor migrated to CodeMirror (#62782), reading the
+    // `edit-variable-value` group's text returns accessibility noise (e.g. the
+    // "Selection deleted" live-region announcement) alongside the value.
+    // Target the CodeMirror content textbox instead; clicking it focuses the
+    // editor just as clicking the group did.
     return this.page
       .getByTestId(`variable-${variableName}`)
-      .getByTestId('edit-variable-value');
+      .getByTestId('edit-variable-value')
+      .getByRole('textbox');
   }
 
   async undoModification() {
@@ -744,6 +758,10 @@ export class OperateProcessInstanceViewModificationModePage {
   }
 
   async expectEditorToBeLoaded() {
-    await expect(this.page.getByRole('code')).toBeVisible();
+    // The inline value editor is CodeMirror (#62782); it exposes the
+    // `code-mirror-editor` testid rather than Monaco's `role="code"`.
+    await expect(
+      this.page.getByTestId('code-mirror-editor').first(),
+    ).toBeVisible();
   }
 }

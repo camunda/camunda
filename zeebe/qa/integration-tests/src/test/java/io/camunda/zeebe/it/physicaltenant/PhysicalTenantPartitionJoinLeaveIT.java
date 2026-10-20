@@ -93,7 +93,7 @@ final class PhysicalTenantPartitionJoinLeaveIT {
             .orElseThrow();
 
     // when — that other broker joins partition 1 of tenant A
-    awaitAccepted(
+    TENANTS.awaitAccepted(
         "the cluster accepts the join",
         () ->
             actuator.joinPartition(
@@ -112,7 +112,7 @@ final class PhysicalTenantPartitionJoinLeaveIT {
         .isEqualTo(defaultReplicas);
 
     // when — the same broker leaves partition 1 of tenant A again
-    awaitAccepted(
+    TENANTS.awaitAccepted(
         "the cluster accepts the leave",
         () -> actuator.leavePartition(Integer.parseInt(joiningBroker), PARTITION_ID, TENANT_A));
 
@@ -145,23 +145,5 @@ final class PhysicalTenantPartitionJoinLeaveIT {
         .atMost(Duration.ofSeconds(120))
         .ignoreExceptions()
         .untilAsserted(() -> assertThat(replicasOf(actuator, physicalTenantId)).hasSize(expected));
-  }
-
-  /**
-   * Retries {@code request} until the cluster accepts it. The request is not an assertion — it
-   * either returns or throws a {@link feign.FeignException} — so it cannot be handed to {@code
-   * untilAsserted}, which only retries on {@link AssertionError}. A retry is needed because the
-   * cluster can still be applying its own initial configuration change when the test starts, and
-   * rejects a second change while one is in progress.
-   */
-  private void awaitAccepted(final String alias, final Runnable request) {
-    await(alias)
-        .atMost(Duration.ofSeconds(30))
-        .ignoreExceptions()
-        .until(
-            () -> {
-              request.run();
-              return true;
-            });
   }
 }

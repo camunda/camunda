@@ -13,7 +13,6 @@ import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.zeebe.broker.client.api.BrokerClusterState;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyListener;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.GlobalConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
@@ -108,11 +107,6 @@ final class PublishMessageDispatchStrategyTest {
 
     @Override
     public void removeTopologyListener(final BrokerTopologyListener listener) {
-      throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public void onClusterConfigurationUpdated(final ClusterConfiguration clusterConfiguration) {
       throw new UnsupportedOperationException();
     }
 

@@ -9,8 +9,8 @@ package io.camunda.zeebe.it.cluster.clustering.dynamic;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.zeebe.dynamic.config.impl.serializer.ProtoBufSerializer;
 import io.camunda.zeebe.dynamic.config.serializer.ClusterConfigurationJsonSerializer;
-import io.camunda.zeebe.dynamic.config.serializer.ProtoBufSerializer;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;

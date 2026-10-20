@@ -11,8 +11,8 @@ import static io.camunda.zeebe.dynamic.config.gossip.ClusterConfigurationGossipe
 import static io.camunda.zeebe.it.cluster.clustering.dynamic.Utils.assertChangeIsPlanned;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.configuration.Export;
-import io.camunda.configuration.Metadata;
+import io.camunda.configuration.cluster.Metadata;
+import io.camunda.configuration.data.Export;
 import io.camunda.zeebe.protocol.record.intent.MessageIntent;
 import io.camunda.zeebe.qa.util.actuator.ClusterActuator;
 import io.camunda.zeebe.qa.util.actuator.PartitionsActuator;

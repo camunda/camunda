@@ -14,6 +14,7 @@ import io.camunda.zeebe.engine.processing.common.EventHandle;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEvent;
+import io.camunda.zeebe.engine.processing.storageordinals.TimerStorageOrdinals;
 import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionAware;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
@@ -22,6 +23,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.immutable.TimerInstanceState;
+import io.camunda.zeebe.engine.state.instance.TimerInstance;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.model.bpmn.util.time.RepeatingInterval;
 import io.camunda.zeebe.model.bpmn.util.time.Timer;
@@ -97,6 +99,8 @@ public final class TimerTriggerProcessor
           record, RejectionType.NOT_FOUND, NO_TIMER_FOUND_MESSAGE.formatted(record.getKey()));
       return;
     }
+
+    restoreStorageOrdinal(timer, timerInstance);
 
     final var tenantId = timer.getTenantId();
     // this is an additional safeguard to avoid banning unrelated instances
@@ -184,6 +188,7 @@ public final class TimerTriggerProcessor
         event.getId(),
         record.getTenantId(),
         record.getRootProcessInstanceKey(),
+        record.getStorageOrdinal(),
         record.getBpmnProcessId(),
         record.getElementType(),
         refreshedTimer);
@@ -191,8 +196,8 @@ public final class TimerTriggerProcessor
 
   private Timer refreshTimer(final Timer timer, final TimerRecord record) {
     return switch (timer) {
-      case CronTimer cronTimer -> cronTimer;
-      case RepeatingInterval repeatingInterval -> {
+      case final CronTimer cronTimer -> cronTimer;
+      case final RepeatingInterval repeatingInterval -> {
         int repetitions = record.getRepetitions();
         if (repetitions != RepeatingInterval.INFINITE) {
           repetitions--;
@@ -210,6 +215,7 @@ public final class TimerTriggerProcessor
 
   @Override
   public SuspensionAction onSuspended(final TypedRecord<TimerRecord> record) {
+    restoreStorageOrdinal(record);
     stateWriter.appendFollowUpEvent(record.getKey(), TimerIntent.SUSPENDED, record.getValue());
     return SuspensionAction.BUFFER;
   }
@@ -218,8 +224,32 @@ public final class TimerTriggerProcessor
   public SuspensionAction onResuming(final TypedRecord<TimerRecord> record) {
     final long timerKey = record.getKey();
     final var timer = record.getValue();
+    restoreStorageOrdinal(record);
     // RESUMED restores a missing due-date entry before the drained TRIGGER removes the timer.
     stateWriter.appendFollowUpEvent(timerKey, TimerIntent.RESUMED, timer);
     return SuspensionAction.PROCESS;
+  }
+
+  /** Variant for the suspension callbacks, which run without the NOT_FOUND check above. */
+  private void restoreStorageOrdinal(final TypedRecord<TimerRecord> record) {
+    final var timer = record.getValue();
+    final var timerInstance =
+        timerInstanceState.get(timer.getElementInstanceKey(), record.getKey());
+    if (timerInstance != null) {
+      restoreStorageOrdinal(timer, timerInstance);
+    }
+  }
+
+  /**
+   * Populate the timer record with the storage ordinal of the timer instance to ensure that the
+   * correct ordinal is used for the rescheduled timer.
+   *
+   * <p>The state is the source of truth for the ordinal: a TRIGGER command written before the
+   * ordinal existed carries 0, and every follow-up event (SUSPENDED, RESUMED, TRIGGERED, the
+   * rescheduled CREATED) reuses this record.
+   */
+  private static void restoreStorageOrdinal(
+      final TimerRecord timer, final TimerInstance timerInstance) {
+    timer.setStorageOrdinal(TimerStorageOrdinals.of(timerInstance));
   }
 }

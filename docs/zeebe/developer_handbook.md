@@ -16,6 +16,8 @@ This document contains instructions for developers who want to contribute to thi
 
 ## How to create a new record?
 
+New records affect rolling updates, see [rolling_updates.md](rolling_updates.md#processing).
+
 Generally, you'll need to do the following things:
 1. [Expand our `protocol` with a new `RecordValue`](#expanding-our-protocol-with-a-new-recordvalue).
 2. [Implement this `RecordValue` in the `protocol-impl` module](#implement-a-new-recordvalue-in-protocol-impl).

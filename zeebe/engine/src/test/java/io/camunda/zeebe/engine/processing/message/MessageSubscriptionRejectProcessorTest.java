@@ -11,6 +11,7 @@ import static io.camunda.zeebe.test.util.TestUtil.waitUntil;
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -35,16 +36,21 @@ import io.camunda.zeebe.engine.state.appliers.EventAppliers;
 import io.camunda.zeebe.engine.state.immutable.DistributionState;
 import io.camunda.zeebe.engine.state.routing.RoutingInfo;
 import io.camunda.zeebe.engine.util.StreamProcessorRule;
+import io.camunda.zeebe.protocol.Protocol;
+import io.camunda.zeebe.protocol.impl.record.value.message.MessageCorrelationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecord;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordValue;
+import io.camunda.zeebe.protocol.record.intent.MessageCorrelationIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
+import io.camunda.zeebe.protocol.record.value.StorageOrdinalRelated;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.stream.api.InterPartitionCommandSender;
 import io.camunda.zeebe.stream.api.ProcessingResultBuilder;
 import io.camunda.zeebe.stream.api.StreamClock.ControllableStreamClock;
+import io.camunda.zeebe.stream.impl.records.CopiedRecords;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.FeatureFlags;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
@@ -52,6 +58,7 @@ import java.time.Duration;
 import java.time.InstantSource;
 import java.util.Optional;
 import java.util.function.Supplier;
+import java.util.stream.Stream;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -163,7 +170,8 @@ public final class MessageSubscriptionRejectProcessorTest {
             any(),
             eq(k2.getCorrelationKeyBuffer()),
             eq(DEFAULT_TENANT),
-            anyLong());
+            anyLong(),
+            anyInt());
   }
 
   @Test
@@ -244,6 +252,37 @@ public final class MessageSubscriptionRejectProcessorTest {
     assertThat(secondCorrelating.getValue().getMessageKey()).isEqualTo(m1Key);
   }
 
+  @Test
+  public void shouldMarkNotCorrelatedResponseAsNotOrdinalControlled() {
+    // given a synchronous correlate (carrying request metadata) that locked the subscription
+    final MessageSubscriptionRecord subscription = subscription().setElementInstanceKey(1L);
+    rule.writeCommand(MessageSubscriptionIntent.CREATE, subscription);
+    awaitFirstByElement(subscription.getElementInstanceKey(), MessageSubscriptionIntent.CREATED);
+    rule.writeCommand(
+        1,
+        1L,
+        MessageCorrelationIntent.CORRELATE,
+        new MessageCorrelationRecord()
+            .setName("order canceled")
+            .setCorrelationKey("order-123")
+            .setTenantId(DEFAULT_TENANT));
+
+    final long messageKey =
+        awaitFirstByElement(
+                subscription.getElementInstanceKey(), MessageSubscriptionIntent.CORRELATING)
+            .getValue()
+            .getMessageKey();
+
+    // when
+    rule.writeCommand(MessageSubscriptionIntent.REJECT, subscription.setMessageKey(messageKey));
+
+    // then
+    waitUntil(() -> notCorrelatedEvents().findFirst().isPresent());
+    final MessageCorrelationRecord value = notCorrelatedEvents().findFirst().get().getValue();
+    assertThat(value.getStorageOrdinal()).isEqualTo(StorageOrdinalRelated.NOT_ORDINAL_CONTROLLED);
+    assertThat(value.getProcessInstanceKey()).isEqualTo(-1L);
+  }
+
   private Record<MessageSubscriptionRecord> awaitFirstByElement(
       final long elementInstanceKey, final MessageSubscriptionIntent intent) {
     return awaitAndGet(
@@ -277,5 +316,11 @@ public final class MessageSubscriptionRejectProcessorTest {
       final Supplier<Optional<Record<T>>> supplier) {
     waitUntil(() -> supplier.get().isPresent());
     return supplier.get().get();
+  }
+
+  private Stream<Record<MessageCorrelationRecord>> notCorrelatedEvents() {
+    return rule.events()
+        .withIntent(MessageCorrelationIntent.NOT_CORRELATED)
+        .map(l -> CopiedRecords.createCopiedRecord(Protocol.DEPLOYMENT_PARTITION, l));
   }
 }

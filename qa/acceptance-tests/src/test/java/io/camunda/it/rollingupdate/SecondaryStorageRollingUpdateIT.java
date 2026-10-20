@@ -21,7 +21,7 @@ import static org.awaitility.Awaitility.await;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ClientStatusException;
-import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
+import io.camunda.configuration.data.SecondaryStorage.SecondaryStorageType;
 import io.camunda.container.ClusterHelper;
 import io.camunda.container.cluster.BrokerNode;
 import io.camunda.container.cluster.CamundaCluster;

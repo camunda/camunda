@@ -1,0 +1,31 @@
+import buildlogic.projectArtifact
+import buildlogic.ArtifactKind
+plugins { id("buildlogic.server-conventions") }
+
+dependencies {
+  implementation(project(":camunda-cluster"))
+  implementation(project(":zeebe-protocol"))
+  implementation(project(":zeebe-protocol-impl"))
+  implementation(project(":zeebe-transport"))
+  implementation(project(":zeebe-util"))
+  implementation(project(":zeebe-scheduler"))
+  implementation(project(":zeebe-msgpack-value"))
+  implementation(project(":zeebe-msgpack-core"))
+  implementation(libs.com.fasterxml.jackson.core.jackson.databind)
+  implementation(libs.org.agrona.agrona)
+  implementation(project(":zeebe-test-util"))
+  implementation(project(":zeebe-bpmn-model"))
+  implementation(libs.org.msgpack.jackson.dataformat.msgpack)
+  implementation(libs.junit.junit)
+  implementation(libs.org.assertj.assertj.core)
+  implementation(libs.org.slf4j.slf4j.api)
+  implementation(project(":zeebe-atomix-cluster"))
+  implementation(libs.com.fasterxml.jackson.core.jackson.core)
+  implementation(project(":zeebe-atomix-utils"))
+  implementation(libs.io.micrometer.micrometer.core)
+  implementation(libs.org.jeasy.easy.random.core)
+  implementation(libs.io.github.classgraph.classgraph)
+  testImplementation(projectArtifact(":zeebe-protocol-asserts", ArtifactKind.GENERATED_ASSERTIONS))
+}
+
+description = "Zeebe Protocol Test Util"

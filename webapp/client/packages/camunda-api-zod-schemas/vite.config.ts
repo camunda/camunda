@@ -15,6 +15,8 @@ export default defineConfig({
 	plugins: [
 		dts({
 			insertTypesEntry: true,
+			// Only the 8.11 modules consume the generated schemas so far.
+			exclude: ['lib/8.9/gen/**', 'lib/8.10/gen/**'],
 		}),
 		circleDependency(),
 	],

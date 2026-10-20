@@ -8,7 +8,7 @@
 
 import {useEffect, useRef, useState} from 'react';
 import {Loading} from '@carbon/react';
-import {ResizablePanel, SplitDirection} from '../ResizablePanel/ResizablePanel';
+import {ResizablePanel, SplitDirection} from '#/operate/shared/ResizablePanel/ResizablePanel';
 import {Container, PanelContainer} from './styled';
 
 type Props = {

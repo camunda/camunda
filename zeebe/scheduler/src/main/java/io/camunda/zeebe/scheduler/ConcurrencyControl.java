@@ -73,6 +73,12 @@ public interface ConcurrencyControl extends Executor {
   ScheduledTimer schedule(final long delayMs, final Runnable runnable);
 
   /**
+   * Schedule a task to be executed repeatedly, first after the given delay and then at that same
+   * interval. A run that fails does not stop later runs; cancel the returned timer to stop them.
+   */
+  ScheduledTimer runAtFixedRate(final Duration delay, final Runnable runnable);
+
+  /**
    * Create a new future object
    *
    * @param <V> value type of future

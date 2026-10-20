@@ -141,6 +141,15 @@ public interface BackupAcceptance {
     waitUntilBackupIsCompleted(actuator, backupId);
 
     // when
+    Awaitility.await("until backup state is available on all partitions")
+        .atMost(Duration.ofSeconds(30))
+        .untilAsserted(
+            () -> {
+              final var state = actuator.state();
+              assertThat(state.getBackupStates()).hasSize(cluster.partitionsCount());
+              assertThat(state.getCheckpointStates()).hasSize(cluster.partitionsCount());
+            });
+
     final var response = actuator.state();
 
     // then

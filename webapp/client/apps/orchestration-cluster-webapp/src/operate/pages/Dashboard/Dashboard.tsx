@@ -6,25 +6,30 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import {useInfiniteQuery} from '@tanstack/react-query';
 import {useTranslation} from 'react-i18next';
-import {useRunningInstancesCount} from './useRunningInstancesCount';
 import {Container, Grid, ScrollableContent, Tile, TileTitle, VisuallyHiddenH1} from './styled';
 import {MetricPanel} from './MetricPanel/MetricPanel';
 import {NoInstancesEmptyState} from './NoInstancesEmptyState';
 import {InstancesByProcess} from './InstancesByProcess/InstancesByProcess';
+import {instancesByProcessInfiniteQuery} from './InstancesByProcess/instancesByProcess.queries';
 import {IncidentsByError} from './IncidentsByError/IncidentsByError';
 
 const Dashboard: React.FC = () => {
 	const {t} = useTranslation();
-	const {data: count} = useRunningInstancesCount();
-	const hasNoInstances = count.total === 0;
+	const processStats = useInfiniteQuery({
+		...instancesByProcessInfiniteQuery(),
+		refetchInterval: 5000,
+		select: (data) => data.pages[0]?.page.totalItems ?? 0,
+	});
+	const hasNoInstances = processStats.status === 'success' && processStats.data === 0;
 
 	return (
 		<Container>
 			<Grid $numberOfColumns={hasNoInstances ? 1 : 2}>
 				<VisuallyHiddenH1>{t('operate.dashboard.title')}</VisuallyHiddenH1>
 				<Tile data-testid="metric-panel">
-					<MetricPanel count={count} />
+					<MetricPanel />
 				</Tile>
 				<Tile>
 					<TileTitle>{t('operate.dashboard.processesByNameTitle')}</TileTitle>

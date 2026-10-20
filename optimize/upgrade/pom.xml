@@ -71,7 +71,7 @@
     <dependency>
       <groupId>org.apache.commons</groupId>
       <artifactId>commons-lang3</artifactId>
-      <version>3.20.0</version>
+      <version>3.21.0</version>
       <scope>provided</scope>
     </dependency>
 
@@ -171,7 +171,7 @@
     <dependency>
       <groupId>io.github.classgraph</groupId>
       <artifactId>classgraph</artifactId>
-      <version>4.8.196</version>
+      <version>4.8.199</version>
       <scope>provided</scope>
     </dependency>
 

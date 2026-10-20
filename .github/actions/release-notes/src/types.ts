@@ -1,10 +1,7 @@
 /**
- * The attribution contract shared by the PR-gate lint and the release-notes
- * generator (#57713): ParsedRef -> ResolvedRef -> PolicyDecision.
- *
- * ParsedRef is pure text extraction (no IO). ResolvedRef adds the facts only
- * the GitHub API can supply (issue vs PR, alive vs dead, same-repo vs cross).
- * PolicyDecision is a pure function of ResolvedRef[] + opt-out state.
+ * The attribution contract shared by the PR-gate lint and the generator:
+ * ParsedRef (pure text extraction) -> ResolvedRef (API facts added) ->
+ * PolicyDecision (pure function of ResolvedRef[] + opt-out state).
  */
 
 /** How a reference was written, which decides whether it satisfies the gate. */
@@ -60,19 +57,19 @@ export interface Resolver {
   resolve(refs: readonly ParsedRef[]): Promise<ResolvedRef[]>;
 }
 
-/**
- * The pull-request fields the gate evaluates. Fetched from the API rather than
- * read off the event payload: on `workflow_run` there is no `pull_request` in
- * the payload at all, and fetching also guarantees the body is current at
- * evaluation time rather than a snapshot from whenever the event fired.
- */
+/** The PR fields the gate evaluates. Fetched from the API, not the event
+ *  payload — `workflow_run` carries no `pull_request` at all, and this
+ *  guarantees the body is current rather than a stale event snapshot. */
 export interface PullMeta {
   readonly body: string;
   readonly title: string;
-  /** Drives the bot exemptions (title lint per D16, and the Renovate link
+  /** Drives the bot exemptions (title lint, and the Renovate link
    *  exemption). Absent means "not exempt", so a missing author degrades to a
    *  stricter check, never a looser one. */
   readonly authorLogin?: string;
+  /** ISO-8601 merge timestamp, absent on an open PR. The generator keys the
+   *  post-gate anomaly rule on it; the gate does not read it. */
+  readonly mergedAt?: string;
 }
 
 /** How the linked PR was delivered — a direct PR, or a backport hop to an original. */
@@ -84,7 +81,7 @@ export type TitleCode =
   | 'title-type' // FAIL: type missing, not lower-case, or not in the enum
   | 'title-scope' // FAIL: a scope is present (scope-empty: always)
   | 'title-length' // FAIL: header exceeds the max length
-  | 'title-skipped'; // PASS: author is a bot — title lint does not apply (D16)
+  | 'title-skipped'; // PASS: author is a bot — title lint does not apply
 
 /** Result of linting the PR title against commitlint.config.cjs (the active rules). */
 export interface TitleDecision {

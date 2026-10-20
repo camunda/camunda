@@ -29,14 +29,17 @@ type Props = {
 type DetailItemProps = {
 	label: string;
 	children: React.ReactNode;
+	title?: string;
 };
 
-const DetailItem: React.FC<DetailItemProps> = ({label, children}) => (
+const DetailItem: React.FC<DetailItemProps> = ({label, children, title}) => (
 	<div className="px-4 py-3">
 		<Text as="div" variant="body-sm" className="text-neutral-foreground-subtle">
 			{label}
 		</Text>
-		<div className="text-sm leading-5 text-neutral-foreground-strong">{children}</div>
+		<div className="truncate text-sm leading-5 text-neutral-foreground-strong" title={title}>
+			{children}
+		</div>
 	</div>
 );
 
@@ -65,7 +68,9 @@ const Aside: React.FC<Props> = ({
 				</Text>
 			) : null}
 			{taskTenant === undefined ? null : (
-				<DetailItem label={t('tasklist.taskDetailsTenantLabel')}>{taskTenant.name}</DetailItem>
+				<DetailItem label={t('tasklist.taskDetailsTenantLabel')} title={taskTenant.name}>
+					{taskTenant.name}
+				</DetailItem>
 			)}
 			<DetailItem label={t('tasklist.taskDetailsCreationDateLabel')}>
 				{formatISODateTime(creationDate)?.absolute.text ?? creationDate}
@@ -76,8 +81,8 @@ const Aside: React.FC<Props> = ({
 				) : (
 					<div className="flex flex-wrap gap-1 pt-1">
 						{candidates.map((candidate) => (
-							<Badge variant="neutral" key={candidate}>
-								{candidate}
+							<Badge variant="neutral" key={candidate} className="max-w-full" title={candidate}>
+								<span className="truncate">{candidate}</span>
 							</Badge>
 						))}
 					</div>
@@ -99,7 +104,11 @@ const Aside: React.FC<Props> = ({
 					{formatISODateTime(followUpDate)?.absolute.text ?? followUpDate}
 				</DetailItem>
 			) : null}
-			{businessId ? <DetailItem label={t('tasklist.taskDetailsBusinessIdLabel')}>{businessId}</DetailItem> : null}
+			{businessId ? (
+				<DetailItem label={t('tasklist.taskDetailsBusinessIdLabel')} title={businessId}>
+					{businessId}
+				</DetailItem>
+			) : null}
 		</aside>
 	);
 };

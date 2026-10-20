@@ -7,7 +7,7 @@
  */
 package io.camunda.application.commons.rdbms;
 
-import io.camunda.configuration.Rdbms;
+import io.camunda.configuration.data.secondarystorage.Rdbms;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;

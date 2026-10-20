@@ -11,12 +11,14 @@ import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.ScheduledTimer;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.util.LockUtil;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.concurrent.Callable;
 import java.util.concurrent.PriorityBlockingQueue;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReentrantLock;
@@ -140,6 +142,34 @@ public class TestConcurrencyControl implements ConcurrencyControl {
     // Schedule immediately
     LockUtil.withLock(lock, runnable);
     return () -> {};
+  }
+
+  /**
+   * Only supported with {@code asyncSchedule}, where every run is queued until {@link #runAll()}.
+   * Each run queues the next one before executing, so a failing run doesn't stop the repetition.
+   */
+  @Override
+  public ScheduledTimer runAtFixedRate(final Duration delay, final Runnable runnable) {
+    if (!asyncSchedule) {
+      throw new UnsupportedOperationException("runAtFixedRate requires asyncSchedule");
+    }
+    final var cancelled = new AtomicBoolean();
+    final var nextRun = new AtomicReference<ScheduledTimer>();
+    final var run =
+        new Runnable() {
+          @Override
+          public void run() {
+            if (!cancelled.get()) {
+              nextRun.set(schedule(delay.toMillis(), this));
+              runnable.run();
+            }
+          }
+        };
+    nextRun.set(schedule(delay.toMillis(), run));
+    return () -> {
+      cancelled.set(true);
+      nextRun.get().cancel();
+    };
   }
 
   @Override

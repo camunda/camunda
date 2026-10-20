@@ -22,11 +22,23 @@ public class ProcessDefinitionEntityTransfomer
         value.getName(),
         value.getBpmnProcessId(),
         value.getBpmnXml(),
-        value.getResourceName(),
+        resourceNameOf(value),
         value.getVersion(),
         value.getVersionTag(),
         value.getTenantId(),
         value.getFormId(),
         value.getState() == null ? null : ProcessDefinitionState.valueOf(value.getState().name()));
+  }
+
+  /**
+   * Documents written by the camunda/operate#5980 {@code CUSTOMCopyProcessesFromOptimize} hotfix
+   * have no resource name, so it is derived from the BPMN process id.
+   */
+  private static String resourceNameOf(final ProcessEntity value) {
+    final var resourceName = value.getResourceName();
+    if (resourceName != null || value.getBpmnProcessId() == null) {
+      return resourceName;
+    }
+    return value.getBpmnProcessId() + ".bpmn";
   }
 }

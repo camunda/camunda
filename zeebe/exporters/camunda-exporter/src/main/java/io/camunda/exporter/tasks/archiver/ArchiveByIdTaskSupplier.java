@@ -34,7 +34,8 @@ public class ArchiveByIdTaskSupplier<SortFieldType> {
           SocketTimeoutException.class,
           ElasticsearchException.class,
           OpenSearchException.class,
-          BatchCountMismatchException.class);
+          BatchCountMismatchException.class,
+          VersionConflictOnArchiveDeleteException.class);
 
   private final HistoryConfiguration config;
   private final String sourceIdx;
@@ -95,8 +96,9 @@ public class ArchiveByIdTaskSupplier<SortFieldType> {
 
   public CompletableFuture<Long> moveNextBatch() {
     final Stopwatch stopwatch = Stopwatch.createStarted();
+    final var batchSizeForBatch = batchSize.get();
     return idsSupplier
-        .apply(getLastSearchPosition(), batchSize.get())
+        .apply(getLastSearchPosition(), batchSizeForBatch)
         .thenComposeAsync(
             response -> {
               if (response.isEmpty()) {
@@ -113,6 +115,12 @@ public class ArchiveByIdTaskSupplier<SortFieldType> {
                         lastSearchResponse.set(response);
                         totalArchived.accumulateAndGet(deletedCount, Long::sum);
                         retryCount.set(0);
+                        // batch was below page size, so that implies there should
+                        // not be another batch to read, so now that we've processed
+                        // this batch we can finish
+                        if (response.documents.size() < batchSizeForBatch) {
+                          finished.set(true);
+                        }
                         return deletedCount;
                       })
                   .exceptionallyCompose(
@@ -241,9 +249,9 @@ public class ArchiveByIdTaskSupplier<SortFieldType> {
     }
   }
 
-  public record IdWithRouting(String id, String routing) {
+  public record IdWithRouting(String id, String routing, Long seqNo, Long primaryTerm) {
     public static IdWithRouting of(final String id) {
-      return new IdWithRouting(id, null);
+      return new IdWithRouting(id, null, null, null);
     }
   }
 

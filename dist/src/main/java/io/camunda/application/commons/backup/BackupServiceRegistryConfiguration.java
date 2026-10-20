@@ -7,13 +7,13 @@
  */
 package io.camunda.application.commons.backup;
 
-import static io.camunda.configuration.SecondaryStorage.SecondaryStorageType.elasticsearch;
-import static io.camunda.configuration.SecondaryStorage.SecondaryStorageType.opensearch;
+import static io.camunda.configuration.data.SecondaryStorage.SecondaryStorageType.elasticsearch;
+import static io.camunda.configuration.data.SecondaryStorage.SecondaryStorageType.opensearch;
 
 import io.camunda.application.commons.backup.BackupServiceRegistry.PhysicalTenantBackup;
-import io.camunda.configuration.DocumentBasedSecondaryStorageBackup;
-import io.camunda.configuration.SecondaryStorage;
 import io.camunda.configuration.conditions.ConditionalOnSecondaryStorageType;
+import io.camunda.configuration.data.SecondaryStorage;
+import io.camunda.configuration.data.secondarystorage.documentbased.DocumentBasedSecondaryStorageBackup;
 import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
 import io.camunda.search.connect.tenant.SearchClients;
 import io.camunda.search.schema.config.SearchEngineConfiguration;

@@ -45,7 +45,7 @@ jobs:
       fail-fast: false
       matrix:
         database: [ elasticsearch, opensearch ]
-        branch: [ main, stable/8.8, stable/8.9 ]
+        branch: [ main, stable/8.8, stable/8.9, stable/8.10 ]
     needs: detect-changes
     if: ${{ needs.detect-changes.outputs.backend-changes == 'true' }}
     steps:
@@ -66,7 +66,7 @@ jobs:
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
       - name: Read Java/version info
         id: "pom-info"
-        uses: YunaBraska/java-info-action@085d09be3659b484e0a6d0c95aac6612687ce8d9 # 3.0.13
+        uses: YunaBraska/java-info-action@7a178ff2b0222107efbaab0c457c2ff09a84a801 # 3.0.14
       - name: Read DB versions
         id: db-versions
         uses: ./.github/actions/read-db-versions

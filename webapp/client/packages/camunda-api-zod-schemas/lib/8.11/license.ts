@@ -6,17 +6,12 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {z} from 'zod';
 import {API_VERSION, type Endpoint} from './common';
+import {licenseResponseSchema} from './gen/zod/licenseResponseSchema';
+import type {LicenseResponse} from './gen/types/LicenseResponse';
 
-const licenseSchema = z.object({
-	validLicense: z.boolean(),
-	licenseType: z.string(),
-	isCommercial: z.boolean(),
-	expiresAt: z.string().nullable(),
-});
-
-type License = z.infer<typeof licenseSchema>;
+const licenseSchema = licenseResponseSchema;
+type License = LicenseResponse;
 
 const getLicense = {
 	method: 'GET',

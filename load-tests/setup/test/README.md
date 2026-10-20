@@ -40,6 +40,10 @@ N>1 (resource-name/prefix uniqueness across tenants). Run a manual load test wit
 `physical-tenant-count=3` (or higher) before relying on a change to that loop —
 see "Optional physical tenants (pt1..ptN)" in `../README.md`.
 
+The rendered k6 manifests (`templates/k6`) are excluded from every scenario
+except `k6`, which runs on `main` only to keep the golden files small. Remove
+`OnlyVersions` from that scenario in `golden_test.go` to cover other versions.
+
 ## About the credentials in these files
 
 The `load-test-setup` chart's `Secret` manifests (`camunda-credentials.yaml`,

@@ -29,13 +29,30 @@
     </dependency>
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>zeebe-cluster-config</artifactId>
+      <artifactId>zeebe-cluster-config-api</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-cluster-config-openapi</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-cluster-config-impl</artifactId>
       <scope>test</scope>
     </dependency>
 
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-broker</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-db</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>

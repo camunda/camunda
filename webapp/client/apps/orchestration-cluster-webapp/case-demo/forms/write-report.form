@@ -1,0 +1,29 @@
+{
+  "executionPlatform": "Camunda Cloud",
+  "executionPlatformVersion": "8.11.0",
+  "exporter": {
+    "name": "Camunda Modeler",
+    "version": "5.40.0"
+  },
+  "schemaVersion": 18,
+  "id": "write-report",
+  "type": "default",
+  "components": [
+    {
+      "type": "textarea",
+      "key": "inspectionNotes",
+      "label": "Inspection notes",
+      "id": "Field_inspectionNotes_122",
+      "readonly": true
+    },
+    {
+      "type": "textarea",
+      "key": "reportSummary",
+      "label": "Report summary",
+      "id": "Field_reportSummary_123",
+      "validate": {
+        "required": true
+      }
+    }
+  ]
+}

@@ -89,6 +89,7 @@ public final class PhysicalTenantResolver implements PhysicalTenantIds {
     PhysicalTenantOverridePolicyValidation.validate(environment);
     PhysicalTenantRequiredOverrideValidation.validate(environment);
     PhysicalTenantAssignedProvidersValidation.validate(environment);
+    PhysicalTenantOidcClientSecretValidation.validate(environment);
     PhysicalTenantDocumentAssignedValidation.validateRootAssignedAbsent(environment);
     PhysicalTenantExporterAssignedValidation.validateRootAssignedAbsent(environment);
     final Map<String, Camunda> resolvedPhysicalTenants = new LinkedHashMap<>();
@@ -115,9 +116,12 @@ public final class PhysicalTenantResolver implements PhysicalTenantIds {
     PhysicalTenantExporterAssignedValidation.validate(
         environment, resolvedPhysicalTenants, physicalTenantIds);
     resolvedPhysicalTenants.forEach(
-        (physicalTenantId, physicalTenantCfg) ->
-            PhysicalTenantExporterConfigurations.narrowToAssigned(
-                physicalTenantCfg, physicalTenantId, environment));
+        (physicalTenantId, physicalTenantCfg) -> {
+          PhysicalTenantExporterConfigurations.narrowToAssigned(
+              physicalTenantCfg, physicalTenantId, environment);
+          PhysicalTenantAuthenticationProviderConfigurations.narrowToAssigned(
+              physicalTenantCfg, physicalTenantId, environment);
+        });
 
     // must stay below the narrowing above: GenericExporterIsolationValidation compares the tenants'
     // narrowed exporter maps

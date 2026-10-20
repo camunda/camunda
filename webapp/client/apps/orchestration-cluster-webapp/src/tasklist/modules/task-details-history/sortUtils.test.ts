@@ -20,25 +20,25 @@ describe('task details history sorting', () => {
 		const search = taskDetailsHistorySearchSchema.parse({});
 
 		expect(search).toEqual(taskDetailsHistorySearchDefaults);
-		expect(getAuditLogSort(search)).toEqual({field: 'timestamp', order: 'desc'});
+		expect(getAuditLogSort(search)).toEqual({field: 'timestamp', order: 'DESC'});
 	});
 
 	it('should keep the selected history sort from the URL', () => {
-		const search = taskDetailsHistorySearchSchema.parse({sort: 'operationType+asc'});
+		const search = taskDetailsHistorySearchSchema.parse({sort: 'operationType+ASC'});
 
-		expect(getAuditLogSort(search)).toEqual({field: 'operationType', order: 'asc'});
+		expect(getAuditLogSort(search)).toEqual({field: 'operationType', order: 'ASC'});
 	});
 
 	it('should recover to the default sort when the URL contains an unsupported sort', () => {
-		const search = taskDetailsHistorySearchSchema.parse({sort: 'status+asc'});
+		const search = taskDetailsHistorySearchSchema.parse({sort: 'status+ASC'});
 
 		expect(search).toEqual(taskDetailsHistorySearchDefaults);
-		expect(getAuditLogSort(search)).toEqual({field: 'timestamp', order: 'desc'});
+		expect(getAuditLogSort(search)).toEqual({field: 'timestamp', order: 'DESC'});
 	});
 
 	it('should build the next sort search value when the user selects a column', () => {
-		expect(getNextSortSearchValue('timestamp', 'asc')).toBe('timestamp+desc');
-		expect(getNextSortSearchValue('timestamp', 'desc')).toBe('timestamp+asc');
-		expect(getNextSortSearchValue('actorId')).toBe('actorId+asc');
+		expect(getNextSortSearchValue('timestamp', 'ASC')).toBe('timestamp+DESC');
+		expect(getNextSortSearchValue('timestamp', 'DESC')).toBe('timestamp+ASC');
+		expect(getNextSortSearchValue('actorId')).toBe('actorId+ASC');
 	});
 });

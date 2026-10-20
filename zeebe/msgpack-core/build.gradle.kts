@@ -1,0 +1,14 @@
+plugins { id("buildlogic.server-conventions") }
+
+dependencies {
+  api(libs.org.agrona.agrona)
+  implementation(libs.org.jspecify.jspecify)
+  testImplementation(libs.org.msgpack.msgpack.core)
+  testImplementation(libs.junit.junit)
+  testRuntimeOnly(libs.org.junit.vintage.junit.vintage.engine)
+  testImplementation(project(":zeebe-test-util"))
+  testImplementation(project(":zeebe-util"))
+  testImplementation(libs.org.apache.commons.commons.lang3)
+}
+
+description = "Zeebe Msgpack Core"

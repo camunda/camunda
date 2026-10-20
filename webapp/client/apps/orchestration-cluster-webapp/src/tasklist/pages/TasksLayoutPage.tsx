@@ -9,7 +9,7 @@
 import {Outlet, useMatchRoute} from '@tanstack/react-router';
 import {useTranslation} from 'react-i18next';
 import type {CurrentUser, QueryUserTasksResponseBody} from '@camunda/camunda-api-zod-schemas/8.11';
-import {useMediaQuery} from '@camunda/design-system';
+import {Heading, useMediaQuery} from '@camunda/design-system';
 import {cn} from '#/shared/cn';
 import {AvailableTasks} from '#/tasklist/modules/available-tasks/components/AvailableTasks';
 import {Filters} from '#/tasklist/modules/available-tasks/components/Filters';
@@ -56,7 +56,9 @@ const TasksLayoutPage: React.FC<Props> = ({
 				aria-label={t('tasklist.tasksPanelLabel')}
 			>
 				<header className="flex items-center border-b border-border px-2">
-					<h1 className="sr-only">{t('tasklist.headerNavItemTasks')}</h1>
+					<Heading as="h1" className="sr-only">
+						{t('tasklist.headerNavItemTasks')}
+					</Heading>
 					<Filters disabled={isPending} />
 				</header>
 				<AvailableTasks

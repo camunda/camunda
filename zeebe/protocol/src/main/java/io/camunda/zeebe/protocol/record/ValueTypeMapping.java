@@ -39,6 +39,7 @@ import io.camunda.zeebe.protocol.record.intent.DecisionIntent;
 import io.camunda.zeebe.protocol.record.intent.DecisionRequirementsIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
+import io.camunda.zeebe.protocol.record.intent.ElementInstanceWalkIntent;
 import io.camunda.zeebe.protocol.record.intent.ErrorIntent;
 import io.camunda.zeebe.protocol.record.intent.EscalationIntent;
 import io.camunda.zeebe.protocol.record.intent.ExpressionIntent;
@@ -112,6 +113,7 @@ import io.camunda.zeebe.protocol.record.value.ConditionalSubscriptionRecordValue
 import io.camunda.zeebe.protocol.record.value.DecisionEvaluationRecordValue;
 import io.camunda.zeebe.protocol.record.value.DeploymentDistributionRecordValue;
 import io.camunda.zeebe.protocol.record.value.DeploymentRecordValue;
+import io.camunda.zeebe.protocol.record.value.ElementInstanceWalkRecordValue;
 import io.camunda.zeebe.protocol.record.value.ErrorRecordValue;
 import io.camunda.zeebe.protocol.record.value.EscalationRecordValue;
 import io.camunda.zeebe.protocol.record.value.ExpressionRecordValue;
@@ -303,6 +305,9 @@ public final class ValueTypeMapping {
     mapping.put(
         ValueType.PROCESS_INSTANCE_BATCH,
         new Mapping<>(ProcessInstanceBatchRecordValue.class, ProcessInstanceBatchIntent.class));
+    mapping.put(
+        ValueType.ELEMENT_INSTANCE_WALK,
+        new Mapping<>(ElementInstanceWalkRecordValue.class, ElementInstanceWalkIntent.class));
     mapping.put(
         ValueType.AD_HOC_SUB_PROCESS_INSTRUCTION,
         new Mapping<>(

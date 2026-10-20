@@ -8,11 +8,11 @@
 package io.camunda.configuration.beanoverrides;
 
 import io.camunda.configuration.Camunda;
-import io.camunda.configuration.JobMetricsConfig;
-import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.configuration.beans.GatewayRestProperties;
 import io.camunda.configuration.beans.LegacyGatewayRestProperties;
+import io.camunda.configuration.data.SecondaryStorage.SecondaryStorageType;
+import io.camunda.configuration.monitoring.metrics.JobMetricsConfig;
 import io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration;
 import io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration.JobMetricsConfiguration;
 import org.springframework.beans.BeanUtils;

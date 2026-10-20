@@ -48,6 +48,8 @@ final class ImplRecordValuePopulator {
    */
   static void populate(final Object implInstance, final EasyRandom random) {
     final Class<?> clazz = implInstance.getClass();
+    ValueType valueType = null;
+    IntegerProperty intentProperty = null;
 
     for (final Field field : clazz.getDeclaredFields()) {
       try {
@@ -60,12 +62,20 @@ final class ImplRecordValuePopulator {
         // Handle different msgpack property types
         if (fieldType.equals(EnumProperty.class)) {
           populateEnumProperty(implInstance, field, random);
+          final var enumProperty = (EnumProperty<?>) field.get(implInstance);
+          if (enumProperty.getValue() instanceof final ValueType nestedValueType) {
+            valueType = nestedValueType;
+          }
         } else if (fieldType.equals(StringProperty.class)) {
           populateStringProperty(field, implInstance, random);
         } else if (fieldType.equals(LongProperty.class)) {
           populateLongProperty(field, implInstance, random);
         } else if (fieldType.equals(IntegerProperty.class)) {
-          populateIntegerProperty(field, implInstance, random);
+          if ("intentProperty".equals(field.getName())) {
+            intentProperty = (IntegerProperty) field.get(implInstance);
+          } else {
+            populateIntegerProperty(field, implInstance, random);
+          }
         } else if (fieldType.equals(BinaryProperty.class)) {
           populateBinaryProperty(field, implInstance, random);
         } else if (fieldType.equals(DocumentProperty.class)) {
@@ -94,6 +104,16 @@ final class ImplRecordValuePopulator {
             "Failed to access field '" + field.getName() + "' in class '" + clazz.getName() + "'",
             e);
       }
+    }
+
+    // Resolve the intent after its value type, regardless of field order.
+    if (intentProperty != null) {
+      if (valueType == null) {
+        throw new IllegalArgumentException(
+            "Expected a value type for the intent property in class: " + clazz.getName());
+      }
+      final var intent = random.nextObject(ValueTypeMapping.get(valueType).getIntentClass());
+      intentProperty.setValue(intent.value());
     }
   }
 
@@ -156,12 +176,7 @@ final class ImplRecordValuePopulator {
       throws IllegalAccessException {
     final IntegerProperty integerProperty = (IntegerProperty) field.get(implInstance);
     if (integerProperty != null) {
-      // Special handling for intent properties, that are mapped to enums elsewhere
-      if ("intentProperty".equals(field.getName())) {
-        integerProperty.setValue(0);
-      } else {
-        integerProperty.setValue(random.nextInt());
-      }
+      integerProperty.setValue(random.nextInt());
     }
   }
 

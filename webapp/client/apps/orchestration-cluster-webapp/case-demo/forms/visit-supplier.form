@@ -1,0 +1,39 @@
+{
+  "executionPlatform": "Camunda Cloud",
+  "executionPlatformVersion": "8.11.0",
+  "exporter": {
+    "name": "Camunda Modeler",
+    "version": "5.40.0"
+  },
+  "schemaVersion": 18,
+  "id": "visit-supplier",
+  "type": "default",
+  "components": [
+    {
+      "type": "text",
+      "text": "### Visit the supplier",
+      "id": "Text_415"
+    },
+    {
+      "type": "textfield",
+      "key": "supplierName",
+      "label": "Supplier",
+      "id": "Field_supplierName_416",
+      "readonly": true
+    },
+    {
+      "type": "datetime",
+      "key": "visitDate",
+      "label": "Visit date",
+      "id": "Field_visitDate_417",
+      "subtype": "date",
+      "dateLabel": "Visit date"
+    },
+    {
+      "type": "textarea",
+      "key": "visitNotes",
+      "label": "Findings",
+      "id": "Field_visitNotes_418"
+    }
+  ]
+}

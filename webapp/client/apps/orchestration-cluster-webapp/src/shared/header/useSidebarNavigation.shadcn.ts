@@ -11,6 +11,7 @@ import {useTranslation} from 'react-i18next';
 
 import {
 	Bot,
+	Briefcase,
 	GitBranch,
 	History,
 	LayoutDashboard,
@@ -38,12 +39,14 @@ type FileRouteTypes = RegisteredRouter['routeTree']['types']['fileRouteTypes'];
 const tabRoutes = {
 	tasklistIndex: '/tasklist',
 	tasklistProcesses: '/tasklist/processes',
+	tasklistCases: '/tasklist/cases',
 	// The Dashboard is the only Operate page migrated to the Design System so far, so it
 	// points at the migration-time /operate-preview leaf. Every other Operate item below
 	// still points at its live Carbon route — those pages haven't moved yet.
 	operateDashboard: '/operate-preview',
 	operateProcesses: '/operate/processes',
 	operateDecisions: '/operate/decisions',
+	operateDecisionsPreview: '/operate-preview/decisions',
 	operateOperationsLog: '/operate/operations-log',
 	operateBatchOperations: '/operate/batch-operations',
 	adminIndex: '/admin',
@@ -144,6 +147,7 @@ function useSidebarNavigation(currentUser: CurrentUser): SidebarNavigation {
 	const matchRoute = useMatchRoute();
 	const {authorizedComponents} = currentUser;
 	const isProcessesRoute = matchRoute({to: tabRoutes['tasklistProcesses'], fuzzy: true}) !== false;
+	const isCasesRoute = matchRoute({to: tabRoutes['tasklistCases'], fuzzy: true}) !== false;
 	const isThemeEditorRoute = matchRoute({to: '/tasklist/theme-editor'}) !== false;
 	const activeComponentHomeRoute = useActiveComponentHomeRoute();
 	const isTasklistRoute = activeComponentHomeRoute === tabRoutes['tasklistIndex'];
@@ -166,7 +170,7 @@ function useSidebarNavigation(currentUser: CurrentUser): SidebarNavigation {
 							key: 'tasks',
 							label: t('tasklist.headerNavItemTasks'),
 							icon: ListTodo,
-							isActive: !isProcessesRoute && !isThemeEditorRoute,
+							isActive: !isProcessesRoute && !isCasesRoute && !isThemeEditorRoute,
 							linkProps: {
 								to: tabRoutes['tasklistIndex'],
 								activeOptions: {
@@ -184,6 +188,16 @@ function useSidebarNavigation(currentUser: CurrentUser): SidebarNavigation {
 								to: tabRoutes['tasklistProcesses'],
 							},
 						},
+						{
+							type: 'item',
+							key: 'cases',
+							label: t('tasklist.headerNavItemCases'),
+							icon: Briefcase,
+							isActive: isCasesRoute,
+							linkProps: {
+								to: tabRoutes['tasklistCases'],
+							},
+						},
 					]
 				: [],
 		};
@@ -194,7 +208,9 @@ function useSidebarNavigation(currentUser: CurrentUser): SidebarNavigation {
 	if (isOperateRoute) {
 		const hasOperateAccess = hasComponentAccess('operate', authorizedComponents);
 		const isOperateProcessesRoute = matchRoute({to: tabRoutes['operateProcesses'], fuzzy: true}) !== false;
-		const isOperateDecisionsRoute = matchRoute({to: tabRoutes['operateDecisions'], fuzzy: true}) !== false;
+		const isOperateDecisionsRoute =
+			matchRoute({to: tabRoutes['operateDecisions'], fuzzy: true}) !== false ||
+			matchRoute({to: tabRoutes['operateDecisionsPreview'], fuzzy: true}) !== false;
 		const isOperateOperationsLogRoute = matchRoute({to: tabRoutes['operateOperationsLog'], fuzzy: true}) !== false;
 		const isOperateBatchOperationsRoute = matchRoute({to: tabRoutes['operateBatchOperations'], fuzzy: true}) !== false;
 
@@ -305,4 +321,4 @@ function useSidebarNavigation(currentUser: CurrentUser): SidebarNavigation {
 	};
 }
 
-export {useSidebarNavigation};
+export {ADMIN_NAV_ITEMS, useSidebarNavigation};

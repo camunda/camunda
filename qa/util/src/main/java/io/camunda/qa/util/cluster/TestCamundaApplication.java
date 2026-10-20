@@ -16,8 +16,8 @@ import io.camunda.application.Profile;
 import io.camunda.application.commons.CommonsModuleConfiguration;
 import io.camunda.application.initializers.McpGatewayInitializer;
 import io.camunda.application.initializers.WebappsConfigurationInitializer;
-import io.camunda.configuration.EngineJob;
-import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
+import io.camunda.configuration.data.SecondaryStorage.SecondaryStorageType;
+import io.camunda.configuration.processing.engine.EngineJob;
 import io.camunda.identity.IdentityModuleConfiguration;
 import io.camunda.operate.OperateModuleConfiguration;
 import io.camunda.security.api.model.config.AuthenticationMethod;
@@ -260,7 +260,7 @@ public final class TestCamundaApplication extends TestSpringApplication<TestCamu
         data -> {
           final var unifiedExporter =
               data.getExporters()
-                  .computeIfAbsent(id, ignored -> new io.camunda.configuration.Exporter());
+                  .computeIfAbsent(id, ignored -> new io.camunda.configuration.data.Exporter());
           unifiedExporter.setClassName(tempExporterCfg.getClassName());
           unifiedExporter.setJarPath(tempExporterCfg.getJarPath());
           unifiedExporter.setArgs(tempExporterCfg.getArgs());

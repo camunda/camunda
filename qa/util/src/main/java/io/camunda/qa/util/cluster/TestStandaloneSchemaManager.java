@@ -10,7 +10,7 @@ package io.camunda.qa.util.cluster;
 import io.atomix.cluster.MemberId;
 import io.camunda.application.StandaloneSchemaManager;
 import io.camunda.application.commons.configuration.UnifiedConfigurationModule;
-import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
+import io.camunda.configuration.data.SecondaryStorage.SecondaryStorageType;
 import io.camunda.zeebe.qa.util.actuator.HealthActuator;
 import io.camunda.zeebe.qa.util.actuator.HealthActuator.NoopHealthActuator;
 import io.camunda.zeebe.qa.util.cluster.TestSpringApplication;

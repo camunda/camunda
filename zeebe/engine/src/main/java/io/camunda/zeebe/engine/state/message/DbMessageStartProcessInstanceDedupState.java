@@ -15,6 +15,7 @@ import io.camunda.zeebe.db.impl.DbLong;
 import io.camunda.zeebe.engine.metrics.MessageStartProcessInstanceDedupMetrics;
 import io.camunda.zeebe.engine.state.mutable.MutableMessageStartProcessInstanceDedupState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
+import io.camunda.zeebe.protocol.record.value.StorageOrdinalRelated;
 import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
 import org.agrona.collections.MutableBoolean;
@@ -126,9 +127,27 @@ public final class DbMessageStartProcessInstanceDedupState
       final long messageKey,
       final long processInstanceKey,
       final long deletionDeadline) {
+    put(
+        processDefinitionKey,
+        messageKey,
+        processInstanceKey,
+        deletionDeadline,
+        StorageOrdinalRelated.MAIN_INDEX);
+  }
+
+  @Override
+  public void put(
+      final long processDefinitionKey,
+      final long messageKey,
+      final long processInstanceKey,
+      final long deletionDeadline,
+      final int storageOrdinal) {
     this.processDefinitionKey.wrapLong(processDefinitionKey);
     this.messageKey.wrapLong(messageKey);
-    entry.setProcessInstanceKey(processInstanceKey).setDeletionDeadline(deletionDeadline);
+    entry
+        .setProcessInstanceKey(processInstanceKey)
+        .setDeletionDeadline(deletionDeadline)
+        .setStorageOrdinal(storageOrdinal);
     // put upserts, so only a genuine insert changes the outstanding-entry level.
     final boolean isNew = !columnFamily.exists(processDefinitionAndMessageKey);
     columnFamily.upsert(processDefinitionAndMessageKey, entry);

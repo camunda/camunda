@@ -25,6 +25,8 @@ import type {
 	QueryUserTaskAuditLogsRequestBody,
 	QueryUserTaskAuditLogsResponseBody,
 	GetAuditLogResponseBody,
+	QueryAuditLogsRequestBody,
+	QueryAuditLogsResponseBody,
 	Variable,
 	QueryDecisionDefinitionsRequestBody,
 	QueryDecisionDefinitionsResponseBody,
@@ -33,12 +35,52 @@ import type {
 	GetSystemConfigurationResponseBody,
 	QueryMessageSubscriptionsRequestBody,
 	QueryMessageSubscriptionsResponseBody,
+	QueryMappingRulesRequestBody,
+	QueryMappingRulesResponseBody,
+	User,
+	QueryUsersRequestBody,
+	QueryUsersResponseBody,
+	ClusterVariable,
+	QueryClusterVariablesRequestBody,
+	QueryClusterVariablesResponseBody,
+	QueryTenantsRequestBody,
+	QueryTenantsResponseBody,
+	QueryGlobalTaskListenersRequestBody,
+	QueryGlobalTaskListenersResponseBody,
+	GlobalTaskListener,
+	Authorization,
+	QueryAuthorizationsRequestBody,
+	QueryAuthorizationsResponseBody,
+	QueryRolesRequestBody,
+	QueryRolesResponseBody,
+	Role,
+	QueryUsersByRoleRequestBody,
+	QueryUsersByRoleResponseBody,
+	QueryGroupsByRoleRequestBody,
+	QueryGroupsByRoleResponseBody,
+	QueryMappingRulesByRoleRequestBody,
+	QueryMappingRulesByRoleResponseBody,
+	QueryClientsByRoleRequestBody,
+	QueryClientsByRoleResponseBody,
+	QueryGroupsRequestBody,
+	QueryGroupsResponseBody,
+	QueryProcessInstancesRequestBody,
+	QueryProcessInstancesResponseBody,
+	ProcessInstance,
+	QueryElementInstancesRequestBody,
+	QueryElementInstancesResponseBody,
+	QueryVariablesRequestBody,
+	QueryVariablesResponseBody,
 } from '@camunda/camunda-api-zod-schemas/8.11';
 import {request} from './request';
 import {endpoints} from './endpoints';
 import {mapQueryError} from './mapQueryError';
+import {parseAdminClientConfig, type AdminClientConfig} from './adminClientConfig';
 
 const DEFAULT_MAX_ITEM_PER_PAGE = 50;
+
+type OffsetPage = {from?: number; limit?: number; after?: never; before?: never};
+type OffsetPagedRequestBody<T extends {page?: unknown}> = Omit<T, 'page'> & {page?: OffsetPage};
 
 type ProcessStartFormResponse = Omit<GetProcessStartFormResponseBody, 'schema'> & {
 	schema: string;
@@ -71,6 +113,37 @@ const queryKeys = {
 		['getProcessDefinitionInstanceStatistics', body] as const,
 	getIncidentProcessInstanceStatisticsByError: (body: GetIncidentProcessInstanceStatisticsByErrorRequestBody) =>
 		['getIncidentProcessInstanceStatisticsByError', body] as const,
+	queryAuditLogs: (body: QueryAuditLogsRequestBody) => ['queryAuditLogs', body] as const,
+	queryMappingRules: (body: QueryMappingRulesRequestBody) => ['queryMappingRules', body] as const,
+	users: (body: QueryUsersRequestBody) => ['users', body] as const,
+	user: (username: string) => ['user', username] as const,
+	queryClusterVariables: (body: QueryClusterVariablesRequestBody) => ['queryClusterVariables', body] as const,
+	getClusterVariable: (variable: Pick<ClusterVariable, 'name' | 'scope' | 'tenantId'>) =>
+		['getClusterVariable', variable] as const,
+	queryTenants: (body: QueryTenantsRequestBody) => ['queryTenants', body] as const,
+	searchGlobalTaskListeners: (body: QueryGlobalTaskListenersRequestBody) =>
+		['searchGlobalTaskListeners', body] as const,
+	globalTaskListener: (id: string) => ['globalTaskListener', id] as const,
+	queryAuthorizations: (body: QueryAuthorizationsRequestBody) => ['queryAuthorizations', body] as const,
+	getAuthorization: (authorization: Pick<Authorization, 'authorizationKey'>) =>
+		['getAuthorization', authorization] as const,
+	queryRoles: (body: QueryRolesRequestBody) => ['queryRoles', body] as const,
+	role: (roleId: string) => ['role', roleId] as const,
+	roleUsers: (roleId: string, body: QueryUsersByRoleRequestBody) => ['roleMembers', roleId, 'users', body] as const,
+	roleGroups: (roleId: string, body: QueryGroupsByRoleRequestBody) => ['roleMembers', roleId, 'groups', body] as const,
+	roleMappingRules: (roleId: string, body: QueryMappingRulesByRoleRequestBody) =>
+		['roleMembers', roleId, 'mappingRules', body] as const,
+	roleClients: (roleId: string, body: QueryClientsByRoleRequestBody) =>
+		['roleMembers', roleId, 'clients', body] as const,
+	queryGroups: (body: QueryGroupsRequestBody) => ['queryGroups', body] as const,
+	adminClientConfig: () => ['adminClientConfig'] as const,
+	queryProcessInstances: (body: QueryProcessInstancesRequestBody) => ['queryProcessInstances', body] as const,
+	processInstance: (processInstanceKey: string) => ['processInstance', processInstanceKey] as const,
+	queryElementInstances: (body: QueryElementInstancesRequestBody) => ['queryElementInstances', body] as const,
+	queryVariables: (body: QueryVariablesRequestBody, truncateValues?: boolean) =>
+		['queryVariables', body, truncateValues] as const,
+	userTasksPage: (body: QueryUserTasksRequestBody) => ['userTasks', 'page', body] as const,
+	latestFormByFormId: (formId: string, tenantId?: string) => ['latestFormByFormId', formId, tenantId] as const,
 };
 
 const queries = {
@@ -114,7 +187,7 @@ const queries = {
 			staleTime: Infinity,
 			gcTime: Infinity,
 		}),
-	queryUserTasks: (body: QueryUserTasksRequestBody) => {
+	queryUserTasks: (body: OffsetPagedRequestBody<QueryUserTasksRequestBody>) => {
 		const MAX_TASKS_PER_REQUEST = body.page?.limit ?? DEFAULT_MAX_ITEM_PER_PAGE;
 		const enhancedBody = {
 			...body,
@@ -244,7 +317,7 @@ const queries = {
 			retry: false,
 		}),
 
-	queryUserTaskAuditLogs: (userTaskKey: string, body: QueryUserTaskAuditLogsRequestBody) => {
+	queryUserTaskAuditLogs: (userTaskKey: string, body: OffsetPagedRequestBody<QueryUserTaskAuditLogsRequestBody>) => {
 		const MAX_AUDIT_LOGS_PER_REQUEST = body.page?.limit ?? DEFAULT_MAX_ITEM_PER_PAGE;
 		const enhancedBody = {
 			...body,
@@ -428,6 +501,309 @@ const queries = {
 				return response.json();
 			},
 		}),
+
+	queryUsers: (body: QueryUsersRequestBody) =>
+		queryOptions({
+			queryKey: queryKeys.users(body),
+			queryFn: async (): Promise<QueryUsersResponseBody> => {
+				const {response, error} = await request(endpoints.queryUsers(body));
+				if (error !== null) {
+					throw mapQueryError(error);
+				}
+				return response.json();
+			},
+		}),
+
+	getUser: (username: string) =>
+		queryOptions({
+			queryKey: queryKeys.user(username),
+			queryFn: async (): Promise<User> => {
+				const {response, error} = await request(endpoints.getUser({username}));
+				if (error !== null) {
+					throw mapQueryError(error);
+				}
+				return response.json();
+			},
+		}),
+
+	queryAuditLogs: (body: QueryAuditLogsRequestBody) =>
+		queryOptions({
+			queryKey: queryKeys.queryAuditLogs(body),
+			queryFn: async (): Promise<QueryAuditLogsResponseBody> => {
+				const {response, error} = await request(endpoints.queryAuditLogs(body));
+				if (error !== null) {
+					throw mapQueryError(error);
+				}
+				return response.json();
+			},
+		}),
+
+	queryMappingRules: (body: QueryMappingRulesRequestBody) =>
+		queryOptions({
+			queryKey: queryKeys.queryMappingRules(body),
+			queryFn: async (): Promise<QueryMappingRulesResponseBody> => {
+				const {response, error} = await request(endpoints.queryMappingRules(body));
+				if (error !== null) {
+					throw mapQueryError(error);
+				}
+				return response.json();
+			},
+		}),
+
+	queryClusterVariables: (body: QueryClusterVariablesRequestBody) =>
+		queryOptions({
+			queryKey: queryKeys.queryClusterVariables(body),
+			queryFn: async (): Promise<QueryClusterVariablesResponseBody> => {
+				const {response, error} = await request(endpoints.queryClusterVariables(body));
+				if (error !== null) {
+					throw mapQueryError(error);
+				}
+				return response.json();
+			},
+		}),
+	searchGlobalTaskListeners: (body: QueryGlobalTaskListenersRequestBody) =>
+		queryOptions({
+			queryKey: queryKeys.searchGlobalTaskListeners(body),
+			queryFn: async (): Promise<QueryGlobalTaskListenersResponseBody> => {
+				const {response, error} = await request(endpoints.searchGlobalTaskListeners(body));
+				if (error !== null) {
+					throw mapQueryError(error);
+				}
+				return response.json();
+			},
+		}),
+
+	getClusterVariable: (variable: Pick<ClusterVariable, 'name' | 'scope' | 'tenantId'>) =>
+		queryOptions({
+			queryKey: queryKeys.getClusterVariable(variable),
+			queryFn: async (): Promise<ClusterVariable> => {
+				const {response, error} = await request(endpoints.getClusterVariable(variable));
+				if (error !== null) {
+					throw mapQueryError(error);
+				}
+				return response.json();
+			},
+		}),
+
+	queryTenants: (body: QueryTenantsRequestBody) =>
+		queryOptions({
+			queryKey: queryKeys.queryTenants(body),
+			queryFn: async (): Promise<QueryTenantsResponseBody> => {
+				const {response, error} = await request(endpoints.queryTenants(body));
+				if (error !== null) {
+					throw mapQueryError(error);
+				}
+				return response.json();
+			},
+		}),
+	getGlobalTaskListener: (id: string) =>
+		queryOptions({
+			queryKey: queryKeys.globalTaskListener(id),
+			queryFn: async (): Promise<GlobalTaskListener> => {
+				const {response, error} = await request(endpoints.getGlobalTaskListener({id}));
+				if (error !== null) {
+					throw mapQueryError(error);
+				}
+				return response.json();
+			},
+		}),
+
+	queryAuthorizations: (body: QueryAuthorizationsRequestBody) =>
+		queryOptions({
+			queryKey: queryKeys.queryAuthorizations(body),
+			queryFn: async (): Promise<QueryAuthorizationsResponseBody> => {
+				const {response, error} = await request(endpoints.queryAuthorizations(body));
+				if (error !== null) {
+					throw mapQueryError(error);
+				}
+				return response.json();
+			},
+		}),
+
+	getAuthorization: (authorization: Pick<Authorization, 'authorizationKey'>) =>
+		queryOptions({
+			queryKey: queryKeys.getAuthorization(authorization),
+			queryFn: async (): Promise<Authorization> => {
+				const {response, error} = await request(endpoints.getAuthorization(authorization));
+				if (error !== null) {
+					throw mapQueryError(error);
+				}
+				return response.json();
+			},
+		}),
+
+	queryRoles: (body: QueryRolesRequestBody) =>
+		queryOptions({
+			queryKey: queryKeys.queryRoles(body),
+			queryFn: async (): Promise<QueryRolesResponseBody> => {
+				const {response, error} = await request(endpoints.queryRoles(body));
+				if (error !== null) {
+					throw mapQueryError(error);
+				}
+				return response.json();
+			},
+		}),
+
+	queryGroups: (body: QueryGroupsRequestBody) =>
+		queryOptions({
+			queryKey: queryKeys.queryGroups(body),
+			queryFn: async (): Promise<QueryGroupsResponseBody> => {
+				const {response, error} = await request(endpoints.queryGroups(body));
+				if (error !== null) {
+					throw mapQueryError(error);
+				}
+				return response.json();
+			},
+		}),
+
+	getRole: (roleId: string) =>
+		queryOptions({
+			queryKey: queryKeys.role(roleId),
+			queryFn: async (): Promise<Role> => {
+				const {response, error} = await request(endpoints.getRole({roleId}));
+				if (error !== null) {
+					throw mapQueryError(error);
+				}
+				return response.json();
+			},
+		}),
+
+	queryUsersByRole: (roleId: string, body: QueryUsersByRoleRequestBody) =>
+		queryOptions({
+			queryKey: queryKeys.roleUsers(roleId, body),
+			queryFn: async (): Promise<QueryUsersByRoleResponseBody> => {
+				const {response, error} = await request(endpoints.queryUsersByRole({roleId, ...body}));
+				if (error !== null) {
+					throw mapQueryError(error);
+				}
+				return response.json();
+			},
+		}),
+
+	queryGroupsByRole: (roleId: string, body: QueryGroupsByRoleRequestBody) =>
+		queryOptions({
+			queryKey: queryKeys.roleGroups(roleId, body),
+			queryFn: async (): Promise<QueryGroupsByRoleResponseBody> => {
+				const {response, error} = await request(endpoints.queryGroupsByRole({roleId, ...body}));
+				if (error !== null) {
+					throw mapQueryError(error);
+				}
+				return response.json();
+			},
+		}),
+
+	queryMappingRulesByRole: (roleId: string, body: QueryMappingRulesByRoleRequestBody) =>
+		queryOptions({
+			queryKey: queryKeys.roleMappingRules(roleId, body),
+			queryFn: async (): Promise<QueryMappingRulesByRoleResponseBody> => {
+				const {response, error} = await request(endpoints.queryMappingRulesByRole({roleId, ...body}));
+				if (error !== null) {
+					throw mapQueryError(error);
+				}
+				return response.json();
+			},
+		}),
+
+	queryClientsByRole: (roleId: string, body: QueryClientsByRoleRequestBody) =>
+		queryOptions({
+			queryKey: queryKeys.roleClients(roleId, body),
+			queryFn: async (): Promise<QueryClientsByRoleResponseBody> => {
+				const {response, error} = await request(endpoints.queryClientsByRole({roleId, ...body}));
+				if (error !== null) {
+					throw mapQueryError(error);
+				}
+				return response.json();
+			},
+		}),
+
+	// Fixed for the lifetime of the server, so it is fetched once per session.
+	adminClientConfig: () =>
+		queryOptions({
+			queryKey: queryKeys.adminClientConfig(),
+			staleTime: Infinity,
+			queryFn: async (): Promise<AdminClientConfig> => {
+				const {response, error} = await request(endpoints.getAdminClientConfig());
+				if (error !== null) {
+					throw mapQueryError(error);
+				}
+				return parseAdminClientConfig(await response.text());
+			},
+		}),
+
+	queryProcessInstances: (body: QueryProcessInstancesRequestBody) =>
+		queryOptions({
+			queryKey: queryKeys.queryProcessInstances(body),
+			queryFn: async (): Promise<QueryProcessInstancesResponseBody> => {
+				const {response, error} = await request(endpoints.queryProcessInstances(body));
+				if (error !== null) {
+					throw mapQueryError(error);
+				}
+				return response.json();
+			},
+		}),
+
+	getProcessInstance: (processInstanceKey: string) =>
+		queryOptions({
+			queryKey: queryKeys.processInstance(processInstanceKey),
+			queryFn: async (): Promise<ProcessInstance> => {
+				const {response, error} = await request(endpoints.getProcessInstance(processInstanceKey));
+				if (error !== null) {
+					throw mapQueryError(error);
+				}
+				return response.json();
+			},
+		}),
+
+	queryElementInstances: (body: QueryElementInstancesRequestBody) =>
+		queryOptions({
+			queryKey: queryKeys.queryElementInstances(body),
+			queryFn: async (): Promise<QueryElementInstancesResponseBody> => {
+				const {response, error} = await request(endpoints.queryElementInstances(body));
+				if (error !== null) {
+					throw mapQueryError(error);
+				}
+				return response.json();
+			},
+		}),
+
+	queryVariables: (body: QueryVariablesRequestBody, options?: {truncateValues?: boolean}) =>
+		queryOptions({
+			queryKey: queryKeys.queryVariables(body, options?.truncateValues),
+			queryFn: async (): Promise<QueryVariablesResponseBody> => {
+				const {response, error} = await request(
+					endpoints.queryVariables(body, {truncateValues: options?.truncateValues}),
+				);
+				if (error !== null) {
+					throw mapQueryError(error);
+				}
+				return response.json();
+			},
+		}),
+
+	queryUserTasksPage: (body: QueryUserTasksRequestBody) =>
+		queryOptions({
+			queryKey: queryKeys.userTasksPage(body),
+			queryFn: async (): Promise<QueryUserTasksResponseBody> => {
+				const {response, error} = await request(endpoints.queryUserTasks(body));
+				if (error !== null) {
+					throw mapQueryError(error);
+				}
+				return response.json();
+			},
+		}),
+
+	getLatestFormByFormId: ({formId, tenantId}: {formId: string; tenantId?: string}) =>
+		queryOptions({
+			queryKey: queryKeys.latestFormByFormId(formId, tenantId),
+			queryFn: async (): Promise<Form> => {
+				const {response, error} = await request(endpoints.getLatestFormByFormId({formId, tenantId}));
+				if (error !== null) {
+					throw mapQueryError(error);
+				}
+				return response.json();
+			},
+		}),
 } as const;
 
 export {queries};
+export type {OffsetPagedRequestBody};

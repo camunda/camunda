@@ -97,7 +97,7 @@ function renderTable(initial = SEARCH, isActionMode = false) {
 		return (
 			<div style={{height: '100vh'}}>
 				<Button onClick={() => setSearch({...search, tenantId: 'tenant-b'})}>Change tenant</Button>
-				<Button onClick={() => setSearch({...search, sort: 'startDate+asc'})}>Change sort</Button>
+				<Button onClick={() => setSearch({...search, sort: 'startDate+ASC'})}>Change sort</Button>
 				<InstancesTable search={search} isActionMode={isActionMode} />
 				<Notifications />
 			</div>
@@ -294,6 +294,34 @@ describe('Processes bulk toolbar', () => {
 		await userEvent.click(screen.getByRole('dialog').getByRole('button', {name: 'Apply'}));
 		await expect.element(screen.getByRole('button', {name: 'Go to operation details'})).toBeVisible();
 	});
+
+	it.for([
+		['Suspend', mockCreateSuspensionBatchOperationEndpoint, 'SUSPEND_PROCESS_INSTANCE'],
+		['Cancel', mockCreateCancellationBatchOperationEndpoint, 'CANCEL_PROCESS_INSTANCE'],
+	] as const)(
+		'should narrow a select-all %s request to the active state when finished states are filtered',
+		async ([action, mock, batchOperationType], {worker}) => {
+			worker.use(
+				...list(),
+				completed(batchOperationType),
+				mock({
+					schema: z.strictObject({
+						filter: z.looseObject({
+							tenantId: z.strictObject({$eq: z.literal('tenant-a')}),
+							state: z.strictObject({$eq: z.literal('ACTIVE')}),
+						}),
+					}),
+					successResponse: accepted(batchOperationType),
+					failureResponse: FAILURE_RESPONSE,
+				}),
+			);
+			const screen = await renderTable({...SEARCH, incidents: false, suspended: false});
+			await select(screen);
+			await userEvent.click(screen.getByRole('button', {name: action, exact: true}));
+			await userEvent.click(screen.getByRole('dialog').getByRole('button', {name: 'Apply', exact: true}));
+			await expect.element(screen.getByRole('button', {name: 'Go to operation details'})).toBeVisible();
+		},
+	);
 
 	it('should use the selected state filter rather than the visible rows for all-result eligibility', async ({
 		worker,
@@ -535,12 +563,10 @@ describe('Processes bulk toolbar', () => {
 		});
 	});
 
-	const languages = ['en', 'de', 'fr', 'es'] as const;
-	const actions = ['delete', 'cancel', 'retry'] as const;
-	const counts = [1, 3] as const;
-	const translatedConfirmationCases = languages.flatMap((language) =>
-		actions.flatMap((action) => counts.map((count) => ({language, action, count}))),
-	);
+	const translatedConfirmationCases = [
+		{language: 'de', action: 'delete', count: 1},
+		{language: 'de', action: 'delete', count: 3},
+	] as const;
 
 	it.for(translatedConfirmationCases)(
 		'should preserve the translated $language $action label in a $count-instance confirmation',

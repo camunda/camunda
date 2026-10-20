@@ -34,7 +34,8 @@ public final class Subscriptions {
             subscription.getElementInstanceKey(),
             subscription.getProcessDefinitionKey(),
             subscription.getSubscriptionKey(),
-            false);
+            false,
+            subscription.getStorageOrdinal());
     addSubscriptionInternal(newSubscription);
   }
 
@@ -47,7 +48,8 @@ public final class Subscriptions {
             subscription.getProcessDefinitionKey(),
             // start-event subscriptions have no message-side subscription key
             -1L,
-            true);
+            true,
+            subscription.getStorageOrdinal());
     addSubscriptionInternal(newSubscription);
   }
 
@@ -114,7 +116,8 @@ public final class Subscriptions {
       long elementInstanceKey,
       long processDefinitionKey,
       long subscriptionKey,
-      boolean isStartEventSubscription) {
+      boolean isStartEventSubscription,
+      int storageOrdinal) {
     /* clone the bpmnProcessId buffer */
     public static Subscription cloned(
         final DirectBuffer bpmnProcessId,
@@ -122,14 +125,16 @@ public final class Subscriptions {
         final long elementInstanceKey,
         final long processDefinitionKey,
         final long subscriptionKey,
-        final boolean isStartEventSubscription) {
+        final boolean isStartEventSubscription,
+        final int storageOrdinal) {
       return new Subscription(
           wrapInBufferIfNeeded(cloneBuffer(bpmnProcessId)),
           processInstanceKey,
           elementInstanceKey,
           processDefinitionKey,
           subscriptionKey,
-          isStartEventSubscription);
+          isStartEventSubscription,
+          storageOrdinal);
     }
 
     /* Copy without cloning, buffer is already cloned */
@@ -140,7 +145,8 @@ public final class Subscriptions {
           subscription.elementInstanceKey(),
           subscription.processDefinitionKey(),
           subscription.subscriptionKey(),
-          subscription.isStartEventSubscription);
+          subscription.isStartEventSubscription,
+          subscription.storageOrdinal());
     }
   }
 

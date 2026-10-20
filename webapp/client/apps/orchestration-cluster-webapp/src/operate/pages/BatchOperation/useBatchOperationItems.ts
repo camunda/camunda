@@ -21,7 +21,7 @@ function useBatchOperationItems(batchOperationKey: string) {
 			const {response, error} = await request(
 				endpoints.queryBatchOperationItems({
 					filter: {batchOperationKey},
-					sort: [{field: 'processedDate', order: 'desc'}],
+					sort: [{field: 'processedDate', order: 'DESC'}],
 					page: {from: pageParam, limit: PAGE_LIMIT},
 				}),
 			);
@@ -50,8 +50,11 @@ function useBatchOperationItems(batchOperationKey: string) {
 		hasPreviousPage,
 		fetchPreviousPage,
 		isFetchingNextPage,
+		isFetchNextPageError,
 		hasNextPage,
 		fetchNextPage,
+		isFetchPreviousPageError,
+		refetch,
 	} = query;
 
 	const items = data?.pages.flatMap((page) => page.items) ?? [];
@@ -65,8 +68,11 @@ function useBatchOperationItems(batchOperationKey: string) {
 		hasPreviousPage,
 		fetchPreviousPage,
 		isFetchingNextPage,
+		isFetchNextPageError,
 		hasNextPage,
 		fetchNextPage,
+		isFetchPreviousPageError,
+		refetch,
 		items,
 		totalItems,
 		hasMoreTotalItems,

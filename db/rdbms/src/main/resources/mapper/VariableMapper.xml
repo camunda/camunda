@@ -173,6 +173,27 @@
     SELECT * FROM dual
   </insert>
 
+  <insert id="insertProtectionModes" parameterType="io.camunda.db.rdbms.sql.VariableMapper$ProtectionModesDto">
+    INSERT INTO ${prefix}VARIABLE_PROTECTION_MODE (VAR_KEY, PROTECTION_MODE)
+    VALUES
+    <foreach collection="modes" item="mode" separator=",">
+      (#{variableKey}, #{mode, typeHandler=io.camunda.db.rdbms.sql.typehandler.ProtectionModeTypeHandler})
+    </foreach>
+  </insert>
+
+  <insert id="insertProtectionModes" parameterType="io.camunda.db.rdbms.sql.VariableMapper$ProtectionModesDto" databaseId="oracle">
+    INSERT ALL
+    <foreach collection="modes" item="mode">
+      INTO ${prefix}VARIABLE_PROTECTION_MODE (VAR_KEY, PROTECTION_MODE)
+      VALUES (#{variableKey}, #{mode, typeHandler=io.camunda.db.rdbms.sql.typehandler.ProtectionModeTypeHandler})
+    </foreach>
+    SELECT * FROM dual
+  </insert>
+
+  <delete id="deleteProtectionModes" parameterType="java.lang.Long">
+    DELETE FROM ${prefix}VARIABLE_PROTECTION_MODE WHERE VAR_KEY = #{variableKey}
+  </delete>
+
   <update id="update" parameterType="io.camunda.db.rdbms.write.domain.VariableDbModel">
       UPDATE ${prefix}VARIABLE
       SET TYPE         = #{type},

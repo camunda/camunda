@@ -17,10 +17,9 @@ import io.camunda.client.protocol.rest.ClusterRestoreRequest;
 import io.camunda.client.protocol.rest.RestoreRequest;
 import io.camunda.configuration.Camunda;
 import io.camunda.configuration.Data;
-import io.camunda.configuration.PrimaryStorageBackup;
-import io.camunda.configuration.PrimaryStorageBackup.BackupStoreType;
+import io.camunda.configuration.data.primarystorage.PrimaryStorageBackup;
+import io.camunda.configuration.data.primarystorage.PrimaryStorageBackup.BackupStoreType;
 import io.camunda.zeebe.model.bpmn.Bpmn;
-import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.qa.util.cluster.PhysicalTenantsITHelper;
 import io.camunda.zeebe.qa.util.cluster.PhysicalTenantsITHelper.Storage;
 import io.camunda.zeebe.qa.util.cluster.TestCluster;
@@ -58,8 +57,7 @@ import org.junit.jupiter.api.io.TempDir;
  * {@code service} module for coverage of the per-tenant secondary-storage environment that {@code
  * overrides} coexists with).
  *
- * <p>Covers the three shapes {@link
- * io.camunda.zeebe.dynamic.config.api.ClusterRestoreRequestTransformer} supports: a request naming
+ * <p>Covers the three shapes {@code ClusterRestoreRequestTransformer} supports: a request naming
  * one physical tenant, forcing the restore onto just that tenant while the rest of the cluster is
  * left alone; a request naming every known physical tenant of the cluster — the shape {@code
  * ClusterRecoveryServices} builds when the request omits {@code physicalTenantId} — restoring them
@@ -391,8 +389,8 @@ final class ClusterAdminRestoreAcceptanceIT {
    * <p>Deploy it before the backup is taken, so the restored state still knows it.
    */
   private static void deployProbeProcess(final CamundaClient client, final String processId) {
-    deploy(
-        client, processId, Bpmn.createExecutableProcess(processId).startEvent().endEvent().done());
+    TENANTS.deploy(
+        client, Bpmn.createExecutableProcess(processId).startEvent().endEvent().done(), processId);
   }
 
   /**
@@ -416,24 +414,6 @@ final class ClusterAdminRestoreAcceptanceIT {
   /** Completes every pending job of the type, leaving none behind for a later backup to capture. */
   private static void completeEveryJob(final CamundaClient client, final String jobType) {
     InProcessRestoreTestUtil.completeEveryJob(client, jobType, PARTITIONS_COUNT);
-  }
-
-  /** Deploys a process, idempotent under retry so a transient rejection is simply retried. */
-  private static void deploy(
-      final CamundaClient client, final String processId, final BpmnModelInstance process) {
-    Awaitility.await("process " + processId + " is deployed")
-        .atMost(Duration.ofSeconds(30))
-        .ignoreExceptions()
-        .untilAsserted(
-            () ->
-                assertThat(
-                        client
-                            .newDeployResourceCommand()
-                            .addProcessModel(process, processId + ".bpmn")
-                            .send()
-                            .join()
-                            .getProcesses())
-                    .isNotEmpty());
   }
 
   /**

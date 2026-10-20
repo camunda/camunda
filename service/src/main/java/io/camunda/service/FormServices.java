@@ -64,12 +64,18 @@ public final class FormServices extends SearchQueryService<FormServices, FormQue
 
   public Optional<FormEntity> getLatestVersionByFormIdAndTenantId(
       final String formId, final String tenantId, final CamundaAuthentication authentication) {
-    return search(
-            SearchQueryBuilders.formSearchQuery()
-                .filter(f -> f.formIds(formId).tenantId(tenantId))
-                .sort(s -> s.version().desc())
-                .build(),
-            authentication)
+    final var query =
+        SearchQueryBuilders.formSearchQuery()
+            .filter(f -> f.formIds(formId).tenantId(tenantId))
+            .sort(s -> s.version().desc())
+            .build();
+    return executeSearchRequest(
+            () ->
+                formSearchClient
+                    .withSecurityContext(
+                        securityContextProvider.provideSecurityContext(
+                            authentication, FORM_READ_AUTHORIZATION))
+                    .searchForms(query))
         .items()
         .stream()
         .findFirst();

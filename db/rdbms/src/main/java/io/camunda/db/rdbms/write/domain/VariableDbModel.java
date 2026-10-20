@@ -15,6 +15,8 @@ import io.camunda.db.rdbms.write.util.TruncateUtil;
 import io.camunda.search.entities.ValueTypeEnum;
 import io.camunda.util.ObjectBuilder;
 import io.camunda.util.ValueTypeUtil;
+import java.util.Arrays;
+import java.util.Set;
 import java.util.function.Function;
 
 public record VariableDbModel(
@@ -37,7 +39,8 @@ public record VariableDbModel(
      * Not persisted to the VARIABLE table; used only to gate lookup-table inserts in
      * VariableWriter.
      */
-    Long processDefinitionKey)
+    Long processDefinitionKey,
+    Set<ProtectionModeDbModel> protectionModes)
     implements Copyable<VariableDbModel> {
 
   @Override
@@ -56,7 +59,8 @@ public record VariableDbModel(
                 .processDefinitionId(processDefinitionId)
                 .tenantId(tenantId)
                 .partitionId(partitionId)
-                .processDefinitionKey(processDefinitionKey))
+                .processDefinitionKey(processDefinitionKey)
+                .protectionModes(protectionModes))
         .build();
   }
 
@@ -99,7 +103,30 @@ public record VariableDbModel(
         tenantId,
         partitionId,
         elementInstanceKey,
-        processDefinitionKey);
+        processDefinitionKey,
+        protectionModes);
+  }
+
+  /**
+   * Protection modes as persisted in VARIABLE_PROTECTION_MODE. The code is stored, so codes must
+   * never be changed or reused.
+   */
+  public enum ProtectionModeDbModel {
+    REDACT(0);
+
+    private final int code;
+
+    ProtectionModeDbModel(final int code) {
+      this.code = code;
+    }
+
+    public int getCode() {
+      return code;
+    }
+
+    public static ProtectionModeDbModel fromCode(final int code) {
+      return Arrays.stream(values()).filter(mode -> mode.code == code).findFirst().orElse(null);
+    }
   }
 
   public static class VariableDbModelBuilder implements ObjectBuilder<VariableDbModel> {
@@ -115,6 +142,7 @@ public record VariableDbModel(
     private int partitionId;
     private Long elementInstanceKey;
     private Long processDefinitionKey;
+    private Set<ProtectionModeDbModel> protectionModes = Set.of();
 
     public VariableDbModelBuilder() {}
 
@@ -173,6 +201,12 @@ public record VariableDbModel(
       return this;
     }
 
+    public VariableDbModelBuilder protectionModes(
+        final Set<ProtectionModeDbModel> protectionModes) {
+      this.protectionModes = protectionModes;
+      return this;
+    }
+
     // Build method to create the record
     @Override
     public VariableDbModel build() {
@@ -202,7 +236,8 @@ public record VariableDbModel(
           tenantId,
           partitionId,
           elementInstanceKey,
-          processDefinitionKey);
+          processDefinitionKey,
+          protectionModes);
     }
 
     private VariableDbModel getLongModel() {
@@ -222,7 +257,8 @@ public record VariableDbModel(
           tenantId,
           partitionId,
           elementInstanceKey,
-          processDefinitionKey);
+          processDefinitionKey,
+          protectionModes);
     }
 
     private VariableDbModel getDoubleModel() {
@@ -242,7 +278,8 @@ public record VariableDbModel(
           tenantId,
           partitionId,
           elementInstanceKey,
-          processDefinitionKey);
+          processDefinitionKey,
+          protectionModes);
     }
   }
 }

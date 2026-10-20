@@ -10,7 +10,7 @@ package io.camunda.zeebe.it.cluster.management;
 import static io.camunda.cluster.PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
+import io.camunda.configuration.data.SecondaryStorage.SecondaryStorageType;
 import io.camunda.zeebe.qa.util.actuator.UpgradeReadinessActuator;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;

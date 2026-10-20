@@ -15,10 +15,14 @@ import {
 	mockCurrentUserEndpoint,
 	mockGetDecisionDefinitionXmlEndpoint,
 	mockGetDecisionInstanceEndpoint,
+	mockQueryDecisionInstancesEndpoint,
 } from '#/shared-test-modules/mock-handlers';
 import {createCurrentUser} from '#/shared-test-modules/api-mocks/current-user';
 import {DMN_XML} from '#/shared-test-modules/api-mocks/decision-definition-xmls';
-import {createDecisionInstance} from '#/shared-test-modules/api-mocks/decision-instances';
+import {
+	createDecisionInstance,
+	createQueryDecisionInstancesResponse,
+} from '#/shared-test-modules/api-mocks/decision-instances';
 import {createProblemDetails} from '#/shared-test-modules/api-mocks/shared';
 import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
 import {DecisionInstance} from './DecisionInstance';
@@ -64,6 +68,9 @@ describe.each([
 			mockCurrentUserEndpoint({successResponse: HttpResponse.json(createCurrentUser())}),
 			mockGetDecisionInstanceEndpoint({successResponse: response}),
 			mockGetDecisionDefinitionXmlEndpoint({successResponse: HttpResponse.text(DMN_XML)}),
+			mockQueryDecisionInstancesEndpoint({
+				successResponse: HttpResponse.json(createQueryDecisionInstancesResponse({items: [decisionInstance]})),
+			}),
 		);
 
 		const screen = await renderWithRouter(Component, {
@@ -100,6 +107,9 @@ describe.each([
 				successResponse: HttpResponse.json(createProblemDetails({status: 500}), {status: 500}),
 			}),
 			mockGetDecisionDefinitionXmlEndpoint({successResponse: HttpResponse.text(DMN_XML)}),
+			mockQueryDecisionInstancesEndpoint({
+				successResponse: HttpResponse.json(createQueryDecisionInstancesResponse({items: [decisionInstance]})),
+			}),
 		);
 
 		const screen = await renderWithRouter(Component, {
@@ -125,6 +135,9 @@ describe.each([
 			mockCurrentUserEndpoint({successResponse: HttpResponse.json(createCurrentUser())}),
 			mockGetDecisionInstanceEndpoint({successResponse: HttpResponse.json(decisionInstance)}),
 			mockGetDecisionDefinitionXmlEndpoint({successResponse: HttpResponse.text(DMN_XML)}),
+			mockQueryDecisionInstancesEndpoint({
+				successResponse: HttpResponse.json(createQueryDecisionInstancesResponse({items: [decisionInstance]})),
+			}),
 		);
 
 		const screen = await renderWithRouter(Component, {

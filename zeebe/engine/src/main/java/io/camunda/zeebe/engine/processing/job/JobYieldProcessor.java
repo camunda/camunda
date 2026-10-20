@@ -44,11 +44,12 @@ public final class JobYieldProcessor
     rejectionWriter = writers.rejection();
     preconditionChecker =
         new JobCommandPreconditionValidator(
-            jobState,
-            state.getBannedInstanceState(),
-            "yield",
-            List.of(State.ACTIVATED),
-            tenantCheck);
+                jobState,
+                state.getBannedInstanceState(),
+                "yield",
+                List.of(State.ACTIVATED),
+                tenantCheck)
+            .skipTenantFilterForInternalCommands();
   }
 
   @Override

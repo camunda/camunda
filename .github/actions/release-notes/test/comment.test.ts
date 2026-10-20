@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { type CommentApi, GithubCommentApi, type IssueComment, renderStickyComment, STICKY_MARKER, syncStickyComment } from '../src/comment';
+import { type CommentApi, GithubCommentApi, type IssueComment, OPT_OUT_LINE, renderStickyComment, STICKY_MARKER, syncStickyComment } from '../src/comment';
+import { isOptOutTicked, OPT_OUT_PHRASE } from '../src/parser';
 import type { GateOutcome } from '../src/types';
 
 const FAIL: GateOutcome = {
@@ -36,6 +37,37 @@ test('renderStickyComment always carries the marker and the reasons', () => {
   const body = renderStickyComment(FAIL);
   assert.ok(body.startsWith(STICKY_MARKER));
   assert.ok(body.includes('No linked issue found.'));
+});
+
+test('unlinked-undeclared shows the expected section format with a non-numeric placeholder', () => {
+  const body = renderStickyComment(FAIL);
+  assert.ok(body.includes('## Related issues\n\ncloses #<issue-number>'));
+  assert.ok(body.includes('- [ ] This PR does not need a linked issue'));
+  assert.ok(body.includes('tracked in another repository'));
+});
+
+test('the example opt-out line is what the parser matches once ticked', () => {
+  assert.ok(isOptOutTicked(OPT_OUT_LINE.replace('[ ]', '[x]')));
+  assert.ok(OPT_OUT_LINE.toLowerCase().includes(OPT_OUT_PHRASE));
+});
+
+test('pr-ref-in-section tells the author to link the issue, not the PR', () => {
+  const link = { outcome: 'fail', code: 'pr-ref-in-section', reasons: ['Links a PR.'] } as const;
+  const body = renderStickyComment({ ...FAIL, link, checks: [{ label: 'PR-issue link', ...link }] });
+  assert.ok(body.includes('Replace the PR number with the issue it tracks'));
+  assert.ok(!body.includes('does not need a linked issue'));
+});
+
+test('a failed backport hop shows no section example', () => {
+  const body = renderStickyComment({ ...FAIL, deliveryPath: 'backportHop' });
+  assert.ok(!body.includes('closes #<issue-number>'));
+});
+
+test('a title-only failure shows no link example', () => {
+  const title = { outcome: 'fail', reasons: ['Bad title.'] } as const;
+  const body = renderStickyComment({ ...FAIL, link: PASS.link, checks: [{ label: 'PR title', ...title }] });
+  assert.ok(body.includes('Bad title.'));
+  assert.ok(!body.includes('closes #<issue-number>'));
 });
 
 test('fail with no existing comment creates one', async () => {

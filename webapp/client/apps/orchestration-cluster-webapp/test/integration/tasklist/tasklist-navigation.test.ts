@@ -40,7 +40,7 @@ function createTasksPageRequestSchema(from: number) {
 		sort: z.tuple([
 			z.object({
 				field: z.literal('creationDate'),
-				order: z.literal('desc'),
+				order: z.literal('DESC'),
 			}),
 		]),
 		page: z.object({

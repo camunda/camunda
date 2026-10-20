@@ -22,7 +22,7 @@ import io.camunda.zeebe.broker.clustering.ClusterServicesImpl;
 import io.camunda.zeebe.broker.partitioning.topology.ClusterConfigurationService;
 import io.camunda.zeebe.broker.partitioning.topology.PartitionDistribution;
 import io.camunda.zeebe.broker.partitioning.topology.TopologyManagerImpl;
-import io.camunda.zeebe.dynamic.config.changes.appliers.AwaitModeChangeApplier;
+import io.camunda.zeebe.dynamic.config.impl.changes.appliers.AwaitModeChangeApplier;
 import io.camunda.zeebe.dynamic.config.state.BrokerPartitionState;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.Mode;
@@ -105,8 +105,8 @@ final class PartitionModeHandlerAwaitModeChangeApplierTest {
                         1,
                         LOCAL_MEMBER))
             .collect(Collectors.toSet());
-    when(clusterConfigurationService.getPartitionDistribution(any()))
-        .thenReturn(new PartitionDistribution(metadata));
+    when(clusterConfigurationService.getLatestPartitionDistribution(any()))
+        .thenReturn(CompletableActorFuture.completed(new PartitionDistribution(metadata)));
   }
 
   private void givenPartitionRoles(final Map<Integer, PartitionRole> roles) {

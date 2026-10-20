@@ -6,34 +6,36 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {afterAll, afterEach, beforeAll, describe, expect, vi} from 'vitest';
+import {afterEach, describe, expect, vi} from 'vitest';
 import {userEvent} from 'vitest/browser';
 import {cleanup, render} from 'vitest-browser-react';
 import {it} from '#/vitest-modules/test-extend';
 import {RichTextEditor} from './RichTextEditor';
 
 describe('RichTextEditor', () => {
-	beforeAll(() => {
-		vi.useFakeTimers({toFake: ['setTimeout', 'clearTimeout', 'Date'], shouldAdvanceTime: true});
-	});
-	afterAll(() => vi.useRealTimers());
 	afterEach(async () => {
-		await vi.advanceTimersByTimeAsync(100);
 		await cleanup();
 	});
 
-	it('should preserve the Monaco input contract when editing in the design system', async () => {
-		const onChange = vi.fn();
+	it('should expose the editor id and invalid state on the Monaco input', async () => {
 		const screen = await render(
-			<RichTextEditor id="variable-value" value="true" isInvalid onChange={onChange} autoFocus={false} />,
+			<RichTextEditor id="variable-value" value="true" isInvalid onChange={vi.fn()} autoFocus={false} />,
 		);
 		const editor = screen.getByRole('textbox', {name: 'Value', exact: true});
 
 		await expect.element(editor).toHaveAttribute('id', 'variable-value-editor');
 		await expect.element(editor).toHaveAttribute('aria-invalid', 'true');
+	});
+
+	it('should report edits through onChange', async () => {
+		const onChange = vi.fn();
+		const screen = await render(
+			<RichTextEditor id="variable-value" value="true" onChange={onChange} autoFocus={false} />,
+		);
+
 		await userEvent.click(screen.getByText('true', {exact: true}));
 		await userEvent.keyboard('{End}x');
 
-		expect(onChange).toHaveBeenCalledWith('truex');
+		await expect.poll(() => onChange).toHaveBeenCalledWith('truex');
 	});
 });

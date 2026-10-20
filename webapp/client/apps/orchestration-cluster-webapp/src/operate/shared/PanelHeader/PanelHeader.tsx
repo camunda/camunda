@@ -9,7 +9,7 @@
 import {forwardRef} from 'react';
 import {useTranslation} from 'react-i18next';
 import {Header} from './styled';
-import {Title as PanelTitle} from '../PanelTitle/styled';
+import {Title as PanelTitle} from '#/operate/shared/PanelTitle/styled';
 
 type Props = {
 	title?: string;
@@ -26,17 +26,19 @@ const PanelHeader = forwardRef<HTMLElement, Props>(
 		const {t} = useTranslation();
 		return (
 			<Header className={className} ref={ref} $size={size}>
-				<PanelTitle>
-					{title}
-					{count > 0 && (
-						<>
-							{title === undefined ? null : <>&nbsp;&nbsp;&nbsp;-&nbsp;&nbsp;&nbsp;</>}
-							{hasMoreTotalItems
-								? t('operate.shared.panelHeader.resultCountMore', {count})
-								: t('operate.shared.panelHeader.resultCount', {count})}
-						</>
-					)}
-				</PanelTitle>
+				{(title !== undefined || count > 0) && (
+					<PanelTitle>
+						{title}
+						{count > 0 && (
+							<>
+								{title === undefined ? null : <>&nbsp;&nbsp;&nbsp;-&nbsp;&nbsp;&nbsp;</>}
+								{hasMoreTotalItems
+									? t('operate.shared.panelHeader.resultCountMore', {count})
+									: t('operate.shared.panelHeader.resultCount', {count})}
+							</>
+						)}
+					</PanelTitle>
+				)}
 				{children}
 			</Header>
 		);

@@ -62,10 +62,7 @@ data:
             audiences:
               - "optimize"
               - "optimize-api"
-              - "web-modeler-api"
-            authorization-uri: "http://localhost:18080/auth/realms/camunda-platform/protocol/openid-connect/auth"
-            jwk-set-uri: "http://keycloak:18080/auth/realms/camunda-platform/protocol/openid-connect/certs"
-            token-uri: "http://keycloak:18080/auth/realms/camunda-platform/protocol/openid-connect/token"
+            issuer-uri: "http://localhost:18080/auth/realms/camunda-platform"
             redirect-uri: "http://localhost:8083/api/authentication/callback"
   application.yml: |
     historyCleanup:

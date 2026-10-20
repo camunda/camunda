@@ -11,8 +11,8 @@ import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
 import io.atomix.cluster.MemberId;
 import io.camunda.client.CamundaClient;
-import io.camunda.configuration.Filesystem;
-import io.camunda.configuration.PrimaryStorageBackup;
+import io.camunda.configuration.data.primarystorage.PrimaryStorageBackup;
+import io.camunda.configuration.data.primarystorage.backup.Filesystem;
 import io.camunda.management.backups.BackupType;
 import io.camunda.management.backups.CheckpointState;
 import io.camunda.management.backups.PartitionBackupState;

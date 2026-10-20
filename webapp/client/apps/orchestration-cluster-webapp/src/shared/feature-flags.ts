@@ -6,4 +6,8 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-export {};
+const ENABLE_PROCESS_MIGRATION = true;
+// Enable once token staging (#58011) and the modification summary (#56037) land.
+const ENABLE_PROCESS_INSTANCE_MODIFICATION = false;
+
+export {ENABLE_PROCESS_MIGRATION, ENABLE_PROCESS_INSTANCE_MODIFICATION};

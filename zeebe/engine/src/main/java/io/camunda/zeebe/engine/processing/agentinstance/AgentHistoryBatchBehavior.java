@@ -301,6 +301,7 @@ public final class AgentHistoryBatchBehavior {
           .setElementInstanceKey(elementInstanceKey)
           .setProcessInstanceKey(target.getProcessInstanceKey())
           .setRootProcessInstanceKey(target.getRootProcessInstanceKey())
+          .setStorageOrdinal(target.getStorageOrdinal())
           .setBpmnProcessId(target.getBpmnProcessId())
           .setProcessDefinitionKey(target.getProcessDefinitionKey())
           .setTenantId(target.getTenantId())

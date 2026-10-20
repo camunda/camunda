@@ -13,7 +13,7 @@ import static org.assertj.core.api.Assertions.assertThatNoException;
 import com.google.protobuf.Timestamp;
 import io.camunda.zeebe.dynamic.config.PersistedClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.PersistedCurrentClusterConfiguration;
-import io.camunda.zeebe.dynamic.config.protocol.Topology;
+import io.camunda.zeebe.dynamic.config.impl.protocol.Topology;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;

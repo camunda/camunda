@@ -41,6 +41,7 @@ import io.camunda.zeebe.protocol.record.intent.MessageIntent;
 import io.camunda.zeebe.protocol.record.mapper.AuthzModelMapper;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
+import io.camunda.zeebe.protocol.record.value.StorageOrdinalRelated;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import java.util.HashSet;
@@ -184,6 +185,8 @@ public final class MessageCorrelationCorrelateProcessor
             .setTimeToLive(-1L);
     stateWriter.appendFollowUpEvent(messageKey, MessageIntent.PUBLISHED, messageRecord);
 
+    // no instance is known yet; the CORRELATED event below carries the instance's ordinal
+    messageCorrelationRecord.setStorageOrdinal(StorageOrdinalRelated.NOT_ORDINAL_CONTROLLED);
     stateWriter.appendFollowUpEvent(
         messageKey, MessageCorrelationIntent.CORRELATING, messageCorrelationRecord);
 
@@ -229,6 +232,7 @@ public final class MessageCorrelationCorrelateProcessor
             subscription -> {
               messageCorrelationRecord.setProcessInstanceKey(subscription.processInstanceKey());
               messageCorrelationRecord.setProcessDefinitionKey(subscription.processDefinitionKey());
+              messageCorrelationRecord.setStorageOrdinal(subscription.storageOrdinal());
 
               stateWriter.appendFollowUpEvent(
                   messageKey, MessageCorrelationIntent.CORRELATED, messageCorrelationRecord);

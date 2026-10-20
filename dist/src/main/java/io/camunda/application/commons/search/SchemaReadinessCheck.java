@@ -7,15 +7,17 @@
  */
 package io.camunda.application.commons.search;
 
+import io.camunda.application.commons.pt.PhysicalTenantSchemaInitializationHealthIndicator;
 import io.camunda.cluster.SecondaryStorageReadiness;
+import org.jspecify.annotations.NullMarked;
 import org.springframework.boot.health.contributor.Health;
 import org.springframework.boot.health.contributor.HealthIndicator;
 
 /**
- * Reports the node as ready once at least one physical tenant's secondary storage is ready — a node
- * stays ready as long as it can serve at least one physical tenant, rather than requiring every
- * tenant to be initialized. No per-tenant detail is exposed on this probe.
+ * Reports {@link SecondaryStorageReadiness#nodeReadiness()} as UP, DEGRADED, or DOWN, without
+ * per-tenant details.
  */
+@NullMarked
 public class SchemaReadinessCheck implements HealthIndicator {
 
   public static final String SCHEMA_READINESS_CHECK = "schemaReadinessCheck";
@@ -27,6 +29,9 @@ public class SchemaReadinessCheck implements HealthIndicator {
 
   @Override
   public Health health() {
-    return (secondaryStorageReadiness.anyReady() ? Health.up() : Health.down()).build();
+    return Health.status(
+            PhysicalTenantSchemaInitializationHealthIndicator.statusOf(
+                secondaryStorageReadiness.nodeReadiness()))
+        .build();
   }
 }

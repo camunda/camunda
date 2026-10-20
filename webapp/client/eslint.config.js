@@ -16,11 +16,28 @@ import reactHooksPlugin from 'eslint-plugin-react-hooks';
 import reactRefreshPlugin from 'eslint-plugin-react-refresh';
 import tanstackPlugin from '@tanstack/eslint-plugin-query';
 import vitestPlugin from '@vitest/eslint-plugin';
+import camundaDsPlugin from '@camunda/design-system/eslint-plugin';
+import {readFileSync} from 'node:fs';
+import apiZodSchemasVersionRule from './eslint-rules/api-zod-schemas-version.js';
 
 const files = {
 	browser: ['packages/**/*.{js,jsx,mjs,cjs,ts,tsx,mts,cts}', 'apps/**/*.{js,jsx,mjs,cjs,ts,tsx,mts,cts}'],
-	node: ['scripts/**/*.{js,mjs,cjs,ts,mts,cts}', 'prettier.config.js'],
+	node: [
+		'scripts/**/*.{js,mjs,cjs,ts,mts,cts}',
+		'eslint-rules/**/*.{js,mjs,cjs}',
+		'prettier.config.js',
+		'packages/**/scripts/**/*.{js,mjs,cjs,ts,mts,cts}',
+	],
 };
+
+function getAPIVersion() {
+	const {version} = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf8'));
+	const [, major, minor] = /^(\d+)\.(\d+)/.exec(version) ?? [];
+	if (major === undefined) {
+		throw new Error(`Cannot derive the API version from webapp/client/package.json version '${version}'`);
+	}
+	return `${major}.${minor}`;
+}
 
 const ocPath = 'apps/orchestration-cluster-webapp';
 const ocFiles = {
@@ -31,6 +48,7 @@ const ocFiles = {
 export default defineConfig([
 	{
 		ignores: [
+			'**/gen/**/*.{js,mjs,cjs,ts,mts,cts}',
 			'packages/**/dist/**/*',
 			'apps/**/dist/**/*',
 			'target/**/*',
@@ -94,6 +112,14 @@ export default defineConfig([
 		rules: {
 			'no-duplicate-imports': 'error',
 			curly: 'error',
+		},
+	},
+
+	{
+		files: [`${ocPath}/**/*.{js,jsx,mjs,cjs,ts,tsx,mts,cts}`],
+		plugins: {local: {rules: {'api-zod-schemas-version': apiZodSchemasVersionRule}}},
+		rules: {
+			'local/api-zod-schemas-version': ['error', {version: getAPIVersion()}],
 		},
 	},
 
@@ -192,6 +218,21 @@ export default defineConfig([
 		files: ocFiles.browser,
 		plugins: {'@tanstack/query': tanstackPlugin},
 		rules: {...tanstackPlugin.configs.recommended.rules},
+	},
+
+	{
+		files: ocFiles.browser,
+		ignores: ocFiles.test,
+		...camundaDsPlugin.configs.recommended,
+	},
+
+	{
+		files: [
+			`${ocPath}/src/{admin,tasklist}/**/*.{js,jsx,ts,tsx}`,
+			`${ocPath}/src/**/shadcn.components/**/*.{js,jsx,ts,tsx}`,
+		],
+		ignores: ocFiles.test,
+		...camundaDsPlugin.configs.tailwind,
 	},
 
 	{

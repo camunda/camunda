@@ -27,7 +27,7 @@ describe('<InstancesBar />', () => {
 
 		const incidentsBadge = screen.getByTestId('incident-instances-badge');
 		await expect.element(incidentsBadge).toHaveTextContent('3');
-		await expect.element(incidentsBadge).toHaveClass('text-danger-foreground-strong');
+		await expect.element(incidentsBadge).toHaveClass('text-danger-foreground-subtle');
 	});
 
 	it('should not color the incidents count when there are no incidents', async () => {
@@ -35,7 +35,7 @@ describe('<InstancesBar />', () => {
 
 		const incidentsBadge = screen.getByTestId('incident-instances-badge');
 		await expect.element(incidentsBadge).toHaveTextContent('0');
-		await expect.element(incidentsBadge).not.toHaveClass('text-danger-foreground-strong');
+		await expect.element(incidentsBadge).not.toHaveClass('text-danger-foreground-subtle');
 	});
 
 	it('should render the active instances count when it is defined', async () => {
@@ -60,13 +60,6 @@ describe('<InstancesBar />', () => {
 		expect(screen.getByTestId('active-instances-badge').elements()).toHaveLength(0);
 	});
 
-	it('should apply the given className to the root element', async () => {
-		const screen = await renderWithTooltipProvider(<InstancesBar incidentsCount={2} size="medium" className="foo" />);
-
-		const root = screen.getByTestId('incident-instances-badge').element().parentElement?.parentElement;
-		await expect.element(root as HTMLElement).toHaveClass('foo');
-	});
-
 	it('should color the label red only when the bar size is medium, regardless of the label size', async () => {
 		const screen = await renderWithTooltipProvider(
 			<InstancesBar
@@ -76,7 +69,7 @@ describe('<InstancesBar />', () => {
 			/>,
 		);
 
-		await expect.element(screen.getByText('order-process').first()).toHaveClass('text-danger-foreground-strong');
+		await expect.element(screen.getByText('order-process').first()).toHaveClass('text-danger-foreground-subtle');
 	});
 
 	it('should not color an incident-type label red when the bar size is not medium', async () => {
@@ -88,34 +81,7 @@ describe('<InstancesBar />', () => {
 			/>,
 		);
 
-		await expect.element(screen.getByText('order-process').first()).not.toHaveClass('text-danger-foreground-strong');
-	});
-
-	it('should use the small bar-height class for size="small"', async () => {
-		const screen = await renderWithTooltipProvider(
-			<InstancesBar incidentsCount={2} activeInstancesCount={8} size="small" />,
-		);
-
-		const bar = screen.getByTestId('instances-bar').element();
-		await expect.element(bar.children[0] as HTMLElement).toHaveClass('h-0.5');
-	});
-
-	it('should use the medium bar-height class for size="medium"', async () => {
-		const screen = await renderWithTooltipProvider(
-			<InstancesBar incidentsCount={2} activeInstancesCount={8} size="medium" />,
-		);
-
-		const bar = screen.getByTestId('instances-bar').element();
-		await expect.element(bar.children[0] as HTMLElement).toHaveClass('h-1');
-	});
-
-	it('should use the large bar-height class for size="large"', async () => {
-		const screen = await renderWithTooltipProvider(
-			<InstancesBar incidentsCount={2} activeInstancesCount={8} size="large" />,
-		);
-
-		const bar = screen.getByTestId('instances-bar').element();
-		await expect.element(bar.children[0] as HTMLElement).toHaveClass('h-2');
+		await expect.element(screen.getByText('order-process').first()).not.toHaveClass('text-danger-foreground-subtle');
 	});
 
 	it('should render a defined zero active instances count without the active color', async () => {

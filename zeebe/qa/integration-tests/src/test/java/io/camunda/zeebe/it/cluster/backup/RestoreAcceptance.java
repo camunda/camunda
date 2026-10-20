@@ -42,7 +42,7 @@ public interface RestoreAcceptance {
   default void shouldFailForNonExistingBackup() {
     // then -- restore application exits with an error code
     assertThatCode(() -> restoreBackup(1234))
-        .hasMessageContaining("No completed backup found for partition 1 with backup id 1234")
+        .hasMessageContaining("No completed backup found with backup id 1234")
         .isInstanceOf(NoSuchElementException.class);
   }
 

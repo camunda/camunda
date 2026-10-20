@@ -57,7 +57,7 @@ final class GcsBackupStoreDeleteTest {
   @Test
   void shouldNotDeleteManifestWhenContentsDeletionFails() {
     // given
-    final Manifest deletedManifest = Manifest.createFailed(id).delete();
+    final Manifest deletedManifest = Manifest.createFailed(id, "error").delete();
     when(manifestManager.getManifest(id)).thenReturn(deletedManifest);
     when(fileSetManager.collectBlobIds(eq(id), any()))
         .thenReturn(List.of(BlobId.of("bucket", "contents/1/3/2/snapshot/file1")));
@@ -77,7 +77,7 @@ final class GcsBackupStoreDeleteTest {
   @Test
   void shouldBoundConcurrentDeletions() throws Exception {
     // given - twice as many deletions as may run at once, each blocked until all are submitted
-    final var deletedManifest = Manifest.createFailed(id).delete();
+    final var deletedManifest = Manifest.createFailed(id, "error").delete();
     final var running = new AtomicInteger();
     final var maxRunning = new AtomicInteger();
     final var permittedStarted = new CountDownLatch(GcsBackupStore.DELETE_PARALLELISM);

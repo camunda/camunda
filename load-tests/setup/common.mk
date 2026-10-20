@@ -34,6 +34,10 @@
 #   Whether the load testers prefer REST over gRPC (matches the load-tester
 #   application default). Set to `false` on versions that should keep gRPC (8.7).
 #
+# - k6_data_read_supported
+#   Set to `false` for versions without the `/v2/process-definitions/search` endpoint (8.7),
+#   which disables the k6 `data-read` test.
+#
 # - cluster_rebalance_supported
 #   Set to `false` for versions without the `/cluster/v2/rebalance` endpoint (before 8.10),
 #   so the `leader-balancer` CronJob falls back to the deprecated actuator endpoint.
@@ -45,6 +49,7 @@ install_storage_target ?= install-storage
 physical_tenants_supported ?= true
 prefer_rest ?= true
 cluster_rebalance_supported ?= true
+k6_data_read_supported ?= true
 
 template_output_dir ?= .
 # Enable the chaos-killer CronJob (randomly deletes one matching pod per run).
@@ -86,7 +91,13 @@ else ifeq ($(scenario),max)
 ifeq ($(scenario_max_override_key),)
 $(error scenario=max requires scenario_max_override_key to be declared by the version Makefile)
 endif
+# Without secondary storage the exporters do no indexing work, so the cluster sustains a higher rate.
+# Keep the rates in sync with load-tests/docs/scripts/optimal.json, which the PR benchmark comment shows.
+ifeq ($(secondary_storage),none)
+_scenario_load_test_flags = --set load-tester.starter.rate=500
+else
 _scenario_load_test_flags = --set load-tester.starter.rate=300
+endif
 _scenario_platform_flags = --set-file '$(scenario_max_override_key)./camunda-platform-override-values.yaml'
 else ifeq ($(scenario),archiver)
 _scenario_load_test_flags = --set load-tester.starter.rate=1 --set load-tester.starter.rateDuration=10m --set load-tester.starter.processId=multiInstanceElements --set load-tester.starter.bpmnXmlPath=bpmn/multiInstanceElements.bpmn --set load-tester.starter.payloadPath=bpmn/multiInstanceElementsPayload.json --set load-tester.workers.worker.replicas=0
@@ -122,6 +133,12 @@ ifneq ($(cluster_rebalance_supported),true)
 _load_test_setup_flags += --set leaderBalancer.endpoint=actuator
 endif
 
+# The k6 tests are enabled by default in charts/load-test-setup/values.yaml. Only emit an
+# explicit override for versions without the endpoint they use.
+ifneq ($(k6_data_read_supported),true)
+_load_test_setup_flags += --set k6.tests.data-read.enabled=false
+endif
+
 # The Docker image tag for the load test metrics exporter
 metrics_exporter_image_tag = latest
 
@@ -139,6 +156,8 @@ ifneq ($(filter $(secondary_storage),$(rdbms_storages)),)
 	platform_values += -f camunda-platform-values-rdbms.yaml
 else ifeq ($(secondary_storage),none)
 	_load_test_setup_flags += --set global.extraConfig.load-tester.monitor-data-availability=false
+	_load_test_setup_flags += --set global.performReadBenchmarks=false
+	_load_test_setup_flags += --set k6.tests.data-read.enabled=false
 endif
 platform_values += -f camunda-platform-values-$(secondary_storage).yaml
 

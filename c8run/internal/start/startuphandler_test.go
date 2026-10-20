@@ -208,6 +208,44 @@ func TestShouldAttemptConnectorsStartupWhenEnabled(t *testing.T) {
 	}
 }
 
+type blockingProcessHandler struct {
+	stubProcessHandler
+	started chan string
+	release chan struct{}
+}
+
+func (b *blockingProcessHandler) AttemptToStartProcess(pidPath string, processName string, startProcess func(), healthCheck func() error, stop context.CancelFunc) {
+	b.started <- processName
+	<-b.release
+}
+
+func TestShouldStartDefaultAndTenantConnectorsConcurrently(t *testing.T) {
+	handler := &blockingProcessHandler{started: make(chan string, 2), release: make(chan struct{})}
+	startupHandler := &StartupHandler{ProcessHandler: handler}
+	state := &types.State{
+		Settings: types.C8RunSettings{
+			PhysicalTenants: []types.PhysicalTenant{{ID: "sales", Connectors: true, ConnectorsPort: 8087}},
+		},
+		ProcessInfo: types.Processes{
+			Connectors: types.Process{PidPath: "connectors.process"},
+		},
+	}
+	parentDir := t.TempDir()
+	done := make(chan struct{})
+	defer func() {
+		close(handler.release)
+		<-done
+	}()
+
+	go func() {
+		defer close(done)
+		startupHandler.startConnectors(context.Background(), func() {}, state, parentDir, "java")
+	}()
+
+	require.Eventually(t, func() bool { return len(handler.started) == 2 }, 5*time.Second, 10*time.Millisecond)
+	assert.ElementsMatch(t, []string{"Connectors", "Connectors (sales)"}, []string{<-handler.started, <-handler.started})
+}
+
 func TestResolveJavaHomeAndBinaryUsesBundledJREFirst(t *testing.T) {
 	// given
 	parentDir := t.TempDir()

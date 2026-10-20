@@ -8,6 +8,10 @@
 package io.camunda.configuration;
 
 import io.camunda.configuration.UnifiedConfigurationHelper.BackwardsCompatibilityMode;
+import io.camunda.configuration.system.Actor;
+import io.camunda.configuration.system.LegacyQueryApi;
+import io.camunda.configuration.system.Restore;
+import io.camunda.configuration.system.Upgrade;
 import java.util.Set;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 

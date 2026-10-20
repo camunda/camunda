@@ -36,8 +36,10 @@ import org.jspecify.annotations.NullMarked;
  * Drains buffered commands one per {@code DRAIN} cycle: if one is found, it's drained and another
  * {@code DRAIN} is scheduled unconditionally; the cycle that finds the buffer empty hands off to
  * {@code RESUME_JOBS} instead, to {@link ProcessInstanceResumeJobsProcessor}, which un-parks jobs
- * and appends {@code COMPLETE_RESUMING} itself. {@link SuspensionAction#PROCESS} is unconditional:
- * gating a {@code DRAIN} would strand the instance in {@code RESUMING} forever.
+ * and appends {@code COMPLETE_RESUMING} itself. {@code DRAIN} is always processed while {@code
+ * RESUMING}: gating it would strand the instance there forever. While {@code SUSPENDING} or {@code
+ * SUSPENDED} it is rejected, as draining would write buffered commands back to the log before the
+ * instance resumes.
  *
  * <p>A cycle that fails to write (e.g. batch size exceeded) halts rather than drops the command:
  * the default error handling rejects {@code DRAIN} without banning the instance, and it stays
@@ -49,6 +51,8 @@ import org.jspecify.annotations.NullMarked;
 public final class BufferedCommandDrainProcessor
     implements TypedRecordProcessor<BufferedCommandRecord>, SuspensionAware<BufferedCommandRecord> {
 
+  private static final String NOT_RESUMING_MESSAGE =
+      "Expected to drain buffered commands of process instance '%d', but it is not resuming.";
   private static final String WAITING_CLOSE_ACKS_MESSAGE =
       "Expected to finish draining process instance '%d', but some message subscriptions are still "
           + "closing — will retry once their delete acknowledgements arrive and buffer their reopen "
@@ -154,13 +158,19 @@ public final class BufferedCommandDrainProcessor
 
   @Override
   public SuspensionAction onSuspended(final TypedRecord<BufferedCommandRecord> record) {
+    return SuspensionAction.REJECT;
+  }
+
+  @Override
+  public SuspensionAction onResuming(final TypedRecord<BufferedCommandRecord> record) {
     // DRAIN is what ends the suspension: gating it would strand the instance in RESUMING
     return SuspensionAction.PROCESS;
   }
 
   @Override
-  public SuspensionAction onResuming(final TypedRecord<BufferedCommandRecord> record) {
-    return SuspensionAction.PROCESS;
+  public String rejectionReason(
+      final TypedRecord<BufferedCommandRecord> record, final long processInstanceKey) {
+    return NOT_RESUMING_MESSAGE.formatted(processInstanceKey);
   }
 
   private void appendBufferedCommand(final BufferedCommand buffered) {

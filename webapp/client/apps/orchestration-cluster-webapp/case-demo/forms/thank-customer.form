@@ -1,0 +1,22 @@
+{
+  "executionPlatform": "Camunda Cloud",
+  "executionPlatformVersion": "8.11.0",
+  "exporter": {
+    "name": "Camunda Modeler",
+    "version": "5.40.0"
+  },
+  "schemaVersion": 18,
+  "id": "thank-customer",
+  "type": "default",
+  "components": [
+    {
+      "type": "textarea",
+      "key": "farewellMessage",
+      "label": "Message to the customer",
+      "id": "Field_farewellMessage_27",
+      "validate": {
+        "required": true
+      }
+    }
+  ]
+}

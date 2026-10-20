@@ -1,0 +1,30 @@
+{
+  "executionPlatform": "Camunda Cloud",
+  "executionPlatformVersion": "8.11.0",
+  "exporter": {
+    "name": "Camunda Modeler",
+    "version": "5.40.0"
+  },
+  "schemaVersion": 18,
+  "id": "request-quote",
+  "type": "default",
+  "components": [
+    {
+      "type": "textfield",
+      "key": "workshop",
+      "label": "Workshop",
+      "id": "Field_workshop_120",
+      "readonly": true
+    },
+    {
+      "type": "number",
+      "key": "quote",
+      "label": "Quote (EUR)",
+      "id": "Field_quote_121",
+      "validate": {
+        "required": true,
+        "min": 0
+      }
+    }
+  ]
+}

@@ -29,6 +29,11 @@ const COMPLETED_END_EVENT_BADGE = {
 	left: 17,
 };
 
+const MODIFICATIONS_BADGE = {
+	top: -14,
+	right: -7,
+};
+
 const SUBPROCESS_WITH_INCIDENTS_BADGE = {
 	bottom: -5,
 	right: -12,
@@ -41,4 +46,5 @@ export {
 	COMPLETED_BADGE,
 	COMPLETED_END_EVENT_BADGE,
 	SUBPROCESS_WITH_INCIDENTS_BADGE,
+	MODIFICATIONS_BADGE,
 };

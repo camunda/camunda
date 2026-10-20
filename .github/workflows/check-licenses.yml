@@ -86,7 +86,7 @@ jobs:
             -Dquickly=true
             -DskipQaBuild=true
     steps:
-    - uses: camunda/infra-global-github-actions/start-build-monitor@50906bc0cf037574d72f0fd74ac51451f8d4fcae # main
+    - uses: camunda/infra-global-github-actions/start-build-monitor@95c6f97de08ce6befa8e1b222140676204d792fb # main
     - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       with:
         persist-credentials: false
@@ -124,11 +124,11 @@ jobs:
         echo "${MAVEN_CONFIG}" | tee ./.mvn/maven.config
 
     - name: Setup fossa-cli
-      uses: camunda/infra-global-github-actions/fossa/setup@1bab7578250d06c3ac57ba8e2ddfc65ac3f7880c # fossa-1.0.21
+      uses: camunda/infra-global-github-actions/fossa/setup@47164bc3d1bce866f4f189f19fac7895ae51956d # fossa-1.0.22
 
     - name: Get context info
       id: info
-      uses: camunda/infra-global-github-actions/fossa/info@1bab7578250d06c3ac57ba8e2ddfc65ac3f7880c # fossa-1.0.21
+      uses: camunda/infra-global-github-actions/fossa/info@47164bc3d1bce866f4f189f19fac7895ae51956d # fossa-1.0.22
 
     - name: Adjust pom.xml files for FOSSA
       if: contains(fromJson('["optimize", "single-app"]'), matrix.project.name)
@@ -141,17 +141,24 @@ jobs:
       id: analyze1
       continue-on-error: true
       timeout-minutes: 30
-      uses: camunda/infra-global-github-actions/fossa/analyze@1bab7578250d06c3ac57ba8e2ddfc65ac3f7880c # fossa-1.0.21
+      uses: camunda/infra-global-github-actions/fossa/analyze@47164bc3d1bce866f4f189f19fac7895ae51956d # fossa-1.0.22
       with:
         api-key: ${{ steps.secrets.outputs.FOSSA_API_KEY }}
         branch: ${{  steps.info.outputs.head-ref }}
         path: ${{ matrix.project.path }}
         revision-id: ${{ steps.info.outputs.head-revision }}
 
+    # Both attempts otherwise fire back-to-back within seconds, so a brief FOSSA API outage
+    # (a transient 5xx that fails instantly rather than hanging, see INC-8587) takes out both.
+    # Pause between them to let such a window clear before retrying.
+    - name: Backoff before FOSSA retry
+      if: steps.analyze1.outcome != 'success'
+      run: sleep 90
+
     - name: Analyze project (attempt 2)
       if: steps.analyze1.outcome != 'success'
       timeout-minutes: 30
-      uses: camunda/infra-global-github-actions/fossa/analyze@1bab7578250d06c3ac57ba8e2ddfc65ac3f7880c # fossa-1.0.21
+      uses: camunda/infra-global-github-actions/fossa/analyze@47164bc3d1bce866f4f189f19fac7895ae51956d # fossa-1.0.22
       with:
         api-key: ${{ steps.secrets.outputs.FOSSA_API_KEY }}
         branch: ${{  steps.info.outputs.head-ref }}
@@ -163,7 +170,7 @@ jobs:
     # It does not fail for pre-existing issues already present in the base branch.
     - name: Check Pull Request for new License Issues
       if: steps.info.outputs.is-pull-request == 'true'
-      uses: camunda/infra-global-github-actions/fossa/pr-check@1bab7578250d06c3ac57ba8e2ddfc65ac3f7880c # fossa-1.0.21
+      uses: camunda/infra-global-github-actions/fossa/pr-check@47164bc3d1bce866f4f189f19fac7895ae51956d # fossa-1.0.22
       with:
         api-key: ${{ steps.secrets.outputs.FOSSA_API_KEY }}
         base-ref: ${{ steps.info.outputs.base-ref }}

@@ -1,0 +1,36 @@
+{
+  "executionPlatform": "Camunda Cloud",
+  "executionPlatformVersion": "8.11.0",
+  "exporter": {
+    "name": "Camunda Modeler",
+    "version": "5.40.0"
+  },
+  "schemaVersion": 18,
+  "id": "check-documents",
+  "type": "default",
+  "components": [
+    {
+      "type": "text",
+      "text": "### Check the documents\nOpen the documents of the case and confirm them.",
+      "id": "Text_14"
+    },
+    {
+      "type": "checkbox",
+      "key": "identityVerified",
+      "label": "Identity verified",
+      "id": "Field_identityVerified_15"
+    },
+    {
+      "type": "checkbox",
+      "key": "incomeVerified",
+      "label": "Income verified",
+      "id": "Field_incomeVerified_16"
+    },
+    {
+      "type": "textarea",
+      "key": "documentNotes",
+      "label": "Notes",
+      "id": "Field_documentNotes_17"
+    }
+  ]
+}

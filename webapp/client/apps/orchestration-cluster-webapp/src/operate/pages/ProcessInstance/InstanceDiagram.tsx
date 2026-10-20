@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
+import {useCallback, useContext, useEffect, useMemo, useRef, useState} from 'react';
 import {useNavigate, useRouter} from '@tanstack/react-router';
 import {useTranslation} from 'react-i18next';
 import {useQueryClient as useReactQueryClient} from '@tanstack/react-query';
@@ -29,6 +29,8 @@ import {
 import {useInstanceDiagramOverlays, type ModificationBadge} from './useInstanceDiagramOverlays';
 import {InstanceDiagramOverlays} from './InstanceDiagramOverlays';
 import {Panel} from './instanceDiagram.styled';
+import {InstanceHistoryContext} from './useInstanceHistory';
+import {useProcessInstanceModification} from './useProcessInstanceModification';
 
 const NO_MODIFICATION_BADGES: ModificationBadge[] = [];
 
@@ -42,14 +44,18 @@ type Props = {
 };
 
 function InstanceDiagram({
-	isModificationModeEnabled = false,
-	isExecutionCountVisible = false,
+	isModificationModeEnabled: modificationModeOverride,
+	isExecutionCountVisible: executionCountOverride,
 	modifiableElements,
 	modificationBadges = NO_MODIFICATION_BADGES,
 	selectedElementOverlay,
 	onModificationElementSelection,
 }: Props) {
 	const {processInstanceId, processInstance, selection, search} = useProcessInstancePage();
+	const modification = useProcessInstanceModification();
+	const isModificationModeEnabled = modificationModeOverride ?? modification.isModificationModeEnabled;
+	const history = useContext(InstanceHistoryContext);
+	const isExecutionCountVisible = executionCountOverride ?? history?.executionCount ?? false;
 	const {t} = useTranslation();
 	const navigate = useNavigate();
 	const router = useRouter();
@@ -90,7 +96,7 @@ function InstanceDiagram({
 	const overlaysData = useInstanceDiagramOverlays({
 		statistics: statistics.data,
 		waitStates: isRunning ? waitStates : undefined,
-		agents: isRunning ? agents.data : undefined,
+		agents: agents.data,
 		businessObjects: diagram?.businessObjects,
 		processDefinitionId: processInstance.processDefinitionId,
 		isModificationModeEnabled,

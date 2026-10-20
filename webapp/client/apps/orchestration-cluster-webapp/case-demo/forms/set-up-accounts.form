@@ -1,0 +1,43 @@
+{
+  "executionPlatform": "Camunda Cloud",
+  "executionPlatformVersion": "8.11.0",
+  "exporter": {
+    "name": "Camunda Modeler",
+    "version": "5.40.0"
+  },
+  "schemaVersion": 18,
+  "id": "set-up-accounts",
+  "type": "default",
+  "components": [
+    {
+      "type": "text",
+      "text": "### Step 3 of 3: set up the accounts",
+      "id": "Text_331"
+    },
+    {
+      "type": "textfield",
+      "key": "employeeId",
+      "label": "Employee ID",
+      "id": "Field_employeeId_332",
+      "readonly": true
+    },
+    {
+      "type": "textfield",
+      "key": "emailAddress",
+      "label": "Email address",
+      "id": "Field_emailAddress_333",
+      "validate": {
+        "required": true
+      }
+    },
+    {
+      "type": "checkbox",
+      "key": "accountsCreated",
+      "label": "All accounts are created",
+      "id": "Field_accountsCreated_334",
+      "validate": {
+        "required": true
+      }
+    }
+  ]
+}

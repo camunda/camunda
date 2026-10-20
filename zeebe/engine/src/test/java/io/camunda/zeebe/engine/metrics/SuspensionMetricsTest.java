@@ -31,6 +31,9 @@ final class SuspensionMetricsTest {
   private static final String BUFFERED_COMMAND_EVENTS_METRIC =
       "zeebe.buffered.commands.events.total";
   private static final String RESUME_DURATION_METRIC = "zeebe.process.instance.resume.duration";
+  private static final String SUSPEND_DURATION_METRIC = "zeebe.process.instance.suspend.duration";
+  private static final String USER_TASK_SUSPENSION_EVENTS_METRIC =
+      "zeebe.user.task.suspension.events.total";
 
   private final AtomicLong monotonicNanos = new AtomicLong();
   private SimpleMeterRegistry registry;
@@ -129,6 +132,111 @@ final class SuspensionMetricsTest {
   }
 
   @Test
+  void shouldRecordSuspendDuration() {
+    // given
+    metrics.startSuspendDuration(1234L, metrics.takeSuspendStartTime());
+
+    // when
+    advanceClock(Duration.ofMillis(50));
+    metrics.stopSuspendDuration(1234L);
+
+    // then
+    final var timer = registry.find(SUSPEND_DURATION_METRIC).timer();
+    assertThat(timer).isNotNull();
+    assertThat(timer.count()).isEqualTo(1L);
+    assertThat(timer.totalTime(TimeUnit.MILLISECONDS)).isEqualTo(50.0);
+  }
+
+  @Test
+  void shouldMeasureSuspendDurationFromStartTimeTakenBeforeProcessing() {
+    // given — start time taken before the SUSPEND command's own work
+    final long startTime = metrics.takeSuspendStartTime();
+    advanceClock(Duration.ofMillis(30));
+    metrics.startSuspendDuration(1234L, startTime);
+
+    // when
+    advanceClock(Duration.ofMillis(20));
+    metrics.stopSuspendDuration(1234L);
+
+    // then
+    final var timer = registry.find(SUSPEND_DURATION_METRIC).timer();
+    assertThat(timer).isNotNull();
+    assertThat(timer.totalTime(TimeUnit.MILLISECONDS)).isEqualTo(50.0);
+  }
+
+  @Test
+  void shouldNotMeasureFromRejectedSuspendAttempt() {
+    // given — a rejected SUSPEND takes a start time but never starts the measurement
+    metrics.takeSuspendStartTime();
+    advanceClock(Duration.ofMillis(100));
+
+    // when — a later SUSPEND succeeds
+    metrics.startSuspendDuration(1234L, metrics.takeSuspendStartTime());
+    advanceClock(Duration.ofMillis(50));
+    metrics.stopSuspendDuration(1234L);
+
+    // then — only the successful attempt is measured
+    final var timer = registry.find(SUSPEND_DURATION_METRIC).timer();
+    assertThat(timer).isNotNull();
+    assertThat(timer.count()).isEqualTo(1L);
+    assertThat(timer.totalTime(TimeUnit.MILLISECONDS)).isEqualTo(50.0);
+  }
+
+  @Test
+  void shouldIgnoreDuplicateSuspendStartForSameKey() {
+    // given
+    metrics.startSuspendDuration(1234L, metrics.takeSuspendStartTime());
+    advanceClock(Duration.ofMillis(50));
+
+    // when — a restarted suspension keeps the original start
+    metrics.startSuspendDuration(1234L, metrics.takeSuspendStartTime());
+    metrics.stopSuspendDuration(1234L);
+
+    // then
+    final var timer = registry.find(SUSPEND_DURATION_METRIC).timer();
+    assertThat(timer).isNotNull();
+    assertThat(timer.count()).isEqualTo(1L);
+    assertThat(timer.totalTime(TimeUnit.MILLISECONDS)).isEqualTo(50.0);
+  }
+
+  @Test
+  void shouldNotFailWhenStoppingNonExistentSuspendTimer() {
+    // when / then - no start was ever called for this key
+    assertThatCode(() -> metrics.stopSuspendDuration(9999L)).doesNotThrowAnyException();
+  }
+
+  @Test
+  void shouldClearSuspendTimerSamplesOnRecovery() {
+    // given
+    metrics.startSuspendDuration(1234L, metrics.takeSuspendStartTime());
+
+    // when - recovery clears the in-flight sample, so the later stop has nothing to record
+    metrics.onRecovered(null);
+    metrics.stopSuspendDuration(1234L);
+
+    // then
+    final var timer = registry.find(SUSPEND_DURATION_METRIC).timer();
+    assertThat(timer).isNotNull();
+    assertThat(timer.count()).isZero();
+  }
+
+  @Test
+  void shouldDiscardSuspendDurationSampleOnCancel() {
+    // given
+    metrics.startSuspendDuration(42L, metrics.takeSuspendStartTime());
+    advanceClock(Duration.ofMillis(100));
+
+    // when — instance terminates mid-suspension; sample discarded without recording
+    metrics.discardDurations(42L);
+    metrics.stopSuspendDuration(42L);
+
+    // then
+    final var timer = registry.find(SUSPEND_DURATION_METRIC).timer();
+    assertThat(timer).isNotNull();
+    assertThat(timer.count()).isZero();
+  }
+
+  @Test
   void shouldIgnoreDuplicateStartForSameKey() {
     // given
     metrics.startResumeDuration(1234L);
@@ -192,12 +300,62 @@ final class SuspensionMetricsTest {
     advanceClock(Duration.ofMillis(100));
 
     // when — instance terminates mid-resume; sample discarded without recording
-    metrics.cancelResumeDuration(42L);
+    metrics.discardDurations(42L);
 
     // then — timer exists (eager registration) but has no recordings
     final var timer = registry.find(RESUME_DURATION_METRIC).timer();
     assertThat(timer).isNotNull();
     assertThat(timer.count()).isZero();
+  }
+
+  @Test
+  void shouldDiscardSuspendAndResumeDurationsTogether() {
+    // given
+    metrics.startSuspendDuration(42L, metrics.takeSuspendStartTime());
+    metrics.startResumeDuration(42L);
+
+    // when
+    metrics.discardDurations(42L);
+    metrics.stopSuspendDuration(42L);
+    metrics.stopResumeDuration(42L);
+
+    // then
+    assertThat(registry.get(SUSPEND_DURATION_METRIC).timer().count()).isZero();
+    assertThat(registry.get(RESUME_DURATION_METRIC).timer().count()).isZero();
+  }
+
+  @Test
+  void shouldDropNewSuspendDurationsWhenFull() {
+    // given
+    for (long key = 1; key <= SuspensionMetrics.MAX_IN_FLIGHT_DURATIONS; key++) {
+      metrics.startSuspendDuration(key, metrics.takeSuspendStartTime());
+    }
+
+    // when
+    final long droppedKey = SuspensionMetrics.MAX_IN_FLIGHT_DURATIONS + 1L;
+    metrics.startSuspendDuration(droppedKey, metrics.takeSuspendStartTime());
+    metrics.stopSuspendDuration(droppedKey);
+    metrics.stopSuspendDuration(1L);
+
+    // then — the dropped one records nothing, a running one still records
+    assertThat(registry.get(SUSPEND_DURATION_METRIC).timer().count()).isOne();
+  }
+
+  @Test
+  void shouldDropNewResumeDurationsWhenFull() {
+    // given
+    for (long key = 1; key <= SuspensionMetrics.MAX_IN_FLIGHT_DURATIONS; key++) {
+      metrics.startResumeDuration(key);
+    }
+
+    // when
+    final long droppedKey = SuspensionMetrics.MAX_IN_FLIGHT_DURATIONS + 1L;
+    metrics.startResumeDuration(droppedKey);
+    metrics.stopResumeDuration(droppedKey);
+    metrics.stopResumeDuration(1L);
+
+    // then — the dropped one records nothing, a running one still records
+    assertThat(registry.get(RESUME_DURATION_METRIC).timer().count()).isOne();
   }
 
   @Test
@@ -207,6 +365,18 @@ final class SuspensionMetricsTest {
 
     // then
     assertThat(jobSuspensionEventCount("suspended")).isEqualTo(7.0);
+  }
+
+  @Test
+  void shouldIncrementUserTaskSuspensionCounters() {
+    // when
+    metrics.userTaskSuspended();
+    metrics.userTaskSuspended();
+    metrics.userTaskResumed();
+
+    // then
+    assertThat(taggedCounter(USER_TASK_SUSPENSION_EVENTS_METRIC, "suspended")).isEqualTo(2.0);
+    assertThat(taggedCounter(USER_TASK_SUSPENSION_EVENTS_METRIC, "resumed")).isEqualTo(1.0);
   }
 
   private void advanceClock(final Duration duration) {

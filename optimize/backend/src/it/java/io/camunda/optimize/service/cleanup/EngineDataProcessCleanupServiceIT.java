@@ -7,6 +7,7 @@
  */
 package io.camunda.optimize.service.cleanup;
 
+import static io.camunda.optimize.service.util.InstanceIndexUtil.getProcessInstanceIndexAliasName;
 import static io.camunda.optimize.service.util.importing.ZeebeConstants.ZEEBE_DEFAULT_TENANT_ID;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -16,12 +17,14 @@ import io.camunda.optimize.dto.optimize.ProcessInstanceConstants;
 import io.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import io.camunda.optimize.dto.optimize.datasource.ZeebeDataSourceDto;
 import io.camunda.optimize.dto.optimize.query.variable.SimpleProcessVariableDto;
+import io.camunda.optimize.service.db.DatabaseClient;
 import io.camunda.optimize.service.security.util.LocalDateUtil;
 import io.camunda.optimize.service.util.configuration.cleanup.CleanupConfiguration;
 import io.camunda.optimize.service.util.configuration.cleanup.CleanupMode;
 import io.camunda.optimize.service.util.configuration.cleanup.ProcessCleanupConfiguration;
 import io.camunda.optimize.service.util.configuration.cleanup.ProcessDefinitionCleanupConfiguration;
 import io.github.netmikey.logunit.api.LogCapturer;
+import java.io.IOException;
 import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -126,6 +129,121 @@ public class EngineDataProcessCleanupServiceIT extends AbstractBrokerlessZeebeCC
     assertNoProcessInstanceDataExists(instancesToGetCleanedUp);
 
     assertProcessInstanceDataExists(unaffectedProcessInstances);
+  }
+
+  @Test
+  public void shouldDeleteOnlyProcessInstanceIndicesEmptiedByCleanup() {
+    // given
+    final var emptiedDefinitionKey = KEY_GENERATOR.generate(10);
+    final var retainedDefinitionKey = KEY_GENERATOR.generate(10);
+
+    getProcessDataCleanupConfiguration().setCleanupMode(CleanupMode.ALL);
+    getProcessDataCleanupConfiguration().setDeleteEmptyIndices(true);
+
+    final var endDateForCleanup = getEndTimeLessThanGlobalTtl();
+    final ProcessInstanceDto unaffectedProcessInstance =
+        processInstanceWithEndDate(retainedDefinitionKey, LocalDateUtil.getCurrentDateTime());
+
+    persistProcessInstances(
+        List.of(
+            processInstanceWithEndDate(emptiedDefinitionKey, endDateForCleanup),
+            processInstanceWithEndDate(emptiedDefinitionKey, endDateForCleanup),
+            processInstanceWithEndDate(retainedDefinitionKey, endDateForCleanup),
+            unaffectedProcessInstance));
+
+    // when
+    embeddedOptimizeExtension.getCleanupScheduler().runCleanup();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
+
+    // then
+    assertThat(
+            databaseIntegrationTestExtension.indexExists(
+                getProcessInstanceIndexAliasName(emptiedDefinitionKey)))
+        .isFalse();
+    assertThat(
+            databaseIntegrationTestExtension.indexExists(
+                getProcessInstanceIndexAliasName(retainedDefinitionKey)))
+        .isTrue();
+    assertProcessInstanceDataExists(List.of(unaffectedProcessInstance));
+  }
+
+  @Test
+  public void shouldRemoveAWriteBlockLeftOnAProcessInstanceIndexThatHasInstances()
+      throws IOException {
+    // given
+    final var processDefinitionKey = KEY_GENERATOR.generate(10);
+    getProcessDataCleanupConfiguration().setCleanupMode(CleanupMode.ALL);
+    getProcessDataCleanupConfiguration().setDeleteEmptyIndices(true);
+    persistProcessInstances(
+        List.of(
+            processInstanceWithEndDate(processDefinitionKey, LocalDateUtil.getCurrentDateTime())));
+    final DatabaseClient databaseClient = embeddedOptimizeExtension.getOptimizeDatabaseClient();
+    final String index =
+        databaseClient
+            .getAllIndicesForAlias(
+                databaseClient.convertToPrefixedAliasName(
+                    getProcessInstanceIndexAliasName(processDefinitionKey)))
+            .iterator()
+            .next();
+    databaseClient.addWriteBlock(index);
+    assertThat(databaseClient.hasWriteBlock(index)).isTrue();
+
+    // when
+    embeddedOptimizeExtension.getCleanupScheduler().runCleanup();
+
+    // then
+    assertThat(databaseClient.hasWriteBlock(index)).isFalse();
+  }
+
+  @Test
+  public void shouldKeepEmptiedProcessInstanceIndexWhenDeletingEmptyIndicesIsDisabled() {
+    // given
+    final var processDefinitionKey = KEY_GENERATOR.generate(10);
+
+    getProcessDataCleanupConfiguration().setCleanupMode(CleanupMode.ALL);
+
+    persistProcessInstances(
+        List.of(processInstanceWithEndDate(processDefinitionKey, getEndTimeLessThanGlobalTtl())));
+
+    // when
+    embeddedOptimizeExtension.getCleanupScheduler().runCleanup();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
+
+    // then
+    assertThat(
+            databaseIntegrationTestExtension.indexExists(
+                getProcessInstanceIndexAliasName(processDefinitionKey)))
+        .isTrue();
+  }
+
+  @Test
+  public void shouldRecreateDeletedProcessInstanceIndexWhenNewInstancesAreImported() {
+    // given
+    final var processDefinitionKey = KEY_GENERATOR.generate(10);
+
+    getProcessDataCleanupConfiguration().setCleanupMode(CleanupMode.ALL);
+    getProcessDataCleanupConfiguration().setDeleteEmptyIndices(true);
+
+    persistProcessInstances(
+        List.of(processInstanceWithEndDate(processDefinitionKey, getEndTimeLessThanGlobalTtl())));
+    embeddedOptimizeExtension.getCleanupScheduler().runCleanup();
+    databaseIntegrationTestExtension.refreshAllOptimizeIndices();
+    assertThat(
+            databaseIntegrationTestExtension.indexExists(
+                getProcessInstanceIndexAliasName(processDefinitionKey)))
+        .isFalse();
+
+    // when
+    final ProcessInstanceDto newProcessInstance =
+        processInstanceWithEndDate(processDefinitionKey, LocalDateUtil.getCurrentDateTime());
+    persistProcessInstances(List.of(newProcessInstance));
+
+    // then
+    assertThat(
+            databaseIntegrationTestExtension.indexExists(
+                getProcessInstanceIndexAliasName(processDefinitionKey)))
+        .isTrue();
+    assertProcessInstanceDataExists(List.of(newProcessInstance));
   }
 
   @Test

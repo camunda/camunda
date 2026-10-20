@@ -11,6 +11,7 @@ import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.zeebe.msgpack.property.DocumentProperty;
+import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
@@ -52,9 +53,10 @@ public final class MessageStartProcessInstanceRequestRecord extends UnifiedRecor
   private final LongProperty messageTtlProp = new LongProperty("messageTtl", 0L);
   private final StringProperty tenantIdProp =
       new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+  private final IntegerProperty storageOrdinalProp = new IntegerProperty("storageOrdinal", 0);
 
   public MessageStartProcessInstanceRequestRecord() {
-    super(13);
+    super(14);
     declareProperty(messageKeyProp)
         .declareProperty(messageNameProp)
         .declareProperty(correlationKeyProp)
@@ -67,7 +69,8 @@ public final class MessageStartProcessInstanceRequestRecord extends UnifiedRecor
         .declareProperty(processInstanceKeyProp)
         .declareProperty(messageDeadlineProp)
         .declareProperty(messageTtlProp)
-        .declareProperty(tenantIdProp);
+        .declareProperty(tenantIdProp)
+        .declareProperty(storageOrdinalProp);
   }
 
   public void wrap(final MessageStartProcessInstanceRequestRecord record) {
@@ -84,6 +87,7 @@ public final class MessageStartProcessInstanceRequestRecord extends UnifiedRecor
     setMessageDeadline(record.getMessageDeadline());
     setMessageTtl(record.getMessageTtl());
     setTenantId(record.getTenantId());
+    setStorageOrdinal(record.getStorageOrdinal());
   }
 
   @Override
@@ -278,6 +282,16 @@ public final class MessageStartProcessInstanceRequestRecord extends UnifiedRecor
 
   public MessageStartProcessInstanceRequestRecord setTenantId(final DirectBuffer tenantId) {
     tenantIdProp.setValue(tenantId);
+    return this;
+  }
+
+  @Override
+  public int getStorageOrdinal() {
+    return storageOrdinalProp.getValue();
+  }
+
+  public MessageStartProcessInstanceRequestRecord setStorageOrdinal(final int storageOrdinal) {
+    storageOrdinalProp.setValue(storageOrdinal);
     return this;
   }
 }

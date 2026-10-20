@@ -1,0 +1,29 @@
+{
+  "executionPlatform": "Camunda Cloud",
+  "executionPlatformVersion": "8.11.0",
+  "exporter": {
+    "name": "Camunda Modeler",
+    "version": "5.40.0"
+  },
+  "schemaVersion": 18,
+  "id": "follow-up-candidate",
+  "type": "default",
+  "components": [
+    {
+      "type": "textfield",
+      "key": "employeeName",
+      "label": "Employee",
+      "id": "Field_employeeName_319",
+      "readonly": true
+    },
+    {
+      "type": "textarea",
+      "key": "followUpNotes",
+      "label": "What did the candidate say?",
+      "id": "Field_followUpNotes_320",
+      "validate": {
+        "required": true
+      }
+    }
+  ]
+}

@@ -48,7 +48,8 @@ public abstract class AbstractZeebeValidationTest {
 
   private static ValidationResults validate(final BpmnModelInstance model) {
     final ModelWalker walker = new ModelWalker(model);
-    final ValidationVisitor visitor = new ValidationVisitor(ZeebeDesignTimeValidators.VALIDATORS);
+    final ValidationVisitor visitor =
+        new ValidationVisitor(ZeebeDesignTimeValidators.getValidators());
     walker.walk(visitor);
 
     return visitor.getValidationResult();

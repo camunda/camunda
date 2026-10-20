@@ -11,6 +11,7 @@ import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.RemovalCause;
 import io.camunda.zeebe.db.ColumnFamily;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
@@ -24,6 +25,7 @@ import io.camunda.zeebe.db.impl.DbString;
 import io.camunda.zeebe.db.impl.DbTenantAwareKey;
 import io.camunda.zeebe.db.impl.DbTenantAwareKey.PlacementType;
 import io.camunda.zeebe.engine.EngineConfiguration;
+import io.camunda.zeebe.engine.metrics.EngineMetricsDoc;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableProcess;
 import io.camunda.zeebe.engine.processing.deployment.model.transformation.BpmnTransformer;
@@ -37,9 +39,12 @@ import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessMetadata;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessRecord;
 import io.camunda.zeebe.protocol.record.value.deployment.DeploymentResource;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import io.micrometer.core.instrument.Counter;
+import java.util.HashSet;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Optional;
+import java.util.Set;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.collections.MutableBoolean;
@@ -197,12 +202,33 @@ public final class DbProcessState implements MutableProcessState {
             pendingDeletionKey,
             DbNil.INSTANCE);
 
+    final var collectedDoc = EngineMetricsDoc.PROCESS_CACHE_COLLECTED;
+    final var collectedCounter =
+        Counter.builder(collectedDoc.getName())
+            .description(collectedDoc.getDescription())
+            .register(zeebeDb.getMeterRegistry());
+
     processByTenantAndKeyCache =
-        CacheBuilder.newBuilder().maximumSize(config.getProcessCacheCapacity()).build();
-    processesByTenantAndProcessIdAndVersionCache =
-        CacheBuilder.newBuilder().maximumSize(config.getProcessCacheCapacity()).build();
+        newProcessCacheBuilder(config)
+            // both caches hold the same values, so counting one avoids double-counting
+            .<TenantIdAndProcessDefinitionKey, DeployedProcess>removalListener(
+                notification -> {
+                  if (notification.getCause() == RemovalCause.COLLECTED) {
+                    collectedCounter.increment();
+                  }
+                })
+            .build();
+    processesByTenantAndProcessIdAndVersionCache = newProcessCacheBuilder(config).build();
     processDefinitionKeyByTenantAndProcessIdAndDeploymentKeyCache =
         CacheBuilder.newBuilder().maximumSize(config.getProcessCacheCapacity()).build();
+  }
+
+  private static CacheBuilder<Object, Object> newProcessCacheBuilder(
+      final EngineConfiguration config) {
+    final var builder = CacheBuilder.newBuilder().maximumSize(config.getProcessCacheCapacity());
+    // soft values: a cached process is a large object graph (parsed model, compiled FEEL
+    // expressions) whose size we can't weigh, so let the GC reclaim entries under heap pressure
+    return config.isProcessCacheSoftValues() ? builder.softValues() : builder;
   }
 
   @Override
@@ -735,6 +761,19 @@ public final class DbProcessState implements MutableProcessState {
     return hasPending.get();
   }
 
+  @Override
+  public Set<Integer> getPendingDeletionPartitions(final long processDefinitionKey) {
+    this.processDefinitionKey.wrapLong(processDefinitionKey);
+    final var partitions = new HashSet<Integer>();
+    pendingProcessDeletionsPerPartitionColumnFamily.whileEqualPrefix(
+        this.processDefinitionKey,
+        key -> {
+          partitions.add(key.second().getValue());
+          return true;
+        });
+    return partitions;
+  }
+
   private DeployedProcess lookupProcessByIdAndPersistedVersion(
       final long latestVersion, final String tenantId) {
     tenantIdKey.wrapString(tenantId);
@@ -744,7 +783,8 @@ public final class DbProcessState implements MutableProcessState {
         processByIdAndVersionColumnFamily.get(tenantAwareProcessIdAndVersionKey);
 
     if (processWithVersionAndId != null) {
-      return updateInMemoryState(processWithVersionAndId);
+      // the by-version copy is written once at deployment and goes stale when the state changes
+      return lookupPersistenceStateForProcessByKey(processWithVersionAndId.getKey(), tenantId);
     }
     return null;
   }
@@ -759,14 +799,8 @@ public final class DbProcessState implements MutableProcessState {
         processByIdAndVersionColumnFamily.get(tenantAwareProcessIdAndVersionKey);
 
     if (processWithVersionAndId != null) {
-      updateInMemoryState(processWithVersionAndId);
-
-      final var tenantIdAndProcessIdAndVersion =
-          new TenantIdAndProcessIdAndVersion(tenantId, processIdBuffer, version);
-
-      // return the cached copy
-      return processesByTenantAndProcessIdAndVersionCache.getIfPresent(
-          tenantIdAndProcessIdAndVersion);
+      // the by-version copy is written once at deployment and goes stale when the state changes
+      return lookupPersistenceStateForProcessByKey(processWithVersionAndId.getKey(), tenantId);
     }
     // does not exist in persistence and in memory state
     return null;
@@ -780,10 +814,7 @@ public final class DbProcessState implements MutableProcessState {
     final PersistedProcess processWithKey =
         processColumnFamily.get(tenantAwareProcessDefinitionKey);
     if (processWithKey != null) {
-      updateInMemoryState(processWithKey);
-
-      final var key = new TenantIdAndProcessDefinitionKey(tenantId, processDefinitionKey);
-      return processByTenantAndKeyCache.getIfPresent(key);
+      return updateInMemoryState(processWithKey);
     }
     // does not exist in persistence and in memory state
     return null;

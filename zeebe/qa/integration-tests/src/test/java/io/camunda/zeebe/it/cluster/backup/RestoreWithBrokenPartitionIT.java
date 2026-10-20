@@ -17,8 +17,8 @@ import io.camunda.client.CamundaClient;
 import io.camunda.client.protocol.rest.ClusterRestoreRequest;
 import io.camunda.configuration.Camunda;
 import io.camunda.configuration.Data;
-import io.camunda.configuration.PrimaryStorageBackup;
-import io.camunda.configuration.PrimaryStorageBackup.BackupStoreType;
+import io.camunda.configuration.data.primarystorage.PrimaryStorageBackup;
+import io.camunda.configuration.data.primarystorage.PrimaryStorageBackup.BackupStoreType;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.qa.util.actuator.PartitionsActuator;
 import io.camunda.zeebe.qa.util.cluster.PhysicalTenantsITHelper;
@@ -500,19 +500,7 @@ final class RestoreWithBrokenPartitionIT {
    */
   private static void deployProbeProcess(final CamundaClient client, final String processId) {
     final var process = Bpmn.createExecutableProcess(processId).startEvent().endEvent().done();
-    Awaitility.await("process " + processId + " is deployed")
-        .atMost(Duration.ofSeconds(30))
-        .ignoreExceptions()
-        .untilAsserted(
-            () ->
-                assertThat(
-                        client
-                            .newDeployResourceCommand()
-                            .addProcessModel(process, processId + ".bpmn")
-                            .send()
-                            .join()
-                            .getProcesses())
-                    .isNotEmpty());
+    TENANTS.deploy(client, process, processId);
   }
 
   /**

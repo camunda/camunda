@@ -82,12 +82,14 @@ const Task = React.forwardRef<HTMLDivElement, Props>(
 				>
 					<div className="flex h-full w-full flex-col gap-3" data-testid={`task-${userTaskKey}`} ref={ref}>
 						<div className="flex min-h-5 flex-col justify-center">
-							<Text variant="label-md-strong">{displayName}</Text>
-							<Text variant="helper" className="text-neutral-foreground-subtle">
+							<Text variant="label-md-strong" className="truncate" title={displayName}>
+								{displayName}
+							</Text>
+							<Text variant="helper" className="truncate text-neutral-foreground-subtle" title={processDisplayName}>
 								{processDisplayName}
 							</Text>
 							{businessId === null ? null : (
-								<Text variant="helper" className="text-neutral-foreground-subtle">
+								<Text variant="helper" className="truncate text-neutral-foreground-subtle" title={businessId}>
 									{businessId}
 								</Text>
 							)}

@@ -224,6 +224,9 @@
           <compilerArgs>
             <arg>-parameters</arg>
           </compilerArgs>
+          <!-- Overrides the parent's false. The configuration processor loses defaultValue entries
+               for classes it did not see again, so recompile the whole module on any change. -->
+          <useIncrementalCompilation>true</useIncrementalCompilation>
           <annotationProcessorPaths>
             <path>
               <groupId>org.springframework.boot</groupId>

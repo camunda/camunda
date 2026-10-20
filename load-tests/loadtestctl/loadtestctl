@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+# Runs loadtestctl from its own project, so it works from any directory without exposing uv to the caller.
+HERE="$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")"
+exec uv run --project "$HERE" loadtestctl "$@"

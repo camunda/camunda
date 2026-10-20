@@ -80,7 +80,9 @@ public final class AgentInstanceCompleteProcessor
     // re-chain: other agent instances may still be left for this process instance
     commandWriter.appendNewCommand(
         AgentInstanceIntent.COMPLETE,
-        new AgentInstanceRecord().setProcessInstanceKey(processInstanceKey));
+        new AgentInstanceRecord()
+            .setProcessInstanceKey(processInstanceKey)
+            .setStorageOrdinal(current.getStorageOrdinal()));
   }
 
   @Override

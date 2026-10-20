@@ -13,9 +13,10 @@ import styles from './GenericErrorPage.module.scss';
 
 type Props = {
 	reset: () => void;
+	headingRef?: React.Ref<HTMLHeadingElement>;
 };
 
-const GenericErrorPage: React.FC<Props> = ({reset}) => {
+const GenericErrorPage: React.FC<Props> = ({reset, headingRef}) => {
 	const {t} = useTranslation();
 
 	return (
@@ -25,7 +26,9 @@ const GenericErrorPage: React.FC<Props> = ({reset}) => {
 					<SvgErrorRobot aria-hidden />
 					<Stack gap={6}>
 						<Stack gap={3}>
-							<h1 className={styles.heading}>{t('errorGenericErrorPageTitle')}</h1>
+							<h1 className={styles.heading} ref={headingRef} tabIndex={headingRef ? -1 : undefined}>
+								{t('errorGenericErrorPageTitle')}
+							</h1>
 							<p className={styles.description}>{t('errorGenericErrorPageMessage')}</p>
 						</Stack>
 						<Button onClick={reset}>{t('errorGenericErrorPageButtonLabel')}</Button>

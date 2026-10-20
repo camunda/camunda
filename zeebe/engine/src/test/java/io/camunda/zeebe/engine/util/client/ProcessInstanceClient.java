@@ -110,6 +110,16 @@ public final class ProcessInstanceClient {
       return this;
     }
 
+    public ProcessInstanceCreationClient withProcessDefinitionKey(final long key) {
+      processInstanceCreationRecord.setProcessDefinitionKey(key);
+      return this;
+    }
+
+    public ProcessInstanceCreationClient withVersionTag(final String versionTag) {
+      processInstanceCreationRecord.setVersionTag(versionTag);
+      return this;
+    }
+
     public ProcessInstanceCreationClient withTenantId(final String tenantId) {
       processInstanceCreationRecord.setTenantId(tenantId);
       return this;
@@ -216,6 +226,11 @@ public final class ProcessInstanceClient {
 
     public ProcessInstanceCreationWithResultClient withRequestStreamId(final int requestStreamId) {
       this.requestStreamId = requestStreamId;
+      return this;
+    }
+
+    public ProcessInstanceCreationWithResultClient withVersionTag(final String versionTag) {
+      record.setVersionTag(versionTag);
       return this;
     }
 

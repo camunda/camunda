@@ -54,6 +54,13 @@ function isAdminSectionAvailable(section: AdminSectionKey, config: AdminSectionC
 	return SECTION_AVAILABILITY[section]?.(config) ?? true;
 }
 
+// Mirrors the sidebar order; `roles` is always available, so a landing section always exists.
+const LANDING_SECTIONS = ['users', 'mapping-rules', 'groups', 'roles'] as const satisfies AdminSectionKey[];
+
+function getAdminLandingSection(config: AdminSectionConfig): (typeof LANDING_SECTIONS)[number] {
+	return LANDING_SECTIONS.find((section) => isAdminSectionAvailable(section, config)) ?? 'roles';
+}
+
 function assertAdminSectionAvailable(section: AdminSectionKey): void {
 	if (!isAdminSectionAvailable(section, getAdminSectionConfig())) {
 		throw notFound({routeId: ADMIN_ROUTE_ID});
@@ -64,6 +71,7 @@ export {
 	type AdminSectionConfig,
 	type AdminSectionKey,
 	assertAdminSectionAvailable,
+	getAdminLandingSection,
 	getAdminSectionConfig,
 	isAdminSectionAvailable,
 };

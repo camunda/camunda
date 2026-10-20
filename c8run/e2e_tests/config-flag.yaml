@@ -1,0 +1,5 @@
+camunda:
+  data:
+    secondary-storage:
+      rdbms:
+        queueSize: 999

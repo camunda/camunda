@@ -9,6 +9,7 @@ package io.camunda.configuration;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.configuration.data.secondarystorage.Rdbms;
 import java.util.Locale;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;

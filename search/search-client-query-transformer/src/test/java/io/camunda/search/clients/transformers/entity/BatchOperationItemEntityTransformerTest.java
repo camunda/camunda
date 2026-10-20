@@ -70,4 +70,38 @@ class BatchOperationItemEntityTransformerTest {
     assertThat(searchEntity.processedDate()).isEqualTo(NOW);
     assertThat(searchEntity.errorMessage()).isEqualTo("error");
   }
+
+  @Test
+  void shouldUseProcessDefinitionKeyAsItemKeyOfLegacyDeleteProcessDefinitionItem() {
+    // given - legacy definition deletions set neither incidentKey nor processInstanceKey
+    final OperationEntity entity = new OperationEntity();
+    entity.setBatchOperationId(UUID.randomUUID().toString());
+    entity.setType(OperationType.DELETE_PROCESS_DEFINITION);
+    entity.setState(OperationState.COMPLETED);
+    entity.setProcessDefinitionKey(789L);
+
+    // when
+    final var searchEntity = transformer.apply(entity);
+
+    // then
+    assertThat(searchEntity.itemKey()).isEqualTo(789L);
+    assertThat(searchEntity.processInstanceKey()).isNull();
+  }
+
+  @Test
+  void shouldUseDecisionDefinitionKeyAsItemKeyOfLegacyDeleteDecisionDefinitionItem() {
+    // given - legacy definition deletions set neither incidentKey nor processInstanceKey
+    final OperationEntity entity = new OperationEntity();
+    entity.setBatchOperationId(UUID.randomUUID().toString());
+    entity.setType(OperationType.DELETE_DECISION_DEFINITION);
+    entity.setState(OperationState.COMPLETED);
+    entity.setDecisionDefinitionKey(321L);
+
+    // when
+    final var searchEntity = transformer.apply(entity);
+
+    // then
+    assertThat(searchEntity.itemKey()).isEqualTo(321L);
+    assertThat(searchEntity.processInstanceKey()).isNull();
+  }
 }

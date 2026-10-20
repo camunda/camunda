@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:modeler="http://camunda.org/schema/modeler/1.0" xmlns:ns1="modeler" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:ns0="xmlns" id="bpmn_copilot_Definition_id" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Web Modeler" exporterVersion="9af1958" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.5.0" ns0:modeler="http://camunda.org/schema/modeler/1.0" ns1:executionPlatform="Camunda Cloud" ns1:executionPlatformVersion="8.6">
+  <bpmn:process id="Process_MultiInstanceSubprocess" name="Multi-Instance Subprocess Example" processType="None" isClosed="false" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_1" name="Multiple items received">
+      <bpmn:outgoing>Flow_1</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:sequenceFlow id="Flow_1" sourceRef="StartEvent_1" targetRef="Subprocess_ProcessItems" />
+    <bpmn:subProcess id="Subprocess_ProcessItems" name="Process Items">
+      <bpmn:incoming>Flow_1</bpmn:incoming>
+      <bpmn:outgoing>Flow_2</bpmn:outgoing>
+      <bpmn:multiInstanceLoopCharacteristics>
+        <bpmn:extensionElements>
+          <zeebe:loopCharacteristics inputCollection="=test" />
+        </bpmn:extensionElements>
+      </bpmn:multiInstanceLoopCharacteristics>
+      <bpmn:startEvent id="Event_SubprocessStart" name="Start item processing">
+        <bpmn:outgoing>Flow_3</bpmn:outgoing>
+      </bpmn:startEvent>
+      <bpmn:sequenceFlow id="Flow_3" sourceRef="Event_SubprocessStart" targetRef="Task_ReviewItem" />
+      <bpmn:userTask id="Task_ReviewItem" name="Review item" implementation="##unspecified">
+        <bpmn:extensionElements>
+          <zeebe:formDefinition formId="review-item-1arzgj2" />
+          <zeebe:userTask />
+        </bpmn:extensionElements>
+        <bpmn:incoming>Flow_3</bpmn:incoming>
+        <bpmn:outgoing>Flow_4</bpmn:outgoing>
+      </bpmn:userTask>
+      <bpmn:sequenceFlow id="Flow_4" sourceRef="Task_ReviewItem" targetRef="Task_UpdateItemStatus" />
+      <bpmn:serviceTask id="Task_UpdateItemStatus" name="Update item status" implementation="##WebService">
+        <bpmn:extensionElements>
+          <zeebe:taskDefinition type="tesz" />
+        </bpmn:extensionElements>
+        <bpmn:incoming>Flow_4</bpmn:incoming>
+        <bpmn:outgoing>Flow_5</bpmn:outgoing>
+      </bpmn:serviceTask>
+      <bpmn:sequenceFlow id="Flow_5" sourceRef="Task_UpdateItemStatus" targetRef="Event_SubprocessEnd" />
+      <bpmn:endEvent id="Event_SubprocessEnd" name="Item processing completed">
+        <bpmn:incoming>Flow_5</bpmn:incoming>
+      </bpmn:endEvent>
+    </bpmn:subProcess>
+    <bpmn:sequenceFlow id="Flow_2" sourceRef="Subprocess_ProcessItems" targetRef="Task_CompileResults" />
+    <bpmn:task id="Task_CompileResults" name="Compile results">
+      <bpmn:incoming>Flow_2</bpmn:incoming>
+      <bpmn:outgoing>Flow_6</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:sequenceFlow id="Flow_6" sourceRef="Task_CompileResults" targetRef="Event_ProcessEnd" />
+    <bpmn:endEvent id="Event_ProcessEnd" name="All items processed">
+      <bpmn:incoming>Flow_6</bpmn:incoming>
+    </bpmn:endEvent>
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_Process_MultiInstanceSubprocess">
+    <bpmndi:BPMNPlane id="BPMNPlane_Process_MultiInstanceSubprocess" bpmnElement="Process_MultiInstanceSubprocess">
+      <bpmndi:BPMNShape id="StartEvent_1_di" bpmnElement="StartEvent_1">
+        <dc:Bounds x="167" y="102" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="151" y="138" width="68" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_CompileResults_di" bpmnElement="Task_CompileResults">
+        <dc:Bounds x="435" y="80" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_ProcessEnd_di" bpmnElement="Event_ProcessEnd">
+        <dc:Bounds x="617" y="102" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="610" y="138" width="51" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Subprocess_ProcessItems_di" bpmnElement="Subprocess_ProcessItems">
+        <dc:Bounds x="285" y="80" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_1_di" bpmnElement="Flow_1">
+        <di:waypoint x="203" y="120" />
+        <di:waypoint x="285" y="120" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_2_di" bpmnElement="Flow_2">
+        <di:waypoint x="385" y="120" />
+        <di:waypoint x="435" y="120" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_6_di" bpmnElement="Flow_6">
+        <di:waypoint x="535" y="120" />
+        <di:waypoint x="617" y="120" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_Subprocess_ProcessItems">
+    <bpmndi:BPMNPlane id="BPMNPlane_Subprocess_ProcessItems" bpmnElement="Subprocess_ProcessItems">
+      <bpmndi:BPMNShape id="Event_SubprocessStart_di" bpmnElement="Event_SubprocessStart">
+        <dc:Bounds x="57" y="52" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_ReviewItem_di" bpmnElement="Task_ReviewItem">
+        <dc:Bounds x="175" y="30" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_UpdateItemStatus_di" bpmnElement="Task_UpdateItemStatus">
+        <dc:Bounds x="310" y="30" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_SubprocessEnd_di" bpmnElement="Event_SubprocessEnd">
+        <dc:Bounds x="507" y="52" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_3_di" bpmnElement="Flow_3">
+        <di:waypoint x="93" y="70" />
+        <di:waypoint x="175" y="70" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_4_di" bpmnElement="Flow_4">
+        <di:waypoint x="275" y="70" />
+        <di:waypoint x="310" y="70" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_5_di" bpmnElement="Flow_5">
+        <di:waypoint x="410" y="70" />
+        <di:waypoint x="507" y="70" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

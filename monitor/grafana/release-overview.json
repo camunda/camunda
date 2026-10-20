@@ -54,7 +54,7 @@
                       "kind": "DataQuery",
                       "spec": {
                         "editorMode": "code",
-                        "expr": "zeebe_health{namespace=~\"(c8-)?release-8.*\"} ",
+                        "expr": "zeebe_health{namespace=~\"$namespace\"} ",
                         "format": "table",
                         "instant": true,
                         "interval": "",
@@ -77,7 +77,7 @@
                       "kind": "DataQuery",
                       "spec": {
                         "editorMode": "code",
-                        "expr": "atomix_role{namespace=~\"(c8-)?release-8.*\"} ",
+                        "expr": "atomix_role{namespace=~\"$namespace\"} ",
                         "format": "table",
                         "instant": true,
                         "interval": "",
@@ -374,7 +374,7 @@
                       "kind": "DataQuery",
                       "spec": {
                         "editorMode": "code",
-                        "expr": "max(kubelet_volume_stats_used_bytes{namespace=~\"(c8-)?release-8.*\", persistentvolumeclaim=~\".*zeebe.*|.*camunda.*\"} / kubelet_volume_stats_capacity_bytes{namespace=~\"(c8-)?release-8.*\", persistentvolumeclaim=~\".*zeebe.*|.*camunda.*\"}) by (namespace)",
+                        "expr": "max(kubelet_volume_stats_used_bytes{namespace=~\"$namespace\", persistentvolumeclaim=~\".*zeebe.*|.*camunda.*\"}\n/\nkubelet_volume_stats_capacity_bytes{namespace=~\"$namespace\", persistentvolumeclaim=~\".*zeebe.*|.*camunda.*\"}) by (namespace)",
                         "legendFormat": "{{namespace}}",
                         "range": true
                       },
@@ -459,7 +459,7 @@
                       "kind": "DataQuery",
                       "spec": {
                         "editorMode": "code",
-                        "expr": "histogram_quantile(0.50, sum(rate(zeebe_process_instance_execution_time_bucket{namespace=~\"(c8-)?release-8.*\"}[$__rate_interval])) by (le, namespace))",
+                        "expr": "histogram_quantile(0.50, sum(rate(zeebe_process_instance_execution_time_bucket{namespace=~\"$namespace\"}[$__rate_interval])) by (le, namespace))",
                         "instant": false,
                         "interval": "",
                         "legendFormat": "{{namespace}}",
@@ -482,7 +482,7 @@
                       "kind": "DataQuery",
                       "spec": {
                         "editorMode": "code",
-                        "expr": "histogram_quantile(0.50, sum(rate(zeebe_process_instance_execution_time_seconds_bucket{namespace=~\"(c8-)?release-8.*\"}[$__rate_interval])) by (le, namespace))",
+                        "expr": "histogram_quantile(0.50, sum(rate(zeebe_process_instance_execution_time_seconds_bucket{namespace=~\"$namespace\"}[$__rate_interval])) by (le, namespace))",
                         "instant": false,
                         "legendFormat": "{{namespace}}",
                         "range": true
@@ -587,7 +587,7 @@
                       "kind": "DataQuery",
                       "spec": {
                         "editorMode": "code",
-                        "expr": "histogram_quantile(0.90, sum(rate(zeebe_process_instance_execution_time_bucket{namespace=~\"(c8-)?release-8.*\"}[$__rate_interval])) by (le, namespace))",
+                        "expr": "histogram_quantile(0.90, sum(rate(zeebe_process_instance_execution_time_bucket{namespace=~\"$namespace\"}[$__rate_interval])) by (le, namespace))",
                         "instant": true,
                         "interval": "",
                         "legendFormat": "{{namespace}}"
@@ -609,7 +609,7 @@
                       "kind": "DataQuery",
                       "spec": {
                         "editorMode": "code",
-                        "expr": "histogram_quantile(0.90, sum(rate(zeebe_process_instance_execution_time_seconds_bucket{namespace=~\"(c8-)?release-8.*\"}[$__rate_interval])) by (le, namespace))",
+                        "expr": "histogram_quantile(0.90, sum(rate(zeebe_process_instance_execution_time_seconds_bucket{namespace=~\"$namespace\"}[$__rate_interval])) by (le, namespace))",
                         "instant": false,
                         "legendFormat": "{{namespace}}",
                         "range": true
@@ -715,7 +715,7 @@
                       "kind": "DataQuery",
                       "spec": {
                         "editorMode": "code",
-                        "expr": "histogram_quantile(0.99, sum(rate(zeebe_process_instance_execution_time_bucket{namespace=~\"(c8-)?release-8.*\"}[$__rate_interval])) by (le, namespace))",
+                        "expr": "histogram_quantile(0.99, sum(rate(zeebe_process_instance_execution_time_bucket{namespace=~\"$namespace\"}[$__rate_interval])) by (le, namespace))",
                         "instant": true,
                         "interval": "",
                         "legendFormat": "{{namespace}}"
@@ -737,7 +737,7 @@
                       "kind": "DataQuery",
                       "spec": {
                         "editorMode": "code",
-                        "expr": "histogram_quantile(0.99, sum(rate(zeebe_process_instance_execution_time_seconds_bucket{namespace=~\"(c8-)?release-8.*\"}[$__rate_interval])) by (le, namespace))",
+                        "expr": "histogram_quantile(0.99, sum(rate(zeebe_process_instance_execution_time_seconds_bucket{namespace=~\"$namespace\"}[$__rate_interval])) by (le, namespace))",
                         "instant": false,
                         "legendFormat": "{{namespace}}",
                         "range": true
@@ -843,7 +843,7 @@
                       "kind": "DataQuery",
                       "spec": {
                         "editorMode": "code",
-                        "expr": "max(kubelet_volume_stats_used_bytes{namespace=~\"(c8-)?release-8.*\", persistentvolumeclaim=~\".*elastic.*\"} / kubelet_volume_stats_capacity_bytes{namespace=~\"(c8-)?release-8.*\", persistentvolumeclaim=~\".*elastic.*\"}) by (namespace)",
+                        "expr": "max(kubelet_volume_stats_used_bytes{namespace=~\"$namespace\", persistentvolumeclaim=~\".*elastic.*\"}\n/\nkubelet_volume_stats_capacity_bytes{namespace=~\"$namespace\", persistentvolumeclaim=~\".*elastic.*\"}) by (namespace)",
                         "legendFormat": "{{namespace}}",
                         "range": true
                       },
@@ -928,7 +928,7 @@
                       "kind": "DataQuery",
                       "spec": {
                         "editorMode": "code",
-                        "expr": "sum(container_memory_rss{namespace=~\"(c8-)?release-8.*\",pod=~\"camunda.*|zeebe.*\",container!=\"\"}) by (namespace)",
+                        "expr": "sum(container_memory_rss{namespace=~\"$namespace\",pod=~\"camunda.*|zeebe.*\",container!=\"\"}) by (namespace)",
                         "format": "time_series",
                         "interval": "",
                         "intervalFactor": 1,
@@ -1012,7 +1012,7 @@
                       "kind": "DataQuery",
                       "spec": {
                         "editorMode": "code",
-                        "expr": "sum(container_memory_rss{namespace=~\"(c8-)?release-8.*\",pod=~\".*elastic.*\", container=~\"elasticsearch\",container!=\"\"}) by (namespace)",
+                        "expr": "sum(container_memory_rss{namespace=~\"$namespace\",pod=~\".*elastic.*\", container=~\"elasticsearch\",container!=\"\"}) by (namespace)",
                         "format": "time_series",
                         "interval": "",
                         "intervalFactor": 1,
@@ -1096,7 +1096,7 @@
                       "kind": "DataQuery",
                       "spec": {
                         "editorMode": "code",
-                        "expr": "sum by (namespace) (rate(container_cpu_usage_seconds_total{namespace=~\"(c8-)?release-8.*\", pod=~\"elastic.*\", container!=\"\"}[$__rate_interval]))",
+                        "expr": "sum by (namespace) (rate(container_cpu_usage_seconds_total{namespace=~\"$namespace\", pod=~\"elastic.*\", container!=\"\"}[$__rate_interval]))",
                         "interval": "",
                         "legendFormat": "{{namespace}}",
                         "range": true
@@ -1186,7 +1186,7 @@
                       "kind": "DataQuery",
                       "spec": {
                         "editorMode": "code",
-                        "expr": "sum by (namespace) (rate(container_cpu_usage_seconds_total{namespace=~\"(c8-)?release-8.*\", pod=~\"zeebe.*|camunda.*\",container!=\"\"}[$__rate_interval]))",
+                        "expr": "sum by (namespace) (rate(container_cpu_usage_seconds_total{namespace=~\"$namespace\", pod=~\"zeebe.*|camunda.*\",container!=\"\"}[$__rate_interval]))",
                         "interval": "",
                         "legendFormat": "{{namespace}}",
                         "range": true
@@ -1276,7 +1276,7 @@
                       "kind": "DataQuery",
                       "spec": {
                         "editorMode": "code",
-                        "expr": "sum(rate(zeebe_camunda_exporter_archiver_process_instances_total{namespace=~\"(c8-)?release-8.[^8]*\", state=\"archived\"}[1d])) by (namespace) / sum(rate(zeebe_executed_instances_total{action=\"completed\", namespace=~\"(c8-)?release-8.[^8]*\", type=\"ROOT_PROCESS_INSTANCE\"}[1d])) by (namespace)",
+                        "expr": "sum(rate(zeebe_camunda_exporter_archiver_process_instances_total{namespace=~\"$namespace\", namespace!=\"c8-release-8-8-x\", state=\"archived\"}[$interval])) by (namespace)\n/\nsum(rate(zeebe_executed_instances_total{action=\"completed\", namespace=~\"$namespace\", namespace!=\"c8-release-8-8-x\", type=\"ROOT_PROCESS_INSTANCE\"}[$interval])) by (namespace)",
                         "legendFormat": "__auto",
                         "range": true
                       },
@@ -1297,7 +1297,7 @@
                       "kind": "DataQuery",
                       "spec": {
                         "editorMode": "code",
-                        "expr": "sum(rate(zeebe_camunda_exporter_archiver_process_instances_total{namespace=~\"(c8-)?release-8.8.*\", state=\"archived\"}[1d])) by (namespace) \n/\nsum(rate(zeebe_element_instance_events_total{namespace=~\"(c8-)?release-8.8.*\", action=\"completed\", type=\"PROCESS\"}[1d])) by (namespace)\n",
+                        "expr": "sum(rate(zeebe_camunda_exporter_archiver_process_instances_total{namespace=~\"$namespace\", namespace=\"c8-release-8-8-x\", state=\"archived\"}[$interval])) by (namespace) \n/\nsum(rate(zeebe_element_instance_events_total{namespace=~\"$namespace\", namespace=\"c8-release-8-8-x\", action=\"completed\", type=\"PROCESS\"}[$interval])) by (namespace)\n",
                         "instant": false,
                         "legendFormat": "__auto",
                         "range": true
@@ -1386,7 +1386,7 @@
                       "spec": {
                         "adhocFilters": [],
                         "editorMode": "code",
-                        "expr": "histogram_quantile(0.99,sum by (le, namespace) (rate(starter_data_availability_latency_seconds_bucket{namespace=~\"(c8-)?release-8.*\"}[$__rate_interval])))",
+                        "expr": "histogram_quantile(0.99, sum(rate(starter_data_availability_latency_seconds_bucket{namespace=~\"$namespace\"}[$__rate_interval])) by (le, namespace))",
                         "fromExploreMetrics": true,
                         "interval": "",
                         "legendFormat": "{{namespace}}",
@@ -1474,7 +1474,7 @@
                       "spec": {
                         "adhocFilters": [],
                         "editorMode": "code",
-                        "expr": "histogram_quantile(0.9,sum by (le, namespace) (rate(starter_data_availability_latency_seconds_bucket{namespace=~\"(c8-)?release-8.*\"}[$__rate_interval])))",
+                        "expr": "histogram_quantile(0.9, sum(rate(starter_data_availability_latency_seconds_bucket{namespace=~\"$namespace\"}[$__rate_interval])) by (le, namespace))",
                         "fromExploreMetrics": true,
                         "interval": "",
                         "legendFormat": "{{namespace}}",
@@ -1562,7 +1562,7 @@
                       "spec": {
                         "adhocFilters": [],
                         "editorMode": "code",
-                        "expr": "histogram_quantile(0.5,sum by (le, namespace) (rate(starter_data_availability_latency_seconds_bucket{namespace=~\"(c8-)?release-8.*\"}[$__rate_interval])))",
+                        "expr": "histogram_quantile(0.5, sum(rate(starter_data_availability_latency_seconds_bucket{namespace=~\"$namespace\"}[$__rate_interval])) by (le, namespace))",
                         "fromExploreMetrics": true,
                         "interval": "",
                         "legendFormat": "{{namespace}}",
@@ -1649,7 +1649,7 @@
                       "kind": "DataQuery",
                       "spec": {
                         "editorMode": "code",
-                        "expr": "sum(rate(zeebe_executed_instances_total{action=\"completed\", namespace=~\"(c8-)?release-8.*\", type=\"ROOT_PROCESS_INSTANCE\"}[1d])) by (namespace)\n    /\n(sum(rate(grpc_server_processing_duration_seconds_count{namespace=~\"(c8-)?release-8.*\", method=\"CreateProcessInstance\"}[1d])) by (namespace)\nor\nsum(rate(http_server_requests_seconds_count{\n    method=\"POST\",\n   namespace=~\"(c8-)?release-8.*\",\n    uri=\"/v2/process-instances\",\n  }[1d]) != 0) by (namespace)\n) ",
+                        "expr": "sum(rate(zeebe_executed_instances_total{action=\"completed\", namespace=~\"$namespace\", type=\"ROOT_PROCESS_INSTANCE\"}[$interval])) by (namespace)\n/\n(\n  sum(rate(grpc_server_processing_duration_seconds_count{namespace=~\"$namespace\", method=\"CreateProcessInstance\"}[$interval])) by (namespace)\n  or\n  sum(rate(http_server_requests_seconds_count{namespace=~\"$namespace\", method=\"POST\", uri=\"/v2/process-instances\"}[$interval]) != 0) by (namespace)\n) ",
                         "legendFormat": "__auto",
                         "range": true
                       },
@@ -2008,8 +2008,8 @@
         "spec": {
           "allowCustomValue": true,
           "current": {
-            "text": "",
-            "value": "${DS_PROMETHEUS}"
+            "text": "Prometheus",
+            "value": "prometheus"
           },
           "hide": "dontHide",
           "includeAll": false,
@@ -2020,6 +2020,100 @@
           "pluginId": "prometheus",
           "refresh": "onDashboardLoad",
           "regex": "",
+          "skipUrlSync": false
+        }
+      },
+      {
+        "kind": "QueryVariable",
+        "spec": {
+          "allowCustomValue": true,
+          "current": {
+            "text": [
+              "All"
+            ],
+            "value": [
+              "$__all"
+            ]
+          },
+          "definition": "label_values(kube_namespace_created{namespace=~\"(c8-)?release-8.*\"},namespace)",
+          "hide": "inControlsMenu",
+          "includeAll": true,
+          "label": "Release",
+          "multi": true,
+          "name": "namespace",
+          "options": [],
+          "query": {
+            "datasource": {
+              "name": "prometheus"
+            },
+            "group": "prometheus",
+            "kind": "DataQuery",
+            "spec": {
+              "qryType": 1,
+              "query": "label_values(kube_namespace_created{namespace=~\"(c8-)?release-8.*\"},namespace)",
+              "refId": "PrometheusVariableQueryEditor-VariableQuery"
+            },
+            "version": "v0"
+          },
+          "refresh": "onDashboardLoad",
+          "regex": "",
+          "regexApplyTo": "value",
+          "skipUrlSync": false,
+          "sort": "naturalAsc"
+        }
+      },
+      {
+        "kind": "IntervalVariable",
+        "spec": {
+          "auto": false,
+          "auto_count": 30,
+          "auto_min": "10s",
+          "current": {
+            "text": "1d",
+            "value": "1d"
+          },
+          "hide": "inControlsMenu",
+          "label": "Interval",
+          "name": "interval",
+          "options": [
+            {
+              "selected": false,
+              "text": "1h",
+              "value": "1h"
+            },
+            {
+              "selected": false,
+              "text": "6h",
+              "value": "6h"
+            },
+            {
+              "selected": false,
+              "text": "12h",
+              "value": "12h"
+            },
+            {
+              "selected": true,
+              "text": "1d",
+              "value": "1d"
+            },
+            {
+              "selected": false,
+              "text": "7d",
+              "value": "7d"
+            },
+            {
+              "selected": false,
+              "text": "14d",
+              "value": "14d"
+            },
+            {
+              "selected": false,
+              "text": "30d",
+              "value": "30d"
+            }
+          ],
+          "query": "1h,6h,12h,1d,7d,14d,30d",
+          "refresh": "onTimeRangeChanged",
           "skipUrlSync": false
         }
       }

@@ -20,6 +20,7 @@ import io.camunda.security.core.authz.LazyTokenClaimsConverter;
 import io.camunda.security.core.port.in.OidcProviderConfigurationPort;
 import io.camunda.security.core.port.out.MembershipPort;
 import io.camunda.security.spring.CamundaSecurityLibraryProperties;
+import io.camunda.security.spring.converter.AdditionalJwkSetUrisByRegistrationId;
 import io.camunda.security.spring.oidc.OidcAccessTokenDecoderFactory;
 import io.camunda.spring.utils.PhysicalTenantContext;
 import jakarta.servlet.http.HttpServletRequest;
@@ -65,8 +66,12 @@ class OidcOverrideBeansConfigurationConverterWiringTest {
 
   @Test
   void shouldSelectScopedConverterAndNormalizeUriClaimForScopedRegistration() {
-    // given — root Keycloak uses preferred_username, scoped Auth0 uses iss (a URI-valued claim)
+    // given — root Keycloak uses preferred_username, scoped Auth0 uses iss (a URI-valued claim),
+    // and the login happens on the tenant that owns the Auth0 registration
     final var converter = converter("preferred_username", "iss");
+    final var loginRequest = new MockHttpServletRequest();
+    PhysicalTenantContext.setPhysicalTenantId(loginRequest, "tenanta");
+    RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(loginRequest));
     final var authentication = login("auth0", Map.of("iss", URI.create("https://scoped-idp")));
 
     // when
@@ -222,9 +227,11 @@ class OidcOverrideBeansConfigurationConverterWiringTest {
         defaultConverter,
         request,
         oidcProviderRepository,
+        AdditionalJwkSetUrisByRegistrationId.empty(),
         membershipPort,
         propagator,
-        environment);
+        environment,
+        configuration.physicalTenantOidcSettings(environment, membershipPort, propagator));
   }
 
   private static OAuth2AuthenticationToken login(

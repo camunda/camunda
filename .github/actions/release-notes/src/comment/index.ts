@@ -1,30 +1,24 @@
 import { githubHeaders, repoApiUrl } from '../github';
-import type { GateOutcome } from '../types';
+import { SECTION_HEADING } from '../parser';
+import type { GateOutcome, PolicyCode } from '../types';
 
 /**
- * The single sticky PR comment the gate maintains. One marked comment per PR,
- * upserted by a hidden marker so re-runs never stack duplicates.
- *
- * Split like the resolver (types.ts): the body render + upsert logic are pure /
- * injectable (unit-tested for idempotency), and only GithubCommentApi touches
- * the network — plain fetch, no octokit, same rationale as GithubResolver.
+ * The single sticky PR comment the gate maintains — one per PR, upserted by
+ * a hidden marker so re-runs never stack duplicates. Split like the resolver:
+ * render + upsert are pure/injectable; only GithubCommentApi touches the
+ * network (plain fetch, no octokit).
  */
 
-/** Hidden HTML marker identifying our comment. Never change it — it is how
- * every future run finds the comment it already posted. */
+/** Never change — how every future run finds the comment it already posted. */
 export const STICKY_MARKER = '<!-- release-notes-pr-gate -->';
 
-/** The subset of an issue comment the sticky logic reads. */
 export interface IssueComment {
   readonly id: number;
   readonly body: string;
 }
 
-/**
- * The issue-comments API surface the sticky comment needs, injected so the
- * upsert logic is testable without mocking fetch. (PR comments are issue
- * comments — the issues API serves both.)
- */
+/** Injected so the upsert logic is testable without mocking fetch. (PR
+ *  comments are issue comments — the issues API serves both.) */
 export interface CommentApi {
   list(): Promise<IssueComment[]>;
   create(body: string): Promise<void>;
@@ -37,35 +31,46 @@ export type StickyAction = 'created' | 'updated' | 'resolved' | 'noop';
 /** Where the comment sends authors for the full list of causes and fixes. */
 export const GATE_DOCS_URL = 'https://camunda.github.io/camunda/ci/#release-notes-pr-gate';
 
-/**
- * Build the comment body (pure). Always carries the marker on the first line.
- *
- * Deliberately terse: the reasons name the exact fix, and everything else —
- * why the rule exists, the full cause list, the rollout state — lives in the
- * docs behind GATE_DOCS_URL rather than being restated on every failing PR.
- */
+/** The template's opt-out line. The parser matches OPT_OUT_PHRASE anywhere
+ *  after the ticked box, so the label may extend it; a test pins that. */
+export const OPT_OUT_LINE = '- [ ] This PR does not need a linked issue (no tracked issue, or it is tracked in another repository)';
+
+/** What a failing link check should look like, shown only when that check
+ *  fails. The placeholder is deliberately not a number: pasted unchanged it
+ *  matches nothing, whereas `#1234` would link a real, unrelated issue. */
+function linkExample(code: PolicyCode): string | null {
+  if (code === 'pr-ref-in-section') {
+    return 'Replace the PR number with the issue it tracks (a PR number is never accepted here):\n\n```md\n'
+      + `## ${SECTION_HEADING}\n\ncloses #<issue-number>\n\`\`\`\n`;
+  }
+  if (code === 'unlinked-undeclared') {
+    return `Expected format in the PR description:\n\n\`\`\`md\n## ${SECTION_HEADING}\n\ncloses #<issue-number>\n\n${OPT_OUT_LINE}\n\`\`\`\n\n`
+      + '- `closes #<issue-number>` when this PR fully resolves the issue, or `relates to #<issue-number>` when it is one of several PRs for it.\n'
+      + '- No tracked issue (hotfix, dep bump, CI/refactor)? Tick the checkbox instead.\n';
+  }
+  return null;
+}
+
+/** Deliberately terse: the reasons name the exact fix; everything else (why
+ *  the rule exists, rollout state) lives behind GATE_DOCS_URL. */
 export function renderStickyComment(gate: GateOutcome): string {
   if (gate.outcome === 'pass') {
     return `${STICKY_MARKER}\n### ✅ Release-notes checks passed\n`;
   }
 
-  // One block per failing check, each naming the reasons and the fix.
   const blocks = gate.checks
     .filter((check) => check.outcome === 'fail')
     .map((check) => `**${check.label}**\n${check.reasons.map((reason) => `- ${reason}`).join('\n')}`)
     .join('\n\n');
-  const footer = `[Causes and fixes](${GATE_DOCS_URL}) · advisory, does not block merge`;
-  return `${STICKY_MARKER}\n### ❌ Release-notes checks\n\n${blocks}\n\n${footer}\n`;
+  // A backport hop's reasons already speak to the marker; the section example would be noise.
+  const example = gate.link.outcome === 'fail' && gate.deliveryPath === 'direct' ? linkExample(gate.link.code) : null;
+  const footer = `[Causes and fixes](${GATE_DOCS_URL}) · fix this to turn the check green`;
+  return `${STICKY_MARKER}\n### ❌ Release-notes checks\n\n${blocks}\n\n${example ? `${example}\n` : ''}${footer}\n`;
 }
 
-/**
- * Idempotently reconcile the PR's single sticky comment against the outcome.
- *
- *  - fail: update the existing comment, or create one if none exists.
- *  - pass: if a comment exists (the PR failed earlier), update it to the
- *          resolved body; if none exists, do nothing — a PR that never failed
- *          stays comment-free, so the gate adds no noise across ~800 PRs.
- */
+/** fail: update or create. pass: update to the resolved body if a comment
+ *  already exists (the PR failed earlier), else do nothing — a PR that never
+ *  failed stays comment-free. */
 export async function syncStickyComment(api: CommentApi, gate: GateOutcome): Promise<StickyAction> {
   const existing = (await api.list()).find((comment) => comment.body.includes(STICKY_MARKER));
   const body = renderStickyComment(gate);
@@ -86,13 +91,9 @@ export async function syncStickyComment(api: CommentApi, gate: GateOutcome): Pro
   return 'noop';
 }
 
-/**
- * issue-comments API over plain fetch (Node global). Same reasoning as
- * GithubResolver: a handful of endpoints, so octokit's bundle cost is not worth
- * paying. Uses GITHUB_TOKEN with `pull-requests: write` — nothing reacts to this
- * comment as an event, so the gate needs no App identity (and therefore no Vault
- * secrets) to post it.
- */
+/** issue-comments API over plain fetch. Uses GITHUB_TOKEN with
+ *  `pull-requests: write` — nothing reacts to this comment as an event, so
+ *  no App identity or Vault secrets are needed to post it. */
 export class GithubCommentApi implements CommentApi {
   private readonly repoUrl: string;
   private readonly headers: Record<string, string>;
@@ -107,14 +108,8 @@ export class GithubCommentApi implements CommentApi {
     this.headers = githubHeaders(token, { json: true });
   }
 
-  /**
-   * Fetch comments most-recently-updated first, stopping as soon as a page
-   * contains the sticky marker. `syncStickyComment` touches the sticky
-   * comment via `create`/`update` on every run, which keeps its `updated_at`
-   * near the top — so on a busy PR this typically returns after one page
-   * instead of walking every comment. A PR whose sticky comment doesn't exist
-   * yet still pages through everything, but that happens at most once per PR.
-   */
+  /** Fetch most-recently-updated first, stopping as soon as a page contains
+   *  the sticky marker — every run touches it, keeping it near the top. */
   async list(): Promise<IssueComment[]> {
     const perPage = 100;
     const all: IssueComment[] = [];

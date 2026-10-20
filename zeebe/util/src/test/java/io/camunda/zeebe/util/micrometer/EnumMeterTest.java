@@ -13,6 +13,7 @@ import io.micrometer.common.docs.KeyName;
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.Meter.Type;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import java.lang.ref.Reference;
 import org.junit.jupiter.api.Test;
 
 @SuppressWarnings("NullableProblems")
@@ -47,7 +48,7 @@ final class EnumMeterTest {
   @Test
   void shouldRegisterGaugeForAllValues() {
     // given/when
-    EnumMeter.register(States.class, DOC, TAG, registry);
+    final var meter = EnumMeter.register(States.class, DOC, TAG, registry);
 
     // then
     assertThat(registry.get(DOC.getName()).tagKeys(TAG.asString()).meters())
@@ -58,6 +59,7 @@ final class EnumMeterTest {
         .returns(0.0, Gauge::value);
     assertThat(registry.get(DOC.getName()).tag(TAG.asString(), "C").gauge())
         .returns(0.0, Gauge::value);
+    Reference.reachabilityFence(meter);
   }
 
   @Test

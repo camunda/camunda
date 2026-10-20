@@ -7,8 +7,8 @@
  */
 package io.camunda.configuration.conditions;
 
-import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.configuration.conditions.ConditionalOnSecondaryStorageType.OnSecondaryStorageTypeCondition;
+import io.camunda.configuration.data.SecondaryStorage.SecondaryStorageType;
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;

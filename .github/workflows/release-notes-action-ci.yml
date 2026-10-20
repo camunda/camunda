@@ -33,7 +33,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Print metadata
         uses: ./.github/actions/print-metadata
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 24
       - name: Install dependencies
@@ -42,14 +42,14 @@ jobs:
           directory: .github/actions/release-notes
       - name: Typecheck
         run: npm run typecheck
-      - name: Test (parser + policy)
+      - name: Test
         run: npm test
       - name: Rebuild bundle
         run: npm run build
       - name: Fail if committed dist is stale
         run: |
-          if ! git diff --exit-code -- lint/dist; then
-            echo "::error::lint/dist is out of date. Run 'npm run build' in .github/actions/release-notes and commit the result."
+          if ! git diff --exit-code -- lint/dist generate/dist apply/dist; then
+            echo "::error::lint/dist, generate/dist or apply/dist is out of date. Run 'npm run build' in .github/actions/release-notes and commit the result."
             exit 1
           fi
       - name: Repo-constant grep — PR template matches the parser opt-out phrase

@@ -25,6 +25,7 @@ public final class ConfigurationDefaults {
   public static final int DEFAULT_LONG_POLLING_EMPTY_RESPONSE_THRESHOLD = 3;
   public static final boolean DEFAULT_TLS_ENABLED = false;
   public static final long DEFAULT_PROBE_TIMEOUT = 10_000; // 10 seconds
+  public static final Duration DEFAULT_NOTIFICATION_BATCH_WINDOW = Duration.ofMillis(100);
 
   public static final String DEFAULT_CLUSTER_NAME = "zeebe-cluster";
   public static final String DEFAULT_CLUSTER_MEMBER_ID = "gateway";

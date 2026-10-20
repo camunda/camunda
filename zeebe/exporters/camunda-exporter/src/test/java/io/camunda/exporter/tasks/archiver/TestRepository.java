@@ -61,6 +61,25 @@ final class TestRepository extends NoopArchiverRepository {
   }
 
   @Override
+  public CompletableFuture<Void> moveDocumentsById(
+      final String sourceIndexName,
+      final String destinationIndexName,
+      final Map<String, List<String>> keysByField,
+      final Map<String, String> inclusionFilters,
+      final Map<String, String> exclusionFilters,
+      final Executor executor) {
+    moves.add(
+        new DocumentMove(
+            sourceIndexName,
+            destinationIndexName,
+            keysByField,
+            inclusionFilters,
+            exclusionFilters,
+            executor));
+    return CompletableFuture.completedFuture(null);
+  }
+
+  @Override
   public CompletableFuture<Void> moveDocuments(
       final String sourceIndexName,
       final String destinationIndexName,
@@ -76,14 +95,25 @@ final class TestRepository extends NoopArchiverRepository {
       String sourceIndexName,
       String destinationIndexName,
       Map<String, List<String>> keysByField,
-      Map<String, String> filters,
+      Map<String, String> inclusionFilters,
+      Map<String, String> exclusionFilters,
       Executor executor) {
     public DocumentMove(
         final String sourceIndexName,
         final String destinationIndexName,
         final Map<String, List<String>> keysByField,
         final Executor executor) {
-      this(sourceIndexName, destinationIndexName, keysByField, Map.of(), executor);
+      this(sourceIndexName, destinationIndexName, keysByField, Map.of(), Map.of(), executor);
+    }
+
+    public DocumentMove(
+        final String sourceIndexName,
+        final String destinationIndexName,
+        final Map<String, List<String>> keysByField,
+        final Map<String, String> inclusionFilters,
+        final Executor executor) {
+      this(
+          sourceIndexName, destinationIndexName, keysByField, inclusionFilters, Map.of(), executor);
     }
   }
 }

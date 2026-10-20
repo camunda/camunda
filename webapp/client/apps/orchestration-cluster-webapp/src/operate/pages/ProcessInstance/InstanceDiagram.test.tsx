@@ -24,7 +24,7 @@ import {TooltipProvider} from '@camunda/design-system';
 import {HttpResponse, http, delay} from 'msw';
 import i18n from 'i18next';
 import {z} from 'zod';
-import type {ProcessInstance as ProcessInstanceData} from '@camunda/camunda-api-zod-schemas/8.10';
+import type {ProcessInstance as ProcessInstanceData} from '@camunda/camunda-api-zod-schemas/8.11';
 import {it} from '#/vitest-modules/test-extend';
 import {renderWithRouter} from '#/vitest-modules/render-with-router';
 import {createProcessInstance} from '#/shared-test-modules/api-mocks/process-instances';
@@ -519,6 +519,19 @@ describe('<InstanceDiagram />', () => {
 		expect(processInstanceSearchSchema.parse(screen.router.state.location.search).elementInstanceKey).toBeUndefined();
 	});
 
+	it('should show agent overlays for a finished process instance', async ({worker}) => {
+		worker.use(...handlers({agents: [createAgentInstance({elementId: 'call_1'})]}));
+		const screen = await renderLoadedPage({nextInstanceState: 'COMPLETED'});
+
+		await screen.router.navigate({
+			to: '/operate/processes/$processInstanceId/details',
+			params: {processInstanceId: 'instance-2'},
+			search: {},
+		});
+
+		await expect.element(screen.getByTestId('instance-agent-call_1')).toHaveTextContent('Thinking...');
+	});
+
 	it('should clear the previous selection when navigating to a different process instance', async ({worker}) => {
 		worker.use(...handlers());
 
@@ -690,6 +703,22 @@ describe('<InstanceDiagram />', () => {
 		await expect.poll(() => screen.router.state.location.pathname).toBe('/operate/decisions/decision-1');
 	});
 
+	it('should mark a called process as loading while its drilldown resolves', async ({worker}) => {
+		worker.use(
+			...handlers(),
+			mockQueryElementInstancesEndpoint({
+				successResponse: HttpResponse.json(singleResult({elementInstanceKey: 'element-1'})),
+				delay: 'infinite',
+			}),
+		);
+
+		await renderLoadedPage();
+		const shape = document.querySelector<SVGElement>('[data-element-id="call_1"]');
+		await userEvent.dblClick(shape!);
+
+		await expect.poll(() => shape?.classList.contains('op-drilldown-loading')).toBe(true);
+	});
+
 	it.for([
 		{elementId: 'call_1', message: 'Failed to resolve called instances'},
 		{elementId: 'rule_1', message: 'Failed to resolve called decision instances'},
@@ -698,7 +727,6 @@ describe('<InstanceDiagram />', () => {
 		async ({elementId, message}, {worker}) => {
 			const failure = {
 				successResponse: HttpResponse.json(createProblemDetails({status: 500}), {status: 500}),
-				delay: 200,
 			};
 			worker.use(
 				...handlers(),
@@ -714,7 +742,6 @@ describe('<InstanceDiagram />', () => {
 			const shape = document.querySelector<SVGElement>(`[data-element-id="${elementId}"]`);
 			await userEvent.dblClick(shape!);
 
-			await expect.poll(() => shape?.classList.contains('op-drilldown-loading')).toBe(true);
 			await expect.poll(() => notificationsStore.notifications.map(({title}) => title)).toContain(message);
 			await expect.poll(() => shape?.classList.contains('op-drilldown-loading')).toBe(false);
 			expect(screen.router.state.location.pathname).toBe(`/operate/processes/${INSTANCE_ID}/details`);

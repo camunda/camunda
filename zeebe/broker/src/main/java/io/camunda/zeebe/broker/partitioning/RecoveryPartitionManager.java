@@ -15,6 +15,7 @@ import io.camunda.cluster.PartitionId;
 import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.broker.partitioning.startup.RaftPartitionFactory;
 import io.camunda.zeebe.broker.partitioning.topology.ClusterConfigurationService;
+import io.camunda.zeebe.broker.partitioning.topology.PartitionDistribution;
 import io.camunda.zeebe.broker.partitioning.topology.TopologyManagerImpl;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.backup.BackupCfg;
@@ -35,7 +36,7 @@ import io.camunda.zeebe.dynamic.config.state.ExportingState;
 import io.camunda.zeebe.dynamic.config.state.RoutingState;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.restore.PartitionRestoreService;
-import io.camunda.zeebe.restore.ValidatePartitionCount;
+import io.camunda.zeebe.restore.PartitionRestoreService.BackupValidator;
 import io.camunda.zeebe.restore.validation.RestoreValidator;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
@@ -178,7 +179,15 @@ public final class RecoveryPartitionManager
         () -> {
           clusterConfigurationService.registerPartitionChangeExecutors(
               partitionGroup, this, this, this);
-          startInternal(result);
+          concurrencyControl.runOnCompletion(
+              clusterConfigurationService.getLatestPartitionDistribution(partitionGroup),
+              (distribution, error) -> {
+                if (error != null) {
+                  result.completeExceptionally(error);
+                } else {
+                  startInternal(result, localPartitions(distribution));
+                }
+              });
         });
     return result;
   }
@@ -196,11 +205,11 @@ public final class RecoveryPartitionManager
     return result;
   }
 
-  private void startInternal(final ActorFuture<Void> result) {
+  private void startInternal(
+      final ActorFuture<Void> result, final List<PartitionMetadata> localPartitions) {
     stopped = false;
     restoreExecutor =
         Executors.newThreadPerTaskExecutor(Thread.ofVirtual().name("zeebe-restore-", 0).factory());
-    final var localPartitions = localPartitions();
     // A broker in recovery mode is ready by design: it must accept management traffic (restore
     // requests) and must not be restarted by the readiness-based liveness probe while a restore is
     // in progress. Register upfront - including with no local partitions, so an expected physical
@@ -391,7 +400,7 @@ public final class RecoveryPartitionManager
             return;
           }
           final var partitionDir = partitionDirectory(new PartitionId(partitionGroup, partitionId));
-          CompletableFuture.runAsync(() -> deleteDirectory(partitionDir), executor.get())
+          CompletableFuture.runAsync(() -> deletePartitionDirectory(partitionDir), executor.get())
               .whenCompleteAsync(
                   (ok, error) -> {
                     if (error != null) {
@@ -455,49 +464,60 @@ public final class RecoveryPartitionManager
                     "No backup store available to restore partition " + partitionId));
             return;
           }
-          final var metadata =
-              localPartitions().stream()
-                  .filter(p -> p.id().number() == partitionId)
-                  .findFirst()
-                  .orElse(null);
-          if (metadata == null) {
-            result.completeExceptionally(
-                new IllegalStateException(
-                    "Cannot restore partition %d, it is not a local partition of group %s"
-                        .formatted(partitionId, partitionGroup)));
-            return;
-          }
-          final var ids = backupIds.stream().mapToLong(Long::longValue).toArray();
-          final var partitionDir = partitionDirectory(metadata.id());
+          concurrencyControl.runOnCompletion(
+              clusterConfigurationService.getLatestPartitionDistribution(partitionGroup),
+              (distribution, distributionError) -> {
+                if (distributionError != null) {
+                  result.completeExceptionally(distributionError);
+                  return;
+                }
+                final var metadata =
+                    localPartitions(distribution).stream()
+                        .filter(p -> p.id().number() == partitionId)
+                        .findFirst()
+                        .orElse(null);
+                if (metadata == null) {
+                  result.completeExceptionally(
+                      new IllegalStateException(
+                          "Cannot restore partition %d, it is not a local partition of group %s"
+                              .formatted(partitionId, partitionGroup)));
+                  return;
+                }
+                final var ids = backupIds.stream().mapToLong(Long::longValue).toArray();
+                final var partitionDir = partitionDirectory(metadata.id());
 
-          CompletableFuture.runAsync(() -> restorePartition(metadata, store, ids), executor.get())
-              .thenRunAsync(() -> verifyRestoredPartition(metadata), executor.get())
-              .whenCompleteAsync(
-                  (ok, error) -> {
-                    if (error != null) {
-                      LOG.error(
-                          "Failed to restore partition {}, dropping partial data so the"
-                              + " operation can be retried",
-                          partitionId,
-                          error);
-                      try {
-                        deleteDirectory(partitionDir);
-                      } catch (final Exception cleanupError) {
-                        error.addSuppressed(cleanupError);
-                      }
-                    }
-                  },
-                  executor.get())
-              .whenCompleteAsync(
-                  (ok, error) -> {
-                    if (error != null) {
-                      result.completeExceptionally(FuturesUtil.unwrapCompletionException(error));
-                    } else {
-                      LOG.info("Restored partition {} from backups {}", partitionId, backupIds);
-                      result.complete(null);
-                    }
-                  },
-                  concurrencyControl);
+                CompletableFuture.runAsync(
+                        () -> restorePartition(metadata, store, ids), executor.get())
+                    .thenRunAsync(() -> verifyRestoredPartition(metadata), executor.get())
+                    .whenCompleteAsync(
+                        (ok, error) -> {
+                          if (error != null) {
+                            LOG.error(
+                                "Failed to restore partition {}, dropping partial data so the"
+                                    + " operation can be retried",
+                                partitionId,
+                                error);
+                            try {
+                              deleteDirectory(partitionDir);
+                            } catch (final Exception cleanupError) {
+                              error.addSuppressed(cleanupError);
+                            }
+                          }
+                        },
+                        executor.get())
+                    .whenCompleteAsync(
+                        (ok, error) -> {
+                          if (error != null) {
+                            result.completeExceptionally(
+                                FuturesUtil.unwrapCompletionException(error));
+                          } else {
+                            LOG.info(
+                                "Restored partition {} from backups {}", partitionId, backupIds);
+                            result.complete(null);
+                          }
+                        },
+                        concurrencyControl);
+              });
         });
     return result;
   }
@@ -509,6 +529,14 @@ public final class RecoveryPartitionManager
       return Optional.empty();
     }
     return Optional.of(restoreExecutor);
+  }
+
+  private static void deletePartitionDirectory(final Path directory) {
+    try {
+      FileUtil.deleteFolderIfExists(directory);
+    } catch (final IOException e) {
+      throw new UncheckedIOException("Failed to delete directory " + directory, e);
+    }
   }
 
   private static void deleteDirectory(final Path directory) {
@@ -533,8 +561,7 @@ public final class RecoveryPartitionManager
               brokerInfo.getNodeId(),
               new RocksDBSnapshotFileInfoProvider(),
               registry);
-      restoreService.restore(
-          backupIds, new ValidatePartitionCount(brokerCfg.getCluster().getPartitionsCount()));
+      restoreService.restore(backupIds, BackupValidator.none());
     } catch (final Exception e) {
       throw new CompletionException("Failed to restore partition %s".formatted(metadata.id()), e);
     } finally {
@@ -650,17 +677,11 @@ public final class RecoveryPartitionManager
 
   /**
    * Resolves the partitions of this partition group that the local broker is a member of, according
-   * to the current partition distribution.
+   * to the given partition distribution.
    */
-  private List<PartitionMetadata> localPartitions() {
+  private List<PartitionMetadata> localPartitions(final PartitionDistribution distribution) {
     final var localMemberId = localMemberId();
-    // The default physical tenant's partition distribution is the only one stored in dynamic
-    // config; other physical tenants derive their distribution by rewriting the group on every
-    // PartitionId.
-    return clusterConfigurationService
-        .getPartitionDistribution(partitionGroup)
-        .partitions()
-        .stream()
+    return distribution.partitions().stream()
         .filter(p -> p.members().contains(localMemberId))
         .toList();
   }

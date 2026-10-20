@@ -45,7 +45,7 @@ import {VariableEditor} from './VariableEditor';
 const JSONEditorModal = lazy(async () => {
 	const [{loadMonaco}, {JSONEditorModal}] = await Promise.all([
 		import('#/shared/monaco/loadMonaco'),
-		import('#/tasklist/modules/task-details-variables/components/JSONEditorModal'),
+		import('./JSONEditorModal'),
 	]);
 	loadMonaco();
 	return {default: JSONEditorModal};

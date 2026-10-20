@@ -10,6 +10,7 @@ package io.camunda.search.schema;
 import static io.camunda.search.schema.utils.SchemaTestUtil.createTestIndexDescriptor;
 import static io.camunda.search.schema.utils.SchemaTestUtil.createTestTemplateDescriptor;
 import static io.camunda.search.schema.utils.SchemaTestUtil.validateMappings;
+import static io.camunda.search.schema.utils.SearchEngineClientUtils.SETTINGS_FINGERPRINT_META_KEY;
 import static io.camunda.search.test.utils.SearchDBExtension.ENGINE_CLIENT_TEST_MARKERS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
@@ -25,14 +26,18 @@ import io.camunda.search.schema.elasticsearch.ElasticsearchEngineClient;
 import io.camunda.search.schema.utils.SchemaTestUtil;
 import io.camunda.search.test.utils.TestObjectMapper;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
+import io.camunda.webapps.schema.descriptors.IndexDescriptors;
+import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Named;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -461,6 +466,117 @@ public class ElasticsearchEngineClientIT {
 
     // then
     verify(indicesSpy, never()).putIndexTemplate(any(PutIndexTemplateRequest.class));
+  }
+
+  /**
+   * Regression test for #63764: every index template {@link IndexDescriptors} registers must be
+   * left untouched by a repeated schema initialization that changes neither its schema file nor its
+   * configuration. Before the fix, the settings check diffed the schema file against the search
+   * engine's normalized rendering of it, which never matched for templates with an {@code analysis}
+   * block, so those were rewritten on every restart.
+   */
+  @ParameterizedTest
+  @MethodSource("templateDescriptors")
+  void shouldNotRewriteIndexTemplateOnRepeatedSchemaInitialization(
+      final IndexTemplateDescriptor template) throws IOException {
+    // given
+    final var settings = new IndexConfiguration();
+
+    final var indicesSpy = spy(elsClient.indices());
+    final var clientSpy = spy(elsClient);
+    doReturn(indicesSpy).when(clientSpy).indices();
+    final var engineClient =
+        new ElasticsearchEngineClient(clientSpy, TestObjectMapper.objectMapper());
+
+    engineClient.createIndexTemplate(template, settings, true);
+    reset(indicesSpy); // ignore create
+
+    // when
+    engineClient.updateIndexTemplateSettings(template, settings);
+
+    // then
+    verify(indicesSpy, never()).putIndexTemplate(any(PutIndexTemplateRequest.class));
+  }
+
+  private static Stream<Named<IndexTemplateDescriptor>> templateDescriptors() {
+    return new IndexDescriptors("", true)
+        .templates().stream()
+            .map(template -> Named.of(template.getMappingsClasspathFilename(), template));
+  }
+
+  @Test
+  void shouldIssuePutIndexTemplateOnceWhenAnalysisSettingsChanged() throws IOException {
+    // given
+    final var template =
+        createTestTemplateDescriptor("template_analysis_change", "/mappings-and-analysis.json");
+    final var settings = new IndexConfiguration();
+
+    final var indicesSpy = spy(elsClient.indices());
+    final var clientSpy = spy(elsClient);
+    doReturn(indicesSpy).when(clientSpy).indices();
+    final var engineClient =
+        new ElasticsearchEngineClient(clientSpy, TestObjectMapper.objectMapper());
+
+    engineClient.createIndexTemplate(template, settings, true);
+    template.setMappingsClasspathFilename("/mappings-and-updated-analysis.json");
+    reset(indicesSpy); // ignore create
+
+    // when
+    engineClient.updateIndexTemplateSettings(template, settings);
+    engineClient.updateIndexTemplateSettings(template, settings);
+
+    // then
+    verify(indicesSpy, times(1)).putIndexTemplate(any(PutIndexTemplateRequest.class));
+    final var normalizer =
+        elsClient
+            .indices()
+            .getIndexTemplate(req -> req.name(template.getTemplateName()))
+            .indexTemplates()
+            .getFirst()
+            .indexTemplate()
+            .template()
+            .settings()
+            .index()
+            .analysis()
+            .normalizer()
+            .get("case_insensitive");
+    assertThat(normalizer.custom().filter()).containsExactly("lowercase", "asciifolding");
+  }
+
+  @Test
+  void shouldRewriteTemplateWithoutSettingsFingerprintOnlyOnce() throws IOException {
+    // given - a template as written before settings fingerprints existed
+    final var template = createTestTemplateDescriptor("template_no_fingerprint", "/mappings.json");
+    final var settings = new IndexConfiguration();
+    elsClient
+        .indices()
+        .putIndexTemplate(
+            req ->
+                req.name(template.getTemplateName())
+                    .indexPatterns(template.getIndexPattern())
+                    .template(t -> t.settings(s -> s.numberOfShards("1"))));
+
+    final var indicesSpy = spy(elsClient.indices());
+    final var clientSpy = spy(elsClient);
+    doReturn(indicesSpy).when(clientSpy).indices();
+    final var engineClient =
+        new ElasticsearchEngineClient(clientSpy, TestObjectMapper.objectMapper());
+
+    // when
+    engineClient.updateIndexTemplateSettings(template, settings);
+    engineClient.updateIndexTemplateSettings(template, settings);
+
+    // then - the first check adds the fingerprint, the second one finds it
+    verify(indicesSpy, times(1)).putIndexTemplate(any(PutIndexTemplateRequest.class));
+    final var meta =
+        elsClient
+            .indices()
+            .getIndexTemplate(req -> req.name(template.getTemplateName()))
+            .indexTemplates()
+            .getFirst()
+            .indexTemplate()
+            .meta();
+    assertThat(meta).containsKey(SETTINGS_FINGERPRINT_META_KEY);
   }
 
   @ParameterizedTest

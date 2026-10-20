@@ -9,6 +9,8 @@ package io.camunda.it.physicaltenant;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.webapps.schema.descriptors.index.RoleIndex;
 import io.camunda.zeebe.qa.util.actuator.PrometheusActuator;
 import io.camunda.zeebe.qa.util.cluster.PhysicalTenantsITHelper;
@@ -45,10 +47,6 @@ import org.testcontainers.elasticsearch.ElasticsearchContainer;
  * indices with a strict, conflicting mapping, so the tenant's very first attempt fails while
  * everything else about the cluster stays healthy — no network games and one container. The same
  * trick is used by {@code SchemaManagerStartupIT}.
- *
- * <p>The degraded tenant is deliberately <em>not</em> the default one: until the module-specific
- * search-engine readiness indicators are replaced ({@code #51861}), a degraded default tenant still
- * pulls down the readiness group, so isolation is only observable for a non-default tenant.
  */
 @Timeout(300)
 @ZeebeIntegration
@@ -62,6 +60,7 @@ final class PhysicalTenantSchemaInitializationIsolationIT {
   private static final String READINESS_GAUGE = "camunda_physical_tenant_secondary_storage_ready";
 
   private static final HttpClient HTTP = HttpClient.newHttpClient();
+  private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
   @SuppressWarnings("resource")
   private static final ElasticsearchContainer ES =
@@ -105,6 +104,25 @@ final class PhysicalTenantSchemaInitializationIsolationIT {
     assertThat(readinessGaugeFor(DEFAULT_TENANT)).isEqualTo(1);
     assertThat(readinessGaugeFor(TENANT_A)).isZero();
 
+    // then - the actuator tells an operator which tenant needs them and why, without reading as
+    // down: the node still serves the default tenant. Awaited, because the gate can open through
+    // the default tenant just before tenant A's failure is recorded
+    Awaitility.await("tenant A's terminal failure is reported")
+        .atMost(Duration.ofSeconds(30))
+        .untilAsserted(
+            () -> {
+              final HttpResponse<String> health = actuatorHealth();
+              assertThat(health.statusCode()).isEqualTo(200);
+              final JsonNode schemaInitialization = schemaInitializationHealth(health);
+              assertThat(schemaInitialization.path("status").asText()).isEqualTo("DEGRADED");
+              assertThat(schemaInitialization.at("/details/" + DEFAULT_TENANT + "/status").asText())
+                  .isEqualTo("UP");
+              final JsonNode failedTenant = schemaInitialization.at("/details/" + TENANT_A);
+              assertThat(failedTenant.path("status").asText()).isEqualTo("DOWN");
+              assertThat(failedTenant.path("state").asText()).isEqualTo("FAILED");
+              assertThat(failedTenant.path("error").asText()).isNotBlank();
+            });
+
     // then - the healthy tenant is served ...
     assertThat(searchProcessInstances(DEFAULT_TENANT).statusCode()).isEqualTo(200);
 
@@ -144,6 +162,22 @@ final class PhysicalTenantSchemaInitializationIsolationIT {
 
     // and - the healthy tenant was never affected
     assertThat(readinessGaugeFor(DEFAULT_TENANT)).isEqualTo(1);
+    assertThat(schemaInitializationHealth(actuatorHealth()).path("status").asText())
+        .isEqualTo("UP");
+  }
+
+  private HttpResponse<String> actuatorHealth() throws IOException, InterruptedException {
+    return HTTP.send(
+        HttpRequest.newBuilder(broker.actuatorUri("health")).GET().build(),
+        BodyHandlers.ofString());
+  }
+
+  private static JsonNode schemaInitializationHealth(final HttpResponse<String> health)
+      throws IOException {
+    return OBJECT_MAPPER
+        .readTree(health.body())
+        .path("components")
+        .path("physicalTenantSchemaInitialization");
   }
 
   private HttpResponse<String> searchProcessInstances(final String physicalTenantId)

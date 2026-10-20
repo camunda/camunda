@@ -566,7 +566,7 @@ describe('<ConversationHistory />', () => {
 
     const message = within(screen.getByTestId('conversation-message-1'));
     expect(message.getByTestId('message-token-metric')).toHaveTextContent(
-      '150 tokens',
+      '290 tokens',
     );
     expect(message.getByTestId('message-duration-metric')).toHaveTextContent(
       '1.23s',
@@ -574,7 +574,8 @@ describe('<ConversationHistory />', () => {
 
     await user.hover(message.getByTestId('message-token-metric'));
     const tooltip = await screen.findByRole('tooltip');
-    expect(tooltip).toHaveTextContent('Input: 100 (60 cached)');
+    expect(tooltip).toHaveTextContent('Input: 100');
+    expect(tooltip).toHaveTextContent('Cache read: 60');
     expect(tooltip).toHaveTextContent('Output: 50 (20 reasoning)');
     expect(tooltip).toHaveTextContent('Cache write: 80');
 

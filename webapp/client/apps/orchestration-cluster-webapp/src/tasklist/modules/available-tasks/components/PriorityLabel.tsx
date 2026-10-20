@@ -27,7 +27,7 @@ const PriorityLabel: React.FC<Props> = ({priority, align = 'top-end'}) => {
 	const PriorityIcon = ICON_MAPPINGS[priorityLabel.key];
 
 	return (
-		<LabelWithTooltip title={priorityLabel.long} content={priorityLabel.long} align={align}>
+		<LabelWithTooltip label={priorityLabel.long} content={priorityLabel.long} align={align}>
 			<PriorityIcon className="size-4 shrink-0" data-testid={`${priorityLabel.key}-priority-icon`} aria-hidden />
 			{priorityLabel.short}
 		</LabelWithTooltip>

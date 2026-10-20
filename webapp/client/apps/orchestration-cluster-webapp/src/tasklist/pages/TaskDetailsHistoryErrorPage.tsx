@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Button} from '@camunda/design-system';
+import {Button, Heading, Text} from '@camunda/design-system';
 import {ExternalLink} from '@camunda/design-system/icons';
 import {useNavigate, type ErrorComponentProps} from '@tanstack/react-router';
 import {Trans, useTranslation} from 'react-i18next';
@@ -44,10 +44,12 @@ const ForbiddenHistoryPage: React.FC = () => {
 				<SvgForbidden className="shrink-0 max-xl:hidden" aria-hidden />
 				<div className="flex min-w-0 flex-col items-start gap-6">
 					<div className="flex flex-col gap-2">
-						<h2 className="text-xl leading-7 font-normal">{t('tasklist.taskDetailsHistoryForbiddenTitle')}</h2>
-						<div className="text-sm leading-5 font-normal">
+						<Heading as="h2" variant="heading-md">
+							{t('tasklist.taskDetailsHistoryForbiddenTitle')}
+						</Heading>
+						<Text as="div" variant="body-md">
 							<Trans i18nKey="tasklist.taskDetailsHistoryForbiddenDesc" components={{strong: <strong />}} />
-						</div>
+						</Text>
 					</div>
 					<Button asChild variant="link" className="h-auto max-w-full justify-start whitespace-normal p-0 text-left">
 						<a href={DOCS_URL} target="_blank" rel="noopener noreferrer">
@@ -74,8 +76,12 @@ const GenericHistoryErrorPage: React.FC<GenericHistoryErrorPageProps> = ({onRetr
 				<SvgErrorRobot className="shrink-0 max-xl:hidden" aria-hidden />
 				<div className="flex min-w-0 flex-col items-start gap-6">
 					<div className="flex flex-col gap-2">
-						<h2 className="text-xl leading-7 font-normal">{t('tasklist.taskDetailsHistoryErrorTitle')}</h2>
-						<p className="text-sm leading-5 font-normal">{t('tasklist.taskDetailsHistoryErrorMessage')}</p>
+						<Heading as="h2" variant="heading-md">
+							{t('tasklist.taskDetailsHistoryErrorTitle')}
+						</Heading>
+						<Text as="p" variant="body-md">
+							{t('tasklist.taskDetailsHistoryErrorMessage')}
+						</Text>
 					</div>
 					<Button onClick={onRetry}>{t('errorGenericErrorPageButtonLabel')}</Button>
 				</div>

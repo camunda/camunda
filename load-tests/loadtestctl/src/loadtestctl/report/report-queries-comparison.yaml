@@ -1,0 +1,116 @@
+# Metrics compared between a PR load test and the daily run, and posted for the daily run.
+# Keys match the metric names in docs/scripts/optimal.json.
+queries:
+  - key: process-instances-started
+    description: Process instances submitted by the starter
+    header: Process instances submitted by the starter
+    query: |-
+      sum(increase(starter_process_instances_started_total{namespace="$NAMESPACE"}[$DURATION_S]))
+
+  - key: process-instances-completed
+    description: Root process instances completed by the engine
+    header: Root process instances completed by the engine
+    query: |-
+      sum(increase(zeebe_executed_instances_total{
+        action="completed",
+        type="ROOT_PROCESS_INSTANCE",
+        namespace="$NAMESPACE"
+      }[$DURATION_S]))
+
+  - key: throughput-per-second
+    description: Client Process Instance Started Rate (avg)
+    header: Client Process Instance Started Rate (avg)
+    query: |-
+      sum(rate(starter_process_instances_started_total{namespace="$NAMESPACE"}[$DURATION_S]))
+
+  - key: completed-pi-rate-per-second
+    description: Completion PI rate (avg)
+    header: Completion PI rate (avg)
+    query: |-
+      sum(rate(zeebe_executed_instances_total{
+        action="completed",
+        type="ROOT_PROCESS_INSTANCE",
+        namespace="$NAMESPACE"
+      }[$DURATION_S]))
+
+  # Fraction of gateway-accepted submissions that completed end-to-end.
+  # Denominator picks up gRPC and/or HTTP submissions via PromQL `or`. The `!= 0`
+  # guard on the HTTP arm prevents zero-result series from contributing when the
+  # cluster is gRPC-only (or vice versa).
+  - key: completion-ratio
+    description: Completed process instances in %
+    header: Completed process instances in %
+    query: |-
+      100 * (
+        sum(rate(zeebe_executed_instances_total{
+          action="completed",
+          type="ROOT_PROCESS_INSTANCE",
+          namespace="$NAMESPACE"
+        }[$DURATION_S]))
+        /
+        (
+          sum(rate(grpc_server_processing_duration_seconds_count{
+            method="CreateProcessInstance",
+            namespace="$NAMESPACE"
+          }[$DURATION_S]))
+          or
+          sum(rate(http_server_requests_seconds_count{
+            method="POST",
+            uri=~"/v2/process-instances|/physical-tenants/[^/]+/v2/process-instances",
+            namespace="$NAMESPACE"
+          }[$DURATION_S]) != 0)
+        )
+      )
+
+  - key: backpressure-percent
+    description: Backpressure (rejected / received)
+    header: Backpressure (rejected / received)
+    query: |-
+      100 *
+      sum(increase(zeebe_dropped_request_count_total{namespace="$NAMESPACE"}[$DURATION_S]))
+      /
+      sum(increase(zeebe_received_request_count_total{namespace="$NAMESPACE"}[$DURATION_S]))
+
+  # Gateway-accepted submission rate. Denominator-side counterpart to the
+  # completion-ratio query: gRPC `or` HTTP, with `!= 0` to exclude empty series
+  # on a single-protocol cluster.
+  - key: starter-rate-per-second
+    description: Gateway-accepted submission rate (avg)
+    header: Gateway-accepted submission rate (avg)
+    query: |-
+      sum(rate(grpc_server_processing_duration_seconds_count{
+        namespace="$NAMESPACE",
+        method="CreateProcessInstance"
+      }[$DURATION_S]))
+      or
+      sum(rate(http_server_requests_seconds_count{
+        method="POST",
+        namespace="$NAMESPACE",
+        uri=~"/v2/process-instances|/physical-tenants/[^/]+/v2/process-instances"
+      }[$DURATION_S]) != 0)
+
+  # P99 latency from starter submission to data being durably available. Lower
+  # is better. Baseline is a placeholder until we calibrate against clean main
+  # runs.
+  - key: data-availability
+    description: Data availability latency (P99)
+    header: Data availability latency (P99)
+    query: |-
+      histogram_quantile(0.99, sum by (le) (
+        rate(starter_data_availability_latency_seconds_bucket{
+          namespace="$NAMESPACE"
+        }[$DURATION_S])
+      ))
+
+  # P99 of round-trip request-response time as observed by the starter:
+  # client send → gateway processing (incl. processing-queue + auth/authz) →
+  # response received. Threshold per spec: p99 < 5s.
+  - key: request-response-latency
+    description: Request-response latency (P99)
+    header: Request-response latency (P99)
+    query: |-
+      histogram_quantile(0.99, sum by (le) (
+        rate(starter_response_latency_seconds_bucket{
+          namespace="$NAMESPACE"
+        }[$DURATION_S])
+      ))

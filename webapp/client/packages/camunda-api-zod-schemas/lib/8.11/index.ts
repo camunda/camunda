@@ -44,6 +44,7 @@ import {
 	getElementInstance,
 	updateElementInstanceVariables,
 	queryElementInstanceIncidents,
+	queryElementInstanceEffectiveVariables,
 } from './element-instance';
 import {queryElementInstanceInspection} from './element-instance-inspection';
 import {
@@ -107,6 +108,7 @@ import {
 	updateUserTask,
 } from './user-task';
 import {getVariable, queryVariables} from './variable';
+import {getForm, getLatestFormByFormId} from './form';
 import {queryJobs, activateJobs, failJob, throwJobError, completeJob, updateJob} from './job';
 import {
 	getProcessDefinition,
@@ -230,6 +232,7 @@ const endpoints = {
 	createDocumentLink,
 	queryElementInstances,
 	queryElementInstanceIncidents,
+	queryElementInstanceEffectiveVariables,
 	queryElementInstanceInspection,
 	getElementInstance,
 	updateElementInstanceVariables,
@@ -273,6 +276,8 @@ const endpoints = {
 	createProcessInstance,
 	getVariable,
 	queryVariables,
+	getForm,
+	getLatestFormByFormId,
 	queryJobs,
 	activateJobs,
 	failJob,
@@ -475,15 +480,8 @@ export {
 	type QueryAgentInstanceHistoryResponseBody,
 } from './agent-instance';
 export {
-	activityTypeSchema,
-	queryActivatableActivitiesRequestBodySchema,
-	queryActivatableActivitiesResponseBodySchema,
 	activateActivityWithinAdHocSubProcessRequestBodySchema,
 	activateActivityWithinAdHocSubProcessResponseBodySchema,
-	type ActivityType,
-	type QueryActivatableActivitiesRequestBody,
-	type ActivatableActivity,
-	type QueryActivatableActivitiesResponseBody,
 	type ActivateActivityWithinAdHocSubProcessRequestBody,
 	type ActivateActivityWithinAdHocSubProcessResponseBody,
 } from './ad-hoc-sub-process';
@@ -515,10 +513,12 @@ export {
 	batchOperationItemStateSchema,
 	batchOperationSchema,
 	batchOperationItemSchema,
+	batchOperationSortFieldEnum,
 	queryBatchOperationsRequestBodySchema,
 	queryBatchOperationsResponseBodySchema,
 	queryBatchOperationItemsRequestBodySchema,
 	queryBatchOperationItemsResponseBodySchema,
+	type BatchOperationSortField,
 	type BatchOperationType,
 	type BatchOperationState,
 	type BatchOperationItemState,
@@ -621,6 +621,7 @@ export {
 	elementInstanceFilterSchema,
 	queryElementInstanceIncidentsRequestBodySchema,
 	queryElementInstanceIncidentsResponseBodySchema,
+	queryElementInstanceEffectiveVariablesRequestBodySchema,
 	type ElementInstanceState,
 	type ElementInstanceType,
 	type ElementInstance,
@@ -630,6 +631,7 @@ export {
 	type UpdateElementInstanceVariablesRequestBody,
 	type QueryElementInstanceIncidentsRequestBody,
 	type QueryElementInstanceIncidentsResponseBody,
+	type QueryElementInstanceEffectiveVariablesRequestBody,
 } from './element-instance';
 export {
 	waitStateTypeSchema,
@@ -846,7 +848,6 @@ export {
 	queryUserTasksRequestBodySchema,
 	formSchema,
 	assignTaskRequestBodySchema,
-	unassignTaskRequestBodySchema,
 	completeTaskRequestBodySchema,
 	queryVariablesByUserTaskRequestBodySchema,
 	queryVariablesByUserTaskResponseBodySchema,
@@ -856,7 +857,6 @@ export {
 	type QueryUserTasksRequestBody,
 	type Form,
 	type AssignTaskRequestBody,
-	type UnassignTaskRequestBody,
 	type CompleteTaskRequestBody,
 	type QueryVariablesByUserTaskRequestBody,
 	type QueryVariablesByUserTaskResponseBody,

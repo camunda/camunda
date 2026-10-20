@@ -8,6 +8,14 @@
 package io.camunda.configuration;
 
 import io.camunda.configuration.UnifiedConfigurationHelper.BackwardsCompatibilityMode;
+import io.camunda.configuration.data.AuditLog;
+import io.camunda.configuration.data.Export;
+import io.camunda.configuration.data.Exporter;
+import io.camunda.configuration.data.ExtensionProperties;
+import io.camunda.configuration.data.HistoryDeletion;
+import io.camunda.configuration.data.PrimaryStorage;
+import io.camunda.configuration.data.SecondaryStorage;
+import io.camunda.configuration.data.WaitStates;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;

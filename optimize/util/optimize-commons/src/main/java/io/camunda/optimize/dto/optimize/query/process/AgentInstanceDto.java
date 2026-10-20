@@ -214,6 +214,8 @@ public class AgentInstanceDto implements Serializable, OptimizeDto {
 
     private long inputTokens;
     private long outputTokens;
+    private long cacheReadTokenCount;
+    private long cacheCreationTokenCount;
     private long modelCalls;
     private long toolCalls;
 
@@ -233,6 +235,22 @@ public class AgentInstanceDto implements Serializable, OptimizeDto {
 
     public void setOutputTokens(final long outputTokens) {
       this.outputTokens = outputTokens;
+    }
+
+    public long getCacheReadTokenCount() {
+      return cacheReadTokenCount;
+    }
+
+    public void setCacheReadTokenCount(final long cacheReadTokenCount) {
+      this.cacheReadTokenCount = cacheReadTokenCount;
+    }
+
+    public long getCacheCreationTokenCount() {
+      return cacheCreationTokenCount;
+    }
+
+    public void setCacheCreationTokenCount(final long cacheCreationTokenCount) {
+      this.cacheCreationTokenCount = cacheCreationTokenCount;
     }
 
     public long getModelCalls() {
@@ -259,13 +277,21 @@ public class AgentInstanceDto implements Serializable, OptimizeDto {
       final AgentMetricsDto that = (AgentMetricsDto) o;
       return inputTokens == that.inputTokens
           && outputTokens == that.outputTokens
+          && cacheReadTokenCount == that.cacheReadTokenCount
+          && cacheCreationTokenCount == that.cacheCreationTokenCount
           && modelCalls == that.modelCalls
           && toolCalls == that.toolCalls;
     }
 
     @Override
     public int hashCode() {
-      return Objects.hash(inputTokens, outputTokens, modelCalls, toolCalls);
+      return Objects.hash(
+          inputTokens,
+          outputTokens,
+          cacheReadTokenCount,
+          cacheCreationTokenCount,
+          modelCalls,
+          toolCalls);
     }
 
     @Override
@@ -274,6 +300,10 @@ public class AgentInstanceDto implements Serializable, OptimizeDto {
           + inputTokens
           + ", outputTokens="
           + outputTokens
+          + ", cacheReadTokenCount="
+          + cacheReadTokenCount
+          + ", cacheCreationTokenCount="
+          + cacheCreationTokenCount
           + ", modelCalls="
           + modelCalls
           + ", toolCalls="
@@ -286,6 +316,8 @@ public class AgentInstanceDto implements Serializable, OptimizeDto {
 
       public static final String inputTokens = "inputTokens";
       public static final String outputTokens = "outputTokens";
+      public static final String cacheReadTokenCount = "cacheReadTokenCount";
+      public static final String cacheCreationTokenCount = "cacheCreationTokenCount";
       public static final String modelCalls = "modelCalls";
       public static final String toolCalls = "toolCalls";
     }

@@ -92,8 +92,7 @@ Note: Everything in this directory can be imported directly by referencing the d
 
 The development scripts exist inside the `scripts` folder. Here is a brief explanation of the scripts we developed:
 
-- **e2e**: This script executes the Self-Managed end-to-end (E2E) tests in `e2e/sm-tests` locally against Chrome using TestCafe, with `-c 3` running three browser instances concurrently. CI uses the headless `e2e:ci:*` variants instead.
-- **start-backend**: This script starts everything needed for development apart from the front-end application. It starts the `docker-compose.yml` to start necessary services, and starts the backend server. It can be triggered using the `yarn start-backend` command.
+- **start-backend**: This script starts everything needed for development apart from the front-end application. It starts the `docker-compose.yml` to start necessary services, and starts the backend server. It can be triggered using the `yarn start-backend` command. The stack starts without data; run `yarn e2e:seed` to generate the minimal E2E dataset.
 - **writeModules**: This script runs on the `package.json` "postinstall" hook. It is used to create a symbolic link of the `modules` folder into the `node_modules` folder. This makes it easier to import stuff from the modules folder (reusable component & services module) without the need to specify the full path.
 
   For example, if we need to use the request module that exists inside `src/modules/request.ts`, we can do the following: `import {...} from 'request'` anywhere in the codebase.
@@ -139,17 +138,12 @@ For mocking internal or external modules, we usually use `Jest.mock` function in
 
 ### End-to-end (E2E) tests
 
-End-to-end tests are executed using TestCafe to validate the functionality of the application in a real browser environment. These tests cover user interactions and the integration of various components. Tests are run in three parallel browsers to speed up the process. Different users are configured for each browser to avoid race conditions.
+End-to-end tests are written with Playwright and live in `e2e/`. They run in parallel against a real Camunda, Identity and Elasticsearch stack with a small, deterministic dataset (`e2e/seed/`). Each test works in its own collection that is created through the API and deleted afterwards. See [e2e/AGENTS.md](e2e/AGENTS.md) for the structure and conventions.
 
-**CSS selectors management**: CSS selectors are organized in separate files named `<ModuleName>.elements.js`. Common selectors used across multiple tests are stored in `Common.elements.js` to avoid duplication.
+**CI jobs**:
 
-**Screenshot generation**: E2E tests can generate screenshots for documentation purposes by running `yarn screenshots`. The `e2e/browserMagic.js` module is sometimes used to add labels and arrows to screenshots, enhancing their utility for documentation.
-
-**CI jobs**: We have three workflows on the CI that run the E2E tests:
-
-1. `optimize-e2e-tests-sm-nightly.yml`: It runs the E2E tests in self-managed mode every night in a headless version of Firefox.
-1. `optimize-e2e-smoke` in `ci-optimize.yml`: It runs only the smoke E2E tests in self-managed mode on PR/push in a headless version of Firefox.
-2. `optimize-e2e-tests-cloud.yml`: It runs the E2E tests in cloud mode on PR/push in a headless version of Chrome.
+1. `optimize-e2e-smoke.yml`: runs the whole self-managed suite, including the visual tests, on PR/push.
+2. `optimize-e2e-tests-cloud-nightly.yml`: runs the cloud (Auth0) smoke test every night.
 
 ## Current migrations
 

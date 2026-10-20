@@ -26,7 +26,6 @@ import io.atomix.raft.cluster.RaftMember;
 import io.atomix.raft.cluster.RaftMember.Type;
 import io.atomix.raft.impl.RaftContext;
 import io.atomix.raft.impl.ReconfigurationHelper;
-import io.atomix.raft.storage.log.IndexedRaftLogEntry;
 import io.atomix.raft.storage.log.entry.ConfigurationEntry;
 import io.atomix.raft.storage.system.Configuration;
 import io.atomix.raft.utils.JointConsensusVoteQuorum;
@@ -84,10 +83,7 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
               // configurations take effect as soon as they are appended, so an appended but not
               // yet committed configuration must survive a restart. Only if neither source has a
               // configuration, configure the server with the user provided configuration.
-              final var storedConfiguration = raft.getMetaStore().loadConfiguration();
-              if (storedConfiguration != null) {
-                updateConfiguration(storedConfiguration);
-              }
+              reloadStoredConfiguration();
               reloadConfigurationFromLog();
               if (configuration == null) {
                 createInitialConfig(cluster);
@@ -342,38 +338,124 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
   public void reloadConfigurationFromLog() {
     raft.checkThread();
     final var currentConfiguration = configuration;
-    IndexedRaftLogEntry lastConfigurationEntry = null;
+    // Entries covered by the current configuration or the commit index can be skipped: the
+    // configuration guard ignores older indexes anyway, and a committed configuration entry is
+    // always persisted before the commit index that covers it, so it is already reflected in the
+    // current configuration. Without a current configuration (the join path and members without a
+    // meta store), the whole log has to be searched.
+    final var firstIndexToSearch =
+        currentConfiguration == null
+            ? 0
+            : Math.max(currentConfiguration.index(), raft.getCommitIndex()) + 1;
+    newestConfigurationEntry(firstIndexToSearch, Long.MAX_VALUE)
+        .ifPresent(
+            newest -> {
+              LOGGER.info(
+                  "Reloading configuration {} from log entry at index {}", newest, newest.index());
+              configure(newest);
+            });
+  }
+
+  /**
+   * Applies the stored committed configuration if there is no configuration yet, or if the current
+   * one is newer and so not committed. The latter happens when the whole log was reset, for example
+   * to install a snapshot: no entry remains, so every configuration newer than the stored one has
+   * lost its entry, whatever its index is compared to the new first index of the log.
+   */
+  public void reloadStoredConfiguration() {
+    raft.checkThread();
+    final var storedConfiguration = raft.getMetaStore().loadConfiguration();
+    if (storedConfiguration == null) {
+      return;
+    }
+    if (configuration == null) {
+      updateConfiguration(storedConfiguration);
+    } else if (configuration.index() > storedConfiguration.index()) {
+      revertConfiguration(storedConfiguration);
+    }
+  }
+
+  /**
+   * Drops the current configuration if the log entry it was taken from is gone, for example after
+   * the log was truncated. Configurations take effect as soon as they are appended, so a
+   * configuration without its entry must be dropped. Otherwise this member keeps a configuration
+   * that no log contains, commits it once the commit index passes its index and reports it to the
+   * leader, which ignores it and never repairs it.
+   *
+   * @param lastRetainedIndex the index of the last entry remaining in the log
+   */
+  public void dropConfigurationsWithoutLogEntry(final long lastRetainedIndex) {
+    raft.checkThread();
+    if (configuration == null || configuration.index() <= lastRetainedIndex) {
+      return;
+    }
+
+    // Committed configurations are never truncated, so the stored configuration is always a valid
+    // fallback. A newer configuration entry that is still in the log takes precedence.
+    final var storedConfiguration = raft.getMetaStore().loadConfiguration();
+    // A configuration is stored when it commits, so committed entries do not need to be searched.
+    final var firstIndexToSearch = raft.getCommitIndex() + 1;
+    final var target =
+        firstIndexToSearch <= lastRetainedIndex && !raft.getLog().isEmpty()
+            ? newestConfigurationEntry(firstIndexToSearch, lastRetainedIndex)
+                .orElse(storedConfiguration)
+            : storedConfiguration;
+    if (target == null) {
+      LOGGER.warn(
+          "Cannot drop configuration {}, no stored or logged configuration to fall back to",
+          configuration);
+      return;
+    }
+    revertConfiguration(target);
+  }
+
+  /**
+   * Returns the newest configuration entry in the log between the given indexes, both inclusive. An
+   * index of 0 as first index searches from the start of the log.
+   */
+  private Optional<Configuration> newestConfigurationEntry(
+      final long firstIndex, final long lastIndex) {
     // The reader needs to be uncommitted because the configuration entry might not be committed yet
     // on this node, but committed on the leader already.
     try (final var reader = raft.getLog().openUncommittedReader()) {
-      if (currentConfiguration != null) {
-        // Entries covered by the current configuration or the commit index can be skipped: the
-        // configuration guard ignores older indexes anyway, and a committed configuration entry is
-        // always persisted before the commit index that covers it, so it is already reflected in
-        // the current configuration. Without a current configuration (the join path and members
-        // without a meta store), the whole log has to be searched.
-        reader.seek(Math.max(currentConfiguration.index(), raft.getCommitIndex()) + 1);
+      if (firstIndex > 0) {
+        reader.seek(firstIndex);
       }
+      Configuration newest = null;
       while (reader.hasNext()) {
         final var entry = reader.next();
-        if (entry.entry() instanceof ConfigurationEntry) {
-          lastConfigurationEntry = entry;
+        if (entry.index() > lastIndex) {
+          break;
+        }
+        if (entry.entry() instanceof final ConfigurationEntry configurationEntry) {
+          newest =
+              new Configuration(
+                  entry.index(),
+                  entry.term(),
+                  configurationEntry.timestamp(),
+                  configurationEntry.newMembers(),
+                  configurationEntry.oldMembers(),
+                  false);
         }
       }
-      if (lastConfigurationEntry != null) {
-        final var configurationEntry = (ConfigurationEntry) lastConfigurationEntry.entry();
-        LOGGER.info(
-            "Reloading configuration {} from log entry at index {}",
-            configurationEntry,
-            lastConfigurationEntry.index());
-        configure(
-            new Configuration(
-                lastConfigurationEntry.index(),
-                lastConfigurationEntry.term(),
-                configurationEntry.timestamp(),
-                configurationEntry.newMembers(),
-                configurationEntry.oldMembers(),
-                false));
+      return Optional.ofNullable(newest);
+    }
+  }
+
+  private void revertConfiguration(final Configuration target) {
+    LOGGER.info("Reverting configuration {} to {}", configuration, target);
+    final var initialType = localMember.getType();
+    updateConfiguration(target);
+    if (raft.getCommitIndex() >= target.index()) {
+      // Prunes the members of the dropped configuration, applies the local member type and stores
+      // the configuration if it is newer than the stored one.
+      commitCurrentConfiguration();
+    } else {
+      // The members of the dropped configuration were kept as replication targets until the outcome
+      // of a configuration is decided. For the dropped one it is decided now.
+      pruneMembersNotInConfiguration();
+      if (initialType != localMember.getType()) {
+        raft.transition(localMember.getType());
       }
     }
   }
@@ -519,6 +601,13 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
     // and every caller (the commit-index hook, an already-committed configure(), the initial
     // config, PassiveRole/InactiveRole onConfigure, force-configure) may invoke this repeatedly for
     // the same configuration.
+    pruneMembersNotInConfiguration();
+
+    // Apply the configuration to the local server state.
+    raft.transition(localMember.getType());
+  }
+
+  private void pruneMembersNotInConfiguration() {
     final var membersInConfiguration = configuration.allMembers();
     final var membersToRemove =
         remoteMemberContexts.values().stream()
@@ -528,9 +617,6 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
     for (final var member : membersToRemove) {
       removeMemberContext(member);
     }
-
-    // Apply the configuration to the local server state.
-    raft.transition(localMember.getType());
   }
 
   @Override

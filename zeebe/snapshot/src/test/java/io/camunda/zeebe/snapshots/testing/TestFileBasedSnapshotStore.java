@@ -75,6 +75,32 @@ public class TestFileBasedSnapshotStore implements ReceivableSnapshotStore {
   }
 
   @Override
+  public ActorFuture<Optional<String>> reserveLatestSnapshot(final long checkpointId) {
+    return snapshotStore.reserveLatestSnapshot(checkpointId);
+  }
+
+  @Override
+  public ActorFuture<Void> reserveSnapshot(final long checkpointId, final String snapshotId) {
+    return snapshotStore.reserveSnapshot(checkpointId, snapshotId);
+  }
+
+  @Override
+  public ActorFuture<Optional<PersistedSnapshot>> getReservedSnapshot(
+      final long checkpointId, final String snapshotId) {
+    return snapshotStore.getReservedSnapshot(checkpointId, snapshotId);
+  }
+
+  @Override
+  public void releaseReservation(final long checkpointId, final String snapshotId) {
+    snapshotStore.releaseReservation(checkpointId, snapshotId);
+  }
+
+  @Override
+  public void releaseAllReservations() {
+    snapshotStore.releaseAllReservations();
+  }
+
+  @Override
   public ActorFuture<Void> abortPendingSnapshots() {
     return snapshotStore.abortPendingSnapshots();
   }
@@ -115,13 +141,25 @@ public class TestFileBasedSnapshotStore implements ReceivableSnapshotStore {
   }
 
   public void newSnapshot(final long index, final long term, final int size, final Random random) {
+    newSnapshot(index, term, index, index, size, random);
+  }
+
+  public void newSnapshot(
+      final long index,
+      final long term,
+      final long processedPosition,
+      final long exportedPosition,
+      final int size,
+      final Random random) {
     final var chunks =
         IntStream.range(0, size)
             .boxed()
             .map(i -> "chunk-" + i)
             .collect(Collectors.toMap(k -> k, v -> String.valueOf(random.nextLong())));
     final var transientSnapshot =
-        snapshotStore.newTransientSnapshot(index, term, index, index, false).get();
+        snapshotStore
+            .newTransientSnapshot(index, term, processedPosition, exportedPosition, false)
+            .get();
     transientSnapshot.take(p -> writeSnapshot(p, chunks)).join();
     transientSnapshot.persist().join();
   }

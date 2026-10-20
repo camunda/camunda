@@ -6,6 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import {useMemo} from 'react';
 import {useInfiniteQuery} from '@tanstack/react-query';
 import type {QueryProcessInstancesResponseBody} from '@camunda/camunda-api-zod-schemas/8.11';
 import {request} from '#/shared/http/request';
@@ -22,16 +23,16 @@ const RUNNING_INSTANCES_REFETCH_INTERVAL_MS = 5000;
  * `useProcessInstancesPaginated`. Polls only while a running-instance state is selected — a list
  * of finished instances cannot change underneath the user.
  */
-function useProcessInstancesSearch(search: ProcessesSearch) {
+function useProcessInstancesSearch(search: ProcessesSearch, isPollingEnabled = true) {
 	const filter = mapProcessInstancesFilter(search);
-	const sort = mapProcessInstancesSort(search.sort);
+	const sort = useMemo(() => mapProcessInstancesSort(search.sort), [search.sort]);
 	const isShowingRunningInstances = search.active || search.incidents || search.suspended;
 
 	const query = useInfiniteQuery({
 		queryKey: ['processInstances', filter, sort] as const,
 		enabled: filter !== undefined,
 		staleTime: 5000,
-		refetchInterval: isShowingRunningInstances ? RUNNING_INSTANCES_REFETCH_INTERVAL_MS : false,
+		refetchInterval: isPollingEnabled && isShowingRunningInstances ? RUNNING_INSTANCES_REFETCH_INTERVAL_MS : false,
 		queryFn: async ({pageParam}): Promise<QueryProcessInstancesResponseBody> => {
 			const {response, error} = await request(
 				endpoints.queryProcessInstances({filter, sort, page: {from: pageParam, limit: PAGE_LIMIT}}),

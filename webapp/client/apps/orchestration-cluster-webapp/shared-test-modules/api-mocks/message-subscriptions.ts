@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import type {MessageSubscription, QueryMessageSubscriptionsResponseBody} from '@camunda/camunda-api-zod-schemas/8.10';
+import type {MessageSubscription, QueryMessageSubscriptionsResponseBody} from '@camunda/camunda-api-zod-schemas/8.11';
 
 function createMessageSubscription(overrides?: Partial<MessageSubscription>): MessageSubscription {
 	return {
@@ -33,6 +33,7 @@ function createMessageSubscription(overrides?: Partial<MessageSubscription>): Me
 		processDefinitionVersion: 3,
 		toolName: 'place-order',
 		inboundConnectorType: null,
+		businessId: null,
 		...overrides,
 	};
 }

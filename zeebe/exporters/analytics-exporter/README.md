@@ -178,6 +178,15 @@ Every signal uses the canonical `camunda.<namespace>.<action>` contract name. `u
 and `heartbeat` carried flat pre-contract names until 8.10 and were renamed to
 `camunda.user_task.created` and `camunda.telemetry.heartbeat`.
 
+### Attribute naming
+
+Attribute keys use one dot per hierarchy step, with snake_case only inside a single segment:
+`camunda.process.definition.key`, not an underscore between `definition` and `key`.
+
+`camunda.process.instance.key` is dotted because the instance is a sub-entity of the process.
+`camunda.process.root_instance.key` (and a future `parent_instance.key`) keeps `root_instance` as one
+underscore segment because it is a qualified reference to another instance, not a level of its own.
+
 ### Common log record attributes
 
 These attributes are set on every log record:
@@ -194,14 +203,14 @@ Beyond the common attributes above, each event type carries its own additional f
 
 **`camunda.process.instance.activated`**
 
-|              Attribute              |  Type  |                  Description                   |
-|-------------------------------------|--------|------------------------------------------------|
-| `camunda.process.id`                | string | BPMN process ID.                               |
-| `camunda.process.version`           | long   | Deployed process version.                      |
-| `camunda.process.definition_key`    | long   | Process definition key.                        |
-| `camunda.process.instance_key`      | long   | Process instance key.                          |
-| `camunda.process.root_instance_key` | long   | Root process instance key (for sub-processes). |
-| `camunda.tenant.id`                 | string | Tenant ID.                                     |
+|              Attribute               |  Type  |                  Description                   |
+|--------------------------------------|--------|------------------------------------------------|
+| `camunda.process.id`                 | string | BPMN process ID.                               |
+| `camunda.process.definition.version` | long   | Deployed process version.                      |
+| `camunda.process.definition.key`     | long   | Process definition key.                        |
+| `camunda.process.instance.key`       | long   | Process instance key.                          |
+| `camunda.process.root_instance.key`  | long   | Root process instance key (for sub-processes). |
+| `camunda.tenant.id`                  | string | Tenant ID.                                     |
 
 The event is taken from the activation of the root process element, which is the single point every
 process instance passes through however it was started: the client API, or a message, timer, signal
@@ -213,20 +222,20 @@ counts root instances only.
 |            Attribute             |  Type  |            Description            |
 |----------------------------------|--------|-----------------------------------|
 | `camunda.process.id`             | string | BPMN process ID.                  |
-| `camunda.process.definition_key` | long   | Process definition key.           |
-| `camunda.process.instance_key`   | long   | Process instance key.             |
+| `camunda.process.definition.key` | long   | Process definition key.           |
+| `camunda.process.instance.key`   | long   | Process instance key.             |
 | `camunda.element.id`             | string | BPMN element ID of the user task. |
 | `camunda.tenant.id`              | string | Tenant ID.                        |
 
 Note: unlike `camunda.process.instance.activated`, this event does not carry
-`camunda.process.version`.
+`camunda.process.definition.version`.
 
 **`camunda.user_task.assigned`**
 
 |           Attribute            |  Type  |      Description      |
 |--------------------------------|--------|-----------------------|
 | `camunda.user_task.key`        | long   | User task key.        |
-| `camunda.process.instance_key` | long   | Process instance key. |
+| `camunda.process.instance.key` | long   | Process instance key. |
 | `camunda.tenant.id`            | string | Tenant ID.            |
 
 No assignee-derived data (raw or hashed) is exported; the event only signals that an assignment
@@ -253,8 +262,8 @@ The tenant name, description, and associated entity are deliberately not exporte
 |----------------------------------|--------|------------------------------------------|
 | `camunda.incident.key`           | long   | Incident key, taken from the record key. |
 | `camunda.process.id`             | string | BPMN process ID.                         |
-| `camunda.process.definition_key` | long   | Process definition key.                  |
-| `camunda.process.instance_key`   | long   | Process instance key.                    |
+| `camunda.process.definition.key` | long   | Process definition key.                  |
+| `camunda.process.instance.key`   | long   | Process instance key.                    |
 | `camunda.tenant.id`              | string | Tenant ID.                               |
 
 Both events carry the same attributes, so time-to-resolution is a join on
@@ -263,34 +272,34 @@ quote expressions and variable values.
 
 **`camunda.process.definition.created`** and **`camunda.process.definition.deleted`**
 
-|            Attribute             |  Type  |       Description       |
-|----------------------------------|--------|-------------------------|
-| `camunda.process.id`             | string | BPMN process ID.        |
-| `camunda.process.version`        | long   | Process version.        |
-| `camunda.process.definition_key` | long   | Process definition key. |
-| `camunda.tenant.id`              | string | Tenant ID.              |
+|              Attribute               |  Type  |       Description       |
+|--------------------------------------|--------|-------------------------|
+| `camunda.process.id`                 | string | BPMN process ID.        |
+| `camunda.process.definition.version` | long   | Process version.        |
+| `camunda.process.definition.key`     | long   | Process definition key. |
+| `camunda.tenant.id`                  | string | Tenant ID.              |
 
 The BPMN resource, resource name, and version tag are deliberately not exported.
 
 **`camunda.decision.definition.created`** and **`camunda.decision.definition.deleted`**
 
-|         Attribute          |  Type  |        Description        |
-|----------------------------|--------|---------------------------|
-| `camunda.decision.id`      | string | Decision ID from the DMN. |
-| `camunda.decision.key`     | long   | Decision key.             |
-| `camunda.decision.version` | long   | Decision version.         |
-| `camunda.tenant.id`        | string | Tenant ID.                |
+|               Attribute               |  Type  |        Description        |
+|---------------------------------------|--------|---------------------------|
+| `camunda.decision.id`                 | string | Decision ID from the DMN. |
+| `camunda.decision.definition.key`     | long   | Decision key.             |
+| `camunda.decision.definition.version` | long   | Decision version.         |
+| `camunda.tenant.id`                   | string | Tenant ID.                |
 
 The decision name and version tag are deliberately not exported.
 
 **`camunda.form.definition.created`** and **`camunda.form.definition.deleted`**
 
-|       Attribute        |  Type  |  Description  |
-|------------------------|--------|---------------|
-| `camunda.form.id`      | string | Form ID.      |
-| `camunda.form.key`     | long   | Form key.     |
-| `camunda.form.version` | long   | Form version. |
-| `camunda.tenant.id`    | string | Tenant ID.    |
+|             Attribute             |  Type  |  Description  |
+|-----------------------------------|--------|---------------|
+| `camunda.form.id`                 | string | Form ID.      |
+| `camunda.form.definition.key`     | long   | Form key.     |
+| `camunda.form.definition.version` | long   | Form version. |
+| `camunda.tenant.id`               | string | Tenant ID.    |
 
 The form resource, resource name, and version tag are deliberately not exported.
 
@@ -298,17 +307,17 @@ The form resource, resource name, and version tag are deliberately not exported.
 
 |              Attribute              |  Type  |                       Description                        |
 |-------------------------------------|--------|----------------------------------------------------------|
-| `camunda.agent.instance_key`        | long   | Agent instance key.                                      |
-| `camunda.agent.definition_key`      | long   | Agent definition key.                                    |
+| `camunda.agent.instance.key`        | long   | Agent instance key.                                      |
+| `camunda.agent.definition.key`      | long   | Agent definition key.                                    |
 | `camunda.agent.status`              | string | Agent instance status, e.g. `INITIALIZING`, `COMPLETED`. |
 | `camunda.process.id`                | string | BPMN process ID.                                         |
-| `camunda.process.definition_key`    | long   | Process definition key.                                  |
-| `camunda.process.instance_key`      | long   | Process instance key.                                    |
-| `camunda.process.root_instance_key` | long   | Root process instance key (for sub-processes).           |
+| `camunda.process.definition.key`    | long   | Process definition key.                                  |
+| `camunda.process.instance.key`      | long   | Process instance key.                                    |
+| `camunda.process.root_instance.key` | long   | Root process instance key (for sub-processes).           |
 | `camunda.tenant.id`                 | string | Tenant ID.                                               |
 
 Both events carry the same attributes, so agent run duration is a join on
-`camunda.agent.instance_key`. The agent definition (model, provider, system prompt), its
+`camunda.agent.instance.key`. The agent definition (model, provider, system prompt), its
 tools, its collected metrics such as token counts, its configured limits, the changed
 attribute names, and the version tag are all deliberately not exported.
 
@@ -317,9 +326,15 @@ attribute names, and the version tag are all deliberately not exported.
 Alongside the events above, the exporter ships delta counters over OTLP metrics. Each counter
 is incremented once per source record and carries the dimensions listed below.
 
-|                Counter                |            Source record            |     Dimensions      |
-|---------------------------------------|-------------------------------------|---------------------|
-| `camunda.decision.instance.evaluated` | `DECISION_EVALUATION` / `EVALUATED` | `camunda.tenant.id` |
+|                Counter                |         Unit          |            Source record            |     Dimensions      |
+|---------------------------------------|-----------------------|-------------------------------------|---------------------|
+| `camunda.decision.instance.evaluated` | `{decision_instance}` | `DECISION_EVALUATION` / `EVALUATED` | `camunda.tenant.id` |
+
+Each flush that counted at least one record also emits the `camunda.metric.export_window` gauge
+(unit `{record}`): its value is the number of records counted in the window, and it carries
+`camunda.metric.sequence_number`, `camunda.log.position_start`, `camunda.log.position_end`,
+`camunda.event.time_min` and `camunda.event.time_max`, so consumers can reassign flush-time metric
+timestamps to event time.
 
 `camunda.decision.instance.evaluated` counts evaluation records, not the decisions inside them:
 a decision that requires sub-decisions still counts once, and failed evaluations are not counted,
@@ -341,8 +356,11 @@ attributes (heartbeats are not tied to the log stream):
 | `camunda.telemetry.heartbeat.broker_version`   | string | Broker version (matches `io.camunda.zeebe.util.VersionUtil#getVersion`). |
 | `camunda.telemetry.heartbeat.exporter_version` | string | Analytics exporter version.                                              |
 
-The analytics schema URL (`https://camunda.io/schemas/analytics/v1`) is delivered automatically via
-the OTel instrumentation scope on every record, not as a per-record attribute.
+The analytics schema URL (`https://camunda.io/schemas/analytics/1.0`) is delivered automatically via
+the OTel instrumentation scope on every record and metric, not as a per-record attribute. Its last
+segment is the product-telemetry data contract version the payload conforms to. Releases before the
+contract-aligned attribute keys stamped `v1`, so a consumer can tell the two payload shapes apart
+from the scope alone.
 
 ### Resource attributes
 

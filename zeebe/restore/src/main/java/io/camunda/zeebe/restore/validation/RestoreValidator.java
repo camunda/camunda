@@ -11,6 +11,7 @@ import static io.camunda.zeebe.backup.management.BackupMetadataSyncer.MAPPER;
 import static java.util.Objects.requireNonNull;
 
 import io.camunda.zeebe.backup.api.BackupIdentifierWildcard.CheckpointPattern;
+import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.api.BackupStatusCode;
 import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.backup.common.BackupIdentifierWildcardImpl;
@@ -30,6 +31,7 @@ import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeParseException;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -151,9 +153,19 @@ public final class RestoreValidator
     final var ids = backupIds.stream().mapToLong(Long::longValue).sorted().toArray();
     final var store =
         requireNonNull(backupStore, "Backup store must be configured to load backups");
+    final var restoredPartitionCount = backupPartitionCount(store, ids[ids.length - 1]);
+    if (exportedPositionSupplier != null) {
+      // A database that already holds exported positions has to belong to the partitions of the
+      // backup. One without any is restored from scratch, so the backup alone decides.
+      final var exportedPartitionCount = availableExportedPositions(exportedPositionSupplier);
+      if (!exportedPartitionCount.isEmpty()) {
+        verifyPartitionCountsAgree(
+            ids[ids.length - 1], restoredPartitionCount, exportedPartitionCount.size());
+      }
+    }
     return awaitResult(
             FuturesUtil.parTraverse(
-                IntStream.rangeClosed(1, partitionCount).boxed().toList(),
+                IntStream.rangeClosed(1, restoredPartitionCount).boxed().toList(),
                 partition -> verifyBackupsExist(store, partition, ids)))
         .stream()
         .collect(Collectors.toMap(Entry::getKey, Entry::getValue));
@@ -202,31 +214,127 @@ public final class RestoreValidator
   private RestorableBackups findBackups(final RestoreRequest request) {
     final Instant instantTo = parseTimestamp(request.arguments().parameters().to(), "to");
     final Instant instantFrom = parseTimestamp(request.arguments().parameters().from(), "from");
+    // Exported positions are mandatory for a range restore: validateParameters rejects the request
+    // without a way to read them, and they are what the partitions to restore are taken from.
     final var exportedPositions =
-        exportedPositionSupplier == null
-            ? null
-            : exportedPositions(exportedPositionSupplier, partitionCount);
+        requireExportedPositions(
+            exportedPositions(
+                requireNonNull(exportedPositionSupplier, "Exported positions are required"),
+                partitionCount));
     LOG.info("Exported positions for all partitions: {}", exportedPositions);
-    final var metadataByPartition = loadMetadataForAllPartitions(partitionCount);
-    return RestorePointResolver.resolve(
-        metadataByPartition, instantFrom, instantTo, exportedPositions);
+    final var metadataByPartition = loadMetadataForAllPartitions(exportedPositions.size());
+    final var restorableBackups =
+        RestorePointResolver.resolve(
+            metadataByPartition, instantFrom, instantTo, exportedPositions);
+    verifyLastBackupsHoldThePartitions(restorableBackups, exportedPositions.size());
+    return restorableBackups;
   }
 
+  @VisibleForTesting
+  void verifyLastBackupsHoldThePartitions(
+      final RestorableBackups restorableBackups, final int exportedPartitionCount) {
+    final var store =
+        requireNonNull(backupStore, "Backup store must be configured to load backups");
+    restorableBackups.backupsByPartitionId().values().stream()
+        .map(backups -> backups.getLast().checkpointId())
+        .distinct()
+        .sorted()
+        .forEach(
+            lastBackup ->
+                verifyPartitionCountsAgree(
+                    lastBackup, backupPartitionCount(store, lastBackup), exportedPartitionCount));
+  }
+
+  /**
+   * The partitions to restore are those of the last backup, which have to be the ones the RDBMS
+   * holds exported positions for.
+   */
+  private static void verifyPartitionCountsAgree(
+      final long backupId, final int backupPartitionCount, final int exportedPartitionCount) {
+    if (backupPartitionCount != exportedPartitionCount) {
+      throw new IllegalStateException(
+          ("Cannot restore: backup %d was taken with %d partitions, but the RDBMS holds exported "
+                  + "positions for %d")
+              .formatted(backupId, backupPartitionCount, exportedPartitionCount));
+    }
+  }
+
+  /**
+   * The partition count recorded in the descriptor of the given backup, on any partition since
+   * every partition's backup records the same count, rejected if the group holds fewer partitions.
+   *
+   * <p>Restoring a backup taken before a scale up leaves the group with that backup's partitions,
+   * so restoring forward again to a backup with more partitions than that is rejected here: the
+   * group has no partitions to restore them into.
+   */
+  private int backupPartitionCount(final BackupStore store, final long backupId) {
+    final var backupPartitionCount =
+        awaitResult(store.list(lookupWildcard(backupId))).stream()
+            .filter(status -> status.statusCode() == BackupStatusCode.COMPLETED)
+            .findAny()
+            .flatMap(BackupStatus::descriptor)
+            .orElseThrow(
+                () ->
+                    new NoSuchElementException(
+                        "No completed backup found with backup id %d".formatted(backupId)))
+            .numberOfPartitions();
+    if (backupPartitionCount > partitionCount) {
+      throw new IllegalArgumentException(
+          "Cannot restore backup %d: it has %d partitions, but the partition group only has %d"
+              .formatted(backupId, backupPartitionCount, partitionCount));
+    }
+    return backupPartitionCount;
+  }
+
+  /**
+   * The exported positions of the partitions the RDBMS holds, which are the partitions of the
+   * backup to restore: partitions 1 up to the first one without an exported position. Partitions
+   * without one after that are fine, e.g. those a scale-up added after the database was restored to
+   * the backups, but a position after a missing one means the database is inconsistent.
+   */
   private Map<Integer, Long> exportedPositions(
       final IntFunction<@Nullable Long> positionSupplier, final int partitionCount) {
-    return IntStream.rangeClosed(1, partitionCount)
-        .boxed()
-        .collect(
-            Collectors.toUnmodifiableMap(
-                partition -> partition,
-                partition -> {
-                  final var position = positionSupplier.apply(partition);
-                  if (position == null) {
-                    throw new IllegalStateException(
-                        "No exported position found for partition " + partition + " in RDBMS");
-                  }
-                  return position;
-                }));
+    final var positions = new HashMap<Integer, Long>();
+    var firstMissing = 0;
+    for (int partition = 1; partition <= partitionCount; partition++) {
+      final var position = positionSupplier.apply(partition);
+      if (position == null) {
+        if (firstMissing == 0) {
+          firstMissing = partition;
+        }
+      } else if (firstMissing != 0) {
+        throw new IllegalStateException(
+            "The RDBMS holds an exported position for partition %d but none for partition %d"
+                .formatted(partition, firstMissing));
+      } else {
+        positions.put(partition, position);
+      }
+    }
+    return Map.copyOf(positions);
+  }
+
+  /**
+   * The exported positions of the RDBMS, or none if they cannot be read. A database that is about
+   * to be restored into may not have its schema yet, which only the restore creates, so a failure
+   * to read is not an inconsistency; a gap between the positions still is.
+   */
+  private Map<Integer, Long> availableExportedPositions(
+      final IntFunction<@Nullable Long> positionSupplier) {
+    try {
+      return exportedPositions(positionSupplier, partitionCount);
+    } catch (final IllegalStateException inconsistentPositions) {
+      throw inconsistentPositions;
+    } catch (final RuntimeException e) {
+      LOG.warn("Exported positions are not available, restoring from the backup alone", e);
+      return Map.of();
+    }
+  }
+
+  private static Map<Integer, Long> requireExportedPositions(final Map<Integer, Long> positions) {
+    if (positions.isEmpty()) {
+      throw new IllegalStateException("No exported position found for partition 1 in RDBMS");
+    }
+    return positions;
   }
 
   private List<BackupMetadata> loadMetadataForAllPartitions(final int partitionCount) {
@@ -262,6 +370,11 @@ public final class RestoreValidator
       LOG.warn("Failed to parse backup metadata for partition {}", partitionId, e);
       return Optional.empty();
     }
+  }
+
+  private BackupIdentifierWildcardImpl lookupWildcard(final long backupId) {
+    return new BackupIdentifierWildcardImpl(
+        Optional.empty(), Optional.empty(), CheckpointPattern.of(backupId));
   }
 
   private static <T> T awaitResult(final CompletableFuture<T> future) {

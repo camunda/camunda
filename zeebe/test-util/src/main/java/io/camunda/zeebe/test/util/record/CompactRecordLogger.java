@@ -99,6 +99,7 @@ import io.camunda.zeebe.protocol.record.value.DecisionEvaluationRecordValue;
 import io.camunda.zeebe.protocol.record.value.DeploymentDistributionRecordValue;
 import io.camunda.zeebe.protocol.record.value.DeploymentRecordValue;
 import io.camunda.zeebe.protocol.record.value.DocumentReferenceValue;
+import io.camunda.zeebe.protocol.record.value.ElementInstanceWalkRecordValue;
 import io.camunda.zeebe.protocol.record.value.ErrorRecordValue;
 import io.camunda.zeebe.protocol.record.value.EscalationRecordValue;
 import io.camunda.zeebe.protocol.record.value.ExpressionRecordValue;
@@ -284,6 +285,7 @@ public class CompactRecordLogger {
     valueLoggers.put(ValueType.MESSAGE_SUBSCRIPTION, this::summarizeMessageSubscription);
     valueLoggers.put(ValueType.PROCESS_INSTANCE, this::summarizeProcessInstance);
     valueLoggers.put(ValueType.PROCESS_INSTANCE_BATCH, this::summarizeProcessInstanceBatch);
+    valueLoggers.put(ValueType.ELEMENT_INSTANCE_WALK, this::summarizeElementInstanceWalk);
     valueLoggers.put(ValueType.PROCESS_INSTANCE_CREATION, this::summarizeProcessInstanceCreation);
     valueLoggers.put(
         ValueType.PROCESS_INSTANCE_MODIFICATION, this::summarizeProcessInstanceModification);
@@ -1096,6 +1098,18 @@ public class CompactRecordLogger {
     return result.append(formatTenant(value)).toString();
   }
 
+  String summarizeElementInstanceWalk(final Record<?> record) {
+    final var value = (ElementInstanceWalkRecordValue) record.getValue();
+    return "PI:"
+        + shortenKey(value.getProcessInstanceKey())
+        + " EI:"
+        + shortenKey(value.getElementInstanceKey())
+        + " parent:"
+        + shortenKey(value.getParentKey())
+        + " idx:"
+        + shortenKey(value.getIndex());
+  }
+
   private String summarizeTreePath(final ProcessInstanceRecordValue value) {
     final StringBuilder result = new StringBuilder();
     if (!value.getElementInstancePath().isEmpty()) {
@@ -1126,6 +1140,7 @@ public class CompactRecordLogger {
     return new StringBuilder()
         .append("new <process ")
         .append(formatId(value.getBpmnProcessId()))
+        .append(formatVersionTag(value.getVersionTag()))
         .append(">")
         .append(summarizeStartInstructions(value.getStartInstructions()))
         .append(formatVariables(value))
@@ -1567,14 +1582,13 @@ public class CompactRecordLogger {
   private String summarizeClock(final Record<?> record) {
     final var value = (ClockRecordValue) record.getValue();
 
-    final var clockValue =
-        switch (record.getIntent()) {
-          case ClockIntent.PIN, ClockIntent.PINNED -> formatPinnedTime(value.getTime());
-          case ClockIntent.RESET, ClockIntent.RESETTED -> "system time";
-          default -> value.getTime();
-        };
-
-    return "to %s".formatted(clockValue);
+    return switch (record.getIntent()) {
+      case ClockIntent.PIN, ClockIntent.PINNED -> "to " + formatPinnedTime(value.getTime());
+      case ClockIntent.RESET, ClockIntent.RESETTED -> "to system time";
+      case ClockIntent.FETCH -> "current time";
+      case ClockIntent.FETCHED -> "current time is " + formatPinnedTime(value.getTime());
+      default -> "to " + value.getTime();
+    };
   }
 
   private String summarizeRole(final Record<?> record) {
@@ -2261,6 +2275,10 @@ public class CompactRecordLogger {
     return StringUtils.isEmpty(tenantId) || TenantOwned.DEFAULT_TENANT_IDENTIFIER.equals(tenantId)
         ? ""
         : " (tenant: %s)".formatted(tenantId);
+  }
+
+  private String formatVersionTag(final String versionTag) {
+    return versionTag.isEmpty() ? "" : " tag:" + versionTag;
   }
 
   private String formatVariables(final RecordValueWithVariables value) {

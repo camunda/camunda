@@ -9,6 +9,7 @@ package io.camunda.optimize.dto.zeebe.variable;
 
 import static io.camunda.optimize.service.util.importing.ZeebeConstants.ZEEBE_DEFAULT_TENANT_ID;
 
+import io.camunda.zeebe.protocol.record.value.VariableMetadataValue;
 import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
 import io.camunda.zeebe.protocol.record.value.VariableSourceValue;
 import java.util.Objects;
@@ -82,6 +83,11 @@ public class ZeebeVariableDataDto implements VariableRecordValue {
 
   @Override
   public VariableSourceValue getSource() {
+    return null; // not used in Optimize
+  }
+
+  @Override
+  public VariableMetadataValue getMetadata() {
     return null; // not used in Optimize
   }
 

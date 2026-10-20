@@ -21,6 +21,7 @@ import com.tngtech.archunit.lang.ConditionEvent;
 import com.tngtech.archunit.lang.ConditionEvents;
 import com.tngtech.archunit.lang.SimpleConditionEvent;
 import com.tngtech.archunit.lang.syntax.ArchRuleDefinition;
+import io.camunda.archunit.KebabCasePropertyKeys;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Predicate;
@@ -34,19 +35,16 @@ import org.springframework.beans.factory.annotation.Value;
  * <p>Spring Boot's relaxed binding for {@link Value} only applies when property keys use canonical
  * kebab-case. Non-canonical styles (camelCase, snake_case, UPPER_SNAKE_CASE) result in partial or
  * no cross-source resolution, causing silent misconfiguration when properties are supplied via
- * environment variables or application.properties using a different format.
+ * environment variables or application.properties using a different format. Special characters
+ * (e.g. {@code !} or {@code @}) are worse still: Spring silently falls back to the {@link Value}'s
+ * default, with no error or warning, hiding a misconfigured key.
  *
  * <p>These rules ensure that all {@link Value} annotations in production code use kebab-case
- * property keys, rejecting any key that contains uppercase letters or underscores.
+ * property keys, allowing only lowercase letters, digits, dots, and hyphens (see {@link
+ * KebabCasePropertyKeys}).
  */
 @AnalyzeClasses(packages = "io.camunda", importOptions = ImportOption.DoNotIncludeTests.class)
 public final class RequireKebabCaseInValueArchTest {
-
-  /**
-   * Matches any property key that contains at least one uppercase letter or underscore. This
-   * rejects camelCase, snake_case, and UPPER_SNAKE_CASE, while allowing only kebab-case.
-   */
-  static final Pattern FORBIDDEN_CHARS = Pattern.compile(".*[A-Z_].*");
 
   /**
    * Matches a Spring {@code ${...}} property placeholder and captures the property key in group 1.
@@ -127,8 +125,8 @@ public final class RequireKebabCaseInValueArchTest {
               });
 
   /**
-   * Validates that the property key extracted from a {@link Value} annotation does not contain
-   * {@link RequireKebabCaseInValueArchTest#FORBIDDEN_CHARS}.
+   * Validates that the property key extracted from a {@link Value} annotation is valid per {@link
+   * KebabCasePropertyKeys#isValid(String)}.
    *
    * @param valueAnnotation the Value annotation to validate
    * @param owner the element that owns the annotation (field, method, or constructor)
@@ -142,7 +140,7 @@ public final class RequireKebabCaseInValueArchTest {
 
     extractPropertyKey(valueAnnotation.value())
         .filter(Predicate.not(WHITELISTED_PROPERTY_KEYS::contains))
-        .filter(RequireKebabCaseInValueArchTest::valueContainsForbiddenCharacters)
+        .filter(Predicate.not(KebabCasePropertyKeys::isValid))
         .ifPresent(propertyKey -> events.add(addViolation(owner, propertyKey)));
   }
 
@@ -167,17 +165,13 @@ public final class RequireKebabCaseInValueArchTest {
     return matcher.matches() ? Optional.of(matcher.group(1)) : Optional.empty();
   }
 
-  private static boolean valueContainsForbiddenCharacters(final String value) {
-    return value != null && FORBIDDEN_CHARS.matcher(value).matches();
-  }
-
   private static ConditionEvent addViolation(
       final HasName.AndFullName element, final String propertyKey) {
     final String message =
         String.format(
             """
-            @Value on '%s' has invalid property key: '%s' (contains uppercase or underscore). \
-            Please use kebab-case instead.""",
+            @Value on '%s' has invalid property key: '%s' (must contain only lowercase letters, \
+            digits, dots, and hyphens). Please use kebab-case instead.""",
             element.getFullName(), propertyKey);
     return SimpleConditionEvent.violated(element, message);
   }

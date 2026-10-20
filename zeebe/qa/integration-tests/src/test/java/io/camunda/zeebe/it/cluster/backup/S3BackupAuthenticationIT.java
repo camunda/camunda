@@ -7,13 +7,14 @@
  */
 package io.camunda.zeebe.it.cluster.backup;
 
-import io.camunda.configuration.PrimaryStorageBackup.BackupStoreType;
-import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
+import io.camunda.configuration.data.SecondaryStorage.SecondaryStorageType;
+import io.camunda.configuration.data.primarystorage.PrimaryStorageBackup.BackupStoreType;
 import io.camunda.container.CamundaContainer.BrokerContainer;
 import io.camunda.management.backups.StateCode;
 import io.camunda.zeebe.backup.s3.S3BackupConfig.Builder;
 import io.camunda.zeebe.backup.s3.S3BackupStore;
 import io.camunda.zeebe.qa.util.actuator.BackupActuator;
+import io.camunda.zeebe.qa.util.actuator.PartitionsActuator;
 import io.camunda.zeebe.qa.util.testcontainers.ZeebeTestContainerDefaults;
 import io.camunda.zeebe.test.testcontainers.S3MockTestContainer;
 import io.camunda.zeebe.test.util.junit.RegressionTest;
@@ -36,7 +37,7 @@ final class S3BackupAuthenticationIT {
   @Container private static final S3MockTestContainer S3 = new S3MockTestContainer();
 
   static {
-    S3.withNetwork(NETWORK).withNetworkAliases(S3_NETWORK_ALIAS);
+    S3.container().withNetwork(NETWORK).withNetworkAliases(S3_NETWORK_ALIAS);
   }
 
   @BeforeAll
@@ -83,6 +84,14 @@ final class S3BackupAuthenticationIT {
 
     // then
     Assertions.assertThat(zeebe.isStarted()).isTrue();
+
+    final var partitionsActuator = PartitionsActuator.of(zeebe);
+    Awaitility.await("partition has taken its first snapshot")
+        .atMost(Duration.ofSeconds(30))
+        .ignoreExceptions()
+        .untilAsserted(
+            () ->
+                Assertions.assertThat(partitionsActuator.query().get(1).snapshotId()).isNotNull());
 
     final var backupActuator = BackupActuator.of(zeebe);
     final var backupId = 1L;

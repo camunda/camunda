@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.processing.bpmn.activity;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.entry;
 import static org.assertj.core.api.Assertions.tuple;
 
 import io.camunda.zeebe.engine.util.EngineRule;
@@ -27,12 +28,14 @@ import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
+import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Consumer;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -590,6 +593,93 @@ public final class CallActivityTest {
             tuple(callActivityInstanceKey, "x", "1"),
             tuple(callActivityInstanceKey, "y", "2"),
             tuple(processInstanceKey, "x", "1"));
+  }
+
+  @Test
+  public void shouldMakeChildVariablesAvailableLocallyWhenCallActivityHasEndExecutionListener() {
+    // given: propagateAllChildVariables=false, no output mapping, and an end execution listener
+    // on the call activity — the listener must not interfere with parking/consuming the child's
+    // variables
+    final var endListenerType = "end-listener";
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            "wf-parent.bpmn",
+            parentProcess(
+                c ->
+                    c.zeebePropagateAllChildVariables(false)
+                        .zeebeEndExecutionListener(endListenerType)))
+        .withXmlResource("wf-child.bpmn", childProcess(jobType, ServiceTaskBuilder::done))
+        .deploy();
+
+    final var processInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID_PARENT).create();
+
+    // when
+    completeJobWith(Map.of("x", 1));
+    final long callActivityInstanceKey = getCallActivityInstanceKey(processInstanceKey);
+    final Optional<JobRecordValue> endListenerJob =
+        ENGINE.jobs().withType(endListenerType).activate().getValue().getJobs().stream()
+            .filter(job -> job.getProcessInstanceKey() == processInstanceKey)
+            .findFirst();
+    assertThat(endListenerJob)
+        .hasValueSatisfying(job -> assertThat(job.getVariables()).contains(entry("x", 1)));
+    ENGINE.job().ofInstance(processInstanceKey).withType(endListenerType).complete();
+
+    // then: the child's variable ends up local to the call activity scope instead of being
+    // discarded, and is never propagated to the parent process instance
+    assertThat(
+            RecordingExporter.records()
+                .betweenProcessInstance(processInstanceKey)
+                .variableRecords()
+                .withIntent(VariableIntent.CREATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withName("x"))
+        .extracting(Record::getValue)
+        .extracting(v -> tuple(v.getScopeKey(), v.getValue()))
+        .containsExactly(tuple(callActivityInstanceKey, "1"));
+  }
+
+  @Test
+  public void shouldCompleteCallActivityWithoutPropagationWhenChildHasNoVariables() {
+    // given: propagateAllChildVariables=false, no output mapping, and the child completes with no
+    // variables at all - hasVariables is based on capacity() > 0, which an empty msgpack document
+    // still satisfies, so this runs through mapLocalVariables with an empty document
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            "wf-parent.bpmn", parentProcess(c -> c.zeebePropagateAllChildVariables(false)))
+        .withXmlResource("wf-child.bpmn", childProcess(jobType, ServiceTaskBuilder::done))
+        .deploy();
+
+    final var processInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID_PARENT).create();
+
+    // when
+    completeJobWith(Map.of());
+    final long callActivityInstanceKey = getCallActivityInstanceKey(processInstanceKey);
+
+    // then: the call activity completes normally, with no incident and no spurious variable record
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementType(BpmnElementType.CALL_ACTIVITY)
+                .exists())
+        .isTrue();
+    assertThat(
+            RecordingExporter.<Boolean>expectNoMatchingRecords(
+                ignored ->
+                    RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+                        .withProcessInstanceKey(processInstanceKey)
+                        .exists()))
+        .isFalse();
+    assertThat(
+            RecordingExporter.<Boolean>expectNoMatchingRecords(
+                ignored ->
+                    RecordingExporter.variableRecords(VariableIntent.CREATED)
+                        .withScopeKey(callActivityInstanceKey)
+                        .exists()))
+        .isFalse();
   }
 
   @Test

@@ -17,6 +17,7 @@
     <exclude.from.config>OptimizeLicense.txt</exclude.from.config>
     <assembly.skipAssembly>false</assembly.skipAssembly>
     <distro.zip.attach>true</distro.zip.attach>
+    <optimize.distro.attach>true</optimize.distro.attach>
   </properties>
 
   <dependencies>
@@ -59,7 +60,7 @@
               <descriptors>
                 <descriptor>assembly-distro-production.xml</descriptor>
               </descriptors>
-              <attach>true</attach>
+              <attach>${optimize.distro.attach}</attach>
               <formats>
                 <format>tar.gz</format>
               </formats>

@@ -25,9 +25,12 @@ const getIncludeIds = (selectedIds: string[], checkedEligibleIds: string[]) => {
   return checkedEligibleIds.length > 0 ? checkedEligibleIds : selectedIds;
 };
 
+const FINISHED_STATE_SEARCH_PARAMS = ['completed', 'canceled'];
+
 const useProcessInstancesBatchOperationMutationRequestBody = (
   checkedEligibleIds: string[],
-  includeSuspended = false,
+  includeSuspended: boolean,
+  excludeFinishedStates = false,
 ) => {
   const conditions = variableFilterStore.conditions;
   const [searchParams] = useSearchParams();
@@ -36,8 +39,15 @@ const useProcessInstancesBatchOperationMutationRequestBody = (
 
   const includeIds = getIncludeIds(selectedIds, checkedEligibleIds);
 
+  const requestSearchParams = new URLSearchParams(searchParams);
+  if (excludeFinishedStates) {
+    FINISHED_STATE_SEARCH_PARAMS.forEach((param) =>
+      requestSearchParams.delete(param),
+    );
+  }
+
   return buildMutationRequestBody({
-    searchParams,
+    searchParams: requestSearchParams,
     includeIds,
     excludeIds: excludedIds,
     conditions,
@@ -45,14 +55,29 @@ const useProcessInstancesBatchOperationMutationRequestBody = (
   });
 };
 
+/** Retry and batch modification only apply to active instances. */
 const useBatchOperationMutationRequestBody = () =>
   useProcessInstancesBatchOperationMutationRequestBody(
     processInstancesSelectionStore.checkedRunningIds,
+    false,
+  );
+
+// Cancellation and suspension reject finished states at the top level, so they are left out of the filter.
+const useCancelProcessInstancesBatchOperationMutationRequestBody = () =>
+  useProcessInstancesBatchOperationMutationRequestBody(
+    [
+      ...processInstancesSelectionStore.checkedRunningIds,
+      ...processInstancesSelectionStore.checkedSuspendedIds,
+    ],
+    true,
+    true,
   );
 
 const useSuspendProcessInstancesBatchOperationMutationRequestBody = () =>
   useProcessInstancesBatchOperationMutationRequestBody(
     processInstancesSelectionStore.checkedRunningIds,
+    false,
+    true,
   );
 
 const useResumeProcessInstancesBatchOperationMutationRequestBody = () =>
@@ -102,7 +127,9 @@ const useDeleteDecisionInstancesBatchOperationRequestBody =
   };
 
 export {
+  FINISHED_STATE_SEARCH_PARAMS,
   useBatchOperationMutationRequestBody,
+  useCancelProcessInstancesBatchOperationMutationRequestBody,
   useSuspendProcessInstancesBatchOperationMutationRequestBody,
   useResumeProcessInstancesBatchOperationMutationRequestBody,
   useDeleteProcessInstancesBatchOperationMutationRequestBody,

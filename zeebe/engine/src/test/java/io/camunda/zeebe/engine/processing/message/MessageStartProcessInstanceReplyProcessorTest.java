@@ -35,6 +35,7 @@ import io.camunda.zeebe.protocol.record.intent.MessageCorrelationIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageStartEventSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageStartProcessInstanceRequestIntent;
+import io.camunda.zeebe.protocol.record.value.StorageOrdinalRelated;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.BeforeEach;
@@ -126,6 +127,7 @@ public final class MessageStartProcessInstanceReplyProcessorTest {
                 .setStartEventId("start")
                 .setMessageStartEventSubscriptionKey(MESSAGE_START_EVENT_SUBSCRIPTION_KEY)
                 .setProcessInstanceKey(PROCESS_INSTANCE_KEY)
+                .setStorageOrdinal(1234)
                 .setTenantId("<default>"));
     return record;
   }
@@ -174,6 +176,7 @@ public final class MessageStartProcessInstanceReplyProcessorTest {
       assertThat(subscriptionCaptor.getValue().getBpmnProcessId()).isEqualTo(BPMN_PROCESS_ID);
       assertThat(subscriptionCaptor.getValue().getProcessInstanceKey())
           .isEqualTo(PROCESS_INSTANCE_KEY);
+      assertThat(subscriptionCaptor.getValue().getStorageOrdinal()).isEqualTo(1234);
 
       verify(mockStateWriter)
           .appendFollowUpEvent(
@@ -251,6 +254,7 @@ public final class MessageStartProcessInstanceReplyProcessorTest {
               correlationCaptor.capture());
       assertThat(correlationCaptor.getValue().getProcessInstanceKey())
           .isEqualTo(PROCESS_INSTANCE_KEY);
+      assertThat(correlationCaptor.getValue().getStorageOrdinal()).isEqualTo(1234);
       verify(mockResponseWriter)
           .writeAcceptedResponse(
               eq(MESSAGE_KEY),
@@ -306,6 +310,27 @@ public final class MessageStartProcessInstanceReplyProcessorTest {
     }
 
     @Test
+    void shouldMarkUniquenessRejectedEventAsNotOrdinalControlled() {
+      // given a reply that carries an instance ordinal
+      final var processor = uniquenessProcessor();
+      final var record = createMockReplyRecord();
+
+      // when
+      processor.processRecord(record);
+
+      // then the event is forced to the marker, the reply value is not copied
+      final var eventCaptor =
+          ArgumentCaptor.forClass(MessageStartProcessInstanceRequestRecord.class);
+      verify(mockStateWriter)
+          .appendFollowUpEvent(
+              eq(record.getKey()),
+              eq(MessageStartProcessInstanceRequestIntent.UNIQUENESS_REJECTED),
+              eventCaptor.capture());
+      assertThat(eventCaptor.getValue().getStorageOrdinal())
+          .isEqualTo(StorageOrdinalRelated.NOT_ORDINAL_CONTROLLED);
+    }
+
+    @Test
     void shouldWriteDeferredNotCorrelatedResponseAndExpireMessageForSyncCorrelate() {
       // given a synchronous correlate is awaiting the reply and its message is still buffered
       final var processor = uniquenessProcessor();
@@ -343,6 +368,26 @@ public final class MessageStartProcessInstanceReplyProcessorTest {
               anyInt());
       verify(mockStateWriter)
           .appendFollowUpEvent(eq(MESSAGE_KEY), eq(MessageIntent.EXPIRED), any());
+    }
+
+    @Test
+    void shouldMarkDeferredNotCorrelatedResponseAsNotOrdinalControlled() {
+      // given a synchronous correlate is awaiting the reply
+      final var processor = uniquenessProcessor();
+      final var record = createMockReplyRecord();
+      givenPendingCorrelateRequest();
+      when(mockMessageState.getMessage(MESSAGE_KEY)).thenReturn(createStoredMessage());
+      final var captor = ArgumentCaptor.forClass(MessageCorrelationRecord.class);
+
+      // when
+      processor.processRecord(record);
+
+      // then no instance is known, so the NOT_CORRELATED event is not ordinal controlled
+      verify(mockStateWriter)
+          .appendFollowUpEvent(
+              eq(MESSAGE_KEY), eq(MessageCorrelationIntent.NOT_CORRELATED), captor.capture());
+      assertThat(captor.getValue().getStorageOrdinal())
+          .isEqualTo(StorageOrdinalRelated.NOT_ORDINAL_CONTROLLED);
     }
 
     @Test
@@ -385,6 +430,27 @@ public final class MessageStartProcessInstanceReplyProcessorTest {
 
       // and the no-subscription-rejection reply outcome is counted (M2)
       assertThat(replyCount("rejected_no_subscription")).isEqualTo(1.0);
+    }
+
+    @Test
+    void shouldMarkNoSubscriptionRejectedEventAsNotOrdinalControlled() {
+      // given a reply that carries an instance ordinal
+      final var processor = noSubscriptionProcessor();
+      final var record = createMockReplyRecord();
+
+      // when
+      processor.processRecord(record);
+
+      // then the event is forced to the marker, the reply value is not copied
+      final var eventCaptor =
+          ArgumentCaptor.forClass(MessageStartProcessInstanceRequestRecord.class);
+      verify(mockStateWriter)
+          .appendFollowUpEvent(
+              eq(record.getKey()),
+              eq(MessageStartProcessInstanceRequestIntent.NO_SUBSCRIPTION_REJECTED),
+              eventCaptor.capture());
+      assertThat(eventCaptor.getValue().getStorageOrdinal())
+          .isEqualTo(StorageOrdinalRelated.NOT_ORDINAL_CONTROLLED);
     }
 
     @Test

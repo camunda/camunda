@@ -12,7 +12,7 @@ import {observer} from 'mobx-react-lite';
 import {useRef} from 'react';
 import type {Notification as NotificationType} from '#/shared/notifications/notifications.store';
 import {useRelativeDate} from '#/shared/notifications/useRelativeDate';
-import styles from '#/shared/notifications/components/Notifications.module.scss';
+import styles from './Notifications.module.scss';
 
 type Props = {
 	notification: NotificationType;

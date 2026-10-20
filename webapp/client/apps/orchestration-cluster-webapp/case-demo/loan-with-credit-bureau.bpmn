@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="loan-with-credit-bureau-definitions" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.40.0" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.11.0">
+  <bpmn:process id="loan-with-credit-bureau" name="Loan application with credit bureau" isExecutable="true">
+    <bpmn:extensionElements>
+      <zeebe:case title="loanTitle" caseForm="loan-case-details" />
+    </bpmn:extensionElements>
+    <bpmn:startEvent id="bureau-application-submitted" name="Application submitted">
+      <bpmn:outgoing>bureau-flow-1</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:subProcess id="bureau-credit-check" name="Credit check">
+      <bpmn:extensionElements>
+        <zeebe:stage />
+      </bpmn:extensionElements>
+      <bpmn:incoming>bureau-flow-1</bpmn:incoming>
+      <bpmn:outgoing>bureau-flow-2</bpmn:outgoing>
+      <bpmn:startEvent id="bureau-check-start">
+        <bpmn:outgoing>bureau-check-flow-1</bpmn:outgoing>
+      </bpmn:startEvent>
+      <bpmn:callActivity id="call-credit-bureau" name="Ask the credit bureau">
+        <bpmn:extensionElements>
+          <zeebe:calledElement processId="credit-bureau-check" propagateAllChildVariables="true" />
+        </bpmn:extensionElements>
+        <bpmn:incoming>bureau-check-flow-1</bpmn:incoming>
+        <bpmn:outgoing>bureau-check-flow-2</bpmn:outgoing>
+      </bpmn:callActivity>
+      <bpmn:endEvent id="bureau-check-end">
+        <bpmn:incoming>bureau-check-flow-2</bpmn:incoming>
+      </bpmn:endEvent>
+      <bpmn:sequenceFlow id="bureau-check-flow-1" sourceRef="bureau-check-start" targetRef="call-credit-bureau" />
+      <bpmn:sequenceFlow id="bureau-check-flow-2" sourceRef="call-credit-bureau" targetRef="bureau-check-end" />
+    </bpmn:subProcess>
+    <bpmn:subProcess id="bureau-decision" name="Decision">
+      <bpmn:extensionElements>
+        <zeebe:stage />
+      </bpmn:extensionElements>
+      <bpmn:incoming>bureau-flow-2</bpmn:incoming>
+      <bpmn:outgoing>bureau-flow-3</bpmn:outgoing>
+      <bpmn:startEvent id="bureau-decision-start">
+        <bpmn:outgoing>bureau-decision-flow-1</bpmn:outgoing>
+      </bpmn:startEvent>
+      <bpmn:userTask id="bureau-review-loan" name="Review loan">
+        <bpmn:extensionElements>
+          <zeebe:userTask />
+          <zeebe:formDefinition formId="underwriter-review" />
+        </bpmn:extensionElements>
+        <bpmn:incoming>bureau-decision-flow-1</bpmn:incoming>
+        <bpmn:outgoing>bureau-decision-flow-2</bpmn:outgoing>
+      </bpmn:userTask>
+      <bpmn:endEvent id="bureau-decision-end">
+        <bpmn:incoming>bureau-decision-flow-2</bpmn:incoming>
+      </bpmn:endEvent>
+      <bpmn:sequenceFlow id="bureau-decision-flow-1" sourceRef="bureau-decision-start" targetRef="bureau-review-loan" />
+      <bpmn:sequenceFlow id="bureau-decision-flow-2" sourceRef="bureau-review-loan" targetRef="bureau-decision-end" />
+    </bpmn:subProcess>
+    <bpmn:endEvent id="bureau-loan-closed" name="Loan closed">
+      <bpmn:incoming>bureau-flow-3</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="bureau-flow-1" sourceRef="bureau-application-submitted" targetRef="bureau-credit-check" />
+    <bpmn:sequenceFlow id="bureau-flow-2" sourceRef="bureau-credit-check" targetRef="bureau-decision" />
+    <bpmn:sequenceFlow id="bureau-flow-3" sourceRef="bureau-decision" targetRef="bureau-loan-closed" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="loan-with-credit-bureau-diagram">
+    <bpmndi:BPMNPlane id="loan-with-credit-bureau-plane" bpmnElement="loan-with-credit-bureau">
+      <bpmndi:BPMNShape id="bureau-application-submitted_di" bpmnElement="bureau-application-submitted">
+        <dc:Bounds x="100" y="182" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="80" y="225" width="76" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="bureau-credit-check_di" bpmnElement="bureau-credit-check" isExpanded="true">
+        <dc:Bounds x="180" y="100" width="300" height="200" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="bureau-check-start_di" bpmnElement="bureau-check-start">
+        <dc:Bounds x="210" y="182" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="call-credit-bureau_di" bpmnElement="call-credit-bureau">
+        <dc:Bounds x="280" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="bureau-check-end_di" bpmnElement="bureau-check-end">
+        <dc:Bounds x="420" y="182" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="bureau-check-flow-1_di" bpmnElement="bureau-check-flow-1">
+        <di:waypoint x="246" y="200" />
+        <di:waypoint x="280" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="bureau-check-flow-2_di" bpmnElement="bureau-check-flow-2">
+        <di:waypoint x="380" y="200" />
+        <di:waypoint x="420" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="bureau-decision_di" bpmnElement="bureau-decision" isExpanded="true">
+        <dc:Bounds x="540" y="100" width="300" height="200" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="bureau-decision-start_di" bpmnElement="bureau-decision-start">
+        <dc:Bounds x="570" y="182" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="bureau-review-loan_di" bpmnElement="bureau-review-loan">
+        <dc:Bounds x="640" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="bureau-decision-end_di" bpmnElement="bureau-decision-end">
+        <dc:Bounds x="780" y="182" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="bureau-decision-flow-1_di" bpmnElement="bureau-decision-flow-1">
+        <di:waypoint x="606" y="200" />
+        <di:waypoint x="640" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="bureau-decision-flow-2_di" bpmnElement="bureau-decision-flow-2">
+        <di:waypoint x="740" y="200" />
+        <di:waypoint x="780" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="bureau-loan-closed_di" bpmnElement="bureau-loan-closed">
+        <dc:Bounds x="902" y="182" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="891" y="225" width="58" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="bureau-flow-1_di" bpmnElement="bureau-flow-1">
+        <di:waypoint x="136" y="200" />
+        <di:waypoint x="180" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="bureau-flow-2_di" bpmnElement="bureau-flow-2">
+        <di:waypoint x="480" y="200" />
+        <di:waypoint x="540" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="bureau-flow-3_di" bpmnElement="bureau-flow-3">
+        <di:waypoint x="840" y="200" />
+        <di:waypoint x="902" y="200" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

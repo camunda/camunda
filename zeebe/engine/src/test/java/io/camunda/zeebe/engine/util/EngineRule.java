@@ -661,6 +661,10 @@ public final class EngineRule extends ExternalResource {
     return environmentRule.writeBatch(records);
   }
 
+  public long writeRecordsOnPartition(final int partitionId, final RecordToWrite... records) {
+    return environmentRule.writeBatch(partitionId, records);
+  }
+
   public long writeCommandOnPartition(
       final int partitionId, final long key, final Intent intent, final UnifiedRecordValue value) {
     return environmentRule.writeCommandOnPartition(partitionId, key, intent, value);

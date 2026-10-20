@@ -22,11 +22,12 @@ import {getHeaderColumns} from './headerColumns';
 type Props = {
 	decisionEvaluationInstanceKey: string;
 	onOpenDrd: () => void;
+	openDrdButtonRef?: React.Ref<HTMLButtonElement>;
 };
 
 const DecisionInstanceLink = createLink(Link);
 
-const Header: React.FC<Props> = ({decisionEvaluationInstanceKey, onOpenDrd}) => {
+const Header: React.FC<Props> = ({decisionEvaluationInstanceKey, onOpenDrd, openDrdButtonRef}) => {
 	const {t} = useTranslation();
 	const isMultiTenancyEnabled = getClientConfig().deployment.isMultiTenancyEnabled;
 	const {data: tenants} = useSuspenseQuery({...queries.getCurrentUser(), select: ({tenants}) => tenants});
@@ -131,6 +132,7 @@ const Header: React.FC<Props> = ({decisionEvaluationInstanceKey, onOpenDrd}) => 
 						kind="tertiary"
 						title={t('operate.decisionInstance.header.openDrdButton')}
 						aria-label={t('operate.decisionInstance.header.openDrdButton')}
+						ref={openDrdButtonRef}
 						onClick={onOpenDrd}
 					>
 						{t('operate.decisionInstance.header.openDrdButton')}

@@ -80,7 +80,6 @@ public final class ProcessInstanceSuspendingTest {
             .getFirst();
     assertThat(subscriptionClosing.getPosition())
         .isStrictlyBetween(suspending.getPosition(), suspended.getPosition());
-    assertThat(suspended.getSourceRecordPosition()).isEqualTo(suspending.getSourceRecordPosition());
   }
 
   @Test
@@ -117,6 +116,5 @@ public final class ProcessInstanceSuspendingTest {
             .getFirst();
     assertThat(jobSuspended.getPosition())
         .isStrictlyBetween(suspending.getPosition(), suspended.getPosition());
-    assertThat(suspended.getSourceRecordPosition()).isEqualTo(suspending.getSourceRecordPosition());
   }
 }

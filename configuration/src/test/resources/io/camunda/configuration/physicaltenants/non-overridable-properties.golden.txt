@@ -17,6 +17,7 @@ api.grpc.port
 api.grpc.ssl
 api.long-polling.enabled
 api.long-polling.min-empty-responses
+api.long-polling.notification-batch-window
 api.long-polling.probe-timeout
 api.long-polling.timeout
 api.rest.executor.core-pool-size-multiplier
@@ -102,6 +103,7 @@ data.primary-storage.rocks-db.memory-limit
 data.primary-storage.versioned-directory-retention-count
 data.secondary-storage.rdbms.max-varchar-field-length
 license.key
+processing.engine.caches.process-cache-soft-values
 security.authentication.catch-all-unhandled-paths-enabled
 security.authentication.method
 security.authentication.unprotected-api

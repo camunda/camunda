@@ -75,15 +75,16 @@ public class AuthenticationController {
    *
    * <p>Unlike {@code POST /v2/authorizations/search}, this endpoint requires no {@code
    * AUTHORIZATION:READ} permission: seeing which authorizations apply to yourself is always
-   * allowed. It returns 401 for anonymous/unauthenticated callers, mirroring {@link
-   * #getCurrentUser()}.
+   * allowed. On a protected API it returns 401 for anonymous/unauthenticated callers, mirroring
+   * {@link #getCurrentUser()}. On an unprotected API anonymous callers get an empty result instead.
    */
   @CamundaPostMapping(path = "/me/authorizations/search")
   public ResponseEntity<OwnAuthorizationSearchResult> searchOwnAuthorizations(
       @PhysicalTenantId final String physicalTenantId,
       @RequestBody(required = false) final AuthorizationSearchQuery query) {
     final var authentication = authenticationProvider.getCamundaAuthentication();
-    if (authentication == null || authentication.isAnonymous()) {
+    if (authentication == null
+        || (authentication.isAnonymous() && securityProperties.isApiProtected())) {
       return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
     }
     return SearchQueryRequestMapper.toAuthorizationQuery(query)

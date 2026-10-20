@@ -65,6 +65,9 @@ public class MessageSubscriptionSearchIT {
         .join();
 
     waitForCorrelatedMessageSubscriptions(camundaClient, 2);
+    // the correlated state is written to a separate index, so wait for it before snapshotting
+    waitForMessageSubscriptions(
+        camundaClient, f -> f.messageSubscriptionState(MessageSubscriptionState.CORRELATED), 1);
 
     orderedMessageSubscriptions =
         camundaClient

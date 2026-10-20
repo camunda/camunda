@@ -49,6 +49,7 @@ public final class ProcessInstanceCreationRecord extends UnifiedRecordValue
       new StringValue("rootProcessInstanceKey");
   private static final StringValue STORAGE_ORDINAL_KEY = new StringValue("storageOrdinal");
   private static final StringValue BUSINESS_ID_KEY = new StringValue("businessId");
+  private static final StringValue VERSION_TAG_KEY = new StringValue("versionTag");
 
   private final StringProperty bpmnProcessIdProperty = new StringProperty(BPMN_PROCESS_ID_KEY, "");
   private final LongProperty processDefinitionKeyProperty =
@@ -75,9 +76,10 @@ public final class ProcessInstanceCreationRecord extends UnifiedRecordValue
   private final IntegerProperty storageOrdinalProperty =
       new IntegerProperty(STORAGE_ORDINAL_KEY, 0);
   private final StringProperty businessIdProperty = new StringProperty(BUSINESS_ID_KEY, "");
+  private final StringProperty versionTagProperty = new StringProperty(VERSION_TAG_KEY, "");
 
   public ProcessInstanceCreationRecord() {
-    super(13);
+    super(14);
     declareProperty(bpmnProcessIdProperty)
         .declareProperty(processDefinitionKeyProperty)
         .declareProperty(processInstanceKeyProperty)
@@ -90,7 +92,8 @@ public final class ProcessInstanceCreationRecord extends UnifiedRecordValue
         .declareProperty(tagsProperty)
         .declareProperty(rootProcessInstanceKeyProperty)
         .declareProperty(storageOrdinalProperty)
-        .declareProperty(businessIdProperty);
+        .declareProperty(businessIdProperty)
+        .declareProperty(versionTagProperty);
   }
 
   @Override
@@ -181,6 +184,16 @@ public final class ProcessInstanceCreationRecord extends UnifiedRecordValue
 
   public ProcessInstanceCreationRecord setBusinessId(final DirectBuffer businessId) {
     businessIdProperty.setValue(businessId);
+    return this;
+  }
+
+  @Override
+  public String getVersionTag() {
+    return bufferAsString(versionTagProperty.getValue());
+  }
+
+  public ProcessInstanceCreationRecord setVersionTag(final String versionTag) {
+    versionTagProperty.setValue(versionTag);
     return this;
   }
 

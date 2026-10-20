@@ -13,6 +13,7 @@ import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
 import io.camunda.zeebe.engine.state.deployment.PersistedProcess;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import org.agrona.DirectBuffer;
 
 public interface ProcessState {
@@ -110,6 +111,9 @@ public interface ProcessState {
 
   /** Whether any partition still owes a drain report for the given process definition. */
   boolean hasPendingDeletion(long processDefinitionKey);
+
+  /** The partitions that still owe a drain report for the given process definition. */
+  Set<Integer> getPendingDeletionPartitions(long processDefinitionKey);
 
   record ProcessIdentifier(String tenantId, long processDefinitionKey)
       implements ResourceIdentifier {}

@@ -23,6 +23,7 @@ import io.camunda.zeebe.protocol.impl.record.value.message.MessageSubscriptionRe
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.MessageCorrelationIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
+import io.camunda.zeebe.protocol.record.value.StorageOrdinalRelated;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -131,7 +132,8 @@ public final class MessageSubscriptionRejectProcessor
         subscription.getVariablesBuffer(),
         subscription.getCorrelationKeyBuffer(),
         subscription.getTenantId(),
-        subscription.getSubscriptionKey());
+        subscription.getSubscriptionKey(),
+        subscription.getStorageOrdinal());
   }
 
   private void writeNotCorrelatedResponse(final TypedRecord<MessageSubscriptionRecord> record) {
@@ -147,7 +149,8 @@ public final class MessageSubscriptionRejectProcessor
               .setCorrelationKey(messageSubscription.getCorrelationKey())
               .setVariables(messageSubscription.getVariablesBuffer())
               .setTenantId(messageSubscription.getTenantId())
-              .setMessageKey(messageKey);
+              .setMessageKey(messageKey)
+              .setStorageOrdinal(StorageOrdinalRelated.NOT_ORDINAL_CONTROLLED);
 
       stateWriter.appendFollowUpEvent(
           messageKey, MessageCorrelationIntent.NOT_CORRELATED, messageCorrelationRecord);

@@ -73,7 +73,8 @@ public final class JobCancelProcessor
             new AgentHistoryRecord()
                 .setJobKey(jobKey)
                 .ignoreLease()
-                .setProcessInstanceKey(job.getProcessInstanceKey()));
+                .setProcessInstanceKey(job.getProcessInstanceKey())
+                .setStorageOrdinal(job.getStorageOrdinal()));
       }
     } else {
       rejectionWriter.appendRejection(

@@ -150,6 +150,13 @@ test.describe('decision instance page', () => {
     // wait for monaco-editor to be fully rendered
     await expect(page.getByText('"$1000"')).toBeVisible();
 
+    await expect(
+      page.getByTestId('decision-viewer').getByText('"$" + string(amount)'),
+    ).toBeVisible();
+    await expect(
+      page.getByRole('heading', {name: 'Convert amount to string'}),
+    ).toBeVisible();
+
     await expect(page).toHaveScreenshot();
   });
 

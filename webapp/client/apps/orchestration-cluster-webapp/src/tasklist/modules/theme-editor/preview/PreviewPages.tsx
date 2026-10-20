@@ -90,7 +90,7 @@ const PreviewShell: React.FC = () => {
 							<PreviewEnvironmentTag />
 						</div>
 					}
-					actions={<Avatar name={PREVIEW_USER.displayName} size="sm" />}
+					actions={<Avatar name={PREVIEW_USER.displayName ?? undefined} size="sm" />}
 				/>
 				<AppSidebar
 					ariaLabel={ariaLabel}

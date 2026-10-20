@@ -9,6 +9,7 @@ package io.camunda.it.client;
 
 import static io.camunda.it.util.TestHelper.deployResource;
 import static io.camunda.it.util.TestHelper.startProcessInstance;
+import static io.camunda.it.util.TestHelper.waitForJobs;
 import static io.camunda.it.util.TestHelper.waitForProcessInstancesToStart;
 import static io.camunda.it.util.TestHelper.waitForProcessesToBeDeployed;
 import static io.camunda.it.util.TestHelper.waitUntilFailedJobIncident;
@@ -42,6 +43,7 @@ class IncidentErrorMessageFilterIT {
 
     startProcessInstance(camundaClient, "job_search_test_process");
     waitForProcessInstancesToStart(camundaClient, 1);
+    waitForJobs(camundaClient, f -> f.type(JOB_TYPE), 1);
 
     jobKey =
         camundaClient

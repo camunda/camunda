@@ -43,6 +43,8 @@ public final class AgentInstanceBehavior {
     }
     commandWriter.appendNewCommand(
         AgentInstanceIntent.COMPLETE,
-        new AgentInstanceRecord().setProcessInstanceKey(processInstanceKey));
+        new AgentInstanceRecord()
+            .setProcessInstanceKey(processInstanceKey)
+            .setStorageOrdinal(context.getStorageOrdinal()));
   }
 }

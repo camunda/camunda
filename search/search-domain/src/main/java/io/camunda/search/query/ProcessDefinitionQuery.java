@@ -35,7 +35,7 @@ public record ProcessDefinitionQuery(
   @Override
   public AggregationBase aggregation() {
     if (filter.isLatestVersion()) {
-      return new ProcessDefinitionLatestVersionAggregation(filter, sort, page);
+      return new ProcessDefinitionLatestVersionAggregation(filter, sort, page, resultConfig);
     }
     return null;
   }

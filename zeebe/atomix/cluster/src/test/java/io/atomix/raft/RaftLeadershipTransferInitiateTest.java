@@ -26,6 +26,7 @@ import io.atomix.raft.protocol.TimeoutNowRequest;
 import io.atomix.raft.protocol.VersionedAppendRequest;
 import io.atomix.raft.protocol.VoteRequest;
 import io.atomix.raft.roles.LeaderRole;
+import io.camunda.zeebe.test.util.junit.SlowTest;
 import java.time.Duration;
 import java.util.Map;
 import java.util.Optional;
@@ -35,7 +36,9 @@ import java.util.function.Supplier;
 import org.awaitility.Awaitility;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 
+@Category(SlowTest.class)
 public class RaftLeadershipTransferInitiateTest {
   /**
    * For tests we don't install a real coordinator check, so any member ID and config version will

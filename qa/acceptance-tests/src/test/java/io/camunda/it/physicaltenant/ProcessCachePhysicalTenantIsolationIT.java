@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.search.response.ElementInstance;
+import io.camunda.client.api.search.response.ProcessDefinition;
 import io.camunda.client.api.search.response.UserTask;
 import io.camunda.qa.util.multidb.MultiDbPhysicalTenants;
 import io.camunda.qa.util.multidb.MultiDbTest;
@@ -125,8 +126,9 @@ final class ProcessCachePhysicalTenantIsolationIT {
       final long processInstanceKey,
       final String expectedProcessName,
       final String expectedTaskName) {
-    assertThat(client.newProcessDefinitionGetRequest(processDefinitionKey).send().join().getName())
-        .isEqualTo(expectedProcessName);
+    final ProcessDefinition processDefinition =
+        awaitProcessDefinition(client, processDefinitionKey);
+    assertThat(processDefinition.getName()).isEqualTo(expectedProcessName);
 
     final UserTask userTask = awaitUserTask(client, processInstanceKey);
     assertThat(userTask.getProcessName()).isEqualTo(expectedProcessName);
@@ -143,6 +145,16 @@ final class ProcessCachePhysicalTenantIsolationIT {
     final ElementInstance elementInstanceByKey =
         client.newElementInstanceGetRequest(elementInstance.getElementInstanceKey()).send().join();
     assertThat(elementInstanceByKey.getElementName()).isEqualTo(expectedTaskName);
+  }
+
+  private static ProcessDefinition awaitProcessDefinition(
+      final CamundaClient client, final long processDefinitionKey) {
+    return Awaitility.await("the process definition %d is exported".formatted(processDefinitionKey))
+        .atMost(PROPAGATION_TIMEOUT)
+        .ignoreExceptions()
+        .until(
+            () -> client.newProcessDefinitionGetRequest(processDefinitionKey).send().join(),
+            Objects::nonNull);
   }
 
   private static UserTask awaitUserTask(final CamundaClient client, final long processInstanceKey) {

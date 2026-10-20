@@ -94,7 +94,6 @@ data.secondary-storage.elasticsearch.date-format
 data.secondary-storage.elasticsearch.decision-requirements-cache.max-size
 data.secondary-storage.elasticsearch.form-cache.max-size
 data.secondary-storage.elasticsearch.health-check-enabled
-data.secondary-storage.elasticsearch.history.archive-by-id-enabled
 data.secondary-storage.elasticsearch.history.archive-by-id-max-retry-attempts
 data.secondary-storage.elasticsearch.history.archive-by-id-retry-delay-ms
 data.secondary-storage.elasticsearch.history.delay-between-runs
@@ -207,7 +206,6 @@ data.secondary-storage.opensearch.date-format
 data.secondary-storage.opensearch.decision-requirements-cache.max-size
 data.secondary-storage.opensearch.form-cache.max-size
 data.secondary-storage.opensearch.health-check-enabled
-data.secondary-storage.opensearch.history.archive-by-id-enabled
 data.secondary-storage.opensearch.history.archive-by-id-max-retry-attempts
 data.secondary-storage.opensearch.history.archive-by-id-retry-delay-ms
 data.secondary-storage.opensearch.history.delay-between-runs

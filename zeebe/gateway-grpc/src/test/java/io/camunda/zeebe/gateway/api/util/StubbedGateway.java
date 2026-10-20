@@ -33,6 +33,7 @@ import io.camunda.zeebe.gateway.protocol.GatewayGrpc;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayBlockingStub;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsResponse;
+import io.camunda.zeebe.gateway.validation.VariableNameLengthValidator;
 import io.camunda.zeebe.protocol.impl.stream.job.ActivatedJobImpl;
 import io.camunda.zeebe.protocol.impl.stream.job.JobActivationProperties;
 import io.camunda.zeebe.scheduler.Actor;
@@ -64,6 +65,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.awaitility.Awaitility;
@@ -105,7 +107,12 @@ public final class StubbedGateway {
 
     final EndpointManager endpointManager =
         new EndpointManager(
-            brokerClient, activateJobsHandler, clientStreamAdapter, securityConfiguration);
+            brokerClient,
+            activateJobsHandler,
+            clientStreamAdapter,
+            physicalTenantIds.known().stream()
+                .collect(Collectors.toMap(tenantId -> tenantId, tenantId -> securityConfiguration)),
+            VariableNameLengthValidator.DEFAULT_MAX_NAME_FIELD_LENGTH);
     final GatewayGrpcService gatewayGrpcService = new GatewayGrpcService(endpointManager);
     final var handlersByTenant =
         physicalTenantIds.known().stream()

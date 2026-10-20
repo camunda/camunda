@@ -15,6 +15,7 @@ public final class CachesCfg implements ConfigurationEntry {
   private int drgCacheCapacity = EngineConfiguration.DEFAULT_DRG_CACHE_CAPACITY;
   private int formCacheCapacity = EngineConfiguration.DEFAULT_FORM_CACHE_CAPACITY;
   private int processCacheCapacity = EngineConfiguration.DEFAULT_PROCESS_CACHE_CAPACITY;
+  private boolean processCacheSoftValues = EngineConfiguration.DEFAULT_PROCESS_CACHE_SOFT_VALUES;
   private int resourceCacheCapacity = EngineConfiguration.DEFAULT_PROCESS_CACHE_CAPACITY;
   private int authorizationsCacheCapacity =
       EngineConfiguration.DEFAULT_AUTHORIZATIONS_CACHE_CAPACITY;
@@ -45,6 +46,14 @@ public final class CachesCfg implements ConfigurationEntry {
 
   public void setProcessCacheCapacity(final int processCacheCapacity) {
     this.processCacheCapacity = processCacheCapacity;
+  }
+
+  public boolean isProcessCacheSoftValues() {
+    return processCacheSoftValues;
+  }
+
+  public void setProcessCacheSoftValues(final boolean processCacheSoftValues) {
+    this.processCacheSoftValues = processCacheSoftValues;
   }
 
   public int getResourceCacheCapacity() {
@@ -96,6 +105,8 @@ public final class CachesCfg implements ConfigurationEntry {
         + formCacheCapacity
         + ", processCacheCapacity="
         + processCacheCapacity
+        + ", processCacheSoftValues="
+        + processCacheSoftValues
         + ", resourceCacheCapacity="
         + resourceCacheCapacity
         + ", authorizationsCacheCapacity="

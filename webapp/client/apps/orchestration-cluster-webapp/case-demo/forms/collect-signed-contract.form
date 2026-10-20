@@ -1,0 +1,39 @@
+{
+  "executionPlatform": "Camunda Cloud",
+  "executionPlatformVersion": "8.11.0",
+  "exporter": {
+    "name": "Camunda Modeler",
+    "version": "5.40.0"
+  },
+  "schemaVersion": 18,
+  "id": "collect-signed-contract",
+  "type": "default",
+  "components": [
+    {
+      "type": "text",
+      "text": "### Step 2 of 3: collect the signed contract",
+      "id": "Text_315"
+    },
+    {
+      "type": "textfield",
+      "key": "employeeName",
+      "label": "Employee",
+      "id": "Field_employeeName_316",
+      "readonly": true
+    },
+    {
+      "type": "textfield",
+      "key": "contractType",
+      "label": "Contract type",
+      "id": "Field_contractType_317",
+      "readonly": true
+    },
+    {
+      "type": "checkbox",
+      "key": "contractSigned",
+      "label": "The candidate signed the contract",
+      "id": "Field_contractSigned_318",
+      "description": "Leave it empty to follow up with the candidate"
+    }
+  ]
+}

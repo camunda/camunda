@@ -240,11 +240,11 @@ final class RestoreArgumentsTest {
 
     @Test
     void shouldRequireAnEmptyDirectoryForTheDefaultTenant() {
-      // given — no --tenantId, which is every pre-existing invocation
+      // given — no --tenantId on a single-tenant cluster, which is every pre-existing invocation
       final var arguments = arguments();
 
       // when / then — the long-standing refusal, unchanged
-      assertThat(arguments.targetDataPolicy()).isEqualTo(TargetDataPolicy.REQUIRE_EMPTY);
+      assertThat(arguments.targetDataPolicy(false)).isEqualTo(TargetDataPolicy.REQUIRE_EMPTY);
     }
 
     @Test
@@ -255,7 +255,17 @@ final class RestoreArgumentsTest {
 
       // when / then — restoring the whole cluster is the recovery of a node meant to start from
       // nothing, so there is nothing it should be replacing
-      assertThat(arguments.targetDataPolicy()).isEqualTo(TargetDataPolicy.REQUIRE_EMPTY);
+      assertThat(arguments.targetDataPolicy(true)).isEqualTo(TargetDataPolicy.REQUIRE_EMPTY);
+    }
+
+    @Test
+    void shouldReplaceOnlyTheDefaultTenantsDataOnAMultiTenantClusterWithoutATenantFlag() {
+      // given — no --tenantId/--allTenants, so only the default tenant is restored
+      final var arguments = arguments();
+
+      // when / then — the other tenants have no data left to keep under REQUIRE_EMPTY, so they
+      // would start empty; only the default tenant's directory is cleared instead
+      assertThat(arguments.targetDataPolicy(true)).isEqualTo(TargetDataPolicy.REPLACE_SELECTED);
     }
 
     @Test
@@ -266,7 +276,7 @@ final class RestoreArgumentsTest {
 
       // when / then — naming a tenant is asking to replace it on a node whose other tenants are
       // live, so an empty-directory requirement could never be satisfied
-      assertThat(arguments.targetDataPolicy()).isEqualTo(TargetDataPolicy.REPLACE_SELECTED);
+      assertThat(arguments.targetDataPolicy(true)).isEqualTo(TargetDataPolicy.REPLACE_SELECTED);
     }
   }
 }

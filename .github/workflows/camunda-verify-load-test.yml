@@ -1,4 +1,5 @@
-# description: Verifies a load test deployment is healthy.
+# description: Verifies a load test deployment is healthy: pods are ready and the client is connected
+#              to the gateway, and the k6 TestRuns (if any) are healthy.
 # called-by: camunda-scheduled-release-load-tests.yml, camunda-verify-and-cleanup-load-test.yml
 # type: CI
 # owner: @camunda/reliability-testing
@@ -23,15 +24,16 @@ jobs:
   verify:
     name: Verify
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    # Worst case of `loadtestctl verify` (~115 min with 2 k6 TestRuns), plus setup and final steps.
+    timeout-minutes: 130
     permissions:
-      contents: 'read'
-      id-token: 'write'
+      contents: read
+      id-token: write # Teleport cluster auth
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: teleport-actions/setup@b638ff596557cc3959eb6b5287d5e58e0c8ac6a6 # v1.1.1
+      - uses: teleport-actions/setup@10b5e9f760190f027a1e04e342178d8d6e7eae30 # v2.0.0
         with:
           proxy: camunda.teleport.sh:443
           version: auto
@@ -40,8 +42,27 @@ jobs:
           proxy: camunda.teleport.sh:443
           token: ${{ env.TELEPORT_JOIN_TOKEN }}
           kubernetes-cluster: ${{ env.CLUSTER }}
+
+      # Prometheus credentials are required by `loadtestctl verify` below.
+      - name: Import Prometheus credentials
+        id: secrets
+        uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secrets: |
+            secret/data/products/qa/ci/common LDAP_QA_USER | LOADTESTCTL_PROMETHEUS_USER;
+            secret/data/products/qa/ci/common LDAP_QA_PASSWORD | LOADTESTCTL_PROMETHEUS_PASSWORD;
+
+      - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+
       - name: Verify Load test
-        run: load-tests/docs/scripts/verify-test.sh "${NAMESPACE}"
+        env:
+          LOADTESTCTL_PROMETHEUS_URL: https://ci-monitor.benchmark.camunda.cloud
+        run: load-tests/loadtestctl/loadtestctl verify "${NAMESPACE}" --result-file "${GITHUB_OUTPUT}"
+
       - name: Observe build status
         if: always()
         continue-on-error: true

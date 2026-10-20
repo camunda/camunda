@@ -10,6 +10,7 @@ package io.camunda.zeebe.test.broker.protocol;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
+import io.camunda.zeebe.protocol.impl.record.value.AsyncRequestRecord;
 import io.camunda.zeebe.protocol.impl.record.value.distribution.CommandDistributionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.record.ImmutableProtocol;
@@ -23,6 +24,7 @@ import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
+import org.jeasy.random.EasyRandom;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
@@ -150,6 +152,30 @@ final class ProtocolFactoryTest {
   }
 
   @ParameterizedTest
+  @MethodSource("provideValueTypes")
+  void shouldPopulateIntentForNestedValueType(final ValueType valueType) {
+    // given
+    final var valueTypes = ValueTypeMapping.getAcceptedValueTypes().stream().toList();
+    final var random =
+        new EasyRandom() {
+          @Override
+          public int nextInt(final int bound) {
+            return bound == valueTypes.size()
+                ? valueTypes.indexOf(valueType)
+                : super.nextInt(bound);
+          }
+        };
+    final var record = new AsyncRequestRecord();
+
+    // when
+    ImplRecordValuePopulator.populate(record, random);
+
+    // then
+    assertThat(record.getValueType()).isEqualTo(valueType);
+    assertThat(record.getIntent()).isInstanceOf(ValueTypeMapping.get(valueType).getIntentClass());
+  }
+
+  @ParameterizedTest
   @MethodSource("provideProtocolClasses")
   void shouldGenerateForAllProtocolClasses(final Class<?> protocolClass) {
     // given
@@ -230,6 +256,8 @@ final class ProtocolFactoryTest {
 
     // Cast to implementation class to access AuthInfo
     final var implValue = (CommandDistributionRecord) record.getValue();
+    assertThat(implValue.getIntent())
+        .isInstanceOf(ValueTypeMapping.get(implValue.getValueType()).getIntentClass());
 
     // Verify AuthInfo is populated
     final var authInfo = implValue.getAuthInfo();

@@ -14,7 +14,7 @@ import io.camunda.client.protocol.rest.RestorePartitionStatus;
 import io.camunda.client.protocol.rest.RestorePartitionStatus.StateEnum;
 import io.camunda.client.protocol.rest.RestoreStatusResponse;
 import io.camunda.configuration.Camunda;
-import io.camunda.configuration.PrimaryStorageBackup.BackupStoreType;
+import io.camunda.configuration.data.primarystorage.PrimaryStorageBackup.BackupStoreType;
 import io.camunda.management.backups.BackupInfo;
 import io.camunda.management.backups.StateCode;
 import io.camunda.management.backups.TakeBackupRuntimeResponse;

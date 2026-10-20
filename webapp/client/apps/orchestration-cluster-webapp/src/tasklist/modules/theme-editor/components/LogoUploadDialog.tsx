@@ -118,19 +118,25 @@ const LogoUploadDialog: React.FC<Props> = ({isOpen, onOpenChange, onConfirm}) =>
 							/>
 						)}
 						{/* A label around the input opens the file chooser without any script. */}
-						<label className="relative inline-flex h-8 cursor-pointer items-center rounded-lg border border-border bg-background px-3 text-sm font-medium focus-within:ring-2 focus-within:ring-ring hover:bg-neutral-background-medium">
-							<input
-								type="file"
-								data-testid="theme-editor-logo-input"
-								accept={ACCEPTED_TYPES.join(',')}
-								className="absolute inset-0 size-full cursor-pointer opacity-0"
-								onChange={(event) => {
-									void handleFile(event.target.files?.[0]);
-									event.target.value = '';
-								}}
-							/>
-							{draft === null ? t('tasklist.themeEditorLogoChooseFile') : t('tasklist.themeEditorLogoChooseAnother')}
-						</label>
+						<Button
+							asChild
+							variant="secondary"
+							className="relative cursor-pointer focus-within:ring-2 focus-within:ring-ring"
+						>
+							<label>
+								<input
+									type="file"
+									data-testid="theme-editor-logo-input"
+									accept={ACCEPTED_TYPES.join(',')}
+									className="absolute inset-0 size-full cursor-pointer opacity-0"
+									onChange={(event) => {
+										void handleFile(event.target.files?.[0]);
+										event.target.value = '';
+									}}
+								/>
+								{draft === null ? t('tasklist.themeEditorLogoChooseFile') : t('tasklist.themeEditorLogoChooseAnother')}
+							</label>
+						</Button>
 					</div>
 					<Text as="span" variant="helper" className="text-neutral-foreground-subtle">
 						{t('tasklist.themeEditorLogoRequirements')}

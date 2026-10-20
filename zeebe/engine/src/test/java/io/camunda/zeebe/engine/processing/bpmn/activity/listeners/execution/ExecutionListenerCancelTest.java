@@ -1659,7 +1659,8 @@ public class ExecutionListenerCancelTest {
         ENGINE.processInstance().withInstanceKey(processInstanceKey).expectRejection().cancel();
 
     // then: the second cancel is rejected (the process is already terminating)
-    assertThat(rejectedCancel.getRejectionType()).isEqualTo(RejectionType.NOT_FOUND);
+    assertThat(rejectedCancel.getRejectionType()).isEqualTo(RejectionType.INVALID_STATE);
+    assertThat(rejectedCancel.getRejectionReason()).contains("already in progress");
 
     // cleanup: complete the cancel-EL job so the process terminates
     ENGINE.job().ofInstance(processInstanceKey).withType(CANCEL_EL_TYPE).complete();
@@ -1808,5 +1809,70 @@ public class ExecutionListenerCancelTest {
             tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_TERMINATING),
             tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.COMPLETE_EXECUTION_LISTENER),
             tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_TERMINATED));
+  }
+
+  @Test
+  public void shouldTerminateSuspendedProcessInstanceWhenProcessCancelElJobCompleted() {
+    // given
+    final long processInstanceKey =
+        createProcessInstance(
+            ENGINE,
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .zeebeCancelExecutionListener(CANCEL_EL_TYPE)
+                .startEvent()
+                .serviceTask("task", t -> t.zeebeJobType(SERVICE_TASK_TYPE))
+                .endEvent()
+                .done());
+    suspendAndCancelOnceServiceTaskJobCreated(processInstanceKey);
+
+    // when
+    ENGINE.job().ofInstance(processInstanceKey).withType(CANCEL_EL_TYPE).complete();
+
+    // then
+    assertThatProcessInstanceTerminated(processInstanceKey);
+  }
+
+  @Test
+  public void shouldTerminateSuspendedProcessInstanceWhenAllCancelElJobsCompleted() {
+    // given
+    final long processInstanceKey =
+        createProcessInstance(
+            ENGINE,
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .zeebeCancelExecutionListener(CANCEL_EL_TYPE)
+                .zeebeCancelExecutionListener(CANCEL_EL_TYPE + "_2")
+                .startEvent()
+                .serviceTask("task", t -> t.zeebeJobType(SERVICE_TASK_TYPE))
+                .endEvent()
+                .done());
+    suspendAndCancelOnceServiceTaskJobCreated(processInstanceKey);
+    ENGINE.job().ofInstance(processInstanceKey).withType(CANCEL_EL_TYPE).complete();
+
+    // when
+    ENGINE.job().ofInstance(processInstanceKey).withType(CANCEL_EL_TYPE + "_2").complete();
+
+    // then
+    assertThatProcessInstanceTerminated(processInstanceKey);
+  }
+
+  private static void suspendAndCancelOnceServiceTaskJobCreated(final long processInstanceKey) {
+    jobRecords(JobIntent.CREATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .withType(SERVICE_TASK_TYPE)
+        .await();
+    ENGINE.processInstance().withInstanceKey(processInstanceKey).suspend();
+    ENGINE.processInstance().withInstanceKey(processInstanceKey).expectTerminating().cancel();
+    jobRecords(JobIntent.CREATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .withType(CANCEL_EL_TYPE)
+        .await();
+  }
+
+  private static void assertThatProcessInstanceTerminated(final long processInstanceKey) {
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_TERMINATED)
+                .withRecordKey(processInstanceKey)
+                .exists())
+        .isTrue();
   }
 }

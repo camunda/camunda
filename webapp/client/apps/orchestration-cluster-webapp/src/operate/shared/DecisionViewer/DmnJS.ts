@@ -51,23 +51,28 @@ class DmnJS {
 	onDefinitionsChange?: (definitions: Definitions | undefined) => void;
 
 	render = async (container: HTMLElement, xml: string, decisionViewId: string) => {
-		if (this.#manager === null) {
-			this.#manager = new DecisionManager({container});
-		}
+		let manager = this.#manager ?? new DecisionManager({container});
+		this.#manager = manager;
 
 		if (this.#xml !== xml) {
-			this.#manager.destroy();
-			this.#manager = new DecisionManager({container});
+			manager.destroy();
+			manager = new DecisionManager({container});
+			this.#manager = manager;
 
-			await this.#manager.importXML(xml);
-			this.onDefinitionsChange?.(this.#manager.getDefinitions());
+			await manager.importXML(xml);
+
+			if (this.#manager !== manager) {
+				return;
+			}
+
+			this.onDefinitionsChange?.(manager.getDefinitions());
 		}
 
 		if (this.#decisionViewId !== decisionViewId || this.#xml !== xml) {
-			const view = this.#manager.getViews().find((view) => view.id === decisionViewId);
+			const view = manager.getViews().find((view) => view.id === decisionViewId);
 
 			if (view !== undefined) {
-				this.#manager.open(view);
+				manager.open(view);
 				this.#decisionViewId = decisionViewId;
 			} else {
 				logger.error(`decision "${decisionViewId}" not found in xml`);

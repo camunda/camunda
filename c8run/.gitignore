@@ -18,3 +18,5 @@ connectors.process
 /e2e_tests/playwright-report
 /e2e_tests/test-results
 /secrets
+configuration/physical-tenants.generated.yaml
+connectors-*.process

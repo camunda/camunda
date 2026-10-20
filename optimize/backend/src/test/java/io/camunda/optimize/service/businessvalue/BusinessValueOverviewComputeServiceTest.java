@@ -1053,6 +1053,64 @@ class BusinessValueOverviewComputeServiceTest {
                         0)));
   }
 
+  /**
+   * The sweep resolves definitions once before its evaluations, which take long enough for a
+   * process definition to be deleted in the meantime. The deletion cascade removes that
+   * definition's overview rows; upserting the pre-evaluation snapshot would put them straight back,
+   * and since no later sweep ever selects a deleted definition, nothing would remove them again.
+   */
+  @Test
+  void shouldNotUpsertRowsForADefinitionDeletedDuringTheSweep() {
+    // given two definitions at the start, only one of them still there by the time the
+    // evaluations finish
+    givenDefinitionKeys(DEFAULT_TENANT, List.of("surviving-process", "deleted-process"));
+    when(definitionService.getAllDefinitionsWithTenants(DefinitionType.PROCESS))
+        .thenReturn(
+            definitionsFor(DEFAULT_TENANT, List.of("surviving-process", "deleted-process")),
+            definitionsFor(DEFAULT_TENANT, List.of("surviving-process")));
+
+    // when
+    computeService.computeOverviewRows(List.of(MetricRange.SEVEN_DAYS));
+
+    // then the deleted definition's row is not resurrected
+    assertThat(capturedRows())
+        .extracting(BusinessValueOverviewDto::getProcessDefinitionKey)
+        .containsOnly("surviving-process");
+  }
+
+  /**
+   * An empty definition read after the evaluations is far more likely to be a failed or incomplete
+   * read than a genuine fleet-wide deletion. Writing rows that cannot be confirmed risks
+   * resurrecting rows nothing will ever clean up, so the sweep skips the write entirely.
+   */
+  @Test
+  void shouldSkipTheWriteEntirelyWhenNoDefinitionsCanBeConfirmedAfterEvaluation() {
+    // given
+    givenDefinitionKeys(DEFAULT_TENANT, List.of("some-process"));
+    when(definitionService.getAllDefinitionsWithTenants(DefinitionType.PROCESS))
+        .thenReturn(definitionsFor(DEFAULT_TENANT, List.of("some-process")), List.of());
+
+    // when
+    computeService.computeOverviewRows(List.of(MetricRange.SEVEN_DAYS));
+
+    // then
+    verify(overviewWriter, never()).bulkUpsertFromScheduler(any());
+  }
+
+  private static List<DefinitionWithTenantIdsDto> definitionsFor(
+      final String tenantId, final List<String> keys) {
+    return keys.stream()
+        .map(
+            key ->
+                new DefinitionWithTenantIdsDto(
+                    key,
+                    key,
+                    DefinitionType.PROCESS,
+                    new ArrayList<>(List.of(tenantId)),
+                    Collections.emptySet()))
+        .toList();
+  }
+
   private List<BusinessValueOverviewDto> capturedTargetWriteRows() {
     final ArgumentCaptor<List<BusinessValueOverviewDto>> captor =
         ArgumentCaptor.forClass(List.class);

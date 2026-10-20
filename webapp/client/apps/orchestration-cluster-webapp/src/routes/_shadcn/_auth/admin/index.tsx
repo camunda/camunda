@@ -6,9 +6,11 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {createFileRoute} from '@tanstack/react-router';
-import {AdminPage} from '#/admin/pages/AdminPage';
+import {createFileRoute, redirect} from '@tanstack/react-router';
+import {getAdminLandingSection, getAdminSectionConfig} from '#/admin/adminSections';
 
 export const Route = createFileRoute('/_shadcn/_auth/admin/')({
-	component: AdminPage,
+	beforeLoad: () => {
+		throw redirect({to: `/admin/${getAdminLandingSection(getAdminSectionConfig())}`, replace: true});
+	},
 });

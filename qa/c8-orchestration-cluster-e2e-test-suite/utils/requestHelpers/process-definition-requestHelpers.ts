@@ -12,10 +12,18 @@ import {
   type APIResponse,
 } from '@playwright/test';
 import {assertStatusCode, buildUrl, jsonHeaders} from '../http';
-import {createSingleInstance, deployWithSubstitutions} from '../zeebeClient';
+import {
+  cancelProcessInstance,
+  createSingleInstance,
+  deployWithSubstitutions,
+} from '../zeebeClient';
 import {JSONDoc} from '@camunda8/sdk/dist/zeebe/types';
 import {sleep} from '../sleep';
-import {defaultAssertionOptions, extendedAssertionOptions} from '../constants';
+import {
+  defaultAssertionOptions,
+  extendedAssertionOptions,
+  uniquePrefixedId,
+} from '../constants';
 import {validateResponse} from 'json-body-assertions';
 import {deleteResource} from './resource-requestHelpers';
 
@@ -166,6 +174,59 @@ export async function createInstanceOnceDeployed(
   }
 }
 
+/**
+ * Process id and job type are substituted together so a parallel worker's poller
+ * cannot activate another test's job.
+ */
+export async function deployServiceTaskProcess(
+  processDefinitionId: string,
+  jobType: string,
+) {
+  const deployment = await deployWithSubstitutions(
+    './resources/simpleServiceTaskProcess.bpmn',
+    {
+      'id="simpleServiceTaskProcess"': `id="${processDefinitionId}"`,
+      'type="task"': `type="${jobType}"`,
+    },
+  );
+  return deployment.processes[0];
+}
+
+/** Leaving the child's job unworked keeps the child instance alive. */
+export async function deployCallActivityPair(prefix: string) {
+  const childId = `${prefix}-child`;
+  const parentId = `${prefix}-parent`;
+  const childJobType = `${prefix}-child-job`;
+  await deployWithSubstitutions('./resources/childProcess_v_1.bpmn', {
+    'id="childProcess"': `id="${childId}"`,
+    'type="Task"': `type="${childJobType}"`,
+  });
+  const parent = await deployWithSubstitutions(
+    './resources/callActivityParentProcess.bpmn',
+    {
+      'id="callActivityParentProcess"': `id="${parentId}"`,
+      'processId="childProcess"': `processId="${childId}"`,
+    },
+  );
+  return {parentId, childId, childJobType, parent: parent.processes[0]};
+}
+
+/** The correlation key is rewritten to read a `corrId` start variable. */
+export async function deployMessageCatchProcess(
+  processDefinitionId: string,
+  messageName: string,
+) {
+  const deployment = await deployWithSubstitutions(
+    './resources/messageCatchEvent1.bpmn',
+    {
+      messageCatchEvent1: processDefinitionId,
+      'name="Message_143t419"': `name="${messageName}"`,
+      'correlationKey="=143419"': 'correlationKey="=corrId"',
+    },
+  );
+  return deployment.processes[0];
+}
+
 const USER_TASK_MODEL = './resources/Zeebe_User_Task_Process.bpmn';
 const USER_TASK_MODEL_ID = 'Zeebe_User_Task_Process';
 
@@ -189,4 +250,84 @@ export async function deployUserTaskProcess(
       : {}),
   });
   return deployment.processes[0];
+}
+
+/**
+ * Deploys a single-service-task definition under a unique id and starts one
+ * instance of it. Process id and job type are unique per call, so a worker in
+ * another test cannot activate this instance's job.
+ */
+export async function startServiceTaskInstance(prefix: string) {
+  const processDefinitionId = uniquePrefixedId(prefix);
+  const jobType = uniquePrefixedId(`${prefix}-job`);
+  await deployServiceTaskProcess(processDefinitionId, jobType);
+  const instance = await createInstanceOnceDeployed(processDefinitionId, 1);
+  return {
+    processDefinitionId,
+    jobType,
+    processInstanceKey: instance.processInstanceKey,
+  };
+}
+
+export async function partitionsCount(
+  request: APIRequestContext,
+): Promise<number> {
+  const res = await request.get(buildUrl('/topology'), {
+    headers: jsonHeaders(),
+  });
+  await assertStatusCode(res, 200);
+  return (await res.json()).partitionsCount as number;
+}
+
+/**
+ * The partition that minted a key, encoded in its high bits. A definition key
+ * is minted on the deployment partition, which therefore serves every delete of
+ * that definition.
+ */
+export function partitionOf(key: string): number {
+  return Number(BigInt(key) >> 51n);
+}
+
+/**
+ * Starts instances of `processDefinitionId` until one lands on `partition`,
+ * returning all of them.
+ *
+ * Placement is round-robin and the gateway's offset is shared with the specs
+ * running in parallel, so a fixed instance count cannot guarantee a given
+ * partition is covered.
+ */
+export async function createInstancesUntilOn(
+  processDefinitionId: string,
+  partition: number,
+  maxAttempts: number,
+) {
+  const instances = [];
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    const instance = await createInstanceOnceDeployed(processDefinitionId, 1);
+    instances.push(instance);
+    if (partitionOf(instance.processInstanceKey) === partition) {
+      break;
+    }
+  }
+  return instances;
+}
+
+/**
+ * Starts one instance of `processDefinitionId` away from `partition`,
+ * cancelling any that land on it so that partition keeps none of the
+ * definition's running instances. Returns undefined if none landed elsewhere.
+ */
+export async function createInstanceAwayFrom(
+  processDefinitionId: string,
+  partition: number,
+  maxAttempts: number,
+) {
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    const instance = await createInstanceOnceDeployed(processDefinitionId, 1);
+    if (partitionOf(instance.processInstanceKey) !== partition) {
+      return instance;
+    }
+    await cancelProcessInstance(instance.processInstanceKey);
+  }
+  return undefined;
 }

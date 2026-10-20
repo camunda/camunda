@@ -14,7 +14,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.configuration.Camunda;
-import io.camunda.configuration.PrimaryStorageBackup.BackupStoreType;
+import io.camunda.configuration.data.primarystorage.PrimaryStorageBackup.BackupStoreType;
 import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.backup.client.api.BackupRequestHandler;
 import io.camunda.zeebe.backup.client.api.BackupStatus;
@@ -310,6 +310,7 @@ class BackupMultiPartitionTest {
 
     // then
     waitUntilBackupIsCompleted(backupId);
+    waitUntilCheckpointStateIsAvailableOnAllPartitions();
 
     final var state = getCheckpointState();
     assertThat(state).isNotNull();
@@ -401,6 +402,18 @@ class BackupMultiPartitionTest {
         .get(30, TimeUnit.SECONDS);
   }
 
+  private void waitUntilCheckpointStateIsAvailableOnAllPartitions() {
+    Awaitility.await("Checkpoint state is available on all partitions.")
+        .timeout(Duration.ofMinutes(1))
+        .ignoreExceptions()
+        .untilAsserted(
+            () -> {
+              final var state = getCheckpointState();
+              assertThat(state.getCheckpointStates()).hasSize(cluster.partitionsCount());
+              assertThat(state.getBackupStates()).hasSize(cluster.partitionsCount());
+            });
+  }
+
   private void takeBackupOnPartition(final long backupId, final int partitionId) {
     final BrokerBackupRequest backupRequest = new BrokerBackupRequest();
     backupRequest.setBackupId(backupId);
@@ -420,13 +433,15 @@ class BackupMultiPartitionTest {
     backupStatusRequest.setPartitionGroup(DEFAULT_PHYSICAL_TENANT_ID);
     final BrokerClient brokerClient = cluster.anyGateway().bean(BrokerClient.class);
     Awaitility.await()
+        .atMost(30, TimeUnit.SECONDS)
         .ignoreExceptions()
         .untilAsserted(
-            () ->
-                assertThat(brokerClient.sendRequest(backupStatusRequest).join())
-                    .matches(
-                        response ->
-                            response.getResponse().getStatus() == BackupStatusCode.COMPLETED));
+            () -> {
+              final var response = brokerClient.sendRequest(backupStatusRequest).join();
+              assertThat(response.getResponse().getStatus())
+                  .as("backup %d status on partition %d", backupId, partitionId)
+                  .isEqualTo(BackupStatusCode.COMPLETED);
+            });
   }
 
   private void publishMessageAndWaitUntilCorrelated() {

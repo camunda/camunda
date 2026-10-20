@@ -70,6 +70,7 @@ const apiTestIgnore = [
   'tests/api/v2/usage-metrics/*.spec.ts',
   'tests/api/v2/audit-log/*.spec.ts',
   'tests/api/v2/job/job-statistics-*.spec.ts',
+  'tests/api/v2/global-task-listener/*.spec.ts',
   'tests/api/v2/optimize/**/*.spec.ts',
   'tests/api/v2/analytics-exporter/**/*.spec.ts',
 ];
@@ -89,6 +90,10 @@ const normalProjects = [
       'tests/api/v2/usage-metrics/*.spec.ts',
       'tests/api/v2/audit-log/*.spec.ts',
       'tests/api/v2/job/job-statistics-*.spec.ts',
+      // A global task listener applies to every user task in the cluster. With
+      // no worker for its jobs, it blocks the user tasks of any spec that runs
+      // at the same time.
+      'tests/api/v2/global-task-listener/*.spec.ts',
     ],
     use: devices['Desktop Chrome'],
     workers: 1,
@@ -102,6 +107,7 @@ const normalProjects = [
       : ['tests/**/*.spec.ts'],
     testIgnore: [
       'tests/tasklist/task-panel.spec.ts',
+      'tests/identity/global-task-listeners.spec.ts',
       'v2-stateless-tests/**',
       'tests/api/**/*.spec.ts',
     ],
@@ -109,9 +115,16 @@ const normalProjects = [
   },
   {
     name: 'chromium-subset',
-    testMatch: 'tests/tasklist/task-panel.spec.ts',
+    testMatch: [
+      'tests/tasklist/task-panel.spec.ts',
+      // A global task listener applies to every user task in the cluster. With
+      // no worker for its jobs, it blocks the user tasks of any spec that runs
+      // at the same time.
+      'tests/identity/global-task-listeners.spec.ts',
+    ],
     use: devices['Desktop Chrome'],
     testIgnore: ['v2-stateless-tests/**', 'tests/api/**/*.spec.ts'],
+    workers: 1,
   },
   {
     name: 'firefox',
@@ -121,6 +134,7 @@ const normalProjects = [
       : ['tests/**/*.spec.ts'],
     testIgnore: [
       'tests/tasklist/task-panel.spec.ts',
+      'tests/identity/global-task-listeners.spec.ts',
       'v2-stateless-tests/**',
       'tests/api/**/*.spec.ts',
     ],
@@ -128,9 +142,13 @@ const normalProjects = [
   },
   {
     name: 'firefox-subset',
-    testMatch: 'tests/tasklist/task-panel.spec.ts',
+    testMatch: [
+      'tests/tasklist/task-panel.spec.ts',
+      'tests/identity/global-task-listeners.spec.ts',
+    ],
     use: devices['Desktop Firefox'],
     testIgnore: ['v2-stateless-tests/**', 'tests/api/**/*.spec.ts'],
+    workers: 1,
   },
   {
     name: 'msedge',
@@ -140,6 +158,7 @@ const normalProjects = [
       : ['tests/**/*.spec.ts'],
     testIgnore: [
       'tests/tasklist/task-panel.spec.ts',
+      'tests/identity/global-task-listeners.spec.ts',
       'v2-stateless-tests/**',
       'tests/api/**/*.spec.ts',
     ],
@@ -147,9 +166,13 @@ const normalProjects = [
   },
   {
     name: 'msedge-subset',
-    testMatch: 'tests/tasklist/task-panel.spec.ts',
+    testMatch: [
+      'tests/tasklist/task-panel.spec.ts',
+      'tests/identity/global-task-listeners.spec.ts',
+    ],
     use: devices['Desktop Edge'],
     testIgnore: ['v2-stateless-tests/**', 'tests/api/**/*.spec.ts'],
+    workers: 1,
   },
   {
     name: 'tasklist-e2e',
@@ -160,7 +183,15 @@ const normalProjects = [
       'v2-stateless-tests/**',
       'tests/api/**/*.spec.ts',
     ],
-    teardown: 'chromium-subset',
+    teardown: 'tasklist-e2e-subset',
+  },
+  {
+    // A teardown project runs in full whatever the file or grep filter, so a
+    // Tasklist-scoped run gets its own instead of sharing chromium-subset.
+    name: 'tasklist-e2e-subset',
+    testMatch: 'tests/tasklist/task-panel.spec.ts',
+    use: devices['Desktop Chrome'],
+    testIgnore: ['v2-stateless-tests/**', 'tests/api/**/*.spec.ts'],
   },
   {
     name: 'identity-e2e',
@@ -207,10 +238,26 @@ const normalProjects = [
   },
 ];
 
+// The generated cluster and restore specs put the whole cluster into recovery mode for their
+// restore scenarios. While a tenant is recovering, its secondary-storage endpoints answer 503, so
+// these specs must not overlap with any other spec. They run as the teardown of the main project,
+// i.e. after every other spec has finished (and also when one of them failed).
+const recoveryModeSpecs = [
+  'v2-stateless-tests/tests/request-validation/cluster-validation-api-tests.spec.ts',
+  'v2-stateless-tests/tests/request-validation/restore-validation-api-tests.spec.ts',
+];
+
 const v2StatelessProjects = [
   {
     name: 'request-validation-tests',
     testMatch: ['v2-stateless-tests/tests/request-validation/*.spec.ts'],
+    testIgnore: recoveryModeSpecs,
+    teardown: 'request-validation-recovery-mode-tests',
+    use: devices['Desktop Chrome'],
+  },
+  {
+    name: 'request-validation-recovery-mode-tests',
+    testMatch: recoveryModeSpecs,
     use: devices['Desktop Chrome'],
   },
 ];

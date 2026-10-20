@@ -21,15 +21,15 @@ import io.camunda.zeebe.dynamic.config.changes.PartitionScalingChangeExecutor;
 import io.camunda.zeebe.dynamic.config.changes.RestoreChangeExecutor;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionState.State;
+import io.camunda.zeebe.dynamic.config.util.ConfigurationUtil;
 import io.camunda.zeebe.scheduler.AsyncClosable;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.jspecify.annotations.Nullable;
 
 public interface ClusterConfigurationService extends AsyncClosable {
-
-  PartitionDistribution getPartitionDistribution(String physicalTenantId);
 
   Map<String, PartitionDistribution> getPartitionDistribution();
 
@@ -96,6 +96,34 @@ public interface ClusterConfigurationService extends AsyncClosable {
    * (e.g., partitions in {@code JOINING} state during scale-up).
    */
   CurrentClusterConfiguration getCurrentClusterConfiguration();
+
+  /**
+   * Returns the partition distribution of the given physical tenant according to the {@link
+   * #getLatestClusterConfiguration() latest cluster configuration}. Unlike the cached {@link
+   * #getCurrentClusterConfiguration()}, it reflects a change applied just before, such as the
+   * partitions a restore dropped.
+   */
+  default ActorFuture<PartitionDistribution> getLatestPartitionDistribution(
+      final String physicalTenantId) {
+    return getLatestClusterConfiguration()
+        .thenApply(
+            configuration -> partitionDistributionOf(configuration, physicalTenantId),
+            Runnable::run);
+  }
+
+  /**
+   * The partition distribution of the given physical tenant in {@code configuration}, e.g. one
+   * fetched with {@link #getLatestClusterConfiguration()}.
+   */
+  static PartitionDistribution partitionDistributionOf(
+      final @Nullable CurrentClusterConfiguration configuration, final String physicalTenantId) {
+    if (configuration == null) {
+      return PartitionDistribution.NO_PARTITIONS;
+    }
+    return new PartitionDistribution(
+        ConfigurationUtil.getPartitionDistributionPerPhysicalTenant(configuration)
+            .getOrDefault(physicalTenantId, Set.of()));
+  }
 
   /**
    * Returns the number of partitions assigned to the given member that are currently in the {@code

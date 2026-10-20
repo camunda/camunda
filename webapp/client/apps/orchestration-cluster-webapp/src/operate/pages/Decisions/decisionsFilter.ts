@@ -6,8 +6,14 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import type {DecisionInstanceState, QueryDecisionInstancesRequestBody} from '@camunda/camunda-api-zod-schemas/8.11';
+import type {
+	DecisionInstanceState,
+	QueryDecisionInstancesRequestBody,
+	QuerySortOrder,
+} from '@camunda/camunda-api-zod-schemas/8.11';
+import {z} from 'zod';
 import {parseIds} from '#/operate/shared/utils/parseIds';
+import {createSortSearchParamSchema} from '#/shared/sortSearchParam';
 import {decodeAdvancedStringFilter} from '#/operate/shared/utils/advancedStringFilter';
 import {isSpecificTenant} from '#/operate/shared/utils/isSpecificTenant';
 import {buildInstanceKeyCriterion} from '#/operate/shared/utils/buildInstanceKeyCriterion';
@@ -64,12 +70,13 @@ function mapDecisionInstancesFilter(search: DecisionsSearch): DecisionInstancesF
 	};
 }
 
-type ResolvedDecisionInstancesSort = [{field: DecisionInstancesSortField; order: 'asc' | 'desc'}];
+type ResolvedDecisionInstancesSort = [{field: DecisionInstancesSortField; order: QuerySortOrder}];
 
-const DEFAULT_SORT: ResolvedDecisionInstancesSort = [{field: 'evaluationDate', order: 'desc'}];
+const DEFAULT_SORT: ResolvedDecisionInstancesSort = [{field: 'evaluationDate', order: 'DESC'}];
 // The only two sortable columns InstancesTable actually wires up — the app itself never produces
 // a `sort` value outside this set, so anything else can only come from a hand-edited URL.
-const SORTABLE_FIELDS: DecisionInstancesSortField[] = ['evaluationDate', 'businessId'];
+const SORTABLE_FIELDS = ['evaluationDate', 'businessId'] as const satisfies readonly DecisionInstancesSortField[];
+const decisionInstancesSortSchema = createSortSearchParamSchema(z.enum(SORTABLE_FIELDS));
 
 /**
  * Parses the `sort` search param (`"field+order"`) into the API sort shape, falling back to
@@ -77,16 +84,9 @@ const SORTABLE_FIELDS: DecisionInstancesSortField[] = ['evaluationDate', 'busine
  * legacy's `parseSortParamsV2`, which validates both parts rather than trusting the URL.
  */
 function mapDecisionInstancesSort(sort: string | undefined): ResolvedDecisionInstancesSort {
-	if (sort === undefined) {
-		return DEFAULT_SORT;
-	}
+	const result = decisionInstancesSortSchema.safeParse(sort);
 
-	const [field, order] = sort.split('+');
-	if (!SORTABLE_FIELDS.includes(field as DecisionInstancesSortField) || (order !== 'asc' && order !== 'desc')) {
-		return DEFAULT_SORT;
-	}
-
-	return [{field: field as DecisionInstancesSortField, order}];
+	return result.success ? [result.data] : DEFAULT_SORT;
 }
 
 export {mapDecisionInstancesFilter, mapDecisionInstancesSort, buildInstanceKeyCriterion};

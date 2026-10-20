@@ -14,6 +14,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageStartProcessInstanceRequestRecord;
 import io.camunda.zeebe.protocol.record.intent.MessageStartProcessInstanceRequestIntent;
+import io.camunda.zeebe.protocol.record.value.StorageOrdinalRelated;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -53,6 +54,9 @@ public final class MessageStartProcessInstanceRequestRejectExpiredProcessor
     final var reply = record.getValue();
     metrics.stopRoundTrip(
         reply.getMessageKey(), reply.getProcessDefinitionKey(), ReplyOutcome.REJECTED_EXPIRED);
+    // a rejection belongs to no instance; forced here so a reply from an older P_B cannot
+    // leak the msgpack default into the event
+    reply.setStorageOrdinal(StorageOrdinalRelated.NOT_ORDINAL_CONTROLLED);
     stateWriter.appendFollowUpEvent(
         record.getKey(), MessageStartProcessInstanceRequestIntent.EXPIRED_REJECTED, reply);
     metrics.crossPartitionReply(ReplyOutcome.REJECTED_EXPIRED);

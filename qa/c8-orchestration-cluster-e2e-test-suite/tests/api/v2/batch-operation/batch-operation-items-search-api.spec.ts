@@ -316,6 +316,10 @@ test.describe.parallel('Batch Operation Items Search API Tests', () => {
       }).toPass(defaultAssertionOptions);
     });
 
+    await test.step('Poll batch status', async () => {
+      await expectBatchState(request, batchOperationKey, 'COMPLETED');
+    });
+
     await test.step('Search Batch Operation Items - by multiple process instance key as itemKey', async () => {
       await expect(async () => {
         const res = await request.post(

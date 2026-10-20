@@ -6,65 +6,47 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {z} from 'zod';
-import {
-	API_VERSION,
-	getOrFilterSchema,
-	getQueryRequestBodySchema,
-	getQueryResponseBodySchema,
-	advancedStringFilterSchema,
-	type Endpoint,
-} from './common';
+import {API_VERSION, type Endpoint} from './common';
+import {getUserStatus200Schema} from './gen/zod/getUserSchema';
+import {userCreateResultSchema} from './gen/zod/userCreateResultSchema';
+import {userRequestSchema} from './gen/zod/userRequestSchema';
+import {userResultSchema} from './gen/zod/userResultSchema';
+import {userSearchQueryRequestSchema} from './gen/zod/userSearchQueryRequestSchema';
+import {userSearchResultSchema} from './gen/zod/userSearchResultSchema';
+import {userUpdateRequestSchema} from './gen/zod/userUpdateRequestSchema';
+import {userUpdateResultSchema} from './gen/zod/userUpdateResultSchema';
+import type {GetUserStatus200} from './gen/types/GetUser';
+import type {UserCreateResult} from './gen/types/UserCreateResult';
+import type {UserRequest} from './gen/types/UserRequest';
+import type {UserResult} from './gen/types/UserResult';
+import type {UserSearchQueryRequest} from './gen/types/UserSearchQueryRequest';
+import type {UserSearchResult} from './gen/types/UserSearchResult';
+import type {UserUpdateRequest} from './gen/types/UserUpdateRequest';
+import type {UserUpdateResult} from './gen/types/UserUpdateResult';
 
-const userSchema = z.object({
-	username: z.string(),
-	name: z.string(),
-	email: z.string(),
-});
-type User = z.infer<typeof userSchema>;
+const userSchema = userResultSchema;
+type User = UserResult;
 
-const createUserRequestBodySchema = userSchema
-	.pick({
-		username: true,
-		name: true,
-		email: true,
-	})
-	.extend({
-		password: z.string(),
-	});
-type CreateUserRequestBody = z.infer<typeof createUserRequestBodySchema>;
+const createUserRequestBodySchema = userRequestSchema;
+type CreateUserRequestBody = UserRequest;
 
-const createUserResponseBodySchema = userSchema;
-type CreateUserResponseBody = z.infer<typeof createUserResponseBodySchema>;
+const createUserResponseBodySchema = userCreateResultSchema;
+type CreateUserResponseBody = UserCreateResult;
 
-const updateUserRequestBodySchema = userSchema
-	.pick({
-		name: true,
-		email: true,
-	})
-	.extend({
-		password: z.string(),
-	})
-	.partial();
-type UpdateUserRequestBody = z.infer<typeof updateUserRequestBodySchema>;
+const updateUserRequestBodySchema = userUpdateRequestSchema;
+type UpdateUserRequestBody = UserUpdateRequest;
 
-const updateUserResponseBodySchema = userSchema;
-type UpdateUserResponseBody = z.infer<typeof updateUserResponseBodySchema>;
+const updateUserResponseBodySchema = userUpdateResultSchema;
+type UpdateUserResponseBody = UserUpdateResult;
 
-const queryUsersRequestBodySchema = getQueryRequestBodySchema({
-	sortFields: ['username', 'name', 'email'] as const,
-	filter: getOrFilterSchema(
-		z.object({
-			username: advancedStringFilterSchema.optional(),
-			name: advancedStringFilterSchema.optional(),
-			email: advancedStringFilterSchema.optional(),
-		}),
-	),
-});
-type QueryUsersRequestBody = z.infer<typeof queryUsersRequestBodySchema>;
+const getUserResponseBodySchema = getUserStatus200Schema;
+type GetUserResponseBody = GetUserStatus200;
 
-const queryUsersResponseBodySchema = getQueryResponseBodySchema(userSchema);
-type QueryUsersResponseBody = z.infer<typeof queryUsersResponseBodySchema>;
+const queryUsersRequestBodySchema = userSearchQueryRequestSchema;
+type QueryUsersRequestBody = UserSearchQueryRequest;
+
+const queryUsersResponseBodySchema = userSearchResultSchema;
+type QueryUsersResponseBody = UserSearchResult;
 
 const createUser = {
 	method: 'POST',
@@ -88,9 +70,6 @@ const getUser = {
 		return `/${API_VERSION}/users/${username}` as const;
 	},
 } as const satisfies Endpoint<Pick<User, 'username'>>;
-
-const getUserResponseBodySchema = userSchema;
-type GetUserResponseBody = z.infer<typeof getUserResponseBodySchema>;
 
 const deleteUser = {
 	method: 'DELETE',

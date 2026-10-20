@@ -18,7 +18,8 @@ public record FlowNodeInstanceEntity(
     Long flowNodeInstanceKey,
     Long processInstanceKey,
     @Nullable Long rootProcessInstanceKey,
-    Long processDefinitionKey,
+    // absent on documents imported by Operate 8.1.7 and earlier.
+    @Nullable Long processDefinitionKey,
     // only written on AI_START_STATES intents; absent on docs first created by a later intent.
     @Nullable OffsetDateTime startDate,
     @Nullable OffsetDateTime endDate,
@@ -31,7 +32,8 @@ public record FlowNodeInstanceEntity(
     // not set by the primary handler; populated asynchronously by IncidentUpdateTask.
     @Nullable Boolean hasIncident,
     @Nullable Long incidentKey,
-    String processDefinitionId,
+    // absent on documents imported by Operate 8.1 and earlier.
+    @Nullable String processDefinitionId,
     String tenantId,
     @Nullable Integer level)
     implements TenantOwnedEntity {
@@ -39,11 +41,9 @@ public record FlowNodeInstanceEntity(
   public FlowNodeInstanceEntity {
     Objects.requireNonNull(flowNodeInstanceKey, "flowNodeInstanceKey");
     Objects.requireNonNull(processInstanceKey, "processInstanceKey");
-    Objects.requireNonNull(processDefinitionKey, "processDefinitionKey");
     Objects.requireNonNull(flowNodeId, "flowNodeId");
     Objects.requireNonNull(type, "type");
     Objects.requireNonNull(state, "state");
-    Objects.requireNonNull(processDefinitionId, "processDefinitionId");
     Objects.requireNonNull(tenantId, "tenantId");
   }
 

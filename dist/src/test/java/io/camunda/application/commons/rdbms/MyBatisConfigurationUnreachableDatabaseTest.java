@@ -8,11 +8,13 @@
 package io.camunda.application.commons.rdbms;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
 
 import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.configuration.Camunda;
 import io.camunda.configuration.UnifiedConfigurationHelper;
 import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
+import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.util.LinkedHashMap;
 import org.junit.jupiter.api.AfterAll;
@@ -66,8 +68,14 @@ class MyBatisConfigurationUnreachableDatabaseTest {
         configuration.rdbmsDataSources(resolver, new SimpleMeterRegistry())) {
       final var sqlSessionFactories = configuration.sqlSessionFactories(dataSources, resolver);
       final var mapperBundles = configuration.rdbmsMapperBundles(sqlSessionFactories, dataSources);
-      final var schemaManagerRegistry =
-          configuration.rdbmsSchemaManagerRegistry(dataSources, resolver);
+      final var schemaManagerRegistry = configuration.rdbmsSchemaManagerRegistry();
+      final var schemaInitializer =
+          configuration.rdbmsSchemaInitializer(
+              dataSources,
+              resolver,
+              mock(BrokerTopologyManager.class),
+              schemaManagerRegistry,
+              null);
       final var migrationStatusProvider =
           configuration.rdbmsSchemaMigrationStatusProvider(dataSources, resolver);
 
@@ -78,6 +86,7 @@ class MyBatisConfigurationUnreachableDatabaseTest {
       assertThat(dataSources.vendorPropertiesFor(TENANT_A).databaseId()).isEqualTo("postgresql");
       assertThat(dataSources.vendorPropertiesFor(TENANT_B).databaseId()).isEqualTo("mariadb");
       assertThat(migrationStatusProvider).isNotNull();
+      assertThat(schemaInitializer).isNotNull();
 
       // and - no tenant is claimed ready, since nothing has migrated
       assertThat(schemaManagerRegistry.isInitialized(TENANT_A)).isFalse();

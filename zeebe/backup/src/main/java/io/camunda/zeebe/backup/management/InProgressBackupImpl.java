@@ -142,6 +142,38 @@ final class InProgressBackupImpl implements InProgressBackup {
 
   @Override
   public ActorFuture<Void> reserveSnapshot() {
+    return backupDescriptor
+        .snapshotId()
+        .map(this::useProvidedSnapshot)
+        .orElseGet(this::findAndReserveSnapshot);
+  }
+
+  private ActorFuture<Void> useProvidedSnapshot(final String snapshotId) {
+    return snapshotStore
+        .getReservedSnapshot(backupId.checkpointId(), snapshotId)
+        .andThen(
+            (snapshot, error) -> {
+              if (error == null && snapshot.isPresent()) {
+                reservedSnapshot = snapshot.get();
+                LOG.atTrace()
+                    .addKeyValue("backup", backupId)
+                    .addKeyValue("snapshot", snapshotId)
+                    .setMessage("Using snapshot reserved for the checkpoint")
+                    .log();
+                return concurrencyControl.createCompletedFuture();
+              }
+              LOG.atDebug()
+                  .addKeyValue("backup", backupId)
+                  .addKeyValue("snapshot", snapshotId)
+                  .setCause(error)
+                  .setMessage("Snapshot of the checkpoint is not reserved, searching for one")
+                  .log();
+              return findAndReserveSnapshot();
+            },
+            concurrencyControl);
+  }
+
+  private ActorFuture<Void> findAndReserveSnapshot() {
     final ActorFuture<Void> future = concurrencyControl.createFuture();
     findAndReserveSnapshot(future, MAX_RESERVATION_ATTEMPTS);
     return future;
@@ -318,6 +350,12 @@ final class InProgressBackupImpl implements InProgressBackup {
 
   @Override
   public void close() {
+    // the reservation was made for this checkpoint before it was written, so it must be released
+    // even if this backup never got to use it
+    backupDescriptor
+        .snapshotId()
+        .ifPresent(
+            snapshotId -> snapshotStore.releaseReservation(backupId.checkpointId(), snapshotId));
     final var reservation = snapshotReservation;
     if (reservation != null) {
       reservation.release();

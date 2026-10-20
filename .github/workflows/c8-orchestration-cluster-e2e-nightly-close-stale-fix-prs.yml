@@ -32,6 +32,11 @@ on:
         required: false
 
 permissions:
+  # write, and only for one reason: `--delete-branch` on `gh pr close` deletes a
+  # ref, which is a contents mutation. It was briefly reduced to read while the
+  # sweeper kept branches so triage could reopen them; triage now restores the
+  # branch from the PR's head commit instead, so deleting is safe again and this
+  # has to go back. Nothing else here writes contents.
   contents: write
   pull-requests: write
 
@@ -48,6 +53,10 @@ jobs:
         env:
           GH_TOKEN:   ${{ secrets.GITHUB_TOKEN }}
           STALE_DAYS: ${{ inputs.stale_days || '1' }}
+          # Read back by .github/scripts/nightly-fix-reopen.sh to identify a PR
+          # this workflow closed, as opposed to one a human closed.
+          STALE_CLOSED_LABEL: auto-closed-stale
+          STALE_CLOSE_MARKER: stale-sweeper-closed
           DRY_RUN:    ${{ inputs.dry_run || 'false' }}
           REPO:       ${{ github.repository }}
         run: |
@@ -94,10 +103,35 @@ jobs:
 
             echo "  CLOSE  #$number — created $created: $title"
             if [ "$DRY_RUN" != "true" ]; then
+              # Labelled BEFORE the close, so the marker is on the PR even if
+              # the close itself fails. Triage reads this label to tell a PR
+              # THIS workflow closed from one a human closed deliberately: the
+              # first may be reopened tonight, the second never may be.
+              # Best-effort — the comment marker below covers a token that
+              # cannot apply it, and PRs closed before this shipped.
+              gh label create "$STALE_CLOSED_LABEL" \
+                --repo "$REPO" --color "BFBFBF" \
+                --description "Closed automatically by close-stale-fix-prs; triage may reopen it" \
+                >/dev/null 2>&1 || true
+              gh pr edit "$number" --repo "$REPO" \
+                --add-label "$STALE_CLOSED_LABEL" >/dev/null 2>&1 || true
+
+              close_comment=$(printf '%s\n\n%s\n\n%s' \
+                "Closed by close-stale-fix-prs workflow: bot PRs are closed daily before triage. Add the \`do-not-close\` label to hold this PR across the daily reset, or re-trigger the fix agent to start fresh." \
+                "The branch is deleted, but tonight's triage can still reopen this PR: it restores the branch from the PR's own head commit first." \
+                "<!-- ${STALE_CLOSE_MARKER} at=$(date -u +%FT%TZ) v=1 -->")
+
+              # --delete-branch is back: triage no longer needs the branch to
+              # survive. `gh pr reopen` does need a live head ref, but the
+              # commits remain reachable as refs/pull/<n>/head, so the reopen
+              # path recreates the branch at the PR's recorded head commit
+              # first (.github/scripts/nightly-fix-reopen.sh:restore_branch).
+              # Keeping branches instead would leave every unmerged fix branch
+              # lying around with nothing reaping them.
               gh pr close "$number" \
                 --repo "$REPO" \
                 --delete-branch \
-                --comment "Closed by close-stale-fix-prs workflow: bot PRs are closed daily before triage. Add the \`do-not-close\` label to hold this PR across the daily reset, or re-trigger the fix agent to start fresh." \
+                --comment "$close_comment" \
                 || echo "::warning::Failed to close #$number"
             fi
             closed=$((closed + 1))

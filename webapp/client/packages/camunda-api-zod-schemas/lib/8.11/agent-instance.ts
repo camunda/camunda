@@ -6,222 +6,85 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {z} from 'zod';
-import {
-	API_VERSION,
-	advancedDateTimeFilterSchema,
-	advancedIntegerFilterSchema,
-	basicStringFilterSchema,
-	getEnumFilterSchema,
-	getQueryRequestBodySchema,
-	getQueryResponseBodySchema,
-	type Endpoint,
-} from './common';
-import {documentReferenceSchema} from './document';
+import {API_VERSION, type Endpoint} from './common';
+import {agentInstanceDefinitionResultSchema} from './gen/zod/agentInstanceDefinitionResultSchema';
+import {agentInstanceDocumentContentSchema} from './gen/zod/agentInstanceDocumentContentSchema';
+import {agentInstanceFilterSchema} from './gen/zod/agentInstanceFilterSchema';
+import {agentInstanceHistoryCommitStatusEnumSchema} from './gen/zod/agentInstanceHistoryCommitStatusEnumSchema';
+import {agentInstanceHistoryFilterSchema} from './gen/zod/agentInstanceHistoryFilterSchema';
+import {agentInstanceHistoryItemMetricsSchema} from './gen/zod/agentInstanceHistoryItemMetricsSchema';
+import {agentInstanceHistoryItemResultSchema} from './gen/zod/agentInstanceHistoryItemResultSchema';
+import {agentInstanceHistoryRoleEnumSchema} from './gen/zod/agentInstanceHistoryRoleEnumSchema';
+import {agentInstanceHistorySearchQueryResultSchema} from './gen/zod/agentInstanceHistorySearchQueryResultSchema';
+import {agentInstanceHistorySearchQuerySchema} from './gen/zod/agentInstanceHistorySearchQuerySchema';
+import {agentInstanceLimitsSchema} from './gen/zod/agentInstanceLimitsSchema';
+import {agentInstanceMessageContentSchema} from './gen/zod/agentInstanceMessageContentSchema';
+import {agentInstanceMetricsSchema} from './gen/zod/agentInstanceMetricsSchema';
+import {agentInstanceObjectContentSchema} from './gen/zod/agentInstanceObjectContentSchema';
+import {agentInstanceResultSchema} from './gen/zod/agentInstanceResultSchema';
+import {agentInstanceSearchQueryResultSchema} from './gen/zod/agentInstanceSearchQueryResultSchema';
+import {agentInstanceSearchQuerySchema} from './gen/zod/agentInstanceSearchQuerySchema';
+import {agentInstanceStatusEnumSchema} from './gen/zod/agentInstanceStatusEnumSchema';
+import {agentInstanceTextContentSchema} from './gen/zod/agentInstanceTextContentSchema';
+import {agentInstanceToolCallSchema} from './gen/zod/agentInstanceToolCallSchema';
+import {agentToolSchema} from './gen/zod/agentToolSchema';
+import {getAgentInstanceStatus200Schema} from './gen/zod/getAgentInstanceSchema';
+import type {AgentInstanceDefinitionResult} from './gen/types/AgentInstanceDefinitionResult';
+import type {AgentInstanceDocumentContent} from './gen/types/AgentInstanceDocumentContent';
+import type {AgentInstanceFilter} from './gen/types/AgentInstanceFilter';
+import type {AgentInstanceHistoryCommitStatusEnumKey} from './gen/types/AgentInstanceHistoryCommitStatusEnum';
+import type {AgentInstanceHistoryFilter} from './gen/types/AgentInstanceHistoryFilter';
+import type {AgentInstanceHistoryItemMetrics} from './gen/types/AgentInstanceHistoryItemMetrics';
+import type {AgentInstanceHistoryItemResult} from './gen/types/AgentInstanceHistoryItemResult';
+import type {AgentInstanceHistoryRoleEnumKey} from './gen/types/AgentInstanceHistoryRoleEnum';
+import type {AgentInstanceHistorySearchQuery} from './gen/types/AgentInstanceHistorySearchQuery';
+import type {AgentInstanceHistorySearchQueryResult} from './gen/types/AgentInstanceHistorySearchQueryResult';
+import type {AgentInstanceLimits} from './gen/types/AgentInstanceLimits';
+import type {AgentInstanceMessageContent} from './gen/types/AgentInstanceMessageContent';
+import type {AgentInstanceMetrics} from './gen/types/AgentInstanceMetrics';
+import type {AgentInstanceObjectContent} from './gen/types/AgentInstanceObjectContent';
+import type {AgentInstanceResult} from './gen/types/AgentInstanceResult';
+import type {AgentInstanceSearchQuery} from './gen/types/AgentInstanceSearchQuery';
+import type {AgentInstanceSearchQueryResult} from './gen/types/AgentInstanceSearchQueryResult';
+import type {AgentInstanceStatusEnumKey} from './gen/types/AgentInstanceStatusEnum';
+import type {AgentInstanceTextContent} from './gen/types/AgentInstanceTextContent';
+import type {AgentInstanceToolCall} from './gen/types/AgentInstanceToolCall';
+import type {AgentTool} from './gen/types/AgentTool';
+import type {GetAgentInstanceStatus200} from './gen/types/GetAgentInstance';
 
-const agentInstanceStatusSchema = z.enum([
-	'UNKNOWN',
-	'COMPLETED',
-	'IDLE',
-	'INITIALIZING',
-	'THINKING',
-	'TOOL_CALLING',
-	'TOOL_DISCOVERY',
-]);
-type AgentInstanceStatus = z.infer<typeof agentInstanceStatusSchema>;
+const agentInstanceStatusSchema = agentInstanceStatusEnumSchema;
+type AgentInstanceStatus = AgentInstanceStatusEnumKey;
 
-const agentInstanceTextContentSchema = z.object({
-	contentType: z.literal('TEXT'),
-	text: z.string(),
-});
-type AgentInstanceTextContent = z.infer<typeof agentInstanceTextContentSchema>;
+const agentInstanceDefinitionSchema = agentInstanceDefinitionResultSchema;
+type AgentInstanceDefinition = AgentInstanceDefinitionResult;
 
-const agentInstanceDocumentContentSchema = z.object({
-	contentType: z.literal('DOCUMENT'),
-	documentReference: documentReferenceSchema,
-});
-type AgentInstanceDocumentContent = z.infer<typeof agentInstanceDocumentContentSchema>;
+const agentInstanceSchema = agentInstanceResultSchema;
+type AgentInstance = AgentInstanceResult;
 
-const agentInstanceObjectContentSchema = z.object({
-	contentType: z.literal('OBJECT'),
-	object: z.unknown(),
-});
-type AgentInstanceObjectContent = z.infer<typeof agentInstanceObjectContentSchema>;
+const queryAgentInstancesRequestBodySchema = agentInstanceSearchQuerySchema;
+type QueryAgentInstancesRequestBody = AgentInstanceSearchQuery;
 
-const agentInstanceMessageContentSchema = z.discriminatedUnion('contentType', [
-	agentInstanceTextContentSchema,
-	agentInstanceDocumentContentSchema,
-	agentInstanceObjectContentSchema,
-]);
-type AgentInstanceMessageContent = z.infer<typeof agentInstanceMessageContentSchema>;
+const queryAgentInstancesResponseBodySchema = agentInstanceSearchQueryResultSchema;
+type QueryAgentInstancesResponseBody = AgentInstanceSearchQueryResult;
 
-const agentInstanceDefinitionSchema = z.object({
-	model: z.string(),
-	provider: z.string(),
-	systemPrompt: z.array(agentInstanceMessageContentSchema),
-});
-type AgentInstanceDefinition = z.infer<typeof agentInstanceDefinitionSchema>;
+const getAgentInstanceResponseBodySchema = getAgentInstanceStatus200Schema;
+type GetAgentInstanceResponseBody = GetAgentInstanceStatus200;
 
-const agentInstanceMetricsSchema = z.object({
-	inputTokens: z.number(),
-	outputTokens: z.number(),
-	reasoningTokenCount: z.number(),
-	cacheCreationTokenCount: z.number(),
-	cacheReadTokenCount: z.number(),
-	modelCalls: z.number(),
-	toolCalls: z.number(),
-});
-type AgentInstanceMetrics = z.infer<typeof agentInstanceMetricsSchema>;
+const agentInstanceHistoryRoleSchema = agentInstanceHistoryRoleEnumSchema;
+type AgentInstanceHistoryRole = AgentInstanceHistoryRoleEnumKey;
 
-const agentInstanceLimitsSchema = z.object({
-	maxModelCalls: z.number(),
-	maxToolCalls: z.number(),
-	maxTokens: z.number(),
-});
-type AgentInstanceLimits = z.infer<typeof agentInstanceLimitsSchema>;
+const agentInstanceHistoryCommitStatusSchema = agentInstanceHistoryCommitStatusEnumSchema;
+type AgentInstanceHistoryCommitStatus = AgentInstanceHistoryCommitStatusEnumKey;
 
-const agentToolSchema = z.object({
-	name: z.string(),
-	description: z.string().nullable(),
-	elementId: z.string().nullable(),
-});
-type AgentTool = z.infer<typeof agentToolSchema>;
+// Gen `agentInstanceHistoryItemSchema` is the update-request item. The search result item is `agentInstanceHistoryItemResultSchema`.
+const agentInstanceHistoryItemSchema = agentInstanceHistoryItemResultSchema;
+type AgentInstanceHistoryItem = AgentInstanceHistoryItemResult;
 
-const agentInstanceSchema = z.object({
-	agentInstanceKey: z.string(),
-	agentDefinitionKey: z.string(),
-	status: agentInstanceStatusSchema,
-	definition: agentInstanceDefinitionSchema,
-	metrics: agentInstanceMetricsSchema,
-	limits: agentInstanceLimitsSchema,
-	tools: z.array(agentToolSchema),
-	elementId: z.string(),
-	processInstanceKey: z.string(),
-	rootProcessInstanceKey: z.string(),
-	processDefinitionKey: z.string(),
-	processDefinitionId: z.string(),
-	processDefinitionVersion: z.number(),
-	processDefinitionVersionTag: z.string().nullable(),
-	tenantId: z.string(),
-	creationDate: z.string(),
-	lastUpdatedDate: z.string(),
-	completionDate: z.string().nullable(),
-	elementInstanceKeys: z.array(z.string()),
-});
-type AgentInstance = z.infer<typeof agentInstanceSchema>;
+const queryAgentInstanceHistoryRequestBodySchema = agentInstanceHistorySearchQuerySchema;
+type QueryAgentInstanceHistoryRequestBody = AgentInstanceHistorySearchQuery;
 
-const agentInstanceFilterSchema = z
-	.object({
-		agentInstanceKey: basicStringFilterSchema,
-		agentDefinitionKey: basicStringFilterSchema,
-		status: getEnumFilterSchema(agentInstanceStatusSchema),
-		elementId: basicStringFilterSchema,
-		processInstanceKey: basicStringFilterSchema,
-		rootProcessInstanceKey: basicStringFilterSchema,
-		processDefinitionKey: basicStringFilterSchema,
-		processDefinitionId: basicStringFilterSchema,
-		processDefinitionVersion: advancedIntegerFilterSchema,
-		processDefinitionVersionTag: basicStringFilterSchema,
-		tenantId: basicStringFilterSchema,
-		creationDate: advancedDateTimeFilterSchema,
-		lastUpdatedDate: advancedDateTimeFilterSchema,
-		completionDate: advancedDateTimeFilterSchema,
-		elementInstanceKeys: z.array(basicStringFilterSchema),
-	})
-	.partial();
-type AgentInstanceFilter = z.infer<typeof agentInstanceFilterSchema>;
-
-const queryAgentInstancesRequestBodySchema = getQueryRequestBodySchema({
-	sortFields: [
-		'agentInstanceKey',
-		'agentDefinitionKey',
-		'status',
-		'elementId',
-		'processInstanceKey',
-		'rootProcessInstanceKey',
-		'processDefinitionKey',
-		'tenantId',
-		'creationDate',
-		'lastUpdatedDate',
-		'completionDate',
-	] as const,
-	filter: agentInstanceFilterSchema,
-});
-type QueryAgentInstancesRequestBody = z.infer<typeof queryAgentInstancesRequestBodySchema>;
-
-const queryAgentInstancesResponseBodySchema = getQueryResponseBodySchema(agentInstanceSchema);
-type QueryAgentInstancesResponseBody = z.infer<typeof queryAgentInstancesResponseBodySchema>;
-
-const getAgentInstanceResponseBodySchema = agentInstanceSchema;
-type GetAgentInstanceResponseBody = z.infer<typeof getAgentInstanceResponseBodySchema>;
-
-const agentInstanceHistoryRoleSchema = z.enum(['USER', 'ASSISTANT', 'TOOL_RESULT', 'CONFIGURATION']);
-type AgentInstanceHistoryRole = z.infer<typeof agentInstanceHistoryRoleSchema>;
-
-const agentInstanceHistoryCommitStatusSchema = z.enum(['COMMITTED', 'PENDING', 'DISCARDED']);
-type AgentInstanceHistoryCommitStatus = z.infer<typeof agentInstanceHistoryCommitStatusSchema>;
-
-const agentInstanceToolCallSchema = z.object({
-	toolCallId: z.string(),
-	toolName: z.string(),
-	elementId: z.string().nullable(),
-	arguments: z.record(z.string(), z.unknown()).nullable(),
-});
-type AgentInstanceToolCall = z.infer<typeof agentInstanceToolCallSchema>;
-
-const agentInstanceHistoryItemMetricsSchema = z.object({
-	inputTokens: z.number().nullable(),
-	outputTokens: z.number().nullable(),
-	reasoningTokenCount: z.number().nullable(),
-	cacheCreationTokenCount: z.number().nullable(),
-	cacheReadTokenCount: z.number().nullable(),
-	durationMs: z.number().nullable(),
-});
-type AgentInstanceHistoryItemMetrics = z.infer<typeof agentInstanceHistoryItemMetricsSchema>;
-
-const agentInstanceHistoryItemSchema = z.object({
-	historyItemKey: z.string(),
-	historyItemId: z.string(),
-	agentInstanceKey: z.string(),
-	elementInstanceKey: z.string(),
-	jobKey: z.string(),
-	jobLeaseToken: z.string(),
-	loopIteration: z.number().int(),
-	role: agentInstanceHistoryRoleSchema,
-	content: z.array(agentInstanceMessageContentSchema),
-	toolCalls: z.array(agentInstanceToolCallSchema),
-	metrics: agentInstanceHistoryItemMetricsSchema.nullable(),
-	commitStatus: agentInstanceHistoryCommitStatusSchema,
-	producedAt: z.string(),
-	tools: z.array(agentToolSchema),
-	model: z.string().nullable(),
-	provider: z.string().nullable(),
-	limits: agentInstanceLimitsSchema,
-	systemPrompt: z.array(agentInstanceMessageContentSchema),
-});
-type AgentInstanceHistoryItem = z.infer<typeof agentInstanceHistoryItemSchema>;
-
-const agentInstanceHistoryFilterSchema = z
-	.object({
-		historyItemKey: basicStringFilterSchema,
-		role: getEnumFilterSchema(agentInstanceHistoryRoleSchema),
-		elementInstanceKey: basicStringFilterSchema,
-		jobKey: basicStringFilterSchema,
-		loopIteration: advancedIntegerFilterSchema,
-		commitStatus: getEnumFilterSchema(agentInstanceHistoryCommitStatusSchema),
-		producedAt: advancedDateTimeFilterSchema,
-	})
-	.partial();
-type AgentInstanceHistoryFilter = z.infer<typeof agentInstanceHistoryFilterSchema>;
-
-const queryAgentInstanceHistoryRequestBodySchema = getQueryRequestBodySchema({
-	sortFields: ['producedAt', 'historyItemKey', 'loopIteration'] as const,
-	filter: agentInstanceHistoryFilterSchema,
-});
-type QueryAgentInstanceHistoryRequestBody = z.infer<typeof queryAgentInstanceHistoryRequestBodySchema>;
-
-const queryAgentInstanceHistoryResponseBodySchema = getQueryResponseBodySchema(agentInstanceHistoryItemSchema);
-type QueryAgentInstanceHistoryResponseBody = z.infer<typeof queryAgentInstanceHistoryResponseBodySchema>;
+const queryAgentInstanceHistoryResponseBodySchema = agentInstanceHistorySearchQueryResultSchema;
+type QueryAgentInstanceHistoryResponseBody = AgentInstanceHistorySearchQueryResult;
 
 const getAgentInstance = {
 	method: 'GET',

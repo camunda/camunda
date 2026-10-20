@@ -9,7 +9,7 @@
 import {Suspense, type ComponentProps} from 'react';
 import {LoaderCircle} from '@camunda/design-system/icons';
 import {useTranslation} from 'react-i18next';
-import {LazyMonacoEditor} from '../LazyMonacoEditor';
+import {LazyMonacoEditor} from '#/operate/shared/Editors/LazyMonacoEditor';
 
 const RichTextEditor = (props: ComponentProps<typeof LazyMonacoEditor>) => {
 	const {t} = useTranslation();

@@ -6,56 +6,43 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {z} from 'zod';
 import {API_VERSION, type Endpoint} from './common';
+import {createDocumentsStatus201Schema} from './gen/zod/createDocumentsSchema';
+import {documentCreationFailureDetailSchema as genDocumentCreationFailureDetailSchema} from './gen/zod/documentCreationFailureDetailSchema';
+import {documentLinkRequestSchema} from './gen/zod/documentLinkRequestSchema';
+import {documentLinkSchema as genDocumentLinkSchema} from './gen/zod/documentLinkSchema';
+import {documentMetadataResponseSchema} from './gen/zod/documentMetadataResponseSchema';
+import {documentReferenceSchema as genDocumentReferenceSchema} from './gen/zod/documentReferenceSchema';
+import {getDocumentStatus200Schema} from './gen/zod/getDocumentSchema';
+import type {CreateDocumentsStatus201} from './gen/types/CreateDocuments';
+import type {DocumentCreationFailureDetail as GenDocumentCreationFailureDetail} from './gen/types/DocumentCreationFailureDetail';
+import type {DocumentLink as GenDocumentLink} from './gen/types/DocumentLink';
+import type {DocumentLinkRequest} from './gen/types/DocumentLinkRequest';
+import type {DocumentMetadataResponse} from './gen/types/DocumentMetadataResponse';
+import type {DocumentReference as GenDocumentReference} from './gen/types/DocumentReference';
+import type {GetDocumentStatus200} from './gen/types/GetDocument';
 
-const documentMetadataSchema = z.object({
-	contentType: z.string(),
-	fileName: z.string(),
-	expiresAt: z.string().nullable(),
-	size: z.number(),
-	processDefinitionId: z.string().nullable(),
-	processInstanceKey: z.string().nullable(),
-	customProperties: z.record(z.string(), z.unknown()),
-});
-type DocumentMetadata = z.infer<typeof documentMetadataSchema>;
+// Gen `documentMetadataSchema` is the request metadata. The response metadata is `documentMetadataResponseSchema`.
+const documentMetadataSchema = documentMetadataResponseSchema;
+type DocumentMetadata = DocumentMetadataResponse;
 
-const documentReferenceSchema = z.object({
-	'camunda.document.type': z.literal('camunda'),
-	storeId: z.string(),
-	documentId: z.string(),
-	contentHash: z.string().nullable(),
-	metadata: documentMetadataSchema,
-});
-type DocumentReference = z.infer<typeof documentReferenceSchema>;
+const documentReferenceSchema = genDocumentReferenceSchema;
+type DocumentReference = GenDocumentReference;
 
-const documentCreationFailureDetailSchema = z.object({
-	fileName: z.string(),
-	status: z.number().int(),
-	title: z.string(),
-	detail: z.string(),
-});
-type DocumentCreationFailureDetail = z.infer<typeof documentCreationFailureDetailSchema>;
+const documentCreationFailureDetailSchema = genDocumentCreationFailureDetailSchema;
+type DocumentCreationFailureDetail = GenDocumentCreationFailureDetail;
 
-const createDocumentsResponseBodySchema = z.object({
-	createdDocuments: z.array(documentReferenceSchema),
-	failedDocuments: z.array(documentCreationFailureDetailSchema),
-});
-type CreateDocumentsResponseBody = z.infer<typeof createDocumentsResponseBodySchema>;
+const createDocumentsResponseBodySchema = createDocumentsStatus201Schema;
+type CreateDocumentsResponseBody = CreateDocumentsStatus201;
 
-const documentLinkRequestBodySchema = z.object({
-	timeToLive: z.number().optional().default(3600000),
-});
-type DocumentLinkRequestBody = z.infer<typeof documentLinkRequestBodySchema>;
+const documentLinkRequestBodySchema = documentLinkRequestSchema;
+type DocumentLinkRequestBody = DocumentLinkRequest;
 
-const documentLinkSchema = z.object({
-	url: z.string(),
-	expiresAt: z.string(),
-});
-type DocumentLink = z.infer<typeof documentLinkSchema>;
+const documentLinkSchema = genDocumentLinkSchema;
+type DocumentLink = GenDocumentLink;
 
-const getDocumentResponseBodySchema = z.string();
-type GetDocumentResponseBody = z.infer<typeof getDocumentResponseBodySchema>;
+const getDocumentResponseBodySchema = getDocumentStatus200Schema;
+type GetDocumentResponseBody = GetDocumentStatus200;
 
 const createDocument = {
 	method: 'POST',

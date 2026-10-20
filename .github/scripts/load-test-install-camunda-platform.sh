@@ -82,8 +82,16 @@ cd "load-tests/setup/${namespace}"
 # Build load test configuration
 load_test_config="--set global.image.tag=${image_tag} \
                   --set global.image.repository=${image_repository} \
-                  --set global.image.pullSecrets[0].name=harbor-registry \
-                  --set global.performReadBenchmarks=${perform_read_benchmarks}"
+                  --set global.image.pullSecrets[0].name=harbor-registry"
+
+# Only pass the value to turn read benchmarks off. This flag is rendered after the Makefile flags,
+# so always passing it (including "true") would override the Makefile, which turns read benchmarks
+# off for scenarios without secondary storage. When on, the chart default and the Makefile decide.
+# The k6 data-read test reads from secondary storage, like the read benchmarks.
+if [[ "${perform_read_benchmarks}" != "true" ]]; then
+  load_test_config="$load_test_config --set global.performReadBenchmarks=false"
+  load_test_config="$load_test_config --set k6.tests.data-read.enabled=false"
+fi
 
 # Enable the load-tester Optimize report-evaluation meter via chart extraConfig
 # (binds to the Spring property load-tester.optimize.report-evaluation-enabled; off by default).

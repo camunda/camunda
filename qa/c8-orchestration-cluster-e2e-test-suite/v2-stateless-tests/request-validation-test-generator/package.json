@@ -32,5 +32,5 @@
     "typescript": "^5.5.4",
     "yaml": "^2.4.2"
   },
-  "packageManager": "npm@12.1.0"
+  "packageManager": "npm@12.2.0"
 }

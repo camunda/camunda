@@ -8,8 +8,11 @@
 package io.camunda.zeebe.engine.processing.message;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.zeebe.engine.metrics.MessageCorrelationMetrics;
@@ -18,11 +21,14 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWr
 import io.camunda.zeebe.engine.state.immutable.MessageStartProcessInstanceDedupState;
 import io.camunda.zeebe.engine.state.immutable.MessageStartProcessInstanceDedupState.ExpiredEntryVisitor;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageStartProcessInstanceRequestRecord;
+import io.camunda.zeebe.protocol.record.intent.MessageStartProcessInstanceRequestIntent;
+import io.camunda.zeebe.protocol.record.value.StorageOrdinalRelated;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.InstantSource;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 
 /**
  * Unit tests for the swept-dedup metric (M11) recorded by the expired-dedup sweeper on {@code P_B}.
@@ -86,8 +92,47 @@ public final class MessageStartProcessInstanceRequestSweepExpiredDedupsProcessor
     assertThat(meterRegistry.get(SWEPT_METRIC).counter().count()).isEqualTo(0.0);
   }
 
+  @Test
+  void shouldMarkExpiredDedupDeletedEventsAsNotOrdinalControlled() {
+    // given one past-deadline dedup row
+    visitEntries(1);
+
+    // when
+    processor.processRecord(mockRecord);
+
+    // then the deletion event belongs to no instance
+    final var eventCaptor = ArgumentCaptor.forClass(MessageStartProcessInstanceRequestRecord.class);
+    verify(mockStateWriter)
+        .appendFollowUpEvent(
+            eq(RECORD_KEY),
+            eq(MessageStartProcessInstanceRequestIntent.EXPIRED_DEDUP_DELETED),
+            eventCaptor.capture());
+    assertThat(eventCaptor.getValue().getStorageOrdinal())
+        .isEqualTo(StorageOrdinalRelated.NOT_ORDINAL_CONTROLLED);
+  }
+
+  @Test
+  void shouldMarkFollowUpSweepCommandAsNotOrdinalControlled() {
+    // given more past-deadline rows than fit in one batch
+    when(mockDedupState.visitExpiredEntries(anyLong(), any())).thenReturn(true);
+
+    // when
+    processor.processRecord(mockRecord);
+
+    // then the follow-up trigger belongs to no instance
+    final var commandCaptor =
+        ArgumentCaptor.forClass(MessageStartProcessInstanceRequestRecord.class);
+    verify(mockCommandWriter)
+        .appendFollowUpCommand(
+            eq(RECORD_KEY),
+            eq(MessageStartProcessInstanceRequestIntent.SWEEP_EXPIRED_DEDUPS),
+            commandCaptor.capture());
+    assertThat(commandCaptor.getValue().getStorageOrdinal())
+        .isEqualTo(StorageOrdinalRelated.NOT_ORDINAL_CONTROLLED);
+  }
+
   private void visitEntries(final int count) {
-    when(mockDedupState.visitExpiredEntries(anyLong(), org.mockito.ArgumentMatchers.any()))
+    when(mockDedupState.visitExpiredEntries(anyLong(), any()))
         .thenAnswer(
             invocation -> {
               final ExpiredEntryVisitor visitor = invocation.getArgument(1);

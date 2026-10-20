@@ -27,6 +27,7 @@ import static io.camunda.gateway.mapping.http.validator.RequestValidator.createP
 import io.camunda.gateway.mapping.http.GatewayErrorMapper;
 import io.camunda.gateway.mapping.http.RequestMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryFilterMapper;
+import io.camunda.gateway.mapping.http.validator.ProcessInstanceRequestValidator;
 import io.camunda.gateway.protocol.model.CancelProcessInstanceRequest;
 import io.camunda.gateway.protocol.model.DirectAncestorKeyInstruction;
 import io.camunda.gateway.protocol.model.ModifyProcessInstanceVariableInstruction;
@@ -68,6 +69,8 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.record.value.RuntimeInstructionType;
 import io.camunda.zeebe.util.Either;
 import java.util.List;
+import java.util.Optional;
+import java.util.function.Function;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.jspecify.annotations.Nullable;
 import org.springframework.http.HttpStatus;
@@ -243,6 +246,40 @@ public class ProcessInstanceMapper {
     }
 
     return Either.right(filter.get());
+  }
+
+  public Either<ProblemDetail, ProcessInstanceFilter> toProcessInstanceCancellationFilter(
+      final io.camunda.gateway.protocol.model.ProcessInstanceFilter request) {
+    return toValidatedProcessInstanceFilter(
+        request,
+        ProcessInstanceRequestValidator::validateCancelProcessInstanceBatchOperationFilter);
+  }
+
+  public Either<ProblemDetail, ProcessInstanceFilter> toProcessInstanceIncidentResolutionFilter(
+      final io.camunda.gateway.protocol.model.ProcessInstanceFilter request) {
+    return toValidatedProcessInstanceFilter(
+        request, ProcessInstanceRequestValidator::validateResolveIncidentBatchOperationFilter);
+  }
+
+  public Either<ProblemDetail, ProcessInstanceFilter> toProcessInstanceSuspensionFilter(
+      final io.camunda.gateway.protocol.model.ProcessInstanceFilter request) {
+    return toValidatedProcessInstanceFilter(
+        request,
+        ProcessInstanceRequestValidator::validateSuspendProcessInstanceBatchOperationFilter);
+  }
+
+  public Either<ProblemDetail, ProcessInstanceFilter> toProcessInstanceResumptionFilter(
+      final io.camunda.gateway.protocol.model.ProcessInstanceFilter request) {
+    return toValidatedProcessInstanceFilter(
+        request,
+        ProcessInstanceRequestValidator::validateResumeProcessInstanceBatchOperationFilter);
+  }
+
+  private Either<ProblemDetail, ProcessInstanceFilter> toValidatedProcessInstanceFilter(
+      final io.camunda.gateway.protocol.model.ProcessInstanceFilter request,
+      final Function<ProcessInstanceFilter, Optional<ProblemDetail>> validator) {
+    return toRequiredProcessInstanceFilter(request)
+        .flatMap(filter -> RequestMapper.getResult(validator.apply(filter), () -> filter));
   }
 
   public Either<ProblemDetail, ProcessInstanceMigrateBatchOperationRequest>

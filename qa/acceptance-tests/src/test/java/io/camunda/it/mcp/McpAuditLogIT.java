@@ -19,7 +19,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.search.enums.AuditLogEntityTypeEnum;
 import io.camunda.client.api.search.enums.AuditLogOperationTypeEnum;
-import io.camunda.configuration.ExtensionProperties;
+import io.camunda.configuration.data.ExtensionProperties;
 import io.camunda.qa.util.auth.Authenticated;
 import io.camunda.qa.util.cluster.TestCamundaApplication;
 import io.camunda.qa.util.multidb.CamundaMultiDBExtension;

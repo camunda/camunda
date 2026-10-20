@@ -7,6 +7,7 @@
  */
 package io.camunda.search.schema.elasticsearch;
 
+import static io.camunda.search.schema.utils.SearchEngineClientUtils.SETTINGS_FINGERPRINT_META_KEY;
 import static io.camunda.search.schema.utils.SearchEngineClientUtils.convertValue;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
@@ -49,7 +50,6 @@ import io.camunda.search.schema.config.IndexConfiguration;
 import io.camunda.search.schema.exceptions.IndexSchemaValidationException;
 import io.camunda.search.schema.exceptions.SearchEngineException;
 import io.camunda.search.schema.utils.SearchEngineClientUtils;
-import io.camunda.search.schema.utils.SearchEngineClientUtils.SchemaSettingsAppender;
 import io.camunda.search.schema.utils.SuppressLogger;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
@@ -61,7 +61,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -656,14 +655,14 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
     try (final var templateFile =
         getResourceAsStream(indexTemplateDescriptor.getMappingsClasspathFilename())) {
 
+      final var templateSettings =
+          utils.new SchemaSettingsAppender(templateFile)
+              .withNumberOfReplicas(settings.getNumberOfReplicas().toString())
+              .withNumberOfShards(settings.getNumberOfShards().toString())
+              .withRefreshInterval(settings.getRefreshInterval());
+      final var priority = convertValue(settings.getTemplatePriority(), Long::valueOf);
       final var templateFields =
-          deserializeJson(
-              IndexTemplateMapping._DESERIALIZER,
-              utils.new SchemaSettingsAppender(templateFile)
-                  .withNumberOfReplicas(settings.getNumberOfReplicas().toString())
-                  .withNumberOfShards(settings.getNumberOfShards().toString())
-                  .withRefreshInterval(settings.getRefreshInterval())
-                  .build());
+          deserializeJson(IndexTemplateMapping._DESERIALIZER, templateSettings.build());
       return PutIndexTemplateRequest.of(
           b ->
               b.name(indexTemplateDescriptor.getTemplateName())
@@ -673,7 +672,10 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
                           t.aliases(indexTemplateDescriptor.getAlias(), Alias.of(a -> a))
                               .mappings(templateFields.mappings())
                               .settings(templateFields.settings()))
-                  .priority(convertValue(settings.getTemplatePriority(), Long::valueOf))
+                  .priority(priority)
+                  .meta(
+                      SETTINGS_FINGERPRINT_META_KEY,
+                      JsonData.of(templateSettings.settingsFingerprint(priority)))
                   .composedOf(indexTemplateDescriptor.getComposedOf())
                   .create(create));
     } catch (final IOException e) {
@@ -699,8 +701,8 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
       final var configuredPriority =
           convertValue(indexConfiguration.getTemplatePriority(), Long::valueOf);
 
-      if (areTemplateSettingsEqualToConfigured(
-          currentTemplate, configuredSettings, configuredPriority)) {
+      final var configuredFingerprint = configuredSettings.settingsFingerprint(configuredPriority);
+      if (configuredFingerprint.equals(storedSettingsFingerprint(currentTemplate))) {
         LOG.debug(
             "Index template settings for [{}] are already up to date",
             indexTemplateDescriptor.getTemplateName());
@@ -725,7 +727,8 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
                                   .mappings(currentTemplate.template().mappings())
                                   .aliases(currentTemplate.template().aliases()))
                       .composedOf(currentTemplate.composedOf())
-                      .priority(configuredPriority)));
+                      .priority(configuredPriority)
+                      .meta(SETTINGS_FINGERPRINT_META_KEY, JsonData.of(configuredFingerprint))));
     } catch (final IOException e) {
       throw new SearchEngineException(
           "Failed to load file "
@@ -735,12 +738,9 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
     }
   }
 
-  private boolean areTemplateSettingsEqualToConfigured(
-      final IndexTemplate currentTemplate,
-      final SchemaSettingsAppender configuredSettings,
-      final Long configuredPriority) {
-    return Objects.equals(configuredPriority, currentTemplate.priority())
-        && configuredSettings.equalsSettings(serializeAsMap(currentTemplate.template().settings()));
+  private static String storedSettingsFingerprint(final IndexTemplate template) {
+    final var fingerprint = template.meta().get(SETTINGS_FINGERPRINT_META_KEY);
+    return fingerprint == null ? null : fingerprint.to(String.class);
   }
 
   private IndexTemplate getIndexTemplateState(

@@ -115,6 +115,25 @@ final class ProcessInstanceSuspensionJobBehaviorTest {
   }
 
   @Test
+  void shouldNotSuspendJobOfTerminatingElement() {
+    // given - e.g. the canceling task listener job of an interrupted user task
+    rootInstance();
+    childInstance(CHILD_ELEMENT_KEY, PROCESS_INSTANCE_KEY);
+    activatableJob(PROCESS_INSTANCE_KEY, JOB_KEY);
+    activatableJob(CHILD_ELEMENT_KEY, CHILD_JOB_KEY);
+    elementInstanceState.updateInstance(
+        CHILD_ELEMENT_KEY, ei -> ei.setState(ProcessInstanceIntent.ELEMENT_TERMINATING));
+
+    // when
+    behavior.suspendJobs(PROCESS_INSTANCE_KEY);
+
+    // then
+    verify(stateWriter).appendFollowUpEvent(eq(JOB_KEY), eq(JobIntent.SUSPENDED), any());
+    verify(stateWriter, never())
+        .appendFollowUpEvent(eq(CHILD_JOB_KEY), eq(JobIntent.SUSPENDED), any());
+  }
+
+  @Test
   void shouldDoNothingWhenProcessInstanceIsGone() {
     // given - no element instance seeded; getInstance returns null
 

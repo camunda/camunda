@@ -10,7 +10,7 @@ package io.camunda.container;
 import static io.camunda.container.ZeebeTopologyWaitStrategy.newDefaultTopologyCheck;
 
 import io.camunda.configuration.Camunda;
-import io.camunda.configuration.Exporter;
+import io.camunda.configuration.data.Exporter;
 import io.camunda.container.cluster.BrokerNode;
 import io.camunda.container.cluster.CamundaPort;
 import io.camunda.container.cluster.GatewayNode;

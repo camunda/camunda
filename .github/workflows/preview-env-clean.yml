@@ -50,7 +50,7 @@ jobs:
         vault-auth-secret-id: ${{ secrets.VAULT_SECRET_ID}}
         vault-url: ${{ secrets.VAULT_ADDR }}
 
-    - uses: camunda/infra-global-github-actions/preview-env/clean@50d6a648396f9cf5af51212986d9baa83f8c0129 # preview-env-1.0.13
+    - uses: camunda/infra-global-github-actions/preview-env/clean@b66111b4f2f415dcbf6e5d14e9976575ede4e5ed # preview-env-1.0.15
       with:
         labels: deploy-preview
         pull-request: ${{ inputs.pull-request }}
@@ -70,7 +70,7 @@ jobs:
           secret/data/products/camunda/ci/camunda ARGOCD_TOKEN;
 
     # Clean up any (remaining) smoke-test preview environments older than 12 hours
-    - uses: camunda/infra-global-github-actions/argocd-delete-applications@67d00e9260887361a31f6446252fffbecae4a02e # argocd-delete-applications-1.0.1
+    - uses: camunda/infra-global-github-actions/argocd-delete-applications@47164bc3d1bce866f4f189f19fac7895ae51956d # argocd-delete-applications-1.0.2
       with:
         argocd-token: ${{ steps.secrets.outputs.ARGOCD_TOKEN }}
         github-token: ${{ github.token }}

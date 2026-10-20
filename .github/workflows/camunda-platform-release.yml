@@ -231,6 +231,13 @@ jobs:
           # Assign the amount of seconds that the plugin will wait for a deployment
           # state. Can not be less than Constants.WAIT_MAX_TIME_DEFAULT_VALUE.
           CENTRAL_WAIT_MAX_TIME: "10800"
+          # maven-scm discards git's stderr (GitRemoteInfoCommand builds its
+          # ScmException from the URL alone), so a failed ls-remote reports nothing
+          # but "unbale to execute ls-remote". A file path routes git's own
+          # diagnostics past maven; NO_DATA keeps packfile bodies out of the trace.
+          GIT_TRACE: ${{ runner.temp }}/git-trace.log
+          GIT_TRACE_CURL: ${{ runner.temp }}/git-trace-curl.log
+          GIT_TRACE_CURL_NO_DATA: "1"
         run: |
           # Perform a maven release
           # https://maven.apache.org/maven-release/maven-release-plugin/perform-mojo.html
@@ -271,6 +278,65 @@ jobs:
           echo "tagCommitSha=${TAG_COMMIT_SHA}" >> "$GITHUB_OUTPUT"
           popd
 
+      # release:perform's `git ls-remote` (run from java.io.tmpdir) has failed
+      # intermittently on 8.10.0-alpha5-rc2, 8.9.19, 8.8.39 and 8.10.0-rc1 -- always
+      # in under a second, always after the clone and every push in the same job had
+      # succeeded against the same URL. That is an answer, not a timeout, but maven
+      # swallowed it every time. These failure-only steps record whether the remote
+      # rejected us (HTTP status) or the runner never reached it (DNS/connect). All
+      # are best-effort: a release is never failed by its own diagnostics.
+      - name: Probe git remote access
+        id: probe-git-remote
+        if: failure() && steps.maven-perform-release.outcome == 'failure'
+        continue-on-error: true
+        timeout-minutes: 3
+        env:
+          APP_TOKEN: ${{ steps.github-token.outputs.token }}
+          PROBE_LOG: ${{ runner.temp }}/git-remote-probe.log
+          REF_ADVERTISEMENT: https://github.com/camunda/camunda.git/info/refs?service=git-upload-pack
+        run: .github/scripts/probe-git-remote.sh
+
+      # GIT_TRACE_CURL records request headers, Authorization included. Scrub before
+      # the traces leave the runner.
+      - name: Redact git traces
+        id: redact-git-traces
+        if: failure() && steps.maven-perform-release.outcome == 'failure'
+        continue-on-error: true
+        env:
+          DIAGNOSTICS_DIR: ${{ runner.temp }}/git-remote-diagnostics
+        run: |
+          set -euo pipefail
+          umask 077
+          mkdir -p "${DIAGNOSTICS_DIR}"
+
+          for source in \
+            "${{ runner.temp }}/git-trace.log" \
+            "${{ runner.temp }}/git-trace-curl.log" \
+            "${{ runner.temp }}/git-remote-probe.log"; do
+            [ -f "${source}" ] || continue
+            destination="${DIAGNOSTICS_DIR}/$(basename "${source}")"
+            # Keep only the last 5 MB: the failure is at the end of the trace, and
+            # the artifact stays bounded however verbose git gets.
+            tail -c 5M "${source}" | sed -E \
+              -e 's#//[^@/[:space:]]*@#//***@#g' \
+              -e 's#(authorization|AUTHORIZATION): .*#\1: ***#gI' \
+              -e 's#(x-access-token|ghs_|github_pat_)[A-Za-z0-9_]*#\1***#g' \
+              > "${destination}"
+          done
+
+      - name: Upload git remote diagnostics
+        if: >-
+          failure() &&
+          steps.maven-perform-release.outcome == 'failure' &&
+          steps.redact-git-traces.outcome == 'success'
+        continue-on-error: true
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: git-remote-diagnostics-${{ env.RELEASE_VERSION }}
+          path: ${{ runner.temp }}/git-remote-diagnostics/
+          if-no-files-found: warn
+          retention-days: 14
+
       - name: Validate flattened POM metadata
         if: ${{ inputs.dryRun }}
         uses: ./.github/actions/validate-pom-metadata
@@ -308,7 +374,7 @@ jobs:
 
           echo "dir=${ARTIFACT_DIR}" >> "$GITHUB_OUTPUT"
       - name: Upload Release Artifacts
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: release-artifacts-${{ inputs.releaseVersion }}
           path: ${{ steps.release-artifacts.outputs.dir }}
@@ -455,7 +521,7 @@ jobs:
           username: oauth2accesstoken
           password: ${{ steps.auth.outputs.access_token }}
       - name: Download Release Artifacts
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: release-artifacts-${{ inputs.releaseVersion }}
       - name: Build Optimize Docker Image
@@ -577,7 +643,7 @@ jobs:
           username: minimus
           password: ${{ steps.secrets.outputs.minimus-token }}
       - name: Download Release Artifacts
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: release-artifacts-${{ inputs.releaseVersion }}
       - name: Build Camunda Docker Image
@@ -669,6 +735,87 @@ jobs:
       dockerImage: ${{ (inputs.dryRun || inputs.releaseProcessDryRun) && '' || format('camunda/camunda:{0}', inputs.releaseVersion) }}
     secrets: inherit
 
+  # Shadow run of the new release-notes generator (#57713), beside the legacy
+  # zcl changelog the `github` job builds. Read-only, non-blocking, its own
+  # job so the token stays read-only unlike `github`'s. Runs after `github`
+  # (shared GITHUB_TOKEN, avoids tripping the secondary rate limit) and is
+  # skipped for patches/alphas only where the walked tag can't yet resolve
+  # (dry runs) or the comparison isn't useful (minors, candidates). Kill
+  # switch: repo variable RELEASE_NOTES_SHADOW_DISABLED=true. Full rationale
+  # and the version-shape rules: GENERATOR.md.
+  release-notes-shadow:
+    needs: [release, github]
+    name: Release Notes (shadow run)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: read
+      pull-requests: read
+    continue-on-error: true
+    timeout-minutes: 60 # A minor walks thousands of commits; give it headroom.
+    if: ${{ always() && !cancelled() &&
+      needs.release.result == 'success' && needs.github.result == 'success' &&
+      vars.RELEASE_NOTES_SHADOW_DISABLED != 'true' &&
+      !inputs.dryRun && !inputs.releaseProcessDryRun && !contains(inputs.releaseVersion, 'dryrun') &&
+      !contains(inputs.releaseVersion, '-rc') && !endsWith(inputs.releaseVersion, '.0') }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ env.RELEASE_BRANCH }}
+          fetch-depth: 0 # Tags and full history — the range walk needs both.
+          persist-credentials: false
+      - name: Generate Changelog (new generator, shadow run)
+        id: gen-changelog-shadow
+        continue-on-error: true
+        uses: ./.github/actions/release-notes/generate
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          target-version: ${{ inputs.releaseVersion }}
+          release-branch: ${{ env.RELEASE_BRANCH }}
+          allow-unattributed: 'true'
+          unattributed-reason: 'shadow run (#57713) — comparing against the legacy zcl changelog, not yet gating'
+          output-dir: release-notes-shadow
+      # Read-only comparison of the generator's label/comment plan with the
+      # version:<tag> labels zcl applied in the github job (#57714). Writes
+      # nothing to GitHub; the report lands in this job's summary.
+      - name: Compare label and comment plan with zcl (apply dry run)
+        id: apply-dry-run-shadow
+        if: ${{ always() && !cancelled() }}
+        continue-on-error: true
+        uses: ./.github/actions/release-notes/apply
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          input-dir: release-notes-shadow
+          generate-outcome: ${{ steps.gen-changelog-shadow.outcome }}
+      - name: Upload apply divergence report
+        if: ${{ always() && !cancelled() }}
+        continue-on-error: true
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: apply-divergence-${{ inputs.releaseVersion }}-${{ github.run_attempt }}
+          path: release-notes-shadow/apply-divergence.json
+          if-no-files-found: ignore
+          retention-days: 30
+      # continue-on-error above hides a timeout or crash from the job's own
+      # status; surface it here so a swallowed failure still shows up.
+      - name: Report shadow-run outcome
+        if: always()
+        env:
+          GENERATE_OUTCOME: ${{ steps.gen-changelog-shadow.outcome }}
+          APPLY_OUTCOME: ${{ steps.apply-dry-run-shadow.outcome }}
+          APPLY_COMPARED: ${{ steps.apply-dry-run-shadow.outputs.compared }}
+        run: |
+          echo "### Release Notes shadow run: ${GENERATE_OUTCOME}" >> "$GITHUB_STEP_SUMMARY"
+          if [ "${APPLY_OUTCOME}" = "success" ] && [ "${APPLY_COMPARED}" = "true" ]; then
+            echo "### Release Notes apply dry run: compared" >> "$GITHUB_STEP_SUMMARY"
+          elif [ "${APPLY_OUTCOME}" = "success" ]; then
+            echo "### Release Notes apply dry run: no comparison (see its summary above)" >> "$GITHUB_STEP_SUMMARY"
+            echo "::warning::The release-notes apply dry run produced no comparison."
+          else
+            echo "### Release Notes apply dry run: ${APPLY_OUTCOME}" >> "$GITHUB_STEP_SUMMARY"
+            echo "::warning::The release-notes apply dry run ${APPLY_OUTCOME}, so no label/comment comparison was produced."
+          fi
+
   # GitHub release job creates a GitHub release with artifacts, changelog, and proper versioning.
   # Flags impact:
   # - With dryRun=true: Skips creating the actual GitHub release (only prepares artifacts and changelog)
@@ -757,7 +904,7 @@ jobs:
           # To show the changelog also as step summary
           echo "$changelog" >> "$GITHUB_STEP_SUMMARY"
       - name: Download Release Artifacts
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: release-artifacts-${{ inputs.releaseVersion }}
           path: release-artifacts
@@ -867,9 +1014,9 @@ jobs:
             secret/data/products/camunda/ci/camunda FOSSA_API_KEY;
       - name: Get FOSSA context
         id: fossa-context
-        uses: camunda/infra-global-github-actions/fossa/info@1bab7578250d06c3ac57ba8e2ddfc65ac3f7880c # fossa-1.0.21
+        uses: camunda/infra-global-github-actions/fossa/info@47164bc3d1bce866f4f189f19fac7895ae51956d # fossa-1.0.22
       - name: Wait for FOSSA scan completion
-        uses: camunda/infra-global-github-actions/fossa/wait-for-scan@1bab7578250d06c3ac57ba8e2ddfc65ac3f7880c # fossa-1.0.21
+        uses: camunda/infra-global-github-actions/fossa/wait-for-scan@47164bc3d1bce866f4f189f19fac7895ae51956d # fossa-1.0.22
         with:
           api-key: ${{ steps.secrets.outputs.FOSSA_API_KEY }}
           branch: ${{ steps.fossa-context.outputs.head-ref }}
@@ -877,7 +1024,7 @@ jobs:
           revision-id: ${{ needs.release.outputs.releaseTagCommitSha }}
           dry-run: ${{ inputs.dryRun || inputs.releaseProcessDryRun }}
       - name: Create FOSSA releases and generate reports
-        uses: camunda/infra-global-github-actions/fossa/release@1bab7578250d06c3ac57ba8e2ddfc65ac3f7880c # fossa-1.0.21
+        uses: camunda/infra-global-github-actions/fossa/release@47164bc3d1bce866f4f189f19fac7895ae51956d # fossa-1.0.22
         with:
           api-key: ${{ steps.secrets.outputs.FOSSA_API_KEY }}
           branch: ${{ steps.fossa-context.outputs.head-ref }}
@@ -1187,5 +1334,4 @@ jobs:
                 }
               ]
             }
-
 

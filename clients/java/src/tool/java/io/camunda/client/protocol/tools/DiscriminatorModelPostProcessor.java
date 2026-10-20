@@ -43,8 +43,8 @@ import org.yaml.snakeyaml.Yaml;
  *
  * <p>{@code specDir} — path to the YAML spec directory (zeebe/gateway-protocol/src/main/proto/v2).
  * {@code inputGenDir} — path to the raw generated REST package directory
- * (io/camunda/client/protocol/rest).
- * {@code outputGenDir} — path where the discriminator-processed REST package is written.
+ * (io/camunda/client/protocol/rest). {@code outputGenDir} — path where the discriminator-processed
+ * REST package is written.
  */
 public final class DiscriminatorModelPostProcessor {
 

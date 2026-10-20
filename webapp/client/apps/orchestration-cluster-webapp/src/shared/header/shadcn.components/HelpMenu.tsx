@@ -8,7 +8,6 @@
 
 import {Button, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger} from '@camunda/design-system';
 import {HelpCircle} from '@camunda/design-system/icons';
-import {useCallback} from 'react';
 import {useTranslation} from 'react-i18next';
 
 type Props = {
@@ -17,18 +16,6 @@ type Props = {
 
 const HelpMenu: React.FC<Props> = ({isPaidPlan}) => {
 	const {t} = useTranslation();
-	const handleDocumentationClick = useCallback(() => {
-		window.open('https://docs.camunda.io/', '_blank', 'noopener,noreferrer');
-	}, []);
-	const handleAcademyClick = useCallback(() => {
-		window.open('https://academy.camunda.com/', '_blank', 'noopener,noreferrer');
-	}, []);
-	const handleFeedbackAndSupportClick = useCallback(() => {
-		window.open('https://jira.camunda.com/projects/SUPPORT/queues', '_blank', 'noopener,noreferrer');
-	}, []);
-	const handleCommunityForumClick = useCallback(() => {
-		window.open('https://forum.camunda.io', '_blank', 'noopener,noreferrer');
-	}, []);
 
 	return (
 		<DropdownMenu>
@@ -38,14 +25,28 @@ const HelpMenu: React.FC<Props> = ({isPaidPlan}) => {
 				</Button>
 			</DropdownMenuTrigger>
 			<DropdownMenuContent align="end">
-				<DropdownMenuItem onClick={handleDocumentationClick}>{t('headerSidebarDocumentationLink')}</DropdownMenuItem>
-				<DropdownMenuItem onClick={handleAcademyClick}>{t('headerSidebarCamundaAcademyLink')}</DropdownMenuItem>
+				<DropdownMenuItem asChild>
+					<a href="https://docs.camunda.io/" target="_blank" rel="noopener noreferrer">
+						{t('headerSidebarDocumentationLink')}
+					</a>
+				</DropdownMenuItem>
+				<DropdownMenuItem asChild>
+					<a href="https://academy.camunda.com/" target="_blank" rel="noopener noreferrer">
+						{t('headerSidebarCamundaAcademyLink')}
+					</a>
+				</DropdownMenuItem>
 				{isPaidPlan ? (
-					<DropdownMenuItem onClick={handleFeedbackAndSupportClick}>
-						{t('headerSidebarFeedbackAndSupportLink')}
+					<DropdownMenuItem asChild>
+						<a href="https://jira.camunda.com/projects/SUPPORT/queues" target="_blank" rel="noopener noreferrer">
+							{t('headerSidebarFeedbackAndSupportLink')}
+						</a>
 					</DropdownMenuItem>
 				) : null}
-				<DropdownMenuItem onClick={handleCommunityForumClick}>{t('headerSidebarCommunityForumLink')}</DropdownMenuItem>
+				<DropdownMenuItem asChild>
+					<a href="https://forum.camunda.io" target="_blank" rel="noopener noreferrer">
+						{t('headerSidebarCommunityForumLink')}
+					</a>
+				</DropdownMenuItem>
 			</DropdownMenuContent>
 		</DropdownMenu>
 	);

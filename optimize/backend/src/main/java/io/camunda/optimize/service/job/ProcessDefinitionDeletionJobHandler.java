@@ -16,8 +16,11 @@ import io.camunda.optimize.dto.optimize.query.job.JobType;
 import io.camunda.optimize.service.DefinitionService;
 import io.camunda.optimize.service.db.reader.DefinitionReader;
 import io.camunda.optimize.service.db.reader.ProcessDefinitionReader;
+import io.camunda.optimize.service.db.writer.BusinessValueOverviewWriter;
+import io.camunda.optimize.service.db.writer.BusinessValueTargetWriter;
 import io.camunda.optimize.service.db.writer.ProcessDefinitionWriter;
 import io.camunda.optimize.service.db.writer.ProcessInstanceWriter;
+import io.camunda.optimize.service.exceptions.OptimizeBulkFailureException;
 import io.camunda.optimize.service.exceptions.OptimizeByQueryFailureException;
 import io.camunda.optimize.service.report.ReportService;
 import io.camunda.optimize.service.util.BackoffCalculator;
@@ -43,7 +46,10 @@ public class ProcessDefinitionDeletionJobHandler implements JobHandler {
           SocketTimeoutException.class,
           ElasticsearchException.class,
           OpenSearchException.class,
-          OptimizeByQueryFailureException.class);
+          OptimizeByQueryFailureException.class,
+          // Bulk deletes report per-item failures without a transport exception, so without this
+          // a transient rejection (HTTP 429 under load) would fail the job on the first attempt.
+          OptimizeBulkFailureException.class);
   private static final int MAX_ATTEMPTS = 3;
   private static final long MAX_BACKOFF_SECONDS = 5;
   private static final long INITIAL_BACKOFF_MILLIS = 1000;
@@ -54,6 +60,8 @@ public class ProcessDefinitionDeletionJobHandler implements JobHandler {
   private final DefinitionReader definitionReader;
   private final ReportService reportService;
   private final DefinitionService definitionService;
+  private final BusinessValueTargetWriter businessValueTargetWriter;
+  private final BusinessValueOverviewWriter businessValueOverviewWriter;
   private final Sleeper sleeper;
 
   @Autowired
@@ -63,7 +71,9 @@ public class ProcessDefinitionDeletionJobHandler implements JobHandler {
       final ProcessDefinitionWriter processDefinitionWriter,
       final DefinitionReader definitionReader,
       final ReportService reportService,
-      final DefinitionService definitionService) {
+      final DefinitionService definitionService,
+      final BusinessValueTargetWriter businessValueTargetWriter,
+      final BusinessValueOverviewWriter businessValueOverviewWriter) {
     this(
         processDefinitionReader,
         processInstanceWriter,
@@ -71,6 +81,8 @@ public class ProcessDefinitionDeletionJobHandler implements JobHandler {
         definitionReader,
         reportService,
         definitionService,
+        businessValueTargetWriter,
+        businessValueOverviewWriter,
         Thread::sleep);
   }
 
@@ -81,6 +93,8 @@ public class ProcessDefinitionDeletionJobHandler implements JobHandler {
       final DefinitionReader definitionReader,
       final ReportService reportService,
       final DefinitionService definitionService,
+      final BusinessValueTargetWriter businessValueTargetWriter,
+      final BusinessValueOverviewWriter businessValueOverviewWriter,
       final Sleeper sleeper) {
     this.processDefinitionReader = processDefinitionReader;
     this.processInstanceWriter = processInstanceWriter;
@@ -88,6 +102,8 @@ public class ProcessDefinitionDeletionJobHandler implements JobHandler {
     this.definitionReader = definitionReader;
     this.reportService = reportService;
     this.definitionService = definitionService;
+    this.businessValueTargetWriter = businessValueTargetWriter;
+    this.businessValueOverviewWriter = businessValueOverviewWriter;
     this.sleeper = sleeper;
   }
 
@@ -148,7 +164,35 @@ public class ProcessDefinitionDeletionJobHandler implements JobHandler {
       withRetry(
           "clear cached XML for reports referencing " + bpmnProcessId,
           () -> reportService.clearCachedReportXml(bpmnProcessId, tenantId));
+      // Re-check rather than reuse the decision made before the steps above. Business-value data
+      // is keyed on (tenantId, processDefinitionKey) and carries no version, so if a new version
+      // was imported while this job ran, these deletes would discard data that now belongs to the
+      // live version — and a target is hand-entered, so it cannot be recomputed. Re-reading
+      // narrows that window to the deletes themselves.
+      if (stillLastRemainingVersion(bpmnProcessId, tenantId)) {
+        withRetry(
+            "delete business-value target for " + bpmnProcessId,
+            () -> businessValueTargetWriter.deleteForDefinition(tenantId, bpmnProcessId));
+        withRetry(
+            "delete business-value overview rows for " + bpmnProcessId,
+            () -> businessValueOverviewWriter.deleteForDefinition(tenantId, bpmnProcessId));
+      } else {
+        LOG.info(
+            "Skipping business-value deletion for process definition {}: another version was "
+                + "imported for tenant {} while this deletion job was running.",
+            bpmnProcessId,
+            tenantId);
+      }
     }
+  }
+
+  private boolean stillLastRemainingVersion(final String bpmnProcessId, final String tenantId) {
+    return withRetry(
+            "re-check remaining versions of process definition " + bpmnProcessId,
+            () ->
+                definitionReader.getDefinitionVersions(
+                    DefinitionType.PROCESS, bpmnProcessId, Collections.singleton(tenantId)))
+        .isEmpty();
   }
 
   private void withRetry(final String description, final Runnable runnable) {

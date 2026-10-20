@@ -32,6 +32,9 @@ public class ProcessCleanupConfiguration {
   @JsonProperty("batchSize")
   private int batchSize;
 
+  @JsonProperty("deleteEmptyIndices")
+  private boolean deleteEmptyIndices;
+
   @JsonProperty("perProcessDefinitionConfig")
   private Map<String, ProcessDefinitionCleanupConfiguration>
       processDefinitionSpecificConfiguration = new HashMap<>();
@@ -85,6 +88,15 @@ public class ProcessCleanupConfiguration {
     this.batchSize = batchSize;
   }
 
+  public boolean isDeleteEmptyIndices() {
+    return deleteEmptyIndices;
+  }
+
+  @JsonProperty("deleteEmptyIndices")
+  public void setDeleteEmptyIndices(final boolean deleteEmptyIndices) {
+    this.deleteEmptyIndices = deleteEmptyIndices;
+  }
+
   public Map<String, ProcessDefinitionCleanupConfiguration>
       getProcessDefinitionSpecificConfiguration() {
     return processDefinitionSpecificConfiguration;
@@ -104,7 +116,12 @@ public class ProcessCleanupConfiguration {
 
   @Override
   public int hashCode() {
-    return Objects.hash(enabled, cleanupMode, batchSize, processDefinitionSpecificConfiguration);
+    return Objects.hash(
+        enabled,
+        cleanupMode,
+        batchSize,
+        deleteEmptyIndices,
+        processDefinitionSpecificConfiguration);
   }
 
   @Override
@@ -119,6 +136,7 @@ public class ProcessCleanupConfiguration {
     return enabled == that.enabled
         && Objects.equals(cleanupMode, that.cleanupMode)
         && Objects.equals(batchSize, that.batchSize)
+        && deleteEmptyIndices == that.deleteEmptyIndices
         && Objects.equals(
             processDefinitionSpecificConfiguration, that.processDefinitionSpecificConfiguration);
   }
@@ -131,6 +149,8 @@ public class ProcessCleanupConfiguration {
         + getCleanupMode()
         + ", batchSize="
         + getBatchSize()
+        + ", deleteEmptyIndices="
+        + isDeleteEmptyIndices()
         + ", processDefinitionSpecificConfiguration="
         + getProcessDefinitionSpecificConfiguration()
         + ")";

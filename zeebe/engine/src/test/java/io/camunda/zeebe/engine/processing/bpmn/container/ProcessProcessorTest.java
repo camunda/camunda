@@ -68,7 +68,7 @@ public final class ProcessProcessorTest {
   }
 
   @Test
-  void shouldCancelResumeDurationSampleOnCompletion() {
+  void shouldDiscardDurationsOnCompletion() {
     // given — a process instance completing normally (whether or not it was ever resuming: a
     // buffered command can drain straight to completion, superseding the RESUME_JOBS/
     // COMPLETE_RESUMING chain before it reaches the normal resume finish line)
@@ -76,7 +76,7 @@ public final class ProcessProcessorTest {
     // when
     processor.finalizeCompletion(element, context);
 
-    // then — the in-flight resume-duration sample, if any, is discarded rather than left dangling
-    verify(suspensionMetrics).cancelResumeDuration(PROCESS_INSTANCE_KEY);
+    // then — in-flight suspend/resume measurements, if any, are discarded rather than left dangling
+    verify(suspensionMetrics).discardDurations(PROCESS_INSTANCE_KEY);
   }
 }

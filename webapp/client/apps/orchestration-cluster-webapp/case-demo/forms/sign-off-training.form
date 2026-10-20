@@ -1,0 +1,34 @@
+{
+  "executionPlatform": "Camunda Cloud",
+  "executionPlatformVersion": "8.11.0",
+  "exporter": {
+    "name": "Camunda Modeler",
+    "version": "5.40.0"
+  },
+  "schemaVersion": 18,
+  "id": "sign-off-training",
+  "type": "default",
+  "components": [
+    {
+      "type": "text",
+      "text": "### Step 3 of 3: sign off the training",
+      "id": "Text_340"
+    },
+    {
+      "type": "textfield",
+      "key": "buddy",
+      "label": "Colleague",
+      "id": "Field_buddy_341",
+      "readonly": true
+    },
+    {
+      "type": "checkbox",
+      "key": "trainingSignedOff",
+      "label": "The training is complete",
+      "id": "Field_trainingSignedOff_342",
+      "validate": {
+        "required": true
+      }
+    }
+  ]
+}

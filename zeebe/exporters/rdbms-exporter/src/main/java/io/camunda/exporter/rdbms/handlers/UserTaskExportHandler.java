@@ -53,7 +53,9 @@ public class UserTaskExportHandler implements RdbmsExportHandler<UserTaskRecordV
           UserTaskIntent.MIGRATED,
           UserTaskIntent.ASSIGNMENT_DENIED,
           UserTaskIntent.UPDATE_DENIED,
-          UserTaskIntent.COMPLETION_DENIED);
+          UserTaskIntent.COMPLETION_DENIED,
+          UserTaskIntent.SUSPENDED,
+          UserTaskIntent.RESUMED);
 
   private final UserTaskWriter userTaskWriter;
   private final ExporterEntityCache<Long, CachedProcessEntity> processCache;
@@ -99,12 +101,11 @@ public class UserTaskExportHandler implements RdbmsExportHandler<UserTaskRecordV
           userTaskWriter.updateState(value.getUserTaskKey(), UserTaskState.CANCELING);
       case UserTaskIntent.CREATED, ASSIGNED, UPDATED ->
           userTaskWriter.update(map(record, UserTaskState.CREATED, null));
-      case UserTaskIntent.CANCELED ->
-          userTaskWriter.update(
-              map(
-                  record,
-                  UserTaskState.CANCELED,
-                  DateUtil.toOffsetDateTime(record.getTimestamp())));
+      case UserTaskIntent.CANCELED -> {
+        userTaskWriter.update(
+            map(record, UserTaskState.CANCELED, DateUtil.toOffsetDateTime(record.getTimestamp())));
+        userTaskWriter.updateSuspended(value.getUserTaskKey(), false);
+      }
       case UserTaskIntent.COMPLETED ->
           userTaskWriter.update(
               map(
@@ -126,6 +127,8 @@ public class UserTaskExportHandler implements RdbmsExportHandler<UserTaskRecordV
                   .build());
       case UserTaskIntent.ASSIGNMENT_DENIED, UPDATE_DENIED, COMPLETION_DENIED ->
           userTaskWriter.updateState(value.getUserTaskKey(), UserTaskState.CREATED);
+      case UserTaskIntent.SUSPENDED -> userTaskWriter.updateSuspended(value.getUserTaskKey(), true);
+      case UserTaskIntent.RESUMED -> userTaskWriter.updateSuspended(value.getUserTaskKey(), false);
       default ->
           // All currently supported intents are handled explicitly above.
           // If new intent is added to EXPORTABLE_INTENTS but not handled here,

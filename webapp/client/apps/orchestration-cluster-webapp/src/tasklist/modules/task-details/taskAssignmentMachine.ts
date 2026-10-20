@@ -112,6 +112,12 @@ const fetchUserTaskLogic = fromPromise<UserTask, {queryClient: QueryClient; user
 	input.queryClient.fetchQuery(queries.getUserTask(input.userTaskKey)),
 );
 
+const toggleTransitions = [
+	{guard: 'isTaskAssigned', target: 'Unassigning'},
+	{guard: 'hasCurrentUser', target: 'Assigning'},
+	{actions: 'notifyMissingCurrentUser'},
+] as const;
+
 const taskAssignmentMachine = setup({
 	types: {
 		context: {} as MachineContext,
@@ -139,8 +145,7 @@ const taskAssignmentMachine = setup({
 		},
 		isInitiallyAssigning: ({context}) => context.initialTaskState === 'ASSIGNING' && context.initialAssignee === null,
 		isInitiallyUnassigning: ({context}) => context.initialTaskState === 'ASSIGNING' && context.initialAssignee !== null,
-		isTaskAssigned: (_, params: {taskState: UserTask['state']; assignee: string | null}) =>
-			typeof params.assignee === 'string' && params.taskState !== 'ASSIGNING',
+		isTaskAssigned: ({event}) => typeof event.assignee === 'string' && event.taskState !== 'ASSIGNING',
 		hasCurrentUser: ({context}) => Boolean(context.currentUser && context.currentUser.trim().length > 0),
 	},
 	actions: {
@@ -226,22 +231,7 @@ const taskAssignmentMachine = setup({
 				{guard: 'isInitiallyUnassigning', target: 'AwaitingUnassignment', actions: 'clearInitialTaskState'},
 			],
 			on: {
-				'task.toggle': [
-					{
-						guard: {
-							type: 'isTaskAssigned',
-							params: ({event}) => ({taskState: event.taskState, assignee: event.assignee}),
-						},
-						target: 'Unassigning',
-					},
-					{
-						guard: 'hasCurrentUser',
-						target: 'Assigning',
-					},
-					{
-						actions: 'notifyMissingCurrentUser',
-					},
-				],
+				'task.toggle': toggleTransitions,
 			},
 		},
 
@@ -427,6 +417,9 @@ const taskAssignmentMachine = setup({
 			after: {
 				SUCCESS_RESET_DELAY: {target: 'Idle'},
 			},
+			on: {
+				'task.toggle': toggleTransitions,
+			},
 		},
 
 		Unassigning: {
@@ -534,6 +527,9 @@ const taskAssignmentMachine = setup({
 			tags: 'status:unassignment_successful',
 			after: {
 				SUCCESS_RESET_DELAY: {target: 'Idle'},
+			},
+			on: {
+				'task.toggle': toggleTransitions,
 			},
 		},
 	},

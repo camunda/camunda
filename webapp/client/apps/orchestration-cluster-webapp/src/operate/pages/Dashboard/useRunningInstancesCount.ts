@@ -22,7 +22,7 @@ type RunningInstancesCount = {
 };
 
 const DEFAULT_SORT: GetProcessDefinitionInstanceStatisticsRequestBody = {
-	sort: [{field: 'activeInstancesWithoutIncidentCount', order: 'desc'}],
+	sort: [{field: 'activeInstancesWithoutIncidentCount', order: 'DESC'}],
 };
 
 function aggregateRunningInstancesCount(
@@ -75,3 +75,4 @@ function useRunningInstancesCount() {
 }
 
 export {useRunningInstancesCount, runningInstancesCountQuery};
+export type {RunningInstancesCount};

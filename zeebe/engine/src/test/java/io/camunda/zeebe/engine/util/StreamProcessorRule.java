@@ -237,6 +237,10 @@ public final class StreamProcessorRule implements TestRule, CommandWriter {
     return streamProcessingComposite.writeBatch(recordToWrites);
   }
 
+  public long writeBatch(final int partitionId, final RecordToWrite... recordToWrites) {
+    return streamProcessingComposite.writeBatch(partitionId, recordToWrites);
+  }
+
   @Override
   public long writeCommand(final Intent intent, final UnifiedRecordValue value) {
     return streamProcessingComposite.writeCommand(intent, value);

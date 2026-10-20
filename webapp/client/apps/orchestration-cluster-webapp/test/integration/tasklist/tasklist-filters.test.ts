@@ -41,7 +41,7 @@ function createUserTasksRequestSchema(options: {
 }) {
 	return z.object({
 		filter: options.filter,
-		sort: z.tuple([z.object({field: z.literal(options.sortField), order: z.literal('desc')})]),
+		sort: z.tuple([z.object({field: z.literal(options.sortField), order: z.literal('DESC')})]),
 		page: z.object({limit: z.literal(50), from: z.literal(0)}),
 	});
 }

@@ -116,7 +116,7 @@ const InstancesTable: React.FC<Props> = ({search}) => {
 			key: 'evaluationDate',
 			sortKey: 'evaluationDate',
 			isDefault: true,
-			defaultOrder: 'desc' as const,
+			defaultOrder: 'DESC' as const,
 			label: t('operate.decisions.instancesTable.evaluationDate'),
 			render: (row: DecisionInstance) => formatEvaluationDate(row.evaluationDate),
 		},

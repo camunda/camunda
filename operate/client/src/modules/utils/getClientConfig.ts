@@ -18,7 +18,11 @@ const ClientConfigSchema = z.object({
   clusterId: z.string().min(1).nullable().optional().default(null),
   mixpanelToken: z.string().nullable().optional().default(null),
   mixpanelAPIHost: z.string().nullable().optional().default(null),
-  tasklistUrl: z.string().check(z.url()).nullable().optional().default(null),
+  tasklistUrl: z
+    .union([z.url(), z.string().regex(/^\/(?!\/)/)])
+    .nullable()
+    .optional()
+    .default(null),
   resourcePermissionsEnabled: z.boolean().optional().default(false),
   multiTenancyEnabled: z.boolean().optional().default(false),
   databaseType: z.string().optional().default('document-store'),

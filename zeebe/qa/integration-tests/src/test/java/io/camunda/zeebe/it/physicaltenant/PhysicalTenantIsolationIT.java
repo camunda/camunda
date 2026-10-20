@@ -9,7 +9,6 @@ package io.camunda.zeebe.it.physicaltenant;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.awaitility.Awaitility.await;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ClientStatusException;
@@ -73,21 +72,7 @@ final class PhysicalTenantIsolationIT {
             .endEvent()
             .done();
 
-    // tenant A's partition group may need a moment to elect a leader after startup; retry the
-    // first command until it lands (its topology is not observable via the default topology RPC)
-    await("deployment to tenant A succeeds")
-        .atMost(Duration.ofSeconds(30))
-        .ignoreExceptions()
-        .untilAsserted(
-            () ->
-                assertThat(
-                        tenantAClient
-                            .newDeployResourceCommand()
-                            .addProcessModel(process, processId + ".bpmn")
-                            .send()
-                            .join()
-                            .getProcesses())
-                    .isNotEmpty());
+    TENANTS.deploy(tenantAClient, process, processId);
 
     // when - an instance is created in tenant A, making a job available there
     final long processInstanceKey =

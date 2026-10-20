@@ -15,6 +15,7 @@ import io.camunda.client.api.search.enums.ProcessInstanceState;
 import io.camunda.process.test.impl.containers.CamundaContainer;
 import io.camunda.zeebe.LoadTesterApplication;
 import io.camunda.zeebe.metrics.StarterMetricsDoc;
+import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Duration;
 import org.junit.jupiter.api.Test;
@@ -93,12 +94,12 @@ class StarterWorkerIT {
             });
 
     // and — the starter should have exposed a counter that recorded each submitted request.
-    final var counter =
-        meterRegistry.find(StarterMetricsDoc.PROCESS_INSTANCES_STARTED.getName()).counter();
-    assertThat(counter)
+    final var counters =
+        meterRegistry.find(StarterMetricsDoc.PROCESS_INSTANCES_STARTED.getName()).counters();
+    assertThat(counters)
         .describedAs("starter.process.instances.started counter should be registered")
-        .isNotNull();
-    assertThat(counter.count())
+        .isNotEmpty();
+    assertThat(counters.stream().mapToDouble(Counter::count).sum())
         .describedAs("counter should reflect the number of submitted start requests (>0)")
         .isGreaterThan(0.0);
 

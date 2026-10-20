@@ -112,6 +112,12 @@
     </dependency>
 
     <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-params</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
       <groupId>org.assertj</groupId>
       <artifactId>assertj-core</artifactId>
       <scope>test</scope>
@@ -186,6 +192,7 @@
         <configuration>
           <usedDependencies>
             <dependency>net.jqwik:jqwik</dependency>
+            <dependency>org.junit.jupiter:junit-jupiter-params</dependency>
           </usedDependencies>
           <ignoredUnusedDeclaredDependencies>
             <!-- Will be used soon and is already useful for bringing in dependencies on auto-generated google api libraries -->

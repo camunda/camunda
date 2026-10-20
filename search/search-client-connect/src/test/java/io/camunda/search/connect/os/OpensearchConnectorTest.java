@@ -257,6 +257,23 @@ class OpensearchConnectorTest {
   }
 
   @Test
+  void shouldApplyTimeoutsWhenCreatingClientWithoutConfiguredTimeouts() throws Exception {
+    // given
+    final var configuration = new ConnectConfiguration();
+    final var connector =
+        Mockito.spy(
+            new OpensearchConnector(
+                configuration, new ObjectMapper(), null, new PluginRepository()));
+
+    // when
+    try (final var ignored = connector.createClient()._transport()) {
+      // then
+      Mockito.verify(connector)
+          .setTimeouts(Mockito.any(RequestConfig.Builder.class), Mockito.eq(configuration));
+    }
+  }
+
+  @Test
   void shouldEnableTcpKeepAlive() {
     // given
     final var configuration = new ConnectConfiguration();

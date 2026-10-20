@@ -9,9 +9,9 @@ import (
 	"time"
 
 	"github.com/camunda/camunda/c8run/internal/processmanagement"
+	"github.com/camunda/camunda/c8run/internal/springconfig"
 	"github.com/camunda/camunda/c8run/internal/types"
 	"github.com/rs/zerolog/log"
-	"gopkg.in/yaml.v3"
 )
 
 type ShutdownHandler struct {
@@ -59,6 +59,15 @@ func (s *ShutdownHandler) ShutdownProcesses(state *types.State) {
 }
 
 func (s *ShutdownHandler) stopCommand(settings types.C8RunSettings, processes types.Processes) {
+	tenantPids, _ := filepath.Glob(filepath.Join(filepath.Dir(processes.Connectors.PidPath), "connectors-*.process"))
+	for _, pidPath := range tenantPids {
+		tenant := strings.TrimSuffix(strings.TrimPrefix(filepath.Base(pidPath), "connectors-"), ".process")
+		if err := s.stopProcess(pidPath); err != nil {
+			log.Debug().Err(err).Str("tenant", tenant).Msg("Failed to stop tenant connectors")
+		} else {
+			log.Info().Str("tenant", tenant).Msg("Connectors for physical tenant is stopped.")
+		}
+	}
 	err := s.stopProcess(processes.Connectors.PidPath)
 	if err != nil {
 		log.Debug().Err(err).Msg("Failed to stop connectors")
@@ -72,7 +81,7 @@ func (s *ShutdownHandler) stopCommand(settings types.C8RunSettings, processes ty
 		log.Info().Msg("Camunda is stopped.")
 	}
 
-	if shouldDeleteDataDir(settings, processes) {
+	if shouldDeleteDataDir(settings) {
 		deleteDataDir(processes)
 	}
 }
@@ -121,25 +130,14 @@ func (s *ShutdownHandler) stopProcess(pidPath string) error {
 	return nil
 }
 
-func shouldDeleteDataDir(settings types.C8RunSettings, processes types.Processes) bool {
+func shouldDeleteDataDir(settings types.C8RunSettings) bool {
 	// Only consider deletion when using H2 (default) secondary storage.
-	if settings.SecondaryStorageType == "" || strings.EqualFold(settings.SecondaryStorageType, "elasticsearch") {
+	if !strings.EqualFold(settings.SecondaryStorageType, "rdbms") {
 		return false
 	}
 
-	// Highest precedence: explicit env override.
-	if url, ok := os.LookupEnv("CAMUNDA_DATA_SECONDARY_STORAGE_RDBMS_URL"); ok {
-		return isInMemoryH2(url)
-	}
-
-	baseDir := filepath.Dir(processes.Camunda.PidPath)
-	for _, cfg := range resolveConfigPaths(baseDir, settings.Config) {
-		if url, err := detectRdbmsURL(cfg); err == nil && isInMemoryH2(url) {
-			return true
-		}
-	}
-
-	return false
+	url, _ := springconfig.Value(settings.ConfigPaths, "camunda.data.secondary-storage.rdbms.url")
+	return isInMemoryH2(url)
 }
 
 func deleteDataDir(processes types.Processes) {
@@ -171,73 +169,4 @@ func deleteDataDir(processes types.Processes) {
 func isInMemoryH2(url string) bool {
 	u := strings.ToLower(strings.TrimSpace(url))
 	return strings.HasPrefix(u, "jdbc:h2:mem")
-}
-
-func resolveConfigPaths(baseDir string, userConfig string) []string {
-	var paths []string
-	if userConfig != "" {
-		candidate := filepath.Join(baseDir, userConfig)
-		if info, err := os.Stat(candidate); err == nil {
-			if info.IsDir() {
-				candidate = filepath.Join(candidate, "application.yaml")
-			}
-			paths = append(paths, candidate)
-		}
-	}
-	defaultConfig := filepath.Join(baseDir, "configuration", "application.yaml")
-	paths = append(paths, defaultConfig)
-	return paths
-}
-
-func detectRdbmsURL(path string) (string, error) {
-	info, err := os.Stat(path)
-	if err != nil {
-		if errors.Is(err, os.ErrNotExist) {
-			return "", nil
-		}
-		return "", err
-	}
-	if info.IsDir() {
-		return detectRdbmsURL(filepath.Join(path, "application.yaml"))
-	}
-
-	content, err := os.ReadFile(path)
-	if err != nil {
-		if errors.Is(err, os.ErrNotExist) {
-			return "", nil
-		}
-		return "", err
-	}
-
-	if len(strings.TrimSpace(string(content))) == 0 {
-		return "", nil
-	}
-
-	var root map[string]any
-	if err := yaml.Unmarshal(content, &root); err != nil {
-		log.Warn().Err(err).Str("path", path).
-			Msg("failed to parse YAML configuration while detecting RDBMS URL; ignoring and proceeding without secondary storage URL")
-		return "", err
-	}
-
-	camundaNode, ok := root["camunda"].(map[string]any)
-	if !ok {
-		return "", nil
-	}
-	dataNode, ok := camundaNode["data"].(map[string]any)
-	if !ok {
-		return "", nil
-	}
-	secondaryNode, ok := dataNode["secondary-storage"].(map[string]any)
-	if !ok {
-		return "", nil
-	}
-	rdbmsNode, ok := secondaryNode["rdbms"].(map[string]any)
-	if !ok {
-		return "", nil
-	}
-	if url, ok := rdbmsNode["url"].(string); ok {
-		return strings.TrimSpace(url), nil
-	}
-	return "", nil
 }

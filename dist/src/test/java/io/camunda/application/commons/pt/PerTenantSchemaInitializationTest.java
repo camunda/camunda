@@ -11,11 +11,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import io.camunda.application.commons.pt.SchemaInitializationStatus.State;
 import io.camunda.zeebe.test.util.junit.RegressionTest;
 import io.camunda.zeebe.util.retry.RetryConfiguration;
 import java.time.Duration;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
@@ -32,6 +34,8 @@ import org.awaitility.Awaitility;
 import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 /**
  * Exercises the startup gate and the background retry loop against a fake attempt, so that the
@@ -962,6 +966,477 @@ final class PerTenantSchemaInitializationTest {
       // then
       Awaitility.await().until(() -> initialization.isInitialized(TENANT_A));
       assertThat(attempts).hasValue(2);
+    }
+  }
+
+  @Test
+  void shouldReportInitializingUntilTheFirstAttemptSucceeds() throws Exception {
+    // given - an attempt that has not finished yet
+    final var release = new CountDownLatch(1);
+    try (final var initialization =
+        initialization(Set.of(TENANT_A), tenantId -> awaitUninterruptibly(release))) {
+      final var gateOpened = startInBackground(initialization);
+
+      // then
+      assertThat(initialization.status(TENANT_A))
+          .isEqualTo(new SchemaInitializationStatus(State.INITIALIZING, 0, null));
+
+      // when
+      release.countDown();
+
+      // then
+      assertThat(gateOpened.await(10, TimeUnit.SECONDS)).isTrue();
+      assertThat(initialization.status(TENANT_A))
+          .isEqualTo(new SchemaInitializationStatus(State.INITIALIZED, 0, null));
+    }
+  }
+
+  @Test
+  void shouldReportRetryingWithTheLastFailureWhileATenantKeepsFailing() {
+    // given
+    final var failure = new IllegalStateException("storage unreachable");
+    try (final var initialization =
+        initialization(
+            Set.of(TENANT_A),
+            tenantId -> {
+              throw failure;
+            })) {
+
+      // when
+      initialization.start();
+
+      // then - an operator can tell a tenant that will recover on its own from one that will not
+      Awaitility.await("the tenant has failed a few times")
+          .atMost(Duration.ofSeconds(10))
+          .untilAsserted(
+              () -> {
+                final var status = initialization.status(TENANT_A);
+                assertThat(status.state()).isEqualTo(State.RETRYING);
+                assertThat(status.failedAttempts()).isGreaterThan(1);
+                assertThat(status.lastFailure()).isSameAs(failure);
+              });
+    }
+  }
+
+  @Test
+  void shouldReportFailedAfterATerminalFailure() {
+    // given - one serviceable tenant, so that the gate releases rather than aborts
+    final var failure = new TerminalFailure();
+    try (final var initialization =
+        initialization(
+            bothTenants(),
+            tenantId -> {
+              if (TENANT_B.equals(tenantId)) {
+                throw failure;
+              }
+            })) {
+
+      // when
+      initialization.start();
+      initialization.awaitGate();
+
+      // then
+      Awaitility.await("tenant B stops trying")
+          .atMost(Duration.ofSeconds(10))
+          .untilAsserted(
+              () ->
+                  assertThat(initialization.status(TENANT_B))
+                      .isEqualTo(new SchemaInitializationStatus(State.FAILED, 1, failure)));
+      assertThat(initialization.status(TENANT_A).state()).isEqualTo(State.INITIALIZED);
+    }
+  }
+
+  @Test
+  void shouldReportGaveUpOnceTheRetryBudgetIsSpent() {
+    // given
+    final var failure = new IllegalStateException("storage unreachable");
+    try (final var initialization =
+        initialization(
+            bothTenants(),
+            tenantId -> {
+              if (TENANT_B.equals(tenantId)) {
+                throw failure;
+              }
+            },
+            tenantId -> false,
+            singleAttemptRetryConfig())) {
+
+      // when
+      initialization.start();
+      initialization.awaitGate();
+
+      // then - told apart from a terminal failure: raising the budget is what repairs it
+      Awaitility.await("tenant B gives up")
+          .atMost(Duration.ofSeconds(10))
+          .untilAsserted(
+              () ->
+                  assertThat(initialization.status(TENANT_B))
+                      .isEqualTo(new SchemaInitializationStatus(State.GAVE_UP, 1, failure)));
+    }
+  }
+
+  @Test
+  void shouldReportRecoveringWhileDeferredAndInitializedOnceItLifts() {
+    // given - a tenant in recovery mode
+    final var deferred = new AtomicBoolean(true);
+    try (final var initialization =
+        initialization(Set.of(TENANT_A), tenantId -> {}, tenantId -> deferred.get())) {
+      initialization.start();
+
+      // then - held back on purpose, which is neither progress nor a failure
+      Awaitility.await("the tenant is deferred")
+          .atMost(Duration.ofSeconds(10))
+          .untilAsserted(
+              () ->
+                  assertThat(initialization.status(TENANT_A))
+                      .isEqualTo(new SchemaInitializationStatus(State.RECOVERING, 0, null)));
+
+      // when
+      deferred.set(false);
+
+      // then
+      Awaitility.await("the tenant initializes")
+          .atMost(Duration.ofSeconds(10))
+          .untilAsserted(
+              () ->
+                  assertThat(initialization.status(TENANT_A).state()).isEqualTo(State.INITIALIZED));
+    }
+  }
+
+  @Test
+  void shouldReportAbortedWhenATenantsTaskCannotRun() {
+    // given - a retry configuration that cannot be read for tenant B
+    final var failure = new IllegalStateException("unusable retry configuration");
+    try (final var initialization =
+        initialization(
+            bothTenants(),
+            tenantId -> {},
+            tenantId -> false,
+            tenantId -> {
+              if (TENANT_B.equals(tenantId)) {
+                throw failure;
+              }
+              return fastRetry();
+            })) {
+
+      // when
+      initialization.start();
+      initialization.awaitGate();
+
+      // then
+      Awaitility.await("tenant B's task ends")
+          .atMost(Duration.ofSeconds(10))
+          .untilAsserted(
+              () ->
+                  assertThat(initialization.status(TENANT_B))
+                      .isEqualTo(new SchemaInitializationStatus(State.ABORTED, 0, failure)));
+    }
+  }
+
+  @Test
+  void shouldReportAbortedWhenATenantsTaskDiesWithoutPassingACatch() {
+    // given - tenant B's task is killed by an Error, which no catch block records
+    try (final var initialization =
+        initialization(
+            bothTenants(),
+            tenantId -> {
+              if (TENANT_B.equals(tenantId)) {
+                throw new DeliberateError();
+              }
+            })) {
+
+      // when
+      initialization.start();
+      initialization.awaitGate();
+
+      // then - not left reading as initializing, which nothing is doing any more. The Error may
+      // reach the JVM's handler only after the gate opened on tenant A, so Awaitility must not
+      // fail on it
+      Awaitility.await("tenant B's task ends")
+          .dontCatchUncaughtExceptions()
+          .atMost(Duration.ofSeconds(10))
+          .untilAsserted(
+              () -> assertThat(initialization.status(TENANT_B).state()).isEqualTo(State.ABORTED));
+    }
+  }
+
+  @Test
+  void shouldNotBlameAnAbortedTaskOnAnEarlierAttemptsFailure() {
+    // given - tenant B fails once, then its task is killed by an Error on the retry
+    final var attempts = new AtomicInteger();
+    try (final var initialization =
+        initialization(
+            bothTenants(),
+            tenantId -> {
+              if (TENANT_B.equals(tenantId)) {
+                if (attempts.incrementAndGet() == 1) {
+                  throw new IllegalStateException("storage unreachable");
+                }
+                throw new DeliberateError();
+              }
+            })) {
+
+      // when
+      initialization.start();
+      initialization.awaitGate();
+
+      // then - the retryable failure did not end the task, so it is not reported as the cause.
+      // The Error is expected on tenant B's thread, so Awaitility must not fail on it
+      Awaitility.await("tenant B's task ends")
+          .dontCatchUncaughtExceptions()
+          .atMost(Duration.ofSeconds(10))
+          .untilAsserted(
+              () ->
+                  assertThat(initialization.status(TENANT_B))
+                      .isEqualTo(new SchemaInitializationStatus(State.ABORTED, 1, null)));
+    }
+  }
+
+  @Test
+  void shouldForgetPastFailuresOnceATenantIsInitialized() {
+    // given - tenant A fails once before it succeeds
+    final var attempts = new AtomicInteger();
+    try (final var initialization =
+        initialization(
+            Set.of(TENANT_A),
+            tenantId -> {
+              if (attempts.incrementAndGet() == 1) {
+                throw new IllegalStateException("storage unreachable");
+              }
+            })) {
+
+      // when
+      initialization.start();
+      initialization.awaitGate();
+
+      // then
+      assertThat(initialization.status(TENANT_A))
+          .isEqualTo(new SchemaInitializationStatus(State.INITIALIZED, 1, null));
+    }
+  }
+
+  @Test
+  void shouldRejectTheStatusOfATenantItDoesNotInitialize() {
+    // given
+    try (final var initialization = initialization(Set.of(TENANT_A), tenantId -> {})) {
+
+      // when / then
+      assertThatThrownBy(() -> initialization.status(TENANT_B))
+          .isInstanceOf(IllegalArgumentException.class);
+    }
+  }
+
+  @Test
+  void shouldReportInitializedOnceAnExplicitRequestInitializesARecoveringTenant() {
+    // given - a tenant held back in recovery mode, as it is while a restore runs
+    final var deferred = new AtomicBoolean(true);
+    final var worker = new AtomicReference<Thread>();
+    try (final var initialization =
+        initialization(
+            Set.of(TENANT_A),
+            tenantId -> {},
+            tenantId -> {
+              worker.set(Thread.currentThread());
+              return deferred.get();
+            })) {
+      initialization.start();
+      Awaitility.await("the tenant is deferred")
+          .atMost(Duration.ofSeconds(10))
+          .untilAsserted(
+              () ->
+                  assertThat(initialization.status(TENANT_A).state()).isEqualTo(State.RECOVERING));
+
+      // when
+      initialization.initializeNow(TENANT_A);
+
+      // then
+      assertThat(initialization.status(TENANT_A))
+          .isEqualTo(new SchemaInitializationStatus(State.INITIALIZED, 0, null));
+
+      // when - the deferral lifts, and the background task ends without an attempt of its own
+      deferred.set(false);
+
+      // then - its ending does not overwrite what the explicit request achieved
+      Awaitility.await("the background task ends")
+          .atMost(Duration.ofSeconds(10))
+          .until(() -> !worker.get().isAlive());
+      assertThat(initialization.status(TENANT_A))
+          .isEqualTo(new SchemaInitializationStatus(State.INITIALIZED, 0, null));
+    }
+  }
+
+  @Test
+  void shouldReportInitializedOnceAnExplicitRequestRepairsATerminallyFailedTenant() {
+    // given - tenant B fails terminally in the background, then succeeds when asked explicitly
+    final var failure = new TerminalFailure();
+    final var attemptsOfB = new AtomicInteger();
+    try (final var initialization =
+        initialization(
+            bothTenants(),
+            tenantId -> {
+              if (TENANT_B.equals(tenantId) && attemptsOfB.incrementAndGet() == 1) {
+                throw failure;
+              }
+            })) {
+      initialization.start();
+      initialization.awaitGate();
+      Awaitility.await("tenant B stops trying")
+          .atMost(Duration.ofSeconds(10))
+          .untilAsserted(
+              () ->
+                  assertThat(initialization.status(TENANT_B))
+                      .isEqualTo(new SchemaInitializationStatus(State.FAILED, 1, failure)));
+
+      // when
+      initialization.initializeNow(TENANT_B);
+
+      // then - the failure that no longer applies is not reported alongside the success
+      assertThat(initialization.status(TENANT_B))
+          .isEqualTo(new SchemaInitializationStatus(State.INITIALIZED, 1, null));
+    }
+  }
+
+  @Test
+  void shouldLeaveTheStatusUnchangedWhenAnExplicitRequestFails() {
+    // given - a recovering tenant whose explicit attempt fails
+    final var failure = new IllegalStateException("storage unreachable");
+    try (final var initialization =
+        initialization(
+            Set.of(TENANT_A),
+            tenantId -> {
+              throw failure;
+            },
+            tenantId -> true)) {
+      initialization.start();
+      Awaitility.await("the tenant is deferred")
+          .atMost(Duration.ofSeconds(10))
+          .untilAsserted(
+              () ->
+                  assertThat(initialization.status(TENANT_A).state()).isEqualTo(State.RECOVERING));
+
+      // when
+      assertThatThrownBy(() -> initialization.initializeNow(TENANT_A)).isSameAs(failure);
+
+      // then - the failure is the caller's to handle; the background task is still deferring, and
+      // nothing it does has failed
+      assertThat(initialization.status(TENANT_A))
+          .isEqualTo(new SchemaInitializationStatus(State.RECOVERING, 0, null));
+    }
+  }
+
+  @ParameterizedTest
+  @ValueSource(booleans = {false, true})
+  void shouldKeepReportingInitializedWhenABackgroundFailureIsRecordedAfterAnExplicitSuccess(
+      final boolean terminalFailure) throws Exception {
+    // given - a background attempt that has failed, held after releasing the attempt lock but
+    // before its failure is recorded, which is where the classification runs
+    final var attempts = new AtomicInteger();
+    final var classifying = new CountDownLatch(1);
+    final var release = new CountDownLatch(1);
+    final var worker = new AtomicReference<Thread>();
+    try (final var initialization =
+        new PerTenantSchemaInitialization(
+            Set.of(TENANT_A),
+            tenantId -> {
+              if (attempts.incrementAndGet() == 1) {
+                throw new IllegalStateException("storage unreachable");
+              }
+            },
+            failure -> {
+              if (worker.compareAndSet(null, Thread.currentThread())) {
+                classifying.countDown();
+                awaitUninterruptibly(release);
+              }
+              return terminalFailure;
+            },
+            retryConfig())) {
+      try {
+        initialization.start();
+        assertThat(classifying.await(10, TimeUnit.SECONDS)).isTrue();
+
+        // when - an explicit request succeeds in that window
+        initialization.initializeNow(TENANT_A);
+        release.countDown();
+
+        // then - the failure it overtook no longer applies, however the task ends
+        Awaitility.await("the background task ends")
+            .atMost(Duration.ofSeconds(10))
+            .until(() -> !worker.get().isAlive());
+        assertThat(initialization.status(TENANT_A).state()).isEqualTo(State.INITIALIZED);
+        assertThat(initialization.status(TENANT_A).lastFailure()).isNull();
+      } finally {
+        release.countDown();
+      }
+    }
+  }
+
+  @Test
+  void shouldKeepReportingInitializedWhenABackgroundDeferralIsRecordedAfterAnExplicitSuccess()
+      throws Exception {
+    // given - a background task held in its deferral check, after it has seen the tenant unready
+    final var checking = new CountDownLatch(1);
+    final var release = new CountDownLatch(1);
+    final var worker = new AtomicReference<Thread>();
+    try (final var initialization =
+        initialization(
+            Set.of(TENANT_A),
+            tenantId -> {},
+            tenantId -> {
+              if (worker.compareAndSet(null, Thread.currentThread())) {
+                checking.countDown();
+                awaitUninterruptibly(release);
+              }
+              return true;
+            })) {
+      try {
+        initialization.start();
+        assertThat(checking.await(10, TimeUnit.SECONDS)).isTrue();
+
+        // when - an explicit request succeeds in that window, and the check then defers
+        initialization.initializeNow(TENANT_A);
+        release.countDown();
+
+        // then
+        Awaitility.await("the background task ends")
+            .atMost(Duration.ofSeconds(10))
+            .until(() -> !worker.get().isAlive());
+        assertThat(initialization.status(TENANT_A))
+            .isEqualTo(new SchemaInitializationStatus(State.INITIALIZED, 0, null));
+      } finally {
+        release.countDown();
+      }
+    }
+  }
+
+  @Test
+  void shouldReportEveryTenantsStatusInConfigurationOrder() {
+    // given - configured B first, so that the order cannot come from sorting the ids
+    final var failure = new TerminalFailure();
+    try (final var initialization =
+        initialization(
+            new LinkedHashSet<>(List.of(TENANT_B, TENANT_A)),
+            tenantId -> {
+              if (TENANT_B.equals(tenantId)) {
+                throw failure;
+              }
+            })) {
+
+      // when
+      initialization.start();
+      initialization.awaitGate();
+
+      // then
+      Awaitility.await("tenant B stops trying")
+          .atMost(Duration.ofSeconds(10))
+          .untilAsserted(
+              () ->
+                  assertThat(initialization.statuses())
+                      .containsExactly(
+                          Map.entry(
+                              TENANT_B, new SchemaInitializationStatus(State.FAILED, 1, failure)),
+                          Map.entry(
+                              TENANT_A,
+                              new SchemaInitializationStatus(State.INITIALIZED, 0, null))));
     }
   }
 

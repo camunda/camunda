@@ -7,6 +7,8 @@
  */
 package io.camunda.optimize.rest.security.csl;
 
+import io.camunda.identity.sdk.authentication.exception.JsonWebKeyException;
+import io.camunda.identity.sdk.authentication.exception.TokenExpiredException;
 import io.camunda.identity.sdk.authentication.exception.TokenVerificationException;
 import io.camunda.optimize.rest.exceptions.NotAuthorizedException;
 import io.camunda.optimize.service.security.CCSMTokenService;
@@ -61,13 +63,22 @@ public class OptimizeCcsmComponentAccessPolicy implements OptimizeComponentAcces
       return Either.right(null);
     } catch (final NotAuthorizedException e) {
       return Either.left(e.getMessage());
-    } catch (final TokenVerificationException e) {
+    } catch (final TokenExpiredException e) {
       // An expired token is renewed by the webapp chain and passed through by the API chain, so
       // treating it as a denial here would log out a user whose permission is intact. The cost is
-      // that a revoked user keeps API access until the token is renewed, at most for its remaining
-      // lifetime, while the next web app request denies them right away.
-      LOG.debug("Access token could not be verified: {}", e.getMessage());
+      // that a revoked user keeps API access with the expired token, because the API chain does
+      // not renew it, until the next web app request renews it and denies them.
+      LOG.debug("Access token has expired: {}", e.getMessage());
       return Either.right(null);
+    } catch (final JsonWebKeyException e) {
+      // Denies like any other verification error, but logs a warning: when the keys cannot be
+      // fetched, every user is denied, not only a user without the permission.
+      LOG.warn("Could not fetch the keys to verify the access token, denying access", e);
+      return Either.left("Access token could not be verified: " + e.getMessage());
+    } catch (final TokenVerificationException e) {
+      // Any verification error other than expiry is a denial. OptimizeBearerPermissionFilter makes
+      // the same decision for bearer requests.
+      return Either.left("Access token could not be verified: " + e.getMessage());
     }
   }
 }

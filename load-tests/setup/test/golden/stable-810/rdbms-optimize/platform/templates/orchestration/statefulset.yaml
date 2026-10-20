@@ -15,6 +15,7 @@ metadata:
 
     app.kubernetes.io/component: zeebe-broker
 
+    camunda.io/broker-generation: numbered
   annotations:
 spec:
   replicas: 3
@@ -43,12 +44,12 @@ spec:
 
         app.kubernetes.io/component: zeebe-broker
 
+        camunda.io/broker-generation: numbered
       annotations:
 
     spec:
       imagePullSecrets:
         - name: harbor-registry
-      initContainers:
       containers:
         - name: orchestration
           image: docker.io/camunda/camunda:8.10.0-alpha4
@@ -191,6 +192,10 @@ spec:
                     operator: In
                     values:
                       - zeebe-broker
+                  - key: camunda.io/broker-generation
+                    operator: In
+                    values:
+                      - numbered
               topologyKey: kubernetes.io/hostname
       tolerations:
         - effect: NoSchedule

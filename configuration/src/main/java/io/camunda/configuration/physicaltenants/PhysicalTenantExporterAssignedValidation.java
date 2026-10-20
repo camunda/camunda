@@ -9,8 +9,8 @@ package io.camunda.configuration.physicaltenants;
 
 import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.configuration.Camunda;
-import io.camunda.configuration.Exporter;
 import io.camunda.configuration.UnifiedConfigurationException;
+import io.camunda.configuration.data.Exporter;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;

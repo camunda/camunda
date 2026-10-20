@@ -41,12 +41,13 @@ if [[ "$returnCode" != 0 ]]; then
 fi
 printf "\nTest: test --config flag\n"
 
-#PREFIX="$(curl localhost:9600/actuator/configprops | jq '.contexts.camunda.beans.["camunda-io.camunda.configuration.Camunda"].properties.data.secondaryStorage.elasticsearch.indexPrefix')"
-#echo $PREFIX
-#if [[ "$PREFIX" != "\"extra-prefix-zeebe-record\"" ]]; then
-#        echo "test failed"
-#        exit 1
-#fi
+QUEUE_SIZE="$(curl --silent --show-error --fail localhost:9600/actuator/configprops \
+        | jq -r '[.contexts[] | .beans["camunda-io.camunda.configuration.Camunda"].properties.data.secondaryStorage.rdbms.queueSize // empty] | first // empty')"
+echo "$QUEUE_SIZE"
+if [[ "$QUEUE_SIZE" != "999" ]]; then
+        echo "test failed: expected the RDBMS queueSize from e2e_tests/config-flag.yaml"
+        exit 1
+fi
 
 printf "\nTest: centralized secret resolution\n"
 

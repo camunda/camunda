@@ -6,21 +6,21 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useEffect, useState} from 'react';
-import {useNavigate} from '@tanstack/react-router';
+import {useCallback, useEffect, useRef} from 'react';
+import {useLocation} from '@tanstack/react-router';
 import {useTranslation} from 'react-i18next';
-import {notificationsStore} from '#/shared/notifications/notifications.store';
-import {GenericErrorPage} from '#/shared/pages/GenericErrorPage';
 import {VisuallyHiddenH1} from '#/operate/shared/VisuallyHiddenH1/VisuallyHiddenH1';
 import {InstanceDetail} from '#/operate/shared/InstanceDetail/InstanceDetail';
 import {DiagramShell} from '#/operate/shared/DiagramShell/DiagramShell';
-import {EmptyState} from '#/operate/components/EmptyState/EmptyState';
-import permissionDeniedIconUrl from '#/operate/assets/permission-denied.svg';
+import {DecisionInstanceError} from './DecisionInstanceError';
 import {Header} from './Header';
 import {DecisionPanel} from './DecisionPanel';
+import {Drd} from './Drd';
+import {DrdPanel} from './DrdPanel';
 import {VariablesPanel, VariablesPanelPending} from './VariablesPanel';
 import {useDecisionInstance} from './decisionInstance.queries';
 import {Container, Section} from './styled';
+import {useDrdPanelState} from './useDrdPanelState';
 
 type Props = {
 	decisionInstanceId: string;
@@ -28,47 +28,111 @@ type Props = {
 
 const DecisionInstance: React.FC<Props> = ({decisionInstanceId}) => {
 	const {t} = useTranslation();
-	const navigate = useNavigate();
-	const [drdPanelState, setDrdPanelState] = useState<'minimized' | 'closed'>('minimized');
-	const {isUnauthorized, isNotFound, isGenericError, query} = useDecisionInstance(decisionInstanceId);
+	const {state} = useLocation();
+	const [drdPanelState, setDrdPanelState] = useDrdPanelState();
+	const shouldRestoreFocus = useRef(false);
+	const lastFocusedDestination = useRef<{key: string; status: 'success' | 'error'} | null>(null);
+	const {query} = useDecisionInstance(decisionInstanceId);
+	const focusFromDrd =
+		typeof state.operateDecisionFocus === 'object' &&
+		state.operateDecisionFocus.decisionInstanceKey === decisionInstanceId;
+
+	const changeDrdPanelState = (state: typeof drdPanelState) => {
+		shouldRestoreFocus.current = state !== drdPanelState;
+		setDrdPanelState(state);
+	};
+
+	const openDrdButtonRef = useCallback(
+		(button: HTMLButtonElement | null) => {
+			if (button !== null && drdPanelState === 'closed' && shouldRestoreFocus.current) {
+				button.focus();
+				shouldRestoreFocus.current = false;
+			}
+		},
+		[drdPanelState],
+	);
+
+	const drdModeButtonRef = useCallback(
+		(button: HTMLButtonElement | null) => {
+			if (button !== null && drdPanelState !== 'closed' && shouldRestoreFocus.current) {
+				button.focus();
+				shouldRestoreFocus.current = false;
+			}
+		},
+		[drdPanelState],
+	);
 
 	useEffect(() => {
-		if (isNotFound) {
-			notificationsStore.displayNotification({
-				kind: 'error',
-				title: t('operate.decisionInstance.notFoundNotificationTitle', {decisionInstanceId}),
-				isDismissable: true,
-			});
-			void navigate({to: '/operate/decisions', search: {evaluated: true, failed: true}, replace: true});
+		if (!focusFromDrd) {
+			return;
 		}
-	}, [isNotFound, decisionInstanceId, navigate, t]);
+		const status = query.isError ? 'error' : query.isSuccess ? 'success' : null;
+		if (
+			status === null ||
+			(lastFocusedDestination.current?.key === decisionInstanceId && lastFocusedDestination.current.status === status)
+		) {
+			return;
+		}
+		if (status === 'error') {
+			lastFocusedDestination.current = {key: decisionInstanceId, status};
+			return;
+		}
+		const target =
+			document.getElementById('operate-decision-drd-mode-button') ??
+			document.getElementById('operate-decision-instance-heading');
+		if (target !== null) {
+			target.focus();
+			lastFocusedDestination.current = {key: decisionInstanceId, status};
+		}
+	}, [decisionInstanceId, focusFromDrd, query.isError, query.isSuccess]);
 
-	if (isUnauthorized) {
+	if (query.isError) {
 		return (
-			<EmptyState
-				icon={<img src={permissionDeniedIconUrl} alt="" />}
-				heading={t('operate.decisionInstance.forbidden.heading')}
-				description={t('operate.decisionInstance.forbidden.description')}
-				link={{
-					label: t('operate.decisionInstance.forbidden.learnMoreLink'),
-					href: 'https://docs.camunda.io/docs/self-managed/operate-deployment/operate-authentication/#resource-based-permissions',
-				}}
+			<DecisionInstanceError
+				error={query.error}
+				decisionInstanceId={decisionInstanceId}
+				onRetry={() => void query.refetch()}
 			/>
 		);
 	}
 
-	if (isGenericError) {
-		return <GenericErrorPage reset={() => void query.refetch()} />;
+	const drd =
+		drdPanelState !== 'closed' ? (
+			<Drd
+				key={decisionInstanceId}
+				decisionEvaluationInstanceKey={decisionInstanceId}
+				decisionEvaluationKey={query.data?.decisionEvaluationKey}
+				decisionDefinitionKey={query.data?.decisionDefinitionKey}
+				decisionDefinitionId={query.data?.decisionDefinitionId}
+				drdPanelState={drdPanelState}
+				onChangeDrdPanelState={changeDrdPanelState}
+				modeButtonRef={drdModeButtonRef}
+			/>
+		) : null;
+
+	if (drdPanelState === 'maximized') {
+		return (
+			<>
+				<VisuallyHiddenH1 id="operate-decision-instance-heading" tabIndex={-1}>
+					{t('operate.decisionInstance.title')}
+				</VisuallyHiddenH1>
+				<Container>{drd}</Container>
+			</>
+		);
 	}
 
 	return (
 		<DecisionInstanceShell
 			header={
-				<Header decisionEvaluationInstanceKey={decisionInstanceId} onOpenDrd={() => setDrdPanelState('minimized')} />
+				<Header
+					decisionEvaluationInstanceKey={decisionInstanceId}
+					onOpenDrd={() => changeDrdPanelState('minimized')}
+					openDrdButtonRef={openDrdButtonRef}
+				/>
 			}
 			topPanel={<DecisionPanel decisionEvaluationInstanceKey={decisionInstanceId} />}
 			bottomPanel={<VariablesPanel decisionEvaluationInstanceKey={decisionInstanceId} />}
-			rightPanel={drdPanelState === 'minimized' ? <div /> : null}
+			rightPanel={drdPanelState === 'minimized' ? <DrdPanel>{drd}</DrdPanel> : null}
 		/>
 	);
 };
@@ -78,9 +142,10 @@ type ShellProps = {
 	topPanel?: React.ReactNode;
 	bottomPanel?: React.ReactNode;
 	rightPanel?: React.ReactNode;
+	isPending?: boolean;
 };
 
-const DecisionInstanceShell: React.FC<ShellProps> = ({header, topPanel, bottomPanel, rightPanel}) => {
+const DecisionInstanceShell: React.FC<ShellProps> = ({header, topPanel, bottomPanel, rightPanel, isPending}) => {
 	const {t} = useTranslation();
 	const pendingTopPanel = (
 		<Section aria-label={t('operate.decisionInstance.panel.label')} tabIndex={0}>
@@ -90,8 +155,10 @@ const DecisionInstanceShell: React.FC<ShellProps> = ({header, topPanel, bottomPa
 
 	return (
 		<>
-			<VisuallyHiddenH1>{t('operate.decisionInstance.title')}</VisuallyHiddenH1>
-			<Container>
+			<VisuallyHiddenH1 id="operate-decision-instance-heading" tabIndex={-1}>
+				{t('operate.decisionInstance.title')}
+			</VisuallyHiddenH1>
+			<Container $isPending={isPending}>
 				<InstanceDetail
 					type="decision"
 					header={header}

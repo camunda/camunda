@@ -10,7 +10,7 @@ import {Form} from 'react-final-form';
 import {DatePicker, Layer, Modal, Stack} from '@carbon/react';
 import {createPortal} from 'react-dom';
 import {logger} from '#/operate/shared/utils/logger';
-import {formatDate} from '../formatDate';
+import {formatDate} from '#/operate/shared/DateRangeField/formatDate';
 import {DateInput} from './DateInput';
 import {TimeInput} from './TimeInput';
 import {TimeInputStack} from './styled';

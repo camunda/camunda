@@ -153,21 +153,22 @@ or upload the `.zip` to https://trace.playwright.dev.
 
 ## Playwright Projects
 
-|          Project           |                            Test match                            |                                                       Notes                                                       |
-|----------------------------|------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------|
-| `chromium`                 | `tests/**/*.spec.ts`                                             | Main UI tests; excludes `task-panel.spec.ts`, `tests/api/**`, and `v2-stateless-tests/**`                         |
-| `chromium-subset`          | `tests/tasklist/task-panel.spec.ts`                              | Teardown project of chromium                                                                                      |
-| `firefox`                  | Same as chromium                                                 | Cross-browser variant                                                                                             |
-| `firefox-subset`           | `tests/tasklist/task-panel.spec.ts`                              | Teardown project of firefox                                                                                       |
-| `msedge`                   | Same as chromium                                                 | Cross-browser variant                                                                                             |
-| `msedge-subset`            | `tests/tasklist/task-panel.spec.ts`                              | Teardown project of msedge                                                                                        |
-| `api-tests`                | `tests/api/v2/**/*.spec.ts`                                      | Stateful REST API tests; excludes `clock/`, `usage-metrics/`, `audit-log/`, `job/job-statistics-*`, `optimize/**` |
-| `api-tests-subset`         | `clock/`, `usage-metrics/`, `audit-log/`, `job/job-statistics-*` | Sequential teardown of api-tests (`workers: 1`)                                                                   |
-| `tasklist-e2e`             | `tests/tasklist/*.spec.ts`                                       | Tasklist-scoped run                                                                                               |
-| `identity-e2e`             | `tests/identity/*.spec.ts`                                       | Identity-scoped run                                                                                               |
-| `operate-e2e`              | `tests/operate/*.spec.ts`                                        | Operate-scoped run                                                                                                |
-| `optimize-default-config`  | `tests/api/v2/optimize/default-config.spec.ts`                   | Single Optimize config test                                                                                       |
-| `request-validation-tests` | `v2-stateless-tests/tests/request-validation/*.spec.ts`          | Stateless; set `V2_STATELESS_TESTS=true`                                                                          |
+|          Project           |                                        Test match                                         |                                                                   Notes                                                                    |
+|----------------------------|-------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------|
+| `chromium`                 | `tests/**/*.spec.ts`                                                                      | Main UI tests; excludes `task-panel.spec.ts`, `identity/global-task-listeners.spec.ts`, `tests/api/**`, and `v2-stateless-tests/**`        |
+| `chromium-subset`          | `tests/tasklist/task-panel.spec.ts`, `tests/identity/global-task-listeners.spec.ts`       | Sequential teardown of chromium (`workers: 1`)                                                                                             |
+| `firefox`                  | Same as chromium                                                                          | Cross-browser variant                                                                                                                      |
+| `firefox-subset`           | `tests/tasklist/task-panel.spec.ts`, `tests/identity/global-task-listeners.spec.ts`       | Sequential teardown of firefox (`workers: 1`)                                                                                              |
+| `msedge`                   | Same as chromium                                                                          | Cross-browser variant                                                                                                                      |
+| `msedge-subset`            | `tests/tasklist/task-panel.spec.ts`, `tests/identity/global-task-listeners.spec.ts`       | Sequential teardown of msedge (`workers: 1`)                                                                                               |
+| `api-tests`                | `tests/api/v2/**/*.spec.ts`                                                               | Stateful REST API tests; excludes `clock/`, `usage-metrics/`, `audit-log/`, `job/job-statistics-*`, `global-task-listener/`, `optimize/**` |
+| `api-tests-subset`         | `clock/`, `usage-metrics/`, `audit-log/`, `job/job-statistics-*`, `global-task-listener/` | Sequential teardown of api-tests (`workers: 1`)                                                                                            |
+| `tasklist-e2e`             | `tests/tasklist/*.spec.ts`                                                                | Tasklist-scoped run                                                                                                                        |
+| `tasklist-e2e-subset`      | `tests/tasklist/task-panel.spec.ts`                                                       | Teardown project of tasklist-e2e                                                                                                           |
+| `identity-e2e`             | `tests/identity/*.spec.ts`                                                                | Identity-scoped run                                                                                                                        |
+| `operate-e2e`              | `tests/operate/*.spec.ts`                                                                 | Operate-scoped run                                                                                                                         |
+| `optimize-default-config`  | `tests/api/v2/optimize/default-config.spec.ts`                                            | Single Optimize config test                                                                                                                |
+| `request-validation-tests` | `v2-stateless-tests/tests/request-validation/*.spec.ts`                                   | Stateless; set `V2_STATELESS_TESTS=true`                                                                                                   |
 
 Global settings: timeout 12 min, 4 workers, 1 retry, trace/screenshot/video retained on failure.
 
@@ -237,12 +238,14 @@ Always run `npm run lint` before committing. Fix all errors — do not commit wi
 
 ## CI Workflows
 
-|                      Workflow                      |        Trigger         |                                                       Link                                                       |
-|----------------------------------------------------|------------------------|------------------------------------------------------------------------------------------------------------------|
-| `c8-orchestration-cluster-e2e-tests-nightly.yml`   | Nightly (all versions) | [Actions](https://github.com/camunda/camunda/actions/workflows/c8-orchestration-cluster-e2e-tests-nightly.yml)   |
-| `c8-orchestration-cluster-e2e-tests-on-demand.yml` | Manual                 | [Actions](https://github.com/camunda/camunda/actions/workflows/c8-orchestration-cluster-e2e-tests-on-demand.yml) |
+|                        Workflow                         |                           Trigger                            |                                                       Link                                                       |
+|---------------------------------------------------------|--------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------|
+| `c8-orchestration-cluster-nightly-<version>-<type>.yml` | Nightly, per version and type (`e2e`, `api-es`, `api-rdbms`) | [Runbook](docs/nightly-runbook.md)                                                                               |
+| `ci-c8-orchestration-cluster-e2e-suite-reusable.yml`    | Automatic PR check (non-fork PRs touching the suite)         | Called by `ci.yml`; blocks only on the PR's own added/modified specs                                             |
+| `c8-orchestration-cluster-e2e-tests-on-demand.yml`      | Manual                                                       | [Actions](https://github.com/camunda/camunda/actions/workflows/c8-orchestration-cluster-e2e-tests-on-demand.yml) |
 
-Nightly results post to Slack `#c8-orchestration-cluster-e2e-test-results`.
+Nightly results post to Slack `#c8-orchestration-cluster-e2e-test-results`. The schedule, test ownership
+and failure handling are in [`docs/nightly-runbook.md`](docs/nightly-runbook.md).
 
 ## Branching and Backports
 
@@ -271,7 +274,7 @@ Each supported version lives on its own branch in `camunda/camunda`:
   except infrastructure smoke checks that verify a component bundled in the suite's Docker
   Compose stack starts and is accessible (e.g. the Optimize startup check).
 - Reviewers must include someone from the Test Automation Team and a product team developer.
-- **Run the on-demand workflow against your branch before requesting review.** PRs without a completed run will be returned. If failures exist, document them in the PR description and confirm they are pre-existing.
+- **Your changed tests must pass the automatic PR check before requesting review.** A PR that changes the suite runs the suite automatically (`ci-c8-orchestration-cluster-e2e-suite-reusable.yml`, via `ci.yml`), blocking the merge on the specs you added or modified. It does not gate on untouched tests and does not run on fork PRs — when your change can break tests you did not edit (shared page object, fixture or config) or the PR is from a fork, also run the on-demand workflow and document any failures in the PR description, confirming they are pre-existing.
 - Track work on the [project board](https://github.com/orgs/camunda/projects/178/views/1).
 - Avoid introducing new `test.skip()` or `test.fixme()` calls. If a skip is genuinely unavoidable
   (e.g. a confirmed upstream bug blocking the test), it must include a linked issue and a
@@ -307,6 +310,17 @@ the window).
 evidence: every retry attempt in `results.json` failed (a `failed → passed` retry is flakiness — fix
 with a wait/retry); and the failure reproduces across both tasklist modes / DBs that share the flow,
 or has failed on consecutive nights. If it looks intermittent → flakiness fix, not a product bug.
+
+**Judge each variant separately, and let the worst one decide.** The same test runs under several
+variants per version — ES cluster topology (`all-in-one` vs `profiles`), tasklist mode (`v1`/`v2`),
+and DB — and each uploads its own `results.json`. Read every variant's report that exists before
+ruling on Gate A; never let one variant's verdict stand for the others. A `failed → passed` retry in
+one variant does **not** clear Gate A if another variant shows `failed → failed`: the deterministic
+variant alone proves the failure is deterministic, and you must go on to Gate B. Variants are
+*expected* to disagree when they exercise different code paths — a single-partition cluster can only
+reach the states a multi-partition cluster's routing sometimes avoids — so a disagreement is a lead
+for Gate B (which change made these topologies diverge?), never a reason to discard the failing one
+as noise. State in the PR body which variants you checked and what each one showed.
 
 **Gate B — Pin it to a recent product change.** Identify the owning module (table below) and find
 the breaking change. You are already inside the `camunda/camunda` checkout (on `${TARGET_REF}`), so
@@ -390,6 +404,167 @@ Orchestration-suite failures almost always trace to a module inside this same re
 | c8Run setup / packaging             | `camunda/camunda`               | `c8run/`                                    |
 | Helm chart / deploy config          | `camunda/camunda-platform-helm` | `charts/`                                   |
 
+### Labels for the issue (both owning repos)
+
+Bugs are triaged by their labels, and no automation adds them for you: `camunda/camunda`'s
+`opened_issue_labeler.yml` reads only the markers of its bug-report form, and the body this agent
+writes has none. Set **all** of the applicable labels on `gh issue create`. When you reuse, reopen,
+or append a fingerprint to an existing issue, add the ones it is missing (see step 1).
+
+Both repos in the routing table above — `camunda/camunda` and `camunda/camunda-platform-helm` —
+define `severity/`, `likelihood/`, `affects/` and `component/`, so the only per-repo differences are
+`qa/automation-found` and the component vocabulary.
+
+|         Label         |                                                                                               Value                                                                                               |
+|-----------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `kind/bug`            | Always, in both repos.                                                                                                                                                                            |
+| `qa/automation-found` | `camunda/camunda` only — its marker for an automation-found bug. `camunda/camunda-platform-helm` does not define it.                                                                              |
+| `component/<x>`       | From the per-repo vocabulary below.                                                                                                                                                               |
+| `severity/<x>`        | From the severity rules below. Always, in both repos.                                                                                                                                             |
+| `likelihood/<x>`      | `likelihood/high`, because Gate A already proved the failure is deterministic. Use `likelihood/mid` only when it fails in some scenarios or on some nights of the same version and not in others. |
+| `affects/<X.Y>`       | The version of the failing run (`8.10` -> `affects/8.10`). Omit it for `main`.                                                                                                                    |
+
+**Standing rule:** a repo only accepts labels it defines. Confirm with
+`gh label list --repo <owner>/<repo> --search "<prefix>"` when unsure, and drop a label the repo
+does not have rather than letting `gh issue create` fail — but never drop a whole category in
+silence: see **Fields you cannot determine** below.
+
+#### `component/` vocabulary
+
+`camunda/camunda`, by failure surface:
+
+|                    Failure surface                    |       `component/` label        |
+|-------------------------------------------------------|---------------------------------|
+| Identity, Admin UI, authorizations, RBA (8.10+)       | `component/identity`            |
+| Management Identity (Self-Managed)                    | `component/management-identity` |
+| Operate                                               | `component/operate`             |
+| Tasklist                                              | `component/tasklist`            |
+| Optimize                                              | `component/optimize`            |
+| REST API v2 contract (status codes, filters, OpenAPI) | `component/c8-api`              |
+| Engine behavior (BPMN/DMN execution, process state)   | `component/zeebe-engine`        |
+| Broker, cluster, partitions, backups                  | `component/zeebe`               |
+| Exporters, secondary storage (ES/OS/RDBMS), import    | `component/data-layer`          |
+| c8Run packaging or startup                            | `component/c8run`               |
+| Cannot tell                                           | `needs component label`         |
+
+`camunda/camunda-platform-helm`:
+
+|                                                            Failure surface                                                             |                                   `component/` label                                   |
+|----------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------|
+| Chart templating, values, install/upgrade itself                                                                                       | `component/helm`                                                                       |
+| A component's chart config (Operate, Tasklist, Optimize, Zeebe, Identity, Console, Connectors, Web Modeler, Elasticsearch, monitoring) | the matching `component/<name>`                                                        |
+| Shared/core chart wiring                                                                                                               | `component/core` or `component/orchestration`                                          |
+| Cannot tell                                                                                                                            | omit `component/` and say so in the comment (this repo has no "needs component" label) |
+
+#### Severity
+
+Severity follows [CONTRIBUTING.md](https://github.com/camunda/camunda/blob/main/CONTRIBUTING.md#severity-and-likelihood-bugs)
+and applies in both repos:
+
+- `severity/critical` — **data loss** (user data deleted, lost or corrupted, for example entities
+  gone after an upgrade) or **unauthorized access** (a user without the permission reaches data or
+  actions). There is no workaround.
+- `severity/high` — a user-facing flow is blocked and no workaround is known, or the only
+  workaround is very complex (a login fails, an action in the UI cannot complete).
+- `severity/mid` — a noticeable impact with a known, simple workaround (the same action works
+  through the REST API, another UI path, or another filter). Name the workaround in the body.
+- `severity/low` — little impact on users: a wrong status code for invalid input, a cosmetic
+  defect, log noise.
+- `severity/unknown` — only when you genuinely cannot tell without a deep investigation, **and**
+  only together with the comment required below. Never omit severity instead.
+
+When you hesitate between two severities, take the higher one. Give the reason in the `### Severity`
+section of the body.
+
+**Exact strings matter.** Use `severity/mid`, never `severity/medium` — `camunda/camunda` defines
+both, and `severity/mid` is the one CONTRIBUTING.md documents.
+
+#### Fields you cannot determine
+
+Never omit a required category in silence. When you cannot confidently determine the component, the
+severity, or the affected version:
+
+1. **Apply the marker label** where the repo has one. **Both repos define `severity/unknown` and
+   `likelihood/unknown`**, so those categories are never left unset. Only the component marker is
+   repo-specific: `camunda/camunda` has `needs component label`; `camunda/camunda-platform-helm`
+   has none, so omit `component/` there and rely on the comment.
+2. **Always post a comment** naming each field and why. The comment is the part that works in both
+   repos, so it is mandatory even where a marker label exists:
+
+   ```bash
+   gh issue comment <n> --repo <owner>/<repo> --body \
+     "Automated triage could not determine **<field>**: <reason>. Please set it during triage."
+   ```
+
+   One comment listing every undetermined field is enough — do not post one per field.
+
+Never change a `component/`, `severity/`, `likelihood/` or `affects/` label that a person already
+set on an existing issue. Add only the categories that are missing.
+
+#### Team board routing — why the `component/` label is load-bearing
+
+**Never add the issue to a project board yourself.** `gh project item-add` needs a `project` scope
+the qa-processes App token does not carry, and every owning repo already automates it. What those
+automations route on is the **`component/` label you set at creation** — so an issue filed without
+one reaches no team. It lands on the catch-all Quality Board, where nobody owns it. That is the
+single most consequential reason the label table above is mandatory.
+
+This works on creation: labels passed to `gh issue create` do emit `labeled` webhook events, so
+`camunda/camunda`'s `add-to-projects.yml` — which triggers on `labeled`, **not** `opened` — fires for
+issues this agent files. [camunda/camunda#60836](https://github.com/camunda/camunda/issues/60836) is
+the counter-example worth remembering: filed by the bot with only `kind/bug`, it reached no team
+board until a human added `component/optimize` six weeks later.
+
+`camunda/camunda` — `.github/workflows/add-to-projects.yml`:
+
+|            `component/` label you set             |                                                                                 Team board it routes to                                                                                  |
+|---------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `operate`, `tasklist`, `optimize`, `zeebe-engine` | [Core Features #173](https://github.com/orgs/camunda/projects/173)                                                                                                                       |
+| `c8-api`                                          | [Core Features #173](https://github.com/orgs/camunda/projects/173) **and** [CamundaEx #182](https://github.com/orgs/camunda/projects/182)                                                |
+| `zeebe`                                           | [Core Features #173](https://github.com/orgs/camunda/projects/173) **and** [Distributed Systems / ZDP #92](https://github.com/orgs/camunda/projects/92) — added to both, unconditionally |
+| `data-layer`                                      | [Data Layer #184](https://github.com/orgs/camunda/projects/184)                                                                                                                          |
+| `identity`, `management-identity`                 | [Identity #209](https://github.com/orgs/camunda/projects/209)                                                                                                                            |
+| `c8run`                                           | [Distribution #33](https://github.com/orgs/camunda/projects/33)                                                                                                                          |
+| `needs component label`                           | ⚠️ **no team board** — only the Quality Board                                                                                                                                            |
+
+`kind/bug` additionally puts it on the [Quality Board #187](https://github.com/orgs/camunda/projects/187) regardless of component.
+
+The other repo in this agent's routing table:
+
+|              Repo               |                             What routes it                              |                                      Board                                       |
+|---------------------------------|-------------------------------------------------------------------------|----------------------------------------------------------------------------------|
+| `camunda/camunda-platform-helm` | `.github/workflows/add-new-issue.yaml`, unconditional on issue creation | [Distribution #33](https://github.com/orgs/camunda/projects/33), + Quality Board |
+
+It routes whatever labels you set, so the `component/` label matters there for triage rather than
+for routing — but it is still mandatory, and `camunda-platform-helm` has no severity label, so the
+`Severity` section of the body is the only record of that.
+
+#### Use the target repo's own bug template
+
+**Every repo's template is different — read it before filing** and use *its* section headings:
+
+```bash
+gh api "repos/<owner>/<repo>/contents/.github/ISSUE_TEMPLATE" --jq '.[].name'
+```
+
+A body that matches the template is what makes the issue triageable by the people who own it, and
+in some repos (`camunda/camunda-platform-helm`) an automation parses those exact headings.
+
+Five things this agent must record **in every repo**, whatever the template looks like:
+**Current behavior vs Expected behavior**, **Environment**, **Version**, **Severity**, and the
+**`Fingerprint:`** line. When the repo's template has no section for one of them, append it under its
+own heading rather than dropping it — `Severity` especially, since several repos have no severity
+label and the body is then the only record of it.
+
+|           Owning repo           |                     Its bug template                     |                                                                                                                                                      Headings to use                                                                                                                                                       |
+|---------------------------------|----------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `camunda/camunda`               | `.github/ISSUE_TEMPLATE/1. bug_report.yml`               | The canonical shape below — it is modelled on this template.                                                                                                                                                                                                                                                               |
+| `camunda/camunda-platform-helm` | `.github/ISSUE_TEMPLATE/issue.md` (markdown, not a form) | Its own `##` headings, exactly: `## Description`, `## Expected vs Actual Behavior`, `## Steps to Reproduce`, `## Acceptance Criteria`. **Its AI triage reads this body to assign labels and severity**, so keep the headings verbatim; append `## Environment`, `## Version`, `## Severity` and `## Rootcause` after them. |
+
+When a repo has no usable bug template, use the canonical shape in step 2 of
+**Filing the bug ticket** below — it is `camunda/camunda`'s, and the most complete of the Camunda
+templates.
+
 ### Filing the bug ticket (dedupe FIRST)
 
 > **Token:** use the default `GH_TOKEN` (the qa-processes App token) for ALL `gh` calls FIRST —
@@ -430,20 +605,72 @@ Orchestration-suite failures almost always trace to a module inside this same re
 
      Put its URL in `fix-meta.json`.
 
-2. **File the issue** when none exists. You MAY use the repo's `create-issue` skill (bug template +
-   component label), but the body MUST contain the fingerprint line below so dedupe works:
+   - In **every** case above, also add the labels the issue is missing (see **Labels for the issue
+     (both owning repos)**) — a reused or human-filed issue is exactly where severity and component
+     are most often absent:
+     `gh issue edit <n> --repo <owner>/<repo> --add-label "<label>,<label>"`. Drop a label the repo
+     does not define, never change one a person already set, and post the comment required by
+     **Fields you cannot determine** if a category stays unset.
+
+2. **File the issue** when none exists, using **that repo's own** bug template (see **Use the
+   target repo's own bug template** above). Whatever the template, the four dropdowns a Camunda form
+   would ask for — Component, Affected version, Severity, Likelihood — are carried by the **labels**
+   instead, which is why every one of them is mandatory above. The shape below is
+   `camunda/camunda`'s; adapt its headings per the table above when filing in
+   `camunda/camunda-platform-helm`. Do **not** write the form's HTML markers
+   (`<!-- Component -->`, `<!-- Severity -->`) into the body: that hands label selection back to
+   `opened_issue_labeler.yml`, whose regexes have mislabelled bot issues before, and it hides from
+   the command which labels were actually set. You MAY use the repo's `create-issue` skill instead,
+   but only if the result carries the same sections, the same labels, and the fingerprint line:
 
    ```bash
-   gh issue create --repo camunda/camunda \
+   # every label from "Labels for the issue (both owning repos)"
+   # Quote each label: `needs component label` holds spaces.
+   # camunda/camunda:
+   LABELS=(--label kind/bug --label qa/automation-found --label "component/<x>" \
+     --label "severity/<x>" --label "likelihood/<x>" --label "affects/<X.Y>")
+   # camunda/camunda-platform-helm (no qa/automation-found there):
+   # LABELS=(--label kind/bug --label "component/<x>" \
+   #   --label "severity/<x>" --label "likelihood/<x>" --label "affects/<X.Y>")
+
+   gh issue create --repo <owner>/<repo> \
      --title "<module>: <one-line symptom> (nightly <version>)" \
-     --label "kind/bug" --label "nightly-detected" \
+     "${LABELS[@]}" \
      --body "$(cat <<'BODY'
    Detected by orchestration-cluster nightly triage. The failing test is **correct** and the failure
    is **not flaky** — it traces to a recent product change.
 
-   - **Failing test:** `<file>` › `<test_name>` (<test_type>, <version>)
-   - **Symptom:** <what the screenshot / error shows>
-   - **Suspected change:** <commit sha + subject, or PR #, or docs reference>
+   ### Description
+   <one-line symptom, in product terms rather than test terms>
+
+   ### Steps to reproduce
+   1. Run `<file>` › `<test_name>` (<test_type>) on <version>.
+   2. See the nightly run: <e2e / api run URL>
+
+   ### Current behavior
+   <what the screenshot / trace / error actually shows the product doing>
+
+   ### Expected behavior
+   <what the assertion expects, and the docs reference if the behavior is documented>
+
+   ### Environment
+   SM
+   <!-- the template's Environment dropdown is SM / SaaS / SaaS & SM; this suite runs SM -->
+   **Secondary storage:** <Elasticsearch | OpenSearch | RDBMS (<vendor>)> — <any scenario flags>
+
+   ### Version
+   <X.Y> (branch `<stable/X.Y | main>`)
+
+   ### Workaround
+   <the workaround that justified severity/mid, or "none known">
+
+   ### Severity
+   <severity label> — <one-line reason>
+
+   ### Rootcause
+   <commit sha + subject, or PR #, or docs reference, or "not pinned">
+
+   ### Triage
    - **Nightly run(s):** <e2e / api run URLs>
    - **Triage run:** <triage_run_url>
 
@@ -452,8 +679,12 @@ Orchestration-suite failures almost always trace to a module inside this same re
    )"
    ```
 
-   The `Fingerprint:` line is **mandatory**. `kind/bug` / `nightly-detected` are defaults — drop a
-   label the repo rejects rather than failing.
+   The `Fingerprint:` line is **mandatory**. Keep every `###` heading even when a value is unknown:
+   write "not determined — see comment" under it and post the comment required by **Fields you
+   cannot determine**. If a label is rejected, check its name against the tables above and retry;
+   drop only a label the repo genuinely does not define (an `affects/<X.Y>` that does not exist yet,
+   or `qa/automation-found` in `camunda/camunda-platform-helm`). Never drop a whole category without
+   the explaining comment.
 
 3. **Skip the failing test with a bug-linked annotation**, static `test.skip(...)` form, with the
    annotation comment on the line directly above — exact format, no deviation:
@@ -611,8 +842,13 @@ if [ "$HAS_E2E" = "true" ] && [ -n "$E2E_RUN_ID" ]; then
 fi
 
 if [ "$HAS_API_ES" = "true" ] && [ -n "$API_ES_RUN_ID" ]; then
+  # The trailing -* is REQUIRED: the ES API nightly runs the suite twice, under
+  # two cluster topologies, and uploads one report per topology
+  # (json-report-nightly-api-<safe_version>-all-in-one and -profiles).
+  # Without the wildcard this pattern matches NOTHING and the 2>/dev/null
+  # swallows it, leaving you with an empty api-es/ and no ES evidence at all.
   gh run download "$API_ES_RUN_ID" --repo "$REPO" \
-    --pattern "json-report-nightly-api-${SAFE_VERSION}" \
+    --pattern "json-report-nightly-api-${SAFE_VERSION}-*" \
     --dir /tmp/nightly-artifacts/api-es 2>/dev/null || true
 fi
 
@@ -636,9 +872,20 @@ Resulting layout:
   e2e-v1-html/   html-report-nightly-e2e-<safe_version>-v1/...   ← contains screenshots
   e2e-v2/        json-report-nightly-e2e-<safe_version>-v2/results.json
   e2e-v2-html/   html-report-nightly-e2e-<safe_version>-v2/...
-  api-es/        json-report-nightly-api-<safe_version>/results.json
+  api-es/        json-report-nightly-api-<safe_version>-all-in-one/results.json
+  api-es/        json-report-nightly-api-<safe_version>-profiles/results.json
   api-rdbms/     json-report-nightly-api-rdbms-<safe_version>-<db>/results.json
 ```
+
+**The ES API suite runs under two cluster topologies, and you get one report for
+each**: `all-in-one` is a single-partition cluster, `profiles` is
+multi-partition. They are not duplicates — a test can legitimately pass in one
+and fail in the other, because partition count changes which code path answers
+(a request routed round-robin can land on a partition in a different state).
+Read **both** before drawing any conclusion from either, and see Gate A in
+`## Product-Bug Escalation`. For RDBMS the topology is already baked into the
+`database` field of `/tmp/test_specs.json` (e.g. `"MSSQL 2025-profiles"`), so
+that pattern needs no wildcard.
 
 Screenshots from Playwright's HTML report live under
 `html-report/.../data/*.png`. You can read PNGs directly — use them as the
@@ -840,6 +1087,39 @@ the Product-Bug Escalation skip-PR path (there is nothing to run-and-green —
 the "fix" is a `test.skip()` annotation) and the Workflow-Level Failure Fix
 Agent (no single spec to reproduce against).
 
+### Ownership routing
+
+For test failures and workflow-level failures alike. Name the team that owns each root-cause
+group, so the Slack thread and the job summary say whose failure it is. A workflow-level failure is
+one group: the failed job. Routing never notifies anyone and never holds up a fix: work on the fix
+first, and record the routing of a group as soon as its root cause is known.
+
+1. **`.codeowners` first.** Look up every failing spec of the group in
+   `/tmp/nightly-fix-agent-codeowners`, main's `.codeowners` (the last matching rule wins). Do not
+   use the workspace's copy: on a `stable/<version>` branch it can predate the current owners. If
+   the specs all resolve to one team other than the suite owner `@camunda/test-automation-team`,
+   that team is the owner: tier `High`, source `codeowners: <the matching rule>`. Do not read the
+   runbook for that group. A workflow-level failure has no failing spec, so it starts at step 2.
+2. **Otherwise, follow `skills/route.md`** in the runbook directory, when the prompt says the
+   runbook is available. When it is not, record the group with tier `None`, no candidates, and the
+   gap `routing runbook not available`. The changes for the nightly:
+   - The input is what you diagnosed: the spec paths, or for a workflow-level failure the failed
+     job, step and the file that owns it, plus the error messages and the root cause. The root
+     cause outranks the area of the spec ("Root cause outranks surface symptom" in `route.md`). A
+     product bug routes to the team that owns the broken component.
+   - Discover the teams by listing `memory/teams/`, as `route.md` requires.
+   - The available signals are `team-entries`, `codeowners` (main's copy above) and `git-history`
+     (in the workspace).
+     `prior-questions`, `prior-incidents`, `handbook` and `glean` are not available here. Name one
+     under `gaps` only when its absence lowered the tier.
+   - Use the tiers of `route.md`. `Low`: no owner, up to three candidate slugs, best first. `None`:
+     no owner and no candidates. This replaces the fallback to `team-core-api`, because the suite
+     owner already reviews the nights that nobody owns.
+   - Ignore the Slack and Claude Code output adapters, the pings and the improvement loop. Never
+     write to the runbook directory, and never open a PR against `camunda/eng-kit-memory`. Put a
+     memory gap that you find under `gaps`.
+3. **Record one `routing` entry per group** in `/tmp/fix-meta.json` (see "Result manifest").
+
 ### Constraints
 
 - **Allowed tools, outside the Live Docker Verify loop:** `gh`, `git`, `grep`, `rg`, `cat`, `find`, `jq`, `sed`, `awk`, `unzip`, `date` (needed for the Time Budget checkpoint comparisons above), `mv` (needed for atomic checkpoint writes above), `npx prettier`, `npx eslint`, `npm run responses:regenerate`. Everything else — `make`, `mvn`, `./mvnw`, `docker`, `kubectl`, `helm`, `npm install`, `npm run build`, `npm run test`, `npx playwright test` — is forbidden here: the fix agent does **not** execute tests from artifact evidence alone.
@@ -935,6 +1215,9 @@ filed/reused issue (a dispatch may yield several bugs):
     {
       "repo": "camunda/camunda",
       "component": "operate",
+      "severity": "high",
+      "affects": ["8.10"],
+      "undetermined_fields": [],
       "issue_url": "https://github.com/camunda/camunda/issues/55864",
       "issue_number": 55864,
       "fingerprint": "<FP>",
@@ -947,9 +1230,43 @@ filed/reused issue (a dispatch may yield several bugs):
 ```
 
 `category`, the skip PR in `prs`, and a non-empty `product_bugs` are all required for this verdict.
+`component`, `severity` and `affects` must match the labels you actually set, and
+`undetermined_fields` lists any category you could not determine and had to flag with a comment
+(`["component"]`, `["severity"]`, …) — `[]` when every field is set. `c8-orchestration-cluster-e2e-nightly-fix.yml`
+renders them in the Slack thread and the job summary, so the owning team is named there rather than
+having to open the issue to find out the bug is theirs.
 `suspect_commit` is surfaced directly in the Slack thread. The triage dispatcher reads each issue's
 fingerprint marker to suppress re-dispatch while the issue is open; once the skip PR merges the test
 no longer runs, and when the issue is later closed the skip should be removed so the test runs again.
+
+**`routing`** — one entry per root-cause group (see "Ownership routing" above). For a
+workflow-level failure, `tests` is `[]` and `job` names the failed job and step:
+
+```json
+"routing": [
+  {
+    "tests": ["tests/operate/dashboard.spec.ts › Navigate to processes view"],
+    "team": "Operate & Admin Pod",
+    "slug": "team-operate-pod",
+    "github_handle": "@camunda/operate-admin-pod",
+    "tier": "High",
+    "reasoning": ["\"<literal phrase from the error or root cause>\" matches team-operate-pod: \"<line from the entry>\""],
+    "sources": ["codeowners: camunda/camunda:<rule>", "team-entries: memory/teams/team-operate-pod.md"],
+    "candidates": [],
+    "gaps": []
+  }
+]
+```
+
+`team`, `slug` and `github_handle` come from the frontmatter of the team entry. Without the
+runbook, a `High` entry sets `team` and `github_handle` to the `.codeowners` handle and `slug` to
+`""`. Leave all three `""` for `Low` and `None`. `reasoning` follows the output contract of
+`route.md`: at least two bullets when the runbook was used, each quoting a literal phrase. The
+calling workflow shows `team` and `tier` in the Slack thread and the whole entry in the job summary.
+
+Use exactly the keys of the example, also when a value is empty, plus `job` for a workflow-level
+failure. Give `reasoning`, `sources`, `candidates` and `gaps` as lists. The job summary does not
+show other keys, such as `group` or `source`.
 
 ## Unskip Verify Agent
 
@@ -1050,7 +1367,8 @@ actually fixed, or something regressed since — then:
 2. **Leave the test un-skipped and failing.** Do NOT re-add `test.skip(`, do NOT mask
    it with a longer timeout, a viewport pin, or a weakened assertion. The PR is
    *supposed* to go red here: that is the signal a human needs.
-3. Reopen the closed issue the marker referenced (`gh issue reopen`) — or file a new
+3. Reopen the closed issue the marker referenced (`gh issue reopen`) and add the labels
+   it is missing (see "### Labels for the issue (both owning repos)") — or file a new
    one per "### Filing the bug ticket (dedupe FIRST)" when the original is not the
    right home — and comment on it linking this verification run.
 4. Comment on the unskip PR (`gh pr comment $PR_NUMBER --repo $REPO`) with the test,
@@ -1233,6 +1551,9 @@ Write to `/tmp/fix-meta.json`:
 ```json
 {"prs": [{"number": 123, "owner": "camunda", "repo": "camunda", "branch": "ci/...", "has_e2e": false, "has_api": false}], "category": "workflow-fix"}
 ```
+
+Add one `routing` entry for the failed job, as "Ownership routing" in the Nightly Fix Agent
+section describes, also when you open no PR.
 
 ### When — and only when — you cannot fix
 

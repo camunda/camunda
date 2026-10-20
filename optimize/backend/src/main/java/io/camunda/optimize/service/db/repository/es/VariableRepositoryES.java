@@ -171,7 +171,8 @@ public class VariableRepositoryES implements VariableRepository {
                                                                   s.source(
                                                                       ProcessInstanceScriptFactory
                                                                           .createVariableClearScript()))))
-                                              .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT)))));
+                                              .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT)
+                                              .requireAlias(true)))));
               return b;
             });
     esClient.doBulkRequest(

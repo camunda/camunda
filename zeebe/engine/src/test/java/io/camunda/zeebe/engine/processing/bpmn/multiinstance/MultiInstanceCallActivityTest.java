@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.processing.bpmn.multiinstance;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
 
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
@@ -16,6 +17,7 @@ import io.camunda.zeebe.model.bpmn.builder.CallActivityBuilder;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
 import io.camunda.zeebe.test.util.JsonUtil;
@@ -255,6 +257,82 @@ public final class MultiInstanceCallActivityTest {
                 .withScopeKey(processInstanceKey))
         .extracting(r -> r.getValue().getValue())
         .containsExactly(expectedOutputCollection);
+  }
+
+  @Test
+  public void shouldKeepChildVariablesLocalToEachCallActivityInstanceWhenPropagationDisabled() {
+    // given: propagateAllChildVariables=false, no output mapping - each child instance sets the
+    // same variable name to a different value; it must stay local to its own call activity scope
+    final var isolatedVar = "isolatedVar";
+    final var parentProcess =
+        parentProcessWithCallActivity(
+            callActivity ->
+                callActivity
+                    .zeebePropagateAllChildVariables(false)
+                    .multiInstance(
+                        b -> b.zeebeInputCollectionExpression(INPUT_COLLECTION_VARIABLE)));
+
+    ENGINE.deployment().withXmlResource("wf-parent.bpmn", parentProcess).deploy();
+
+    final long processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID_PARENT)
+            .withVariable(INPUT_COLLECTION_VARIABLE, INPUT_COLLECTION)
+            .create();
+
+    final List<Long> callActivityInstanceKeys =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementType(BpmnElementType.CALL_ACTIVITY)
+            .limit(INPUT_COLLECTION.size())
+            .map(Record::getKey)
+            .collect(Collectors.toList());
+
+    // when: each child instance completes its job setting the same variable name to a value
+    // matching its own position
+    awaitJobsCreated(INPUT_COLLECTION.size());
+    final var jobCounter = new AtomicInteger();
+    ENGINE
+        .jobs()
+        .withType(jobType)
+        .activate()
+        .getValue()
+        .getJobKeys()
+        .forEach(
+            jobKey ->
+                ENGINE
+                    .job()
+                    .withKey(jobKey)
+                    .withVariable(isolatedVar, jobCounter.incrementAndGet())
+                    .complete());
+
+    // then: each call activity instance keeps its own value local, with no cross-instance
+    // leakage and no propagation to the process instance scope
+    assertThat(
+            RecordingExporter.records()
+                .betweenProcessInstance(processInstanceKey)
+                .variableRecords()
+                .withIntent(VariableIntent.CREATED)
+                .withName(isolatedVar)
+                .filter(r -> callActivityInstanceKeys.contains(r.getValue().getScopeKey()))
+                .limit(INPUT_COLLECTION.size()))
+        .extracting(Record::getValue)
+        .extracting(v -> tuple(v.getScopeKey(), v.getValue()))
+        .containsExactlyInAnyOrder(
+            tuple(callActivityInstanceKeys.get(0), "1"),
+            tuple(callActivityInstanceKeys.get(1), "2"),
+            tuple(callActivityInstanceKeys.get(2), "3"));
+
+    assertThat(
+            RecordingExporter.records()
+                .betweenProcessInstance(processInstanceKey)
+                .variableRecords()
+                .withIntent(VariableIntent.CREATED)
+                .withName(isolatedVar)
+                .withScopeKey(processInstanceKey)
+                .exists())
+        .isFalse();
   }
 
   private void awaitJobsCreated(final int size) {

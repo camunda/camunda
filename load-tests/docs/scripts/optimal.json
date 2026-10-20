@@ -37,5 +37,27 @@
       "expected": 5,
       "tolerance-percent": 100
     }
+  },
+  "storage-type-overrides": {
+    "none": {
+      "process-instances-started": {
+        "expected": 900000
+      },
+      "process-instances-completed": {
+        "expected": 900000
+      },
+      "throughput-per-second": {
+        "expected": 500
+      },
+      "completed-pi-rate-per-second": {
+        "expected": 500
+      },
+      "starter-rate-per-second": {
+        "expected": 500
+      },
+      "data-availability": {
+        "expected": null
+      }
+    }
   }
 }

@@ -54,9 +54,9 @@ public class JobWorkerManagerTest {
     // given
     final CamundaClient clientA = mock(CamundaClient.class);
     final CamundaClient clientB = mock(CamundaClient.class);
-    when(jobWorkerFactory.createJobWorker(eq(clientA), any(), any()))
+    when(jobWorkerFactory.createJobWorker(eq(clientA), any(), any(), any()))
         .thenReturn(mock(JobWorker.class));
-    when(jobWorkerFactory.createJobWorker(eq(clientB), any(), any()))
+    when(jobWorkerFactory.createJobWorker(eq(clientB), any(), any(), any()))
         .thenReturn(mock(JobWorker.class));
 
     // when - the same type is registered on two different clients
@@ -64,8 +64,8 @@ public class JobWorkerManagerTest {
     jobWorkerManager.createJobWorker(clientB, managedWorker(TYPE), SOURCE, "b");
 
     // then - a worker is opened on each client, not just once
-    verify(jobWorkerFactory).createJobWorker(eq(clientA), any(), any());
-    verify(jobWorkerFactory).createJobWorker(eq(clientB), any(), any());
+    verify(jobWorkerFactory).createJobWorker(eq(clientA), any(), any(), eq("a"));
+    verify(jobWorkerFactory).createJobWorker(eq(clientB), any(), any(), eq("b"));
   }
 
   @Test
@@ -75,8 +75,8 @@ public class JobWorkerManagerTest {
     final CamundaClient clientB = mock(CamundaClient.class);
     final JobWorker workerA = mock(JobWorker.class);
     final JobWorker workerB = mock(JobWorker.class);
-    when(jobWorkerFactory.createJobWorker(eq(clientA), any(), any())).thenReturn(workerA);
-    when(jobWorkerFactory.createJobWorker(eq(clientB), any(), any())).thenReturn(workerB);
+    when(jobWorkerFactory.createJobWorker(eq(clientA), any(), any(), any())).thenReturn(workerA);
+    when(jobWorkerFactory.createJobWorker(eq(clientB), any(), any(), any())).thenReturn(workerB);
     jobWorkerManager.createJobWorker(clientA, managedWorker(TYPE), SOURCE, "a");
     jobWorkerManager.createJobWorker(clientB, managedWorker(TYPE), SOURCE, "b");
 
@@ -95,8 +95,8 @@ public class JobWorkerManagerTest {
     final CamundaClient clientB = mock(CamundaClient.class);
     final JobWorker workerA = mock(JobWorker.class);
     final JobWorker workerB = mock(JobWorker.class);
-    when(jobWorkerFactory.createJobWorker(eq(clientA), any(), any())).thenReturn(workerA);
-    when(jobWorkerFactory.createJobWorker(eq(clientB), any(), any())).thenReturn(workerB);
+    when(jobWorkerFactory.createJobWorker(eq(clientA), any(), any(), any())).thenReturn(workerA);
+    when(jobWorkerFactory.createJobWorker(eq(clientB), any(), any(), any())).thenReturn(workerB);
     jobWorkerManager.createJobWorker(clientA, managedWorker(TYPE), SOURCE, "a");
     jobWorkerManager.createJobWorker(clientB, managedWorker(TYPE), SOURCE, "b");
 
@@ -114,7 +114,8 @@ public class JobWorkerManagerTest {
     // given
     final CamundaClient clientA = mock(CamundaClient.class);
     final CamundaClient clientB = mock(CamundaClient.class);
-    when(jobWorkerFactory.createJobWorker(any(), any(), any())).thenReturn(mock(JobWorker.class));
+    when(jobWorkerFactory.createJobWorker(any(), any(), any(), any()))
+        .thenReturn(mock(JobWorker.class));
     jobWorkerManager.createJobWorker(clientA, managedWorker(TYPE), SOURCE, "a");
     jobWorkerManager.createJobWorker(clientB, managedWorker(TYPE), SOURCE, "b");
 

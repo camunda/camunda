@@ -7,29 +7,45 @@
  */
 
 import {queryOptions} from '@tanstack/react-query';
-import type {
-	QueryBatchOperationsRequestBody,
-	QueryBatchOperationsResponseBody,
+import {z} from 'zod';
+import {
+	batchOperationSortFieldEnum,
+	type QueryBatchOperationsRequestBody,
+	type QueryBatchOperationsResponseBody,
 } from '@camunda/camunda-api-zod-schemas/8.11';
 import {request} from '#/shared/http/request';
 import {mapQueryError} from '#/shared/http/mapQueryError';
 import {endpoints} from '#/shared/http/endpoints';
-
-type SortField = NonNullable<QueryBatchOperationsRequestBody['sort']>[number]['field'];
+import {createSortSearchParamSchema} from '#/shared/sortSearchParam';
 
 type BatchOperationsSearch = {
 	page: number;
 	pageSize: number;
-	sort?: string;
+	sort: string;
 };
 
-const DEFAULT_SORT = 'endDate+desc';
+const DEFAULT_SORT = {field: 'endDate', order: 'DESC'} as const;
+const sortSearchParamSchema = createSortSearchParamSchema(batchOperationSortFieldEnum);
+
+function parseBatchOperationsSort(value: string | undefined) {
+	return sortSearchParamSchema.safeParse(value).data ?? DEFAULT_SORT;
+}
+
+const batchOperationsSearchSchema = z.object({
+	page: z.number().int().positive().default(1),
+	pageSize: z.number().int().positive().default(20),
+	sort: z
+		.unknown()
+		.optional()
+		.transform((value) => {
+			const {field, order} = parseBatchOperationsSort(typeof value === 'string' ? value : undefined);
+			return `${field}+${order}`;
+		}),
+});
 
 function getRequestBody({page, pageSize, sort}: BatchOperationsSearch): QueryBatchOperationsRequestBody {
-	const [sortField, sortOrder] = (sort ?? DEFAULT_SORT).split('+');
-
 	return {
-		sort: [{field: sortField as SortField, order: (sortOrder ?? 'desc') as 'asc' | 'desc'}],
+		sort: [parseBatchOperationsSort(sort)],
 		page: {from: (page - 1) * pageSize, limit: pageSize},
 	};
 }
@@ -49,4 +65,4 @@ function batchOperationsOptions(search: BatchOperationsSearch) {
 	});
 }
 
-export {batchOperationsOptions};
+export {batchOperationsOptions, batchOperationsSearchSchema};

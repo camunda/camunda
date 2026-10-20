@@ -71,8 +71,7 @@ test.describe('Process Instance History', () => {
     await captureFailureVideo(page, testInfo);
   });
 
-  // Skipped due to bug 60856: https://github.com/camunda/camunda/issues/60856
-  test.skip('Verify history of instance with an incident', async ({
+  test('Verify history of instance with an incident', async ({
     page,
     operateProcessesPage,
     operateFiltersPanelPage,

@@ -127,6 +127,7 @@ public final class MessageCorrelator {
         subscriptionRecord.getVariablesBuffer(),
         subscriptionRecord.getCorrelationKeyBuffer(),
         subscriptionRecord.getTenantId(),
-        subscriptionRecord.getSubscriptionKey());
+        subscriptionRecord.getSubscriptionKey(),
+        subscriptionRecord.getStorageOrdinal());
   }
 }

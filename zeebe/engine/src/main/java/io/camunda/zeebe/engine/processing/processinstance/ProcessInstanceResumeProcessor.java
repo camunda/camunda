@@ -48,6 +48,10 @@ public final class ProcessInstanceResumeProcessor
       MESSAGE_PREFIX + "no such process was found";
   private static final String PROCESS_NOT_SUSPENDED_MESSAGE =
       MESSAGE_PREFIX + "it is not currently suspended";
+  private static final String PROCESS_SUSPENDING_MESSAGE =
+      MESSAGE_PREFIX + "it is still suspending; retry once it is suspended";
+  private static final String PROCESS_TERMINATING_MESSAGE =
+      MESSAGE_PREFIX + "it is already being terminated";
 
   private final ElementInstanceState elementInstanceState;
   private final TypedResponseWriter responseWriter;
@@ -79,6 +83,7 @@ public final class ProcessInstanceResumeProcessor
 
     validateNotFound(command, elementInstance)
         .flatMap(ei -> validateAuthorized(command, ei))
+        .flatMap(ei -> validateNotTerminating(command, ei))
         .flatMap(ei -> validateSuspensionState(command, ei))
         .ifRightOrLeft(
             ei -> resume(command, ei),
@@ -93,6 +98,13 @@ public final class ProcessInstanceResumeProcessor
   }
 
   @Override
+  public SuspensionAction onSuspending(final TypedRecord<ProcessInstanceRecord> record) {
+    // process instead of rejecting at the gate: validateSuspensionState rejects it, but only after
+    // the authorization check, so unauthorized callers can't observe the suspension state
+    return SuspensionAction.PROCESS;
+  }
+
+  @Override
   public SuspensionAction onSuspended(final TypedRecord<ProcessInstanceRecord> record) {
     return SuspensionAction.PROCESS;
   }
@@ -104,9 +116,7 @@ public final class ProcessInstanceResumeProcessor
 
   private Either<Rejection, ElementInstance> validateNotFound(
       final TypedRecord<ProcessInstanceRecord> command, final ElementInstance elementInstance) {
-    if (elementInstance == null
-        || elementInstance.getParentKey() > 0
-        || elementInstance.isTerminating()) {
+    if (elementInstance == null || elementInstance.getParentKey() > 0) {
       return Either.left(
           new Rejection(
               RejectionType.NOT_FOUND, PROCESS_NOT_FOUND_MESSAGE.formatted(command.getKey())));
@@ -139,10 +149,27 @@ public final class ProcessInstanceResumeProcessor
         .map(ignored -> elementInstance);
   }
 
+  private Either<Rejection, ElementInstance> validateNotTerminating(
+      final TypedRecord<ProcessInstanceRecord> command, final ElementInstance elementInstance) {
+    if (elementInstance.isTerminating()) {
+      return Either.left(
+          new Rejection(
+              RejectionType.INVALID_STATE,
+              PROCESS_TERMINATING_MESSAGE.formatted(command.getKey())));
+    }
+    return Either.right(elementInstance);
+  }
+
   private Either<Rejection, ElementInstance> validateSuspensionState(
       final TypedRecord<ProcessInstanceRecord> command, final ElementInstance elementInstance) {
-    final var marker = suspensionState.getSuspensionState(command.getKey());
-    if (marker != SuspensionState.State.SUSPENDED && marker != SuspensionState.State.RESUMING) {
+    final var currentSuspensionState = suspensionState.getSuspensionState(command.getKey());
+    if (currentSuspensionState == SuspensionState.State.SUSPENDING) {
+      return Either.left(
+          new Rejection(
+              RejectionType.INVALID_STATE, PROCESS_SUSPENDING_MESSAGE.formatted(command.getKey())));
+    }
+    if (currentSuspensionState != SuspensionState.State.SUSPENDED
+        && currentSuspensionState != SuspensionState.State.RESUMING) {
       return Either.left(
           new Rejection(
               RejectionType.INVALID_STATE,
@@ -182,9 +209,7 @@ public final class ProcessInstanceResumeProcessor
     // buffer spans several command batches, and RESUMED is written only once it is empty
     responseWriter.writeAcceptedResponseOnCommand(
         command.getKey(), ProcessInstanceIntent.RESUMING, value, command);
-    if (!isRestart) {
-      suspensionMetrics.startResumeDuration(command.getKey());
-    }
+    suspensionMetrics.startResumeDuration(command.getKey());
   }
 
   /**

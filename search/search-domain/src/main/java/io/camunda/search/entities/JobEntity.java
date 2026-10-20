@@ -36,16 +36,19 @@ public record JobEntity(
     Map<String, String> customHeaders,
     @Nullable OffsetDateTime deadline,
     @Nullable OffsetDateTime endTime,
-    String processDefinitionId,
-    Long processDefinitionKey,
+    // absent on job documents imported by Operate 8.7 and earlier.
+    @Nullable String processDefinitionId,
+    @Nullable Long processDefinitionKey,
     Long processInstanceKey,
     @Nullable Long rootProcessInstanceKey,
     @Nullable String businessId,
-    String elementId,
+    // absent on jobs created before the 8.6 upgrade whose first imported event was a failure.
+    @Nullable String elementId,
     Long elementInstanceKey,
     String tenantId,
-    OffsetDateTime creationTime,
-    OffsetDateTime lastUpdateTime)
+    // absent on job documents written before 8.9.
+    @Nullable OffsetDateTime creationTime,
+    @Nullable OffsetDateTime lastUpdateTime)
     implements TenantOwnedEntity {
 
   public JobEntity {
@@ -57,14 +60,9 @@ public record JobEntity(
     requireNonNull(listenerEventType, "listenerEventType");
     requireNonNull(retries, "retries");
     requireNonNull(hasFailedWithRetriesLeft, "hasFailedWithRetriesLeft");
-    requireNonNull(processDefinitionId, "processDefinitionId");
-    requireNonNull(processDefinitionKey, "processDefinitionKey");
     requireNonNull(processInstanceKey, "processInstanceKey");
-    requireNonNull(elementId, "elementId");
     requireNonNull(elementInstanceKey, "elementInstanceKey");
     requireNonNull(tenantId, "tenantId");
-    requireNonNull(creationTime, "creationTime");
-    requireNonNull(lastUpdateTime, "lastUpdateTime");
     // Mutable collections are required: MyBatis hydrates collection-mapped fields (e.g. from a
     // <collection> result map or a LEFT JOIN) by calling .add() on the existing instance.
     // Immutable defaults (e.g. Map.of()) would cause UnsupportedOperationException at runtime.

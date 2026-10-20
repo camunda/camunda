@@ -26,6 +26,7 @@ import {tracking} from 'modules/tracking';
 import {handleOperationError} from 'modules/utils/notifications';
 import {
   useBatchOperationMutationRequestBody,
+  useCancelProcessInstancesBatchOperationMutationRequestBody,
   useDeleteProcessInstancesBatchOperationMutationRequestBody,
   useResumeProcessInstancesBatchOperationMutationRequestBody,
   useSuspendProcessInstancesBatchOperationMutationRequestBody,
@@ -91,6 +92,11 @@ const Toolbar: React.FC<Props> = observer(
       processInstancesSelectionStore.hasSelectedSuspendedInstances,
       hasSuspendedFilter,
     );
+    const hasSelectedCancelableInstances = hasSelectedState(
+      processInstancesSelectionStore.hasSelectedRunningInstances ||
+        processInstancesSelectionStore.hasSelectedSuspendedInstances,
+      hasActiveFilter || hasSuspendedFilter,
+    );
     const hasSelectedFinishedInstances = hasSelectedState(
       processInstancesSelectionStore.hasSelectedFinishedInstances,
       hasFinishedFilter,
@@ -106,6 +112,9 @@ const Toolbar: React.FC<Props> = observer(
 
     const batchOperationMutationRequestBody =
       useBatchOperationMutationRequestBody();
+
+    const cancelBatchOperationMutationRequestBody =
+      useCancelProcessInstancesBatchOperationMutationRequestBody();
 
     const deleteBatchOperationMutationRequestBody =
       useDeleteProcessInstancesBatchOperationMutationRequestBody();
@@ -192,7 +201,7 @@ const Toolbar: React.FC<Props> = observer(
       }
 
       if (modalMode === 'CANCEL_PROCESS_INSTANCE') {
-        cancelMutation.mutate(batchOperationMutationRequestBody);
+        cancelMutation.mutate(cancelBatchOperationMutationRequestBody);
       } else if (modalMode === 'DELETE_PROCESS_INSTANCE') {
         deleteMutation.mutate(deleteBatchOperationMutationRequestBody);
       } else if (modalMode === 'RESOLVE_INCIDENT') {
@@ -216,8 +225,9 @@ const Toolbar: React.FC<Props> = observer(
         return '';
       }
 
-      const runningInstancesCount =
-        processInstancesSelectionStore.checkedRunningIds.length;
+      const cancelableInstancesCount =
+        processInstancesSelectionStore.checkedRunningIds.length +
+        processInstancesSelectionStore.checkedSuspendedIds.length;
 
       const selectedInstancesText = isSelectedCountTruncated
         ? `${selectedInstancesCount}+ instances`
@@ -254,7 +264,7 @@ const Toolbar: React.FC<Props> = observer(
         messages.push(
           'Only suspended process instances will be resumed. Other selected instances will be ignored.',
         );
-      } else if (selectedInstancesCount > runningInstancesCount) {
+      } else if (selectedInstancesCount > cancelableInstancesCount) {
         messages.push('Finished instances in your selection will be ignored.');
       }
 
@@ -348,13 +358,13 @@ const Toolbar: React.FC<Props> = observer(
               onClick={() => setModalMode('CANCEL_PROCESS_INSTANCE')}
               disabled={
                 batchModificationStore.state.isEnabled ||
-                !hasSelectedRunningInstances
+                !hasSelectedCancelableInstances
               }
               title={
                 batchModificationStore.state.isEnabled
                   ? 'Not available in batch modification mode'
-                  : !hasSelectedRunningInstances
-                    ? 'No running process instances selected. Select at least one active or incident process instance to cancel.'
+                  : !hasSelectedCancelableInstances
+                    ? 'No running process instances selected. Select at least one active, incident or suspended process instance to cancel.'
                     : undefined
               }
               data-testid="cancel-batch-operation"

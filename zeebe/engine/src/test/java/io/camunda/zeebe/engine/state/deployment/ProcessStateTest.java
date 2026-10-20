@@ -26,7 +26,7 @@ import io.camunda.zeebe.engine.state.immutable.ProcessState.PersistedProcessVisi
 import io.camunda.zeebe.engine.state.immutable.ProcessState.ProcessIdentifier;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
-import io.camunda.zeebe.engine.util.ProcessingStateRule;
+import io.camunda.zeebe.engine.util.ProcessingStateExtension;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.protocol.Protocol;
@@ -39,23 +39,23 @@ import java.time.InstantSource;
 import java.util.function.LongConsumer;
 import org.agrona.io.DirectBufferInputStream;
 import org.assertj.core.api.Assertions;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
+@ExtendWith(ProcessingStateExtension.class)
 public final class ProcessStateTest {
 
   private static final Long FIRST_PROCESS_KEY =
       Protocol.encodePartitionId(Protocol.DEPLOYMENT_PARTITION, 1);
   private static final String TENANT_ID = "defaultTenant";
-  @Rule public final ProcessingStateRule stateRule = new ProcessingStateRule();
-
   private MutableProcessState processState;
   private MutableProcessingState processingState;
 
-  @Before
+  @BeforeEach
   public void setUp() {
-    processingState = stateRule.getProcessingState();
     processState = processingState.getProcessState();
   }
 
@@ -994,6 +994,47 @@ public final class ProcessStateTest {
 
     // then
     assertThat(latestActive).isNull();
+  }
+
+  @ParameterizedTest
+  @EnumSource(
+      value = PersistedProcessState.class,
+      names = {"DRAINING", "PENDING_DELETION"})
+  public void shouldKeepUpdatedStateWhenReloadingByVersionAfterCacheMiss(
+      final PersistedProcessState state) {
+    // given
+    final var processRecord = creatingProcessRecord(processingState);
+    processState.putProcess(processRecord.getKey(), processRecord);
+    processState.updateProcessState(processRecord, state);
+
+    // when - the cached definition is gone, e.g. reclaimed by the GC
+    processState.clearCache();
+    final var byVersion =
+        processState.getProcessByProcessIdAndVersion(
+            wrapString("processId"), processRecord.getVersion(), TENANT_ID);
+
+    // then - the version lookup also refills the key cache, which must not regress either
+    final var byKey = processState.getProcessByKeyAndTenant(processRecord.getKey(), TENANT_ID);
+    assertThat(byVersion.getState()).isEqualTo(state);
+    assertThat(byKey.getState()).isEqualTo(state);
+  }
+
+  @Test
+  public void shouldNotResolveDrainingLatestAsLatestActiveAfterCacheMiss() {
+    // given
+    final var v1 = creatingProcessRecord(processingState, "processId", 1);
+    final var v2 = creatingProcessRecord(processingState, "processId", 2);
+    processState.putProcess(v1.getKey(), v1);
+    processState.putProcess(v2.getKey(), v2);
+    processState.markDraining(v2);
+
+    // when - the cached definitions are gone, e.g. reclaimed by the GC
+    processState.clearCache();
+    final var latestActive =
+        processState.getLatestActiveProcessVersionByProcessId(wrapString("processId"), TENANT_ID);
+
+    // then
+    assertThat(latestActive.getKey()).isEqualTo(v1.getKey());
   }
 
   @Test

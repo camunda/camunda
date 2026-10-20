@@ -12,17 +12,22 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import io.camunda.security.api.context.MembershipResolutionContextPropagator;
 import io.camunda.security.api.context.OidcClaimsProvider;
 import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.core.authz.LazyTokenClaimsConverter;
+import io.camunda.security.core.port.out.MembershipPort;
 import io.camunda.security.spring.CamundaSecurityLibraryProperties;
 import io.camunda.security.spring.converter.TokenClaimsConvertersByIssuer;
+import io.camunda.security.spring.oidc.ScopedOidcClaimsProviderFactory;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.core.env.Environment;
+import org.springframework.mock.env.MockEnvironment;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 
@@ -46,12 +51,27 @@ class OidcOverrideBeansConfigurationTokenConverterWiringTest {
   private final OidcOverrideBeansConfiguration configuration =
       new OidcOverrideBeansConfiguration(new CamundaSecurityLibraryProperties());
 
+  // No physical tenants are configured in these tests (empty environment), so the per-tenant map is
+  // empty and the bean returns the plain default converter — exercising the #61920 per-issuer
+  // wiring
+  // exactly as before. The physical-tenant collaborators below are therefore never invoked here.
+  private final MembershipPort membershipPort = mock(MembershipPort.class);
+  private final ScopedOidcClaimsProviderFactory scopedOidcClaimsProviderFactory =
+      mock(ScopedOidcClaimsProviderFactory.class);
+  private final Environment environment = new MockEnvironment();
+
   @Test
   void shouldUseIssuerSpecificConverterWhenTheProviderIsWired() {
     // given a per-issuer map wired for the additional provider's issuer
     final var converter =
         configuration.oidcTokenAuthenticationConverter(
-            defaultConverter, claimsProvider, converterMapProvider(ENTRA_ISSUER, entraConverter));
+            defaultConverter,
+            claimsProvider,
+            converterMapProvider(ENTRA_ISSUER, entraConverter),
+            membershipPort,
+            MembershipResolutionContextPropagator.identity(),
+            scopedOidcClaimsProviderFactory,
+            environment);
     final var jwt = jwtWithIssuer(ENTRA_ISSUER);
     when(claimsProvider.claimsFor(jwt.getClaims(), jwt.getTokenValue()))
         .thenReturn(jwt.getClaims());
@@ -75,8 +95,11 @@ class OidcOverrideBeansConfigurationTokenConverterWiringTest {
         configuration.oidcTokenAuthenticationConverter(
             defaultConverter,
             claimsProvider,
-            converterMapProvider(
-                Map.of(ENTRA_ISSUER, entraConverter, auth0Issuer, auth0Converter)));
+            converterMapProvider(Map.of(ENTRA_ISSUER, entraConverter, auth0Issuer, auth0Converter)),
+            membershipPort,
+            MembershipResolutionContextPropagator.identity(),
+            scopedOidcClaimsProviderFactory,
+            environment);
 
     final var entraJwt = jwtWithIssuer(ENTRA_ISSUER);
     when(claimsProvider.claimsFor(entraJwt.getClaims(), entraJwt.getTokenValue()))
@@ -104,7 +127,13 @@ class OidcOverrideBeansConfigurationTokenConverterWiringTest {
     // given a per-issuer map that does not cover the token's issuer
     final var converter =
         configuration.oidcTokenAuthenticationConverter(
-            defaultConverter, claimsProvider, converterMapProvider(ENTRA_ISSUER, entraConverter));
+            defaultConverter,
+            claimsProvider,
+            converterMapProvider(ENTRA_ISSUER, entraConverter),
+            membershipPort,
+            MembershipResolutionContextPropagator.identity(),
+            scopedOidcClaimsProviderFactory,
+            environment);
     final var jwt = jwtWithIssuer("https://auth0.example.com");
     when(claimsProvider.claimsFor(jwt.getClaims(), jwt.getTokenValue()))
         .thenReturn(jwt.getClaims());
@@ -125,7 +154,13 @@ class OidcOverrideBeansConfigurationTokenConverterWiringTest {
     // this class's own two-argument constructor call before this fix
     final var converter =
         configuration.oidcTokenAuthenticationConverter(
-            defaultConverter, claimsProvider, emptyConverterMapProvider());
+            defaultConverter,
+            claimsProvider,
+            emptyConverterMapProvider(),
+            membershipPort,
+            MembershipResolutionContextPropagator.identity(),
+            scopedOidcClaimsProviderFactory,
+            environment);
     final var jwt = jwtWithIssuer(ENTRA_ISSUER);
     when(claimsProvider.claimsFor(jwt.getClaims(), jwt.getTokenValue()))
         .thenReturn(jwt.getClaims());

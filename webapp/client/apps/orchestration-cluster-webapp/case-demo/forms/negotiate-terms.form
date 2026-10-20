@@ -1,0 +1,58 @@
+{
+  "executionPlatform": "Camunda Cloud",
+  "executionPlatformVersion": "8.11.0",
+  "exporter": {
+    "name": "Camunda Modeler",
+    "version": "5.40.0"
+  },
+  "schemaVersion": 18,
+  "id": "negotiate-terms",
+  "type": "default",
+  "components": [
+    {
+      "type": "text",
+      "text": "### Negotiate the terms",
+      "id": "Text_419"
+    },
+    {
+      "type": "textfield",
+      "key": "supplierName",
+      "label": "Supplier",
+      "id": "Field_supplierName_420",
+      "readonly": true
+    },
+    {
+      "type": "select",
+      "key": "paymentTerms",
+      "label": "Payment terms",
+      "id": "Field_paymentTerms_421",
+      "validate": {
+        "required": true
+      },
+      "values": [
+        {
+          "value": "net-30",
+          "label": "30 days"
+        },
+        {
+          "value": "net-60",
+          "label": "60 days"
+        },
+        {
+          "value": "net-90",
+          "label": "90 days"
+        }
+      ]
+    },
+    {
+      "type": "number",
+      "key": "discountPercent",
+      "label": "Volume discount (%)",
+      "id": "Field_discountPercent_422",
+      "validate": {
+        "min": 0,
+        "max": 100
+      }
+    }
+  ]
+}

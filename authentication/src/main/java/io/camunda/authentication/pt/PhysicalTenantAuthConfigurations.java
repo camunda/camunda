@@ -160,7 +160,7 @@ public final class PhysicalTenantAuthConfigurations {
 
     // method is cluster-wide, not per-tenant.
     config.setMethod(rootMethod != null ? rootMethod : AuthenticationMethod.BASIC);
-    mergeRootProviders(binder, ptPrefix, rootProviders, config);
+    mergeRootProviders(environment, binder, ptPrefix, rootProviders, config);
     narrowToAssigned(binder, ptPrefix, config);
     return config;
   }
@@ -173,9 +173,10 @@ public final class PhysicalTenantAuthConfigurations {
    *
    * <ul>
    *   <li>the reserved id {@value #DEFAULT_SLOT_ASSIGNED_ID} keeps the unnamed default slot ({@code
-   *       authentication.oidc.*}); when it is absent from {@code assigned} the slot is reset to a
-   *       content-less instance, which CSL's {@code flatten} ignores (so the inherited cluster
-   *       provider is not turned into a chain for this tenant);
+   *       authentication.oidc.*}); when it is absent from {@code assigned} the slot loses its
+   *       provider fields and keeps only the tenant-wide settings (see {@link #withoutProvider}),
+   *       so CSL's {@code flatten} ignores it and the inherited cluster provider is not turned into
+   *       a chain for this tenant;
    *   <li>every other entry keeps the like-named {@code providers.oidc.<name>}; named providers not
    *       listed are removed.
    * </ul>
@@ -208,10 +209,9 @@ public final class PhysicalTenantAuthConfigurations {
       }
     }
 
-    // Default slot: drop unless explicitly assigned by its reserved id. setOidc never stores null
-    // (it coerces to an empty instance), so a fresh OidcConfiguration is the canonical "no slot".
+    // Default slot: drop its provider unless explicitly assigned by its reserved id.
     if (!assignedIds.contains(DEFAULT_SLOT_ASSIGNED_ID)) {
-      config.setOidc(new OidcConfiguration());
+      config.setOidc(withoutProvider(config.getOidc()));
     }
 
     // Named providers: keep only the assigned ids.
@@ -222,12 +222,33 @@ public final class PhysicalTenantAuthConfigurations {
   }
 
   /**
+   * The default slot without its provider fields. {@code groups-claim} (the tenant's groups mode),
+   * {@code user-info-augmentation} and the principal claims also apply to the tenant's named
+   * providers, so they are kept; without a {@code client-id} CSL's {@code flatten} does not treat
+   * the slot as a provider.
+   *
+   * <p>Keep this equal to {@code
+   * PhysicalTenantAuthenticationProviderConfigurations#withoutProvider} in the configuration
+   * module, so gRPC and REST read the same claims for a tenant.
+   */
+  private static OidcConfiguration withoutProvider(final OidcConfiguration defaultSlot) {
+    final OidcConfiguration tenantSettings = new OidcConfiguration();
+    tenantSettings.setGroupsClaim(defaultSlot.getGroupsClaim());
+    tenantSettings.setUserInfoAugmentation(defaultSlot.getUserInfoAugmentation());
+    tenantSettings.setUsernameClaim(defaultSlot.getUsernameClaim());
+    tenantSettings.setClientIdClaim(defaultSlot.getClientIdClaim());
+    tenantSettings.setPreferUsernameClaim(defaultSlot.isPreferUsernameClaim());
+    return tenantSettings;
+  }
+
+  /**
    * Sets the tenant's OIDC providers to the union of the cluster (root) providers and the
    * per-tenant overlay: every root provider is present with the overlay's fields for that id
    * applied on top, and providers defined only in the overlay are kept. {@code rootProviders} is
    * the snapshot of the root providers taken before the overlay was bound onto {@code config}.
    */
   private static void mergeRootProviders(
+      final Environment environment,
       final Binder binder,
       final String ptPrefix,
       final Map<String, OidcConfiguration> rootProviders,
@@ -241,7 +262,9 @@ public final class PhysicalTenantAuthConfigurations {
     }
     rootProviders.forEach(
         (id, rootProvider) -> {
-          binder.bind(ptPrefix + ".providers.oidc." + id, Bindable.ofInstance(rootProvider));
+          PhysicalTenantConfigUtil.mapEntryNames(
+                  environment, ptPrefix + ".providers.oidc", id, ROOT_PREFIX + ".providers.oidc")
+              .forEach(name -> binder.bind(name, Bindable.ofInstance(rootProvider)));
           union.put(id, rootProvider);
         });
     // getProviders() is null only when neither root nor overlay declared any providers, in which

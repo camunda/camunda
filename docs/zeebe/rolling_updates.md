@@ -53,8 +53,24 @@ All changes we make should fall into one of two categories:
 1. Adding new commands and events, typically to implement new features.
 2. Changing command behavior to produce different sequence of events, typically to fix bugs or extend features.
 
-When adding new commands or events, we break compatibility with older brokers because they cannot process or replay them.
-This is a transient state during rolling updates and resolves itself once the old broker is updated.
+When adding a new record, command or event, we break compatibility with older brokers that have to handle it.
+The same applies to new versions of existing events.
+Replay only applies events, so an old-version follower fails when it must replay an event or event version it does not know.
+Its stream processor then becomes unhealthy until the broker is upgraded.
+Commands and rejections are skipped during replay without decoding their intent or value, so a new command that completes using only events and event versions the old broker supports does not affect old followers.
+Raft replication keeps working in the meantime, and the follower recovers once it runs the new version.
+For followers, this is a transient state during rolling updates and resolves itself once the old broker is updated.
+See https://github.com/camunda/camunda/issues/30727 for an example of this.
+
+There is one edge case: if leadership moves back to a not-yet-upgraded broker, that partition can stall until this broker is upgraded.
+The returning leader first replays the log after its snapshot and then resumes processing after the last processed source position.
+It therefore stalls when it must replay an event or event version it does not support, or process a command it does not support that is still pending.
+A new record that was written and fully completed using only supported events does not stall it.
+
+This also applies to startup tasks that write a new record, such as `IdentitySetupInitializer` or `RpaReexportMigrator`.
+They write the record as soon as a new-version leader starts, so such tasks should be treated like any other new record.
+
+This risk is accepted: it is not a reason to avoid adding a new record when an implementation needs one.
 
 When changing command behavior, older brokers can simply continue replaying the new sequence of events produced.
 When the old broker is processing, it will continue to produce the old sequence of events and new brokers will have to replay it.

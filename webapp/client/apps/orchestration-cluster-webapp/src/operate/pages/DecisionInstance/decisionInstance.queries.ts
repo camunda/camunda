@@ -26,18 +26,24 @@ function decisionInstanceQuery(decisionEvaluationInstanceKey: string) {
 	});
 }
 
+function getDecisionInstanceErrorKind(error: unknown): 'forbidden' | 'notFound' | 'generic' {
+	if (error instanceof ForbiddenError) {
+		return 'forbidden';
+	}
+	const requestError = requestErrorSchema.safeParse(error);
+	return requestError.success && requestError.data.response?.status === 404 ? 'notFound' : 'generic';
+}
+
 function useDecisionInstance(decisionEvaluationInstanceKey: string) {
 	const query = useQuery(decisionInstanceQuery(decisionEvaluationInstanceKey));
-	const requestError = requestErrorSchema.safeParse(query.error);
-	const isUnauthorized = query.error instanceof ForbiddenError;
-	const isNotFound = requestError.success && requestError.data.response?.status === 404;
+	const errorKind = query.isError ? getDecisionInstanceErrorKind(query.error) : null;
 
 	return {
 		query,
-		isUnauthorized,
-		isNotFound,
-		isGenericError: query.isError && !isUnauthorized && !isNotFound,
+		isUnauthorized: errorKind === 'forbidden',
+		isNotFound: errorKind === 'notFound',
+		isGenericError: errorKind === 'generic',
 	};
 }
 
-export {decisionInstanceQuery, useDecisionInstance};
+export {decisionInstanceQuery, getDecisionInstanceErrorKind, useDecisionInstance};

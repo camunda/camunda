@@ -44,6 +44,7 @@ import io.atomix.raft.zeebe.ZeebeLogAppender;
 import io.atomix.utils.concurrent.SingleThreadContext;
 import io.atomix.utils.concurrent.ThreadContext;
 import io.camunda.zeebe.journal.CorruptedJournalException;
+import io.camunda.zeebe.test.util.junit.SlowTest;
 import io.camunda.zeebe.util.health.FailureListener;
 import io.camunda.zeebe.util.health.HealthReport;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -77,12 +78,14 @@ import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.rules.TemporaryFolder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /** Raft test. */
+@Category(SlowTest.class)
 public class RaftTest extends ConcurrentTestCase {
   private static final Logger LOGGER = LoggerFactory.getLogger(RaftTest.class);
 

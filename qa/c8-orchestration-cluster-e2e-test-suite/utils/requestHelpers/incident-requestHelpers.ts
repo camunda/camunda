@@ -15,6 +15,27 @@ import {createInstances, createSingleInstance} from '../zeebeClient';
 
 const INCIDENT_SEARCH_ENDPOINT = '/incidents/search';
 
+/**
+ * Asserts no *open* incident: a resolved one stays searchable forever, so a
+ * test that raises and resolves one on purpose could never assert health.
+ * searchIncidentByPIK cannot express this — it waits for presence.
+ */
+export async function expectNoIncidents(
+  request: APIRequestContext,
+  processInstanceKey: string,
+  assertionOptions = defaultAssertionOptions,
+): Promise<void> {
+  // Retried: an incident resolved moments earlier can still read as ACTIVE.
+  await expect(async () => {
+    const res = await request.post(buildUrl(INCIDENT_SEARCH_ENDPOINT), {
+      headers: jsonHeaders(),
+      data: {filter: {processInstanceKey, state: 'ACTIVE'}},
+    });
+    await assertStatusCode(res, 200);
+    expect((await res.json()).items ?? []).toHaveLength(0);
+  }).toPass(assertionOptions);
+}
+
 export async function searchIncidentByPIK(
   request: APIRequestContext,
   {processInstanceKey}: {processInstanceKey: string},

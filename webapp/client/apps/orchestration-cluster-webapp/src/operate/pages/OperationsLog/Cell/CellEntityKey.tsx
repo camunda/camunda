@@ -19,6 +19,8 @@ type Props = {
 };
 
 const ProcessInstanceLink = createLink<React.FC<React.ComponentProps<'a'>>>(Link);
+const BatchOperationLink = createLink<React.FC<React.ComponentProps<'a'>>>(Link);
+const DecisionInstanceLink = createLink<React.FC<React.ComponentProps<'a'>>>(Link);
 
 const CellEntityKey: React.FC<Props> = ({item, processDefinitionName, decisionDefinitionName}) => {
 	const {t} = useTranslation();
@@ -45,6 +47,24 @@ const CellEntityKey: React.FC<Props> = ({item, processDefinitionName, decisionDe
 					>
 						{label}
 					</ProcessInstanceLink>
+				) : item.entityType === 'BATCH' ? (
+					<BatchOperationLink
+						to="/operate/batch-operations/$batchOperationKey"
+						params={{batchOperationKey: String(item.batchOperationKey)}}
+						title={linkLabel}
+						aria-label={linkLabel}
+					>
+						{label}
+					</BatchOperationLink>
+				) : item.entityType === 'DECISION' && item.operationType === 'EVALUATE' ? (
+					<DecisionInstanceLink
+						to="/operate/decisions/$decisionInstanceId"
+						params={{decisionInstanceId: item.entityKey}}
+						title={linkLabel}
+						aria-label={linkLabel}
+					>
+						{label}
+					</DecisionInstanceLink>
 				) : link ? (
 					<Link href={link} title={linkLabel} aria-label={linkLabel}>
 						{label}

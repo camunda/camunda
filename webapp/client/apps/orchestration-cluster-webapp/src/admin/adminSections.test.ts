@@ -7,7 +7,16 @@
  */
 
 import {describe, expect, it} from 'vitest';
-import {isAdminSectionAvailable, type AdminSectionConfig} from './adminSections';
+import {ADMIN_NAV_ITEMS} from '#/shared/header/useSidebarNavigation.shadcn';
+import {getAdminLandingSection, isAdminSectionAvailable, type AdminSectionConfig} from './adminSections';
+
+const ALL_CONFIGS: AdminSectionConfig[] = [false, true].flatMap((isOidc) =>
+	[false, true].flatMap((isSaas) =>
+		[false, true].flatMap((isTenantsApiEnabled) =>
+			[false, true].map((isCamundaGroupsEnabled) => ({isOidc, isSaas, isTenantsApiEnabled, isCamundaGroupsEnabled})),
+		),
+	),
+);
 
 const SELF_MANAGED: AdminSectionConfig = {
 	isOidc: false,
@@ -50,4 +59,40 @@ describe('admin section availability', () => {
 		expect(isAdminSectionAvailable('roles', saasWithOidc)).toBe(true);
 		expect(isAdminSectionAvailable('operations-log', saasWithOidc)).toBe(true);
 	});
+});
+
+describe('admin landing section', () => {
+	it('should land on users while Camunda owns them', () => {
+		expect(getAdminLandingSection(SELF_MANAGED)).toBe('users');
+	});
+
+	it('should land on mapping rules when users are delegated to an IdP', () => {
+		expect(getAdminLandingSection({...SELF_MANAGED, isOidc: true})).toBe('mapping-rules');
+	});
+
+	it('should land on groups when neither users nor mapping rules are offered', () => {
+		expect(getAdminLandingSection({...SELF_MANAGED, isOidc: true, isSaas: true, isCamundaGroupsEnabled: true})).toBe(
+			'groups',
+		);
+	});
+
+	it('should fall back to roles when no earlier section is offered', () => {
+		expect(getAdminLandingSection({...SELF_MANAGED, isOidc: true, isSaas: true})).toBe('roles');
+	});
+
+	it.for(ALL_CONFIGS.map((config) => [JSON.stringify(config), config] as const))(
+		'should land on the first sidebar entry that is offered in %s',
+		([, config]) => {
+			const firstOffered = ADMIN_NAV_ITEMS.find(({key}) => isAdminSectionAvailable(key, config));
+
+			expect(getAdminLandingSection(config)).toBe(firstOffered?.key);
+		},
+	);
+
+	it.for(ALL_CONFIGS.map((config) => [JSON.stringify(config), config] as const))(
+		'should always offer roles in %s, as the landing fallback relies on it',
+		([, config]) => {
+			expect(isAdminSectionAvailable('roles', config)).toBe(true);
+		},
+	);
 });

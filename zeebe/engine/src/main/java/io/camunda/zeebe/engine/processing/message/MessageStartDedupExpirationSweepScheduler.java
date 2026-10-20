@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.processing.message;
 import io.camunda.zeebe.engine.state.immutable.MessageStartProcessInstanceDedupState;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageStartProcessInstanceRequestRecord;
 import io.camunda.zeebe.protocol.record.intent.MessageStartProcessInstanceRequestIntent;
+import io.camunda.zeebe.protocol.record.value.StorageOrdinalRelated;
 import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.stream.api.scheduling.ProcessingScheduleService;
@@ -55,7 +56,8 @@ public final class MessageStartDedupExpirationSweepScheduler
     if (dedupState.hasExpiredEntry(clock.millis())) {
       taskResultBuilder.appendCommandRecord(
           MessageStartProcessInstanceRequestIntent.SWEEP_EXPIRED_DEDUPS,
-          new MessageStartProcessInstanceRequestRecord());
+          new MessageStartProcessInstanceRequestRecord()
+              .setStorageOrdinal(StorageOrdinalRelated.NOT_ORDINAL_CONTROLLED));
     }
     reschedule(executionInterval);
     return taskResultBuilder.build();

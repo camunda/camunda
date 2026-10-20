@@ -19,10 +19,15 @@ const config: KnipConfig = {
 		// TODO(#55735): remove when consumer migration is complete
 		'src/operate/shared/utils/**',
 		'src/operate/shared/FiltersPanel/**',
-		'src/operate/shared/DeleteDefinition/**',
 		'src/operate/shared/StructuredList/**',
-		// TODO(#61095, #55987): remove when Process Instance header / Processes toolbar operations are migrated
-		'src/operate/components/DrainingTag/**',
+		// TODO(#63423, #63424): remove when InstancesByProcess/IncidentsByError consume ExpandableListRow
+		'src/operate/pages/Dashboard/shadcn.components/ExpandableList.tsx',
+		// TODO(#64456): remove when InstancesList/ProcessInstanceHeader/DecisionInstance
+		// consumers migrate to the shadcn Frame/InstanceHeader siblings
+		'src/operate/shared/Frame/shadcn.components/Frame.tsx',
+		'src/operate/shared/InstanceHeader/shadcn.components/InstanceHeader.tsx',
+		// prototype: a standalone Node script that seeds the case management demo
+		'case-demo/**',
 	],
 	ignoreDependencies: ['@vitest/browser'],
 	typescript: {

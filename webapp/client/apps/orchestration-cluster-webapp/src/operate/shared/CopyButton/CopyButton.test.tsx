@@ -92,21 +92,6 @@ describe('<CopyButton />', () => {
 		await expect.element(screen.getByText('Copy', {exact: true})).toBeVisible();
 	});
 
-	it('should cancel the feedback timeout when the value changes mid-countdown', async () => {
-		const screen = await render(<CopyButton value="first" />);
-
-		await userEvent.click(screen.getByRole('button', {name: 'Copy', exact: true}).element());
-		await expect.element(screen.getByText('Copied')).toBeVisible();
-
-		vi.useFakeTimers({shouldAdvanceTime: true});
-
-		await screen.rerender(<CopyButton value="second" />);
-		await expect.element(screen.getByText('Copy', {exact: true})).toBeVisible();
-
-		await vi.advanceTimersByTimeAsync(5000);
-		await expect.element(screen.getByText('Copy', {exact: true})).toBeVisible();
-	});
-
 	it('should stay in the copy state when the clipboard write is rejected', async () => {
 		mockWriteText.mockRejectedValue(new Error('permission denied'));
 

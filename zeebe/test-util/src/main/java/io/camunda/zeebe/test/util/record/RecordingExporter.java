@@ -26,6 +26,7 @@ import io.camunda.zeebe.protocol.record.intent.ConditionalEvaluationIntent;
 import io.camunda.zeebe.protocol.record.intent.ConditionalSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.DecisionEvaluationIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
+import io.camunda.zeebe.protocol.record.intent.ElementInstanceWalkIntent;
 import io.camunda.zeebe.protocol.record.intent.EscalationIntent;
 import io.camunda.zeebe.protocol.record.intent.GlobalListenerBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.GlobalListenerIntent;
@@ -86,6 +87,7 @@ import io.camunda.zeebe.protocol.record.value.ConditionalSubscriptionRecordValue
 import io.camunda.zeebe.protocol.record.value.DecisionEvaluationRecordValue;
 import io.camunda.zeebe.protocol.record.value.DeploymentDistributionRecordValue;
 import io.camunda.zeebe.protocol.record.value.DeploymentRecordValue;
+import io.camunda.zeebe.protocol.record.value.ElementInstanceWalkRecordValue;
 import io.camunda.zeebe.protocol.record.value.ErrorRecordValue;
 import io.camunda.zeebe.protocol.record.value.EscalationRecordValue;
 import io.camunda.zeebe.protocol.record.value.ExpressionRecordValue;
@@ -473,6 +475,16 @@ public final class RecordingExporter implements Exporter {
   public static ProcessInstanceBatchRecordStream processInstanceBatchRecords(
       final ProcessInstanceBatchIntent intent) {
     return processInstanceBatchRecords().withIntent(intent);
+  }
+
+  public static ElementInstanceWalkRecordStream elementInstanceWalkRecords() {
+    return new ElementInstanceWalkRecordStream(
+        records(ValueType.ELEMENT_INSTANCE_WALK, ElementInstanceWalkRecordValue.class));
+  }
+
+  public static ElementInstanceWalkRecordStream elementInstanceWalkRecords(
+      final ElementInstanceWalkIntent intent) {
+    return elementInstanceWalkRecords().withIntent(intent);
   }
 
   public static TimerRecordStream timerRecords() {

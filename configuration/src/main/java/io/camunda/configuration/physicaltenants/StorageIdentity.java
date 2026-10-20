@@ -8,10 +8,10 @@
 package io.camunda.configuration.physicaltenants;
 
 import io.camunda.configuration.Camunda;
-import io.camunda.configuration.Rdbms;
-import io.camunda.configuration.SecondaryStorage;
-import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
-import io.camunda.configuration.SecondaryStorageDatabase;
+import io.camunda.configuration.data.SecondaryStorage;
+import io.camunda.configuration.data.SecondaryStorage.SecondaryStorageType;
+import io.camunda.configuration.data.secondarystorage.Rdbms;
+import io.camunda.configuration.data.secondarystorage.SecondaryStorageDatabase;
 import java.util.List;
 import java.util.Locale;
 import org.jspecify.annotations.NullMarked;

@@ -7,9 +7,10 @@
  */
 
 import {z} from 'zod';
-import type {AuditLogSortField} from '@camunda/camunda-api-zod-schemas/8.11';
+import type {AuditLogSortField, QuerySortOrder} from '@camunda/camunda-api-zod-schemas/8.11';
+import {createSortSearchParamSchema} from '#/shared/sortSearchParam';
 
-const INITIAL_SORT_ORDER = 'desc';
+const INITIAL_SORT_ORDER = 'DESC';
 const DEFAULT_SORT_PARAMS = {
 	sortBy: 'timestamp',
 	sortOrder: INITIAL_SORT_ORDER,
@@ -21,28 +22,23 @@ const taskDetailsHistorySearchDefaults = {
 
 const sortSchema = z.object({
 	sortBy: z.enum(['timestamp', 'operationType', 'actorId']),
-	sortOrder: z.enum(['asc', 'desc']),
+	sortOrder: z.enum(['ASC', 'DESC']),
 });
 
 type TaskDetailsHistorySortParams = z.infer<typeof sortSchema>;
 type TaskDetailsHistorySortField = TaskDetailsHistorySortParams['sortBy'];
 
+const sortSearchParamSchema = createSortSearchParamSchema(sortSchema.shape.sortBy);
+
 const sortSearchValueCodec = z.codec(z.string(), sortSchema, {
 	decode: (sort, ctx) => {
-		const [sortBy, sortOrder, ...rest] = sort.split('+');
-
-		if (rest.length > 0) {
-			ctx.issues.push({code: 'custom', message: 'Invalid sort search value', input: sort});
-			return z.NEVER;
-		}
-
-		const result = sortSchema.safeParse({sortBy, sortOrder});
+		const result = sortSearchParamSchema.safeParse(sort);
 		if (!result.success) {
 			ctx.issues.push({code: 'custom', message: 'Invalid sort search value', input: sort});
 			return z.NEVER;
 		}
 
-		return result.data;
+		return {sortBy: result.data.field, sortOrder: result.data.order};
 	},
 	encode: ({sortBy, sortOrder}) => `${sortBy}+${sortOrder}`,
 });
@@ -62,7 +58,7 @@ const taskDetailsHistorySearchSchema = z.object({
 
 type TaskDetailsHistorySort = {
 	field: AuditLogSortField;
-	order: 'asc' | 'desc';
+	order: QuerySortOrder;
 };
 type TaskDetailsHistorySearch = z.infer<typeof taskDetailsHistorySearchSchema>;
 
@@ -80,8 +76,8 @@ function getAuditLogSort(search: TaskDetailsHistorySearch): TaskDetailsHistorySo
 	};
 }
 
-function getNextSortSearchValue(sortBy: TaskDetailsHistorySortField, currentSortOrder?: 'asc' | 'desc') {
-	return sortSearchValueCodec.encode({sortBy, sortOrder: currentSortOrder === 'asc' ? 'desc' : 'asc'});
+function getNextSortSearchValue(sortBy: TaskDetailsHistorySortField, currentSortOrder?: QuerySortOrder) {
+	return sortSearchValueCodec.encode({sortBy, sortOrder: currentSortOrder === 'ASC' ? 'DESC' : 'ASC'});
 }
 
 export {

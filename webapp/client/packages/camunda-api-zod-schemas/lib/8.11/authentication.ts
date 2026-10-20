@@ -6,29 +6,12 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {z} from 'zod';
 import {API_VERSION, type Endpoint} from './common';
+import {camundaUserResultSchema} from './gen/zod/camundaUserResultSchema';
+import type {CamundaUserResult} from './gen/types/CamundaUserResult';
 
-const currentUserSchema = z.object({
-	username: z.string(),
-	displayName: z.string(),
-	email: z.string(),
-	authorizedComponents: z.array(z.string()),
-	tenants: z.array(
-		z.object({
-			tenantId: z.string(),
-			name: z.string(),
-			description: z.string().nullable(),
-		}),
-	),
-	groups: z.array(z.string()),
-	roles: z.array(z.string()),
-	salesPlanType: z.string().nullable(),
-	c8Links: z.record(z.string(), z.string()),
-	canLogout: z.boolean(),
-});
-
-type CurrentUser = z.infer<typeof currentUserSchema>;
+const currentUserSchema = camundaUserResultSchema;
+type CurrentUser = CamundaUserResult;
 
 const getCurrentUser = {
 	method: 'GET',
@@ -36,4 +19,5 @@ const getCurrentUser = {
 } as const satisfies Endpoint;
 
 export {currentUserSchema, getCurrentUser};
+
 export type {CurrentUser};

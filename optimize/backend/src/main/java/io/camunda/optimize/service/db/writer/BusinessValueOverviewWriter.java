@@ -10,7 +10,11 @@ package io.camunda.optimize.service.db.writer;
 import io.camunda.optimize.dto.optimize.query.businessvalue.BusinessValueOverviewDto;
 import io.camunda.optimize.dto.optimize.query.businessvalue.BusinessValueOverviewDto.AutomationRateBlock;
 import io.camunda.optimize.dto.optimize.query.businessvalue.BusinessValueOverviewDto.CycleTimeBlock;
+import io.camunda.optimize.dto.optimize.query.businessvalue.BusinessValueOverviewDto.MetricRange;
 import io.camunda.optimize.service.db.repository.BusinessValueOverviewRepository;
+import io.camunda.optimize.service.exceptions.OptimizeBulkFailureException;
+import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
+import java.util.Arrays;
 import java.util.List;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -38,6 +42,54 @@ public class BusinessValueOverviewWriter {
     validateAll(rows);
     LOG.debug("Upserting [{}] business-value overview rows from target write", rows.size());
     repository.bulkUpsert(rows, true);
+  }
+
+  /**
+   * Removes every overview row of a process definition — one per {@link MetricRange}.
+   *
+   * <p>Rows are keyed on {@code (tenantId, processDefinitionKey, metricRange)} and carry no
+   * version, so this is only correct once the definition is gone for that tenant entirely. The ids
+   * are computed rather than searched for, so a definition with no rows costs no query and deleting
+   * rows that were never written is a no-op.
+   *
+   * <p>A blank tenant or key means there can be no rows to delete — neither can be written without
+   * both — so this returns rather than failing the caller.
+   */
+  public void deleteForDefinition(final String tenantId, final String processDefinitionKey) {
+    if (StringUtils.isBlank(tenantId) || StringUtils.isBlank(processDefinitionKey)) {
+      LOG.debug(
+          "Skipping business-value overview deletion for definition [{}] tenant [{}]: "
+              + "rows cannot exist without both",
+          processDefinitionKey,
+          tenantId);
+      return;
+    }
+    LOG.debug(
+        "Deleting business-value overview rows for definition [{}] tenant [{}]",
+        processDefinitionKey,
+        tenantId);
+    try {
+      repository.deleteByIds(
+          Arrays.stream(MetricRange.values())
+              .map(
+                  range ->
+                      BusinessValueOverviewRepository.documentId(
+                          tenantId, processDefinitionKey, range))
+              .toList());
+    } catch (final OptimizeRuntimeException e) {
+      // Logged here as well as rethrown: the caller retries, so a failure that later succeeds
+      // leaves no other trace that the cluster rejected the delete.
+      LOG.warn(
+          "Bulk delete of business-value overview rows for definition [{}] tenant [{}] failed",
+          processDefinitionKey,
+          tenantId,
+          e);
+      throw new OptimizeBulkFailureException(
+          String.format(
+              "Could not delete the business-value overview rows for definition [%s] tenant [%s].",
+              processDefinitionKey, tenantId),
+          e);
+    }
   }
 
   private void validateAll(final List<BusinessValueOverviewDto> rows) {

@@ -422,7 +422,8 @@ final class BrokerTopologyManagerTest {
                 Optional.of(new CompletedChange(1, Status.COMPLETED, Instant.now(), Instant.now())))
             .build();
 
-    topologyManager.onClusterConfigurationUpdated(clusterTopology);
+    topologyManager.onClusterConfigurationUpdated(
+        CurrentClusterConfiguration.fromLegacy(clusterTopology));
     actorSchedulerRule.workUntilDone();
 
     // then
@@ -462,7 +463,8 @@ final class BrokerTopologyManagerTest {
         ClusterConfiguration.init()
             .addMember(MemberId.from("1"), MemberState.initializeAsActive(Map.of()))
             .addMember(MemberId.from("2"), MemberState.initializeAsActive(Map.of()));
-    topologyManager.onClusterConfigurationUpdated(clusterTopologyWithTwoBrokers);
+    topologyManager.onClusterConfigurationUpdated(
+        CurrentClusterConfiguration.fromLegacy(clusterTopologyWithTwoBrokers));
     actorSchedulerRule.workUntilDone();
 
     // then
@@ -478,7 +480,8 @@ final class BrokerTopologyManagerTest {
         ClusterConfiguration.init()
             .addMember(MemberId.from("1"), MemberState.initializeAsActive(Map.of()))
             .addMember(MemberId.from("2"), MemberState.initializeAsActive(Map.of()));
-    topologyManager.onClusterConfigurationUpdated(clusterTopologyWithTwoBrokers);
+    topologyManager.onClusterConfigurationUpdated(
+        CurrentClusterConfiguration.fromLegacy(clusterTopologyWithTwoBrokers));
     actorSchedulerRule.workUntilDone();
 
     // when
@@ -514,7 +517,8 @@ final class BrokerTopologyManagerTest {
                         PartitionState.active(2, DynamicPartitionConfig.init()),
                         2,
                         PartitionState.active(1, DynamicPartitionConfig.init()))));
-    topologyManager.onClusterConfigurationUpdated(clusterTopologyWithTwoBrokers);
+    topologyManager.onClusterConfigurationUpdated(
+        CurrentClusterConfiguration.fromLegacy(clusterTopologyWithTwoBrokers));
     actorSchedulerRule.workUntilDone();
 
     // then
@@ -546,7 +550,8 @@ final class BrokerTopologyManagerTest {
                         PartitionState.active(2, DynamicPartitionConfig.init()),
                         2,
                         PartitionState.active(1, DynamicPartitionConfig.init()))));
-    topologyManager.onClusterConfigurationUpdated(clusterTopologyWithTwoBrokers);
+    topologyManager.onClusterConfigurationUpdated(
+        CurrentClusterConfiguration.fromLegacy(clusterTopologyWithTwoBrokers));
     actorSchedulerRule.workUntilDone();
 
     // when
@@ -762,7 +767,8 @@ final class BrokerTopologyManagerTest {
                         2,
                         PartitionState.active(2, DynamicPartitionConfig.init()))))
             .addMember(MemberId.from("2"), MemberState.initializeAsActive(Map.of()));
-    topologyManager.onClusterConfigurationUpdated(clusterTopologyWithTwoBrokers);
+    topologyManager.onClusterConfigurationUpdated(
+        CurrentClusterConfiguration.fromLegacy(clusterTopologyWithTwoBrokers));
     actorSchedulerRule.workUntilDone();
 
     // when -- a broker for the default group joins afterward

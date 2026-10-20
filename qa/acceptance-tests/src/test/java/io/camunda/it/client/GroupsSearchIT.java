@@ -7,6 +7,7 @@
  */
 package io.camunda.it.client;
 
+import static io.camunda.qa.util.multidb.CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
@@ -70,6 +71,7 @@ public class GroupsSearchIT {
 
   private static void assertGroupCreated(final String groupId, final String groupName) {
     Awaitility.await("Group is created and exported")
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptionsInstanceOf(ProblemException.class)
         .untilAsserted(
             () -> {

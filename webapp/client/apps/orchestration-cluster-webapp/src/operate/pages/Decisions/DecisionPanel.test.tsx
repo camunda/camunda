@@ -99,5 +99,6 @@ describe('<DecisionPanel />', () => {
 		await screen.getByRole('button', {name: 'Try again'}).click();
 
 		await expect.element(screen.getByTestId('decision-viewer')).toBeVisible();
+		await expect.element(screen.getByText('Invoice Amount')).toBeVisible();
 	});
 });

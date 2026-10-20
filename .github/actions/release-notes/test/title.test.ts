@@ -48,7 +48,7 @@ test('an over-length header fails', () => {
   assert.equal(d.code, 'title-length');
 });
 
-test('release-merge titles (D25) pass as merge type', () => {
+test('release-merge titles pass as merge type', () => {
   assert.equal(lintTitle('merge: release-8.8.0 back to stable/8.8').outcome, 'pass');
 });
 
@@ -66,7 +66,7 @@ test('a mention in a scope is neutralised too', () => {
   assert.ok(d.reasons.some((reason) => reason.includes('`(@channel)`')));
 });
 
-test('bot authors are title-exempt (D16), humans are not', () => {
+test('bot authors are title-exempt, humans are not', () => {
   assert.ok(isTitleExemptAuthor('renovate[bot]'));
   assert.ok(isTitleExemptAuthor('backport-action'));
   assert.ok(!isTitleExemptAuthor('szpraat'));

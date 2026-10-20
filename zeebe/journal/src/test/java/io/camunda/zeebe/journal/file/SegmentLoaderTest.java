@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.journal.file;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import io.camunda.zeebe.journal.util.PosixPathAssert;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
@@ -44,5 +46,27 @@ final class SegmentLoaderTest {
 
     // then
     PosixPathAssert.assertThat(segmentFile).hasRealSize(segmentSize);
+  }
+
+  @Test
+  void shouldDeleteNewSegmentWhileMapped(final @TempDir Path tmpDir) {
+    // given
+    final var segmentSize = 4 * 1024 * 1024;
+    final var descriptor =
+        SegmentDescriptor.builder().withId(1).withIndex(1).withMaxSegmentSize(segmentSize).build();
+    final var segmentLoader =
+        new SegmentLoader(
+            segmentSize * 2,
+            new JournalMetrics(meterRegistry),
+            SegmentAllocator.defaultAllocator());
+    final var segmentFile = tmpDir.resolve("segment.log");
+    final var segment =
+        segmentLoader.createSegment(segmentFile, descriptor, 0, new SparseJournalIndex(1));
+
+    // when
+    segment.delete();
+
+    // then
+    assertThat(tmpDir).isEmptyDirectory();
   }
 }

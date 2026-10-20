@@ -21,7 +21,7 @@ import io.camunda.zeebe.dynamic.config.changes.ModeChangeExecutor;
 import io.camunda.zeebe.dynamic.config.changes.PartitionChangeExecutor;
 import io.camunda.zeebe.dynamic.config.changes.PartitionScalingChangeExecutor;
 import io.camunda.zeebe.dynamic.config.changes.RestoreChangeExecutor;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.impl.ClusterConfigurationManagerServiceImpl;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.util.ConfigurationUtil;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
@@ -53,12 +53,6 @@ public class DynamicClusterConfigurationService
 
   public DynamicClusterConfigurationService(final ClusterChangeExecutor clusterChangeExecutor) {
     this.clusterChangeExecutor = clusterChangeExecutor;
-  }
-
-  @Override
-  public PartitionDistribution getPartitionDistribution(final String physicalTenantId) {
-    return partitionDistributionPerPhysicalTenant.getOrDefault(
-        physicalTenantId, new PartitionDistribution(Set.of()));
   }
 
   @Override
@@ -312,18 +306,13 @@ public class DynamicClusterConfigurationService
       final BrokerStartupContext brokerStartupContext) {
     final var rootDirectory =
         Path.of(brokerStartupContext.getBrokerConfiguration().getData().getDirectory());
-    return new ClusterConfigurationManagerService(
+    return new ClusterConfigurationManagerServiceImpl(
         rootDirectory,
         brokerStartupContext.getClusterServices().getCommunicationService(),
         brokerStartupContext.getClusterServices().getMembershipService(),
         brokerStartupContext.getBrokerConfiguration().getCluster().getConfigManager().gossip(),
         clusterChangeExecutor,
         brokerStartupContext.getMeterRegistry());
-  }
-
-  @Override
-  public void onClusterConfigurationUpdated(final ClusterConfiguration clusterConfiguration) {
-    // NOOP
   }
 
   @Override

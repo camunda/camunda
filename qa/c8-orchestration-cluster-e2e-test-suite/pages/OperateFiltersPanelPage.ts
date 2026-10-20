@@ -164,17 +164,19 @@ export class OperateFiltersPanelPage {
     if (await this.isOptionalFilterDisplayed(filterName)) {
       return;
     }
-    // The dropdown is a Radix menu that mounts its items asynchronously, so
-    // clicking the trigger and immediately clicking the item can race the
-    // menu's open animation under CI load. Wait for the trigger and then the
-    // item to actually be visible, mirroring TaskPanelPage.filterBy()'s
-    // handling of the equivalent Tasklist dropdown.
     await expect(this.moreFiltersButton).toBeVisible({timeout: 10000});
-    await this.moreFiltersButton.click();
     const menuItem = this.page.getByRole('menuitem', {
       name: filterName,
     });
-    await expect(menuItem).toBeVisible({timeout: 10000});
+    // The item exists only while the menu is open, so retry opening it rather
+    // than waiting longer. Checked before each click: clicking the trigger on
+    // an open menu closes it again.
+    await expect(async () => {
+      if (!(await menuItem.isVisible())) {
+        await this.moreFiltersButton.click();
+      }
+      await expect(menuItem).toBeVisible({timeout: 5000});
+    }).toPass({timeout: 30000});
     await menuItem.click();
   }
 
@@ -317,16 +319,19 @@ export class OperateFiltersPanelPage {
     await expect(this.processInstanceKeysFilter).toBeVisible();
     await expect(this.processInstanceKeysFilter).toBeEnabled();
     await this.processInstanceKeysFilter.click();
-    // Clear any existing content first: pressSequentially appends, so typing
-    // on a retry or a reused filter without clearing produces a doubled value
-    // (e.g. "45034503"). fill('') clears and fires the controlled input's
-    // onChange; pressSequentially then types char-by-char so the value sticks.
-    await this.processInstanceKeysFilter.fill('');
-    await this.processInstanceKeysFilter.pressSequentially(processInstanceKey);
-    await expect(this.processInstanceKeysFilter).toHaveValue(
-      processInstanceKey,
-      {timeout: 30000},
-    );
+    // Clear before each attempt: pressSequentially appends, so retyping over a
+    // partial value would double it. The retry is for the first keystroke,
+    // which the controlled input can drop before it has settled.
+    await expect(async () => {
+      await this.processInstanceKeysFilter.fill('');
+      await this.processInstanceKeysFilter.pressSequentially(
+        processInstanceKey,
+      );
+      await expect(this.processInstanceKeysFilter).toHaveValue(
+        processInstanceKey,
+        {timeout: 10000},
+      );
+    }).toPass({timeout: 60000});
   }
 
   async fillParentProcessInstanceKeyFilter(parentProcessInstanceKey: string) {
@@ -406,6 +411,21 @@ export class OperateFiltersPanelPage {
 
   async clickActiveInstancesCheckbox(): Promise<void> {
     await this.activeInstancesCheckbox.click();
+  }
+
+  /** Reads the URL rather than clicking blindly: a click on an already-checked
+   * box turns the filter off. */
+  async applySuspendedFilter(): Promise<void> {
+    // Retried until the URL carries it: a click issued while the Processes
+    // tab is still navigating is undone when that navigation lands.
+    await expect(async () => {
+      if (new URL(this.page.url()).searchParams.get('suspended') !== 'true') {
+        await this.clickSuspendedInstancesCheckbox();
+      }
+      expect(new URL(this.page.url()).searchParams.get('suspended')).toBe(
+        'true',
+      );
+    }).toPass({timeout: 30000});
   }
 
   async clickSuspendedInstancesCheckbox(): Promise<void> {

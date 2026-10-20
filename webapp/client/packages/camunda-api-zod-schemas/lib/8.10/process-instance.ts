@@ -276,8 +276,8 @@ const getProcessInstanceSequenceFlows = {
 const sequenceFlowSchema = z.object({
 	processInstanceKey: z.string(),
 	sequenceFlowId: z.string(),
-	processDefinitionKey: z.string(),
-	processDefinitionId: z.string(),
+	processDefinitionKey: z.string().nullable(),
+	processDefinitionId: z.string().nullable(),
 	elementId: z.string(),
 	tenantId: z.string(),
 });

@@ -10,6 +10,8 @@ package io.camunda.zeebe.protocol.impl.record.value.variable;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
+import io.camunda.zeebe.protocol.record.value.ProtectionMode;
+import java.util.List;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.Test;
 
@@ -130,6 +132,49 @@ final class VariableRecordTest {
     final String afterWrap = record.getValue();
     assertThat(afterWrap).isEqualTo(JSON_VALUE_2);
     assertThat(afterWrap).isNotSameAs(cachedValue);
+  }
+
+  @Test
+  void shouldNotProtectVariableByDefault() {
+    // given
+    final var record = new VariableRecord();
+
+    // then
+    assertThat(record.getMetadata().getProtectionModes()).isEmpty();
+  }
+
+  @Test
+  void shouldKeepMetadataWhenWrittenAndWrapped() {
+    // given
+    final var record =
+        createFullRecord(JSON_VALUE)
+            .setMetadata(
+                new VariableMetadataRecord().setProtectionModes(List.of(ProtectionMode.REDACT)));
+    final var buffer = new UnsafeBuffer(new byte[record.getLength()]);
+    record.write(buffer, 0);
+
+    // when
+    final var wrapped = new VariableRecord();
+    wrapped.wrap(buffer, 0, record.getLength());
+
+    // then
+    assertThat(wrapped.getMetadata().getProtectionModes()).containsExactly(ProtectionMode.REDACT);
+  }
+
+  @Test
+  void shouldCopyMetadata() {
+    // given
+    final var record =
+        createFullRecord(JSON_VALUE)
+            .setMetadata(
+                new VariableMetadataRecord().setProtectionModes(List.of(ProtectionMode.REDACT)));
+
+    // when
+    final var copy = new VariableRecord();
+    copy.copyFrom(record);
+
+    // then
+    assertThat(copy.getMetadata().getProtectionModes()).containsExactly(ProtectionMode.REDACT);
   }
 
   private VariableRecord createFullRecord(final String jsonValue) {

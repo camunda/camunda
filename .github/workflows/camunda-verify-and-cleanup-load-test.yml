@@ -23,8 +23,8 @@ jobs:
   verify:
     name: Verify
     permissions:
-      contents: 'read'
-      id-token: 'write'
+      contents: read
+      id-token: write # Teleport auth in called workflow
     uses: ./.github/workflows/camunda-verify-load-test.yml
     secrets: inherit
     with:
@@ -36,7 +36,7 @@ jobs:
     if: always()
     permissions:
       contents: read
-      id-token: write
+      id-token: write # Teleport auth in called workflow
     uses: ./.github/workflows/camunda-delete-load-test.yml
     secrets: inherit
     with:

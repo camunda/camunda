@@ -22,8 +22,10 @@ import io.camunda.zeebe.protocol.impl.record.value.message.MessageStartEventSubs
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageStartProcessInstanceRequestRecord;
 import io.camunda.zeebe.protocol.record.intent.MessageStartProcessInstanceRequestIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
+import io.camunda.zeebe.protocol.record.value.StorageOrdinalRelated;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import io.camunda.zeebe.util.collection.Tuple;
 import java.util.Collection;
 import java.util.function.Predicate;
 import org.agrona.DirectBuffer;
@@ -163,14 +165,18 @@ public final class MessageCorrelateBehavior {
 
           final var correlation = evaluateStartEventCorrelation(messageData, subscriptionRecord);
           if (correlation.isRight()) {
-            final var processInstanceKey =
+            final var startedInstance =
                 triggerOrDelegateStartEvent(messageData, subscription.getKey(), subscriptionRecord);
+            final var processInstanceKey = startedInstance.getLeft();
             if (processInstanceKey > 0) {
-              // Started locally on this partition — record it so the message is not correlated to
-              // the same process twice. A delegated cross-partition ask returns -1: its CORRELATED
-              // event is written by the STARTED reply processor only after P_B confirms the
-              // activation, so it must not be added here.
+              // Started locally on this partition - record it, together with the ordinal the
+              // instance was created with, so the message is not correlated to the same process
+              // twice and the CORRELATED response carries that ordinal. A delegated
+              // cross-partition ask returns -1: its CORRELATED event is written by the STARTED
+              // reply processor only after P_B confirms the activation, so it must not be added
+              // here.
               subscriptionRecord.setProcessInstanceKey(processInstanceKey);
+              subscriptionRecord.setStorageOrdinal(startedInstance.getRight());
               correlatingSubscriptions.add(subscriptionRecord);
             } else if (shouldDelegateToBusinessIdPartition(messageData)) {
               // triggerOrDelegateStartEvent returned -1: distinguish a genuine cross-partition
@@ -303,7 +309,8 @@ public final class MessageCorrelateBehavior {
                 messageData.variables(),
                 messageData.correlationKey(),
                 messageData.tenantId(),
-                subscription.subscriptionKey()));
+                subscription.subscriptionKey(),
+                subscription.storageOrdinal()));
   }
 
   /**
@@ -402,16 +409,17 @@ public final class MessageCorrelateBehavior {
    * Starts a single selected start-event subscription for the given message, applying the same
    * routing as a fresh publish: when the businessId hashes to another partition ({@code P_B !=
    * P_K}) the start is delegated to {@code P_B} via the cross-partition ask; otherwise the start
-   * event is triggered locally. Returns the new process-instance key when started locally, or
-   * {@code -1} when the start was delegated cross-partition (the {@code CORRELATED} event is then
-   * written by the STARTED reply processor on {@code P_K} once {@code P_B} confirms).
+   * event is triggered locally. Returns the new process-instance key and its storage ordinal when
+   * started locally, or {@code -1} (with {@link StorageOrdinalRelated#NOT_ORDINAL_CONTROLLED}) when
+   * the start was delegated cross-partition (the {@code CORRELATED} event is then written by the
+   * STARTED reply processor on {@code P_K} once {@code P_B} confirms).
    *
    * <p>This is shared by the live publish path ({@link #correlateToMessageStartEvents}) and the
    * buffered-message pick-up ({@code BpmnBufferedMessageStartEventBehavior}) so a buffered message
    * whose businessId belongs to {@code P_B} can never be started locally and bypass the
    * cross-partition uniqueness handshake.
    */
-  public long triggerOrDelegateStartEvent(
+  public Tuple<Long, Integer> triggerOrDelegateStartEvent(
       final MessageData messageData,
       final long messageStartEventSubscriptionKey,
       final MessageStartEventSubscriptionRecord subscriptionRecord) {
@@ -422,7 +430,7 @@ public final class MessageCorrelateBehavior {
       // reply processors on P_K.
       dispatchCrossPartitionStartProcessInstanceAsk(
           messageData, messageStartEventSubscriptionKey, subscriptionRecord);
-      return -1L;
+      return Tuple.of(-1L, StorageOrdinalRelated.NOT_ORDINAL_CONTROLLED);
     }
     return eventHandle.triggerMessageStartEvent(
         messageStartEventSubscriptionKey,
@@ -460,7 +468,8 @@ public final class MessageCorrelateBehavior {
         .setVariables(messageData.variables())
         .setTenantId(messageData.tenantId())
         .setMessageDeadline(messageData.messageDeadline())
-        .setMessageTtl(messageData.messageTtl());
+        .setMessageTtl(messageData.messageTtl())
+        .setStorageOrdinal(StorageOrdinalRelated.NOT_ORDINAL_CONTROLLED);
 
     stateWriter.appendFollowUpEvent(
         messageData.messageKey(), MessageStartProcessInstanceRequestIntent.REQUESTED, askRecord);

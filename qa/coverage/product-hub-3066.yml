@@ -1,0 +1,240 @@
+# Coverage plan — Batch operation monitoring in Operate
+#
+# Seeded from the 23 Gherkin scenarios in the QA issue's test plan, then scored
+# against the tests that already exist. The scoring is the point: the QA issue
+# reports "Regression Automation: Completed Final" at confidence 5/5, and three
+# of its state-transition scenarios are disabled in CI for an open product bug.
+# Both things are true; only one of them was written down anywhere.
+#
+# For camunda/team-test-automation#83.
+
+epic: camunda/product-hub#3066
+qa_issue: camunda/product-hub#3240
+target_repo: camunda/camunda
+target_versions: ["8.9", "8.10"]
+
+preconditions:
+  - what: Operate's Batch Operations pages are reachable
+    why: >
+      The list lives at /operate/batch-operations and the detail page at
+      /operate/batch-operations/:id. Every UI case below needs a batch
+      operation that already exists, so each one creates its own.
+
+specs:
+  # ---------------------------------------------------------------------------
+  # UI — the end-to-end suite
+  #
+  # Fifteen tests, three of them skipped. The skips are correctly annotated
+  # (`// Skipped due to bug #52021`) and that bug is still open, so they are
+  # recorded as `stub`: the test is written and does not run.
+  # ---------------------------------------------------------------------------
+  - path: qa/c8-orchestration-cluster-e2e-test-suite/tests/operate/batchOperations.spec.ts
+    framework: playwright
+    covers: >
+      The Batch Operations list and detail pages against a real cluster:
+      navigation, sorting through the URL, the detail page's tiles, and the
+      lifecycle actions.
+    cases:
+      - id: BOM-UI-01
+        traces_to: Clicking an operation in the list opens its detail page
+        surface: ui
+        status: automated
+
+      - id: BOM-UI-02
+        traces_to: An item in the batch's items table links to its process instance
+        surface: ui
+        status: automated
+
+      - id: BOM-UI-03
+        traces_to: The Batch Operations list is reachable from the Operations header menu
+        surface: ui
+        status: automated
+
+      - id: BOM-UI-04
+        traces_to: >
+          Clicking the Operation, Actor or Start date column header writes the
+          sort into the URL, and a reload restores it
+        surface: ui
+        count: 4
+        status: automated
+        notes: >
+          Four tests: one per sortable column header, plus the reload. The plan's
+          scenario 5 also says sorting must NOT be offered on the Items column;
+          no test asserts that absence, so it is listed separately as BOM-UI-12.
+
+      - id: BOM-UI-05
+        traces_to: The detail page shows batch state, item summary, start date and actor tiles
+        surface: ui
+        status: automated
+
+      - id: BOM-UI-06
+        traces_to: The back button returns from a batch's detail page to the list
+        surface: ui
+        status: automated
+
+      - id: BOM-UI-07
+        traces_to: The Batch Operations list shows every expected column header
+        surface: ui
+        status: automated
+
+      - id: BOM-UI-08
+        traces_to: Lifecycle action buttons are hidden once a batch reaches Completed
+        surface: ui
+        status: automated
+
+      - id: BOM-UI-09
+        traces_to: >
+          A suspend issued from the detail page reaches the engine and survives a
+          page reload
+        surface: ui
+        status: automated
+        notes: >
+          This is the half of scenario 15 that still runs. It reloads rather than
+          waiting for the page to update itself, which is exactly the behaviour
+          bug #52021 breaks — see BOM-UI-10.
+
+      - id: BOM-UI-10
+        traces_to: >
+          Suspending an active batch updates the detail page in place, without a
+          reload
+        surface: ui
+        status: stub
+        notes: >
+          Written and skipped for camunda/camunda#52021 — the detail page does
+          not poll after a lifecycle action, so the state never updates on screen.
+          The skip is correctly annotated in the spec. Counted here so the gate
+          stops reporting it as working coverage.
+
+      - id: BOM-UI-11
+        traces_to: >
+          Cancelling an active batch, and cancelling a suspended one, update the
+          detail page in place
+        surface: ui
+        count: 2
+        status: stub
+        notes: Same bug and same skip annotation as BOM-UI-10.
+
+      - id: BOM-UI-12
+        traces_to: The Items column offers no sorting
+        surface: ui
+        status: planned
+        notes: >
+          Scenario 5 asserts an absence, which none of the four sorting tests
+          covers. Cheap to add beside them.
+
+  # ---------------------------------------------------------------------------
+  # Component — already covered, and the basis for the exclusions below
+  #
+  # 72 tests against a mocked API. They are why most of this epic's scenarios
+  # need no E2E case: what they cannot see is whether the real backend agrees,
+  # and the UI cases above cover that.
+  # ---------------------------------------------------------------------------
+  - path: webapp/client/apps/orchestration-cluster-webapp/src/operate/pages/BatchOperations/BatchOperations.test.tsx
+    framework: vitest
+    covers: >
+      The Batch Operations list against a mocked API: empty state, forbidden
+      state, rows, item counts, pagination, sorting and bookmarked URLs.
+    cases:
+      - id: BOM-C-01
+        traces_to: >
+          The list renders its empty state, its rows, operation-type links, item
+          counts, pagination and page size
+        surface: component
+        count: 22
+        status: automated
+        notes: >
+          Covers scenarios 1, 3, 4, 5, 6 and 23 of the QA plan between them,
+          including the forbidden page of scenario 2 and the sort/offset
+          restoration from a bookmarked URL.
+
+  - path: webapp/client/apps/orchestration-cluster-webapp/src/operate/pages/BatchOperation/BatchOperation.test.tsx
+    framework: vitest
+    covers: >
+      The detail page against a mocked API: tiles, state and actor, load
+      failure, the forbidden state, and the not-found redirect.
+    cases:
+      - id: BOM-C-02
+        traces_to: >
+          The detail page renders its tiles, state and actor, and handles load
+          failure, forbidden access and a batch that has gone away
+        surface: component
+        count: 9
+        status: automated
+
+  - path: webapp/client/apps/orchestration-cluster-webapp/src/operate/pages/BatchOperation/BatchOperationActions.test.tsx
+    framework: vitest
+    covers: >
+      Suspend, resume and cancel against a mocked API, including convergence
+      while polling, permission warnings, and controls that stay disabled
+      across a remount.
+    cases:
+      - id: BOM-C-03
+        traces_to: >
+          Suspend, resume and cancel converge on their outcome, warn on a
+          forbidden action, and survive transient polling failures
+        surface: component
+        count: 17
+        status: automated
+        notes: >
+          These pass while BOM-UI-10 and BOM-UI-11 are skipped, and that is not a
+          contradiction: here the poll is mocked and the component is asked
+          whether it converges when told the new state. Bug #52021 is that the
+          real page never asks. The component layer cannot see that.
+
+  - path: webapp/client/apps/orchestration-cluster-webapp/src/operate/pages/BatchOperation/BatchItemsTable.test.tsx
+    framework: vitest
+    covers: The items table — columns, item states, per-item errors, sorting, pagination.
+    cases:
+      - id: BOM-C-04
+        traces_to: >
+          The items table renders its columns and every item state, shows
+          per-item errors, and sorts and paginates
+        surface: component
+        count: 13
+        status: automated
+
+  - path: webapp/client/apps/orchestration-cluster-webapp/src/operate/shared/BatchItemsCount/BatchItemsCount.test.tsx
+    framework: vitest
+    covers: The item-count indicator across its no-items, not-started and per-status forms.
+    cases:
+      - id: BOM-C-05
+        traces_to: >
+          The item-count indicator distinguishes no items, none started, and
+          per-status counts, and shows a failure reason on hover
+        surface: component
+        count: 4
+        status: automated
+
+# ---------------------------------------------------------------------------
+
+out_of_scope:
+  - what: Batch operation initiation from the Processes view and the v2 API
+    why: >
+      Scenario-plan section "Batch Operation Initiation" belongs to the
+      operations that start a batch — cancel, migrate, modify, resolve
+      incidents — each of which is its own epic with its own tests. This plan
+      covers monitoring an existing batch, which is what epic #3066 is.
+  - what: Removal of the legacy Operations side pane
+    why: A deletion, asserted by the absence of its own tests rather than by new ones.
+  - what: Consistency with the design prototype
+    why: A review activity, not an assertion a test can make.
+
+prerequisites:
+  - what: >
+      Decide whether the three stubbed UI cases stay stubbed or are removed
+      while camunda/camunda#52021 is open.
+    why: >
+      They are correctly annotated and the bug is real, so nothing is wrong
+      today. But a stub that outlives its bug becomes a silent gap, and nothing
+      currently watches that pairing.
+    blocks: [BOM-UI-10, BOM-UI-11]
+    status: not started
+
+lifecycle:
+  isolation: >
+    Each UI test creates the batch operation it acts on, so tests do not
+    contend for one shared batch. The component tests mock the API and share
+    nothing.
+  notes: >
+    The three stubbed cases are slow tests (`test.slow()`) even when they run,
+    because they wait on real engine state transitions.

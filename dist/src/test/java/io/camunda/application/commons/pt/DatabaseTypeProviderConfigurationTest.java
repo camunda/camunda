@@ -12,8 +12,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.configuration.Camunda;
-import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.configuration.UnifiedConfigurationHelper;
+import io.camunda.configuration.data.SecondaryStorage.SecondaryStorageType;
 import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
 import io.camunda.search.connect.configuration.DatabaseType;
 import java.util.function.Function;

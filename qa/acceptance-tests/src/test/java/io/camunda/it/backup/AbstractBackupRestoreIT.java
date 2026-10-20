@@ -14,7 +14,7 @@ import feign.FeignException.NotFound;
 import io.camunda.application.commons.configuration.WorkingDirectoryConfiguration.WorkingDirectory;
 import io.camunda.client.CamundaClient;
 import io.camunda.configuration.Camunda;
-import io.camunda.configuration.PrimaryStorageBackup.BackupStoreType;
+import io.camunda.configuration.data.primarystorage.PrimaryStorageBackup.BackupStoreType;
 import io.camunda.it.document.DocumentClient;
 import io.camunda.management.backups.StateCode;
 import io.camunda.management.backups.TakeBackupHistoryResponse;

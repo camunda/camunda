@@ -12,6 +12,7 @@ import io.camunda.zeebe.engine.processing.common.EventTriggerBehavior;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.common.ValidationException;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCallActivity;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEventElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowNode;
 import io.camunda.zeebe.engine.processing.deployment.model.element.InputMappings;
@@ -199,6 +200,11 @@ public final class BpmnVariableMappingBehavior {
           resolveResult.get(),
           outputVariableBehavior);
 
+    } else if (hasVariables && isCallActivityWithoutPropagation(element)) {
+      final Either<Failure, Void> variableEither = mapLocalVariables(context, element, variables);
+      if (variableEither.isLeft()) {
+        return variableEither;
+      }
     } else if (hasVariables) {
       // merge/propagate the event variables by default
       final Either<Failure, Void> variableEither =
@@ -288,6 +294,11 @@ public final class BpmnVariableMappingBehavior {
     final var isMultiInstanceActivity =
         elementInstanceState.getInstance(elementInstanceKey).getMultiInstanceLoopCounter() > 0;
     return isMultiInstanceActivity ? elementInstanceKey : context.getFlowScopeKey();
+  }
+
+  private boolean isCallActivityWithoutPropagation(final ExecutableFlowNode element) {
+    return element instanceof final ExecutableCallActivity callActivity
+        && !callActivity.isPropagateAllChildVariablesEnabled();
   }
 
   private boolean isConnectedToEventBasedGateway(final ExecutableFlowNode element) {

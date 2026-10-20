@@ -1,0 +1,124 @@
+---
+name: Frontend Snyk Test
+
+# owner: @camunda/engineering-operations
+
+description: Scan a frontend project's lockfile for open-source vulnerabilities with `snyk test`
+
+inputs:
+  directory:
+    description: Frontend directory containing package.json and the lockfile
+    required: true
+  lockfile:
+    description: Lockfile name inside the directory (package-lock.json or yarn.lock)
+    required: false
+    default: "package-lock.json"
+  project-name:
+    description: Human readable project name, used for logging
+    required: true
+  artifact-name:
+    description: Name of the uploaded JSON report artifact (slashes are replaced with dashes)
+    required: true
+  snyk-org:
+    description: Snyk organization to scan against
+    required: false
+    default: "team-zeebe"
+  severity-threshold:
+    description: Minimum vulnerability severity that fails the job
+    required: false
+    default: "high"
+
+runs:
+  using: composite
+  steps:
+    - name: Validate inputs
+      id: validate
+      shell: bash
+      env:
+        DIRECTORY: ${{ inputs.directory }}
+        LOCKFILE: ${{ inputs.lockfile }}
+        PROJECT_NAME: ${{ inputs.project-name }}
+        ARTIFACT_NAME: ${{ inputs.artifact-name }}
+      run: |
+        set -euo pipefail
+        for var in DIRECTORY LOCKFILE PROJECT_NAME ARTIFACT_NAME; do
+          if [ -z "${!var}" ]; then
+            echo "::error::Input for ${var} is required"
+            exit 1
+          fi
+        done
+        if [ -z "${SNYK_TOKEN:-}" ]; then
+          echo "::error::SNYK_TOKEN environment variable is not set"
+          exit 1
+        fi
+        if [ ! -f "${DIRECTORY}/${LOCKFILE}" ]; then
+          echo "::error::Lockfile ${DIRECTORY}/${LOCKFILE} not found"
+          exit 1
+        fi
+        printf 'Scanning %s: %s/%s\n' "${PROJECT_NAME}" "${DIRECTORY}" "${LOCKFILE}"
+        echo "report-file=${RUNNER_TEMP}/snyk-report.json" >> "$GITHUB_OUTPUT"
+        echo "artifact-name=${ARTIFACT_NAME//\//-}" >> "$GITHUB_OUTPUT"
+
+    - name: Install Snyk CLI
+      uses: snyk/actions/setup@9adf32b1121593767fc3c057af55b55db032dc04 # v1.0.0
+
+    - name: Scan with Snyk
+      # Run from the frontend directory so its `.snyk` policy file (accepted risks) is applied.
+      working-directory: ${{ inputs.directory }}
+      shell: bash
+      env:
+        SNYK_TOKEN: ${{ env.SNYK_TOKEN }}
+        LOCKFILE: ${{ inputs.lockfile }}
+        SNYK_ORG: ${{ inputs.snyk-org }}
+        SEVERITY_THRESHOLD: ${{ inputs.severity-threshold }}
+        REPORT_FILE: ${{ steps.validate.outputs.report-file }}
+      run: |
+        # Bounds the `snyk` call so a single stuck/slow call to the Snyk API cannot consume the
+        # whole job's timeout (see INC-6630 for the same class of issue with unbounded external
+        # network calls in CI).
+        #
+        # snyk exit codes: 0 = no issues, 1 = vulnerabilities found (a valid result),
+        # 2 = error / re-run recommended, 3 = no supported projects. `timeout` returns 124 when
+        # it kills a stuck call. Only 2 and 124 are transient, so we retry those and pass every
+        # other code straight through - retrying a legitimate vuln finding (1) would needlessly
+        # double every scan that has findings and defeat the purpose of this bound.
+        function runSnykWithRetry() {
+          local maxAttempts=2
+          local perAttemptTimeoutSecs=120
+          local retryDelaySecs=10
+          local attempt=1
+
+          while true; do
+            local status=0
+            timeout "${perAttemptTimeoutSecs}s" snyk "$@" || status=$?
+            if [ "${status}" -ne 2 ] && [ "${status}" -ne 124 ]; then
+              return "${status}"
+            fi
+            if [ "${attempt}" -ge "${maxAttempts}" ]; then
+              echo "::error::snyk $* still failing after ${maxAttempts} attempts (exit ${status})"
+              return "${status}"
+            fi
+            echo "snyk $* transient failure (exit ${status}), retry ${attempt}/${maxAttempts} in ${retryDelaySecs}s..."
+            sleep "${retryDelaySecs}"
+            attempt=$((attempt + 1))
+          done
+        }
+
+        args=(
+          test
+          --file="${LOCKFILE}"
+          --org="${SNYK_ORG}"
+          --severity-threshold="${SEVERITY_THRESHOLD}"
+          --json-file-output="${REPORT_FILE}"
+        )
+
+        runSnykWithRetry "${args[@]}"
+
+    - name: Upload Snyk report
+      if: ${{ !cancelled() && steps.validate.outcome == 'success' }}
+      uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+      with:
+        name: ${{ steps.validate.outputs.artifact-name }}
+        path: ${{ steps.validate.outputs.report-file }}
+        if-no-files-found: warn
+        retention-days: 14

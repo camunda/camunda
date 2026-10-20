@@ -121,7 +121,7 @@ const Header: React.FC<Props> = ({children, currentApp, initialSaasToken}) => {
 								<HelpMenu isPaidPlan={['paid-cc', 'enterprise'].includes(currentUser.salesPlanType ?? '')} />
 								{isSaas && initialSaasToken !== null ? (
 									<SaasAccountMenu
-										displayName={currentUser.displayName}
+										displayName={currentUser.displayName ?? currentUser.username}
 										canLogout={canLogout}
 										onLogout={handleLogout}
 										onOpenCookiePreferences={handleCookiePreferences}
@@ -129,7 +129,7 @@ const Header: React.FC<Props> = ({children, currentApp, initialSaasToken}) => {
 									/>
 								) : (
 									<AccountMenu
-										displayName={currentUser.displayName}
+										displayName={currentUser.displayName ?? currentUser.username}
 										canLogout={canLogout}
 										onLogout={handleLogout}
 										onOpenCookiePreferences={handleCookiePreferences}

@@ -10,10 +10,10 @@ package io.camunda.qa.util.multidb;
 import static io.camunda.qa.util.multidb.MultiDbConfigurator.zeebePrefix;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.configuration.DocumentBasedSecondaryStorageDatabase;
-import io.camunda.configuration.Exporter;
-import io.camunda.configuration.SecondaryStorage;
-import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
+import io.camunda.configuration.data.Exporter;
+import io.camunda.configuration.data.SecondaryStorage;
+import io.camunda.configuration.data.SecondaryStorage.SecondaryStorageType;
+import io.camunda.configuration.data.secondarystorage.documentbased.DocumentBasedSecondaryStorageDatabase;
 import io.camunda.qa.util.cluster.TestCamundaApplication;
 import io.camunda.zeebe.exporter.ElasticsearchExporter;
 import io.camunda.zeebe.exporter.opensearch.OpensearchExporter;

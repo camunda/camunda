@@ -19,7 +19,7 @@ describe('getTasksRequestBody', () => {
 			filter: {
 				state: {$in: ['CREATED', 'ASSIGNING', 'UPDATING', 'COMPLETING', 'CANCELING']},
 			},
-			sort: [{field: 'creationDate', order: 'desc'}],
+			sort: [{field: 'creationDate', order: 'DESC'}],
 		});
 	});
 
@@ -31,7 +31,7 @@ describe('getTasksRequestBody', () => {
 
 		expect(result).toEqual({
 			filter: {},
-			sort: [{field: 'creationDate', order: 'desc'}],
+			sort: [{field: 'creationDate', order: 'DESC'}],
 		});
 	});
 
@@ -40,7 +40,7 @@ describe('getTasksRequestBody', () => {
 
 		expect(result).toEqual({
 			filter: {assignee: 'demo', state: 'CREATED'},
-			sort: [{field: 'creationDate', order: 'desc'}],
+			sort: [{field: 'creationDate', order: 'DESC'}],
 		});
 	});
 
@@ -49,7 +49,7 @@ describe('getTasksRequestBody', () => {
 
 		expect(result).toEqual({
 			filter: {state: 'CREATED', assignee: {$exists: false}},
-			sort: [{field: 'creationDate', order: 'desc'}],
+			sort: [{field: 'creationDate', order: 'DESC'}],
 		});
 	});
 
@@ -58,7 +58,7 @@ describe('getTasksRequestBody', () => {
 
 		expect(result).toEqual({
 			filter: {state: 'COMPLETED'},
-			sort: [{field: 'completionDate', order: 'desc'}],
+			sort: [{field: 'completionDate', order: 'DESC'}],
 		});
 	});
 
@@ -95,7 +95,7 @@ describe('getTasksRequestBody', () => {
 				dueDate: {$gte: '2024-01-01T00:00:00.000Z', $lte: '2024-01-31T00:00:00.000Z'},
 				followUpDate: {$gte: '2024-02-01T00:00:00.000Z', $lte: '2024-02-28T00:00:00.000Z'},
 			},
-			sort: [{field: 'creationDate', order: 'desc'}],
+			sort: [{field: 'creationDate', order: 'DESC'}],
 		});
 	});
 
@@ -137,7 +137,7 @@ describe('getTasksRequestBody', () => {
 		([sortBy, field]) => {
 			const result = getTasksRequestBody({filter: 'all-open', sortBy}, {currentUsername: 'demo'});
 
-			expect(result.sort).toEqual([{field, order: 'desc'}]);
+			expect(result.sort).toEqual([{field, order: 'DESC'}]);
 		},
 	);
 

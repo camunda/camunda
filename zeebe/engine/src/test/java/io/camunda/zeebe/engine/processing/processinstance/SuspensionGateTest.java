@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.processing.processinstance;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
 
 import io.camunda.zeebe.engine.state.immutable.SuspensionState.State;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
@@ -44,8 +45,29 @@ public final class SuspensionGateTest {
 
   @Test
   public void shouldBufferInternalCommandWhileSuspended() {
-    // given - an internal COMPLETE_ELEMENT command (BUFFER category via BpmnStreamProcessor) is
-    // targeted at an element of the process instance while it is suspended
+    // given
+    final var taskActivated = createInstanceWithActivatedJob();
+    ENGINE
+        .processInstance()
+        .withInstanceKey(taskActivated.getValue().getProcessInstanceKey())
+        .suspend();
+
+    assertInternalCommandIsBuffered(taskActivated);
+  }
+
+  @Test
+  public void shouldBufferInternalCommandWhileSuspending() {
+    // given
+    final var taskActivated = createInstanceWithActivatedJob();
+    await().until(ENGINE::hasReachedEnd);
+    ((MutableProcessingState) ENGINE.getProcessingState())
+        .getSuspensionState()
+        .setSuspensionState(taskActivated.getValue().getProcessInstanceKey(), State.SUSPENDING);
+
+    assertInternalCommandIsBuffered(taskActivated);
+  }
+
+  private Record<ProcessInstanceRecordValue> createInstanceWithActivatedJob() {
     final String processId = Strings.newRandomValidBpmnId();
     final String jobType = Strings.newRandomValidBpmnId();
     ENGINE
@@ -63,8 +85,13 @@ public final class SuspensionGateTest {
             .withProcessInstanceKey(processInstanceKey)
             .withElementType(BpmnElementType.SERVICE_TASK)
             .getFirst();
-    ENGINE.processInstance().withInstanceKey(processInstanceKey).suspend();
+    ENGINE.jobs().withType(jobType).activate();
+    return taskActivated;
+  }
 
+  private void assertInternalCommandIsBuffered(
+      final Record<ProcessInstanceRecordValue> taskActivated) {
+    final long processInstanceKey = taskActivated.getValue().getProcessInstanceKey();
     // when
     ENGINE.writeRecords(
         RecordToWrite.command()

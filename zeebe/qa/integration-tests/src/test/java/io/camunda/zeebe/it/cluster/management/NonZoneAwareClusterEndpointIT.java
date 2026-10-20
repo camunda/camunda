@@ -11,9 +11,9 @@ import static io.camunda.zeebe.qa.util.cluster.util.ZoneFixtures.*;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.cluster.MemberId;
-import io.camunda.configuration.Partitioning.Scheme;
-import io.camunda.configuration.Zone;
-import io.camunda.configuration.ZoneAware;
+import io.camunda.configuration.cluster.Partitioning.Scheme;
+import io.camunda.configuration.cluster.Zone;
+import io.camunda.configuration.cluster.partitioning.ZoneAware;
 import io.camunda.zeebe.management.cluster.BrokerId;
 import io.camunda.zeebe.management.cluster.BrokerState;
 import io.camunda.zeebe.management.cluster.ClusterZoneMigrationRequest;

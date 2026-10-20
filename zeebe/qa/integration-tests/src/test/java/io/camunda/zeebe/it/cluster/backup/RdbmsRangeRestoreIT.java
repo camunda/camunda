@@ -10,8 +10,8 @@ package io.camunda.zeebe.it.cluster.backup;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.configuration.Camunda;
-import io.camunda.configuration.Filesystem;
-import io.camunda.configuration.PrimaryStorageBackup.BackupStoreType;
+import io.camunda.configuration.data.primarystorage.PrimaryStorageBackup.BackupStoreType;
+import io.camunda.configuration.data.primarystorage.backup.Filesystem;
 import io.camunda.zeebe.qa.util.cluster.TestRestoreApp;
 import io.camunda.zeebe.util.FileUtil;
 import java.nio.file.Path;

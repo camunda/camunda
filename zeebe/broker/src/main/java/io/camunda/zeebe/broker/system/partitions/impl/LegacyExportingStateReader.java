@@ -23,7 +23,7 @@ import org.slf4j.LoggerFactory;
 /**
  * Reads the legacy per-partition {@code .exporterPaused} state from disk, so it can be migrated
  * into the dynamic cluster configuration on startup. See {@link
- * io.camunda.zeebe.dynamic.config.PartitionGroupExportingStateInitializer}.
+ * io.camunda.zeebe.dynamic.config.impl.PartitionGroupExportingStateInitializer}.
  */
 @NullMarked
 public final class LegacyExportingStateReader {

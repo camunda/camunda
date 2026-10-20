@@ -33,6 +33,10 @@ const injectCustomCss: PluginOption = {
 	},
 };
 
+const CARBON_SETUP_FILE = './src/vitest-modules/vitest-carbon.setup.ts';
+const SHADCN_SETUP_FILE = './src/vitest-modules/vitest-shadcn.setup.ts';
+const SHADCN_COMPONENT_TESTS = ['src/**/shadcn.components/**/*.test.ts', 'src/**/shadcn.components/**/*.test.tsx'];
+
 const basePlugins: PluginOption[] = [
 	devtools(),
 	tailwindcss(),
@@ -56,12 +60,23 @@ const config = defineConfig(({mode}) => ({
 			'#/admin': path.resolve(import.meta.dirname, './src/admin'),
 		},
 	},
+
+	optimizeDeps: {
+		include: [
+			'@tanstack/react-devtools',
+			'@tanstack/react-query-devtools',
+			'@tanstack/react-router-devtools',
+			'i18next-browser-languagedetector',
+			'react-dom/client',
+		],
+	},
 	plugins: mode === 'sbom' ? [...basePlugins, sbom({specVersion: '1.6'})] : basePlugins,
 	server: {
 		port: 3000,
 		open: true,
 		proxy: {
 			'/v2': 'http://localhost:8080',
+			'/admin/config.js': 'http://localhost:8080',
 			'/login': {
 				target: 'http://localhost:8080',
 				bypass: (req) => (req.headers['sec-fetch-mode'] === 'navigate' ? '/' : undefined),
@@ -117,13 +132,37 @@ const config = defineConfig(({mode}) => ({
 				height: 720,
 			},
 			provider: playwright(),
+			// One instance per pod and design system. CI runs each pod separately with `--project '<pod>*'`.
 			instances: [
 				{
 					browser: 'chromium',
-					name: 'carbon',
+					name: 'admin',
+					include: ['src/admin/**/*.test.ts', 'src/admin/**/*.test.tsx'],
+					setupFiles: [SHADCN_SETUP_FILE],
+				},
+				{
+					browser: 'chromium',
+					name: 'operate:carbon',
+					include: ['src/operate/**/*.test.ts', 'src/operate/**/*.test.tsx'],
+					exclude: SHADCN_COMPONENT_TESTS,
+					setupFiles: [CARBON_SETUP_FILE],
+				},
+				{
+					browser: 'chromium',
+					name: 'operate:shadcn',
+					include: ['src/operate/**/shadcn.components/**/*.test.ts', 'src/operate/**/shadcn.components/**/*.test.tsx'],
+					setupFiles: [SHADCN_SETUP_FILE],
+				},
+				{
+					browser: 'chromium',
+					name: 'tasklist',
+					include: ['src/tasklist/**/*.test.ts', 'src/tasklist/**/*.test.tsx'],
+					setupFiles: [SHADCN_SETUP_FILE],
+				},
+				{
+					browser: 'chromium',
+					name: 'shared:carbon',
 					include: [
-						'src/operate/**/*.test.ts',
-						'src/operate/**/*.test.tsx',
 						'src/routes/_carbon/**/*.test.ts',
 						'src/routes/_carbon/**/*.test.tsx',
 						'src/shared/**/*.test.ts',
@@ -131,23 +170,19 @@ const config = defineConfig(({mode}) => ({
 						'src/vitest-modules/**/*.test.ts',
 						'src/vitest-modules/**/*.test.tsx',
 					],
-					exclude: ['src/**/shadcn.components/**/*.test.ts', 'src/**/shadcn.components/**/*.test.tsx'],
-					setupFiles: ['./src/vitest-modules/vitest-carbon.setup.ts'],
+					exclude: SHADCN_COMPONENT_TESTS,
+					setupFiles: [CARBON_SETUP_FILE],
 				},
 				{
 					browser: 'chromium',
-					name: 'shadcn',
+					name: 'shared:shadcn',
 					include: [
-						'src/**/shadcn.components/**/*.test.ts',
-						'src/**/shadcn.components/**/*.test.tsx',
-						'src/admin/**/*.test.ts',
-						'src/admin/**/*.test.tsx',
 						'src/routes/_shadcn/**/*.test.ts',
 						'src/routes/_shadcn/**/*.test.tsx',
-						'src/tasklist/**/*.test.ts',
-						'src/tasklist/**/*.test.tsx',
+						'src/shared/**/shadcn.components/**/*.test.ts',
+						'src/shared/**/shadcn.components/**/*.test.tsx',
 					],
-					setupFiles: ['./src/vitest-modules/vitest-shadcn.setup.ts'],
+					setupFiles: [SHADCN_SETUP_FILE],
 				},
 			],
 		},

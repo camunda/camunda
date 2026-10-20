@@ -208,7 +208,7 @@ class RollingUpgradeCompatibilityValidatorTest {
     // given – validate only the latest changeset file (the file for the current release);
     // historical changesets (e.g. 8.9.0) pre-date the rolling-upgrade guardrails and are exempt
     final var changeSets =
-        loadChangeSets(null, "db/changelog/rdbms-exporter/changesets/8.10.0.xml");
+        loadChangeSets(null, "db/changelog/rdbms-exporter/changesets/8.11.0.xml");
 
     // when
     final var violations = RollingUpgradeCompatibilityValidator.validate(changeSets);

@@ -254,6 +254,7 @@ public class CamundaServicesConfiguration {
                       search,
                       processCache,
                       incident,
+                      variable,
                       executor,
                       converter);
               final var processDefinition =
@@ -590,7 +591,7 @@ public class CamundaServicesConfiguration {
             topologyServicesByTenant,
             physicalTenantId -> secondaryStorageReadiness.getObject().isReady(physicalTenantId)));
     builder.clusterUpgradeStatusServices(
-        new ClusterUpgradeStatusServices(migrationStatusAggregator, executor));
+        new ClusterUpgradeStatusServices(migrationStatusAggregator));
     builder.clusterTopologyServices(new ClusterTopologyServices(topologyServicesByTenant));
 
     builder.clusterRecoveryServices(

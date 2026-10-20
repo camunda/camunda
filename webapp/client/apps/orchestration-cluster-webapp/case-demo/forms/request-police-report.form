@@ -1,0 +1,22 @@
+{
+  "executionPlatform": "Camunda Cloud",
+  "executionPlatformVersion": "8.11.0",
+  "exporter": {
+    "name": "Camunda Modeler",
+    "version": "5.40.0"
+  },
+  "schemaVersion": 18,
+  "id": "request-police-report",
+  "type": "default",
+  "components": [
+    {
+      "type": "textfield",
+      "key": "policeReportNumber",
+      "label": "Police report number",
+      "id": "Field_policeReportNumber_132",
+      "validate": {
+        "required": true
+      }
+    }
+  ]
+}

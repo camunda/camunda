@@ -1077,6 +1077,7 @@ public class SearchQueryFilterMapper {
       Optional.ofNullable(filter.getState())
           .map(mapToStringOperations())
           .ifPresent(builder::stateOperations);
+      Optional.ofNullable(filter.getIsSuspended()).ifPresent(builder::isSuspended);
       Optional.ofNullable(filter.getProcessDefinitionId())
           .map(mapToStringOperations())
           .ifPresent(builder::processDefinitionIdOperations);

@@ -52,14 +52,22 @@ public class RestoreArguments {
   /**
    * What this run may do to data already in the data directory.
    *
-   * <p>Naming a tenant with {@code --tenantId} is asking to replace that tenant on a node whose
-   * other tenants are live, so their data stays and the named tenant's own directory is cleared.
-   * Every other invocation — the default tenant, or {@code --allTenants} — is the recovery of a
-   * node meant to start from nothing, and keeps the long-standing requirement that the data
-   * directory be empty.
+   * <p>A run that restores only some of the configured tenants is a replacement on a node whose
+   * other tenants are live, so their data stays and only the targeted tenants' own directories are
+   * cleared. That is the case when naming a tenant with {@code --tenantId}, and also when naming
+   * none on a cluster with more than the default tenant, which targets the default tenant alone.
+   * Every other invocation — the default tenant of a single-tenant cluster, or {@code --allTenants}
+   * — is the recovery of a node meant to start from nothing, and keeps the long-standing
+   * requirement that the data directory be empty.
+   *
+   * @param multipleTenantsConfigured whether this cluster is configured with more than one physical
+   *     tenant
    */
-  public TargetDataPolicy targetDataPolicy() {
-    return tenantId != null && !allTenantsRequested()
+  public TargetDataPolicy targetDataPolicy(final boolean multipleTenantsConfigured) {
+    if (allTenantsRequested()) {
+      return TargetDataPolicy.REQUIRE_EMPTY;
+    }
+    return tenantId != null || multipleTenantsConfigured
         ? TargetDataPolicy.REPLACE_SELECTED
         : TargetDataPolicy.REQUIRE_EMPTY;
   }

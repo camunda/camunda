@@ -11,6 +11,7 @@ import type {
 	GetProcessInstanceWaitStateStatisticsResponseBody,
 	ProcessInstance,
 	QueryProcessInstanceIncidentsResponseBody,
+	QueryElementInstancesRequestBody,
 } from '@camunda/camunda-api-zod-schemas/8.11';
 import {request, requestErrorSchema} from '#/shared/http/request';
 import {ForbiddenError} from '#/shared/errors';
@@ -19,6 +20,18 @@ import {endpoints} from '#/shared/http/endpoints';
 import {isInstanceRunning, shouldPollProcessInstance} from '#/operate/shared/utils/processInstance';
 
 const POLLING_INTERVAL_MS = 5000;
+const historySort = [
+	{field: 'startDate', order: 'DESC'},
+	{field: 'elementInstanceKey', order: 'DESC'},
+] satisfies QueryElementInstancesRequestBody['sort'];
+
+async function instanceRequest<T>(input: Request, signal: AbortSignal): Promise<T> {
+	const {response, error} = await request(new Request(input, {signal}));
+	if (error !== null) {
+		throw mapQueryError(error);
+	}
+	return response.json();
+}
 
 function processInstanceQuery(processInstanceKey: string) {
 	return queryOptions({
@@ -53,6 +66,43 @@ function processInstanceIncidentsCountQuery({
 			return result.page.totalItems;
 		},
 		select: (count) => (hasIncident ? count : 0),
+		staleTime: POLLING_INTERVAL_MS,
+		refetchInterval: POLLING_INTERVAL_MS,
+	});
+}
+
+function selectionIncidentsCountQuery({
+	processInstanceKey,
+	elementId,
+	elementInstanceKey,
+}: {
+	processInstanceKey: string;
+	elementId?: string;
+	elementInstanceKey?: string;
+}) {
+	return queryOptions({
+		queryKey:
+			elementId === undefined && elementInstanceKey === undefined
+				? (['processInstanceIncidentsCount', processInstanceKey] as const)
+				: (['selectionIncidentsCount', processInstanceKey, elementId, elementInstanceKey] as const),
+		queryFn: async (): Promise<number> => {
+			const {response, error} = await request(
+				elementInstanceKey === undefined
+					? endpoints.queryProcessInstanceIncidents(processInstanceKey, {
+							filter: {state: 'ACTIVE', elementId},
+							page: {limit: 0},
+						})
+					: endpoints.queryElementInstanceIncidents(elementInstanceKey, {
+							filter: {state: 'ACTIVE'},
+							page: {limit: 0},
+						}),
+			);
+			if (error !== null) {
+				throw mapQueryError(error);
+			}
+			const result: QueryProcessInstanceIncidentsResponseBody = await response.json();
+			return result.page.totalItems;
+		},
 		staleTime: POLLING_INTERVAL_MS,
 		refetchInterval: POLLING_INTERVAL_MS,
 	});
@@ -97,8 +147,11 @@ function useProcessInstanceWaitStateStatistics(processInstance: ProcessInstance)
 }
 
 export {
+	historySort,
+	instanceRequest,
 	processInstanceQuery,
 	processInstanceIncidentsCountQuery,
+	selectionIncidentsCountQuery,
 	processInstanceWaitStateStatisticsQuery,
 	useProcessInstance,
 	useProcessInstanceWaitStateStatistics,

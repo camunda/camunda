@@ -26,7 +26,7 @@ import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.testing.ControlledActorSchedulerExtension;
 import io.camunda.zeebe.stream.api.scheduling.ProcessingScheduleService;
 import io.camunda.zeebe.stream.api.scheduling.ScheduledCommandCache.NoopScheduledCommandCache;
-import io.camunda.zeebe.stream.api.scheduling.SimpleProcessingScheduleService;
+import io.camunda.zeebe.stream.api.scheduling.SimpleProcessingScheduleService.ScheduledTask;
 import io.camunda.zeebe.stream.api.scheduling.Task;
 import io.camunda.zeebe.stream.api.scheduling.TaskResult;
 import io.camunda.zeebe.stream.api.scheduling.TaskResultBuilder;
@@ -303,7 +303,7 @@ class ProcessingScheduleServiceTest {
     final var mockedTask = mock(Runnable.class);
 
     // when
-    scheduleService.runAtFixedRate(Duration.ofSeconds(1), mockedTask);
+    scheduleService.runRunnableAtFixedRate(Duration.ofSeconds(1), mockedTask);
     actorScheduler.workUntilDone();
     for (int i = 0; i < 5; i++) {
       actorScheduler.updateClock(Duration.ofSeconds(1));
@@ -321,7 +321,7 @@ class ProcessingScheduleServiceTest {
     final var mockedTask = mock(Runnable.class);
 
     // when
-    scheduleService.runAtFixedRate(Duration.ofSeconds(1), mockedTask);
+    scheduleService.runRunnableAtFixedRate(Duration.ofSeconds(1), mockedTask);
     actorScheduler.workUntilDone();
     actorScheduler.updateClock(Duration.ofSeconds(1));
     actorScheduler.workUntilDone();
@@ -337,7 +337,7 @@ class ProcessingScheduleServiceTest {
     final var mockedTask = mock(Runnable.class);
 
     // when
-    scheduleService.runAtFixedRate(Duration.ofSeconds(1), mockedTask);
+    scheduleService.runRunnableAtFixedRate(Duration.ofSeconds(1), mockedTask);
     actorScheduler.workUntilDone();
     actorScheduler.updateClock(Duration.ofSeconds(1));
     actorScheduler.workUntilDone();
@@ -421,6 +421,31 @@ class ProcessingScheduleServiceTest {
     assertThat(commandCache.stagedCache().contains(ACTIVATE_ELEMENT, 1)).isTrue();
     assertThat(commandCache.stagedCache().persisted()).isFalse();
     assertThat(commandCache.contains(ACTIVATE_ELEMENT, 1)).isFalse();
+  }
+
+  @Test
+  void shouldNotCacheWrittenCommandsIfWriteIsAborted() {
+    // given - the write keeps failing and the stream processor closes during the retry
+    testWriter.acceptWrites.set(
+        () -> {
+          lifecycleSupplier.isAborted = true;
+          return false;
+        });
+
+    // when
+    scheduleService.runDelayed(
+        Duration.ZERO,
+        (builder) -> {
+          builder.appendCommandRecord(1, ACTIVATE_ELEMENT, Records.processInstance(1));
+          return builder.build();
+        });
+    actorScheduler.workUntilDone();
+
+    // then - write was staged for caching, but rolled back since it was never written
+    assertThat(commandCache.stagedCache().contains(ACTIVATE_ELEMENT, 1)).isTrue();
+    assertThat(commandCache.stagedCache().persisted()).isFalse();
+    assertThat(commandCache.contains(ACTIVATE_ELEMENT, 1)).isFalse();
+    assertThat(testWriter.entries).isEmpty();
   }
 
   @Test
@@ -533,8 +558,7 @@ class ProcessingScheduleServiceTest {
    * <p>Note: This is an actor scheduler limitation, since the used way how we schedule timers are
    * not thread safe, so this need to happen on the same thread, meaning on the same actor.
    */
-  private static final class TestScheduleServiceActorDecorator extends Actor
-      implements SimpleProcessingScheduleService {
+  private static final class TestScheduleServiceActorDecorator extends Actor {
     private final ProcessingScheduleServiceImpl processingScheduleService;
 
     public TestScheduleServiceActorDecorator(
@@ -554,7 +578,6 @@ class ProcessingScheduleServiceTest {
           });
     }
 
-    @Override
     public ScheduledTask runDelayed(final Duration delay, final Runnable task) {
       final var futureScheduledTask =
           actor.call(() -> processingScheduleService.runDelayed(delay, task));
@@ -570,7 +593,6 @@ class ProcessingScheduleServiceTest {
                       }));
     }
 
-    @Override
     public ScheduledTask runDelayed(final Duration delay, final Task task) {
       final var futureScheduledTask =
           actor.call(() -> processingScheduleService.runDelayed(delay, task));
@@ -586,7 +608,6 @@ class ProcessingScheduleServiceTest {
                       }));
     }
 
-    @Override
     public ScheduledTask runAt(final long timestamp, final Task task) {
       final var futureScheduledTask =
           actor.call(() -> processingScheduleService.runAt(timestamp, task));
@@ -602,7 +623,6 @@ class ProcessingScheduleServiceTest {
                       }));
     }
 
-    @Override
     public ScheduledTask runAt(final long timestamp, final Runnable task) {
       final var futureScheduledTask =
           actor.call(() -> processingScheduleService.runAt(timestamp, task));
@@ -618,12 +638,12 @@ class ProcessingScheduleServiceTest {
                       }));
     }
 
-    @Override
-    public void runAtFixedRate(final Duration delay, final Runnable task) {
+    // Not named runAtFixedRate: that signature is taken by Actor (ConcurrencyControl) and returns a
+    // timer.
+    public void runRunnableAtFixedRate(final Duration delay, final Runnable task) {
       actor.submit(() -> processingScheduleService.runAtFixedRate(delay, task));
     }
 
-    @Override
     public void runAtFixedRate(final Duration delay, final Task task) {
       actor.submit(() -> processingScheduleService.runAtFixedRate(delay, task));
     }

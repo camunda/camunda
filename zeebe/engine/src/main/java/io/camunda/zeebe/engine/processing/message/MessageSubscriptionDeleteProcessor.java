@@ -112,6 +112,7 @@ public final class MessageSubscriptionDeleteProcessor
         subscriptionRecord.getElementInstanceKey(),
         subscriptionRecord.getProcessDefinitionKey(),
         subscriptionRecord.getMessageNameBuffer(),
-        subscriptionRecord.getTenantId());
+        subscriptionRecord.getTenantId(),
+        subscriptionRecord.getStorageOrdinal());
   }
 }

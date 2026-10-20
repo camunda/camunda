@@ -9,8 +9,8 @@
 import {observer} from 'mobx-react-lite';
 import {TransitionGroup} from 'react-transition-group';
 import {notificationsStore} from '#/shared/notifications/notifications.store';
-import {Notification} from '#/shared/notifications/components/Notification';
-import styles from '#/shared/notifications/components/Notifications.module.scss';
+import {Notification} from './Notification';
+import styles from './Notifications.module.scss';
 
 const Notifications: React.FC = observer(() => {
 	const {notifications} = notificationsStore;

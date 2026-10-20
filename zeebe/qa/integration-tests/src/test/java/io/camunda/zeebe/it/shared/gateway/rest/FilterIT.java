@@ -11,7 +11,7 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ProblemException;
-import io.camunda.configuration.Filter;
+import io.camunda.configuration.api.rest.Filter;
 import io.camunda.zeebe.it.shared.gateway.rest.util.DisableTopologyFilter;
 import io.camunda.zeebe.it.shared.gateway.rest.util.DisableUserTasksTestFilter;
 import io.camunda.zeebe.qa.util.cluster.TestCluster;

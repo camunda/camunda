@@ -14,6 +14,7 @@ import {
 	DialogContent,
 	DialogHeader,
 	DialogTitle,
+	Heading,
 } from '@camunda/design-system';
 import {CalendarClock, CircleUser, X} from '@camunda/design-system/icons';
 import {useTranslation} from 'react-i18next';
@@ -61,7 +62,9 @@ const HistoryItemDetailsModal: React.FC<Props> = ({onClose, auditLog}) => {
 					</dl>
 					{auditLog.operationType === 'ASSIGN' ? (
 						<section>
-							<h3 className="py-4 font-semibold">{t('tasklist.taskDetailsHistoryModalDetails')}:</h3>
+							<Heading as="h3" variant="heading-xs" className="py-4">
+								{t('tasklist.taskDetailsHistoryModalDetails')}:
+							</Heading>
 							<dl className="border-y border-border">
 								<div className="grid min-h-11 grid-cols-[40%_60%] items-center">
 									<dt className="flex items-center gap-1 py-2 pr-4 whitespace-nowrap">

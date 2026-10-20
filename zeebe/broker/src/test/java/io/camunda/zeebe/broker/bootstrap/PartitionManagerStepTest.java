@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -88,6 +89,7 @@ class PartitionManagerStepTest {
     private ActorFuture<BrokerStartupContext> startupFuture;
     private ActorScheduler actorScheduler;
     private CurrentClusterConfiguration mockClusterConfiguration;
+    private ClusterConfigurationService clusterConfigurationService;
 
     @BeforeEach
     void setUp() {
@@ -106,13 +108,16 @@ class PartitionManagerStepTest {
           PHYSICAL_TENANT_ID, mock(BrokerAdminServiceImpl.class));
       testBrokerStartupContext.addJobStreamService(
           PHYSICAL_TENANT_ID, mock(JobStreamService.class));
-      final ClusterConfigurationService clusterConfigurationService =
-          mock(ClusterConfigurationService.class);
-      when(clusterConfigurationService.getPartitionDistribution(any()))
-          .thenReturn(PartitionDistribution.NO_PARTITIONS);
+      clusterConfigurationService = mock(ClusterConfigurationService.class);
+      when(clusterConfigurationService.getLatestPartitionDistribution(any()))
+          .thenReturn(CompletableActorFuture.completed(PartitionDistribution.NO_PARTITIONS));
       mockClusterConfiguration = mock(CurrentClusterConfiguration.class);
       when(clusterConfigurationService.getInitialClusterConfiguration())
           .thenReturn(mockClusterConfiguration);
+      when(clusterConfigurationService.getCurrentClusterConfiguration())
+          .thenReturn(mockClusterConfiguration);
+      when(clusterConfigurationService.getLatestClusterConfiguration())
+          .thenReturn(CompletableActorFuture.completed(mockClusterConfiguration));
       final var memberState = BrokerPartitionState.initialize(Map.of()).setMode(Mode.PROCESSING);
       final var partitionGroup =
           PartitionGroupConfiguration.empty(1).addMember(MemberId.from("0"), memberState);
@@ -183,6 +188,26 @@ class PartitionManagerStepTest {
           .failsWithin(Duration.ZERO)
           .withThrowableOfType(ExecutionException.class)
           .withRootCauseInstanceOf(IllegalStateException.class);
+    }
+
+    @Test
+    void shouldNotStartPartitionsWhenStoppedBeforeTheConfigurationIsAvailable() {
+      // given - the latest configuration is not available yet when the manager is started
+      final var latestConfiguration = new CompletableActorFuture<CurrentClusterConfiguration>();
+      when(clusterConfigurationService.getLatestClusterConfiguration())
+          .thenReturn(latestConfiguration);
+      sut.startupInternal(testBrokerStartupContext, CONCURRENCY_CONTROL, startupFuture);
+      await().until(startupFuture::isDone);
+      final var partitionManager =
+          testBrokerStartupContext.getPartitionManagers().get(PHYSICAL_TENANT_ID);
+
+      // when - the manager is stopped before the configuration arrives
+      partitionManager.stop().join();
+      latestConfiguration.complete(mockClusterConfiguration);
+
+      // then - it does not start anything on behalf of the stopped manager
+      verify(clusterConfigurationService, never())
+          .registerPartitionChangeExecutors(any(), any(), any());
     }
 
     @Test

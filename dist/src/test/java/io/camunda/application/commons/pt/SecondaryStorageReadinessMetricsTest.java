@@ -42,6 +42,16 @@ class SecondaryStorageReadinessMetricsTest {
           public boolean anyReady() {
             return !readyTenants.isEmpty();
           }
+
+          @Override
+          public boolean isRecovering(final String physicalTenantId) {
+            return false;
+          }
+
+          @Override
+          public NodeReadiness nodeReadiness() {
+            return NodeReadiness.READY;
+          }
         };
   }
 

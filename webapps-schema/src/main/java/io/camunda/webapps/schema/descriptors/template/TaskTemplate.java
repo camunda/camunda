@@ -72,6 +72,7 @@ public class TaskTemplate extends AbstractTemplateDescriptor
   public static final String PROCESS_DEFINITION_VERSION = "processDefinitionVersion";
   public static final String ROOT_PROCESS_INSTANCE_KEY = "rootProcessInstanceKey";
   public static final String BUSINESS_ID = "businessId";
+  public static final String IS_SUSPENDED = "isSuspended";
 
   public static final String JOIN_FIELD_NAME = "join";
 

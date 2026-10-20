@@ -16,6 +16,7 @@ import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageStartProcessInstanceRequestRecord;
+import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageStartProcessInstanceRequestIntent;
@@ -23,11 +24,15 @@ import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.MessageStartProcessInstanceRequestRecordValue;
+import io.camunda.zeebe.protocol.record.value.StorageOrdinalRelated;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.protocol.record.value.deployment.ProcessMetadataValue;
+import io.camunda.zeebe.stream.api.StreamClock.ControllableStreamClock.Modification;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.time.Instant;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.awaitility.Awaitility;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -53,6 +58,7 @@ public final class MessageStartProcessInstanceRequestRequestProcessorTest {
   private static final String BUSINESS_ID = "biz-1";
   private static final long SOURCE_MESSAGE_KEY = Protocol.encodePartitionId(1, 42);
   private static final long SUBSCRIPTION_PLACEHOLDER_KEY = 9_999L;
+  private static final int FIXED_ORDINAL = 1234;
 
   private static final BpmnModelInstance MESSAGE_START_PROCESS =
       Bpmn.createExecutableProcess(PROCESS_ID)
@@ -65,7 +71,12 @@ public final class MessageStartProcessInstanceRequestRequestProcessorTest {
   @Rule
   public final EngineRule engine =
       EngineRule.singlePartition()
-          .withEngineConfig(config -> config.setBusinessIdUniquenessEnabled(true));
+          .withEngineConfig(
+              config ->
+                  config
+                      .setBusinessIdUniquenessEnabled(true)
+                      .setArchiverlessEnabled(true)
+                      .setFixedStorageOrdinal(FIXED_ORDINAL));
 
   @Test
   public void shouldStartProcessInstanceAndReplyStartedWhenSubscriptionExistsAndBusinessIdIsFree() {
@@ -93,13 +104,127 @@ public final class MessageStartProcessInstanceRequestRequestProcessorTest {
             .getFirst();
     assertThat(requested.getRecordType()).isEqualTo(RecordType.EVENT);
     assertOriginalRequestPreserved(requested.getValue(), BUSINESS_ID, subscriptionKey);
+    assertThat(requested.getValue().getStorageOrdinal())
+        .as("the ask belongs to no instance")
+        .isEqualTo(StorageOrdinalRelated.NOT_ORDINAL_CONTROLLED);
 
     final var startReply = firstReplyCommand(MessageStartProcessInstanceRequestIntent.START);
     assertOriginalRequestPreserved(startReply, BUSINESS_ID, subscriptionKey);
     assertThat(startReply.getProcessInstanceKey())
         .as("START reply carries the new PI key for P_K to apply")
         .isEqualTo(newPiKey);
+    assertThat(startReply.getStorageOrdinal())
+        .as("START reply carries the ordinal P_K stamps on its CORRELATED event")
+        .isEqualTo(FIXED_ORDINAL);
 
+    assertNoOtherReply(MessageStartProcessInstanceRequestIntent.START);
+  }
+
+  @Test
+  public void shouldReplyWithStoredOrdinalOnDedupHit() {
+    // given a first REQUEST already started a PI, so the dedup row holds its ordinal
+    engine.deployment().withXmlResource(MESSAGE_START_PROCESS).deploy();
+    final long subscriptionKey = waitForStartEventSubscriptionKey();
+    final long messageDeadline = engine.getClock().getCurrentTimeInMillis() + 60_000L;
+    engine.writeRecords(
+        RecordToWrite.command()
+            .key(subscriptionKey)
+            .messageStartProcessInstanceRequest(
+                MessageStartProcessInstanceRequestIntent.REQUEST,
+                request(BUSINESS_ID, subscriptionKey)
+                    .setMessageDeadline(messageDeadline)
+                    .setMessageTtl(60_000L)));
+    final long firstPiKey =
+        firstReplyCommand(MessageStartProcessInstanceRequestIntent.START).getProcessInstanceKey();
+
+    // when the same REQUEST is replayed (a retry from P_K's pending-ask state)
+    engine.writeRecords(
+        RecordToWrite.command()
+            .key(subscriptionKey)
+            .messageStartProcessInstanceRequest(
+                MessageStartProcessInstanceRequestIntent.REQUEST,
+                request(BUSINESS_ID, subscriptionKey)
+                    .setMessageDeadline(messageDeadline)
+                    .setMessageTtl(60_000L)));
+
+    // then the second START reply re-sends the cached PI key together with the stored ordinal
+    final var startReplies =
+        RecordingExporter.messageStartProcessInstanceRequestRecords(
+                MessageStartProcessInstanceRequestIntent.START)
+            .filter(r -> r.getRecordType() == RecordType.COMMAND)
+            .limit(2)
+            .map(Record::getValue)
+            .toList();
+    assertThat(startReplies)
+        .extracting(MessageStartProcessInstanceRequestRecordValue::getProcessInstanceKey)
+        .containsExactly(firstPiKey, firstPiKey);
+    assertThat(startReplies)
+        .extracting(MessageStartProcessInstanceRequestRecordValue::getStorageOrdinal)
+        .containsExactly(FIXED_ORDINAL, FIXED_ORDINAL);
+  }
+
+  @Test
+  public void shouldReplyWithStoredOrdinalWhenItDiffersFromCurrentOrdinalOnDedupHit() {
+    // given a dedup row held by a PI on another partition, written as a STARTED v2 event
+    engine.deployment().withXmlResource(MESSAGE_START_PROCESS).deploy();
+    final long subscriptionKey = waitForStartEventSubscriptionKey();
+    final long processDefinitionKey =
+        RecordingExporter.messageStartEventSubscriptionRecords()
+            .getFirst()
+            .getValue()
+            .getProcessDefinitionKey();
+    final long messageDeadline = engine.getClock().getCurrentTimeInMillis() + 60_000L;
+    final long storedPiKey = Protocol.encodePartitionId(2, 4_242L);
+    final int storedOrdinal = FIXED_ORDINAL + 1;
+
+    // the row holds an ordinal that differs from the engine's current one, so a reply built from a
+    // fresh provider read would be distinguishable from one built from the row
+    engine.stop();
+    engine.writeRecords(
+        RecordToWrite.event()
+            .recordVersion(2)
+            .key(subscriptionKey)
+            .messageStartProcessInstanceRequest(
+                MessageStartProcessInstanceRequestIntent.STARTED,
+                requestWith(BUSINESS_ID, subscriptionKey, processDefinitionKey)
+                    .setProcessInstanceKey(storedPiKey)
+                    .setMessageDeadline(messageDeadline)
+                    .setMessageTtl(60_000L)
+                    .setStorageOrdinal(storedOrdinal)));
+    RecordingExporter.reset();
+    engine.start();
+
+    // when the same REQUEST arrives
+    engine.writeRecords(
+        RecordToWrite.command()
+            .key(subscriptionKey)
+            .messageStartProcessInstanceRequest(
+                MessageStartProcessInstanceRequestIntent.REQUEST,
+                request(BUSINESS_ID, subscriptionKey)
+                    .setMessageDeadline(messageDeadline)
+                    .setMessageTtl(60_000L)));
+
+    // then the START reply carries the stored row, not a fresh read of the current ordinal
+    final var reply = firstReplyCommand(MessageStartProcessInstanceRequestIntent.START);
+    assertThat(reply.getProcessInstanceKey())
+        .as("the reply must come from the stored row, not from a newly created instance")
+        .isEqualTo(storedPiKey);
+    assertThat(reply.getStorageOrdinal())
+        .as("the reply must carry the stored ordinal, not the one from the provider")
+        .isEqualTo(storedOrdinal);
+
+    // and no instance was created for the dedup hit
+    final long createdPis =
+        RecordingExporter.records()
+            .limit(
+                r ->
+                    r.getRecordType() == RecordType.COMMAND
+                        && r.getIntent() == MessageStartProcessInstanceRequestIntent.START)
+            .processInstanceRecords()
+            .withBpmnProcessId(PROCESS_ID)
+            .withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            .count();
+    assertThat(createdPis).isZero();
     assertNoOtherReply(MessageStartProcessInstanceRequestIntent.START);
   }
 
@@ -130,6 +255,9 @@ public final class MessageStartProcessInstanceRequestRequestProcessorTest {
     assertThat(reply.getProcessInstanceKey())
         .as("rejection replies do not carry a PI key")
         .isEqualTo(-1L);
+    assertThat(reply.getStorageOrdinal())
+        .as("rejection replies belong to no instance")
+        .isEqualTo(StorageOrdinalRelated.NOT_ORDINAL_CONTROLLED);
 
     // bound the PI-creation scan on the rejection reply as a deterministic terminal so the
     // assertion does not have to wait for a second creation that should never happen
@@ -199,6 +327,9 @@ public final class MessageStartProcessInstanceRequestRequestProcessorTest {
     assertThat(reply.getBusinessId()).isEqualTo(BUSINESS_ID);
     assertThat(reply.getProcessDefinitionKey()).isEqualTo(424242L);
     assertThat(reply.getProcessInstanceKey()).isEqualTo(-1L);
+    assertThat(reply.getStorageOrdinal())
+        .as("rejection replies belong to no instance")
+        .isEqualTo(StorageOrdinalRelated.NOT_ORDINAL_CONTROLLED);
   }
 
   @Test
@@ -224,6 +355,9 @@ public final class MessageStartProcessInstanceRequestRequestProcessorTest {
     assertThat(reply.getProcessInstanceKey())
         .as("expiry rejections do not carry a PI key")
         .isEqualTo(-1L);
+    assertThat(reply.getStorageOrdinal())
+        .as("rejection replies belong to no instance")
+        .isEqualTo(StorageOrdinalRelated.NOT_ORDINAL_CONTROLLED);
 
     final long startedPis =
         RecordingExporter.records()
@@ -262,13 +396,17 @@ public final class MessageStartProcessInstanceRequestRequestProcessorTest {
   @Test
   public void shouldTreatExactDeadlineBoundaryAsExpired() {
     // Pins the guard's boundary semantics as inclusive (messageDeadline <= now, not <): a request
-    // whose deadline is exactly the current clock value counts as expired. Pinning the clock makes
-    // the processor's clock.millis() stable so an exact-equality deadline can be asserted
-    // deterministically — with a live clock the comparison would race the wall clock.
+    // whose deadline is exactly the current clock value counts as expired. Pinning the stream clock
+    // to a known instant makes the processor's clock.millis() return exactly that value. Reading
+    // the time back from the actor clock instead races the actor threads' clock updates.
     engine.deployment().withXmlResource(MESSAGE_START_PROCESS).deploy();
     final long subscriptionKey = waitForStartEventSubscriptionKey();
-    engine.getClock().pinCurrentTime();
-    final long now = engine.getClock().getCurrentTimeInMillis();
+    final long now = System.currentTimeMillis();
+    engine.clock().pinAt(now);
+    // the pin is applied as a post-commit side effect, so make sure the engine sees the pinned time
+    final var pinned = Modification.pinAt(Instant.ofEpochMilli(now));
+    Awaitility.await("stream clock pinned")
+        .until(() -> engine.getStreamClock().currentModification(), pinned::equals);
 
     // when a REQUEST arrives whose messageDeadline is EXACTLY now (positive TTL)
     engine.writeRecords(

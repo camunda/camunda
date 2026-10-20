@@ -19,6 +19,7 @@ public class ImportRequestDto {
   private Object source;
   private RequestType type;
   private int retryNumberOnConflict;
+  private boolean requireAlias;
 
   ImportRequestDto(
       final String importName,
@@ -27,7 +28,8 @@ public class ImportRequestDto {
       final String id,
       final Object source,
       final RequestType type,
-      final int retryNumberOnConflict) {
+      final int retryNumberOnConflict,
+      final boolean requireAlias) {
     this.importName = importName;
     this.indexName = indexName;
     this.scriptData = scriptData;
@@ -35,6 +37,7 @@ public class ImportRequestDto {
     this.source = source;
     this.type = type;
     this.retryNumberOnConflict = retryNumberOnConflict;
+    this.requireAlias = requireAlias;
   }
 
   public String getImportName() {
@@ -93,13 +96,22 @@ public class ImportRequestDto {
     this.retryNumberOnConflict = retryNumberOnConflict;
   }
 
+  public boolean isRequireAlias() {
+    return requireAlias;
+  }
+
+  public void setRequireAlias(final boolean requireAlias) {
+    this.requireAlias = requireAlias;
+  }
+
   protected boolean canEqual(final Object other) {
     return other instanceof ImportRequestDto;
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(importName, indexName, scriptData, id, source, type, retryNumberOnConflict);
+    return Objects.hash(
+        importName, indexName, scriptData, id, source, type, retryNumberOnConflict, requireAlias);
   }
 
   @Override
@@ -112,6 +124,7 @@ public class ImportRequestDto {
     }
     final ImportRequestDto that = (ImportRequestDto) o;
     return retryNumberOnConflict == that.retryNumberOnConflict
+        && requireAlias == that.requireAlias
         && Objects.equals(importName, that.importName)
         && Objects.equals(indexName, that.indexName)
         && Objects.equals(scriptData, that.scriptData)
@@ -136,6 +149,8 @@ public class ImportRequestDto {
         + getType()
         + ", retryNumberOnConflict="
         + getRetryNumberOnConflict()
+        + ", requireAlias="
+        + isRequireAlias()
         + ")";
   }
 
@@ -152,6 +167,7 @@ public class ImportRequestDto {
     private Object source;
     private RequestType type;
     private int retryNumberOnConflict;
+    private boolean requireAlias;
 
     ImportRequestDtoBuilder() {}
 
@@ -190,9 +206,14 @@ public class ImportRequestDto {
       return this;
     }
 
+    public ImportRequestDtoBuilder requireAlias(final boolean requireAlias) {
+      this.requireAlias = requireAlias;
+      return this;
+    }
+
     public ImportRequestDto build() {
       return new ImportRequestDto(
-          importName, indexName, scriptData, id, source, type, retryNumberOnConflict);
+          importName, indexName, scriptData, id, source, type, retryNumberOnConflict, requireAlias);
     }
 
     @Override
@@ -211,6 +232,8 @@ public class ImportRequestDto {
           + type
           + ", retryNumberOnConflict="
           + retryNumberOnConflict
+          + ", requireAlias="
+          + requireAlias
           + ")";
     }
   }
@@ -222,6 +245,7 @@ public class ImportRequestDto {
     id,
     source,
     type,
-    retryNumberOnConflict
+    retryNumberOnConflict,
+    requireAlias
   }
 }

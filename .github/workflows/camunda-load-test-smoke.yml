@@ -3,7 +3,9 @@
 #              - install (deploys the PR ref from scratch to check the installation)
 #              - upgrade (deploys the base-ref first, then updates to the PR ref to check upgrading from an older setup-code version).
 #              Both chains wait for pod readiness and gateway connectivity after each deploy,
-#              then delete their namespace.
+#              and check the k6 TestRuns, then delete their namespace.
+#              In the upgrade chain, the k6 operator does not restart a TestRun when it is updated, so
+#              the TestRun status left by the base-ref deployment satisfies the check after the update.
 # calls: camunda-load-test.yml (scenario: realistic),
 #        camunda-verify-load-test.yml (verify connectivity),
 #        camunda-delete-load-test.yml (delete namespace)
@@ -122,6 +124,9 @@ jobs:
   smoke-install:
     name: Smoke Install
     needs: sanitize-branch-name
+    permissions:
+      contents: read
+      id-token: write # Teleport auth in called workflow
     uses: ./.github/workflows/camunda-load-test.yml
     secrets: inherit
     with:
@@ -141,8 +146,8 @@ jobs:
     name: Verify Install
     needs: [sanitize-branch-name, smoke-install]
     permissions:
-      contents: 'read'
-      id-token: 'write'
+      contents: read
+      id-token: write # Teleport auth in called workflow
     uses: ./.github/workflows/camunda-verify-load-test.yml
     secrets: inherit
     with:
@@ -154,7 +159,7 @@ jobs:
     if: always()
     permissions:
       contents: read
-      id-token: write
+      id-token: write # Teleport auth in called workflow
     uses: ./.github/workflows/camunda-delete-load-test.yml
     secrets: inherit
     with:
@@ -170,6 +175,9 @@ jobs:
   smoke-upgrade-install:
     name: Smoke Upgrade - Install (base ref)
     needs: sanitize-branch-name
+    permissions:
+      contents: read
+      id-token: write # Teleport auth in called workflow
     uses: ./.github/workflows/camunda-load-test.yml
     secrets: inherit
     with:
@@ -185,8 +193,8 @@ jobs:
     name: Verify Upgrade Install
     needs: [sanitize-branch-name, smoke-upgrade-install]
     permissions:
-      contents: 'read'
-      id-token: 'write'
+      contents: read
+      id-token: write # Teleport auth in called workflow
     uses: ./.github/workflows/camunda-verify-load-test.yml
     secrets: inherit
     with:
@@ -195,6 +203,9 @@ jobs:
   smoke-upgrade-update:
     name: Smoke Upgrade - Update (PR ref)
     needs: [sanitize-branch-name, verify-upgrade-install]
+    permissions:
+      contents: read
+      id-token: write # Teleport auth in called workflow
     uses: ./.github/workflows/camunda-load-test.yml
     secrets: inherit
     with:
@@ -210,8 +221,8 @@ jobs:
     name: Verify Upgrade Update
     needs: [sanitize-branch-name, smoke-upgrade-update]
     permissions:
-      contents: 'read'
-      id-token: 'write'
+      contents: read
+      id-token: write # Teleport auth in called workflow
     uses: ./.github/workflows/camunda-verify-load-test.yml
     secrets: inherit
     with:
@@ -223,7 +234,7 @@ jobs:
     if: always()
     permissions:
       contents: read
-      id-token: write
+      id-token: write # Teleport auth in called workflow
     uses: ./.github/workflows/camunda-delete-load-test.yml
     secrets: inherit
     with:

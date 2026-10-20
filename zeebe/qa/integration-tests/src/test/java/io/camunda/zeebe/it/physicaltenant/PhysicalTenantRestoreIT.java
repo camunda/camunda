@@ -9,13 +9,14 @@ package io.camunda.zeebe.it.physicaltenant;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.atomix.cluster.MemberId;
 import io.camunda.client.CamundaClient;
 import io.camunda.configuration.Camunda;
-import io.camunda.configuration.PrimaryStorageBackup.BackupStoreType;
-import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
+import io.camunda.configuration.data.SecondaryStorage.SecondaryStorageType;
+import io.camunda.configuration.data.primarystorage.PrimaryStorageBackup.BackupStoreType;
 import io.camunda.zeebe.it.cluster.backup.InProcessRestoreTestUtil;
 import io.camunda.zeebe.qa.util.cluster.PhysicalTenantsITHelper;
 import io.camunda.zeebe.qa.util.cluster.PhysicalTenantsITHelper.Storage;
@@ -30,6 +31,7 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpRequest.BodyPublishers;
 import java.net.http.HttpResponse.BodyHandlers;
+import java.nio.file.DirectoryNotEmptyException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -105,35 +107,36 @@ final class PhysicalTenantRestoreIT {
   @TempDir private Path tenantABackupDirectory;
 
   @Test
-  void shouldRestoreTheDefaultTenantWhenNoTenantIsNamed() throws Exception {
-    // given — both tenants backed up, then every node wiped
+  void shouldRestoreOnlyDefaultTenantWhenNoTenantIsNamed() throws Exception {
+    // given — both tenants backed up, and the data of both still on every node
     try (final var cluster = buildCluster()) {
       backUpBothTenants(cluster);
       cluster.shutdown();
-      for (final var node : nodeIds()) {
-        deleteContents(dataDirectoryOf(node));
-      }
+      final var tenantAFingerprint = fingerprintOf(TENANT_A);
+      assertThat(fingerprintOf(DEFAULT_TENANT)).isNotEmpty();
+      assertThat(tenantAFingerprint).isNotEmpty();
+      final var topologyFile = dataDirectoryOf(MemberId.from("0")).resolve(".topology.meta");
+      final var topologyBefore = Files.readAllBytes(topologyFile);
 
-      // when — no --tenantId, which is every pre-existing invocation of this application
+      // when — no --tenantId on a two-tenant cluster, which targets the default tenant alone.
+      // Nothing is deleted by hand: tenanta has no data left to keep if the directory has to be
+      // empty, so the application clears the default tenant's own data itself.
       restoreOnEveryNode(restoreApp -> restoreApp.withBackupId(DEFAULT_BACKUP_ID));
 
-      // then — the default tenant's partitions are back on both brokers, and the tenant that was
-      // not named has nothing restored for it anywhere
+      // then — the default tenant's partitions are back on both brokers
       assertThat(restoredPartitionsOf(DEFAULT_TENANT)).containsExactly(1, 2);
-      assertThat(restoredPartitionsOf(TENANT_A)).isEmpty();
-      // No topology file: restoring the default tenant of a two-tenant cluster is a partial
-      // restore, and a partial restore leaves the topology alone. The brokers generate what they
-      // need on boot.
-      assertThat(dataDirectoryOf(MemberId.from("0")).resolve(".topology.meta")).doesNotExist();
+      // ... and tenanta's data is what it was, on both brokers
+      assertThat(fingerprintOf(TENANT_A)).isEqualTo(tenantAFingerprint);
+      // Restoring the default tenant of a two-tenant cluster is a partial restore, and a partial
+      // restore leaves the topology alone.
+      assertThat(Files.readAllBytes(topologyFile)).isEqualTo(topologyBefore);
 
-      // and the brokers start and the default tenant is back at the state the backup captured
+      // and the brokers start, the default tenant back at the state the backup captured
       awaitReady(cluster.start());
       assertStateRestoredFromBackup(cluster, DEFAULT_TENANT);
-      // tenanta was wiped and not restored, so it comes up as an empty tenant — usable, with
-      // neither the state the backup held nor the state written after it
-      assertNoJobsOf(cluster, TENANT_A, jobTypeBeforeBackup(TENANT_A));
-      assertNoJobsOf(cluster, TENANT_A, jobTypeAfterBackup(TENANT_A));
-      assertOperational(cluster, TENANT_A, PARTITIONS);
+      // tenanta was never rolled back, so the work created after its backup is still there. A
+      // restore that left it empty fails here.
+      assertJobsFromEveryPartition(cluster, TENANT_A, jobTypeAfterBackup(TENANT_A));
     }
   }
 
@@ -197,6 +200,45 @@ final class PhysicalTenantRestoreIT {
       awaitReady(cluster.start());
       assertStateRestoredFromBackup(cluster, DEFAULT_TENANT);
       assertStateRestoredFromBackup(cluster, TENANT_A);
+    }
+  }
+
+  @Test
+  void shouldRequireAnEmptyDataDirectoryWhenTheDefaultTenantIsTheOnlyOne() throws Exception {
+    // given — a cluster with the default tenant only, backed up and shut down, its data in place
+    try (final var cluster = buildCluster(false)) {
+      awaitReady(cluster.start());
+      assertOperational(cluster, DEFAULT_TENANT, PARTITIONS);
+      createPendingWorkOnEveryPartition(
+          cluster, DEFAULT_TENANT, jobTypeBeforeBackup(DEFAULT_TENANT));
+      takeBackupAndAwait(cluster, DEFAULT_TENANT, DEFAULT_BACKUP_ID);
+      createPendingWorkOnEveryPartition(
+          cluster, DEFAULT_TENANT, jobTypeAfterBackup(DEFAULT_TENANT));
+      cluster.shutdown();
+      assertThat(fingerprintOf(DEFAULT_TENANT)).isNotEmpty();
+
+      // when / then — there are no other tenants whose data has to stay, so the application does
+      // not clear anything on the operator's behalf
+      final var node = nodeIds().getFirst();
+      assertThatThrownBy(
+              () -> {
+                try (final var app =
+                    restoreApp(
+                        node, restoreApp -> restoreApp.withBackupId(DEFAULT_BACKUP_ID), false)) {
+                  app.start();
+                }
+              })
+          .hasRootCauseInstanceOf(DirectoryNotEmptyException.class);
+
+      // and once every node is purged, the same restore succeeds and the tenant is back at the
+      // state the backup captured
+      for (final var memberId : nodeIds()) {
+        deleteContents(dataDirectoryOf(memberId));
+      }
+      restoreOnEveryNode(
+          restoreApp -> restoreApp.withBackupId(DEFAULT_BACKUP_ID), properties -> {}, false);
+      awaitReady(cluster.start());
+      assertStateRestoredFromBackup(cluster, DEFAULT_TENANT);
     }
   }
 
@@ -292,6 +334,13 @@ final class PhysicalTenantRestoreIT {
    * own ports while the first one's are still settling.
    */
   private TestCluster buildCluster() {
+    return buildCluster(true);
+  }
+
+  /**
+   * @param withTenantA whether the cluster has a second physical tenant besides the default one
+   */
+  private TestCluster buildCluster(final boolean withTenantA) {
     return new TestClusterBuilder()
         .withBrokersCount(BROKERS)
         .withGatewaysCount(0)
@@ -300,7 +349,9 @@ final class PhysicalTenantRestoreIT {
         .withReplicationFactor(REPLICATION_FACTOR)
         .withBrokerConfig(
             (memberId, broker) -> {
-              TENANTS.configureStatic(broker);
+              if (withTenantA) {
+                TENANTS.configureStatic(broker);
+              }
               broker
                   .withUnauthenticatedAccess()
                   .withDataConfig(
@@ -308,8 +359,10 @@ final class PhysicalTenantRestoreIT {
                         data.getPrimaryStorage().setDirectory(dataDirectoryOf(memberId).toString());
                         configureBackup(
                             data.getPrimaryStorage().getBackup(), defaultBackupDirectory);
-                      })
-                  .withPtConfig(TENANT_A, this::configureTenantA);
+                      });
+              if (withTenantA) {
+                broker.withPtConfig(TENANT_A, this::configureTenantA);
+              }
             })
         .build();
   }
@@ -320,7 +373,8 @@ final class PhysicalTenantRestoreIT {
   }
 
   private static void configureBackup(
-      final io.camunda.configuration.PrimaryStorageBackup backup, final Path directory) {
+      final io.camunda.configuration.data.primarystorage.PrimaryStorageBackup backup,
+      final Path directory) {
     backup.setStore(BackupStoreType.FILESYSTEM);
     backup.getFilesystem().setBasePath(directory.toString());
   }
@@ -338,29 +392,58 @@ final class PhysicalTenantRestoreIT {
   private void restoreOnEveryNode(
       final UnaryOperator<TestRestoreApp> arguments,
       final Consumer<Map<String, Object>> extraProperties) {
+    restoreOnEveryNode(arguments, extraProperties, true);
+  }
+
+  private void restoreOnEveryNode(
+      final UnaryOperator<TestRestoreApp> arguments,
+      final Consumer<Map<String, Object>> extraProperties,
+      final boolean withTenantA) {
     for (final var memberId : nodeIds()) {
       final Map<String, Object> properties = new LinkedHashMap<>();
       extraProperties.accept(properties);
 
-      var restoreApp =
-          new TestRestoreApp()
-              .withUnifiedConfig(
-                  config -> {
-                    config.getCluster().setNodeId(Integer.parseInt(memberId.id()));
-                    config.getCluster().setSize(BROKERS);
-                    config.getCluster().setReplicationFactor(REPLICATION_FACTOR);
-                    config.getCluster().setPartitionCount(PARTITIONS);
-                    config
-                        .getData()
-                        .getPrimaryStorage()
-                        .setDirectory(dataDirectoryOf(memberId).toString());
-                    configureBackup(
-                        config.getData().getPrimaryStorage().getBackup(), defaultBackupDirectory);
-                    // A restore from explicit backup ids reads no secondary storage; declaring it
-                    // absent also keeps the tenants out of the cross-tenant isolation rules, which
-                    // would otherwise see them both pointed at the same default database.
-                    config.getData().getSecondaryStorage().setType(SecondaryStorageType.none);
-                  })
+      var restoreApp = restoreApp(memberId, arguments, withTenantA);
+      for (final var property : properties.entrySet()) {
+        restoreApp = restoreApp.withProperty(property.getKey(), property.getValue());
+      }
+
+      try (final var app = restoreApp) {
+        final var node = memberId;
+        assertThatNoException().describedAs("restore on node %s", node.id()).isThrownBy(app::start);
+      }
+    }
+  }
+
+  /**
+   * @param withTenantA whether the cluster has a second physical tenant besides the default one
+   */
+  private TestRestoreApp restoreApp(
+      final MemberId memberId,
+      final UnaryOperator<TestRestoreApp> arguments,
+      final boolean withTenantA) {
+    var restoreApp =
+        new TestRestoreApp()
+            .withUnifiedConfig(
+                config -> {
+                  config.getCluster().setNodeId(Integer.parseInt(memberId.id()));
+                  config.getCluster().setSize(BROKERS);
+                  config.getCluster().setReplicationFactor(REPLICATION_FACTOR);
+                  config.getCluster().setPartitionCount(PARTITIONS);
+                  config
+                      .getData()
+                      .getPrimaryStorage()
+                      .setDirectory(dataDirectoryOf(memberId).toString());
+                  configureBackup(
+                      config.getData().getPrimaryStorage().getBackup(), defaultBackupDirectory);
+                  // A restore from explicit backup ids reads no secondary storage; declaring it
+                  // absent also keeps the tenants out of the cross-tenant isolation rules, which
+                  // would otherwise see them both pointed at the same default database.
+                  config.getData().getSecondaryStorage().setType(SecondaryStorageType.none);
+                });
+    if (withTenantA) {
+      restoreApp =
+          restoreApp
               .withPtConfig(
                   TENANT_A,
                   camunda -> {
@@ -373,16 +456,8 @@ final class PhysicalTenantRestoreIT {
               .withProperty(
                   "camunda.physical-tenants." + TENANT_A + ".security.authorizations.enabled",
                   false);
-      restoreApp = arguments.apply(restoreApp);
-      for (final var property : properties.entrySet()) {
-        restoreApp = restoreApp.withProperty(property.getKey(), property.getValue());
-      }
-
-      try (final var app = restoreApp) {
-        final var node = memberId;
-        assertThatNoException().describedAs("restore on node %s", node.id()).isThrownBy(app::start);
-      }
     }
+    return arguments.apply(restoreApp);
   }
 
   /** Publishes messages so the tenant's partitions hold state worth restoring. */

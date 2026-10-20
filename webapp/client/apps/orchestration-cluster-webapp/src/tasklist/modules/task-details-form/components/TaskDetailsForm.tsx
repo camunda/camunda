@@ -16,7 +16,7 @@ import {CamundaFormRenderer, type PartialVariable} from '#/tasklist/modules/form
 import type {FormManager} from '#/tasklist/modules/form-js/FormManager';
 import {useUploadDocuments} from '#/tasklist/modules/form-js/useUploadDocuments';
 import {tryParseJSON} from '#/tasklist/modules/json/tryParseJSON';
-import {formatVariablesToFormData} from '../formatVariablesToFormData';
+import {formatVariablesToFormData} from '#/tasklist/modules/task-details-form/formatVariablesToFormData';
 
 type Props = {
 	formSchema: string;

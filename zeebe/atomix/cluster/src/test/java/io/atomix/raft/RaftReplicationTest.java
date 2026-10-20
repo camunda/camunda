@@ -18,16 +18,19 @@ package io.atomix.raft;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.raft.RaftServer.Role;
+import io.camunda.zeebe.test.util.junit.SlowTest;
 import java.util.stream.Collectors;
 import org.awaitility.Awaitility;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 
 @RunWith(Parameterized.class)
+@Category(SlowTest.class)
 public class RaftReplicationTest {
   @Rule @Parameter public RaftRule raftRule;
 

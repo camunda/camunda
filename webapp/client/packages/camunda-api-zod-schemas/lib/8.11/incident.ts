@@ -6,58 +6,37 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {z} from 'zod';
-import {
-	API_VERSION,
-	getQueryResponseBodySchema,
-	getQueryRequestBodySchema,
-	advancedDateTimeFilterSchema,
-	advancedStringFilterSchema,
-	basicStringFilterSchema,
-	getEnumFilterSchema,
-	type Endpoint,
-} from './common';
+import {API_VERSION, type Endpoint} from './common';
+import {getIncidentStatus200Schema} from './gen/zod/getIncidentSchema';
+import {incidentErrorTypeEnumSchema} from './gen/zod/incidentErrorTypeEnumSchema';
+import {incidentResultSchema} from './gen/zod/incidentResultSchema';
+import {incidentSearchQueryResultSchema} from './gen/zod/incidentSearchQueryResultSchema';
+import {incidentSearchQuerySchema} from './gen/zod/incidentSearchQuerySchema';
+import {incidentStateEnumSchema} from './gen/zod/incidentStateEnumSchema';
+import type {GetIncidentStatus200} from './gen/types/GetIncident';
+import type {IncidentErrorTypeEnumKey} from './gen/types/IncidentErrorTypeEnum';
+import type {IncidentResult} from './gen/types/IncidentResult';
+import type {IncidentSearchQuery} from './gen/types/IncidentSearchQuery';
+import type {IncidentSearchQueryResult} from './gen/types/IncidentSearchQueryResult';
+import type {IncidentStateEnumKey} from './gen/types/IncidentStateEnum';
 
-const incidentErrorTypeSchema = z.enum([
-	'AD_HOC_SUB_PROCESS_NO_RETRIES',
-	'UNSPECIFIED',
-	'UNKNOWN',
-	'IO_MAPPING_ERROR',
-	'JOB_NO_RETRIES',
-	'EXECUTION_LISTENER_NO_RETRIES',
-	'TASK_LISTENER_NO_RETRIES',
-	'CONDITION_ERROR',
-	'EXTRACT_VALUE_ERROR',
-	'CALLED_ELEMENT_ERROR',
-	'UNHANDLED_ERROR_EVENT',
-	'MESSAGE_SIZE_EXCEEDED',
-	'CALLED_DECISION_ERROR',
-	'DECISION_EVALUATION_ERROR',
-	'FORM_NOT_FOUND',
-	'RESOURCE_NOT_FOUND',
-	'SECRET_RESOLUTION_ERROR',
-]);
-type IncidentErrorType = z.infer<typeof incidentErrorTypeSchema>;
+const incidentErrorTypeSchema = incidentErrorTypeEnumSchema;
+type IncidentErrorType = IncidentErrorTypeEnumKey;
 
-const incidentStateSchema = z.enum(['ACTIVE', 'MIGRATED', 'RESOLVED', 'PENDING']);
-type IncidentState = z.infer<typeof incidentStateSchema>;
+const incidentStateSchema = incidentStateEnumSchema;
+type IncidentState = IncidentStateEnumKey;
 
-const incidentSchema = z.object({
-	processDefinitionId: z.string(),
-	errorType: incidentErrorTypeSchema,
-	errorMessage: z.string(),
-	elementId: z.string(),
-	creationTime: z.string(),
-	state: incidentStateSchema,
-	tenantId: z.string(),
-	incidentKey: z.string(),
-	processDefinitionKey: z.string(),
-	processInstanceKey: z.string(),
-	rootProcessInstanceKey: z.string().nullable(),
-	elementInstanceKey: z.string(),
-	jobKey: z.string().nullable(),
-});
-type Incident = z.infer<typeof incidentSchema>;
+const incidentSchema = incidentResultSchema;
+type Incident = IncidentResult;
+
+const getIncidentResponseBodySchema = getIncidentStatus200Schema;
+type GetIncidentResponseBody = GetIncidentStatus200;
+
+const queryIncidentsRequestBodySchema = incidentSearchQuerySchema;
+type QueryIncidentsRequestBody = IncidentSearchQuery;
+
+const queryIncidentsResponseBodySchema = incidentSearchQueryResultSchema;
+type QueryIncidentsResponseBody = IncidentSearchQueryResult;
 
 const resolveIncident = {
 	method: 'POST',
@@ -68,46 +47,6 @@ const getIncident = {
 	method: 'GET',
 	getUrl: ({incidentKey}) => `/${API_VERSION}/incidents/${incidentKey}` as const,
 } as const satisfies Endpoint<Pick<Incident, 'incidentKey'>>;
-
-const getIncidentResponseBodySchema = incidentSchema;
-type GetIncidentResponseBody = z.infer<typeof getIncidentResponseBodySchema>;
-
-const queryIncidentsRequestBodySchema = getQueryRequestBodySchema({
-	sortFields: [
-		'incidentKey',
-		'processDefinitionKey',
-		'processDefinitionId',
-		'processInstanceKey',
-		'errorType',
-		'errorMessage',
-		'elementId',
-		'elementInstanceKey',
-		'creationTime',
-		'state',
-		'jobKey',
-		'tenantId',
-	] as const,
-	filter: z
-		.object({
-			processDefinitionId: advancedStringFilterSchema,
-			errorType: getEnumFilterSchema(incidentErrorTypeSchema),
-			errorMessage: advancedStringFilterSchema,
-			elementId: advancedStringFilterSchema,
-			creationTime: advancedDateTimeFilterSchema,
-			state: getEnumFilterSchema(incidentStateSchema),
-			tenantId: advancedStringFilterSchema,
-			incidentKey: basicStringFilterSchema,
-			processDefinitionKey: basicStringFilterSchema,
-			processInstanceKey: basicStringFilterSchema,
-			elementInstanceKey: basicStringFilterSchema,
-			jobKey: basicStringFilterSchema,
-		})
-		.partial(),
-});
-type QueryIncidentsRequestBody = z.infer<typeof queryIncidentsRequestBodySchema>;
-
-const queryIncidentsResponseBodySchema = getQueryResponseBodySchema(incidentSchema);
-type QueryIncidentsResponseBody = z.infer<typeof queryIncidentsResponseBodySchema>;
 
 const queryIncidents = {
 	method: 'POST',
@@ -125,6 +64,7 @@ export {
 	incidentStateSchema,
 	incidentSchema,
 };
+
 export type {
 	IncidentErrorType,
 	IncidentState,

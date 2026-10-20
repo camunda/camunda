@@ -33,7 +33,7 @@ public sealed interface Manifest {
         creationTime);
   }
 
-  static FailedManifest createFailed(final BackupIdentifier id) {
+  static FailedManifest createFailed(final BackupIdentifier id, final String failureReason) {
     final var creationTime = Instant.now();
     return new ManifestImpl(
         BackupIdentifierImpl.from(id),
@@ -42,7 +42,8 @@ public sealed interface Manifest {
         null,
         null,
         creationTime,
-        creationTime);
+        creationTime,
+        failureReason);
   }
 
   BackupIdentifierImpl id();

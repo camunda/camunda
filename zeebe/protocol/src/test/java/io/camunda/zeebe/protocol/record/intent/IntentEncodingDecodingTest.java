@@ -17,6 +17,7 @@ package io.camunda.zeebe.protocol.record.intent;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.management.CheckpointIntent;
 import io.camunda.zeebe.protocol.record.intent.scaling.ScaleIntent;
 import java.util.ArrayList;
@@ -50,6 +51,20 @@ final class IntentEncodingDecodingTest {
     final Set<Class<? extends Intent>> actualIntentClasses =
         parameters.map(parameterSet -> parameterSet.intent.getClass()).collect(Collectors.toSet());
     assertThat(actualIntentClasses).containsAll(new ArrayList<>(Intent.INTENT_CLASSES));
+  }
+
+  @Test
+  void shouldIdentifyElementInstanceWalkCommandsAndEvents() {
+    // when
+    final Intent unknown = Intent.fromProtocolValue(ValueType.ELEMENT_INSTANCE_WALK, (short) -1);
+    final Intent acknowledgement =
+        Intent.fromProtocolValue(ValueType.ELEMENT_INSTANCE_WALK, "SUSPENDED");
+
+    // then
+    assertThat(ElementInstanceWalkIntent.SUSPEND.isEvent()).isFalse();
+    assertThat(ElementInstanceWalkIntent.SUSPENDED.isEvent()).isTrue();
+    assertThat(unknown).isSameAs(Intent.UNKNOWN);
+    assertThat(acknowledgement).isSameAs(ElementInstanceWalkIntent.SUSPENDED);
   }
 
   private static Stream<ParameterSet> parameters() {
@@ -158,6 +173,8 @@ final class IntentEncodingDecodingTest {
     result.addAll(
         buildParameterSets(SignalSubscriptionIntent.class, SignalSubscriptionIntent::from));
     result.addAll(buildParameterSets(TenantIntent.class, TenantIntent::from));
+    result.addAll(
+        buildParameterSets(ElementInstanceWalkIntent.class, ElementInstanceWalkIntent::from));
     result.addAll(buildParameterSets(TimerIntent.class, TimerIntent::from));
     result.addAll(buildParameterSets(UsageMetricIntent.class, UsageMetricIntent::from));
     result.addAll(buildParameterSets(UserIntent.class, UserIntent::from));

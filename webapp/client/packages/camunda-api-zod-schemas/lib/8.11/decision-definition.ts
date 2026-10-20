@@ -6,107 +6,57 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {z} from 'zod';
-import {API_VERSION, getQueryRequestBodySchema, getQueryResponseBodySchema, type Endpoint} from './common';
+import {API_VERSION, type Endpoint} from './common';
+import {decisionDefinitionResultSchema} from './gen/zod/decisionDefinitionResultSchema';
+import {decisionDefinitionSearchQueryResultSchema} from './gen/zod/decisionDefinitionSearchQueryResultSchema';
+import {decisionDefinitionSearchQuerySchema} from './gen/zod/decisionDefinitionSearchQuerySchema';
+import {decisionEvaluationInstructionSchema} from './gen/zod/decisionEvaluationInstructionSchema';
+import {evaluateDecisionResultSchema} from './gen/zod/evaluateDecisionResultSchema';
+import {evaluatedDecisionInputItemSchema as genEvaluatedDecisionInputItemSchema} from './gen/zod/evaluatedDecisionInputItemSchema';
+import {evaluatedDecisionOutputItemSchema as genEvaluatedDecisionOutputItemSchema} from './gen/zod/evaluatedDecisionOutputItemSchema';
+import {evaluatedDecisionResultSchema as genEvaluatedDecisionResultSchema} from './gen/zod/evaluatedDecisionResultSchema';
+import {getDecisionDefinitionXMLStatus200Schema} from './gen/zod/getDecisionDefinitionXMLSchema';
+import {matchedDecisionRuleItemSchema as genMatchedDecisionRuleItemSchema} from './gen/zod/matchedDecisionRuleItemSchema';
+import type {DecisionDefinitionResult} from './gen/types/DecisionDefinitionResult';
+import type {DecisionDefinitionSearchQuery} from './gen/types/DecisionDefinitionSearchQuery';
+import type {DecisionDefinitionSearchQueryResult} from './gen/types/DecisionDefinitionSearchQueryResult';
+import type {DecisionEvaluationInstruction} from './gen/types/DecisionEvaluationInstruction';
+import type {EvaluateDecisionResult} from './gen/types/EvaluateDecisionResult';
+import type {EvaluatedDecisionInputItem as GenEvaluatedDecisionInputItem} from './gen/types/EvaluatedDecisionInputItem';
+import type {EvaluatedDecisionOutputItem as GenEvaluatedDecisionOutputItem} from './gen/types/EvaluatedDecisionOutputItem';
+import type {EvaluatedDecisionResult as GenEvaluatedDecisionResult} from './gen/types/EvaluatedDecisionResult';
+import type {GetDecisionDefinitionXMLStatus200} from './gen/types/GetDecisionDefinitionXML';
+import type {MatchedDecisionRuleItem as GenMatchedDecisionRuleItem} from './gen/types/MatchedDecisionRuleItem';
 
-const decisionDefinitionSchema = z.object({
-	decisionDefinitionId: z.string(),
-	name: z.string().nullable(),
-	version: z.number(),
-	decisionRequirementsId: z.string(),
-	decisionRequirementsName: z.string().nullable(),
-	decisionRequirementsVersion: z.number(),
-	tenantId: z.string(),
-	decisionDefinitionKey: z.string(),
-	decisionRequirementsKey: z.string(),
-});
-type DecisionDefinition = z.infer<typeof decisionDefinitionSchema>;
+const decisionDefinitionSchema = decisionDefinitionResultSchema;
+type DecisionDefinition = DecisionDefinitionResult;
 
-const queryDecisionDefinitionsRequestBodySchema = getQueryRequestBodySchema({
-	sortFields: [
-		'decisionDefinitionKey',
-		'decisionDefinitionId',
-		'name',
-		'version',
-		'decisionRequirementsId',
-		'decisionRequirementsKey',
-		'tenantId',
-	] as const,
-	filter: decisionDefinitionSchema
-		.extend({
-			isLatestVersion: z.boolean(),
-		})
-		.partial(),
-});
-type QueryDecisionDefinitionsRequestBody = z.infer<typeof queryDecisionDefinitionsRequestBodySchema>;
+const queryDecisionDefinitionsRequestBodySchema = decisionDefinitionSearchQuerySchema;
+type QueryDecisionDefinitionsRequestBody = DecisionDefinitionSearchQuery;
 
-const queryDecisionDefinitionsResponseBodySchema = getQueryResponseBodySchema(decisionDefinitionSchema);
-type QueryDecisionDefinitionsResponseBody = z.infer<typeof queryDecisionDefinitionsResponseBodySchema>;
+const queryDecisionDefinitionsResponseBodySchema = decisionDefinitionSearchQueryResultSchema;
+type QueryDecisionDefinitionsResponseBody = DecisionDefinitionSearchQueryResult;
 
-const getDecisionDefinitionXmlResponseBodySchema = z.string();
-type GetDecisionDefinitionXmlResponseBody = z.infer<typeof getDecisionDefinitionXmlResponseBodySchema>;
+const getDecisionDefinitionXmlResponseBodySchema = getDecisionDefinitionXMLStatus200Schema;
+type GetDecisionDefinitionXmlResponseBody = GetDecisionDefinitionXMLStatus200;
 
-const evaluatedDecisionInputItemSchema = z.object({
-	inputId: z.string(),
-	inputName: z.string(),
-	inputValue: z.string(),
-});
-type EvaluatedDecisionInputItem = z.infer<typeof evaluatedDecisionInputItemSchema>;
+const evaluatedDecisionInputItemSchema = genEvaluatedDecisionInputItemSchema;
+type EvaluatedDecisionInputItem = GenEvaluatedDecisionInputItem;
 
-const evaluatedDecisionOutputItemSchema = z.object({
-	outputId: z.string(),
-	outputName: z.string(),
-	outputValue: z.string(),
-	ruleId: z.string().nullable(),
-	ruleIndex: z.number().int().nullable(),
-});
-type EvaluatedDecisionOutputItem = z.infer<typeof evaluatedDecisionOutputItemSchema>;
+const evaluatedDecisionOutputItemSchema = genEvaluatedDecisionOutputItemSchema;
+type EvaluatedDecisionOutputItem = GenEvaluatedDecisionOutputItem;
 
-const matchedDecisionRuleItemSchema = z.object({
-	ruleId: z.string().nullable(),
-	ruleIndex: z.number().int().nullable(),
-	evaluatedOutputs: z.array(evaluatedDecisionOutputItemSchema),
-});
-type MatchedDecisionRuleItem = z.infer<typeof matchedDecisionRuleItemSchema>;
+const matchedDecisionRuleItemSchema = genMatchedDecisionRuleItemSchema;
+type MatchedDecisionRuleItem = GenMatchedDecisionRuleItem;
 
-const evaluatedDecisionResultSchema = z.object({
-	decisionDefinitionId: z.string(),
-	decisionDefinitionName: z.string(),
-	decisionDefinitionVersion: z.number().int(),
-	decisionDefinitionType: z.string(),
-	output: z.string(),
-	tenantId: z.string(),
-	matchedRules: z.array(matchedDecisionRuleItemSchema),
-	evaluatedInputs: z.array(evaluatedDecisionInputItemSchema),
-	decisionDefinitionKey: z.string(),
-	decisionEvaluationInstanceKey: z.string(),
-});
-type EvaluatedDecisionResult = z.infer<typeof evaluatedDecisionResultSchema>;
+const evaluatedDecisionResultSchema = genEvaluatedDecisionResultSchema;
+type EvaluatedDecisionResult = GenEvaluatedDecisionResult;
 
-const evaluateDecisionRequestBodySchema = z.object({
-	decisionDefinitionId: z.string().optional(),
-	variables: z.record(z.string(), z.unknown()).optional(),
-	tenantId: z.string().optional(),
-	decisionDefinitionKey: z.string().optional(),
-});
-type EvaluateDecisionRequestBody = z.infer<typeof evaluateDecisionRequestBodySchema>;
+const evaluateDecisionRequestBodySchema = decisionEvaluationInstructionSchema;
+type EvaluateDecisionRequestBody = DecisionEvaluationInstruction;
 
-const evaluateDecisionResponseBodySchema = z.object({
-	decisionDefinitionId: z.string(),
-	decisionDefinitionName: z.string().nullable(),
-	decisionDefinitionVersion: z.number().int(),
-	decisionRequirementsId: z.string(),
-	output: z.string(),
-	failedDecisionDefinitionId: z.string(),
-	failureMessage: z.string().nullable(),
-	tenantId: z.string(),
-	decisionDefinitionKey: z.string(),
-	decisionRequirementsKey: z.string(),
-	decisionInstanceKey: z.string(),
-	decisionEvaluationKey: z.string(),
-	evaluatedDecisions: z.array(evaluatedDecisionResultSchema),
-});
-type EvaluateDecisionResponseBody = z.infer<typeof evaluateDecisionResponseBodySchema>;
+const evaluateDecisionResponseBodySchema = evaluateDecisionResultSchema;
+type EvaluateDecisionResponseBody = EvaluateDecisionResult;
 
 const queryDecisionDefinitions = {
 	method: 'POST',

@@ -8,7 +8,7 @@
 package io.camunda.zeebe.qa.util.junit;
 
 import io.atomix.cluster.MemberId;
-import io.camunda.configuration.NodeIdProvider.Type;
+import io.camunda.configuration.cluster.NodeIdProvider.Type;
 import io.camunda.zeebe.qa.util.actuator.ClusterActuator;
 import io.camunda.zeebe.qa.util.cluster.TestApplication;
 import io.camunda.zeebe.qa.util.cluster.TestCluster;

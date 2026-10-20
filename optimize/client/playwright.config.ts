@@ -1,0 +1,74 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+
+import {defineConfig, devices} from '@playwright/test';
+
+import {env} from './e2e/env';
+import {LOGIN_TIMEOUT} from './e2e/setup/login';
+
+const isCI = !!process.env.CI;
+
+export default defineConfig({
+  testDir: './e2e',
+  outputDir: './e2e/test-results',
+  fullyParallel: true,
+  forbidOnly: isCI,
+  retries: isCI ? 2 : 0,
+  workers: 2,
+  timeout: 60_000,
+  expect: {timeout: 10_000},
+  reporter: isCI
+    ? [['list'], ['github'], ['html', {open: 'never', outputFolder: 'e2e/playwright-report'}]]
+    : [['list'], ['html', {open: 'never', outputFolder: 'e2e/playwright-report'}]],
+  use: {
+    ...devices['Desktop Chrome'],
+    baseURL: env.optimizeUrl,
+    viewport: {width: 1920, height: 1080},
+    locale: 'en-US',
+    timezoneId: 'Europe/Berlin',
+    actionTimeout: 15_000,
+    navigationTimeout: 30_000,
+    trace: 'retain-on-failure',
+    screenshot: 'only-on-failure',
+  },
+  webServer: {
+    // CI serves the bundle from the build step instead of compiling the Sass and modules on demand.
+    command: isCI ? 'yarn vite preview --port 3000 --strictPort' : 'yarn start',
+    url: env.optimizeUrl,
+    reuseExistingServer: true,
+    timeout: 120_000,
+    env: {BROWSER: 'none'},
+  },
+  projects: [
+    {
+      name: 'setup',
+      testMatch: 'setup/*.setup.ts',
+    },
+    {
+      name: 'e2e',
+      testMatch: 'tests/**/*.spec.ts',
+      dependencies: ['setup'],
+    },
+    {
+      name: 'visual',
+      testMatch: 'visual/**/*.spec.ts',
+      dependencies: ['setup'],
+      // Baselines are rendered on the Linux CI runner; other platforms only exercise the flow.
+      ignoreSnapshots: !isCI && !process.env.E2E_VISUAL,
+      snapshotPathTemplate: '{testDir}/{testFileDir}/__screenshots__/{testFileName}/{arg}{ext}',
+      expect: {toHaveScreenshot: {stylePath: './e2e/visual/screenshot.css'}},
+    },
+    {
+      name: 'cloud',
+      testMatch: 'cloud/**/*.spec.ts',
+      workers: 1,
+      // The Auth0 login alone may take up to LOGIN_TIMEOUT.
+      timeout: 3 * LOGIN_TIMEOUT,
+    },
+  ],
+});

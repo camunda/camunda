@@ -8,9 +8,7 @@
 package io.camunda.zeebe.metrics;
 
 import io.camunda.client.CamundaClient;
-import io.camunda.client.api.command.ClientStatusException;
 import io.camunda.zeebe.util.logging.ThrottledLogger;
-import io.grpc.Status.Code;
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Duration;
@@ -42,7 +40,7 @@ public class ConnectionMonitor {
 
   /**
    * Blocks until the topology request succeeds, logging each broker/partition once. Flips the
-   * {@code app.connected} gauge to 1 on success. Fails fast on authentication errors.
+   * {@code app.connected} gauge to 1 on success.
    */
   public void awaitAndPrintTopology() {
     while (true) {
@@ -58,22 +56,15 @@ public class ConnectionMonitor {
                 });
         connected.set(1);
         return;
-      } catch (final ClientStatusException e) {
-        final var statusCode = e.getStatusCode();
-        if (statusCode.equals(Code.UNAUTHENTICATED) || statusCode.equals(Code.PERMISSION_DENIED)) {
-          // Fail fast through Spring's error path so @PreDestroy hooks run and tests get
-          // a diagnosable stack trace. In production an uncaught exception out of this
-          // thread still terminates the app via SpringApplication's default handling.
-          throw new IllegalStateException(
-              "Failed to retrieve topology due to authentication error; check your config", e);
-        }
-        THROTTLED_LOGGER.warn("Failed to retrieve topology due to client exception: ", e);
-        sleep();
       } catch (final Exception e) {
         THROTTLED_LOGGER.warn("Failed to retrieve topology: ", e);
         sleep();
       }
     }
+  }
+
+  public boolean isConnected() {
+    return connected.get() == 1;
   }
 
   private static void sleep() {

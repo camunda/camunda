@@ -8,17 +8,17 @@
 package io.camunda.configuration.beanoverrides;
 
 import io.camunda.configuration.Camunda;
-import io.camunda.configuration.DocumentBasedSecondaryStorageDatabase;
-import io.camunda.configuration.InterceptorPlugin;
-import io.camunda.configuration.Opensearch;
-import io.camunda.configuration.SecondaryStorage;
-import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
-import io.camunda.configuration.SecondaryStorageDatabase;
-import io.camunda.configuration.SecondaryStorageSecurity;
 import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.configuration.beans.LegacySearchEngineConnectProperties;
 import io.camunda.configuration.beans.SearchEngineConnectProperties;
 import io.camunda.configuration.conditions.ConditionalOnSecondaryStorageType;
+import io.camunda.configuration.data.SecondaryStorage;
+import io.camunda.configuration.data.SecondaryStorage.SecondaryStorageType;
+import io.camunda.configuration.data.secondarystorage.Opensearch;
+import io.camunda.configuration.data.secondarystorage.SecondaryStorageDatabase;
+import io.camunda.configuration.data.secondarystorage.SecondaryStorageSecurity;
+import io.camunda.configuration.data.secondarystorage.documentbased.DocumentBasedSecondaryStorageDatabase;
+import io.camunda.configuration.data.secondarystorage.documentbased.InterceptorPlugin;
 import java.util.Collections;
 import java.util.List;
 import org.slf4j.Logger;

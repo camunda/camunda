@@ -1,0 +1,38 @@
+{
+  "executionPlatform": "Camunda Cloud",
+  "executionPlatformVersion": "8.11.0",
+  "exporter": {
+    "name": "Camunda Modeler",
+    "version": "5.40.0"
+  },
+  "schemaVersion": 18,
+  "id": "notify-requester",
+  "type": "default",
+  "components": [
+    {
+      "type": "text",
+      "text": "### The supplier is on a sanctions list: tell the requester",
+      "id": "Text_435"
+    },
+    {
+      "type": "textfield",
+      "key": "supplierName",
+      "label": "Supplier",
+      "id": "Field_supplierName_436",
+      "readonly": true
+    },
+    {
+      "type": "textfield",
+      "key": "requester",
+      "label": "Requester",
+      "id": "Field_requester_437",
+      "readonly": true
+    },
+    {
+      "type": "textarea",
+      "key": "blockedNotes",
+      "label": "Message to the requester",
+      "id": "Field_blockedNotes_438"
+    }
+  ]
+}

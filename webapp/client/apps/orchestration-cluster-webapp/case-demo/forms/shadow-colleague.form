@@ -1,0 +1,33 @@
+{
+  "executionPlatform": "Camunda Cloud",
+  "executionPlatformVersion": "8.11.0",
+  "exporter": {
+    "name": "Camunda Modeler",
+    "version": "5.40.0"
+  },
+  "schemaVersion": 18,
+  "id": "shadow-colleague",
+  "type": "default",
+  "components": [
+    {
+      "type": "text",
+      "text": "### Step 2 of 3: shadow a colleague",
+      "id": "Text_337"
+    },
+    {
+      "type": "textfield",
+      "key": "buddy",
+      "label": "Colleague",
+      "id": "Field_buddy_338",
+      "validate": {
+        "required": true
+      }
+    },
+    {
+      "type": "textarea",
+      "key": "shadowingNotes",
+      "label": "What did the employee learn?",
+      "id": "Field_shadowingNotes_339"
+    }
+  ]
+}

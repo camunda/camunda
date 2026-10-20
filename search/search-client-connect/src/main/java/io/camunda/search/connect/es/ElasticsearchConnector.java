@@ -106,10 +106,8 @@ public final class ElasticsearchConnector {
     final var httpHosts = getHttpHosts(configuration);
     final var restClientBuilder = RestClient.builder(httpHosts);
 
-    if (configuration.getConnectTimeout() != null || configuration.getSocketTimeout() != null) {
-      restClientBuilder.setRequestConfigCallback(
-          configCallback -> setTimeouts(configCallback, configuration));
-    }
+    restClientBuilder.setRequestConfigCallback(
+        configCallback -> setTimeouts(configCallback, configuration));
 
     final Header[] defaultHeaders =
         new Header[] {

@@ -13,13 +13,16 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.application.Profile;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.springframework.context.support.GenericApplicationContext;
 import org.springframework.core.env.Environment;
+import org.springframework.core.env.MapPropertySource;
 
 class HealthConfigurationInitializerTest {
 
@@ -191,9 +194,12 @@ class HealthConfigurationInitializerTest {
     }
 
     @Test
-    void shouldNotIncludeEsIndicatorsWithRdbms() {
-      // given
+    void shouldIncludeSchemaReadinessCheckForWebappsWithRdbms() {
+      // given - RDBMS initializes its schema per physical tenant, like Elasticsearch/OpenSearch, so
+      // a
+      // started node no longer implies a serviceable tenant
       withRdbmsSecondaryStorage();
+      withHttpGatewayEnabled();
       final var profiles = List.of(Profile.OPERATE.getId(), Profile.TASKLIST.getId());
 
       // when
@@ -201,7 +207,7 @@ class HealthConfigurationInitializerTest {
           initializer.collectReadinessGroupHealthIndicators(profiles, environment);
 
       // then
-      assertThat(indicators).contains("readinessState").doesNotContain("schemaReadinessCheck");
+      assertThat(indicators).contains("readinessState", "schemaReadinessCheck");
     }
 
     @Test
@@ -280,17 +286,35 @@ class HealthConfigurationInitializerTest {
     }
 
     @Test
-    void shouldNotIncludeSchemaReadinessCheckWithRdbms() {
+    void shouldIncludeSchemaReadinessCheckForBrokerWithRdbms() {
       // given
       withRdbmsSecondaryStorage();
-      final var profiles = List.of(Profile.GATEWAY.getId());
+      withHttpGatewayEnabled();
+      final var profiles = List.of(Profile.BROKER.getId());
 
       // when
       final var indicators =
           initializer.collectReadinessGroupHealthIndicators(profiles, environment);
 
       // then
-      assertThat(indicators).contains("gatewayStarted").doesNotContain("schemaReadinessCheck");
+      assertThat(indicators).contains("brokerReady", "nodeIdProviderReady", "schemaReadinessCheck");
+    }
+
+    @Test
+    void shouldNotIncludeSchemaReadinessCheckForBrokerWithRdbmsAndEmbeddedGatewayDisabled() {
+      // given
+      withRdbmsSecondaryStorage();
+      withEmbeddedGateway(false);
+      final var profiles = List.of(Profile.BROKER.getId());
+
+      // when
+      final var indicators =
+          initializer.collectReadinessGroupHealthIndicators(profiles, environment);
+
+      // then
+      assertThat(indicators)
+          .contains("brokerReady", "nodeIdProviderReady")
+          .doesNotContain("schemaReadinessCheck");
     }
 
     @Test
@@ -341,6 +365,33 @@ class HealthConfigurationInitializerTest {
 
       // then — no schemaReadinessCheck because no relevant profile is active
       assertThat(indicators).doesNotContain("schemaReadinessCheck");
+    }
+  }
+
+  @Nested
+  class StatusOrder {
+
+    @ParameterizedTest
+    @ValueSource(strings = {"broker", "gateway"})
+    void shouldRankDegradedBetweenDownAndUpOnEveryNode(final String profile) {
+      // given - a broker-only node reports DEGRADED too, through the per-tenant schema
+      // initialization indicator, so it must not be left to Spring's default order
+      try (final var context = new GenericApplicationContext()) {
+        context.getEnvironment().setActiveProfiles(profile);
+        context
+            .getEnvironment()
+            .getPropertySources()
+            .addFirst(
+                new MapPropertySource(
+                    "test", Map.of("camunda.data.secondary-storage.type", "elasticsearch")));
+
+        // when
+        initializer.initialize(context);
+
+        // then
+        assertThat(context.getEnvironment().getProperty("management.endpoint.health.status.order"))
+            .isEqualTo("down,out-of-service,unknown,degraded,up");
+      }
     }
   }
 }

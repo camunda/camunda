@@ -76,7 +76,7 @@ jobs:
           else
             git checkout -b "${BRANCH}"
             # Commit only parent/pom.xml so unrelated changes can never sneak in.
-            git commit -m "build(project): update backwards.compat.version to ${RELEASE_VERSION} after minor release" -- parent/pom.xml
+            git commit -m "build: update backwards.compat.version to ${RELEASE_VERSION} after minor release" -- parent/pom.xml
             echo "outcome=opened" >> "$GITHUB_OUTPUT"
             echo "branch=${BRANCH}" >> "$GITHUB_OUTPUT"
           fi
@@ -121,7 +121,7 @@ jobs:
               --repo "$GITHUB_REPOSITORY" \
               --base main \
               --head "${BRANCH}" \
-              --title "build(project): update backwards.compat.version to ${RELEASE_VERSION} after minor release" \
+              --title "build: update backwards.compat.version to ${RELEASE_VERSION} after minor release" \
               --body "After the \`${RELEASE_VERSION}\` minor release, \`backwards.compat.version\` on \`main\` should point to \`${RELEASE_VERSION}\` so that CI validates future development against the newly shipped minor.")
           fi
           echo "url=${url}" >> "$GITHUB_OUTPUT"

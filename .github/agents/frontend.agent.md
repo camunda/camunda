@@ -54,9 +54,12 @@ You are the **Frontend Development Specialist** for the orchestration cluster we
 
 ## Core Loop
 
-For tracked Operate work, use the validation tiers and lifecycle in
-[operate-engineering-loop](../../.claude/skills/operate-engineering-loop/SKILL.md) instead of the
-generic sequence below.
+For tracked Operate work, choose one complete workflow instead of the generic sequence below:
+
+- Legacy-to-unified ports: [frontend-operate-migrator](../../.agents/skills/frontend-operate-migrator/SKILL.md)
+- Other Operate changes: [operate-engineering-loop](../../.agents/skills/operate-engineering-loop/SKILL.md)
+
+Never run both workflows for the same ticket.
 
 **For other frontend changes:**
 
@@ -97,14 +100,14 @@ For detailed guidance, consult the frontend docs:
 
 ## Operate
 
-For Operate work, load `.claude/skills/operate-frontend/`. Also load
-`frontend-operate-migrator` when porting legacy behavior.
+For Operate work, load `.agents/skills/operate-frontend/` for conventions and choose the single
+execution workflow above when the task calls for one.
 
 ## Tasklist Pod
 
 When building, changing, or testing features in the Tasklist pod area at `webapp/client/apps/orchestration-cluster-webapp/src/tasklist/`, consult the tasklist-frontend skill:
 
-- `.claude/skills/tasklist-frontend/` — Tasklist pod ownership (Employee Engagement & Tasklist), structure, and boundaries
+- `.agents/skills/tasklist-frontend/` — Tasklist pod ownership (Employee Engagement & Tasklist), structure, and boundaries
 
 Key principles: building blocks live in `src/tasklist/modules/` (split by meaningful unit, kept flat — components in `components/`, everything else at the module root), pages are assembled in `src/tasklist/pages/`, and routes are thin wrappers under `src/routes/_auth/tasklist/`. **Do not modify `src/shared/` for Tasklist work unless an engineer explicitly tells you to** — surface the need instead. Defer to `frontend-feature` for general conventions.
 

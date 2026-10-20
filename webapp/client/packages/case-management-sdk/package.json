@@ -1,0 +1,45 @@
+{
+	"name": "@camunda/case-management-sdk",
+	"version": "0.0.1",
+	"license": "LicenseRef-Camunda-1.0",
+	"description": "Derives the case state (stages, case header, documents) from the BPMN XML and the orchestration cluster APIs",
+	"homepage": "https://github.com/camunda/camunda#readme",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/camunda/camunda.git"
+	},
+	"bugs": {
+		"url": "https://github.com/camunda/camunda/issues"
+	},
+	"keywords": [
+		"camunda",
+		"case-management",
+		"bpmn"
+	],
+	"type": "module",
+	"private": true,
+	"scripts": {
+		"build": "vite build",
+		"typecheck": "tsc",
+		"prepare": "npm run build"
+	},
+	"sideEffects": false,
+	"files": [
+		"dist"
+	],
+	"exports": {
+		".": {
+			"import": {
+				"types": "./dist/index.d.ts",
+				"default": "./dist/index.js"
+			}
+		},
+		"./package.json": "./package.json"
+	},
+	"packageManager": "npm@12.2.0",
+	"devDependencies": {
+		"typescript": "7.0.2",
+		"vite": "8.3.4",
+		"vite-plugin-dts": "5.1.2"
+	}
+}

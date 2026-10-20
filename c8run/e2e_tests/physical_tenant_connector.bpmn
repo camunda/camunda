@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" id="d" targetNamespace="t">
+  <bpmn:process id="c8runPhysicalTenantConnector" isExecutable="true">
+    <bpmn:startEvent id="s"/>
+    <bpmn:sequenceFlow id="f1" sourceRef="s" targetRef="task"/>
+    <bpmn:serviceTask id="task">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="io.camunda:http-json:1" retries="1"/>
+        <zeebe:ioMapping>
+          <zeebe:input source="noAuth" target="authentication.type"/>
+          <zeebe:input source="GET" target="method"/>
+          <zeebe:input source="http://localhost:9600/actuator/health" target="url"/>
+        </zeebe:ioMapping>
+        <zeebe:taskHeaders><zeebe:header key="resultVariable" value="r"/></zeebe:taskHeaders>
+      </bpmn:extensionElements>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="f2" sourceRef="task" targetRef="e"/>
+    <bpmn:endEvent id="e"/>
+  </bpmn:process>
+</bpmn:definitions>

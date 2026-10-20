@@ -12,8 +12,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.application.commons.configuration.WorkingDirectoryConfiguration.WorkingDirectory;
 import io.camunda.configuration.Camunda;
-import io.camunda.configuration.PrimaryStorageBackup.BackupStoreType;
 import io.camunda.configuration.beans.BrokerBasedProperties;
+import io.camunda.configuration.data.primarystorage.PrimaryStorageBackup.BackupStoreType;
 import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
 import io.camunda.zeebe.dynamic.nodeid.NodeIdProvider;
 import io.camunda.zeebe.dynamic.nodeid.fs.DataDirectoryProvider;

@@ -66,6 +66,7 @@ public class AuthenticationControllerTest extends RestControllerTest {
   void setUpAuthorizationServices() {
     when(serviceRegistry.authorizationServices(any())).thenReturn(authorizationServices);
     securityProperties.getAuthorizations().setEnabled(true);
+    securityProperties.getAuthentication().setUnprotectedApi(false);
   }
 
   @Test
@@ -275,7 +276,35 @@ public class AuthenticationControllerTest extends RestControllerTest {
   }
 
   @Test
-  void searchOwnAuthorizationsShouldReturnUnauthorizedForAnonymousAuthentication() {
+  void searchOwnAuthorizationsShouldReturnEmptyResultForAnonymousAuthenticationOnUnprotectedApi() {
+    // given
+    securityProperties.getAuthentication().setUnprotectedApi(true);
+    securityProperties.getAuthorizations().setEnabled(false);
+    when(authenticationProvider.getCamundaAuthentication())
+        .thenReturn(CamundaAuthentication.anonymous());
+    when(authorizationServices.searchOwnAuthorizations(any(AuthorizationQuery.class), any()))
+        .thenReturn(SearchQueryResult.empty());
+
+    // when / then
+    webClient
+        .post()
+        .uri(ME_AUTHORIZATIONS_URL)
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectBody()
+        .json(
+            """
+                {
+                  "authorizationsEnabled": false,
+                  "items": []
+                }""",
+            JsonCompareMode.LENIENT);
+  }
+
+  @Test
+  void searchOwnAuthorizationsShouldReturnUnauthorizedForAnonymousAuthenticationOnProtectedApi() {
     // given
     when(authenticationProvider.getCamundaAuthentication())
         .thenReturn(CamundaAuthentication.anonymous());
@@ -293,7 +322,8 @@ public class AuthenticationControllerTest extends RestControllerTest {
   }
 
   @Test
-  void searchOwnAuthorizationsShouldReturnUnauthorizedWhenNoAuthenticationIsResolved() {
+  void
+      searchOwnAuthorizationsShouldReturnUnauthorizedWhenNoAuthenticationIsResolvedOnProtectedApi() {
     // given
     when(authenticationProvider.getCamundaAuthentication()).thenReturn(null);
 

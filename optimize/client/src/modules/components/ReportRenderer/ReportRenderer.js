@@ -52,7 +52,7 @@ function ReportRenderer(props) {
 
     return (
       <ErrorBoundary>
-        <div className="ReportRenderer">
+        <div className="ReportRenderer" data-testid="report-renderer">
           <View {...props} />
           {report.data.configuration.showInstanceCount && (
             <div className="additionalInfo">

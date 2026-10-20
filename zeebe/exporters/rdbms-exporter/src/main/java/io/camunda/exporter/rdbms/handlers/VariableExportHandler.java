@@ -8,11 +8,14 @@
 package io.camunda.exporter.rdbms.handlers;
 
 import io.camunda.db.rdbms.write.domain.VariableDbModel;
+import io.camunda.db.rdbms.write.domain.VariableDbModel.ProtectionModeDbModel;
 import io.camunda.db.rdbms.write.service.VariableWriter;
 import io.camunda.exporter.rdbms.RdbmsExportHandler;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 public class VariableExportHandler implements RdbmsExportHandler<VariableRecordValue> {
 
@@ -55,6 +58,17 @@ public class VariableExportHandler implements RdbmsExportHandler<VariableRecordV
         .tenantId(value.getTenantId())
         .elementInstanceKey(value.getElementInstanceKey())
         .partitionId(record.getPartitionId())
+        .protectionModes(mapProtectionModes(value))
         .build();
+  }
+
+  private static Set<ProtectionModeDbModel> mapProtectionModes(final VariableRecordValue value) {
+    return value.getMetadata().getProtectionModes().stream()
+        .map(
+            mode ->
+                switch (mode) {
+                  case REDACT -> ProtectionModeDbModel.REDACT;
+                })
+        .collect(Collectors.toSet());
   }
 }
