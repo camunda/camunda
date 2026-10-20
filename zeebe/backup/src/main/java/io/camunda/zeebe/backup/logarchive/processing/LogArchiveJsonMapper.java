@@ -75,6 +75,9 @@ public final class LogArchiveJsonMapper {
         event.getArchivedPosition(),
         timeline ? event.getStartIndex() : null,
         timeline ? event.getParentTimelineId() : null,
+        timeline ? recordTimestamp : null,
+        timeline ? event.getParentIndex() : null,
+        timeline ? event.getParentPosition() : null,
         logArchived
             ? event.getObjects().stream().map(LogArchiveJsonMapper::logObject).toList()
             : List.of(),
@@ -99,18 +102,27 @@ public final class LogArchiveJsonMapper {
         commitEntry(partitionId, eventIntent, event, recordPosition, recordTimestamp));
   }
 
-  /** The registry file of the timeline that the {@code TIMELINE_STARTED} event starts. */
-  public static TimelineFile timelineFile(final int partitionId, final LogArchiveRecord event) {
+  /**
+   * The registry file of the timeline that the {@code TIMELINE_STARTED} event starts.
+   *
+   * @param recordTimestamp the value of the commit entry's {@code startedAt}, see {@link
+   *     LogArchiveRecordsProcessor#NO_RECORD_TIMESTAMP}
+   */
+  public static TimelineFile timelineFile(
+      final int partitionId, final LogArchiveRecord event, final long recordTimestamp) {
     return new TimelineFile(
         LogArchiveJson.FORMAT_VERSION,
         event.getTimelineId(),
         partitionId,
         event.getParentTimelineId(),
         event.getStartIndex(),
-        event.getSeq());
+        event.getSeq(),
+        recordTimestamp,
+        event.getParentIndex(),
+        event.getParentPosition());
   }
 
-  /** The registry file as {@link #timelineFile(int, LogArchiveRecord)} would write it. */
+  /** The registry file as {@link #timelineFile(int, LogArchiveRecord, long)} would write it. */
   public static TimelineFile timelineFile(final CommitEntry entry) {
     return new TimelineFile(
         LogArchiveJson.FORMAT_VERSION,
@@ -118,7 +130,10 @@ public final class LogArchiveJsonMapper {
         entry.partitionId(),
         entry.parentTimelineId() == null ? "" : entry.parentTimelineId(),
         entry.startIndex() == null ? -1 : entry.startIndex(),
-        entry.seq());
+        entry.seq(),
+        entry.startedAt() == null ? -1 : entry.startedAt(),
+        entry.parentIndex() == null ? -1 : entry.parentIndex(),
+        entry.parentPosition() == null ? -1 : entry.parentPosition());
   }
 
   /** The handover file for the store of the old backups. */

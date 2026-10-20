@@ -608,7 +608,16 @@ final class LogArchivePublisherTest {
   }
 
   private static TimelineFile timelineFile() {
-    return new TimelineFile(LogArchiveJson.FORMAT_VERSION, TIMELINE, PARTITION, "parent", 501, 1);
+    return new TimelineFile(
+        LogArchiveJson.FORMAT_VERSION,
+        TIMELINE,
+        PARTITION,
+        "parent",
+        501,
+        1,
+        1792137600500L,
+        500,
+        4100);
   }
 
   private static PublishRequest timelineStarted(final long seq) {

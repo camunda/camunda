@@ -11,6 +11,7 @@ import io.camunda.zeebe.backup.logarchive.format.EncodedLogObject;
 import io.camunda.zeebe.backup.logarchive.format.LogArchiveFrame;
 import io.camunda.zeebe.backup.logarchive.format.LogObjectEncoder;
 import io.camunda.zeebe.backup.logarchive.leader.LogArchiverTimeline.Effective;
+import io.camunda.zeebe.backup.logarchive.leader.LogArchiverTimeline.Takeover;
 import io.camunda.zeebe.backup.logarchive.model.LogArchiveKeys;
 import io.camunda.zeebe.backup.logarchive.processing.LogArchiveListener;
 import io.camunda.zeebe.backup.logarchive.state.LogArchiveMeta;
@@ -99,6 +100,9 @@ public final class LogArchiver extends Actor
   private String prefix = "";
   private long startIndex = -1;
   private String parentTimelineId = "";
+  // where the timeline being started takes over its parent, -1 if unknown (spec section 19.3)
+  private long parentIndex = -1;
+  private long parentPosition = -1;
   // whether the replicated state holds a timeline, as far as this archiver knows
   private boolean stateHasTimeline;
   // set by activate(); lets the first timeline start once recovery finds none
@@ -300,7 +304,8 @@ public final class LogArchiver extends Actor
           attempt ->
               attempt == 0 ? effectiveTimelineId : forkTimelineId(effectiveTimelineId, 1, attempt),
           0,
-          recoveredTimelineId);
+          recoveredTimelineId,
+          effective.takeover());
     } else if (bucketAhead) {
       LOG.warn(
           "Partition {}: the log archive bucket is ahead of the recovered state of timeline '{}'"
@@ -311,7 +316,8 @@ public final class LogArchiver extends Actor
       startTimeline(
           attempt -> forkTimelineId(recoveredTimelineId, meta.getNextSeq(), attempt),
           1,
-          recoveredTimelineId);
+          recoveredTimelineId,
+          null);
     } else {
       timelineId = recoveredTimelineId;
       prefix = LogArchiveKeys.partitionPrefix(timelineId, partitionId);
@@ -334,7 +340,8 @@ public final class LogArchiver extends Actor
         attempt ->
             attempt == 0 ? effectiveTimelineId : forkTimelineId(effectiveTimelineId, 1, attempt),
         0,
-        "");
+        "",
+        null);
   }
 
   /**
@@ -369,9 +376,19 @@ public final class LogArchiver extends Actor
    * overwrite that history.
    */
   private void startTimeline(
-      final IntFunction<String> candidates, final int attempt, final String parent) {
+      final IntFunction<String> candidates,
+      final int attempt,
+      final String parent,
+      final @Nullable Takeover takeover) {
     startIndex = source.firstIndex();
     parentTimelineId = parent;
+    if (takeover != null && takeover.parentTimelineId().equals(parent)) {
+      parentIndex = takeover.parentIndex();
+      parentPosition = takeover.parentPosition();
+    } else {
+      parentIndex = -1;
+      parentPosition = -1;
+    }
     timelineId = "";
     state = State.RESOLVE_TIMELINE;
     resolveTimeline(candidates, attempt);
@@ -436,7 +453,9 @@ public final class LogArchiver extends Actor
         new LogArchiveRecord()
             .setTimelineId(timelineId)
             .setStartIndex(startIndex)
-            .setParentTimelineId(parentTimelineId);
+            .setParentTimelineId(parentTimelineId)
+            .setParentIndex(parentIndex)
+            .setParentPosition(parentPosition);
     if (!write(LogArchiveIntent.START_TIMELINE, record)) {
       retryLater(this::writeStartTimeline);
     }

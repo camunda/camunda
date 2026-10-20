@@ -30,6 +30,11 @@ import org.jspecify.annotations.Nullable;
  * @param recordTimestamp timestamp of the event record that this entry describes, in epoch millis
  * @param startIndex only for {@link Type#TIMELINE_STARTED}
  * @param parentTimelineId only for {@link Type#TIMELINE_STARTED}
+ * @param startedAt only for {@link Type#TIMELINE_STARTED}, the event's record timestamp
+ * @param parentIndex only for {@link Type#TIMELINE_STARTED}, the Raft index of the last entry the
+ *     timeline shares with its parent, -1 if unknown
+ * @param parentPosition only for {@link Type#TIMELINE_STARTED}, the position of the last record the
+ *     timeline shares with its parent, -1 if unknown
  * @param objects only for {@link Type#LOG_ARCHIVED}
  * @param checkpoints only for {@link Type#LOG_ARCHIVED}
  * @param snapshot only for {@link Type#SNAPSHOT_ARCHIVED}
@@ -47,6 +52,9 @@ import org.jspecify.annotations.Nullable;
   "archivedPosition",
   "startIndex",
   "parentTimelineId",
+  "startedAt",
+  "parentIndex",
+  "parentPosition",
   "objects",
   "checkpoints",
   "snapshot",
@@ -65,13 +73,16 @@ public record CommitEntry(
     long archivedPosition,
     @JsonInclude(JsonInclude.Include.NON_NULL) @Nullable Long startIndex,
     @JsonInclude(JsonInclude.Include.NON_NULL) @Nullable String parentTimelineId,
+    @JsonInclude(JsonInclude.Include.NON_NULL) @Nullable Long startedAt,
+    @JsonInclude(JsonInclude.Include.NON_NULL) @Nullable Long parentIndex,
+    @JsonInclude(JsonInclude.Include.NON_NULL) @Nullable Long parentPosition,
     @JsonInclude(JsonInclude.Include.NON_EMPTY) List<LogObjectJson> objects,
     @JsonInclude(JsonInclude.Include.NON_EMPTY) List<CoveredCheckpointJson> checkpoints,
     @JsonInclude(JsonInclude.Include.NON_NULL) @Nullable ArchivedSnapshotJson snapshot,
     @JsonInclude(JsonInclude.Include.NON_NULL) @Nullable IndexChunkJson chunk,
     @JsonInclude(JsonInclude.Include.NON_NULL) @Nullable HandoverJson handover) {
 
-  /** A commit entry without a handover, i.e. of any type but {@link Type#HANDOVER}. */
+  /** A commit entry without a handover and without the takeover fields of a started timeline. */
   public CommitEntry(
       final int formatVersion,
       final String timelineId,
@@ -100,6 +111,9 @@ public record CommitEntry(
         archivedPosition,
         startIndex,
         parentTimelineId,
+        null,
+        null,
+        null,
         objects,
         checkpoints,
         snapshot,

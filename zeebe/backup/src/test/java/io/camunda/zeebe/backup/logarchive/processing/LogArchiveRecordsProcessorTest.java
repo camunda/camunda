@@ -123,8 +123,55 @@ final class LogArchiveRecordsProcessorTest {
     // then
     assertThat(harness.published).hasSize(2);
     assertThat(harness.published.get(0).timeline())
-        .isEqualTo(new TimelineFile(1, TIMELINE, 1, "parent", 1, 1));
+        .isEqualTo(new TimelineFile(1, TIMELINE, 1, "parent", 1, 1, -1, -1, -1));
     assertThat(harness.published.get(1).timeline()).isNull();
+  }
+
+  @Test
+  void shouldWriteTakeoverPointOfTimelineStartedIntoCommitEntryAndTimelineFile() {
+    // given
+    final var command = startTimeline(TIMELINE, 1).setParentIndex(77).setParentPosition(910);
+
+    // when
+    harness.accept(LogArchiveIntent.START_TIMELINE, command);
+
+    // then
+    final var request = harness.published.getFirst();
+    final var entry = LogArchiveJson.read(request.commitEntryJson(), CommitEntry.class);
+    assertThat(entry.startedAt()).isEqualTo(entry.recordTimestamp());
+    assertThat(entry.parentIndex()).isEqualTo(77L);
+    assertThat(entry.parentPosition()).isEqualTo(910L);
+    assertThat(request.timeline())
+        .isEqualTo(
+            new TimelineFile(1, TIMELINE, 1, "parent", 1, 1, entry.recordTimestamp(), 77, 910));
+  }
+
+  @Test
+  void shouldWriteUnknownTakeoverPointWhenTimelineStartedCarriesNone() {
+    // when
+    harness.accept(LogArchiveIntent.START_TIMELINE, startTimeline(TIMELINE, 1));
+
+    // then
+    final var entry =
+        LogArchiveJson.read(harness.published.getFirst().commitEntryJson(), CommitEntry.class);
+    assertThat(entry.parentIndex()).isEqualTo(-1L);
+    assertThat(entry.parentPosition()).isEqualTo(-1L);
+  }
+
+  @Test
+  void shouldOmitTakeoverFieldsFromCommitEntriesOtherThanTimelineStarted() {
+    // given
+    harness.accept(LogArchiveIntent.START_TIMELINE, startTimeline(TIMELINE, 1));
+
+    // when
+    harness.accept(LogArchiveIntent.ARCHIVE_LOG, archiveLog(object(1)));
+
+    // then
+    final var entry =
+        LogArchiveJson.read(harness.published.get(1).commitEntryJson(), CommitEntry.class);
+    assertThat(entry.startedAt()).isNull();
+    assertThat(entry.parentIndex()).isNull();
+    assertThat(entry.parentPosition()).isNull();
   }
 
   @Test

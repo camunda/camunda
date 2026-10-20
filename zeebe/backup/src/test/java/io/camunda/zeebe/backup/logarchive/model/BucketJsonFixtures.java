@@ -88,8 +88,12 @@ final class BucketJsonFixtures {
         -1,
         2600001L,
         "tl-0",
+        1792137600500L,
+        2599990L,
+        4090L,
         List.of(),
         List.of(),
+        null,
         null,
         null);
   }
@@ -157,7 +161,7 @@ final class BucketJsonFixtures {
   }
 
   static TimelineFile timelineFile() {
-    return new TimelineFile(1, "tl-0.r5", 1, "tl-0", 2731001, 1);
+    return new TimelineFile(1, "tl-0.r5", 1, "tl-0", 2731001, 1, 1792137600500L, 2731000, 4931877);
   }
 
   static SnapshotDescriptorFile snapshotDescriptor() {
