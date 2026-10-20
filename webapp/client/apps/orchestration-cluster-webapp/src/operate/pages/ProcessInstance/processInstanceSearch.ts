@@ -17,7 +17,9 @@ const processInstanceSelectionSchema = z.object({
 	anchorElementId: z.coerce.string().optional(),
 });
 
-const processInstanceSearchSchema = processInstanceSelectionSchema.loose();
+const processInstanceSearchSchema = processInstanceSelectionSchema
+	.extend({tenantId: z.coerce.string().optional()})
+	.loose();
 
 type ProcessInstanceSearch = z.infer<typeof processInstanceSearchSchema>;
 type ProcessInstanceSelection = z.infer<typeof processInstanceSelectionSchema>;
@@ -32,8 +34,8 @@ type GetDefaultProcessInstanceTabOptions = {
 };
 
 function validateProcessInstanceRouteSearch(
-	search: z.input<typeof processInstanceSelectionSchema>,
-): ProcessInstanceSelection {
+	search: z.input<typeof processInstanceSelectionSchema> & {tenantId?: string},
+): ProcessInstanceSelection & {tenantId?: string} {
 	return processInstanceSearchSchema.parse(search);
 }
 
