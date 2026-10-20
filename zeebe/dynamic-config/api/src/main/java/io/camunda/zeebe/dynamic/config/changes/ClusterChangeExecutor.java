@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.dynamic.config.changes;
 
+import static io.camunda.zeebe.util.Unit.unit;
+
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
@@ -41,12 +43,12 @@ public interface ClusterChangeExecutor {
     @Override
     public ActorFuture<Void> preScaling(
         final int currentClusterSize, final Set<MemberId> clusterMembers) {
-      return CompletableActorFuture.completed(null);
+      return CompletableActorFuture.completed(unit());
     }
 
     @Override
     public ActorFuture<Void> postScaling(final Set<MemberId> clusterMembers) {
-      return CompletableActorFuture.completed(null);
+      return CompletableActorFuture.completed(unit());
     }
   }
 }

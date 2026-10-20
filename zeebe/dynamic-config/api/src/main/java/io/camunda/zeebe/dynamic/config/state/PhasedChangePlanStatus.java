@@ -7,10 +7,7 @@
  */
 package io.camunda.zeebe.dynamic.config.state;
 
-import org.jspecify.annotations.NullMarked;
-
 /** Terminal outcome of a {@link PhasedChangePlan}. */
-@NullMarked
 public enum PhasedChangePlanStatus {
   COMPLETED,
   CANCELLED,

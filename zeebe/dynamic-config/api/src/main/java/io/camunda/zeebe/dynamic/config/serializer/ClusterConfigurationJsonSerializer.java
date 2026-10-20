@@ -13,7 +13,6 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo.Id;
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.OperationId;
-import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 import tools.jackson.core.JsonParser;
 import tools.jackson.databind.DeserializationContext;
@@ -45,7 +44,6 @@ import tools.jackson.databind.ser.std.ToStringSerializer;
  * {@link MapperFeature} cover it, and both are properties of the model's own shape rather than
  * lists to keep in step with it.
  */
-@NullMarked
 public final class ClusterConfigurationJsonSerializer {
 
   private static final ObjectMapper JSON =

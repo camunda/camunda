@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.dynamic.config.api;
 
+import static java.util.Objects.requireNonNull;
+
 import com.google.common.collect.ImmutableSortedMap;
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
@@ -15,12 +17,9 @@ import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.Phase;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.SortedMap;
-import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
-@NullMarked
 public record ClusterConfigurationChangeResponse(
     long changeId,
     LegacyConfigurationChangeResponse legacyResponse,
@@ -30,7 +29,7 @@ public record ClusterConfigurationChangeResponse(
     @Nullable CurrentConfigurationChangeResponse response) {
 
   public ClusterConfigurationChangeResponse {
-    Objects.requireNonNull(legacyResponse, "legacyResponse must not be null");
+    requireNonNull(legacyResponse, "legacyResponse must not be null");
   }
 
   public record LegacyConfigurationChangeResponse(
@@ -55,9 +54,9 @@ public record ClusterConfigurationChangeResponse(
       List<Phase> phases) {
 
     public CurrentConfigurationChangeResponse {
-      Objects.requireNonNull(currentConfiguration, "currentConfiguration must not be null");
-      Objects.requireNonNull(expectedConfiguration, "expectedConfiguration must not be null");
-      Objects.requireNonNull(phases, "phases must not be null");
+      requireNonNull(currentConfiguration, "currentConfiguration must not be null");
+      requireNonNull(expectedConfiguration, "expectedConfiguration must not be null");
+      requireNonNull(phases, "phases must not be null");
     }
   }
 }

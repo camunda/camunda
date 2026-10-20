@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.dynamic.config.impl.serializer;
 
+import static java.util.Objects.requireNonNull;
+
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.Timestamp;
 import io.atomix.cluster.MemberId;
@@ -412,7 +414,9 @@ public class ProtoBufSerializer
 
   private PartitionConfig encodePartitionConfig(final DynamicPartitionConfig config) {
     return PartitionConfig.newBuilder()
-        .setExporting(encodeExportingConfig(config.exporting()))
+        .setExporting(
+            encodeExportingConfig(
+                requireNonNull(config.exporting(), "exporting config must be initialized")))
         .build();
   }
 

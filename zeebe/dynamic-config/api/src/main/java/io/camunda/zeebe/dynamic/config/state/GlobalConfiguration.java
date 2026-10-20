@@ -7,13 +7,14 @@
  */
 package io.camunda.zeebe.dynamic.config.state;
 
+import static java.util.Objects.requireNonNull;
+
 import com.google.common.collect.ImmutableSortedMap;
 import io.atomix.cluster.MemberId;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.SortedMap;
 import java.util.TreeMap;
@@ -21,7 +22,6 @@ import java.util.function.Function;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -47,7 +47,6 @@ import org.jspecify.annotations.Nullable;
  * @param pendingChanges the ongoing cluster-level change plan, if any
  * @param lastChange the last completed cluster-level change plan, if any
  */
-@NullMarked
 public record GlobalConfiguration(
     long version,
     Optional<String> clusterId,
@@ -60,12 +59,11 @@ public record GlobalConfiguration(
   public static final long INITIAL_VERSION = 1;
 
   public GlobalConfiguration {
-    Objects.requireNonNull(clusterId, "clusterId must not be null");
-    Objects.requireNonNull(members, "members must not be null");
-    Objects.requireNonNull(
-        partitionDistributorConfig, "partitionDistributorConfig must not be null");
-    Objects.requireNonNull(pendingChanges, "pendingChanges must not be null");
-    Objects.requireNonNull(lastChange, "lastChange must not be null");
+    requireNonNull(clusterId, "clusterId must not be null");
+    requireNonNull(members, "members must not be null");
+    requireNonNull(partitionDistributorConfig, "partitionDistributorConfig must not be null");
+    requireNonNull(pendingChanges, "pendingChanges must not be null");
+    requireNonNull(lastChange, "lastChange must not be null");
     members = ImmutableSortedMap.copyOf(members);
   }
 

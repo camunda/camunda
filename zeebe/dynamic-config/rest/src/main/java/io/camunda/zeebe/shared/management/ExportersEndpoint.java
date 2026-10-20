@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.shared.management;
 
+import static java.util.Objects.requireNonNull;
+
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ExporterDeleteRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ExporterDisableRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ExporterEnableRequest;
@@ -64,7 +66,7 @@ public class ExportersEndpoint {
   @PostMapping(path = "/{exporterId}/enable")
   public CompletableFuture<ResponseEntity<?>> enableExporter(
       @PathVariable("exporterId") final String exporterId,
-      @RequestBody(required = false) final InitializationInfo initializeInfo,
+      @RequestBody(required = false) final @Nullable InitializationInfo initializeInfo,
       @RequestParam(defaultValue = "false") final boolean dryRun,
       @RequestParam(required = false) final @Nullable String physicalTenant) {
     return requestSender
@@ -109,11 +111,12 @@ public class ExportersEndpoint {
 
   private ResponseEntity<?> mapQueryResponse(
       final Optional<String> physicalTenant,
-      final Either<ErrorResponse, CurrentClusterConfiguration> response,
-      final Throwable throwable) {
+      final @Nullable Either<ErrorResponse, CurrentClusterConfiguration> response,
+      final @Nullable Throwable throwable) {
     if (throwable != null) {
       return ClusterApiUtils.mapError(throwable);
     }
+    requireNonNull(response);
 
     if (response.isLeft()) {
       return ClusterApiUtils.mapErrorResponse(response.getLeft());

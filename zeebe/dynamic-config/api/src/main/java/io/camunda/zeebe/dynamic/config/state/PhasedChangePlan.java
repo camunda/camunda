@@ -15,7 +15,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
-import org.jspecify.annotations.NullMarked;
 
 /**
  * A pre-computed sequence of phases for cluster-spanning operations that touch both {@link
@@ -35,7 +34,6 @@ import org.jspecify.annotations.NullMarked;
  * across its {@link PartitionGroupPhase}s. Multiple plans with disjoint {@link Groups} scopes may
  * be pending concurrently; see {@link PhasedChangeState}.
  */
-@NullMarked
 public record PhasedChangePlan(
     long id, int currentPhaseIndex, List<Phase> phases, Instant startedAt) {
 

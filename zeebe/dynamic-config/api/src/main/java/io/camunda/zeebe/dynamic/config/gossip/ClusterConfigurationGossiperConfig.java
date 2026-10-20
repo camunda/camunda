@@ -9,6 +9,7 @@ package io.camunda.zeebe.dynamic.config.gossip;
 
 import java.time.Duration;
 import java.util.Optional;
+import org.jspecify.annotations.Nullable;
 
 public record ClusterConfigurationGossiperConfig(
     Duration syncDelay,
@@ -32,11 +33,11 @@ public record ClusterConfigurationGossiperConfig(
           DEFAULT_BOOTSTRAP_TIMEOUT);
 
   public ClusterConfigurationGossiperConfig(
-      final Duration syncDelay,
-      final Duration syncRequestTimeout,
-      final Integer gossipFanout,
-      final Duration syncInitializerDelay,
-      final Duration bootstrapTimeout) {
+      final @Nullable Duration syncDelay,
+      final @Nullable Duration syncRequestTimeout,
+      final @Nullable Integer gossipFanout,
+      final @Nullable Duration syncInitializerDelay,
+      final @Nullable Duration bootstrapTimeout) {
     this.syncDelay = Optional.ofNullable(syncDelay).orElse(DEFAULT_SYNC_DELAY);
     this.syncRequestTimeout =
         Optional.ofNullable(syncRequestTimeout).orElse(DEFAULT_SYNC_REQUEST_TIMEOUT);

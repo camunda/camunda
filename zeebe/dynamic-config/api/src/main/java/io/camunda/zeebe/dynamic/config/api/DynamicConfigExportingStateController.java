@@ -16,7 +16,6 @@ import io.camunda.zeebe.dynamic.config.state.PartitionState;
 import java.time.Duration;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
-import org.jspecify.annotations.NullMarked;
 
 /**
  * Applies exporting state changes through dynamic cluster configuration, scoped to the physical
@@ -26,7 +25,6 @@ import org.jspecify.annotations.NullMarked;
  * <p>The poll interval and timeout used while awaiting the change are configurable so tests do not
  * have to wait on production defaults.
  */
-@NullMarked
 public final class DynamicConfigExportingStateController implements ExportingStateController {
 
   private static final Duration POLL_INTERVAL = Duration.ofMillis(200);
@@ -143,8 +141,8 @@ public final class DynamicConfigExportingStateController implements ExportingSta
    * {@link NullPointerException}.
    */
   private static ExportingState exportingStateOf(final PartitionState partition) {
-    final var config = partition.config();
-    return config.isInitialized() ? config.exporting().state() : ExportingState.UNKNOWN;
+    final var exporting = partition.config().exporting();
+    return exporting != null ? exporting.state() : ExportingState.UNKNOWN;
   }
 
   private final class TenantController implements ExportingStateController.ByTenant {

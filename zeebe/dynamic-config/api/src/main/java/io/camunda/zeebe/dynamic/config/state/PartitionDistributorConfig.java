@@ -11,14 +11,12 @@ import io.camunda.zeebe.dynamic.config.PartitionDistributor;
 import io.camunda.zeebe.dynamic.config.util.RoundRobinPartitionDistributor;
 import io.camunda.zeebe.dynamic.config.util.ZoneAwarePartitionDistributor;
 import java.util.List;
-import org.jspecify.annotations.NullMarked;
 
 /**
  * The partition distributor configuration stored in the cluster's agreed state. Keeping this in the
  * gossiped topology ensures that late-joining or recovering brokers use the same distributor as the
  * rest of the cluster rather than falling back to static configuration.
  */
-@NullMarked
 public sealed interface PartitionDistributorConfig {
 
   default PartitionDistributor toDistributor() {

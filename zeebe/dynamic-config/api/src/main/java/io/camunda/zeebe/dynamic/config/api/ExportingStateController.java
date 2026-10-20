@@ -8,7 +8,6 @@
 package io.camunda.zeebe.dynamic.config.api;
 
 import java.util.concurrent.CompletableFuture;
-import org.jspecify.annotations.NullMarked;
 
 /**
  * Resolves either the {@link ByTenant} controller for a single physical tenant, or the {@link
@@ -19,7 +18,6 @@ import org.jspecify.annotations.NullMarked;
  * and {@code /v2/exporting} endpoints (per-tenant) and the {@code /cluster/v2/exporting} endpoint
  * (cluster-wide) all go through it, so they cannot drift on how a change is submitted or awaited.
  */
-@NullMarked
 public interface ExportingStateController {
 
   ByTenant getByTenant(String physicalTenantId);

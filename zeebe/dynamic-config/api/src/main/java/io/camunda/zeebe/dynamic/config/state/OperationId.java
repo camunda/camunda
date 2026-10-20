@@ -7,8 +7,6 @@
  */
 package io.camunda.zeebe.dynamic.config.state;
 
-import org.jspecify.annotations.NullMarked;
-
 /**
  * Identifies one operation within a {@link DependencyChangePlan}.
  *
@@ -17,7 +15,6 @@ import org.jspecify.annotations.NullMarked;
  * across gossip and comparable for deterministic ordering — two brokers rendering the same plan
  * must produce the same list.
  */
-@NullMarked
 public record OperationId(int value) implements Comparable<OperationId> {
 
   public OperationId {

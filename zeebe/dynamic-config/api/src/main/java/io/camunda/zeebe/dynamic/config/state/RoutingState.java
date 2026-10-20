@@ -7,11 +7,12 @@
  */
 package io.camunda.zeebe.dynamic.config.state;
 
+import static java.util.Objects.requireNonNull;
+
 import com.google.common.collect.ImmutableSortedSet;
 import io.camunda.zeebe.dynamic.config.state.RoutingState.RequestHandling.AllPartitions;
 import io.camunda.zeebe.protocol.Protocol;
 import java.util.HashSet;
-import java.util.Objects;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
@@ -29,8 +30,8 @@ import java.util.stream.IntStream;
 public record RoutingState(
     long version, RequestHandling requestHandling, MessageCorrelation messageCorrelation) {
   public RoutingState {
-    Objects.requireNonNull(requestHandling);
-    Objects.requireNonNull(messageCorrelation);
+    requireNonNull(requestHandling);
+    requireNonNull(messageCorrelation);
 
     if (version < 0) {
       throw new IllegalArgumentException("Version must be positive");
@@ -137,8 +138,8 @@ public record RoutingState(
       }
 
       public ActivePartitions {
-        Objects.requireNonNull(additionalActivePartitions);
-        Objects.requireNonNull(inactivePartitions);
+        requireNonNull(additionalActivePartitions);
+        requireNonNull(inactivePartitions);
         validatePartitionCount(basePartitionCount);
 
         for (final int activePartition : additionalActivePartitions) {

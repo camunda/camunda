@@ -8,7 +8,6 @@
 package io.camunda.zeebe.dynamic.config.api;
 
 import io.camunda.zeebe.util.Either;
-import org.jspecify.annotations.NullMarked;
 
 /**
  * Validates a specific type of {@link ClusterConfigurationManagementRequest} before it is applied.
@@ -26,7 +25,6 @@ import org.jspecify.annotations.NullMarked;
  * @param <R> the request type produced by validation; implementations that don't need to rewrite
  *     the request should use {@code T} and return it unchanged
  */
-@NullMarked
 public interface ClusterConfigurationRequestValidator<
     T extends ClusterConfigurationManagementRequest,
     R extends ClusterConfigurationManagementRequest> {

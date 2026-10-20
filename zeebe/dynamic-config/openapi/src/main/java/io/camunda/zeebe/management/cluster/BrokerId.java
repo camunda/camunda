@@ -14,6 +14,8 @@ import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.management.cluster.BrokerId.Integer;
 import io.camunda.zeebe.management.cluster.BrokerId.String;
 import java.util.Objects;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
 /**
  * A broker ID that is either an integer (non-zone-aware clusters) or a string (zone-aware clusters,
@@ -22,6 +24,7 @@ import java.util.Objects;
  * <p>This is used to deserialize BrokerId from openAPI spec, to allow deserializing it from an
  * integer or from a string.
  */
+@NullMarked
 @JsonDeserialize(using = BrokerIdDeserializer.class)
 public abstract sealed class BrokerId permits Integer, String {
 
@@ -35,7 +38,7 @@ public abstract sealed class BrokerId permits Integer, String {
   }
 
   @Override
-  public boolean equals(final Object o) {
+  public boolean equals(final @Nullable Object o) {
     if (o instanceof final BrokerId other) {
       return Objects.equals(value(), other.value());
     }
@@ -48,7 +51,7 @@ public abstract sealed class BrokerId permits Integer, String {
     return java.lang.String.valueOf(value());
   }
 
-  public boolean valueEquals(final Object other) {
+  public boolean valueEquals(final @Nullable Object other) {
     return Objects.equals(value(), other);
   }
 

@@ -12,7 +12,6 @@ import static io.camunda.zeebe.util.Unit.unit;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import java.util.SortedSet;
-import org.jspecify.annotations.NullMarked;
 
 /**
  * Performs the local, broker-side steps of an in-process restore of a single partition while the
@@ -21,7 +20,6 @@ import org.jspecify.annotations.NullMarked;
  *
  * <p>Implementations must be idempotent: every step may be retried until it succeeds.
  */
-@NullMarked
 public interface RestoreChangeExecutor {
 
   /** Drops the member's local disk data for {@code partitionId}, preparing it for a restore. */
