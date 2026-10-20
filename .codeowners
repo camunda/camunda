@@ -273,6 +273,7 @@
 
 # Zeebe exporters
 /zeebe/exporter-common/     @camunda/data-layer
+/zeebe/exporter-config-support/ @camunda/core-features
 /zeebe/exporter-test/       @camunda/data-layer
 /zeebe/exporters/           @camunda/data-layer
 
