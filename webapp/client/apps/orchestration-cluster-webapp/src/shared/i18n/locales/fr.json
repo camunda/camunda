@@ -913,7 +913,17 @@
 			"caseActivitySlow": "L’activité a démarré. Sa tâche met plus de temps que d’habitude à s’afficher.",
 			"caseActivityCompletedTimes": "Terminée {{count}}×",
 			"caseActivityCompletedBefore": "Déjà terminée {{count}}×",
-			"caseStageBlockedNoWork": "L’étape attend la résolution de l’incident"
+			"caseStageBlockedNoWork": "L’étape attend la résolution de l’incident",
+			"caseAutomationAutomated": "Étape automatique",
+			"caseAutomationDecision": "Décision",
+			"caseAutomationCalledProcess": "Processus appelé",
+			"caseAutomationTimer": "Minuteur",
+			"caseAutomationMessage": "Message",
+			"caseAutomationSignal": "Signal",
+			"caseAutomationEvent": "Événement",
+			"caseAutomationWaiting": "En attente",
+			"caseAutomationIncident": "Incident",
+			"caseAutomationInstances": "{{count}} instances"
 		},
 		"operate": {
 			"dashboard": {

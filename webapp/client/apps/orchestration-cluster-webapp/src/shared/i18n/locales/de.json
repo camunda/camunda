@@ -910,7 +910,17 @@
 			"caseActivitySlow": "Die Aktivität wurde gestartet. Ihre Aufgabe erscheint später als üblich.",
 			"caseActivityCompletedTimes": "{{count}}× erledigt",
 			"caseActivityCompletedBefore": "Zuvor {{count}}× erledigt",
-			"caseStageBlockedNoWork": "Die Phase wartet, bis der Vorfall gelöst ist"
+			"caseStageBlockedNoWork": "Die Phase wartet, bis der Vorfall gelöst ist",
+			"caseAutomationAutomated": "Automatischer Schritt",
+			"caseAutomationDecision": "Entscheidung",
+			"caseAutomationCalledProcess": "Aufgerufener Prozess",
+			"caseAutomationTimer": "Timer",
+			"caseAutomationMessage": "Nachricht",
+			"caseAutomationSignal": "Signal",
+			"caseAutomationEvent": "Ereignis",
+			"caseAutomationWaiting": "Wartet",
+			"caseAutomationIncident": "Vorfall",
+			"caseAutomationInstances": "{{count}} Instanzen"
 		},
 		"operate": {
 			"dashboard": {

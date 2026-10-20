@@ -910,7 +910,17 @@
 			"caseActivitySlow": "La actividad se inició. Su tarea tarda más de lo habitual en aparecer.",
 			"caseActivityCompletedTimes": "Hecha {{count}}×",
 			"caseActivityCompletedBefore": "Hecha {{count}}× antes",
-			"caseStageBlockedNoWork": "La etapa espera hasta que se resuelva el incidente"
+			"caseStageBlockedNoWork": "La etapa espera hasta que se resuelva el incidente",
+			"caseAutomationAutomated": "Paso automático",
+			"caseAutomationDecision": "Decisión",
+			"caseAutomationCalledProcess": "Proceso llamado",
+			"caseAutomationTimer": "Temporizador",
+			"caseAutomationMessage": "Mensaje",
+			"caseAutomationSignal": "Señal",
+			"caseAutomationEvent": "Evento",
+			"caseAutomationWaiting": "En espera",
+			"caseAutomationIncident": "Incidente",
+			"caseAutomationInstances": "{{count}} instancias"
 		},
 		"operate": {
 			"dashboard": {

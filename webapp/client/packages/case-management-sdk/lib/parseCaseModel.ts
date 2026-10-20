@@ -82,6 +82,8 @@ type CaseModel = {
 	hasCallActivity: boolean;
 	elementNames: Map<string, string>;
 	elementTypes: Map<string, string>;
+	/** What triggers each event, such as `timer` or `message`, from its event definition. */
+	eventTriggers: Map<string, string>;
 	/** The stage that contains each flow node. */
 	stageIdByElementId: Map<string, string>;
 };
@@ -92,6 +94,7 @@ const EMPTY_CASE_MODEL: CaseModel = {
 	hasCallActivity: false,
 	elementNames: new Map(),
 	elementTypes: new Map(),
+	eventTriggers: new Map(),
 	stageIdByElementId: new Map(),
 };
 
@@ -275,6 +278,7 @@ function parseCaseModel(xml: string, processDefinitionId: string): CaseModel {
 	const allFlowNodes = getDescendantFlowNodes(process);
 	const elementNames = new Map<string, string>();
 	const elementTypes = new Map<string, string>();
+	const eventTriggers = new Map<string, string>();
 
 	for (const element of allFlowNodes) {
 		const id = element.getAttribute('id');
@@ -282,6 +286,14 @@ function parseCaseModel(xml: string, processDefinitionId: string): CaseModel {
 		if (id !== null) {
 			elementNames.set(id, element.getAttribute('name') || id);
 			elementTypes.set(id, element.localName);
+
+			const definition = Array.from(element.children).find(
+				(child) => isBpmn(child) && child.localName.endsWith('EventDefinition'),
+			);
+
+			if (definition !== undefined) {
+				eventTriggers.set(id, definition.localName.replace(/EventDefinition$/, ''));
+			}
 		}
 	}
 
@@ -348,6 +360,7 @@ function parseCaseModel(xml: string, processDefinitionId: string): CaseModel {
 		hasCallActivity: allFlowNodes.some((element) => isBpmn(element, 'callActivity')),
 		elementNames,
 		elementTypes,
+		eventTriggers,
 		stageIdByElementId,
 	};
 }

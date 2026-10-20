@@ -922,7 +922,17 @@
 			"caseActivitySlow": "The activity started. Its task takes longer to show than usual.",
 			"caseActivityCompletedTimes": "Done {{count}}×",
 			"caseActivityCompletedBefore": "Done {{count}}× before",
-			"caseStageBlockedNoWork": "The stage waits until the incident is resolved"
+			"caseStageBlockedNoWork": "The stage waits until the incident is resolved",
+			"caseAutomationAutomated": "Automated step",
+			"caseAutomationDecision": "Decision",
+			"caseAutomationCalledProcess": "Called process",
+			"caseAutomationTimer": "Timer",
+			"caseAutomationMessage": "Message",
+			"caseAutomationSignal": "Signal",
+			"caseAutomationEvent": "Event",
+			"caseAutomationWaiting": "Waiting",
+			"caseAutomationIncident": "Incident",
+			"caseAutomationInstances": "{{count}} instances"
 		},
 		"operate": {
 			"dashboard": {

@@ -107,15 +107,15 @@ read their durations from the variables `creditReportTimeout`, `signatureReminde
 | `ON-…-06`   | Mid-probation review done           | Probation, step 2: Hold the final review                                                    |
 | `ON-…-07`   | Offer declined                      | Offer declined replaces the line; Preparation reads as cancelled                            |
 | `SO-…-01`   | New supplier                        | Registration, step 1: Register the supplier                                                 |
-| `SO-…-02`   | Waiting on the sanctions check      | Registration waits for a service task: no open work in the stage                            |
+| `SO-…-02`   | Waiting on the sanctions check      | The stage lists the running service task "Check the sanctions list"                         |
 | `SO-…-03`   | Sanctions hit                       | The BPMN error starts Supplier blocked, which replaces the line                             |
 | `SO-…-04`   | Due diligence, high risk            | Required user task open, required service task running; header shows the risk level         |
 | `SO-…-05`   | Credit report times out             | After 1 minute, the timer cancels the credit report and opens Estimate the credit risk      |
 | `SO-…-06`   | Optional ESG rating running         | Both required activities done, the optional service task still running                      |
 | `SO-…-07`   | Reminder due                        | After 1 minute, Remind the supplier opens next to Sign the contract; header: Contract owner |
-| `SO-…-08`   | Waiting for the countersignature    | Contract waits for a message: no open work in the stage                                     |
-| `SO-…-09`   | Waiting for the first order         | Activation waits 14 days on a timer; header shows the ERP supplier number                   |
-| `SO-…-10`   | ERP rejected the supplier           | The failed job raises an incident: Activation reads as blocked                              |
+| `SO-…-08`   | Waiting for the countersignature    | The stage lists the message catch event as waiting                                          |
+| `SO-…-09`   | Waiting for the first order         | The stage lists the timer as waiting; the case form shows the ERP supplier number           |
+| `SO-…-10`   | ERP rejected the supplier           | The failed job raises an incident: the stage reads as blocked, the step as incident         |
 | `SO-…-11`   | First order due                     | After 1 minute, the timer opens Review the first order                                      |
 | `AC-…-01`   | Address change                      | No case marker: no stages, all open tasks                                                   |
 
