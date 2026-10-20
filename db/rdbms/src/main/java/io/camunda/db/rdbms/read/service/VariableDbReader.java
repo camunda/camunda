@@ -11,6 +11,7 @@ import io.camunda.db.rdbms.read.RdbmsReaderConfig;
 import io.camunda.db.rdbms.read.domain.VariableDbQuery;
 import io.camunda.db.rdbms.read.domain.VariableNameDbQuery;
 import io.camunda.db.rdbms.sql.VariableMapper;
+import io.camunda.db.rdbms.sql.VariableMapper.ProtectionModeRow;
 import io.camunda.db.rdbms.sql.columns.VariableSearchColumn;
 import io.camunda.search.clients.reader.VariableReader;
 import io.camunda.search.entities.VariableEntity;
@@ -23,6 +24,7 @@ import io.camunda.search.sort.VariableSort;
 import io.camunda.security.api.model.authz.AuthorizationResourceType;
 import io.camunda.security.core.authz.ResourceAccessChecks;
 import java.util.List;
+import java.util.stream.Collectors;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -70,7 +72,32 @@ public class VariableDbReader extends AbstractEntityReader<VariableEntity>
                     .page(dbPage));
     LOG.trace("[RDBMS DB] Search for variables with filter {}", query);
     return executePagedQuery(
-        () -> variableMapper.count(dbQuery), () -> variableMapper.search(dbQuery), dbPage, dbSort);
+        () -> variableMapper.count(dbQuery),
+        () -> withProtectionModes(variableMapper.search(dbQuery)),
+        dbPage,
+        dbSort);
+  }
+
+  /** Loads the protection modes of a page of variables with one query instead of one per row. */
+  private List<VariableEntity> withProtectionModes(final List<VariableEntity> variables) {
+    if (variables.isEmpty()) {
+      return variables;
+    }
+    final var modesByVariableKey =
+        variableMapper
+            .findProtectionModes(variables.stream().map(VariableEntity::variableKey).toList())
+            .stream()
+            .collect(
+                Collectors.groupingBy(
+                    ProtectionModeRow::variableKey,
+                    Collectors.mapping(ProtectionModeRow::mode, Collectors.toSet())));
+    return variables.stream()
+        .map(
+            variable ->
+                modesByVariableKey.containsKey(variable.variableKey())
+                    ? variable.withProtectionModes(modesByVariableKey.get(variable.variableKey()))
+                    : variable)
+        .toList();
   }
 
   public @Nullable VariableEntity findOne(final Long key) {

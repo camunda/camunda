@@ -93,6 +93,16 @@
       <if test="filter.isTruncated != null">
         AND IS_PREVIEW = #{filter.isTruncated}
       </if>
+      <if test="filter.protectionModes != null and !filter.protectionModes.isEmpty()">
+        AND EXISTS (
+          SELECT 1 FROM ${prefix}VARIABLE_PROTECTION_MODE PM
+          WHERE PM.VAR_KEY = ${prefix}VARIABLE.VAR_KEY
+          AND PM.PROTECTION_MODE IN
+          <foreach collection="filter.protectionModes" item="mode" open="(" separator="," close=")">
+            #{mode, typeHandler=io.camunda.db.rdbms.sql.typehandler.EntityProtectionModeTypeHandler}
+          </foreach>
+        )
+      </if>
       <!-- advanced filters on variable name / values -->
       <if test="filter.valueOperations != null and !filter.valueOperations.isEmpty()">
         <foreach collection="filter.valueOperations" item="operation">
@@ -189,6 +199,24 @@
     </foreach>
     SELECT * FROM dual
   </insert>
+
+  <resultMap id="protectionModeRowResultMap" type="io.camunda.db.rdbms.sql.VariableMapper$ProtectionModeRow">
+    <constructor>
+      <arg column="VAR_KEY" javaType="java.lang.Long" name="variableKey"/>
+      <arg column="PROTECTION_MODE" javaType="io.camunda.search.entities.VariableEntity$ProtectionMode"
+        typeHandler="io.camunda.db.rdbms.sql.typehandler.EntityProtectionModeTypeHandler"
+        name="mode"/>
+    </constructor>
+  </resultMap>
+
+  <select id="findProtectionModes" resultMap="protectionModeRowResultMap">
+    SELECT VAR_KEY, PROTECTION_MODE
+    FROM ${prefix}VARIABLE_PROTECTION_MODE
+    WHERE VAR_KEY IN
+    <foreach collection="variableKeys" item="variableKey" open="(" separator="," close=")">
+      #{variableKey}
+    </foreach>
+  </select>
 
   <delete id="deleteProtectionModes" parameterType="java.lang.Long">
     DELETE FROM ${prefix}VARIABLE_PROTECTION_MODE WHERE VAR_KEY = #{variableKey}
