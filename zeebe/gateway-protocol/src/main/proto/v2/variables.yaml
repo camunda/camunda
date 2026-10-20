@@ -236,6 +236,7 @@ components:
         - variableKey
         - scopeKey
         - rootProcessInstanceKey
+        - metadata
       properties:
         name:
           description: Name of this variable.
@@ -268,9 +269,39 @@ components:
           nullable: true
           allOf:
             - $ref: 'keys.yaml#/components/schemas/ProcessInstanceKey'
+        metadata:
+          description: |
+            Metadata describing how this variable is protected. `null` when the variable is not
+            protected.
+          nullable: true
+          allOf:
+            - $ref: '#/components/schemas/VariableMetadata'
       x-properties-added-in-version:
         - propertyName: rootProcessInstanceKey
           addedInVersion: "8.9"
+        - propertyName: metadata
+          addedInVersion: "8.11"
+
+    VariableMetadata:
+      description: Metadata describing how a variable is treated.
+      type: object
+      required:
+        - protectionModes
+      properties:
+        protectionModes:
+          description: |
+            The protections applied to the variable. The value of a variable protected with
+            `REDACT` is irrecoverably replaced before it is stored, so it is never readable.
+          type: array
+          items:
+            $ref: '#/components/schemas/ProtectionModeEnum'
+
+    ProtectionModeEnum:
+      type: string
+      enum: [ REDACT ]
+      description: |
+        The kind of protection applied to a variable value. `REDACT` irrecoverably replaces the
+        value before it reaches secondary storage.
 
     VariableValueFilterProperty:
       type: object
