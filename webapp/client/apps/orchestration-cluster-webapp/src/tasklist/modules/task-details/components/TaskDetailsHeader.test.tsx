@@ -19,6 +19,7 @@ const baseProps = {
 	processName: 'Invoice process',
 	assignee: null,
 	taskState: 'CREATED',
+	isSuspended: false,
 	user: currentUser,
 	assignButton: <button>Assign to me</button>,
 } satisfies React.ComponentProps<typeof TaskDetailsHeader>;
@@ -32,6 +33,16 @@ describe('<TaskDetailsHeader />', () => {
 
 		await expect.element(screen.getByText('Review invoice')).toBeVisible();
 		await expect.element(screen.getByText('Invoice process')).toBeVisible();
+		await expect.element(screen.getByText('Suspended', {exact: true})).not.toBeInTheDocument();
+	});
+
+	it('should render the suspended label for a task of a suspended process instance', async () => {
+		const screen = await renderWithRouter(() => <TaskDetailsHeader {...baseProps} isSuspended />, {
+			path: '/tasklist/$userTaskKey',
+			initialEntry: '/tasklist/2251799813685281',
+		});
+
+		await expect.element(screen.getByText('Suspended', {exact: true})).toBeVisible();
 	});
 
 	it('should render completion label with assignee for COMPLETED task', async () => {

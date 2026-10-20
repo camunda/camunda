@@ -103,6 +103,7 @@ test('should have no accessibility violations on the task tab with read-only var
 					name: 'Approve expense report',
 					processName: 'Finance process',
 					assignee: 'another-user',
+					isSuspended: true,
 				}),
 			),
 		}),

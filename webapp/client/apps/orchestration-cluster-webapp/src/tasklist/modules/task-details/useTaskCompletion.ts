@@ -36,23 +36,32 @@ function useTaskCompletion({
 	currentUser,
 	taskState,
 	assignee,
+	isSuspended,
 	onComplete,
 }: {
 	userTaskKey: string;
 	currentUser: string;
 	taskState: UserTask['state'];
 	assignee: string | null;
+	isSuspended: boolean;
 	onComplete: () => void;
 }) {
 	const queryClient = useQueryClient();
 
 	const actorRef = useActorRef(taskCompletionMachine, {
-		input: {queryClient, userTaskKey, currentUser, initialTaskState: taskState, initialAssignee: assignee},
+		input: {
+			queryClient,
+			userTaskKey,
+			currentUser,
+			initialTaskState: taskState,
+			initialAssignee: assignee,
+			initialIsSuspended: isSuspended,
+		},
 	});
 
 	useEffect(() => {
-		actorRef.send({type: 'task.updated', taskState, assignee});
-	}, [actorRef, taskState, assignee]);
+		actorRef.send({type: 'task.updated', taskState, assignee, isSuspended});
+	}, [actorRef, taskState, assignee, isSuspended]);
 
 	useEffect(() => {
 		const subscription = actorRef.on('task.completed', onComplete);

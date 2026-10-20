@@ -24,6 +24,7 @@ type Props = {
 	completionStatus: CompletionStatus;
 	isCompletionAllowed: boolean;
 	isHidden: boolean;
+	isSuspended: boolean;
 	onSubmit: (variables: Record<string, unknown>) => void;
 };
 
@@ -40,6 +41,7 @@ const TaskDetailsForm: React.FC<Props> = ({
 	completionStatus,
 	isCompletionAllowed,
 	isHidden,
+	isSuspended,
 	onSubmit,
 }) => {
 	const {t} = useTranslation();
@@ -107,6 +109,7 @@ const TaskDetailsForm: React.FC<Props> = ({
 							status={submissionStatus}
 							onClick={handleCompleteTask}
 							isHidden={isHidden}
+							isSuspended={isSuspended}
 							isDisabled={!canCompleteTask}
 						/>
 					</footer>
