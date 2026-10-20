@@ -219,6 +219,7 @@ jobs:
           # Assign the amount of seconds that the plugin will wait for a deployment
           # state. Can not be less than Constants.WAIT_MAX_TIME_DEFAULT_VALUE.
           CENTRAL_WAIT_MAX_TIME: "10800"
+          APP_TOKEN: ${{ steps.github-token.outputs.token }}
         run: |
           # Perform a maven release
           # https://maven.apache.org/maven-release/maven-release-plugin/perform-mojo.html
@@ -228,6 +229,19 @@ jobs:
           #   In order to disable QA/IT and the auto formatting during the release.
           #   It is unnecessary to release integration tests, and we don't want to run the auto-formatting unnecessarily.
 
+
+          # release:perform clones into target/ and runs `git ls-remote` from
+          # java.io.tmpdir. actions/checkout's credentials only apply inside the work
+          # tree, and the scm.url that prepare recorded in release.properties carries
+          # no usable credentials, so both calls go out anonymously -- and fail
+          # whenever GitHub's edge refuses anonymous git requests. Authenticate every
+          # git call of this step instead.
+          git_auth=$(printf 'x-access-token:%s' "${APP_TOKEN}" | base64 -w0)
+          echo "::add-mask::${git_auth}"
+          export GIT_CONFIG_COUNT=1
+          export GIT_CONFIG_KEY_0=http.https://github.com/.extraheader
+          export GIT_CONFIG_VALUE_0="AUTHORIZATION: basic ${git_auth}"
+          unset APP_TOKEN
 
           ./mvnw release:perform -B \
             -Dgpg.passphrase="${{ steps.secrets.outputs.MAVEN_CENTRAL_GPG_SIGNING_KEY_PASSPHRASE }}" \
