@@ -52,7 +52,7 @@ camunda:
 
           history:
             elsRolloverDateFormat: "date"
-            rolloverBatchSize: 100
+            rolloverBatchSize: 500
             waitPeriodBeforeArchiving: "1h"
             delayBetweenRuns: 2000
             maxDelayBetweenRuns: 60000
