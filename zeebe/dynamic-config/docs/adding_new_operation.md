@@ -9,5 +9,5 @@
 7. **Handler**: implement in `ClusterConfigurationManagementRequestsHandler`, delegate to `handleRequest(dryRun, transformer)`.
 8. **Sender**: add method in `ClusterConfigurationManagementRequestSender`.
 9. **Server**: register `replyTo` handler in `ClusterConfigurationRequestServer.start()`.
-10. **Applier**: new `OperationApplier` in `impl/changes/`, register in `ConfigurationChangeAppliersImpl`.
+10. **Applier**: new applier in `impl/changes/appliers/`, register in `GlobalConfigurationChangeAppliersImpl` or `PartitionGroupConfigurationChangeAppliersImpl`.
 
