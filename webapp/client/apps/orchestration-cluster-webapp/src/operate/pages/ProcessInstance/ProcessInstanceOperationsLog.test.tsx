@@ -9,8 +9,9 @@
 import {afterEach, describe, expect} from 'vitest';
 import {userEvent} from 'vitest/browser';
 import {cleanup} from 'vitest-browser-react';
-import {HttpResponse} from 'msw';
+import {http, HttpResponse} from 'msw';
 import {z} from 'zod';
+import {endpoints} from '@camunda/camunda-api-zod-schemas/8.11';
 import {useRouterState} from '@tanstack/react-router';
 import {it} from '#/vitest-modules/test-extend';
 import {renderWithRouter} from '#/vitest-modules/render-with-router';
@@ -41,6 +42,14 @@ afterEach(async () => {
 
 function auditLogsResponse(...items: ReturnType<typeof createAuditLog>[]) {
 	return HttpResponse.json(createQueryAuditLogsResponse({items}));
+}
+
+function createGate() {
+	let open: () => void = () => {};
+	const opened = new Promise<void>((resolve) => {
+		open = resolve;
+	});
+	return {open, opened};
 }
 
 function renderOperationsLog(search = '') {
@@ -209,6 +218,89 @@ describe('<ProcessInstanceOperationsLog />', () => {
 
 		await expect.element(screen.getByText("Couldn't fetch data")).toBeVisible();
 		await expect.element(screen.getByRole('cell', {name: 'Create'})).not.toBeInTheDocument();
+	});
+
+	it('should wait for the selected element instance instead of asking for a single one', async ({worker}) => {
+		const gate = createGate();
+		const elementInstance = createElementInstance({elementInstanceKey: '2251799813685299'});
+		worker.use(
+			http.get(endpoints.getElementInstance.getUrl({elementInstanceKey: ':elementInstanceKey'}), async () => {
+				await gate.opened;
+				return HttpResponse.json(elementInstance);
+			}),
+			mockQueryAuditLogsEndpoint({successResponse: auditLogsResponse(createAuditLog({operationType: 'MIGRATE'}))}),
+		);
+		const screen = await renderOperationsLog(
+			`?elementId=user-task&elementInstanceKey=${elementInstance.elementInstanceKey}`,
+		);
+
+		await expect
+			.element(
+				screen.getByText('To view the Operations Log, select a single Element Instance in the Instance History.'),
+			)
+			.not.toBeInTheDocument();
+		gate.open();
+
+		await expect.element(screen.getByRole('cell', {name: 'Migrate'})).toBeVisible();
+	});
+
+	it('should show an error message when the selected element instance cannot be fetched', async ({worker}) => {
+		worker.use(
+			mockGetElementInstanceEndpoint({
+				successResponse: HttpResponse.json(createProblemDetails({status: 500}), {status: 500}),
+			}),
+		);
+		const screen = await renderOperationsLog('?elementId=user-task&elementInstanceKey=2251799813685299');
+
+		await expect.element(screen.getByText("Couldn't fetch data")).toBeVisible();
+		await expect
+			.element(
+				screen.getByText('To view the Operations Log, select a single Element Instance in the Instance History.'),
+			)
+			.not.toBeInTheDocument();
+	});
+
+	it('should show an empty message for an element that has no instances', async ({worker}) => {
+		worker.use(
+			mockQueryElementInstancesEndpoint({
+				successResponse: HttpResponse.json(createQueryElementInstancesResponse([], 0)),
+			}),
+		);
+		const screen = await renderOperationsLog('?elementId=user-task');
+
+		await expect.element(screen.getByText('No operations found for this instance')).toBeVisible();
+		await expect
+			.element(
+				screen.getByText('To view the Operations Log, select a single Element Instance in the Instance History.'),
+			)
+			.not.toBeInTheDocument();
+	});
+
+	it('should show an empty message for a placeholder instance', async () => {
+		const screen = await renderOperationsLog('?elementId=user-task&elementInstanceKey=1&isPlaceholder=true');
+
+		await expect.element(screen.getByText('No operations found for this instance')).toBeVisible();
+	});
+
+	it('should not show the empty message while a changed filter is loading', async ({worker}) => {
+		const gate = createGate();
+		worker.use(mockQueryAuditLogsEndpoint({successResponse: auditLogsResponse()}));
+		const screen = await renderOperationsLog();
+		await expect.element(screen.getByText('No operations found for this instance')).toBeVisible();
+
+		worker.use(
+			http.post(endpoints.queryAuditLogs.getUrl(), async () => {
+				await gate.opened;
+				return auditLogsResponse(createAuditLog({operationType: 'SUSPEND'}));
+			}),
+		);
+		await userEvent.click(screen.getByRole('combobox', {name: /Operation type/}));
+		await userEvent.click(screen.getByRole('option', {name: 'Suspend'}));
+
+		await expect.element(screen.getByText('No operations found for this instance')).not.toBeInTheDocument();
+		gate.open();
+
+		await expect.element(screen.getByRole('cell', {name: 'Suspend'})).toBeVisible();
 	});
 
 	it('should ask for a single element instance when the selected element has several', async ({worker}) => {

@@ -43,9 +43,24 @@ const sortSearchParamSchema = createSortSearchParamSchema(auditLogSortFieldEnum)
 const ProcessInstanceOperationsLog: React.FC<{search: ProcessInstanceOperationsLogSearch}> = ({search}) => {
 	const {t} = useTranslation();
 	const {processInstanceId} = useProcessInstancePage();
-	const {resolvedElementInstance, isFetchingElement, hasSelection} = useProcessInstanceElementSelection();
+	const {
+		resolvedElementInstance,
+		selectedElementInstanceKey,
+		selectedElementInstanceCount,
+		isSelectedInstancePlaceholder,
+		isFetchingElementError,
+		hasSelection,
+	} = useProcessInstanceElementSelection();
 	const [detailsModal, setDetailsModal] = useState<DetailsModalState>({isOpen: false});
-	const hasMultipleInstances = hasSelection && resolvedElementInstance === null;
+	const isScopeResolved = !hasSelection || resolvedElementInstance !== null;
+	const hasMultipleInstances =
+		selectedElementInstanceKey === null &&
+		selectedElementInstanceCount !== null &&
+		selectedElementInstanceCount > 0 &&
+		resolvedElementInstance === null;
+	const hasNoInstances =
+		isSelectedInstancePlaceholder ||
+		(hasSelection && selectedElementInstanceKey === null && selectedElementInstanceCount === 0);
 
 	const {field: sortField, order: sortOrder} = useMemo(
 		() => sortSearchParamSchema.safeParse(search.sort).data ?? DEFAULT_SORT,
@@ -64,6 +79,8 @@ const ProcessInstanceOperationsLog: React.FC<{search: ProcessInstanceOperationsL
 		dataUpdatedAt,
 		error,
 		isPending,
+		isFetching,
+		isPlaceholderData,
 		isFetchingPreviousPage,
 		hasPreviousPage,
 		fetchPreviousPage,
@@ -71,21 +88,38 @@ const ProcessInstanceOperationsLog: React.FC<{search: ProcessInstanceOperationsL
 		hasNextPage,
 		fetchNextPage,
 	} = useAuditLogs(filter, [{field: sortField, order: sortOrder}], {
-		enabled: !isFetchingElement && !hasMultipleInstances,
+		enabled: isScopeResolved,
 	});
 	useAuditLogsErrorNotification(error, dataUpdatedAt);
 
-	if (hasMultipleInstances) {
+	if (isFetchingElementError) {
 		return (
 			<TableContainer>
 				<EmptyMessageContainer>
-					<EmptyMessage message={t('operate.processInstance.operationsLog.multiInstance')} />
+					<ErrorMessage />
+				</EmptyMessageContainer>
+			</TableContainer>
+		);
+	}
+
+	if (hasMultipleInstances || hasNoInstances) {
+		return (
+			<TableContainer>
+				<EmptyMessageContainer>
+					<EmptyMessage
+						message={t(
+							hasMultipleInstances
+								? 'operate.processInstance.operationsLog.multiInstance'
+								: 'operate.processInstance.operationsLog.empty',
+						)}
+					/>
 				</EmptyMessageContainer>
 			</TableContainer>
 		);
 	}
 
 	const auditLogs = data?.pages.flatMap((page) => page.items) ?? [];
+	const isLoadingScope = !isScopeResolved || isPending || (isPlaceholderData && isFetching && auditLogs.length === 0);
 
 	const columns = [
 		{key: 'result', label: '', render: (row: AuditLog) => <CellResult item={row} />},
@@ -131,7 +165,7 @@ const ProcessInstanceOperationsLog: React.FC<{search: ProcessInstanceOperationsL
 	return (
 		<TableContainer>
 			<ProcessInstanceOperationsLogFilters search={search} />
-			{isPending ? (
+			{isLoadingScope ? (
 				<DataTableSkeleton columnCount={columns.length} rowCount={10} showHeader={false} showToolbar={false} />
 			) : (
 				<PaginatedSortableTable
@@ -146,9 +180,10 @@ const ProcessInstanceOperationsLog: React.FC<{search: ProcessInstanceOperationsL
 						)
 					}
 					hideHeaderWhenEmpty
+					isFetching={isFetching && isPlaceholderData}
 					pagination={{
-						hasPreviousPage,
-						hasNextPage,
+						hasPreviousPage: !isPlaceholderData && hasPreviousPage,
+						hasNextPage: !isPlaceholderData && hasNextPage,
 						isFetchingPreviousPage,
 						isFetchingNextPage,
 						fetchPreviousPage,
