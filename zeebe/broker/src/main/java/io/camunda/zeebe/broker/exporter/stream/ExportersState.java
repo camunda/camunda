@@ -89,6 +89,10 @@ public final class ExportersState {
         .orElse(0L);
   }
 
+  public boolean hasExporterState(final String exporterId) {
+    return findExporterStateEntry(exporterId).isPresent();
+  }
+
   private Optional<ExporterStateEntry> findExporterStateEntry(final String exporterId) {
     this.exporterId.wrapString(exporterId);
     return Optional.ofNullable(exporterPositionColumnFamily.get(this.exporterId));

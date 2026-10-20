@@ -53,6 +53,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import org.agrona.DirectBuffer;
 import org.agrona.LangUtil;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
@@ -93,6 +94,7 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
   private final PartitionMessagingService partitionMessagingService;
   private final String exporterPositionsSendingSubject;
   private final List<String> exporterPositionsReceivingSubjects;
+  private final Set<String> externalPositionIds;
   private final String clusterId;
   private final ExporterMode exporterMode;
   private final Duration distributionInterval;
@@ -160,6 +162,7 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
             : List.of(exporterPositionsSendingSubject);
 
     exporterMode = context.getExporterMode();
+    externalPositionIds = context.getExternalPositionIds();
     distributionInterval = context.getDistributionInterval();
     migrationStatusScanMaxRecords = context.getMigrationStatusScanMaxRecords();
     positionsToSkipFilter = context.getPositionsToSkipFilter();
@@ -420,6 +423,7 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
     // remove exporters from state
     // which are no longer in our configuration
     clearExporterState();
+    initializeExternalPositions();
     if (exporterMode == ExporterMode.ACTIVE) {
       startActiveExportingMode();
     } else { // PASSIVE, we consume the messages and set it in our state
@@ -498,7 +502,66 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
   }
 
   private boolean isExporterConfigured(final String exporterId) {
-    return containers.stream().anyMatch(container -> container.getId().equals(exporterId));
+    return externalPositionIds.contains(exporterId)
+        || containers.stream().anyMatch(container -> container.getId().equals(exporterId));
+  }
+
+  /**
+   * Sets the position and metadata of an external position on the leader. Followers get them with
+   * the next distribution, and compaction stops at the position as at an exporter's. The position
+   * never goes back; the metadata changes with every call.
+   */
+  public ActorFuture<Void> setExternalPosition(
+      final String id, final long position, final DirectBuffer metadata) {
+    if (!externalPositionIds.contains(id)) {
+      return CompletableActorFuture.completedExceptionally(
+          new IllegalArgumentException(
+              "Expected one of the external position ids %s, but got '%s'"
+                  .formatted(externalPositionIds, id)));
+    }
+    if (exporterMode != ExporterMode.ACTIVE) {
+      return CompletableActorFuture.completedExceptionally(
+          new IllegalStateException(
+              "Expected to set external position '%s' on the leader, but this director is %s"
+                  .formatted(id, exporterMode)));
+    }
+    // a job that throws would close the actor, so a rejection only fails the future
+    final var result = new CompletableActorFuture<Void>();
+    actor.run(
+        () -> {
+          final var current = state.getPosition(id);
+          if (position < current) {
+            result.completeExceptionally(
+                new IllegalArgumentException(
+                    "Expected external position '%s' to move forward from %d, but got %d"
+                        .formatted(id, current, position)));
+            return;
+          }
+          state.setExporterState(id, position, metadata);
+          result.complete(null);
+        });
+    return result;
+  }
+
+  /** The position and a copy of the metadata of an external position, as the state has them. */
+  public ActorFuture<ExternalPosition> getExternalPosition(final String id) {
+    return actor.call(
+        () -> {
+          final var metadata = state.getExporterMetadata(id);
+          final var copy = new byte[metadata.capacity()];
+          metadata.getBytes(0, copy);
+          return new ExternalPosition(state.getPosition(id), copy);
+        });
+  }
+
+  private void initializeExternalPositions() {
+    for (final String id : externalPositionIds) {
+      if (!state.hasExporterState(id)) {
+        // Until the leader sets it, the position is unknown, and compaction stops where it is; on
+        // followers too, as one of them may become the leader that still needs these records.
+        state.setPosition(id, ExportersState.VALUE_NOT_FOUND);
+      }
+    }
   }
 
   private void initContainers() throws Exception {
@@ -559,11 +622,17 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
     idle = true;
     LOG.debug("No exporters are configured. Going idle.");
     logStream.removeRecordAvailableListener(this);
-    exporterDistributionService.close();
-    if (exporterDistributionTimer != null) {
-      // closing the service do not stop the repeated timer task scheduled in this actor
-      exporterDistributionTimer.cancel();
-      exporterDistributionTimer = null;
+    if (externalPositionIds.isEmpty()) {
+      exporterDistributionService.close();
+      if (exporterDistributionTimer != null) {
+        // closing the service do not stop the repeated timer task scheduled in this actor
+        exporterDistributionTimer.cancel();
+        exporterDistributionTimer = null;
+      }
+    } else if (exporterMode == ExporterMode.ACTIVE && exporterDistributionTimer == null) {
+      // External positions still go to followers, without exporters to read the log for.
+      exporterDistributionTimer =
+          actor.runAtFixedRate(distributionInterval, this::distributeExporterState);
     }
     if (logStreamReader != null) {
       // We have to close it, otherwise it will prevent journal segment deletion
@@ -618,7 +687,7 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
         containerOpenFutures,
         (error) -> {
           allExportersOpened = true;
-          if (state.hasExporters()) {
+          if (state.hasExporters() && !containers.isEmpty()) {
             final long snapshotPosition = state.getLowestPosition();
             // start reading and exporting
             startActiveExportingFrom(snapshotPosition);
@@ -682,6 +751,10 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
       actor.submit(this::readNextEvent);
     }
 
+    if (exporterDistributionTimer != null) {
+      // an idle director with external positions kept distributing
+      exporterDistributionTimer.cancel();
+    }
     exporterDistributionTimer =
         actor.runAtFixedRate(distributionInterval, this::distributeExporterState);
   }
@@ -692,7 +765,7 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
       container.initMetadata();
     }
 
-    if (state.hasExporters()) {
+    if (state.hasExporters() || !externalPositionIds.isEmpty()) {
       exporterDistributionService.subscribeForExporterState(actor::run);
     } else {
       becomeIdle();
@@ -791,6 +864,7 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
   private void clearExporterState() {
     final List<String> exporterIds =
         containers.stream().map(ExporterContainer::getId).collect(Collectors.toList());
+    exporterIds.addAll(externalPositionIds);
 
     state.visitExporterState(
         (exporterId, exporterStateEntry) -> {
@@ -948,6 +1022,9 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
    * @param initializeFrom the id of the exporter to initialize the metadata of the exporter from
    */
   public record ExporterInitializationInfo(long metadataVersion, String initializeFrom) {}
+
+  /** An external position, -1 if none is set yet, and its metadata, empty if none. */
+  public record ExternalPosition(long position, byte[] metadata) {}
 
   private static class ExporterEventFilter implements EventFilter {
 
