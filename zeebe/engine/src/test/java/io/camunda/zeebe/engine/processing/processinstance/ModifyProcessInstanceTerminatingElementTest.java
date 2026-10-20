@@ -156,6 +156,56 @@ public class ModifyProcessInstanceTerminatingElementTest {
   }
 
   @Test
+  public void shouldCancelExecutionListenerJobOfCalledProcessWhenTerminatingCallActivity() {
+    // given a called process terminating on a cancel execution listener job without retries
+    final String childProcessId = Strings.newRandomValidBpmnId();
+    final String parentProcessId = Strings.newRandomValidBpmnId();
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(childProcessId)
+                .zeebeExecutionListener(l -> l.cancel().type("cancel_listener"))
+                .startEvent()
+                .serviceTask("serviceTask", t -> t.zeebeJobType("task"))
+                .endEvent()
+                .done())
+        .deploy();
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(parentProcessId)
+                .startEvent()
+                .callActivity("callActivity", c -> c.zeebeProcessId(childProcessId))
+                .endEvent()
+                .done())
+        .deploy();
+    final long parentKey = ENGINE.processInstance().ofBpmnProcessId(parentProcessId).create();
+    final long childKey =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withParentProcessInstanceKey(parentKey)
+            .withBpmnProcessId(childProcessId)
+            .getFirst()
+            .getKey();
+    getElementInstanceKey(childKey, "serviceTask");
+    ENGINE.processInstance().withInstanceKey(parentKey).expectTerminating().cancel();
+    failCancelingListenerJob(childKey, "cancel_listener");
+
+    // when
+    terminateElementByModification(parentKey, "callActivity");
+
+    // then
+    assertThatElementIsTerminated(childKey, childProcessId);
+    assertThatIncidentIsResolved(childKey);
+    assertThat(
+            RecordingExporter.jobRecords(JobIntent.CANCELED)
+                .withProcessInstanceKey(childKey)
+                .withType("cancel_listener")
+                .exists())
+        .describedAs("Expected the cancel execution listener job to be canceled")
+        .isTrue();
+  }
+
+  @Test
   public void shouldTerminateCancelingUserTaskInterruptedByBoundaryEvent() {
     // given a user task that is terminating because a boundary event interrupted it
     final String processId = Strings.newRandomValidBpmnId();
