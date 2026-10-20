@@ -7,12 +7,28 @@
  */
 
 import styled from 'styled-components';
+import {orange20, orange70} from '@carbon/colors';
 
 const ToolList = styled.ul`
   list-style: none;
   display: flex;
   flex-direction: column;
   gap: var(--cds-spacing-04);
+
+  .tool-category-camunda {
+    background-color: ${orange20};
+    color: ${orange70};
+  }
+
+  .cds--g90 & .tool-category-camunda,
+  .cds--g100 & .tool-category-camunda {
+    background-color: ${orange70};
+    color: ${orange20};
+  }
+
+  .cds--tag {
+    margin-inline-start: var(--cds-spacing-03);
+  }
 `;
 
 const ToolName = styled.span`

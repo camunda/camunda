@@ -73,21 +73,6 @@ const TextContent = styled.div`
   color: var(--cds-text-primary);
 `;
 
-const ObjectContent = styled.pre`
-  flex: 1;
-  overflow: auto;
-  border-radius: 4px;
-  padding: var(--cds-spacing-03);
-  background-color: var(--cds-layer-03);
-  font-family: var(--cds-code-01-font-family);
-  font-size: var(--cds-code-01-font-size);
-  font-weight: var(--cds-code-01-font-weight);
-  line-height: var(--cds-code-01-line-height);
-  letter-spacing: var(--cds-code-01-letter-spacing);
-  white-space: pre-wrap;
-  word-break: break-word;
-`;
-
 const ModalContent = styled(TextContent)`
   min-height: 60vh;
   max-height: 70vh;
@@ -104,15 +89,53 @@ const ViewSwitcher = styled(ContentSwitcher)`
   width: 15rem;
 `;
 
+const ModalAttachments = styled.div`
+  margin-block-start: auto;
+  padding-block-start: var(--cds-spacing-05);
+  flex-shrink: 0;
+`;
+
+const ContentsLayout = styled.div`
+  display: grid;
+  grid-template-columns: minmax(11rem, 16rem) minmax(0, 1fr);
+  gap: var(--cds-spacing-05);
+  flex: 1 1 auto;
+  min-block-size: 0;
+
+  & > nav {
+    position: sticky;
+    inset-block-start: 0;
+    align-self: start;
+  }
+
+  @media (max-width: 40rem) {
+    grid-template-columns: minmax(8rem, 11rem) minmax(0, 1fr);
+    gap: var(--cds-spacing-03);
+  }
+`;
+
+const ContentsPane = styled.div`
+  display: flex;
+  flex-direction: column;
+  min-block-size: 0;
+  min-inline-size: 0;
+
+  & > * {
+    flex-shrink: 0;
+  }
+`;
+
 export {
+  ContentsLayout,
+  ContentsPane,
   Container,
   MessageHeader,
   MessageBlock,
   ActorLabel,
   TextContent,
-  ObjectContent,
   MessageActions,
   ModalContent,
   ModalToolbar,
   ViewSwitcher,
+  ModalAttachments,
 };

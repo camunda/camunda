@@ -18,11 +18,15 @@ import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import type {ReactNode} from 'react';
 import {mockSearchAgentInstanceHistory} from 'modules/mocks/api/v2/agentInstances/searchAgentInstanceHistory';
-import {searchResult} from 'modules/testUtils';
+import {createVariable, searchResult} from 'modules/testUtils';
 import {Paths} from 'modules/Routes';
 import {AgentDetails} from './index';
 import {mockAgentInstanceHistoryItem} from 'modules/mocks/mockAgentInstanceHistoryItem';
 import {mockAgentInstance} from 'modules/mocks/mockAgentInstance';
+import {mockSearchVariables} from 'modules/mocks/api/v2/variables/searchVariables';
+import {mockGetVariable} from 'modules/mocks/api/v2/variables/getVariable';
+import {mockServer} from 'modules/mock-server/node';
+import {http, HttpResponse} from 'msw';
 
 function createWrapper() {
   const queryClient = getMockQueryClient();
@@ -43,7 +47,16 @@ const agentInstance = mockAgentInstance();
 
 describe('<AgentDetails />', () => {
   beforeEach(() => {
+    mockServer.use(
+      http.post('/v2/agent-instances/:key/history/search', () =>
+        HttpResponse.json(searchResult([])),
+      ),
+      http.get('/v2/process-definitions/:key/xml', () =>
+        HttpResponse.text('<definitions />'),
+      ),
+    );
     mockSearchAgentInstanceHistory().withSuccess(searchResult([]));
+    mockSearchVariables().withSuccess(searchResult([]));
   });
 
   it('should render Agent Instance heading and status for TOOL_CALLING', () => {
@@ -162,6 +175,7 @@ describe('<AgentDetails />', () => {
         isError={true}
         selectedElementInstanceKey={null}
       />,
+      {wrapper: createWrapper()},
     );
 
     expect(screen.getByText('Agent Instance')).toBeInTheDocument();
@@ -333,6 +347,253 @@ describe('<AgentDetails />', () => {
     ).toBeInTheDocument();
   });
 
+  it('should render persisted system prompt evidence from the agent result variable', async () => {
+    mockServer.use(
+      http.post('/v2/agent-instances/:key/history/search', () =>
+        HttpResponse.json(
+          searchResult([
+            mockAgentInstanceHistoryItem({
+              role: 'CONFIGURATION',
+              content: [
+                {
+                  contentType: 'OBJECT',
+                  object: {
+                    evidence: {
+                      kind: 'configuration',
+                      systemPrompt: {resourceKey: '2251799813779747'},
+                      documentParsing: {
+                        plugin: 'file-parser',
+                        pdfEngine: 'native',
+                      },
+                    },
+                  },
+                },
+              ],
+            }),
+          ]),
+        ),
+      ),
+    );
+    const requestBodySpy = vi.fn();
+    mockSearchVariables().withSuccess(
+      searchResult([
+        createVariable({
+          name: 'agent',
+          scopeKey: agentInstance.processInstanceKey,
+          processInstanceKey: agentInstance.processInstanceKey,
+          value: JSON.stringify({
+            systemPrompt: {
+              type: 'linked',
+              promptId: 'claims-review-instructions.md',
+              binding: 'latest',
+              version: 1,
+              prompt: 'Route ambiguous damage descriptions to manual review.',
+            },
+          }),
+        }),
+      ]),
+      {requestBodyResolverFn: requestBodySpy},
+    );
+
+    render(
+      <AgentDetails
+        agentInstances={[agentInstance]}
+        totalAgentsCount={1}
+        hasMoreTotalItems={false}
+        isError={false}
+        selectedElementInstanceKey={null}
+      />,
+      {wrapper: createWrapper()},
+    );
+
+    const evidence = await screen.findByLabelText('System prompt evidence');
+    const section = screen.getByTestId('agent-system-prompt-section');
+    const prompt = within(section).getByTestId('conversation-message');
+
+    expect(evidence).toHaveAccessibleName('System prompt evidence');
+    expect(within(evidence).queryByText('Type:')).not.toBeInTheDocument();
+    expect(within(evidence).queryByText('Linked')).not.toBeInTheDocument();
+    expect(
+      within(evidence).getByText('claims-review-instructions.md'),
+    ).toBeInTheDocument();
+    expect(within(evidence).getByText('Latest')).toBeInTheDocument();
+    expect(within(evidence).getByText('1')).toBeInTheDocument();
+    expect(
+      await within(evidence).findByText('2251799813779747'),
+    ).toBeInTheDocument();
+    expect(
+      within(screen.getByTestId('agent-available-tools-section')).getByText(
+        'file-parser',
+      ),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText('Route ambiguous damage descriptions to manual review.'),
+    ).toBeInTheDocument();
+    expect(
+      prompt.compareDocumentPosition(evidence) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    expect(requestBodySpy).toHaveBeenCalledWith({
+      filter: {
+        processInstanceKey: {$eq: agentInstance.processInstanceKey},
+        scopeKey: {$eq: agentInstance.processInstanceKey},
+        name: {$eq: 'agent'},
+      },
+      page: {limit: 1},
+    });
+  });
+
+  it('should omit system prompt evidence when the agent result variable is absent', () => {
+    render(
+      <AgentDetails
+        agentInstances={[agentInstance]}
+        totalAgentsCount={1}
+        hasMoreTotalItems={false}
+        isError={false}
+        selectedElementInstanceKey={null}
+      />,
+      {wrapper: createWrapper()},
+    );
+
+    expect(
+      screen.queryByLabelText('System prompt evidence'),
+    ).not.toBeInTheDocument();
+  });
+
+  it('should restore recorded prompt metadata when the agent result arrives after the panel opens', async () => {
+    let searches = 0;
+    mockServer.use(
+      http.post('/v2/variables/search', () => {
+        searches++;
+        return HttpResponse.json(
+          searchResult(
+            searches === 1
+              ? []
+              : [
+                  createVariable({
+                    name: 'agent',
+                    scopeKey: agentInstance.processInstanceKey,
+                    processInstanceKey: agentInstance.processInstanceKey,
+                    value: JSON.stringify({
+                      systemPrompt: {
+                        type: 'linked',
+                        promptId: 'dispute-compliance-policy.md',
+                        binding: 'latest',
+                        version: 82,
+                        prompt: 'Recorded compliance instructions.',
+                      },
+                    }),
+                  }),
+                ],
+          ),
+        );
+      }),
+    );
+    render(
+      <AgentDetails
+        agentInstances={[{...agentInstance, status: 'IDLE'}]}
+        totalAgentsCount={1}
+        hasMoreTotalItems={false}
+        isError={false}
+        selectedElementInstanceKey={null}
+      />,
+      {wrapper: createWrapper()},
+    );
+
+    expect(
+      screen.queryByLabelText('System prompt evidence'),
+    ).not.toBeInTheDocument();
+
+    const evidence = await screen.findByLabelText(
+      'System prompt evidence',
+      {},
+      {timeout: 7000},
+    );
+    expect(
+      within(evidence).getByText('dispute-compliance-policy.md'),
+    ).toBeInTheDocument();
+    expect(within(evidence).getByText('Latest')).toBeInTheDocument();
+    expect(within(evidence).getByText('82')).toBeInTheDocument();
+    expect(
+      screen.getByText('Recorded compliance instructions.'),
+    ).toBeInTheDocument();
+  }, 10000);
+
+  it('should fetch the complete agent result when its variable is truncated', async () => {
+    const truncatedVariable = createVariable({
+      name: 'agent',
+      scopeKey: agentInstance.processInstanceKey,
+      processInstanceKey: agentInstance.processInstanceKey,
+      value: '{"systemPrompt":',
+      isTruncated: true,
+    });
+    mockSearchVariables().withSuccess(searchResult([truncatedVariable]));
+    mockGetVariable().withSuccess(
+      createVariable({
+        ...truncatedVariable,
+        value: JSON.stringify({
+          systemPrompt: {
+            type: 'linked',
+            promptId: 'claims-review-instructions.md',
+            binding: 'latest',
+            version: 2,
+            prompt:
+              'Permit automatic approval for ambiguous damage descriptions.',
+          },
+        }),
+        isTruncated: false,
+      }),
+    );
+
+    render(
+      <AgentDetails
+        agentInstances={[agentInstance]}
+        totalAgentsCount={1}
+        hasMoreTotalItems={false}
+        isError={false}
+        selectedElementInstanceKey={null}
+      />,
+      {wrapper: createWrapper()},
+    );
+
+    expect(
+      await screen.findByText(
+        'Permit automatic approval for ambiguous damage descriptions.',
+      ),
+    ).toBeInTheDocument();
+    expect(
+      within(screen.getByLabelText('System prompt evidence')).getByText('2'),
+    ).toBeInTheDocument();
+  });
+
+  it('should display an error for invalid persisted prompt evidence', async () => {
+    mockSearchVariables().withSuccess(
+      searchResult([
+        createVariable({
+          name: 'agent',
+          scopeKey: agentInstance.processInstanceKey,
+          processInstanceKey: agentInstance.processInstanceKey,
+          value: JSON.stringify({systemPrompt: {type: 'inline'}}),
+        }),
+      ]),
+    );
+
+    render(
+      <AgentDetails
+        agentInstances={[agentInstance]}
+        totalAgentsCount={1}
+        hasMoreTotalItems={false}
+        isError={false}
+        selectedElementInstanceKey={null}
+      />,
+      {wrapper: createWrapper()},
+    );
+
+    expect(
+      await screen.findByText('Unable to load system prompt evidence.'),
+    ).toBeInTheDocument();
+  });
+
   it('should render document references in the system prompt', () => {
     render(
       <AgentDetails
@@ -383,7 +644,7 @@ describe('<AgentDetails />', () => {
     ).toBeInTheDocument();
   });
 
-  it('should not fetch the conversation history until its accordion item is opened', async () => {
+  it('should fetch tool configuration first and conversation history when opened', async () => {
     const historySpy = vi.fn();
     mockSearchAgentInstanceHistory(agentInstance.agentInstanceKey).withSuccess(
       searchResult([]),
@@ -409,8 +670,12 @@ describe('<AgentDetails />', () => {
     // Flush potentially pending queries otherwise this test cannot break.
     // eslint-disable-next-line testing-library/no-unnecessary-act
     await act(async () => {});
-    expect(historySpy).not.toHaveBeenCalled();
+    expect(historySpy).toHaveBeenCalledTimes(1);
 
+    mockSearchAgentInstanceHistory(agentInstance.agentInstanceKey).withSuccess(
+      searchResult([]),
+      {mockResolverFn: historySpy},
+    );
     await user.click(
       within(section).getByRole('button', {name: 'Conversation history'}),
     );
@@ -419,7 +684,7 @@ describe('<AgentDetails />', () => {
       screen.queryByTestId('conversation-history-skeleton'),
     );
 
-    expect(historySpy).toHaveBeenCalledTimes(1);
+    expect(historySpy).toHaveBeenCalledTimes(2);
   });
 
   it('should display the agent instance key and not render a selector when only one agent exists', () => {

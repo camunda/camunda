@@ -11,7 +11,7 @@ import type {
   AgentInstance,
   AgentInstanceStatus,
 } from '@camunda/camunda-api-zod-schemas/8.10';
-import {Accordion, AccordionItem, Tag} from '@carbon/react';
+import {Accordion, AccordionItem, Tag, SkeletonText} from '@carbon/react';
 import {
   CircleDash,
   WarningFilled,
@@ -32,6 +32,9 @@ import {
   MetricsRow,
   ModelInfo,
   ModelInfoLabel,
+  PromptEvidence,
+  PromptEvidenceLabel,
+  PromptEvidenceValue,
 } from './styled';
 import {AgentSelector, type SelectableAgentInstance} from './AgentSelector';
 import {ModelCallsMetric} from './AgentMetrics/ModelCallsMetric';
@@ -43,6 +46,8 @@ import {ConversationHistory} from './ConversationHistory';
 import {LatestAgentMessage} from './ConversationHistory/LatestAgentMessage';
 import {AvailableTools} from './AvailableTools';
 import {getTotalTokens} from './getTotalTokens';
+import {useAgentToolConfiguration} from './AvailableTools/useAgentToolConfiguration';
+import {useSystemPromptEvidence} from './useSystemPromptEvidence';
 
 const STATUS_LABELS: Record<AgentInstanceStatus, string> = {
   UNKNOWN: 'Unknown',
@@ -102,6 +107,20 @@ const AgentDetails: React.FC<AgentDetailsProps> = ({
       ) ?? null,
     [agentInstances, currentAgentInstanceKey],
   );
+  const {data: promptEvidence, isError: isPromptEvidenceError} =
+    useSystemPromptEvidence({
+      processInstanceKey: agentInstance?.processInstanceKey ?? '',
+      enabled: agentInstance !== null,
+    });
+
+  const {
+    providerTools,
+    resourceKey,
+    status: configurationStatus,
+  } = useAgentToolConfiguration(
+    agentInstance?.agentInstanceKey,
+    agentInstance?.status,
+  );
 
   const selectableAgentInstances = useMemo(
     () =>
@@ -128,6 +147,10 @@ const AgentDetails: React.FC<AgentDetailsProps> = ({
     STATUS_LABELS[agentInstance.status] ?? agentInstance.status;
   const {metrics, limits, definition} = agentInstance;
   const totalTokens = getTotalTokens(metrics);
+  const systemPrompt =
+    promptEvidence === null || promptEvidence === undefined
+      ? definition.systemPrompt
+      : [{contentType: 'TEXT' as const, text: promptEvidence.prompt}];
 
   const remainingAgentsCount =
     agentInstances.length < totalAgentsCount
@@ -238,10 +261,30 @@ const AgentDetails: React.FC<AgentDetailsProps> = ({
             </SectionTitle>
           }
         >
-          <ConversationMessage
-            actor="SYSTEM"
-            content={definition.systemPrompt}
-          />
+          <ConversationMessage actor="SYSTEM" content={systemPrompt} />
+          {promptEvidence !== undefined && promptEvidence !== null && (
+            <PromptEvidence aria-label="System prompt evidence">
+              <PromptEvidenceLabel>Prompt ID:</PromptEvidenceLabel>
+              <PromptEvidenceValue>
+                {promptEvidence.promptId}
+              </PromptEvidenceValue>
+              <PromptEvidenceLabel>Binding:</PromptEvidenceLabel>
+              <PromptEvidenceValue>
+                {promptEvidence.binding}
+              </PromptEvidenceValue>
+              <PromptEvidenceLabel>Version:</PromptEvidenceLabel>
+              <PromptEvidenceValue>
+                {promptEvidence.version.toLocaleString()}
+              </PromptEvidenceValue>
+              <PromptEvidenceLabel>Resource key:</PromptEvidenceLabel>
+              <PromptEvidenceValue>
+                {resourceKey ?? 'Not recorded'}
+              </PromptEvidenceValue>
+            </PromptEvidence>
+          )}
+          {isPromptEvidenceError && (
+            <ErrorHint>Unable to load system prompt evidence.</ErrorHint>
+          )}
         </AccordionItem>
         <AccordionItem
           data-testid="agent-available-tools-section"
@@ -251,7 +294,16 @@ const AgentDetails: React.FC<AgentDetailsProps> = ({
             </SectionTitle>
           }
         >
-          <AvailableTools tools={agentInstance.tools} />
+          <AvailableTools
+            tools={agentInstance.tools}
+            providerTools={providerTools}
+          />
+          {configurationStatus === 'pending' && <SkeletonText />}
+          {configurationStatus === 'error' && (
+            <ErrorHint>
+              Unable to load provider capabilities and prompt resource key.
+            </ErrorHint>
+          )}
         </AccordionItem>
         <AccordionItem
           data-testid="agent-model-section"

@@ -6,73 +6,112 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {lazy, Suspense, useState} from 'react';
-import {Modal, Switch} from '@carbon/react';
+import {useState, type ReactNode} from 'react';
+import {Modal} from '@carbon/react';
 import {CopyButton} from 'modules/components/CopyButton';
-import {MarkdownMessage} from './MarkdownMessage';
-import {ModalContent, ModalToolbar, ViewSwitcher} from './styled';
+import {StructuredText} from './StructuredValue/StructuredText';
+import {StructuredValue} from './StructuredValue';
+import {
+  ContentsLayout,
+  ContentsPane,
+  ModalContent,
+  ModalToolbar,
+  ModalAttachments,
+} from './styled';
 
-const RichTextEditor = lazy(async () => {
-  const [{loadMonaco}, {RichTextEditor}] = await Promise.all([
-    import('modules/loadMonaco'),
-    import('modules/components/RichTextEditor'),
-  ]);
+import {
+  ModalViewSwitcher,
+  SourceEditor,
+  type ModalView,
+  type ModalViewProps,
+} from './ModalView';
 
-  loadMonaco();
-
-  return {default: RichTextEditor};
-});
-
-type MessageDetailsModalProps = {
+type MessageDetailsModalProps = ModalViewProps & {
   title: string;
-  language: 'markdown' | 'json';
+  language: 'markdown' | 'structured';
+  /** Markdown source, or the copy value for structured content. */
   content: string;
+  value?: unknown;
   onClose: () => void;
+  navigation?: ReactNode;
+  contents?: ReactNode;
+  attachments?: ReactNode;
 };
 
 const MessageDetailsModal: React.FC<MessageDetailsModalProps> = ({
   title,
   language,
   content,
+  value,
   onClose,
+  navigation,
+  contents,
+  attachments,
+  view,
+  onViewChange,
 }) => {
-  const [modalView, setModalView] = useState<'preview' | 'source'>('preview');
+  const [localView, setLocalView] = useState<ModalView>('preview');
+  const modalView = view ?? localView;
+  const setModalView = onViewChange ?? setLocalView;
+
+  const body = (
+    <>
+      {language === 'markdown' ? (
+        <>
+          <ModalToolbar>
+            <ModalViewSwitcher view={modalView} onChange={setModalView} />
+            <CopyButton value={content} />
+          </ModalToolbar>
+          {modalView === 'preview' ? (
+            <ModalContent className="agent-message-content">
+              <StructuredText content={content} />
+            </ModalContent>
+          ) : (
+            <SourceEditor value={content} language="markdown" />
+          )}
+          {modalView === 'preview' && attachments && (
+            <ModalAttachments>{attachments}</ModalAttachments>
+          )}
+        </>
+      ) : (
+        <>
+          <ModalToolbar>
+            <span />
+            <CopyButton value={content} />
+          </ModalToolbar>
+          <ModalContent>
+            <StructuredValue value={value} />
+          </ModalContent>
+        </>
+      )}
+    </>
+  );
 
   return (
     <Modal
       open
-      modalHeading={title}
+      modalHeading={
+        navigation ? (
+          <span className="agent-history-heading">
+            <span>{title}</span>
+            {navigation}
+          </span>
+        ) : (
+          title
+        )
+      }
       onRequestClose={onClose}
       size="lg"
       passiveModal
+      className={navigation || contents ? 'agent-history-modal' : undefined}
     >
-      {language === 'markdown' ? (
-        <>
-          <ModalToolbar>
-            <ViewSwitcher
-              size="sm"
-              onChange={({name}) => setModalView(name as 'preview' | 'source')}
-              selectedIndex={modalView === 'preview' ? 0 : 1}
-            >
-              <Switch name="preview" text="Preview" />
-              <Switch name="source" text="Source" />
-            </ViewSwitcher>
-            <CopyButton value={content} />
-          </ModalToolbar>
-          {modalView === 'preview' ? (
-            <ModalContent>
-              <MarkdownMessage content={content} />
-            </ModalContent>
-          ) : (
-            <Suspense>
-              <RichTextEditor value={content} readOnly language="markdown" />
-            </Suspense>
-          )}
-        </>
+      {contents ? (
+        <ContentsLayout>
+          {contents}
+          <ContentsPane>{body}</ContentsPane>
+        </ContentsLayout>
       ) : (
-        <Suspense>
-          <RichTextEditor value={content} readOnly language={language} />
-        </Suspense>
+        body
       )}
     </Modal>
   );

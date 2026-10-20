@@ -12,6 +12,7 @@ import type {DocumentInfo} from '../documentInfo';
 import {PreviewImage} from './PreviewImage';
 import {PreviewPdf} from './styled';
 import {PreviewJson} from './PreviewJson';
+import {PreviewText} from './PreviewText';
 
 type DocumentPreviewProps = {
   document: DocumentInfo;
@@ -50,6 +51,10 @@ const ModalContent: React.FC<DocumentPreviewProps> = ({document}) => {
 
   if (document.type === 'json') {
     return <PreviewJson src={document.link} fileName={document.fileName} />;
+  }
+
+  if (document.type === 'text') {
+    return <PreviewText src={document.link} fileName={document.fileName} />;
   }
 
   return <p>Preview not available for document "{document.fileName}".</p>;

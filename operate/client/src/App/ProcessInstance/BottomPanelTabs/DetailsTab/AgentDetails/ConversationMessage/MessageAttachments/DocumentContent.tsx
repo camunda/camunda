@@ -8,31 +8,34 @@
 
 import {memo, useId} from 'react';
 import type {AgentInstanceHistoryItem} from '@camunda/camunda-api-zod-schemas/8.10';
-import {Document, View} from '@carbon/react/icons';
+import {Document} from '@carbon/react/icons';
 import {
-  AttachmentsContainer,
   AttachmentsLabel,
-  Attachment,
-  HiddenButton,
-  AttachmentsList,
+  DocumentAttachments,
+  DocumentList,
+  DocumentCard,
+  DocumentPreview,
+  DocumentFileName,
+  DocumentFooter,
 } from './styled';
-import {ModalStateManager} from 'modules/components/ModalStateManager';
 import {toDocumentInfo} from 'App/ProcessInstance/DocumentsView/documentInfo';
-import {DocumentListModal} from 'App/ProcessInstance/DocumentsView/DocumentListModal';
-import {middleTruncate} from 'App/ProcessInstance/DocumentsView/middleTruncate';
+import {DownloadDocumentButton} from 'App/ProcessInstance/DocumentsView/DownloadDocumentButton';
+import {toHumanReadableBytes} from 'App/ProcessInstance/DocumentsView/humanReadableBytes';
 
-const MAX_VISIBLE_DOCUMENTS = 3;
+const MAX_VISIBLE_DOCUMENTS = 4;
 
 type ContentItem = AgentInstanceHistoryItem['content'][number];
 
 type Props = {
   content: ContentItem[];
   modalTitleSuffix: string;
+  showAll?: boolean;
 };
 
 const DocumentContent: React.FC<Props> = memo(function DocumentContent({
   content,
   modalTitleSuffix,
+  showAll = false,
 }) {
   const id = useId();
 
@@ -44,47 +47,40 @@ const DocumentContent: React.FC<Props> = memo(function DocumentContent({
     return null;
   }
 
-  const visibleDocuments = documents.slice(0, MAX_VISIBLE_DOCUMENTS);
-  const hiddenDocumentsCount = documents.length - visibleDocuments.length;
+  const visibleDocuments = showAll
+    ? documents
+    : documents.slice(0, MAX_VISIBLE_DOCUMENTS);
 
   return (
-    <AttachmentsContainer>
-      <AttachmentsLabel id={id}>Documents</AttachmentsLabel>
-      <AttachmentsList aria-labelledby={id}>
+    <DocumentAttachments>
+      <AttachmentsLabel id={id}>
+        Documents
+        {visibleDocuments.length < documents.length &&
+          ` (${visibleDocuments.length} of ${documents.length})`}
+      </AttachmentsLabel>
+      <DocumentList aria-labelledby={id}>
         {visibleDocuments.map((document, i) => (
-          <Attachment key={i} title={document.fileName}>
-            <Document size={12} />
-            {middleTruncate(document.fileName, 20)}
-          </Attachment>
+          <DocumentCard key={i} aria-label={document.fileName}>
+            <DocumentPreview
+              document={document}
+              labelSuffix={document.fileName}
+            >
+              <Document size={32} aria-hidden="true" />
+              <DocumentFileName title={document.fileName}>
+                {document.fileName}
+              </DocumentFileName>
+            </DocumentPreview>
+            <DocumentFooter>
+              <span>{toHumanReadableBytes(document.size)}</span>
+              <DownloadDocumentButton
+                document={document}
+                labelSuffix={`${document.fileName} in ${modalTitleSuffix}`}
+              />
+            </DocumentFooter>
+          </DocumentCard>
         ))}
-        {hiddenDocumentsCount > 0 && (
-          <Attachment>{hiddenDocumentsCount} more</Attachment>
-        )}
-      </AttachmentsList>
-      <ModalStateManager
-        renderLauncher={({setOpen}) => (
-          <HiddenButton
-            kind="ghost"
-            size="xs"
-            hasIconOnly
-            renderIcon={View}
-            iconDescription="View documents"
-            tooltipPosition="top"
-            tooltipAlignment="end"
-            onClick={() => setOpen(true)}
-          />
-        )}
-      >
-        {({open, setOpen}) => (
-          <DocumentListModal
-            open={open}
-            setOpen={setOpen}
-            documents={documents}
-            labelSuffix={modalTitleSuffix}
-          />
-        )}
-      </ModalStateManager>
-    </AttachmentsContainer>
+      </DocumentList>
+    </DocumentAttachments>
   );
 });
 

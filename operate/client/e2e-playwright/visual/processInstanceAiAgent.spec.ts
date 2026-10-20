@@ -23,6 +23,8 @@ const AI_AGENT_ELEMENT_INSTANCE_KEY =
     .elementInstanceKey;
 const PROCESS_INSTANCE_KEY =
   agentProcessWithOneActiveInstance.detail.processInstanceKey;
+const AGENT_INSTANCE_KEY_2 =
+  agentProcessWithTwoActiveInstances.agentInstances!.items[1]!.agentInstanceKey;
 
 function agentMockResponses(mock: InstanceMock) {
   return mockResponses({
@@ -39,8 +41,7 @@ function agentMockResponses(mock: InstanceMock) {
 }
 
 test.describe('AI agent details', () => {
-  // Taller viewport is needed to fit all agent details into the page.
-  test.use({viewport: {width: 1280, height: 1400}});
+  test.use({viewport: {width: 1440, height: 900}});
 
   test.beforeEach(async ({context}) => {
     await context.route('**/client-config.js', (route) =>
@@ -100,23 +101,78 @@ test.describe('AI agent details', () => {
 
     await processInstancePage.gotoProcessInstancePage({
       key: PROCESS_INSTANCE_KEY,
-      bottomPanel: 'details',
-      selection: `elementId=${AI_AGENT_ELEMENT_ID}`,
     });
+    await processInstancePage.diagram.clickElement('Review claim');
+    await expect(page).toHaveURL(
+      new RegExp(
+        `/operate/processes/${PROCESS_INSTANCE_KEY}/details\\?elementId=${AI_AGENT_ELEMENT_ID}`,
+      ),
+    );
     await expect(
       processInstancePage.aiAgentDetails.statusOverlay,
     ).toBeVisible();
-
-    await processInstancePage.aiAgentDetails.usageSectionTrigger.click();
-    await processInstancePage.aiAgentDetails.systemPromptSection.click();
-    await processInstancePage.aiAgentDetails.availableToolsSection.click();
-    await processInstancePage.aiAgentDetails.modelSection.click();
-
     await expect(
       processInstancePage.aiAgentDetails.statusSection.getByLabel(
         'Assistant message',
       ),
     ).toBeVisible();
+
+    await processInstancePage.aiAgentDetails.statusSectionTrigger.click();
+    await processInstancePage.aiAgentDetails.systemPromptSectionTrigger.click();
+
+    await expect(
+      page.getByRole('link', {name: 'Details', exact: true}),
+    ).toBeVisible();
+    await expect(
+      page.getByRole('link', {name: 'Variables', exact: true}),
+    ).toBeVisible();
+    await expect(
+      processInstancePage.diagram.getElement('Manual review'),
+    ).toBeVisible();
+    await expect(
+      processInstancePage.aiAgentDetails.systemPromptEvidence,
+    ).toContainText(
+      'Prompt ID:claims-review-instructions.mdBinding:LatestVersion:1',
+    );
+    await expect(
+      processInstancePage.aiAgentDetails.systemPromptEvidence,
+    ).not.toContainText('Type:');
+    expect(
+      await processInstancePage.aiAgentDetails.systemPromptSection
+        .getByTestId('conversation-message')
+        .evaluate((prompt) => {
+          const evidence = prompt.parentElement?.querySelector(
+            '[aria-label="System prompt evidence"]',
+          );
+          return (
+            evidence != null &&
+            Boolean(
+              prompt.compareDocumentPosition(evidence) &
+              Node.DOCUMENT_POSITION_FOLLOWING,
+            )
+          );
+        }),
+    ).toBe(true);
+    await expect(
+      processInstancePage.aiAgentDetails.systemPromptSection.getByText(
+        'Route ambiguous damage descriptions to manual review, even when timestamped photos are complete.',
+      ),
+    ).toBeVisible();
+    await expect(
+      processInstancePage.aiAgentDetails.systemPromptSection.getByText(
+        'Return only a JSON object with decision and rationale.',
+      ),
+    ).toBeVisible();
+    await expect(
+      processInstancePage.aiAgentDetails.systemPromptSection.getByText(
+        'Set decision to manual-review for that route.',
+      ),
+    ).toBeVisible();
+    expect(
+      await processInstancePage.aiAgentDetails.systemPromptSection.evaluate(
+        (element) => element.scrollWidth <= element.clientWidth,
+      ),
+    ).toBe(true);
 
     await expect(page).toHaveScreenshot();
   });
@@ -233,7 +289,10 @@ test.describe('AI agent details', () => {
     await expect(page).toHaveScreenshot();
   });
 
-  test('conversation document lists', async ({page, processInstancePage}) => {
+  test('expanded conversation documents', async ({
+    page,
+    processInstancePage,
+  }) => {
     await page.route(
       URL_API_PATTERN,
       agentMockResponses(agentProcessWithOneActiveInstance),
@@ -253,18 +312,18 @@ test.describe('AI agent details', () => {
       ),
     ).toBeVisible();
 
-    const viewDocumentsButton =
+    const expandMessageButton =
       processInstancePage.aiAgentDetails.conversationHistorySection
         .getByLabel('User message')
-        .getByRole('button', {name: 'View documents'});
+        .getByRole('button', {name: 'Expand'});
 
     await processInstancePage.aiAgentDetails.conversationHistorySectionTrigger.click();
-    await viewDocumentsButton.scrollIntoViewIfNeeded();
-    await viewDocumentsButton.focus();
-    await viewDocumentsButton.click();
+    await expandMessageButton.scrollIntoViewIfNeeded();
+    await expandMessageButton.focus();
+    await expandMessageButton.click();
 
     const modal = page.getByRole('dialog', {
-      name: '4 documents in conversation message',
+      name: 'User message',
     });
     await expect(modal).toBeVisible();
     await expect(modal.getByText('test_image.png')).toBeVisible();
@@ -317,6 +376,39 @@ test.describe('AI agent details', () => {
 
     await processInstancePage.aiAgentDetails.conversationHistorySectionTrigger.click();
     await processInstancePage.aiAgentDetails.agentSelector.click();
+
+    await page
+      .getByRole('option', {name: `${AGENT_INSTANCE_KEY_2} - Initializing`})
+      .click();
+    await processInstancePage.aiAgentDetails.systemPromptSectionTrigger.click();
+    await expect(
+      processInstancePage.aiAgentDetails.systemPromptEvidence,
+    ).toContainText('Version:2');
+    await expect(
+      processInstancePage.aiAgentDetails.systemPromptSection.getByText(
+        'Permit automatic approval for ambiguous damage descriptions when timestamped photos are complete.',
+      ),
+    ).toBeVisible();
+    await expect(
+      processInstancePage.diagram.diagramCanvas.locator(
+        '[data-element-id="end_label"]',
+      ),
+    ).toContainText(/Automatic\s*approval/);
+    await expect(
+      processInstancePage.aiAgentDetails.systemPromptSection.getByText(
+        'Return only a JSON object with decision and rationale.',
+      ),
+    ).toBeVisible();
+    await expect(
+      processInstancePage.aiAgentDetails.systemPromptSection.getByText(
+        'Set decision to automatic-approval.',
+      ),
+    ).toBeVisible();
+    expect(
+      await processInstancePage.aiAgentDetails.systemPromptSection.evaluate(
+        (element) => element.scrollWidth <= element.clientWidth,
+      ),
+    ).toBe(true);
 
     await expect(page).toHaveScreenshot();
   });

@@ -41,7 +41,7 @@ describe('<ToolResultMessage />', () => {
     expect(message.getByText('Tool output here')).toBeInTheDocument();
   });
 
-  it('should render a compact JSON preview for object content', () => {
+  it('should render a readable one-line summary for object content', () => {
     render(
       <ToolResultMessage
         availableTools={[]}
@@ -58,7 +58,7 @@ describe('<ToolResultMessage />', () => {
     );
 
     expect(
-      screen.getByText('{"message":"Tool output here","hello":"world"}'),
+      screen.getByText('Message: Tool output here · Hello: world'),
     ).toBeInTheDocument();
   });
 
@@ -78,7 +78,7 @@ describe('<ToolResultMessage />', () => {
     ).toBeInTheDocument();
   });
 
-  it('should render document chips and open the document list modal', async () => {
+  it('should render document cards and open their preview directly', async () => {
     const {user} = render(
       <ToolResultMessage
         availableTools={[]}
@@ -94,7 +94,7 @@ describe('<ToolResultMessage />', () => {
               documentId: 'doc-1',
               storeId: 'default',
               metadata: {
-                contentType: 'text/plain',
+                contentType: 'application/pdf',
                 fileName: 'report.txt',
                 size: 1234,
                 expiresAt: null,
@@ -115,11 +115,11 @@ describe('<ToolResultMessage />', () => {
       screen.getByRole('listitem', {name: 'report.txt'}),
     ).toBeInTheDocument();
 
-    await user.click(screen.getByLabelText('View documents'));
+    await user.click(screen.getByLabelText('Preview document for report.txt'));
 
     const dialog = within(screen.getByRole('dialog'));
     expect(
-      dialog.getByRole('heading', {name: '1 document in tool result'}),
+      dialog.getByRole('heading', {name: 'Preview: report.txt'}),
     ).toBeInTheDocument();
   });
 

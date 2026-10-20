@@ -8,10 +8,32 @@
 
 import {render, screen, within} from 'modules/testing-library';
 import {MessageDetailsModal} from './MessageDetailsModal';
+import {ConversationContainer} from '../ConversationHistory/styled';
 
 vi.unmock('react-markdown');
 
 describe('<MessageDetailsModal />', () => {
+  it('should keep history message content at its natural height before attachments', () => {
+    render(
+      <ConversationContainer>
+        <MessageDetailsModal
+          title="User message"
+          language="markdown"
+          content={'## Instructions\n\n- Read the PDF.\n'.repeat(30)}
+          navigation={<nav>1 / 2</nav>}
+          attachments={<div>Documents</div>}
+          onClose={vi.fn()}
+        />
+      </ConversationContainer>,
+    );
+
+    const content = screen
+      .getByRole('dialog')
+      .querySelector('.agent-message-content');
+    expect(content).toHaveStyle({flex: '0 0 auto', overflow: 'visible'});
+    expect(content?.nextElementSibling).toHaveTextContent('Documents');
+  });
+
   it('should render markdown in preview mode by default', () => {
     render(
       <MessageDetailsModal
@@ -64,12 +86,13 @@ describe('<MessageDetailsModal />', () => {
     expect(await screen.findByRole('textbox')).toHaveValue('Hello **world**');
   });
 
-  it('should render source only without tabs for json content', () => {
+  it('should render structured content as labeled fields without tabs', () => {
     render(
       <MessageDetailsModal
         title="Object details"
-        language="json"
+        language="structured"
         content='{"foo": "bar"}'
+        value={{foo: 'bar'}}
         onClose={vi.fn()}
       />,
     );
@@ -78,7 +101,9 @@ describe('<MessageDetailsModal />', () => {
       screen.queryByRole('tab', {name: 'Preview'}),
     ).not.toBeInTheDocument();
     expect(screen.queryByRole('tab', {name: 'Source'})).not.toBeInTheDocument();
-    expect(screen.getByTestId('monaco-editor')).toHaveValue('{"foo": "bar"}');
+    expect(screen.queryByTestId('monaco-editor')).not.toBeInTheDocument();
+    expect(screen.getByText('Foo')).toBeInTheDocument();
+    expect(screen.getByText('bar')).toBeInTheDocument();
   });
 
   it('should call onClose when the close button is clicked', async () => {

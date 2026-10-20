@@ -285,10 +285,9 @@ describe('<ConversationMessage />', () => {
         />,
       );
 
-      const genericObject = screen.getByText(
-        (_content, element) => element?.tagName === 'PRE',
+      expect(screen.getByTestId('structured-value')).toHaveTextContent(
+        'Fallback content',
       );
-      expect(genericObject.textContent).toBe(JSON.stringify(object, null, 2));
       expect(screen.queryByText('Thinking')).not.toBeInTheDocument();
       expect(screen.getByRole('button', {name: 'Expand'})).toBeInTheDocument();
       expect(
@@ -313,9 +312,9 @@ describe('<ConversationMessage />', () => {
       />,
     );
 
-    expect(
-      screen.getByText(/"text": "Assistant-only reasoning"/),
-    ).toBeVisible();
+    expect(screen.getByTestId('structured-value')).toHaveTextContent(
+      'Assistant-only reasoning',
+    );
     expect(screen.queryByText('Thinking')).not.toBeInTheDocument();
   });
 

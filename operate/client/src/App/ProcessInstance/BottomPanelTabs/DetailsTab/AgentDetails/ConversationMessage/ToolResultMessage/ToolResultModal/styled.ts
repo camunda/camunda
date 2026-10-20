@@ -7,8 +7,9 @@
  */
 
 import styled from 'styled-components';
+import {Modal} from '@carbon/react';
+import {ContentsPane} from '../../styled';
 
-// The styles use container queries, which do not support CSS variables in their selectors.
 const EDITOR_BASIS = '400px';
 const COLUMN_GAP = '1rem'; // --cds-spacing-05
 
@@ -19,19 +20,25 @@ const Description = styled.p`
 `;
 
 const Columns = styled.div`
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(
+    auto-fit,
+    minmax(min(100%, ${EDITOR_BASIS}), 1fr)
+  );
+  grid-auto-rows: minmax(12rem, 1fr);
   gap: ${COLUMN_GAP};
-  container-type: inline-size;
+  min-block-size: 0;
+  overflow: auto;
 `;
 
 const Column = styled.section`
-  flex: 1 1 ${EDITOR_BASIS};
   display: grid;
-  grid-template-rows: auto 1fr;
+  grid-template-rows: auto minmax(0, 1fr);
   grid-template-columns: 1fr auto;
   align-items: center;
   gap: var(--cds-spacing-03);
+  min-block-size: 0;
+  min-inline-size: 0;
 
   & > :last-child {
     align-self: start;
@@ -39,11 +46,29 @@ const Column = styled.section`
   }
 `;
 
-const EditorContainer = styled.div`
-  block-size: 40vh;
+const ResultContainer = styled.div`
+  block-size: 100%;
+  min-block-size: 0;
+  overflow: auto;
+  font-size: var(--cds-body-compact-01-font-size);
+  line-height: var(--cds-body-compact-01-line-height);
+  color: var(--cds-text-primary);
+`;
 
-  @container (max-inline-size: calc(2 * ${EDITOR_BASIS} + ${COLUMN_GAP})) {
-    block-size: 25vh;
+const ToolModal = styled(Modal)`
+  .cds--modal-container {
+    block-size: 84vh;
+    max-block-size: 84vh;
+  }
+
+  .cds--modal-content {
+    display: flex;
+    flex-direction: column;
+    min-block-size: 0;
+  }
+
+  .cds--modal-content > ${Columns}, ${ContentsPane} > ${Columns} {
+    flex: 1 1 0;
   }
 `;
 
@@ -63,4 +88,12 @@ const EmptyHint = styled.span`
   color: var(--cds-text-secondary);
 `;
 
-export {Description, Columns, Column, ColumnLabel, EditorContainer, EmptyHint};
+export {
+  Description,
+  Columns,
+  Column,
+  ColumnLabel,
+  ResultContainer,
+  EmptyHint,
+  ToolModal,
+};

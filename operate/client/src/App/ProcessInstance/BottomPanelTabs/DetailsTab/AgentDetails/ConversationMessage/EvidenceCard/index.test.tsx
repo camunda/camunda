@@ -1,0 +1,228 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+
+import {render, screen, within} from 'modules/testing-library';
+import {EvidenceCards} from './index';
+import {isEvidenceOnly} from './evidence';
+
+describe('<EvidenceCards />', () => {
+  it('should render which engine parsed the attached PDF', () => {
+    render(
+      <EvidenceCards
+        content={[
+          {
+            contentType: 'OBJECT',
+            object: {
+              evidence: {
+                kind: 'documentParsing',
+                sentAs: 'input_file content part',
+                plugin: 'file-parser',
+                pdfEngine: 'native',
+                configuredVia: 'bodyProperties.plugins',
+                documents: [
+                  {
+                    fileName: 'statement-2026-09.pdf',
+                    documentId: 'doc-1',
+                    contentType: 'application/pdf',
+                  },
+                ],
+              },
+            },
+          },
+        ]}
+      />,
+    );
+
+    const card = within(screen.getByTestId('evidence-document-parsing'));
+    expect(card.getByText('file-parser (provider-run)')).toBeInTheDocument();
+    expect(card.getByText('native')).toBeInTheDocument();
+    expect(card.getByText('statement-2026-09.pdf (doc-1)')).toBeInTheDocument();
+  });
+
+  it('should not render modeling-time configuration as instance evidence', () => {
+    render(
+      <EvidenceCards
+        content={[
+          {
+            contentType: 'OBJECT',
+            object: {
+              evidence: {
+                kind: 'configuration',
+                systemPrompt: {
+                  type: 'linked',
+                  promptId: 'card-dispute-analyst',
+                  binding: 'latest',
+                  version: 3,
+                  resourceKey: '2251799813690001',
+                },
+                credential: {
+                  mode: 'saved credential',
+                  template: 'io.camunda:agentic-ai-openai-custom-credential:1',
+                  secretFields: ['apiKey'],
+                },
+                serverTools: {configured: []},
+              },
+            },
+          },
+        ]}
+      />,
+    );
+
+    expect(
+      screen.queryByTestId('evidence-system-prompt'),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByTestId('evidence-credential')).not.toBeInTheDocument();
+    expect(
+      screen.queryByTestId('evidence-server-tools-configured'),
+    ).not.toBeInTheDocument();
+  });
+
+  it('should flag the in-process sandbox fallback', () => {
+    render(
+      <EvidenceCards
+        content={[
+          {
+            contentType: 'OBJECT',
+            object: {
+              evidence: {
+                kind: 'sandbox',
+                fallback: true,
+                operation: 'sandbox_bash',
+                command: 'python3 deadline.py',
+                exitCode: 0,
+              },
+            },
+          },
+        ]}
+      />,
+    );
+
+    const sandbox = within(screen.getByTestId('evidence-sandbox'));
+    expect(
+      sandbox.getByText('In-process fallback, no sandbox'),
+    ).toBeInTheDocument();
+    expect(sandbox.getByText('python3 deadline.py')).toBeInTheDocument();
+    expect(sandbox.getByText('0')).toBeInTheDocument();
+  });
+
+  it('should lift the A2A task id and state from the tool result', () => {
+    render(
+      <EvidenceCards
+        content={[
+          {
+            contentType: 'OBJECT',
+            object: {
+              taskId: 'task-1',
+              state: 'TASK_STATE_COMPLETED',
+              answer: 'RISK: LOW',
+              evidence: {
+                kind: 'a2a',
+                agentUrl: 'http://localhost:38090/a2a',
+                authScheme: 'bearer',
+                polls: 2,
+              },
+            },
+          },
+        ]}
+      />,
+    );
+
+    const a2a = within(screen.getByTestId('evidence-a2a'));
+    expect(a2a.getByText('task-1')).toBeInTheDocument();
+    expect(a2a.getByText('TASK_STATE_COMPLETED')).toBeInTheDocument();
+    expect(a2a.getAllByText('bearer')).toHaveLength(1);
+    expect(a2a.queryByText(/never recorded/)).not.toBeInTheDocument();
+  });
+
+  it('should link to the remote Camunda process instance', () => {
+    render(
+      <EvidenceCards
+        content={[
+          {
+            contentType: 'OBJECT',
+            object: {
+              taskId: 'task-1',
+              state: 'TASK_STATE_COMPLETED',
+              remoteProcessInstanceKey: '2251799813720201',
+              remoteOperateUrl:
+                'http://localhost:38080/operate/processes/2251799813720201',
+              evidence: {kind: 'a2a', authScheme: 'bearer'},
+            },
+          },
+        ]}
+      />,
+    );
+
+    const link = within(screen.getByTestId('evidence-a2a')).getByRole('link', {
+      name: '2251799813720201',
+    });
+    expect(link).toHaveAttribute(
+      'href',
+      'http://localhost:38080/operate/processes/2251799813720201',
+    );
+    expect(link).toHaveAttribute('target', '_blank');
+    expect(link).toHaveAttribute('rel', 'noopener noreferrer');
+  });
+
+  it('should state when the remote agent reports no process instance', () => {
+    render(
+      <EvidenceCards
+        content={[
+          {
+            contentType: 'OBJECT',
+            object: {taskId: 'task-1', evidence: {kind: 'a2a'}},
+          },
+        ]}
+      />,
+    );
+
+    expect(
+      within(screen.getByTestId('evidence-a2a')).getByText(
+        'not a Camunda agent / not reported',
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it('should only treat evidence wrappers as evidence-only content', () => {
+    expect(
+      isEvidenceOnly({contentType: 'OBJECT', object: {evidence: {kind: 'x'}}}),
+    ).toBe(true);
+    expect(
+      isEvidenceOnly({
+        contentType: 'OBJECT',
+        object: {answer: 'yes', evidence: {kind: 'a2a'}},
+      }),
+    ).toBe(false);
+  });
+
+  it('should not duplicate configured provider capabilities in conversation cards', () => {
+    render(
+      <EvidenceCards
+        content={[
+          {
+            contentType: 'OBJECT',
+            object: {
+              evidence: {
+                kind: 'configuration',
+                serverTools: {configured: []},
+                documentParsing: {plugin: 'file-parser', pdfEngine: 'native'},
+              },
+            },
+          },
+        ]}
+      />,
+    );
+
+    expect(
+      screen.queryByTestId('evidence-server-tools-configured'),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByTestId('evidence-document-parsing'),
+    ).not.toBeInTheDocument();
+  });
+});

@@ -29,6 +29,21 @@ import {flattenPaginatedPages} from 'modules/queries/flattenPaginatedPages';
 import {ToolResultMessage} from '../ConversationMessage/ToolResultMessage';
 import type {InfiniteData} from '@tanstack/react-query';
 import {isActiveAgentInstanceStatus} from 'modules/queries/agentInstances/agentInstanceStatus';
+import {HistoryCardModal} from './HistoryCardModal';
+
+const chronologicalCards = (data: Map<number, AgentInstanceHistoryItem[]>) =>
+  Array.from(data.values())
+    .flat()
+    .filter(
+      (item) =>
+        item.role !== 'CONFIGURATION' &&
+        (item.role !== 'TOOL_RESULT' || item.toolCalls.length > 0),
+    )
+    .sort(
+      (a, b) =>
+        Date.parse(a.producedAt) - Date.parse(b.producedAt) ||
+        (BigInt(a.historyItemKey) < BigInt(b.historyItemKey) ? -1 : 1),
+    );
 
 function mapIntoLoopIterationChunks(
   pages: InfiniteData<QueryAgentInstanceHistoryResponseBody>,
@@ -66,6 +81,23 @@ const ConversationHistory: React.FC<ConversationHistoryProps> = ({
 
   const [sortOrder, setSortOrder] = useState<QuerySortOrder>('desc');
   const [isScoped, setIsScoped] = useState(true);
+  const [selection, setSelection] = useState<{
+    agent: string;
+    scope: string | null;
+    key: string;
+  } | null>(null);
+  const messagesRef = useRef<HTMLDivElement>(null);
+  const navigationVersion = useRef(0);
+  const scope = canBeScoped && isScoped ? selectedElementInstanceKey : null;
+  useEffect(() => {
+    navigationVersion.current++;
+  }, [agentInstanceKey, scope]);
+  if (
+    selection &&
+    (selection.agent !== agentInstanceKey || selection.scope !== scope)
+  ) {
+    setSelection(null);
+  }
 
   const {
     data,
@@ -76,6 +108,7 @@ const ConversationHistory: React.FC<ConversationHistoryProps> = ({
     hasNextPage,
     fetchNextPage,
     isFetchingNextPage,
+    isFetchNextPageError,
   } = useAgentInstanceHistory(agentInstanceKey, {
     enabled: isVisible,
     enablePeriodicRefetch: isActiveAgentInstanceStatus(agentInstanceStatus),
@@ -84,6 +117,58 @@ const ConversationHistory: React.FC<ConversationHistoryProps> = ({
       canBeScoped && isScoped ? selectedElementInstanceKey : null,
     select: mapIntoLoopIterationChunks,
   });
+
+  const cards = data ? chronologicalCards(data) : [];
+  const selectedIndex =
+    selection?.agent === agentInstanceKey && selection.scope === scope
+      ? cards.findIndex((item) => item.historyItemKey === selection.key)
+      : -1;
+  const selectedCard = cards[selectedIndex];
+  const openCard = (key: string) =>
+    setSelection({agent: agentInstanceKey, scope, key});
+  const navigate = async (direction: -1 | 1) => {
+    if (!selectedCard) {
+      return;
+    }
+    const version = navigationVersion.current;
+    let loadedCards = cards;
+    let index = selectedIndex;
+    let more = hasNextPage;
+    while (!loadedCards[index + direction] && more) {
+      const result = await fetchNextPage();
+      if (navigationVersion.current !== version) {
+        return;
+      }
+      if (result.isError || !result.data) {
+        return;
+      }
+      loadedCards = chronologicalCards(result.data);
+      index = loadedCards.findIndex(
+        (item) => item.historyItemKey === selectedCard.historyItemKey,
+      );
+      more = result.hasNextPage;
+    }
+    const neighbor = loadedCards[index + direction];
+    if (neighbor) {
+      openCard(neighbor.historyItemKey);
+    }
+  };
+  const closeCard = () => {
+    navigationVersion.current++;
+    const key = selectedCard?.historyItemKey;
+    setSelection(null);
+    if (key) {
+      requestAnimationFrame(() => {
+        const card = messagesRef.current?.querySelector(
+          `[data-history-card="${key}"]`,
+        );
+        card?.scrollIntoView?.({block: 'nearest'});
+        card
+          ?.querySelector<HTMLButtonElement>('[data-history-expand]')
+          ?.focus();
+      });
+    }
+  };
 
   const lastAgentStatus = useRef(agentInstanceStatus);
   useEffect(() => {
@@ -94,6 +179,16 @@ const ConversationHistory: React.FC<ConversationHistoryProps> = ({
     lastAgentStatus.current = agentInstanceStatus;
   }, [agentInstanceStatus, isEnabled, refetch]);
 
+  // The first user message starts the agent; later ones are analyst feedback
+  // that sends the agent into another revise loop.
+  const firstUserMessageKey =
+    status === 'success'
+      ? Array.from(data.entries())
+          .sort(([a], [b]) => a - b)
+          .flatMap(([, items]) => items)
+          .find((item) => item.role === 'USER')?.historyItemKey
+      : undefined;
+
   if (status === 'pending') {
     return (
       <div data-testid="conversation-history-skeleton">
@@ -102,7 +197,7 @@ const ConversationHistory: React.FC<ConversationHistoryProps> = ({
     );
   }
 
-  if (status === 'error') {
+  if (status === 'error' && !data) {
     return <StatusHint>Failed to load conversation history.</StatusHint>;
   }
 
@@ -117,7 +212,7 @@ const ConversationHistory: React.FC<ConversationHistoryProps> = ({
         }
         onToggleScope={() => setIsScoped((prev) => !prev)}
       />
-      <Messages data-dimmed={isPlaceholderData}>
+      <Messages ref={messagesRef} data-dimmed={isPlaceholderData}>
         {data.size === 0 ? (
           <StatusHint>
             {canBeScoped && isScoped
@@ -134,26 +229,45 @@ const ConversationHistory: React.FC<ConversationHistoryProps> = ({
             return (
               <Fragment key={iteration}>
                 {sortOrder === 'asc' && loopIterationNode}
-                {items.map((item) =>
-                  item.role === 'CONFIGURATION' ? null : item.role ===
-                    'TOOL_RESULT' ? (
-                    <ToolResultMessage
-                      key={item.historyItemKey}
-                      availableTools={availableTools}
-                      toolCalls={item.toolCalls}
-                      content={item.content}
-                    />
-                  ) : (
-                    <ConversationMessage
-                      key={item.historyItemKey}
-                      historyItemKey={item.historyItemKey}
-                      actor={item.role}
-                      content={item.content}
-                      toolCalls={item.toolCalls}
-                      metrics={item.metrics}
-                    />
-                  ),
-                )}
+                {items.map((item) => (
+                  <Fragment key={item.historyItemKey}>
+                    {item.role === 'CONFIGURATION' ? null : item.role ===
+                      'TOOL_RESULT' ? (
+                      <div
+                        key={item.historyItemKey}
+                        data-history-card={item.historyItemKey}
+                      >
+                        <ToolResultMessage
+                          availableTools={availableTools}
+                          toolCalls={item.toolCalls}
+                          content={item.content}
+                          onExpand={() => openCard(item.historyItemKey)}
+                        />
+                      </div>
+                    ) : (
+                      <div
+                        key={item.historyItemKey}
+                        data-history-card={item.historyItemKey}
+                      >
+                        <ConversationMessage
+                          historyItemKey={item.historyItemKey}
+                          actor={item.role}
+                          content={item.content}
+                          toolCalls={item.toolCalls}
+                          metrics={item.metrics}
+                          onExpand={() => openCard(item.historyItemKey)}
+                          label={
+                            item.role === 'USER' &&
+                            firstUserMessageKey !== undefined &&
+                            item.historyItemKey !== firstUserMessageKey
+                              ? 'User · analyst feedback (revise)'
+                              : undefined
+                          }
+                        />
+                      </div>
+                    )}
+                  </Fragment>
+                ))}
                 {sortOrder === 'desc' && loopIterationNode}
               </Fragment>
             );
@@ -165,6 +279,29 @@ const ConversationHistory: React.FC<ConversationHistoryProps> = ({
         <ShowMoreButton kind="ghost" size="sm" onClick={() => fetchNextPage()}>
           Show more
         </ShowMoreButton>
+      )}
+      {selectedCard && !isPlaceholderData && (
+        <HistoryCardModal
+          item={selectedCard}
+          cards={cards}
+          availableTools={availableTools}
+          position={selectedIndex + 1}
+          total={cards.length}
+          hasEarlier={
+            selectedIndex > 0 || (hasNextPage && sortOrder === 'desc')
+          }
+          hasLater={
+            selectedIndex < cards.length - 1 ||
+            (hasNextPage && sortOrder === 'asc')
+          }
+          loading={isFetchingNextPage}
+          loadError={isFetchNextPageError}
+          moreUnloaded={hasNextPage}
+          onSelect={openCard}
+          onPrevious={() => navigate(-1)}
+          onNext={() => navigate(1)}
+          onClose={closeCard}
+        />
       )}
     </ConversationContainer>
   );
