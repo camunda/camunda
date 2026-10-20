@@ -529,6 +529,9 @@ public final class NettyMessagingService implements ManagedMessagingService {
       } else {
         sslContextBuilder.trustManager(config.getCertificateChain());
       }
+      // Netty 4.2 verifies the hostname by default, but the handler has no peer host. Keep the
+      // 4.1 behavior of not verifying it.
+      sslContextBuilder.endpointIdentificationAlgorithm(null);
       clientSslContext =
           sslContextBuilder.sslProvider(SslProvider.OPENSSL_REFCNT).protocols(TLS_PROTOCOL).build();
       return CompletableFuture.completedFuture(null);
