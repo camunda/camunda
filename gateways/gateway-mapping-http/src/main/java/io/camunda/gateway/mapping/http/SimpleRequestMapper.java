@@ -17,6 +17,7 @@ import io.camunda.gateway.protocol.model.ProcessInstanceCreationStartInstruction
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceCreateRequest;
 import io.camunda.zeebe.util.Either;
 import java.util.List;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.http.ProblemDetail;
 
 public class SimpleRequestMapper {
@@ -32,7 +33,12 @@ public class SimpleRequestMapper {
       return Either.left(validationError.get());
     }
 
-    if (request.getProcessDefinitionId() != null && !request.getProcessDefinitionId().isBlank()) {
+    final var startInstructions =
+        mapCreateProcessInstanceStartInstructions(request.getStartInstructions());
+    final var runtimeInstructions =
+        mapCreateProcessInstanceRuntimeInstructions(request.getRuntimeInstructions());
+
+    if (StringUtils.isNotBlank(request.getProcessDefinitionId())) {
       if (request.getProcessDefinitionVersionTag() != null) {
         return PROCESS_INSTANCE_MAPPER.toCreateProcessInstance(
             (ProcessInstanceCreationInstruction)
@@ -42,11 +48,8 @@ public class SimpleRequestMapper {
                     .variables(request.getVariables())
                     .tenantId(request.getTenantId())
                     .operationReference(request.getOperationReference())
-                    .startInstructions(
-                        mapCreateProcessInstanceStartInstructions(request.getStartInstructions()))
-                    .runtimeInstructions(
-                        mapCreateProcessInstanceRuntimeInstructions(
-                            request.getRuntimeInstructions()))
+                    .startInstructions(startInstructions)
+                    .runtimeInstructions(runtimeInstructions)
                     .awaitCompletion(request.getAwaitCompletion())
                     .fetchVariables(request.getFetchVariables())
                     .requestTimeout(request.getRequestTimeout())
@@ -63,10 +66,8 @@ public class SimpleRequestMapper {
                   .variables(request.getVariables())
                   .tenantId(request.getTenantId())
                   .operationReference(request.getOperationReference())
-                  .startInstructions(
-                      mapCreateProcessInstanceStartInstructions(request.getStartInstructions()))
-                  .runtimeInstructions(
-                      mapCreateProcessInstanceRuntimeInstructions(request.getRuntimeInstructions()))
+                  .startInstructions(startInstructions)
+                  .runtimeInstructions(runtimeInstructions)
                   .awaitCompletion(request.getAwaitCompletion())
                   .fetchVariables(request.getFetchVariables())
                   .requestTimeout(request.getRequestTimeout())
@@ -81,10 +82,8 @@ public class SimpleRequestMapper {
             ProcessInstanceCreationInstructionByKey.Builder.create()
                 .processDefinitionKey(request.getProcessDefinitionKey())
                 .variables(request.getVariables())
-                .startInstructions(
-                    mapCreateProcessInstanceStartInstructions(request.getStartInstructions()))
-                .runtimeInstructions(
-                    mapCreateProcessInstanceRuntimeInstructions(request.getRuntimeInstructions()))
+                .startInstructions(startInstructions)
+                .runtimeInstructions(runtimeInstructions)
                 .tenantId(request.getTenantId())
                 .operationReference(request.getOperationReference())
                 .awaitCompletion(request.getAwaitCompletion())
