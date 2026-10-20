@@ -1468,6 +1468,15 @@
 					"helperMove": "toutes les instances d'élément en cours vers un autre élément cible du diagramme",
 					"helperVariables": "Vous pouvez également ajouter ou modifier des variables en sélectionnant la portée de l'élément dans le panneau Historique de l'instance.",
 					"helperReview": "Un récapitulatif de toutes les modifications planifiées s'affiche après avoir cliqué sur « Vérifier les modifications ». La modification est appliquée après la confirmation du récapitulatif."
+				},
+				"helper": {
+					"title": "Voici ce qui a changé dans Operate",
+					"gotIt": "Compris",
+					"intro": "Nous avons apporté quelques modifications à la page de l'instance de processus.",
+					"incidents": "Les <strong>incidents</strong> ont désormais leur propre onglet, qui s'ouvre automatiquement lorsqu'il y en a",
+					"details": "Cliquez sur n'importe quel élément du diagramme pour afficher ses détails dans l'onglet <strong>Détails</strong>",
+					"callActivity": "Double-cliquez sur une <strong>call activity</strong> pour accéder directement à l'instance appelée.",
+					"imageAlt": "Page de détails de l'instance de processus avec l'onglet des incidents et le diagramme"
 				}
 			},
 			"operations": {

@@ -1477,6 +1477,15 @@
 					"helperMove": "all the running element instances to a different target element in the diagram",
 					"helperVariables": "Additionally, you add/edit variables by selecting the element scope in the Instance History panel.",
 					"helperReview": "A summary of all planned modifications will be shown after clicking on “Review Modifications”. The modification will be applied after the confirmation of the summary."
+				},
+				"helper": {
+					"title": "Here's what moved in Operate",
+					"gotIt": "Got it",
+					"intro": "We made some changes to the process instance page.",
+					"incidents": "<strong>Incidents</strong> now have their own tab, which opens automatically when present",
+					"details": "Click any element in the diagram to see its details in the <strong>Details</strong> tab",
+					"callActivity": "Double-click a <strong>call activity</strong> to jump directly into the called instance.",
+					"imageAlt": "Process instance details page with incidents tab and diagram"
 				}
 			},
 			"operations": {

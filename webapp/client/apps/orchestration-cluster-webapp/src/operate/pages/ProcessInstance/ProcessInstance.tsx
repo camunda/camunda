@@ -25,6 +25,7 @@ import {ProcessInstanceHeaderSkeleton} from './ProcessInstanceHeaderSkeleton';
 import {ProcessInstanceBreadcrumb} from './ProcessInstanceBreadcrumb';
 import {ProcessInstanceModificationFooter} from './ProcessInstanceModificationFooter';
 import {useModificationController} from './useProcessInstanceModification';
+import {ProcessInstanceHelperModal} from './ProcessInstanceHelperModal';
 import {useProcessInstance} from './processInstance.queries';
 import {
 	getProcessInstanceTabPath,
@@ -192,6 +193,7 @@ const ProcessInstance: React.FC<Props> = ({processInstanceId, search, topPanel, 
 				>
 					<p>{t('operate.processInstance.modification.leaveDescription')}</p>
 				</Modal>
+				<ProcessInstanceHelperModal />
 			</Container>
 		</ProcessInstancePageProvider>
 	);

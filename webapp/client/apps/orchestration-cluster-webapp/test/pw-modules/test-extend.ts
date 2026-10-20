@@ -77,6 +77,10 @@ type Fixtures = {
 };
 
 const test = base.extend<Fixtures>({
+	page: async ({page}, use) => {
+		await page.addInitScript(() => localStorage.setItem('operate.hideProcessInstanceHelperModal', 'true'));
+		await use(page);
+	},
 	makeAxeBuilder: async ({page}, use) => {
 		const makeAxeBuilder = () => new AxeBuilder({page});
 		await use(makeAxeBuilder);
