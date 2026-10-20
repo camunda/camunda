@@ -9,6 +9,8 @@ package io.camunda.zeebe.restore.logarchive;
 
 import io.camunda.zeebe.backup.logarchive.format.DecodedLogObject;
 import io.camunda.zeebe.backup.logarchive.format.LogObjectDecoder;
+import io.camunda.zeebe.backup.logarchive.leader.LogArchiverTimeline;
+import io.camunda.zeebe.backup.logarchive.leader.LogArchiverTimeline.Takeover;
 import io.camunda.zeebe.backup.logarchive.model.ArchivedSnapshotJson;
 import io.camunda.zeebe.backup.logarchive.model.CoveredCheckpointJson;
 import io.camunda.zeebe.backup.logarchive.model.LogArchiveJson;
@@ -175,6 +177,8 @@ public final class LogArchiveRestore {
       verifyJournal(plan, target);
       final var newTimelineId = restoredTimelineId(view.timelineId(), checkpointId);
       writeTimelineFile(dataDirectory, newTimelineId);
+      writeTakeoverFile(
+          dataDirectory, view.timelineId(), lastIndex, checkpoint.checkpointPosition());
       LOG.info(
           "Restored partition {} to checkpoint {}: journal {} to {}, new timeline '{}'",
           plan.partitionId(),
@@ -255,6 +259,8 @@ public final class LogArchiveRestore {
       verifyJournal(plan, target);
       final var newTimelineId = restoredTimelineId(view.timelineId(), checkpointId);
       writeTimelineFile(target.dataDirectory(), newTimelineId);
+      writeTakeoverFile(
+          target.dataDirectory(), view.timelineId(), range[1], checkpoint.checkpointPosition());
       LOG.info(
           "Restored partition {} bridged to checkpoint {}: journal {} to {} (old backups up to {},"
               + " log archive from {}), new timeline '{}'",
@@ -619,6 +625,32 @@ public final class LogArchiveRestore {
     Files.writeString(temporary, timelineId, StandardCharsets.UTF_8);
     FileUtil.flush(temporary);
     FileUtil.moveDurably(temporary, file, StandardCopyOption.ATOMIC_MOVE);
+  }
+
+  /**
+   * Durably writes where the new timeline takes over its parent, next to the timeline file: the
+   * Raft index and position of the restore point's entry in the source timeline. The archiver puts
+   * it on {@code START_TIMELINE} (spec section 19.3).
+   */
+  public static void writeTakeoverFile(
+      final Path dataDirectory,
+      final String parentTimelineId,
+      final long parentIndex,
+      final long parentPosition)
+      throws IOException {
+    final var file = dataDirectory.resolve(LogArchiverTimeline.TAKEOVER_FILE_NAME);
+    final var temporary = dataDirectory.resolve(LogArchiverTimeline.TAKEOVER_FILE_NAME + ".tmp");
+    Files.write(temporary, new Takeover(parentTimelineId, parentIndex, parentPosition).toJson());
+    FileUtil.flush(temporary);
+    FileUtil.moveDurably(temporary, file, StandardCopyOption.ATOMIC_MOVE);
+  }
+
+  /**
+   * Removes a takeover file left by an earlier restore into the directory, for restores that start
+   * a timeline without a known takeover point (the classic restore from old backups).
+   */
+  public static void deleteTakeoverFile(final Path dataDirectory) throws IOException {
+    Files.deleteIfExists(dataDirectory.resolve(LogArchiverTimeline.TAKEOVER_FILE_NAME));
   }
 
   private static LogArchiveRestoreException missingCheckpointFrame(

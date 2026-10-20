@@ -42,6 +42,25 @@ final class RestoreManagerTest {
   }
 
   @Test
+  void shouldRemoveStaleTakeoverFileWhenWritingClassicTimeline(@TempDir final Path dir)
+      throws IOException {
+    // given - an earlier restore from the log archive left a takeover file
+    final var configuration = new BrokerCfg();
+    configuration.getData().getBackup().getLogArchive().setEnabled(true);
+    configuration.getData().getBackup().getLogArchive().setTimeline("tl-7");
+    Files.writeString(
+        dir.resolve("log-archive-takeover"),
+        "{\"parentTimelineId\":\"tl-7\",\"parentIndex\":1,\"parentPosition\":1}");
+
+    // when
+    RestoreManager.writeLogArchiveTimeline(configuration, dir, new long[] {5});
+
+    // then
+    assertThat(dir.resolve("log-archive-takeover")).doesNotExist();
+    assertThat(Files.readString(dir.resolve("log-archive-timeline"))).isEqualTo("tl-7.b5");
+  }
+
+  @Test
   void shouldNotWriteTimelineFileWhenLogArchiveDisabled(@TempDir final Path dir)
       throws IOException {
     // given

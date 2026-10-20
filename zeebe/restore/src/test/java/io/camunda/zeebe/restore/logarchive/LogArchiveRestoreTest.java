@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.zeebe.backup.logarchive.format.LogArchiveFrame;
+import io.camunda.zeebe.backup.logarchive.leader.LogArchiverTimeline;
 import io.camunda.zeebe.journal.JournalMetaStore.InMemory;
 import io.camunda.zeebe.journal.file.SegmentedJournal;
 import io.camunda.zeebe.scheduler.ActorScheduler;
@@ -260,6 +261,30 @@ final class LogArchiveRestoreTest {
                 target.dataDirectory().resolve(LogArchiveRestore.TIMELINE_FILE_NAME),
                 StandardCharsets.UTF_8))
         .isEqualTo("tl-0.r1792137600000");
+  }
+
+  @Test
+  void shouldWriteDeterministicTakeoverFileNextToTimelineFile() throws IOException {
+    // given
+    final var archive = archive(1);
+    archive.appendAll(1, 2);
+    archive.checkpoint(1_792_137_600_000L, 2);
+    archive.archive(2);
+    final var target = target(1);
+
+    // when
+    final var result =
+        restore.restorePartition(
+            LogArchiveView.read(store, TIMELINE, 1), 1_792_137_600_000L, target);
+
+    // then
+    final var takeover = target.dataDirectory().resolve(LogArchiverTimeline.TAKEOVER_FILE_NAME);
+    assertThat(takeover)
+        .hasContent(
+            "{\"parentTimelineId\":\"tl-0\",\"parentIndex\":%d,\"parentPosition\":%d}"
+                .formatted(result.lastIndex(), result.checkpointPosition()));
+    assertThat(target.dataDirectory().resolve(LogArchiverTimeline.TAKEOVER_FILE_NAME + ".tmp"))
+        .doesNotExist();
   }
 
   @Test

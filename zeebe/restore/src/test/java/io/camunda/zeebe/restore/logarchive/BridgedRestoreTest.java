@@ -18,6 +18,7 @@ import io.camunda.cluster.PartitionId;
 import io.camunda.zeebe.backup.common.BackupDescriptorImpl;
 import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
 import io.camunda.zeebe.backup.logarchive.format.LogArchiveFrame;
+import io.camunda.zeebe.backup.logarchive.leader.LogArchiverTimeline;
 import io.camunda.zeebe.backup.management.BackupService;
 import io.camunda.zeebe.journal.JournalMetaStore.InMemory;
 import io.camunda.zeebe.journal.file.SegmentedJournal;
@@ -157,6 +158,22 @@ final class BridgedRestoreTest {
     }
     assertThat(dataDirectory().resolve(LogArchiveRestore.TIMELINE_FILE_NAME))
         .hasContent("tl-0.r30");
+  }
+
+  @Test
+  void shouldWriteTakeoverFileOfTheCheckpointEntryWhenBridged() throws Exception {
+    // given
+    takeOldBackups(sourceFrames(), -1);
+    archiveFromSwitchIndex();
+    final var bridged = bridgedPlan(List.of(1L, 2L), 5);
+    restoreOldLog(bridged);
+
+    // when
+    restore.restoreBridgedPartition(bridged, target());
+
+    // then - the entry of the checkpoint is the last one of the restored journal
+    assertThat(dataDirectory().resolve(LogArchiverTimeline.TAKEOVER_FILE_NAME))
+        .hasContent("{\"parentTimelineId\":\"tl-0\",\"parentIndex\":28,\"parentPosition\":28}");
   }
 
   @Test
