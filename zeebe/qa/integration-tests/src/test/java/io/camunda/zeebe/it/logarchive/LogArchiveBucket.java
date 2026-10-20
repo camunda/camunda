@@ -13,7 +13,10 @@ import io.camunda.configuration.Camunda;
 import io.camunda.configuration.data.primarystorage.PrimaryStorageBackup.BackupStoreType;
 import io.camunda.zeebe.backup.filesystem.FilesystemBackupConfig;
 import io.camunda.zeebe.backup.filesystem.FilesystemLogArchiveStore;
+import io.camunda.zeebe.backup.logarchive.format.LogArchiveFrame;
 import io.camunda.zeebe.backup.logarchive.format.LogObjectDecoder;
+import io.camunda.zeebe.backup.logarchive.format.RaftEntryInfo;
+import io.camunda.zeebe.backup.logarchive.format.SegmentV1Decoder;
 import io.camunda.zeebe.backup.logarchive.model.ArchivedSnapshotJson;
 import io.camunda.zeebe.backup.logarchive.model.CommitEntry;
 import io.camunda.zeebe.backup.logarchive.model.CommitEntry.Type;
@@ -26,6 +29,7 @@ import io.camunda.zeebe.backup.logarchive.store.LogArchiveStore;
 import io.camunda.zeebe.qa.util.cluster.TestSpringApplication;
 import io.camunda.zeebe.restore.logarchive.LogArchiveRestoreException;
 import io.camunda.zeebe.restore.logarchive.LogArchiveView;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -33,6 +37,7 @@ import java.util.ArrayList;
 import java.util.HexFormat;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.stream.LongStream;
 
 /**
@@ -203,26 +208,18 @@ final class LogArchiveBucket implements AutoCloseable {
           .isEqualTo(object.sizeBytes());
       assertThat(sha256Hex(content)).as("sha256 of %s", object.key()).isEqualTo(object.sha256());
 
-      final var decoded = LogObjectDecoder.decode(content);
-      final var header = decoded.header();
-      assertThat(header.partitionId()).isEqualTo(partitionId);
-      assertThat(header.timelineId()).isEqualTo(timelineId);
-      assertThat(header.term()).isEqualTo(object.term());
-      assertThat(header.firstIndex()).isEqualTo(object.firstIndex());
-      assertThat(header.lastIndex()).isEqualTo(object.lastIndex());
-      assertThat(header.firstPosition()).isEqualTo(object.firstPosition());
-      assertThat(header.lastPosition()).isEqualTo(object.lastPosition());
-      assertThat(decoded.frames())
+      final var frameList = decode(object, content, timelineId, partitionId);
+      assertThat(frameList)
           .as("frames of %s", object.key())
           .hasSize(object.entryCount())
           .hasSize((int) (object.lastIndex() - object.firstIndex() + 1));
 
       long expectedIndex = object.firstIndex();
-      for (final var frame : decoded.frames()) {
+      for (final var frame : frameList) {
         assertThat(frame.index()).as("frame index in %s", object.key()).isEqualTo(expectedIndex++);
         assertThat(frame.term())
             .as("term of frame %d", frame.index())
-            .isLessThanOrEqualTo(header.term());
+            .isLessThanOrEqualTo(object.term());
         if (frame.asqn() >= 0) {
           assertThat(frame.lowestPosition()).isEqualTo(frame.asqn());
           if (lastHighestPosition >= 0) {
@@ -269,6 +266,66 @@ final class LogArchiveBucket implements AutoCloseable {
         List.copyOf(rootKeys),
         List.copyOf(dataKeys),
         List.copyOf(frames));
+  }
+
+  /**
+   * Decodes an object by its key's extension and checks what it says about itself against its
+   * description. Returns the frames with term and positions filled in from their Raft entries.
+   */
+  private static List<LogArchiveFrame> decode(
+      final LogObjectJson object,
+      final byte[] content,
+      final String timelineId,
+      final int partitionId) {
+    if (!LogArchiveKeys.isSegmentKey(object.key())) {
+      final var decoded = LogObjectDecoder.decode(content);
+      final var header = decoded.header();
+      assertThat(header.partitionId()).isEqualTo(partitionId);
+      assertThat(header.timelineId()).isEqualTo(timelineId);
+      assertThat(header.term()).isEqualTo(object.term());
+      assertThat(header.firstIndex()).isEqualTo(object.firstIndex());
+      assertThat(header.lastIndex()).isEqualTo(object.lastIndex());
+      assertThat(header.firstPosition()).isEqualTo(object.firstPosition());
+      assertThat(header.lastPosition()).isEqualTo(object.lastPosition());
+      assertThat(object.bodyLength()).isEqualTo(-1);
+      return decoded.frames();
+    }
+
+    final var segment = SegmentV1Decoder.decode(content);
+    final var footer = segment.footer();
+    assertThat(segment.identity().partitionId()).isEqualTo(partitionId);
+    assertThat(segment.identity().clusterId()).isNotBlank();
+    assertThat(segment.identity().physicalTenantId()).isNotBlank();
+    assertThat(footer.history())
+        .isEqualTo(
+            UUID.nameUUIDFromBytes(("log-archive:" + timelineId).getBytes(StandardCharsets.UTF_8)));
+    assertThat(footer.firstIndex()).isEqualTo(object.firstIndex());
+    assertThat(footer.lastIndex()).isEqualTo(object.lastIndex());
+    assertThat(footer.firstPosition()).isEqualTo(object.firstPosition());
+    assertThat(footer.lastPosition()).isEqualTo(object.lastPosition());
+    assertThat(footer.bodyLength()).isEqualTo(object.bodyLength()).isPositive();
+    assertThat(footer.level()).isZero();
+    assertThat(segment.frameOffsets()).containsExactly(0L);
+    assertThat(segment.frameFirstPositions()).containsExactly(object.firstPosition());
+    if (object.firstPosition() >= 0) {
+      assertThat(footer.latestTimestamp()).as("latest record timestamp").isPositive();
+    } else {
+      assertThat(footer.latestTimestamp()).isEqualTo(-1);
+    }
+    return segment.frames().stream()
+        .map(
+            frame -> {
+              final var info = RaftEntryInfo.read(frame.serializedRecord());
+              return new LogArchiveFrame(
+                  frame.index(),
+                  info.term(),
+                  frame.asqn(),
+                  info.lowestPosition(),
+                  info.highestPosition(),
+                  frame.checksum(),
+                  frame.serializedRecord());
+            })
+        .toList();
   }
 
   @Override
