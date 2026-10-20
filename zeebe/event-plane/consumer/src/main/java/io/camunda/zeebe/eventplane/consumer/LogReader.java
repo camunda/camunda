@@ -63,6 +63,8 @@ public final class LogReader {
   private @Nullable RetentionMarker marker;
   private @Nullable HistoryLineage lineage;
   private List<String> lineageKeys = List.of();
+  // The directory and index for which a whole listing found no segment, and nothing after it.
+  private @Nullable String listedWholeFor;
 
   public LogReader(final ObjectStore store, final LogId log, final StartFrom from) {
     this(store, log, from, ConsumerListener.NONE);
@@ -365,8 +367,15 @@ public final class LogReader {
       final long limit = path.limit(stretch);
       final var starting = startingAt(directory, index, limit, gone);
       later = lowest(later, starting.later());
-      final var segment =
-          starting.segment() != null ? starting.segment() : containing(directory, index, gone);
+      var segment = starting.segment();
+      final var head = directory + "@" + index;
+      if (segment == null && (starting.later() != NONE || !head.equals(listedWholeFor))) {
+        // A segment that starts before the index and holds it, as a rollup. If a whole listing
+        // found none, none can come before a segment at or after the index does, which the cheap
+        // listing above sees: at the head of a log, the reader lists only after the index.
+        segment = containing(directory, index, gone);
+        listedWholeFor = segment == null && starting.later() == NONE ? head : null;
+      }
       if (segment != null) {
         return new Found(segment, Math.min(segment.lastIndex(), limit), later);
       }

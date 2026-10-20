@@ -21,6 +21,7 @@ final class RecordingStore implements ObjectStore {
 
   private final ObjectStore delegate;
   private final List<Range> ranges = new CopyOnWriteArrayList<>();
+  private final List<Listing> listings = new CopyOnWriteArrayList<>();
   private volatile @Nullable BeforeRange beforeRange;
 
   RecordingStore(final ObjectStore delegate) {
@@ -68,7 +69,12 @@ final class RecordingStore implements ObjectStore {
   @Override
   public List<StoredObject> list(
       final String prefix, @Nullable final String startAfter, final int limit) throws IOException {
+    listings.add(new Listing(prefix, startAfter));
     return delegate.list(prefix, startAfter, limit);
+  }
+
+  List<Listing> listings() {
+    return List.copyOf(listings);
   }
 
   @Override
@@ -82,6 +88,8 @@ final class RecordingStore implements ObjectStore {
   }
 
   record Range(String key, long offset, int length) {}
+
+  record Listing(String prefix, @Nullable String startAfter) {}
 
   @FunctionalInterface
   interface BeforeRange {

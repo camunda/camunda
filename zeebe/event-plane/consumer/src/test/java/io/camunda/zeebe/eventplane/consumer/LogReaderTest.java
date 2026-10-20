@@ -95,6 +95,33 @@ final class LogReaderTest {
   }
 
   @Test
+  void shouldListOnlyAfterTheNextIndexAtTheHead() throws IOException {
+    // given a reader that read everything there is
+    for (int first = 1; first <= 24; first += 3) {
+      log.upload(HISTORY, entries(first, first + 2));
+    }
+    final var reader = reader(Start.EARLIEST);
+    reader.poll(handler);
+    final var directory = ObjectNames.segmentsPrefix("c", "default", 1, HISTORY);
+    final long before = wholeListings(directory);
+
+    // when it polls at the head
+    for (int poll = 0; poll < 10; poll++) {
+      assertThat(reader.poll(handler)).isFalse();
+    }
+
+    // then, having listed the whole directory once when it reached the head, it lists only past
+    // the next index
+    assertThat(wholeListings(directory) - before).isZero();
+  }
+
+  private long wholeListings(final String directory) {
+    return store.listings().stream()
+        .filter(listing -> listing.prefix().equals(directory) && listing.startAfter() == null)
+        .count();
+  }
+
+  @Test
   void shouldGoOnAfterACursor() throws IOException {
     // given
     log.upload(HISTORY, entries(1, 12));
