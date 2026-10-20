@@ -359,6 +359,20 @@ public final class DbProcessState implements MutableProcessState {
 
   @Override
   public void deleteProcess(final ProcessRecord processRecord) {
+    deleteProcessExceptVersionTag(processRecord);
+
+    // use deleteIfExists as no entry exists for processes that do not have a version tag assigned
+    processDefinitionKeyByProcessIdAndVersionTagColumnFamily.deleteIfExists(
+        tenantAwareProcessIdAndVersionTagKey);
+  }
+
+  @Override
+  public void deleteProcessAndRepointVersionTag(final ProcessRecord processRecord) {
+    deleteProcessExceptVersionTag(processRecord);
+    updateVersionTagIndexOnDelete(processRecord);
+  }
+
+  private void deleteProcessExceptVersionTag(final ProcessRecord processRecord) {
     tenantIdKey.wrapString(processRecord.getTenantId());
     processDefinitionKey.wrapLong(processRecord.getProcessDefinitionKey());
     processId.wrapString(processRecord.getBpmnProcessId());
@@ -372,10 +386,6 @@ public final class DbProcessState implements MutableProcessState {
     // use deleteIfExists as no entry exists for older records that do not have a deployment key yet
     processDefinitionKeyByProcessIdAndDeploymentKeyColumnFamily.deleteIfExists(
         tenantAwareProcessIdAndDeploymentKey);
-
-    // use deleteIfExists as no entry exists for processes that do not have a version tag assigned
-    processDefinitionKeyByProcessIdAndVersionTagColumnFamily.deleteIfExists(
-        tenantAwareProcessIdAndVersionTagKey);
 
     invalidateCaches(
         processRecord.getTenantId(),
@@ -396,6 +406,40 @@ public final class DbProcessState implements MutableProcessState {
 
     versionManager.deleteResourceVersion(
         processRecord.getBpmnProcessId(), processRecord.getVersion(), processRecord.getTenantId());
+  }
+
+  private void updateVersionTagIndexOnDelete(final ProcessRecord processRecord) {
+    final var deletedVersionTag = processRecord.getVersionTag();
+    if (deletedVersionTag.isBlank()) {
+      return;
+    }
+    final var indexedKey =
+        processDefinitionKeyByProcessIdAndVersionTagColumnFamily.get(
+            tenantAwareProcessIdAndVersionTagKey);
+    if (indexedKey == null
+        || indexedKey.inner().wrappedKey().getValue() != processRecord.getProcessDefinitionKey()) {
+      return;
+    }
+
+    // the index points to the highest version with the tag, so only lower versions can match
+    final var knownVersions =
+        getKnownProcessVersions(processRecord.getBpmnProcessId(), processRecord.getTenantId());
+    for (final long version : knownVersions.reversed()) {
+      if (version >= processRecord.getVersion()) {
+        continue;
+      }
+      processVersion.wrapLong(version);
+      final var candidate =
+          processByIdAndVersionColumnFamily.get(tenantAwareProcessIdAndVersionKey);
+      if (candidate != null && deletedVersionTag.equals(candidate.getVersionTag())) {
+        processDefinitionKey.wrapLong(candidate.getKey());
+        processDefinitionKeyByProcessIdAndVersionTagColumnFamily.upsert(
+            tenantAwareProcessIdAndVersionTagKey, fkProcessDefinitionKey);
+        return;
+      }
+    }
+    processDefinitionKeyByProcessIdAndVersionTagColumnFamily.deleteExisting(
+        tenantAwareProcessIdAndVersionTagKey);
   }
 
   @Override
