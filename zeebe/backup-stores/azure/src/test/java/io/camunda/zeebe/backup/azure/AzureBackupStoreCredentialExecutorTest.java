@@ -20,23 +20,13 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.Test;
 
 final class AzureBackupStoreCredentialExecutorTest {
 
-  private ExecutorService executor;
-
-  @BeforeEach
-  void setUp() {
-    executor = AzureBackupStore.newCredentialExecutor();
-  }
-
-  @AfterEach
-  void tearDown() {
-    executor.shutdownNow();
-  }
+  @AutoClose(method = "shutdownNow")
+  private final ExecutorService executor = AzureBackupStore.newCredentialExecutor();
 
   @Test
   void shouldRunTasksOnDaemonPlatformThreads() {
