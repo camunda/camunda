@@ -668,7 +668,7 @@ public class CamundaProcessTestExtension
    * @param name the name of the secret
    * @param value the value of the secret
    * @return the extension builder
-   * @since 8.10.0
+   * @since 8.10.6
    */
   public CamundaProcessTestExtension withClusterSecret(final String name, final String value) {
     runtimeBuilder.withClusterSecret(name, value);
