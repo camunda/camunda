@@ -12,28 +12,37 @@ import {endpoints} from '#/shared/http/endpoints';
 import {instanceRequest} from './processInstance.queries';
 
 const VARIABLES_PAGE_SIZE = 50;
+const DOCUMENT_VALUE_FILTER = '*camunda.document.type*';
 
 function variablesQuery({
 	processInstanceKey,
 	scopeKey,
 	searchTerm = '',
+	documentsOnly = false,
 }: {
 	processInstanceKey: string;
 	scopeKey: string | null;
 	searchTerm?: string;
+	documentsOnly?: boolean;
 }) {
 	const trimmedSearchTerm = searchTerm.trim();
 	const name = trimmedSearchTerm === '' ? undefined : `*${trimmedSearchTerm}*`;
+	const value = documentsOnly ? DOCUMENT_VALUE_FILTER : undefined;
 
 	return infiniteQueryOptions({
-		queryKey: ['processInstanceVariables', processInstanceKey, scopeKey, name] as const,
+		queryKey: ['processInstanceVariables', processInstanceKey, scopeKey, name, value] as const,
 		queryFn:
 			scopeKey === null
 				? skipToken
 				: ({pageParam, signal}) =>
 						instanceRequest<QueryVariablesResponseBody>(
 							endpoints.queryVariables({
-								filter: {processInstanceKey, scopeKey, ...(name === undefined ? {} : {name: {$like: name}})},
+								filter: {
+									processInstanceKey,
+									scopeKey,
+									...(name === undefined ? {} : {name: {$like: name}}),
+									...(value === undefined ? {} : {value: {$like: value}}),
+								},
 								page:
 									pageParam === null ? {limit: VARIABLES_PAGE_SIZE} : {after: pageParam, limit: VARIABLES_PAGE_SIZE},
 								sort: [{field: 'name', order: 'ASC'}],

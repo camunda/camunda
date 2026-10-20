@@ -638,8 +638,8 @@ const endpoints = {
 		});
 	},
 
-	getDocument: ({documentId, contentHash}: {documentId: string; contentHash?: string}) =>
-		new Request(getFullURL(unifiedAPIEndpoints.getDocument.getUrl({documentId, contentHash})), {
+	getDocument: ({documentId, storeId, contentHash}: {documentId: string; storeId?: string; contentHash?: string}) =>
+		new Request(getFullURL(unifiedAPIEndpoints.getDocument.getUrl({documentId, storeId, contentHash})), {
 			...BASE_REQUEST_OPTIONS,
 			method: unifiedAPIEndpoints.getDocument.method,
 		}),

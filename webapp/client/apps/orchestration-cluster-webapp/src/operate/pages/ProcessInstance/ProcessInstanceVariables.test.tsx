@@ -12,10 +12,11 @@ import {cleanup} from 'vitest-browser-react';
 import {HttpResponse} from 'msw';
 import {z} from 'zod';
 import {useRouterState} from '@tanstack/react-router';
-import type {Variable} from '@camunda/camunda-api-zod-schemas/8.11';
+import type {DocumentReference, Variable} from '@camunda/camunda-api-zod-schemas/8.11';
 import {it} from '#/vitest-modules/test-extend';
 import {renderWithRouter} from '#/vitest-modules/render-with-router';
 import {
+	mockGetDocumentEndpoint,
 	mockGetElementInstanceEndpoint,
 	mockGetVariableEndpoint,
 	mockQueryElementInstancesEndpoint,
@@ -28,10 +29,12 @@ import {
 } from '#/shared-test-modules/api-mocks/element-instances';
 import {createQueryVariablesByUserTaskResponse, createVariable} from '#/shared-test-modules/api-mocks/variables';
 import {createPaginatedResponse, createProblemDetails} from '#/shared-test-modules/api-mocks/shared';
+import {createDocumentReference} from '#/shared-test-modules/api-mocks/documents';
 import {notificationsStore} from '#/shared/notifications/notifications.store';
 import {ProcessInstancePageProvider} from './ProcessInstancePageProvider';
 import {ProcessInstanceVariables} from './ProcessInstanceVariables';
 import {processInstanceSearchSchema} from './processInstanceSearch';
+import {initialModificationState} from './modifications/modificationReducer';
 
 const PROCESS_INSTANCE_ID = '2251799813685280';
 
@@ -47,7 +50,7 @@ function variablesResponse(
 	return HttpResponse.json(createQueryVariablesByUserTaskResponse({items, page}));
 }
 
-function renderVariables(search = '') {
+function renderVariables(search = '', {isModificationModeEnabled = false} = {}) {
 	function Variables() {
 		const routeSearch = useRouterState({select: (state) => state.location.search});
 		return (
@@ -56,6 +59,7 @@ function renderVariables(search = '') {
 					processInstanceId={PROCESS_INSTANCE_ID}
 					processInstance={createProcessInstance({processInstanceKey: PROCESS_INSTANCE_ID})}
 					search={processInstanceSearchSchema.parse(routeSearch)}
+					modification={{state: initialModificationState, isModificationModeEnabled, dispatch: () => {}}}
 				>
 					<ProcessInstanceVariables />
 				</ProcessInstancePageProvider>
@@ -289,5 +293,231 @@ describe('<ProcessInstanceVariables />', () => {
 			.toContain('Failed to fetch full amount');
 		await expect.element(screen.getByRole('button', {name: 'Open'})).toHaveFocus();
 		await expect.element(screen.getByRole('dialog')).not.toBeInTheDocument();
+	});
+
+	describe('document variables', () => {
+		const documentReference = (documentId: string, metadata?: Partial<DocumentReference['metadata']>) =>
+			createDocumentReference({documentId, metadata: {fileName: `${documentId}.pdf`, ...metadata}});
+		const documentListValue = JSON.stringify([
+			documentReference('doc-1'),
+			documentReference('doc-2'),
+			documentReference('doc-3'),
+		]);
+		const truncatedDocumentListValue = documentListValue.slice(0, documentListValue.lastIndexOf('"documentId"'));
+		const decoyVariables = [
+			createVariable({name: 'nestedDecoy', value: JSON.stringify({wrapper: {'camunda.document.type': 'camunda'}})}),
+			createVariable({name: 'stringDecoy', value: JSON.stringify('attach your camunda.document.type here')}),
+		];
+		const documentsOnlySchema = z.object({
+			filter: z.object({value: z.object({$like: z.literal('*camunda.document.type*')})}),
+		});
+
+		it('should show a single document with its preview and download actions', async ({worker}) => {
+			worker.use(
+				mockQueryVariablesEndpoint({
+					successResponse: variablesResponse([
+						createVariable({
+							name: 'invoice',
+							value: JSON.stringify(documentReference('doc-1', {fileName: 'invoice.pdf', size: 1536})),
+						}),
+					]),
+				}),
+			);
+			const screen = await renderVariables();
+
+			const row = screen.getByTestId('variable-invoice');
+			await expect.element(row.getByTestId('document-value-cell')).toHaveTextContent('invoice.pdf1.5 KiB');
+			await expect.element(row.getByRole('button', {name: 'Preview'})).toBeEnabled();
+			await expect
+				.element(row.getByRole('link', {name: 'Download'}))
+				.toHaveAttribute(
+					'href',
+					`${window.location.origin}/v2/documents/doc-1?storeId=in-memory&contentHash=sha256-xyz`,
+				);
+			await expect.element(row.getByRole('button', {name: 'Open'})).toBeVisible();
+			await expect.element(row.getByRole('button', {name: 'View documents'})).not.toBeInTheDocument();
+			await expect.element(row.getByRole('button', {name: 'Copy invoice'})).not.toBeInTheDocument();
+		});
+
+		it('should mark an expired document and disable its actions', async ({worker}) => {
+			worker.use(
+				mockQueryVariablesEndpoint({
+					successResponse: variablesResponse([
+						createVariable({
+							name: 'invoice',
+							value: JSON.stringify(documentReference('doc-1', {expiresAt: '2000-01-01T00:00:00.000Z'})),
+						}),
+					]),
+				}),
+			);
+			const screen = await renderVariables();
+
+			const row = screen.getByTestId('variable-invoice');
+			await expect.element(row.getByText('Expired')).toBeVisible();
+			await expect.element(row.getByRole('button', {name: 'Preview'})).toBeDisabled();
+			await expect.element(row.getByRole('button', {name: 'Download'})).toBeDisabled();
+		});
+
+		it('should list the documents of a document list variable', async ({worker}) => {
+			worker.use(
+				mockQueryVariablesEndpoint({
+					successResponse: variablesResponse([createVariable({name: 'files', value: documentListValue})]),
+				}),
+			);
+			const screen = await renderVariables();
+
+			const row = screen.getByTestId('variable-files');
+			await expect.element(row.getByTestId('document-value-cell')).toHaveTextContent('3 documents');
+			await expect.element(row.getByRole('button', {name: 'Preview'})).not.toBeInTheDocument();
+			await expect.element(row.getByRole('link', {name: 'Download'})).not.toBeInTheDocument();
+
+			await userEvent.click(row.getByRole('button', {name: 'View documents'}));
+
+			const dialog = screen.getByRole('dialog', {name: '3 documents in files'});
+			await expect.element(dialog.getByRole('listitem', {name: 'doc-1.pdf'})).toBeVisible();
+			await expect.element(dialog.getByRole('listitem', {name: 'doc-2.pdf'})).toBeVisible();
+			await expect.element(dialog.getByRole('listitem', {name: 'doc-3.pdf'})).toBeVisible();
+		});
+
+		it('should load all documents of a truncated document list variable', async ({worker}) => {
+			worker.use(
+				mockQueryVariablesEndpoint({
+					successResponse: variablesResponse([
+						createVariable({name: 'files', value: truncatedDocumentListValue, isTruncated: true, variableKey: '5'}),
+					]),
+				}),
+				mockGetVariableEndpoint({
+					successResponse: HttpResponse.json(
+						createVariable({name: 'files', value: documentListValue, variableKey: '5'}),
+					),
+				}),
+			);
+			const screen = await renderVariables();
+
+			const row = screen.getByTestId('variable-files');
+			await expect.element(row.getByTestId('document-value-cell')).toHaveTextContent('2+ documents');
+
+			await userEvent.click(row.getByRole('button', {name: 'View documents'}));
+
+			const dialog = screen.getByRole('dialog', {name: '3 documents in files'});
+			await expect.element(dialog.getByRole('listitem', {name: 'doc-3.pdf'})).toBeVisible();
+		});
+
+		it('should keep the truncated documents when the full document list cannot be loaded', async ({worker}) => {
+			worker.use(
+				mockQueryVariablesEndpoint({
+					successResponse: variablesResponse([
+						createVariable({name: 'files', value: truncatedDocumentListValue, isTruncated: true, variableKey: '5'}),
+					]),
+				}),
+				mockGetVariableEndpoint({
+					successResponse: HttpResponse.json(createProblemDetails({status: 500}), {status: 500}),
+				}),
+			);
+			const screen = await renderVariables();
+
+			await userEvent.click(screen.getByTestId('variable-files').getByRole('button', {name: 'View documents'}));
+
+			const dialog = screen.getByRole('dialog', {name: '2+ documents in files'});
+			await expect
+				.element(
+					dialog.getByText('Failed to load the full variable value. More documents may exist for this variable.'),
+				)
+				.toBeVisible();
+			await expect.element(dialog.getByRole('listitem', {name: 'doc-2.pdf'})).toBeVisible();
+		});
+
+		it('should render values that only mention the document marker as regular variables', async ({worker}) => {
+			worker.use(mockQueryVariablesEndpoint({successResponse: variablesResponse(decoyVariables)}));
+			const screen = await renderVariables();
+
+			const row = screen.getByTestId('variable-nestedDecoy');
+			await expect.element(row.getByRole('button', {name: 'Copy nestedDecoy'})).toBeVisible();
+			await expect.element(row.getByTestId('document-value-cell')).not.toBeInTheDocument();
+			await expect.element(row.getByRole('button', {name: 'Preview'})).not.toBeInTheDocument();
+			await expect.element(row.getByRole('button', {name: 'View documents'})).not.toBeInTheDocument();
+		});
+
+		it('should filter the variables by documents', async ({worker}) => {
+			worker.use(
+				mockQueryVariablesEndpoint({
+					schema: documentsOnlySchema,
+					successResponse: variablesResponse([
+						createVariable({name: 'invoice', value: JSON.stringify(documentReference('doc-1'))}),
+						...decoyVariables,
+					]),
+					failureResponse: variablesResponse([
+						createVariable({name: 'amount'}),
+						createVariable({name: 'invoice', value: JSON.stringify(documentReference('doc-1'))}),
+					]),
+				}),
+			);
+			const screen = await renderVariables();
+			await expect.element(screen.getByTestId('variable-amount')).toBeVisible();
+			await expect.element(screen.getByRole('button', {name: 'All'})).toHaveAttribute('aria-pressed', 'true');
+
+			await userEvent.click(screen.getByRole('button', {name: 'Documents'}));
+
+			await expect.element(screen.getByRole('button', {name: 'Documents'})).toHaveAttribute('aria-pressed', 'true');
+			await expect.element(screen.getByTestId('variable-amount')).not.toBeInTheDocument();
+			await expect.element(screen.getByTestId('variable-invoice')).toBeVisible();
+			await expect.element(screen.getByTestId('variable-nestedDecoy')).not.toBeInTheDocument();
+			await expect.element(screen.getByTestId('variable-stringDecoy')).not.toBeInTheDocument();
+
+			await userEvent.click(screen.getByRole('button', {name: 'All'}));
+
+			await expect.element(screen.getByTestId('variable-amount')).toBeVisible();
+			await expect.element(screen.getByTestId('variable-invoice')).toBeVisible();
+		});
+
+		it('should show an empty message when there are no document variables', async ({worker}) => {
+			worker.use(
+				mockQueryVariablesEndpoint({
+					schema: documentsOnlySchema,
+					successResponse: variablesResponse(decoyVariables),
+					failureResponse: variablesResponse([createVariable({name: 'amount'})]),
+				}),
+			);
+			const screen = await renderVariables();
+			await expect.element(screen.getByTestId('variable-amount')).toBeVisible();
+
+			await userEvent.click(screen.getByRole('button', {name: 'Documents'}));
+
+			await expect.element(screen.getByText('There are no document variables')).toBeVisible();
+			await expect.element(screen.getByTestId('variable-nestedDecoy')).not.toBeInTheDocument();
+		});
+
+		it('should hide the document filter in modification mode', async ({worker}) => {
+			worker.use(mockQueryVariablesEndpoint({successResponse: variablesResponse([createVariable({name: 'amount'})])}));
+			const screen = await renderVariables('', {isModificationModeEnabled: true});
+
+			await expect.element(screen.getByTestId('variable-amount')).toBeVisible();
+			await expect.element(screen.getByRole('group', {name: 'Variable filter'})).not.toBeInTheDocument();
+		});
+
+		it('should preview a document from the variables list', async ({worker}) => {
+			worker.use(
+				mockQueryVariablesEndpoint({
+					successResponse: variablesResponse([
+						createVariable({
+							name: 'invoice',
+							value: JSON.stringify(documentReference('doc-pdf', {fileName: 'invoice.pdf'})),
+						}),
+					]),
+				}),
+				mockGetDocumentEndpoint({
+					successResponse: new HttpResponse('%PDF-1.4', {headers: {'Content-Type': 'application/pdf'}}),
+				}),
+			);
+			const screen = await renderVariables();
+
+			await userEvent.click(screen.getByTestId('variable-invoice').getByRole('button', {name: 'Preview'}));
+
+			const dialog = screen.getByRole('dialog', {name: 'Preview: invoice.pdf'});
+			await expect.element(dialog.getByTitle('invoice.pdf')).toBeVisible();
+			await userEvent.click(dialog.getByRole('button', {name: 'Close'}));
+			await expect.element(dialog).not.toBeInTheDocument();
+			await expect.element(screen.getByTestId('variable-invoice')).toBeVisible();
+		});
 	});
 });

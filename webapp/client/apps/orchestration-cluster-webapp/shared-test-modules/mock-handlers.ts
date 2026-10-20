@@ -281,6 +281,11 @@ const mockQueryVariablesByUserTaskEndpoint = createEndpointMock({
 	method: endpoints.queryVariablesByUserTask.method,
 });
 
+const mockGetDocumentEndpoint = createEndpointMock({
+	endpoint: endpoints.getDocument.getUrl({documentId: ':documentId'}),
+	method: endpoints.getDocument.method,
+});
+
 const mockGetVariableEndpoint = createEndpointMock({
 	endpoint: endpoints.getVariable.getUrl({variableKey: ':variableKey'}),
 	method: endpoints.getVariable.method,
@@ -644,6 +649,7 @@ export {
 	mockGetUserTaskEndpoint,
 	mockGetUserTaskFormEndpoint,
 	mockQueryVariablesByUserTaskEndpoint,
+	mockGetDocumentEndpoint,
 	mockGetVariableEndpoint,
 	mockQueryVariablesEndpoint,
 	mockQueryJobsEndpoint,

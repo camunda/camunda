@@ -1391,7 +1391,15 @@
 					"showAll": "Mostrar todo",
 					"open": "Abrir variable",
 					"openDescription": "Abrir",
-					"fullValueTitle": "Valor completo de {{name}}"
+					"fullValueTitle": "Valor completo de {{name}}",
+					"filter": "Filtro de variables",
+					"filterAll": "Todas",
+					"filterDocuments": "Documentos",
+					"noDocuments": "No hay variables de documento",
+					"viewDocuments": "Ver documentos",
+					"viewDocumentsLabel": "Ver documentos de la variable {{name}}",
+					"documentsLoadingHint": "Cargando el valor completo de la variable... Puede haber más documentos para esta variable.",
+					"documentsErrorHint": "No se pudo cargar el valor completo de la variable. Puede haber más documentos para esta variable."
 				},
 				"details": {
 					"title": "Detalles",
@@ -1857,6 +1865,26 @@
 					"failed_other": "{{formattedCount}} fallidos",
 					"pending_one": "{{formattedCount}} pendiente",
 					"pending_other": "{{formattedCount}} pendientes"
+				},
+				"documents": {
+					"preview": "Vista previa",
+					"previewLabel": "Vista previa del documento de {{label}}",
+					"download": "Descargar",
+					"downloadLabel": "Descargar documento de {{label}}",
+					"expired": "Caducado",
+					"expiredTooltip": "El documento ha caducado",
+					"previewUnavailable": "Vista previa no disponible",
+					"unsupportedFileType": "Tipo de archivo no compatible",
+					"downloadUnavailable": "Descarga no disponible",
+					"previewTitle": "Vista previa: {{fileName}}",
+					"previewNotAvailable": "Vista previa no disponible para el documento \"{{fileName}}\".",
+					"imagePreviewFailed": "No se pudo cargar la vista previa de la imagen \"{{fileName}}\".",
+					"jsonPreviewFailed": "No se pudo cargar la vista previa JSON de \"{{fileName}}\".",
+					"preparingJsonPreview": "Preparando vista previa JSON…",
+					"listTitleSingle": "{{amount}} documento en {{label}}",
+					"listTitleMultiple": "{{amount}} documentos en {{label}}",
+					"countSingle": "{{amount}} documento",
+					"countMultiple": "{{amount}} documentos"
 				}
 			}
 		}

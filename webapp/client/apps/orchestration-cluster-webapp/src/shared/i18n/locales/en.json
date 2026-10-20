@@ -1403,7 +1403,15 @@
 					"showAll": "Show all",
 					"open": "Open variable",
 					"openDescription": "Open",
-					"fullValueTitle": "Full value of {{name}}"
+					"fullValueTitle": "Full value of {{name}}",
+					"filter": "Variable filter",
+					"filterAll": "All",
+					"filterDocuments": "Documents",
+					"noDocuments": "There are no document variables",
+					"viewDocuments": "View documents",
+					"viewDocumentsLabel": "View documents for variable {{name}}",
+					"documentsLoadingHint": "Loading the full variable value... More documents may exist for this variable.",
+					"documentsErrorHint": "Failed to load the full variable value. More documents may exist for this variable."
 				},
 				"details": {
 					"title": "Details",
@@ -1869,6 +1877,26 @@
 					"failed_other": "{{formattedCount}} failed",
 					"pending_one": "{{formattedCount}} pending",
 					"pending_other": "{{formattedCount}} pending"
+				},
+				"documents": {
+					"preview": "Preview",
+					"previewLabel": "Preview document for {{label}}",
+					"download": "Download",
+					"downloadLabel": "Download document for {{label}}",
+					"expired": "Expired",
+					"expiredTooltip": "Document has expired",
+					"previewUnavailable": "Preview unavailable",
+					"unsupportedFileType": "Unsupported file type",
+					"downloadUnavailable": "Download unavailable",
+					"previewTitle": "Preview: {{fileName}}",
+					"previewNotAvailable": "Preview not available for document \"{{fileName}}\".",
+					"imagePreviewFailed": "Failed to load image preview for \"{{fileName}}\".",
+					"jsonPreviewFailed": "Failed to load JSON preview for \"{{fileName}}\".",
+					"preparingJsonPreview": "Preparing JSON preview…",
+					"listTitleSingle": "{{amount}} document in {{label}}",
+					"listTitleMultiple": "{{amount}} documents in {{label}}",
+					"countSingle": "{{amount}} document",
+					"countMultiple": "{{amount}} documents"
 				}
 			}
 		}

@@ -6,23 +6,31 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useState} from 'react';
+import {useMemo, useState} from 'react';
 import {keepPreviousData, useInfiniteQuery, useQueryClient} from '@tanstack/react-query';
 import {useTranslation} from 'react-i18next';
 import {Loading, Search} from '@carbon/react';
 import {EmptyMessage} from '#/operate/shared/EmptyMessage/EmptyMessage';
 import {ErrorMessage} from '#/operate/shared/ErrorMessage/ErrorMessage';
+import {FilterSwitcher, FilterSwitcherButton} from '#/operate/shared/FilterSwitcher/styled';
+import {PreviewDocumentButton} from '#/operate/shared/Documents/PreviewDocumentButton';
+import {DownloadDocumentButton} from '#/operate/shared/Documents/DownloadDocumentButton';
 import {InlineJsonEditor} from '#/operate/shared/Editors/InlineJsonEditor';
 import {ForbiddenError} from '#/shared/errors';
 import {useDebouncedValue} from '#/shared/hooks/useDebouncedValue';
 import {useProcessInstanceElementSelection} from './useProcessInstanceElementSelection';
 import {useProcessInstancePage} from './useProcessInstancePage';
+import {useProcessInstanceModification} from './useProcessInstanceModification';
 import {variableQuery, variablesQuery} from './variables.queries';
 import {ViewFullVariableButton} from './ViewFullVariableButton';
+import {parseDocumentVariable} from './parseDocumentVariable';
+import {DocumentValueCell} from './DocumentValueCell';
+import {ViewDocumentListButton} from './ViewDocumentListButton';
 import {
 	Content,
 	DimmableResults,
 	EmptyMessageContainer,
+	FilterSwitcherContainer,
 	Operations,
 	StructuredList,
 	VariableName,
@@ -54,33 +62,68 @@ const VariablesError: React.FC<{error: Error | null}> = ({error}) => {
 const VariablesTable: React.FC<{processInstanceKey: string; scopeKey: string}> = ({processInstanceKey, scopeKey}) => {
 	const {t} = useTranslation();
 	const queryClient = useQueryClient();
+	const {isModificationModeEnabled} = useProcessInstanceModification();
 	const [searchValue, setSearchValue] = useState('');
+	const [showDocumentsOnly, setShowDocumentsOnly] = useState(false);
 	const searchTerm = useDebouncedValue(searchValue, SEARCH_DEBOUNCE_MS);
 	const {data, error, isLoading, isPlaceholderData, hasNextPage, isFetchingNextPage, fetchNextPage} = useInfiniteQuery({
-		...variablesQuery({processInstanceKey, scopeKey, searchTerm}),
+		...variablesQuery({processInstanceKey, scopeKey, searchTerm, documentsOnly: showDocumentsOnly}),
 		placeholderData: keepPreviousData,
 		refetchOnMount: false,
 	});
-	const variables = data?.pages.flatMap((page) => page.items) ?? [];
+	const variables = useMemo(
+		() =>
+			(data?.pages.flatMap((page) => page.items) ?? [])
+				.map((variable) => ({...variable, documentResult: parseDocumentVariable(variable.value, variable.isTruncated)}))
+				.filter(({documentResult}) => !showDocumentsOnly || documentResult !== null),
+		[data, showDocumentsOnly],
+	);
+	const hasSearchTerm = searchTerm.trim() !== '';
 
 	return (
 		<>
-			<VariablesSearch>
-				<Search
-					size="sm"
-					labelText={t('operate.processInstance.variables.search')}
-					placeholder={t('operate.processInstance.variables.search')}
-					value={searchValue}
-					onChange={(event) => setSearchValue(event.target.value)}
-					onClear={() => setSearchValue('')}
-				/>
-			</VariablesSearch>
+			<FilterSwitcherContainer>
+				<VariablesSearch>
+					<Search
+						size="sm"
+						labelText={t('operate.processInstance.variables.search')}
+						placeholder={t('operate.processInstance.variables.search')}
+						value={searchValue}
+						onChange={(event) => setSearchValue(event.target.value)}
+						onClear={() => setSearchValue('')}
+					/>
+				</VariablesSearch>
+				{!isModificationModeEnabled && (
+					<FilterSwitcher role="group" aria-label={t('operate.processInstance.variables.filter')}>
+						<FilterSwitcherButton
+							type="button"
+							aria-pressed={!showDocumentsOnly}
+							onClick={() => setShowDocumentsOnly(false)}
+						>
+							{t('operate.processInstance.variables.filterAll')}
+						</FilterSwitcherButton>
+						<FilterSwitcherButton
+							type="button"
+							aria-pressed={showDocumentsOnly}
+							onClick={() => setShowDocumentsOnly(true)}
+						>
+							{t('operate.processInstance.variables.filterDocuments')}
+						</FilterSwitcherButton>
+					</FilterSwitcher>
+				)}
+			</FilterSwitcherContainer>
 			<DimmableResults $dimmed={isPlaceholderData}>
 				{error !== null ? (
 					<VariablesError error={error} />
-				) : !isLoading && searchTerm.trim() !== '' && variables.length === 0 ? (
+				) : !isLoading && (showDocumentsOnly || hasSearchTerm) && variables.length === 0 ? (
 					<EmptyMessageContainer>
-						<EmptyMessage message={t('operate.processInstance.variables.noSearchResults')} />
+						<EmptyMessage
+							message={t(
+								hasSearchTerm
+									? 'operate.processInstance.variables.noSearchResults'
+									: 'operate.processInstance.variables.noDocuments',
+							)}
+						/>
 					</EmptyMessageContainer>
 				) : (
 					<StructuredList
@@ -103,42 +146,59 @@ const VariablesTable: React.FC<{processInstanceKey: string; scopeKey: string}> =
 								void fetchNextPage();
 							}
 						}}
-						rows={variables.map(({name, value, variableKey, isTruncated}) => ({
+						rows={variables.map(({name, value, variableKey, isTruncated, documentResult}) => ({
 							key: name,
 							dataTestId: `variable-${name}`,
 							columns: [
 								{cellContent: <VariableName title={name}>{name}</VariableName>, width: '35%'},
 								{
-									cellContent: (
-										<InlineJsonEditor
-											value={value}
-											label={name}
-											isTruncatedValue={isTruncated}
-											readOnly
-											onCopy={
-												isTruncated
-													? async () => (await queryClient.fetchQuery(variableQuery(variableKey))).value
-													: undefined
-											}
-											renderButton={
-												isTruncated
-													? () => (
-															<ViewFullVariableButton
-																variableKey={variableKey}
-																variableName={name}
-																buttonLabel={t('operate.processInstance.variables.showAll')}
-															/>
-														)
-													: undefined
-											}
-										/>
-									),
+									cellContent:
+										documentResult !== null ? (
+											<DocumentValueCell result={documentResult} />
+										) : (
+											<InlineJsonEditor
+												value={value}
+												label={name}
+												isTruncatedValue={isTruncated}
+												readOnly
+												onCopy={
+													isTruncated
+														? async () => (await queryClient.fetchQuery(variableQuery(variableKey))).value
+														: undefined
+												}
+												renderButton={
+													isTruncated
+														? () => (
+																<ViewFullVariableButton
+																	variableKey={variableKey}
+																	variableName={name}
+																	buttonLabel={t('operate.processInstance.variables.showAll')}
+																/>
+															)
+														: undefined
+												}
+											/>
+										),
 									width: 'auto',
 								},
 								{
 									cellContent: (
 										<Operations>
 											<ViewFullVariableButton variableKey={variableKey} variableName={name} />
+											{documentResult?.type === 'single' && (
+												<>
+													<PreviewDocumentButton document={documentResult.document} labelSuffix={name} />
+													<DownloadDocumentButton document={documentResult.document} labelSuffix={name} />
+												</>
+											)}
+											{documentResult?.type === 'list' && (
+												<ViewDocumentListButton
+													documents={documentResult.documents}
+													isLowerBound={documentResult.isLowerBound}
+													variableKey={variableKey}
+													variableName={name}
+												/>
+											)}
 										</Operations>
 									),
 									width: '120px',
