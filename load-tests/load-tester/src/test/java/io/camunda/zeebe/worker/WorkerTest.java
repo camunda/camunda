@@ -28,7 +28,13 @@ import io.camunda.zeebe.config.LoadTesterProperties;
 import io.camunda.zeebe.config.WorkerProperties;
 import io.camunda.zeebe.metrics.ConnectionMonitor;
 import io.camunda.zeebe.util.PayloadReader;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import java.time.Clock;
 import java.time.Duration;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Test;
@@ -39,6 +45,8 @@ class WorkerTest {
   private static final String CORRELATION_KEY_VALUE = "abc";
   private static final String MESSAGE_NAME = "messageName";
   private static final Duration COMPLETION_DELAY = Duration.ofMillis(250);
+  private static final String JOB_TYPE = "test-job";
+  private static final Instant START = Instant.parse("2026-01-01T00:00:00Z");
 
   @Test
   void shouldApplyCompletionDelayWhenPublishMessageFails() throws Exception {
@@ -111,6 +119,93 @@ class WorkerTest {
         .isLessThan(COMPLETION_DELAY.toMillis());
   }
 
+  @Test
+  void shouldRecordDelayWhenJobIsActivatedAgainAfterItsDeadline() {
+    // given
+    final var registry = new SimpleMeterRegistry();
+    final var clock = new MutableClock();
+    final var worker = newWorker(notCompletingProperties(), registry, clock);
+    final var jobClient = mock(JobClient.class);
+    final var job = mockJob();
+    when(job.getDeadline()).thenReturn(START.plusSeconds(30).toEpochMilli());
+    worker.handleJob(jobClient, job);
+
+    // when — the job is activated again 2s after the deadline of the first activation
+    clock.advance(Duration.ofSeconds(32));
+    when(job.getDeadline()).thenReturn(START.plusSeconds(62).toEpochMilli());
+    worker.handleJob(jobClient, job);
+
+    // then
+    final var timer = registry.get("job.reactivation.delay").tag("job_type", JOB_TYPE).timer();
+    assertThat(timer.count()).isEqualTo(1);
+    assertThat(timer.totalTime(TimeUnit.MILLISECONDS)).isEqualTo(2000);
+  }
+
+  @Test
+  void shouldRecordZeroDelayWhenJobIsActivatedAgainBeforeItsDeadline() {
+    // given
+    final var registry = new SimpleMeterRegistry();
+    final var clock = new MutableClock();
+    final var worker = newWorker(notCompletingProperties(), registry, clock);
+    final var jobClient = mock(JobClient.class);
+    final var job = mockJob();
+    when(job.getDeadline()).thenReturn(START.plusSeconds(30).toEpochMilli());
+    worker.handleJob(jobClient, job);
+
+    // when
+    clock.advance(Duration.ofSeconds(29));
+    worker.handleJob(jobClient, job);
+
+    // then
+    final var timer = registry.get("job.reactivation.delay").timer();
+    assertThat(timer.count()).isEqualTo(1);
+    assertThat(timer.totalTime(TimeUnit.MILLISECONDS)).isZero();
+  }
+
+  @Test
+  void shouldNotRecordDelayOnFirstActivation() {
+    // given
+    final var registry = new SimpleMeterRegistry();
+    final var worker = newWorker(notCompletingProperties(), registry, new MutableClock());
+    final var job = mockJob();
+    when(job.getDeadline()).thenReturn(START.plusSeconds(30).toEpochMilli());
+
+    // when
+    worker.handleJob(mock(JobClient.class), job);
+
+    // then
+    assertThat(registry.get("job.reactivation.delay").timer().count()).isZero();
+  }
+
+  private static WorkerProperties notCompletingProperties() {
+    final var props = new WorkerProperties();
+    props.setCompleteJobs(false);
+    return props;
+  }
+
+  private static final class MutableClock extends Clock {
+    private Instant now = START;
+
+    void advance(final Duration duration) {
+      now = now.plus(duration);
+    }
+
+    @Override
+    public ZoneId getZone() {
+      return ZoneOffset.UTC;
+    }
+
+    @Override
+    public Clock withZone(final ZoneId zone) {
+      return this;
+    }
+
+    @Override
+    public Instant instant() {
+      return now;
+    }
+  }
+
   private static ActivatedJob mockJob() {
     final var job = mock(ActivatedJob.class);
     when(job.getKey()).thenReturn(42L);
@@ -133,7 +228,24 @@ class WorkerTest {
     final var payloadReader = mock(PayloadReader.class);
     when(payloadReader.readPayload(anyString())).thenReturn("{}");
     final var connectionMonitor = mock(ConnectionMonitor.class);
-    return new Worker(client, properties, payloadReader, connectionMonitor);
+    return new Worker(
+        client, properties, payloadReader, connectionMonitor, new SimpleMeterRegistry(), JOB_TYPE);
+  }
+
+  private static Worker newWorker(
+      final WorkerProperties workerProps, final MeterRegistry registry, final Clock clock) {
+    final var properties = new LoadTesterProperties();
+    properties.setWorker(workerProps);
+    final var payloadReader = mock(PayloadReader.class);
+    when(payloadReader.readPayload(anyString())).thenReturn("{}");
+    return new Worker(
+        mock(CamundaClient.class),
+        properties,
+        payloadReader,
+        mock(ConnectionMonitor.class),
+        registry,
+        JOB_TYPE,
+        clock);
   }
 
   @SuppressWarnings("unchecked")

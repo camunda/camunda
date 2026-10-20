@@ -14,17 +14,26 @@ import io.camunda.client.api.worker.JobClient;
 import io.camunda.zeebe.config.LoadTesterProperties;
 import io.camunda.zeebe.config.WorkerProperties;
 import io.camunda.zeebe.metrics.ConnectionMonitor;
+import io.camunda.zeebe.metrics.WorkerMetricsDoc;
+import io.camunda.zeebe.metrics.WorkerMetricsDoc.WorkerMetricKeyNames;
 import io.camunda.zeebe.util.PayloadReader;
 import io.camunda.zeebe.util.logging.ThrottledLogger;
+import io.camunda.zeebe.util.micrometer.MicrometerUtil;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Timer;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
+import java.time.Clock;
 import java.time.Duration;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
@@ -43,17 +52,44 @@ public class Worker {
       new ArrayBlockingQueue<>(REQUEST_FUTURES_CAPACITY);
   private final ResponseChecker responseChecker;
   private final ConnectionMonitor connectionMonitor;
+  private final Timer reactivationDelay;
+  private final Clock clock;
+  // Job key to the deadline (epoch millis) of its previous activation. Jobs are never completed
+  // when completeJobs is false, so this holds one entry per probe job. The probe starter is capped
+  // at 1000 instances.
+  private final ConcurrentHashMap<Long, Long> previousDeadlines = new ConcurrentHashMap<>();
 
+  @Autowired
   public Worker(
       final CamundaClient client,
       final LoadTesterProperties properties,
       final PayloadReader payloadReader,
-      final ConnectionMonitor connectionMonitor) {
+      final ConnectionMonitor connectionMonitor,
+      final MeterRegistry registry,
+      @Value("${camunda.client.worker.defaults.type}") final String jobType) {
+    this(
+        client, properties, payloadReader, connectionMonitor, registry, jobType, Clock.systemUTC());
+  }
+
+  Worker(
+      final CamundaClient client,
+      final LoadTesterProperties properties,
+      final PayloadReader payloadReader,
+      final ConnectionMonitor connectionMonitor,
+      final MeterRegistry registry,
+      final String jobType,
+      final Clock clock) {
     this.client = client;
     workerCfg = properties.getWorker();
     variables = payloadReader.readPayload(workerCfg.getPayloadPath());
     responseChecker = new ResponseChecker(requestFutures);
     this.connectionMonitor = connectionMonitor;
+    reactivationDelay =
+        MicrometerUtil.buildTimer(WorkerMetricsDoc.JOB_REACTIVATION_DELAY)
+            .tag(WorkerMetricKeyNames.JOB_TYPE.asString(), jobType)
+            .publishPercentileHistogram()
+            .register(registry);
+    this.clock = clock;
   }
 
   @PostConstruct
@@ -88,6 +124,7 @@ public class Worker {
   public void handleJob(final JobClient jobClient, final ActivatedJob job) {
     if (!workerCfg.isCompleteJobs()) {
       // Return right away without completing, so the job times out and is activated again.
+      recordReactivationDelay(job);
       return;
     }
 
@@ -132,6 +169,17 @@ public class Worker {
           "Completion-response queue full (capacity: {}); dropping future tracking",
           REQUEST_FUTURES_CAPACITY);
     }
+  }
+
+  private void recordReactivationDelay(final ActivatedJob job) {
+    final Long previousDeadline = previousDeadlines.put(job.getKey(), job.getDeadline());
+    if (previousDeadline == null) {
+      return;
+    }
+    // Compares the broker's deadline with the local clock. Skew between nodes is a few ms, far
+    // below the lateness this is meant to show.
+    final long delayMillis = Math.max(0, clock.millis() - previousDeadline);
+    reactivationDelay.record(Duration.ofMillis(delayMillis));
   }
 
   private boolean publishMessage(final String correlationKey) {

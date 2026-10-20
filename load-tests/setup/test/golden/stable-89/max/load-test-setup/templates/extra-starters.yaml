@@ -1,7 +1,7 @@
 ---
 # Source: load-test-setup/templates/extra-starters.yaml
-apiVersion: apps/v1
-kind: Deployment
+apiVersion: batch/v1
+kind: Job
 metadata:
   name: timeout-probe-starter
   labels:
@@ -9,10 +9,9 @@ metadata:
     camunda.io/created-by: golden-test
     camunda.io/purpose: load-test
 spec:
-  selector:
-    matchLabels:
-      app: timeout-probe-starter
-  replicas: 1
+  # A Job, so an evicted pod is not replaced. A replacement would count instanceLimit from zero
+  # again and overshoot it.
+  backoffLimit: 0
   template:
     metadata:
       labels:
@@ -23,6 +22,7 @@ spec:
         camunda.io/created-by: golden-test
         camunda.io/purpose: load-test
     spec:
+      restartPolicy: Never
       imagePullSecrets:
         - name: harbor-registry
       nodeSelector:
@@ -143,8 +143,8 @@ spec:
 
 ---
 # Source: load-test-setup/templates/extra-starters.yaml
-apiVersion: apps/v1
-kind: Deployment
+apiVersion: batch/v1
+kind: Job
 metadata:
   name: timer-burst-starter
   labels:
@@ -152,10 +152,9 @@ metadata:
     camunda.io/created-by: golden-test
     camunda.io/purpose: load-test
 spec:
-  selector:
-    matchLabels:
-      app: timer-burst-starter
-  replicas: 1
+  # A Job, so an evicted pod is not replaced. A replacement would count instanceLimit from zero
+  # again and overshoot it.
+  backoffLimit: 0
   template:
     metadata:
       labels:
@@ -166,6 +165,7 @@ spec:
         camunda.io/created-by: golden-test
         camunda.io/purpose: load-test
     spec:
+      restartPolicy: Never
       imagePullSecrets:
         - name: harbor-registry
       nodeSelector:
