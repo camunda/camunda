@@ -72,8 +72,8 @@ const AgentDetails: React.FC<AgentDetailsProps> = ({agentInstances, totalAgentsC
 	const headingId = useId();
 	const [selectedAgentInstanceKey, setSelectedAgentInstanceKey] = useState<string | null>(null);
 
-	const currentAgentInstanceKey = selectedAgentInstanceKey ?? agentInstances[0]?.agentInstanceKey;
-	const agentInstance = agentInstances.find((agent) => agent.agentInstanceKey === currentAgentInstanceKey) ?? null;
+	const agentInstance =
+		agentInstances.find((agent) => agent.agentInstanceKey === selectedAgentInstanceKey) ?? agentInstances[0] ?? null;
 	const heading = t('operate.processInstance.details.agent.heading');
 
 	if (isError || !agentInstance) {

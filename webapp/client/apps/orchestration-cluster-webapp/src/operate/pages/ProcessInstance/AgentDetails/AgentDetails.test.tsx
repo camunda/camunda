@@ -86,6 +86,33 @@ describe('<AgentDetails />', () => {
 		await expect.element(screen.getByRole('button', {name: 'Status: Thinking'})).not.toBeInTheDocument();
 	});
 
+	it('should fall back to the first agent when the selected agent is no longer listed', async () => {
+		const screen = await renderAgentDetails({
+			agentInstances: [
+				createAgentInstance({agentInstanceKey: '1', status: 'THINKING'}),
+				createAgentInstance({agentInstanceKey: '2', status: 'COMPLETED'}),
+			],
+		});
+		await userEvent.click(screen.getByRole('combobox', {name: 'Current AI agent'}));
+		await userEvent.click(screen.getByRole('option', {name: '2 - Completed'}));
+		await expect.element(screen.getByRole('button', {name: 'Status: Completed'})).toBeVisible();
+
+		await screen.rerender(
+			<AgentDetails
+				agentInstances={[
+					createAgentInstance({agentInstanceKey: '3', status: 'IDLE'}),
+					createAgentInstance({agentInstanceKey: '4', status: 'THINKING'}),
+				]}
+				totalAgentsCount={2}
+				hasMoreTotalItems={false}
+				isError={false}
+			/>,
+		);
+
+		await expect.element(screen.getByRole('button', {name: 'Status: Idle'})).toBeVisible();
+		await expect.element(screen.getByText('Unable to load agent information.')).not.toBeInTheDocument();
+	});
+
 	it('should hint at agents that are not shown', async () => {
 		const screen = await renderAgentDetails({
 			agentInstances: [
