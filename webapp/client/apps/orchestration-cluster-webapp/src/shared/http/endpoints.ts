@@ -44,6 +44,8 @@ import {
 	type QueryUserTaskAuditLogsRequestBody,
 	type QueryAuditLogsRequestBody,
 	type QueryMessageSubscriptionsRequestBody,
+	type QueryJobsRequestBody,
+	type QueryElementInstanceInspectionRequestBody,
 	type UserTask,
 	type ProcessDefinition,
 	type DecisionDefinition,
@@ -225,6 +227,22 @@ const endpoints = {
 		new Request(getFullURL(unifiedAPIEndpoints.queryMessageSubscriptions.getUrl()), {
 			...BASE_REQUEST_OPTIONS,
 			method: unifiedAPIEndpoints.queryMessageSubscriptions.method,
+			body: JSON.stringify(body),
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	queryJobs: (body: QueryJobsRequestBody) =>
+		new Request(getFullURL(unifiedAPIEndpoints.queryJobs.getUrl()), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.queryJobs.method,
+			body: JSON.stringify(body),
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	queryElementInstanceInspection: (body: QueryElementInstanceInspectionRequestBody) =>
+		new Request(getFullURL(unifiedAPIEndpoints.queryElementInstanceInspection.getUrl()), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.queryElementInstanceInspection.method,
 			body: JSON.stringify(body),
 			headers: {'Content-Type': 'application/json'},
 		}),

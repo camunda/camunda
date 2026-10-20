@@ -34,6 +34,11 @@ import {
 	mockQueryElementInstancesEndpoint,
 	mockQueryBatchOperationItemsEndpoint,
 	mockQueryVariablesEndpoint,
+	mockQueryJobsEndpoint,
+	mockQueryUserTasksEndpoint,
+	mockQueryDecisionInstancesEndpoint,
+	mockQueryMessageSubscriptionsEndpoint,
+	mockQueryElementInstanceInspectionEndpoint,
 } from './mock-handlers';
 
 function processInstanceHeaderHandlers(instance: ProcessInstance) {
@@ -68,6 +73,11 @@ function processInstanceHeaderHandlers(instance: ProcessInstance) {
 		mockQueryElementInstancesEndpoint({successResponse: empty()}),
 		mockQueryBatchOperationItemsEndpoint({successResponse: empty()}),
 		mockQueryVariablesEndpoint({successResponse: empty()}),
+		mockQueryJobsEndpoint({successResponse: empty()}),
+		mockQueryUserTasksEndpoint({successResponse: empty()}),
+		mockQueryDecisionInstancesEndpoint({successResponse: empty()}),
+		mockQueryMessageSubscriptionsEndpoint({successResponse: empty()}),
+		mockQueryElementInstanceInspectionEndpoint({successResponse: empty()}),
 	];
 }
 
