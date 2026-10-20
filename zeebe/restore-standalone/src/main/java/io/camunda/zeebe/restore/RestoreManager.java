@@ -17,6 +17,7 @@ import io.camunda.zeebe.backup.management.BackupMetadataSyncer;
 import io.camunda.zeebe.broker.partitioning.startup.RaftPartitionFactory;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDBSnapshotFileInfoProvider;
+import io.camunda.zeebe.eventplane.history.RestoredHistory;
 import io.camunda.zeebe.journal.CheckedJournalException.FlushException;
 import io.camunda.zeebe.restore.PartitionRestoreService.BackupValidator;
 import io.camunda.zeebe.util.CloseableSilently;
@@ -33,6 +34,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -288,14 +290,35 @@ public class RestoreManager implements CloseableSilently {
             new RocksDBSnapshotFileInfoProvider(),
             partition.registry());
     try {
-      restoreService.restore(backupIds, validator);
+      final var eventPlaneHistory = eventPlaneHistory();
+      final var checkpoint = restoreService.restore(backupIds, validator);
       LOG.info(
           "Successfully restored partition {} from backups {}.",
           raftPartition.id().number(),
           backupIds);
+      if (eventPlaneHistory != null) {
+        // the Event Plane goes on in a new history, from the checkpoint
+        new RestoredHistory(
+                eventPlaneHistory, Instant.now(), null, checkpoint.index(), checkpoint.position())
+            .writeTo(raftPartition.dataDirectory().toPath());
+      }
     } finally {
       MicrometerUtil.close(registry);
     }
+  }
+
+  /** The Event Plane's history after the restore, which the operator names, if it is on. */
+  private @Nullable UUID eventPlaneHistory() {
+    final var eventPlane = configuration.getExperimental().getEventPlane();
+    if (!eventPlane.isEnabled()) {
+      return null;
+    }
+    if (eventPlane.getRestoreHistory() == null) {
+      throw new IllegalArgumentException(
+          "Expected the Event Plane's history after the restore, in"
+              + " zeebe.broker.experimental.eventPlane.restoreHistory, but got none");
+    }
+    return UUID.fromString(eventPlane.getRestoreHistory());
   }
 
   /** The local partitions up to {@code partitionCount}; the ones above it are not in the backup. */
