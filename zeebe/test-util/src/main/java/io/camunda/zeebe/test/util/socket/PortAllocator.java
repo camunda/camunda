@@ -97,11 +97,12 @@ final class PortAllocator {
       return null;
     }
 
+    final var reservation = new PortReservation(port, lock);
     if (!isBindable(port)) {
-      new PortReservation(port, lock).close();
+      reservation.close();
       return null;
     }
-    return new PortReservation(port, lock);
+    return reservation;
   }
 
   private FileChannel openChannel() {
