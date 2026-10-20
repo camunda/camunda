@@ -11,18 +11,26 @@ import {styles} from '@carbon/elements';
 
 const Fields = styled.dl`
   display: grid;
-  grid-template-columns: minmax(max-content, 12rem) 1fr;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
   column-gap: var(--cds-spacing-05);
   row-gap: var(--cds-spacing-03);
   margin: 0;
   ${styles.bodyCompact01};
+
+  @container (max-width: 24rem) {
+    grid-template-columns: minmax(0, 1fr);
+  }
 `;
 
-const Label = styled.dt`
+const Label = styled.dt<{$fullWidth?: boolean}>`
+  ${({$fullWidth}) => $fullWidth && 'grid-column: 1 / -1;'}
+  min-inline-size: 0;
+  overflow-wrap: anywhere;
   color: var(--cds-text-secondary);
 `;
 
-const Value = styled.dd`
+const Value = styled.dd<{$fullWidth?: boolean}>`
+  ${({$fullWidth}) => $fullWidth && 'grid-column: 1 / -1;'}
   margin: 0;
   min-width: 0;
   overflow-wrap: anywhere;
@@ -62,6 +70,7 @@ const Container = styled.div`
   flex: 1;
   min-width: 0;
   overflow: auto;
+  container-type: inline-size;
 `;
 
 const Segments = styled.div`
