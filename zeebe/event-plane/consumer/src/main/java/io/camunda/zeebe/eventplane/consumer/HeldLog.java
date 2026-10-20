@@ -125,7 +125,10 @@ final class HeldLog {
         if (reader.poll(handler)) {
           continue;
         }
-      } catch (final Exception e) {
+      } catch (final VirtualMachineError e) {
+        throw e;
+      } catch (final Throwable e) {
+        // A reader thread that died would leave the log held, and read by no one.
         LOG.warn("Failed to read log {}; trying again", reader.log(), e);
         wait = retryNanos;
       }

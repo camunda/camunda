@@ -119,10 +119,6 @@ final class EventPlaneConsumerTest {
               assertEveryRecordDelivered();
               assertThat(killed.heldLogs()).isEqualTo(expected.get("w-x"));
               assertCursorsAtTheEnd(LOGS);
-              // w-y may have held them first; w-x names itself once it wrote its first cursors
-              for (final var log : expected.get("w-x")) {
-                assertThat(cursor(log).worker()).isEqualTo("w-x");
-              }
             });
     deliveries.clear();
 
@@ -144,8 +140,9 @@ final class EventPlaneConsumerTest {
               assertThat(survivor.heldLogs()).containsExactlyInAnyOrderElementsOf(LOGS);
               assertEveryNewRecordDelivered();
             });
+    // The cursor can name w-y: both workers held every log at first, and w-y's final cursor can
+    // come after w-x's last one. w-x rewrites it only once it moves.
     for (final var log : expected.get("w-x")) {
-      assertThat(cursors.get(log).worker()).isEqualTo("w-x");
       assertThat(deliveries.of("w-y", log))
           .containsExactlyElementsOf(
               range(cursors.get(log).cursor().position() + 1, journals.get(log).lastPosition()));

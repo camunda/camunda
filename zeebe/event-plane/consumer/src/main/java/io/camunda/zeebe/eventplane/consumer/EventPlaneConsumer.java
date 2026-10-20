@@ -336,7 +336,8 @@ public final class EventPlaneConsumer implements AutoCloseable {
   }
 
   private void discover(final long now) {
-    if (discovered && now - lastDiscovery < listingInterval.toNanos()) {
+    // a worker that knows no log yet looks every round, as for a cluster that just started
+    if (discovered && !logs.isEmpty() && now - lastDiscovery < listingInterval.toNanos()) {
       return;
     }
     try {

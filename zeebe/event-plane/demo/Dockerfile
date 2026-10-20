@@ -4,5 +4,7 @@
 FROM eclipse-temurin:21-jre
 COPY target/lib/ /app/lib/
 COPY target/zeebe-event-plane-demo-*.jar /app/lib/
-ENTRYPOINT ["java", "-cp", "/app/lib/*"]
+# Decoding records uses Zeebe's buffers (Agrona), which need jdk.internal.misc; zstd is native.
+ENTRYPOINT ["java", "--add-opens=java.base/jdk.internal.misc=ALL-UNNAMED", \
+  "--enable-native-access=ALL-UNNAMED", "-cp", "/app/lib/*"]
 CMD ["io.camunda.zeebe.eventplane.demo.WorkerApp"]
