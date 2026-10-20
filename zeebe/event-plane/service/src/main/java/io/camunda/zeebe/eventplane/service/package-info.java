@@ -7,9 +7,9 @@
  */
 /**
  * The Event Plane's stateless service: it passes upload notifications on to the workers and to its
- * peers, shows each consumer group's workers and lag, and hands out credentials. Everything that
- * matters is in the object store, so a restart loses only the newest notices it remembered and the
- * open streams.
+ * peers, shows each consumer group's workers and lag, and hands out credentials, and the stores
+ * that clusters write to. Everything that matters is in the object store or its settings, so a
+ * restart loses only the newest notices it remembered and the open streams.
  */
 @NullMarked
 package io.camunda.zeebe.eventplane.service;

@@ -12,14 +12,19 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.zeebe.eventplane.store.InvalidStoreConfigException;
+import io.camunda.zeebe.eventplane.store.StoreConfig;
 import io.camunda.zeebe.eventplane.store.StoreConfig.Type;
 import java.net.URI;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Map;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 final class ServiceSettingsTest {
 
@@ -40,10 +45,46 @@ final class ServiceSettingsTest {
     assertThat(settings.service().address().getPort()).isEqualTo(8085);
     assertThat(settings.service().peers()).isEmpty();
     assertThat(settings.service().keepAlive()).isEqualTo(Duration.ofSeconds(15));
+    assertThat(settings.service().clusters()).isEmpty();
     assertThat(MAPPER.readTree(settings.service().credentialsJson()))
         .isEqualTo(
             MAPPER.readTree(
                 "{\"type\":\"filesystem\",\"path\":\"/data/event-plane\",\"forcePathStyle\":false}"));
+  }
+
+  @Test
+  void shouldReadTheStoresOfTheClusters() {
+    // given
+    final var properties =
+        Map.of(
+            "eventplane.store.path",
+            "/data/home",
+            "eventplane.service.clusters",
+            """
+            {"east":{"type":"S3","bucket":"east-bucket","basePath":"plane","region":"us-east-1",
+                     "endpoint":"http://minio:9000","accessKeyId":"key",
+                     "secretAccessKey":"secret","forcePathStyle":true,"unknown":1},
+             "west":{"type":"filesystem","path":"/data/west"}}""");
+
+    // when
+    final var clusters = ServiceSettings.from(properties::get).service().clusters();
+
+    // then
+    assertThat(clusters)
+        .containsOnly(
+            Map.entry(
+                "east",
+                new StoreConfig(
+                    Type.S3,
+                    null,
+                    "east-bucket",
+                    "plane",
+                    "us-east-1",
+                    URI.create("http://minio:9000"),
+                    "key",
+                    "secret",
+                    true)),
+            Map.entry("west", StoreConfig.filesystem(Path.of("/data/west"))));
   }
 
   @Test
@@ -115,7 +156,8 @@ final class ServiceSettingsTest {
             "eventplane.store.type", " ",
             "eventplane.store.path", "/data",
             "eventplane.service.port", "",
-            "eventplane.service.peers", "  ");
+            "eventplane.service.peers", "  ",
+            "eventplane.service.clusters", " ");
 
     // when
     final var settings = ServiceSettings.from(properties::get);
@@ -124,6 +166,7 @@ final class ServiceSettingsTest {
     assertThat(settings.store().type()).isEqualTo(Type.FILESYSTEM);
     assertThat(settings.service().address().getPort()).isEqualTo(8085);
     assertThat(settings.service().peers()).isEmpty();
+    assertThat(settings.service().clusters()).isEmpty();
   }
 
   @Test
@@ -167,6 +210,75 @@ final class ServiceSettingsTest {
         .hasMessageContaining("but got");
   }
 
+  @ParameterizedTest
+  @MethodSource("wrongClusters")
+  void shouldRejectClustersThatAreWrong(final String json, final String message) {
+    // given
+    final var properties =
+        Map.of("eventplane.store.path", "/data", "eventplane.service.clusters", json);
+
+    // when, then
+    assertThatThrownBy(() -> ServiceSettings.from(properties::get))
+        .isInstanceOf(InvalidServiceSettingException.class)
+        .hasMessageContaining(message);
+  }
+
+  static Stream<Arguments> wrongClusters() {
+    final var name = "Expected eventplane.service.clusters";
+    return Stream.of(
+        Arguments.of("[]", name + " to be a JSON object of cluster ids and stores, but got ARRAY"),
+        Arguments.of("{\"a\":", name + " to be JSON, but got invalid JSON at line 1"),
+        Arguments.of(
+            "{\"a\":[]}", name + ".a to be a JSON object of store settings, but got ARRAY"),
+        Arguments.of("{\"a\":{}}", name + ".a.type to be filesystem or s3, but got none"),
+        Arguments.of("{\"a\":{\"type\":5}}", name + ".a.type to be text, but got NUMBER"),
+        Arguments.of(
+            "{\"a\":{\"type\":\"gcs\"}}",
+            name + ".a to be a valid store, but got one that isn't (Expected type to be"),
+        Arguments.of(
+            "{\"a\":{\"type\":\"s3\"}}",
+            "(Expected bucket to be set for an S3 store, but got none)"),
+        Arguments.of(
+            "{\"a\":{\"type\":\"filesystem\"}}",
+            "(Expected path to be set for a filesystem store, but got none)"),
+        Arguments.of(
+            "{\"a\":{\"type\":\"s3\",\"bucket\":5}}",
+            name + ".a.bucket to be text, but got NUMBER"),
+        Arguments.of(
+            "{\"a\":{\"type\":\"s3\",\"bucket\":\"b\",\"forcePathStyle\":\"yes\"}}",
+            name + ".a.forcePathStyle to be true or false, but got STRING"),
+        Arguments.of(
+            "{\"a\":{\"type\":\"s3\",\"bucket\":\"b\",\"endpoint\":\"http://a b\"}}",
+            name + ".a.endpoint to be a URI, but got 'http://a b'"),
+        Arguments.of(
+            "{\"\":{\"type\":\"s3\",\"bucket\":\"b\"}}",
+            "Expected a cluster id to be set and not start with '_', but got ''"),
+        Arguments.of(
+            "{\"_groups\":{\"type\":\"s3\",\"bucket\":\"b\"}}",
+            "Expected a cluster id to be set and not start with '_', but got '_groups'"));
+  }
+
+  @ParameterizedTest
+  @ValueSource(
+      strings = {
+        "{\"a\":{\"type\":\"s3\",\"bucket\":5,\"secretAccessKey\":\"very-secret\"}}",
+        "{\"a\":{\"type\":\"s3\",\"secretAccessKey\":\"very-secret\"}}",
+        "{\"a\":{\"type\":\"gcs\",\"secretAccessKey\":\"very-secret\"}}",
+        "{\"a\":{\"secretAccessKey\":\"very-secret\"}}",
+        "{\"a\":{\"secretAccessKey\":\"very-secret\"} x}",
+        "very-secret",
+      })
+  void shouldNotQuoteTheSecretsOfClustersThatAreWrong(final String json) {
+    // given
+    final var properties =
+        Map.of("eventplane.store.path", "/data", "eventplane.service.clusters", json);
+
+    // when, then
+    assertThatThrownBy(() -> ServiceSettings.from(properties::get))
+        .isInstanceOf(InvalidServiceSettingException.class)
+        .hasMessageNotContaining("very-secret");
+  }
+
   @Test
   void shouldRejectAFilesystemStoreWithoutAPath() {
     // when, then
@@ -194,6 +306,7 @@ final class ServiceSettingsTest {
     "eventplane.store.forcePathStyle,EVENTPLANE_STORE_FORCE_PATH_STYLE",
     "eventplane.service.keepAlive,EVENTPLANE_SERVICE_KEEP_ALIVE",
     "eventplane.service.peers,EVENTPLANE_SERVICE_PEERS",
+    "eventplane.service.clusters,EVENTPLANE_SERVICE_CLUSTERS",
   })
   void shouldNameTheEnvironmentVariableOfAProperty(final String property, final String variable) {
     // when, then

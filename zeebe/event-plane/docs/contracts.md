@@ -207,7 +207,8 @@ needs no configuration machinery.
 | `POST /v1/uploads` | An `UploadNotice`. Passes it on to the workers subscribed to its log, and to the configured peers unless the request has the header `X-Event-Plane-Forwarded: true`. Answers 202. |
 | `GET /v1/notifications?log={c}/{t}/{p}&log=…` | Server-sent events: `event: upload`, with the notice's JSON on one `data:` line. A comment line `: keep-alive` every 15 seconds. Each `log` value is URL-encoded (`c%2Fdefault%2F1`), and the service decodes it. |
 | `GET /v1/groups/{group}` | `{"group":"g","workers":[{"worker":"w-…","beat":42}],"cursors":[{"log":"c/t/p","history":"…","index":1,"position":1,"worker":"w-…","newestIndex":40,"lag":39}]}`. `newestIndex` is the last index of the newest segment of the cursor's history that the service knows of, from notices or a listing, or null, with a lag of 0, if it knows of none. |
-| `GET /v1/credentials` | A stub: the store's configuration, as a worker would use it. |
+| `GET /v1/clusters` | `{"clusters":{"c":{…}}}`: the store each cluster writes to, with `StoreConfig`'s field names, the secret as `***`. From `eventplane.service.clusters`, a JSON object of cluster id to store, empty by default. |
+| `GET /v1/credentials` | A stub: the store's configuration, as a worker would use it. With `?cluster=c`, the store of that cluster, secret included, or 404 if unknown. The consumer's `ServiceClusters.fetch(service)` reads both. |
 
 ## Consumer group objects
 

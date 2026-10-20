@@ -11,13 +11,18 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.zeebe.eventplane.store.StoreConfig;
+import io.camunda.zeebe.eventplane.store.StoreConfig.Type;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 final class ServiceConfigTest {
 
@@ -30,6 +35,15 @@ final class ServiceConfigTest {
     assertThat(config.peers()).isEmpty();
     assertThat(config.keepAlive()).isEqualTo(Duration.ofSeconds(15));
     assertThat(config.credentialsJson()).isEqualTo("{}");
+  }
+
+  @Test
+  void shouldDefaultToNoClusters() {
+    // when
+    final var config = new ServiceConfig(new InetSocketAddress("127.0.0.1", 0));
+
+    // then
+    assertThat(config.clusters()).isEmpty();
   }
 
   @Test
@@ -53,6 +67,48 @@ final class ServiceConfigTest {
 
     // when, then
     assertThat(config.toString()).doesNotContain("s3cr3t").contains("keepAlive=PT15S");
+  }
+
+  @Test
+  void shouldKeepASortedCopyOfTheClusters() {
+    // given
+    final var clusters = new HashMap<String, StoreConfig>();
+    clusters.put("west", StoreConfig.filesystem(Path.of("/west")));
+    clusters.put("east", StoreConfig.filesystem(Path.of("/east")));
+    final var config = new ServiceConfig(new InetSocketAddress(0)).withClusters(clusters);
+
+    // when
+    clusters.put("north", StoreConfig.filesystem(Path.of("/north")));
+
+    // then
+    assertThat(config.clusters()).containsOnlyKeys("east", "west");
+    assertThat(config.clusters().keySet()).containsExactly("east", "west");
+  }
+
+  @Test
+  void shouldShowTheClusterIdsButNotTheStores() {
+    // given
+    final var store = new StoreConfig(Type.S3, null, "b", null, null, null, "key", "s3cr3t", false);
+    final var config =
+        new ServiceConfig(new InetSocketAddress(0)).withClusters(Map.of("east", store));
+
+    // when, then
+    assertThat(config.toString()).contains("clusters=[east]").doesNotContain("s3cr3t");
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {"", " ", "_groups"})
+  void shouldRejectAClusterIdThatIsBlankOrStartsWithAnUnderscore(final String cluster) {
+    // given
+    final var config = new ServiceConfig(new InetSocketAddress(0));
+    final var clusters = Map.of(cluster, StoreConfig.filesystem(Path.of("/data")));
+
+    // when, then
+    assertThatThrownBy(() -> config.withClusters(clusters))
+        .isInstanceOf(InvalidServiceSettingException.class)
+        .hasMessage(
+            "Expected a cluster id to be set and not start with '_', but got '%s'"
+                .formatted(cluster));
   }
 
   @Test

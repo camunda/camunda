@@ -19,6 +19,7 @@ import java.time.format.DateTimeParseException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 import org.jspecify.annotations.Nullable;
@@ -56,6 +57,9 @@ import org.jspecify.annotations.Nullable;
  *       keep-alive, as an ISO-8601 duration</td><td>{@code PT15S}</td></tr>
  *   <tr><td>{@code eventplane.service.credentials}</td><td>the JSON object of {@code GET
  *       /v1/credentials}</td><td>the store's own settings</td></tr>
+ *   <tr><td>{@code eventplane.service.clusters}</td><td>the stores that clusters write to: a JSON
+ *       object of cluster id to store settings, named like the {@code eventplane.store.*} ones
+ *       ({@code {"c":{"type":"s3","bucket":"b"}}})</td><td>none</td></tr>
  * </table>
  *
  * @param store how to open the store
@@ -90,6 +94,7 @@ public record ServiceSettings(StoreConfig store, ServiceConfig service) {
     final var store = store(settings);
     final var host = settings.apply(SERVICE + "host");
     final var credentials = settings.apply(SERVICE + "credentials");
+    final var clusters = settings.apply(SERVICE + "clusters");
     final var keepAlive = settings.apply(SERVICE + "keepAlive");
     final var address =
         new InetSocketAddress(
@@ -99,7 +104,8 @@ public record ServiceSettings(StoreConfig store, ServiceConfig service) {
             address,
             peers(settings.apply(SERVICE + "peers")),
             keepAlive == null ? ServiceConfig.DEFAULT_KEEP_ALIVE : duration(keepAlive),
-            credentials == null ? StoreCredentials.json(store) : credentials);
+            credentials == null ? StoreCredentials.json(store) : credentials,
+            clusters == null ? Map.of() : ClusterSettings.parse(SERVICE + "clusters", clusters));
     return new ServiceSettings(store, service);
   }
 
@@ -155,7 +161,7 @@ public record ServiceSettings(StoreConfig store, ServiceConfig service) {
     }
   }
 
-  private static URI uri(final String setting, final String value) {
+  static URI uri(final String setting, final String value) {
     try {
       return new URI(value);
     } catch (final URISyntaxException e) {

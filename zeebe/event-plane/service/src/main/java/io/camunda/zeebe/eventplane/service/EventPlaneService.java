@@ -28,7 +28,9 @@ import org.slf4j.LoggerFactory;
  *       those logs.
  *   <li>{@code GET /v1/groups/{group}}: the workers, cursors and lag of a consumer group, read from
  *       the store.
- *   <li>{@code GET /v1/credentials}: a stub, the configured JSON.
+ *   <li>{@code GET /v1/clusters}: the stores that the registered clusters write to, secrets masked.
+ *   <li>{@code GET /v1/credentials}: a stub, the configured JSON, or with {@code ?cluster=c} the
+ *       store of that cluster, secret included.
  * </ul>
  *
  * It keeps no state that matters. A restart loses the newest notice it remembered of each log, and
@@ -57,7 +59,8 @@ public final class EventPlaneService implements AutoCloseable {
             new UploadHandler(notices, forwarder),
             new NotificationHandler(notices, config.keepAlive()),
             new GroupHandler(new GroupView(store, notices)),
-            config.credentialsJson().getBytes(StandardCharsets.UTF_8));
+            new ClusterHandler(
+                config.clusters(), config.credentialsJson().getBytes(StandardCharsets.UTF_8)));
   }
 
   /**

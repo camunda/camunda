@@ -177,6 +177,8 @@ final class RoutingTest {
         "/v1/groups/",
         "/v1/groups/a/b",
         "/v1/groups//",
+        "/v1/clusters/",
+        "/v1/clusters/x",
         "/v2/credentials",
         "/v1/credentials/x",
       })
@@ -187,7 +189,9 @@ final class RoutingTest {
     // then
     assertThat(response.statusCode()).isEqualTo(404);
     assertThat(MAPPER.readTree(response.body()).get("error").asText())
-        .startsWith("Expected a path of /v1/uploads, /v1/notifications, /v1/groups/{group} or");
+        .startsWith(
+            "Expected a path of /v1/uploads, /v1/notifications, /v1/groups/{group}, /v1/clusters"
+                + " or /v1/credentials, but got");
   }
 
   @ParameterizedTest
@@ -201,6 +205,9 @@ final class RoutingTest {
     "POST,/v1/credentials,GET",
     "PUT,/v1/credentials,GET",
     "HEAD,/v1/credentials,GET",
+    "POST,/v1/clusters,GET",
+    "PUT,/v1/clusters,GET",
+    "HEAD,/v1/clusters,GET",
     "HEAD,/v1/notifications,GET",
   })
   void shouldAnswer405ToAMethodTheEndpointDoesNotTake(

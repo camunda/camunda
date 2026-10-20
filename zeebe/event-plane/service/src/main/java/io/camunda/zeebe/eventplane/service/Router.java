@@ -25,23 +25,24 @@ final class Router implements HttpHandler {
 
   private static final String UPLOADS = "/v1/uploads";
   private static final String NOTIFICATIONS = "/v1/notifications";
+  private static final String CLUSTERS = "/v1/clusters";
   private static final String CREDENTIALS = "/v1/credentials";
   private static final String GROUPS = "/v1/groups/";
 
   private final UploadHandler uploads;
   private final NotificationHandler notifications;
   private final GroupHandler groups;
-  private final byte[] credentials;
+  private final ClusterHandler clusters;
 
   Router(
       final UploadHandler uploads,
       final NotificationHandler notifications,
       final GroupHandler groups,
-      final byte[] credentials) {
+      final ClusterHandler clusters) {
     this.uploads = uploads;
     this.notifications = notifications;
     this.groups = groups;
-    this.credentials = credentials.clone();
+    this.clusters = clusters;
   }
 
   @Override
@@ -69,9 +70,13 @@ final class Router implements HttpHandler {
       if (allows(exchange, "GET")) {
         notifications.handle(exchange);
       }
+    } else if (path.equals(CLUSTERS)) {
+      if (allows(exchange, "GET")) {
+        clusters.clusters(exchange);
+      }
     } else if (path.equals(CREDENTIALS)) {
       if (allows(exchange, "GET")) {
-        Responses.json(exchange, 200, credentials);
+        clusters.credentials(exchange);
       }
     } else if (path.startsWith(GROUPS) && isOneSegment(path.substring(GROUPS.length()))) {
       if (allows(exchange, "GET")) {
@@ -81,8 +86,8 @@ final class Router implements HttpHandler {
       Responses.error(
           exchange,
           404,
-          "Expected a path of %s, %s, %s{group} or %s, but got %s"
-              .formatted(UPLOADS, NOTIFICATIONS, GROUPS, CREDENTIALS, path));
+          "Expected a path of %s, %s, %s{group}, %s or %s, but got %s"
+              .formatted(UPLOADS, NOTIFICATIONS, GROUPS, CLUSTERS, CREDENTIALS, path));
     }
   }
 

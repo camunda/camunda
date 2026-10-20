@@ -11,7 +11,6 @@ import com.sun.net.httpserver.HttpExchange;
 import io.camunda.zeebe.eventplane.notification.UploadNotice;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.LinkedHashSet;
@@ -88,26 +87,13 @@ final class NotificationHandler {
    */
   private static Set<LogId> logs(@Nullable final String rawQuery) {
     final var logs = new LinkedHashSet<LogId>();
-    if (rawQuery != null) {
-      for (final var parameter : rawQuery.split("&")) {
-        final int equals = parameter.indexOf('=');
-        if (equals > 0 && decode(parameter.substring(0, equals)).equals("log")) {
-          logs.add(LogId.parse(decode(parameter.substring(equals + 1))));
-        }
-      }
+    for (final var value : Query.values(rawQuery, "log")) {
+      logs.add(LogId.parse(value));
     }
     if (logs.isEmpty()) {
       throw new InvalidRequestException(
           "at least one parameter log={cluster}/{tenant}/{partition}", "none");
     }
     return logs;
-  }
-
-  private static String decode(final String encoded) {
-    try {
-      return URLDecoder.decode(encoded, StandardCharsets.UTF_8);
-    } catch (final IllegalArgumentException e) {
-      throw new InvalidRequestException("a query in percent-encoding", "'" + encoded + "'");
-    }
   }
 }

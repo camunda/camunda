@@ -52,8 +52,9 @@ import org.slf4j.LoggerFactory;
  * listens for uploads of the logs it holds; without, it lists more often.
  *
  * <p>The group's objects live in one store, its home. The logs can live elsewhere: each cluster
- * writes to a store of its own, which {@link Builder#logStore} names. The worker then finds logs in
- * every store, and reads each one from its cluster's store.
+ * writes to a store of its own, which {@link Builder#logStore} names, or the service knows ({@link
+ * ServiceClusters}). The worker then finds logs in every store, and reads each one from its
+ * cluster's store.
  */
 public final class EventPlaneConsumer implements AutoCloseable {
 
@@ -525,6 +526,16 @@ public final class EventPlaneConsumer implements AutoCloseable {
     /** The store a cluster writes its logs to, if it isn't the group's home store. */
     public Builder logStore(final String cluster, final ObjectStore store) {
       logStores.put(cluster, store);
+      return this;
+    }
+
+    /**
+     * The stores that clusters write their logs to, by cluster id, as {@link #logStore} for each. A
+     * worker gets the settings from {@link ServiceClusters#fetch}, opens the stores, owns them and
+     * closes them after the worker.
+     */
+    public Builder logStores(final Map<String, ObjectStore> stores) {
+      logStores.putAll(stores);
       return this;
     }
 

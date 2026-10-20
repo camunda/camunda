@@ -15,16 +15,19 @@ import io.camunda.zeebe.eventplane.history.HistoryManifest.Base;
 import io.camunda.zeebe.eventplane.store.FileSystemStore;
 import io.camunda.zeebe.eventplane.store.ObjectNames;
 import io.camunda.zeebe.eventplane.store.ObjectStore;
+import io.camunda.zeebe.eventplane.store.ObjectStores;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListSet;
+import java.util.function.Consumer;
 import java.util.stream.LongStream;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -42,6 +45,7 @@ final class CrossStoreTest {
   private ObjectStore eastStore;
   private ObjectStore westStore;
   private final List<TestJournal> journals = new ArrayList<>();
+  private final List<ObjectStore> opened = new ArrayList<>();
   private final List<EventPlaneConsumer> workers = new ArrayList<>();
   private final Map<LogId, Set<Long>> delivered = new ConcurrentHashMap<>();
 
@@ -53,8 +57,11 @@ final class CrossStoreTest {
   }
 
   @AfterEach
-  void tearDown() {
+  void tearDown() throws IOException {
     workers.forEach(EventPlaneConsumer::close);
+    for (final var store : opened) {
+      store.close();
+    }
     journals.forEach(TestJournal::close);
   }
 
@@ -65,10 +72,44 @@ final class CrossStoreTest {
     final long westEnd = upload(westStore, WEST);
 
     // when
-    worker("w-1");
-    worker("w-2");
+    final Consumer<EventPlaneConsumer.Builder> stores =
+        builder -> builder.logStore("east", eastStore).logStore("west", westStore);
+    worker("w-1", stores);
+    worker("w-2", stores);
 
     // then
+    assertEveryLogReadFromItsOwnStore(eastEnd, westEnd);
+  }
+
+  @Test
+  void shouldReadEveryClusterFromTheStoreThatTheServiceNames() throws Exception {
+    // given
+    final long eastEnd = upload(eastStore, EAST);
+    final long westEnd = upload(westStore, WEST);
+
+    try (final var service =
+        StubService.start()
+            .clusters(
+                Map.of(
+                    "east", filesystemJson(directory.resolve("east")),
+                    "west", filesystemJson(directory.resolve("west"))))) {
+      // when
+      final var logStores = new HashMap<String, ObjectStore>();
+      for (final var cluster : ServiceClusters.fetch(service.uri()).entrySet()) {
+        final var store = ObjectStores.open(cluster.getValue());
+        opened.add(store);
+        logStores.put(cluster.getKey(), store);
+      }
+      worker("w-1", builder -> builder.logStores(logStores));
+      worker("w-2", builder -> builder.logStores(logStores));
+
+      // then
+      assertEveryLogReadFromItsOwnStore(eastEnd, westEnd);
+    }
+  }
+
+  private void assertEveryLogReadFromItsOwnStore(final long eastEnd, final long westEnd)
+      throws IOException {
     await()
         .untilAsserted(
             () -> {
@@ -86,12 +127,10 @@ final class CrossStoreTest {
     assertThat(westStore.list(ObjectNames.groupsPrefix(), null, 10)).isEmpty();
   }
 
-  private void worker(final String id) {
-    final var worker =
+  private void worker(final String id, final Consumer<EventPlaneConsumer.Builder> logStores) {
+    final var builder =
         EventPlaneConsumer.builder()
             .store(home)
-            .logStore("east", eastStore)
-            .logStore("west", westStore)
             .group("g")
             .workerId(id)
             .subscribe("*", "*")
@@ -104,10 +143,15 @@ final class CrossStoreTest {
             .heartbeatInterval(Duration.ofMillis(50))
             .lease(Duration.ofSeconds(1))
             .cursorInterval(Duration.ofMillis(100))
-            .listingInterval(Duration.ofMillis(100))
-            .build();
+            .listingInterval(Duration.ofMillis(100));
+    logStores.accept(builder);
+    final var worker = builder.build();
     workers.add(worker);
     worker.start();
+  }
+
+  private static String filesystemJson(final Path root) {
+    return "{\"type\":\"filesystem\",\"path\":\"%s\"}".formatted(root);
   }
 
   /** Uploads a log's first segments to a store, and returns the last record's position. */
