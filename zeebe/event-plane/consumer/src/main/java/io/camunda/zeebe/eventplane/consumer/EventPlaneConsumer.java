@@ -18,6 +18,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -49,6 +50,10 @@ import org.slf4j.LoggerFactory;
  * Delivery is at least once: around a handover, records can come twice, but none is skipped, and
  * the first arrival of each record of a log comes in position order. With a service, the worker
  * listens for uploads of the logs it holds; without, it lists more often.
+ *
+ * <p>The group's objects live in one store, its home. The logs can live elsewhere: each cluster
+ * writes to a store of its own, which {@link Builder#logStore} names. The worker then finds logs in
+ * every store, and reads each one from its cluster's store.
  */
 public final class EventPlaneConsumer implements AutoCloseable {
 
@@ -56,6 +61,9 @@ public final class EventPlaneConsumer implements AutoCloseable {
   private static final int PAGE_SIZE = 1000;
 
   private final ObjectStore store;
+  private final Map<String, ObjectStore> logStores;
+  private final List<ObjectStore> stores;
+  private volatile Map<LogId, ObjectStore> logLocations = Map.of();
   private final String group;
   private final String workerId;
   private final List<Subscription> subscription;
@@ -92,6 +100,11 @@ public final class EventPlaneConsumer implements AutoCloseable {
 
   private EventPlaneConsumer(final Builder builder) {
     store = Objects.requireNonNull(builder.store, "store");
+    logStores = Map.copyOf(builder.logStores);
+    final var distinct = new ArrayList<ObjectStore>();
+    distinct.add(store);
+    logStores.values().stream().filter(other -> !distinct.contains(other)).forEach(distinct::add);
+    stores = List.copyOf(distinct);
     group = Objects.requireNonNull(builder.group, "group");
     workerId = builder.workerId != null ? builder.workerId : "w-" + Ulid.next();
     subscription = List.copyOf(builder.subscription);
@@ -321,7 +334,17 @@ public final class EventPlaneConsumer implements AutoCloseable {
       return;
     }
     try {
-      logs = LogDiscovery.discover(store, subscription);
+      final var found = new HashMap<LogId, ObjectStore>();
+      for (final var candidate : stores) {
+        for (final var log : LogDiscovery.discover(candidate, subscription)) {
+          // a cluster whose store is named is read there only
+          if (logStores.getOrDefault(log.cluster(), candidate) == candidate) {
+            found.putIfAbsent(log, candidate);
+          }
+        }
+      }
+      logLocations = Map.copyOf(found);
+      logs = Set.copyOf(found.keySet());
       discovered = true;
       lastDiscovery = now;
     } catch (final IOException e) {
@@ -390,7 +413,9 @@ public final class EventPlaneConsumer implements AutoCloseable {
 
   private void startReading(final LogId log, @Nullable final GroupCursor cursor) {
     final StartFrom from = cursor == null ? start : cursor.cursor();
-    final var reader = new LogReader(store, log, from, listener, holeGrace, clock);
+    final var logStore =
+        logLocations.getOrDefault(log, logStores.getOrDefault(log.cluster(), store));
+    final var reader = new LogReader(logStore, log, from, listener, holeGrace, clock);
     final var heldLog = new HeldLog(store, group, workerId, reader, handler, listingInterval);
     releasing.remove(log);
     held.put(log, heldLog);
@@ -452,6 +477,7 @@ public final class EventPlaneConsumer implements AutoCloseable {
   public static final class Builder {
 
     private @Nullable ObjectStore store;
+    private final Map<String, ObjectStore> logStores = new LinkedHashMap<>();
     private @Nullable String group;
     private @Nullable String workerId;
     private final List<Subscription> subscription = new ArrayList<>();
@@ -468,9 +494,18 @@ public final class EventPlaneConsumer implements AutoCloseable {
 
     private Builder() {}
 
-    /** The store with the logs and the group's objects. Required. */
+    /**
+     * The group's home: the store with its heartbeats and cursors, and with the logs of every
+     * cluster without a store of its own. Required.
+     */
     public Builder store(final ObjectStore store) {
       this.store = store;
+      return this;
+    }
+
+    /** The store a cluster writes its logs to, if it isn't the group's home store. */
+    public Builder logStore(final String cluster, final ObjectStore store) {
+      logStores.put(cluster, store);
       return this;
     }
 
