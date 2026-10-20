@@ -8,7 +8,14 @@
 package io.camunda.zeebe.backup.azure;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
+import com.azure.core.http.HttpPipeline;
+import com.azure.storage.blob.BlobContainerClient;
+import com.azure.storage.blob.BlobServiceClient;
+import com.azure.storage.blob.BlobServiceVersion;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
@@ -77,5 +84,29 @@ final class AzureBackupStoreCredentialExecutorTest {
 
     // then
     assertThat(CompletableFuture.allOf(futures)).succeedsWithin(15, TimeUnit.SECONDS);
+  }
+
+  @Test
+  void shouldShutDownCredentialExecutorWhenStoreIsClosed() {
+    // given
+    final var config =
+        new AzureBackupConfig.Builder()
+            .withCreateContainer(false)
+            .withContainerName("test")
+            .build();
+    final var client = mock(BlobServiceClient.class);
+    final var containerClient = mock(BlobContainerClient.class);
+    when(client.getBlobContainerClient(anyString())).thenReturn(containerClient);
+    when(containerClient.exists()).thenReturn(true);
+    when(client.getHttpPipeline()).thenReturn(mock(HttpPipeline.class));
+    when(client.getAccountUrl()).thenReturn("https://test.blob.core.windows.net");
+    when(client.getServiceVersion()).thenReturn(BlobServiceVersion.getLatest());
+    final var store = new AzureBackupStore(config, client, executor);
+
+    // when
+    store.closeAsync().join();
+
+    // then
+    assertThat(executor.isShutdown()).isTrue();
   }
 }
