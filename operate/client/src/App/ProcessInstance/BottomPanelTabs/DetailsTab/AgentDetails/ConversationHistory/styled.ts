@@ -39,6 +39,7 @@ const ConversationContainer = styled.div`
   }
 
   .agent-history-modal .agent-message-content {
+    flex: 0 0 auto;
     min-block-size: 0;
     max-block-size: none;
     overflow: visible;

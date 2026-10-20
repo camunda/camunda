@@ -8,10 +8,32 @@
 
 import {render, screen, within} from 'modules/testing-library';
 import {MessageDetailsModal} from './MessageDetailsModal';
+import {ConversationContainer} from '../ConversationHistory/styled';
 
 vi.unmock('react-markdown');
 
 describe('<MessageDetailsModal />', () => {
+  it('should keep history message content at its natural height before attachments', () => {
+    render(
+      <ConversationContainer>
+        <MessageDetailsModal
+          title="User message"
+          language="markdown"
+          content={'## Instructions\n\n- Read the PDF.\n'.repeat(30)}
+          navigation={<nav>1 / 2</nav>}
+          attachments={<div>Documents</div>}
+          onClose={vi.fn()}
+        />
+      </ConversationContainer>,
+    );
+
+    const content = screen
+      .getByRole('dialog')
+      .querySelector('.agent-message-content');
+    expect(content).toHaveStyle({flex: '0 0 auto', overflow: 'visible'});
+    expect(content?.nextElementSibling).toHaveTextContent('Documents');
+  });
+
   it('should render markdown in preview mode by default', () => {
     render(
       <MessageDetailsModal
