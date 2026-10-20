@@ -53,6 +53,7 @@ public final class ClusterCfg implements ConfigurationEntry {
   private Duration electionTimeout = DEFAULT_ELECTION_TIMEOUT;
   private MembershipCfg membership = new MembershipCfg();
   private RaftCfg raft = new RaftCfg();
+  private ConfigManagerCfg configManager = ConfigManagerCfg.defaultConfig();
   private CompressionAlgorithm messageCompression = CompressionAlgorithm.NONE;
 
   @Override
@@ -191,6 +192,14 @@ public final class ClusterCfg implements ConfigurationEntry {
     this.messageCompression = messageCompression;
   }
 
+  public ConfigManagerCfg getConfigManager() {
+    return configManager;
+  }
+
+  public void setConfigManager(final ConfigManagerCfg configManager) {
+    this.configManager = configManager;
+  }
+
   @Override
   public String toString() {
     return "ClusterCfg{"
@@ -219,6 +228,8 @@ public final class ClusterCfg implements ConfigurationEntry {
         + raft
         + ", messageCompression="
         + messageCompression
+        + ", configManager="
+        + configManager
         + '}';
   }
 }
