@@ -1,0 +1,190 @@
+# description: Hands a failed AlwaysGreen run to the central triage in
+#              camunda/c8-cross-component-e2e-tests.
+# type: CI
+# owner: @camunda/test-automation-team
+---
+name: AlwaysGreen Triage
+
+# The classification used to live here, as ~3000 lines of Python plus a 541-line
+# workflow. It now lives once, in camunda/c8-cross-component-e2e-tests, for every
+# consumer. See camunda/team-test-automation#163.
+#
+# What is LEFT here is deliberately a reusable workflow rather than a job inlined
+# into each pipeline: `stable/8.7`, `stable/8.8`, `stable/8.9` and `stable/8.10`
+# all call this file as `camunda/camunda/.github/workflows/alwaysgreen-triage.yml@main`.
+# That pin resolves against main at run time, so deleting this file does not merely
+# lose triage on those branches -- their whole pipeline run fails to START. Keeping
+# the entry point and gutting the body behind it is what lets main migrate without
+# touching four release branches, and what keeps the next release branch working
+# with no backport at all.
+#
+# Every input the pre-migration workflow accepted is still declared, for the same
+# reason: a stable caller passes them, and a workflow_call that does not declare an
+# input a caller sends is a hard error on the caller's side.
+
+on:
+  workflow_call:
+    inputs:
+      base_ref:
+        description: 'Branch the failing run was on (main, stable/8.x)'
+        required: true
+        type: string
+      chart_version:
+        description: >
+          Chart directory the run deployed. Accepted for caller compatibility; the
+          central triage derives what it needs from the run itself.
+        required: false
+        type: string
+        default: ''
+      dry_run:
+        description: 'Classify and report, but do not dispatch a fix agent'
+        required: false
+        type: boolean
+        default: false
+      max_dispatches:
+        description: 'Cap on fix-agent dispatches for this run'
+        required: false
+        type: number
+        default: 2
+      parent_slack_ts:
+        description: >
+          ts of the post-failure-feedback message for this failure. When set, triage
+          replies in that thread instead of starting a new one.
+        required: false
+        type: string
+        default: ''
+      parent_slack_channel:
+        description: 'Channel of parent_slack_ts'
+        required: false
+        type: string
+        default: ''
+      tooling_ref:
+        description: >
+          Ref carrying this workflow's local actions. A reusable workflow's checkout
+          takes the CALLER's ref, and a stable branch does not have main's tree, so
+          the tooling ref has to be named rather than inherited.
+        required: false
+        type: string
+        default: ''
+
+  # Replay a past run by id, and the only way to exercise a change to this file
+  # before it is on the default branch.
+  workflow_dispatch:
+    inputs:
+      run_id:
+        description: 'Run to hand over. Required: a replay always names its target.'
+        required: true
+      base_ref:
+        description: 'Branch the failing run was on (main, stable/8.x)'
+        required: true
+        default: main
+      tooling_ref:
+        description: 'Ref carrying the AlwaysGreen tooling (defaults to main)'
+        required: false
+        default: ''
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  handover:
+    name: Hand the failure to the central triage
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      # Only for the local observe-build-status action below. Pinned to the tooling
+      # ref because a reusable workflow checks out the CALLER's tree by default, and
+      # a stable branch's tree does not carry main's actions.
+      - name: Checkout (for observe-build-status)
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.tooling_ref || 'main' }}
+          sparse-checkout: .github
+          persist-credentials: false
+
+      - name: Generate a token that may dispatch to the triage repository
+        id: github-token
+        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@7fe5cca167f7826bedbc078ae36ff2e974cc8cb5 # generate-github-app-token-from-vault-secrets-1.1.2
+        with:
+          github-app-id-vault-key: GITHUB_APP_ID
+          github-app-id-vault-path: secret/data/products/qa/ci/github.com/apps/camunda/quality-assurance-ci
+          github-app-private-key-vault-key: GITHUB_APP_SECRET
+          github-app-private-key-vault-path: secret/data/products/qa/ci/github.com/apps/camunda/quality-assurance-ci
+          vault-auth-method: approle
+          vault-auth-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-auth-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          vault-url: ${{ secrets.VAULT_ADDR }}
+          owner: camunda
+          repositories: c8-cross-component-e2e-tests
+
+      # A disabled workflow accepts a repository_dispatch and runs nothing, so the
+      # POST below would succeed and the failure would simply never be triaged.
+      # Checked rather than assumed, and fatal rather than skipped: the dispatchers
+      # in that repository are routinely disabled by hand, and this one going the
+      # same way must not be silent.
+      - name: Refuse to dispatch at a disabled receiver
+        env:
+          GH_TOKEN: ${{ steps.github-token.outputs.token }}
+        run: |
+          set -euo pipefail
+          state=$(gh api repos/camunda/c8-cross-component-e2e-tests/actions/workflows/alwaysgreen-triage.yml \
+            --jq '.state' 2>/dev/null || echo "unknown")
+          if [ "$state" != "active" ]; then
+            echo "::error::the AlwaysGreen triage receiver is '${state}', so this failure would go untriaged"
+            exit 1
+          fi
+
+      # Deliberately NOT continue-on-error. A dispatch that fails to arrive means the
+      # failure is never triaged, which is the one outcome this system exists to
+      # prevent, so it fails the job and is visible.
+      #
+      # RUN_ID is the CALLER's run on a workflow_call -- github.run_id inside a
+      # reusable workflow is the caller's id, which is exactly the run holding the
+      # evidence.
+      - name: Hand the failure to the central triage
+        env:
+          GH_TOKEN: ${{ steps.github-token.outputs.token }}
+          RUN_ID: ${{ inputs.run_id || github.run_id }}
+          BASE_REF: ${{ inputs.base_ref }}
+          SLACK_TS: ${{ inputs.parent_slack_ts }}
+          SLACK_CHANNEL: ${{ inputs.parent_slack_channel }}
+          DRY_RUN: ${{ inputs.dry_run || false }}
+          MAX_DISPATCHES: ${{ inputs.max_dispatches || 2 }}
+        run: |
+          set -euo pipefail
+          payload=$(jq -nc \
+            --arg repo "${GITHUB_REPOSITORY}" \
+            --arg run_id "${RUN_ID}" \
+            --arg base_ref "${BASE_REF}" \
+            --arg ts "${SLACK_TS:-}" \
+            --arg channel "${SLACK_CHANNEL:-}" \
+            --argjson dry_run "${DRY_RUN:-false}" \
+            --argjson max_dispatches "${MAX_DISPATCHES:-2}" \
+            '{event_type: "alwaysgreen-triage",
+              client_payload: {source_repo: $repo,
+                               run_id: $run_id,
+                               base_ref: $base_ref,
+                               slack_ts: $ts,
+                               slack_channel: $channel,
+                               dry_run: $dry_run,
+                               max_dispatches: $max_dispatches}}')
+          gh api --method POST \
+            -H "Accept: application/vnd.github+json" \
+            /repos/camunda/c8-cross-component-e2e-tests/dispatches \
+            --input - <<<"$payload"
+          echo "Handed run ${RUN_ID} (${BASE_REF}) to the central triage." >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          job_name: alwaysgreen-triage
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
