@@ -25,7 +25,7 @@ import org.junit.jupiter.api.Test;
 
 final class AzureBackupStoreCredentialExecutorTest {
 
-  @AutoClose(method = "shutdownNow")
+  @AutoClose("shutdownNow")
   private final ExecutorService executor = AzureBackupStore.newCredentialExecutor();
 
   @Test
