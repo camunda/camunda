@@ -464,6 +464,15 @@ public final class RecoveryPartitionManager
                     "No backup store available to restore partition " + partitionId));
             return;
           }
+          if (brokerCfg.getExperimental().getEventPlane().isEnabled()) {
+            // A restore starts a new Event Plane history, which every broker must agree on; the
+            // offline restore takes it from the operator, this one has nothing to take it from yet.
+            result.completeExceptionally(
+                new IllegalStateException(
+                    "Expected an offline restore of partition %d while the Event Plane is on, but got an in-process one"
+                        .formatted(partitionId)));
+            return;
+          }
           concurrencyControl.runOnCompletion(
               clusterConfigurationService.getLatestPartitionDistribution(partitionGroup),
               (distribution, distributionError) -> {

@@ -18,12 +18,17 @@ import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import java.net.URI;
 import org.jspecify.annotations.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Publishes the partition's journal into the Event Plane's store while this broker leads it, if the
  * Event Plane is on. Comes after the exporter director, which keeps the upload floor.
  */
 public final class EventPlanePartitionTransitionStep implements PartitionTransitionStep {
+
+  private static final Logger LOG =
+      LoggerFactory.getLogger(EventPlanePartitionTransitionStep.class);
 
   private @Nullable PublisherService publisher;
 
@@ -50,17 +55,27 @@ public final class EventPlanePartitionTransitionStep implements PartitionTransit
     if (!config.isEnabled() || targetRole != Role.LEADER || publisher != null) {
       return CompletableActorFuture.completed(null);
     }
+    final var configuredId =
+        config.getClusterId() != null
+            ? config.getClusterId()
+            : context.getBrokerCfg().getCluster().getClusterId();
     final var clusterKey =
-        context
-            .getClusterConfigurationService()
-            .getCurrentClusterConfiguration()
-            .clusterId()
-            .orElse(context.getBrokerCfg().getCluster().getClusterName());
+        configuredId != null
+            ? configuredId
+            : context
+                .getClusterConfigurationService()
+                .getCurrentClusterConfiguration()
+                .clusterId()
+                .orElse(context.getBrokerCfg().getCluster().getClusterName());
+    if (configuredId == null) {
+      LOG.warn(
+          "The Event Plane names this cluster {} after its generated id. A restore that recreates"
+              + " the topology generates a new one, and the Event Plane then sees a new cluster."
+              + " Configure camunda.cluster.cluster-id to keep the cluster's logs across restores.",
+          clusterKey);
+    }
     final var log =
-        new Identity(
-            config.getClusterId() != null ? config.getClusterId() : clusterKey,
-            context.partitionId().group(),
-            context.getPartitionId());
+        new Identity(clusterKey, context.partitionId().group(), context.getPartitionId());
     final var raftPartition = context.getRaftPartition();
     publisher =
         new PublisherService(
