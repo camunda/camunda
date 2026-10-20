@@ -35,6 +35,7 @@ x-broker: &broker
     ZEEBE_BROKER_EXPERIMENTAL_EVENTPLANE_STORE_SECRETACCESSKEY: minio-secret
     ZEEBE_BROKER_EXPERIMENTAL_EVENTPLANE_STORE_FORCEPATHSTYLE: "true"
 
+# Worker ids that rendezvous hashing gives one log each; with w-1, w-2 and w-3, w-2 gets all three.
 x-worker: &worker
   image: event-plane-tools:trial
   depends_on: [service]
@@ -121,16 +122,16 @@ services:
     <<: *worker
     environment:
       <<: *worker-env
-      EVENTPLANE_WORKER: w-1
+      EVENTPLANE_WORKER: w-x
 
   worker-2:
     <<: *worker
     environment:
       <<: *worker-env
-      EVENTPLANE_WORKER: w-2
+      EVENTPLANE_WORKER: w-y
 
   worker-3:
     <<: *worker
     environment:
       <<: *worker-env
-      EVENTPLANE_WORKER: w-3
+      EVENTPLANE_WORKER: w-z
