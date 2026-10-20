@@ -630,7 +630,10 @@ public class FlowNodeInstanceZeebeImportIT extends OperateZeebeAbstractIT {
             .andReturn();
 
     // then
-    assertThat(mvcResult.getResponse().getContentAsString()).doesNotContain("instanceMetadata");
+    assertErrorMessageIsEqualTo(mvcResult, "No data found for flow node instance.");
+    assertThat(mvcResult.getResponse().getContentAsString())
+        .doesNotContain(taskInstanceIdOfB)
+        .doesNotContain("instanceMetadata");
   }
 
   @Test
