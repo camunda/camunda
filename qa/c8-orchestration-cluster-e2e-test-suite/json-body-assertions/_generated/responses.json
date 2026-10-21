@@ -1,10 +1,10 @@
 {
   "metadata": {
-    "sourceRepo": "https://github.com/camunda/camunda",
-    "commit": "cd084f6187456aa438d7204e4adb3bacc48253a0",
-    "generatedAt": "2026-10-18T12:10:55.231Z",
+    "sourceRepo": "camunda/camunda",
+    "commit": "local",
+    "generatedAt": "2026-10-21T03:56:28.145Z",
     "specPath": "zeebe/gateway-protocol/src/main/proto/v2/rest-api.yaml",
-    "specSha256": "7c5ac353ded63be8080aec76c5074036945bd2e5695951f414cba606e32b13e2"
+    "specSha256": "c13bcdddfab42a1fb7932312918863678102ea12ef86a74491c21074bd861bab"
   },
   "responses": [
     {
@@ -2540,6 +2540,20 @@
               "PARTIALLY_COMPLETED",
               "SUSPENDED"
             ]
+          }
+        ],
+        "optional": []
+      }
+    },
+    {
+      "path": "/clock",
+      "method": "GET",
+      "status": "200",
+      "schema": {
+        "required": [
+          {
+            "name": "timestamp",
+            "type": "string"
           }
         ],
         "optional": []
@@ -12098,6 +12112,20 @@
                   "type": "boolean"
                 },
                 {
+                  "name": "metadata",
+                  "type": "object",
+                  "nullable": true,
+                  "children": {
+                    "required": [
+                      {
+                        "name": "protectionModes",
+                        "type": "array<string>"
+                      }
+                    ],
+                    "optional": []
+                  }
+                },
+                {
                   "name": "name",
                   "type": "string"
                 },
@@ -12207,6 +12235,20 @@
                   "type": "boolean"
                 },
                 {
+                  "name": "metadata",
+                  "type": "object",
+                  "nullable": true,
+                  "children": {
+                    "required": [
+                      {
+                        "name": "protectionModes",
+                        "type": "array<string>"
+                      }
+                    ],
+                    "optional": []
+                  }
+                },
+                {
                   "name": "name",
                   "type": "string"
                 },
@@ -12286,6 +12328,20 @@
                   "type": "boolean"
                 },
                 {
+                  "name": "metadata",
+                  "type": "object",
+                  "nullable": true,
+                  "children": {
+                    "required": [
+                      {
+                        "name": "protectionModes",
+                        "type": "array<string>"
+                      }
+                    ],
+                    "optional": []
+                  }
+                },
+                {
                   "name": "name",
                   "type": "string"
                 },
@@ -12355,6 +12411,20 @@
       "status": "200",
       "schema": {
         "required": [
+          {
+            "name": "metadata",
+            "type": "object",
+            "nullable": true,
+            "children": {
+              "required": [
+                {
+                  "name": "protectionModes",
+                  "type": "array<string>"
+                }
+              ],
+              "optional": []
+            }
+          },
           {
             "name": "name",
             "type": "string"
