@@ -157,6 +157,7 @@ final class LogArchiveBucket implements AutoCloseable {
     final var merged = new ArrayList<LogObjectJson>();
     long mergedIndex = startIndex - 1;
     long releasedIndex = startIndex - 1;
+    long holdIndex = startIndex;
     for (final var entry : commits.subList(1, commits.size())) {
       switch (entry.type()) {
         case LOG_ARCHIVED -> {
@@ -210,6 +211,18 @@ final class LogArchiveBucket implements AutoCloseable {
               .isGreaterThan(releasedIndex)
               .isLessThanOrEqualTo(mergedIndex);
           releasedIndex = entry.releasedIndex();
+        }
+        case HOLD_MOVED -> {
+          assertThat(first.isAuthority()).as("HOLD_MOVED only in mode B").isTrue();
+          assertThat(entry.holdIndex())
+              .as("hold of commit entry %d moves up", entry.seq())
+              .isNotNull()
+              .isGreaterThan(holdIndex);
+          assertThat(snapshots)
+              .as("the hold of commit entry %d is an archived snapshot", entry.seq())
+              .anyMatch(
+                  s -> s.index() == entry.holdIndex() && s.id().equals(entry.holdSnapshotId()));
+          holdIndex = entry.holdIndex();
         }
         case HANDOVER -> {
           assertThat(entry.handover()).isNotNull();
@@ -293,6 +306,8 @@ final class LogArchiveBucket implements AutoCloseable {
     assertThat(objects(view)).containsExactlyElementsOf(objects);
     assertThat(view.mergedIndex()).isEqualTo(mergedIndex);
     assertThat(view.releasedIndex()).isEqualTo(releasedIndex);
+    assertThat(view.isAuthority()).isEqualTo(first.isAuthority());
+    assertThat(view.holdIndex()).isEqualTo(holdIndex);
     final long finalReleasedIndex = releasedIndex;
     assertThat(view.mergedObjects())
         .containsExactlyElementsOf(
