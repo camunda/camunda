@@ -77,6 +77,27 @@ public abstract class LogArchiveStoreContractTest {
   }
 
   @Test
+  void shouldDeleteKey() {
+    // given
+    final var prefix = newPrefix();
+    store().put(prefix + "data/1.seg", new byte[] {1}).join();
+    store().put(prefix + "data/2.seg", new byte[] {2}).join();
+
+    // when
+    store().delete(prefix + "data/1.seg").join();
+
+    // then
+    assertThat(store().getIfExists(prefix + "data/1.seg").join()).isEmpty();
+    assertThat(store().list(prefix).join()).containsExactly(prefix + "data/2.seg");
+  }
+
+  @Test
+  void shouldDeleteMissingKey() {
+    // when / then
+    store().delete(newPrefix() + "data/missing.seg").join();
+  }
+
+  @Test
   void shouldReadExactRange() {
     // given
     final var key = newPrefix() + "log/1-100.log";

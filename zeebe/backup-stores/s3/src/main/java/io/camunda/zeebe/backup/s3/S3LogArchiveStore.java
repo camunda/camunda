@@ -135,6 +135,12 @@ public final class S3LogArchiveStore implements LogArchiveStore {
   }
 
   @Override
+  public CompletableFuture<Void> delete(final String key) {
+    // S3 answers a delete of a missing key with success, as the contract requires
+    return client.deleteObject(r -> r.bucket(bucket).key(basePrefix + key)).thenApply(r -> null);
+  }
+
+  @Override
   public CompletableFuture<Void> closeAsync() {
     return CompletableFuture.runAsync(client::close);
   }
