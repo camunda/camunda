@@ -21,6 +21,7 @@ import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.TenantQuery;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
+import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.reader.ResourceAccess;
 import io.camunda.security.reader.ResourceAccessProvider;
 import io.camunda.service.TenantServices;
@@ -51,6 +52,7 @@ public class OidcCamundaUserServiceTest {
   @Mock private CamundaAuthenticationProvider authenticationProvider;
   @Mock private ResourceAccessProvider resourceAccessProvider;
   @Mock private TenantServices tenantServices;
+  private final SecurityConfiguration securityConfiguration = new SecurityConfiguration();
   private OidcCamundaUserService userService;
 
   @BeforeEach
@@ -73,7 +75,8 @@ public class OidcCamundaUserServiceTest {
             resourceAccessProvider,
             tenantServices,
             authorizedClientRepository,
-            null);
+            null,
+            securityConfiguration);
   }
 
   @Test
@@ -294,6 +297,28 @@ public class OidcCamundaUserServiceTest {
     assertThatThrownBy(() -> userService.getUserToken())
         .isInstanceOf(UnsupportedOperationException.class)
         .hasMessageContaining("User is not authenticated or is not a OIDC user");
+  }
+
+  @Test
+  void shouldAllowLogoutOutsideSaas() {
+    // when
+    final var currentUser = userService.getCurrentUser();
+
+    // then
+    assertThat(currentUser.canLogout()).isTrue();
+  }
+
+  @Test
+  void shouldNotAllowLogoutInSaas() {
+    // given
+    securityConfiguration.getSaas().setOrganizationId("org-id");
+    securityConfiguration.getSaas().setClusterId("cluster-id");
+
+    // when
+    final var currentUser = userService.getCurrentUser();
+
+    // then
+    assertThat(currentUser.canLogout()).isFalse();
   }
 
   @Test

@@ -27,10 +27,6 @@ public class TasklistProfileService {
     return "";
   }
 
-  public boolean currentProfileCanLogout() {
-    return true;
-  }
-
   public boolean isLoginDelegated() {
     final var consolidatedAuthVariation =
         AuthenticationMethod.parse(environment.getProperty(METHOD));
