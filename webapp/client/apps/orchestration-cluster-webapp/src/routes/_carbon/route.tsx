@@ -36,7 +36,10 @@ const Route = createFileRoute('/_carbon')({
 	},
 	head: () => ({
 		meta: [],
-		links: [{rel: 'stylesheet', href: appCss}],
+		links: [
+			{rel: 'preload', as: 'style', href: appCss},
+			{rel: 'stylesheet', href: appCss},
+		],
 	}),
 });
 
