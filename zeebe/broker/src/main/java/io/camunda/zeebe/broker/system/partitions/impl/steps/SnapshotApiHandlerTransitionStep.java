@@ -39,7 +39,14 @@ public class SnapshotApiHandlerTransitionStep implements PartitionTransitionStep
               context.getPartitionId(),
               (from, to) ->
                   context.snapshotCopy().copySnapshot(from, to, Set.of(ColumnFamilyScope.GLOBAL)),
-              context.getSnapshotApiRequestHandler());
+              context.getSnapshotApiRequestHandler(),
+              (int)
+                  context
+                      .getBrokerCfg()
+                      .getExperimental()
+                      .getRaft()
+                      .getSnapshotChunkSize()
+                      .toBytes());
       context.getSnapshotApiRequestHandler().addTransferService(context.getPartitionId(), service);
     }
     return CompletableActorFuture.completed();
