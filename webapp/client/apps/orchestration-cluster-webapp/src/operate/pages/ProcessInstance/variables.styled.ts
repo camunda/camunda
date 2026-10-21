@@ -29,9 +29,17 @@ const EmptyMessageContainer = styled.div`
 	height: 100%;
 `;
 
-const VariablesSearch = styled.div`
+const FilterSwitcherContainer = styled.div`
+	display: flex;
+	flex-direction: column;
+	align-items: flex-start;
+	gap: var(--cds-spacing-04);
 	padding: 0 var(--cds-spacing-05) var(--cds-spacing-05);
 	border-bottom: solid 1px var(--cds-border-subtle-01);
+`;
+
+const VariablesSearch = styled.div`
+	width: 100%;
 `;
 
 const DimmableResults = styled.div<{$dimmed: boolean}>`
@@ -73,6 +81,7 @@ const InlineLoading = styled(BaseInlineLoading)`
 export {
 	Content,
 	EmptyMessageContainer,
+	FilterSwitcherContainer,
 	VariablesSearch,
 	DimmableResults,
 	StructuredList,

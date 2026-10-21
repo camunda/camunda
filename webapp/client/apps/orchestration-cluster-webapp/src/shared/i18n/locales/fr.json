@@ -1476,7 +1476,15 @@
 					"showAll": "Tout afficher",
 					"open": "Ouvrir la variable",
 					"openDescription": "Ouvrir",
-					"fullValueTitle": "Valeur complète de {{name}}"
+					"fullValueTitle": "Valeur complète de {{name}}",
+					"filter": "Filtre des variables",
+					"filterAll": "Toutes",
+					"filterDocuments": "Documents",
+					"noDocuments": "Il n’y a aucune variable de document",
+					"viewDocuments": "Afficher les documents",
+					"viewDocumentsLabel": "Afficher les documents de la variable {{name}}",
+					"documentsLoadingHint": "Chargement de la valeur complète de la variable... D’autres documents peuvent exister pour cette variable.",
+					"documentsErrorHint": "Impossible de charger la valeur complète de la variable. D’autres documents peuvent exister pour cette variable."
 				},
 				"details": {
 					"title": "Détails",
@@ -1942,6 +1950,28 @@
 					"failed_other": "{{formattedCount}} échoués",
 					"pending_one": "{{formattedCount}} en attente",
 					"pending_other": "{{formattedCount}} en attente"
+				},
+				"documents": {
+					"preview": "Aperçu",
+					"previewLabel": "Aperçu du document pour {{label}}",
+					"download": "Télécharger",
+					"downloadLabel": "Télécharger le document pour {{label}}",
+					"expired": "Expiré",
+					"expiredTooltip": "Le document a expiré",
+					"previewUnavailable": "Aperçu indisponible",
+					"unsupportedFileType": "Type de fichier non pris en charge",
+					"downloadUnavailable": "Téléchargement indisponible",
+					"previewTitle": "Aperçu : {{fileName}}",
+					"previewNotAvailable": "Aperçu non disponible pour le document « {{fileName}} ».",
+					"imagePreviewFailed": "Impossible de charger l’aperçu de l’image « {{fileName}} ».",
+					"jsonPreviewFailed": "Impossible de charger l’aperçu JSON « {{fileName}} ».",
+					"preparingJsonPreview": "Préparation de l’aperçu JSON…",
+					"listTitleSingle": "{{amount}} document dans {{label}}",
+					"listTitleMultiple": "{{amount}} documents dans {{label}}",
+					"countSingle": "{{amount}} document",
+					"countMultiple": "{{amount}} documents",
+					"pdfPreviewFailed": "Impossible de charger l’aperçu PDF « {{fileName}} ».",
+					"preparingPdfPreview": "Préparation de l’aperçu PDF…"
 				}
 			}
 		}
