@@ -13,7 +13,7 @@ import {
 	type BreadcrumbDescriptor,
 } from '@camunda/camunda-composite-components';
 import {
-	ClusterIcon,
+	EnvironmentIcon,
 	NavBreadcrumbSwitcher,
 	OrganisationIcon,
 	camundaAppIcons,
@@ -35,7 +35,7 @@ function getBreadcrumbIcon(key: string, currentApp: CamundaAppKey): NavIcon {
 		return OrganisationIcon;
 	}
 	if (key === 'cluster') {
-		return ClusterIcon;
+		return EnvironmentIcon;
 	}
 
 	return camundaAppIcons[currentApp];
