@@ -136,7 +136,7 @@ final class LogArchiveMergeReleaseProcessorTest {
     assertThat(meta.getMergedPosition()).isEqualTo(20);
     assertThat(meta.getNextSeq()).isEqualTo(6);
     assertThat(meta.getArchivedIndex()).isEqualTo(30);
-    assertThat(harness.listener.calls).last().isEqualTo("logMerged 20 20");
+    assertThat(harness.listener.calls).last().isEqualTo("logMerged 5 20 20");
   }
 
   @Test

@@ -431,8 +431,8 @@ final class LogArchiveHarness implements AutoCloseable {
     }
 
     @Override
-    public void onLogMerged(final long mergedIndex, final long mergedPosition) {
-      calls.add("logMerged " + mergedIndex + " " + mergedPosition);
+    public void onLogMerged(final long seq, final long mergedIndex, final long mergedPosition) {
+      calls.add("logMerged " + seq + " " + mergedIndex + " " + mergedPosition);
     }
 
     @Override

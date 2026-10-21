@@ -47,6 +47,15 @@ public interface LogArchiveListener {
   default void onLogMerged(final long mergedIndex, final long mergedPosition) {}
 
   /**
+   * A {@code LOG_MERGED} event was committed, with the seq of its commit entry; the cleaner needs
+   * it to know when the event plane has seen a merge (spec section 20.4). The processor calls this
+   * one; by default it forwards to {@link #onLogMerged(long, long)}.
+   */
+  default void onLogMerged(final long seq, final long mergedIndex, final long mergedPosition) {
+    onLogMerged(mergedIndex, mergedPosition);
+  }
+
+  /**
    * A {@code MERGE_LOG} command was rejected.
    *
    * @param mergedIndex the current M; the merger looks for the next merge from it
