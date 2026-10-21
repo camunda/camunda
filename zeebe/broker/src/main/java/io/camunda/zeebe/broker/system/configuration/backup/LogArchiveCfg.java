@@ -31,6 +31,10 @@ public class LogArchiveCfg implements ConfigurationEntry {
   private Duration snapshotUploadInterval = Duration.ofMinutes(30);
   private int chunkSize = 1000;
   private int rootEvery = 100;
+  private int mergeMaxObjects = 1000;
+  private DataSize mergeFrameBytes = DataSize.ofMegabytes(32);
+  private Duration cleanupInterval = Duration.ofMinutes(1);
+  private Duration cleanupGracePeriod = Duration.ofMinutes(5);
   private LogArchiveEventPlaneCfg eventPlane = new LogArchiveEventPlaneCfg();
   private @Nullable String testOnlyAdvertisedVersion;
 
@@ -104,6 +108,42 @@ public class LogArchiveCfg implements ConfigurationEntry {
     this.rootEvery = rootEvery;
   }
 
+  /** Merge at most this many objects at once, and merge as soon as this many are unmerged. */
+  public int getMergeMaxObjects() {
+    return mergeMaxObjects;
+  }
+
+  public void setMergeMaxObjects(final int mergeMaxObjects) {
+    this.mergeMaxObjects = mergeMaxObjects;
+  }
+
+  /** Entries per zstd frame of a merged object. */
+  public DataSize getMergeFrameBytes() {
+    return mergeFrameBytes;
+  }
+
+  public void setMergeFrameBytes(final DataSize mergeFrameBytes) {
+    this.mergeFrameBytes = mergeFrameBytes;
+  }
+
+  /** How often the cleaner lists the bucket for replaced and orphaned objects. */
+  public Duration getCleanupInterval() {
+    return cleanupInterval;
+  }
+
+  public void setCleanupInterval(final Duration cleanupInterval) {
+    this.cleanupInterval = cleanupInterval;
+  }
+
+  /** How long a replaced or orphaned object stays after it became garbage. */
+  public Duration getCleanupGracePeriod() {
+    return cleanupGracePeriod;
+  }
+
+  public void setCleanupGracePeriod(final Duration cleanupGracePeriod) {
+    this.cleanupGracePeriod = cleanupGracePeriod;
+  }
+
   public LogArchiveEventPlaneCfg getEventPlane() {
     return eventPlane;
   }
@@ -145,6 +185,14 @@ public class LogArchiveCfg implements ConfigurationEntry {
         + chunkSize
         + ", rootEvery="
         + rootEvery
+        + ", mergeMaxObjects="
+        + mergeMaxObjects
+        + ", mergeFrameBytes="
+        + mergeFrameBytes
+        + ", cleanupInterval="
+        + cleanupInterval
+        + ", cleanupGracePeriod="
+        + cleanupGracePeriod
         + ", eventPlane="
         + eventPlane
         + ", testOnlyAdvertisedVersion="
