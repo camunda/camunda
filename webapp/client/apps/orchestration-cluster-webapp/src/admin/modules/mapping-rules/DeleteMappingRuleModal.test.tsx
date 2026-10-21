@@ -70,7 +70,20 @@ describe('<DeleteMappingRuleModal />', () => {
 	it('should keep the dialog open when the delete fails', async ({worker}) => {
 		const mockOnClose = vi.fn();
 		const mappingRule = createMappingRule({mappingRuleId: 'my-rule'});
-		worker.use(mockDeleteMappingRuleEndpoint({successResponse: new HttpResponse(null, {status: 500})}));
+		worker.use(
+			mockDeleteMappingRuleEndpoint({
+				successResponse: HttpResponse.json(
+					{
+						type: 'about:blank',
+						title: 'INVALID_ARGUMENT',
+						status: 400,
+						detail: 'Invalid request to delete mapping rules',
+						instance: '/v2/test',
+					},
+					{status: 400},
+				),
+			}),
+		);
 
 		const screen = await render(<DeleteMappingRuleModal mappingRule={mappingRule} onClose={mockOnClose} />, {
 			wrapper: getWrapper(),
@@ -79,6 +92,7 @@ describe('<DeleteMappingRuleModal />', () => {
 		await userEvent.click(screen.getByRole('button', {name: 'Delete'}));
 
 		await expect.element(screen.getByText('Failed to delete mapping rule')).toBeVisible();
+		await expect.element(screen.getByText('Invalid request to delete mapping rules')).toBeVisible();
 		expect(mockOnClose).not.toHaveBeenCalled();
 	});
 

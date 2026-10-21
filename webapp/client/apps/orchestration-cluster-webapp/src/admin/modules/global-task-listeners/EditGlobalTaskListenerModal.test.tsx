@@ -112,7 +112,16 @@ describe('<EditGlobalTaskListenerModal />', () => {
 			mockUpdateGlobalTaskListenerEndpoint({
 				schema: z.object({type: z.literal('will-not-match')}),
 				successResponse: HttpResponse.json({}),
-				failureResponse: new HttpResponse(null, {status: 500}),
+				failureResponse: HttpResponse.json(
+					{
+						type: 'about:blank',
+						title: 'INVALID_ARGUMENT',
+						status: 400,
+						detail: 'Invalid request to update global task listeners',
+						instance: '/v2/test',
+					},
+					{status: 400},
+				),
 			}),
 		);
 
@@ -125,6 +134,7 @@ describe('<EditGlobalTaskListenerModal />', () => {
 		await userEvent.click(screen.getByRole('button', {name: 'Save'}));
 
 		await expect.element(screen.getByText('Failed to update global task listener')).toBeVisible();
+		await expect.element(screen.getByText('Invalid request to update global task listeners')).toBeVisible();
 		expect(mockOnClose).not.toHaveBeenCalled();
 	});
 

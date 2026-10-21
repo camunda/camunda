@@ -25,6 +25,7 @@ async function getErrorMessage(error: unknown): Promise<string | undefined> {
 
 	const {response} = requestError.data;
 	const problemDetails = await response
+		.clone()
 		.json()
 		.then((body: unknown) => problemDetailResponseSchema.safeParse(body))
 		.catch(() => undefined);

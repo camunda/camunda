@@ -181,7 +181,18 @@ describe('<EditClusterVariableModal />', () => {
 			mockGetGlobalClusterVariableEndpoint({
 				successResponse: HttpResponse.json(createClusterVariable({value: '1'})),
 			}),
-			mockUpdateGlobalClusterVariableEndpoint({successResponse: new HttpResponse(null, {status: 500})}),
+			mockUpdateGlobalClusterVariableEndpoint({
+				successResponse: HttpResponse.json(
+					{
+						type: 'about:blank',
+						title: 'INVALID_ARGUMENT',
+						status: 400,
+						detail: 'Invalid request to update cluster variables',
+						instance: '/v2/test',
+					},
+					{status: 400},
+				),
+			}),
 		);
 		const onClose = vi.fn();
 		const screen = await render(
@@ -197,6 +208,7 @@ describe('<EditClusterVariableModal />', () => {
 		await userEvent.click(screen.getByRole('button', {name: 'Save'}));
 
 		await expect.element(screen.getByText('Failed to update cluster variable')).toBeVisible();
+		await expect.element(screen.getByText('Invalid request to update cluster variables')).toBeVisible();
 		expect(onClose).not.toHaveBeenCalled();
 	});
 });

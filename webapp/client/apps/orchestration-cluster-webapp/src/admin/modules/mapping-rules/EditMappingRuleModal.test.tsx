@@ -85,7 +85,16 @@ describe('<EditMappingRuleModal />', () => {
 			mockUpdateMappingRuleEndpoint({
 				schema: z.object({name: z.literal('will-not-match')}),
 				successResponse: HttpResponse.json({}),
-				failureResponse: new HttpResponse(null, {status: 500}),
+				failureResponse: HttpResponse.json(
+					{
+						type: 'about:blank',
+						title: 'INVALID_ARGUMENT',
+						status: 400,
+						detail: 'Invalid request to change mapping rules',
+						instance: '/v2/test',
+					},
+					{status: 400},
+				),
 			}),
 		);
 
@@ -97,6 +106,7 @@ describe('<EditMappingRuleModal />', () => {
 		await userEvent.click(screen.getByRole('button', {name: 'Save'}));
 
 		await expect.element(screen.getByText('Failed to update mapping rule')).toBeVisible();
+		await expect.element(screen.getByText('Invalid request to change mapping rules')).toBeVisible();
 		expect(mockOnClose).not.toHaveBeenCalled();
 	});
 

@@ -98,7 +98,20 @@ describe('<DeleteGlobalTaskListenerModal />', () => {
 	it('should keep the dialog open when the delete fails', async ({worker}) => {
 		const mockOnClose = vi.fn();
 		const globalTaskListener = createGlobalTaskListener({id: 'my-listener'});
-		worker.use(mockDeleteGlobalTaskListenerEndpoint({successResponse: new HttpResponse(null, {status: 500})}));
+		worker.use(
+			mockDeleteGlobalTaskListenerEndpoint({
+				successResponse: HttpResponse.json(
+					{
+						type: 'about:blank',
+						title: 'INVALID_ARGUMENT',
+						status: 400,
+						detail: 'Invalid request to delete global task listeners',
+						instance: '/v2/test',
+					},
+					{status: 400},
+				),
+			}),
+		);
 
 		const screen = await render(
 			<DeleteGlobalTaskListenerModal globalTaskListener={globalTaskListener} onClose={mockOnClose} />,
@@ -108,6 +121,7 @@ describe('<DeleteGlobalTaskListenerModal />', () => {
 		await userEvent.click(screen.getByRole('button', {name: 'Delete'}));
 
 		await expect.element(screen.getByText('Failed to delete global task listener')).toBeVisible();
+		await expect.element(screen.getByText('Invalid request to delete global task listeners')).toBeVisible();
 		expect(mockOnClose).not.toHaveBeenCalled();
 	});
 
