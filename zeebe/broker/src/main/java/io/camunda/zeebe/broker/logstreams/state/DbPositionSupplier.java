@@ -56,6 +56,11 @@ public final class DbPositionSupplier implements StatePositionSupplier {
    *
    * <p>Once a handover to the log archive is recorded, the old backups no longer pin compaction:
    * only F does (spec section 18.2).
+   *
+   * <p>The merged position M caps it as well (spec section 20.3), so that every replica keeps the
+   * entries a merge still reads from its journal. M is -1 until the first merge with records, which
+   * keeps the previous snapshot's bound like F does. A timeline started before merging existed has
+   * no merged index ({@code mergedIndex < 0}); it is never merged, so M does not cap it.
    */
   @Override
   public long getHighestBackupPosition() {
@@ -66,6 +71,8 @@ public final class DbPositionSupplier implements StatePositionSupplier {
             ? checkpointState.getLatestBackupPosition()
             : Long.MAX_VALUE;
     final long archivedPosition = meta != null ? meta.getArchivedPosition() : Long.MAX_VALUE;
-    return Math.min(backupPosition, archivedPosition);
+    final long mergedPosition =
+        meta != null && meta.getMergedIndex() >= 0 ? meta.getMergedPosition() : Long.MAX_VALUE;
+    return Math.min(backupPosition, Math.min(archivedPosition, mergedPosition));
   }
 }
