@@ -42,6 +42,7 @@ public class ClusterRaftTest {
         "camunda.cluster.raft.request-timeout=5s",
         "camunda.cluster.raft.snapshot-request-timeout=5s",
         "camunda.cluster.raft.snapshot-chunk-size=2GB",
+        "camunda.cluster.raft.bootstrap-snapshot-request-timeout=45s",
         "camunda.cluster.raft.configuration-change-timeout=20s",
         "camunda.cluster.raft.max-quorum-response-timeout=10s",
         "camunda.cluster.raft.min-step-down-failure-count=5",
@@ -94,6 +95,7 @@ public class ClusterRaftTest {
           .returns(Duration.ofSeconds(5), ExperimentalRaftCfg::getRequestTimeout)
           .returns(Duration.ofSeconds(5), ExperimentalRaftCfg::getSnapshotRequestTimeout)
           .returns(DataSize.ofGigabytes(2), ExperimentalRaftCfg::getSnapshotChunkSize)
+          .returns(Duration.ofSeconds(45), ExperimentalRaftCfg::getBootstrapSnapshotRequestTimeout)
           .returns(Duration.ofSeconds(20), ExperimentalRaftCfg::getConfigurationChangeTimeout)
           .returns(Duration.ofSeconds(10), ExperimentalRaftCfg::getMaxQuorumResponseTimeout)
           .returns(5, ExperimentalRaftCfg::getMinStepDownFailureCount)
