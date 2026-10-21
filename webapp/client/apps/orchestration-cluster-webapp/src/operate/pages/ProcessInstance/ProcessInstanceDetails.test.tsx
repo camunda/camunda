@@ -329,7 +329,7 @@ describe('<ProcessInstanceDetails />', () => {
 			const screen = await renderDetails({search: selected('service-task')});
 
 			await expect.element(screen.getByRole('heading', {name: 'Agent Instance'})).toBeVisible();
-			await expect.element(screen.getByRole('button', {name: 'Status: Calling tools'})).toBeVisible();
+			await expect.element(screen.getByText('Status: Calling tools')).toBeVisible();
 			await expect.element(screen.getByRole('heading', {name: 'Element Instance'})).toBeVisible();
 			await expect.element(screen.getByText('Waiting for message: payment-received')).not.toBeInTheDocument();
 		});
@@ -346,7 +346,7 @@ describe('<ProcessInstanceDetails />', () => {
 			const screen = await renderDetails({search: `?elementInstanceKey=${ELEMENT_INSTANCE_KEY}`});
 
 			await expect.element(screen.getByRole('heading', {name: 'Agent Instance'})).toBeVisible();
-			await expect.element(screen.getByRole('button', {name: 'Status: Calling tools'})).toBeVisible();
+			await expect.element(screen.getByText('Status: Calling tools')).toBeVisible();
 		});
 
 		it('should filter on the element id only for a multi-instance body', async ({worker}) => {

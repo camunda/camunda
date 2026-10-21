@@ -340,7 +340,7 @@ const ProcessInstanceDetails: React.FC = () => {
 					agentInstances={agentInstances?.items ?? []}
 					totalAgentsCount={agentInstances?.page.totalItems ?? 0}
 					hasMoreTotalItems={agentInstances?.page.hasMoreTotalItems ?? false}
-					isError={isAgentInstancesError}
+					isError={isAgentInstancesError && agentInstances === undefined}
 				/>
 			)}
 			{!showAgentInstance && <ProcessInstanceWaitingStatus waitStates={waitStates} />}

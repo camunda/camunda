@@ -53,9 +53,8 @@ describe('<AgentDetails />', () => {
 		const screen = await renderAgentDetails({agentInstances: [createAgentInstance({status})]});
 
 		await expect.element(screen.getByRole('heading', {name: 'Agent Instance'})).toBeVisible();
-		await expect
-			.element(screen.getByRole('button', {name: `Status: ${label}`}))
-			.toHaveAttribute('aria-expanded', 'true');
+		await expect.element(screen.getByText(`Status: ${label}`)).toBeVisible();
+		await expect.element(screen.getByRole('button', {name: `Status: ${label}`})).not.toBeInTheDocument();
 	});
 
 	it('should render an error hint when the agent instances failed to load', async () => {
@@ -63,7 +62,7 @@ describe('<AgentDetails />', () => {
 
 		await expect.element(screen.getByRole('heading', {name: 'Agent Instance'})).toBeVisible();
 		await expect.element(screen.getByText('Unable to load agent information.')).toBeVisible();
-		await expect.element(screen.getByRole('button', {name: /^Status:/})).not.toBeInTheDocument();
+		await expect.element(screen.getByText(/^Status:/)).not.toBeInTheDocument();
 	});
 
 	it('should render the agent instance key without a selector when only one agent exists', async () => {
@@ -81,14 +80,14 @@ describe('<AgentDetails />', () => {
 			],
 		});
 
-		await expect.element(screen.getByRole('button', {name: 'Status: Thinking'})).toBeVisible();
+		await expect.element(screen.getByText('Status: Thinking')).toBeVisible();
 
 		await userEvent.click(screen.getByRole('combobox', {name: 'Current AI agent'}));
 		await expect.element(screen.getByRole('option', {name: '1 - Thinking'})).toBeVisible();
 		await userEvent.click(screen.getByRole('option', {name: '2 - Completed'}));
 
-		await expect.element(screen.getByRole('button', {name: 'Status: Completed'})).toBeVisible();
-		await expect.element(screen.getByRole('button', {name: 'Status: Thinking'})).not.toBeInTheDocument();
+		await expect.element(screen.getByText('Status: Completed')).toBeVisible();
+		await expect.element(screen.getByText('Status: Thinking')).not.toBeInTheDocument();
 	});
 
 	it('should fall back to the first agent when the selected agent is no longer listed', async () => {
@@ -100,7 +99,7 @@ describe('<AgentDetails />', () => {
 		});
 		await userEvent.click(screen.getByRole('combobox', {name: 'Current AI agent'}));
 		await userEvent.click(screen.getByRole('option', {name: '2 - Completed'}));
-		await expect.element(screen.getByRole('button', {name: 'Status: Completed'})).toBeVisible();
+		await expect.element(screen.getByText('Status: Completed')).toBeVisible();
 
 		await screen.rerender(
 			<AgentDetails
@@ -114,7 +113,7 @@ describe('<AgentDetails />', () => {
 			/>,
 		);
 
-		await expect.element(screen.getByRole('button', {name: 'Status: Idle'})).toBeVisible();
+		await expect.element(screen.getByText('Status: Idle')).toBeVisible();
 		await expect.element(screen.getByText('Unable to load agent information.')).not.toBeInTheDocument();
 	});
 

@@ -20,6 +20,7 @@ import {
 	ModelInfo,
 	ModelInfoLabel,
 	SecondaryText,
+	StatusRow,
 } from './agentDetails.styled';
 import {AgentSectionTitle} from './AgentSectionTitle';
 import {AgentSelector} from './AgentSelector';
@@ -111,18 +112,14 @@ const AgentDetails: React.FC<AgentDetailsProps> = ({agentInstances, totalAgentsC
 					<SecondaryText>{agentInstance.agentInstanceKey}</SecondaryText>
 				)}
 			</AgentHeader>
+			<StatusRow data-testid="agent-status-section">
+				<AgentSectionTitle icon={<StatusIcon status={agentInstance.status} />}>
+					{t('operate.processInstance.details.agent.statusTitle', {
+						status: getStatusLabel(t, agentInstance.status),
+					})}
+				</AgentSectionTitle>
+			</StatusRow>
 			<Accordion align="start">
-				<AccordionItem
-					data-testid="agent-status-section"
-					open
-					title={
-						<AgentSectionTitle icon={<StatusIcon status={agentInstance.status} />}>
-							{t('operate.processInstance.details.agent.statusTitle', {
-								status: getStatusLabel(t, agentInstance.status),
-							})}
-						</AgentSectionTitle>
-					}
-				/>
 				<AccordionItem
 					data-testid="agent-usage-section"
 					aria-label={t('operate.processInstance.details.agent.usage')}

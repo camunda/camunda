@@ -35,6 +35,17 @@ const AgentHeader = styled.div`
 	gap: var(--cds-spacing-03);
 `;
 
+const StatusRow = styled.div`
+	display: flex;
+	align-items: center;
+	min-block-size: 2.5rem;
+	padding-inline-start: calc(2 * var(--cds-spacing-05) + 1rem);
+	font-size: var(--cds-body-01-font-size);
+	line-height: var(--cds-body-01-line-height);
+	letter-spacing: var(--cds-body-01-letter-spacing);
+	border-block-end: 1px solid var(--cds-border-subtle);
+`;
+
 const Dropdown = styled(BaseDropdown)`
 	& [role='listbox'] {
 		max-inline-size: unset;
@@ -209,6 +220,7 @@ export {
 	ModelInfo,
 	ModelInfoLabel,
 	SecondaryText,
+	StatusRow,
 	TitleWithIcon,
 	TokenBreakdown,
 	TokenBreakdownColumn,
