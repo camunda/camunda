@@ -18,6 +18,7 @@ package io.camunda.process.test.api;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.client.api.worker.JobWorker;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import java.time.Duration;
@@ -34,6 +35,7 @@ public class CamundaProcessTestClusterSecretsIT {
       new CamundaProcessTestExtension().withClusterSecret("MY_API_KEY", "test-key");
 
   private CamundaClient client;
+  private CamundaProcessTestContext processTestContext;
 
   @Test
   void shouldResolveClusterSecretReference() {
@@ -80,5 +82,47 @@ public class CamundaProcessTestClusterSecretsIT {
           .atMost(Duration.ofSeconds(30))
           .untilAsserted(() -> assertThat(variables.get()).containsEntry("apiKey", "test-key"));
     }
+  }
+
+  @Test
+  void shouldResolveClusterSecretForMockJobWorker() {
+    // given
+    final AtomicReference<Map<String, Object>> variables = new AtomicReference<>();
+    processTestContext
+        .mockJobWorker("mocked-cluster-secrets-job")
+        .withHandler(
+            (jobClient, job) -> {
+              variables.set(job.getVariablesAsMap());
+              jobClient.newCompleteCommand(job).send().join();
+            });
+
+    client
+        .newDeployResourceCommand()
+        .addProcessModel(
+            Bpmn.createExecutableProcess("mocked-cluster-secrets-process")
+                .startEvent()
+                .serviceTask(
+                    "task",
+                    task ->
+                        task.zeebeJobType("mocked-cluster-secrets-job")
+                            .zeebeInputExpression("=camunda.secrets.MY_API_KEY", "apiKey"))
+                .endEvent()
+                .done(),
+            "mocked-cluster-secrets-process.bpmn")
+        .send()
+        .join();
+
+    // when
+    final ProcessInstanceEvent processInstance =
+        client
+            .newCreateInstanceCommand()
+            .bpmnProcessId("mocked-cluster-secrets-process")
+            .latestVersion()
+            .send()
+            .join();
+
+    // then
+    CamundaAssert.assertThatProcessInstance(processInstance).isCompleted();
+    assertThat(variables.get()).containsEntry("apiKey", "test-key");
   }
 }
