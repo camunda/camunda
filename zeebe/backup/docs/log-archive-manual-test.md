@@ -337,9 +337,10 @@ cuts the parent at the takeover position; 380 jobs after the restore.
 
 ### J. Merge, release and event plane compaction (step 2)
 
-Scenario `j-merge` is `i-eventplane` with 1 MB journal segments, `mergeMaxObjects` 50, cleaner
-`PT10S` / grace `PT30S`, `retentionWindow` `PT3M`, `releaseInterval` `PT10S`, backups every 30 s. The event
-plane is started by `event-plane.sh` with rollup period `PT1M`, delay `PT10S`, interval `PT10S` and
+Scenario `j-merge` is `i-eventplane` with 8 MB journal segments (`J_SEGMENT_SIZE`; 128 MB in
+production) and merged objects in frames of 2 MB of entries (`J_FRAME_BYTES`; 32 MB in production), so
+every merged object has about four frames, cleaner `PT10S` / grace `PT30S`, `retentionWindow` `PT3M`, `releaseInterval` `PT10S`, backups every 30 s. The event
+plane is started by `event-plane.sh` with rollup period `PT2M`, delay `PT10S`, interval `PT10S` and
 retention `PT10M`. Export `SCENARIO=j-merge` in every shell that calls `event-plane.sh` (it defaults to
 `i-eventplane`). `bucket.sh merge j-merge` prints per partition the number of `LOG_MERGED` entries, the
 merged index, whether the merged ranges are contiguous, the newest `LOG_RELEASED` entry, the number of
@@ -349,7 +350,8 @@ level-1 objects and the replaced small objects still in `data/`.
 cd zeebe/backup/docs/log-archive-manual && source ./env.sh && export SCENARIO=j-merge
 ./cluster.sh stop; ./cluster.sh wipe; rm -rf "$WORK/store/j-merge"
 ./event-plane.sh start && ./cluster.sh start j-merge && ./api.sh deploy
-# load for 8 to 10 minutes: a loop of  ./api.sh load 20 rN; ./api.sh complete 20; sleep 1
+# load for 8 to 10 minutes: a loop of  ./api.sh load 20 rN 8000; ./api.sh complete 20; sleep 1
+# (8 KB payloads fill an 8 MB journal segment in about a minute)
 ```
 
 1. **J1, merges.** After 2 to 3 minutes. **Pass:** `bucket.sh merge j-merge` shows `LOG_MERGED` entries

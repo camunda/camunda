@@ -13,11 +13,11 @@ newest_seq() { ls "$1" 2>/dev/null | tail -1 | sed 's/\.json$//' | sed 's/^0*//'
 case "$1" in
   start)
     mkdir -p "$(store_of "$S")"
-    # j-merge: roll up every 10 seconds and keep the released objects for 10 minutes
+    # j-merge: roll up 2-minute periods, checked every 10 seconds, and keep the released objects for 10 minutes
     extra=()
     if [ "$S" = j-merge ]; then
       extra=(--camunda.event-plane.log-archive.rollup.enabled=true
-             --camunda.event-plane.log-archive.rollup.period=PT1M
+             --camunda.event-plane.log-archive.rollup.period=PT2M
              --camunda.event-plane.log-archive.rollup.delay=PT10S
              --camunda.event-plane.log-archive.rollup.interval=PT10S
              --camunda.event-plane.log-archive.retention=PT10M)

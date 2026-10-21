@@ -64,7 +64,10 @@ broker_env() {
       # manual scenario J: merge often, release and roll up quickly
       # the backup schedule is the continuous block's PT1M, shortened to 30 seconds
       env+=("CAMUNDA_DATA_PRIMARYSTORAGE_BACKUP_SCHEDULE=PT30S"
-            "ZEEBE_BROKER_DATA_BACKUP_LOGARCHIVE_MERGEMAXOBJECTS=50"
+            # journal segments of J_SEGMENT_SIZE (default 8MB, 128MB in production), merged objects in
+            # frames of J_FRAME_BYTES (32MB in production), so a merged object has several frames
+            "CAMUNDA_DATA_PRIMARYSTORAGE_LOGSTREAM_LOGSEGMENTSIZE=${J_SEGMENT_SIZE:-8MB}"
+            "ZEEBE_BROKER_DATA_BACKUP_LOGARCHIVE_MERGEFRAMEBYTES=${J_FRAME_BYTES:-2MB}"
             "ZEEBE_BROKER_DATA_BACKUP_LOGARCHIVE_CLEANUPINTERVAL=PT10S"
             "ZEEBE_BROKER_DATA_BACKUP_LOGARCHIVE_CLEANUPGRACEPERIOD=PT30S"
             "ZEEBE_BROKER_DATA_BACKUP_LOGARCHIVE_RETENTIONWINDOW=PT3M"
@@ -78,8 +81,8 @@ broker_env() {
             "CAMUNDA_DATA_SECONDARYSTORAGE_RDBMS_PASSWORD=") ;;
   esac
   case "$scenario" in
-    h-compacted|j-merge)
-      # small segments, so the log is compacted before the archive starts (j-merge: merges happen often)
+    h-compacted)
+      # small segments, so the log is compacted before the archive starts
       # (the segment size must exceed the max message size, 4 MB by default)
       env+=("CAMUNDA_DATA_PRIMARYSTORAGE_LOGSTREAM_LOGSEGMENTSIZE=1MB"
             "CAMUNDA_CLUSTER_NETWORK_MAXMESSAGESIZE=512KB") ;;
