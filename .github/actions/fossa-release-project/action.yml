@@ -21,6 +21,10 @@ inputs:
   fossa-api-key-vault-path:
     description: 'Vault path of the secret holding the FOSSA_API_KEY for this project'
     required: true
+  fossa-api-key-vault-key:
+    description: 'Key of the FOSSA API key within fossa-api-key-vault-path'
+    required: false
+    default: 'FOSSA_API_KEY'
   release-number:
     description: 'Release number to create in FOSSA'
     required: true
@@ -53,7 +57,7 @@ runs:
         secretId: ${{ inputs.secret_vault_secretId }}
         exportEnv: false
         secrets: |
-          ${{ inputs.fossa-api-key-vault-path }} FOSSA_API_KEY;
+          ${{ inputs.fossa-api-key-vault-path }} ${{ inputs.fossa-api-key-vault-key }} | FOSSA_API_KEY;
     - name: Get FOSSA context
       id: fossa-context
       uses: camunda/infra-global-github-actions/fossa/info@47164bc3d1bce866f4f189f19fac7895ae51956d # fossa-1.0.22

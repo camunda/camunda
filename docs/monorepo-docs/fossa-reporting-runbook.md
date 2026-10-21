@@ -31,9 +31,11 @@ its own job, so a failure in one does not hide the result of another.
    to public. The CI account `ci-camunda-camunda` lacks the rights, and the FOSSA UI search only
    shows groups visible to the searching account, so ask them to check for existing groups first.
    Note both group IDs from the group URL (`https://app.fossa.com/projects/group/<id>`).
+   Ask them to store the API key under `products/camunda/ci/camunda` as
+   `FOSSA_API_KEY_<COMPONENT>`, next to the single-app key.
    See [infra FOSSA docs](https://github.com/camunda/infra-core/blob/stage/docs/scanning-tools/fossa.md).
 3. **Add a job.** In `camunda-platform-release.yml`, copy `fossa-release-optimize` and change the
-   `project-id`, the group IDs and the `if` gate. Add the job to `needs` and to the `if` of
+   `project-id`, the group IDs, `fossa-api-key-vault-key` and the `if` gate. Add the job to `needs` and to the `if` of
    `notify-on-success` and `notify-if-failed`.
 4. **Dry run.** Run `zeebe-release-stable-dry-run.yml` from the branch. The new job must print the
    FOSSA calls for its project locator, and the other `fossa-release*` jobs must be unchanged.
