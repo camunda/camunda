@@ -329,6 +329,7 @@ public final class LogArchiveRecordsProcessor
     final long chunkNo =
         eventIntent == LogArchiveIntent.INDEX_SEALED ? event.getChunk().getChunkNo() : -1;
     final long publishedSeq = event.getPublishedSeq();
+    final long seq = event.getSeq();
     resultBuilder.appendPostCommitTask(
         () -> {
           if (request != null) {
@@ -350,7 +351,8 @@ public final class LogArchiveRecordsProcessor
             case INDEX_SEALED -> currentListener.onIndexSealed(chunkNo);
             case PUBLISHED -> currentListener.onPublished(publishedSeq);
             case LOG_MERGED ->
-                currentListener.onLogMerged(newMeta.getMergedIndex(), newMeta.getMergedPosition());
+                currentListener.onLogMerged(
+                    seq, newMeta.getMergedIndex(), newMeta.getMergedPosition());
             case LOG_RELEASED -> currentListener.onLogReleased(newMeta.getReleasedIndex());
             default -> {}
           }

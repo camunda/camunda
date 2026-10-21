@@ -20,6 +20,9 @@ import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.partition.RaftPartition;
 import io.atomix.raft.partition.impl.RaftPartitionServer;
 import io.atomix.raft.storage.log.RaftLogReader;
+import io.camunda.zeebe.backup.logarchive.leader.LogArchiveAnnouncer;
+import io.camunda.zeebe.backup.logarchive.leader.LogArchiveCleaner;
+import io.camunda.zeebe.backup.logarchive.leader.LogArchiveMerger;
 import io.camunda.zeebe.backup.logarchive.leader.LogArchiver;
 import io.camunda.zeebe.backup.logarchive.processing.LogArchiveListener;
 import io.camunda.zeebe.backup.logarchive.state.DbLogArchiveState;
@@ -173,13 +176,32 @@ final class LogArchiveTransitionStepTest {
 
   @Test
   void shouldStartLeaderComponentsOnLeader() {
+    // given
+    context.setZeebeDb(createDb());
+
+    // when
+    step.transitionTo(context, 3, Role.LEADER).join();
+
+    // then - archiver, uploader, publisher, merger and cleaner
+    assertThat(context.getLogArchiveProcessor()).isNotNull();
+    verify(actorSchedulingService, times(5)).submitActor(any(), any());
+    verify(actorSchedulingService).submitActor(any(LogArchiveMerger.class), any());
+    verify(actorSchedulingService).submitActor(any(LogArchiveCleaner.class), any());
+    verify(logStorage).addCommitListener(any(LogArchiver.class));
+  }
+
+  @Test
+  void shouldStartTheAnnouncerWithTheEventPlane() {
+    // given
+    context.setZeebeDb(createDb());
+    brokerCfg.getData().getBackup().getLogArchive().getEventPlane().setUrl("http://localhost:1");
+
     // when
     step.transitionTo(context, 3, Role.LEADER).join();
 
     // then
-    assertThat(context.getLogArchiveProcessor()).isNotNull();
-    verify(actorSchedulingService, times(3)).submitActor(any(), any());
-    verify(logStorage).addCommitListener(any(LogArchiver.class));
+    verify(actorSchedulingService, times(6)).submitActor(any(), any());
+    verify(actorSchedulingService).submitActor(any(LogArchiveAnnouncer.class), any());
   }
 
   @Test

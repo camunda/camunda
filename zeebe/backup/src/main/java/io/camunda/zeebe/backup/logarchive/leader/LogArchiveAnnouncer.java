@@ -61,6 +61,8 @@ public final class LogArchiveAnnouncer extends Actor {
   // incremented whenever state is discarded, so late callbacks are ignored
   private long generation;
   private Duration backoff = INITIAL_BACKOFF;
+  // the event plane's nextSeq as of its last answer, read by the cleaner on its own thread
+  private volatile @Nullable Confirmed confirmed;
 
   public LogArchiveAnnouncer(
       final int partitionId,
@@ -130,6 +132,16 @@ public final class LogArchiveAnnouncer extends Actor {
         });
   }
 
+  /**
+   * Returns the seq the event plane expects next for the timeline, as of its last answer: it has
+   * applied every entry below it. -1 if unknown, e.g. before the first answer of this leader or
+   * after a switch to another timeline. Safe to call from any thread.
+   */
+  public long confirmedNextSeq(final String timeline) {
+    final var current = confirmed;
+    return current != null && current.timelineId().equals(timeline) ? current.nextSeq() : -1;
+  }
+
   @Override
   protected void onActorClosing() {
     closed = true;
@@ -144,6 +156,7 @@ public final class LogArchiveAnnouncer extends Actor {
     divergedTimelineId = null;
     highestPublishedSeq = 0;
     nextSeq = -1;
+    confirmed = null;
     inFlight = false;
     retryPending = false;
     backoff = INITIAL_BACKOFF;
@@ -273,6 +286,10 @@ public final class LogArchiveAnnouncer extends Actor {
     } else if ((status == 200 || status == 409) && answer.nextSeq() > 0) {
       backoff = INITIAL_BACKOFF;
       nextSeq = answer.nextSeq();
+      final var timeline = timelineId;
+      if (timeline != null) {
+        confirmed = new Confirmed(timeline, nextSeq);
+      }
       if (nextSeq > highestPublishedSeq + 1) {
         LOG.warn(
             "Partition {}: the event plane expects seq {} of timeline {}, but the highest published"
@@ -316,4 +333,6 @@ public final class LogArchiveAnnouncer extends Actor {
           }
         });
   }
+
+  private record Confirmed(String timelineId, long nextSeq) {}
 }

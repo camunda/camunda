@@ -171,6 +171,11 @@ public final class FilesystemLogArchiveStore implements LogArchiveStore {
   }
 
   @Override
+  public CompletableFuture<Void> delete(final String key) {
+    return run(() -> Files.deleteIfExists(resolve(key)));
+  }
+
+  @Override
   public CompletableFuture<Void> closeAsync() {
     executor.shutdown();
     return CompletableFuture.completedFuture(null);

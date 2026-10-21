@@ -194,6 +194,71 @@ final class DbPositionSupplierTest {
     assertThat(position).isEqualTo(-1);
   }
 
+  @Test
+  void shouldUseMergedPositionBelowTheArchivedPosition() {
+    // given
+    setMergedPosition(42, 10, 7);
+    final var supplier = new DbPositionSupplier(zeebeDb, false, true);
+
+    // when
+    final long position = supplier.getHighestBackupPosition();
+
+    // then
+    assertThat(position).isEqualTo(7);
+  }
+
+  @Test
+  void shouldHoldBackWhileNoMergeWithRecordsHappened() {
+    // given - the timeline knows merging, but nothing with records is merged yet
+    setMergedPosition(42, 0, -1);
+    final var supplier = new DbPositionSupplier(zeebeDb, false, true);
+
+    // when
+    final long position = supplier.getHighestBackupPosition();
+
+    // then - -1 keeps the previous snapshot's index
+    assertThat(position).isEqualTo(-1);
+  }
+
+  @Test
+  void shouldFollowMergedPositionOnceMergesHappen() {
+    // given
+    setMergedPosition(42, 0, -1);
+    final var supplier = new DbPositionSupplier(zeebeDb, false, true);
+    assertThat(supplier.getHighestBackupPosition()).isEqualTo(-1);
+
+    // when
+    setMergedPosition(42, 10, 30);
+
+    // then
+    assertThat(supplier.getHighestBackupPosition()).isEqualTo(30);
+  }
+
+  @Test
+  void shouldIgnoreMergedPositionOfATimelineStartedBeforeMerging() {
+    // given - state written before merging existed: no merged index
+    setMergedPosition(42, -1, -1);
+    final var supplier = new DbPositionSupplier(zeebeDb, false, true);
+
+    // when
+    final long position = supplier.getHighestBackupPosition();
+
+    // then - F alone caps compaction, as before
+    assertThat(position).isEqualTo(42);
+  }
+
+  private void setMergedPosition(
+      final long archivedPosition, final long mergedIndex, final long mergedPosition) {
+    logArchiveState.setMeta(
+        new LogArchiveMeta()
+            .setTimelineId("tl-0")
+            .setStartIndex(1)
+            .setArchivedIndex(20)
+            .setArchivedPosition(archivedPosition)
+            .setMergedIndex(mergedIndex)
+            .setMergedPosition(mergedPosition));
+  }
+
   private void setBackupPosition(final long position) {
     checkpointState.setLatestBackupInfo(1, position, 1, CheckpointType.MANUAL_BACKUP, 1);
   }

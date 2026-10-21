@@ -11,6 +11,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.github.luben.zstd.Zstd;
+import io.camunda.zeebe.journal.record.SBESerializer;
+import java.io.ByteArrayOutputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
@@ -18,6 +20,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.Test;
 
 final class SegmentV1CodecTest {
@@ -231,6 +234,137 @@ final class SegmentV1CodecTest {
     // then
     assertThat(first.bytes()).isEqualTo(second.bytes());
     assertThat(first.sha256()).isEqualTo(second.sha256());
+  }
+
+  @Test
+  void shouldKeepTheBytesOfAnObjectWrittenBeforeMultipleFrames() {
+    // given - the bytes the single-frame encoder wrote before merged objects had several frames;
+    // a change here breaks I4 between leaders of different versions
+    final var frames = archiverFrames(1, 50);
+
+    // when
+    final var encoded = SegmentV1Encoder.encode(IDENTITY, "tl-0", frames, 77);
+
+    // then
+    assertThat(encoded.sha256())
+        .isEqualTo("2796f6912ae6220c73bac4541f8021a2f5090706a945ceeed2171a8375aab209");
+  }
+
+  @Test
+  void shouldRoundTripAnObjectOfSeveralFrames() {
+    // given - 40 entries of about 60 bytes, a new frame every 500 bytes
+    final var frames = archiverFrames(10, 40);
+    final var out = new ByteArrayOutputStream();
+    final var writer = SegmentV1Encoder.writer(out, IDENTITY, "tl-0", 500);
+
+    // when
+    frames.forEach(writer::append);
+    final var written = writer.finish(5_000);
+    final var decoded = SegmentV1Decoder.decode(out.toByteArray());
+
+    // then
+    assertThat(written.frameCount()).isGreaterThan(1);
+    assertThat(decoded.frameOffsets()).hasSize(written.frameCount()).first().isEqualTo(0L);
+    assertThat(decoded.frameOffsets()).isSorted().doesNotHaveDuplicates();
+    assertThat(decoded.frames())
+        .extracting(LogArchiveFrame::index, LogArchiveFrame::checksum)
+        .containsExactlyElementsOf(
+            frames.stream()
+                .map(f -> org.assertj.core.groups.Tuple.tuple(f.index(), f.checksum()))
+                .toList());
+    assertThat(decoded.frames())
+        .extracting(LogArchiveFrame::serializedRecord)
+        .containsExactlyElementsOf(frames.stream().map(LogArchiveFrame::serializedRecord).toList());
+    assertThat(decoded.footer()).isEqualTo(written.footer());
+    assertThat(decoded.footer().firstPosition()).isEqualTo(frames.get(0).lowestPosition());
+    assertThat(decoded.footer().lastPosition()).isEqualTo(frames.getLast().highestPosition());
+    assertThat(written.sizeBytes()).isEqualTo(out.size());
+    assertThat(written.sha256()).isEqualTo(SegmentV1Encoder.sha256Hex(out.toByteArray()));
+  }
+
+  @Test
+  void shouldListTheFirstPositionAndOffsetOfEveryFrame() {
+    // given
+    final var frames = archiverFrames(1, 30);
+    final var out = new ByteArrayOutputStream();
+    final var writer = SegmentV1Encoder.writer(out, IDENTITY, "tl-0", 300);
+
+    // when
+    frames.forEach(writer::append);
+    writer.finish(1);
+    final byte[] bytes = out.toByteArray();
+    final var decoded = SegmentV1Decoder.decode(bytes);
+
+    // then - every frame decompresses on its own and starts with the listed position
+    final var offsets = decoded.frameOffsets();
+    int entry = 0;
+    for (int i = 0; i < offsets.size(); i++) {
+      final long start = offsets.get(i);
+      final long end = i + 1 < offsets.size() ? offsets.get(i + 1) : decoded.footer().bodyLength();
+      assertThat(Zstd.getFrameContentSize(bytes, (int) start, (int) (end - start))).isPositive();
+      final var firstWithPosition =
+          frames.subList(entry, frames.size()).stream()
+              .limit(entriesInFrame(bytes, start, end))
+              .filter(f -> f.lowestPosition() >= 0)
+              .findFirst();
+      assertThat(decoded.frameFirstPositions().get(i))
+          .isEqualTo(firstWithPosition.map(LogArchiveFrame::lowestPosition).orElse(-1L));
+      entry += entriesInFrame(bytes, start, end);
+    }
+    assertThat(entry).isEqualTo(30);
+  }
+
+  @Test
+  void shouldWriteOneFrameWhileTheFrameLimitIsNotReached() {
+    // given
+    final var frames = archiverFrames(1, 50);
+    final var out = new ByteArrayOutputStream();
+    final var writer = SegmentV1Encoder.writer(out, IDENTITY, "tl-0", 1024 * 1024);
+
+    // when
+    frames.forEach(writer::append);
+    final var written = writer.finish(77);
+
+    // then - the same bytes as an object cut by the archiver
+    final var cut = SegmentV1Encoder.encode(IDENTITY, "tl-0", frames, 77);
+    assertThat(written.frameCount()).isOne();
+    assertThat(out.toByteArray()).isEqualTo(cut.bytes());
+    assertThat(written.sha256()).isEqualTo(cut.sha256());
+  }
+
+  @Test
+  void shouldRejectAGapAcrossFrames() {
+    // given
+    final var frames = archiverFrames(1, 4);
+    final var writer = SegmentV1Encoder.writer(new ByteArrayOutputStream(), IDENTITY, "tl-0", 1);
+    writer.append(frames.get(0));
+
+    // when / then
+    assertThatThrownBy(() -> writer.append(frames.get(2)))
+        .isInstanceOf(IllegalArgumentException.class);
+    assertThatThrownBy(
+            () ->
+                SegmentV1Encoder.writer(new ByteArrayOutputStream(), IDENTITY, "tl-0", 1)
+                    .finish(-1))
+        .isInstanceOf(IllegalArgumentException.class);
+  }
+
+  private static int entriesInFrame(final byte[] bytes, final long start, final long end) {
+    final byte[] entries =
+        Zstd.decompress(
+            Arrays.copyOfRange(bytes, (int) start, (int) end),
+            (int) Zstd.getFrameContentSize(bytes, (int) start, (int) (end - start)));
+    final var serializer = new SBESerializer();
+    final var buffer = new UnsafeBuffer(entries);
+    int offset = 0;
+    int count = 0;
+    while (offset < entries.length) {
+      offset += 1;
+      final var metadata = serializer.readMetadata(buffer, offset);
+      offset += serializer.getMetadataLength() + metadata.length();
+      count++;
+    }
+    return count;
   }
 
   @Test

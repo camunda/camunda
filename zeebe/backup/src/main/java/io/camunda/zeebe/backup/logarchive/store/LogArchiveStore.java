@@ -56,5 +56,14 @@ public interface LogArchiveStore {
    */
   CompletableFuture<List<String>> listChildPrefixes(String prefix);
 
+  /**
+   * Deletes the object under {@code key}; succeeds if it does not exist. Only the log archive
+   * cleaner deletes, and only objects that are replaced or orphaned (spec section 20.4).
+   */
+  default CompletableFuture<Void> delete(final String key) {
+    return CompletableFuture.failedFuture(
+        new UnsupportedOperationException("This store does not delete: " + key));
+  }
+
   CompletableFuture<Void> closeAsync();
 }

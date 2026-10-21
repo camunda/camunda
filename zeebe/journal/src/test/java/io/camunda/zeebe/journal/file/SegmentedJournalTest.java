@@ -97,6 +97,36 @@ class SegmentedJournalTest {
   }
 
   @Test
+  void shouldReturnTheFirstIndexOfEachSegment() {
+    // given - two entries per segment
+    journal = openJournal(2);
+    for (int i = 1; i <= 5; i++) {
+      journal.append(i, journalFactory.entry());
+    }
+
+    // when
+    final var firstIndexes = journal.getSegmentFirstIndexes();
+
+    // then
+    assertThat(firstIndexes).containsExactly(1L, 3L, 5L);
+  }
+
+  @Test
+  void shouldNotReturnTheFirstIndexOfDeletedSegments() {
+    // given
+    journal = openJournal(2);
+    for (int i = 1; i <= 5; i++) {
+      journal.append(i, journalFactory.entry());
+    }
+
+    // when
+    journal.deleteUntil(4);
+
+    // then
+    assertThat(journal.getSegmentFirstIndexes()).containsExactly(3L, 5L);
+  }
+
+  @Test
   void shouldFindFirstAsqnSkippingAsqnIgnoreEntries() {
     // given
     final int entriesPerSegment = 2;

@@ -30,6 +30,7 @@ import io.camunda.zeebe.journal.JournalRecord;
 import io.camunda.zeebe.journal.SegmentInfo;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.io.Closeable;
+import java.util.List;
 import org.agrona.CloseHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -245,5 +246,13 @@ public final class RaftLog implements Closeable {
 
   public SegmentInfo getTailSegments(final long index) {
     return journal.getTailSegments(index);
+  }
+
+  /**
+   * Returns the first index of each journal segment, see {@link Journal#getSegmentFirstIndexes()}.
+   * Safe to call from any thread.
+   */
+  public List<Long> getSegmentFirstIndexes() {
+    return journal.getSegmentFirstIndexes();
   }
 }

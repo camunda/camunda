@@ -19,6 +19,7 @@ import io.camunda.zeebe.journal.CheckedJournalException.FlushException;
 import io.camunda.zeebe.journal.JournalException.InvalidChecksum;
 import io.camunda.zeebe.journal.JournalException.InvalidIndex;
 import io.camunda.zeebe.util.buffer.BufferWriter;
+import java.util.List;
 
 public interface Journal extends AutoCloseable {
 
@@ -159,4 +160,13 @@ public interface Journal extends AutoCloseable {
    * @return The tail segments including paths and the first ASQN in the first segment.
    */
   SegmentInfo getTailSegments(long index);
+
+  /**
+   * Returns the index of the first record of each segment, in ascending order; the last one is the
+   * segment that is currently written to. Every segment before it is complete: its last index is
+   * the next segment's first index minus one. Safe to call from any thread.
+   *
+   * @return the first index of each segment
+   */
+  List<Long> getSegmentFirstIndexes();
 }

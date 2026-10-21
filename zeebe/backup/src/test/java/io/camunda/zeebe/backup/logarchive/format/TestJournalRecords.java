@@ -7,8 +7,11 @@
  */
 package io.camunda.zeebe.backup.logarchive.format;
 
+import io.atomix.raft.storage.log.entry.SerializedApplicationEntry;
+import io.atomix.raft.storage.serializer.RaftEntrySBESerializer;
 import io.camunda.zeebe.journal.record.SBESerializer;
 import io.camunda.zeebe.util.buffer.DirectBufferWriter;
+import java.util.Arrays;
 import org.agrona.concurrent.UnsafeBuffer;
 
 /** Builds serialized journal {@code RecordData} messages, as the journal stores them. */
@@ -25,13 +28,44 @@ public final class TestJournalRecords {
   public static byte[] recordData(
       final long index, final long asqn, final int totalLength, final byte fill) {
     final byte[] payload = new byte[totalLength - RECORD_DATA_OVERHEAD];
-    java.util.Arrays.fill(payload, fill);
+    Arrays.fill(payload, fill);
     final byte[] serialized = new byte[totalLength];
     new SBESerializer()
         .writeData(
             index,
             asqn,
             new DirectBufferWriter(new UnsafeBuffer(payload)),
+            new UnsafeBuffer(serialized),
+            0)
+        .get();
+    return serialized;
+  }
+
+  /**
+   * @return a {@code RecordData} message that holds a real Raft application entry with the given
+   *     term and positions, and a payload of {@code payloadLength} bytes filled with {@code fill}
+   */
+  public static byte[] raftRecordData(
+      final long index,
+      final long term,
+      final long lowestPosition,
+      final long highestPosition,
+      final int payloadLength,
+      final byte fill) {
+    final byte[] payload = new byte[payloadLength];
+    Arrays.fill(payload, fill);
+    final var raft = new RaftEntrySBESerializer();
+    final var entry =
+        new SerializedApplicationEntry(lowestPosition, highestPosition, new UnsafeBuffer(payload));
+    final var raftEntry =
+        new UnsafeBuffer(new byte[raft.getApplicationEntrySerializedLength(entry)]);
+    raft.writeApplicationEntry(term, entry, raftEntry, 0);
+    final byte[] serialized = new byte[RECORD_DATA_OVERHEAD + raftEntry.capacity()];
+    new SBESerializer()
+        .writeData(
+            index,
+            lowestPosition,
+            new DirectBufferWriter(raftEntry),
             new UnsafeBuffer(serialized),
             0)
         .get();

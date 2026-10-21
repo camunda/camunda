@@ -24,16 +24,14 @@ import java.util.UUID;
 import org.agrona.concurrent.UnsafeBuffer;
 
 /**
- * Decodes the event plane's segment format v1, as the cluster writes it: one zstd frame, the
- * metadata and the footer. Anything that does not fit the format fails with a {@link
- * LogObjectFormatException}; the entries carry the journal's checksums, which the journal verifies
- * when restore appends them.
+ * Decodes the event plane's segment format v1, as the cluster writes it: the zstd frames listed by
+ * the frame index (one for a cut object, several for a merged one), the metadata and the footer.
+ * Anything that does not fit the format fails with a {@link LogObjectFormatException}; the entries
+ * carry the journal's checksums, which the journal verifies when restore appends them.
  */
 public final class SegmentV1Decoder {
 
-  /**
-   * Upper bound for the decompressed body, so that a corrupt content size cannot exhaust memory.
-   */
+  /** Upper bound for a decompressed frame, so that a corrupt content size cannot exhaust memory. */
   private static final long MAX_BODY_BYTES = Integer.MAX_VALUE - 8L;
 
   private SegmentV1Decoder() {}
@@ -98,7 +96,7 @@ public final class SegmentV1Decoder {
     final var identity = readIdentity(metadata, directory.get(KEY_IDENTITY));
     final var frameIndex = readFrameIndex(metadata, directory.get(KEY_FRAME_INDEX));
 
-    final var frames = decodeEntries(object, footer);
+    final var frames = decodeEntries(object, footer, frameIndex);
     return new DecodedSegment(
         footer,
         identity,
@@ -175,17 +173,86 @@ public final class SegmentV1Decoder {
     return frames;
   }
 
+  /**
+   * Decompresses every zstd frame of the body, as listed by the frame index, and reads the entries
+   * of each. An entry never spans two frames.
+   */
   private static List<LogArchiveFrame> decodeEntries(
-      final byte[] object, final SegmentFooter footer) {
-    final byte[] body = Arrays.copyOfRange(object, 0, (int) footer.bodyLength());
-    final byte[] entries = decompress(body);
-    final var serializer = new SBESerializer();
-    final var buffer = new UnsafeBuffer(entries);
-    final int metadataLength = serializer.getMetadataLength();
+      final byte[] object, final SegmentFooter footer, final List<long[]> frameIndex) {
+    final int bodyLength = (int) footer.bodyLength();
     final var frames = new ArrayList<LogArchiveFrame>(footer.entryCount());
-    int offset = 0;
+    final var serializer = new SBESerializer();
     long previousAsqn = -1;
     long firstPosition = -1;
+    for (int i = 0; i < frameIndex.size(); i++) {
+      final long start = frameIndex.get(i)[1];
+      final long end = i + 1 < frameIndex.size() ? frameIndex.get(i + 1)[1] : bodyLength;
+      if ((i == 0 && start != 0) || start < 0 || start >= end || end > bodyLength) {
+        throw new LogObjectFormatException(
+            "invalid frame %d at body offset %d, next frame or body end at %d"
+                .formatted(i, start, end));
+      }
+      final int before = frames.size();
+      final long frameFirstAsqn =
+          decodeFrame(
+              decompress(object, (int) start, (int) (end - start)),
+              serializer,
+              previousAsqn,
+              frames);
+      if (frames.size() == before) {
+        throw new LogObjectFormatException("frame %d holds no entries".formatted(i));
+      }
+      if (frameFirstAsqn != frameIndex.get(i)[0]) {
+        throw new LogObjectFormatException(
+            "frame %d starts at position %d, but the frame index says %d"
+                .formatted(i, frameFirstAsqn, frameIndex.get(i)[0]));
+      }
+      for (int f = before; f < frames.size(); f++) {
+        final long asqn = frames.get(f).asqn();
+        if (asqn >= 0) {
+          previousAsqn = asqn;
+          if (firstPosition < 0) {
+            firstPosition = asqn;
+          }
+        }
+      }
+    }
+
+    if (frames.size() != footer.entryCount()) {
+      throw new LogObjectFormatException(
+          "footer says %d entries but the body has %d"
+              .formatted(footer.entryCount(), frames.size()));
+    }
+    for (int i = 0; i < frames.size(); i++) {
+      if (frames.get(i).index() != footer.firstIndex() + i) {
+        throw new LogObjectFormatException(
+            "entry %d has index %d, expected %d"
+                .formatted(i, frames.get(i).index(), footer.firstIndex() + i));
+      }
+    }
+    if (firstPosition != footer.firstPosition()) {
+      throw new LogObjectFormatException(
+          "first position %d does not match the footer's %d"
+              .formatted(firstPosition, footer.firstPosition()));
+    }
+    return frames;
+  }
+
+  /**
+   * Reads the entries of one decompressed frame into {@code frames}.
+   *
+   * @return the asqn of the first application entry in the frame, -1 if it has none
+   */
+  private static long decodeFrame(
+      final byte[] entries,
+      final SBESerializer serializer,
+      final long asqnBefore,
+      final List<LogArchiveFrame> frames) {
+    final var buffer = new UnsafeBuffer(entries);
+    final int metadataLength = serializer.getMetadataLength();
+    int offset = 0;
+    long previousAsqn = asqnBefore;
+    long firstAsqn = -1;
     try {
       while (offset < entries.length) {
         if (entries[offset] != JOURNAL_FRAME_VERSION) {
@@ -213,8 +280,8 @@ public final class SegmentV1Decoder {
                 "asqn %d does not increase at index %d".formatted(asqn, data.index()));
           }
           previousAsqn = asqn;
-          if (firstPosition < 0) {
-            firstPosition = asqn;
+          if (firstAsqn < 0) {
+            firstAsqn = asqn;
           }
         }
         frames.add(
@@ -225,34 +292,23 @@ public final class SegmentV1Decoder {
     } catch (final RuntimeException e) {
       throw new LogObjectFormatException("invalid entry", e);
     }
-
-    if (frames.size() != footer.entryCount()) {
-      throw new LogObjectFormatException(
-          "footer says %d entries but the body has %d"
-              .formatted(footer.entryCount(), frames.size()));
-    }
-    for (int i = 0; i < frames.size(); i++) {
-      if (frames.get(i).index() != footer.firstIndex() + i) {
-        throw new LogObjectFormatException(
-            "entry %d has index %d, expected %d"
-                .formatted(i, frames.get(i).index(), footer.firstIndex() + i));
-      }
-    }
-    if (firstPosition != footer.firstPosition()) {
-      throw new LogObjectFormatException(
-          "first position %d does not match the footer's %d"
-              .formatted(firstPosition, footer.firstPosition()));
-    }
-    return frames;
+    return firstAsqn;
   }
 
-  private static byte[] decompress(final byte[] body) {
-    final long size = Zstd.getFrameContentSize(body);
+  private static byte[] decompress(final byte[] object, final int offset, final int length) {
+    final long size = Zstd.getFrameContentSize(object, offset, length);
     if (size < 0 || size > MAX_BODY_BYTES) {
-      throw new LogObjectFormatException("invalid or unknown decompressed body size " + size);
+      throw new LogObjectFormatException("invalid or unknown decompressed frame size " + size);
     }
     try (final var context = new ZstdDecompressCtx()) {
-      return context.decompress(body, (int) size);
+      final byte[] entries = new byte[(int) size];
+      final int decompressed =
+          context.decompressByteArray(entries, 0, entries.length, object, offset, length);
+      if (decompressed != entries.length) {
+        throw new LogObjectFormatException(
+            "frame decompressed to %d bytes, expected %d".formatted(decompressed, size));
+      }
+      return entries;
     } catch (final ZstdException e) {
       throw new LogObjectFormatException("corrupt body", e);
     }

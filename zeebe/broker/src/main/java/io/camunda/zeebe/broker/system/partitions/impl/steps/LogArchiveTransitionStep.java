@@ -10,9 +10,12 @@ package io.camunda.zeebe.broker.system.partitions.impl.steps;
 import io.atomix.raft.RaftServer.Role;
 import io.camunda.zeebe.backup.logarchive.leader.HttpLogArchiveEventPlaneClient;
 import io.camunda.zeebe.backup.logarchive.leader.LogArchiveAnnouncer;
+import io.camunda.zeebe.backup.logarchive.leader.LogArchiveCleaner;
+import io.camunda.zeebe.backup.logarchive.leader.LogArchiveMerger;
 import io.camunda.zeebe.backup.logarchive.leader.LogArchivePublisher;
 import io.camunda.zeebe.backup.logarchive.leader.LogArchiveReleaser;
 import io.camunda.zeebe.backup.logarchive.leader.LogArchiveReleaser.ReleaseState;
+import io.camunda.zeebe.backup.logarchive.leader.LogArchiveStateView;
 import io.camunda.zeebe.backup.logarchive.leader.LogArchiver;
 import io.camunda.zeebe.backup.logarchive.leader.LogArchiverRaftEntrySource;
 import io.camunda.zeebe.backup.logarchive.leader.LogArchiverTimeline;
@@ -45,8 +48,8 @@ import org.slf4j.LoggerFactory;
  *
  * <p>On every role it creates a fresh {@link LogArchiveRecordsProcessor}, which the following
  * {@link StreamProcessorTransitionStep} registers, so that followers replay log archive events. On
- * the leader it also starts the archiver, snapshot uploader and publisher and registers them on
- * that processor.
+ * the leader it also starts the archiver, snapshot uploader, publisher, merger and cleaner (and the
+ * announcer with the event plane) and registers them on that processor.
  *
  * <p>This step runs before the stream processor is created, so the listener and the publication are
  * registered on the processor before it can recover. The processor's {@code onRecovered} therefore
@@ -137,6 +140,12 @@ public final class LogArchiveTransitionStep implements PartitionTransitionStep {
       final LogArchiveRecordsProcessor processor) {
     final ActorFuture<Void> installed = context.getConcurrencyControl().createFuture();
     final int partitionId = context.getPartitionId();
+    final var zeebeDb = context.getZeebeDb();
+    if (zeebeDb == null) {
+      installed.completeExceptionally(
+          new IllegalStateException("Expected the state to be open before the log archive"));
+      return installed;
+    }
     final LogArchiveStore store;
     try {
       store = LogArchiveStoreFactory.createStore(context.getBrokerCfg().getData().getBackup());
@@ -169,6 +178,29 @@ public final class LogArchiveTransitionStep implements PartitionTransitionStep {
             cfg.getSnapshotUploadInterval());
     final var announcer = createAnnouncer(context, cfg, store);
     final var releaser = createReleaser(context, cfg, logStream.newLogStreamWriter());
+    // merger and cleaner read the state on their own threads, each through its own instance
+    final var merger =
+        new LogArchiveMerger(
+            partitionId,
+            resolveClusterId(context, cfg),
+            context.partitionId().group(),
+            term,
+            store,
+            logStream.newLogStreamWriter(),
+            new LogArchiverRaftEntrySource(context.getRaftPartition().getServer().openReader()),
+            context.getRaftPartition().getServer()::getSegmentFirstIndexes,
+            LogArchiveStateView.of(new DbLogArchiveState(zeebeDb, zeebeDb.createContext())),
+            cfg.getMergeMaxObjects(),
+            cfg.getMergeFrameBytes().toBytes(),
+            partitionDirectory.resolve("log-archive-merge"));
+    final var cleaner =
+        new LogArchiveCleaner(
+            partitionId,
+            store,
+            LogArchiveStateView.of(new DbLogArchiveState(zeebeDb, zeebeDb.createContext())),
+            announcer != null ? announcer::confirmedNextSeq : null,
+            cfg.getCleanupInterval(),
+            cfg.getCleanupGracePeriod());
     // The publisher checks the bucket against the recovered state before it publishes anything and
     // hands the outcome to the archiver and the uploader, which wait for it (spec section 8.4).
     final var publisher =
@@ -179,6 +211,8 @@ public final class LogArchiveTransitionStep implements PartitionTransitionStep {
             (meta, bucketAhead) -> {
               archiver.onRecoveryChecked(meta.copy(), bucketAhead);
               uploader.onRecoveryChecked(meta.copy(), bucketAhead);
+              merger.onRecoveryChecked(meta.copy(), bucketAhead);
+              cleaner.onRecoveryChecked(meta.copy(), bucketAhead);
               if (releaser != null) {
                 releaser.onRecoveryChecked(meta.copy(), bucketAhead);
               }
@@ -187,7 +221,8 @@ public final class LogArchiveTransitionStep implements PartitionTransitionStep {
             context.getBackupStore(),
             announcer);
     final var components =
-        new LeaderComponents(store, archiver, uploader, publisher, announcer, releaser);
+        new LeaderComponents(
+            store, archiver, uploader, publisher, merger, cleaner, announcer, releaser);
     leaderComponents = components;
 
     final ActorFuture<Void> submitted = context.getConcurrencyControl().createFuture();
@@ -201,7 +236,8 @@ public final class LogArchiveTransitionStep implements PartitionTransitionStep {
           }
           // registered before this step completes, i.e. before the stream processor exists
           final var listeners =
-              new ArrayList<LogArchiveListener>(List.of(archiver, uploader, publisher));
+              new ArrayList<LogArchiveListener>(
+                  List.of(archiver, uploader, publisher, merger, cleaner));
           if (releaser != null) {
             listeners.add(releaser);
           }
@@ -369,11 +405,14 @@ public final class LogArchiveTransitionStep implements PartitionTransitionStep {
       LogArchiver archiver,
       SnapshotUploader uploader,
       LogArchivePublisher publisher,
+      LogArchiveMerger merger,
+      LogArchiveCleaner cleaner,
       @Nullable LogArchiveAnnouncer announcer,
       @Nullable LogArchiveReleaser releaser) {
 
     List<Actor> actors() {
-      final List<Actor> actors = new ArrayList<>(List.of(archiver, uploader, publisher));
+      final List<Actor> actors =
+          new ArrayList<>(List.of(archiver, uploader, publisher, merger, cleaner));
       if (announcer != null) {
         actors.add(announcer);
       }
@@ -429,6 +468,11 @@ public final class LogArchiveTransitionStep implements PartitionTransitionStep {
     @Override
     public void onLogMerged(final long mergedIndex, final long mergedPosition) {
       delegates.forEach(d -> d.onLogMerged(mergedIndex, mergedPosition));
+    }
+
+    @Override
+    public void onLogMerged(final long seq, final long mergedIndex, final long mergedPosition) {
+      delegates.forEach(d -> d.onLogMerged(seq, mergedIndex, mergedPosition));
     }
 
     @Override
