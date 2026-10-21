@@ -169,7 +169,8 @@ public final class LogArchiveTransitionStep implements PartitionTransitionStep {
             () -> LogArchiverTimeline.resolveEffective(partitionDirectory, cfg.getTimeline()),
             cfg.getCutMaxBytes().toBytes(),
             cfg.getCutInterval(),
-            cfg.getIdleCutInterval());
+            cfg.getIdleCutInterval(),
+            cfg.getCompactionMode());
     final var uploader =
         new SnapshotUploader(
             partitionId,
@@ -492,6 +493,16 @@ public final class LogArchiveTransitionStep implements PartitionTransitionStep {
     @Override
     public void onReleaseLogRejected(final long releasedIndex) {
       delegates.forEach(d -> d.onReleaseLogRejected(releasedIndex));
+    }
+
+    @Override
+    public void onHoldMoved(final long holdIndex) {
+      delegates.forEach(d -> d.onHoldMoved(holdIndex));
+    }
+
+    @Override
+    public void onMoveHoldRejected(final long holdIndex) {
+      delegates.forEach(d -> d.onMoveHoldRejected(holdIndex));
     }
 
     @Override
