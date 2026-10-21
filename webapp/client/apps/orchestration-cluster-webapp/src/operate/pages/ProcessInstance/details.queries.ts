@@ -8,6 +8,7 @@
 
 import {queryOptions} from '@tanstack/react-query';
 import type {
+	QueryAgentInstancesResponseBody,
 	QueryDecisionInstancesResponseBody,
 	QueryElementInstanceInspectionResponseBody,
 	QueryJobsResponseBody,
@@ -21,6 +22,7 @@ import {mapQueryError} from '#/shared/http/mapQueryError';
 
 const POLLING_INTERVAL_MS = 5000;
 const MAX_WAIT_STATES = 1000;
+const MAX_AGENT_INSTANCES = 50;
 
 async function getJson<T>(endpoint: Request): Promise<T> {
 	const {response, error} = await request(endpoint);
@@ -113,7 +115,36 @@ function elementMessageSubscriptionQuery(elementInstanceKey: string) {
 	});
 }
 
+function elementAgentInstancesQuery({
+	processInstanceKey,
+	elementId,
+	elementInstanceKey,
+}: {
+	processInstanceKey: string;
+	elementId: string;
+	elementInstanceKey: string | null;
+}) {
+	return queryOptions({
+		queryKey: ['detailsAgentInstances', processInstanceKey, elementId, elementInstanceKey] as const,
+		queryFn: () =>
+			getJson<QueryAgentInstancesResponseBody>(
+				endpoints.queryAgentInstances({
+					sort: [{field: 'creationDate', order: 'ASC'}],
+					page: {limit: MAX_AGENT_INSTANCES},
+					filter: {
+						processInstanceKey,
+						elementId,
+						elementInstanceKeys: elementInstanceKey ? [elementInstanceKey] : undefined,
+					},
+				}),
+			),
+		staleTime: POLLING_INTERVAL_MS,
+	});
+}
+
 export {
+	POLLING_INTERVAL_MS,
+	elementAgentInstancesQuery,
 	waitStatesQuery,
 	calledProcessInstancesQuery,
 	elementJobQuery,

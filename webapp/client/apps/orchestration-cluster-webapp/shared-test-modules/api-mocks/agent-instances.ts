@@ -6,7 +6,8 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import type {AgentInstance} from '@camunda/camunda-api-zod-schemas/8.11';
+import type {AgentInstance, QueryAgentInstancesResponseBody} from '@camunda/camunda-api-zod-schemas/8.11';
+import {createPaginatedResponse} from './shared';
 
 function createAgentInstance(overrides?: Partial<AgentInstance>): AgentInstance {
 	return {
@@ -41,4 +42,14 @@ function createAgentInstance(overrides?: Partial<AgentInstance>): AgentInstance 
 	};
 }
 
-export {createAgentInstance};
+function createQueryAgentInstancesResponse(
+	items: AgentInstance[] = [],
+	{totalItems = items.length, hasMoreTotalItems = false}: {totalItems?: number; hasMoreTotalItems?: boolean} = {},
+): QueryAgentInstancesResponseBody {
+	return createPaginatedResponse({
+		items,
+		page: {totalItems, startCursor: null, endCursor: null, hasMoreTotalItems},
+	});
+}
+
+export {createAgentInstance, createQueryAgentInstancesResponse};

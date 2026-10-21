@@ -10,6 +10,7 @@ import {afterEach, describe, expect} from 'vitest';
 import {userEvent} from 'vitest/browser';
 import {cleanup} from 'vitest-browser-react';
 import {HttpResponse} from 'msw';
+import {z} from 'zod';
 import {useNavigate, useRouterState} from '@tanstack/react-router';
 import type {
 	ElementInstance,
@@ -17,10 +18,12 @@ import type {
 	GetSystemConfigurationResponseBody,
 } from '@camunda/camunda-api-zod-schemas/8.11';
 import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
+import {createAgentInstance, createQueryAgentInstancesResponse} from '#/shared-test-modules/api-mocks/agent-instances';
 import {it} from '#/vitest-modules/test-extend';
 import {renderWithRouter} from '#/vitest-modules/render-with-router';
 import {
 	mockGetElementInstanceEndpoint,
+	mockQueryAgentInstancesEndpoint,
 	mockGetProcessDefinitionXmlEndpoint,
 	mockQueryDecisionInstancesEndpoint,
 	mockQueryElementInstanceInspectionEndpoint,
@@ -149,6 +152,7 @@ function handlers({
 		mockGetProcessDefinitionXmlEndpoint({successResponse: HttpResponse.text(BPMN_XML)}),
 		mockGetElementInstanceEndpoint({successResponse: HttpResponse.json(elementInstance)}),
 		mockQueryJobsEndpoint({successResponse: HttpResponse.json(createQueryJobsResponse())}),
+		mockQueryAgentInstancesEndpoint({successResponse: HttpResponse.json(createQueryAgentInstancesResponse())}),
 		mockQueryElementInstanceInspectionEndpoint({
 			successResponse: HttpResponse.json(createQueryElementInstanceInspectionResponse()),
 		}),
@@ -287,6 +291,163 @@ describe('<ProcessInstanceDetails />', () => {
 		const screen = await renderDetails({search: selected('service-task')});
 
 		await expect.element(screen.getByText('Element Instance Key')).toBeVisible();
+	});
+
+	describe('agent instances', () => {
+		const agentsResponse = () =>
+			HttpResponse.json(createQueryAgentInstancesResponse([createAgentInstance({status: 'TOOL_CALLING'})]));
+		const emptyResponse = () => HttpResponse.json(createQueryAgentInstancesResponse());
+		const agentRequestSchema = (elementInstanceKeyFilter: z.ZodRawShape = {}) =>
+			z.object({
+				sort: z.tuple([z.object({field: z.literal('creationDate'), order: z.literal('ASC')})]),
+				page: z.object({limit: z.literal(50)}).strict(),
+				filter: z
+					.object({
+						processInstanceKey: z.literal(PROCESS_INSTANCE_ID),
+						elementId: z.literal('service-task'),
+						...elementInstanceKeyFilter,
+					})
+					.strict(),
+			});
+
+		it('should show the agent details of the selected element instance instead of its wait state', async ({worker}) => {
+			worker.use(
+				mockQueryAgentInstancesEndpoint({
+					schema: agentRequestSchema({elementInstanceKeys: z.tuple([z.literal(ELEMENT_INSTANCE_KEY)])}),
+					successResponse: agentsResponse(),
+					failureResponse: emptyResponse(),
+				}),
+				mockQueryElementInstanceInspectionEndpoint({
+					successResponse: HttpResponse.json(
+						createQueryElementInstanceInspectionResponse([
+							createElementInstanceInspection({elementInstanceKey: ELEMENT_INSTANCE_KEY}),
+						]),
+					),
+				}),
+				...handlers(),
+			);
+			const screen = await renderDetails({search: selected('service-task')});
+
+			await expect.element(screen.getByRole('heading', {name: 'Agent Instance'})).toBeVisible();
+			await expect.element(screen.getByText('Status: Calling tools')).toBeVisible();
+			await expect.element(screen.getByRole('heading', {name: 'Element Instance'})).toBeVisible();
+			await expect.element(screen.getByText('Waiting for message: payment-received')).not.toBeInTheDocument();
+		});
+
+		it('should show the agent details when only an element instance key is selected', async ({worker}) => {
+			worker.use(
+				mockQueryAgentInstancesEndpoint({
+					schema: agentRequestSchema({elementInstanceKeys: z.tuple([z.literal(ELEMENT_INSTANCE_KEY)])}),
+					successResponse: agentsResponse(),
+					failureResponse: emptyResponse(),
+				}),
+				...handlers(),
+			);
+			const screen = await renderDetails({search: `?elementInstanceKey=${ELEMENT_INSTANCE_KEY}`});
+
+			await expect.element(screen.getByRole('heading', {name: 'Agent Instance'})).toBeVisible();
+			await expect.element(screen.getByText('Status: Calling tools')).toBeVisible();
+		});
+
+		it('should filter on the element id only for a multi-instance body', async ({worker}) => {
+			worker.use(
+				mockQueryAgentInstancesEndpoint({
+					schema: agentRequestSchema(),
+					successResponse: agentsResponse(),
+					failureResponse: emptyResponse(),
+				}),
+				...handlers({
+					elementInstance: createElementInstance({
+						elementInstanceKey: ELEMENT_INSTANCE_KEY,
+						elementId: 'service-task',
+						type: 'MULTI_INSTANCE_BODY',
+					}),
+				}),
+			);
+			const screen = await renderDetails({search: `${selected('service-task')}&isMultiInstanceBody=true`});
+
+			await expect.element(screen.getByRole('heading', {name: 'Agent Instance'})).toBeVisible();
+			await expect.element(screen.getByText(ELEMENT_INSTANCE_KEY)).toBeVisible();
+		});
+
+		it('should filter on the element id only for a multi-instance body selected by its key', async ({worker}) => {
+			worker.use(
+				mockQueryAgentInstancesEndpoint({
+					schema: agentRequestSchema(),
+					successResponse: agentsResponse(),
+					failureResponse: emptyResponse(),
+				}),
+				...handlers({
+					elementInstance: createElementInstance({
+						elementInstanceKey: ELEMENT_INSTANCE_KEY,
+						elementId: 'service-task',
+						type: 'MULTI_INSTANCE_BODY',
+					}),
+				}),
+			);
+			const screen = await renderDetails({search: `?elementInstanceKey=${ELEMENT_INSTANCE_KEY}`});
+
+			await expect.element(screen.getByRole('heading', {name: 'Agent Instance'})).toBeVisible();
+		});
+
+		it('should show the agent details when several element instances are selected', async ({worker}) => {
+			worker.use(
+				mockQueryElementInstancesEndpoint({
+					successResponse: HttpResponse.json(createQueryElementInstancesResponse([], 3)),
+				}),
+				mockQueryAgentInstancesEndpoint({
+					schema: agentRequestSchema(),
+					successResponse: agentsResponse(),
+					failureResponse: emptyResponse(),
+				}),
+				...handlers(),
+			);
+			const screen = await renderDetails({search: '?elementId=service-task'});
+
+			await expect.element(screen.getByRole('heading', {name: 'Agent Instance'})).toBeVisible();
+			await expect.element(screen.getByRole('heading', {name: 'Element Instance'})).toBeVisible();
+			await expect
+				.element(screen.getByText('To view the details, select a single element instance in the instance history.'))
+				.toBeVisible();
+		});
+
+		it('should show an error hint when the agent instances cannot be fetched', async ({worker}) => {
+			worker.use(
+				mockQueryAgentInstancesEndpoint({
+					successResponse: HttpResponse.json(createProblemDetails({status: 500}), {status: 500}),
+				}),
+				...handlers(),
+			);
+			const screen = await renderDetails({search: selected('service-task')});
+
+			await expect.element(screen.getByText('Unable to load agent information.')).toBeVisible();
+			await expect.element(screen.getByText('Element Instance Key')).toBeVisible();
+		});
+
+		it('should show the wait state instead of agent details when the element has no agent instances', async ({
+			worker,
+		}) => {
+			worker.use(
+				mockQueryAgentInstancesEndpoint({
+					schema: agentRequestSchema({elementInstanceKeys: z.tuple([z.literal(ELEMENT_INSTANCE_KEY)])}),
+					successResponse: emptyResponse(),
+					failureResponse: agentsResponse(),
+				}),
+				mockQueryElementInstanceInspectionEndpoint({
+					successResponse: HttpResponse.json(
+						createQueryElementInstanceInspectionResponse([
+							createElementInstanceInspection({elementInstanceKey: ELEMENT_INSTANCE_KEY}),
+						]),
+					),
+				}),
+				...handlers(),
+			);
+			const screen = await renderDetails({search: selected('service-task')});
+
+			await expect.element(screen.getByText('Waiting for message: payment-received')).toBeVisible();
+			await expect.element(screen.getByText('Element Instance Key')).toBeVisible();
+			await expect.element(screen.getByRole('heading', {name: 'Agent Instance'})).not.toBeInTheDocument();
+		});
 	});
 
 	describe('call activity', () => {
