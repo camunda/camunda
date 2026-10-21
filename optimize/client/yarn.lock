@@ -1213,10 +1213,10 @@
     react-markdown "10.1.0"
     semver "7.8.5"
 
-"@camunda/design-system@0.61.1":
-  version "0.61.1"
-  resolved "https://registry.yarnpkg.com/@camunda/design-system/-/design-system-0.61.1.tgz#d9d459adea5ffe30261a82c207b7081cdfbde82a"
-  integrity sha512-lvfDXd58VnwuHBch5Ye+MeAS67A7u5F8/CPWOtAZ1Y45erHhIEfBMJr8BYmO1acnixQpdYQBQnggTxw96e43Ug==
+"@camunda/design-system@0.74.0":
+  version "0.74.0"
+  resolved "https://registry.yarnpkg.com/@camunda/design-system/-/design-system-0.74.0.tgz#4c60b98e45399dcfb2a502907665e2fdf045e480"
+  integrity sha512-JXykr0zDiQx9a6AaQDm0KOp10b4jpzEJFg9gI3X1pXRZkAdpMFBvCakB01f1UiWcsffITmtfRCQ2UfuVth1fqQ==
   dependencies:
     "@tanstack/react-table" "^8.20.5"
     "@tanstack/react-virtual" "^3.14.2"
@@ -1231,6 +1231,7 @@
     react-remove-scroll "^2.7.2"
     recharts "^3.8.1"
     sonner "^2.0.8"
+    tabbable "^6.5.0"
     tailwind-merge "3.6.0"
 
 "@camunda8/orchestration-cluster-api@10.0.0":
@@ -15244,6 +15245,11 @@ tabbable@^6.0.0, tabbable@^6.2.0:
   resolved "https://registry.npmjs.org/tabbable/-/tabbable-6.2.0.tgz"
   integrity sha512-Cat63mxsVJlzYvN51JmVXIgNoUokrIaT2zLclCXjRd8boZ0004U4KCs/sToJ75C6sdlByWxpYnb5Boif1VSFew==
 
+tabbable@^6.5.0:
+  version "6.5.0"
+  resolved "https://registry.yarnpkg.com/tabbable/-/tabbable-6.5.0.tgz#a65101385a4fd6cbd580b7546da0170f307b535d"
+  integrity sha512-wieBHXygIm7OyQOu5hQlkk62/WyCFYGlWg7L6/ZCUZwx0o398Zkn4pVmMyfYhfMG8kGrj/Krt8eIk6UKC6VzwA==
+
 tailwind-merge@3.6.0:
   version "3.6.0"
   resolved "https://registry.yarnpkg.com/tailwind-merge/-/tailwind-merge-3.6.0.tgz#88d83242d1dd7bc847223f73dcf210dd1f2ee11c"
@@ -15551,7 +15557,7 @@ tslib@^1.8.1:
   resolved "https://registry.npmjs.org/tslib/-/tslib-1.14.1.tgz"
   integrity sha512-Xni35NKzjgMrwevysHTCArtLDpPvye8zV/0E4EyYn43P7/7qvQwPh9BGkHewbMulVntbigmcT7rdX3BNo9wRJg==
 
-tslib@^2.0.0, tslib@^2.0.3, tslib@^2.1.0, tslib@^2.5.0, tslib@^2.8.0:
+tslib@^2.0.0, tslib@^2.0.3, tslib@^2.1.0, tslib@^2.8.0:
   version "2.8.1"
   resolved "https://registry.yarnpkg.com/tslib/-/tslib-2.8.1.tgz#612efe4ed235d567e8aba5f2a5fab70280ade83f"
   integrity sha512-oJFu94HQb+KVduSUQL7wnpmqnfmLsOA/nAh6b6EH0wCEoK0/mPeXU6c3wKDV83MkOuHPRHtSXKKU99IBazS/2w==
