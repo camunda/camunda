@@ -915,6 +915,9 @@ public class WebSecurityConfig {
         // registration it routed the token to, so a token can never reach another provider's keys.
         final var additionalJwkSetUrisByRegistrationId =
             buildAdditionalJwkSetUrisByRegistrationId(oidcProviderRepository);
+        // Checked here, at startup, not first inside the lazily created decoder.
+        IssuerAwareJWSKeySelector.requireConsistentAdditionalKeys(
+            clientRegistrations, additionalJwkSetUrisByRegistrationId);
         LOG.info(
             "Create Issuer Aware JWT Decoder for multiple OIDC Providers: [{}]",
             clientRegistrations.stream()

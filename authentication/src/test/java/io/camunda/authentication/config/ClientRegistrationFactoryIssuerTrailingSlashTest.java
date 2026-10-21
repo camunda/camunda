@@ -14,7 +14,9 @@ import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMoc
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.github.tomakehurst.wiremock.client.ResponseDefinitionBuilder;
 import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
+import com.github.tomakehurst.wiremock.stubbing.Scenario;
 import io.camunda.security.configuration.OidcAuthenticationConfiguration;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -95,6 +97,41 @@ class ClientRegistrationFactoryIssuerTrailingSlashTest {
         .hasMessageContaining("did not match the requested issuer \"" + issuer + "\"");
   }
 
+  /**
+   * The first document declares an unrelated issuer, and a second fetch, for the slash variant,
+   * returns a document that declares the variant. The retry must not paper over the first, real
+   * mismatch: only a document that declared the slash variant itself justifies retrying.
+   */
+  @Test
+  void shouldNotRetryWhenTheFirstDocumentDeclaredAnUnrelatedIssuer() {
+    // given
+    final var issuer = baseUrl() + REALM_PATH;
+    givenDiscoveryDocumentsInSequence(baseUrl() + "/realms/other", issuer + "/");
+
+    // when / then - the original mismatch, against the unrelated issuer
+    assertThatThrownBy(
+            () -> ClientRegistrationFactory.createClientRegistration("idp", configuredWith(issuer)))
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("The Issuer \"" + baseUrl() + "/realms/other\"");
+  }
+
+  /**
+   * Spring's message is the only source of the declared issuer; a change to its form must make the
+   * retry fall back to failing, never to accepting.
+   */
+  @Test
+  void shouldReadTheDeclaredIssuerFromSpringsMismatchMessage() {
+    assertThat(
+            ClientRegistrationFactory.declaredIssuer(
+                new IllegalStateException(
+                    "The Issuer \"https://idp/v2.0\" provided in the configuration metadata did"
+                        + " not match the requested issuer \"https://idp/v2.0/\"")))
+        .isEqualTo("https://idp/v2.0");
+    assertThat(ClientRegistrationFactory.declaredIssuer(new IllegalStateException("other")))
+        .isNull();
+    assertThat(ClientRegistrationFactory.declaredIssuer(new IllegalStateException())).isNull();
+  }
+
   @ParameterizedTest
   @CsvSource({
     "https://login.microsoftonline.com/tenant/v2.0/, https://login.microsoftonline.com/tenant/v2.0",
@@ -143,6 +180,49 @@ class ClientRegistrationFactoryIssuerTrailingSlashTest {
               .willReturn(
                   aResponse().withHeader("Content-Type", "application/json").withBody(document)));
     }
+  }
+
+  /**
+   * The first discovery request gets a document declaring one issuer, every later one the other.
+   */
+  private static void givenDiscoveryDocumentsInSequence(
+      final String firstIssuer, final String laterIssuer) {
+    for (final var path :
+        new String[] {
+          REALM_PATH + "/.well-known/openid-configuration",
+          REALM_PATH + "//.well-known/openid-configuration"
+        }) {
+      idp.stubFor(
+          get(urlEqualTo(path))
+              .inScenario("discovery")
+              .whenScenarioStateIs(Scenario.STARTED)
+              .willReturn(document(firstIssuer))
+              .willSetStateTo("fetched"));
+      idp.stubFor(
+          get(urlEqualTo(path))
+              .inScenario("discovery")
+              .whenScenarioStateIs("fetched")
+              .willReturn(document(laterIssuer)));
+    }
+  }
+
+  private static ResponseDefinitionBuilder document(final String documentIssuer) {
+    final var base = baseUrl();
+    return aResponse()
+        .withHeader("Content-Type", "application/json")
+        .withBody(
+            """
+            {
+              "issuer": "%s",
+              "authorization_endpoint": "%s/auth",
+              "token_endpoint": "%s/token",
+              "jwks_uri": "%s/jwks",
+              "response_types_supported": ["code"],
+              "subject_types_supported": ["public"],
+              "id_token_signing_alg_values_supported": ["RS256"]
+            }
+            """
+                .formatted(documentIssuer, base, base, base));
   }
 
   private static OidcAuthenticationConfiguration configuredWith(final String issuerUri) {
