@@ -1130,20 +1130,31 @@ jobs:
               ' \
             | tail -1 || true)
 
+          # The job /logs endpoint currently returns plain text, but GitHub documents it as a
+          # downloadable archive. Detect a ZIP by its "PK" magic bytes and unpack it; otherwise
+          # read the log as-is.
+          deployment_id=""
           if [[ -z "${job_id}" ]]; then
             echo "::warning::Could not locate the Maven Release job via the API"
-            job_logs=""
           else
-            job_logs=$(curl -fsSL \
+            logs_file=$(mktemp)
+            if curl -fsSL \
                 -H "Authorization: Bearer ${GH_TOKEN}" \
                 -H "Accept: application/vnd.github+json" \
-                "${api}/actions/jobs/${job_id}/logs" || true)
+                -o "${logs_file}" \
+                "${api}/actions/jobs/${job_id}/logs"; then
+              deployment_id=$(
+                if [[ "$(head -c 2 "${logs_file}")" == "PK" ]]; then
+                  unzip -p "${logs_file}"
+                else
+                  cat "${logs_file}"
+                fi \
+                | grep -oE 'deploymentId: [0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}' \
+                | tail -1 \
+                | awk '{print $2}' || true)
+            fi
+            rm -f "${logs_file}"
           fi
-
-          deployment_id=$(printf '%s' "$job_logs" \
-            | grep -oE 'deploymentId: [0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}' \
-            | tail -1 \
-            | awk '{print $2}' || true)
 
           if [[ -n "${deployment_id}" ]]; then
             echo "deploymentId=${deployment_id}" >> "$GITHUB_OUTPUT"
@@ -1281,20 +1292,31 @@ jobs:
               ' \
             | tail -1 || true)
 
+          # The job /logs endpoint currently returns plain text, but GitHub documents it as a
+          # downloadable archive. Detect a ZIP by its "PK" magic bytes and unpack it; otherwise
+          # read the log as-is.
+          deployment_id=""
           if [[ -z "${job_id}" ]]; then
             echo "::warning::Could not locate the Maven Release job via the API"
-            job_logs=""
           else
-            job_logs=$(curl -fsSL \
+            logs_file=$(mktemp)
+            if curl -fsSL \
                 -H "Authorization: Bearer ${GH_TOKEN}" \
                 -H "Accept: application/vnd.github+json" \
-                "${api}/actions/jobs/${job_id}/logs" || true)
+                -o "${logs_file}" \
+                "${api}/actions/jobs/${job_id}/logs"; then
+              deployment_id=$(
+                if [[ "$(head -c 2 "${logs_file}")" == "PK" ]]; then
+                  unzip -p "${logs_file}"
+                else
+                  cat "${logs_file}"
+                fi \
+                | grep -oE 'deploymentId: [0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}' \
+                | tail -1 \
+                | awk '{print $2}' || true)
+            fi
+            rm -f "${logs_file}"
           fi
-
-          deployment_id=$(printf '%s' "$job_logs" \
-            | grep -oE 'deploymentId: [0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}' \
-            | tail -1 \
-            | awk '{print $2}' || true)
 
           if [[ -n "${deployment_id}" ]]; then
             echo "deploymentId=${deployment_id}" >> "$GITHUB_OUTPUT"
