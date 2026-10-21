@@ -138,6 +138,49 @@ Accept: application/json
 %}
 
 ###
+# @name deploy-process-diagram
+POST {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/deployments
+Authorization: Basic {{BASIC_AUTH_TOKEN}}
+Accept: application/json
+Content-Type: multipart/form-data; boundary=boundary123
+
+--boundary123
+Content-Disposition: form-data; name="tenantId"
+Content-Type: application/json
+
+<default>
+--boundary123
+Content-Disposition: form-data; name="resources"; filename="User Task Test Process.bpmn"
+Content-Type: application/octet-stream
+
+< ./c8run-tests/User Task Processes/User Task Test Process.bpmn
+--boundary123
+Content-Disposition: form-data; name="resources"; filename="New form A.form"
+Content-Type: application/octet-stream
+
+< ./c8run-tests/User Task Processes/New form A.form
+--boundary123
+Content-Disposition: form-data; name="resources"; filename="New form B.form"
+Content-Type: application/octet-stream
+
+< ./c8run-tests/User Task Processes/New form B.form
+--boundary123
+Content-Disposition: form-data; name="resources"; filename="New form C.form"
+Content-Type: application/octet-stream
+
+< ./c8run-tests/User Task Processes/New form C.form
+--boundary123--
+
+
+> {%
+  client.test("Process deployment is successful", function () {
+    client.assert(response.status === 200, "Expected 200, got " + response.status);
+    const processKey = response.body.deployments[0].processDefinition.processDefinitionKey;
+    client.global.set("PROCESS_DEFINITION_KEY", processKey);
+  });
+%}
+
+###
 # @name test-user-update
 PUT {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/users/{{USERNAME}}
 Authorization: Basic {{BASIC_AUTH_TOKEN}}
@@ -610,6 +653,10 @@ Accept: application/json
 
 ###
 # @name process-definition-search-authorized
+< {%
+  import {wait} from "../http/js/wait"
+  wait(3)
+%}
 POST {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/process-definitions/search
 Authorization: Basic {{BASIC_AUTH_TOKEN}}
 Content-Type: application/json
