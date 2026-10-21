@@ -144,6 +144,73 @@ final class LogArchiveCleanerTest {
   }
 
   @Test
+  void shouldKeepTheCleanedIndexBelowAPendingObjectAndAdvanceAfterItsDeletion() {
+    // given - [1, 4] and [9, 12] are garbage, M = 16, R = 0
+    stateView.meta = meta(16, 0, 10);
+    stateView.merged.add(new LogObject().setKey(data(1, 16, 7)).setFirstIndex(1).setLastIndex(16));
+    store.put(data(1, 4, 6), data(9, 12, 6), data(1, 16, 7));
+    start(null);
+    resumeTimeline();
+    assertThat(cleaner.cleanedIndex()).isZero();
+
+    // when - both are in their grace period
+    runAfter(INTERVAL);
+
+    // then - nothing is clean below the start of the first pending object
+    assertThat(cleaner.cleanedIndex()).isZero();
+
+    // when
+    runAfter(GRACE);
+
+    // then
+    assertThat(store.deleted).hasSize(2);
+    assertThat(cleaner.cleanedIndex()).isEqualTo(16);
+  }
+
+  @Test
+  void shouldNotAdvanceTheCleanedIndexPastAnObjectThatFailedToDelete() {
+    // given
+    stateView.meta = meta(16, 0, 10);
+    store.put(data(5, 8, 6), data(9, 12, 6));
+    store.failDeletes = 1;
+    start(null);
+    resumeTimeline();
+    runAfter(INTERVAL);
+
+    // when - the first delete fails
+    runAfter(GRACE);
+
+    // then - [5, 8] is still there, so the cleaned index stays below its start
+    assertThat(cleaner.cleanedIndex()).isEqualTo(4);
+
+    // when
+    runAfter(INTERVAL);
+
+    // then
+    assertThat(cleaner.cleanedIndex()).isEqualTo(16);
+  }
+
+  @Test
+  void shouldStartAtTheReleasedIndexOnANewLeader() {
+    // given
+    stateView.meta = meta(16, 8, 10);
+    store.put(data(9, 12, 6));
+
+    // when
+    start(null);
+    resumeTimeline();
+
+    // then - nothing new is clean before the first sweep
+    assertThat(cleaner.cleanedIndex()).isEqualTo(8);
+
+    // when
+    runAfter(INTERVAL);
+
+    // then - the pending object keeps it below its start
+    assertThat(cleaner.cleanedIndex()).isEqualTo(8);
+  }
+
+  @Test
   void shouldDeleteOnlyWhatTheEventPlaneHasSeenMerged() {
     // given - recovered with M = 0 as of seq 4; merges to 8 (seq 5) and to 16 (seq 7)
     stateView.meta = meta(0, 0, 5);

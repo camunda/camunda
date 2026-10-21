@@ -1436,6 +1436,12 @@ remembers `(seq, mergedIndex)` of its merges; a new leader knows only `meta.merg
 `meta.nextSeq - 1`, so it deletes nothing until the event plane has confirmed that seq). The event
 plane then never lists an object the cluster has deleted.
 
+The cleaner exposes `cleanedIndex` C: after each sweep, the highest index such that no garbage key
+with `firstIndex <= C` is left, pending in its grace period or undeleted (the first index, not the
+last: an object R reached into would no longer be the cluster's to delete). It never goes down within
+a term; before a leader's first completed sweep it is `meta.releasedIndex`. The releaser never
+releases past C (section 21.1), so the cluster alone deletes what its merges replaced.
+
 Known limits: listing `data/` grows with the timeline until the event plane removes released
 objects; restore folds the bucket once and fails if a merge deletes an object it resolved more than
 `cleanupGracePeriod` earlier (run it again).
@@ -1475,7 +1481,10 @@ With `retentionWindow` set (default: none, nothing is ever released):
   position).
 - **Released index R:** the `lastIndex` of the newest merged object with `lastIndex < S.index`.
   Everything up to R is released. Only merged objects are released, so the event plane only ever
-  takes over objects of one journal segment's size or larger.
+  takes over objects of one journal segment's size or larger. R also never exceeds the cleaner's
+  cleaned index (section 20.4), so the objects a merge replaced are deleted by the cluster before R
+  passes them. The event plane's queueing of replaced objects on `LOG_RELEASED` (section 22.1)
+  remains only as a backstop, e.g. for objects of crashed sweeps.
 
 The window and the clock are the leader's choice; the processor only checks that the proposal is
 safe.
