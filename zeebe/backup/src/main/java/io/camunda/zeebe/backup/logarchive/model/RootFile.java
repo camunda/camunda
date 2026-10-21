@@ -8,6 +8,7 @@
 package io.camunda.zeebe.backup.logarchive.model;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -25,6 +26,10 @@ import org.jspecify.annotations.Nullable;
  * @param releasedIndex R, the highest released index; {@code startIndex - 1} before the first
  *     release
  * @param releasedPosition the highest position of a released object, -1 if none
+ * @param holdIndex H, the restore hold of a timeline in mode B; null (omitted) in mode {@code
+ *     CLUSTER}
+ * @param compactionMode {@code AUTHORITY} for a timeline in mode B; null (omitted) for {@code
+ *     CLUSTER}
  * @param chunks all sealed index chunks, in chunk order
  * @param openObjects all open objects, in first index order
  * @param openCheckpoints covered checkpoints newer than the last sealed chunk
@@ -44,6 +49,8 @@ import org.jspecify.annotations.Nullable;
   "mergedPosition",
   "releasedIndex",
   "releasedPosition",
+  "holdIndex",
+  "compactionMode",
   "chunks",
   "openObjects",
   "openCheckpoints",
@@ -64,12 +71,57 @@ public record RootFile(
     long mergedPosition,
     long releasedIndex,
     long releasedPosition,
+    @JsonInclude(JsonInclude.Include.NON_NULL) @Nullable Long holdIndex,
+    @JsonInclude(JsonInclude.Include.NON_NULL) @Nullable String compactionMode,
     List<IndexChunkJson> chunks,
     List<LogObjectJson> openObjects,
     List<CoveredCheckpointJson> openCheckpoints,
     List<LogObjectJson> mergedObjects,
     List<ArchivedSnapshotJson> snapshots,
     @JsonInclude(JsonInclude.Include.NON_NULL) @Nullable HandoverJson handover) {
+
+  /** A root of a timeline in mode {@code CLUSTER}. */
+  public RootFile(
+      final int formatVersion,
+      final String timelineId,
+      final String parentTimelineId,
+      final int partitionId,
+      final long seq,
+      final long startIndex,
+      final long archivedIndex,
+      final long archivedPosition,
+      final long mergedIndex,
+      final long mergedPosition,
+      final long releasedIndex,
+      final long releasedPosition,
+      final List<IndexChunkJson> chunks,
+      final List<LogObjectJson> openObjects,
+      final List<CoveredCheckpointJson> openCheckpoints,
+      final List<LogObjectJson> mergedObjects,
+      final List<ArchivedSnapshotJson> snapshots,
+      final @Nullable HandoverJson handover) {
+    this(
+        formatVersion,
+        timelineId,
+        parentTimelineId,
+        partitionId,
+        seq,
+        startIndex,
+        archivedIndex,
+        archivedPosition,
+        mergedIndex,
+        mergedPosition,
+        releasedIndex,
+        releasedPosition,
+        null,
+        null,
+        chunks,
+        openObjects,
+        openCheckpoints,
+        mergedObjects,
+        snapshots,
+        handover);
+  }
 
   /** A root of a timeline that has neither merged nor released anything, without a handover. */
   public RootFile(
@@ -156,6 +208,8 @@ public record RootFile(
       @JsonProperty("mergedPosition") final @Nullable Long mergedPosition,
       @JsonProperty("releasedIndex") final @Nullable Long releasedIndex,
       @JsonProperty("releasedPosition") final @Nullable Long releasedPosition,
+      @JsonProperty("holdIndex") final @Nullable Long holdIndex,
+      @JsonProperty("compactionMode") final @Nullable String compactionMode,
       @JsonProperty("chunks") final List<IndexChunkJson> chunks,
       @JsonProperty("openObjects") final List<LogObjectJson> openObjects,
       @JsonProperty("openCheckpoints") final List<CoveredCheckpointJson> openCheckpoints,
@@ -175,6 +229,8 @@ public record RootFile(
         mergedPosition == null ? -1L : mergedPosition,
         releasedIndex == null ? startIndex - 1 : releasedIndex,
         releasedPosition == null ? -1L : releasedPosition,
+        holdIndex,
+        compactionMode,
         chunks,
         openObjects,
         openCheckpoints,
@@ -184,10 +240,17 @@ public record RootFile(
   }
 
   public RootFile {
+    compactionMode = CompactionModes.normalize(compactionMode);
     chunks = chunks == null ? List.of() : List.copyOf(chunks);
     openObjects = openObjects == null ? List.of() : List.copyOf(openObjects);
     openCheckpoints = openCheckpoints == null ? List.of() : List.copyOf(openCheckpoints);
     mergedObjects = mergedObjects == null ? List.of() : List.copyOf(mergedObjects);
     snapshots = snapshots == null ? List.of() : List.copyOf(snapshots);
+  }
+
+  /** Whether the timeline is in mode B. A missing mode is {@code CLUSTER}. */
+  @JsonIgnore
+  public boolean isAuthority() {
+    return CompactionModes.isAuthority(compactionMode);
   }
 }

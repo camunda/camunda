@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.backup.logarchive.state;
 
+import io.camunda.zeebe.backup.logarchive.model.CompactionModes;
 import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.msgpack.property.LongProperty;
@@ -40,9 +41,12 @@ public final class LogArchiveMeta extends UnpackedObject implements DbValue {
   private final LongProperty mergedPositionProperty = new LongProperty("mergedPosition", -1L);
   private final LongProperty releasedIndexProperty = new LongProperty("releasedIndex", -1L);
   private final LongProperty releasedPositionProperty = new LongProperty("releasedPosition", -1L);
+  private final StringProperty compactionModeProperty =
+      new StringProperty("compactionMode", "CLUSTER");
+  private final LongProperty holdIndexProperty = new LongProperty("holdIndex", -1L);
 
   public LogArchiveMeta() {
-    super(15);
+    super(17);
     declareProperty(timelineIdProperty)
         .declareProperty(parentTimelineIdProperty)
         .declareProperty(startIndexProperty)
@@ -57,7 +61,9 @@ public final class LogArchiveMeta extends UnpackedObject implements DbValue {
         .declareProperty(mergedIndexProperty)
         .declareProperty(mergedPositionProperty)
         .declareProperty(releasedIndexProperty)
-        .declareProperty(releasedPositionProperty);
+        .declareProperty(releasedPositionProperty)
+        .declareProperty(compactionModeProperty)
+        .declareProperty(holdIndexProperty);
   }
 
   /** The id of the current timeline, empty if no timeline was started yet. */
@@ -211,6 +217,35 @@ public final class LogArchiveMeta extends UnpackedObject implements DbValue {
     return this;
   }
 
+  /**
+   * The compaction mode of the timeline: {@code CLUSTER} (mode A) or {@code AUTHORITY} (mode B).
+   */
+  public String getCompactionMode() {
+    return BufferUtil.bufferAsString(compactionModeProperty.getValue());
+  }
+
+  public LogArchiveMeta setCompactionMode(final String compactionMode) {
+    compactionModeProperty.setValue(compactionMode);
+    return this;
+  }
+
+  public boolean isAuthority() {
+    return CompactionModes.AUTHORITY.equals(getCompactionMode());
+  }
+
+  /**
+   * H, the restore hold: the restore window covers every index at or above it. Starts at {@code
+   * startIndex} and only moves up. Only meaningful for {@code AUTHORITY} timelines.
+   */
+  public long getHoldIndex() {
+    return holdIndexProperty.getValue();
+  }
+
+  public LogArchiveMeta setHoldIndex(final long holdIndex) {
+    holdIndexProperty.setValue(holdIndex);
+    return this;
+  }
+
   /** Whether a handover is recorded on this timeline. */
   public boolean hasHandover() {
     return getHandoverCheckpointId() >= 0;
@@ -241,12 +276,14 @@ public final class LogArchiveMeta extends UnpackedObject implements DbValue {
         .setMergedIndex(getMergedIndex())
         .setMergedPosition(getMergedPosition())
         .setReleasedIndex(getReleasedIndex())
-        .setReleasedPosition(getReleasedPosition());
+        .setReleasedPosition(getReleasedPosition())
+        .setCompactionMode(getCompactionMode())
+        .setHoldIndex(getHoldIndex());
   }
 
   @Override
   public String toString() {
-    return "LogArchiveMeta{timelineId=%s, parentTimelineId=%s, startIndex=%d, archivedIndex=%d, archivedPosition=%d, nextSeq=%d, lastPublishedSeq=%d, nextChunkNo=%d, firstArchivedPosition=%d, handoverCheckpointId=%d, handoverPosition=%d, mergedIndex=%d, mergedPosition=%d, releasedIndex=%d, releasedPosition=%d}"
+    return "LogArchiveMeta{timelineId=%s, parentTimelineId=%s, startIndex=%d, archivedIndex=%d, archivedPosition=%d, nextSeq=%d, lastPublishedSeq=%d, nextChunkNo=%d, firstArchivedPosition=%d, handoverCheckpointId=%d, handoverPosition=%d, mergedIndex=%d, mergedPosition=%d, releasedIndex=%d, releasedPosition=%d, compactionMode=%s, holdIndex=%d}"
         .formatted(
             getTimelineId(),
             getParentTimelineId(),
@@ -262,6 +299,8 @@ public final class LogArchiveMeta extends UnpackedObject implements DbValue {
             getMergedIndex(),
             getMergedPosition(),
             getReleasedIndex(),
-            getReleasedPosition());
+            getReleasedPosition(),
+            getCompactionMode(),
+            getHoldIndex());
   }
 }

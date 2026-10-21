@@ -233,6 +233,18 @@ final class LogArchiveHarness implements AutoCloseable {
         .setParentTimelineId("parent");
   }
 
+  static LogArchiveRecord startTimeline(
+      final String timelineId, final long startIndex, final String compactionMode) {
+    return startTimeline(timelineId, startIndex).setCompactionMode(compactionMode);
+  }
+
+  static LogArchiveRecord moveHold(final long holdIndex, final String snapshotId) {
+    return new LogArchiveRecord()
+        .setTimelineId(TIMELINE)
+        .setHoldIndex(holdIndex)
+        .setHoldSnapshotId(snapshotId);
+  }
+
   static LogObject object(
       final long firstIndex,
       final long lastIndex,
@@ -448,6 +460,16 @@ final class LogArchiveHarness implements AutoCloseable {
     @Override
     public void onReleaseLogRejected(final long releasedIndex) {
       calls.add("releaseLogRejected " + releasedIndex);
+    }
+
+    @Override
+    public void onHoldMoved(final long holdIndex) {
+      calls.add("holdMoved " + holdIndex);
+    }
+
+    @Override
+    public void onMoveHoldRejected(final long holdIndex) {
+      calls.add("moveHoldRejected " + holdIndex);
     }
 
     @Override

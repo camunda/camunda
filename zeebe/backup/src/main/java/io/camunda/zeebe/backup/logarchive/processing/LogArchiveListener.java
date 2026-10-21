@@ -72,6 +72,16 @@ public interface LogArchiveListener {
    */
   default void onReleaseLogRejected(final long releasedIndex) {}
 
+  /** A {@code HOLD_MOVED} event was committed. The argument is H after applying it. */
+  default void onHoldMoved(final long holdIndex) {}
+
+  /**
+   * A {@code MOVE_HOLD} command was rejected.
+   *
+   * @param holdIndex the current H
+   */
+  default void onMoveHoldRejected(final long holdIndex) {}
+
   /** A {@code PUBLISHED} event was committed. */
   default void onPublished(final long publishedSeq) {}
 

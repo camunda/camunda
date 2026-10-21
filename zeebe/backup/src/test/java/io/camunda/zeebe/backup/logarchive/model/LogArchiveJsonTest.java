@@ -38,6 +38,12 @@ final class LogArchiveJsonTest {
         Arguments.of("commit-entry-index-sealed.json", BucketJsonFixtures.commitIndexSealed()),
         Arguments.of("commit-entry-log-merged.json", BucketJsonFixtures.commitLogMerged()),
         Arguments.of("commit-entry-log-released.json", BucketJsonFixtures.commitLogReleased()),
+        Arguments.of(
+            "commit-entry-timeline-started-authority.json",
+            BucketJsonFixtures.commitTimelineStartedAuthority()),
+        Arguments.of("commit-entry-hold-moved.json", BucketJsonFixtures.commitHoldMoved()),
+        Arguments.of("root-file-authority.json", BucketJsonFixtures.rootFileAuthority()),
+        Arguments.of("timeline-file-authority.json", BucketJsonFixtures.timelineFileAuthority()),
         Arguments.of("index-chunk-file.json", BucketJsonFixtures.indexChunkFile()),
         Arguments.of("root-file.json", BucketJsonFixtures.rootFile()),
         Arguments.of("latest-hint.json", BucketJsonFixtures.latestHint()),
@@ -83,6 +89,63 @@ final class LogArchiveJsonTest {
 
     // then
     assertThat(actual).isEqualTo(value);
+  }
+
+  @Test
+  void shouldReadFilesWithoutCompactionModeAsCluster() {
+    // given - as written before compaction modes existed
+    final var timeline = BucketJsonFixtures.timelineFile();
+    final var root = BucketJsonFixtures.rootFile();
+    final var entry = BucketJsonFixtures.commitTimelineStarted();
+
+    // when
+    final var readTimeline =
+        LogArchiveJson.read(readGoldenUnchecked("timeline-file.json"), TimelineFile.class);
+    final var readRoot = LogArchiveJson.read(readGoldenUnchecked("root-file.json"), RootFile.class);
+    final var readEntry =
+        LogArchiveJson.read(
+            readGoldenUnchecked("commit-entry-timeline-started.json"), CommitEntry.class);
+
+    // then
+    assertThat(readTimeline).isEqualTo(timeline);
+    assertThat(readTimeline.isAuthority()).isFalse();
+    assertThat(readRoot).isEqualTo(root);
+    assertThat(readRoot.isAuthority()).isFalse();
+    assertThat(readRoot.holdIndex()).isNull();
+    assertThat(readEntry).isEqualTo(entry);
+    assertThat(readEntry.isAuthority()).isFalse();
+  }
+
+  @Test
+  void shouldReadAuthorityMode() {
+    // when
+    final var timeline =
+        LogArchiveJson.read(
+            readGoldenUnchecked("timeline-file-authority.json"), TimelineFile.class);
+    final var root =
+        LogArchiveJson.read(readGoldenUnchecked("root-file-authority.json"), RootFile.class);
+    final var entry =
+        LogArchiveJson.read(
+            readGoldenUnchecked("commit-entry-timeline-started-authority.json"), CommitEntry.class);
+
+    // then
+    assertThat(timeline.isAuthority()).isTrue();
+    assertThat(root.isAuthority()).isTrue();
+    assertThat(root.holdIndex()).isEqualTo(2600001L);
+    assertThat(entry.isAuthority()).isTrue();
+  }
+
+  @Test
+  void shouldTreatExplicitClusterModeAsOmitted() {
+    // given
+    final var explicit =
+        new TimelineFile(
+            1, "tl-0.r5", 1, "tl-0", 2731001, 1, 1792137600500L, 2731000, 4931877, "CLUSTER");
+
+    // then
+    assertThat(explicit).isEqualTo(BucketJsonFixtures.timelineFile());
+    assertThat(LogArchiveJson.write(explicit))
+        .isEqualTo(LogArchiveJson.write(BucketJsonFixtures.timelineFile()));
   }
 
   @Test

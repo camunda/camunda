@@ -49,7 +49,7 @@ public final class LogArchiveJsonMapper {
    *
    * @param eventIntent one of {@code TIMELINE_STARTED}, {@code LOG_ARCHIVED}, {@code
    *     SNAPSHOT_ARCHIVED}, {@code INDEX_SEALED}, {@code HANDOVER_COMPLETED}, {@code LOG_MERGED},
-   *     {@code LOG_RELEASED}
+   *     {@code LOG_RELEASED}, {@code HOLD_MOVED}
    * @param event the event record as written to the log, including seq, archivedIndex,
    *     archivedPosition and the covered checkpoints
    * @param recordPosition see {@link LogArchiveRecordsProcessor#recordPositionOf}
@@ -67,6 +67,7 @@ public final class LogArchiveJsonMapper {
     final boolean logArchived = type == CommitEntry.Type.LOG_ARCHIVED;
     final boolean logMerged = type == CommitEntry.Type.LOG_MERGED;
     final boolean logReleased = type == CommitEntry.Type.LOG_RELEASED;
+    final boolean holdMoved = type == CommitEntry.Type.HOLD_MOVED;
     return new CommitEntry(
         LogArchiveJson.FORMAT_VERSION,
         event.getTimelineId(),
@@ -81,11 +82,14 @@ public final class LogArchiveJsonMapper {
         logMerged ? event.getMergedPosition() : null,
         logReleased ? event.getReleasedIndex() : null,
         logReleased ? event.getReleasedPosition() : null,
+        holdMoved ? event.getHoldIndex() : null,
+        holdMoved ? event.getHoldSnapshotId() : null,
         timeline ? event.getStartIndex() : null,
         timeline ? event.getParentTimelineId() : null,
         timeline ? event.getStartedAt() : null,
         timeline ? event.getParentIndex() : null,
         timeline ? event.getParentPosition() : null,
+        timeline ? event.getCompactionMode() : null,
         logArchived || logMerged
             ? event.getObjects().stream().map(LogArchiveJsonMapper::logObject).toList()
             : List.of(),
@@ -121,7 +125,8 @@ public final class LogArchiveJsonMapper {
         event.getSeq(),
         event.getStartedAt(),
         event.getParentIndex(),
-        event.getParentPosition());
+        event.getParentPosition(),
+        event.getCompactionMode());
   }
 
   /** The registry file as {@link #timelineFile(int, LogArchiveRecord)} would write it. */
@@ -135,7 +140,8 @@ public final class LogArchiveJsonMapper {
         entry.seq(),
         entry.startedAt() == null ? -1 : entry.startedAt(),
         entry.parentIndex() == null ? -1 : entry.parentIndex(),
-        entry.parentPosition() == null ? -1 : entry.parentPosition());
+        entry.parentPosition() == null ? -1 : entry.parentPosition(),
+        entry.compactionMode());
   }
 
   /** The handover file for the store of the old backups. */
@@ -171,6 +177,8 @@ public final class LogArchiveJsonMapper {
         meta.getMergedPosition(),
         meta.getReleasedIndex(),
         meta.getReleasedPosition(),
+        meta.isAuthority() ? meta.getHoldIndex() : null,
+        meta.getCompactionMode(),
         chunks.stream().map(LogArchiveJsonMapper::chunk).toList(),
         openObjects.stream().map(open -> logObject(open.object())).toList(),
         openObjects.stream()
@@ -311,6 +319,7 @@ public final class LogArchiveJsonMapper {
       case HANDOVER_COMPLETED -> CommitEntry.Type.HANDOVER;
       case LOG_MERGED -> CommitEntry.Type.LOG_MERGED;
       case LOG_RELEASED -> CommitEntry.Type.LOG_RELEASED;
+      case HOLD_MOVED -> CommitEntry.Type.HOLD_MOVED;
       default ->
           throw new IllegalArgumentException("Intent %s has no commit entry".formatted(intent));
     };

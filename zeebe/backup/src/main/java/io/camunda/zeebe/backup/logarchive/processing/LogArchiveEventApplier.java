@@ -61,6 +61,7 @@ final class LogArchiveEventApplier {
       case HANDOVER_COMPLETED -> applyHandoverCompleted(event);
       case LOG_MERGED -> applyLogMerged(event);
       case LOG_RELEASED -> applyLogReleased(event);
+      case HOLD_MOVED -> applyHoldMoved(event);
       case PUBLISHED -> {
         applyPublished(event);
         return null;
@@ -95,6 +96,8 @@ final class LogArchiveEventApplier {
             .setArchivedIndex(event.getStartIndex() - 1)
             .setMergedIndex(event.getStartIndex() - 1)
             .setReleasedIndex(event.getStartIndex() - 1)
+            .setCompactionMode(event.getCompactionMode())
+            .setHoldIndex(event.getStartIndex())
             .setNextSeq(event.getSeq() + 1)
             .setHandoverCheckpointId(handoverCheckpointId)
             .setHandoverPosition(handoverPosition);
@@ -251,6 +254,13 @@ final class LogArchiveEventApplier {
     meta.setReleasedIndex(releasedIndex).setNextSeq(event.getSeq() + 1);
     store(meta, event);
     event.setReleasedIndex(meta.getReleasedIndex()).setReleasedPosition(meta.getReleasedPosition());
+  }
+
+  /** Moves the restore hold up to the proposed index; the cluster deletes nothing either way. */
+  private void applyHoldMoved(final LogArchiveRecord event) {
+    final var meta = state.meta();
+    meta.setHoldIndex(event.getHoldIndex()).setNextSeq(event.getSeq() + 1);
+    store(meta, event);
   }
 
   private void applyPublished(final LogArchiveRecord event) {

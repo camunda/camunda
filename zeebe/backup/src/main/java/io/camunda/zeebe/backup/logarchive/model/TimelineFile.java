@@ -8,6 +8,8 @@
 package io.camunda.zeebe.backup.logarchive.model;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import org.jspecify.annotations.Nullable;
@@ -39,7 +41,8 @@ import org.jspecify.annotations.Nullable;
   "startedSeq",
   "startedAt",
   "parentIndex",
-  "parentPosition"
+  "parentPosition",
+  "compactionMode"
 })
 public record TimelineFile(
     int formatVersion,
@@ -50,7 +53,42 @@ public record TimelineFile(
     long startedSeq,
     long startedAt,
     long parentIndex,
-    long parentPosition) {
+    long parentPosition,
+    @JsonInclude(JsonInclude.Include.NON_NULL) @Nullable String compactionMode) {
+
+  /** A file of a timeline in mode {@code CLUSTER}. */
+  public TimelineFile(
+      final int formatVersion,
+      final String timelineId,
+      final int partitionId,
+      final String parentTimelineId,
+      final long startIndex,
+      final long startedSeq,
+      final long startedAt,
+      final long parentIndex,
+      final long parentPosition) {
+    this(
+        formatVersion,
+        timelineId,
+        partitionId,
+        parentTimelineId,
+        startIndex,
+        startedSeq,
+        startedAt,
+        parentIndex,
+        parentPosition,
+        null);
+  }
+
+  public TimelineFile {
+    compactionMode = CompactionModes.normalize(compactionMode);
+  }
+
+  /** Whether the timeline is in mode B. A missing mode is {@code CLUSTER}. */
+  @JsonIgnore
+  public boolean isAuthority() {
+    return CompactionModes.isAuthority(compactionMode);
+  }
 
   /**
    * Reads a file, defaulting the fields that older files do not have. Without this, Jackson would
@@ -66,7 +104,8 @@ public record TimelineFile(
       @JsonProperty("startedSeq") final long startedSeq,
       @JsonProperty("startedAt") final @Nullable Long startedAt,
       @JsonProperty("parentIndex") final @Nullable Long parentIndex,
-      @JsonProperty("parentPosition") final @Nullable Long parentPosition) {
+      @JsonProperty("parentPosition") final @Nullable Long parentPosition,
+      @JsonProperty("compactionMode") final @Nullable String compactionMode) {
     return new TimelineFile(
         formatVersion,
         timelineId,
@@ -76,6 +115,7 @@ public record TimelineFile(
         startedSeq,
         startedAt == null ? -1L : startedAt,
         parentIndex == null ? -1L : parentIndex,
-        parentPosition == null ? -1L : parentPosition);
+        parentPosition == null ? -1L : parentPosition,
+        compactionMode);
   }
 }

@@ -383,7 +383,24 @@ final class LogArchiverTest {
     assertThat(command.record().getTimelineId()).isEqualTo("tl-0.r42");
     assertThat(command.record().getStartIndex()).isEqualTo(5);
     assertThat(command.record().getParentTimelineId()).isEqualTo("tl-0");
+    assertThat(command.record().getCompactionMode()).isEqualTo("CLUSTER");
     assertThat(store.keys()).isEmpty();
+  }
+
+  @Test
+  void shouldStartTimelineInTheConfiguredCompactionMode() {
+    // given
+    startArchiver(3 * FRAME_BYTES, () -> "tl-0.r42", "AUTHORITY");
+    source.setFirstIndex(5);
+    source.commit(10);
+
+    // when
+    recover("tl-0", 20);
+
+    // then
+    assertThat(written).hasSize(1);
+    assertThat(written.getFirst().intent()).isEqualTo(LogArchiveIntent.START_TIMELINE);
+    assertThat(written.getFirst().record().getCompactionMode()).isEqualTo("AUTHORITY");
   }
 
   @Test
@@ -916,7 +933,17 @@ final class LogArchiverTest {
     startArchiverWith(cutMaxBytes, () -> Effective.configured(timeline.get()));
   }
 
+  private void startArchiver(
+      final long cutMaxBytes, final Supplier<String> timeline, final String compactionMode) {
+    startArchiverWith(cutMaxBytes, () -> Effective.configured(timeline.get()), compactionMode);
+  }
+
   private void startArchiverWith(final long cutMaxBytes, final Supplier<Effective> timeline) {
+    startArchiverWith(cutMaxBytes, timeline, "CLUSTER");
+  }
+
+  private void startArchiverWith(
+      final long cutMaxBytes, final Supplier<Effective> timeline, final String compactionMode) {
     archiver =
         new LogArchiver(
             PARTITION,
@@ -929,7 +956,8 @@ final class LogArchiverTest {
             timeline,
             cutMaxBytes,
             CUT_INTERVAL,
-            IDLE_CUT_INTERVAL);
+            IDLE_CUT_INTERVAL,
+            compactionMode);
     scheduler.submitActor(archiver);
     scheduler.workUntilDone();
   }
