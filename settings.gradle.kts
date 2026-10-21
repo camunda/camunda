@@ -309,6 +309,22 @@ registerProject(":zeebe-restore", "zeebe/restore")
 
 registerProject(":zeebe-restore-standalone", "zeebe/restore-standalone")
 
+registerProject(":zeebe-event-plane-segment", "zeebe/event-plane/segment")
+
+registerProject(":zeebe-event-plane-common", "zeebe/event-plane/common")
+
+registerProject(":zeebe-event-plane-publisher", "zeebe/event-plane/publisher")
+
+registerProject(":zeebe-event-plane-consumer", "zeebe/event-plane/consumer")
+
+registerProject(":zeebe-event-plane-maintenance", "zeebe/event-plane/maintenance")
+
+registerProject(":zeebe-event-plane-service", "zeebe/event-plane/service")
+
+registerProject(":zeebe-event-plane-demo", "zeebe/event-plane/demo")
+
+registerProject(":zeebe-event-plane-qa", "zeebe/event-plane/qa")
+
 registerProject(":camunda-search-client-connect", "search/search-client-connect")
 
 registerProject(":zeebe-feel-tagged-parameters", "zeebe/feel-tagged-parameters")

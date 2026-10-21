@@ -19,8 +19,10 @@ dependencies {
   implementation(libs.io.micrometer.micrometer.core)
   implementation(libs.org.slf4j.slf4j.api)
   implementation(libs.org.jspecify.jspecify)
+  implementation(project(":zeebe-event-plane-common"))
 
   testImplementation(projectArtifact(":zeebe-restore", ArtifactKind.TESTS))
+  testImplementation(project(":zeebe-event-plane-segment"))
   testImplementation(project(":zeebe-protocol"))
   testImplementation(libs.org.assertj.assertj.core)
   testImplementation(libs.org.junit.jupiter.junit.jupiter.api)
