@@ -261,6 +261,14 @@ public final class DbLogArchiveState {
     return List.copyOf(result.values());
   }
 
+  /** The covered checkpoints whose type creates a backup, in checkpoint id order. */
+  public List<CoveredCheckpoint> backupCheckpoints() {
+    final var result = new ArrayList<CoveredCheckpoint>();
+    backupCheckpointsColumnFamily.forEach(
+        value -> result.add(new CoveredCheckpoint().copy(value.value())));
+    return result;
+  }
+
   /** All archived objects above M (without the merged ones) in index order. */
   public List<UnmergedObject> unmergedObjects() {
     final var result = new ArrayList<UnmergedObject>();
