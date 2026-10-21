@@ -37,6 +37,7 @@ import java.util.function.Supplier;
 import org.rocksdb.Checkpoint;
 import org.rocksdb.ColumnFamilyDescriptor;
 import org.rocksdb.ColumnFamilyHandle;
+import org.rocksdb.CompactRangeOptions;
 import org.rocksdb.OptimisticTransactionDB;
 import org.rocksdb.ReadOptions;
 import org.rocksdb.RocksDB;
@@ -187,6 +188,21 @@ public class ZeebeTransactionDb<
         throw new ZeebeDbException(
             String.format("Failed to take snapshot in path %s.", snapshotDir), rocksException);
       }
+    }
+  }
+
+  /**
+   * Rewrites all data into compressed, target-sized SST files. The bottommost level is forced to be
+   * compacted, as otherwise RocksDB trivially moves a lone L0 file down without rewriting (and thus
+   * without compressing or splitting) it.
+   */
+  public void compactAll() {
+    try (final var options =
+        new CompactRangeOptions()
+            .setBottommostLevelCompaction(CompactRangeOptions.BottommostLevelCompaction.kForce)) {
+      optimisticTransactionDB.compactRange(defaultHandle, null, null, options);
+    } catch (final RocksDBException e) {
+      throw new ZeebeDbException("Failed to compact the database.", e);
     }
   }
 

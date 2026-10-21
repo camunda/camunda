@@ -200,6 +200,12 @@ camunda: # Type: io.camunda.configuration.Camunda
       scheme: "round-robin" # Type: io.camunda.configuration.Partitioning$Scheme, Env: CAMUNDA_CLUSTER_PARTITIONING_SCHEME
     
     raft: # Type: io.camunda.configuration.Raft  
+      # Sets the timeout for each request a new partition sends to fetch the bootstrap snapshot during
+      # partition scaling. The first request also includes creating the bootstrap snapshot on the leader of
+      # the source partition, so with a large state it may take tens of seconds. Raise it if bootstrapping
+      # new partitions fails with request timeouts. This is independent of snapshotRequestTimeout, which
+      # applies to snapshots replicated within a partition.
+      bootstrap-snapshot-request-timeout: null # Type: Duration, Env: CAMUNDA_CLUSTER_RAFT_BOOTSTRAPSNAPSHOTREQUESTTIMEOUT
       # Sets the timeout for configuration change requests such as joining or leaving. Since changes are
       # usually a multi-step process with multiple commits, a higher timeout than the default requestTimeout
       # is recommended.
