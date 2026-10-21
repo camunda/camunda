@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.eventplane.consumer;
 
+import io.camunda.zeebe.eventplane.segment.LogId;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;

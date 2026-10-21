@@ -8,6 +8,7 @@
 package io.camunda.zeebe.eventplane.maintenance;
 
 import io.camunda.zeebe.eventplane.history.HistoryLineage.Stretch;
+import io.camunda.zeebe.eventplane.segment.LogId;
 import io.camunda.zeebe.eventplane.snapshot.SnapshotArchive;
 import io.camunda.zeebe.eventplane.snapshot.SnapshotDescriptor;
 import io.camunda.zeebe.eventplane.store.ObjectStore;
@@ -54,7 +55,7 @@ final class SnapshotRetention {
    */
   Result run(final LogId log, final List<Stretch> path, final Instant threshold)
       throws IOException {
-    final var listing = SnapshotArchive.list(store, log.cluster(), log.tenant(), log.partition());
+    final var listing = SnapshotArchive.list(store, log);
     final var newestOnPath =
         listing.complete().stream()
             .filter(snapshot -> snapshot.servesPath(path))
@@ -66,8 +67,7 @@ final class SnapshotRetention {
     for (final var snapshot : listing.complete()) {
       final boolean onPath = snapshot.servesPath(path);
       if (snapshot.createdAt().isBefore(threshold) && !snapshot.equals(newestOnPath)) {
-        SnapshotArchive.delete(
-            store, log.cluster(), log.tenant(), log.partition(), snapshot.snapshotId());
+        SnapshotArchive.delete(store, log, snapshot.snapshotId());
         LOG.info(
             "Deleted snapshot {} of {} at index {}, created at {}",
             snapshot.snapshotId(),
@@ -90,13 +90,12 @@ final class SnapshotRetention {
   /** Deletes the files of a snapshot without descriptor, once every one is old. */
   private boolean deleteIfOld(final LogId log, final String snapshotId, final Instant threshold)
       throws IOException {
-    final var objects =
-        SnapshotArchive.objects(store, log.cluster(), log.tenant(), log.partition(), snapshotId);
+    final var objects = SnapshotArchive.objects(store, log, snapshotId);
     final boolean old =
         !objects.isEmpty()
             && objects.stream().map(StoredObject::lastModified).allMatch(threshold::isAfter);
     if (old) {
-      SnapshotArchive.deleteFiles(store, log.cluster(), log.tenant(), log.partition(), snapshotId);
+      SnapshotArchive.deleteFiles(store, log, snapshotId);
       LOG.info("Deleted the files of snapshot {} of {}, which has no descriptor", snapshotId, log);
     }
     return old;

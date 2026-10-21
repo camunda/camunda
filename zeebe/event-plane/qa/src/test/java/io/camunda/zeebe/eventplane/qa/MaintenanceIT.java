@@ -13,11 +13,11 @@ import static org.awaitility.Awaitility.await;
 import io.camunda.configuration.data.SecondaryStorage.SecondaryStorageType;
 import io.camunda.zeebe.eventplane.consumer.ConsumerListener;
 import io.camunda.zeebe.eventplane.consumer.EventPlaneConsumer;
-import io.camunda.zeebe.eventplane.consumer.LogId;
 import io.camunda.zeebe.eventplane.consumer.RecordHandler;
 import io.camunda.zeebe.eventplane.consumer.Start;
 import io.camunda.zeebe.eventplane.maintenance.Maintenance;
 import io.camunda.zeebe.eventplane.maintenance.MaintenanceConfig;
+import io.camunda.zeebe.eventplane.segment.LogId;
 import io.camunda.zeebe.eventplane.store.FileSystemStore;
 import io.camunda.zeebe.eventplane.store.ObjectNames;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
@@ -186,7 +186,7 @@ final class MaintenanceIT {
   private Set<Integer> levels() throws Exception {
     final var levels = new TreeSet<Integer>();
     for (final var log : Bucket.logs(store)) {
-      final var prefix = ObjectNames.logPrefix(log.clusterId(), log.tenantId(), log.partition());
+      final var prefix = ObjectNames.logPrefix(log);
       for (final var directory : store.listPrefixes(prefix)) {
         for (final var object : store.list(directory, null, Integer.MAX_VALUE)) {
           if (object.key().endsWith(".seg")) {

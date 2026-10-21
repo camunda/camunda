@@ -8,6 +8,7 @@
 package io.camunda.zeebe.restore;
 
 import io.camunda.zeebe.eventplane.history.HistoryLineage.Stretch;
+import io.camunda.zeebe.eventplane.segment.LogId;
 import io.camunda.zeebe.eventplane.store.InvalidObjectNameException;
 import io.camunda.zeebe.eventplane.store.ObjectNames;
 import io.camunda.zeebe.eventplane.store.ObjectStore;
@@ -30,22 +31,13 @@ final class PathSegments {
   private static final String SEGMENT_SUFFIX = ".seg";
 
   private final ObjectStore store;
-  private final String cluster;
-  private final String tenant;
-  private final int partition;
+  private final LogId log;
   private final List<Stretch> path;
   private List<PathSegment> segments = List.of();
 
-  PathSegments(
-      final ObjectStore store,
-      final String cluster,
-      final String tenant,
-      final int partition,
-      final List<Stretch> path) {
+  PathSegments(final ObjectStore store, final LogId log, final List<Stretch> path) {
     this.store = store;
-    this.cluster = cluster;
-    this.tenant = tenant;
-    this.partition = partition;
+    this.log = log;
     this.path = List.copyOf(path);
   }
 
@@ -55,7 +47,7 @@ final class PathSegments {
     for (final var stretch : path) {
       final var end = stretch.end();
       final long servesUpTo = end == null ? Long.MAX_VALUE : end.index();
-      final var prefix = ObjectNames.segmentsPrefix(cluster, tenant, partition, stretch.history());
+      final var prefix = ObjectNames.segmentsPrefix(log, stretch.history());
       String startAfter = null;
       while (true) {
         final var page = store.list(prefix, startAfter, PAGE_SIZE);

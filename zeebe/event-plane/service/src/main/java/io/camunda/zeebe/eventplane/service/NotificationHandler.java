@@ -9,6 +9,8 @@ package io.camunda.zeebe.eventplane.service;
 
 import com.sun.net.httpserver.HttpExchange;
 import io.camunda.zeebe.eventplane.notification.UploadNotice;
+import io.camunda.zeebe.eventplane.segment.InvalidLogIdException;
+import io.camunda.zeebe.eventplane.segment.LogId;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
@@ -88,12 +90,20 @@ final class NotificationHandler {
   private static Set<LogId> logs(@Nullable final String rawQuery) {
     final var logs = new LinkedHashSet<LogId>();
     for (final var value : Query.values(rawQuery, "log")) {
-      logs.add(LogId.parse(value));
+      logs.add(parse(value));
     }
     if (logs.isEmpty()) {
       throw new InvalidRequestException(
           "at least one parameter log={cluster}/{tenant}/{partition}", "none");
     }
     return logs;
+  }
+
+  private static LogId parse(final String value) {
+    try {
+      return LogId.parse(value);
+    } catch (final InvalidLogIdException e) {
+      throw new InvalidRequestException(e.expected(), "'" + e.text() + "'");
+    }
   }
 }

@@ -7,21 +7,21 @@
  */
 package io.camunda.zeebe.eventplane.publisher;
 
-import io.camunda.zeebe.eventplane.segment.Identity;
+import io.camunda.zeebe.eventplane.segment.LogId;
 
 /** A call to a publisher that its state doesn't allow: it isn't started yet, or it is already. */
 public abstract sealed class PublisherStateException extends IllegalStateException
     permits PublisherNotStartedException, PublisherAlreadyStartedException {
 
-  private final Identity log;
+  private final LogId log;
 
-  PublisherStateException(final String message, final Identity log) {
+  PublisherStateException(final String message, final LogId log) {
     super(message);
     this.log = log;
   }
 
   /** The log whose publisher was called. */
-  public Identity log() {
+  public LogId log() {
     return log;
   }
 }

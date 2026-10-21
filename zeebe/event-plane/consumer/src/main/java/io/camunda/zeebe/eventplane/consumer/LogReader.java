@@ -10,6 +10,7 @@ package io.camunda.zeebe.eventplane.consumer;
 import io.camunda.zeebe.eventplane.history.Histories;
 import io.camunda.zeebe.eventplane.history.HistoryLineage;
 import io.camunda.zeebe.eventplane.segment.Entry;
+import io.camunda.zeebe.eventplane.segment.LogId;
 import io.camunda.zeebe.eventplane.store.NoSuchObjectException;
 import io.camunda.zeebe.eventplane.store.ObjectNames;
 import io.camunda.zeebe.eventplane.store.ObjectStore;
@@ -120,7 +121,7 @@ public final class LogReader {
     holeGraceNanos = holeGrace.toNanos();
     metadataIntervalNanos = metadataInterval.toNanos();
     this.clock = clock;
-    retentionPrefix = ObjectNames.retentionPrefix(log.cluster(), log.tenant(), log.partition());
+    retentionPrefix = ObjectNames.retentionPrefix(log);
     historiesPrefix = ObjectNames.historiesPrefix(log.cluster(), log.tenant());
     switch (from) {
       case final Cursor given -> cursor = given;

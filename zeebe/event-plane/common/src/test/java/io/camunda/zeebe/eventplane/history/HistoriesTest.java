@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.zeebe.eventplane.history.HistoryManifest.Base;
+import io.camunda.zeebe.eventplane.segment.LogId;
 import io.camunda.zeebe.eventplane.store.FileSystemStore;
 import io.camunda.zeebe.eventplane.store.ObjectNames;
 import io.camunda.zeebe.eventplane.store.ObjectStore;
@@ -73,7 +74,7 @@ final class HistoriesTest {
     // given
     final var part = part("c", "default", A, 3, NOON, Base.NOTHING);
     Histories.writePart(store, part);
-    final var key = ObjectNames.historyPart("c", "default", A, 3);
+    final var key = ObjectNames.historyPart(new LogId("c", "default", 3), A);
     final var first = store.get(key).orElseThrow();
 
     // when
@@ -182,7 +183,7 @@ final class HistoriesTest {
     Histories.writePart(store, part("c", "default2", B, 1, NOON, Base.NOTHING));
     Histories.writePart(store, part("c", "other", B, 1, NOON, Base.NOTHING));
     Histories.writePart(store, part("c2", "default", B, 1, NOON, Base.NOTHING));
-    store.put(ObjectNames.logPrefix("c", "default", 1) + "segment.json", new byte[] {1});
+    store.put(ObjectNames.logPrefix(new LogId("c", "default", 1)) + "segment.json", new byte[] {1});
 
     // when
     final var lineage = Histories.load(store, "c", "default");
@@ -293,7 +294,7 @@ final class HistoriesTest {
     // given a store that loses a part between listing and reading it
     Histories.writePart(store, part("c", "default", A, 1, NOON, Base.NOTHING));
     Histories.writePart(store, part("c", "default", B, 1, NOON, Base.NOTHING));
-    final var vanishing = ObjectNames.historyPart("c", "default", A, 1);
+    final var vanishing = ObjectNames.historyPart(new LogId("c", "default", 1), A);
     final var forgetful = new StoreThatForgets(store, vanishing);
 
     // when

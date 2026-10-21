@@ -19,7 +19,7 @@ import io.camunda.zeebe.eventplane.publisher.EntrySource;
 import io.camunda.zeebe.eventplane.publisher.FloorStore;
 import io.camunda.zeebe.eventplane.publisher.PartitionPublisher;
 import io.camunda.zeebe.eventplane.publisher.UploadFloor;
-import io.camunda.zeebe.eventplane.segment.Identity;
+import io.camunda.zeebe.eventplane.segment.LogId;
 import io.camunda.zeebe.eventplane.store.ObjectNames;
 import io.camunda.zeebe.eventplane.store.ObjectStore;
 import io.camunda.zeebe.snapshots.PersistedSnapshotStore;
@@ -49,7 +49,7 @@ final class PublisherService implements AutoCloseable {
 
   private static final Logger LOG = LoggerFactory.getLogger(PublisherService.class);
 
-  private final Identity log;
+  private final LogId log;
   private final String clusterKey;
   private final Path partitionDirectory;
   private final ObjectStore store;
@@ -66,7 +66,7 @@ final class PublisherService implements AutoCloseable {
   private Instant nextSnapshotUpload = Instant.MIN;
 
   PublisherService(
-      final Identity log,
+      final LogId log,
       final String clusterKey,
       final Path partitionDirectory,
       final ObjectStore store,
@@ -93,7 +93,7 @@ final class PublisherService implements AutoCloseable {
         Executors.newSingleThreadScheduledExecutor(
             runnable ->
                 Thread.ofPlatform()
-                    .name("event-plane-publisher-%s-%d".formatted(log.tenantId(), log.partition()))
+                    .name("event-plane-publisher-%s-%d".formatted(log.tenant(), log.partition()))
                     .daemon()
                     .unstarted(runnable));
   }
@@ -174,7 +174,7 @@ final class PublisherService implements AutoCloseable {
    * See "The history file after a restore" in zeebe/event-plane/docs/contracts.md.
    */
   private HistoryManifest manifest(final @Nullable UploadFloor floor) throws IOException {
-    final var initial = HistoryIds.initial(clusterKey, log.tenantId());
+    final var initial = HistoryIds.initial(clusterKey, log.tenant());
     final var restored = RestoredHistory.readFrom(partitionDirectory);
     if (restored.isPresent()
         && (floor == null || !floor.history().equals(restored.get().history()))) {
@@ -200,14 +200,13 @@ final class PublisherService implements AutoCloseable {
   }
 
   private Optional<HistoryManifest> storedPart(final UUID history) throws IOException {
-    final var key =
-        ObjectNames.historyPart(log.clusterId(), log.tenantId(), history, log.partition());
+    final var key = ObjectNames.historyPart(log, history);
     final var content = store.get(key);
     return content.isPresent() ? Optional.of(ManifestJson.read(content.get())) : Optional.empty();
   }
 
   private HistoryManifest part(final UUID history, final Instant createdAt, final Base base) {
     return new HistoryManifest(
-        1, log.clusterId(), log.tenantId(), history, createdAt, Map.of(log.partition(), base));
+        1, log.cluster(), log.tenant(), history, createdAt, Map.of(log.partition(), base));
   }
 }

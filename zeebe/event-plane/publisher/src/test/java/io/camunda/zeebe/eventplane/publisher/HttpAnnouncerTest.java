@@ -12,7 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.sun.net.httpserver.HttpServer;
 import io.camunda.zeebe.eventplane.notification.UploadNotice;
 import io.camunda.zeebe.eventplane.segment.Footer;
-import io.camunda.zeebe.eventplane.segment.Identity;
+import io.camunda.zeebe.eventplane.segment.LogId;
 import io.camunda.zeebe.eventplane.store.ObjectNames;
 import io.camunda.zeebe.test.util.logging.LogCapturer;
 import java.io.IOException;
@@ -33,11 +33,10 @@ import org.junit.jupiter.api.Test;
 
 final class HttpAnnouncerTest {
 
-  private static final Identity LOG = new Identity("prod", "default", 3);
+  private static final LogId LOG = new LogId("prod", "default", 3);
   private static final UUID HISTORY = UUID.fromString("7f3a9c0e-4b2d-4e8f-9a1b-2c3d4e5f6071");
   private static final String KEY =
-      ObjectNames.segment(
-          "prod", "default", 3, HISTORY, 1096001, 1096704, 0, "01JCZ4A1B2C3D4E5F6G7H8J9KM");
+      ObjectNames.segment(LOG, HISTORY, 1096001, 1096704, 0, "01JCZ4A1B2C3D4E5F6G7H8J9KM");
   private static final Upload UPLOAD =
       new Upload(
           KEY,

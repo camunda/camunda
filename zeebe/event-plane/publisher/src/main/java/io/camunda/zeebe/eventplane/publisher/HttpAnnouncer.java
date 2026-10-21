@@ -8,7 +8,7 @@
 package io.camunda.zeebe.eventplane.publisher;
 
 import io.camunda.zeebe.eventplane.notification.UploadNotice;
-import io.camunda.zeebe.eventplane.segment.Identity;
+import io.camunda.zeebe.eventplane.segment.LogId;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -73,7 +73,7 @@ public final class HttpAnnouncer implements Announcer {
   }
 
   @Override
-  public void announce(final Identity log, final Upload upload) {
+  public void announce(final LogId log, final Upload upload) {
     if (closed) {
       LOG.warn("Expected an open announcer to announce segment {}, but it is closed", upload.key());
       return;
@@ -159,11 +159,11 @@ public final class HttpAnnouncer implements Announcer {
     }
   }
 
-  private static UploadNotice notice(final Identity log, final Upload upload) {
+  private static UploadNotice notice(final LogId log, final Upload upload) {
     final var footer = upload.footer();
     return new UploadNotice(
-        log.clusterId(),
-        log.tenantId(),
+        log.cluster(),
+        log.tenant(),
         log.partition(),
         footer.history(),
         upload.key(),

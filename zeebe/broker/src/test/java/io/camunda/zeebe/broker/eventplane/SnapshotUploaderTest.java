@@ -9,7 +9,7 @@ package io.camunda.zeebe.broker.eventplane;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.zeebe.eventplane.segment.Identity;
+import io.camunda.zeebe.eventplane.segment.LogId;
 import io.camunda.zeebe.eventplane.snapshot.SnapshotArchive;
 import io.camunda.zeebe.eventplane.snapshot.SnapshotDescriptor;
 import io.camunda.zeebe.eventplane.snapshot.SnapshotDescriptor.SnapshotFile;
@@ -41,7 +41,7 @@ import org.junit.jupiter.api.io.TempDir;
 /** A leader's snapshots go into the store with a descriptor, once each. */
 final class SnapshotUploaderTest {
 
-  private static final Identity LOG = new Identity("c", "default", 1);
+  private static final LogId LOG = new LogId("c", "default", 1);
   private static final UUID HISTORY = UUID.fromString("00000000-0000-4000-8000-000000000001");
   private static final Instant NOW = Instant.parse("2026-10-20T12:00:00Z");
 
@@ -100,15 +100,12 @@ final class SnapshotUploaderTest {
         new SnapshotDescriptor(
             1, snapshot.getId(), 10, 1, 40, 30, 35, 42, HISTORY, expectedFiles, NOW);
     assertThat(uploaded).contains(expected);
-    assertThat(SnapshotArchive.descriptor(store, "c", "default", 1, snapshot.getId()))
-        .contains(expected);
+    assertThat(SnapshotArchive.descriptor(store, LOG, snapshot.getId())).contains(expected);
     assertThat(expected.files())
         .extracting(SnapshotFile::name)
         .contains(snapshot.getId() + ".checksum", "zeebe.metadata", "state");
     for (final var file : snapshot.files().entrySet()) {
-      assertThat(
-              store.get(
-                  ObjectNames.snapshotFile("c", "default", 1, snapshot.getId(), file.getKey())))
+      assertThat(store.get(ObjectNames.snapshotFile(LOG, snapshot.getId(), file.getKey())))
           .hasValueSatisfying(
               content -> assertThat(content).isEqualTo(readAllBytes(file.getValue())));
     }
@@ -151,7 +148,7 @@ final class SnapshotUploaderTest {
     // then
     assertThat(uploaded)
         .hasValueSatisfying(d -> assertThat(d.snapshotId()).isEqualTo(second.getId()));
-    assertThat(SnapshotArchive.list(store, "c", "default", 1).complete())
+    assertThat(SnapshotArchive.list(store, LOG).complete())
         .extracting(SnapshotDescriptor::snapshotId)
         .containsExactlyInAnyOrder(first.getId(), second.getId());
   }
@@ -177,7 +174,7 @@ final class SnapshotUploaderTest {
     // then
     assertThat(uploaded)
         .hasValueSatisfying(d -> assertThat(d.snapshotId()).isEqualTo(later.getId()));
-    assertThat(SnapshotArchive.list(store, "c", "default", 1).complete())
+    assertThat(SnapshotArchive.list(store, LOG).complete())
         .extracting(SnapshotDescriptor::snapshotId)
         .containsExactly(later.getId());
   }

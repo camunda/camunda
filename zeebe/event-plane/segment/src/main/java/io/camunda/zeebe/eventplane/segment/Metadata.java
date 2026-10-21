@@ -19,9 +19,9 @@ import java.util.SortedMap;
 import java.util.TreeMap;
 
 /** The metadata entries this reader knows: the segment's log, and where its frames start. */
-public record Metadata(Identity identity, List<Frame> frames) {
+public record Metadata(LogId log, List<Frame> frames) {
 
-  private static final int IDENTITY = 1;
+  private static final int LOG = 1;
   private static final int FRAME_INDEX = 2;
   private static final int DIRECTORY_ENTRY_LENGTH = 2 + 4 + 4;
   private static final int FRAME_LENGTH = 16;
@@ -81,7 +81,7 @@ public record Metadata(Identity identity, List<Frame> frames) {
         ByteBuffer.allocate(frames.size() * FRAME_LENGTH).order(ByteOrder.LITTLE_ENDIAN);
     frames.forEach(frame -> index.putLong(frame.firstPosition()).putLong(frame.offset()));
     final var entries = new TreeMap<Integer, byte[]>();
-    entries.put(IDENTITY, identity.encode());
+    entries.put(LOG, log.encode());
     entries.put(FRAME_INDEX, index.array());
     return encode(entries);
   }
@@ -149,11 +149,11 @@ public record Metadata(Identity identity, List<Frame> frames) {
             "Expected metadata entry %d once in the directory, but got it twice".formatted(key));
       }
     }
-    final var identity = values.get(IDENTITY);
-    if (identity == null) {
+    final var log = values.get(LOG);
+    if (log == null) {
       throw new InvalidMetadata(
-          "Expected metadata entry %d, the identity, but got keys %s"
-              .formatted(IDENTITY, new TreeMap<>(values).keySet()));
+          "Expected metadata entry %d, the log id, but got keys %s"
+              .formatted(LOG, new TreeMap<>(values).keySet()));
     }
     final var frameIndex = values.get(FRAME_INDEX);
     if (frameIndex == null) {
@@ -176,6 +176,6 @@ public record Metadata(Identity identity, List<Frame> frames) {
       }
       frames.add(frame);
     }
-    return new Metadata(Identity.decode(identity), frames);
+    return new Metadata(LogId.decode(log), frames);
   }
 }

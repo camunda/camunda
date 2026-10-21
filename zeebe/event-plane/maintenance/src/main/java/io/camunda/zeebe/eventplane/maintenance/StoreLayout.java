@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.eventplane.maintenance;
 
+import io.camunda.zeebe.eventplane.segment.LogId;
 import io.camunda.zeebe.eventplane.store.InvalidObjectNameException;
 import io.camunda.zeebe.eventplane.store.ObjectNames;
 import io.camunda.zeebe.eventplane.store.ObjectStore;
@@ -61,7 +62,7 @@ final class StoreLayout {
    */
   List<UUID> histories(final LogId log) throws IOException {
     final var histories = new ArrayList<UUID>();
-    for (final var name : names(log.prefix())) {
+    for (final var name : names(ObjectNames.logPrefix(log))) {
       final var history = parseHistory(name);
       if (history != null) {
         histories.add(history);
@@ -76,7 +77,12 @@ final class StoreLayout {
     for (final var key : store.listPrefixes(prefix)) {
       final var encoded = key.substring(prefix.length(), key.length() - 1);
       try {
-        names.add(ObjectNames.decode(encoded));
+        final var name = ObjectNames.decode(encoded);
+        // No log has a blank cluster or tenant, so it is not a directory that the Event Plane
+        // wrote.
+        if (!name.isBlank()) {
+          names.add(name);
+        }
       } catch (final InvalidObjectNameException e) {
         LOG.debug(
             "Skipping the directory '{}', which is not a name that the Event Plane wrote", key);

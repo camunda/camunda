@@ -10,6 +10,7 @@ package io.camunda.zeebe.eventplane.qa;
 import io.camunda.zeebe.eventplane.segment.Entry;
 import io.camunda.zeebe.eventplane.segment.EntryReader;
 import io.camunda.zeebe.eventplane.segment.Footer;
+import io.camunda.zeebe.eventplane.segment.LogId;
 import io.camunda.zeebe.eventplane.store.ObjectNames;
 import io.camunda.zeebe.eventplane.store.ObjectStore;
 import java.io.ByteArrayInputStream;
@@ -26,8 +27,8 @@ final class Bucket {
   private Bucket() {}
 
   /** The logs in the bucket. */
-  static List<LogRef> logs(final ObjectStore store) throws IOException {
-    final var logs = new ArrayList<LogRef>();
+  static List<LogId> logs(final ObjectStore store) throws IOException {
+    final var logs = new ArrayList<LogId>();
     for (final var cluster : store.listPrefixes("")) {
       if (cluster.equals(ObjectNames.groupsPrefix())) {
         continue;
@@ -37,7 +38,7 @@ final class Bucket {
           final var name = last(partition);
           if (name.chars().allMatch(Character::isDigit)) {
             logs.add(
-                new LogRef(
+                new LogId(
                     ObjectNames.decode(last(cluster)),
                     ObjectNames.decode(last(tenant)),
                     Integer.parseInt(name)));
@@ -49,10 +50,10 @@ final class Bucket {
   }
 
   /** Every entry of every segment of a log, in all its histories. */
-  static LogRead readLog(final ObjectStore store, final LogRef log) throws IOException {
+  static LogRead readLog(final ObjectStore store, final LogId log) throws IOException {
     final var entries = new ArrayList<Entry>();
     final var histories = new ArrayList<UUID>();
-    final var prefix = ObjectNames.logPrefix(log.clusterId(), log.tenantId(), log.partition());
+    final var prefix = ObjectNames.logPrefix(log);
     for (final var directory : store.listPrefixes(prefix)) {
       final UUID history;
       try {
@@ -79,8 +80,6 @@ final class Bucket {
     final var trimmed = prefix.substring(0, prefix.length() - 1);
     return trimmed.substring(trimmed.lastIndexOf('/') + 1);
   }
-
-  record LogRef(String clusterId, String tenantId, int partition) {}
 
   /** The entries read, in the order of their segments' names. */
   record LogRead(List<UUID> histories, List<Entry> all) {

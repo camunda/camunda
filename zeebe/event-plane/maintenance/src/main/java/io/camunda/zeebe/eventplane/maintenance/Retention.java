@@ -11,6 +11,7 @@ import io.camunda.zeebe.eventplane.history.HistoryLineage;
 import io.camunda.zeebe.eventplane.history.HistoryLineage.Stretch;
 import io.camunda.zeebe.eventplane.history.HistoryManifest;
 import io.camunda.zeebe.eventplane.segment.Footer;
+import io.camunda.zeebe.eventplane.segment.LogId;
 import io.camunda.zeebe.eventplane.store.NoSuchObjectException;
 import io.camunda.zeebe.eventplane.store.ObjectNames;
 import io.camunda.zeebe.eventplane.store.ObjectStore;
@@ -152,8 +153,7 @@ final class Retention {
           e);
       return MaintenanceReport.NONE;
     }
-    final var markerKey =
-        ObjectNames.retentionMarker(log.cluster(), log.tenant(), log.partition(), Ulid.next());
+    final var markerKey = ObjectNames.retentionMarker(log, Ulid.next());
     store.put(markerKey, marker(current.historyId(), cutoff, firstPosition));
     LOG.info("Wrote the retention marker '{}' for the cutoff at index {}", markerKey, cutoff);
     for (final var segment : expired) {
@@ -168,7 +168,7 @@ final class Retention {
    * run.
    */
   private void trimMarkers(final LogId log) throws IOException {
-    final var prefix = log.retentionPrefix();
+    final var prefix = ObjectNames.retentionPrefix(log);
     final var keys = new TreeSet<String>();
     for (final var object : Listing.objects(store, prefix)) {
       final var name = object.key().substring(prefix.length());

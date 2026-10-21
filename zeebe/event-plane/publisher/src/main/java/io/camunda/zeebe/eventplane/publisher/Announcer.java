@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.eventplane.publisher;
 
-import io.camunda.zeebe.eventplane.segment.Identity;
+import io.camunda.zeebe.eventplane.segment.LogId;
 
 /**
  * Tells the Event Plane's service about uploads. It never throws and never blocks the publisher:
@@ -18,7 +18,7 @@ public interface Announcer extends AutoCloseable {
   /** Announces nothing. */
   Announcer NONE = (log, upload) -> {};
 
-  void announce(Identity log, Upload upload);
+  void announce(LogId log, Upload upload);
 
   /** Gives announcements in flight a moment to finish. */
   @Override

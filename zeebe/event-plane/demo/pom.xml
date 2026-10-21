@@ -24,6 +24,11 @@
   <dependencies>
     <dependency>
       <groupId>io.camunda</groupId>
+      <artifactId>zeebe-event-plane-segment</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
       <artifactId>zeebe-event-plane-consumer</artifactId>
     </dependency>
 

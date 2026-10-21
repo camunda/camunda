@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.eventplane.consumer;
 
+import io.camunda.zeebe.eventplane.segment.LogId;
 import io.camunda.zeebe.eventplane.store.InvalidObjectNameException;
 import io.camunda.zeebe.eventplane.store.ObjectNames;
 import io.camunda.zeebe.eventplane.store.ObjectStore;
@@ -80,10 +81,14 @@ final class LogDiscovery {
     return tenants;
   }
 
-  /** Adds a name that a key holds percent-encoded; skips one that isn't. */
+  /** Adds a name that a key holds percent-encoded; skips one that isn't, or that is blank. */
   private static void decoded(final String encoded, final List<String> names) {
     try {
-      names.add(ObjectNames.decode(encoded));
+      final var name = ObjectNames.decode(encoded);
+      // No log has a blank cluster or tenant, so it is not a directory that the Event Plane wrote.
+      if (!name.isBlank()) {
+        names.add(name);
+      }
     } catch (final InvalidObjectNameException e) {
       // Not a directory that the Event Plane wrote.
     }

@@ -13,6 +13,7 @@ import io.camunda.zeebe.eventplane.history.HistoryManifest;
 import io.camunda.zeebe.eventplane.history.InconsistentHistoryException;
 import io.camunda.zeebe.eventplane.history.InvalidHistoryJsonException;
 import io.camunda.zeebe.eventplane.history.MissingManifestException;
+import io.camunda.zeebe.eventplane.segment.LogId;
 import io.camunda.zeebe.eventplane.snapshot.InvalidSnapshotDescriptorException;
 import io.camunda.zeebe.eventplane.store.ObjectStore;
 import java.io.IOException;

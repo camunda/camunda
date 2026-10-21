@@ -17,6 +17,7 @@ import io.camunda.zeebe.eventplane.history.HistoryManifest.Base;
 import io.camunda.zeebe.eventplane.history.ManifestJson;
 import io.camunda.zeebe.eventplane.history.RestoredHistory;
 import io.camunda.zeebe.eventplane.segment.Entry;
+import io.camunda.zeebe.eventplane.segment.LogId;
 import io.camunda.zeebe.eventplane.snapshot.SnapshotArchive;
 import io.camunda.zeebe.eventplane.snapshot.SnapshotDescriptor;
 import io.camunda.zeebe.eventplane.store.FileSystemStore;
@@ -77,10 +78,10 @@ final class RestoreFromBucketIT {
     deployProcess();
     instances.addAll(createInstances(10));
     final var log = await("the first segments").until(() -> Bucket.logs(store), l -> !l.isEmpty());
-    final var cluster = log.getFirst().clusterId();
+    final var first = log.getFirst();
     // a snapshot keeps every entry after the floor, so it is taken once the floor has moved on: its
     // exported position, the floor's without exporters, is the bucket's last record's
-    final var uploaded = awaitTheWholeJournalInTheBucket(store, log.getFirst());
+    final var uploaded = awaitTheWholeJournalInTheBucket(store, first);
     final var partitions = PartitionsActuator.of(broker);
     final var snapshotId =
         await("a snapshot at the floor")
@@ -97,13 +98,11 @@ final class RestoreFromBucketIT {
             .snapshotId();
     await("the snapshot in the bucket")
         .timeout(Duration.ofSeconds(60))
-        .until(
-            () -> SnapshotArchive.descriptor(store, cluster, "default", 1, snapshotId),
-            Optional::isPresent);
-    final long beforeTheSecondBatch = Bucket.readLog(store, log.getFirst()).lastPosition();
+        .until(() -> SnapshotArchive.descriptor(store, first, snapshotId), Optional::isPresent);
+    final long beforeTheSecondBatch = Bucket.readLog(store, first).lastPosition();
     instances.addAll(createInstances(10));
-    final var archived = awaitTheWholeJournalInTheBucket(store, log.getFirst());
-    final var snapshots = SnapshotArchive.list(store, cluster, "default", 1).complete();
+    final var archived = awaitTheWholeJournalInTheBucket(store, first);
+    final var snapshots = SnapshotArchive.list(store, first).complete();
     final var configuration = broker.bean(BrokerBasedProperties.class);
     final var partitionDirectory =
         Path.of(configuration.getData().getDirectory()).resolve("default/partitions/1");
@@ -173,7 +172,7 @@ final class RestoreFromBucketIT {
     final var part =
         await("the new history's part")
             .until(
-                () -> store.get(ObjectNames.historyPart(cluster, "default", restoreHistory, 1)),
+                () -> store.get(ObjectNames.historyPart(first, restoreHistory)),
                 content -> content.isPresent());
     assertThat(ManifestJson.read(part.orElseThrow()).partitions())
         .containsEntry(
@@ -183,7 +182,7 @@ final class RestoreFromBucketIT {
         await("segments of the new history")
             .timeout(Duration.ofSeconds(30))
             .until(
-                () -> Bucket.readLog(store, log.getFirst()),
+                () -> Bucket.readLog(store, first),
                 read ->
                     read.histories().contains(restoreHistory)
                         && read.lastPosition() > restoredHistory.position());
@@ -251,7 +250,7 @@ final class RestoreFromBucketIT {
    * longer than a segment's cut interval, and holds the last processed record.
    */
   private Bucket.LogRead awaitTheWholeJournalInTheBucket(
-      final FileSystemStore store, final Bucket.LogRef log) {
+      final FileSystemStore store, final LogId log) {
     final var lastIndex = new AtomicLong(-1);
     final var partitions = PartitionsActuator.of(broker);
     return await("the whole journal in the bucket")

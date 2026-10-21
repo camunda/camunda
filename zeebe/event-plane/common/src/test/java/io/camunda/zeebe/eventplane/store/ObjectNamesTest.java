@@ -10,6 +10,7 @@ package io.camunda.zeebe.eventplane.store;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import io.camunda.zeebe.eventplane.segment.LogId;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -20,6 +21,8 @@ final class ObjectNamesTest {
 
   private static final UUID HISTORY = UUID.fromString("7f3a9c0e-4b2d-4e8f-9a1b-2c3d4e5f6071");
   private static final String ULID = "01JCZ4A1B2C3D4E5F6G7H8J9KM";
+  private static final LogId LOG = new LogId("c", "t", 3);
+  private static final LogId ENCODED = new LogId("prod/eu", "default", 3);
 
   @Test
   void shouldKeepUnreservedCharacters() {
@@ -68,21 +71,21 @@ final class ObjectNamesTest {
   @Test
   void shouldNameObjectsAsTheContractDoes() {
     // when, then
-    assertThat(ObjectNames.historyPart("prod/eu", "default", HISTORY, 3))
+    assertThat(ObjectNames.historyPart(ENCODED, HISTORY))
         .isEqualTo("prod%2Feu/default/histories/7f3a9c0e-4b2d-4e8f-9a1b-2c3d4e5f6071/3.json");
-    assertThat(ObjectNames.segment("prod/eu", "default", 3, HISTORY, 1, 40, 0, ULID))
+    assertThat(ObjectNames.segment(ENCODED, HISTORY, 1, 40, 0, ULID))
         .isEqualTo(
             "prod%2Feu/default/3/7f3a9c0e-4b2d-4e8f-9a1b-2c3d4e5f6071/"
                 + "00000000000000000001-00000000000000000040-L0-01JCZ4A1B2C3D4E5F6G7H8J9KM.seg");
-    assertThat(ObjectNames.retentionMarker("c", "t", 3, ULID))
+    assertThat(ObjectNames.retentionMarker(LOG, ULID))
         .isEqualTo("c/t/3/retention/01JCZ4A1B2C3D4E5F6G7H8J9KM.json");
-    assertThat(ObjectNames.snapshotDescriptor("c", "t", 3, "12-1-30-30"))
+    assertThat(ObjectNames.snapshotDescriptor(LOG, "12-1-30-30"))
         .isEqualTo("c/t/3/snapshots/12-1-30-30/descriptor.json");
-    assertThat(ObjectNames.snapshotFile("c", "t", 3, "12-1-30-30", "000012.sst"))
+    assertThat(ObjectNames.snapshotFile(LOG, "12-1-30-30", "000012.sst"))
         .isEqualTo("c/t/3/snapshots/12-1-30-30/000012.sst");
     assertThat(ObjectNames.group("g")).isEqualTo("_groups/g/group.json");
     assertThat(ObjectNames.worker("g", "w-01JD")).isEqualTo("_groups/g/workers/w-01JD.json");
-    assertThat(ObjectNames.cursor("g", "prod/eu", "default", 3))
+    assertThat(ObjectNames.cursor("g", ENCODED))
         .isEqualTo("_groups/g/cursors/prod%2Feu/default/3.json");
   }
 
@@ -92,12 +95,12 @@ final class ObjectNamesTest {
     assertThat(ObjectNames.clusterPrefix("prod/eu")).isEqualTo("prod%2Feu/");
     assertThat(ObjectNames.tenantPrefix("c", "a b")).isEqualTo("c/a%20b/");
     assertThat(ObjectNames.historiesPrefix("c", "t")).isEqualTo("c/t/histories/");
-    assertThat(ObjectNames.logPrefix("c", "t", 3)).isEqualTo("c/t/3/");
-    assertThat(ObjectNames.segmentsPrefix("c", "t", 3, HISTORY))
+    assertThat(ObjectNames.logPrefix(LOG)).isEqualTo("c/t/3/");
+    assertThat(ObjectNames.segmentsPrefix(LOG, HISTORY))
         .isEqualTo("c/t/3/7f3a9c0e-4b2d-4e8f-9a1b-2c3d4e5f6071/");
-    assertThat(ObjectNames.retentionPrefix("c", "t", 3)).isEqualTo("c/t/3/retention/");
-    assertThat(ObjectNames.snapshotsPrefix("c", "t", 3)).isEqualTo("c/t/3/snapshots/");
-    assertThat(ObjectNames.snapshotPrefix("c", "t", 3, "12-1-30-30"))
+    assertThat(ObjectNames.retentionPrefix(LOG)).isEqualTo("c/t/3/retention/");
+    assertThat(ObjectNames.snapshotsPrefix(LOG)).isEqualTo("c/t/3/snapshots/");
+    assertThat(ObjectNames.snapshotPrefix(LOG, "12-1-30-30"))
         .isEqualTo("c/t/3/snapshots/12-1-30-30/");
     assertThat(ObjectNames.groupsPrefix()).isEqualTo("_groups/");
     assertThat(ObjectNames.workersPrefix("g")).isEqualTo("_groups/g/workers/");
@@ -107,25 +110,24 @@ final class ObjectNamesTest {
   @Test
   void shouldStartEveryKeyWithItsDirectoriesPrefix() {
     // given
-    final var segment = ObjectNames.segment("c", "t", 3, HISTORY, 1, 2, 0, ULID);
-    final var part = ObjectNames.historyPart("c", "t", HISTORY, 3);
+    final var segment = ObjectNames.segment(LOG, HISTORY, 1, 2, 0, ULID);
+    final var part = ObjectNames.historyPart(LOG, HISTORY);
 
     // when, then
     assertThat(segment)
-        .startsWith(ObjectNames.segmentsPrefix("c", "t", 3, HISTORY))
-        .startsWith(ObjectNames.logPrefix("c", "t", 3))
+        .startsWith(ObjectNames.segmentsPrefix(LOG, HISTORY))
+        .startsWith(ObjectNames.logPrefix(LOG))
         .startsWith(ObjectNames.tenantPrefix("c", "t"))
         .startsWith(ObjectNames.clusterPrefix("c"));
     assertThat(part)
         .startsWith(ObjectNames.historiesPrefix("c", "t"))
         .startsWith(ObjectNames.tenantPrefix("c", "t"));
-    assertThat(ObjectNames.retentionMarker("c", "t", 3, ULID))
-        .startsWith(ObjectNames.retentionPrefix("c", "t", 3));
-    assertThat(ObjectNames.snapshotDescriptor("c", "t", 3, "s1"))
-        .startsWith(ObjectNames.snapshotPrefix("c", "t", 3, "s1"))
-        .startsWith(ObjectNames.snapshotsPrefix("c", "t", 3));
+    assertThat(ObjectNames.retentionMarker(LOG, ULID)).startsWith(ObjectNames.retentionPrefix(LOG));
+    assertThat(ObjectNames.snapshotDescriptor(LOG, "s1"))
+        .startsWith(ObjectNames.snapshotPrefix(LOG, "s1"))
+        .startsWith(ObjectNames.snapshotsPrefix(LOG));
     assertThat(ObjectNames.worker("g", "w")).startsWith(ObjectNames.workersPrefix("g"));
-    assertThat(ObjectNames.cursor("g", "c", "t", 3)).startsWith(ObjectNames.cursorsPrefix("g"));
+    assertThat(ObjectNames.cursor("g", LOG)).startsWith(ObjectNames.cursorsPrefix("g"));
     assertThat(ObjectNames.group("g")).startsWith(ObjectNames.groupsPrefix());
   }
 
@@ -134,12 +136,12 @@ final class ObjectNamesTest {
     // given
     final var keys =
         List.of(
-            ObjectNames.segment("c", "t", 3, HISTORY, 9, 10, 0, ULID),
-            ObjectNames.segment("c", "t", 3, HISTORY, 10, 10, 0, ULID),
-            ObjectNames.segment("c", "t", 3, HISTORY, 100, 200, 0, ULID),
-            ObjectNames.segment("c", "t", 3, HISTORY, 100, 200, 1, ULID),
-            ObjectNames.segment("c", "t", 3, HISTORY, 1_000, 1_000, 0, ULID),
-            ObjectNames.segment("c", "t", 3, HISTORY, Long.MAX_VALUE - 1, Long.MAX_VALUE, 0, ULID));
+            ObjectNames.segment(LOG, HISTORY, 9, 10, 0, ULID),
+            ObjectNames.segment(LOG, HISTORY, 10, 10, 0, ULID),
+            ObjectNames.segment(LOG, HISTORY, 100, 200, 0, ULID),
+            ObjectNames.segment(LOG, HISTORY, 100, 200, 1, ULID),
+            ObjectNames.segment(LOG, HISTORY, 1_000, 1_000, 0, ULID),
+            ObjectNames.segment(LOG, HISTORY, Long.MAX_VALUE - 1, Long.MAX_VALUE, 0, ULID));
 
     // when, then the keys are in log order as text, though 9 < 10 < 100 < 1000 numerically too
     assertThat(keys).isSorted();
@@ -152,22 +154,20 @@ final class ObjectNamesTest {
     final var later = Ulid.of(1_790_000_000_001L, new byte[10]);
 
     // when, then
-    assertThat(ObjectNames.segment("c", "t", 3, HISTORY, 1, 5, 1, earlier))
-        .isLessThan(ObjectNames.segment("c", "t", 3, HISTORY, 1, 5, 1, later));
+    assertThat(ObjectNames.segment(LOG, HISTORY, 1, 5, 1, earlier))
+        .isLessThan(ObjectNames.segment(LOG, HISTORY, 1, 5, 1, later));
   }
 
   @Test
   void shouldNotLetANameAddAPathSegment() {
     // when
-    final var key = ObjectNames.segment("a/../b", "..", 3, HISTORY, 1, 5, 0, ULID);
+    final var key = ObjectNames.segment(new LogId("a/../b", "..", 3), HISTORY, 1, 5, 0, ULID);
 
     // then
     assertThat(key).startsWith("a%2F..%2Fb/%2E%2E/3/");
-    assertThat(ObjectNames.cursor("g/x", "c", "t", 3))
-        .isEqualTo("_groups/g%2Fx/cursors/c/t/3.json");
+    assertThat(ObjectNames.cursor("g/x", LOG)).isEqualTo("_groups/g%2Fx/cursors/c/t/3.json");
     assertThat(ObjectNames.worker("g", "../w")).isEqualTo("_groups/g/workers/..%2Fw.json");
-    assertThat(ObjectNames.snapshotFile("c", "t", 3, "s", ".."))
-        .isEqualTo("c/t/3/snapshots/s/%2E%2E");
+    assertThat(ObjectNames.snapshotFile(LOG, "s", "..")).isEqualTo("c/t/3/snapshots/s/%2E%2E");
   }
 
   @Test
@@ -176,11 +176,12 @@ final class ObjectNamesTest {
     assertThatThrownBy(() -> ObjectNames.clusterPrefix("_groups"))
         .isInstanceOf(InvalidObjectNameException.class)
         .hasMessage("Expected a cluster id that doesn't start with '_', but got '_groups'");
-    assertThatThrownBy(() -> ObjectNames.historyPart("_c", "t", HISTORY, 1))
+    final var underscore = new LogId("_c", "t", 1);
+    assertThatThrownBy(() -> ObjectNames.historyPart(underscore, HISTORY))
         .isInstanceOf(InvalidObjectNameException.class);
-    assertThatThrownBy(() -> ObjectNames.segment("_c", "t", 1, HISTORY, 1, 1, 0, ULID))
+    assertThatThrownBy(() -> ObjectNames.segment(underscore, HISTORY, 1, 1, 0, ULID))
         .isInstanceOf(InvalidObjectNameException.class);
-    assertThatThrownBy(() -> ObjectNames.cursor("g", "_c", "t", 1))
+    assertThatThrownBy(() -> ObjectNames.cursor("g", underscore))
         .isInstanceOf(InvalidObjectNameException.class);
     assertThat(ObjectNames.tenantPrefix("c", "_t")).as("a tenant may").isEqualTo("c/_t/");
   }
@@ -195,42 +196,30 @@ final class ObjectNamesTest {
     assertThatThrownBy(() -> ObjectNames.group("")).isInstanceOf(InvalidObjectNameException.class);
     assertThatThrownBy(() -> ObjectNames.worker("g", ""))
         .isInstanceOf(InvalidObjectNameException.class);
-    assertThatThrownBy(() -> ObjectNames.snapshotFile("c", "t", 1, "s", ""))
-        .isInstanceOf(InvalidObjectNameException.class);
-  }
-
-  @Test
-  void shouldRejectAPartitionBelowOne() {
-    // when, then
-    assertThatThrownBy(() -> ObjectNames.logPrefix("c", "t", 0))
-        .isInstanceOf(InvalidObjectNameException.class)
-        .hasMessage("Expected a partition of 1 or more, but got '0'");
-    assertThatThrownBy(() -> ObjectNames.historyPart("c", "t", HISTORY, -1))
-        .isInstanceOf(InvalidObjectNameException.class);
-    assertThatThrownBy(() -> ObjectNames.cursor("g", "c", "t", 0))
+    assertThatThrownBy(() -> ObjectNames.snapshotFile(LOG, "s", ""))
         .isInstanceOf(InvalidObjectNameException.class);
   }
 
   @Test
   void shouldRejectASegmentThatIsNotOneOrAUlidThatIsNot() {
     // when, then
-    assertThatThrownBy(() -> ObjectNames.segment("c", "t", 1, HISTORY, 5, 4, 0, ULID))
+    assertThatThrownBy(() -> ObjectNames.segment(LOG, HISTORY, 5, 4, 0, ULID))
         .isInstanceOf(InvalidObjectNameException.class);
-    assertThatThrownBy(() -> ObjectNames.segment("c", "t", 1, HISTORY, -1, 4, 0, ULID))
+    assertThatThrownBy(() -> ObjectNames.segment(LOG, HISTORY, -1, 4, 0, ULID))
         .isInstanceOf(InvalidObjectNameException.class);
-    assertThatThrownBy(() -> ObjectNames.segment("c", "t", 1, HISTORY, 1, 4, -1, ULID))
+    assertThatThrownBy(() -> ObjectNames.segment(LOG, HISTORY, 1, 4, -1, ULID))
         .isInstanceOf(InvalidObjectNameException.class);
-    assertThatThrownBy(() -> ObjectNames.segment("c", "t", 1, HISTORY, 1, 4, 0, "not-a-ulid"))
+    assertThatThrownBy(() -> ObjectNames.segment(LOG, HISTORY, 1, 4, 0, "not-a-ulid"))
         .isInstanceOf(InvalidObjectNameException.class)
         .hasMessage("Expected a ULID, but got 'not-a-ulid'");
-    assertThatThrownBy(() -> ObjectNames.retentionMarker("c", "t", 1, "not-a-ulid"))
+    assertThatThrownBy(() -> ObjectNames.retentionMarker(LOG, "not-a-ulid"))
         .isInstanceOf(InvalidObjectNameException.class);
   }
 
   @Test
   void shouldParseASegmentsNameFromItsKey() {
     // given
-    final var key = ObjectNames.segment("prod/eu", "default", 3, HISTORY, 41, 1_096_704, 1, ULID);
+    final var key = ObjectNames.segment(ENCODED, HISTORY, 41, 1_096_704, 1, ULID);
 
     // when
     final var name = ObjectNames.parseSegment(key);
@@ -242,8 +231,8 @@ final class ObjectNamesTest {
   @Test
   void shouldParseASegmentsNameWhateverItsKeyStartsWith() {
     // given
-    final var below = ObjectNames.segment("c", "t", 3, HISTORY, 1, 2, 0, ULID);
-    final var relative = below.substring(ObjectNames.logPrefix("c", "t", 3).length());
+    final var below = ObjectNames.segment(LOG, HISTORY, 1, 2, 0, ULID);
+    final var relative = below.substring(ObjectNames.logPrefix(LOG).length());
 
     // when, then
     assertThat(ObjectNames.parseSegment(relative)).isEqualTo(ObjectNames.parseSegment(below));
@@ -257,12 +246,11 @@ final class ObjectNamesTest {
     final var name = new SegmentName(HISTORY, 7, Long.MAX_VALUE, 12, ULID);
 
     // when
-    final var key = ObjectNames.segment("c", "t", 3, name);
+    final var key = ObjectNames.segment(LOG, name);
 
     // then
     assertThat(ObjectNames.parseSegment(key)).isEqualTo(name);
-    assertThat(key)
-        .isEqualTo(ObjectNames.segment("c", "t", 3, HISTORY, 7, Long.MAX_VALUE, 12, ULID));
+    assertThat(key).isEqualTo(ObjectNames.segment(LOG, HISTORY, 7, Long.MAX_VALUE, 12, ULID));
   }
 
   @ParameterizedTest
@@ -290,15 +278,16 @@ final class ObjectNamesTest {
   }
 
   @Test
-  void shouldParseACursorsKeyBackIntoGroupClusterTenantAndPartition() {
+  void shouldParseACursorsKeyBackIntoGroupAndLog() {
     // given
-    final var key = ObjectNames.cursor("my group", "prod/eu", "größe", 12);
+    final var log = new LogId("prod/eu", "größe", 12);
+    final var key = ObjectNames.cursor("my group", log);
 
     // when
     final var name = ObjectNames.parseCursor(key);
 
     // then
-    assertThat(name).isEqualTo(new CursorName("my group", "prod/eu", "größe", 12));
+    assertThat(name).isEqualTo(new CursorName("my group", log));
   }
 
   @ParameterizedTest
@@ -316,6 +305,8 @@ final class ObjectNamesTest {
         "_groups/g/cursors/c/t/99999999999.json",
         "_groups/g/workers/w.json",
         "_groups/g/cursors/_c/t/3.json",
+        "_groups/g/cursors/%20/t/3.json",
+        "_groups/g/cursors/c/%20/3.json",
         "_groups/g/cursors/c/t/3.json.tmp",
         "_groups/g/cursors/c%2/t/3.json",
         "_groups/g/cursors/c%2f/t/3.json",

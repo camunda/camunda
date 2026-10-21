@@ -13,6 +13,7 @@ import io.camunda.zeebe.eventplane.history.HistoryLineage.Stretch;
 import io.camunda.zeebe.eventplane.segment.Entry;
 import io.camunda.zeebe.eventplane.segment.EntryReader;
 import io.camunda.zeebe.eventplane.segment.Footer;
+import io.camunda.zeebe.eventplane.segment.LogId;
 import io.camunda.zeebe.eventplane.snapshot.SnapshotArchive;
 import io.camunda.zeebe.eventplane.snapshot.SnapshotDescriptor;
 import io.camunda.zeebe.eventplane.store.NoSuchObjectException;
@@ -69,9 +70,7 @@ public final class BucketRestoreService {
           .reversed();
 
   private final ObjectStore store;
-  private final String cluster;
-  private final String tenant;
-  private final int partitionId;
+  private final LogId log;
   private final RaftPartition partition;
   private final Path rootDirectory;
   private final int brokerId;
@@ -91,10 +90,8 @@ public final class BucketRestoreService {
       final SnapshotFileInfoProvider fileInfoProvider,
       final MeterRegistry meterRegistry) {
     this.store = store;
-    this.cluster = cluster;
+    log = new LogId(cluster, partition.id().group(), partition.id().number());
     this.partition = partition;
-    tenant = partition.id().group();
-    partitionId = partition.id().number();
     rootDirectory = partition.dataDirectory().toPath();
     this.brokerId = brokerId;
     this.fileInfoProvider = fileInfoProvider;
@@ -110,21 +107,19 @@ public final class BucketRestoreService {
    * @throws BucketRestoreException if the bucket doesn't hold what the restore needs
    */
   public RestoredFromBucket restore(final long target) throws IOException, FlushException {
-    final var lineage = Histories.load(store, cluster, tenant);
+    final var lineage = Histories.load(store, log.cluster(), log.tenant());
     final var current =
-        lineage
-            .current(cluster, tenant)
-            .orElseThrow(() -> new NoHistory(cluster, tenant, partitionId));
-    final var path = lineage.path(current.historyId(), partitionId);
+        lineage.current(log.cluster(), log.tenant()).orElseThrow(() -> new NoHistory(log));
+    final var path = lineage.path(current.historyId(), log.partition());
     if (path.isEmpty()) {
-      throw new NoHistory(cluster, tenant, partitionId);
+      throw new NoHistory(log);
     }
-    final var segments = new PathSegments(store, cluster, tenant, partitionId, path);
+    final var segments = new PathSegments(store, log, path);
     segments.refresh();
     final var candidates = candidates(path, target);
     LOG.info(
         "Restoring partition {} from the bucket {} in history {}, to position {}, from one of {} snapshots",
-        partitionId,
+        log.partition(),
         store.root(),
         current.historyId(),
         target == LATEST ? "latest" : target,
@@ -151,7 +146,7 @@ public final class BucketRestoreService {
       }
       final var appended = append(journal, segments, 1, target);
       if (appended.position() < 1) {
-        throw new NothingToRestore(partitionId, target);
+        throw new NothingToRestore(log.partition(), target);
       }
       journal.flush();
       return restored(current.historyId(), null, appended);
@@ -161,7 +156,7 @@ public final class BucketRestoreService {
   /** The snapshots a restore along the path can start from, by the target, newest first. */
   private List<SnapshotDescriptor> candidates(final List<Stretch> path, final long target)
       throws IOException {
-    return SnapshotArchive.list(store, cluster, tenant, partitionId).complete().stream()
+    return SnapshotArchive.list(store, log).complete().stream()
         .filter(snapshot -> snapshot.servesPath(path))
         .filter(snapshot -> snapshot.requiredPosition() <= target)
         .sorted(NEWEST_FIRST)
@@ -207,10 +202,10 @@ public final class BucketRestoreService {
       }
     }
     if (next == first) {
-      throw new MissingEntry(partitionId, first);
+      throw new MissingEntry(log.partition(), first);
     }
     if (target != LATEST && position < target) {
-      throw new LogEndsBeforeTarget(partitionId, target, next - 1, position);
+      throw new LogEndsBeforeTarget(log.partition(), target, next - 1, position);
     }
     return new Appended(next - 1, position);
   }
@@ -231,14 +226,14 @@ public final class BucketRestoreService {
           continue;
         }
         if (entry.index() != expected) {
-          throw new UnexpectedEntry(partitionId, segment.key(), expected, entry.index());
+          throw new UnexpectedEntry(log.partition(), segment.key(), expected, entry.index());
         }
         entries.add(entry);
         expected++;
       }
     }
     if (expected <= segment.lastServed()) {
-      throw new UnexpectedEntry(partitionId, segment.key(), expected, -1);
+      throw new UnexpectedEntry(log.partition(), segment.key(), expected, -1);
     }
     return entries;
   }
@@ -247,10 +242,9 @@ public final class BucketRestoreService {
   private void install(final SnapshotDescriptor snapshot) throws IOException {
     final var download =
         rootDirectory.resolve(
-            "restoring-partition" + partitionId + "-snapshot-" + snapshot.snapshotId());
+            "restoring-partition" + log.partition() + "-snapshot-" + snapshot.snapshotId());
     try {
-      final var files =
-          SnapshotArchive.download(store, cluster, tenant, partitionId, snapshot, download);
+      final var files = SnapshotArchive.download(store, log, snapshot, download);
       @SuppressWarnings("resource")
       final var snapshotStore =
           new FileBasedSnapshotStore(
@@ -265,7 +259,7 @@ public final class BucketRestoreService {
       final UUID history, final @Nullable String snapshotId, final Appended appended) {
     LOG.info(
         "Restored partition {} from the bucket, from snapshot {}, up to index {}, position {}",
-        partitionId,
+        log.partition(),
         snapshotId,
         appended.lastIndex(),
         appended.position());

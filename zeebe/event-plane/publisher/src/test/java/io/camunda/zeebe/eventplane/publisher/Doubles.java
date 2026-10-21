@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.eventplane.publisher;
 
-import io.camunda.zeebe.eventplane.segment.Identity;
+import io.camunda.zeebe.eventplane.segment.LogId;
 import io.camunda.zeebe.eventplane.store.FileSystemStore;
 import io.camunda.zeebe.eventplane.store.ObjectStore;
 import io.camunda.zeebe.eventplane.store.StoredObject;
@@ -179,7 +179,7 @@ final class Doubles {
     }
 
     @Override
-    public void announce(final Identity log, final Upload upload) {
+    public void announce(final LogId log, final Upload upload) {
       events.add("announce " + upload.footer().lastIndex());
       uploads.add(upload);
     }

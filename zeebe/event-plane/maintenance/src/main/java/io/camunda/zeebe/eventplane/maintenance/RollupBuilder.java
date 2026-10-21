@@ -13,6 +13,7 @@ import io.camunda.zeebe.eventplane.segment.EntryReader;
 import io.camunda.zeebe.eventplane.segment.Footer;
 import io.camunda.zeebe.eventplane.segment.InvalidSegmentException;
 import io.camunda.zeebe.eventplane.segment.Level;
+import io.camunda.zeebe.eventplane.segment.LogId;
 import io.camunda.zeebe.eventplane.segment.Metadata;
 import io.camunda.zeebe.eventplane.segment.SegmentWriter;
 import io.camunda.zeebe.eventplane.segment.TailTooShortException;
@@ -51,7 +52,7 @@ final class RollupBuilder {
     long latestRecordTimestamp = NO_POSITION;
     long lastIndex = 0;
     final Footer footer;
-    try (final var writer = new SegmentWriter(out, log.identity(), history, Level.ROLLUP)) {
+    try (final var writer = new SegmentWriter(out, log, history, Level.ROLLUP)) {
       for (final var segment : chain) {
         final var content = store.get(segment.key());
         if (content.isEmpty()) {
@@ -107,9 +108,9 @@ final class RollupBuilder {
           "history %s and entries %d to %d"
               .formatted(footer.history(), footer.firstIndex(), footer.lastIndex()));
     }
-    if (!metadata.identity().equals(log.identity())) {
+    if (!metadata.log().equals(log)) {
       throw new UnexpectedSegmentException(
-          segment.key(), "the identity " + log.identity(), "the identity " + metadata.identity());
+          segment.key(), "the log " + log, "the log " + metadata.log());
     }
     return footer;
   }

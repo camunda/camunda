@@ -11,6 +11,7 @@ import io.camunda.zeebe.eventplane.history.HistoryLineage;
 import io.camunda.zeebe.eventplane.history.HistoryLineage.Stretch;
 import io.camunda.zeebe.eventplane.history.HistoryManifest.Base;
 import io.camunda.zeebe.eventplane.history.MissingManifestException;
+import io.camunda.zeebe.eventplane.segment.LogId;
 import io.camunda.zeebe.eventplane.store.ObjectNames;
 import java.util.List;
 import java.util.Objects;
@@ -74,8 +75,7 @@ final class LogPath {
 
   /** The directory of the segments of a stretch's history. */
   String directory(final int stretch) {
-    return ObjectNames.segmentsPrefix(
-        log.cluster(), log.tenant(), log.partition(), history(stretch));
+    return ObjectNames.segmentsPrefix(log, history(stretch));
   }
 
   /** The last index that a stretch's history's segments serve on the path. */

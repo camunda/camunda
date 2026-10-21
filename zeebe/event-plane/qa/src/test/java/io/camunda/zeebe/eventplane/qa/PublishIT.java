@@ -52,11 +52,7 @@ final class PublishIT {
             .until(() -> Bucket.readLog(store, log.getFirst()), read -> read.lastPosition() > 0);
     assertThat(segments.indexesAreContiguous()).isTrue();
     assertThat(segments.positionsIncrease()).isTrue();
-    assertThat(
-            store.get(
-                ObjectNames.historyPart(
-                    log.getFirst().clusterId(), "default", segments.history(), 1)))
-        .isPresent();
+    assertThat(store.get(ObjectNames.historyPart(log.getFirst(), segments.history()))).isPresent();
 
     // the floor follows the uploads, and compaction stops there: a snapshot's exported position,
     // the floor's without exporters, bounds what the journal may compact

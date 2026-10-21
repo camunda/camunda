@@ -8,6 +8,7 @@
 package io.camunda.zeebe.eventplane.service;
 
 import io.camunda.zeebe.eventplane.notification.UploadNotice;
+import io.camunda.zeebe.eventplane.segment.LogId;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -30,7 +31,7 @@ final class NoticeBoard implements AutoCloseable {
 
   /** Remembers the notice if it is the newest of its log by last index, and passes it on. */
   void publish(final UploadNotice notice) {
-    final var log = LogId.of(notice);
+    final var log = notice.log();
     newest.merge(
         log, notice, (old, latest) -> latest.lastIndex() >= old.lastIndex() ? latest : old);
     for (final var subscription : subscriptions) {

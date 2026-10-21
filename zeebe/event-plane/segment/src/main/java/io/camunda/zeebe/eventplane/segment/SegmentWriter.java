@@ -42,7 +42,7 @@ public final class SegmentWriter implements AutoCloseable {
 
   private final CountingOutputStream out;
   private final ZstdOutputStreamNoFinalizer zstd;
-  private final Identity identity;
+  private final LogId log;
   private final UUID history;
   private final Level level;
   private final long frameTarget;
@@ -58,15 +58,14 @@ public final class SegmentWriter implements AutoCloseable {
   private long lastPosition = NO_POSITION;
   private boolean done;
 
-  public SegmentWriter(OutputStream out, Identity identity, UUID history, Level level)
-      throws IOException {
-    this(out, identity, history, level, level.frameTarget());
+  public SegmentWriter(OutputStream out, LogId log, UUID history, Level level) throws IOException {
+    this(out, log, history, level, level.frameTarget());
   }
 
-  SegmentWriter(OutputStream out, Identity identity, UUID history, Level level, long frameTarget)
+  SegmentWriter(OutputStream out, LogId log, UUID history, Level level, long frameTarget)
       throws IOException {
     this.out = new CountingOutputStream(out);
-    this.identity = identity;
+    this.log = log;
     this.history = history;
     this.level = level;
     this.frameTarget = frameTarget;
@@ -157,7 +156,7 @@ public final class SegmentWriter implements AutoCloseable {
             latestRecordTimestamp,
             out.count(),
             level);
-    out.write(new Metadata(identity, frames).encode());
+    out.write(new Metadata(log, frames).encode());
     out.write(footer.encode());
     out.flush();
     return footer;

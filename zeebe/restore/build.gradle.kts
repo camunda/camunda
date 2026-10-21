@@ -25,7 +25,8 @@ dependencies {
   implementation(libs.com.fasterxml.jackson.core.jackson.core)
   // BucketRestoreService takes the common module's ObjectStore
   api(project(":zeebe-event-plane-common"))
-  implementation(project(":zeebe-event-plane-segment"))
+  // BucketRestoreException.NoHistory names the segment module's LogId
+  api(project(":zeebe-event-plane-segment"))
   testImplementation(project(":zeebe-logstreams"))
   testImplementation(projectArtifact(":zeebe-logstreams", ArtifactKind.TESTS))
   testImplementation(libs.org.junit.jupiter.junit.jupiter.params)

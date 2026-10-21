@@ -12,6 +12,7 @@ import static org.awaitility.Awaitility.await;
 
 import io.camunda.zeebe.eventplane.history.HistoryIds;
 import io.camunda.zeebe.eventplane.history.HistoryManifest.Base;
+import io.camunda.zeebe.eventplane.segment.LogId;
 import io.camunda.zeebe.eventplane.store.FileSystemStore;
 import io.camunda.zeebe.eventplane.store.ObjectNames;
 import io.camunda.zeebe.eventplane.store.ObjectStore;
@@ -169,7 +170,7 @@ final class CrossStoreTest {
   }
 
   private static String cursorKey(final LogId log) {
-    return ObjectNames.cursor("g", log.cluster(), log.tenant(), log.partition());
+    return ObjectNames.cursor("g", log);
   }
 
   private static List<Long> range(final long to) {

@@ -7,13 +7,13 @@
  */
 package io.camunda.zeebe.eventplane.store;
 
+import io.camunda.zeebe.eventplane.segment.LogId;
+
 /**
- * What the key of a consumer group's cursor says: the group, and the log, a partition of a physical
- * tenant of a cluster. See {@link ObjectNames#cursor}.
+ * What the key of a consumer group's cursor says: the group, and the log. See {@link
+ * ObjectNames#cursor}.
  *
  * @param group the consumer group
- * @param cluster the log's cluster
- * @param tenant the log's physical tenant
- * @param partition the log's partition
+ * @param log the log the cursor is in
  */
-public record CursorName(String group, String cluster, String tenant, int partition) {}
+public record CursorName(String group, LogId log) {}

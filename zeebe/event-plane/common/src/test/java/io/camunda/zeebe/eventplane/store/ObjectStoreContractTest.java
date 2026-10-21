@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.tuple;
 
+import io.camunda.zeebe.eventplane.segment.LogId;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
@@ -30,6 +31,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 abstract class ObjectStoreContractTest {
 
   private static final UUID HISTORY = UUID.fromString("7f3a9c0e-4b2d-4e8f-9a1b-2c3d4e5f6071");
+  private static final LogId LOG = new LogId("c", "default", 1);
 
   protected ObjectStore store;
 
@@ -451,12 +453,12 @@ abstract class ObjectStoreContractTest {
     final var ulid = Ulid.next();
     final var keys =
         List.of(
-            ObjectNames.segment("prod/eu", "default", 3, HISTORY, 1, 40, 0, ulid),
-            ObjectNames.segment("prod/eu", "tenant one", 3, HISTORY, 1, 40, 0, ulid),
-            ObjectNames.segment("prod/eu", "tenant%one", 3, HISTORY, 1, 40, 0, ulid),
-            ObjectNames.segment("prod/eu", "größe", 3, HISTORY, 41, 80, 1, ulid),
-            ObjectNames.segment("..", "..", 3, HISTORY, 1, 40, 0, ulid),
-            ObjectNames.historyPart("prod/eu", "default", HISTORY, 3));
+            ObjectNames.segment(new LogId("prod/eu", "default", 3), HISTORY, 1, 40, 0, ulid),
+            ObjectNames.segment(new LogId("prod/eu", "tenant one", 3), HISTORY, 1, 40, 0, ulid),
+            ObjectNames.segment(new LogId("prod/eu", "tenant%one", 3), HISTORY, 1, 40, 0, ulid),
+            ObjectNames.segment(new LogId("prod/eu", "größe", 3), HISTORY, 41, 80, 1, ulid),
+            ObjectNames.segment(new LogId("..", "..", 3), HISTORY, 1, 40, 0, ulid),
+            ObjectNames.historyPart(new LogId("prod/eu", "default", 3), HISTORY));
     for (final var key : keys) {
       store.put(key, bytes(key));
     }
@@ -465,7 +467,11 @@ abstract class ObjectStoreContractTest {
     final var clusters = store.listPrefixes("");
     final var tenants = store.listPrefixes(ObjectNames.clusterPrefix("prod/eu"));
     final var segments =
-        keys(store.list(ObjectNames.segmentsPrefix("prod/eu", "tenant one", 3, HISTORY), null, 10));
+        keys(
+            store.list(
+                ObjectNames.segmentsPrefix(new LogId("prod/eu", "tenant one", 3), HISTORY),
+                null,
+                10));
 
     // then
     assertThat(clusters.stream().map(prefix -> decodeBelow("", prefix)))
@@ -475,7 +481,8 @@ abstract class ObjectStoreContractTest {
                 .map(prefix -> decodeBelow(ObjectNames.clusterPrefix("prod/eu"), prefix)))
         .containsExactlyInAnyOrder("default", "tenant one", "tenant%one", "größe");
     assertThat(segments)
-        .containsExactly(ObjectNames.segment("prod/eu", "tenant one", 3, HISTORY, 1, 40, 0, ulid));
+        .containsExactly(
+            ObjectNames.segment(new LogId("prod/eu", "tenant one", 3), HISTORY, 1, 40, 0, ulid));
     for (final var key : keys) {
       assertThat(store.get(key)).hasValue(bytes(key));
     }
@@ -485,21 +492,20 @@ abstract class ObjectStoreContractTest {
   @Test
   void shouldListASegmentsDirectoryInLogOrder() throws IOException {
     // given segments put out of order
-    final var first = ObjectNames.segment("c", "default", 1, HISTORY, 1, 40, 0, Ulid.next());
-    final var second = ObjectNames.segment("c", "default", 1, HISTORY, 41, 99, 0, Ulid.next());
-    final var third = ObjectNames.segment("c", "default", 1, HISTORY, 100, 120, 0, Ulid.next());
-    final var rollup = ObjectNames.segment("c", "default", 1, HISTORY, 1, 99, 1, Ulid.next());
+    final var first = ObjectNames.segment(LOG, HISTORY, 1, 40, 0, Ulid.next());
+    final var second = ObjectNames.segment(LOG, HISTORY, 41, 99, 0, Ulid.next());
+    final var third = ObjectNames.segment(LOG, HISTORY, 100, 120, 0, Ulid.next());
+    final var rollup = ObjectNames.segment(LOG, HISTORY, 1, 99, 1, Ulid.next());
     for (final var key : List.of(third, rollup, first, second)) {
       store.put(key, bytes("x"));
     }
 
     // when
-    final var listed =
-        keys(store.list(ObjectNames.segmentsPrefix("c", "default", 1, HISTORY), null, 10));
+    final var listed = keys(store.list(ObjectNames.segmentsPrefix(LOG, HISTORY), null, 10));
 
     // then names sort by first index, and by last index of the same first
     assertThat(listed).containsExactly(first, rollup, second, third);
-    assertThat(keys(store.list(ObjectNames.segmentsPrefix("c", "default", 1, HISTORY), first, 10)))
+    assertThat(keys(store.list(ObjectNames.segmentsPrefix(LOG, HISTORY), first, 10)))
         .containsExactly(rollup, second, third);
   }
 

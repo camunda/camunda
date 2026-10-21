@@ -321,14 +321,7 @@ final class RollupTest extends StoreTestCase {
     final var short4to6 = segments.put(HISTORY, 0, TWO_DAYS, entries(4, 5));
     final var misnamed =
         ObjectNames.segment(
-            SegmentFixture.LOG.cluster(),
-            SegmentFixture.LOG.tenant(),
-            SegmentFixture.LOG.partition(),
-            HISTORY,
-            4,
-            6,
-            0,
-            ObjectNames.parseSegment(short4to6).ulid());
+            SegmentFixture.LOG, HISTORY, 4, 6, 0, ObjectNames.parseSegment(short4to6).ulid());
     store.put(misnamed, store.get(short4to6).orElseThrow());
     store.delete(short4to6);
 

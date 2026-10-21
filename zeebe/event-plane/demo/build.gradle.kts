@@ -1,6 +1,7 @@
 plugins { id("buildlogic.server-conventions") }
 
 dependencies {
+  implementation(project(":zeebe-event-plane-segment"))
   implementation(project(":zeebe-event-plane-consumer"))
   implementation(project(":zeebe-event-plane-common"))
   implementation(project(":zeebe-event-plane-service"))

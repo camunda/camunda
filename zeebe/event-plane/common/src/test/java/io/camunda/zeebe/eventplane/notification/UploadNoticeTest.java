@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import io.camunda.zeebe.eventplane.segment.LogId;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.UUID;
@@ -39,6 +40,12 @@ final class UploadNoticeTest {
 
     // then
     assertThat(json).isEqualTo(JSON);
+  }
+
+  @Test
+  void shouldNameTheLogOfItsSegment() {
+    // when, then
+    assertThat(notice().log()).isEqualTo(new LogId("c", "default", 3));
   }
 
   @Test

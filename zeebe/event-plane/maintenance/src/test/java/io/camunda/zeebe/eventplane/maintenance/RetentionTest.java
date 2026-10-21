@@ -400,19 +400,10 @@ final class RetentionTest extends StoreTestCase {
   }
 
   private static String descriptorKey(final String snapshotId) {
-    return ObjectNames.snapshotDescriptor(
-        SegmentFixture.LOG.cluster(),
-        SegmentFixture.LOG.tenant(),
-        SegmentFixture.LOG.partition(),
-        snapshotId);
+    return ObjectNames.snapshotDescriptor(SegmentFixture.LOG, snapshotId);
   }
 
   private static String fileKey(final String snapshotId) {
-    return ObjectNames.snapshotFile(
-        SegmentFixture.LOG.cluster(),
-        SegmentFixture.LOG.tenant(),
-        SegmentFixture.LOG.partition(),
-        snapshotId,
-        "state");
+    return ObjectNames.snapshotFile(SegmentFixture.LOG, snapshotId, "state");
   }
 }

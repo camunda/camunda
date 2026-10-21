@@ -14,7 +14,7 @@ import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.eventplane.publisher.Announcer;
 import io.camunda.zeebe.eventplane.publisher.CutPolicy;
 import io.camunda.zeebe.eventplane.publisher.HttpAnnouncer;
-import io.camunda.zeebe.eventplane.segment.Identity;
+import io.camunda.zeebe.eventplane.segment.LogId;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.scheduler.ScheduledTimer;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
@@ -109,8 +109,7 @@ public final class EventPlanePartitionTransitionStep implements PartitionTransit
               + " Configure camunda.cluster.cluster-id to keep the cluster's logs across restores.",
           clusterKey);
     }
-    final var log =
-        new Identity(clusterKey, context.partitionId().group(), context.getPartitionId());
+    final var log = new LogId(clusterKey, context.partitionId().group(), context.getPartitionId());
     final var raftPartition = context.getRaftPartition();
     // the publisher's thread has a transaction context of its own
     final var floorStore =

@@ -42,7 +42,7 @@ import net.jqwik.api.statistics.Statistics;
  */
 final class SegmentPropertiesTest {
 
-  private static final Identity IDENTITY = new Identity("cluster-1", "default", 3);
+  private static final LogId LOG = new LogId("cluster-1", "default", 3);
   private static final UUID HISTORY = UUID.fromString("7f3a9c0e-4b2d-4e8f-9a1b-2c3d4e5f6071");
   private static final long NOON = 1_792_152_000_000L;
 
@@ -86,7 +86,7 @@ final class SegmentPropertiesTest {
                 withRecords.isEmpty() ? NO_POSITION : NOON,
                 read.footer().bodyLength(),
                 level(frameTarget)));
-    assertThat(read.metadata().identity()).isEqualTo(IDENTITY);
+    assertThat(read.metadata().log()).isEqualTo(LOG);
     assertThat(read.entriesFrom(0)).isEqualTo(entries);
 
     final var frames = read.metadata().frames();
@@ -240,7 +240,7 @@ final class SegmentPropertiesTest {
 
   private static byte[] write(List<Entry> entries, long frameTarget) throws IOException {
     final var out = new ByteArrayOutputStream();
-    try (var writer = new SegmentWriter(out, IDENTITY, HISTORY, level(frameTarget), frameTarget)) {
+    try (var writer = new SegmentWriter(out, LOG, HISTORY, level(frameTarget), frameTarget)) {
       for (var entry : entries) {
         writer.append(entry);
       }

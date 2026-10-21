@@ -22,7 +22,7 @@ import io.camunda.zeebe.eventplane.publisher.Doubles.ListSource;
 import io.camunda.zeebe.eventplane.segment.Entry;
 import io.camunda.zeebe.eventplane.segment.EntryReader;
 import io.camunda.zeebe.eventplane.segment.Footer;
-import io.camunda.zeebe.eventplane.segment.Identity;
+import io.camunda.zeebe.eventplane.segment.LogId;
 import io.camunda.zeebe.eventplane.store.ObjectNames;
 import io.camunda.zeebe.eventplane.store.SegmentName;
 import io.camunda.zeebe.eventplane.store.Ulid;
@@ -46,7 +46,7 @@ import org.junit.jupiter.api.io.TempDir;
 
 final class PartitionPublisherTest {
 
-  static final Identity LOG = new Identity("cluster-1", "default", 1);
+  static final LogId LOG = new LogId("cluster-1", "default", 1);
   static final UUID HISTORY = UUID.fromString("7f3a9c0e-4b2d-4e8f-9a1b-2c3d4e5f6071");
   static final HistoryManifest MANIFEST =
       new HistoryManifest(
@@ -217,7 +217,7 @@ final class PartitionPublisherTest {
   @Test
   void shouldEncodeTheClusterAndTenantInTheKeyOfASegment() throws Exception {
     // given
-    final var log = new Identity("my cluster", "a/b", 2);
+    final var log = new LogId("my cluster", "a/b", 2);
     final var manifest =
         new HistoryManifest(
             1,
@@ -381,8 +381,7 @@ final class PartitionPublisherTest {
       // then
       assertThat(logs.messagesAt(Level.WARN))
           .containsExactly(
-              ("Expected the journal of Identity[clusterId=cluster-1, tenantId=default,"
-                  + " partition=1] to hold entry 2, which follows the upload floor at index 1,"
+              ("Expected the journal of cluster-1/default/1 to hold entry 2, which follows the upload floor at index 1,"
                   + " but its first entry is 3: it was compacted past the floor, so entries 2"
                   + " to 2 are not published"));
     }
@@ -418,7 +417,7 @@ final class PartitionPublisherTest {
   @Test
   void shouldRejectAManifestOfAnotherCluster() {
     // given
-    final var other = new Identity("cluster-2", "default", 1);
+    final var other = new LogId("cluster-2", "default", 1);
 
     // when
     assertThatThrownBy(() -> publisher(other, MANIFEST))
@@ -435,7 +434,7 @@ final class PartitionPublisherTest {
   @Test
   void shouldRejectAManifestOfAnotherTenant() {
     // given
-    final var other = new Identity("cluster-1", "other", 1);
+    final var other = new LogId("cluster-1", "other", 1);
 
     // when
     assertThatThrownBy(() -> publisher(other, MANIFEST))
@@ -447,7 +446,7 @@ final class PartitionPublisherTest {
   @Test
   void shouldRejectAManifestOfAnotherPartition() {
     // given
-    final var other = new Identity("cluster-1", "default", 2);
+    final var other = new LogId("cluster-1", "default", 2);
 
     // when
     assertThatThrownBy(() -> publisher(other, MANIFEST))
@@ -509,7 +508,7 @@ final class PartitionPublisherTest {
         LOG, MANIFEST, source, store, floors, announcements, policy, clock);
   }
 
-  private PartitionPublisher publisher(final Identity log, final HistoryManifest manifest) {
+  private PartitionPublisher publisher(final LogId log, final HistoryManifest manifest) {
     return new PartitionPublisher(
         log,
         manifest,

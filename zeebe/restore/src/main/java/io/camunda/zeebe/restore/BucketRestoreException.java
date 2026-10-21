@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.restore;
 
+import io.camunda.zeebe.eventplane.segment.LogId;
 import java.io.IOException;
 
 /** A partition can't be restored from the Event Plane's bucket, as the bucket doesn't hold it. */
@@ -27,24 +28,19 @@ public abstract sealed class BucketRestoreException extends IOException {
   /** The tenant has no history in the bucket, or its current history doesn't have the partition. */
   public static final class NoHistory extends BucketRestoreException {
 
-    private final String cluster;
-    private final String tenant;
+    private final LogId log;
 
-    public NoHistory(final String cluster, final String tenant, final int partition) {
+    public NoHistory(final LogId log) {
       super(
-          partition,
+          log.partition(),
           "Expected a history of partition %d of cluster '%s' and tenant '%s' in the bucket, but got none"
-              .formatted(partition, cluster, tenant));
-      this.cluster = cluster;
-      this.tenant = tenant;
+              .formatted(log.partition(), log.cluster(), log.tenant()));
+      this.log = log;
     }
 
-    public String cluster() {
-      return cluster;
-    }
-
-    public String tenant() {
-      return tenant;
+    /** The log that has no history. */
+    public LogId log() {
+      return log;
     }
   }
 

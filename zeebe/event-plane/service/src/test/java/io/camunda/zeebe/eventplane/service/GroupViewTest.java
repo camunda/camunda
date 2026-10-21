@@ -18,6 +18,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.zeebe.eventplane.segment.LogId;
 import io.camunda.zeebe.eventplane.store.FileSystemStore;
 import io.camunda.zeebe.eventplane.store.ObjectNames;
 import java.net.http.HttpResponse;
@@ -157,10 +158,10 @@ final class GroupViewTest {
     put(store, ObjectNames.worker("g", "w-broken"), "not json");
     put(store, ObjectNames.worker("g", "w-no-beat"), "{\"version\":1,\"worker\":\"w-no-beat\"}");
     cursor(store, "g", "c", "default", 1, HISTORY, 10, 9, "w-1");
-    put(store, ObjectNames.cursor("g", "c", "default", 2), "{\"version\":1}");
+    put(store, ObjectNames.cursor("g", new LogId("c", "default", 2)), "{\"version\":1}");
     put(
         store,
-        ObjectNames.cursor("g", "c", "default", 3),
+        ObjectNames.cursor("g", new LogId("c", "default", 3)),
         "{\"history\":\"not-a-uuid\",\"index\":1,\"position\":1}");
     put(store, "_groups/g/cursors/c/default/four.json", "{}");
     put(store, "_groups/g/workers/readme.txt", "not a heartbeat");
@@ -180,7 +181,7 @@ final class GroupViewTest {
     // given
     put(
         store,
-        ObjectNames.cursor("g", "c", "default", 1),
+        ObjectNames.cursor("g", new LogId("c", "default", 1)),
         "{\"version\":1,\"history\":\"%s\",\"index\":1,\"position\":1}".formatted(HISTORY));
 
     // when

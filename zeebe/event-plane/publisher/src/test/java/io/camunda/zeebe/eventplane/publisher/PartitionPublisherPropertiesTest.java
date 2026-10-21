@@ -116,7 +116,7 @@ final class PartitionPublisherPropertiesTest {
 
     assertThat(events.getFirst()).isEqualTo("put " + PART_KEY);
     final var segments = new TreeMap<Long, List<Entry>>();
-    final var prefix = ObjectNames.segmentsPrefix("cluster-1", "default", 1, HISTORY);
+    final var prefix = ObjectNames.segmentsPrefix(LOG, HISTORY);
     for (final var object : store.list(prefix, null, 1000)) {
       final var content = store.get(object.key()).orElseThrow();
       final var footer = Footer.read(ByteBuffer.wrap(content));

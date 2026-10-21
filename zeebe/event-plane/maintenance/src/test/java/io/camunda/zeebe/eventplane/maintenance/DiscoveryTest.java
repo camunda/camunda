@@ -10,6 +10,7 @@ package io.camunda.zeebe.eventplane.maintenance;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.eventplane.history.HistoryManifest.Base;
+import io.camunda.zeebe.eventplane.segment.LogId;
 import io.camunda.zeebe.eventplane.store.ObjectNames;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
@@ -61,12 +62,18 @@ final class DiscoveryTest extends StoreTestCase {
             "_groups/g/group.json",
             "_groups/g/cursors/cluster-1/default/1.json",
             "_other/default/1/" + HISTORY + "/not-looked-at.seg",
-            ObjectNames.snapshotDescriptor("cluster-1", "default", 1, "snap-1"),
+            ObjectNames.snapshotDescriptor(new LogId("cluster-1", "default", 1), "snap-1"),
             "cluster-1/default/not-a-partition/"
                 + HISTORY
                 + "/00000000000000000001-00000000000000000003-L0-00000000000000000000000001.seg",
             "cluster-1/default/1/not-a-history/00000000000000000001-00000000000000000003-L0-00000000000000000000000001.seg",
             "cluster-1/default/1/" + HISTORY + "/readme.txt",
+            "%20/default/1/"
+                + HISTORY
+                + "/00000000000000000001-00000000000000000003-L0-00000000000000000000000001.seg",
+            "cluster-1/%20/1/"
+                + HISTORY
+                + "/00000000000000000001-00000000000000000003-L0-00000000000000000000000001.seg",
             "stray-object.json");
     for (final var other : others) {
       store.put(other, "x".getBytes(StandardCharsets.UTF_8));

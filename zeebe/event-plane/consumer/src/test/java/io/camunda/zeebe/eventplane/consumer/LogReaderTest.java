@@ -13,8 +13,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import io.camunda.zeebe.eventplane.history.HistoryIds;
 import io.camunda.zeebe.eventplane.history.HistoryManifest.Base;
 import io.camunda.zeebe.eventplane.segment.Entry;
-import io.camunda.zeebe.eventplane.segment.Identity;
 import io.camunda.zeebe.eventplane.segment.Level;
+import io.camunda.zeebe.eventplane.segment.LogId;
 import io.camunda.zeebe.eventplane.segment.SmallFrames;
 import io.camunda.zeebe.eventplane.store.FileSystemStore;
 import io.camunda.zeebe.eventplane.store.ObjectNames;
@@ -102,7 +102,7 @@ final class LogReaderTest {
     }
     final var reader = reader(Start.EARLIEST);
     reader.poll(handler);
-    final var directory = ObjectNames.segmentsPrefix("c", "default", 1, HISTORY);
+    final var directory = ObjectNames.segmentsPrefix(new LogId("c", "default", 1), HISTORY);
     final long before = wholeListings(directory);
 
     // when it polls at the head
@@ -130,7 +130,7 @@ final class LogReaderTest {
             clock::get);
     reader.poll(handler);
     final var histories = ObjectNames.historiesPrefix("c", "default");
-    final var markers = ObjectNames.retentionPrefix("c", "default", 1);
+    final var markers = ObjectNames.retentionPrefix(new LogId("c", "default", 1));
     final long historiesBefore = listings(histories);
     final long markersBefore = listings(markers);
 
@@ -245,14 +245,14 @@ final class LogReaderTest {
   void shouldReadFromTheFrameOfTheCursor() throws IOException {
     // given a rollup whose frames hold an entry or two each
     final var out = new ByteArrayOutputStream();
-    try (var writer =
-        SmallFrames.writer(out, new Identity("c", "default", 1), HISTORY, Level.ROLLUP, 200)) {
+    try (var writer = SmallFrames.writer(out, LOG, HISTORY, Level.ROLLUP, 200)) {
       for (final var entry : entries(1, 24)) {
         writer.append(entry);
       }
       writer.finish(1_000);
     }
-    final var key = ObjectNames.segment("c", "default", 1, HISTORY, 1, 24, 1, Ulid.next());
+    final var key =
+        ObjectNames.segment(new LogId("c", "default", 1), HISTORY, 1, 24, 1, Ulid.next());
     store.put(key, out.toByteArray());
 
     // when

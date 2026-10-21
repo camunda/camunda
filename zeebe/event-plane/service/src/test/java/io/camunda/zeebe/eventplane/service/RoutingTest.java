@@ -139,6 +139,8 @@ final class RoutingTest {
         "/v1/notifications?log=c/default/x",
         "/v1/notifications?log=/default/1",
         "/v1/notifications?log=c//1",
+        "/v1/notifications?log=%20/default/1",
+        "/v1/notifications?log=c/%20/1",
         "/v1/notifications?log=c/default/1&log=bad",
       })
   void shouldAnswer400ToStreamsWithoutAValidLog(final String path) throws Exception {
@@ -148,6 +150,18 @@ final class RoutingTest {
     // then
     assertThat(response.statusCode()).isEqualTo(400);
     assertThat(MAPPER.readTree(response.body()).get("error").asText()).startsWith("Expected ");
+  }
+
+  @Test
+  void shouldSayWhatLogItExpectedInThe400() throws Exception {
+    // when
+    final var response = fixture.get("/v1/notifications?log=c/default/0");
+
+    // then
+    assertThat(response.statusCode()).isEqualTo(400);
+    assertThat(MAPPER.readTree(response.body()).get("error").asText())
+        .isEqualTo(
+            "Expected a log as {cluster}/{tenant}/{partition}, with a partition of 1 or more, but got 'c/default/0'");
   }
 
   @Test

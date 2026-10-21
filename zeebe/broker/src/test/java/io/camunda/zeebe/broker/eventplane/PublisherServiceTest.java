@@ -22,7 +22,7 @@ import io.camunda.zeebe.eventplane.publisher.EntrySource;
 import io.camunda.zeebe.eventplane.publisher.FloorStore;
 import io.camunda.zeebe.eventplane.publisher.SourcedEntry;
 import io.camunda.zeebe.eventplane.publisher.UploadFloor;
-import io.camunda.zeebe.eventplane.segment.Identity;
+import io.camunda.zeebe.eventplane.segment.LogId;
 import io.camunda.zeebe.eventplane.store.FileSystemStore;
 import io.camunda.zeebe.eventplane.store.ObjectNames;
 import java.io.IOException;
@@ -40,7 +40,7 @@ import org.junit.jupiter.api.io.TempDir;
 /** Which history a leader publishes in, before and after a restore. */
 final class PublisherServiceTest {
 
-  private static final Identity LOG = new Identity("c", "default", 1);
+  private static final LogId LOG = new LogId("c", "default", 1);
   private static final UUID INITIAL = HistoryIds.initial("c", "default");
   private static final UUID OLD = UUID.fromString("00000000-0000-4000-8000-000000000001");
   private static final UUID RESTORED = UUID.fromString("00000000-0000-4000-8000-000000000002");
@@ -173,7 +173,7 @@ final class PublisherServiceTest {
   }
 
   private HistoryManifest awaitPart(final UUID history) {
-    final var key = ObjectNames.historyPart("c", "default", history, 1);
+    final var key = ObjectNames.historyPart(LOG, history);
     return await("the part of history " + history)
         .until(
             () -> store.get(key).map(PublisherServiceTest::read).orElse(null),

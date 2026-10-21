@@ -23,6 +23,12 @@
     manifests, and upload notifications.</description>
 
   <dependencies>
+    <!-- LogId, which names a log in the keys, the cursors and the notices -->
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-event-plane-segment</artifactId>
+    </dependency>
+
     <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
       <artifactId>jackson-core</artifactId>

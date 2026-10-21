@@ -8,6 +8,7 @@
 package io.camunda.zeebe.eventplane.service;
 
 import io.camunda.zeebe.eventplane.notification.UploadNotice;
+import io.camunda.zeebe.eventplane.segment.LogId;
 import java.time.Duration;
 import java.util.Set;
 import java.util.UUID;

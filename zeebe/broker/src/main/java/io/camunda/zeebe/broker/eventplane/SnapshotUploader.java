@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.broker.eventplane;
 
-import io.camunda.zeebe.eventplane.segment.Identity;
+import io.camunda.zeebe.eventplane.segment.LogId;
 import io.camunda.zeebe.eventplane.snapshot.SnapshotArchive;
 import io.camunda.zeebe.eventplane.snapshot.SnapshotDescriptor;
 import io.camunda.zeebe.eventplane.snapshot.SnapshotDescriptor.SnapshotFile;
@@ -40,13 +40,13 @@ final class SnapshotUploader {
   private static final Logger LOG = LoggerFactory.getLogger(SnapshotUploader.class);
   private static final long RESERVE_TIMEOUT_SECONDS = 30;
 
-  private final Identity log;
+  private final LogId log;
   private final ObjectStore store;
   private final PersistedSnapshotStore snapshots;
   private final InstantSource clock;
 
   SnapshotUploader(
-      final Identity log,
+      final LogId log,
       final ObjectStore store,
       final PersistedSnapshotStore snapshots,
       final InstantSource clock) {
@@ -75,9 +75,7 @@ final class SnapshotUploader {
       LOG.debug("Not uploading snapshot {} of {}, which is at index 0", snapshot.getId(), log);
       return Optional.empty();
     }
-    final var descriptorKey =
-        ObjectNames.snapshotDescriptor(
-            log.clusterId(), log.tenantId(), log.partition(), snapshot.getId());
+    final var descriptorKey = ObjectNames.snapshotDescriptor(log, snapshot.getId());
     if (store.head(descriptorKey).isPresent()) {
       return Optional.empty();
     }
@@ -93,8 +91,7 @@ final class SnapshotUploader {
     try {
       final var files = snapshot.files();
       final var descriptor = descriptor(snapshot, files, history);
-      SnapshotArchive.upload(
-          store, log.clusterId(), log.tenantId(), log.partition(), descriptor, files);
+      SnapshotArchive.upload(store, log, descriptor, files);
       LOG.info(
           "Uploaded snapshot {} of {} at index {}, {} files",
           snapshot.getId(),

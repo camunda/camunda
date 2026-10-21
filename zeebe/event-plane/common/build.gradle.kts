@@ -1,6 +1,7 @@
 plugins { id("buildlogic.server-conventions") }
 
 dependencies {
+  api(project(":zeebe-event-plane-segment"))
   implementation(libs.com.fasterxml.jackson.core.jackson.core)
   implementation(libs.com.fasterxml.jackson.core.jackson.databind)
   implementation(libs.org.jspecify.jspecify)

@@ -299,8 +299,7 @@ final class BucketRestoreServiceTest {
   @Test
   void shouldFailWithoutAHistory() throws Exception {
     // given
-    store.delete(
-        ObjectNames.historyPart(CLUSTER, BucketFixture.TENANT, FIRST, BucketFixture.PARTITION));
+    store.delete(ObjectNames.historyPart(BucketFixture.LOG, FIRST));
 
     // when, then
     assertThatThrownBy(() -> service.restore(LATEST))

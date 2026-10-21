@@ -8,6 +8,7 @@
 package io.camunda.zeebe.eventplane.service;
 
 import io.camunda.zeebe.eventplane.notification.UploadNotice;
+import io.camunda.zeebe.eventplane.segment.LogId;
 import io.camunda.zeebe.eventplane.store.ObjectNames;
 import io.camunda.zeebe.eventplane.store.ObjectStore;
 import io.camunda.zeebe.eventplane.store.Ulid;
@@ -37,7 +38,7 @@ final class Fixtures {
         partition,
         history,
         ObjectNames.segment(
-            cluster, tenant, partition, history, firstIndex, lastIndex, 0, Ulid.next()),
+            new LogId(cluster, tenant, partition), history, firstIndex, lastIndex, 0, Ulid.next()),
         firstIndex,
         lastIndex,
         firstIndex,
@@ -71,7 +72,7 @@ final class Fixtures {
       throws IOException {
     put(
         store,
-        ObjectNames.cursor(group, cluster, tenant, partition),
+        ObjectNames.cursor(group, new LogId(cluster, tenant, partition)),
         """
         {"version":1,"history":"%s","index":%d,"position":%d,"worker":"%s"}"""
             .formatted(history, index, position, worker));
@@ -90,7 +91,12 @@ final class Fixtures {
       throws IOException {
     store.put(
         ObjectNames.segment(
-            cluster, tenant, partition, history, firstIndex, lastIndex, level, Ulid.next()),
+            new LogId(cluster, tenant, partition),
+            history,
+            firstIndex,
+            lastIndex,
+            level,
+            Ulid.next()),
         new byte[0]);
   }
 

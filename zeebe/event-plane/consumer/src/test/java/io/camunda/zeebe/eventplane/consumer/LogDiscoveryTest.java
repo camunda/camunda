@@ -9,6 +9,7 @@ package io.camunda.zeebe.eventplane.consumer;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.zeebe.eventplane.segment.LogId;
 import io.camunda.zeebe.eventplane.store.FileSystemStore;
 import io.camunda.zeebe.eventplane.store.ObjectNames;
 import io.camunda.zeebe.eventplane.store.ObjectStore;
@@ -35,17 +36,32 @@ final class LogDiscoveryTest {
             new LogId("c1", "default", 2),
             new LogId("c1", "other tenant", 1),
             new LogId("c2", "default", 3))) {
-      store.put(
-          ObjectNames.segmentsPrefix(log.cluster(), log.tenant(), log.partition(), history)
-              + "x.seg",
-          new byte[1]);
-      store.put(ObjectNames.historyPart(log.cluster(), log.tenant(), history, 1), new byte[1]);
+      store.put(ObjectNames.segmentsPrefix(log, history) + "x.seg", new byte[1]);
+      store.put(ObjectNames.historyPart(log, history), new byte[1]);
     }
     store.put(ObjectNames.worker("g", "w-1"), new byte[1]);
   }
 
   @Test
   void shouldFindEveryLogOfEveryCluster() throws IOException {
+    // when
+    final var logs = LogDiscovery.discover(store, List.of(Subscription.all()));
+
+    // then
+    assertThat(logs)
+        .containsExactly(
+            new LogId("c1", "default", 1),
+            new LogId("c1", "default", 2),
+            new LogId("c1", "other tenant", 1),
+            new LogId("c2", "default", 3));
+  }
+
+  @Test
+  void shouldSkipTheDirectoriesOfNoCluster() throws IOException {
+    // given directories that no log has: a cluster and a tenant that are blank
+    store.put("%20/default/1/x.seg", new byte[1]);
+    store.put("c1/%20/1/x.seg", new byte[1]);
+
     // when
     final var logs = LogDiscovery.discover(store, List.of(Subscription.all()));
 

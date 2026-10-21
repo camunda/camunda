@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.eventplane.service;
 
+import io.camunda.zeebe.eventplane.segment.LogId;
 import io.camunda.zeebe.eventplane.store.InvalidObjectNameException;
 import io.camunda.zeebe.eventplane.store.ObjectNames;
 import io.camunda.zeebe.eventplane.store.ObjectStore;
@@ -48,8 +49,7 @@ final class NewestIndex {
    * but a rollup can end after a segment that starts later, so every key counts.
    */
   private OptionalLong listed(final LogId log, final UUID history) throws IOException {
-    final var prefix =
-        ObjectNames.segmentsPrefix(log.cluster(), log.tenant(), log.partition(), history);
+    final var prefix = ObjectNames.segmentsPrefix(log, history);
     var newest = OptionalLong.empty();
     @Nullable String startAfter = null;
     while (true) {

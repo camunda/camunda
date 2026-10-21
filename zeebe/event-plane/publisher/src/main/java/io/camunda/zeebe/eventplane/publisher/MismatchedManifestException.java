@@ -8,7 +8,7 @@
 package io.camunda.zeebe.eventplane.publisher;
 
 import io.camunda.zeebe.eventplane.history.HistoryManifest;
-import io.camunda.zeebe.eventplane.segment.Identity;
+import io.camunda.zeebe.eventplane.segment.LogId;
 
 /**
  * A manifest that isn't the given log's part of a history: it belongs to another cluster or tenant,
@@ -19,18 +19,18 @@ public abstract sealed class MismatchedManifestException extends IllegalArgument
         ManifestTenantMismatchException,
         ManifestPartitionsMismatchException {
 
-  private final Identity log;
+  private final LogId log;
   private final HistoryManifest manifest;
 
   MismatchedManifestException(
-      final String message, final Identity log, final HistoryManifest manifest) {
+      final String message, final LogId log, final HistoryManifest manifest) {
     super(message);
     this.log = log;
     this.manifest = manifest;
   }
 
   /** The log that the manifest was given for. */
-  public Identity log() {
+  public LogId log() {
     return log;
   }
 

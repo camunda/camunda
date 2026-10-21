@@ -12,8 +12,8 @@ import static io.camunda.zeebe.eventplane.segment.Entry.NO_POSITION;
 import io.camunda.zeebe.eventplane.history.Histories;
 import io.camunda.zeebe.eventplane.history.HistoryManifest;
 import io.camunda.zeebe.eventplane.segment.Footer;
-import io.camunda.zeebe.eventplane.segment.Identity;
 import io.camunda.zeebe.eventplane.segment.Level;
+import io.camunda.zeebe.eventplane.segment.LogId;
 import io.camunda.zeebe.eventplane.segment.SegmentWriter;
 import io.camunda.zeebe.eventplane.store.ObjectNames;
 import io.camunda.zeebe.eventplane.store.ObjectStore;
@@ -43,7 +43,7 @@ public final class PartitionPublisher implements AutoCloseable {
   /** The level in a segment's name: {@link Level#PUBLISHER}'s code, as the footer has it too. */
   private static final int PUBLISHER_LEVEL = 0;
 
-  private final Identity log;
+  private final LogId log;
   private final HistoryManifest manifest;
   private final EntrySource source;
   private final ObjectStore store;
@@ -67,7 +67,7 @@ public final class PartitionPublisher implements AutoCloseable {
    * @throws MismatchedManifestException if the manifest isn't the log's part of a history
    */
   public PartitionPublisher(
-      final Identity log,
+      final LogId log,
       final HistoryManifest manifest,
       final EntrySource source,
       final ObjectStore store,
@@ -75,10 +75,10 @@ public final class PartitionPublisher implements AutoCloseable {
       final Announcer announcer,
       final CutPolicy policy,
       final InstantSource clock) {
-    if (!manifest.clusterId().equals(log.clusterId())) {
+    if (!manifest.clusterId().equals(log.cluster())) {
       throw new ManifestClusterMismatchException(log, manifest);
     }
-    if (!manifest.physicalTenantId().equals(log.tenantId())) {
+    if (!manifest.physicalTenantId().equals(log.tenant())) {
       throw new ManifestTenantMismatchException(log, manifest);
     }
     if (!manifest.partitions().keySet().equals(Set.of(log.partition()))) {
@@ -203,9 +203,7 @@ public final class PartitionPublisher implements AutoCloseable {
 
   private String key(final Footer footer) {
     return ObjectNames.segment(
-        log.clusterId(),
-        log.tenantId(),
-        log.partition(),
+        log,
         manifest.historyId(),
         footer.firstIndex(),
         footer.lastIndex(),

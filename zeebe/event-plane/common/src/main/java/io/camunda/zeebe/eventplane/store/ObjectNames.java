@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.eventplane.store;
 
+import io.camunda.zeebe.eventplane.segment.LogId;
 import java.io.ByteArrayOutputStream;
 import java.nio.ByteBuffer;
 import java.nio.charset.CharacterCodingException;
@@ -16,11 +17,11 @@ import java.util.UUID;
 import java.util.regex.Pattern;
 
 /**
- * The keys of the Event Plane's objects, and the prefixes to list them by. A log is a partition of
- * a physical tenant of a cluster. Names that a user chooses, such as a cluster, a tenant, a
- * consumer group or a worker, are percent-encoded so that none can add a path segment: every byte
- * outside {@code A-Za-z0-9-._~} becomes {@code %XX}, and {@code .} and {@code ..} become {@code
- * %2E} and {@code %2E%2E}. Indexes are zero-padded to 20 digits, so that keys sort by index.
+ * The keys of the Event Plane's objects, and the prefixes to list them by. A {@link LogId} is a
+ * partition of a physical tenant of a cluster. Names that a user chooses, such as a cluster, a
+ * tenant, a consumer group or a worker, are percent-encoded so that none can add a path segment:
+ * every byte outside {@code A-Za-z0-9-._~} becomes {@code %XX}, and {@code .} and {@code ..} become
+ * {@code %2E} and {@code %2E%2E}. Indexes are zero-padded to 20 digits, so that keys sort by index.
  * Cluster ids must not start with {@code _}, which is for what isn't a cluster.
  *
  * <table>
@@ -60,57 +61,46 @@ public final class ObjectNames {
 
   // Keys
 
-  /** A history's manifest part for one partition. */
-  public static String historyPart(
-      final String cluster, final String tenant, final UUID history, final int partition) {
-    return historiesPrefix(cluster, tenant) + history + "/" + partition(partition) + ".json";
+  /** A history's manifest part for one log's partition. */
+  public static String historyPart(final LogId log, final UUID history) {
+    return historiesPrefix(log.cluster(), log.tenant()) + history + "/" + log.partition() + ".json";
   }
 
   /** A segment of a log, in the directory of the history whose journal it holds. */
   public static String segment(
-      final String cluster,
-      final String tenant,
-      final int partition,
+      final LogId log,
       final UUID history,
       final long firstIndex,
       final long lastIndex,
       final int level,
       final String ulid) {
-    return segment(
-        cluster, tenant, partition, new SegmentName(history, firstIndex, lastIndex, level, ulid));
+    return segment(log, new SegmentName(history, firstIndex, lastIndex, level, ulid));
   }
 
   /** A segment of a log, in the directory of the history whose journal it holds. */
-  public static String segment(
-      final String cluster, final String tenant, final int partition, final SegmentName name) {
-    return segmentsPrefix(cluster, tenant, partition, name.history())
+  public static String segment(final LogId log, final SegmentName name) {
+    return segmentsPrefix(log, name.history())
         + "%020d-%020d-L%d-%s.seg"
             .formatted(name.firstIndex(), name.lastIndex(), name.level(), name.ulid());
   }
 
   /** A retention marker of a log. */
-  public static String retentionMarker(
-      final String cluster, final String tenant, final int partition, final String ulid) {
+  public static String retentionMarker(final LogId log, final String ulid) {
     if (!Ulid.isValid(ulid)) {
       throw new InvalidObjectNameException("a ULID", ulid);
     }
-    return retentionPrefix(cluster, tenant, partition) + ulid + ".json";
+    return retentionPrefix(log) + ulid + ".json";
   }
 
   /** The descriptor of a snapshot of a log, which names its files. */
-  public static String snapshotDescriptor(
-      final String cluster, final String tenant, final int partition, final String snapshotId) {
-    return snapshotFile(cluster, tenant, partition, snapshotId, "descriptor.json");
+  public static String snapshotDescriptor(final LogId log, final String snapshotId) {
+    return snapshotFile(log, snapshotId, "descriptor.json");
   }
 
   /** A file of a snapshot of a log. The file name is one name, not a path. */
   public static String snapshotFile(
-      final String cluster,
-      final String tenant,
-      final int partition,
-      final String snapshotId,
-      final String fileName) {
-    return snapshotPrefix(cluster, tenant, partition, snapshotId) + name("a file name", fileName);
+      final LogId log, final String snapshotId, final String fileName) {
+    return snapshotPrefix(log, snapshotId) + name("a file name", fileName);
   }
 
   /** A consumer group. */
@@ -124,14 +114,13 @@ public final class ObjectNames {
   }
 
   /** The cursor of a group in a log. */
-  public static String cursor(
-      final String group, final String cluster, final String tenant, final int partition) {
+  public static String cursor(final String group, final LogId log) {
     return cursorsPrefix(group)
-        + cluster(cluster)
+        + cluster(log.cluster())
         + "/"
-        + name("a tenant", tenant)
+        + name("a tenant", log.tenant())
         + "/"
-        + partition(partition)
+        + log.partition()
         + ".json";
   }
 
@@ -153,32 +142,28 @@ public final class ObjectNames {
   }
 
   /** A log's directory: its histories' segment directories, its retention markers, snapshots. */
-  public static String logPrefix(final String cluster, final String tenant, final int partition) {
-    return tenantPrefix(cluster, tenant) + partition(partition) + "/";
+  public static String logPrefix(final LogId log) {
+    return tenantPrefix(log.cluster(), log.tenant()) + log.partition() + "/";
   }
 
   /** The directory of the segments of a log that hold the journal of one history. */
-  public static String segmentsPrefix(
-      final String cluster, final String tenant, final int partition, final UUID history) {
-    return logPrefix(cluster, tenant, partition) + history + "/";
+  public static String segmentsPrefix(final LogId log, final UUID history) {
+    return logPrefix(log) + history + "/";
   }
 
   /** The directory of a log's retention markers. */
-  public static String retentionPrefix(
-      final String cluster, final String tenant, final int partition) {
-    return logPrefix(cluster, tenant, partition) + "retention/";
+  public static String retentionPrefix(final LogId log) {
+    return logPrefix(log) + "retention/";
   }
 
   /** The directory of a log's snapshots: a directory for each. */
-  public static String snapshotsPrefix(
-      final String cluster, final String tenant, final int partition) {
-    return logPrefix(cluster, tenant, partition) + "snapshots/";
+  public static String snapshotsPrefix(final LogId log) {
+    return logPrefix(log) + "snapshots/";
   }
 
   /** The directory of one snapshot of a log: its files, and its descriptor. */
-  public static String snapshotPrefix(
-      final String cluster, final String tenant, final int partition, final String snapshotId) {
-    return snapshotsPrefix(cluster, tenant, partition) + name("a snapshot id", snapshotId) + "/";
+  public static String snapshotPrefix(final LogId log, final String snapshotId) {
+    return snapshotsPrefix(log) + name("a snapshot id", snapshotId) + "/";
   }
 
   /** The directory of consumer groups: a directory for each. */
@@ -241,7 +226,11 @@ public final class ObjectNames {
     if (partition < 1 || !String.valueOf(partition).equals(matcher.group(4))) {
       throw new InvalidObjectNameException("a partition of 1 or more, without leading zeros", key);
     }
-    return new CursorName(decode(matcher.group(1)), cluster, decode(matcher.group(3)), partition);
+    final var tenant = decode(matcher.group(3));
+    if (cluster.isBlank() || tenant.isBlank()) {
+      throw new InvalidObjectNameException("a cluster and a tenant that aren't blank", key);
+    }
+    return new CursorName(decode(matcher.group(1)), new LogId(cluster, tenant, partition));
   }
 
   // Encoding
@@ -329,12 +318,5 @@ public final class ObjectNames {
       throw new InvalidObjectNameException(what + " of 1 or more characters", name);
     }
     return encode(name);
-  }
-
-  private static int partition(final int partition) {
-    if (partition < 1) {
-      throw new InvalidObjectNameException("a partition of 1 or more", String.valueOf(partition));
-    }
-    return partition;
   }
 }

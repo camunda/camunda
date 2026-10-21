@@ -8,15 +8,15 @@
 package io.camunda.zeebe.eventplane.publisher;
 
 import io.camunda.zeebe.eventplane.history.HistoryManifest;
-import io.camunda.zeebe.eventplane.segment.Identity;
+import io.camunda.zeebe.eventplane.segment.LogId;
 
 /** A manifest of another tenant than the log's. */
 public final class ManifestTenantMismatchException extends MismatchedManifestException {
 
-  ManifestTenantMismatchException(final Identity log, final HistoryManifest manifest) {
+  ManifestTenantMismatchException(final LogId log, final HistoryManifest manifest) {
     super(
         "Expected a manifest of tenant '%s', but got one of '%s'"
-            .formatted(log.tenantId(), manifest.physicalTenantId()),
+            .formatted(log.tenant(), manifest.physicalTenantId()),
         log,
         manifest);
   }

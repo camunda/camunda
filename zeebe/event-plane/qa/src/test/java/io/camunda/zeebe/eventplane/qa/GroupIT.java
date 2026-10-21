@@ -12,9 +12,8 @@ import static org.awaitility.Awaitility.await;
 
 import io.camunda.configuration.data.SecondaryStorage.SecondaryStorageType;
 import io.camunda.zeebe.eventplane.consumer.EventPlaneConsumer;
-import io.camunda.zeebe.eventplane.consumer.LogId;
 import io.camunda.zeebe.eventplane.consumer.Start;
-import io.camunda.zeebe.eventplane.qa.Bucket.LogRef;
+import io.camunda.zeebe.eventplane.segment.LogId;
 import io.camunda.zeebe.eventplane.service.EventPlaneService;
 import io.camunda.zeebe.eventplane.service.ServiceConfig;
 import io.camunda.zeebe.eventplane.store.FileSystemStore;
@@ -176,7 +175,7 @@ final class GroupIT {
             () -> {
               final var logs = Bucket.logs(store);
               assertThat(logs).isNotEmpty();
-              for (final LogRef log : logs) {
+              for (final LogId log : logs) {
                 final var read = Bucket.readLog(store, log);
                 final var expected =
                     LongStream.rangeClosed(1, read.lastPosition()).boxed().toList();
@@ -219,10 +218,8 @@ final class GroupIT {
       list.add(record.getPosition());
     }
 
-    Set<Long> positions(final LogRef log) {
-      final var list =
-          arrivals.getOrDefault(
-              log.clusterId() + "/" + log.tenantId() + "/" + log.partition(), List.of());
+    Set<Long> positions(final LogId log) {
+      final var list = arrivals.getOrDefault(log.toString(), List.of());
       synchronized (list) {
         return new TreeSet<>(list);
       }

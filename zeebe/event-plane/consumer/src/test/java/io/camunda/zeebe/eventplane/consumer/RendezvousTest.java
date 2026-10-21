@@ -10,6 +10,7 @@ package io.camunda.zeebe.eventplane.consumer;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import io.camunda.zeebe.eventplane.segment.LogId;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;

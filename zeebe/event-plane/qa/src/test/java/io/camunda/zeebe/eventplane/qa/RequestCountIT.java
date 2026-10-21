@@ -163,7 +163,7 @@ final class RequestCountIT {
     final var store = new FileSystemStore(bucket);
     long count = 0;
     for (final var log : Bucket.logs(store)) {
-      final var prefix = ObjectNames.logPrefix(log.clusterId(), log.tenantId(), log.partition());
+      final var prefix = ObjectNames.logPrefix(log);
       for (final var directory : store.listPrefixes(prefix)) {
         for (final var object : store.list(directory, null, Integer.MAX_VALUE)) {
           if (object.key().endsWith(".seg")

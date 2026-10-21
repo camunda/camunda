@@ -14,6 +14,7 @@ import com.sun.net.httpserver.HttpServer;
 import io.camunda.zeebe.eventplane.history.HistoryIds;
 import io.camunda.zeebe.eventplane.history.HistoryManifest.Base;
 import io.camunda.zeebe.eventplane.notification.UploadNotice;
+import io.camunda.zeebe.eventplane.segment.LogId;
 import io.camunda.zeebe.eventplane.store.FileSystemStore;
 import io.camunda.zeebe.eventplane.store.ObjectNames;
 import io.camunda.zeebe.eventplane.store.ObjectStore;
@@ -332,10 +333,7 @@ final class EventPlaneConsumerTest {
   }
 
   private GroupCursor cursor(final LogId log) throws IOException {
-    return GroupCursor.fromJson(
-        store
-            .get(ObjectNames.cursor(GROUP, log.cluster(), log.tenant(), log.partition()))
-            .orElseThrow());
+    return GroupCursor.fromJson(store.get(ObjectNames.cursor(GROUP, log)).orElseThrow());
   }
 
   /** Which logs each worker owns, among these workers. */
@@ -367,7 +365,7 @@ final class EventPlaneConsumerTest {
     for (final var log : logs) {
       assertThat(
               store
-                  .get(ObjectNames.cursor(GROUP, log.cluster(), log.tenant(), log.partition()))
+                  .get(ObjectNames.cursor(GROUP, log))
                   .map(json -> parse(json).cursor().position()))
           .describedAs("the cursor of log %s", log)
           .contains(journals.get(log).lastPosition());

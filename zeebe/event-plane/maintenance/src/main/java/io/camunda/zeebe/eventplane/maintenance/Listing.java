@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.eventplane.maintenance;
 
+import io.camunda.zeebe.eventplane.segment.LogId;
 import io.camunda.zeebe.eventplane.store.InvalidObjectNameException;
 import io.camunda.zeebe.eventplane.store.ObjectNames;
 import io.camunda.zeebe.eventplane.store.ObjectStore;
@@ -47,7 +48,7 @@ final class Listing {
   static List<StoredSegment> segments(final ObjectStore store, final LogId log, final UUID history)
       throws IOException {
     final var segments = new ArrayList<StoredSegment>();
-    for (final var object : objects(store, log.segmentsPrefix(history))) {
+    for (final var object : objects(store, ObjectNames.segmentsPrefix(log, history))) {
       if (object.key().endsWith(SEGMENT_SUFFIX)) {
         try {
           segments.add(

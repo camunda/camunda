@@ -8,6 +8,7 @@
 package io.camunda.zeebe.eventplane.consumer;
 
 import io.camunda.zeebe.eventplane.notification.UploadNotice;
+import io.camunda.zeebe.eventplane.segment.LogId;
 import io.camunda.zeebe.eventplane.store.ObjectNames;
 import io.camunda.zeebe.eventplane.store.ObjectStore;
 import io.camunda.zeebe.eventplane.store.Ulid;
@@ -228,7 +229,7 @@ public final class EventPlaneConsumer implements AutoCloseable {
   }
 
   private void onUpload(final UploadNotice notice) {
-    final var log = new LogId(notice.clusterId(), notice.tenantId(), notice.partition());
+    final var log = notice.log();
     final var heldLog = held.get(log);
     if (heldLog != null) {
       heldLog.wake();
@@ -425,8 +426,7 @@ public final class EventPlaneConsumer implements AutoCloseable {
   }
 
   private @Nullable GroupCursor readCursor(final LogId log) throws IOException {
-    final var json =
-        store.get(ObjectNames.cursor(group, log.cluster(), log.tenant(), log.partition()));
+    final var json = store.get(ObjectNames.cursor(group, log));
     return json.isPresent() ? GroupCursor.fromJson(json.get()) : null;
   }
 

@@ -10,6 +10,7 @@ package io.camunda.zeebe.eventplane.consumer;
 import io.camunda.zeebe.eventplane.segment.EntryReader;
 import io.camunda.zeebe.eventplane.segment.Footer;
 import io.camunda.zeebe.eventplane.segment.Frame;
+import io.camunda.zeebe.eventplane.segment.LogId;
 import io.camunda.zeebe.eventplane.segment.Metadata;
 import io.camunda.zeebe.eventplane.segment.TailTooShortException;
 import io.camunda.zeebe.eventplane.store.ObjectStore;
@@ -105,14 +106,11 @@ final class SegmentFile {
                   footer.firstIndex(),
                   footer.lastIndex()));
     }
-    final var identity = tail.metadata().identity();
-    if (!identity.clusterId().equals(log.cluster())
-        || !identity.tenantId().equals(log.tenant())
-        || identity.partition() != log.partition()) {
+    final var segmentLog = tail.metadata().log();
+    if (!segmentLog.equals(log)) {
       throw new UnexpectedSegmentException(
           segment.key(),
-          "Expected a segment of log %s, but got one of %s/%s/%d"
-              .formatted(log, identity.clusterId(), identity.tenantId(), identity.partition()));
+          "Expected a segment of log %s, but got one of %s".formatted(log, segmentLog));
     }
   }
 

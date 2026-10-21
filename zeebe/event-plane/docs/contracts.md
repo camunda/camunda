@@ -9,17 +9,17 @@ then in the code.
 | Module | Package | Depends on |
 |---|---|---|
 | `zeebe/event-plane/segment` | `io.camunda.zeebe.eventplane.segment` | zstd-jni |
-| `zeebe/event-plane/common` | `io.camunda.zeebe.eventplane.store`, `.history`, `.notification`, `.snapshot` | Jackson, AWS SDK v2 (S3) |
+| `zeebe/event-plane/common` | `io.camunda.zeebe.eventplane.store`, `.history`, `.notification`, `.snapshot` | segment (for `LogId`), Jackson, AWS SDK v2 (S3) |
 | `zeebe/event-plane/publisher` | `io.camunda.zeebe.eventplane.publisher` | segment, common |
 | `zeebe/event-plane/consumer` | `io.camunda.zeebe.eventplane.consumer` | segment, common, zeebe-protocol-impl, zeebe-logstreams |
 | `zeebe/event-plane/maintenance` | `io.camunda.zeebe.eventplane.maintenance` | segment, common |
-| `zeebe/event-plane/service` | `io.camunda.zeebe.eventplane.service` | common, consumer (for the group objects) |
+| `zeebe/event-plane/service` | `io.camunda.zeebe.eventplane.service` | segment, common, consumer (for the group objects) |
 | `zeebe/event-plane/qa` | `io.camunda.zeebe.eventplane.qa` | everything, `zeebe-qa-util` |
 | `zeebe/broker` | `io.camunda.zeebe.broker.eventplane` | publisher |
 
 A log is a partition of a physical tenant of a cluster: the segment module's
-`Identity(clusterId, tenantId, partition)`. The tenant is the partition group's name, `default` for
-the default one.
+`LogId(cluster, tenant, partition)`, in text `{cluster}/{tenant}/{partition}` (`toString`,
+`LogId.parse`). The tenant is the partition group's name, `default` for the default one.
 
 ## Object store
 
@@ -70,8 +70,8 @@ Cluster ids must not start with `_`.
 
 `level` is 0 for a publisher's segment and 1 for a rollup. Names sort by first index, so a listing
 of a history's directory is in log order. `ObjectNames.parseSegment(key)` gives
-`SegmentName(history, firstIndex, lastIndex, level, ulid)`. `ObjectNames` takes cluster, tenant and
-partition as plain values, so that `common` doesn't depend on `segment`.
+`SegmentName(history, firstIndex, lastIndex, level, ulid)`. `ObjectNames` takes a `LogId` for what
+belongs to a log, and plain cluster and tenant names for the directories above it.
 
 ## Histories
 

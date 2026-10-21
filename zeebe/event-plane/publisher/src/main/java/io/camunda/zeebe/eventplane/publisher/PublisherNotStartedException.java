@@ -7,12 +7,12 @@
  */
 package io.camunda.zeebe.eventplane.publisher;
 
-import io.camunda.zeebe.eventplane.segment.Identity;
+import io.camunda.zeebe.eventplane.segment.LogId;
 
 /** A publisher that was asked to publish before it was started. */
 public final class PublisherNotStartedException extends PublisherStateException {
 
-  PublisherNotStartedException(final Identity log) {
+  PublisherNotStartedException(final LogId log) {
     super("Expected the publisher of %s to be started, but it isn't".formatted(log), log);
   }
 }

@@ -11,6 +11,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.json.JsonMapper;
+import io.camunda.zeebe.eventplane.segment.LogId;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.UUID;
@@ -81,6 +82,11 @@ public record UploadNotice(
     if (size < 0) {
       throw new IllegalArgumentException("Expected a size of 0 or more, but got " + size);
     }
+  }
+
+  /** The log of the segment: its cluster, physical tenant and partition. */
+  public LogId log() {
+    return new LogId(clusterId, tenantId, partition);
   }
 
   /** The notice as JSON, always the same bytes for the same notice. */

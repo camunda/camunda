@@ -11,8 +11,8 @@ import io.camunda.zeebe.eventplane.history.Histories;
 import io.camunda.zeebe.eventplane.history.HistoryManifest;
 import io.camunda.zeebe.eventplane.history.HistoryManifest.Base;
 import io.camunda.zeebe.eventplane.segment.Entry;
-import io.camunda.zeebe.eventplane.segment.Identity;
 import io.camunda.zeebe.eventplane.segment.Level;
+import io.camunda.zeebe.eventplane.segment.LogId;
 import io.camunda.zeebe.eventplane.segment.SegmentWriter;
 import io.camunda.zeebe.eventplane.store.ObjectNames;
 import io.camunda.zeebe.eventplane.store.ObjectStore;
@@ -44,9 +44,7 @@ record TestLog(ObjectStore store, LogId log) {
   String upload(final UUID history, final Level level, final List<Entry> entries)
       throws IOException {
     final var out = new ByteArrayOutputStream();
-    try (var writer =
-        new SegmentWriter(
-            out, new Identity(log.cluster(), log.tenant(), log.partition()), history, level)) {
+    try (var writer = new SegmentWriter(out, log, history, level)) {
       entries.forEach(
           entry -> {
             try {
@@ -60,9 +58,7 @@ record TestLog(ObjectStore store, LogId log) {
     }
     final var key =
         ObjectNames.segment(
-            log.cluster(),
-            log.tenant(),
-            log.partition(),
+            log,
             history,
             entries.getFirst().index(),
             entries.getLast().index(),
@@ -76,7 +72,7 @@ record TestLog(ObjectStore store, LogId log) {
   void retention(final UUID history, final long firstIndex, final long firstPosition)
       throws IOException {
     store.put(
-        ObjectNames.retentionMarker(log.cluster(), log.tenant(), log.partition(), Ulid.next()),
+        ObjectNames.retentionMarker(log, Ulid.next()),
         new RetentionMarker(history, firstIndex, firstPosition, Instant.now()).toJson());
   }
 

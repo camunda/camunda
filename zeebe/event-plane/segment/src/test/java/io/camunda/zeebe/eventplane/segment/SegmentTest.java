@@ -39,7 +39,7 @@ import org.junit.jupiter.api.io.TempDir;
 
 final class SegmentTest {
 
-  private static final Identity IDENTITY = new Identity("cluster-1", "default", 3);
+  private static final LogId LOG = new LogId("cluster-1", "default", 3);
   private static final UUID HISTORY = UUID.fromString("7f3a9c0e-4b2d-4e8f-9a1b-2c3d4e5f6071");
   private static final long NOON = 1_792_152_000_000L;
 
@@ -71,7 +71,7 @@ final class SegmentTest {
     assertThat(footer)
         .isEqualTo(new Footer(HISTORY, 1, 4, 1, 5, NOON, footer.bodyLength(), Level.PUBLISHER));
     final var metadata = Metadata.read(tail(segment), tailStart(segment), footer);
-    assertThat(metadata).isEqualTo(new Metadata(IDENTITY, List.of(new Frame(1, 0))));
+    assertThat(metadata).isEqualTo(new Metadata(LOG, List.of(new Frame(1, 0))));
     assertThat(read(segment, footer, 0)).isEqualTo(entries);
   }
 
@@ -146,14 +146,14 @@ final class SegmentTest {
     final var frames = ByteBuffer.allocate(16).order(ByteOrder.LITTLE_ENDIAN);
     frames.putLong(1).putLong(0);
     final var entries = new TreeMap<Integer, byte[]>();
-    entries.put(1, IDENTITY.encode());
+    entries.put(1, LOG.encode());
     entries.put(2, frames.array());
     entries.put(99, new byte[] {1, 2, 3});
     final var footer = new Footer(HISTORY, 1, 1, 1, 1, NOON, 10, Level.PUBLISHER);
     final var tail = concat(new byte[10], Metadata.encode(entries), footer.encode());
 
     assertThat(Metadata.read(ByteBuffer.wrap(tail), 0, Footer.read(ByteBuffer.wrap(tail))))
-        .isEqualTo(new Metadata(IDENTITY, List.of(new Frame(1, 0))));
+        .isEqualTo(new Metadata(LOG, List.of(new Frame(1, 0))));
   }
 
   @Test
@@ -259,10 +259,10 @@ final class SegmentTest {
   void aSegmentsPartsCheckTheirFieldsWhenMade() {
     assertThatThrownBy(() -> new Footer(HISTORY, 1, 1, 5, 4, NOON, 10, Level.PUBLISHER))
         .isInstanceOf(InvalidFooter.Positions.class);
-    assertThatThrownBy(() -> new Metadata(IDENTITY, List.of(new Frame(1, 8))))
+    assertThatThrownBy(() -> new Metadata(LOG, List.of(new Frame(1, 8))))
         .isInstanceOf(InvalidMetadata.class)
         .hasMessage("Expected a segment's first frame at offset 0, but got 8");
-    assertThatThrownBy(() -> new Identity("cluster-1", "default", 0))
+    assertThatThrownBy(() -> new LogId("cluster-1", "default", 0))
         .isInstanceOf(InvalidMetadata.class)
         .hasMessage("Expected a partition of at least 1, but got 0");
   }
@@ -281,24 +281,24 @@ final class SegmentTest {
   }
 
   @Test
-  void readersRejectAnIdentityThatIsntUtf8() {
+  void readersRejectALogIdThatIsntUtf8() {
     final byte[] notUtf8 = {'a', (byte) 0xFF, 'b'};
-    final var badCluster = identity(notUtf8, "default".getBytes(StandardCharsets.UTF_8), 3);
-    final var badTenant = identity("cluster-1".getBytes(StandardCharsets.UTF_8), notUtf8, 3);
+    final var badCluster = logId(notUtf8, "default".getBytes(StandardCharsets.UTF_8), 3);
+    final var badTenant = logId("cluster-1".getBytes(StandardCharsets.UTF_8), notUtf8, 3);
 
-    for (var identity : List.of(badCluster, badTenant)) {
-      final var tail = tail(identity, frameIndex(new Frame(1, 0)), 10);
+    for (var logId : List.of(badCluster, badTenant)) {
+      final var tail = tail(logId, frameIndex(new Frame(1, 0)), 10);
       assertThatThrownBy(
               () -> Metadata.read(ByteBuffer.wrap(tail), 0, Footer.read(ByteBuffer.wrap(tail))))
           .isInstanceOf(InvalidMetadata.class)
-          .hasMessageStartingWith("Expected an identity's ids in UTF-8");
+          .hasMessageStartingWith("Expected a log id's ids in UTF-8");
     }
   }
 
   @Test
   void readersRejectABodyThatEndsTooLateForTheMetadata() throws Exception {
-    final var metadata = new Metadata(IDENTITY, List.of(new Frame(1, 0)));
-    final var valid = tail(IDENTITY.encode(), frameIndex(new Frame(1, 0)), 10);
+    final var metadata = new Metadata(LOG, List.of(new Frame(1, 0)));
+    final var valid = tail(LOG.encode(), frameIndex(new Frame(1, 0)), 10);
     final long footerStart = valid.length - Footer.LENGTH;
 
     for (long bodyLength : List.of(Long.MAX_VALUE, footerStart - 3)) {
@@ -317,7 +317,7 @@ final class SegmentTest {
   @Test
   void readersRejectMetadataWithoutAFrameIndex() {
     final var entries = new TreeMap<Integer, byte[]>();
-    entries.put(1, IDENTITY.encode());
+    entries.put(1, LOG.encode());
     final var footer = new Footer(HISTORY, 1, 1, 1, 1, NOON, 10, Level.PUBLISHER);
     final var tail = concat(new byte[10], Metadata.encode(entries), footer.encode());
 
@@ -373,7 +373,7 @@ final class SegmentTest {
   /** A rollup whose frames each end after the entry that brings them to 500 bytes. */
   private static byte[] writeRollup(List<Entry> entries) throws IOException {
     final var out = new ByteArrayOutputStream();
-    return write(out, new SegmentWriter(out, IDENTITY, HISTORY, Level.ROLLUP, 500), entries, NOON);
+    return write(out, new SegmentWriter(out, LOG, HISTORY, Level.ROLLUP, 500), entries, NOON);
   }
 
   private static byte[] write(
@@ -390,7 +390,7 @@ final class SegmentTest {
   }
 
   private static SegmentWriter writer(ByteArrayOutputStream out) throws IOException {
-    return new SegmentWriter(out, IDENTITY, HISTORY, Level.PUBLISHER);
+    return new SegmentWriter(out, LOG, HISTORY, Level.PUBLISHER);
   }
 
   /** The last 16 KiB, or all of a smaller object, as a reader first reads it. */
@@ -442,15 +442,15 @@ final class SegmentTest {
   }
 
   /** The tail of a segment with a body of {@code bodyLength} zero bytes and this metadata. */
-  private static byte[] tail(byte[] identity, byte[] frameIndex, int bodyLength) {
+  private static byte[] tail(byte[] logId, byte[] frameIndex, int bodyLength) {
     final var entries = new TreeMap<Integer, byte[]>();
-    entries.put(1, identity);
+    entries.put(1, logId);
     entries.put(2, frameIndex);
     final var footer = new Footer(HISTORY, 1, 1, 1, 1, NOON, bodyLength, Level.PUBLISHER);
     return concat(new byte[bodyLength], Metadata.encode(entries), footer.encode());
   }
 
-  private static byte[] identity(byte[] clusterId, byte[] tenantId, int partition) {
+  private static byte[] logId(byte[] clusterId, byte[] tenantId, int partition) {
     return ByteBuffer.allocate(2 + clusterId.length + 2 + tenantId.length + 4)
         .order(ByteOrder.LITTLE_ENDIAN)
         .putShort((short) clusterId.length)

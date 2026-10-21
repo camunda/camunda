@@ -8,12 +8,12 @@
 package io.camunda.zeebe.eventplane.publisher;
 
 import io.camunda.zeebe.eventplane.history.HistoryManifest;
-import io.camunda.zeebe.eventplane.segment.Identity;
+import io.camunda.zeebe.eventplane.segment.LogId;
 
 /** A manifest that holds other partitions than the log's one: it isn't the log's part. */
 public final class ManifestPartitionsMismatchException extends MismatchedManifestException {
 
-  ManifestPartitionsMismatchException(final Identity log, final HistoryManifest manifest) {
+  ManifestPartitionsMismatchException(final LogId log, final HistoryManifest manifest) {
     super(
         "Expected history %s to hold only partition %d, but it holds %s"
             .formatted(manifest.historyId(), log.partition(), manifest.partitions().keySet()),

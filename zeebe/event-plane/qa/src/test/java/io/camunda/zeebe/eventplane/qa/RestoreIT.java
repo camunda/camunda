@@ -18,10 +18,10 @@ import io.camunda.management.backups.StateCode;
 import io.camunda.zeebe.eventplane.consumer.ConsumerListener;
 import io.camunda.zeebe.eventplane.consumer.Cursor;
 import io.camunda.zeebe.eventplane.consumer.EventPlaneConsumer;
-import io.camunda.zeebe.eventplane.consumer.LogId;
 import io.camunda.zeebe.eventplane.consumer.Start;
 import io.camunda.zeebe.eventplane.history.HistoryManifest.Base;
 import io.camunda.zeebe.eventplane.history.ManifestJson;
+import io.camunda.zeebe.eventplane.segment.LogId;
 import io.camunda.zeebe.eventplane.store.FileSystemStore;
 import io.camunda.zeebe.eventplane.store.ObjectNames;
 import io.camunda.zeebe.qa.util.actuator.BackupActuator;
@@ -108,10 +108,7 @@ final class RestoreIT {
           await("the restored history's part")
               .timeout(Duration.ofSeconds(30))
               .until(
-                  () ->
-                      store.get(
-                          ObjectNames.historyPart(
-                              log.clusterId(), log.tenantId(), restoredHistory, 1)),
+                  () -> store.get(ObjectNames.historyPart(log, restoredHistory)),
                   content -> content.isPresent());
       final var base = ManifestJson.read(part.orElseThrow()).partitions().get(1);
       assertThat(base.sourceHistoryId()).isEqualTo(oldHistory);

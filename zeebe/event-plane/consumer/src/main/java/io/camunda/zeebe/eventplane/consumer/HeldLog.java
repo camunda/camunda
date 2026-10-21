@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.eventplane.consumer;
 
+import io.camunda.zeebe.eventplane.segment.LogId;
 import io.camunda.zeebe.eventplane.store.ObjectNames;
 import io.camunda.zeebe.eventplane.store.ObjectStore;
 import java.io.IOException;
@@ -51,7 +52,7 @@ final class HeldLog {
       final Duration pollInterval) {
     this.store = store;
     final var log = reader.log();
-    cursorKey = ObjectNames.cursor(group, log.cluster(), log.tenant(), log.partition());
+    cursorKey = ObjectNames.cursor(group, log);
     this.worker = worker;
     this.reader = reader;
     this.handler = handler;

@@ -12,6 +12,7 @@ import static io.camunda.zeebe.eventplane.maintenance.StoredSegment.ROLLUP_LEVEL
 
 import io.camunda.zeebe.eventplane.segment.EntryOutOfOrderException;
 import io.camunda.zeebe.eventplane.segment.InvalidSegmentException;
+import io.camunda.zeebe.eventplane.segment.LogId;
 import io.camunda.zeebe.eventplane.store.ObjectNames;
 import io.camunda.zeebe.eventplane.store.ObjectStore;
 import io.camunda.zeebe.eventplane.store.SegmentName;
@@ -195,7 +196,7 @@ final class Rollups {
             rollup.footer().lastIndex(),
             ROLLUP_LEVEL,
             Ulid.next());
-    final var key = ObjectNames.segment(log.cluster(), log.tenant(), log.partition(), name);
+    final var key = ObjectNames.segment(log, name);
     store.put(key, rollup.content());
     LOG.info("Rolled up {} segments into '{}'", chain.size(), key);
     final var segment = new StoredSegment(key, name, rollup.content().length);

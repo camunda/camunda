@@ -88,7 +88,7 @@ final class GroupView {
   }
 
   private GroupStatus.Cursor cursor(final String key, final byte[] content) throws IOException {
-    final var log = LogId.of(ObjectNames.parseCursor(key));
+    final var log = ObjectNames.parseCursor(key).log();
     final var cursor = GroupObjects.cursor(key, content);
     final var newest = newestIndex.of(log, cursor.history());
     final long lag = newest.isPresent() ? Math.max(0, newest.getAsLong() - cursor.index()) : 0;

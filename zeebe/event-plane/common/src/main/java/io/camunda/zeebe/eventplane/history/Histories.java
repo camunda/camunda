@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.eventplane.history;
 
+import io.camunda.zeebe.eventplane.segment.LogId;
 import io.camunda.zeebe.eventplane.store.ObjectNames;
 import io.camunda.zeebe.eventplane.store.ObjectStore;
 import java.io.IOException;
@@ -80,10 +81,8 @@ public final class Histories {
               .formatted(manifest.historyId(), manifest.partitions().keySet()));
     }
     final int partition = manifest.partitions().keySet().iterator().next();
-    store.put(
-        ObjectNames.historyPart(
-            manifest.clusterId(), manifest.physicalTenantId(), manifest.historyId(), partition),
-        ManifestJson.write(manifest));
+    final var log = new LogId(manifest.clusterId(), manifest.physicalTenantId(), partition);
+    store.put(ObjectNames.historyPart(log, manifest.historyId()), ManifestJson.write(manifest));
   }
 
   private static void requireTenant(

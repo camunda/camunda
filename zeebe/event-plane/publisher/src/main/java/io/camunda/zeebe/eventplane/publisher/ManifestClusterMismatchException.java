@@ -8,15 +8,15 @@
 package io.camunda.zeebe.eventplane.publisher;
 
 import io.camunda.zeebe.eventplane.history.HistoryManifest;
-import io.camunda.zeebe.eventplane.segment.Identity;
+import io.camunda.zeebe.eventplane.segment.LogId;
 
 /** A manifest of another cluster than the log's. */
 public final class ManifestClusterMismatchException extends MismatchedManifestException {
 
-  ManifestClusterMismatchException(final Identity log, final HistoryManifest manifest) {
+  ManifestClusterMismatchException(final LogId log, final HistoryManifest manifest) {
     super(
         "Expected a manifest of cluster '%s', but got one of '%s'"
-            .formatted(log.clusterId(), manifest.clusterId()),
+            .formatted(log.cluster(), manifest.clusterId()),
         log,
         manifest);
   }

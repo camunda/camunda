@@ -11,8 +11,8 @@ import io.camunda.zeebe.eventplane.history.Histories;
 import io.camunda.zeebe.eventplane.history.HistoryManifest;
 import io.camunda.zeebe.eventplane.history.HistoryManifest.Base;
 import io.camunda.zeebe.eventplane.segment.Entry;
-import io.camunda.zeebe.eventplane.segment.Identity;
 import io.camunda.zeebe.eventplane.segment.Level;
+import io.camunda.zeebe.eventplane.segment.LogId;
 import io.camunda.zeebe.eventplane.segment.SegmentWriter;
 import io.camunda.zeebe.eventplane.snapshot.SnapshotArchive;
 import io.camunda.zeebe.eventplane.snapshot.SnapshotDescriptor;
@@ -37,6 +37,7 @@ final class BucketFixture {
   static final String CLUSTER = "c";
   static final String TENANT = "default";
   static final int PARTITION = 1;
+  static final LogId LOG = new LogId(CLUSTER, TENANT, PARTITION);
 
   private final ObjectStore store;
 
@@ -56,11 +57,7 @@ final class BucketFixture {
       throws IOException {
     final var out = new ByteArrayOutputStream();
     try (final var writer =
-        new SegmentWriter(
-            out,
-            new Identity(CLUSTER, TENANT, PARTITION),
-            history,
-            level == 0 ? Level.PUBLISHER : Level.ROLLUP)) {
+        new SegmentWriter(out, LOG, history, level == 0 ? Level.PUBLISHER : Level.ROLLUP)) {
       for (final var entry : entries) {
         writer.append(entry);
       }
@@ -68,9 +65,7 @@ final class BucketFixture {
     }
     final var key =
         ObjectNames.segment(
-            CLUSTER,
-            TENANT,
-            PARTITION,
+            LOG,
             history,
             entries.getFirst().index(),
             entries.getLast().index(),
@@ -101,7 +96,7 @@ final class BucketFixture {
             history,
             sizes,
             Instant.now());
-    SnapshotArchive.upload(store, CLUSTER, TENANT, PARTITION, descriptor, files);
+    SnapshotArchive.upload(store, LOG, descriptor, files);
     return descriptor;
   }
 }

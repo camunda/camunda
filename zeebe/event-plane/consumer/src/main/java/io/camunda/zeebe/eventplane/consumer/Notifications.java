@@ -8,6 +8,7 @@
 package io.camunda.zeebe.eventplane.consumer;
 
 import io.camunda.zeebe.eventplane.notification.UploadNotice;
+import io.camunda.zeebe.eventplane.segment.LogId;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URLEncoder;

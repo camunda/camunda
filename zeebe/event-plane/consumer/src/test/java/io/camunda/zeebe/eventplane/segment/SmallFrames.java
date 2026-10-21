@@ -21,11 +21,11 @@ public final class SmallFrames {
 
   public static SegmentWriter writer(
       final OutputStream out,
-      final Identity identity,
+      final LogId log,
       final UUID history,
       final Level level,
       final long frameTarget)
       throws IOException {
-    return new SegmentWriter(out, identity, history, level, frameTarget);
+    return new SegmentWriter(out, log, history, level, frameTarget);
   }
 }

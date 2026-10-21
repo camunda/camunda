@@ -8,6 +8,7 @@
 package io.camunda.zeebe.eventplane.consumer;
 
 import io.camunda.zeebe.eventplane.history.HistoryManifest.Base;
+import io.camunda.zeebe.eventplane.segment.LogId;
 import java.util.UUID;
 
 /**

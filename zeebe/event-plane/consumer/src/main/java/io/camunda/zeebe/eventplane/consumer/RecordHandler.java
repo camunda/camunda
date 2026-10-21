@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.eventplane.consumer;
 
+import io.camunda.zeebe.eventplane.segment.LogId;
 import io.camunda.zeebe.protocol.record.Record;
 
 /**
