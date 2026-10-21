@@ -335,6 +335,64 @@ partition on both sides; I2 19/18 commits, caught up from an empty catalog; I3 2
 term 2; I4 `tl-0.r<C>` with takeover (929, 5230) on partition 1 and (980, 6491) on partition 2, the path
 cuts the parent at the takeover position; 380 jobs after the restore.
 
+### J. Merge, release and event plane compaction (step 2)
+
+Scenario `j-merge` is `i-eventplane` with 1 MB journal segments, `mergeMaxObjects` 50, cleaner
+`PT10S` / grace `PT30S`, `retentionWindow` `PT3M`, `releaseInterval` `PT10S`, backups every 30 s. The event
+plane is started by `event-plane.sh` with rollup period `PT1M`, delay `PT10S`, interval `PT10S` and
+retention `PT10M`. Export `SCENARIO=j-merge` in every shell that calls `event-plane.sh` (it defaults to
+`i-eventplane`). `bucket.sh merge j-merge` prints per partition the number of `LOG_MERGED` entries, the
+merged index, whether the merged ranges are contiguous, the newest `LOG_RELEASED` entry, the number of
+level-1 objects and the replaced small objects still in `data/`.
+
+```bash
+cd zeebe/backup/docs/log-archive-manual && source ./env.sh && export SCENARIO=j-merge
+./cluster.sh stop; ./cluster.sh wipe; rm -rf "$WORK/store/j-merge"
+./event-plane.sh start && ./cluster.sh start j-merge && ./api.sh deploy
+# load for 8 to 10 minutes: a loop of  ./api.sh load 20 rN; ./api.sh complete 20; sleep 1
+```
+
+1. **J1, merges.** After 2 to 3 minutes. **Pass:** `bucket.sh merge j-merge` shows `LOG_MERGED` entries
+   (about one per journal segment, 1 MB of log, roughly every 25 s under this load) and no gaps between
+   merged ranges; the brokers log `deleted N replaced or orphaned log objects` every 10 s; the objects
+   replaced by a merge disappear from `data/` after the grace period (`replaced-but-still-there` stays
+   at the last few merges, it does not grow); `GET /v1/log-archive` shows `mergedIndex` rising and the
+   objects API of the event plane lists fewer objects than the bucket (replaced ones are gone from it).
+   The merged objects are about 30 KB (the records compress well), so they have a single frame; several
+   frames need `mergeFrameBytes` below the object size.
+2. **J2, release.** After the 3 minute window. **Pass:** `LOG_RELEASED` entries appear (the released
+   index jumps with every uploaded snapshot, about once a minute), the event plane shows `releasedIndex`
+   in the overview and the timeline view, and the objects up to it carry the "released" badge.
+3. **J3, rollup.** **Pass:** `data/` holds `<first>-<last>-l1.seg` objects covering the released objects
+   of finished 1-minute periods; no level-0 object lies inside a level-1 range (bucket and catalog);
+   the timeline view shows them as `L1 released`; the records view of a level-1 object decodes (rows
+   of `PROCESS_INSTANCE`, `JOB`, ..., in one frame per about 32 MB).
+4. **J4, retention.** About 10 minutes after the first records. **Pass:** the objects API answers a `start`
+   position above 1, the oldest level-0/level-1 objects are gone from `data/` (the first key of `data/`
+   moves), nothing above `releasedIndex` was removed.
+5. **J5, leader kill during merging.** `L=$(./cluster.sh leader 1)`, move the load to another broker
+   (`NODE=1 ./api.sh load ...`), `./cluster.sh kill $L`, wait a minute, `./cluster.sh restart $L j-merge`.
+   **Pass:** `bucket.sh merge` shows more `LOG_MERGED` entries with merged objects of term 2
+   (`-t2.seg`), gaps 0; after the restarted broker caught up, `./event-plane.sh check` passes and
+   `./event-plane.sh objects 1|2` show no gap.
+6. **J6, restore.** Stop the load and the brokers, copy the store
+   (`cp -R "$STORE/j-merge" "$STORE/j-merge-copy"`), `export STORE_OVERRIDE=$STORE/j-merge-copy`,
+   `./cluster.sh wipe`. Take the oldest `SCHEDULED_BACKUP` checkpoint of the commit entries as `OLD` and a
+   recent one present on both partitions as `NEW`:
+   `./restore.sh j-merge --logArchive.timeline=tl-0 --logArchive.checkpointId=$OLD`. **Pass:** refused
+   with "restore point .. is below the restore floor of partition ..: its snapshot is at index .., the
+   log up to index .. was released", before anything is downloaded. The same with `$NEW`: "restored" for
+   all brokers; start the cluster, `./api.sh jobs` lists the jobs open at `NEW`.
+
+**Confirmed on the first run (2026-10-21):** J1 to J6 pass. Counts: after 5 minutes 15 `LOG_MERGED`
+entries per partition without gaps, `data/` held 44 objects against 18 in the event plane catalog; first
+release at index 2672 (p1) and 4661 (p2); level-1 objects such as `2417-4658-l1.seg` (13442 records, one
+frame, 211 KiB) readable in the UI; after 10 minutes the objects API answered `start` 13686 and the first
+`data/` key moved from `1-282` to `2417-4658-l1`; with broker 0 (leader of partition 1) killed, merges
+continued on broker 1 with term 2, ranges contiguous (e.g. 14651-14904, 14905-15163 at term 2);
+restore to the first backup refused with "below the restore floor of partition 2 .. log up to index 17976
+was released", restore to a recent backup (snapshot 22504 / 24288) worked and 8 jobs were activatable.
+
 ### Snapshot checks (S)
 
 - **Snapshot choice**, for every archive restore: take "Restoring partition N to checkpoint … at

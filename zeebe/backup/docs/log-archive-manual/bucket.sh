@@ -3,6 +3,8 @@
 #        bucket.sh old-backups <scenario>                     old-style backups and metadata.json per partition
 #        bucket.sh handover <scenario>                        handover files metadata/<p>/handover/<H>.json
 #        bucket.sh handover-commits <scenario> [timeline]     HANDOVER commit entries of the archive
+#        bucket.sh merge <scenario> [timeline]                LOG_MERGED/LOG_RELEASED entries, merged ranges (contiguous?),
+#                                                             replaced objects still in data/, level-1 rollups
 #        bucket.sh wait-handover <scenario> [afterId]         waits until every partition has a handover
 #                                                             above afterId, prints its checkpoint id
 source "$(dirname "$0")/env.sh"
@@ -37,6 +39,28 @@ case "${1:-}" in
         [ -n "$out" ] && { found=1; echo "p$p $(basename "$f"): $out"; }
       done
       [ $found -eq 1 ] || echo "p$p: no HANDOVER commit entry"
+    done
+    exit 0 ;;
+  merge)
+    D=$(store_of "${2:?scenario}"); T=${3:-tl-0}
+    for p in $(seq 1 $PARTITIONS); do
+      pre="$D/log-archive/$T/p$p"
+      [ -d "$pre/commits" ] || { echo "p$p: no archive yet"; continue; }
+      # merged ranges in log order, from the LOG_MERGED entries
+      jq -r 'select(.type=="LOG_MERGED") | .objects[0] | "\(.firstIndex) \(.lastIndex) \(.key)"' "$pre"/commits/*.json > "$WORK/merged-p$p.txt"
+      n=$(wc -l < "$WORK/merged-p$p.txt" | tr -d ' ')
+      gaps=$(awk 'NR>1 && $1 != prev+1 {g++} {prev=$2} END {print g+0}' "$WORK/merged-p$p.txt")
+      rel=$(jq -c 'select(.type=="LOG_RELEASED") | {seq, releasedIndex, releasedPosition}' "$pre"/commits/*.json | tail -1)
+      last=$(tail -1 "$WORK/merged-p$p.txt" | cut -d' ' -f2)
+      total=$(ls "$pre/data" | wc -l | tr -d ' '); l1=$(ls "$pre/data" | grep -c -- '-l1.seg$')
+      # objects below the merged index whose key is not a merged range: replaced small objects not deleted yet
+      replaced=0; for f in "$pre/data/"*.seg; do
+        k=${f##*/}; case "$k" in *-l1.seg) continue ;; esac
+        li=$((10#$(echo "$k" | cut -d- -f2)))
+        [ "$li" -le "${last:-0}" ] && ! grep -q " data/$k$" "$WORK/merged-p$p.txt" && replaced=$((replaced+1))
+      done
+      echo "p$p: LOG_MERGED entries=$n (merged up to ${last:-none}, gaps between merged ranges: $gaps) LOG_RELEASED newest: ${rel:-none}"
+      echo "    data/ objects=$total level-1 rollups=$l1 replaced-but-still-there=$replaced"
     done
     exit 0 ;;
   wait-handover)
