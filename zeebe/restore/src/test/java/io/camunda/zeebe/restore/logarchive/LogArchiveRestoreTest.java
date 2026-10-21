@@ -205,6 +205,36 @@ final class LogArchiveRestoreTest {
   }
 
   @Test
+  void shouldRestoreFromACompactedObjectOfAnAuthorityTimeline() throws IOException {
+    // given - mode B: [1-2] removed, [3-4] compacted into a level 1 object of one frame per entry,
+    // the replaced objects deleted from the bucket
+    final var archive = archive(1, true);
+    archive.appendAll(1, 2, 3, 4, 5, 6, 7, 8);
+    archive.checkpoint(1_000L, 7);
+    final var small =
+        List.of(archive.archive(2), archive.archive(4), archive.archive(6), archive.archive(8));
+    final var snapshot = archive.uploadSnapshot(takeSnapshot("p1", 4, 4, 4, 4));
+    archive.moveHold(4, snapshot.id());
+    archive.publishRoot();
+    final var compacted = archive.compact(3, 4);
+    archive.remove(2);
+    small.subList(0, 2).forEach(archive::deleteObject);
+    final var target = target(1);
+
+    // when
+    final var view = LogArchiveView.read(store, TIMELINE, 1);
+    restore.restorePartition(view, 1_000L, target);
+
+    // then
+    assertThat(compacted.key()).endsWith("-c1.seg");
+    final var expected =
+        archive.sourceFrames().stream()
+            .filter(frame -> frame.index() >= 3 && frame.index() <= 7)
+            .toList();
+    assertThat(readJournal(target)).containsExactlyElementsOf(expected);
+  }
+
+  @Test
   void shouldStartJournalAtObjectContainingSnapshotIndex() throws IOException {
     // given
     final var archive = archive(1);
@@ -422,6 +452,11 @@ final class LogArchiveRestoreTest {
   }
 
   private TestLogArchive archive(final int partitionId) throws IOException {
+    return archive(partitionId, false);
+  }
+
+  private TestLogArchive archive(final int partitionId, final boolean authority)
+      throws IOException {
     final var archive =
         new TestLogArchive(
             store,
@@ -430,7 +465,11 @@ final class LogArchiveRestoreTest {
             Files.createDirectories(temp.resolve("source-" + partitionId)),
             meterRegistry);
     resources.add(archive);
-    archive.startTimeline(1, "");
+    if (authority) {
+      archive.startAuthorityTimeline(1, "");
+    } else {
+      archive.startTimeline(1, "");
+    }
     return archive;
   }
 

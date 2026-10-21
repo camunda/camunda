@@ -21,6 +21,7 @@ import io.camunda.zeebe.backup.logarchive.model.LatestHint;
 import io.camunda.zeebe.backup.logarchive.model.LogArchiveJson;
 import io.camunda.zeebe.backup.logarchive.model.LogArchiveKeys;
 import io.camunda.zeebe.backup.logarchive.model.LogObjectJson;
+import io.camunda.zeebe.backup.logarchive.model.MaintenanceEntry;
 import io.camunda.zeebe.backup.logarchive.model.RootFile;
 import io.camunda.zeebe.backup.logarchive.model.SnapshotDescriptorFile;
 import io.camunda.zeebe.journal.JournalMetaStore.InMemory;
@@ -63,6 +64,9 @@ final class TestLogArchive implements AutoCloseable {
   private long releasedPosition = -1;
   private final List<LogObjectJson> mergedObjects = new ArrayList<>();
   private long nextSeq = 1;
+  private long nextMaintenanceSeq = 1;
+  private boolean authority;
+  private long holdIndex = -1;
   private long nextChunkNo = 1;
   private final List<LogObjectJson> openObjects = new ArrayList<>();
   private final List<IndexChunkJson> chunks = new ArrayList<>();
@@ -116,7 +120,102 @@ final class TestLogArchive implements AutoCloseable {
     return frames(sourceJournal.getFirstIndex(), sourceJournal.getLastIndex());
   }
 
+  /** Starts a timeline in mode B (spec section 25); the hold starts at the start index. */
+  void startAuthorityTimeline(final long startIndex, final String parentTimelineId) {
+    authority = true;
+    startTimeline(startIndex, parentTimelineId);
+  }
+
+  /** Moves the restore hold to an archived snapshot's index, recording {@code HOLD_MOVED}. */
+  void moveHold(final long newHoldIndex, final String snapshotId) {
+    holdIndex = newHoldIndex;
+    commit(
+        CommitEntry.Type.HOLD_MOVED,
+        null,
+        null,
+        List.of(),
+        List.of(),
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        snapshotId);
+  }
+
+  /**
+   * Compacts the current objects in {@code [firstIndex, lastIndex]} into one level 1 object with
+   * one zstd frame per entry, as the authority would, and writes the {@code COMPACTED} entry.
+   */
+  LogObjectJson compact(final long firstIndex, final long lastIndex) {
+    final var object = writeCompactedObject(firstIndex, lastIndex);
+    writeMaintenance(
+        new MaintenanceEntry(
+            LogArchiveJson.FORMAT_VERSION,
+            timelineId,
+            partitionId,
+            nextMaintenanceSeq,
+            MaintenanceEntry.Type.COMPACTED,
+            nextSeq - 1,
+            object,
+            null,
+            null));
+    return object;
+  }
+
+  /** Writes the level 1 object like {@link #compact}, but no maintenance entry. */
+  LogObjectJson writeCompactedObject(final long firstIndex, final long lastIndex) {
+    final var out = new java.io.ByteArrayOutputStream();
+    final var writer =
+        SegmentV1Encoder.writer(
+            out, new SegmentIdentity("cluster-1", "default", partitionId), timelineId, 1);
+    frames(firstIndex, lastIndex).forEach(writer::append);
+    final var written = writer.finish(-1);
+    final var footer = written.footer();
+    final var object =
+        new LogObjectJson(
+            LogArchiveKeys.compactedDataKey(
+                footer.firstIndex(), footer.lastIndex(), nextMaintenanceSeq),
+            TERM,
+            footer.firstIndex(),
+            footer.lastIndex(),
+            footer.firstPosition(),
+            footer.lastPosition(),
+            footer.entryCount(),
+            written.sizeBytes(),
+            written.sha256(),
+            footer.bodyLength());
+    store.put(prefix + object.key(), out.toByteArray()).join();
+    return object;
+  }
+
+  /** Records that every object ending at or below {@code upToIndex} was removed. */
+  void remove(final long upToIndex) {
+    writeMaintenance(
+        new MaintenanceEntry(
+            LogArchiveJson.FORMAT_VERSION,
+            timelineId,
+            partitionId,
+            nextMaintenanceSeq,
+            MaintenanceEntry.Type.REMOVED,
+            nextSeq - 1,
+            null,
+            upToIndex,
+            -1L));
+  }
+
+  /** Appends a maintenance entry as it is; its seq is the next one. */
+  void writeMaintenance(final MaintenanceEntry entry) {
+    store
+        .put(
+            prefix + LogArchiveKeys.maintenanceKey(nextMaintenanceSeq++),
+            LogArchiveJson.write(entry))
+        .join();
+  }
+
   void startTimeline(final long startIndex, final String parentTimelineId) {
+    holdIndex = startIndex;
     this.startIndex = startIndex;
     this.parentTimelineId = parentTimelineId;
     archivedIndex = startIndex - 1;
@@ -390,6 +489,8 @@ final class TestLogArchive implements AutoCloseable {
             mergedPosition,
             releasedIndex,
             releasedPosition,
+            authority ? holdIndex : null,
+            authority ? "AUTHORITY" : null,
             chunks,
             openObjects,
             openCheckpoints,
@@ -440,6 +541,34 @@ final class TestLogArchive implements AutoCloseable {
       final Long mergedPosition,
       final Long releasedIndex,
       final Long releasedPosition) {
+    commit(
+        type,
+        startIndex,
+        parentTimelineId,
+        objects,
+        checkpoints,
+        snapshot,
+        chunk,
+        mergedIndex,
+        mergedPosition,
+        releasedIndex,
+        releasedPosition,
+        null);
+  }
+
+  private void commit(
+      final CommitEntry.Type type,
+      final Long startIndex,
+      final String parentTimelineId,
+      final List<LogObjectJson> objects,
+      final List<CoveredCheckpointJson> checkpoints,
+      final ArchivedSnapshotJson snapshot,
+      final IndexChunkJson chunk,
+      final Long mergedIndex,
+      final Long mergedPosition,
+      final Long releasedIndex,
+      final Long releasedPosition,
+      final String holdSnapshotId) {
     final long seq = nextSeq++;
     final var entry =
         new CommitEntry(
@@ -456,11 +585,14 @@ final class TestLogArchive implements AutoCloseable {
             mergedPosition,
             releasedIndex,
             releasedPosition,
+            type == CommitEntry.Type.HOLD_MOVED ? holdIndex : null,
+            holdSnapshotId,
             startIndex,
             parentTimelineId,
             null,
             null,
             null,
+            type == CommitEntry.Type.TIMELINE_STARTED && authority ? "AUTHORITY" : null,
             objects,
             checkpoints,
             snapshot,

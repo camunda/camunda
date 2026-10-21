@@ -116,6 +116,13 @@ public final class LogArchiveRestorePlanner {
                   snapshotIndex,
                   view.releasedIndex()));
     }
+    if (view.hasMovedHold() && snapshotIndex < view.holdIndex()) {
+      throw failure(
+          view,
+          "restore point checkpoint %d is below the restore hold of partition %d: its snapshot is at index %d, the hold is at index %d"
+              .formatted(
+                  checkpoint.checkpointId(), view.partitionId(), snapshotIndex, view.holdIndex()));
+    }
     final var objects = selectObjects(view, snapshotIndex, requiredPosition, checkpoint);
     return new LogArchiveRestorePlan(view.partitionId(), checkpoint, snapshot, objects);
   }
@@ -177,6 +184,18 @@ public final class LogArchiveRestorePlanner {
     final long position = checkpoint.checkpointPosition();
     final var selected = new ArrayList<LogObjectJson>();
 
+    if (view.maintainedObjects().isPresent()) {
+      for (final var object : view.maintainedObjects().get()) {
+        if (object.lastIndex() < snapshotIndex && object.lastPosition() < requiredPosition) {
+          continue;
+        }
+        if (select(view, selected, object, snapshotIndex, requiredPosition, checkpoint)) {
+          return selected;
+        }
+      }
+      return failNoObject(view, selected, snapshotIndex, checkpoint);
+    }
+
     // merged objects replace everything up to M; chunks and open objects only count above it
     for (final var object : view.mergedObjects()) {
       if (select(view, selected, object, snapshotIndex, requiredPosition, checkpoint)) {
@@ -207,6 +226,15 @@ public final class LogArchiveRestorePlanner {
       }
     }
 
+    return failNoObject(view, selected, snapshotIndex, checkpoint);
+  }
+
+  private static List<LogObjectJson> failNoObject(
+      final LogArchiveView view,
+      final List<LogObjectJson> selected,
+      final long snapshotIndex,
+      final CoveredCheckpointJson checkpoint) {
+    final long position = checkpoint.checkpointPosition();
     if (selected.isEmpty()) {
       throw failure(
           view,
