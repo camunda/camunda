@@ -112,6 +112,77 @@ final class LogArchiveRestorePlannerTest {
   }
 
   @Test
+  void shouldTakeMergedObjectsUpToMAndChunksAndOpenObjectsAbove() {
+    // given
+    startArchive(1);
+    archive.appendAll(1, 2, 3, 4, 5, 6, 7, 8);
+    archive.checkpoint(10, 8);
+    archive.archive(2);
+    archive.archive(4);
+    archive.seal(2);
+    archive.archive(6);
+    archive.merge(4);
+    archive.archive(8);
+    archive.publishRoot();
+    final var view = LogArchiveView.read(store, TIMELINE, 1);
+
+    // when
+    final var plan = LogArchiveRestorePlanner.plan(view, checkpoint(view, 10));
+
+    // then
+    assertThat(plan.objects())
+        .extracting(o -> o.firstIndex() + "-" + o.lastIndex())
+        .containsExactly("1-4", "5-6", "7-8");
+  }
+
+  @Test
+  void shouldRefuseRestorePointWhoseSnapshotIsAtOrBelowTheReleasedIndex() {
+    // given
+    startArchive(1);
+    archive.appendAll(1, 2, 3, 4, 5, 6, 7, 8);
+    archive.checkpoint(10, 8);
+    archive.checkpoint(11, 5);
+    archive.archive(2);
+    archive.archive(4);
+    archive.archive(6);
+    archive.archive(8);
+    archive.merge(4);
+    archive.merge(6);
+    archive.archiveSnapshot(snapshot("4-1-4-4-1", 4, 4, 4, 4));
+    archive.archiveSnapshot(snapshot("6-1-6-6-1", 6, 6, 6, 6));
+    archive.release(4);
+    final var view = LogArchiveView.read(store, TIMELINE, 1);
+
+    // when - then
+    assertThat(LogArchiveRestorePlanner.plan(view, checkpoint(view, 10)).snapshotIndex())
+        .isEqualTo(6);
+    assertThatThrownBy(() -> LogArchiveRestorePlanner.plan(view, checkpoint(view, 11)))
+        .isInstanceOf(LogArchiveRestoreException.class)
+        .hasMessageContaining("is below the restore floor of partition 1");
+  }
+
+  @Test
+  void shouldRestoreFromSnapshotAboveTheReleasedIndex() {
+    // given
+    startArchive(1);
+    archive.appendAll(1, 2, 3, 4);
+    archive.checkpoint(10, 4);
+    archive.archive(2);
+    archive.archive(4);
+    archive.merge(2);
+    archive.archiveSnapshot(snapshot("3-1-3-3-1", 3, 3, 3, 3));
+    archive.release(2);
+    final var view = LogArchiveView.read(store, TIMELINE, 1);
+
+    // when
+    final var plan = LogArchiveRestorePlanner.plan(view, checkpoint(view, 10));
+
+    // then
+    assertThat(plan.snapshotIndex()).isEqualTo(3);
+    assertThat(plan.objects()).extracting(o -> o.firstIndex()).containsExactly(3L);
+  }
+
+  @Test
   void shouldFailWhenNoObjectCoversSnapshotIndex() {
     // given
     startArchive(5);

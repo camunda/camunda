@@ -156,6 +156,55 @@ final class LogArchiveRestoreTest {
   }
 
   @Test
+  void shouldRebuildJournalFromMergedObjectsWithoutTheReplacedOnes() throws IOException {
+    // given
+    final var archive = archive(1);
+    archive.appendAll(1, 2, 3, 4, 5, 6, 7, 8);
+    archive.checkpoint(1_000L, 7);
+    final var small =
+        List.of(archive.archive(2), archive.archive(4), archive.archive(5), archive.archive(6));
+    archive.merge(4);
+    archive.merge(6);
+    archive.archive(8);
+    archive.uploadSnapshot(takeSnapshot("p1", 2, 2, 2, 2));
+    archive.publishRoot();
+    small.forEach(archive::deleteObject);
+    final var target = target(1);
+
+    // when
+    restore.restorePartition(LogArchiveView.read(store, TIMELINE, 1), 1_000L, target);
+
+    // then
+    final var expected =
+        archive.sourceFrames().stream().filter(frame -> frame.index() <= 7).toList();
+    assertThat(readJournal(target)).containsExactlyElementsOf(expected);
+  }
+
+  @Test
+  void shouldRefuseRestorePointBelowTheRestoreFloorBeforeReadingObjects() throws IOException {
+    // given
+    final var archive = archive(1);
+    archive.appendAll(1, 2, 3, 4, 5, 6, 7, 8);
+    archive.checkpoint(1_000L, 7);
+    final var small =
+        List.of(archive.archive(2), archive.archive(4), archive.archive(5), archive.archive(6));
+    archive.merge(4);
+    archive.merge(6);
+    archive.archive(8);
+    archive.uploadSnapshot(takeSnapshot("p1", 2, 2, 2, 2));
+    archive.release(4);
+    small.forEach(archive::deleteObject);
+    final var view = LogArchiveView.read(store, TIMELINE, 1);
+    final var target = target(1);
+
+    // when - then
+    assertThatThrownBy(() -> restore.restorePartition(view, 1_000L, target))
+        .isInstanceOf(LogArchiveRestoreException.class)
+        .hasMessageContaining("is below the restore floor of partition 1");
+    assertThat(target.dataDirectory()).doesNotExist();
+  }
+
+  @Test
   void shouldStartJournalAtObjectContainingSnapshotIndex() throws IOException {
     // given
     final var archive = archive(1);

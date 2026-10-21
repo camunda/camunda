@@ -57,6 +57,11 @@ final class TestLogArchive implements AutoCloseable {
   private long archivedIndex;
   private long archivedPosition = -1;
   private long firstArchivedPosition = -1;
+  private long mergedIndex;
+  private long mergedPosition = -1;
+  private long releasedIndex;
+  private long releasedPosition = -1;
+  private final List<LogObjectJson> mergedObjects = new ArrayList<>();
   private long nextSeq = 1;
   private long nextChunkNo = 1;
   private final List<LogObjectJson> openObjects = new ArrayList<>();
@@ -115,6 +120,8 @@ final class TestLogArchive implements AutoCloseable {
     this.startIndex = startIndex;
     this.parentTimelineId = parentTimelineId;
     archivedIndex = startIndex - 1;
+    mergedIndex = startIndex - 1;
+    releasedIndex = startIndex - 1;
     commit(
         CommitEntry.Type.TIMELINE_STARTED,
         startIndex,
@@ -209,6 +216,72 @@ final class TestLogArchive implements AutoCloseable {
     openCheckpoints.addAll(covered);
     commit(CommitEntry.Type.LOG_ARCHIVED, null, null, List.of(object), covered, null, null);
     return object;
+  }
+
+  /**
+   * Merges all archived entries after M up to and including {@code lastIndex} (an object boundary)
+   * into one object, as a single frame, and records {@code LOG_MERGED}.
+   */
+  LogObjectJson merge(final long lastIndex) {
+    final var frames = frames(mergedIndex + 1, lastIndex);
+    final var encoded =
+        SegmentV1Encoder.encode(
+            new SegmentIdentity("cluster-1", "default", partitionId), timelineId, frames, -1);
+    final var footer = encoded.footer();
+    final var object =
+        new LogObjectJson(
+            LogArchiveKeys.dataKey(footer.firstIndex(), footer.lastIndex(), TERM),
+            TERM,
+            footer.firstIndex(),
+            footer.lastIndex(),
+            footer.firstPosition(),
+            footer.lastPosition(),
+            footer.entryCount(),
+            encoded.bytes().length,
+            encoded.sha256(),
+            footer.bodyLength());
+    store.put(prefix + object.key(), encoded.bytes()).join();
+    mergedObjects.add(object);
+    mergedIndex = object.lastIndex();
+    if (object.lastPosition() >= 0) {
+      mergedPosition = object.lastPosition();
+    }
+    commit(
+        CommitEntry.Type.LOG_MERGED,
+        null,
+        null,
+        List.of(object),
+        List.of(),
+        null,
+        null,
+        mergedIndex,
+        mergedPosition,
+        null,
+        null);
+    return object;
+  }
+
+  /** Releases all merged objects up to and including the one that ends at {@code lastIndex}. */
+  void release(final long lastIndex) {
+    releasedIndex = lastIndex;
+    mergedObjects.removeIf(object -> object.lastIndex() <= lastIndex);
+    commit(
+        CommitEntry.Type.LOG_RELEASED,
+        null,
+        null,
+        List.of(),
+        List.of(),
+        null,
+        null,
+        null,
+        null,
+        releasedIndex,
+        releasedPosition);
+  }
+
+  /** Deletes an object from the bucket, as the cleaner does with replaced ones. */
+  void deleteObject(final LogObjectJson object) {
+    store.remove(prefix + object.key());
   }
 
   /** Records an archived snapshot without uploading any file. */
@@ -313,9 +386,14 @@ final class TestLogArchive implements AutoCloseable {
             startIndex,
             archivedIndex,
             archivedPosition,
+            mergedIndex,
+            mergedPosition,
+            releasedIndex,
+            releasedPosition,
             chunks,
             openObjects,
             openCheckpoints,
+            mergedObjects,
             snapshots,
             handover);
     store.put(prefix + LogArchiveKeys.rootKey(seq), LogArchiveJson.write(root)).join();
@@ -336,6 +414,32 @@ final class TestLogArchive implements AutoCloseable {
       final List<CoveredCheckpointJson> checkpoints,
       final ArchivedSnapshotJson snapshot,
       final IndexChunkJson chunk) {
+    commit(
+        type,
+        startIndex,
+        parentTimelineId,
+        objects,
+        checkpoints,
+        snapshot,
+        chunk,
+        null,
+        null,
+        null,
+        null);
+  }
+
+  private void commit(
+      final CommitEntry.Type type,
+      final Long startIndex,
+      final String parentTimelineId,
+      final List<LogObjectJson> objects,
+      final List<CoveredCheckpointJson> checkpoints,
+      final ArchivedSnapshotJson snapshot,
+      final IndexChunkJson chunk,
+      final Long mergedIndex,
+      final Long mergedPosition,
+      final Long releasedIndex,
+      final Long releasedPosition) {
     final long seq = nextSeq++;
     final var entry =
         new CommitEntry(
@@ -348,6 +452,10 @@ final class TestLogArchive implements AutoCloseable {
             1_700_000_000_000L + seq,
             archivedIndex,
             archivedPosition,
+            mergedIndex,
+            mergedPosition,
+            releasedIndex,
+            releasedPosition,
             startIndex,
             parentTimelineId,
             null,

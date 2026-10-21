@@ -77,6 +77,68 @@ final class LogArchiveViewTest {
   }
 
   @Test
+  void shouldFoldMergesBeforeAndAfterTheRoot() {
+    // given
+    archive.appendAll(1, 2, 3, 4, 5, 6);
+    archive.archive(2);
+    archive.archive(4);
+    final var firstMerge = archive.merge(4);
+    archive.publishRoot();
+    archive.archive(6);
+    final var secondMerge = archive.merge(6);
+
+    // when
+    final var view = LogArchiveView.read(store, TIMELINE, 1);
+
+    // then
+    assertThat(view.mergedObjects()).containsExactly(firstMerge, secondMerge);
+    assertThat(view.mergedIndex()).isEqualTo(6);
+    assertThat(view.releasedIndex()).isZero();
+    assertThat(view.hasReleased()).isFalse();
+  }
+
+  @Test
+  void shouldFoldReleaseBeforeAndAfterTheRoot() {
+    // given
+    archive.appendAll(1, 2, 3, 4, 5, 6);
+    archive.archive(2);
+    archive.archive(4);
+    archive.archive(6);
+    archive.merge(2);
+    final var second = archive.merge(4);
+    final var third = archive.merge(6);
+    archive.release(2);
+    archive.publishRoot();
+    archive.release(4);
+
+    // when
+    final var view = LogArchiveView.read(store, TIMELINE, 1);
+
+    // then
+    assertThat(view.releasedIndex()).isEqualTo(4);
+    assertThat(view.hasReleased()).isTrue();
+    assertThat(view.mergedObjects()).containsExactly(third);
+    assertThat(view.mergedObjects()).doesNotContain(second);
+    assertThat(view.mergedIndex()).isEqualTo(6);
+  }
+
+  @Test
+  void shouldDefaultMergedAndReleasedIndexWithoutMerges() {
+    // given
+    archive.appendAll(1, 2);
+    archive.archive(2);
+
+    // when
+    final var view = LogArchiveView.read(store, TIMELINE, 1);
+
+    // then
+    assertThat(view.mergedIndex()).isZero();
+    assertThat(view.releasedIndex()).isZero();
+    assertThat(view.mergedObjects()).isEmpty();
+    assertThat(view.hasReleased()).isFalse();
+  }
+
+  @Test
   void shouldFoldAllCommitEntriesWithoutRoot() {
     // given
     archive.appendAll(1, 2);
