@@ -214,7 +214,7 @@ final class LogArchiveTransitionStepTest {
     step.transitionTo(context, 3, Role.LEADER).join();
 
     // then
-    verify(actorSchedulingService, times(4)).submitActor(any(), any());
+    verify(actorSchedulingService, times(6)).submitActor(any(), any());
   }
 
   @Test
