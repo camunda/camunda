@@ -567,7 +567,7 @@ for (const isMultiTenancyEnabled of [false, true]) {
 		const skeleton = page.getByTestId('instance-header-skeleton');
 		try {
 			await expect(skeleton).toBeVisible();
-			await expect(page.locator('head link[rel="stylesheet"][href*="assets/index-"]')).toHaveCount(1);
+			await expect(page.locator('head link[rel="stylesheet"][href*="assets/carbon-"]')).toHaveCount(1);
 			await expect(skeleton.getByRole('columnheader', {name: 'Tenant'})).toHaveCount(isMultiTenancyEnabled ? 1 : 0);
 			await expect(skeleton.getByRole('columnheader', {name: 'Decision Instance Key'})).toBeVisible();
 			await expect(operateDecisionInstancePage.loadingSpinner).toBeVisible();

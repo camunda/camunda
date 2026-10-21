@@ -273,7 +273,7 @@ test.describe('component routes', () => {
 
 		await expect(notFoundPage.heading).toBeVisible();
 		await expect(notFoundPage.goToHomeButton).toHaveCSS('background-color', 'rgb(15, 98, 254)');
-		const carbonStylesheet = page.locator('head link[rel="stylesheet"][href*="assets/index-"]');
+		const carbonStylesheet = page.locator('head link[rel="stylesheet"][href*="assets/carbon-"]');
 		await expect(carbonStylesheet).toHaveCount(1);
 
 		await notFoundPage.goToHomeButton.click();
@@ -305,7 +305,7 @@ test.describe('component routes', () => {
 
 		await expect(page.getByRole('heading', {name: 'Something went wrong'})).toBeVisible({timeout: 15000});
 		await expect(page.getByRole('button', {name: 'Try again'})).toHaveCSS('background-color', 'rgb(15, 98, 254)');
-		await expect(page.locator('head link[rel="stylesheet"][href*="assets/index-"]')).toHaveCount(1);
+		await expect(page.locator('head link[rel="stylesheet"][href*="assets/carbon-"]')).toHaveCount(1);
 	});
 
 	test('should surface a Carbon stylesheet loading failure instead of leaving the app blank', async ({
@@ -317,7 +317,7 @@ test.describe('component routes', () => {
 			releaseStylesheet = resolve;
 		});
 		let shouldFail = true;
-		await page.route('**/assets/index-*.css', async (route) => {
+		await page.route('**/assets/carbon-*.css', async (route) => {
 			await heldStylesheet;
 			if (shouldFail) {
 				await route.abort();

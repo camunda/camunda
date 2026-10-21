@@ -9,7 +9,7 @@
 import {useState, type ReactNode} from 'react';
 import {createPortal} from 'react-dom';
 import {useTranslation} from 'react-i18next';
-import appCss from './index.scss?url';
+import appCss from './carbon.scss?url';
 
 const CarbonStylesheet = ({children}: {children: ReactNode}) => {
 	const {t} = useTranslation();
