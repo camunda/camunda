@@ -7,11 +7,13 @@
  */
 package io.camunda.authentication.config;
 
+import static org.assertj.core.api.Assertions.assertThatNoException;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.JWSHeader;
@@ -23,6 +25,8 @@ import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.oauth2.client.registration.ClientRegistration;
@@ -38,7 +42,9 @@ class IssuerAwareJWSKeySelectorTest {
 
   @BeforeEach
   void setUp() {
-    when(jwsKeySelectorFactory.createJWSKeySelector(any(), any())).thenReturn(keySelector);
+    lenient()
+        .when(jwsKeySelectorFactory.createJWSKeySelector(any(), any()))
+        .thenReturn(keySelector);
   }
 
   /**
@@ -90,6 +96,47 @@ class IssuerAwareJWSKeySelectorTest {
 
     // then
     verify(jwsKeySelectorFactory).createJWSKeySelector(eq(jwkSetUri("entra")), eq(ADDITIONAL_URIS));
+  }
+
+  /**
+   * Two providers that resolve to the same issuer (for example configured as https://idp/ and
+   * https://idp) with different additional keys. Tokens of that issuer reach only the first, so the
+   * other's keys would silently go unused: the configuration is rejected, whatever its order.
+   */
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  void shouldRejectRegistrationsSharingAnIssuerWithDifferentAdditionalKeys(
+      final boolean withKeysFirst) {
+    // given
+    final var withKeys = registration("with-keys", "https://idp.example.com");
+    final var withoutKeys = registration("without-keys", "https://idp.example.com");
+    final var registrations =
+        withKeysFirst ? List.of(withKeys, withoutKeys) : List.of(withoutKeys, withKeys);
+    final var keys = Map.of("with-keys", ADDITIONAL_URIS);
+
+    // when / then
+    assertThatThrownBy(
+            () -> new IssuerAwareJWSKeySelector(registrations, jwsKeySelectorFactory, keys))
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("https://idp.example.com")
+        .hasMessageContaining("with-keys")
+        .hasMessageContaining("without-keys");
+  }
+
+  @Test
+  void shouldAcceptRegistrationsSharingAnIssuerWithTheSameAdditionalKeys() {
+    // given
+    final var registrations =
+        List.of(
+            registration("first", "https://idp.example.com"),
+            registration("second", "https://idp.example.com"));
+
+    // when / then
+    assertThatNoException()
+        .isThrownBy(
+            () ->
+                IssuerAwareJWSKeySelector.requireConsistentAdditionalKeys(
+                    registrations, Map.of("first", ADDITIONAL_URIS, "second", ADDITIONAL_URIS)));
   }
 
   private IssuerAwareJWSKeySelector lookAlikeProviders() {

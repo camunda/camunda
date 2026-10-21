@@ -15,6 +15,7 @@ import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.proc.JWTClaimsSetAwareJWSKeySelector;
 import java.security.Key;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -33,6 +34,11 @@ public class IssuerAwareJWSKeySelector implements JWTClaimsSetAwareJWSKeySelecto
       "Unknown issuer '%s'. No matching client registration found.";
   private static final String ERROR_MISSING_ISSUER =
       "Missing or empty 'iss' (issuer) claim in JWT.";
+  private static final String ERROR_CONFLICTING_ADDITIONAL_KEYS =
+      "OIDC providers '%2$s' and '%3$s' both resolve to issuer '%1$s' but configure different"
+          + " additional-jwk-set-uris. Tokens of that issuer are verified for '%2$s' only, so the"
+          + " additional keys of '%3$s' would never be used. Give both providers the same"
+          + " additional-jwk-set-uris, or remove one of them.";
 
   private final List<ClientRegistration> clientRegistrations;
   private final JWSKeySelectorFactory jwsKeySelectorFactory;
@@ -49,6 +55,7 @@ public class IssuerAwareJWSKeySelector implements JWTClaimsSetAwareJWSKeySelecto
       final List<ClientRegistration> clientRegistrations,
       final JWSKeySelectorFactory jwsKeySelectorFactory,
       final Map<String, List<String>> additionalJwkSetUrisByRegistrationId) {
+    requireConsistentAdditionalKeys(clientRegistrations, additionalJwkSetUrisByRegistrationId);
     this.clientRegistrations = List.copyOf(clientRegistrations);
     this.jwsKeySelectorFactory = jwsKeySelectorFactory;
     this.additionalJwkSetUrisByRegistrationId =
@@ -56,6 +63,42 @@ public class IssuerAwareJWSKeySelector implements JWTClaimsSetAwareJWSKeySelecto
             ? Map.copyOf(additionalJwkSetUrisByRegistrationId)
             : Collections.emptyMap();
     selectors = new ConcurrentHashMap<>();
+  }
+
+  /**
+   * Rejects registrations that share a resolved issuer but configure different additional JWK Set
+   * URIs. A token is routed by issuer to the first registration that has it, so the others' keys
+   * would silently go unused. Two providers configured as {@code https://idp/} and {@code
+   * https://idp} both resolve to the provider's issuer (see {@link ClientRegistrationFactory}), so
+   * this is checked on the resolved issuer, whatever the configuration order.
+   *
+   * @throws IllegalStateException naming the issuer and the registrations that conflict
+   */
+  public static void requireConsistentAdditionalKeys(
+      final List<ClientRegistration> clientRegistrations,
+      final Map<String, List<String>> additionalJwkSetUrisByRegistrationId) {
+    final Map<String, ClientRegistration> firstByIssuer = new HashMap<>();
+    for (final var registration : clientRegistrations) {
+      final var issuer = registration.getProviderDetails().getIssuerUri();
+      if (issuer == null || issuer.isBlank()) {
+        continue;
+      }
+      final var first = firstByIssuer.putIfAbsent(issuer, registration);
+      if (first != null
+          && !additionalKeysOf(first, additionalJwkSetUrisByRegistrationId)
+              .equals(additionalKeysOf(registration, additionalJwkSetUrisByRegistrationId))) {
+        throw new IllegalStateException(
+            ERROR_CONFLICTING_ADDITIONAL_KEYS.formatted(
+                issuer, first.getRegistrationId(), registration.getRegistrationId()));
+      }
+    }
+  }
+
+  private static List<String> additionalKeysOf(
+      final ClientRegistration registration, final Map<String, List<String>> byRegistrationId) {
+    final var uris =
+        byRegistrationId != null ? byRegistrationId.get(registration.getRegistrationId()) : null;
+    return uris != null ? uris : List.of();
   }
 
   @Override

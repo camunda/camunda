@@ -25,6 +25,12 @@ public final class ClientRegistrationFactory {
 
   private static final String DEFAULT_REDIRECT_URI = "{baseUrl}" + WebSecurityConfig.REDIRECT_URI;
 
+  /** Spring's issuer-mismatch message reads {@code <prefix><declared><suffix><requested>"}. */
+  private static final String MISMATCH_PREFIX = "The Issuer \"";
+
+  private static final String MISMATCH_SUFFIX =
+      "\" provided in the configuration metadata did not match the requested issuer \"";
+
   private ClientRegistrationFactory() {}
 
   /**
@@ -63,12 +69,34 @@ public final class ClientRegistrationFactory {
    * IssuerAwareJWSKeySelector} compare it with. Any other mismatch, or a retry that fails too,
    * rethrows the original exception.
    */
+  /**
+   * The issuer the discovery document declared, read from Spring's mismatch message ({@code The
+   * Issuer "<declared>" provided in the configuration metadata did not match the requested issuer
+   * "<requested>"}), as {@code fromIssuerLocation} does not expose the document. {@code null} if
+   * the message has another form, which makes {@link #discover} rethrow: a Spring upgrade that
+   * changes the message fails safe, and the tests of the trailing-slash retry catch it.
+   */
+  static String declaredIssuer(final IllegalStateException issuerMismatch) {
+    final var message = issuerMismatch.getMessage();
+    if (message == null) {
+      return null;
+    }
+    if (!message.startsWith(MISMATCH_PREFIX)) {
+      return null;
+    }
+    final var end = message.indexOf(MISMATCH_SUFFIX, MISMATCH_PREFIX.length());
+    return end < 0 ? null : message.substring(MISMATCH_PREFIX.length(), end);
+  }
+
   private static Builder discover(final String issuerUri) {
     try {
       return ClientRegistrations.fromIssuerLocation(issuerUri);
     } catch (final IllegalStateException issuerMismatch) {
       final var alternative = withToggledTrailingSlash(issuerUri);
-      if (alternative == null) {
+      // Retry only if the document declared exactly the other slash form. Any other mismatch is a
+      // real misconfiguration, and the retry could otherwise reach a different document that
+      // happens to declare the alternative.
+      if (alternative == null || !alternative.equals(declaredIssuer(issuerMismatch))) {
         throw issuerMismatch;
       }
       final Builder builder;
