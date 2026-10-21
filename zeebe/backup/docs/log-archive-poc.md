@@ -1614,3 +1614,33 @@ Tests:
 | W12 | event-plane | rollup, retention, deletion queue, maintenance worker | W11 |
 | W13 | camunda | integration tests | W9, W10, W12 |
 | W14 | both | manual scenario J | W13 |
+
+## 24. Later: restoring from large objects
+
+Not built. Restore downloads each object whole into memory and decodes all its frames
+(`LogArchiveRestore.download`). That is fine for cut and merged objects (tens of MB), but not for
+large rollups (a daily level 1 or level 2 object of a busy partition): memory and the 2 GiB array
+limit, and a restore from a snapshot in the middle of the object still reads all of it.
+
+**Format additions** (compatible: new metadata keys, which readers skip when unknown):
+
+- **First Raft index per frame** in the frame index, next to the first position and the offset
+  (a new key or a new version of key 2). Restore seeks by index, consumers by position; indexes and
+  positions are not 1:1 (entries without records, entries with many records).
+- **A checksum per frame** (key 3, for example SHA-256 of the compressed frame), so a ranged read
+  of one frame can be verified on its own.
+- **A checksum of the metadata block** in the entry that names the object (`metadataSha256` next to
+  `sha256`), so the frame index and frame checksums are trustworthy. Chain: entry → metadata →
+  frame → Raft checksum of each journal entry.
+
+**Restore changes:**
+
+- Read the tail (footer and metadata) with one ranged read and verify it.
+- Read only the frames from the one holding the snapshot index to the one holding the target
+  checkpoint's position, each with a ranged read, verified, decompressed, appended and dropped.
+  Memory stays at about one frame. Reset the journal to the first index of the first frame read.
+- Prefetch the next frames while appending; retry per range.
+- Objects without the new metadata: download to a temporary file while computing SHA-256, then
+  decode frame by frame from the file instead of from a byte array.
+
+The same reader serves consumers that rewind by position, so restore and consumers share it.
