@@ -275,6 +275,7 @@ public class ClusteringRule extends ExternalResource {
 
     // create gateway
     gatewayResource = createGateway();
+    closeables.add(gatewayResource);
 
     // create client
     client = createClient();
@@ -579,6 +580,7 @@ public class ClusteringRule extends ExternalResource {
             null,
             meterRegistry,
             null);
+
     gateway.start().join();
 
     return new GatewayResource(
