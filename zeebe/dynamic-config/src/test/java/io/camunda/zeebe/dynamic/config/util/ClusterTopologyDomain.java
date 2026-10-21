@@ -50,6 +50,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.OptionalLong;
 import java.util.Set;
 import java.util.SortedMap;
 import java.util.SortedSet;
@@ -143,7 +144,14 @@ public final class ClusterTopologyDomain extends DomainContextBase {
 
   @Provide
   Arbitrary<PartitionRestore> partitionRestores() {
-    return Arbitraries.longs().set().ofMinSize(1).map(PartitionRestore::ofBackups);
+    return Combinators.combine(Arbitraries.longs().set().ofMinSize(1), optionalLongs())
+        .as((backupIds, position) -> new PartitionRestore(new TreeSet<>(backupIds), position));
+  }
+
+  @Provide
+  Arbitrary<OptionalLong> optionalLongs() {
+    return Arbitraries.oneOf(
+        Arbitraries.just(OptionalLong.empty()), Arbitraries.longs().map(OptionalLong::of));
   }
 
   @Provide

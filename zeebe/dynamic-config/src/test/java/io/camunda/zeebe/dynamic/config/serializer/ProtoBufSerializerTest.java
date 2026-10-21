@@ -77,8 +77,10 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.OptionalLong;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.TreeSet;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -565,7 +567,11 @@ final class ProtoBufSerializerTest {
             new SchemaInitializationOperation(MemberId.from("1")),
             new PartitionPreRestoreOperation(MemberId.from("1"), 1),
             new PartitionRestoreOperation(
-                MemberId.from("1"), 1, PartitionRestore.ofBackups(1L, 2L)));
+                MemberId.from("1"), 1, PartitionRestore.ofBackups(1L, 2L)),
+            new PartitionRestoreOperation(
+                MemberId.from("2"),
+                1,
+                new PartitionRestore(new TreeSet<>(List.of(1L, 2L)), OptionalLong.of(150L))));
     final List<Phase> phases =
         List.of(
             new GlobalPhase(List.of(new MemberLeaveOperation(MemberId.from("1")))),
@@ -581,7 +587,12 @@ final class ProtoBufSerializerTest {
                         new SchemaInitializationOperation(MemberId.from("1")),
                         new PartitionPreRestoreOperation(MemberId.from("1"), 1),
                         new PartitionRestoreOperation(
-                            MemberId.from("1"), 1, PartitionRestore.ofBackups(1L, 2L))))));
+                            MemberId.from("1"), 1, PartitionRestore.ofBackups(1L, 2L)),
+                        new PartitionRestoreOperation(
+                            MemberId.from("2"),
+                            1,
+                            new PartitionRestore(
+                                new TreeSet<>(List.of(1L, 2L)), OptionalLong.of(150L)))))));
     final var currentMultiConfiguration = CurrentClusterConfiguration.init();
     final var expectedMultiConfiguration =
         CurrentClusterConfiguration.fromLegacy(
@@ -693,7 +704,12 @@ final class ProtoBufSerializerTest {
                         groupId,
                         List.of(
                             new PartitionRestoreOperation(
-                                MemberId.from("1"), 1, PartitionRestore.ofBackups(1L, 2L)))))),
+                                MemberId.from("1"), 1, PartitionRestore.ofBackups(1L, 2L)),
+                            new PartitionRestoreOperation(
+                                MemberId.from("2"),
+                                1,
+                                new PartitionRestore(
+                                    new TreeSet<>(List.of(1L, 2L)), OptionalLong.of(150L))))))),
             Instant.now());
     final var configuration =
         new CurrentClusterConfiguration(
