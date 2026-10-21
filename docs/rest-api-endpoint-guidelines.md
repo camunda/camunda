@@ -827,6 +827,8 @@ Ensure that `securitySchemes` in the OpenAPI YAML mirrors the security schemes d
 
 Every public endpoint in a REST controller **must** have a corresponding path/operation in the OpenAPI spec. Conversely, every spec operation must be backed by a controller method.
 
+> **Note:** `SpecControllerAlignmentTest` in `zeebe/gateway-rest` fails the build when a spec operation has no matching controller method. The reverse direction (a controller endpoint without a spec operation) is not yet checked automatically.
+
 #### `@Hidden` for undocumented internal endpoints
 
 If a controller endpoint exists for internal or platform-specific reasons (e.g., SaaS-only token exchange) and must **not** appear in the public API spec, annotate the handler method with `@Hidden` (from `io.swagger.v3.oas.annotations`):
