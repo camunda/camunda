@@ -46,6 +46,9 @@ import {notificationsStore} from '#/shared/notifications/notifications.store';
 import {ProcessInstanceContext} from './useProcessInstancePage';
 import {processInstanceSearchSchema} from './processInstanceSearch';
 import {InstanceDiagram} from './InstanceDiagram';
+import {ProcessInstancePageProvider} from './ProcessInstancePageProvider';
+import type {ModificationState} from './modifications/modificationReducer';
+import {addToken, cancelToken, createModificationState} from './modifications/mocks';
 import {useInstanceDiagramData} from './instanceDiagram.queries';
 
 const INSTANCE_ID = 'instance-1';
@@ -85,35 +88,47 @@ const singleResult = <T,>(item: T) => ({
 	page: {totalItems: 1, startCursor: null, endCursor: null, hasMoreTotalItems: false},
 });
 
-type PageProps = React.ComponentProps<typeof InstanceDiagram> & {nextInstanceState?: ProcessInstanceData['state']};
+type PageProps = React.ComponentProps<typeof InstanceDiagram> & {
+	nextInstanceState?: ProcessInstanceData['state'];
+	modificationState?: ModificationState;
+};
 
 function DiagramDataProbe({instance}: {instance: ProcessInstanceData}) {
 	useInstanceDiagramData(instance, true);
 	return null;
 }
 
-function Page({nextInstanceState, ...props}: PageProps) {
+function Page({nextInstanceState, modificationState, ...props}: PageProps) {
 	const location = useRouterState({select: (state) => state.location});
 	const processInstanceId = useParams({strict: false}).processInstanceId ?? INSTANCE_ID;
 	if (!location.pathname.startsWith('/operate/processes/')) {
 		return null;
 	}
 	const search = processInstanceSearchSchema.parse(location.search);
+	const processInstance =
+		processInstanceId === INSTANCE_ID
+			? INSTANCE
+			: createProcessInstance({processInstanceKey: processInstanceId, state: nextInstanceState ?? 'ACTIVE'});
+	const diagram = (
+		<div style={{width: '900px', height: '400px'}}>
+			<InstanceDiagram {...props} />
+		</div>
+	);
+	if (modificationState !== undefined) {
+		return (
+			<ProcessInstancePageProvider
+				processInstanceId={processInstanceId}
+				processInstance={processInstance}
+				search={search}
+				modification={{state: modificationState, isModificationModeEnabled: true, dispatch: () => {}}}
+			>
+				{diagram}
+			</ProcessInstancePageProvider>
+		);
+	}
 	return (
-		<ProcessInstanceContext
-			value={{
-				processInstanceId,
-				processInstance:
-					processInstanceId === INSTANCE_ID
-						? INSTANCE
-						: createProcessInstance({processInstanceKey: processInstanceId, state: nextInstanceState ?? 'ACTIVE'}),
-				search,
-				selection: search,
-			}}
-		>
-			<div style={{width: '900px', height: '400px'}}>
-				<InstanceDiagram {...props} />
-			</div>
+		<ProcessInstanceContext value={{processInstanceId, processInstance, search, selection: search}}>
+			{diagram}
 		</ProcessInstanceContext>
 	);
 }
@@ -449,36 +464,31 @@ describe('<InstanceDiagram />', () => {
 	});
 
 	it('should show only execution states and pending badges in modification mode', async ({worker}) => {
-		const onSelection = vi.fn();
 		worker.use(
 			...handlers({
 				waitStates: [{elementId: 'task_1', waitingCount: 2}],
 				agents: [createAgentInstance({elementId: 'call_1'})],
 			}),
+			mockQueryElementInstancesEndpoint({successResponse: HttpResponse.json(createPaginatedResponse())}),
 		);
 
 		const screen = await renderPage({
-			isModificationModeEnabled: true,
 			isExecutionCountVisible: true,
-			onModificationElementSelection: onSelection,
-			modificationBadges: [
-				{
-					elementId: 'task_1',
-					type: 'instance-modification',
-					position: {top: 0, left: 0},
-					payload: {newTokenCount: 2, cancelledTokenCount: 1},
-				},
-			],
+			modificationState: createModificationState([
+				addToken({elementId: 'task_1', scopeId: 'scope-1'}),
+				addToken({elementId: 'task_1', scopeId: 'scope-2'}),
+				cancelToken({elementId: 'task_1', elementInstanceKey: 'task-instance-1'}),
+			]),
 		});
 
 		await expect.element(screen.getByTestId('instance-state-task_1-active')).toBeVisible();
-		await expect.element(screen.getByTestId('instance-modification-task_1')).toHaveTextContent('+2 −1');
+		await expect.element(screen.getByTestId('modifications-overlay')).toHaveTextContent('2,1');
 		await expect.element(screen.getByTestId('instance-state-task_1-completed')).not.toBeInTheDocument();
 		await expect.element(screen.getByTestId('instance-state-task_1-canceled')).not.toBeInTheDocument();
 		await expect.element(screen.getByTestId('instance-waiting-task_1')).not.toBeInTheDocument();
 		await expect.element(screen.getByTestId('instance-agent-call_1')).not.toBeInTheDocument();
-		await userEvent.click(document.querySelector<SVGElement>('[data-element-id="task_1"]')!);
-		expect(onSelection).not.toHaveBeenCalled();
+		await userEvent.click(document.querySelector<SVGElement>('[data-element-id="start_1"]')!);
+		expect(processInstanceSearchSchema.parse(screen.router.state.location.search).elementId).toBeUndefined();
 
 		await userEvent.dblClick(document.querySelector<SVGElement>('[data-element-id="call_1"]')!);
 		expect(screen.router.state.location.pathname).toBe(`/operate/processes/${INSTANCE_ID}/details`);

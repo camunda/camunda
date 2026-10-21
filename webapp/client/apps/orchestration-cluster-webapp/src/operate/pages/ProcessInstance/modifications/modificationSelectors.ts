@@ -171,6 +171,7 @@ function getModificationsByElement(
 		}
 
 		sourceCounts.areAllTokensCanceled =
+			modification.elementInstanceKey === undefined ||
 			sourceCounts.cancelledTokens === (totalRunningInstancesByElement[element.id] ?? 0);
 
 		if (modification.operation === 'MOVE_TOKEN') {

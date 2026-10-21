@@ -104,6 +104,16 @@ function useResolvedSelection(
 			replaceSelection({elementId: id, isMultiInstanceBody: multiInstanceBody || undefined}),
 		[replaceSelection],
 	);
+	const selectPlaceholder = useCallback(
+		(id: string, key: string, multiInstanceBody: boolean) =>
+			replaceSelection({
+				elementId: id,
+				elementInstanceKey: key,
+				isMultiInstanceBody: multiInstanceBody || undefined,
+				isPlaceholder: true,
+			}),
+		[replaceSelection],
+	);
 	const selectElementInstance = useCallback(
 		async (
 			instance: Pick<ElementInstance, 'elementId' | 'elementInstanceKey'> & Partial<Pick<ElementInstance, 'type'>>,
@@ -186,6 +196,7 @@ function useResolvedSelection(
 		isFetchingElementError: enabled && query.isError,
 		selectElement,
 		selectElementInstance,
+		selectPlaceholder,
 		clearSelection,
 		isSelected,
 	};

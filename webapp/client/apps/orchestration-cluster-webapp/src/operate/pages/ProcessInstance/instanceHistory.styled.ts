@@ -6,7 +6,8 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import styled from 'styled-components';
+import styled, {css} from 'styled-components';
+import {Add, Error, WarningAltFilled} from '@carbon/react/icons';
 import {TreeNode} from '@carbon/react';
 import {styles} from '@carbon/type';
 
@@ -99,6 +100,26 @@ const HistoryTimestamp = styled.span`
 const HistoryStatus = styled.li`
 	padding-inline-start: var(--cds-spacing-05);
 `;
+const HistoryModificationIcons = styled.span`
+	display: inline-flex;
+	align-items: center;
+	gap: var(--cds-spacing-03);
+	flex-shrink: 0;
+	margin-inline-start: auto;
+	padding-inline-end: var(--cds-spacing-03);
+`;
+const disabledIconStyles = css`
+	color: var(--cds-icon-disabled);
+`;
+const HistoryAddIcon = styled(Add)`
+	${disabledIconStyles}
+`;
+const HistoryCancelIcon = styled(Error)`
+	${disabledIconStyles}
+`;
+const HistoryWarningIcon = styled(WarningAltFilled)`
+	color: var(--cds-support-warning);
+`;
 const BottomPanel = styled.div`
 	height: 100%;
 	min-height: 0;
@@ -118,6 +139,10 @@ const TabPanel = styled.div`
 `;
 
 export {
+	HistoryModificationIcons,
+	HistoryAddIcon,
+	HistoryCancelIcon,
+	HistoryWarningIcon,
 	HistoryPanel,
 	HistoryHeader,
 	HistoryScroll,

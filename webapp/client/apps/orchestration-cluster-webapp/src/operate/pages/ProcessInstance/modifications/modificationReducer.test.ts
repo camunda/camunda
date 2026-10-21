@@ -33,7 +33,7 @@ function removeVariable(
 describe('modificationReducer', () => {
 	it('should transition between modification mode states', () => {
 		const enabled = reduce([{type: 'enableModificationMode'}]);
-		const applying = modificationReducer(enabled, {type: 'startApplyingModifications'});
+		const applying = modificationReducer(enabled, {type: 'startApplyingModifications', requestId: 'request-1'});
 
 		expect(isModificationModeEnabled(initialModificationState)).toBe(false);
 		expect(enabled.status).toBe('enabled');
@@ -41,6 +41,25 @@ describe('modificationReducer', () => {
 		expect(modificationReducer(enabled, {type: 'disableModificationMode'}).status).toBe('disabled');
 		expect(applying.status).toBe('applying-modifications');
 		expect(isModificationModeEnabled(applying)).toBe(false);
+	});
+
+	it('should only finish the apply request that is still pending', () => {
+		const applying = modificationReducer(createModificationState([cancelToken({elementId: 'task'})]), {
+			type: 'startApplyingModifications',
+			requestId: 'request-1',
+		});
+		const reentered = modificationReducer(applying, {type: 'enableModificationMode'});
+		const restaged = modificationReducer(reentered, {
+			type: 'addModification',
+			modification: cancelToken({elementId: 'other-task'}),
+		});
+
+		expect(applying.modifications).toEqual([]);
+		expect(modificationReducer(applying, {type: 'finishApplyingModifications', requestId: 'request-2'})).toBe(applying);
+		expect(modificationReducer(applying, {type: 'finishApplyingModifications', requestId: 'request-1'})).toEqual(
+			initialModificationState,
+		);
+		expect(modificationReducer(restaged, {type: 'finishApplyingModifications', requestId: 'request-1'})).toBe(restaged);
 	});
 
 	it('should keep staged modifications when disabled, clear everything on reset and ignore unknown actions', () => {

@@ -25,6 +25,7 @@ import {
 	mockQueryElementInstancesEndpoint,
 	mockGetElementInstanceEndpoint,
 	mockQueryBatchOperationItemsEndpoint,
+	mockGetProcessInstanceStatisticsEndpoint,
 } from '#/shared-test-modules/mock-handlers';
 import {createCurrentUser} from '#/shared-test-modules/api-mocks/current-user';
 import {createProcessInstance} from '#/shared-test-modules/api-mocks/process-instances';
@@ -134,6 +135,7 @@ function getProcessInstancePageHandlers({
 			successResponse: HttpResponse.json(createPaginatedResponse({items: waitStateItems})),
 		}),
 		mockQueryBatchOperationItemsEndpoint({successResponse: HttpResponse.json(createPaginatedResponse())}),
+		mockGetProcessInstanceStatisticsEndpoint({successResponse: HttpResponse.json({items: []})}),
 	] as const;
 }
 

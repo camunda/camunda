@@ -11,11 +11,13 @@ import {useNavigate, useRouter} from '@tanstack/react-router';
 import {useTranslation} from 'react-i18next';
 import {useQueryClient as useReactQueryClient} from '@tanstack/react-query';
 import kebabCase from 'lodash/kebabCase';
+import {Button} from '@carbon/react';
 import {ForbiddenError} from '#/shared/errors';
 import {notificationsStore} from '#/shared/notifications/notifications.store';
 import {Diagram} from '#/operate/shared/Diagram';
 import {DiagramShell} from '#/operate/shared/DiagramShell/DiagramShell';
 import {isInstanceRunning} from '#/operate/shared/utils/processInstance';
+import {MODIFICATIONS_BADGE} from '#/operate/shared/utils/badgePositions';
 import {useDiagramXml} from '#/operate/pages/Processes/useDiagramXml';
 import {useProcessInstanceWaitStateStatistics} from './processInstance.queries';
 import {useProcessInstancePage} from './useProcessInstancePage';
@@ -28,31 +30,31 @@ import {
 } from './instanceDiagram.queries';
 import {useInstanceDiagramOverlays, type ModificationBadge} from './useInstanceDiagramOverlays';
 import {InstanceDiagramOverlays} from './InstanceDiagramOverlays';
-import {Panel} from './instanceDiagram.styled';
+import {DiagramPanel, ModificationInfoBanner, ModificationInfoBannerText, Panel} from './instanceDiagram.styled';
 import {InstanceHistoryContext} from './useInstanceHistory';
 import {useProcessInstanceModification} from './useProcessInstanceModification';
-
-const NO_MODIFICATION_BADGES: ModificationBadge[] = [];
+import {ModificationDropdown} from './ModificationDropdown';
+import {createFinishMovingTokenAction} from './modifications/modificationOperations';
+import {getModificationsByElement} from './modifications/modificationSelectors';
+import {getLoadedInstanceAncestors} from './modifications/historyPlaceholders';
+import {
+	getAncestorScopeType,
+	getModifiableElements,
+	getRunningInstancesByElement,
+} from './modifications/modificationTargets';
 
 type Props = {
 	isModificationModeEnabled?: boolean;
 	isExecutionCountVisible?: boolean;
-	modifiableElements?: string[];
-	modificationBadges?: ModificationBadge[];
-	selectedElementOverlay?: React.ComponentProps<typeof Diagram>['selectedElementOverlay'];
-	onModificationElementSelection?: (elementId?: string, isMultiInstance?: boolean) => void;
 };
 
 function InstanceDiagram({
 	isModificationModeEnabled: modificationModeOverride,
 	isExecutionCountVisible: executionCountOverride,
-	modifiableElements,
-	modificationBadges = NO_MODIFICATION_BADGES,
-	selectedElementOverlay,
-	onModificationElementSelection,
 }: Props) {
 	const {processInstanceId, processInstance, selection, search} = useProcessInstancePage();
 	const modification = useProcessInstanceModification();
+	const {state: modificationState, dispatch: dispatchModification} = modification;
 	const isModificationModeEnabled = modificationModeOverride ?? modification.isModificationModeEnabled;
 	const history = useContext(InstanceHistoryContext);
 	const isExecutionCountVisible = executionCountOverride ?? history?.executionCount ?? false;
@@ -93,6 +95,34 @@ function InstanceDiagram({
 	const {statistics, sequenceFlows, agents} = useInstanceDiagramData(processInstance, hasDiagram);
 	const {data: waitStates} = useProcessInstanceWaitStateStatistics(processInstance);
 	const isRunning = isInstanceRunning(processInstance);
+	const businessObjects = diagram?.businessObjects;
+	const runningInstancesByElement = useMemo(
+		() => getRunningInstancesByElement(statistics.data, businessObjects),
+		[statistics.data, businessObjects],
+	);
+	const modificationsByElement = useMemo(
+		() =>
+			getModificationsByElement(modificationState, {
+				businessObjects,
+				totalRunningInstancesByElement: runningInstancesByElement,
+				totalRunningInstancesVisibleByElement: runningInstancesByElement,
+			}),
+		[modificationState, businessObjects, runningInstancesByElement],
+	);
+	const modificationBadges = useMemo<ModificationBadge[]>(
+		() =>
+			Object.entries(modificationsByElement).map(([elementId, {newTokens, visibleCancelledTokens}]) => ({
+				elementId,
+				type: 'instance-modification',
+				position: MODIFICATIONS_BADGE,
+				payload: {newTokenCount: newTokens, cancelledTokenCount: visibleCancelledTokens},
+			})),
+		[modificationsByElement],
+	);
+	const modifiableElements = useMemo(
+		() => getModifiableElements(modificationState, businessObjects, statistics.data, runningInstancesByElement),
+		[modificationState, businessObjects, statistics.data, runningInstancesByElement],
+	);
 	const overlaysData = useInstanceDiagramOverlays({
 		statistics: statistics.data,
 		waitStates: isRunning ? waitStates : undefined,
@@ -183,6 +213,60 @@ function InstanceDiagram({
 			}),
 			replace: true,
 		});
+	};
+
+	const finishMovingToken = (targetElementId?: string) => {
+		if (businessObjects === undefined) {
+			return;
+		}
+		const sourceElementId = modificationState.sourceElementIdForMoveOperation;
+		const sourceElementInstanceKey = modificationState.sourceElementInstanceKeyForMoveOperation;
+		const sourceAncestors =
+			sourceElementInstanceKey === null
+				? []
+				: getLoadedInstanceAncestors(
+						[...(history?.windows.values() ?? [])].map(({scope, query}) => ({
+							key: scope.key,
+							items: query.data?.items ?? [],
+						})),
+						sourceElementInstanceKey,
+						processInstanceId,
+						processInstance.processDefinitionId,
+					);
+		const affectedTokenCount = modificationState.sourceElementInstanceKeyForMoveOperation
+			? 1
+			: (sourceElementId ? runningInstancesByElement[sourceElementId] : undefined) || 1;
+		dispatchModification(
+			createFinishMovingTokenAction(modificationState, {
+				businessObjects,
+				affectedTokenCount,
+				visibleAffectedTokenCount: affectedTokenCount,
+				bpmnProcessId: processInstance.processDefinitionId,
+				runningInstancesByElement,
+				sourceAncestors,
+				targetElementId,
+				ancestorScopeType:
+					targetElementId === undefined
+						? undefined
+						: getAncestorScopeType(businessObjects, sourceElementId ?? '', targetElementId, runningInstancesByElement),
+			}),
+		);
+	};
+
+	const handleModificationElementSelection = (elementId?: string, isMultiInstance?: boolean) => {
+		if (modificationState.status === 'moving-token' && businessObjects !== undefined) {
+			clearSelection();
+			finishMovingToken(elementId);
+			return;
+		}
+		if (modificationState.status === 'adding-token') {
+			return;
+		}
+		if (elementId) {
+			selectElement(elementId, isMultiInstance);
+		} else {
+			clearSelection();
+		}
 	};
 
 	const handleDrillDown = async (elementId: string) => {
@@ -292,56 +376,89 @@ function InstanceDiagram({
 
 	return (
 		<Panel aria-label={t('operate.processInstance.diagram.panelLabel')}>
-			<DiagramShell status={status} emptyMessage={{message: t('operate.processInstance.diagram.noDiagram')}}>
-				{diagram && hasDiagram && (
-					<Diagram
-						key={processInstanceId}
-						xml={diagram.xml}
-						download={{
-							xml: diagram.xml,
-							filename: `${kebabCase(processInstance.processDefinitionName ?? processInstance.processDefinitionId)}_v${processInstance.processDefinitionVersion}.bpmn`,
-						}}
-						selectableElements={isModificationModeEnabled ? (modifiableElements ?? []) : selectableElements}
-						selectedElementIds={selectedElementIds}
-						onElementSelection={(elementId, isMultiInstance, clickedElementId) => {
-							if (isModificationModeEnabled) {
-								onModificationElementSelection?.(elementId, isMultiInstance);
-								return;
-							}
-							if (elementId) {
-								selectElement(elementId, isMultiInstance);
-							} else if (clickedElementId && selectedElementIds?.includes(clickedElementId)) {
-								selectElement(
-									clickedElementId,
-									diagram.businessObjects[clickedElementId]?.loopCharacteristics?.$type ===
-										'bpmn:MultiInstanceLoopCharacteristics',
+			{modificationState.status === 'moving-token' && businessObjects && (
+				<ModificationInfoBanner>
+					<ModificationInfoBannerText>
+						{t('operate.processInstance.modification.selectTarget')}
+					</ModificationInfoBannerText>
+					<Button kind="ghost" size="sm" onClick={() => finishMovingToken()}>
+						{t('operate.processInstance.modification.discard')}
+					</Button>
+				</ModificationInfoBanner>
+			)}
+			{modificationState.status === 'adding-token' && businessObjects && (
+				<ModificationInfoBanner>
+					<ModificationInfoBannerText>
+						{t('operate.processInstance.modification.selectParentScope')}
+					</ModificationInfoBannerText>
+					<Button kind="ghost" size="sm" onClick={() => dispatchModification({type: 'finishAddingToken'})}>
+						{t('operate.processInstance.modification.discard')}
+					</Button>
+				</ModificationInfoBanner>
+			)}
+			<DiagramPanel>
+				<DiagramShell status={status} emptyMessage={{message: t('operate.processInstance.diagram.noDiagram')}}>
+					{diagram && hasDiagram && (
+						<Diagram
+							key={processInstanceId}
+							xml={diagram.xml}
+							download={{
+								xml: diagram.xml,
+								filename: `${kebabCase(processInstance.processDefinitionName ?? processInstance.processDefinitionId)}_v${processInstance.processDefinitionVersion}.bpmn`,
+							}}
+							selectableElements={isModificationModeEnabled ? modifiableElements : selectableElements}
+							selectedElementIds={selectedElementIds}
+							onElementSelection={(elementId, isMultiInstance, clickedElementId) => {
+								if (isModificationModeEnabled) {
+									handleModificationElementSelection(elementId, isMultiInstance);
+									return;
+								}
+								if (elementId) {
+									selectElement(elementId, isMultiInstance);
+								} else if (clickedElementId && selectedElementIds?.includes(clickedElementId)) {
+									selectElement(
+										clickedElementId,
+										diagram.businessObjects[clickedElementId]?.loopCharacteristics?.$type ===
+											'bpmn:MultiInstanceLoopCharacteristics',
+									);
+								} else {
+									clearSelection();
+								}
+							}}
+							onRootChange={(rootElementId, getSelectionRootId) => {
+								clearSelection(
+									(elementId) => elementId !== undefined && rootElementId !== getSelectionRootId(elementId),
 								);
-							} else {
-								clearSelection();
+							}}
+							overlaysData={overlaysData}
+							selectedElementOverlay={
+								isModificationModeEnabled && (
+									<ModificationDropdown
+										businessObjects={diagram.businessObjects}
+										statistics={statistics.data}
+										runningInstancesByElement={runningInstancesByElement}
+										modificationsByElement={modificationsByElement}
+									/>
+								)
 							}
-						}}
-						onRootChange={(rootElementId, getSelectionRootId) => {
-							clearSelection((elementId) => elementId !== undefined && rootElementId !== getSelectionRootId(elementId));
-						}}
-						overlaysData={overlaysData}
-						selectedElementOverlay={isModificationModeEnabled ? selectedElementOverlay : undefined}
-						highlightedSequenceFlows={highlightedSequenceFlows}
-						highlightedElementIds={highlightedElementIds}
-						nonSelectableNodeTooltipText={
-							isModificationModeEnabled ? t('operate.processInstance.diagram.notModifiable') : undefined
-						}
-						hasOuterBorderOnSelection={
-							!isModificationModeEnabled ||
-							(!search.elementInstanceKey &&
-								(statistics.data?.find(({elementId}) => elementId === selection.elementId)?.active ?? 0) > 1)
-						}
-						customElementClasses={customElementClasses}
-						onElementDoubleClick={(elementId) => void handleDrillDown(elementId)}
-					>
-						<InstanceDiagramOverlays />
-					</Diagram>
-				)}
-			</DiagramShell>
+							highlightedSequenceFlows={highlightedSequenceFlows}
+							highlightedElementIds={highlightedElementIds}
+							nonSelectableNodeTooltipText={
+								isModificationModeEnabled ? t('operate.processInstance.diagram.notModifiable') : undefined
+							}
+							hasOuterBorderOnSelection={
+								!isModificationModeEnabled ||
+								(!search.elementInstanceKey &&
+									(selection.elementId === undefined ? 0 : (runningInstancesByElement[selection.elementId] ?? 0)) > 1)
+							}
+							customElementClasses={customElementClasses}
+							onElementDoubleClick={(elementId) => void handleDrillDown(elementId)}
+						>
+							<InstanceDiagramOverlays />
+						</Diagram>
+					)}
+				</DiagramShell>
+			</DiagramPanel>
 		</Panel>
 	);
 }

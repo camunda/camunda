@@ -24,6 +24,7 @@ import {
 	type UpdateJobRequestBody,
 	type CancelProcessInstanceRequestBody,
 	type DeleteProcessInstanceRequestBody,
+	type ModifyProcessInstanceRequestBody,
 	type SuspendProcessInstanceRequestBody,
 	type ResumeProcessInstanceRequestBody,
 	type QueryBatchOperationsRequestBody,
@@ -366,6 +367,14 @@ const endpoints = {
 			...BASE_REQUEST_OPTIONS,
 			method: unifiedAPIEndpoints.deleteProcessInstance.method,
 			...(body === undefined ? {} : {body: JSON.stringify(body), headers: {'Content-Type': 'application/json'}}),
+		}),
+
+	modifyProcessInstance: (processInstanceKey: string, body: ModifyProcessInstanceRequestBody) =>
+		new Request(getFullURL(unifiedAPIEndpoints.modifyProcessInstance.getUrl({processInstanceKey})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.modifyProcessInstance.method,
+			body: JSON.stringify(body),
+			headers: {'Content-Type': 'application/json'},
 		}),
 
 	suspendProcessInstance: (processInstanceKey: string, body?: SuspendProcessInstanceRequestBody) =>

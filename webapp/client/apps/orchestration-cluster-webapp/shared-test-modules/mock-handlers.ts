@@ -141,6 +141,11 @@ const mockDeleteProcessInstanceEndpoint = createEndpointMock({
 	method: endpoints.deleteProcessInstance.method,
 });
 
+const mockModifyProcessInstanceEndpoint = createEndpointMock({
+	endpoint: endpoints.modifyProcessInstance.getUrl({processInstanceKey: ':processInstanceKey'}),
+	method: endpoints.modifyProcessInstance.method,
+});
+
 const mockSuspendProcessInstanceEndpoint = createEndpointMock({
 	endpoint: endpoints.suspendProcessInstance.getUrl({processInstanceKey: ':processInstanceKey'}),
 	method: endpoints.suspendProcessInstance.method,
@@ -751,6 +756,7 @@ export {
 	mockResolveProcessInstanceIncidentsEndpoint,
 	mockCancelProcessInstanceEndpoint,
 	mockDeleteProcessInstanceEndpoint,
+	mockModifyProcessInstanceEndpoint,
 	mockSuspendProcessInstanceEndpoint,
 	mockResumeProcessInstanceEndpoint,
 	mockGetDecisionInstanceEndpoint,
