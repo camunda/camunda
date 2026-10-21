@@ -1126,6 +1126,7 @@ public class CompactRecordLogger {
     return new StringBuilder()
         .append("new <process ")
         .append(formatId(value.getBpmnProcessId()))
+        .append(formatVersionTag(value.getVersionTag()))
         .append(">")
         .append(summarizeStartInstructions(value.getStartInstructions()))
         .append(formatVariables(value))
@@ -2261,6 +2262,10 @@ public class CompactRecordLogger {
     return StringUtils.isEmpty(tenantId) || TenantOwned.DEFAULT_TENANT_IDENTIFIER.equals(tenantId)
         ? ""
         : " (tenant: %s)".formatted(tenantId);
+  }
+
+  private String formatVersionTag(final String versionTag) {
+    return versionTag.isEmpty() ? "" : " tag:" + versionTag;
   }
 
   private String formatVariables(final RecordValueWithVariables value) {

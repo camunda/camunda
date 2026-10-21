@@ -63,6 +63,9 @@
             "businessId": {
               "type": "keyword"
             },
+            "versionTag": {
+              "type": "keyword"
+            },
             "elementInstanceKey": {
               "enabled": false
             }
