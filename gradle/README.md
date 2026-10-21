@@ -47,7 +47,8 @@ work should be skipped and the active project graph should remain unchanged.
 
 ```bash
 # Builds frontend assets as dependencies of the distribution assembly
-./gradlew :camunda-zeebe:distZip
+./gradlew buildDistball      # alias for :camunda-zeebe:distTar
+./gradlew buildDistballZip   # alias for :camunda-zeebe:distZip
 
 # Backend-only archive: does not build fresh frontend assets
 ./gradlew -Pskip.fe.build=true :camunda-zeebe:distZip
