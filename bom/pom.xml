@@ -241,6 +241,19 @@
       <url>https://artifacts.camunda.com/artifactory/camunda-bpm-snapshots/</url>
     </repository>
 
+    <!-- Benchmark-only: unpublished dmn-scala 1.12.6-SNAPSHOT vendored into this branch -->
+    <repository>
+      <releases>
+        <enabled>false</enabled>
+      </releases>
+      <snapshots>
+        <enabled>true</enabled>
+      </snapshots>
+      <id>vendored-dmn-scala</id>
+      <name>Vendored dmn-scala snapshot</name>
+      <url>file://${maven.multiModuleProjectDirectory}/.vendored-m2</url>
+    </repository>
+
     <!-- Fallback in case some dependency isn't visible in the central mirror yet -->
     <repository>
       <snapshots>

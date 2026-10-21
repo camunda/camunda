@@ -1,0 +1,644 @@
+# -- Global values propagated to the camunda-load-tests (load-tester) subchart.
+global:
+  # -- Extra configuration merged into the load test applications' config file.
+  # Seeded as an empty map so callers can add keys via
+  # `--set global.extraConfig.<key>=<value>` (e.g. the Makefile sets
+  # `global.extraConfig.load-tester.monitor-data-availability=false` for the
+  # `none` storage scenario). The subchart ships this key as `null`, and
+  # `load-tester-values-defaults.yaml` supplies a `global:` block without `extraConfig`.
+  # Without a map default here, Helm's global coalescing silently drops the
+  # `--set` value, so the load-test-config ConfigMap (and its starter/workers
+  # wiring) never renders for the `none` scenario. An empty map is falsy, so the
+  # ConfigMap still only renders when a key is actually set.
+  extraConfig: {}
+
+  performReadBenchmarks: true
+
+# -- Name of the load test.
+name: ""
+
+# -- Name or handle of the person owning this load-test deployment.
+author: ""
+
+# -- Date (YYYY-MM-DD) after which this load-test environment can be reclaimed.
+deadlineDate: ""
+
+# -- Optional Kubernetes topology zone to pin workloads to (e.g. `europe-west1-b`).
+# When set, configures the `topology.kubernetes.io/zone` annotation on the namespace resources.
+topologyZone: ""
+
+# -- Internal URL of the Camunda management endpoint. Used by the
+# `leader-balancer` CronJob to trigger periodic partition rebalancing via
+# `POST {{ camundaManagementUrl }}/actuator/rebalance` when `leaderBalancer.endpoint`
+# is `actuator`.
+camundaManagementUrl: http://camunda:9600
+
+# -- Configuration for the `leader-balancer` CronJob, which periodically triggers
+# Zeebe partition leadership rebalancing.
+leaderBalancer:
+  # -- Which endpoint the CronJob calls to trigger a rebalance:
+  # - `v2`: the coordinated `POST {{ zeebeRestAddress }}/cluster/v2/rebalance` endpoint
+  #   (Camunda 8.10+). Authenticated with the dedicated `leaderBalancer.client.oidc` client's
+  #   cluster-admin grant, so `camunda.security.cluster-admin.oidc.clients[0]` (set via
+  #   `orchestration.extraConfiguration`'s `application.yml` in the platform values) must
+  #   include that client id.
+  # - `actuator`: the deprecated, unauthenticated `POST {{ camundaManagementUrl }}/actuator/rebalance`.
+  #   Required for Camunda versions before 8.10, which don't ship `/cluster/v2/rebalance`.
+  endpoint: v2
+
+  # -- Dedicated OIDC client for the CronJob, isolated from `loadTest.client.oidc`.
+  client:
+    oidc:
+      clientId: leader-balancer
+      secret:
+        key: identity-leader-balancer-client-secret
+
+# -- The configuration for the load test metrics exporter
+metricsExporter:
+  image:
+    # -- The registry hosting the load test metrics exporter Docker image
+    registry: registry.camunda.cloud/team-reliability-testing
+    # -- The repository hosting the load test metrics exporter Docker image
+    repository: metrics-exporter
+    # -- The tag of the load test metrics exporter Docker image
+    tag: latest
+
+  database:
+    # -- URL of the database (Elasticsearch or OpenSearch) HTTP endpoint for metrics queries.
+    # Defaults to the ECK-generated ClusterIP service name for Elasticsearch.
+    url: http://elasticsearch-es-http:9200
+
+# -- Configuration for the optional chaos-killer CronJob.
+# When enabled, one randomly-selected matching pod is deleted per run to simulate
+# unscheduled restarts (e.g. PostgreSQL, Zeebe broker, Elasticsearch).
+chaosKiller:
+  # -- Set to true to deploy the chaos-killer CronJob.
+  enabled: false
+  # -- Cron schedule for the chaos-killer (default: once per hour).
+  schedule: "0 * * * *"
+  # -- Space-separated shell glob patterns. One pod matching any pattern is deleted per run.
+  targetPatterns: "camunda-* elastic-* postgresql-*"
+
+# -- load-tester subchart toggle. Set to false to skip deploying the load
+# generators (e.g. for a bare cluster setup).
+load-tester:
+  enabled: true
+
+# -- Configuration for the load test applications.
+loadTest:
+  # -- Client configuration
+  client:
+    # -- OIDC configuration for the load test applications
+    oidc:
+      clientId: orchestration
+      zeebeRestAddress: http://camunda:8080
+      # -- The complete "/token" URL endpoint of the authentication server.
+      # Either set the complete URL used to fetch OIDC token from the
+      # authentication server, or keep it at the default empty value to use the
+      # built-in Keycloak instance. (Keycloak *must* also be enabled in this case.)
+      authServer:
+      zeebeGrpcAddress: http://camunda:26500
+      authorizationAudience: orchestration-api
+      # -- The name of the key used to generate credentials for the load test client applications.
+      # This key is used:
+      # 1. During the cluster provisioning, to create a client ID/password through Keycloak
+      # 2. While configuring the load test application, to create the same password as used by Keycloak.
+      secret:
+        key: orchestration-security-authentication-oidc-secret
+
+# -- Configuration for the ECK-managed Elasticsearch cluster.
+# When enabled, deploys an `Elasticsearch` custom resource managed by the ECK operator.
+# The HTTP API is served over plain HTTP (TLS disabled) with anonymous superuser access —
+# appropriate for load-test environments, not production.
+elasticsearch:
+  # -- Set to true to deploy an Elasticsearch cluster via the ECK operator.
+  enabled: false
+
+  # -- The name of the underlying Elasticsearch resource.
+  # Changing this also changes the names of the other resources deployed by the
+  # ECK Operator, like the Kubernetes Services exposing the access to
+  # Elasticsearch.
+  name: elasticsearch
+
+  # -- Elasticsearch version to deploy. Must be within the range supported by the installed ECK operator (>= 8.x)
+  # See https://www.elastic.co/docs/deploy-manage/deploy/cloud-on-k8s#stack-compatibility
+  version: 8.18.0
+
+  # -- Number of Elasticsearch nodes in the cluster.
+  count: 3
+
+  # -- Environment variables injected into the Elasticsearch container.
+  # Use ES_JAVA_OPTS to tune JVM heap size relative to the container memory limit.
+  # See https://www.elastic.co/docs/deploy-manage/deploy/cloud-on-k8s/manage-compute-resources#k8s-elasticsearch-memory
+  env:
+  - name: ES_JAVA_OPTS
+    value: -Xms3g -Xmx3g
+
+  # -- CPU and memory resource requests and limits for the Elasticsearch container.
+  resources:
+    limits:
+      cpu: "7"
+      memory: 8Gi
+    requests:
+      cpu: "7"
+      memory: 8Gi
+
+  # -- Persistent storage configuration for each Elasticsearch node.
+  storage:
+    # -- Kubernetes StorageClass for the PersistentVolumeClaim.
+    storageClassName: benchmark-ssd-zonal-v1
+    # -- Storage capacity requested per Elasticsearch node.
+    requests: 256Gi
+
+  # -- Node selector labels for Elasticsearch pod scheduling.
+  # The top-level `topologyZone` value is also applied as `topology.kubernetes.io/zone`.
+  nodeSelector:
+    component: benchmark-n2-standard-8
+
+  # -- Tolerations applied to Elasticsearch pods.
+  tolerations:
+  - effect: NoSchedule
+    key: nodepool
+    operator: Equal
+    value: n2-standard-8
+
+# -- Configure the Keycloak deployment.
+keycloak:
+  # -- Whether to deploy Keycloak or not.
+  enabled: true
+
+  # -- The Keycloak image to be deployed.
+  image:
+    registry: europe-west1-docker.pkg.dev/camunda-benchmark
+    repository: dockerhub/camunda/keycloak
+    tag: quay-optimized-26.6.4
+
+  # -- CPU and memory resource requests and limits for the Keycloak instance.
+  resources:
+    requests:
+      cpu: "1"
+      memory: 1Gi
+    limits:
+      cpu: "2"
+      memory: 2Gi
+
+  http:
+    # -- The port Keycloak listens on for HTTP traffic.
+    # Use a non-default port to avoid conflict with Zeebe Gateway on port 8080
+    # during port-forwarding.
+    port: 18080
+
+  # -- Node selector labels for Keycloak pod scheduling.
+  # The top-level `topologyZone` value is also applied as
+  # `topology.kubernetes.io/zone`.
+  nodeSelector:
+    component: benchmark-n2-standard-4
+
+  # -- Tolerations applied to the Keycloak pod.
+  tolerations:
+    - key: nodepool
+      operator: Equal
+      value: n2-standard-4
+      effect: NoSchedule
+
+  adminUser:
+    # -- The name of the initial "admin" user in Keycloak.
+    # This should be the same user as configured in Identity's `global.identity.keycloak.auth.adminUser`.
+    username: admin
+    secret:
+      # -- The name of the key used to generate credentials for the Keycloak admin user.
+      # This key is used:
+      # 1. To generate the "admin" password when creating the Keycloak instance
+      # 2. To configure the credentials used by Identity when connecting to Keycloak.
+      # It should match the key configured in Identity's
+      # `global.identity.keycloak.auth.secret.existingSecretKey`.
+      key: identity-keycloak-admin-password
+
+  # -- Configure the PostgreSQL cluster to be used by Keycloak.
+  postgresql:
+    # -- The name of the CNPG Cluster resource deployed for Keycloak.
+    clusterName: postgresql-keycloak
+
+    # -- The name of the PostgreSQL database created for Keycloak.
+    databaseName: keycloak
+
+    # -- The name of the PostgreSQL user Keycloak uses to connect to its database.
+    databaseUser: keycloak
+
+    # -- The PostgreSQL CNPG image to be used when creating a CNPG-based
+    # PostgreSQL cluster.
+    image:
+      registry: europe-west1-docker.pkg.dev/camunda-benchmark
+      repository: ghcrio/cloudnative-pg/postgresql
+      tag: "18.4"
+
+    # -- CPU and memory resource requests and limits for the PostgreSQL cluster.
+    resources:
+      requests:
+        cpu: 100m
+        memory: 128Mi
+      limits:
+        cpu: 150m
+        memory: 192Mi
+
+    # -- Persistent storage configuration for the PostgreSQL cluster.
+    storage:
+      size: 1Gi
+      storageClass: benchmark-ssd-zonal-v1
+
+    # -- Node selector labels for PostgreSQL pod scheduling
+    # The top-level `topologyZone` value is also applied as `topology.kubernetes.io/zone`.
+    nodeSelector:
+      component: benchmark-n2-standard-4
+
+    # -- Tolerations applied to PostgreSQL pods.
+    tolerations:
+      - key: nodepool
+        operator: Equal
+        value: n2-standard-4
+        effect: NoSchedule
+
+# -- Configuration for OpenSearch
+# See https://github.com/opensearch-project/helm-charts/tree/main/charts/opensearch
+# and its default values: https://github.com/opensearch-project/helm-charts/blob/main/charts/opensearch/values.yaml
+opensearch:
+  # -- Set to true to deploy an OpenSearch cluster via the OpenSearch Helm Chart.
+  enabled: false
+
+  clusterName: opensearch
+  nameOverride: opensearch
+  masterService: opensearch
+
+  majorVersion: "2.19.6"
+
+  image:
+    repository: europe-west1-docker.pkg.dev/camunda-benchmark/dockerhub/opensearchproject/opensearch
+    tag: 2.19.6
+
+  replicas: 3
+
+  config:
+    opensearch.yml: |
+      cluster.name: opensearch
+      network.host: 0.0.0.0
+      plugins.security.disabled: true
+      # Disable deprecation logging to avoid filling up the logs with warnings about deprecated features that we might be using in our tests
+      logger.org.opensearch.deprecation: "OFF"
+
+    # Log as JSON
+    log4j2.properties: |
+      appender.console.type = Console
+      appender.console.name = console
+      appender.console.layout.type = OpenSearchJsonLayout
+      appender.console.layout.type_name = json_logger
+
+      rootLogger.level = info
+      rootLogger.appenderRef.console.ref = console
+
+  extraEnvs:
+    - name: OPENSEARCH_INITIAL_ADMIN_PASSWORD
+      value: "yourStrongPassword123!"
+
+  opensearchJavaOpts: "-Xms3g -Xmx3g"
+
+  sysctlInit:
+    enabled: true
+
+  sysctlVmMaxMapCount: 262144
+
+  resources:
+    requests:
+      cpu: 7000m
+      memory: 8Gi
+    limits:
+      cpu: 7000m
+      memory: 8Gi
+
+  persistence:
+    enabled: true
+    size: 256Gi
+    storageClass: benchmark-ssd-zonal-v1
+
+  nodeSelector:
+    component: benchmark-n2-standard-8
+
+  tolerations:
+    - key: nodepool
+      operator: Equal
+      value: n2-standard-8
+      effect: NoSchedule
+
+  antiAffinity: "hard"
+
+  protocol: http
+
+  securityConfig:
+    enabled: false
+
+
+# -- Configuration for the Prometheus exporter for Elasticsearch
+# See https://github.com/prometheus-community/helm-charts/tree/main/charts/prometheus-elasticsearch-exporter
+prometheus-elasticsearch-exporter:
+  # -- Enable/disable the Prometheus exporter for Elasticsearch
+  # This should most probably be enabled if you deploy Elasticsearch or OpenSearch.
+  enabled: false
+
+  # Other options for the Prometheus exporter for Elasticsearch.
+  # See https://github.com/prometheus-community/helm-charts/blob/main/charts/prometheus-elasticsearch-exporter/values.yaml for the list of options.
+  fullnameOverride: prom-els-exporter
+
+  commonLabels:
+    camunda.io/purpose: load-test
+
+  image:
+    # Route through colocated GAR pull-through cache to avoid quay.io rate limiting
+    # Original: quay.io/prometheuscommunity/elasticsearch-exporter
+    repository: europe-west1-docker.pkg.dev/camunda-benchmark/quayio/prometheuscommunity/elasticsearch-exporter
+
+  log:
+    format: json
+
+  serviceMonitor:
+    enabled: true
+    # Same label as when the exporter is deployed as a standalone Helm Chart (not as a dependency).
+    jobLabel: elasticsearch-exporter
+    # Labels used by the service monitor, specific to our prometheus installation
+    labels:
+      release: monitoring
+
+# -- Configure the PostgreSQL cluster used by Camunda as secondary storage.
+# If you want to use PostgreSQL as secondary storage for Camunda, you must
+# enable this resource and configure it according to your needs.
+#
+# This cluster is **independent** from the PostgreSQL cluster used by Keycloak,
+# configured via `keycloak.postgresql`.
+postgresql:
+  # -- Set to true to deploy this CNPG-managed PostgreSQL cluster.
+  # Only needed when the load test uses PostgreSQL as secondary storage.
+  enabled: false
+
+  # -- The name of the CNPG Cluster resource deployed for Camunda's secondary storage.
+  # Changing this name will also change the Kubernetes Service deployed by the
+  # CNPG operator, and thus will require to adjust the JDBC URL used to connect
+  # Camunda to PostgreSQL.
+  clusterName: postgresql
+
+  # -- The PostgreSQL CNPG image to be used when creating a CNPG-based
+  # PostgreSQL cluster.
+  image:
+    registry: europe-west1-docker.pkg.dev/camunda-benchmark
+    repository: dockerhub/postgres
+    tag: "18.4"
+
+  # -- The UID and GID used by the PostgreSQL container.
+  # This should match the UID/GID in use by the specified Docker image.
+  postgresUID: 999
+  postgresGID: 999
+
+  # -- CPU and memory resource requests and limits for the PostgreSQL cluster.
+  resources:
+    requests:
+      memory: 8Gi
+      cpu: 3000m
+    limits:
+      cpu: 3000m
+      memory: 12Gi
+
+  # -- Persistent storage configuration for the PostgreSQL cluster.
+  storage:
+    size: 256Gi
+    storageClass: benchmark-ssd-zonal-v1
+
+  # -- The PostgreSQL database and user used by Camunda to connect to this cluster.
+  database:
+    # -- The name of the PostgreSQL database created for Camunda.
+    name: camunda
+    # -- The name of the PostgreSQL user Camunda uses to connect to its database.
+    user: camunda
+    # -- The password for the PostgreSQL user used by Camunda. Shared verbatim with
+    # `orchestration.data.secondaryStorage.rdbms.secret.inlineSecret` in the
+    # `camunda-platform-values-rdbms.yaml` values files, independently of the
+    # underlying RDBMS database.
+    password: camunda
+
+  # -- PostgreSQL extensions loaded at server startup.
+  shared_preload_libraries:
+    - pg_stat_statements
+
+  # -- PostgreSQL server configuration parameters (`postgresql.conf`), tuned for the
+  # load test's expected write/update volume.
+  parameters:
+    # WAL Performance Tuning
+    wal_buffers: 128MB
+    max_wal_size: 4GB
+    min_wal_size: 1GB
+    checkpoint_timeout: 20min
+    checkpoint_completion_target: "0.9"
+    wal_writer_delay: 200ms
+    wal_writer_flush_after: 1MB
+
+    # Memory Settings
+    shared_buffers: 2GB
+    effective_cache_size: 7GB
+    work_mem: 32MB
+    maintenance_work_mem: 1GB
+
+    # Autovacuum - Aggressive for high UPDATE/DELETE volume
+    autovacuum_max_workers: "6"
+    autovacuum_naptime: 15s
+    autovacuum_vacuum_scale_factor: "0.03"
+    autovacuum_analyze_scale_factor: "0.02"
+    autovacuum_vacuum_cost_limit: "5000"
+
+    # Monitoring
+    pg_stat_statements.track: all
+    pg_stat_statements.max: "10000"
+    track_io_timing: "on"
+    track_functions: all
+
+    # Logging - default to silent, but keep the values to easily turn them on
+    # during investigations.
+    log_statement: none
+    log_connections: "off"
+    log_disconnections: "off"
+
+  # -- Node selector labels for PostgreSQL pod scheduling.
+  # The top-level `topologyZone` value is also applied as `topology.kubernetes.io/zone`.
+  nodeSelector:
+    component: benchmark-n2-standard-4
+
+  # -- Tolerations applied to PostgreSQL pods.
+  tolerations:
+    - key: nodepool
+      operator: Equal
+      value: n2-standard-4
+      effect: NoSchedule
+
+  # -- Configure a CNPG `Pooler` (PgBouncer, transaction-pooling mode) in front of
+  # this PostgreSQL cluster. Opt-in and disabled by default: existing rdbms load
+  # tests keep connecting straight to the `-rw` Service unless this is turned on.
+  #
+  # Why: each broker pod opens one connection pool per physical tenant, so client
+  # connections to Postgres scale as (broker pods x physical tenants) and quickly
+  # exceed Postgres's default `max_connections` (a 10 brokers x 10 tenants load
+  # test produces a structural floor of ~200 mostly-idle connections). A GKE
+  # benchmark trial confirmed that routing broker traffic through PgBouncer in
+  # transaction-pooling mode collapses steady-state Postgres connections by an
+  # order of magnitude, with zero client queueing and zero connection timeouts,
+  # while Postgres stays at its default `max_connections=100`.
+  #
+  # When enabling this, also point
+  # `orchestration.data.secondaryStorage.rdbms.url` (in the platform values) at
+  # this Pooler's Service (`<clusterName>-pooler`) instead of the Cluster's `-rw`
+  # Service, with `?prepareThreshold=0` appended: pgjdbc defaults to server-side
+  # prepared statements after 5 uses of the same statement, which do not survive
+  # PgBouncer's transaction-mode connection swapping. The `--use-pgbouncer` flag
+  # to `../../newLoadTest.sh` does both for you at namespace scaffold time.
+  #
+  # Reference: https://cloudnative-pg.io/docs/1.30/connection_pooling
+  pooler:
+    # -- Set to true to deploy the CNPG Pooler alongside the PostgreSQL cluster above.
+    enabled: false
+
+    # -- Number of PgBouncer pod replicas.
+    instances: 1
+
+    pgbouncer:
+      # -- PgBouncer parameters passed through to the CNPG Pooler resource.
+      # `max_client_conn` is raised well above PgBouncer's default (100): every
+      # broker pod x physical tenant combination opens its own client connection,
+      # and the default is not enough headroom for this scenario's connection count.
+      parameters:
+        max_client_conn: "1000"
+
+k6:
+  # Each test renders one k6-operator `TestRun`. Besides `enabled` and `script`, a test accepts:
+  # * `parallelism`: number of k6 runner pods sharing the load (default: 1). k6 splits the
+  #   arrival rate and the VUs of the script between them.
+  # * `resources`: runner resources, replacing `k6.resources` for this test only.
+  # * `env`: extra environment variables passed to the script (name: value).
+  # * `generator`: generates test data too large for the `k6-data` ConfigMap (1 MiB limit) in an
+  #   init container of each runner: `python3 /generators/<script> <args>`, with the scripts of
+  #   `k6/generators/` mounted in `/generators`. The files written to `/generated` are available to
+  #   the script through the `GENERATED_DIR` environment variable. Set `image`, `script`, `args`,
+  #   `resources` and `sizeLimit` (of the `/generated` emptyDir). The k6-operator initializer pod
+  #   does not run the generator: the script must tolerate missing files in the init context.
+  tests:
+    default:
+      enabled: true
+      script: test.default.js
+    # Reads data from secondary storage. Disabled together with `global.performReadBenchmarks`
+    # (see `common.mk` and `.github/scripts/load-test-install-camunda-platform.sh`), and for
+    # versions without the search endpoints it uses (`k6_data_read_supported` in `common.mk`).
+    data-read:
+      enabled: true
+      script: test.data-read.js
+    # Evaluates a decision through `/v2/decision-definitions/evaluation`. Enabled by the `dmn`
+    # scenario (see `common.mk`), which also sizes it for a high throughput.
+    dmn:
+      enabled: false
+      script: test.dmn.js
+    # Evaluates a large synthetic decision graph (48 MiB DMN and 8479 rules by default) with inputs
+    # that cover every rule. Enabled by the `dmn-large` scenario (see `common.mk`). The DMN and its
+    # input vectors are generated by `k6/generators/generate_tariff_dmn.py`, which is deterministic.
+    # Load shape: `DMN_RATE`, `DMN_RAMP_UP`, ... in `env`; which rules the requests reach:
+    # `DMN_DEPTH_MIX` and `DMN_EXTRA_VARIABLES` (see the README).
+    dmn-large:
+      enabled: false
+      script: test.dmn-large.js
+      generator:
+        image: europe-west1-docker.pkg.dev/camunda-benchmark/dockerhub/python:3.13-alpine
+        script: generate_tariff_dmn.py
+        args:
+          - --out
+          - /generated/freight_tariff.dmn
+          - --random-vectors
+          - "2000"
+          - --payload-vectors
+          - "500"
+          - --fallthrough-vectors
+          - "500"
+        env:
+          # DMN file size in MiB, e.g. 6, 12, 24 or 48: the rule counts scale with it.
+          DMN_SIZE_MIB: "48"
+          # Average KB of XML per rule: empty for the reference models (6.0), ~3.8 for most
+          # production models, which have more and shorter rules per MiB.
+          DMN_KB_PER_RULE: ""
+          # >0: round(420 x scale) models with the size mix of a production portfolio instead of
+          # one model of DMN_SIZE_MIB (0.1: 42 models, ~180 MiB; 1: ~1.8 GiB).
+          DMN_PORTFOLIO_SCALE: "0"
+        resources:
+          requests:
+            cpu: 500m
+            memory: 512Mi
+          limits:
+            cpu: 1000m
+            memory: 512Mi
+        # a full portfolio (DMN_PORTFOLIO_SCALE=1) writes ~1.9 GiB
+        sizeLimit: 3Gi
+
+  prometheus:
+    endpoint: http://kube-prometheus-stack-prometheus.monitoring.svc.cluster.local:9090/api/v1/write
+
+  tags:
+    # Configure the list of "tags" (labels) automatically set on metrics by k6.
+    #
+    # We want to remove some default tags, like "name" and "url".
+    # These tags are automatically set by k6 on all the metrics, but they both
+    # contain the target URL of HTTP requests, which can create
+    # high-cardinality metrics in Prometheus, which in turns have a very
+    # negative impact on Prometheus performance.
+    #
+    # It's still possible to manually set these tags when calling the
+    # `http.XXX()` methods though ; they are just not automatically filled in
+    # by k6.
+    #
+    # See https://grafana.com/docs/k6/latest/using-k6/k6-options/reference/#system-tags
+    system:
+      - check
+      # `error` is the textual representation of the error ("dial: connection
+      # refused", "dial: connection reset by peer", "dial: i/o timeout",
+      # "lookup: no such host", etc.), when a request fails.
+      # This can be "high cardinality", adjust it if needed.
+      - error
+      - error_code
+      - expected_response
+      - group
+      - method
+      # Disable the default "name" system tag: it contains the URL being
+      # fetched, which can have a high cardinality.
+      #- name
+      - proto
+      - scenario
+      - service
+      - status
+      - subproto
+      - tls_version
+      # Disable the default "url" system tag: the URL can have a high
+      # cardinality.
+      #- url
+
+  resources:
+    # This is highly dependent on the load test scenario and the number of
+    # virtual users being simulated.
+    # Adjust these values based on your specific requirements and the expected
+    # load.
+    requests:
+      cpu: 200m
+      memory: 128Mi
+    limits:
+      cpu: 200m
+      memory: 128Mi
+
+  nodeSelector:
+    # The top-level `topologyZone` value is also applied as `topology.kubernetes.io/zone`.
+    # Keep tests on stable nodes by default to prevent losing them completely
+    # during node preemption.
+    # See: https://github.com/grafana/k6-operator/issues/898
+    component: benchmark-n2-standard-4-stable
+
+  tolerations:
+    - key: nodepool
+      operator: Equal
+      value: n2-standard-4-stable
+      effect: NoSchedule

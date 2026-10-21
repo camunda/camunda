@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<metadata>
+  <groupId>org.camunda.bpm.extension.dmn.scala</groupId>
+  <artifactId>dmn-engine</artifactId>
+  <versioning>
+    <versions>
+      <version>1.12.6-SNAPSHOT</version>
+    </versions>
+    <lastUpdated>20261021212741</lastUpdated>
+  </versioning>
+</metadata>

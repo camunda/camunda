@@ -1,0 +1,45 @@
+# Platform overlay of the `dmn-large` scenario (see common.mk), which evaluates a ~48 MiB decision
+# graph (k6 test `dmn-large`). Unlike the `dmn` scenario, it keeps the durable default topology
+# (replication factor 3, data on disk) and only sizes the brokers for the large model.
+#
+# It does not use the application-override.yml slot, so it can be layered on another topology:
+# to compare with the `dmn` scenario on the same brokers, pass this file to the `dmn` scenario, or
+# pass camunda-platform-values-dmn.yaml, this file and the dmn overrides to the `dmn-large` one.
+#
+# Only scalars are overridden: Helm replaces lists instead of merging them.
+
+orchestration:
+  # The evaluation of a decision runs on the partition's stream processor thread and takes
+  # 0.5-3 s for this model, so the throughput scales with the number of partitions, not CPUs:
+  # 6 partitions give each broker 2 leaders to use its 3 processing threads.
+  partitionCount: "6"
+
+  # Each partition leader keeps its own parsed copy of the decision graph in the heap: ~416 MiB
+  # for this model (the DRG cache is bounded by entry count, not size), so the live heap is ~2 GiB
+  # with 2 leaders per broker. The evaluation allocates heavily: with a 3.2 GiB heap (8Gi, 40%)
+  # the live set stays above the G1 marking threshold and concurrent marking took a third of the
+  # CPU. A 6 GiB heap keeps it around a third, with room for the copies of 3 leaders (one broker
+  # down). RocksDB and the other native memory (~2 GiB) stay outside the heap.
+  resources:
+    requests:
+      memory: 10Gi
+    limits:
+      memory: 10Gi
+  #
+  # Deploying the ~48 MiB DMN writes the resource twice in a single batch: in the
+  # DecisionRequirements CREATED event and in the CommandDistribution of the deployment command to
+  # the other partitions, so it is rejected with EXCEEDED_BATCH_RECORD_SIZE below ~2x its size. The
+  # message size must not exceed the log segment size (128MB by default). The REST deployment
+  # endpoint caps uploads with the multipart limits. These application properties are set as system
+  # properties, which take precedence over the configuration files.
+  javaOpts: >-
+    -Dcamunda.cluster.network.max-message-size=128MB
+    -Dspring.servlet.multipart.max-file-size=64MB
+    -Dspring.servlet.multipart.max-request-size=64MB
+    -XX:MaxRAMPercentage=60.0
+    -XX:+ExitOnOutOfMemoryError
+    -XX:+HeapDumpOnOutOfMemoryError
+    -XX:HeapDumpPath=/usr/local/camunda/data
+    -XX:ErrorFile=/usr/local/camunda/data/zeebe_error%p.log
+    -XX:NativeMemoryTracking=summary
+    -Xlog:gc*:file=/usr/local/camunda/data/gc.log:time:filecount=7,filesize=8M

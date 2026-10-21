@@ -1,0 +1,23 @@
+# -------
+#
+# owner: @data-layer
+#
+# -------
+
+########################################################################################
+################################################### Orchestration cluster configuration
+########################################################################################
+orchestration:
+  data:
+    secondaryStorage:
+      rdbms:
+        # Load-test only: intra-cluster traffic is within the same namespace.
+        # Encryption is disabled to match the standard MSSQL test configuration
+        # used across the QA module (application-rdbmsMSSQL.yaml, docker-compose.yml).
+        url: "jdbc:sqlserver://mssql:1433;Encrypt=false"
+        username: sa
+        # Load-test only: credentials are hardcoded inline, consistent with the
+        # MySQL and PostgreSQL load-test values files (e.g. inlineSecret: camunda).
+        # Do not use these credentials in production environments.
+        secret:
+          inlineSecret: "Camunda#8_demo"
