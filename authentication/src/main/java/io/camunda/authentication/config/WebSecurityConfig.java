@@ -911,8 +911,10 @@ public class WebSecurityConfig {
                 oidcAccessTokenDecoderFactory.createAccessTokenDecoder(
                     clientRegistration, additionalUris));
       } else {
-        final var additionalJwkSetUrisByIssuer =
-            buildAdditionalJwkSetUrisByIssuer(oidcProviderRepository);
+        // Keyed by registration id, not issuer: the key selector takes the additional keys of the
+        // registration it routed the token to, so a token can never reach another provider's keys.
+        final var additionalJwkSetUrisByRegistrationId =
+            buildAdditionalJwkSetUrisByRegistrationId(oidcProviderRepository);
         LOG.info(
             "Create Issuer Aware JWT Decoder for multiple OIDC Providers: [{}]",
             clientRegistrations.stream()
@@ -921,39 +923,17 @@ public class WebSecurityConfig {
         return new SupplierJwtDecoder(
             () ->
                 oidcAccessTokenDecoderFactory.createIssuerAwareAccessTokenDecoder(
-                    clientRegistrations, additionalJwkSetUrisByIssuer));
+                    clientRegistrations, additionalJwkSetUrisByRegistrationId));
       }
     }
 
-    private Map<String, List<String>> buildAdditionalJwkSetUrisByIssuer(
-        final OidcAuthenticationConfigurationRepository oidcProviderRepository) {
-      return oidcProviderRepository.getOidcAuthenticationConfigurations().values().stream()
-          .filter(
-              config ->
-                  config.getIssuerUri() != null
-                      && config.getAdditionalJwkSetUris() != null
-                      && !config.getAdditionalJwkSetUris().isEmpty())
-          .collect(
-              toMap(
-                  OidcAuthenticationConfiguration::getIssuerUri,
-                  config -> List.copyOf(config.getAdditionalJwkSetUris()),
-                  (a, b) -> {
-                    if (!a.equals(b)) {
-                      throw new IllegalStateException(
-                          "Multiple OIDC providers share the same issuer URI with different"
-                              + " additional JWKS URIs. Ensure each issuer has a consistent"
-                              + " configuration.");
-                    }
-                    return a;
-                  }));
-    }
-
     /**
-     * Builds the additional-JWKS lookup for the interactive login flow, keyed by registration id.
-     * Unlike {@link #buildAdditionalJwkSetUrisByIssuer}, this does not require an {@code
-     * issuer-uri}: {@link OidcUserAuthenticationConverter#getJwtDecoder} already resolves its
-     * decoder per registration id, so keying this map the same way lets it find the additional URIs
-     * of a provider configured with explicit endpoints and no {@code issuer-uri}.
+     * Builds the additional-JWKS lookup, keyed by registration id, for the interactive login flow
+     * and the multi-provider access token decoder. It does not require an {@code issuer-uri}:
+     * {@link OidcUserAuthenticationConverter#getJwtDecoder} resolves its decoder per registration
+     * id, and {@link IssuerAwareJWSKeySelector} looks the URIs up by the registration it routed a
+     * token to. Keying by issuer instead would let a token reach the keys of another provider whose
+     * issuer differs only by a trailing slash.
      */
     private Map<String, List<String>> buildAdditionalJwkSetUrisByRegistrationId(
         final OidcAuthenticationConfigurationRepository oidcProviderRepository) {

@@ -8,6 +8,8 @@
 package io.camunda.authentication.config;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -18,6 +20,7 @@ import com.nimbusds.jose.proc.SecurityContext;
 import com.nimbusds.jwt.JWTClaimsSet;
 import java.util.List;
 import java.util.Map;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -28,70 +31,94 @@ import org.springframework.security.oauth2.core.AuthorizationGrantType;
 @ExtendWith(MockitoExtension.class)
 class IssuerAwareJWSKeySelectorTest {
 
-  private static final String JWK_SET_URI = "https://idp.example.com/jwks";
+  private static final List<String> ADDITIONAL_URIS = List.of("https://keys.example.com/jwks");
 
   @Mock private JWSKeySelectorFactory jwsKeySelectorFactory;
   @Mock private JWSKeySelector<SecurityContext> keySelector;
 
+  @BeforeEach
+  void setUp() {
+    when(jwsKeySelectorFactory.createJWSKeySelector(any(), any())).thenReturn(keySelector);
+  }
+
   /**
-   * The additional JWK Set URIs are keyed by the configured issuer-uri, and the token carries the
-   * provider's issuer. They can differ by a trailing slash, see camunda/camunda#61896; the URIs
-   * must still apply.
+   * Two providers whose issuers differ only by a trailing slash, and only one of them configures
+   * additional keys. The other provider's tokens must never be verified with those keys: whoever
+   * holds them could otherwise sign a token that claims the first provider's issuer.
    */
   @Test
-  void shouldUseTheAdditionalJwkSetUrisOfAnIssuerConfiguredWithATrailingSlash() throws Exception {
-    // given - discovery resolved the provider's issuer, without the configured trailing slash
-    final var additionalUris = List.of("https://keys.example.com/jwks");
-    when(jwsKeySelectorFactory.createJWSKeySelector(any(), any())).thenReturn(keySelector);
-    final var selector =
-        new IssuerAwareJWSKeySelector(
-            List.of(registration("https://idp.example.com")),
-            jwsKeySelectorFactory,
-            Map.of("https://idp.example.com/", additionalUris));
+  void shouldNotGiveATokenTheAdditionalKeysOfALookAlikeIssuer() throws Exception {
+    // given
+    final var selector = lookAlikeProviders();
 
     // when
-    selector.selectKeys(
-        new JWSHeader(JWSAlgorithm.RS256),
-        new JWTClaimsSet.Builder().issuer("https://idp.example.com").build(),
-        null);
+    selectKeysFor(selector, "https://idp.example.com/realm");
 
     // then
-    verify(jwsKeySelectorFactory).createJWSKeySelector(JWK_SET_URI, additionalUris);
+    verify(jwsKeySelectorFactory).createJWSKeySelector(eq(jwkSetUri("without-keys")), isNull());
   }
 
   @Test
-  void shouldPreferTheAdditionalJwkSetUrisOfTheExactIssuer() throws Exception {
+  void shouldGiveATokenTheAdditionalKeysOfTheProviderItIsRoutedTo() throws Exception {
     // given
-    final var exactUris = List.of("https://keys.example.com/exact");
-    when(jwsKeySelectorFactory.createJWSKeySelector(any(), any())).thenReturn(keySelector);
-    final var selector =
-        new IssuerAwareJWSKeySelector(
-            List.of(registration("https://idp.example.com")),
-            jwsKeySelectorFactory,
-            Map.of(
-                "https://idp.example.com",
-                exactUris,
-                "https://idp.example.com/",
-                List.of("https://keys.example.com/other")));
+    final var selector = lookAlikeProviders();
 
     // when
-    selector.selectKeys(
-        new JWSHeader(JWSAlgorithm.RS256),
-        new JWTClaimsSet.Builder().issuer("https://idp.example.com").build(),
-        null);
+    selectKeysFor(selector, "https://idp.example.com/realm/");
 
     // then
-    verify(jwsKeySelectorFactory).createJWSKeySelector(JWK_SET_URI, exactUris);
+    verify(jwsKeySelectorFactory)
+        .createJWSKeySelector(eq(jwkSetUri("with-keys")), eq(ADDITIONAL_URIS));
   }
 
-  private static ClientRegistration registration(final String issuer) {
-    return ClientRegistration.withRegistrationId("idp")
+  /**
+   * camunda/camunda#61896: the provider is configured with a trailing slash its tokens don't carry.
+   * Discovery resolves the registration to the provider's issuer, and the additional keys are found
+   * by registration, so they still apply.
+   */
+  @Test
+  void shouldKeepTheAdditionalKeysOfARegistrationResolvedToTheProvidersIssuer() throws Exception {
+    // given - registered as "https://idp.example.com" although configured with a trailing slash
+    final var selector =
+        new IssuerAwareJWSKeySelector(
+            List.of(registration("entra", "https://idp.example.com")),
+            jwsKeySelectorFactory,
+            Map.of("entra", ADDITIONAL_URIS));
+
+    // when
+    selectKeysFor(selector, "https://idp.example.com");
+
+    // then
+    verify(jwsKeySelectorFactory).createJWSKeySelector(eq(jwkSetUri("entra")), eq(ADDITIONAL_URIS));
+  }
+
+  private IssuerAwareJWSKeySelector lookAlikeProviders() {
+    return new IssuerAwareJWSKeySelector(
+        List.of(
+            registration("without-keys", "https://idp.example.com/realm"),
+            registration("with-keys", "https://idp.example.com/realm/")),
+        jwsKeySelectorFactory,
+        Map.of("with-keys", ADDITIONAL_URIS));
+  }
+
+  private static void selectKeysFor(final IssuerAwareJWSKeySelector selector, final String issuer)
+      throws Exception {
+    selector.selectKeys(
+        new JWSHeader(JWSAlgorithm.RS256), new JWTClaimsSet.Builder().issuer(issuer).build(), null);
+  }
+
+  private static String jwkSetUri(final String registrationId) {
+    return "https://idp.example.com/" + registrationId + "/jwks";
+  }
+
+  private static ClientRegistration registration(final String registrationId, final String issuer) {
+    return ClientRegistration.withRegistrationId(registrationId)
         .clientId("client")
         .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
         .redirectUri("{baseUrl}/sso-callback")
         .authorizationUri("https://idp.example.com/auth")
         .tokenUri("https://idp.example.com/token")
-        .jwkSetUri(JWK_SET_URI)
+        .jwkSetUri(jwkSetUri(registrationId))
         .issuerUri(issuer)
         .build();
   }

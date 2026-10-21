@@ -72,22 +72,22 @@ public class OidcAccessTokenDecoderFactory {
 
   /**
    * Creates a {@link JwtDecoder} that supports multiple OIDC Providers by resolving issuer-specific
-   * keys and validation logic at runtime, with support for additional JWK Set URIs per issuer.
+   * keys and validation logic at runtime, with support for additional JWK Set URIs per provider.
    *
    * @param clientRegistrations the list of client registrations to support
-   * @param additionalJwkSetUrisByIssuer a map of issuer URI to additional JWK Set URIs
+   * @param additionalJwkSetUrisByRegistrationId additional JWK Set URIs per registration id
    * @return a {@link JwtDecoder} capable of handling multiple issuers with multi-JWKS support
    * @throws IllegalArgumentException if any registration is missing an issuer URI
    */
   public JwtDecoder createIssuerAwareAccessTokenDecoder(
       final List<ClientRegistration> clientRegistrations,
-      final Map<String, List<String>> additionalJwkSetUrisByIssuer) {
+      final Map<String, List<String>> additionalJwkSetUrisByRegistrationId) {
     LOG.debug(
         "Creating an Issuer Aware JwtDecoder for multiple OIDC Providers: {}",
         clientRegistrations.size());
     validateClientRegistrationsHaveIssuer(clientRegistrations);
     final var jwtProcessor =
-        createIssuerAwareJwtProcessor(clientRegistrations, additionalJwkSetUrisByIssuer);
+        createIssuerAwareJwtProcessor(clientRegistrations, additionalJwkSetUrisByRegistrationId);
     final var jwtValidator = createIssuerAwareJwtValidator(clientRegistrations);
     return createNimbusJwtDecoder(jwtProcessor, jwtValidator);
   }
@@ -194,18 +194,18 @@ public class OidcAccessTokenDecoderFactory {
 
   /**
    * Creates a {@link ConfigurableJWTProcessor} that is aware of multiple issuers and supports
-   * additional JWK Set URIs per issuer.
+   * additional JWK Set URIs per provider.
    *
    * @param clientRegistrations the list of client registrations
-   * @param additionalJwkSetUrisByIssuer a map of issuer URI to additional JWK Set URIs
+   * @param additionalJwkSetUrisByRegistrationId additional JWK Set URIs per registration id
    * @return a configured JWT processor
    */
   protected ConfigurableJWTProcessor<SecurityContext> createIssuerAwareJwtProcessor(
       final List<ClientRegistration> clientRegistrations,
-      final Map<String, List<String>> additionalJwkSetUrisByIssuer) {
+      final Map<String, List<String>> additionalJwkSetUrisByRegistrationId) {
     final var jwsKeySelector =
         new IssuerAwareJWSKeySelector(
-            clientRegistrations, jwsKeySelectorFactory, additionalJwkSetUrisByIssuer);
+            clientRegistrations, jwsKeySelectorFactory, additionalJwkSetUrisByRegistrationId);
     return createAndCustomizeJwtProcessor(
         processor -> processor.setJWTClaimsSetAwareJWSKeySelector(jwsKeySelector));
   }
