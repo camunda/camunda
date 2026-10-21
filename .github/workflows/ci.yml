@@ -2332,6 +2332,8 @@ jobs:
           packages: bats libxml2-utils
       - name: Run ci-relevance tests
         run: bats .github/scripts/ci-relevance/check.bats
+      - name: Run Optimize Docker start script tests
+        run: bats optimize/docker/test/optimize.bats
       - name: Run flattened-pom validation tests
         run: bats .github/scripts/validate-flattened-poms.bats
       - name: Observe build status
