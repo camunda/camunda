@@ -13,9 +13,18 @@ newest_seq() { ls "$1" 2>/dev/null | tail -1 | sed 's/\.json$//' | sed 's/^0*//'
 case "$1" in
   start)
     mkdir -p "$(store_of "$S")"
+    # j-merge: roll up every 10 seconds and keep the released objects for 10 minutes
+    extra=()
+    if [ "$S" = j-merge ]; then
+      extra=(--camunda.event-plane.log-archive.rollup.enabled=true
+             --camunda.event-plane.log-archive.rollup.period=PT1M
+             --camunda.event-plane.log-archive.rollup.delay=PT10S
+             --camunda.event-plane.log-archive.rollup.interval=PT10S
+             --camunda.event-plane.log-archive.retention=PT10M)
+    fi
     nohup java -jar "$EP_DIR/server/target/event-plane-server-0-SNAPSHOT.jar" --spring.profiles.active=demo \
       --server.port="$EP_PORT" --camunda.event-plane.log-archive.default-store="$(store_of "$S")" \
-      > "$WORK/ep.log" 2>&1 &
+      "${extra[@]}" > "$WORK/ep.log" 2>&1 &
     echo $! > "$WORK/ep.pid"
     for _ in $(seq 60); do ep /v1/log-archive >/dev/null && { echo "event plane up on :$EP_PORT"; exit 0; }; sleep 1; done
     echo "event plane did not start, see $WORK/ep.log"; exit 1 ;;

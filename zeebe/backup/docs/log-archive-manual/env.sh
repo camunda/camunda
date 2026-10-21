@@ -45,7 +45,7 @@ broker_env() {
   )
   case "$scenario" in
     a-classic) ;;
-    b-continuous|d-both|g-brownfield|h-rdbms|h-handover|h-compacted)
+    b-continuous|d-both|g-brownfield|h-rdbms|h-handover|h-compacted|j-merge)
       env+=("CAMUNDA_DATA_PRIMARYSTORAGE_BACKUP_CONTINUOUS=true"
             "CAMUNDA_DATA_PRIMARYSTORAGE_BACKUP_SCHEDULE=PT1M"
             "CAMUNDA_DATA_PRIMARYSTORAGE_BACKUP_CHECKPOINTINTERVAL=PT15S"
@@ -53,11 +53,22 @@ broker_env() {
             "CAMUNDA_DATA_PRIMARYSTORAGE_BACKUP_RETENTION_CLEANUPSCHEDULE=PT1H") ;;
   esac
   case "$scenario" in
-    i-eventplane)
+    i-eventplane|j-merge)
       # announce every commit entry to the event plane (event-plane.sh start)
       env+=("ZEEBE_BROKER_DATA_BACKUP_LOGARCHIVE_EVENTPLANE_URL=http://localhost:$EP_PORT"
             "ZEEBE_BROKER_DATA_BACKUP_LOGARCHIVE_EVENTPLANE_USERNAME=demo"
             "ZEEBE_BROKER_DATA_BACKUP_LOGARCHIVE_EVENTPLANE_PASSWORD=demo") ;;
+  esac
+  case "$scenario" in
+    j-merge)
+      # manual scenario J: merge often, release and roll up quickly
+      # the backup schedule is the continuous block's PT1M, shortened to 30 seconds
+      env+=("CAMUNDA_DATA_PRIMARYSTORAGE_BACKUP_SCHEDULE=PT30S"
+            "ZEEBE_BROKER_DATA_BACKUP_LOGARCHIVE_MERGEMAXOBJECTS=50"
+            "ZEEBE_BROKER_DATA_BACKUP_LOGARCHIVE_CLEANUPINTERVAL=PT10S"
+            "ZEEBE_BROKER_DATA_BACKUP_LOGARCHIVE_CLEANUPGRACEPERIOD=PT30S"
+            "ZEEBE_BROKER_DATA_BACKUP_LOGARCHIVE_RETENTIONWINDOW=PT3M"
+            "ZEEBE_BROKER_DATA_BACKUP_LOGARCHIVE_RELEASEINTERVAL=PT10S") ;;
   esac
   case "$scenario" in
     h-*)
@@ -67,14 +78,14 @@ broker_env() {
             "CAMUNDA_DATA_SECONDARYSTORAGE_RDBMS_PASSWORD=") ;;
   esac
   case "$scenario" in
-    h-compacted)
-      # small segments, so the log is compacted before the archive starts
+    h-compacted|j-merge)
+      # small segments, so the log is compacted before the archive starts (j-merge: merges happen often)
       # (the segment size must exceed the max message size, 4 MB by default)
       env+=("CAMUNDA_DATA_PRIMARYSTORAGE_LOGSTREAM_LOGSEGMENTSIZE=1MB"
             "CAMUNDA_CLUSTER_NETWORK_MAXMESSAGESIZE=512KB") ;;
   esac
   case "$scenario" in
-    c-archive|d-both|e-kill|f-outage|g-brownfield|h-handover|h-compacted|i-eventplane)
+    c-archive|d-both|e-kill|f-outage|g-brownfield|h-handover|h-compacted|i-eventplane|j-merge)
       # g-brownfield and h-handover/h-compacted start without the log archive (the old cluster);
       # LOG_ARCHIVE=on enables it for the upgraded cluster, see cluster.sh upgrade.
       if [ "${scenario#g-}" = "$scenario" ] && [ "${scenario#h-}" = "$scenario" ] || [ "${LOG_ARCHIVE:-off}" = on ]; then
