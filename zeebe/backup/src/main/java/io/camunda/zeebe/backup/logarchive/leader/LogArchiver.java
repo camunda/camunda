@@ -13,6 +13,7 @@ import io.camunda.zeebe.backup.logarchive.format.SegmentIdentity;
 import io.camunda.zeebe.backup.logarchive.format.SegmentV1Encoder;
 import io.camunda.zeebe.backup.logarchive.leader.LogArchiverTimeline.Effective;
 import io.camunda.zeebe.backup.logarchive.leader.LogArchiverTimeline.Takeover;
+import io.camunda.zeebe.backup.logarchive.model.CompactionModes;
 import io.camunda.zeebe.backup.logarchive.model.LogArchiveKeys;
 import io.camunda.zeebe.backup.logarchive.processing.LogArchiveListener;
 import io.camunda.zeebe.backup.logarchive.state.LogArchiveMeta;
@@ -96,6 +97,7 @@ public final class LogArchiver extends Actor
   private final long cutMaxBytes;
   private final Duration cutInterval;
   private final Duration idleCutInterval;
+  private final String compactionMode;
   private final AtomicBoolean wakeUpScheduled = new AtomicBoolean();
 
   // all fields below are only accessed on the actor thread
@@ -150,6 +152,39 @@ public final class LogArchiver extends Actor
       final long cutMaxBytes,
       final Duration cutInterval,
       final Duration idleCutInterval) {
+    this(
+        partitionId,
+        clusterId,
+        physicalTenantId,
+        term,
+        store,
+        writer,
+        source,
+        timelineResolver,
+        cutMaxBytes,
+        cutInterval,
+        idleCutInterval,
+        CompactionModes.CLUSTER);
+  }
+
+  /**
+   * Same as above, with the compaction mode written into {@code START_TIMELINE}, {@code CLUSTER} or
+   * {@code AUTHORITY} (spec section 25.1). A running timeline keeps its mode; the mode applies to
+   * the next timeline this archiver starts.
+   */
+  public LogArchiver(
+      final int partitionId,
+      final String clusterId,
+      final String physicalTenantId,
+      final long term,
+      final LogArchiveStore store,
+      final LogStreamWriter writer,
+      final LogArchiverEntrySource source,
+      final Supplier<Effective> timelineResolver,
+      final long cutMaxBytes,
+      final Duration cutInterval,
+      final Duration idleCutInterval,
+      final String compactionMode) {
     super(
         buildActorName("LogArchiver", partitionId),
         null,
@@ -175,6 +210,7 @@ public final class LogArchiver extends Actor
     this.cutMaxBytes = cutMaxBytes;
     this.cutInterval = cutInterval;
     this.idleCutInterval = idleCutInterval;
+    this.compactionMode = compactionMode;
   }
 
   @Override
@@ -467,7 +503,8 @@ public final class LogArchiver extends Actor
             .setParentTimelineId(parentTimelineId)
             .setParentIndex(parentIndex)
             .setParentPosition(parentPosition)
-            .setStartedAt(ActorClock.currentTimeMillis());
+            .setStartedAt(ActorClock.currentTimeMillis())
+            .setCompactionMode(compactionMode);
     if (!write(LogArchiveIntent.START_TIMELINE, record)) {
       retryLater(this::writeStartTimeline);
     }

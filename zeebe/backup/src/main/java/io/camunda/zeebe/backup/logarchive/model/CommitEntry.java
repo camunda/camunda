@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.backup.logarchive.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import java.util.List;
@@ -60,11 +61,14 @@ import org.jspecify.annotations.Nullable;
   "mergedPosition",
   "releasedIndex",
   "releasedPosition",
+  "holdIndex",
+  "holdSnapshotId",
   "startIndex",
   "parentTimelineId",
   "startedAt",
   "parentIndex",
   "parentPosition",
+  "compactionMode",
   "objects",
   "checkpoints",
   "snapshot",
@@ -85,16 +89,76 @@ public record CommitEntry(
     @JsonInclude(JsonInclude.Include.NON_NULL) @Nullable Long mergedPosition,
     @JsonInclude(JsonInclude.Include.NON_NULL) @Nullable Long releasedIndex,
     @JsonInclude(JsonInclude.Include.NON_NULL) @Nullable Long releasedPosition,
+    @JsonInclude(JsonInclude.Include.NON_NULL) @Nullable Long holdIndex,
+    @JsonInclude(JsonInclude.Include.NON_NULL) @Nullable String holdSnapshotId,
     @JsonInclude(JsonInclude.Include.NON_NULL) @Nullable Long startIndex,
     @JsonInclude(JsonInclude.Include.NON_NULL) @Nullable String parentTimelineId,
     @JsonInclude(JsonInclude.Include.NON_NULL) @Nullable Long startedAt,
     @JsonInclude(JsonInclude.Include.NON_NULL) @Nullable Long parentIndex,
     @JsonInclude(JsonInclude.Include.NON_NULL) @Nullable Long parentPosition,
+    @JsonInclude(JsonInclude.Include.NON_NULL) @Nullable String compactionMode,
     @JsonInclude(JsonInclude.Include.NON_EMPTY) List<LogObjectJson> objects,
     @JsonInclude(JsonInclude.Include.NON_EMPTY) List<CoveredCheckpointJson> checkpoints,
     @JsonInclude(JsonInclude.Include.NON_NULL) @Nullable ArchivedSnapshotJson snapshot,
     @JsonInclude(JsonInclude.Include.NON_NULL) @Nullable IndexChunkJson chunk,
     @JsonInclude(JsonInclude.Include.NON_NULL) @Nullable HandoverJson handover) {
+
+  /**
+   * A commit entry of a type without hold fields and of a timeline in mode {@code CLUSTER}. Every
+   * constructor that does not name a compaction mode creates such an entry.
+   */
+  public CommitEntry(
+      final int formatVersion,
+      final String timelineId,
+      final int partitionId,
+      final long seq,
+      final Type type,
+      final long recordPosition,
+      final long recordTimestamp,
+      final long archivedIndex,
+      final long archivedPosition,
+      final @Nullable Long mergedIndex,
+      final @Nullable Long mergedPosition,
+      final @Nullable Long releasedIndex,
+      final @Nullable Long releasedPosition,
+      final @Nullable Long startIndex,
+      final @Nullable String parentTimelineId,
+      final @Nullable Long startedAt,
+      final @Nullable Long parentIndex,
+      final @Nullable Long parentPosition,
+      final List<LogObjectJson> objects,
+      final List<CoveredCheckpointJson> checkpoints,
+      final @Nullable ArchivedSnapshotJson snapshot,
+      final @Nullable IndexChunkJson chunk,
+      final @Nullable HandoverJson handover) {
+    this(
+        formatVersion,
+        timelineId,
+        partitionId,
+        seq,
+        type,
+        recordPosition,
+        recordTimestamp,
+        archivedIndex,
+        archivedPosition,
+        mergedIndex,
+        mergedPosition,
+        releasedIndex,
+        releasedPosition,
+        null,
+        null,
+        startIndex,
+        parentTimelineId,
+        startedAt,
+        parentIndex,
+        parentPosition,
+        null,
+        objects,
+        checkpoints,
+        snapshot,
+        chunk,
+        handover);
+  }
 
   /** A commit entry without a handover and without the takeover fields of a started timeline. */
   public CommitEntry(
@@ -183,8 +247,15 @@ public record CommitEntry(
   }
 
   public CommitEntry {
+    compactionMode = CompactionModes.normalize(compactionMode);
     objects = objects == null ? List.of() : List.copyOf(objects);
     checkpoints = checkpoints == null ? List.of() : List.copyOf(checkpoints);
+  }
+
+  /** Whether the timeline this entry starts is in mode B; false for every other entry. */
+  @JsonIgnore
+  public boolean isAuthority() {
+    return CompactionModes.isAuthority(compactionMode);
   }
 
   /** The event type a commit entry describes. Serialized by name. */
@@ -195,6 +266,7 @@ public record CommitEntry(
     INDEX_SEALED,
     HANDOVER,
     LOG_MERGED,
-    LOG_RELEASED
+    LOG_RELEASED,
+    HOLD_MOVED
   }
 }

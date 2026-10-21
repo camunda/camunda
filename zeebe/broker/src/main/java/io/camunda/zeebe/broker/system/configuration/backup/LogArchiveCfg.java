@@ -31,6 +31,7 @@ public class LogArchiveCfg implements ConfigurationEntry {
   private Duration snapshotUploadInterval = Duration.ofMinutes(30);
   private int chunkSize = 1000;
   private int rootEvery = 100;
+  private String compactionMode = "CLUSTER";
   private @Nullable Duration retentionWindow;
   private Duration releaseInterval = Duration.ofMinutes(1);
   private int mergeMaxObjects = 1000;
@@ -55,6 +56,25 @@ public class LogArchiveCfg implements ConfigurationEntry {
 
   public void setTimeline(final String timeline) {
     this.timeline = timeline;
+  }
+
+  /**
+   * Who compacts and deletes: {@code CLUSTER} (default, spec sections 20 to 22) or {@code
+   * AUTHORITY}, where only the event plane does and the cluster declares a restore hold (spec
+   * section 25). The mode is fixed per timeline: a change applies to the next timeline the archiver
+   * starts.
+   */
+  public String getCompactionMode() {
+    return compactionMode;
+  }
+
+  public void setCompactionMode(final String compactionMode) {
+    if (!"CLUSTER".equals(compactionMode) && !"AUTHORITY".equals(compactionMode)) {
+      throw new IllegalArgumentException(
+          "Expected logArchive.compactionMode to be CLUSTER or AUTHORITY, but got '%s'"
+              .formatted(compactionMode));
+    }
+    this.compactionMode = compactionMode;
   }
 
   /**

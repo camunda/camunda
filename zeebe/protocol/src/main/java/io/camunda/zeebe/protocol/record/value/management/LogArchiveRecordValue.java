@@ -128,6 +128,24 @@ public interface LogArchiveRecordValue extends RecordValue {
    */
   long getReleasedPosition();
 
+  /**
+   * @return the compaction mode of the timeline, {@code CLUSTER} or {@code AUTHORITY} (on {@code
+   *     START_TIMELINE} and {@code TIMELINE_STARTED}); {@code CLUSTER} if not set
+   */
+  String getCompactionMode();
+
+  /**
+   * @return the restore hold index H: the proposal of {@code MOVE_HOLD}, and H after applying on
+   *     {@code HOLD_MOVED}, or -1 if not set
+   */
+  long getHoldIndex();
+
+  /**
+   * @return the id of the archived snapshot at the hold index ({@code MOVE_HOLD} and {@code
+   *     HOLD_MOVED}), or empty if not set
+   */
+  String getHoldSnapshotId();
+
   @Value.Immutable
   @ImmutableProtocol(builder = ImmutableLogObjectValue.Builder.class)
   interface LogObjectValue {

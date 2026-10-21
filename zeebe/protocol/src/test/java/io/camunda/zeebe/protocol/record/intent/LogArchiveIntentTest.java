@@ -45,4 +45,22 @@ final class LogArchiveIntentTest {
     assertThat(LogArchiveIntent.RELEASE_LOG.isEvent()).isFalse();
     assertThat(LogArchiveIntent.LOG_RELEASED.isEvent()).isTrue();
   }
+
+  @Test
+  void shouldDecodeHoldIntentsByValue() {
+    // given
+    final short moveHold = 16;
+    final short holdMoved = 17;
+
+    // when / then
+    assertThat(LogArchiveIntent.from(moveHold)).isEqualTo(LogArchiveIntent.MOVE_HOLD);
+    assertThat(LogArchiveIntent.from(holdMoved)).isEqualTo(LogArchiveIntent.HOLD_MOVED);
+  }
+
+  @Test
+  void shouldTreatOnlyHoldMovedAsEvent() {
+    // when / then
+    assertThat(LogArchiveIntent.MOVE_HOLD.isEvent()).isFalse();
+    assertThat(LogArchiveIntent.HOLD_MOVED.isEvent()).isTrue();
+  }
 }

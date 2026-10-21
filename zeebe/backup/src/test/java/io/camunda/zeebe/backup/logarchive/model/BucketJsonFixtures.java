@@ -183,6 +183,67 @@ final class BucketJsonFixtures {
         null);
   }
 
+  static CommitEntry commitTimelineStartedAuthority() {
+    final var entry = commitTimelineStarted();
+    return new CommitEntry(
+        entry.formatVersion(),
+        entry.timelineId(),
+        entry.partitionId(),
+        entry.seq(),
+        entry.type(),
+        entry.recordPosition(),
+        entry.recordTimestamp(),
+        entry.archivedIndex(),
+        entry.archivedPosition(),
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        entry.startIndex(),
+        entry.parentTimelineId(),
+        entry.startedAt(),
+        entry.parentIndex(),
+        entry.parentPosition(),
+        CompactionModes.AUTHORITY,
+        List.of(),
+        List.of(),
+        null,
+        null,
+        null);
+  }
+
+  static CommitEntry commitHoldMoved() {
+    return new CommitEntry(
+        1,
+        "tl-0",
+        1,
+        4132,
+        CommitEntry.Type.HOLD_MOVED,
+        4932500,
+        1792137607000L,
+        2731480,
+        4931877,
+        null,
+        null,
+        null,
+        null,
+        2731000L,
+        "snap-2731000",
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        List.of(),
+        List.of(),
+        null,
+        null,
+        null);
+  }
+
   static CommitEntry commitSnapshotArchived() {
     return new CommitEntry(
         1,
@@ -247,12 +308,42 @@ final class BucketJsonFixtures {
         null);
   }
 
+  static RootFile rootFileAuthority() {
+    final var root = rootFile();
+    return new RootFile(
+        root.formatVersion(),
+        root.timelineId(),
+        root.parentTimelineId(),
+        root.partitionId(),
+        root.seq(),
+        root.startIndex(),
+        root.archivedIndex(),
+        root.archivedPosition(),
+        root.mergedIndex(),
+        root.mergedPosition(),
+        root.releasedIndex(),
+        root.releasedPosition(),
+        2600001L,
+        CompactionModes.AUTHORITY,
+        root.chunks(),
+        root.openObjects(),
+        root.openCheckpoints(),
+        root.mergedObjects(),
+        root.snapshots(),
+        null);
+  }
+
   static LatestHint latestHint() {
     return new LatestHint(1, "tl-0", 1, 4100);
   }
 
   static TimelineFile timelineFile() {
     return new TimelineFile(1, "tl-0.r5", 1, "tl-0", 2731001, 1, 1792137600500L, 2731000, 4931877);
+  }
+
+  static TimelineFile timelineFileAuthority() {
+    return new TimelineFile(
+        1, "tl-0.r5", 1, "tl-0", 2731001, 1, 1792137600500L, 2731000, 4931877, "AUTHORITY");
   }
 
   static SnapshotDescriptorFile snapshotDescriptor() {

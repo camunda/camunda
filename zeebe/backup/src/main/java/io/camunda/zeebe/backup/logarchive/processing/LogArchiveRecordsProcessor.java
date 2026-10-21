@@ -8,6 +8,7 @@
 package io.camunda.zeebe.backup.logarchive.processing;
 
 import io.camunda.zeebe.backup.logarchive.model.CommitEntry;
+import io.camunda.zeebe.backup.logarchive.model.CompactionModes;
 import io.camunda.zeebe.backup.logarchive.model.HandoverJson;
 import io.camunda.zeebe.backup.logarchive.model.LogArchiveJson;
 import io.camunda.zeebe.backup.logarchive.model.LogArchiveKeys;
@@ -156,6 +157,7 @@ public final class LogArchiveRecordsProcessor
           case COMPLETE_HANDOVER -> validateCompleteHandover(command, meta);
           case MERGE_LOG -> validateMergeLog(command, meta);
           case RELEASE_LOG -> validateReleaseLog(command, meta);
+          case MOVE_HOLD -> validateMoveHold(command, meta);
           default ->
               throw new IllegalArgumentException(
                   "Unknown log archive intent %s".formatted(record.getIntent()));
@@ -277,7 +279,8 @@ public final class LogArchiveRecordsProcessor
               .setParentTimelineId(commandValue.getParentTimelineId())
               .setParentIndex(commandValue.getParentIndex())
               .setParentPosition(commandValue.getParentPosition())
-              .setStartedAt(commandValue.getStartedAt());
+              .setStartedAt(commandValue.getStartedAt())
+              .setCompactionMode(commandValue.getCompactionMode());
       case ARCHIVE_LOG -> {
         event.setSeq(meta.getNextSeq());
         commandValue.getObjects().forEach(event::addObject);
@@ -292,6 +295,11 @@ public final class LogArchiveRecordsProcessor
       }
       case RELEASE_LOG ->
           event.setSeq(meta.getNextSeq()).setReleasedIndex(commandValue.getReleasedIndex());
+      case MOVE_HOLD ->
+          event
+              .setSeq(meta.getNextSeq())
+              .setHoldIndex(commandValue.getHoldIndex())
+              .setHoldSnapshotId(commandValue.getHoldSnapshotId());
       case COMPLETE_HANDOVER ->
           // the position is that of the confirmed handover backup, validated to match the command;
           // a partition without one took no part in the handover and records it from its start
@@ -354,6 +362,7 @@ public final class LogArchiveRecordsProcessor
                 currentListener.onLogMerged(
                     seq, newMeta.getMergedIndex(), newMeta.getMergedPosition());
             case LOG_RELEASED -> currentListener.onLogReleased(newMeta.getReleasedIndex());
+            case HOLD_MOVED -> currentListener.onHoldMoved(newMeta.getHoldIndex());
             default -> {}
           }
         });
@@ -430,6 +439,7 @@ public final class LogArchiveRecordsProcessor
       case COMPLETE_HANDOVER -> LogArchiveIntent.HANDOVER_COMPLETED;
       case MERGE_LOG -> LogArchiveIntent.LOG_MERGED;
       case RELEASE_LOG -> LogArchiveIntent.LOG_RELEASED;
+      case MOVE_HOLD -> LogArchiveIntent.HOLD_MOVED;
       default -> throw new IllegalArgumentException("Not a command: " + command);
     };
   }
@@ -459,6 +469,7 @@ public final class LogArchiveRecordsProcessor
     final long archivedIndex = meta.getArchivedIndex();
     final long mergedIndex = meta.getMergedIndex();
     final long releasedIndex = meta.getReleasedIndex();
+    final long holdIndex = meta.getHoldIndex();
     final var snapshotId = commandValue.getSnapshot().getId();
     // a lost or invalid seal is retried once per rejection while the chunk is still full
     final var retrySeal =
@@ -481,6 +492,7 @@ public final class LogArchiveRecordsProcessor
             case ARCHIVE_SNAPSHOT -> currentListener.onSnapshotRejected(snapshotId);
             case MERGE_LOG -> currentListener.onMergeLogRejected(mergedIndex);
             case RELEASE_LOG -> currentListener.onReleaseLogRejected(releasedIndex);
+            case MOVE_HOLD -> currentListener.onMoveHoldRejected(holdIndex);
             default ->
                 currentListener.onCommandRejected(intent, rejection.type(), rejection.reason());
           }
@@ -513,6 +525,11 @@ public final class LogArchiveRecordsProcessor
       final LogArchiveRecord command, final LogArchiveMeta meta) {
     if (command.getTimelineId().isEmpty()) {
       return invalidArgument("Expected a non-empty timeline id");
+    }
+    final var mode = command.getCompactionMode();
+    if (!CompactionModes.CLUSTER.equals(mode) && !CompactionModes.AUTHORITY.equals(mode)) {
+      return invalidArgument(
+          "Expected the compaction mode to be CLUSTER or AUTHORITY, but got '%s'".formatted(mode));
     }
     if (command.getStartIndex() <= 0) {
       return invalidArgument(
@@ -584,6 +601,11 @@ public final class LogArchiveRecordsProcessor
     if (timelineRejection != null) {
       return timelineRejection;
     }
+    if (meta.isAuthority()) {
+      return invalidState(
+          "Expected a timeline in mode CLUSTER, but '%s' is in mode AUTHORITY, where the authority merges objects"
+              .formatted(meta.getTimelineId()));
+    }
     final var objects = command.getObjects();
     if (objects.size() != 1) {
       return invalidArgument("Expected exactly one merged log object, but got " + objects.size());
@@ -638,6 +660,11 @@ public final class LogArchiveRecordsProcessor
     if (timelineRejection != null) {
       return timelineRejection;
     }
+    if (meta.isAuthority()) {
+      return invalidState(
+          "Expected a timeline in mode CLUSTER, but '%s' is in mode AUTHORITY, where the authority releases objects"
+              .formatted(meta.getTimelineId()));
+    }
     final long releasedIndex = command.getReleasedIndex();
     if (releasedIndex <= meta.getReleasedIndex()) {
       return invalidState(
@@ -654,6 +681,35 @@ public final class LogArchiveRecordsProcessor
       return invalidState(
           "Expected an archived snapshot above the released index %d, but there is none"
               .formatted(releasedIndex));
+    }
+    return null;
+  }
+
+  /** Spec section 25.2: the hold only moves up, to a snapshot that is archived. */
+  private @Nullable Rejection validateMoveHold(
+      final LogArchiveRecord command, final LogArchiveMeta meta) {
+    final var timelineRejection = validateTimeline(command, meta);
+    if (timelineRejection != null) {
+      return timelineRejection;
+    }
+    if (!meta.isAuthority()) {
+      return invalidState(
+          "Expected a timeline in mode AUTHORITY, but '%s' is in mode %s"
+              .formatted(meta.getTimelineId(), meta.getCompactionMode()));
+    }
+    final long holdIndex = command.getHoldIndex();
+    if (holdIndex <= meta.getHoldIndex()) {
+      return invalidState(
+          "Expected a hold index greater than %d, but got %d"
+              .formatted(meta.getHoldIndex(), holdIndex));
+    }
+    final var snapshotId = command.getHoldSnapshotId();
+    if (state.snapshots().stream()
+        .noneMatch(
+            snapshot -> snapshot.getIndex() == holdIndex && snapshot.getId().equals(snapshotId))) {
+      return invalidState(
+          "Expected an archived snapshot '%s' at the hold index %d, but there is none"
+              .formatted(snapshotId, holdIndex));
     }
     return null;
   }

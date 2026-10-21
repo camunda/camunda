@@ -44,9 +44,13 @@ public final class LogArchiveRecord extends UnifiedRecordValue implements LogArc
   private final LongProperty mergedPositionProperty = new LongProperty("mergedPosition", -1L);
   private final LongProperty releasedIndexProperty = new LongProperty("releasedIndex", -1L);
   private final LongProperty releasedPositionProperty = new LongProperty("releasedPosition", -1L);
+  private final StringProperty compactionModeProperty =
+      new StringProperty("compactionMode", "CLUSTER");
+  private final LongProperty holdIndexProperty = new LongProperty("holdIndex", -1L);
+  private final StringProperty holdSnapshotIdProperty = new StringProperty("holdSnapshotId", "");
 
   public LogArchiveRecord() {
-    super(20);
+    super(23);
     declareProperty(timelineIdProperty)
         .declareProperty(seqProperty)
         .declareProperty(startIndexProperty)
@@ -66,7 +70,10 @@ public final class LogArchiveRecord extends UnifiedRecordValue implements LogArc
         .declareProperty(mergedIndexProperty)
         .declareProperty(mergedPositionProperty)
         .declareProperty(releasedIndexProperty)
-        .declareProperty(releasedPositionProperty);
+        .declareProperty(releasedPositionProperty)
+        .declareProperty(compactionModeProperty)
+        .declareProperty(holdIndexProperty)
+        .declareProperty(holdSnapshotIdProperty);
   }
 
   @Override
@@ -276,6 +283,36 @@ public final class LogArchiveRecord extends UnifiedRecordValue implements LogArc
 
   public LogArchiveRecord setReleasedPosition(final long releasedPosition) {
     releasedPositionProperty.setValue(releasedPosition);
+    return this;
+  }
+
+  @Override
+  public String getCompactionMode() {
+    return BufferUtil.bufferAsString(compactionModeProperty.getValue());
+  }
+
+  public LogArchiveRecord setCompactionMode(final String compactionMode) {
+    compactionModeProperty.setValue(compactionMode);
+    return this;
+  }
+
+  @Override
+  public long getHoldIndex() {
+    return holdIndexProperty.getValue();
+  }
+
+  public LogArchiveRecord setHoldIndex(final long holdIndex) {
+    holdIndexProperty.setValue(holdIndex);
+    return this;
+  }
+
+  @Override
+  public String getHoldSnapshotId() {
+    return BufferUtil.bufferAsString(holdSnapshotIdProperty.getValue());
+  }
+
+  public LogArchiveRecord setHoldSnapshotId(final String holdSnapshotId) {
+    holdSnapshotIdProperty.setValue(holdSnapshotId);
     return this;
   }
 }

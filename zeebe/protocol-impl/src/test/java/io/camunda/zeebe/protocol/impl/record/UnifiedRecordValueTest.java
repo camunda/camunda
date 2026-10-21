@@ -160,6 +160,30 @@ final class UnifiedRecordValueTest {
     assertThat(record.getMergedPosition()).isEqualTo(-1L);
     assertThat(record.getReleasedIndex()).isEqualTo(-1L);
     assertThat(record.getReleasedPosition()).isEqualTo(-1L);
+    assertThat(record.getCompactionMode()).isEqualTo("CLUSTER");
+    assertThat(record.getHoldIndex()).isEqualTo(-1L);
+    assertThat(record.getHoldSnapshotId()).isEmpty();
+  }
+
+  @Test
+  void shouldRoundTripModeAndHoldFields() {
+    // given
+    final var original =
+        new LogArchiveRecord()
+            .setCompactionMode("AUTHORITY")
+            .setHoldIndex(42L)
+            .setHoldSnapshotId("42-1-0-0-0-0");
+    final var buffer = new UnsafeBuffer(new byte[original.getLength()]);
+    original.write(buffer, 0);
+
+    // when
+    final var copy = new LogArchiveRecord();
+    copy.wrap(buffer);
+
+    // then
+    assertThat(copy.getCompactionMode()).isEqualTo("AUTHORITY");
+    assertThat(copy.getHoldIndex()).isEqualTo(42L);
+    assertThat(copy.getHoldSnapshotId()).isEqualTo("42-1-0-0-0-0");
   }
 
   @Test
