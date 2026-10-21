@@ -1700,6 +1700,9 @@ log-archive/<tl>/p<n>/maintenance/<seq>.json     seq from 1, gap-free, 20-digit 
  "upToIndex":120,"upToPosition":…}
 ```
 
+- `object` has the fields of a `LogObject` except `term`: a compacted object spans entries of several
+  terms, and restore takes each entry's term from the entry itself. Readers treat a missing term as
+  unknown (-1).
 - **`COMPACTED`**: the objects of the timeline whose ranges lie in `[object.firstIndex,
   object.lastIndex]` are replaced by `object`. Valid when that range starts at the first index and
   ends at the last index of current objects (fold as of `basedOnCommitSeq` and the earlier

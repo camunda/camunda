@@ -103,13 +103,14 @@ public record LogObjectJson(
   }
 
   /**
-   * Reads a missing body length or last record timestamp as -1, which a record's canonical
-   * constructor cannot express.
+   * Reads a missing term, body length or last record timestamp as -1, which a record's canonical
+   * constructor cannot express. Objects an authority compacted (maintenance entries) may carry no
+   * term: they span entries of several terms.
    */
   @JsonCreator
   static LogObjectJson fromJson(
       @JsonProperty("key") final String key,
-      @JsonProperty("term") final long term,
+      @JsonProperty("term") final @Nullable Long term,
       @JsonProperty("firstIndex") final long firstIndex,
       @JsonProperty("lastIndex") final long lastIndex,
       @JsonProperty("firstPosition") final long firstPosition,
@@ -121,7 +122,7 @@ public record LogObjectJson(
       @JsonProperty("lastRecordTimestamp") final @Nullable Long lastRecordTimestamp) {
     return new LogObjectJson(
         key,
-        term,
+        term == null ? -1L : term,
         firstIndex,
         lastIndex,
         firstPosition,

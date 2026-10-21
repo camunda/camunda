@@ -117,6 +117,27 @@ final class LogArchiveJsonTest {
   }
 
   @Test
+  void shouldReadACompactedObjectWithoutTermAsUnknownTerm() {
+    // given - as the event plane writes compacted objects into its maintenance log
+    final var json =
+        ("{\"formatVersion\":1,\"timelineId\":\"tl-0\",\"partitionId\":1,\"seq\":1,"
+                + "\"type\":\"COMPACTED\",\"basedOnCommitSeq\":41,\"object\":{"
+                + "\"key\":\"data/00000000000000000001-00000000000000000120-c1.seg\",\"level\":1,"
+                + "\"firstIndex\":1,\"lastIndex\":120,\"firstPosition\":1,\"lastPosition\":600,"
+                + "\"entryCount\":120,\"sizeBytes\":4096,\"sha256\":\"ab\",\"bodyLength\":4000,"
+                + "\"lastRecordTimestamp\":1792597844450}}")
+            .getBytes(StandardCharsets.UTF_8);
+
+    // when
+    final var entry = LogArchiveJson.read(json, MaintenanceEntry.class);
+
+    // then
+    assertThat(entry.object()).isNotNull();
+    assertThat(entry.object().term()).isEqualTo(-1L);
+    assertThat(entry.object().lastIndex()).isEqualTo(120L);
+  }
+
+  @Test
   void shouldReadAuthorityMode() {
     // when
     final var timeline =
