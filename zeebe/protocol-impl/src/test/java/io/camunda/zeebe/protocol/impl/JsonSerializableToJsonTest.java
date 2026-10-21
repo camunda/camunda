@@ -3443,6 +3443,7 @@ final class JsonSerializableToJsonTest {
                     .setCompensationHandlerInstanceKey(100L)
                     .setCompensableActivityScopeKey(789L)
                     .setCompensableActivityInstanceKey(123L)
+                    .setStorageOrdinal(1234)
                     .setVariables(VARIABLES_MSGPACK),
         """
                 {
@@ -3456,6 +3457,7 @@ final class JsonSerializableToJsonTest {
                   "compensationHandlerInstanceKey": 100,
                   "compensableActivityScopeKey": 789,
                   "compensableActivityInstanceKey": 123,
+                  "storageOrdinal": 1234,
                   "variables": {
                     "foo": "bar"
                   }
@@ -3483,6 +3485,7 @@ final class JsonSerializableToJsonTest {
                   "compensationHandlerInstanceKey": -1,
                   "compensableActivityScopeKey": -1,
                   "compensableActivityInstanceKey": -1,
+                  "storageOrdinal": 0,
                   "variables": {}
                 }
                 """
