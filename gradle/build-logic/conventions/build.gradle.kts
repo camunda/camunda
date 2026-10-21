@@ -2,12 +2,8 @@ plugins { `kotlin-dsl` }
 
 dependencies {
   compileOnly(libs.assertj.assertions.generator)
-  // Mirrors Maven's dependencyManagement of assertj-core. The generator declares the range
-  // [2.1.0, 2.99.0], and resolving a range lists versions in every repository, so a single
-  // throttled repository would fail the build.
-  constraints {
-    compileOnly(libs.assertj.core) { version { strictly(libs.versions.assertj.get()) } }
-  }
+  // The generator declares assertj-core as a range; the catalog's strict version overrides it.
+  constraints { compileOnly(libs.assertj.core) }
   implementation(project(":pom-resolution"))
   implementation("com.diffplug.spotless:spotless-plugin-gradle:8.10.4")
   implementation("com.github.node-gradle:gradle-node-plugin:7.1.0")

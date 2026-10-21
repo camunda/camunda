@@ -33,7 +33,7 @@ dependencyResolutionManagement {
   versionCatalogs {
     create("libs") {
       version("junit", pomProperty("version.junit"))
-      version("assertj", pomProperty("version.assertj"))
+      version("assertj") { strictly(pomProperty("version.assertj")) }
       library("assertj-core", "org.assertj", "assertj-core").versionRef("assertj")
       library("junit-bom", "org.junit", "junit-bom").versionRef("junit")
       library("junit-jupiter", "org.junit.jupiter", "junit-jupiter").withoutVersion()

@@ -67,6 +67,10 @@ dependencies {
         projectArtifact(":camunda-security-protocol", ArtifactKind.MAIN_CLASSES),
     )
     add(assertjGeneratorClasspath.name, libs.org.assertj.assertj.assertions.generator)
+    // The generator declares assertj-core as a range; the catalog's strict version overrides it.
+    constraints {
+        add(assertjGeneratorClasspath.name, libs.org.assertj.assertj.core)
+    }
     implementation(project(":zeebe-protocol"))
     implementation(project(":camunda-security-protocol"))
     implementation(libs.org.assertj.assertj.core)

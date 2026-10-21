@@ -17,7 +17,9 @@ internal fun VersionCatalogBuilder.catalogVersions(
   version("archunit", pomVersion("version.archunit"))
   // used in camunda-spring-boot-starter and camunda-spring-boot-3-starter test dependencies
   version("aspectjweaver", starterPomVersion("version.aspectjweaver"))
-  version("assertj", pomVersion("version.assertj"))
+  // Strict: assertj-assertions-generator declares assertj-core as a version range, which would
+  // otherwise be resolved against every repository. Maven manages a single version.
+  version("assertj") { strictly(pomVersion("version.assertj")) }
   version("assertj-assertions-generator", pomVersion("version.assertj-assertions-generator"))
   version("auth0", pomVersion("version.auth0"))
   version("java-jwt", pomVersion("version.java-jwt"))
