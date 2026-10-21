@@ -9,6 +9,7 @@ package io.camunda.zeebe.exporter;
 
 import io.camunda.search.connect.plugin.PluginConfiguration;
 import io.camunda.zeebe.exporter.filter.FilterConfiguration;
+import io.camunda.zeebe.exporter.support.UrlRedaction;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import java.util.ArrayList;
@@ -56,7 +57,7 @@ public class ElasticsearchExporterConfiguration implements FilterConfiguration {
   public String toString() {
     return "ElasticsearchExporterConfiguration{"
         + "url='"
-        + url
+        + UrlRedaction.describe(url)
         + '\''
         + ", requestTimeoutMs="
         + requestTimeoutMs
