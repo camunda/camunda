@@ -67,6 +67,17 @@ public final class LogArchiveKeys {
     return "index/" + pad(firstIndex) + "-" + pad(lastIndex) + ".json";
   }
 
+  /** {@code maintenance/<seq>.json}: an entry of the authority's maintenance log (section 25.3). */
+  public static String maintenanceKey(final long seq) {
+    return "maintenance/" + pad(seq) + ".json";
+  }
+
+  /** {@code data/<firstIndex>-<lastIndex>-c<n>.seg}: an object the authority wrote (level 1+). */
+  public static String compactedDataKey(
+      final long firstIndex, final long lastIndex, final long maintenanceSeq) {
+    return "data/" + pad(firstIndex) + "-" + pad(lastIndex) + "-c" + maintenanceSeq + ".seg";
+  }
+
   /** {@code root/<seq>.json} */
   public static String rootKey(final long seq) {
     return "root/" + pad(seq) + ".json";
