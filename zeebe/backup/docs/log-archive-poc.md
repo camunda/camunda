@@ -22,8 +22,8 @@ In scope:
 - Runs next to the existing backup. Enabling the log archive does not change the existing backup
   behaviour, except that compaction also respects F.
 
-Out of scope (except section 19, the event plane integration): event plane, holds, retention and deletion of any kind (including the orphan sweeper),
-GCS and Azure, incremental snapshots, merging small objects, migrating existing backups, scaling the
+Out of scope (except sections 19 to 23, the event plane integration): event plane, holds, retention and deletion of any kind (except sections 20 and 21),
+GCS and Azure, incremental snapshots, merging small objects (except section 20), migrating existing backups, scaling the
 partition count (except for partitions added after the handover, section 18.4a), metrics beyond
 basic counters.
 
@@ -251,8 +251,9 @@ Every one of these has at least one test.
   state: two leaders writing the same key write identical bytes.
 - **I5** An archived snapshot's index is never above F.
 - **I6** A sealed chunk is never modified; sealing removes its objects from state.
-- **I7** Nothing in the bucket is ever deleted by this PoC.
-- **I8** With the log archive enabled, local compaction never removes an entry above F.
+- **I7** Nothing in the bucket is ever deleted by this PoC (changed by section 20.4).
+- **I8** With the log archive enabled, local compaction never removes an entry above F (above M
+  since section 20.3).
 
 ## 8. Leader components
 
@@ -1301,8 +1302,305 @@ footer    66 bytes: history (16) | firstIndex (8) | lastIndex (8) | firstPositio
 - **Reading:** the format follows from the key's extension: `.rec` is `ZLA1` (section 10), `.seg` is
   segment v1. Restore decompresses the body (one frame) and appends every entry; ranged reads are not
   needed, objects are at most `cutMaxBytes` before compression.
-- **Not used yet:** several frames per object and level 1 (rollups) are the event plane's (level 2);
-  the cluster always writes one frame and level 0.
+- **Not used yet:** level 1 (rollups) is the event plane's (level 2); the cluster always writes
+  level 0, and one frame per cut object (merged objects have several frames, section 20.2).
 
 **Event plane side:** its decoder reads both formats (by extension); `la_object` gets `body_length`
 (nullable), the objects and timeline APIs return `bodyLength` when known; the UI shows the format.
+
+## 20. Event plane integration, step 2a: merging small objects on journal rollover
+
+Background: the archiver cuts a small object every few seconds (section 8.1) to keep the restore point
+fresh. Restores and the event plane's readers then fetch thousands of small objects. The leader
+replaces them with one bigger object per journal segment, once that segment is complete and
+archived. Above the restore floor (section 21) this is the cluster's work, below it the event
+plane's (section 22).
+
+Replicas cut journal segments at different indexes, and every leader cuts objects at its own
+boundaries. A merge is therefore a proposal, as a cut is: the leader picks the range, the processor
+accepts it only if it starts at the merged cursor M + 1 and ends at an object boundary, in log order.
+The merged bytes are a pure function of the range (Raft entries are identical on every replica, the
+encoding is deterministic), so the boundaries a leader picks do not matter for correctness.
+
+### 20.1 Protocol and state
+
+| Value | Intent | Kind | Written by |
+|-------|--------|------|-----------|
+| 12 | `MERGE_LOG` | command | merger, after uploading the merged object |
+| 13 | `LOG_MERGED` | event | processor, takes a seq (commit entry type `LOG_MERGED`) |
+
+Record fields: `MERGE_LOG` carries `objects` with exactly one `LogObject`, the merged object.
+`LOG_MERGED` carries the same object, and the processor sets `mergedIndex` and `mergedPosition`
+(new fields, long, default -1: M after applying) plus `archivedIndex`/`archivedPosition` as usual.
+
+`LogObject` gets `lastRecordTimestamp` (long, default -1; omitted in JSON when -1): the highest
+record timestamp of its application entries, the same value as the segment footer's latest record
+timestamp. The archiver sets it on every new object; the event plane needs it for its daily rollups
+and its retention (section 22).
+
+Meta gets `mergedIndex` (`startIndex - 1` initially, and reset to it by `START_TIMELINE`) and
+`mergedPosition` (-1).
+
+New column families (partition-local, next free ids):
+
+| Column family | Key | Value |
+|---|---|---|
+| `LOG_ARCHIVE_UNMERGED_OBJECTS` (173) | `firstIndex` | `lastIndex`, `lastPosition`: every archived object above M |
+| `LOG_ARCHIVE_MERGED_OBJECTS` (174) | `firstIndex` | `LogObject`: every merged object above the released index R (section 21) |
+
+The `LOG_ARCHIVED` applier inserts each object into `LOG_ARCHIVE_UNMERGED_OBJECTS` as well (next to
+`LOG_ARCHIVE_OPEN_OBJECTS`; open objects and sealed chunks stay as they are, I6).
+
+**`MERGE_LOG`** is valid when:
+- `timelineId == meta.timelineId`, exactly one object;
+- `object.firstIndex == meta.mergedIndex + 1`;
+- `object.lastIndex <= meta.archivedIndex` and `object.lastIndex` is the `lastIndex` of a row in
+  `LOG_ARCHIVE_UNMERGED_OBJECTS` (the run ends at an object boundary);
+- `entryCount == lastIndex - firstIndex + 1`;
+- `object.lastPosition` equals the highest `lastPosition` of the run's rows (-1 if none has records).
+
+Applier: delete the unmerged rows with `firstIndex <= object.lastIndex`; insert the object into
+`LOG_ARCHIVE_MERGED_OBJECTS`; set `mergedIndex = object.lastIndex` and, if the object has
+application entries, `mergedPosition = object.lastPosition`. A stale proposal (a merge of an old
+leader after a new one merged) fails the first-index check and is rejected; its object becomes an
+orphan (20.4).
+
+**A run of one object** is merged without re-uploading: the merger proposes the archived object
+itself (same key). Nothing is replaced, M moves on.
+
+**Commit entry** `LOG_MERGED`: `objects` (the one merged object), `mergedIndex`, `mergedPosition`,
+`archivedIndex`, `archivedPosition`. It replaces every object of the timeline in
+`[object.firstIndex, object.lastIndex]`, whichever leader cut them; readers that hold the replaced
+objects (the event plane's catalog, restore) drop them.
+
+**Root** (section 9.4) gets `mergedIndex`, `mergedPosition` and `mergedObjects` (all rows of
+`LOG_ARCHIVE_MERGED_OBJECTS`, in index order), so that a restore that starts from a root sees merges
+older than it.
+
+### 20.2 Merger (leader)
+
+`LogArchiveMerger`, a leader-only actor per partition next to the archiver.
+
+- **Trigger.** After every `onLogArchived` and every `onLogMerged`: a merge is due when a journal
+  segment that holds entries above M has been completed (the journal rolled over to a newer
+  segment) and F has passed its last index, or when `LOG_ARCHIVE_UNMERGED_OBJECTS` holds at least
+  `mergeMaxObjects` rows. The journal exposes the first index of each of its segments (new read-only
+  method on `Journal`, delegated through `RaftLog` and `RaftPartitionServer`; the segment map is a
+  concurrent map).
+- **Range.** From M + 1 to L, where L is the last object boundary at or below the completed segment's
+  last index, and the run holds at most `mergeMaxObjects` objects (then the next merge follows
+  right after). Nothing is due if that run is empty.
+- **Bytes.** Entries M + 1 … L from a committed reader of the local journal, encoded as segment v1
+  (section 19.6) with several zstd frames: a new frame starts once a frame holds `mergeFrameBytes` of
+  entries; the frame index (metadata key 2) lists every frame; level 0 (the cluster writes level 0,
+  the event plane's rollups are level 1). Encoded frame by frame into a temporary file, uploaded with
+  `putFile` to `data/<M+1>-<L>-t<term>.seg`, `sha256` and `sizeBytes` computed while writing. If the
+  local journal no longer holds M + 1 (it can't, see 20.3, but a node may be behind), the merger
+  reads the run's small objects from the bucket instead: same entries, same bytes.
+- **Commit.** Write `MERGE_LOG`, wait for `onLogMerged` or the rejection, then look for the next
+  merge. One merge in flight. Failures: retry with backoff, as the archiver.
+- **Listener:** `onLogMerged(mergedIndex, mergedPosition)` and `onMergeLogRejected(mergedIndex)` on
+  `LogArchiveListener`.
+
+### 20.3 Compaction cap
+
+`DbPositionSupplier.getHighestBackupPosition()` also takes the minimum with `meta.mergedPosition`
+(-1 until the first merge with records, which keeps the previous snapshot as today). Every replica
+therefore keeps the entries above M, and a new leader can merge from its own journal. Costs at most
+about one journal segment of disk, plus up to `mergeMaxObjects` objects' worth.
+
+**I8 becomes:** with the log archive enabled, local compaction never removes an entry above M (and
+M <= F).
+
+### 20.4 Deleting replaced and orphaned objects
+
+**I7 becomes:** the cluster deletes only objects of its current timeline above R (section 21), and
+only replaced or orphaned ones; the event plane deletes only released objects (section 22). Nothing
+else is ever deleted.
+
+`LogArchiveCleaner`, a leader-only actor per partition, every `cleanupInterval`:
+
+1. List `data/` of the current timeline's partition prefix. Skip keys it cannot parse.
+2. Garbage is every key with `firstIndex > R`, `lastIndex <= M_safe` that is not the key of a row in
+   `LOG_ARCHIVE_MERGED_OBJECTS`. That covers the small objects a merge replaced, objects of old terms
+   that were never committed, and merged objects of a merge that lost. Keys above `M_safe` are left
+   alone: an upload or a merge may be in flight there.
+3. Delete a garbage key once it has been garbage for at least `cleanupGracePeriod` (first seen, in
+   memory; a new leader starts counting again). The grace period lets readers that resolved a
+   replaced object before the merge finish.
+
+`M_safe` is M, or, when the event plane is configured, the `mergedIndex` of the newest `LOG_MERGED`
+entry the event plane has confirmed (the announcer exposes its confirmed `nextSeq`; the merger
+remembers `(seq, mergedIndex)` of its merges; a new leader knows only `meta.mergedIndex` as of
+`meta.nextSeq - 1`, so it deletes nothing until the event plane has confirmed that seq). The event
+plane then never lists an object the cluster has deleted.
+
+Known limits: listing `data/` grows with the timeline until the event plane removes released
+objects; restore folds the bucket once and fails if a merge deletes an object it resolved more than
+`cleanupGracePeriod` earlier (run it again).
+
+### 20.5 Restore
+
+Restore folds roots and commit entries as before (section 13), plus `mergedObjects` from the root
+and every `LOG_MERGED` entry after it. Objects for an index range up to M come from the merged
+objects, above M from the chunks and open objects as before. Decoders read every frame of a
+segment's body.
+
+### 20.6 Configuration (`logArchive.*`)
+
+| Property | Default | Meaning |
+|---|---|---|
+| `mergeMaxObjects` | `1000` | Merge at most this many objects at once, and merge as soon as this many are unmerged. |
+| `mergeFrameBytes` | `32MB` | Entries per zstd frame of a merged object (as the event plane's rollups). |
+| `cleanupInterval` | `PT1M` | How often the cleaner lists the bucket. |
+| `cleanupGracePeriod` | `PT5M` | How long an object stays after it became garbage. |
+
+## 21. Event plane integration, step 2b: release below the restore floor (level 2)
+
+The cluster keeps what its restores need and hands the rest to the event plane. The handover is a
+commit entry, so it is replicated, in the bucket, announced like every other entry, and the event
+plane can rebuild it.
+
+### 21.1 Restore floor
+
+With `retentionWindow` set (default: none, nothing is ever released):
+
+- **Protected restore point C:** the oldest checkpoint in `LOG_ARCHIVE_BACKUP_CHECKPOINTS` (backup
+  types only) whose `checkpointTimestamp` is at or after `now - retentionWindow`; if there is none,
+  the newest one (the newest backup stays restorable). No backup checkpoint at all: nothing is
+  released.
+- **Floor snapshot S:** the newest archived snapshot that restore would pick for C (section 13 step
+  3: `processedPosition`, `lastFollowupEventPosition` and `maxExportedPosition` all below C's
+  position).
+- **Released index R:** the `lastIndex` of the newest merged object with `lastIndex < S.index`.
+  Everything up to R is released. Only merged objects are released, so the event plane only ever
+  takes over objects of one journal segment's size or larger.
+
+The window and the clock are the leader's choice; the processor only checks that the proposal is
+safe.
+
+### 21.2 Protocol and state
+
+| Value | Intent | Kind | Written by |
+|-------|--------|------|-----------|
+| 14 | `RELEASE_LOG` | command | releaser |
+| 15 | `LOG_RELEASED` | event | processor, takes a seq (commit entry type `LOG_RELEASED`) |
+
+New record fields `releasedIndex`, `releasedPosition` (long, default -1). Meta gets `releasedIndex`
+(`startIndex - 1`) and `releasedPosition` (-1), reset by `START_TIMELINE`.
+
+**`RELEASE_LOG`** (carries `releasedIndex`) is valid when the timeline matches,
+`releasedIndex > meta.releasedIndex`, `releasedIndex` is the `lastIndex` of a row in
+`LOG_ARCHIVE_MERGED_OBJECTS`, and an archived snapshot with `index > releasedIndex` exists.
+
+Applier: delete the merged rows with `lastIndex <= releasedIndex`; set `releasedIndex` and
+`releasedPosition` (the `lastPosition` of the newest released object with records, else unchanged).
+Snapshots, chunks and backup checkpoints stay (known limit: snapshot retention is a separate topic).
+
+**Commit entry** `LOG_RELEASED`: `releasedIndex`, `releasedPosition`. From this entry on, every object
+of the timeline with `lastIndex <= releasedIndex` belongs to the event plane: the cluster never reads,
+rewrites or deletes it again. **Root** gets `releasedIndex`, `releasedPosition`.
+
+### 21.3 Releaser (leader)
+
+`LogArchiveReleaser`, a leader-only actor per partition, every `releaseInterval` (and after
+`onLogMerged`): compute R (21.1) from the replicated state; if R > `meta.releasedIndex`, write
+`RELEASE_LOG(R)` and wait for `onLogReleased` or the rejection. The releaser does not wait for the
+event plane: the bucket holds the commit entry, the announcer delivers it.
+
+### 21.4 Restore
+
+A restore point whose snapshot (section 13 step 3) has `index <= R` is below the floor: restore
+refuses it with a clear message ("restore point … is below the restore floor of partition …"),
+before downloading anything. Restore points above stay unchanged.
+
+Known limit: parent timelines (the timeline a restore or a fork left) are never released; their
+objects stay the cluster's until a later step decides who cleans up timelines nobody writes to.
+
+### 21.5 Configuration (`logArchive.*`)
+
+| Property | Default | Meaning |
+|---|---|---|
+| `retentionWindow` | none | Restore points younger than this stay restorable; older log is released. |
+| `releaseInterval` | `PT1M` | How often the releaser checks the floor. |
+
+## 22. Event plane side of step 2
+
+Code in `camunda/event-plane`, branch `poc/log-archive`, as in 19.4. It follows the event plane's
+own rollup, retention and deletion design (its `docs/11-storage.md`), applied to log archive objects.
+
+### 22.1 Catalog
+
+- `la_object` gets `level` (0 or 1) and `last_record_timestamp` (nullable). `la_timeline` gets
+  `merged_index`, `released_index`, `released_position` (-1). New table `la_replaced`
+  (`cluster_id, physical_tenant_id, partition_id, timeline_id, object_key`, `first_index`,
+  `last_index`) and a deletion queue `la_delete_queue` (`store`, `object_key`, `queued_at`).
+- **`LOG_MERGED`:** in the entry's transaction, move the timeline's `la_object` rows in
+  `[firstIndex, lastIndex]` to `la_replaced`, insert the merged object, set `merged_index`. The event
+  plane does not delete replaced objects above `released_index`: they are the cluster's.
+- **`LOG_RELEASED`:** set `released_index`/`released_position`, and queue every `la_replaced` row
+  with `last_index <= released_index` for deletion (released replaced objects the cluster has not
+  deleted yet; deleting twice is harmless).
+- Rows for objects released and removed stay out of the read API; the objects API answers a new
+  field `start` (the first position still on the path) so readers see when retention removed records.
+
+### 22.2 Rollup of released objects (level 0 → 1)
+
+As the event plane's rollup: take the oldest run of consecutive released level-0 objects of a
+timeline on the current path whose `last_record_timestamp` lies in the same period
+(`rollup.period`, default `P1D`, aligned to UTC), once that period has been over for `rollup.delay`
+(`PT1H`). Objects without records join the run of their neighbours. An object that the path leaves
+early (a takeover inside it) is never rolled up.
+
+Write one segment v1 object, level 1, frames of about 32 MiB, to
+`log-archive/<tl>/p<n>/data/<first>-<last>-l1.seg` (create-only). Then the swap, in one transaction:
+if every input row is still there, delete them, insert the rollup's row and queue the inputs for
+deletion; otherwise give up and leave the new object. After the transaction, delete the queued
+objects from the store and remove them from the queue.
+
+### 22.3 Retention of released objects
+
+Per cluster and tenant: the environment's retention if an environment row exists, else
+`camunda.event-plane.log-archive.retention` (default none: keep). Periodically, per timeline, in one
+transaction: remove the longest run of released objects from the start of the timeline whose
+`last_record_timestamp` is older than `now - retention` (objects without records go with the run
+they are in), and queue them for deletion. Only released objects are ever removed.
+
+### 22.4 Maintenance
+
+Rollup, retention and deletion run on one scheduled worker (`rollup.interval`, default `PT1M`), under
+the `maintenance` lease if the catalog has one, else on one replica (the PoC runs one). Writing and
+deleting needs the store configuration of 19.4 to allow writes.
+
+### 22.5 UI
+
+The timeline view shows `merged_index` and `released_index`, and per object its level and whether it
+is released; replaced objects are not shown.
+
+## 23. Step 2: tests and waves
+
+Tests:
+
+- Cluster unit tests: `MERGE_LOG` and `RELEASE_LOG` rules and rejections, replay gives identical
+  state, golden files for the record and the commit entries; merger (trigger on rollover and on
+  `mergeMaxObjects`, single-object run, rejection, bucket fallback); multi-frame encoding round trip;
+  cleaner (garbage rule, grace period, `M_safe` with and without the event plane); releaser (floor
+  computation with and without backups in the window).
+- Integration tests: small journal segments; merges replace small objects and restore uses them; a
+  leader change in the middle of a merge (the orphan is deleted later, ranges stay contiguous); a
+  release below the floor, restore below it is refused and above it works; with the stub event plane,
+  nothing is deleted before the event plane confirmed the merge.
+- Event plane tests (H2): apply `LOG_MERGED`/`LOG_RELEASED`, rollup swap (including a lost swap),
+  retention, deletion queue; fixtures from the cluster.
+- Manual end to end (scenario J): small journal segments, a short window, short rollup period; see
+  objects merged, released, rolled up and removed in the UI.
+
+| Wave | Repo | Scope | Depends on |
+|---|---|---|---|
+| W8 | camunda | protocol, record, meta, column families, processor, appliers, commit entries, root, goldens | spec |
+| W9 | camunda | journal segment API, merger, multi-frame encoder, compaction cap, cleaner, announcer's confirmed seq | W8 |
+| W10 | camunda | releaser, restore (merged objects, floor), decoder reads frames | W8 |
+| W11 | event-plane | catalog for `LOG_MERGED`/`LOG_RELEASED`, `la_replaced`, read API `start`, UI | spec |
+| W12 | event-plane | rollup, retention, deletion queue, maintenance worker | W11 |
+| W13 | camunda | integration tests | W9, W10, W12 |
+| W14 | both | manual scenario J | W13 |
