@@ -149,12 +149,8 @@ entry on the same path reports a gap up to it, and goes on from it.
 
 ## Snapshots
 
-With `zeebe.broker.experimental.eventPlane.snapshotInterval` above zero, the leader's publisher
-thread uploads the partition's latest snapshot at most once per interval, unless its descriptor is
-in the store already. It reserves the snapshot while it uploads, and PUTs every file of
-`PersistedSnapshot.files()` (the checksum file `{snapshotId}.checksum` among them, as backups carry
-it), then the descriptor last. It skips a bootstrap snapshot and one at index 0, which saves a
-restore nothing. `io.camunda.zeebe.eventplane.snapshot.SnapshotDescriptor`, at
+Backups put their snapshots into the bucket (see [Backups](#backups)); nothing else does.
+`io.camunda.zeebe.eventplane.snapshot.SnapshotDescriptor`, at
 `{cluster}/{tenant}/{partition}/snapshots/{snapshotId}/descriptor.json`:
 
 ```json
@@ -163,49 +159,23 @@ restore nothing. `io.camunda.zeebe.eventplane.snapshot.SnapshotDescriptor`, at
  "history":"…","files":[{"name":"000123.sst","size":4096}],"createdAt":"2026-10-20T12:00:00Z"}
 ```
 
-- `exportedPosition` is the lowest exporter position, `maxExportedPosition` the highest, the upload
-  floor's included. `history` is the one the uploading leader publishes in. Readers skip fields they
-  don't know.
+- Index, term, processed and exported position come from the snapshot id
+  (`FileBasedSnapshotId`), the other two positions from the snapshot's `zeebe.metadata`
+  (`FileBasedSnapshotMetadata`). `exportedPosition` is the lowest exporter position,
+  `maxExportedPosition` the highest, the upload floor's included. `history` is the backup's.
+  Readers skip fields they don't know.
+- The files are the backup's snapshot files, the checksum file `{snapshotId}.checksum` among them.
 - **A descriptor means every file is there:** it is written after the files and deleted before
   them. Files without a descriptor are an upload in progress, or what a stopped upload or deletion
   left; maintenance deletes them once all are older than the retention.
-- **What a snapshot relies on:** its required position is the highest of its four positions. A
-  journal restored from it must reach that position, or the state would hold what the journal
-  doesn't. A snapshot serves a path if its history is on it and, for a history that isn't the
-  path's own, its required position is at or before the checkpoint where the next history took
-  over.
-- **Retention** deletes snapshots older than the retention, but always keeps the newest one that
-  serves the current path, and keeps every segment of the path from the oldest kept snapshot's
-  index + 1 on: the cutoff is the first index of the earliest segment that is young or holds an
-  entry at or after that bound. Snapshots go before segments.
+- **Retention** deletes a snapshot that no backup log names, once it is older than the retention.
+  It never deletes one that a backup log names.
 
-## Restore from the bucket
+## Backups
 
-`io.camunda.zeebe.restore.BucketRestoreService` restores one partition, and `RestoreManager` uses it
-for every local partition when `zeebe.broker.experimental.eventPlane.restoreFromBucket` is true,
-without a backup store. `restoreTo` is the position to restore to, unset for everything the bucket
-holds; `restoreHistory` names the history that goes on, as for a backup. The cluster id is
-`clusterId` if set, else the bucket's only cluster.
-
-- It follows the tenant's current history's path, and takes the newest snapshot that serves it and
-  whose required position is at or before the target.
-- It resets the journal to the snapshot's index + 1, the first entry Raft needs, and appends the
-  path's entries from there with `Journal.append(checksum, serializedRecord)`, up to the first entry
-  with a record past the target: entries without records before it are restored too. Each entry
-  comes from a segment that serves it, the highest level, then the highest last index.
-- If the restored journal doesn't reach the snapshot's required position, it takes the next older
-  snapshot; without any, the journal from index 1. A target past the bucket's last record fails.
-- It leaves the history file with the current history as `source`, the last restored entry as
-  `index`, and the last record's position at or before it as `position`.
-- `restoreTo` is one position for every partition, and positions of different partitions aren't
-  comparable: it suits one partition only. A consistent restore of several partitions goes through
-  a checkpoint, with a backup whose log is in the bucket (below).
-
-## Backups whose log is in the bucket
-
-With `zeebe.broker.experimental.eventPlane.backupLog` true, a backup keeps its snapshot, status and
-descriptor in the backup store as before, but not the journal's segments: its log is the Event
-Plane's. `io.camunda.zeebe.restore.EventPlaneLogBackupStore` wraps the configured `BackupStore`:
+With `zeebe.broker.experimental.eventPlane.backupLog` true, a backup keeps only its status and
+descriptor in the backup store: its snapshot and its log are in the bucket, once.
+`io.camunda.zeebe.restore.EventPlaneLogBackupStore` wraps the configured `BackupStore`:
 
 ```java
 public static BackupStore wrap(
@@ -232,7 +202,7 @@ A backup's log, `io.camunda.zeebe.eventplane.backup.BackupLog`, at
 
 ```json
 {"version":1,"checkpointId":17,"checkpointPosition":1052032,"history":"…",
- "firstIndex":1090001,"lastIndex":1096704,"createdAt":"2026-10-21T12:00:00Z"}
+ "firstIndex":1090001,"lastIndex":1096704,"snapshotId":"…","createdAt":"2026-10-21T12:00:00Z"}
 ```
 
 - `history` is the one the partition's leader publishes in when it saves the backup, from
@@ -244,21 +214,34 @@ A backup's log, `io.camunda.zeebe.eventplane.backup.BackupLog`, at
   `firstLogPosition`, as a backup copies whole journal segments too; the path's first index if the
   descriptor has none. `lastIndex` is the last index the path serves of the segment that holds
   `checkpointPosition`. The backup needs the path's entries from `firstIndex` to `lastIndex`.
+- `snapshotId` is the backup's snapshot, in the bucket's `snapshots/`, or null for a backup without
+  one.
 - **Save:** waits, up to `uploadTimeout`, until the publisher has a history, the bucket has that
   history's part, and the path's segments hold `checkpointPosition`, and fails the backup after
-  that. It finds the segments by their footers, walking back from the newest. Then it PUTs the backup's log, and saves the backup through the
-  delegate without segment files. So a completed backup always has its log in the bucket.
+  that. It finds the segments by their footers, walking back from the newest. Then it PUTs the
+  backup's log, then the snapshot, and saves the backup through the delegate without snapshot and
+  segment files. If the bucket has the snapshot's descriptor already, from an earlier backup of the
+  same snapshot, it PUTs only the descriptor again, with a new `createdAt`: a retention run that
+  read the backup logs before this one was written would otherwise take an old snapshot that no
+  other backup names for one to delete. The backup's log comes first, so that retention keeps the
+  snapshot from its first file on. A completed backup has its snapshot and its log in the bucket,
+  unless a retention run was deleting the snapshot it takes over at that moment: closing that
+  needs conditional writes.
 - **Restore:** restores through the delegate. A backup with segment files, taken without
-  `backupLog`, is returned as it is. For one without, it reads the backup's log, and writes a
-  journal into the target folder, named as the partition's (`{tenant}-partition-{partition}`), with
-  the path's entries from `firstIndex` up to the first entry with a record past
-  `checkpointPosition`, as the restore from the bucket appends them. `PartitionRestoreService`
-  then reads that journal as a backup's.
-- **Delete** and **markFailed:** through the delegate first, then the backup's log is deleted.
+  `backupLog`, is returned as it is. For one without, it reads the backup's log; downloads the
+  snapshot into `{target folder}/snapshot/` if the backup has one and the delegate gave no snapshot
+  files; and writes a journal into the target folder, named as the partition's
+  (`{tenant}-partition-{partition}`), with the path's entries from `firstIndex` up to the first
+  entry with a record past `checkpointPosition`. `PartitionRestoreService` then installs the
+  snapshot and reads that journal as a backup's.
+- **Delete** and **markFailed:** through the delegate first, then the backup's log is deleted. Its
+  snapshot stays until retention finds no backup log naming it.
   Everything else goes to the delegate.
 - **Retention** keeps every backup's log: a segment that serves the path of a backup's history at
-  an index from `firstIndex` to `lastIndex` is never deleted, whatever its age. The retention
-  marker still moves on, so consumers don't see what only backups keep.
+  an index from `firstIndex` to `lastIndex` is never deleted, whatever its age, and nor is the
+  backup's snapshot. The retention marker still moves on, so consumers don't see what only backups
+  keep. Retention keeps nothing else for restores: there is no restore from the bucket without a
+  backup.
 - `BackupLog.fromJson` skips fields it doesn't know, and throws `InvalidBackupLogException` for
   JSON that isn't a valid backup log.
 
@@ -314,8 +297,8 @@ publisher on its first start:
 - A restore from a backup doesn't know the source, the history the backup was taken in, and leaves
   it null. The publisher then takes it from the restored floor, the upload floor in the backup's
   snapshot. Without a floor, the source is the tenant's first history if it has a part for the
-  partition, and else there is none (`Base.NOTHING`). A restore from the bucket knows the source,
-  and names it.
+  partition, and else there is none (`Base.NOTHING`). A backup whose log is in the bucket names
+  its history in its backup log, but the restore doesn't take the source from there yet.
 - Once the floor names the new history, the publisher reads the history's part from the store, as
   it does without a file.
 

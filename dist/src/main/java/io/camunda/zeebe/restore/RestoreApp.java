@@ -252,10 +252,6 @@ public class RestoreApp implements ApplicationRunner {
    * tenant must not leave the others restored, since a run's data is deleted on failure and the
    * cluster would otherwise come up with a partial set of tenants.
    *
-   * <p>A restore from the Event Plane's bucket ({@code
-   * zeebe.broker.experimental.eventPlane.restoreFromBucket}) uses no backup: each tenant's
-   * configured partitions, without backup ids, which the restore ignores.
-   *
    * @return the backups each tenant is restored from, per partition, as resolved by the validation.
    *     Their partitions are the ones to restore, which can be fewer than are configured when the
    *     cluster was scaled up since the backups were taken.
@@ -263,22 +259,6 @@ public class RestoreApp implements ApplicationRunner {
   private Map<String, Map<Integer, long[]>> validateParameters(
       final Map<String, RestoreSelection> selectionPerTenant) {
     final Map<String, Map<Integer, long[]>> backupIdsPerTenant = new LinkedHashMap<>();
-    if (configuration.getExperimental().getEventPlane().isRestoreFromBucket()) {
-      selectionPerTenant.forEach(
-          (physicalTenantId, selection) -> {
-            final Map<Integer, long[]> partitions = new LinkedHashMap<>();
-            final var partitionCount =
-                physicalTenantConfigurations
-                    .forPhysicalTenant(physicalTenantId)
-                    .getCluster()
-                    .getPartitionsCount();
-            for (int partition = 1; partition <= partitionCount; partition++) {
-              partitions.put(partition, new long[0]);
-            }
-            backupIdsPerTenant.put(physicalTenantId, partitions);
-          });
-      return backupIdsPerTenant;
-    }
     selectionPerTenant.forEach(
         (physicalTenantId, selection) -> {
           final var environment =

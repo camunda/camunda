@@ -19,6 +19,7 @@ import io.camunda.configuration.data.primarystorage.backup.Filesystem;
 import io.camunda.management.backups.StateCode;
 import io.camunda.zeebe.eventplane.backup.BackupLog;
 import io.camunda.zeebe.eventplane.segment.LogId;
+import io.camunda.zeebe.eventplane.snapshot.SnapshotArchive;
 import io.camunda.zeebe.eventplane.store.FileSystemStore;
 import io.camunda.zeebe.eventplane.store.ObjectNames;
 import io.camunda.zeebe.model.bpmn.Bpmn;
@@ -42,8 +43,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 /**
- * A backup keeps its log in the Event Plane's bucket instead of copying the journal's segments, and
- * a restore from it rebuilds every partition's journal from the bucket, up to the checkpoint.
+ * A backup keeps its snapshot and its log in the Event Plane's bucket instead of copying them into
+ * the backup store, and a restore from it gets every partition's snapshot and journal from the
+ * bucket, up to the checkpoint.
  */
 @ZeebeIntegration
 final class BackupLogInBucketIT {
@@ -71,22 +73,29 @@ final class BackupLogInBucketIT {
       createInstances(broker, 10);
     }
 
-    // then the backup store holds the snapshots, but no journal segment
-    final var backupFiles = new ArrayList<Path>();
+    // then the backup store holds the backups' records, but no snapshot file and no journal segment
+    final var backupFiles = new ArrayList<String>();
     try (final var files = Files.walk(temp.resolve("backups"))) {
-      files.filter(Files::isRegularFile).forEach(backupFiles::add);
+      files
+          .filter(Files::isRegularFile)
+          .map(file -> temp.resolve("backups").relativize(file).toString())
+          .forEach(backupFiles::add);
     }
     assertThat(backupFiles)
         .describedAs("the backup store's files")
-        .anyMatch(file -> file.getFileName().toString().endsWith(".sst"))
-        .noneMatch(file -> file.getFileName().toString().startsWith("default-partition-"))
-        .noneMatch(
-            file -> temp.resolve("backups").relativize(file).toString().contains("/segments/"));
-    // and the bucket says what each partition's backup needs of the log
+        .isNotEmpty()
+        .allMatch(file -> file.endsWith(".json"));
+    // and the bucket has each partition's snapshot, and says what its backup needs
     for (int partition = 1; partition <= PARTITIONS; partition++) {
       final var backupLog = backupLog(store, partition);
       assertThat(backupLog.checkpointPosition()).isEqualTo(checkpoints.get(partition));
       assertThat(backupLog.firstIndex()).isLessThanOrEqualTo(backupLog.lastIndex());
+      assertThat(backupLog.snapshotId()).isNotNull();
+      assertThat(
+              SnapshotArchive.descriptor(
+                  store, new LogId(CLUSTER, "default", partition), backupLog.snapshotId()))
+          .describedAs("the snapshot of partition %d's backup in the bucket", partition)
+          .isPresent();
     }
     assertThat(before)
         .describedAs("instances on every partition")

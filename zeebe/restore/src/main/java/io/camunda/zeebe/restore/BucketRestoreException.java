@@ -10,7 +10,7 @@ package io.camunda.zeebe.restore;
 import io.camunda.zeebe.eventplane.segment.LogId;
 import java.io.IOException;
 
-/** A partition can't be restored from the Event Plane's bucket, as the bucket doesn't hold it. */
+/** A backup's log can't be read from the Event Plane's bucket, as the bucket doesn't hold it. */
 public abstract sealed class BucketRestoreException extends IOException {
 
   private final int partition;
@@ -90,27 +90,6 @@ public abstract sealed class BucketRestoreException extends IOException {
 
     public long lastPosition() {
       return lastPosition;
-    }
-  }
-
-  /**
-   * Neither a snapshot nor the log from its first entry gives a journal with a record up to the
-   * target.
-   */
-  public static final class NothingToRestore extends BucketRestoreException {
-
-    private final long target;
-
-    public NothingToRestore(final int partition, final long target) {
-      super(
-          partition,
-          "Expected a snapshot of partition %d whose positions the log reaches by position %d, or the log from index 1 with a record up to it, but got neither"
-              .formatted(partition, target));
-      this.target = target;
-    }
-
-    public long target() {
-      return target;
     }
   }
 

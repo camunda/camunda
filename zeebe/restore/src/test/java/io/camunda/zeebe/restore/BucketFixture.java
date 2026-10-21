@@ -14,24 +14,17 @@ import io.camunda.zeebe.eventplane.segment.Entry;
 import io.camunda.zeebe.eventplane.segment.Level;
 import io.camunda.zeebe.eventplane.segment.LogId;
 import io.camunda.zeebe.eventplane.segment.SegmentWriter;
-import io.camunda.zeebe.eventplane.snapshot.SnapshotArchive;
-import io.camunda.zeebe.eventplane.snapshot.SnapshotDescriptor;
-import io.camunda.zeebe.eventplane.snapshot.SnapshotDescriptor.SnapshotFile;
 import io.camunda.zeebe.eventplane.store.ObjectNames;
 import io.camunda.zeebe.eventplane.store.ObjectStore;
 import io.camunda.zeebe.eventplane.store.Ulid;
-import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.nio.file.Files;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.TreeMap;
 import java.util.UUID;
 
-/** Puts what a publisher uploads into a bucket: history parts, segments, and snapshots. */
+/** Puts what a publisher uploads into a bucket: history parts and segments. */
 final class BucketFixture {
 
   static final String CLUSTER = "c";
@@ -73,30 +66,5 @@ final class BucketFixture {
             Ulid.next());
     store.put(key, out.toByteArray());
     return key;
-  }
-
-  /** Uploads a snapshot as the publisher does, naming a history; returns its descriptor. */
-  SnapshotDescriptor snapshot(final PersistedSnapshot snapshot, final UUID history)
-      throws IOException {
-    final var files = snapshot.files();
-    final var sizes = new ArrayList<SnapshotFile>();
-    for (final var file : new TreeMap<>(files).entrySet()) {
-      sizes.add(new SnapshotFile(file.getKey(), Files.size(file.getValue())));
-    }
-    final var descriptor =
-        new SnapshotDescriptor(
-            1,
-            snapshot.getId(),
-            snapshot.getIndex(),
-            snapshot.getTerm(),
-            snapshot.snapshotId().getProcessedPosition(),
-            snapshot.snapshotId().getExportedPosition(),
-            snapshot.getMetadata().maxExportedPosition(),
-            snapshot.getMetadata().lastFollowupEventPosition(),
-            history,
-            sizes,
-            Instant.now());
-    SnapshotArchive.upload(store, LOG, descriptor, files);
-    return descriptor;
   }
 }

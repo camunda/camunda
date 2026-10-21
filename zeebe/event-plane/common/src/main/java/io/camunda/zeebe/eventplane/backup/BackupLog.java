@@ -20,22 +20,23 @@ import java.util.regex.Pattern;
 import org.jspecify.annotations.Nullable;
 
 /**
- * What a backup of a partition needs of the partition's log in the store, which it doesn't copy:
- * the entries from {@code firstIndex} to {@code lastIndex} on the path of {@code history}. Written
- * before the backup is saved, and deleted after it is deleted:
+ * What a backup of a partition needs of the store, which it doesn't copy: the entries from {@code
+ * firstIndex} to {@code lastIndex} on the path of {@code history}, and the snapshot {@code
+ * snapshotId}. Written before the backup is saved, and deleted after it is deleted:
  *
  * <pre>{@code
  * {"version":1,"checkpointId":17,"checkpointPosition":1052032,"history":"…",
- *  "firstIndex":1090001,"lastIndex":1096704,"createdAt":"2026-10-21T12:00:00Z"}
+ *  "firstIndex":1090001,"lastIndex":1096704,"snapshotId":"…","createdAt":"2026-10-21T12:00:00Z"}
  * }</pre>
  *
  * @param version the object's version, 1
  * @param checkpointId the backup's checkpoint id
  * @param checkpointPosition the position of the backup's checkpoint record
- * @param history the tenant's current history when the backup was taken, whose path through the
- *     partition holds the backup's log
+ * @param history the history the partition's leader published in when the backup was taken, whose
+ *     path through the partition holds the backup's log
  * @param firstIndex the first index of the segment that holds the backup's first log position
  * @param lastIndex the last index the path serves of the segment that holds the checkpoint position
+ * @param snapshotId the backup's snapshot in the store's snapshots, or null if it has none
  * @param createdAt when it was written
  */
 public record BackupLog(
@@ -45,6 +46,7 @@ public record BackupLog(
     UUID history,
     long firstIndex,
     long lastIndex,
+    @Nullable String snapshotId,
     Instant createdAt) {
 
   /** The version this class writes and reads. */
@@ -71,6 +73,9 @@ public record BackupLog(
           "Expected a first index of 1 or more, and a last index at or after it, but got %d and %d"
               .formatted(firstIndex, lastIndex));
     }
+    if (snapshotId != null && snapshotId.isEmpty()) {
+      throw new IllegalArgumentException("Expected a snapshot id or none, but got an empty one");
+    }
   }
 
   /** Whether the backup needs the entry at the index of its history's path. */
@@ -87,6 +92,7 @@ public record BackupLog(
     root.put("history", history.toString());
     root.put("firstIndex", firstIndex);
     root.put("lastIndex", lastIndex);
+    root.put("snapshotId", snapshotId);
     root.put("createdAt", createdAt.toString());
     try {
       return MAPPER.writeValueAsBytes(root);
@@ -118,6 +124,7 @@ public record BackupLog(
           uuid(root, "history"),
           number(root, "firstIndex"),
           number(root, "lastIndex"),
+          optionalText(root, "snapshotId"),
           instant(root, "createdAt"));
     } catch (final IllegalArgumentException e) {
       throw new InvalidBackupLogException("the document", "a valid backup log", shown(json), e);
@@ -131,6 +138,18 @@ public record BackupLog(
       throw invalid(field, "a 64-bit integer", value);
     }
     return value.longValue();
+  }
+
+  private static @Nullable String optionalText(final JsonNode node, final String field)
+      throws InvalidBackupLogException {
+    final var value = node.get(field);
+    if (value == null || value.isNull()) {
+      return null;
+    }
+    if (!value.isTextual()) {
+      throw invalid(field, "text or null", value);
+    }
+    return value.textValue();
   }
 
   private static UUID uuid(final JsonNode node, final String field)

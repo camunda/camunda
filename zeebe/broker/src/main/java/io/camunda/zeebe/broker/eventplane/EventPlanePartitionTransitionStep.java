@@ -115,9 +115,7 @@ public final class EventPlanePartitionTransitionStep implements PartitionTransit
             config.getServiceUrl() != null
                 ? new HttpAnnouncer(URI.create(config.getServiceUrl()))
                 : Announcer.NONE,
-            new CutPolicy(config.getMaxSegmentSize().toBytes(), config.getCutInterval()),
-            context.getPersistedSnapshotStore(),
-            config.getSnapshotInterval());
+            new CutPolicy(config.getMaxSegmentSize().toBytes(), config.getCutInterval()));
     publisher.start(config.getPollInterval());
     context.setEventPlanePublisher(publisher);
     floorResend =

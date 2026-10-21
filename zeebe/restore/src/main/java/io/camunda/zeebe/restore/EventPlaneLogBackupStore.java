@@ -15,6 +15,7 @@ import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.api.BackupStatusCode;
 import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.backup.api.ListOptions;
+import io.camunda.zeebe.backup.api.NamedFileSet;
 import io.camunda.zeebe.backup.common.BackupImpl;
 import io.camunda.zeebe.backup.common.NamedFileSetImpl;
 import io.camunda.zeebe.eventplane.backup.BackupLog;
@@ -22,16 +23,25 @@ import io.camunda.zeebe.eventplane.history.Histories;
 import io.camunda.zeebe.eventplane.history.HistoryLineage.Stretch;
 import io.camunda.zeebe.eventplane.history.MissingManifestException;
 import io.camunda.zeebe.eventplane.segment.LogId;
+import io.camunda.zeebe.eventplane.snapshot.SnapshotArchive;
+import io.camunda.zeebe.eventplane.snapshot.SnapshotDescriptor;
+import io.camunda.zeebe.eventplane.snapshot.SnapshotDescriptor.SnapshotFile;
 import io.camunda.zeebe.eventplane.store.NoSuchObjectException;
 import io.camunda.zeebe.eventplane.store.ObjectNames;
 import io.camunda.zeebe.eventplane.store.ObjectStore;
 import io.camunda.zeebe.journal.CheckedJournalException.FlushException;
 import io.camunda.zeebe.journal.JournalMetaStore.InMemory;
 import io.camunda.zeebe.journal.file.SegmentedJournal;
+import io.camunda.zeebe.restore.BackupLogException.InvalidSnapshot;
 import io.camunda.zeebe.restore.BackupLogException.NoBackupLog;
+import io.camunda.zeebe.restore.BackupLogException.NoSnapshot;
 import io.camunda.zeebe.restore.BackupLogException.NotInBucket;
 import io.camunda.zeebe.restore.BackupLogException.NotUploaded;
 import io.camunda.zeebe.restore.BucketRestoreException.NoHistory;
+import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotId;
+import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotId.SnapshotParseResult.Parsed;
+import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotMetadata;
+import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStoreImpl;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -39,12 +49,14 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.InstantSource;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalLong;
+import java.util.TreeMap;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
@@ -54,16 +66,17 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * A backup store whose backups keep their log in the Event Plane's bucket instead of copying the
- * journal's segments. It wraps the configured backup store, which keeps the rest of a backup: its
- * snapshot, status and descriptor. See "Backups whose log is in the bucket" in
- * zeebe/event-plane/docs/contracts.md.
+ * A backup store whose backups keep their snapshot and their log in the Event Plane's bucket, once,
+ * instead of copying them. It wraps the configured backup store, which keeps the rest of a backup:
+ * its status and descriptor. See "Backups" in zeebe/event-plane/docs/contracts.md.
  */
 public final class EventPlaneLogBackupStore implements BackupStore {
 
   private static final Logger LOG = LoggerFactory.getLogger(EventPlaneLogBackupStore.class);
   private static final Duration POLL_INTERVAL = Duration.ofMillis(500);
   private static final String JOURNAL_SUFFIX = ".log";
+  private static final String SNAPSHOT_DIRECTORY = "snapshot";
+  private static final NamedFileSetImpl NO_FILES = new NamedFileSetImpl(Map.of());
 
   private final BackupStore delegate;
   private final ObjectStore store;
@@ -113,15 +126,19 @@ public final class EventPlaneLogBackupStore implements BackupStore {
 
   @Override
   public CompletableFuture<Void> save(final Backup backup) {
-    return CompletableFuture.runAsync(() -> unchecked(() -> writeBackupLog(backup)), executor)
+    return CompletableFuture.runAsync(
+            () ->
+                unchecked(
+                    () -> {
+                      // the backup log first: it keeps the snapshot from retention as it uploads
+                      final var history = writeBackupLog(backup);
+                      putSnapshot(backup, history);
+                    }),
+            executor)
         .thenCompose(
             ignored ->
                 delegate.save(
-                    new BackupImpl(
-                        backup.id(),
-                        backup.descriptor(),
-                        backup.snapshot(),
-                        new NamedFileSetImpl(Map.of()))));
+                    new BackupImpl(backup.id(), backup.descriptor(), NO_FILES, NO_FILES)));
   }
 
   @Override
@@ -202,9 +219,11 @@ public final class EventPlaneLogBackupStore implements BackupStore {
 
   /**
    * Waits until the bucket holds the backup's checkpoint in the history the partition's leader
-   * publishes in, and writes what the backup needs of the log.
+   * publishes in, and writes what the backup needs of the store.
+   *
+   * @return that history
    */
-  private void writeBackupLog(final Backup backup) throws IOException, InterruptedException {
+  private UUID writeBackupLog(final Backup backup) throws IOException, InterruptedException {
     final var id = backup.id();
     final var log = log(id.partitionId());
     final var checkpointPosition = backup.descriptor().checkpointPosition();
@@ -220,6 +239,7 @@ public final class EventPlaneLogBackupStore implements BackupStore {
                 located.history(),
                 located.firstIndex(),
                 located.lastIndex(),
+                backup.descriptor().snapshotId().orElse(null),
                 clock.instant());
         store.put(ObjectNames.backupLog(log, id.checkpointId()), backupLog.toJson());
         LOG.info(
@@ -229,7 +249,7 @@ public final class EventPlaneLogBackupStore implements BackupStore {
             located.firstIndex(),
             located.lastIndex(),
             located.history());
-        return;
+        return located.history();
       }
       if (!clock.instant().isBefore(deadline)) {
         throw new NotUploaded(
@@ -241,6 +261,92 @@ public final class EventPlaneLogBackupStore implements BackupStore {
       }
       Thread.sleep(POLL_INTERVAL);
     }
+  }
+
+  /**
+   * Puts the backup's snapshot into the bucket, unless the backup has none or the bucket has it
+   * already, from an earlier backup of the same snapshot. The backup reserves the snapshot while it
+   * is saved, so its files stay while they upload.
+   *
+   * <p>A snapshot it takes over gets its descriptor again, as new: retention deletes a snapshot
+   * that no backup log names once its descriptor is old, and a retention run that read the backup
+   * logs before this backup's was written would otherwise take it for one.
+   */
+  private void putSnapshot(final Backup backup, final UUID history) throws IOException {
+    final var snapshotId = backup.descriptor().snapshotId();
+    if (snapshotId.isEmpty()) {
+      return;
+    }
+    final var log = log(backup.id().partitionId());
+    final var existing = SnapshotArchive.descriptor(store, log, snapshotId.get());
+    if (existing.isPresent()) {
+      final var taken = existing.get();
+      store.put(
+          ObjectNames.snapshotDescriptor(log, taken.snapshotId()),
+          new SnapshotDescriptor(
+                  taken.version(),
+                  taken.snapshotId(),
+                  taken.index(),
+                  taken.term(),
+                  taken.processedPosition(),
+                  taken.exportedPosition(),
+                  taken.maxExportedPosition(),
+                  taken.lastFollowupEventPosition(),
+                  taken.history(),
+                  taken.files(),
+                  clock.instant())
+              .toJson());
+      LOG.debug("Backup {} takes snapshot {}, which the bucket has", backup.id(), snapshotId.get());
+      return;
+    }
+    final var files = backup.snapshot().namedFiles();
+    SnapshotArchive.upload(store, log, descriptor(backup, snapshotId.get(), history), files);
+    LOG.info(
+        "Backup {} put snapshot {} into the Event Plane's bucket, {} files",
+        backup.id(),
+        snapshotId.get(),
+        files.size());
+  }
+
+  /** The snapshot's descriptor: from its id, and the metadata file among its files. */
+  private SnapshotDescriptor descriptor(
+      final Backup backup, final String snapshotId, final UUID history) throws IOException {
+    final var files = backup.snapshot().namedFiles();
+    final var parsed = FileBasedSnapshotId.ofFileName(snapshotId);
+    if (!(parsed instanceof final Parsed valid)) {
+      throw new InvalidSnapshot(
+          backup.id().partitionId(),
+          backup.id().checkpointId(),
+          snapshotId,
+          "a snapshot id of the form index-term-processed-exported-broker[-checksum]");
+    }
+    final var metadataFile = files.get(FileBasedSnapshotStoreImpl.METADATA_FILE_NAME);
+    if (metadataFile == null) {
+      throw new InvalidSnapshot(
+          backup.id().partitionId(),
+          backup.id().checkpointId(),
+          snapshotId,
+          "a file '%s' among %s"
+              .formatted(FileBasedSnapshotStoreImpl.METADATA_FILE_NAME, files.keySet()));
+    }
+    final var id = valid.snapshotId();
+    final var metadata = FileBasedSnapshotMetadata.decode(Files.readAllBytes(metadataFile));
+    final var sizes = new ArrayList<SnapshotFile>();
+    for (final var file : new TreeMap<>(files).entrySet()) {
+      sizes.add(new SnapshotFile(file.getKey(), Files.size(file.getValue())));
+    }
+    return new SnapshotDescriptor(
+        SnapshotDescriptor.VERSION,
+        snapshotId,
+        id.getIndex(),
+        id.getTerm(),
+        id.getProcessedPosition(),
+        id.getExportedPosition(),
+        metadata.maxExportedPosition(),
+        metadata.lastFollowupEventPosition(),
+        history,
+        sizes,
+        clock.instant());
   }
 
   /** Where the backup's log lies in the bucket, or how far the bucket reaches if not far enough. */
@@ -329,7 +435,8 @@ public final class EventPlaneLogBackupStore implements BackupStore {
 
   /**
    * Writes the backup's log from the bucket into the target folder, as a journal named as the
-   * partition's, and returns the backup with that journal's files as its segments.
+   * partition's, and gets its snapshot from the bucket, unless the delegate gave its files. Returns
+   * the backup with those files.
    */
   private Backup withLogFromBucket(final Backup backup, final Path targetFolder)
       throws IOException, FlushException {
@@ -378,7 +485,32 @@ public final class EventPlaneLogBackupStore implements BackupStore {
           .forEach(file -> files.put(file.getFileName().toString(), file));
     }
     return new BackupImpl(
-        backup.id(), backup.descriptor(), backup.snapshot(), new NamedFileSetImpl(files));
+        backup.id(),
+        backup.descriptor(),
+        snapshotFromBucket(backup, log, targetFolder),
+        new NamedFileSetImpl(files));
+  }
+
+  /** The backup's snapshot files: the delegate's, or else the bucket's, downloaded. */
+  private NamedFileSet snapshotFromBucket(
+      final Backup backup, final LogId log, final Path targetFolder) throws IOException {
+    final var snapshotId = backup.descriptor().snapshotId();
+    if (snapshotId.isEmpty() || !backup.snapshot().names().isEmpty()) {
+      return backup.snapshot();
+    }
+    final var descriptor =
+        SnapshotArchive.descriptor(store, log, snapshotId.get())
+            .orElseThrow(
+                () ->
+                    new NoSnapshot(
+                        backup.id().partitionId(), backup.id().checkpointId(), snapshotId.get()));
+    final var files =
+        SnapshotArchive.download(store, log, descriptor, targetFolder.resolve(SNAPSHOT_DIRECTORY));
+    LOG.info(
+        "Restored snapshot {} of backup {} from the Event Plane's bucket",
+        snapshotId.get(),
+        backup.id());
+    return new NamedFileSetImpl(files);
   }
 
   private CompletableFuture<Void> deleteBackupLog(final BackupIdentifier id) {

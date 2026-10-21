@@ -43,7 +43,7 @@ abstract class StoreTestCase {
     // The fixture writes to the files, so that the store records only what maintenance does.
     final var files = new FileSystemStore(storeDirectory);
     store = new RecordingStore(files);
-    segments = new SegmentFixture(files, clock);
+    segments = new SegmentFixture(files, storeDirectory, clock);
     journal = new RaftJournal(journalDirectory);
     entries = new ArrayList<>();
     for (int i = 0; i < 15; i++) {

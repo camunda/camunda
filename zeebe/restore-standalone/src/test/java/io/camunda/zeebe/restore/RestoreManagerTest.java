@@ -15,87 +15,16 @@ import io.camunda.zeebe.backup.api.Checkpoint;
 import io.camunda.zeebe.backup.management.BackupMetadataSyncer;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.EventPlaneCfg;
-import io.camunda.zeebe.eventplane.history.HistoryManifest.Base;
-import io.camunda.zeebe.eventplane.history.RestoredHistory;
 import io.camunda.zeebe.eventplane.store.FileSystemStore;
 import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.List;
-import java.util.Map;
-import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 final class RestoreManagerTest {
-
-  private static final UUID BUCKET_HISTORY =
-      UUID.fromString("00000000-0000-4000-8000-000000000001");
-  private static final UUID RESTORED_HISTORY =
-      UUID.fromString("00000000-0000-4000-8000-000000000002");
-
-  @Test
-  void shouldRestoreFromTheBucketAndLeaveTheHistoryThatTakesItOver(
-      @TempDir final Path dir, @TempDir final Path bucket, @TempDir final Path journal)
-      throws Exception {
-    // given: ten entries of two records each, without a snapshot
-    final var configuration = bucketRestore(dir, bucket);
-    final var fixture = new BucketFixture(new FileSystemStore(bucket));
-    fixture.history(BUCKET_HISTORY, Instant.EPOCH, Base.NOTHING);
-    try (final var entries = new RaftEntries(journal, 1)) {
-      for (int i = 0; i < 10; i++) {
-        entries.records();
-      }
-      fixture.segment(BUCKET_HISTORY, 0, entries.entries());
-    }
-
-    // when
-    try (final var manager = new RestoreManager(configuration, null, new SimpleMeterRegistry())) {
-      manager.restoreFromBucket();
-    }
-
-    // then
-    final var restored = RestoredHistory.readFrom(dir.resolve("default/partitions/1"));
-    assertThat(restored)
-        .hasValueSatisfying(
-            history -> {
-              assertThat(history.history()).isEqualTo(RESTORED_HISTORY);
-              assertThat(history.source()).isEqualTo(BUCKET_HISTORY);
-              assertThat(history.index()).isEqualTo(10);
-              assertThat(history.position()).isEqualTo(20);
-            });
-  }
-
-  @Test
-  void shouldRestoreFromTheBucketInsteadOfTheBackupsWhenConfigured(
-      @TempDir final Path dir, @TempDir final Path bucket, @TempDir final Path journal)
-      throws Exception {
-    // given
-    final var configuration = bucketRestore(dir, bucket);
-    configuration.getExperimental().getEventPlane().setRestoreTo(6L);
-    final var fixture = new BucketFixture(new FileSystemStore(bucket));
-    fixture.history(BUCKET_HISTORY, Instant.EPOCH, Base.NOTHING);
-    try (final var entries = new RaftEntries(journal, 1)) {
-      for (int i = 0; i < 10; i++) {
-        entries.records();
-      }
-      fixture.segment(BUCKET_HISTORY, 0, entries.entries());
-    }
-
-    // when: the backup ids name no backup, as the restore app passes none
-    try (final var manager = new RestoreManager(configuration, null, new SimpleMeterRegistry())) {
-      manager.restore(Map.of(1, new long[0]), false);
-    }
-
-    // then
-    assertThat(RestoredHistory.readFrom(dir.resolve("default/partitions/1")))
-        .hasValueSatisfying(
-            history -> {
-              assertThat(history.index()).isEqualTo(3);
-              assertThat(history.position()).isEqualTo(6);
-            });
-  }
 
   @Test
   void shouldNameTheConfiguredClusterInTheBucket(@TempDir final Path bucket) throws Exception {
@@ -140,17 +69,6 @@ final class RestoreManagerTest {
           .hasMessageContaining("cluster-a")
           .hasMessageContaining("cluster-b");
     }
-  }
-
-  private static BrokerCfg bucketRestore(final Path dataDirectory, final Path bucket) {
-    final var configuration = new BrokerCfg();
-    configuration.getData().setDirectory(dataDirectory.toString());
-    configuration.getCluster().setPartitionsCount(1);
-    final var eventPlane = configuration.getExperimental().getEventPlane();
-    eventPlane.setRestoreFromBucket(true);
-    eventPlane.setRestoreHistory(RESTORED_HISTORY.toString());
-    eventPlane.getStore().setPath(bucket.toString());
-    return configuration;
   }
 
   @Test

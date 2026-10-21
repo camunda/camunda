@@ -9,8 +9,8 @@ Read from the prototype's code, not from a policy that ran against AWS.
 
 | Role | Objects | PUT | GET / HEAD | LIST | DELETE |
 |---|---|---|---|---|---|
-| Broker (publisher, snapshot upload) | its cluster's prefix | yes | its own history parts and snapshot descriptors | no | no |
-| Broker, with `backupLog` | its tenant's `histories/`, and its logs | backup logs, under `backups/` | yes: history parts, segment footers | yes: history parts, segments | backup logs, with their backups |
+| Broker (publisher) | its cluster's prefix | segments, history parts | its own history parts | no | no |
+| Broker, with `backupLog` | its tenant's `histories/`, and its logs | backup logs, under `backups/`; snapshots, under `snapshots/` | yes: history parts, segment footers, snapshot descriptors | yes: history parts, segments | backup logs, with their backups |
 | Restore (offline app) | its cluster's prefix | no | yes | yes | no |
 | Maintenance | the clusters it maintains | rollups, retention markers | yes, backup logs too | yes, backup logs too | segments, markers, snapshots; never what a backup log holds |
 | Worker of a group | the logs it reads | no | yes | yes | no |
@@ -19,7 +19,8 @@ Read from the prototype's code, not from a policy that ran against AWS.
 
 So a broker never deletes data, and only maintenance does. Without `backupLog`, a broker never lists
 nor deletes at all. With it, a backup costs a few LISTs and one ranged GET per segment between the
-checkpoint and the backup's first log position, walking back from the newest segment.
+checkpoint and the backup's first log position, walking back from the newest segment, and a PUT
+per snapshot file, unless an earlier backup put the same snapshot.
 
 ## Requests per hour
 

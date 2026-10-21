@@ -128,12 +128,5 @@
       <artifactId>junit-jupiter-api</artifactId>
       <scope>test</scope>
     </dependency>
-
-    <!-- The tests of the restore from the bucket put segments into it -->
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>zeebe-event-plane-segment</artifactId>
-      <scope>test</scope>
-    </dependency>
   </dependencies>
 </project>

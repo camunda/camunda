@@ -23,7 +23,7 @@ dependencies {
   implementation(libs.io.micrometer.micrometer.core)
   implementation(libs.com.fasterxml.jackson.core.jackson.databind)
   implementation(libs.com.fasterxml.jackson.core.jackson.core)
-  // BucketRestoreService takes the common module's ObjectStore
+  // EventPlaneLogBackupStore takes the common module's ObjectStore
   api(project(":zeebe-event-plane-common"))
   // BucketRestoreException.NoHistory names the segment module's LogId
   api(project(":zeebe-event-plane-segment"))

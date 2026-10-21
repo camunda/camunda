@@ -7,37 +7,26 @@
  */
 package io.camunda.zeebe.eventplane.maintenance;
 
-import io.camunda.zeebe.eventplane.history.HistoryLineage.Stretch;
 import io.camunda.zeebe.eventplane.segment.LogId;
 import io.camunda.zeebe.eventplane.snapshot.SnapshotArchive;
-import io.camunda.zeebe.eventplane.snapshot.SnapshotDescriptor;
 import io.camunda.zeebe.eventplane.store.ObjectStore;
 import io.camunda.zeebe.eventplane.store.StoredObject;
 import java.io.IOException;
 import java.time.Instant;
-import java.util.Comparator;
-import java.util.List;
+import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Deletes a log's snapshots that are older than the retention period, but always keeps the newest
- * one that a restore along the current path can start from, so that the log stays restorable. A
+ * Deletes a log's snapshots that no backup log names, once they are older than the retention
+ * period. A snapshot that a backup log names is kept whatever its age, as the backup needs it. A
  * snapshot goes descriptor first, so that no reader finds a descriptor without its files; files
  * that a stopped upload or deletion left without a descriptor go once they are all older than the
  * retention period.
  */
 final class SnapshotRetention {
 
-  /** The bound of a log without a snapshot to keep: it holds back no segment. */
-  static final long NO_BOUND = Long.MAX_VALUE;
-
   private static final Logger LOG = LoggerFactory.getLogger(SnapshotRetention.class);
-
-  private static final Comparator<SnapshotDescriptor> NEWEST_LAST =
-      Comparator.comparingLong(SnapshotDescriptor::index)
-          .thenComparingLong(SnapshotDescriptor::processedPosition)
-          .thenComparing(SnapshotDescriptor::snapshotId);
 
   private final ObjectStore store;
 
@@ -48,25 +37,21 @@ final class SnapshotRetention {
   /**
    * Applies retention to the log's snapshots.
    *
-   * @param path the current history's path through the log
-   * @param threshold what was uploaded before it is older than the retention period
-   * @return the first index that a kept snapshot needs, {@link #NO_BOUND} if none, and the count of
-   *     snapshots deleted
+   * @param named the ids of the snapshots that the log's backup logs name
+   * @param threshold what was created or uploaded before it is older than the retention period
+   * @return the count of snapshots deleted, those without a descriptor included
+   * @throws io.camunda.zeebe.eventplane.snapshot.InvalidSnapshotDescriptorException if a descriptor
+   *     isn't valid
    */
-  Result run(final LogId log, final List<Stretch> path, final Instant threshold)
-      throws IOException {
+  int run(final LogId log, final Set<String> named, final Instant threshold) throws IOException {
     final var listing = SnapshotArchive.list(store, log);
-    final var newestOnPath =
-        listing.complete().stream()
-            .filter(snapshot -> snapshot.servesPath(path))
-            .max(NEWEST_LAST)
-            .orElse(null);
-
-    long bound = NO_BOUND;
     int deleted = 0;
+    int spared = 0;
     for (final var snapshot : listing.complete()) {
-      final boolean onPath = snapshot.servesPath(path);
-      if (snapshot.createdAt().isBefore(threshold) && !snapshot.equals(newestOnPath)) {
+      final boolean old = snapshot.createdAt().isBefore(threshold);
+      if (old && named.contains(snapshot.snapshotId())) {
+        spared++;
+      } else if (old) {
         SnapshotArchive.delete(store, log, snapshot.snapshotId());
         LOG.info(
             "Deleted snapshot {} of {} at index {}, created at {}",
@@ -75,16 +60,17 @@ final class SnapshotRetention {
             snapshot.index(),
             snapshot.createdAt());
         deleted++;
-      } else if (onPath) {
-        bound = Math.min(bound, snapshot.index() + 1);
       }
+    }
+    if (spared > 0) {
+      LOG.info("Kept {} old snapshots of {}, as backups need them", spared, log);
     }
     for (final var snapshotId : listing.withoutDescriptor()) {
       if (deleteIfOld(log, snapshotId, threshold)) {
         deleted++;
       }
     }
-    return new Result(bound, deleted);
+    return deleted;
   }
 
   /** Deletes the files of a snapshot without descriptor, once every one is old. */
@@ -100,10 +86,4 @@ final class SnapshotRetention {
     }
     return old;
   }
-
-  /**
-   * @param bound the first index that a kept snapshot of the path needs: the oldest one's index + 1
-   * @param deleted the snapshots deleted
-   */
-  record Result(long bound, int deleted) {}
 }

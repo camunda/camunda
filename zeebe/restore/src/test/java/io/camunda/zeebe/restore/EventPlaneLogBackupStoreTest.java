@@ -10,6 +10,7 @@ package io.camunda.zeebe.restore;
 import static io.camunda.zeebe.restore.BucketFixture.CLUSTER;
 import static io.camunda.zeebe.restore.BucketFixture.LOG;
 import static io.camunda.zeebe.restore.BucketFixture.TENANT;
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -22,14 +23,20 @@ import io.camunda.zeebe.backup.common.NamedFileSetImpl;
 import io.camunda.zeebe.eventplane.backup.BackupLog;
 import io.camunda.zeebe.eventplane.history.HistoryManifest.Base;
 import io.camunda.zeebe.eventplane.segment.Entry;
+import io.camunda.zeebe.eventplane.snapshot.SnapshotArchive;
+import io.camunda.zeebe.eventplane.snapshot.SnapshotDescriptor;
+import io.camunda.zeebe.eventplane.snapshot.SnapshotDescriptor.SnapshotFile;
 import io.camunda.zeebe.eventplane.store.FileSystemStore;
 import io.camunda.zeebe.eventplane.store.ObjectNames;
 import io.camunda.zeebe.journal.JournalMetaStore;
 import io.camunda.zeebe.journal.file.SegmentedJournal;
 import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
+import io.camunda.zeebe.restore.BackupLogException.InvalidSnapshot;
 import io.camunda.zeebe.restore.BackupLogException.NoBackupLog;
+import io.camunda.zeebe.restore.BackupLogException.NoSnapshot;
 import io.camunda.zeebe.restore.BackupLogException.NotUploaded;
 import io.camunda.zeebe.restore.EventPlaneLogBackupStore.PublishingHistory;
+import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotMetadata;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -39,6 +46,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.InstantSource;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -59,6 +67,9 @@ final class EventPlaneLogBackupStoreTest {
   private static final UUID SECOND = UUID.fromString("00000000-0000-4000-8000-000000000002");
   private static final Instant CREATED = Instant.parse("2026-10-21T12:00:00Z");
   private static final BackupIdentifier ID = new BackupIdentifierImpl(0, 1, 17);
+  private static final String SNAPSHOT = "12-1-24-24-0";
+  private static final List<String> SNAPSHOT_FILES =
+      List.of("000001.sst", "zeebe.metadata", SNAPSHOT + ".checksum");
 
   @TempDir private Path bucket;
   @TempDir private Path journalDirectory;
@@ -90,7 +101,7 @@ final class EventPlaneLogBackupStoreTest {
   }
 
   @Test
-  void shouldSaveTheBackupWithoutSegmentsAndWriteWhatItNeedsOfTheLog() throws Exception {
+  void shouldSaveTheBackupWithoutFilesAndPutItsSnapshotAndLogIntoTheBucket() throws Exception {
     // given: the checkpoint is entry 12's position 24, the backup's log starts at entry 7's 13
     fixture.segment(FIRST, 0, journal.entries(1, 5));
     fixture.segment(FIRST, 0, journal.entries(6, 12));
@@ -103,9 +114,74 @@ final class EventPlaneLogBackupStoreTest {
     // then
     final var saved = delegate.backups.get(ID);
     assertThat(saved.segments().names()).isEmpty();
-    assertThat(saved.snapshot().names()).containsExactly("snapshot-file");
+    assertThat(saved.snapshot().names()).isEmpty();
     assertThat(saved.descriptor()).isEqualTo(backup.descriptor());
-    assertThat(backupLog()).isEqualTo(Optional.of(new BackupLog(1, 17, 24, FIRST, 6, 12, CREATED)));
+    assertThat(backupLog())
+        .isEqualTo(Optional.of(new BackupLog(1, 17, 24, FIRST, 6, 12, SNAPSHOT, CREATED)));
+    final var snapshot = SnapshotArchive.descriptor(store, LOG, SNAPSHOT).orElseThrow();
+    assertThat(snapshot)
+        .extracting(
+            SnapshotDescriptor::index,
+            SnapshotDescriptor::term,
+            SnapshotDescriptor::processedPosition,
+            SnapshotDescriptor::exportedPosition,
+            SnapshotDescriptor::maxExportedPosition,
+            SnapshotDescriptor::lastFollowupEventPosition,
+            SnapshotDescriptor::history)
+        .containsExactly(12L, 1L, 24L, 24L, 26L, 25L, FIRST);
+    assertThat(snapshot.files())
+        .extracting(SnapshotFile::name)
+        .containsExactlyInAnyOrderElementsOf(SNAPSHOT_FILES);
+  }
+
+  @Test
+  void shouldNotPutASnapshotThatTheBucketHasAgainButMakeItNew() throws Exception {
+    // given: an earlier backup of the same snapshot, and a local file that a new upload would show
+    fixture.segment(FIRST, 0, journal.entries(1, 12));
+    final var store = store(Duration.ofSeconds(5), FIRST);
+    store.save(backup(24, 13)).join();
+    final var first = SnapshotArchive.descriptor(this.store, LOG, SNAPSHOT).orElseThrow();
+    final var second = backup(new BackupIdentifierImpl(0, 1, 18), 24, 13);
+    Files.writeString(localFiles.resolve("000001.sst"), "STATE");
+    Thread.sleep(10);
+
+    // when
+    store.save(second).join();
+
+    // then: the files are the first upload's, and the descriptor is as new, so retention keeps it
+    assertThat(this.store.get(ObjectNames.snapshotFile(LOG, SNAPSHOT, "000001.sst")))
+        .hasValueSatisfying(content -> assertThat(new String(content, UTF_8)).isEqualTo("state"));
+    final var taken = SnapshotArchive.descriptor(this.store, LOG, SNAPSHOT).orElseThrow();
+    assertThat(taken.createdAt()).isAfter(first.createdAt());
+    assertThat(taken).usingRecursiveComparison().ignoringFields("createdAt").isEqualTo(first);
+    assertThat(BackupLog.fromJson(this.store.get(ObjectNames.backupLog(LOG, 18)).orElseThrow()))
+        .extracting(BackupLog::snapshotId)
+        .isEqualTo(SNAPSHOT);
+  }
+
+  @Test
+  void shouldFailABackupWhoseSnapshotHasNoMetadata() throws Exception {
+    // given
+    fixture.segment(FIRST, 0, journal.entries(1, 12));
+    final var backup = backup(24, 13);
+    final var files = new HashMap<>(backup.snapshot().namedFiles());
+    files.remove("zeebe.metadata");
+
+    // when
+    final var saved =
+        store(Duration.ofSeconds(5), FIRST)
+            .save(
+                new BackupImpl(
+                    ID, backup.descriptor(), new NamedFileSetImpl(files), backup.segments()));
+
+    // then
+    assertThatThrownBy(saved::join)
+        .rootCause()
+        .isInstanceOf(InvalidSnapshot.class)
+        .hasMessageStartingWith(
+            "Expected snapshot 12-1-24-24-0 of backup 17 of partition 1 to have a file 'zeebe.metadata'");
+    assertThat(delegate.backups).isEmpty();
+    assertThat(SnapshotArchive.descriptor(store, LOG, SNAPSHOT)).isEmpty();
   }
 
   @Test
@@ -193,7 +269,7 @@ final class EventPlaneLogBackupStoreTest {
 
     // then
     assertThat(backupLog())
-        .isEqualTo(Optional.of(new BackupLog(1, 17, 26, SECOND, 6, 14, CREATED)));
+        .isEqualTo(Optional.of(new BackupLog(1, 17, 26, SECOND, 6, 14, SNAPSHOT, CREATED)));
     assertThat(restoredJournal()).isEqualTo(concat(journal.entries(6, 10), second.entries(11, 13)));
     assertThat(restored.segments().names()).isNotEmpty();
     second.close();
@@ -216,8 +292,30 @@ final class EventPlaneLogBackupStoreTest {
     assertThat(restored.segments().names())
         .isNotEmpty()
         .allMatch(name -> name.startsWith("default-partition-1-") && name.endsWith(".log"));
-    assertThat(restored.snapshot().names()).containsExactly("snapshot-file");
+    assertThat(restored.snapshot().names()).containsExactlyInAnyOrderElementsOf(SNAPSHOT_FILES);
+    assertThat(restored.snapshot().namedFiles().get("000001.sst"))
+        .hasContent("state")
+        .hasParent(restoreTarget.resolve("snapshot"));
     assertThat(restored.descriptor().checkpointPosition()).isEqualTo(24);
+  }
+
+  @Test
+  void shouldFailARestoreWhoseSnapshotIsNotInTheBucket() throws Exception {
+    // given
+    fixture.segment(FIRST, 0, journal.entries(1, 12));
+    final var store = store(Duration.ofSeconds(5), FIRST);
+    store.save(backup(24, 13)).join();
+    SnapshotArchive.delete(this.store, LOG, SNAPSHOT);
+
+    // when
+    final var restored = store.restore(ID, restoreTarget);
+
+    // then
+    assertThatThrownBy(restored::join)
+        .rootCause()
+        .isInstanceOf(NoSnapshot.class)
+        .hasMessage(
+            "Expected snapshot 12-1-24-24-0 of backup 17 of partition 1 in the Event Plane's bucket, but it has no descriptor there");
   }
 
   @Test
@@ -293,20 +391,35 @@ final class EventPlaneLogBackupStoreTest {
   }
 
   private Backup backup(final long checkpointPosition, final long firstLogPosition) {
+    return backup(ID, checkpointPosition, firstLogPosition);
+  }
+
+  /** A backup of the snapshot at index 12, processed and exported up to position 24. */
+  private Backup backup(
+      final BackupIdentifier id, final long checkpointPosition, final long firstLogPosition) {
     try {
-      final var snapshotFile = Files.writeString(localFiles.resolve("snapshot-file"), "state");
+      final var snapshotFiles =
+          Map.of(
+              "000001.sst",
+              Files.writeString(localFiles.resolve("000001.sst"), "state"),
+              "zeebe.metadata",
+              Files.write(
+                  localFiles.resolve("zeebe.metadata"),
+                  new FileBasedSnapshotMetadata(1, 24, 24, 26, 25, false, 5).encode()),
+              SNAPSHOT + ".checksum",
+              Files.writeString(localFiles.resolve(SNAPSHOT + ".checksum"), "1234"));
       final var segmentFile = Files.writeString(localFiles.resolve("segment-file"), "journal");
       return new BackupImpl(
-          ID,
+          id,
           new BackupDescriptorImpl(
-              Optional.of("12-1-24-24"),
+              Optional.of(SNAPSHOT),
               firstLogPosition < 0 ? OptionalLong.empty() : OptionalLong.of(firstLogPosition),
               checkpointPosition,
               1,
               "8.11.0",
               CREATED,
               CheckpointType.MANUAL_BACKUP),
-          new NamedFileSetImpl(Map.of("snapshot-file", snapshotFile)),
+          new NamedFileSetImpl(snapshotFiles),
           new NamedFileSetImpl(Map.of("segment-file", segmentFile)));
     } catch (final IOException e) {
       throw new UncheckedIOException(e);
@@ -330,6 +443,7 @@ final class EventPlaneLogBackupStoreTest {
             read.history(),
             read.firstIndex(),
             read.lastIndex(),
+            read.snapshotId(),
             CREATED));
   }
 

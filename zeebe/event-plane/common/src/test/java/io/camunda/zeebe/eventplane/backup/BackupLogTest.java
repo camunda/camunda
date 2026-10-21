@@ -23,11 +23,12 @@ final class BackupLogTest {
 
   private static final UUID HISTORY = UUID.fromString("00000000-0000-4000-8000-000000000001");
   private static final Instant NOON = Instant.parse("2026-10-21T12:00:00Z");
+  private static final String SNAPSHOT = "12-1-24-24-0";
 
   @Test
   void shouldWriteTheContractsFieldOrder() {
     // given
-    final var backupLog = new BackupLog(1, 17, 1052032, HISTORY, 1090001, 1096704, NOON);
+    final var backupLog = new BackupLog(1, 17, 1052032, HISTORY, 1090001, 1096704, SNAPSHOT, NOON);
 
     // when
     final var json = new String(backupLog.toJson(), StandardCharsets.UTF_8);
@@ -38,13 +39,56 @@ final class BackupLogTest {
             "{\"version\":1,\"checkpointId\":17,\"checkpointPosition\":1052032,"
                 + "\"history\":\"00000000-0000-4000-8000-000000000001\","
                 + "\"firstIndex\":1090001,\"lastIndex\":1096704,"
+                + "\"snapshotId\":\"12-1-24-24-0\","
                 + "\"createdAt\":\"2026-10-21T12:00:00Z\"}");
+  }
+
+  @Test
+  void shouldWriteAndReadABackupWithoutASnapshot() throws IOException {
+    // given
+    final var backupLog = new BackupLog(1, 17, 1052032, HISTORY, 1, 20, null, NOON);
+
+    // when
+    final var json = backupLog.toJson();
+
+    // then
+    assertThat(new String(json, StandardCharsets.UTF_8)).contains("\"snapshotId\":null");
+    assertThat(BackupLog.fromJson(json)).isEqualTo(backupLog);
+  }
+
+  @Test
+  void shouldReadAMissingSnapshotIdAsNone() throws IOException {
+    // given
+    final var json =
+        "{\"version\":1,\"checkpointId\":17,\"checkpointPosition\":5,"
+            + "\"history\":\"00000000-0000-4000-8000-000000000001\",\"firstIndex\":1,"
+            + "\"lastIndex\":2,\"createdAt\":\"2026-10-21T12:00:00Z\"}";
+
+    // when
+    final var read = BackupLog.fromJson(json.getBytes(StandardCharsets.UTF_8));
+
+    // then
+    assertThat(read.snapshotId()).isNull();
+  }
+
+  @Test
+  void shouldRejectASnapshotIdThatIsNotText() {
+    // given
+    final var json =
+        "{\"version\":1,\"checkpointId\":17,\"checkpointPosition\":5,"
+            + "\"history\":\"00000000-0000-4000-8000-000000000001\",\"firstIndex\":1,"
+            + "\"lastIndex\":2,\"snapshotId\":3,\"createdAt\":\"2026-10-21T12:00:00Z\"}";
+
+    // then
+    assertThatThrownBy(() -> BackupLog.fromJson(json.getBytes(StandardCharsets.UTF_8)))
+        .isInstanceOf(InvalidBackupLogException.class)
+        .hasMessage("Expected snapshotId to be text or null, but got 3");
   }
 
   @Test
   void shouldReadBackWhatItWroteAndSkipFieldsItDoesNotKnow() throws IOException {
     // given
-    final var backupLog = new BackupLog(1, 17, 1052032, HISTORY, 1090001, 1096704, NOON);
+    final var backupLog = new BackupLog(1, 17, 1052032, HISTORY, 1090001, 1096704, SNAPSHOT, NOON);
     final var json =
         new String(backupLog.toJson(), StandardCharsets.UTF_8)
             .replace("\"history\"", "\"later\":[1,2],\"history\"");
@@ -59,7 +103,7 @@ final class BackupLogTest {
   @Test
   void shouldNeedTheEntriesFromItsFirstToItsLastIndex() {
     // given
-    final var backupLog = new BackupLog(1, 17, 1052032, HISTORY, 10, 20, NOON);
+    final var backupLog = new BackupLog(1, 17, 1052032, HISTORY, 10, 20, SNAPSHOT, NOON);
 
     // then
     assertThat(backupLog.needs(9)).isFalse();
@@ -70,7 +114,7 @@ final class BackupLogTest {
 
   @Test
   void shouldRejectALastIndexBeforeTheFirst() {
-    assertThatThrownBy(() -> new BackupLog(1, 17, 1052032, HISTORY, 20, 10, NOON))
+    assertThatThrownBy(() -> new BackupLog(1, 17, 1052032, HISTORY, 20, 10, SNAPSHOT, NOON))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessage(
             "Expected a first index of 1 or more, and a last index at or after it, but got 20 and 10");
@@ -81,7 +125,7 @@ final class BackupLogTest {
     // given
     final var json =
         new String(
-                new BackupLog(1, 17, 1052032, HISTORY, 10, 20, NOON).toJson(),
+                new BackupLog(1, 17, 1052032, HISTORY, 10, 20, SNAPSHOT, NOON).toJson(),
                 StandardCharsets.UTF_8)
             .replace("\"version\":1", "\"version\":2");
 

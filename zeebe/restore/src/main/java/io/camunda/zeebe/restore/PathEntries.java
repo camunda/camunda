@@ -30,9 +30,6 @@ import java.util.List;
  */
 final class PathEntries {
 
-  /** The target that appends everything the bucket holds. */
-  static final long LATEST = Long.MAX_VALUE;
-
   private static final int RELISTS = 3;
 
   private final ObjectStore store;
@@ -50,7 +47,7 @@ final class PathEntries {
    * entry with a record past the target or the bucket's end.
    *
    * @throws MissingEntry if the bucket doesn't hold the entry at {@code first}
-   * @throws LogEndsBeforeTarget if the bucket ends before a target other than {@link #LATEST}
+   * @throws LogEndsBeforeTarget if the bucket ends before the target
    */
   Appended append(final Journal journal, final long first, final long target) throws IOException {
     journal.reset(first);
@@ -87,7 +84,7 @@ final class PathEntries {
     if (next == first) {
       throw new MissingEntry(log.partition(), first);
     }
-    if (target != LATEST && position < target) {
+    if (position < target) {
       throw new LogEndsBeforeTarget(log.partition(), target, next - 1, position);
     }
     return new Appended(next - 1, position);

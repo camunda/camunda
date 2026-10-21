@@ -10,7 +10,7 @@ package io.camunda.zeebe.restore;
 import java.io.IOException;
 import java.time.Duration;
 
-/** A backup's log isn't in the Event Plane's bucket as the backup needs it. */
+/** A backup's log or snapshot isn't in the Event Plane's bucket as the backup needs it. */
 public abstract sealed class BackupLogException extends IOException {
 
   private final int partition;
@@ -89,6 +89,51 @@ public abstract sealed class BackupLogException extends IOException {
 
     public long missingIndex() {
       return missingIndex;
+    }
+  }
+
+  /** A backup's snapshot isn't one the bucket can describe. */
+  public static final class InvalidSnapshot extends BackupLogException {
+
+    private final String snapshotId;
+
+    /**
+     * @param expected what the snapshot should have
+     */
+    public InvalidSnapshot(
+        final int partition,
+        final long checkpointId,
+        final String snapshotId,
+        final String expected) {
+      super(
+          partition,
+          checkpointId,
+          "Expected snapshot %s of backup %d of partition %d to have %s, but it hasn't"
+              .formatted(snapshotId, checkpointId, partition, expected));
+      this.snapshotId = snapshotId;
+    }
+
+    public String snapshotId() {
+      return snapshotId;
+    }
+  }
+
+  /** The bucket doesn't have a backup's snapshot. */
+  public static final class NoSnapshot extends BackupLogException {
+
+    private final String snapshotId;
+
+    public NoSnapshot(final int partition, final long checkpointId, final String snapshotId) {
+      super(
+          partition,
+          checkpointId,
+          "Expected snapshot %s of backup %d of partition %d in the Event Plane's bucket, but it has no descriptor there"
+              .formatted(snapshotId, checkpointId, partition));
+      this.snapshotId = snapshotId;
+    }
+
+    public String snapshotId() {
+      return snapshotId;
     }
   }
 

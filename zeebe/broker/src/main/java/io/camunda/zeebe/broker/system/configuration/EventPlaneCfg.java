@@ -23,10 +23,7 @@ public final class EventPlaneCfg {
   private DataSize maxSegmentSize = DataSize.ofMegabytes(16);
   private Duration pollInterval = Duration.ofMillis(500);
   private String serviceUrl;
-  private Duration snapshotInterval = Duration.ZERO;
   private String restoreHistory;
-  private boolean restoreFromBucket = false;
-  private Long restoreTo;
   private boolean backupLog = false;
   private Duration backupLogTimeout = Duration.ofMinutes(5);
 
@@ -91,15 +88,6 @@ public final class EventPlaneCfg {
     this.serviceUrl = serviceUrl;
   }
 
-  /** How often a leader uploads its newest snapshot; zero to upload none. */
-  public Duration getSnapshotInterval() {
-    return snapshotInterval;
-  }
-
-  public void setSnapshotInterval(final Duration snapshotInterval) {
-    this.snapshotInterval = snapshotInterval;
-  }
-
   /**
    * For a restore only: the id of the history the Event Plane goes on in afterwards. The operator
    * picks a new UUID and passes the same one to every broker's restore.
@@ -110,30 +98,6 @@ public final class EventPlaneCfg {
 
   public void setRestoreHistory(final String restoreHistory) {
     this.restoreHistory = restoreHistory;
-  }
-
-  /**
-   * For a restore only: whether to restore the partitions from the store's snapshots and segments,
-   * instead of from backups.
-   */
-  public boolean isRestoreFromBucket() {
-    return restoreFromBucket;
-  }
-
-  public void setRestoreFromBucket(final boolean restoreFromBucket) {
-    this.restoreFromBucket = restoreFromBucket;
-  }
-
-  /**
-   * For a restore from the bucket only: the position to restore to, the last record's at most; null
-   * to restore everything the store holds.
-   */
-  public Long getRestoreTo() {
-    return restoreTo;
-  }
-
-  public void setRestoreTo(final Long restoreTo) {
-    this.restoreTo = restoreTo;
   }
 
   /**
@@ -158,7 +122,7 @@ public final class EventPlaneCfg {
 
   @Override
   public String toString() {
-    return "EventPlaneCfg{enabled=%s, clusterId=%s, store=%s, cutInterval=%s, maxSegmentSize=%s, pollInterval=%s, serviceUrl=%s, snapshotInterval=%s, restoreHistory=%s, restoreFromBucket=%s, restoreTo=%s, backupLog=%s, backupLogTimeout=%s}"
+    return "EventPlaneCfg{enabled=%s, clusterId=%s, store=%s, cutInterval=%s, maxSegmentSize=%s, pollInterval=%s, serviceUrl=%s, restoreHistory=%s, backupLog=%s, backupLogTimeout=%s}"
         .formatted(
             enabled,
             clusterId,
@@ -167,10 +131,7 @@ public final class EventPlaneCfg {
             maxSegmentSize,
             pollInterval,
             serviceUrl,
-            snapshotInterval,
             restoreHistory,
-            restoreFromBucket,
-            restoreTo,
             backupLog,
             backupLogTimeout);
   }

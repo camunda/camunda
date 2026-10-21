@@ -28,6 +28,9 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.attribute.FileTime;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -35,6 +38,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import org.jspecify.annotations.Nullable;
 
 /** Puts segments, histories and markers into a store the way a publisher and maintenance do. */
 final class SegmentFixture {
@@ -47,11 +51,17 @@ final class SegmentFixture {
   private static final String ALPHABET = "0123456789ABCDEFGHJKMNPQRSTVWXYZ";
 
   private final ObjectStore store;
+  private final Path storeDirectory;
   private final TestClock clock;
   private int sequence;
 
-  SegmentFixture(final ObjectStore store, final TestClock clock) {
+  /**
+   * @param storeDirectory the directory that the file system store keeps its objects in, so that
+   *     the fixture can set when an object was written
+   */
+  SegmentFixture(final ObjectStore store, final Path storeDirectory, final TestClock clock) {
     this.store = store;
+    this.storeDirectory = storeDirectory;
     this.clock = clock;
   }
 
@@ -97,9 +107,9 @@ final class SegmentFixture {
   }
 
   /**
-   * Puts a snapshot of partition 1 at an index, uploaded {@code age} ago, the way a publisher does:
-   * a file, then the descriptor. It relies on the positions up to the entry after its index, {@code
-   * 2 * (index + 1)}. Returns its id.
+   * Puts a snapshot of partition 1 at an index, uploaded {@code age} ago, the way a backup does: a
+   * file, then the descriptor, which says when it was created. It relies on the positions up to the
+   * entry after its index, {@code 2 * (index + 1)}. Returns its id.
    */
   String putSnapshot(final UUID history, final Duration age, final long index) throws IOException {
     final var id = "%d-1-%d-%d-0-x".formatted(index, 2 * index + 1, 2 * index + 1);
@@ -123,11 +133,41 @@ final class SegmentFixture {
   }
 
   /**
+   * Puts a file into the directory of a snapshot, as an upload in progress or a stopped one leaves
+   * it when there is no descriptor. The store says it was written {@code age} ago; returns its key.
+   */
+  String putSnapshotFile(final String snapshotId, final String fileName, final Duration age)
+      throws IOException {
+    final var key = ObjectNames.snapshotFile(LOG, snapshotId, fileName);
+    store.put(key, fileName.getBytes(StandardCharsets.UTF_8));
+    Files.setLastModifiedTime(
+        storeDirectory.resolve(key), FileTime.from(clock.instant().minus(age)));
+    return key;
+  }
+
+  /**
    * Puts the backup log of a checkpoint of partition 1, which needs the entries of the history's
-   * path from the first index to the last, the way a backup does; returns its key.
+   * path from the first index to the last, and has no snapshot; returns its key.
    */
   String putBackupLog(
       final UUID history, final long checkpointId, final long firstIndex, final long lastIndex)
+      throws IOException {
+    return putBackupLog(history, checkpointId, firstIndex, lastIndex, null);
+  }
+
+  /**
+   * Puts the backup log of a checkpoint of partition 1, which needs the entries of the history's
+   * path from the first index to the last, and the snapshot, the way a backup does; returns its
+   * key.
+   *
+   * @param snapshotId the id of the backup's snapshot, null for a backup without one
+   */
+  String putBackupLog(
+      final UUID history,
+      final long checkpointId,
+      final long firstIndex,
+      final long lastIndex,
+      final @Nullable String snapshotId)
       throws IOException {
     final var key = ObjectNames.backupLog(LOG, checkpointId);
     final var backupLog =
@@ -138,6 +178,7 @@ final class SegmentFixture {
             history,
             firstIndex,
             lastIndex,
+            snapshotId,
             clock.instant());
     store.put(key, backupLog.toJson());
     return key;

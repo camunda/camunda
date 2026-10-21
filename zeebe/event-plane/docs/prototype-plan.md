@@ -22,10 +22,12 @@ and the upload floor.
 5. A restore starts a new history, and workers that read past the restore point are told where the
    histories part.
 6. Stretch: the restore comes from the bucket itself. Archived snapshots and segments rebuild the
-   journal byte for byte, in place of a backup.
-7. Added after the plan: one copy of the log. A backup keeps its snapshot in the backup store, but
-   its log only in the bucket, and a restore from it rebuilds every partition's journal from there,
-   to the checkpoint. See [Backups whose log is in the bucket](contracts.md#backups-whose-log-is-in-the-bucket).
+   journal byte for byte, in place of a backup. Built, then replaced by 7.
+7. Added after the plan: one copy of the log and the snapshots. A backup keeps only its record in
+   the backup store; its snapshot and its log are in the bucket, and a restore from it gets every
+   partition's from there, to the checkpoint. It replaced 6: there is no periodic snapshot upload
+   and no restore from the bucket without a backup any more, so retention has one rule, to keep what
+   backups need. See [Backups](contracts.md#backups).
 
 ## What it leaves out
 
@@ -128,6 +130,9 @@ reads the rest from the bucket.
   their entries to the journal with `Journal.append(checksum, serializedRecord)`: segment entries
   are the journal's own bytes. Then it leaves the history file, as above.
 - Retention keeps what a restore needs: every segment after the oldest snapshot that it keeps.
+- Built so, then retired for backups that keep their snapshot and log in the bucket (7 above): a
+  restore to any position worked per partition only, as positions of different partitions aren't
+  comparable, and it kept snapshots and segments a second time, next to the backups'.
 
 ## Spikes, first
 
@@ -184,9 +189,11 @@ The contracts of phase 0 let the four workstreams of phase 1 build without waiti
   - maintenance runs while workers read;
   - the service restarts while workers wait for notifications;
   - a restore, with workers that had read past its checkpoint;
-  - stretch: a restore from the bucket gives the same journal as the one that was archived;
-  - added: a backup of two partitions keeps no journal segment, and a restore from it gives every
-    partition's state at the checkpoint (`BackupLogInBucketIT`).
+  - stretch: a restore from the bucket gives the same journal as the one that was archived (retired
+    with it);
+  - added: a backup of two partitions keeps no snapshot file and no journal segment in the backup
+    store, and a restore from it gives every partition's state at the checkpoint
+    (`BackupLogInBucketIT`).
 
 ## Open points
 
@@ -197,9 +204,10 @@ The contracts of phase 0 let the four workstreams of phase 1 build without waiti
 - Where the code lives after the prototype: camunda/camunda or the event-plane repository.
 - Purges and online restores.
 - How the service authenticates publishers and workers. In the prototype, it doesn't.
-- One copy of the log, as backups keep it now, makes the bucket's retention a backup's too: a
-  backup log holds its segments however old. Snapshots are still kept twice, in the backup store
-  and in the bucket; the backup could name the bucket's snapshot instead.
+- One copy of the log and the snapshots makes the bucket's retention the backups' too: a backup log
+  holds its segments and its snapshot however old. Planned: a check that the Event Plane's
+  retention is always longer than the backups' retention, so that what a backup needs is kept by
+  the Event Plane's retention anyway, and a backup log's hold is only the safety net.
 - A backup's log starts where the local journal segment that holds its snapshot starts, as a backup
   copies whole segments: its descriptor's first log position. At low load, that segment can be
   older than the bucket's retention. Then the backup fails (`BackupLogException.NotInBucket`).
@@ -209,5 +217,5 @@ The contracts of phase 0 let the four workstreams of phase 1 build without waiti
   the backup checked its segments, can delete what that backup needs; the restore then fails. It
   needs a segment at the edge of retention, as above. Conditional writes, or a second check after
   the backup log is written, would close it.
-- `restoreTo` names one position for every partition: it suits one partition. A consistent restore
-  of several goes through a checkpoint, and so through a backup.
+- A restore from a backup doesn't take the new history's source from the backup log yet, which
+  names it; it takes it from the restored floor, as before.

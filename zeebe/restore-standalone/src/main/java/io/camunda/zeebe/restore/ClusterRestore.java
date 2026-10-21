@@ -156,10 +156,7 @@ public final class ClusterRestore {
                     physicalTenantConfigurations(),
                     placementPartitionCounts,
                     physicalTenantId),
-                // a restore from the Event Plane's bucket needs no backup store
-                configuration.getExperimental().getEventPlane().isRestoreFromBucket()
-                    ? null
-                    : target.backupStore().get(),
+                target.backupStore().get(),
                 target.exporterPositionMapper(),
                 meterRegistry)) {
           manager.restore(entry.getValue(), validateConfig);

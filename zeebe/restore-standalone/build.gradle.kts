@@ -22,7 +22,6 @@ dependencies {
   implementation(project(":zeebe-event-plane-common"))
 
   testImplementation(projectArtifact(":zeebe-restore", ArtifactKind.TESTS))
-  testImplementation(project(":zeebe-event-plane-segment"))
   testImplementation(project(":zeebe-protocol"))
   testImplementation(libs.org.assertj.assertj.core)
   testImplementation(libs.org.junit.jupiter.junit.jupiter.api)

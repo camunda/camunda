@@ -17,16 +17,18 @@ import io.camunda.zeebe.eventplane.store.ObjectStore;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
  * What the backups of a log need of it, from their backup logs: a segment that serves the path of a
- * backup's history at an index the backup needs is held, and retention never deletes it, whatever
- * its age.
+ * backup's history at an index the backup needs is held, and so is the snapshot that a backup
+ * names. Retention never deletes either, whatever its age.
  */
 final class BackupHolds {
 
@@ -71,6 +73,18 @@ final class BackupHolds {
   /** Whether a backup needs the segment, which is in the directory of the history. */
   boolean holds(final UUID history, final StoredSegment segment) {
     return holds.stream().anyMatch(hold -> hold.holds(history, segment));
+  }
+
+  /** The ids of the snapshots that the backups name, which are held. */
+  Set<String> snapshotIds() {
+    final var ids = new HashSet<String>();
+    for (final var hold : holds) {
+      final var snapshotId = hold.backup().snapshotId();
+      if (snapshotId != null) {
+        ids.add(snapshotId);
+      }
+    }
+    return ids;
   }
 
   private static Optional<BackupLog> readBackupLog(final ObjectStore store, final String key)
