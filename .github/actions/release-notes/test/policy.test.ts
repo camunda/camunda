@@ -61,5 +61,7 @@ test('a dead (missing) issue ref does not satisfy and is reported', () => {
 });
 
 test('a PR ref fails even when opt-out is ticked (PR ref is always an error)', () => {
-  assert.equal(decide([ref(5, 'contributor', 'pullRequest')], true).code, 'pr-ref-in-section');
+  const d = decide([ref(5, 'contributor', 'pullRequest')], true);
+  assert.equal(d.code, 'pr-ref-in-section');
+  assert.ok(d.reasons.some((r) => r.includes('does not clear this')), 'must not advise the opt-out as a fix');
 });
