@@ -198,6 +198,9 @@ public final class RestoreValidator
                                     .formatted(partitionId, backupId))));
   }
 
+  /**
+   * Restores every partition to the resolved checkpoint, at that partition's own position of it.
+   */
   private Map<Integer, PartitionRestore> resolveRestorePoint(final RestoreRequest request) {
     return findBackups(request).partitions();
   }
