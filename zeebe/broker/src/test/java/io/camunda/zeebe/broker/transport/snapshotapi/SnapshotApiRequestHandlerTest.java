@@ -153,7 +153,7 @@ public class SnapshotApiRequestHandlerTest {
                 snapshotPath -> Map.of(),
                 new SimpleMeterRegistry()));
 
-    client = new SnapshotTransferServiceClient(brokerClient);
+    client = new SnapshotTransferServiceClient(brokerClient, Duration.ofSeconds(30));
 
     scheduler.workUntilDone();
   }

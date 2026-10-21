@@ -114,6 +114,39 @@ final class ExperimentalCfgTest {
   }
 
   @Test
+  void shouldHaveDefaultBootstrapSnapshotRequestTimeout() {
+    // when
+    final BrokerCfg cfg = TestConfigReader.readConfig("default", environment);
+    final var raft = cfg.getExperimental().getRaft();
+
+    // then
+    assertThat(raft.getBootstrapSnapshotRequestTimeout()).isEqualTo(Duration.ofSeconds(30));
+  }
+
+  @Test
+  void shouldSetBootstrapSnapshotRequestTimeoutFromConfig() {
+    // when
+    final BrokerCfg cfg = TestConfigReader.readConfig("experimental-cfg", environment);
+    final var raft = cfg.getExperimental().getRaft();
+
+    // then
+    assertThat(raft.getBootstrapSnapshotRequestTimeout()).isEqualTo(Duration.ofSeconds(45));
+  }
+
+  @Test
+  void shouldSetBootstrapSnapshotRequestTimeoutFromEnv() {
+    // given
+    environment.put("zeebe.broker.experimental.raft.bootstrapSnapshotRequestTimeout", "90s");
+
+    // when
+    final BrokerCfg cfg = TestConfigReader.readConfig("experimental-cfg", environment);
+    final var raft = cfg.getExperimental().getRaft();
+
+    // then
+    assertThat(raft.getBootstrapSnapshotRequestTimeout()).isEqualTo(Duration.ofSeconds(90));
+  }
+
+  @Test
   void shouldSetEnablePreconditionsFromConfig() {
     // when
     final BrokerCfg cfg = TestConfigReader.readConfig("experimental-cfg", environment);
