@@ -14,11 +14,11 @@ import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.IN
 import io.camunda.exporter.index.TargetIndex;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.entities.listview.FlowNodeInstanceForListViewEntity;
+import io.camunda.zeebe.exporter.common.utils.StorageOrdinalUtil;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
-import io.camunda.zeebe.protocol.record.value.StorageOrdinalRelated;
 import java.util.EnumSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -86,11 +86,8 @@ public class ListViewFlowNodeFromIncidentHandler
         .setPositionIncident(record.getPosition())
         .setActivityId(recordValue.getElementId())
         .setProcessInstanceKey(recordValue.getProcessInstanceKey())
-        .setTenantId(tenantOrDefault(recordValue.getTenantId()));
-
-    if (recordValue.getStorageOrdinal() != StorageOrdinalRelated.MAIN_INDEX) {
-      entity.setStorageOrdinal(recordValue.getStorageOrdinal());
-    }
+        .setTenantId(tenantOrDefault(recordValue.getTenantId()))
+        .setStorageOrdinal(StorageOrdinalUtil.ordinalIfOrdinalControlled(recordValue).orElse(null));
 
     if (intentStr.equals(IncidentIntent.CREATED.name())) {
       entity.setErrorMessage(trimWhitespace(recordValue.getErrorMessage()));

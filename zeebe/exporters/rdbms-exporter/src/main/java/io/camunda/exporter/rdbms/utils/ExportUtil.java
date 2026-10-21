@@ -7,7 +7,6 @@
  */
 package io.camunda.exporter.rdbms.utils;
 
-import io.camunda.zeebe.protocol.record.value.StorageOrdinalRelated;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import java.util.List;
 import org.slf4j.Logger;
@@ -96,9 +95,5 @@ public class ExportUtil {
    */
   public static Integer nullIfNegative(final int value) {
     return value < 0 ? null : value;
-  }
-
-  public static Integer nullIfStorageOrdinalIsMainIndex(final int storageOrdinal) {
-    return storageOrdinal != StorageOrdinalRelated.MAIN_INDEX ? storageOrdinal : null;
   }
 }

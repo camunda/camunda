@@ -7,8 +7,6 @@
  */
 package io.camunda.exporter.rdbms.handlers;
 
-import static io.camunda.exporter.rdbms.utils.ExportUtil.nullIfStorageOrdinalIsMainIndex;
-
 import io.camunda.db.rdbms.write.domain.IncidentDbModel;
 import io.camunda.db.rdbms.write.service.IncidentWriter;
 import io.camunda.exporter.rdbms.RdbmsExportHandler;
@@ -18,6 +16,7 @@ import io.camunda.search.entities.IncidentEntity.IncidentState;
 import io.camunda.zeebe.exporter.common.cache.ExporterEntityCache;
 import io.camunda.zeebe.exporter.common.cache.process.CachedProcessEntity;
 import io.camunda.zeebe.exporter.common.utils.ProcessCacheUtil;
+import io.camunda.zeebe.exporter.common.utils.StorageOrdinalUtil;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
@@ -91,7 +90,7 @@ public class IncidentExportHandler implements RdbmsExportHandler<IncidentRecordV
         .jobKey(mapIfGreaterZero(value.getJobKey()))
         .treePath(buildTreePath(record))
         .tenantId(value.getTenantId())
-        .storageOrdinal(nullIfStorageOrdinalIsMainIndex(value.getStorageOrdinal()))
+        .storageOrdinal(StorageOrdinalUtil.ordinalIfOrdinalControlled(value).orElse(null))
         .build();
   }
 

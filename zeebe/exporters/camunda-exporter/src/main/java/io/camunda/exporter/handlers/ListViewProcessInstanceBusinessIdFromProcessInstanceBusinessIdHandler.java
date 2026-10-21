@@ -14,11 +14,11 @@ import io.camunda.exporter.index.TargetIndex;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
 import io.camunda.webapps.schema.entities.listview.ProcessInstanceForListViewEntity;
+import io.camunda.zeebe.exporter.common.utils.StorageOrdinalUtil;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceBusinessIdIntent;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceBusinessIdRecordValue;
-import io.camunda.zeebe.protocol.record.value.StorageOrdinalRelated;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -77,11 +77,8 @@ public class ListViewProcessInstanceBusinessIdFromProcessInstanceBusinessIdHandl
         .setTenantId(tenantOrDefault(recordValue.getTenantId()))
         .setPartitionId(record.getPartitionId())
         .setPosition(record.getPosition())
-        .setBusinessId(emptyToNull(recordValue.getBusinessId()));
-
-    if (recordValue.getStorageOrdinal() != StorageOrdinalRelated.MAIN_INDEX) {
-      entity.setStorageOrdinal(recordValue.getStorageOrdinal());
-    }
+        .setBusinessId(emptyToNull(recordValue.getBusinessId()))
+        .setStorageOrdinal(StorageOrdinalUtil.ordinalIfOrdinalControlled(recordValue).orElse(null));
   }
 
   @Override
