@@ -52,6 +52,32 @@ final class ExporterConfigurationTest {
   }
 
   @Test
+  void shouldNotExposeArgValueInExceptionForInvalidValue() {
+    // given
+    final var config = new ExporterConfiguration("id", Map.of("port", "s3cr3t-password"));
+
+    // when / then
+    assertThatCode(() -> config.instantiate(PortConfig.class))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("port")
+        .hasNoCause()
+        .satisfies(e -> assertThat(e.getMessage()).doesNotContain("s3cr3t-password"));
+  }
+
+  @Test
+  void shouldNotExposeArgValueInExceptionForScalarSuppliedForObject() {
+    // given
+    final var config = new ExporterConfiguration("id", Map.of("index", "s3cr3t-password"));
+
+    // when / then
+    assertThatCode(() -> config.instantiate(ObjectConfig.class))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("index")
+        .hasNoCause()
+        .satisfies(e -> assertThat(e.getMessage()).doesNotContain("s3cr3t-password"));
+  }
+
+  @Test
   void shouldInstantiateConfigWithUnknownProperty() {
     // given
     final var args = Map.<String, Object>of("numberofshards", 1, "unknownProp", false);
@@ -129,6 +155,10 @@ final class ExporterConfigurationTest {
   }
 
   private record Config(int numberOfShards) {}
+
+  private record PortConfig(int port) {}
+
+  private record ObjectConfig(PortConfig index) {}
 
   private record ContainerConfig(Config nested) {}
 

@@ -157,7 +157,13 @@ final class RestClientFactory {
     final var hosts = new HttpHost[urls.length];
 
     for (int i = 0; i < urls.length; i++) {
-      hosts[i] = HttpHost.create(urls[i]);
+      try {
+        hosts[i] = HttpHost.create(urls[i]);
+      } catch (final IllegalArgumentException e) {
+        // neither the url nor the cause is included: both quote the unparseable text, which may
+        // hold credentials
+        throw new IllegalArgumentException("Invalid OpenSearch url at position " + i);
+      }
     }
 
     return hosts;
