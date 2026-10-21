@@ -285,6 +285,14 @@ final class LogArchiveHarness implements AutoCloseable {
     return new LogArchiveRecord().setTimelineId(TIMELINE).setChunk(chunk);
   }
 
+  static LogArchiveRecord mergeLog(final LogObject merged) {
+    return new LogArchiveRecord().setTimelineId(TIMELINE).addObject(merged);
+  }
+
+  static LogArchiveRecord releaseLog(final long releasedIndex) {
+    return new LogArchiveRecord().setTimelineId(TIMELINE).setReleasedIndex(releasedIndex);
+  }
+
   static LogArchiveRecord confirmPublished(final long publishedSeq) {
     return new LogArchiveRecord().setTimelineId(TIMELINE).setPublishedSeq(publishedSeq);
   }
@@ -310,6 +318,17 @@ final class LogArchiveHarness implements AutoCloseable {
                     .append(LogArchiveJsonMapper.logObject(open.object()))
                     .append(
                         open.checkpoints().stream().map(LogArchiveJsonMapper::checkpoint).toList())
+                    .append('\n'));
+    state
+        .unmergedObjects()
+        .forEach(unmerged -> builder.append("unmerged ").append(unmerged).append('\n'));
+    state
+        .mergedObjects()
+        .forEach(
+            merged ->
+                builder
+                    .append("merged ")
+                    .append(LogArchiveJsonMapper.logObject(merged))
                     .append('\n'));
     state.chunks().forEach(chunk -> builder.append(LogArchiveJsonMapper.chunk(chunk)).append('\n'));
     state
@@ -409,6 +428,26 @@ final class LogArchiveHarness implements AutoCloseable {
     @Override
     public void onIndexSealed(final long chunkNo) {
       calls.add("indexSealed " + chunkNo);
+    }
+
+    @Override
+    public void onLogMerged(final long mergedIndex, final long mergedPosition) {
+      calls.add("logMerged " + mergedIndex + " " + mergedPosition);
+    }
+
+    @Override
+    public void onMergeLogRejected(final long mergedIndex) {
+      calls.add("mergeLogRejected " + mergedIndex);
+    }
+
+    @Override
+    public void onLogReleased(final long releasedIndex) {
+      calls.add("logReleased " + releasedIndex);
+    }
+
+    @Override
+    public void onReleaseLogRejected(final long releasedIndex) {
+      calls.add("releaseLogRejected " + releasedIndex);
     }
 
     @Override
