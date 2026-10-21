@@ -98,7 +98,21 @@ public class IssuerAwareJWSKeySelector implements JWTClaimsSetAwareJWSKeySelecto
     final var clientRegistration = getClientRegistrationByIssuer(issuer);
     final var providerDetails = clientRegistration.getProviderDetails();
     final var jwkSetUri = providerDetails.getJwkSetUri();
-    final var additionalUris = additionalJwkSetUrisByIssuer.get(issuer);
+    final var additionalUris = additionalJwkSetUris(issuer);
     return jwsKeySelectorFactory.createJWSKeySelector(jwkSetUri, additionalUris);
+  }
+
+  /**
+   * The map is keyed by the configured issuer-uri, and the token carries the provider's issuer. The
+   * two can differ by a trailing slash, which discovery tolerates (see {@link
+   * ClientRegistrationFactory}), so look the other form up too. The exact issuer wins.
+   */
+  private List<String> additionalJwkSetUris(final String issuer) {
+    final var exact = additionalJwkSetUrisByIssuer.get(issuer);
+    if (exact != null) {
+      return exact;
+    }
+    final var alternative = ClientRegistrationFactory.withToggledTrailingSlash(issuer);
+    return alternative != null ? additionalJwkSetUrisByIssuer.get(alternative) : null;
   }
 }
