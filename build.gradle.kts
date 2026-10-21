@@ -26,3 +26,15 @@ tasks.register<PrintGradleProjectInventoryTask>("printGradleProjectInventory") {
   description = "Prints active Gradle projects and their source directories as TSV."
   projectInventory.set(gradleProjectInventory)
 }
+
+tasks.register("buildDistball") {
+  group = "distribution"
+  description = "Builds the distribution tar (-Pdist.tar.gzip=true: tar.gz), with frontend assets."
+  dependsOn(":camunda-zeebe:distTar")
+}
+
+tasks.register("buildDistballZip") {
+  group = "distribution"
+  description = "Builds the distribution zip, including frontend assets."
+  dependsOn(":camunda-zeebe:distZip")
+}
