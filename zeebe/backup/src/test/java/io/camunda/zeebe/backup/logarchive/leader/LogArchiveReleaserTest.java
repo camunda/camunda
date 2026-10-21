@@ -46,6 +46,7 @@ final class LogArchiveReleaserTest {
   private List<CoveredCheckpoint> backups = List.of();
   private List<ArchivedSnapshot> snapshots = List.of();
   private List<LogObject> merged = List.of();
+  private long cleanedIndex = Long.MAX_VALUE;
   private LogArchiveReleaser releaser;
 
   @BeforeEach
@@ -55,6 +56,7 @@ final class LogArchiveReleaserTest {
             PARTITION,
             writer,
             () -> new ReleaseState(meta, backups, snapshots, merged),
+            () -> cleanedIndex,
             WINDOW,
             INTERVAL);
     scheduler.submitActor(releaser);
@@ -73,6 +75,37 @@ final class LogArchiveReleaserTest {
 
     // then
     assertThat(writer.released()).containsExactly(50L);
+  }
+
+  @Test
+  void shouldNotReleasePastTheCleanedIndex() {
+    // given - objects up to 90 end below the floor snapshot, but only up to 50 are cleaned
+    backups = List.of(backup(1, 10, -10));
+    snapshots = List.of(snapshot(120, 5));
+    merged = List.of(merged(1, 50), merged(51, 90));
+    cleanedIndex = 70;
+
+    // when
+    recoverAndTick();
+
+    // then
+    assertThat(writer.released()).containsExactly(50L);
+  }
+
+  @Test
+  void shouldReleaseNothingWhenTheCleanedIndexIsNotAboveTheReleasedIndex() {
+    // given
+    meta = meta(0, 0);
+    backups = List.of(backup(1, 10, -10));
+    snapshots = List.of(snapshot(120, 5));
+    merged = List.of(merged(1, 50));
+    cleanedIndex = 49;
+
+    // when
+    recoverAndTick();
+
+    // then
+    assertThat(writer.entries).isEmpty();
   }
 
   @Test

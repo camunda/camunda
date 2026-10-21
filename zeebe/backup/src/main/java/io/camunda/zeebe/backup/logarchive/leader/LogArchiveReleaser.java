@@ -25,6 +25,7 @@ import io.camunda.zeebe.scheduler.ScheduledTimer;
 import io.camunda.zeebe.scheduler.clock.ActorClock;
 import java.time.Duration;
 import java.util.List;
+import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
@@ -34,8 +35,8 @@ import org.slf4j.LoggerFactory;
 /**
  * Leader-only actor that hands the log below the restore floor over to the event plane (spec
  * section 21.3): every {@code releaseInterval} and after every merge, it computes R from the
- * replicated state and, if R moved, commits it with {@code RELEASE_LOG}. It does not wait for the
- * event plane; the announcer delivers the commit entry.
+ * replicated state, never past the cleaner's cleaned index and, if R moved, commits it with {@code
+ * RELEASE_LOG}. It does not wait for the event plane; the announcer delivers the commit entry.
  *
  * <p>Nothing happens before {@link #onRecoveryChecked(LogArchiveMeta, boolean)} or {@link
  * #onTimelineStarted(String)}, and a timeline written before merges and releases existed (its meta
@@ -59,6 +60,7 @@ public final class LogArchiveReleaser extends Actor
   private final int partitionId;
   private final LogStreamWriter writer;
   private final Supplier<ReleaseState> stateReader;
+  private final LongSupplier cleanedIndex;
   private final Duration retentionWindow;
   private final Duration releaseInterval;
 
@@ -69,18 +71,22 @@ public final class LogArchiveReleaser extends Actor
 
   /**
    * @param stateReader reads the replicated state; called on the actor thread only
+   * @param cleanedIndex the cleaner's cleaned index; R never exceeds it (see {@link
+   *     LogArchiveCleaner#cleanedIndex()}), so the cluster deletes what its merges replaced
    * @param retentionWindow restore points younger than this stay restorable
    */
   public LogArchiveReleaser(
       final int partitionId,
       final LogStreamWriter writer,
       final Supplier<ReleaseState> stateReader,
+      final LongSupplier cleanedIndex,
       final Duration retentionWindow,
       final Duration releaseInterval) {
     super("LogArchiveReleaser-" + partitionId);
     this.partitionId = partitionId;
     this.writer = writer;
     this.stateReader = stateReader;
+    this.cleanedIndex = cleanedIndex;
     this.retentionWindow = retentionWindow;
     this.releaseInterval = releaseInterval;
   }
@@ -142,11 +148,12 @@ public final class LogArchiveReleaser extends Actor
         || meta.getMergedIndex() < 0) {
       return;
     }
+    final long cleaned = cleanedIndex.getAsLong();
     final var released =
         LogArchiveReleaseFloor.releasedIndex(
             state.backupCheckpoints(),
             state.snapshots(),
-            state.mergedObjects(),
+            state.mergedObjects().stream().filter(o -> o.getLastIndex() <= cleaned).toList(),
             ActorClock.currentTimeMillis(),
             retentionWindow);
     if (released.isEmpty() || released.getAsLong() <= meta.getReleasedIndex()) {

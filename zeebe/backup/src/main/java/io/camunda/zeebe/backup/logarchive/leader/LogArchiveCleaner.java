@@ -48,6 +48,10 @@ import org.slf4j.LoggerFactory;
  * the state it recovered as of that state's last seq: until the event plane confirmed that seq, it
  * deletes nothing.
  *
+ * <p>After every sweep, {@link #cleanedIndex()} is the highest index below which no garbage is
+ * left, pending or undeleted; the releaser never releases past it, so the event plane never takes
+ * over an object the cluster would have deleted (spec section 20.4).
+ *
  * <p>Like the merger, the cleaner does nothing before the publisher's recovery check, and nothing
  * on a timeline the bucket is ahead of (its later history would look like garbage) until a fork
  * started. A timeline started before merging existed has no merged index and nothing to clean.
@@ -78,6 +82,8 @@ public final class LogArchiveCleaner extends Actor
   private final Map<String, Long> firstSeen = new HashMap<>();
   private boolean inFlight;
   private long epoch;
+  private long sweepSafeMergedIndex;
+  private volatile long cleanedIndex = -1;
 
   /**
    * @param stateView read access to the replicated state, used only by this cleaner
@@ -120,6 +126,16 @@ public final class LogArchiveCleaner extends Actor
   protected void onActorClosing() {
     epoch++;
     ready = false;
+  }
+
+  /**
+   * The highest index C such that no garbage with {@code lastIndex <= C} was left by the last
+   * completed sweep (not yet deleted, or not deletable). Never decreases within a timeline; before
+   * the first completed sweep it is the released index. -1 before the recovery check. Safe to call
+   * from any thread.
+   */
+  public long cleanedIndex() {
+    return cleanedIndex;
   }
 
   // -----------------------------------------------------------------------------------------------
@@ -183,6 +199,7 @@ public final class LogArchiveCleaner extends Actor
     mergedIndexBySeq.clear();
     mergedIndexBySeq.put(meta.getNextSeq() - 1, meta.getMergedIndex());
     firstSeen.clear();
+    cleanedIndex = meta.getReleasedIndex();
   }
 
   private void clean() {
@@ -208,6 +225,7 @@ public final class LogArchiveCleaner extends Actor
     }
     final long releasedIndex = meta.getReleasedIndex();
     final long safeMergedIndex = safeMergedIndex(meta);
+    sweepSafeMergedIndex = safeMergedIndex;
     if (safeMergedIndex <= releasedIndex) {
       return;
     }
@@ -297,6 +315,7 @@ public final class LogArchiveCleaner extends Actor
         });
     if (due.isEmpty()) {
       inFlight = false;
+      advanceCleanedIndex();
       return;
     }
     due.sort(null);
@@ -305,10 +324,23 @@ public final class LogArchiveCleaner extends Actor
     deleteNext(due, 0, expectedEpoch);
   }
 
+  /** Called at the end of a sweep: {@code firstSeen} holds the garbage that is still there. */
+  private void advanceCleanedIndex() {
+    long cleaned = sweepSafeMergedIndex;
+    for (final var key : firstSeen.keySet()) {
+      final var matcher = DATA_KEY.matcher(key.substring(key.indexOf("data/")));
+      if (matcher.matches()) {
+        cleaned = Math.min(cleaned, Long.parseLong(matcher.group(2)) - 1);
+      }
+    }
+    cleanedIndex = Math.max(cleanedIndex, cleaned);
+  }
+
   /** Deletes one key after the other, so a large backlog does not flood the store. */
   private void deleteNext(final List<String> due, final int next, final long expectedEpoch) {
     if (next == due.size()) {
       inFlight = false;
+      advanceCleanedIndex();
       LOG.info(
           "Partition {}: deleted {} replaced or orphaned log objects", partitionId, due.size());
       return;
@@ -329,6 +361,7 @@ public final class LogArchiveCleaner extends Actor
                   }
                   if (error != null) {
                     inFlight = false;
+                    advanceCleanedIndex();
                     LOG.warn(
                         "Partition {}: failed to delete {}, trying again on the next run",
                         partitionId,

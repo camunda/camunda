@@ -39,6 +39,7 @@ import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.LongSupplier;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -177,7 +178,6 @@ public final class LogArchiveTransitionStep implements PartitionTransitionStep {
             logStream.newLogStreamWriter(),
             cfg.getSnapshotUploadInterval());
     final var announcer = createAnnouncer(context, cfg, store);
-    final var releaser = createReleaser(context, cfg, logStream.newLogStreamWriter());
     // merger and cleaner read the state on their own threads, each through its own instance
     final var merger =
         new LogArchiveMerger(
@@ -201,6 +201,8 @@ public final class LogArchiveTransitionStep implements PartitionTransitionStep {
             announcer != null ? announcer::confirmedNextSeq : null,
             cfg.getCleanupInterval(),
             cfg.getCleanupGracePeriod());
+    final var releaser =
+        createReleaser(context, cfg, logStream.newLogStreamWriter(), cleaner::cleanedIndex);
     // The publisher checks the bucket against the recovered state before it publishes anything and
     // hands the outcome to the archiver and the uploader, which wait for it (spec section 8.4).
     final var publisher =
@@ -274,7 +276,8 @@ public final class LogArchiveTransitionStep implements PartitionTransitionStep {
   private static @Nullable LogArchiveReleaser createReleaser(
       final PartitionTransitionContext context,
       final LogArchiveCfg cfg,
-      final LogStreamWriter writer) {
+      final LogStreamWriter writer,
+      final LongSupplier cleanedIndex) {
     final var window = cfg.getRetentionWindow();
     final var zeebeDb = context.getZeebeDb();
     if (window == null || zeebeDb == null) {
@@ -288,6 +291,7 @@ public final class LogArchiveTransitionStep implements PartitionTransitionStep {
         () ->
             new ReleaseState(
                 state.meta(), state.backupCheckpoints(), state.snapshots(), state.mergedObjects()),
+        cleanedIndex,
         window,
         cfg.getReleaseInterval());
   }
