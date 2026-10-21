@@ -565,7 +565,8 @@ public final class LogArchiver extends Actor
             .setEntryCount(footer.entryCount())
             .setSizeBytes(encoded.bytes().length)
             .setSha256(encoded.sha256())
-            .setBodyLength(footer.bodyLength());
+            .setBodyLength(footer.bodyLength())
+            .setLastRecordTimestamp(footer.latestTimestamp());
     inFlight = new InFlight(prefix + relativeKey, encoded.bytes(), object);
     lastCutMillis = ActorClock.currentTimeMillis();
     state = State.UPLOADING;
