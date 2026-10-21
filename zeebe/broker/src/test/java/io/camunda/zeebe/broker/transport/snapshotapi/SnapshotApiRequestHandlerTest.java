@@ -154,7 +154,7 @@ public class SnapshotApiRequestHandlerTest {
 
     client =
         new SnapshotTransferServiceClient(
-            brokerClient, PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
+            brokerClient, PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, Duration.ofSeconds(30));
 
     scheduler.workUntilDone();
   }
@@ -231,7 +231,9 @@ public class SnapshotApiRequestHandlerTest {
         submitActor(
             new SnapshotTransferImpl(
                 tenantPartition,
-                ignore -> new SnapshotTransferServiceClient(brokerClient, "tenanta"),
+                ignore ->
+                    new SnapshotTransferServiceClient(
+                        brokerClient, "tenanta", Duration.ofSeconds(30)),
                 snapshotMetrics,
                 receiverSnapshotStore));
 

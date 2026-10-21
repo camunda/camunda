@@ -17,6 +17,7 @@ public final class ExperimentalRaftCfg implements ConfigurationEntry {
 
   public static final Duration DEFAULT_SNAPSHOT_REQUEST_TIMEOUT = Duration.ofMillis(2500);
   public static final DataSize DEFAULT_SNAPSHOT_CHUNK_SIZE = DataSize.ofMegabytes(8);
+  public static final Duration DEFAULT_BOOTSTRAP_SNAPSHOT_REQUEST_TIMEOUT = Duration.ofSeconds(30);
   // Keep in sync with the defaults in RaftPartitionConfig, which these override on startup.
   public static final Duration DEFAULT_JOIN_CATCH_UP_TIMEOUT = Duration.ofSeconds(60);
   public static final DataSize DEFAULT_PROMOTION_LAG_THRESHOLD = DataSize.ofMegabytes(16);
@@ -33,6 +34,7 @@ public final class ExperimentalRaftCfg implements ConfigurationEntry {
   private Duration requestTimeout = DEFAULT_REQUEST_TIMEOUT;
   private Duration snapshotRequestTimeout = DEFAULT_SNAPSHOT_REQUEST_TIMEOUT;
   private DataSize snapshotChunkSize = DEFAULT_SNAPSHOT_CHUNK_SIZE;
+  private Duration bootstrapSnapshotRequestTimeout = DEFAULT_BOOTSTRAP_SNAPSHOT_REQUEST_TIMEOUT;
   private Duration configurationChangeTimeout = DEFAULT_CONFIGURATION_CHANGE_TIMEOUT;
   private Duration joinCatchUpTimeout = DEFAULT_JOIN_CATCH_UP_TIMEOUT;
   private DataSize promotionLagThreshold = DEFAULT_PROMOTION_LAG_THRESHOLD;
@@ -65,6 +67,14 @@ public final class ExperimentalRaftCfg implements ConfigurationEntry {
 
   public void setSnapshotChunkSize(final DataSize snapshotChunkSize) {
     this.snapshotChunkSize = snapshotChunkSize;
+  }
+
+  public Duration getBootstrapSnapshotRequestTimeout() {
+    return bootstrapSnapshotRequestTimeout;
+  }
+
+  public void setBootstrapSnapshotRequestTimeout(final Duration bootstrapSnapshotRequestTimeout) {
+    this.bootstrapSnapshotRequestTimeout = bootstrapSnapshotRequestTimeout;
   }
 
   public Duration getConfigurationChangeTimeout() {
