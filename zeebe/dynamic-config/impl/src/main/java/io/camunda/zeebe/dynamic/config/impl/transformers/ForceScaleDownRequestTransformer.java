@@ -74,6 +74,13 @@ public class ForceScaleDownRequestTransformer implements ConfigurationChangeRequ
       return Either.left(unknownRetainedMember.get());
     }
 
+    // No broker would leave, so the removal was already applied, e.g. by an earlier attempt of
+    // this request whose confirmation was lost. Planning again would force reconfigure partitions
+    // that are already where the request wants them.
+    if (membersToRetain.equals(members)) {
+      return Either.right(List.of());
+    }
+
     final SortedMap<String, SortedMap<Integer, SortedSet<MemberId>>> replicasByTenant =
         new TreeMap<>();
     configuration
