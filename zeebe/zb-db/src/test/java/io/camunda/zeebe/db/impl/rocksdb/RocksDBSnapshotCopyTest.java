@@ -20,14 +20,17 @@ import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import java.util.zip.CRC32;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -121,6 +124,73 @@ public class RocksDBSnapshotCopyTest {
     // then
     final var afterChecksums = computeChecksums(sourceSnapshotPath);
     assertThat(afterChecksums).containsExactlyInAnyOrderEntriesOf(initialChecksums);
+  }
+
+  @Test
+  public void shouldCompactCopyIntoCompressedFiles() throws Exception {
+    // given
+    final var rawBytes = populateCompressibleSnapshot(factory);
+
+    // when
+    copy.copySnapshot(sourceSnapshotPath, destinationPath, Set.of(ColumnFamilyScope.GLOBAL));
+
+    // then - without compaction the copy is a single uncompressed L0 file as big as the data
+    final var sstSizes = sstFileSizes(destinationPath);
+    final var sstTotal = sstSizes.stream().mapToLong(Long::longValue).sum();
+    assertThat(sstTotal).isLessThan(rawBytes / 4);
+  }
+
+  private List<Long> sstFileSizes(final Path dbPath) throws IOException {
+    try (final Stream<Path> files = Files.list(dbPath)) {
+      return files
+          .filter(p -> p.getFileName().toString().endsWith(".sst"))
+          .map(p -> p.toFile().length())
+          .toList();
+    }
+  }
+
+  private long populateCompressibleSnapshot(final ZeebeRocksDbFactory<ZbColumnFamilies> factory)
+      throws Exception {
+    final var rowsPerTransaction = 8;
+    final var transactions = 6;
+    final var valueSize = 1024 * 1024;
+    var rawBytes = 0L;
+    try (final var fromDB = factory.createDb(sourceDBPath.toFile())) {
+      final var fromCtx = fromDB.createContext();
+      final var columnFamily =
+          new RawTransactionalColumnFamily(fromDB, ZbColumnFamilies.PROCESS_CACHE);
+      for (int tx = 0; tx < transactions; tx++) {
+        final var transactionIndex = tx;
+        fromCtx.runInTransaction(
+            () -> {
+              final var ctx = (ZeebeTransaction) fromCtx.getCurrentTransaction();
+              for (int row = 0; row < rowsPerTransaction; row++) {
+                final var key =
+                    ByteBuffer.allocate(Long.BYTES)
+                        .putLong((long) transactionIndex * rowsPerTransaction + row)
+                        .array();
+                final var value = compressibleValue(valueSize);
+                try {
+                  columnFamily.put(ctx, key, key.length, value, value.length);
+                } catch (final Exception e) {
+                  throw new RuntimeException(e);
+                }
+              }
+            });
+        rawBytes += (long) rowsPerTransaction * valueSize;
+      }
+      fromDB.createSnapshot(sourceSnapshotPath.toFile());
+    }
+    return rawBytes;
+  }
+
+  private byte[] compressibleValue(final int size) {
+    final var element = "<bpmn:task id=\"Task_%d\" name=\"Do something useful\"/>\n";
+    final var builder = new StringBuilder(size + 128);
+    while (builder.length() < size) {
+      builder.append(element.formatted(random.nextInt(100)));
+    }
+    return builder.substring(0, size).getBytes(StandardCharsets.UTF_8);
   }
 
   private long computeDBSpace(final Path snapshotPath) throws IOException {
