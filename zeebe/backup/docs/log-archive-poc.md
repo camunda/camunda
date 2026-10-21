@@ -422,7 +422,8 @@ absent optionals omitted. Golden-file tests pin the bytes.
  "checkpoints":[{"checkpointId":1792137600000,"checkpointPosition":4931877,"checkpointType":"MARKER"}]}
 ```
 
-`type` is one of `TIMELINE_STARTED`, `LOG_ARCHIVED`, `SNAPSHOT_ARCHIVED`, `INDEX_SEALED`.
+`type` is one of `TIMELINE_STARTED`, `LOG_ARCHIVED`, `SNAPSHOT_ARCHIVED`, `INDEX_SEALED`, and since
+step 2 `LOG_MERGED` (fields in 20.1) and `LOG_RELEASED` (fields in 21.2).
 `TIMELINE_STARTED` carries `startIndex` and `parentTimelineId`. `SNAPSHOT_ARCHIVED` carries
 `snapshot`. `INDEX_SEALED` carries `chunk`. `recordPosition` and `recordTimestamp` are those of the
 event record.
