@@ -7,8 +7,9 @@
  */
 package io.camunda.zeebe.shared.security;
 
+import com.auth0.jwt.interfaces.DecodedJWT;
 import io.camunda.identity.sdk.Identity;
-import io.camunda.identity.sdk.authentication.AccessToken;
+import io.camunda.identity.sdk.IdentityConfiguration;
 import io.camunda.identity.sdk.tenants.dto.Tenant;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
@@ -27,12 +28,16 @@ import org.springframework.stereotype.Component;
 public final class IdentityAuthenticationManager implements AuthenticationManager {
 
   private final Identity identity;
+  private final String audience;
   private final MultiTenancyConfiguration multiTenancy;
 
   @Autowired
   public IdentityAuthenticationManager(
-      final Identity identity, final MultiTenancyConfiguration multiTenancy) {
+      final Identity identity,
+      final IdentityConfiguration identityConfiguration,
+      final MultiTenancyConfiguration multiTenancy) {
     this.identity = identity;
+    audience = identityConfiguration.getAudience();
     this.multiTenancy = multiTenancy;
   }
 
@@ -44,10 +49,13 @@ public final class IdentityAuthenticationManager implements AuthenticationManage
 
     final List<String> tenants;
     final var tokenValue = preAuthToken.token();
-    final AccessToken token;
+    final DecodedJWT token;
 
     try {
-      token = identity.authentication().verifyToken(tokenValue);
+      // Not verifyToken: for the GENERIC and MICROSOFT types it also fetches the token's
+      // permissions from Identity over REST on every request, and nothing reads them. Same
+      // signature, expiry and audience checks, with the audience verifyToken would use.
+      token = identity.authentication().verifyAndDecode(tokenValue, audience);
     } catch (final Exception e) {
       throw new BadCredentialsException(e.getMessage(), e);
     }
