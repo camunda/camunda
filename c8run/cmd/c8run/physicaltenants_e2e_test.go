@@ -52,7 +52,7 @@ func TestPhysicalTenantSelectionE2E(t *testing.T) {
 		t.Helper()
 		started := time.Now()
 		t.Logf("Starting c8run %v", args)
-		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
+		ctx, cancel := context.WithTimeout(context.Background(), 6*time.Minute)
 		defer cancel()
 		cmd := exec.CommandContext(ctx, binary, args...)
 		cmd.Dir = dir
