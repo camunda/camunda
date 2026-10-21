@@ -395,6 +395,58 @@ continued on broker 1 with term 2, ranges contiguous (e.g. 14651-14904, 14905-15
 restore to the first backup refused with "below the restore floor of partition 2 .. log up to index 17976
 was released", restore to a recent backup (snapshot 22504 / 24288) worked and 8 jobs were activatable.
 
+### K. Mode B: one authority
+
+Scenario `k-authority` is `j-merge` plus `ZEEBE_BROKER_DATA_BACKUP_LOGARCHIVE_COMPACTIONMODE=AUTHORITY`
+(spec section 25). The cluster only writes small objects and moves the restore hold H; the event plane
+is the only one that compacts and deletes. `event-plane.sh` starts it with the rollup settings of J and
+`authority.l1-target-bytes=1MB`, `authority.l1-max-age=PT1M`, `authority.deletion-grace=PT30S`,
+`retention=PT10M`. Export `SCENARIO=k-authority` in every shell that calls `event-plane.sh`.
+
+```bash
+cd zeebe/backup/docs/log-archive-manual && source ./env.sh && export SCENARIO=k-authority
+./cluster.sh stop; ./cluster.sh wipe; rm -rf "$WORK/store/k-authority"
+./event-plane.sh start && ./cluster.sh start k-authority && ./api.sh deploy
+# load for about 12 minutes: a loop of  ./api.sh load 20 rN 8000; ./api.sh complete 20; sleep 3
+```
+
+Event plane API used below: `/v1/log-archive/default/default/partitions/1/timelines/tl-0/progress`,
+`.../activity?limit=500`, `.../bucket` (basic auth `demo`/`demo`). Store folders:
+`$STORE/k-authority/log-archive/tl-0/p<n>/{commits,maintenance,data}`.
+
+1. **K1, mode and hold.** **Pass:** `commits/...01.json` is `TIMELINE_STARTED` with
+   `"compactionMode":"AUTHORITY"`; `progress` says `AUTHORITY`; no `LOG_MERGED` or `LOG_RELEASED` entry
+   exists; `HOLD_MOVED` entries appear after about 3 minutes and `progress.hold.index` rises; the UI shows
+   the badge "mode B" and H instead of M and R in the ownership bar.
+2. **K2, compaction.** After 1 to 2 minutes. **Pass:** `maintenance/` holds `COMPACTED` entries with keys
+   `data/<first>-<last>-c<seq>.seg`, also for ranges above H; the replaced level-0 objects are `REPLACED`
+   in the bucket view and are gone from `data/` about 30 s later (activity `OBJECTS_DELETED`); no
+   `COMPACTION_FAILED` in the activity and none in `$WORK/ep.log`; bucket view has no `UNKNOWN`.
+3. **K3, below the hold.** After 5 to 10 minutes. **Pass:** `COMPACTED` entries of level 2 and the
+   `REMOVED` entry (retention `PT10M`) only have `lastIndex` / `upToIndex` below the hold H of their base
+   commit; `progress.retained.index` rises; the first `data/` key moves.
+4. **K4, the cluster deletes nothing.** **Pass:** the broker logs contain no cleaner or deletion lines
+   (`grep -ci "delet" $WORK/broker-*.log` only matches `BackupRetention ... initialized`), and every object
+   that disappeared from `data/` was replaced or removed by a `maintenance/` entry.
+5. **K5, event plane rebuild.** `./event-plane.sh stop && ./event-plane.sh start` under load (empty catalog).
+   **Pass:** `./event-plane.sh check` passes; `progress` shows the same hold and the current objects of the
+   timeline (`objects` count equals the current objects of the bucket view), no `UNKNOWN`, no object below
+   the hold lost, replaced objects deleted again after the grace period.
+6. **K6, restore.** Stop the load and the cluster, copy the store (`cp -R "$STORE/k-authority"
+   "$STORE/k-authority-copy"`), `export STORE_OVERRIDE=$STORE/k-authority-copy`, `./cluster.sh wipe`. Take
+   the oldest `checkpoints[]` id of the commit entries as `OLD` and a recent one as `NEW`.
+   `./restore.sh k-authority --logArchive.timeline=tl-0 --logArchive.checkpointId=$OLD`. **Pass:** refused
+   with "restore point .. is below the restore hold of partition ..". The same with `$NEW`: "restored" for
+   all brokers with the new timeline `tl-0.r<NEW>`, `compactionMode` `AUTHORITY`; start the cluster.
+
+**Run on 2026-10-21:** K1 to K5 pass (first `COMPACTED` after 1 minute, `HOLD_MOVED` at 3 minutes, level-2
+`COMPACTED` and a `REMOVED` below H after about 6 minutes, final hold 10141 / 11134, no `COMPACTION_FAILED`,
+no cleaner deletion in the broker logs, rebuild of the catalog consistent). K6 refused `OLD` with the
+expected message, but restore of any point first failed with `MismatchedInputException: Cannot map null into
+type long` for `MaintenanceEntry.object.term`: the event plane writes the objects of `COMPACTED` entries
+without `term`, the restore requires it. After adding `"term":1` to the entries in the store copy `NEW`
+restored.
+
 ### Snapshot checks (S)
 
 - **Snapshot choice**, for every archive restore: take "Restoring partition N to checkpoint … at

@@ -45,7 +45,7 @@ broker_env() {
   )
   case "$scenario" in
     a-classic) ;;
-    b-continuous|d-both|g-brownfield|h-rdbms|h-handover|h-compacted|j-merge)
+    b-continuous|d-both|g-brownfield|h-rdbms|h-handover|h-compacted|j-merge|k-authority)
       env+=("CAMUNDA_DATA_PRIMARYSTORAGE_BACKUP_CONTINUOUS=true"
             "CAMUNDA_DATA_PRIMARYSTORAGE_BACKUP_SCHEDULE=PT1M"
             "CAMUNDA_DATA_PRIMARYSTORAGE_BACKUP_CHECKPOINTINTERVAL=PT15S"
@@ -53,15 +53,15 @@ broker_env() {
             "CAMUNDA_DATA_PRIMARYSTORAGE_BACKUP_RETENTION_CLEANUPSCHEDULE=PT1H") ;;
   esac
   case "$scenario" in
-    i-eventplane|j-merge)
+    i-eventplane|j-merge|k-authority)
       # announce every commit entry to the event plane (event-plane.sh start)
       env+=("ZEEBE_BROKER_DATA_BACKUP_LOGARCHIVE_EVENTPLANE_URL=http://localhost:$EP_PORT"
             "ZEEBE_BROKER_DATA_BACKUP_LOGARCHIVE_EVENTPLANE_USERNAME=demo"
             "ZEEBE_BROKER_DATA_BACKUP_LOGARCHIVE_EVENTPLANE_PASSWORD=demo") ;;
   esac
   case "$scenario" in
-    j-merge)
-      # manual scenario J: merge often, release and roll up quickly
+    j-merge|k-authority)
+      # manual scenarios J and K: merge often, release and roll up quickly
       # the backup schedule is the continuous block's PT1M, shortened to 30 seconds
       env+=("CAMUNDA_DATA_PRIMARYSTORAGE_BACKUP_SCHEDULE=PT30S"
             # journal segments of J_SEGMENT_SIZE (default 8MB, 128MB in production), merged objects in
@@ -72,6 +72,11 @@ broker_env() {
             "ZEEBE_BROKER_DATA_BACKUP_LOGARCHIVE_CLEANUPGRACEPERIOD=PT30S"
             "ZEEBE_BROKER_DATA_BACKUP_LOGARCHIVE_RETENTIONWINDOW=PT3M"
             "ZEEBE_BROKER_DATA_BACKUP_LOGARCHIVE_RELEASEINTERVAL=PT10S") ;;
+  esac
+  case "$scenario" in
+    k-authority)
+      # manual scenario K: mode B, the event plane is the only one that compacts and deletes
+      env+=("ZEEBE_BROKER_DATA_BACKUP_LOGARCHIVE_COMPACTIONMODE=AUTHORITY") ;;
   esac
   case "$scenario" in
     h-*)
@@ -88,7 +93,7 @@ broker_env() {
             "CAMUNDA_CLUSTER_NETWORK_MAXMESSAGESIZE=512KB") ;;
   esac
   case "$scenario" in
-    c-archive|d-both|e-kill|f-outage|g-brownfield|h-handover|h-compacted|i-eventplane|j-merge)
+    c-archive|d-both|e-kill|f-outage|g-brownfield|h-handover|h-compacted|i-eventplane|j-merge|k-authority)
       # g-brownfield and h-handover/h-compacted start without the log archive (the old cluster);
       # LOG_ARCHIVE=on enables it for the upgraded cluster, see cluster.sh upgrade.
       if [ "${scenario#g-}" = "$scenario" ] && [ "${scenario#h-}" = "$scenario" ] || [ "${LOG_ARCHIVE:-off}" = on ]; then

@@ -22,6 +22,17 @@ case "$1" in
              --camunda.event-plane.log-archive.rollup.interval=PT10S
              --camunda.event-plane.log-archive.retention=PT10M)
     fi
+    if [ "$S" = k-authority ]; then
+      # k-authority: the same rollup, and the authority compacts L1 objects of 1MB or 1 minute, deletes after 30 seconds
+      extra=(--camunda.event-plane.log-archive.rollup.enabled=true
+             --camunda.event-plane.log-archive.rollup.period=PT4M
+             --camunda.event-plane.log-archive.rollup.delay=PT10S
+             --camunda.event-plane.log-archive.rollup.interval=PT10S
+             --camunda.event-plane.log-archive.retention=PT10M
+             --camunda.event-plane.log-archive.authority.l1-target-bytes=1MB
+             --camunda.event-plane.log-archive.authority.l1-max-age=PT1M
+             --camunda.event-plane.log-archive.authority.deletion-grace=PT30S)
+    fi
     nohup java -jar "$EP_DIR/server/target/event-plane-server-0-SNAPSHOT.jar" --spring.profiles.active=demo \
       --server.port="$EP_PORT" --camunda.event-plane.log-archive.default-store="$(store_of "$S")" \
       "${extra[@]}" > "$WORK/ep.log" 2>&1 &
