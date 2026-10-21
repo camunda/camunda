@@ -253,8 +253,8 @@ class TenantAwareAuthorizationCheckPortTest {
         new TenantAwareAuthorizationCheckPort(
             Map.of("tenant-a", checkPort("tenant-a", scopeRepository)), true, claimsResolver);
 
-    // when / then — CSL's fail-hard forScope(null) surfaces rather than silently resolving against
-    // tenant-a's storage, which would break tenant isolation for an unstamped request
+    // when / then — a check without a tenant fails instead of using tenant-a's storage, which
+    // would break tenant isolation
     assertThatIllegalStateException()
         .isThrownBy(() -> perTenantPort.check(authentication, componentAccess(COMPONENT_ADMIN)));
   }

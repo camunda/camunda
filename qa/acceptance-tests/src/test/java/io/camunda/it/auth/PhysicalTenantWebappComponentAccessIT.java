@@ -73,11 +73,7 @@ class PhysicalTenantWebappComponentAccessIT {
     final HttpResponse<String> response = getOperateIn(TENANT_AUTHORIZATIONS_OFF);
 
     // then
-    assertThat(response.statusCode())
-        .isNotIn(
-            HttpURLConnection.HTTP_UNAUTHORIZED,
-            HttpURLConnection.HTTP_FORBIDDEN,
-            HttpURLConnection.HTTP_MOVED_TEMP);
+    assertThat(response.statusCode()).isEqualTo(HttpURLConnection.HTTP_OK);
   }
 
   private static HttpResponse<String> getOperateIn(final String physicalTenantId) {
