@@ -234,6 +234,14 @@ public class RaftPartitionServer implements HealthMonitorable {
     return server.getContext().getLog().openCommittedReader();
   }
 
+  /**
+   * Returns the first index of each segment of the local journal, in ascending order; every segment
+   * but the last one is complete. Safe to call from any thread.
+   */
+  public List<Long> getSegmentFirstIndexes() {
+    return server.getContext().getLog().getSegmentFirstIndexes();
+  }
+
   public RaftLogReader openUncommittedReader() {
     return server.getContext().getLog().openUncommittedReader();
   }

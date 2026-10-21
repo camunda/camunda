@@ -30,6 +30,7 @@ import io.camunda.zeebe.util.VisibleForTesting;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.util.Collection;
+import java.util.List;
 import java.util.Objects;
 import java.util.OptionalLong;
 import java.util.SortedMap;
@@ -226,6 +227,11 @@ public final class SegmentedJournal implements Journal {
     final var firstAsqn = findFirstAsqn(tailSegments);
 
     return new SegmentInfo(segmentPaths, firstAsqn);
+  }
+
+  @Override
+  public List<Long> getSegmentFirstIndexes() {
+    return segments.getSegmentFirstIndexes();
   }
 
   /**

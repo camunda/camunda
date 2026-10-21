@@ -106,6 +106,11 @@ final class SegmentsManager implements AutoCloseable {
     return segment != null ? segment.getValue() : null;
   }
 
+  /** The first index of each segment, in ascending order; safe to call from any thread. */
+  List<Long> getSegmentFirstIndexes() {
+    return List.copyOf(segments.keySet());
+  }
+
   @Nullable Segment getLastSegment() {
     final Map.Entry<Long, Segment> segment = segments.lastEntry();
     return segment != null ? segment.getValue() : null;
