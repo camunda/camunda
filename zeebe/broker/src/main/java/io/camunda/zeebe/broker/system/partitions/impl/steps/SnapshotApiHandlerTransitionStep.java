@@ -65,7 +65,14 @@ public class SnapshotApiHandlerTransitionStep implements PartitionTransitionStep
                         context
                             .snapshotCopy()
                             .copySnapshot(from, to, Set.of(ColumnFamilyScope.GLOBAL)),
-                    concurrency));
+                    concurrency,
+                    (int)
+                        context
+                            .getBrokerCfg()
+                            .getExperimental()
+                            .getRaft()
+                            .getSnapshotChunkSize()
+                            .toBytes()));
     final ActorFuture<Void> installed = context.getConcurrencyControl().createFuture();
     context.getActorSchedulingService().submitActor(handler).onComplete(installed);
     installed.onComplete(

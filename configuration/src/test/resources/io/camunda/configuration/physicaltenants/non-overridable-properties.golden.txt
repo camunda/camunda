@@ -61,6 +61,7 @@ cluster.node-id-provider.type
 cluster.partitioning.fixed
 cluster.partitioning.scheme
 cluster.partitioning.zone-aware.zones
+cluster.raft.bootstrap-snapshot-request-timeout
 cluster.raft.configuration-change-timeout
 cluster.raft.election-timeout
 cluster.raft.flush-delay
