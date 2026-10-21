@@ -16,13 +16,17 @@ type LegacySharedStateFlag =
 	| 'hideInputMappingsHelperBanner'
 	| 'hideOutputMappingsHelperBanner';
 
-function getLegacySharedStateFlag(key: LegacySharedStateFlag) {
+function getLegacySharedState<T>(key: string, schema: z.ZodType<T>): T | undefined {
 	try {
-		const result = z.object({[key]: z.boolean()}).safeParse(JSON.parse(localStorage.getItem('sharedState') ?? '{}'));
-		return result.success && result.data[key] === true;
+		const result = z.object({[key]: schema}).safeParse(JSON.parse(localStorage.getItem('sharedState') ?? '{}'));
+		return result.success ? result.data[key] : undefined;
 	} catch {
-		return false;
+		return undefined;
 	}
 }
 
-export {getLegacySharedStateFlag};
+function getLegacySharedStateFlag(key: LegacySharedStateFlag) {
+	return getLegacySharedState(key, z.boolean()) === true;
+}
+
+export {getLegacySharedState, getLegacySharedStateFlag};

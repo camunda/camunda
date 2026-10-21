@@ -22,6 +22,7 @@ const {
 	'tasklist.hasCompletedTask': z.boolean(),
 	'tasklist.hasConsentedToStartProcess': z.boolean(),
 	'tasklist.customFilters': z.record(z.string(), namedCustomFiltersSchema),
+	'operate.instanceHistorySortOrder': z.enum(['asc', 'desc']),
 	'operate.hideMoveModificationHelperModal': z.boolean(),
 	'operate.hideMigrationHelperModal': z.boolean(),
 	'operate.hideModificationHelperModal': z.boolean(),

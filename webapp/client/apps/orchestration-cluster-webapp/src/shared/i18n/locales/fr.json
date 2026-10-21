@@ -1493,7 +1493,36 @@
 					"migrated": "Migrée {{date}}",
 					"forbidden": "Vous n’avez pas l’autorisation de consulter l’historique de l’instance",
 					"error": "Impossible de récupérer l’historique de l’instance. Veuillez actualiser la page.",
-					"anchorError": "Impossible de sélectionner l’instance ad hoc. Veuillez réessayer."
+					"anchorError": "Impossible de sélectionner l’instance ad hoc. Veuillez réessayer.",
+					"search": {
+						"label": "Rechercher dans l'historique de l'instance",
+						"placeholder": "Nom ou ID de l'élément",
+						"statusFilter": "Filtre de statut de l'instance",
+						"status": {
+							"all": "Tous",
+							"active": "Actifs",
+							"incidents": "Incidents"
+						},
+						"latestFirst": "Plus récents d'abord",
+						"oldestFirst": "Plus anciens d'abord",
+						"results": "Résultats de la recherche",
+						"error": "Impossible de récupérer les résultats de la recherche",
+						"matchingElements": "{{count}} éléments correspondants",
+						"matchingElements_one": "{{count}} élément correspondant",
+						"matchingElements_other": "{{count}} éléments correspondants",
+						"noActive": {
+							"heading": "Aucun élément actif",
+							"description": "Tous les éléments ont terminé leur exécution"
+						},
+						"noIncidents": {
+							"heading": "Aucun élément avec incident",
+							"description": "Il n'y a actuellement aucun incident"
+						},
+						"noMatches": {
+							"heading": "Aucun élément correspondant",
+							"description": "Essayez un autre nom ou ID"
+						}
+					}
 				},
 				"diagram": {
 					"downloadXml": "Télécharger le XML",

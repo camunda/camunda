@@ -1490,7 +1490,36 @@
 					"migrated": "Migriert {{date}}",
 					"forbidden": "Sie haben keine Berechtigung, die Instanzhistorie anzuzeigen",
 					"error": "Die Instanzhistorie konnte nicht geladen werden. Bitte aktualisieren Sie die Seite.",
-					"anchorError": "Die Ad-hoc-Instanz konnte nicht ausgewählt werden. Bitte versuchen Sie es erneut."
+					"anchorError": "Die Ad-hoc-Instanz konnte nicht ausgewählt werden. Bitte versuchen Sie es erneut.",
+					"search": {
+						"label": "Instanzhistorie durchsuchen",
+						"placeholder": "Elementname oder ID",
+						"statusFilter": "Filter nach Instanzstatus",
+						"status": {
+							"all": "Alle",
+							"active": "Aktiv",
+							"incidents": "Vorfälle"
+						},
+						"latestFirst": "Neueste zuerst",
+						"oldestFirst": "Älteste zuerst",
+						"results": "Suchergebnisse",
+						"error": "Suchergebnisse konnten nicht abgerufen werden",
+						"matchingElements": "{{count}} passende Elemente",
+						"matchingElements_one": "{{count}} passendes Element",
+						"matchingElements_other": "{{count}} passende Elemente",
+						"noActive": {
+							"heading": "Keine aktiven Elemente",
+							"description": "Alle Elemente wurden vollständig ausgeführt"
+						},
+						"noIncidents": {
+							"heading": "Keine Elemente mit Vorfällen",
+							"description": "Derzeit gibt es keine Vorfälle"
+						},
+						"noMatches": {
+							"heading": "Keine passenden Elemente",
+							"description": "Versuchen Sie einen anderen Namen oder eine andere ID"
+						}
+					}
 				},
 				"diagram": {
 					"downloadXml": "XML herunterladen",

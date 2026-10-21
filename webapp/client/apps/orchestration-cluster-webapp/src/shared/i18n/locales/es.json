@@ -1490,7 +1490,36 @@
 					"migrated": "Migrada {{date}}",
 					"forbidden": "No tiene permiso para ver el historial de la instancia",
 					"error": "No se pudo obtener el historial de la instancia. Actualice la página.",
-					"anchorError": "No se pudo seleccionar la instancia ad hoc. Inténtelo de nuevo."
+					"anchorError": "No se pudo seleccionar la instancia ad hoc. Inténtelo de nuevo.",
+					"search": {
+						"label": "Buscar en el historial de la instancia",
+						"placeholder": "Nombre o ID del elemento",
+						"statusFilter": "Filtro de estado de la instancia",
+						"status": {
+							"all": "Todos",
+							"active": "Activos",
+							"incidents": "Incidentes"
+						},
+						"latestFirst": "Más recientes primero",
+						"oldestFirst": "Más antiguos primero",
+						"results": "Resultados de la búsqueda",
+						"error": "No se pudieron obtener los resultados de la búsqueda",
+						"matchingElements": "{{count}} elementos coincidentes",
+						"matchingElements_one": "{{count}} elemento coincidente",
+						"matchingElements_other": "{{count}} elementos coincidentes",
+						"noActive": {
+							"heading": "Ningún elemento activo",
+							"description": "Todos los elementos han terminado de ejecutarse"
+						},
+						"noIncidents": {
+							"heading": "Ningún elemento con incidentes",
+							"description": "Actualmente no hay incidentes"
+						},
+						"noMatches": {
+							"heading": "Ningún elemento coincidente",
+							"description": "Pruebe con otro nombre o ID"
+						}
+					}
 				},
 				"diagram": {
 					"downloadXml": "Descargar XML",

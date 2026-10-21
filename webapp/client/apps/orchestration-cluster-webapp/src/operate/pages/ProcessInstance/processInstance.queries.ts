@@ -12,6 +12,7 @@ import type {
 	ProcessInstance,
 	QueryProcessInstanceIncidentsResponseBody,
 	QueryElementInstancesRequestBody,
+	QuerySortOrder,
 } from '@camunda/camunda-api-zod-schemas/8.11';
 import {request, requestErrorSchema} from '#/shared/http/request';
 import {ForbiddenError} from '#/shared/errors';
@@ -22,10 +23,12 @@ import {isInstanceRunning, shouldPollProcessInstance} from '#/operate/shared/uti
 const POLLING_INTERVAL_MS = 5000;
 const PROCESS_INSTANCE_INCIDENTS_COUNT_KEY = 'processInstanceIncidentsCount';
 const SELECTION_INCIDENTS_COUNT_KEY = 'selectionIncidentsCount';
-const historySort = [
-	{field: 'startDate', order: 'DESC'},
-	{field: 'elementInstanceKey', order: 'DESC'},
-] satisfies QueryElementInstancesRequestBody['sort'];
+function historySort(order: QuerySortOrder) {
+	return [
+		{field: 'startDate', order},
+		{field: 'elementInstanceKey', order},
+	] satisfies QueryElementInstancesRequestBody['sort'];
+}
 
 async function instanceRequest<T>(input: Request, signal: AbortSignal): Promise<T> {
 	const {response, error} = await request(new Request(input, {signal}));

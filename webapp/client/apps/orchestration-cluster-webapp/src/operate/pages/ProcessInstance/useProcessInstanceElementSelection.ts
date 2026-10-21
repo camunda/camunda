@@ -10,7 +10,11 @@ import {createContext, useCallback, useContext, useEffect, useRef} from 'react';
 import {skipToken, useQuery} from '@tanstack/react-query';
 import {useNavigate, useRouter} from '@tanstack/react-router';
 import {useTranslation} from 'react-i18next';
-import type {ElementInstance, QueryElementInstancesResponseBody} from '@camunda/camunda-api-zod-schemas/8.11';
+import type {
+	ElementInstance,
+	QueryElementInstancesResponseBody,
+	QuerySortOrder,
+} from '@camunda/camunda-api-zod-schemas/8.11';
 import {endpoints} from '#/shared/http/endpoints';
 import {ForbiddenError} from '#/shared/errors';
 import {notificationsStore} from '#/shared/notifications/notifications.store';
@@ -21,6 +25,7 @@ function useResolvedSelection(
 	selection: ProcessInstanceSelection,
 	onHistoryForbidden: (error: ForbiddenError) => void,
 	isPolling: boolean,
+	sortOrder: QuerySortOrder,
 ) {
 	const navigate = useNavigate();
 	const router = useRouter();
@@ -142,7 +147,7 @@ function useResolvedSelection(
 					const result = await instanceRequest<QueryElementInstancesResponseBody>(
 						endpoints.queryElementInstances({
 							filter: {elementInstanceScopeKey: instance.elementInstanceKey},
-							sort: historySort,
+							sort: historySort(sortOrder),
 							page: {from: 0, limit: 1},
 						}),
 						current.controller.signal,
@@ -176,7 +181,7 @@ function useResolvedSelection(
 				anchorElementId,
 			});
 		},
-		[replaceSelection, t, onHistoryForbidden],
+		[replaceSelection, t, onHistoryForbidden, sortOrder],
 	);
 	const isSelected = useCallback(
 		(id: string, key?: string, multiInstanceBody = false) =>
