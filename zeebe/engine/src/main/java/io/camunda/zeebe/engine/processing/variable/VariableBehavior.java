@@ -17,6 +17,7 @@ import io.camunda.zeebe.engine.state.variable.DocumentEntry;
 import io.camunda.zeebe.engine.state.variable.IndexedDocument;
 import io.camunda.zeebe.engine.state.variable.VariableInstance;
 import io.camunda.zeebe.engine.util.validation.NestingDepthValidator;
+import io.camunda.zeebe.protocol.impl.record.value.variable.VariableMetadataRecord;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableRecord;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableSourceRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
@@ -28,6 +29,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
 import org.agrona.DirectBuffer;
+import org.jspecify.annotations.Nullable;
 
 /**
  * A behavior which allows processors to mutate the variable state. Use this anywhere where you
@@ -45,6 +47,7 @@ public final class VariableBehavior {
 
   private final IndexedDocument indexedDocument = new IndexedDocument();
   private final VariableRecord variableRecord = new VariableRecord();
+  private final VariableMetadataRecord noMetadata = new VariableMetadataRecord();
   private final VariableSourceRecord variableSourceRecord;
 
   public VariableBehavior(
@@ -94,6 +97,7 @@ public final class VariableBehavior {
    * @param bpmnProcessId the BPMN process ID to be associated with each variable
    * @param tenantId the tenant ID to be associated with each variable
    * @param document the document to merge
+   * @param metadataLookup provides the metadata of each variable
    */
   public void mergeLocalDocument(
       final long scopeKey,
@@ -103,7 +107,8 @@ public final class VariableBehavior {
       final int storageOrdinal,
       final DirectBuffer bpmnProcessId,
       final String tenantId,
-      final DirectBuffer document)
+      final DirectBuffer document,
+      final VariableMetadataLookup metadataLookup)
       throws VariableValidationException {
     validateBuffer(scopeKey, document);
     indexedDocument.index(document);
@@ -122,7 +127,8 @@ public final class VariableBehavior {
     final List<VariableEvent> variableEvents = new ArrayList<>();
     for (final DocumentEntry entry : indexedDocument) {
       applyEntryToRecord(entry);
-      final Optional<VariableEvent> variableEvent = setLocalVariable(variableRecord);
+      final Optional<VariableEvent> variableEvent =
+          setLocalVariable(variableRecord, metadataLookup.forVariable(entry.getName()));
       variableEvent.ifPresent(variableEvents::add);
     }
 
@@ -151,6 +157,7 @@ public final class VariableBehavior {
    * @param rootProcessInstanceKey the root process instance key to be associated with each variable
    * @param storageOrdinal the storage ordinal for the variable
    * @param document the document to merge
+   * @param metadataLookup provides the metadata of each variable
    */
   public void mergeDocument(
       final long scopeKey,
@@ -160,7 +167,8 @@ public final class VariableBehavior {
       final int storageOrdinal,
       final DirectBuffer bpmnProcessId,
       final String tenantId,
-      final DirectBuffer document)
+      final DirectBuffer document,
+      final VariableMetadataLookup metadataLookup)
       throws VariableValidationException {
     validateBuffer(scopeKey, document);
     indexedDocument.index(document);
@@ -187,9 +195,12 @@ public final class VariableBehavior {
         final DocumentEntry entry = entryIterator.next();
         final VariableInstance variableInstance =
             variableState.getVariableInstanceLocal(currentScope, entry.getName());
+        final VariableMetadataRecord entryMetadata = metadataLookup.forVariable(entry.getName());
 
-        if (variableInstance != null && !variableInstance.getValue().equals(entry.getValue())) {
+        if (variableInstance != null
+            && hasChanged(variableInstance, entry.getValue(), entryMetadata)) {
           applyEntryToRecord(entry);
+          variableRecord.setMetadata(metadataToWrite(entryMetadata, variableInstance));
           stateWriter.appendFollowUpEvent(
               variableInstance.getKey(), VariableIntent.UPDATED, variableRecord);
           variableEvents.add(
@@ -205,7 +216,8 @@ public final class VariableBehavior {
     variableRecord.setScopeKey(currentScope);
     for (final DocumentEntry entry : indexedDocument) {
       applyEntryToRecord(entry);
-      final Optional<VariableEvent> variableEvent = setLocalVariable(variableRecord);
+      final Optional<VariableEvent> variableEvent =
+          setLocalVariable(variableRecord, metadataLookup.forVariable(entry.getName()));
       variableEvent.ifPresent(variableEvents::add);
     }
 
@@ -229,6 +241,8 @@ public final class VariableBehavior {
    * @param value a buffer containing the value of the variable as MessagePack
    * @param valueOffset the offset of the value in the {@code value} buffer
    * @param valueLength the length of the value in the {@code value} buffer
+   * @param metadataLookup provides the metadata of the variable, it replaces the metadata of an
+   *     existing variable
    */
   public void setLocalVariable(
       final long scopeKey,
@@ -241,7 +255,8 @@ public final class VariableBehavior {
       final DirectBuffer name,
       final DirectBuffer value,
       final int valueOffset,
-      final int valueLength) {
+      final int valueLength,
+      final VariableMetadataLookup metadataLookup) {
 
     variableRecord
         .setScopeKey(scopeKey)
@@ -254,24 +269,28 @@ public final class VariableBehavior {
         .setName(name)
         .setValue(value, valueOffset, valueLength);
 
-    final Optional<VariableEvent> variableEvent = setLocalVariable(variableRecord);
+    final Optional<VariableEvent> variableEvent =
+        setLocalVariable(variableRecord, metadataLookup.forVariable(name));
     final var variableEvents = variableEvent.map(List::of).orElseGet(List::of);
 
     conditionalBehavior.evaluateConditionals(processInstanceKey, variableEvents);
   }
 
-  private Optional<VariableEvent> setLocalVariable(final VariableRecord record) {
+  private Optional<VariableEvent> setLocalVariable(
+      final VariableRecord record, final @Nullable VariableMetadataRecord metadata) {
     Optional<VariableEvent> event = Optional.empty();
     final VariableInstance variableInstance =
         variableState.getVariableInstanceLocal(record.getScopeKey(), record.getNameBuffer());
     if (variableInstance == null) {
+      record.setMetadata(metadataToWrite(metadata, null));
       final long key = keyGenerator.nextKey();
       stateWriter.appendFollowUpEvent(key, VariableIntent.CREATED, record);
       event =
           Optional.of(
               new VariableEvent(
                   record.getScopeKey(), VariableIntent.CREATED, getVariableRecordCopy(record)));
-    } else if (!variableInstance.getValue().equals(record.getValueBuffer())) {
+    } else if (hasChanged(variableInstance, record.getValueBuffer(), metadata)) {
+      record.setMetadata(metadataToWrite(metadata, variableInstance));
       stateWriter.appendFollowUpEvent(variableInstance.getKey(), VariableIntent.UPDATED, record);
       event =
           Optional.of(
@@ -284,6 +303,27 @@ public final class VariableBehavior {
 
   private void applyEntryToRecord(final DocumentEntry entry) {
     variableRecord.setName(entry.getName()).setValue(entry.getValue());
+  }
+
+  private boolean hasChanged(
+      final VariableInstance variableInstance,
+      final DirectBuffer value,
+      final @Nullable VariableMetadataRecord metadata) {
+    return !variableInstance.getValue().equals(value)
+        || (metadata != null
+            && !variableInstance
+                .getMetadata()
+                .getProtectionModes()
+                .equals(metadata.getProtectionModes()));
+  }
+
+  private VariableMetadataRecord metadataToWrite(
+      final @Nullable VariableMetadataRecord metadata,
+      final @Nullable VariableInstance variableInstance) {
+    if (metadata != null) {
+      return metadata;
+    }
+    return variableInstance != null ? variableInstance.getMetadata() : noMetadata;
   }
 
   private VariableRecord getVariableRecordCopy(final VariableRecord variableRecord) {
