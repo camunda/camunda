@@ -23,6 +23,7 @@ import org.camunda.bpm.model.xml.ModelBuilder;
 import org.camunda.bpm.model.xml.impl.ModelImpl;
 import org.camunda.bpm.model.xml.impl.ModelInstanceImpl;
 import org.camunda.bpm.model.xml.instance.DomDocument;
+import org.camunda.bpm.model.xml.type.ModelElementType;
 
 /**
  * The Bpmn Model
@@ -49,5 +50,19 @@ public class BpmnModelInstanceImpl extends ModelInstanceImpl implements BpmnMode
   @Override
   public BpmnModelInstance clone() {
     return new BpmnModelInstanceImpl(model, modelBuilder, document.clone());
+  }
+
+  /**
+   * All model instances share the model builder of {@link
+   * io.camunda.zeebe.model.bpmn.Bpmn#INSTANCE}, and registering a type mutates it without
+   * synchronization. Model instances are read from many threads at once (e.g. one stream processor
+   * and one exporter per partition), so registrations must be serialized to avoid a {@link
+   * java.util.ConcurrentModificationException}.
+   */
+  @Override
+  public ModelElementType registerGenericType(final String namespaceUri, final String localName) {
+    synchronized (modelBuilder) {
+      return super.registerGenericType(namespaceUri, localName);
+    }
   }
 }
