@@ -190,9 +190,8 @@ class WebAppAuthorizationCheckPortConfigurationTest {
     final var perTenantReaders =
         new PhysicalTenantSearchClientReaders(Map.of("tenant-a", readersStub));
 
-    // when / then: CSL's fail-hard forScope(null) surfaces rather than silently resolving against
-    // tenant-a's storage, proving this bean method actually wires the per-tenant branch (not just
-    // the single-default-entry one every other test in this class exercises)
+    // when / then: a check without a tenant fails instead of using tenant-a's storage, which
+    // shows this bean wired one port per tenant
     new WebApplicationContextRunner()
         .withBean(
             AuthorizationScopeRepositoryPort.class,
@@ -269,6 +268,12 @@ class WebAppAuthorizationCheckPortConfigurationTest {
   @Test
   void shouldResolveWebAppAuthorizationFlagFromRequestPhysicalTenant() {
     // given: the default tenant has authorizations off, tenanta on, tenantb off
+    final var perTenantReaders =
+        new PhysicalTenantSearchClientReaders(
+            Map.of(
+                "default", readersWithoutGrants(),
+                "tenanta", readersWithoutGrants(),
+                "tenantb", readersWithoutGrants()));
     final var securityProperties =
         new PhysicalTenantSecurityProperties(
             Map.of(
@@ -277,6 +282,7 @@ class WebAppAuthorizationCheckPortConfigurationTest {
                 "tenantb", securityProperties(false)));
 
     runner
+        .withBean(PhysicalTenantSearchClientReaders.class, () -> perTenantReaders)
         .withBean(PhysicalTenantSecurityProperties.class, () -> securityProperties)
         .withUserConfiguration(WebAppAuthorizationCheckPortConfiguration.class)
         .run(
@@ -315,6 +321,62 @@ class WebAppAuthorizationCheckPortConfigurationTest {
             });
   }
 
+  @ParameterizedTest(name = "default tenant authorizations enabled: {0}")
+  @ValueSource(booleans = {true, false})
+  void shouldApplyDefaultPhysicalTenantFlagToWebAppRequestsWithoutSecondaryStorage(
+      final boolean defaultAuthorizationsEnabled) {
+    // given: no per-tenant secondary storage, so every check uses the default tenant's port;
+    // tenanta has the opposite flag
+    final var securityProperties =
+        new PhysicalTenantSecurityProperties(
+            Map.of(
+                "default", securityProperties(defaultAuthorizationsEnabled),
+                "tenanta", securityProperties(!defaultAuthorizationsEnabled)));
+
+    runner
+        .withBean(PhysicalTenantSecurityProperties.class, () -> securityProperties)
+        .withUserConfiguration(WebAppAuthorizationCheckPortConfiguration.class)
+        .run(
+            ctx -> {
+              final var enabledPort = ctx.getBean(WebAppAuthorizationEnabledPort.class);
+
+              // when / then: the filter follows the same flag as the port it calls
+              assertThat(enabledPort.isAuthorizationEnabled(requestInPhysicalTenant("tenanta")))
+                  .isEqualTo(defaultAuthorizationsEnabled);
+            });
+  }
+
+  @ParameterizedTest(name = "root authorizations enabled: {0}")
+  @ValueSource(booleans = {true, false})
+  void shouldApplyRootFlagToWebAppRequestsWhenAnotherCheckPortWins(
+      final boolean rootAuthorizationsEnabled) {
+    // given: a host AuthorizationCheckPort replaces the per-tenant one; the default tenant and
+    // tenantb have the opposite flag to root
+    final var securityProperties =
+        new PhysicalTenantSecurityProperties(
+            Map.of(
+                "default", securityProperties(!rootAuthorizationsEnabled),
+                "tenantb", securityProperties(!rootAuthorizationsEnabled)));
+
+    new WebApplicationContextRunner()
+        .withBean(AuthorizationCheckPort.class, () -> mock(AuthorizationCheckPort.class))
+        .withBean(
+            CamundaSecurityLibraryProperties.class,
+            () -> securityProperties(rootAuthorizationsEnabled))
+        .withBean(PhysicalTenantSecurityProperties.class, () -> securityProperties)
+        .withUserConfiguration(WebAppAuthorizationCheckPortConfiguration.class)
+        .run(
+            ctx -> {
+              assertThat(ctx.getBean(AuthorizationCheckPort.class))
+                  .isNotInstanceOf(TenantAwareAuthorizationCheckPort.class);
+              final var enabledPort = ctx.getBean(WebAppAuthorizationEnabledPort.class);
+
+              // when / then: that port applies the root flag, so the filter must too
+              assertThat(enabledPort.isAuthorizationEnabled(requestInPhysicalTenant("tenantb")))
+                  .isEqualTo(rootAuthorizationsEnabled);
+            });
+  }
+
   @Test
   void shouldFailFastAtStartupWhenPhysicalTenantHasNoSecurityProperties() {
     // given: readers exist for a physical tenant that has no security properties
@@ -339,10 +401,13 @@ class WebAppAuthorizationCheckPortConfigurationTest {
   @Test
   void shouldTreatWebAppAuthorizationAsEnabledForUnknownPhysicalTenant() {
     // given: every known tenant has authorizations off
+    final var perTenantReaders =
+        new PhysicalTenantSearchClientReaders(Map.of("default", readersWithoutGrants()));
     final var securityProperties =
         new PhysicalTenantSecurityProperties(Map.of("default", securityProperties(false)));
 
     runner
+        .withBean(PhysicalTenantSearchClientReaders.class, () -> perTenantReaders)
         .withBean(PhysicalTenantSecurityProperties.class, () -> securityProperties)
         .withUserConfiguration(WebAppAuthorizationCheckPortConfiguration.class)
         .run(
