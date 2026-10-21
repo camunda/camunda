@@ -6,7 +6,7 @@
 # own diagnostics, so this script always exits 0.
 #
 # Required env: APP_TOKEN, PROBE_LOG, REF_ADVERTISEMENT
-# Run from the repository root (uses ./mvnw).
+# Run from the repository root (reads release.properties).
 
 set -o nounset
 IFS=$'\n\t'
@@ -22,19 +22,18 @@ redact() { sed -E -e 's#//[^@/]*@#//***@#g' -e 's#(authorization|AUTHORIZATION):
   echo "=== DNS ==="
   getent hosts github.com || echo "getent exit=$?"
 
-  # The pom's <developerConnection> interpolates
-  # ${env.GITHUB_TOKEN_USR}/${env.GITHUB_TOKEN_PSW}, neither of which this
-  # workflow sets. If they survive verbatim the SCM URL carries no usable
-  # credentials -- which only bites outside the work tree, where
-  # actions/checkout's repo-scoped extraheader does not apply. Report the
-  # verdict, never the value: redact() would scrub it anyway.
-  echo "=== resolved SCM developerConnection ==="
-  conn=$(./mvnw -q -N help:evaluate -Dexpression=project.scm.developerConnection -DforceStdout 2>/dev/null)
+  # release:perform clones from the scm.url that release:prepare recorded in
+  # release.properties, not from the pom. If its
+  # ${env.GITHUB_TOKEN_USR}/${env.GITHUB_TOKEN_PSW} placeholders survived
+  # verbatim, the URL carries no usable credentials. Report the verdict, never
+  # the value: redact() would scrub it anyway.
+  echo "=== scm.url in release.properties ==="
+  scm_url=$(sed -n 's/^scm\.url=//p' release.properties 2>/dev/null)
   # SC2016: the unexpanded '${env.' literal is exactly what we are matching on.
   # shellcheck disable=SC2016
-  case "$conn" in
-    '') echo "could not evaluate" ;;
-    *'${env.'*) echo "UNRESOLVED placeholders: the SCM URL carries no usable credentials" ;;
+  case "$scm_url" in
+    '') echo "release.properties missing or without scm.url" ;;
+    *'${env.'*) echo "UNRESOLVED placeholders: the URL carries no usable credentials" ;;
     *) echo "placeholders resolved (value withheld)" ;;
   esac
 
