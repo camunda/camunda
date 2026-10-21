@@ -1,6 +1,5 @@
 import buildlogic.ARTIFACT_KIND
 import buildlogic.skipWhen
-import buildlogic.registerTestPortSlotService
 import buildlogic.requiredVersion
 import com.diffplug.gradle.spotless.SpotlessCheck
 import com.diffplug.gradle.spotless.SpotlessExtension
@@ -130,8 +129,6 @@ val testMaxForks = providers.gradleProperty("test.max.forks").orNull?.toInt() ?:
 val testRetryMaxRetries =
   providers.gradleProperty("test.max.retries").map { it.toInt() }.getOrElse(0)
 
-val testPortSlots = registerTestPortSlotService()
-
 val itPatterns = listOf("**/IT*.class", "**/*IT.class", "**/*ITCase.class")
 
 tasks.withType<Test>().configureEach {
@@ -141,10 +138,6 @@ tasks.withType<Test>().configureEach {
     maxRetries.set(testRetryMaxRetries)
     failOnPassedAfterRetry.set(false)
   }
-  // Give each running test task its own SocketUtil port range, like Maven's per-fork number.
-  usesService(testPortSlots)
-  val slots = testPortSlots
-  doFirst { systemProperty("testForkNumber", slots.get().acquire(path)) }
   jvmArgs(
     "--add-opens=java.base/java.io=ALL-UNNAMED",
     "--add-opens=java.base/jdk.internal.misc=ALL-UNNAMED",

@@ -19,7 +19,7 @@ import io.camunda.container.ExtendedConfigurationBuilder;
 import io.camunda.security.api.model.config.AuthenticationMethod;
 import io.camunda.zeebe.qa.util.cluster.util.ContextOverrideInitializer;
 import io.camunda.zeebe.qa.util.cluster.util.ContextOverrideInitializer.Bean;
-import io.camunda.zeebe.test.util.socket.SocketUtil;
+import io.camunda.zeebe.test.util.socket.PortReservations;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
@@ -63,6 +63,7 @@ public abstract class TestSpringApplication<T extends TestSpringApplication<T>>
   private final Collection<String> additionalProfiles;
   private final Collection<ApplicationContextInitializer> additionalInitializers;
   private final ReactorResourceFactory reactorResourceFactory = new ReactorResourceFactory();
+  private final PortReservations ports = new PortReservations();
   private final Set<String> refreshableKeys = new HashSet<>();
 
   /**
@@ -99,8 +100,8 @@ public abstract class TestSpringApplication<T extends TestSpringApplication<T>>
     this.additionalProfiles.add(Profile.TEST.getId());
 
     // randomize ports to allow multiple concurrent instances
-    overridePropertyIfAbsent("server.port", SocketUtil.getNextAddress().getPort());
-    overridePropertyIfAbsent("management.server.port", SocketUtil.getNextAddress().getPort());
+    overridePropertyIfAbsent("server.port", reservePort());
+    overridePropertyIfAbsent("management.server.port", reservePort());
 
     // give each application a Tomcat base directory that survives until the JVM exits. Since
     // Spring Boot 4.1, auto-generated base directories are deleted when the owning web server is
@@ -150,6 +151,21 @@ public abstract class TestSpringApplication<T extends TestSpringApplication<T>>
     }
 
     return self();
+  }
+
+  /**
+   * Makes the ports of this application available to other applications again. The ports stay
+   * reserved across {@link #stop()} and {@link #close()}, so a closed application can still be
+   * restarted on the same ports; after this it should not be started again.
+   */
+  @Override
+  public void releasePorts() {
+    ports.close();
+  }
+
+  /** Returns a free port that stays reserved for this application until {@link #releasePorts()}. */
+  protected final int reservePort() {
+    return ports.nextPort();
   }
 
   @Override
