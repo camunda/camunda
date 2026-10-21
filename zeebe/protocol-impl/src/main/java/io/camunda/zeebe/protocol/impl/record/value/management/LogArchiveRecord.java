@@ -40,9 +40,13 @@ public final class LogArchiveRecord extends UnifiedRecordValue implements LogArc
   private final LongProperty parentIndexProperty = new LongProperty("parentIndex", -1L);
   private final LongProperty parentPositionProperty = new LongProperty("parentPosition", -1L);
   private final LongProperty startedAtProperty = new LongProperty("startedAt", -1L);
+  private final LongProperty mergedIndexProperty = new LongProperty("mergedIndex", -1L);
+  private final LongProperty mergedPositionProperty = new LongProperty("mergedPosition", -1L);
+  private final LongProperty releasedIndexProperty = new LongProperty("releasedIndex", -1L);
+  private final LongProperty releasedPositionProperty = new LongProperty("releasedPosition", -1L);
 
   public LogArchiveRecord() {
-    super(16);
+    super(20);
     declareProperty(timelineIdProperty)
         .declareProperty(seqProperty)
         .declareProperty(startIndexProperty)
@@ -58,7 +62,11 @@ public final class LogArchiveRecord extends UnifiedRecordValue implements LogArc
         .declareProperty(handoverPositionProperty)
         .declareProperty(parentIndexProperty)
         .declareProperty(parentPositionProperty)
-        .declareProperty(startedAtProperty);
+        .declareProperty(startedAtProperty)
+        .declareProperty(mergedIndexProperty)
+        .declareProperty(mergedPositionProperty)
+        .declareProperty(releasedIndexProperty)
+        .declareProperty(releasedPositionProperty);
   }
 
   @Override
@@ -228,6 +236,46 @@ public final class LogArchiveRecord extends UnifiedRecordValue implements LogArc
 
   public LogArchiveRecord setStartedAt(final long startedAt) {
     startedAtProperty.setValue(startedAt);
+    return this;
+  }
+
+  @Override
+  public long getMergedIndex() {
+    return mergedIndexProperty.getValue();
+  }
+
+  public LogArchiveRecord setMergedIndex(final long mergedIndex) {
+    mergedIndexProperty.setValue(mergedIndex);
+    return this;
+  }
+
+  @Override
+  public long getMergedPosition() {
+    return mergedPositionProperty.getValue();
+  }
+
+  public LogArchiveRecord setMergedPosition(final long mergedPosition) {
+    mergedPositionProperty.setValue(mergedPosition);
+    return this;
+  }
+
+  @Override
+  public long getReleasedIndex() {
+    return releasedIndexProperty.getValue();
+  }
+
+  public LogArchiveRecord setReleasedIndex(final long releasedIndex) {
+    releasedIndexProperty.setValue(releasedIndex);
+    return this;
+  }
+
+  @Override
+  public long getReleasedPosition() {
+    return releasedPositionProperty.getValue();
+  }
+
+  public LogArchiveRecord setReleasedPosition(final long releasedPosition) {
+    releasedPositionProperty.setValue(releasedPosition);
     return this;
   }
 }

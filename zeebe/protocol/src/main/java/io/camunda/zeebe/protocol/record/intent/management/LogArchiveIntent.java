@@ -29,7 +29,11 @@ public enum LogArchiveIntent implements Intent {
   CONFIRM_PUBLISHED(8),
   PUBLISHED(9),
   COMPLETE_HANDOVER(10),
-  HANDOVER_COMPLETED(11);
+  HANDOVER_COMPLETED(11),
+  MERGE_LOG(12),
+  LOG_MERGED(13),
+  RELEASE_LOG(14),
+  LOG_RELEASED(15);
 
   private final short value;
 
@@ -51,6 +55,8 @@ public enum LogArchiveIntent implements Intent {
       case INDEX_SEALED:
       case PUBLISHED:
       case HANDOVER_COMPLETED:
+      case LOG_MERGED:
+      case LOG_RELEASED:
         return true;
       default:
         return false;
@@ -83,6 +89,14 @@ public enum LogArchiveIntent implements Intent {
         return COMPLETE_HANDOVER;
       case 11:
         return HANDOVER_COMPLETED;
+      case 12:
+        return MERGE_LOG;
+      case 13:
+        return LOG_MERGED;
+      case 14:
+        return RELEASE_LOG;
+      case 15:
+        return LOG_RELEASED;
       default:
         return UNKNOWN;
     }

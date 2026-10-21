@@ -413,7 +413,11 @@ public enum ZbColumnFamilies implements EnumValue, ScopedColumnFamily {
   // checkpointId -> checkpoint created but not yet covered by a LOG_ARCHIVED event
   LOG_ARCHIVE_PENDING_CHECKPOINTS(171, PARTITION_LOCAL),
   // checkpointId -> backup checkpoint covered by a LOG_ARCHIVED event; answers backup status/list
-  LOG_ARCHIVE_BACKUP_CHECKPOINTS(172, PARTITION_LOCAL);
+  LOG_ARCHIVE_BACKUP_CHECKPOINTS(172, PARTITION_LOCAL),
+  // firstIndex -> lastIndex and lastPosition of every archived object above the merged index
+  LOG_ARCHIVE_UNMERGED_OBJECTS(173, PARTITION_LOCAL),
+  // firstIndex -> merged log object above the released index
+  LOG_ARCHIVE_MERGED_OBJECTS(174, PARTITION_LOCAL);
 
   private final int value;
   private final ColumnFamilyScope columnFamilyScope;

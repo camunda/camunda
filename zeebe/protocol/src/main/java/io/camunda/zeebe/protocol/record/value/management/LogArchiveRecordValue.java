@@ -107,6 +107,27 @@ public interface LogArchiveRecordValue extends RecordValue {
    */
   long getStartedAt();
 
+  /**
+   * @return the merged index M after applying a {@code LOG_MERGED} event, or -1 if not set
+   */
+  long getMergedIndex();
+
+  /**
+   * @return the merged position after applying a {@code LOG_MERGED} event, or -1 if not set
+   */
+  long getMergedPosition();
+
+  /**
+   * @return the released index R: the proposal of {@code RELEASE_LOG}, and R after applying on
+   *     {@code LOG_RELEASED}, or -1 if not set
+   */
+  long getReleasedIndex();
+
+  /**
+   * @return the released position after applying a {@code LOG_RELEASED} event, or -1 if not set
+   */
+  long getReleasedPosition();
+
   @Value.Immutable
   @ImmutableProtocol(builder = ImmutableLogObjectValue.Builder.class)
   interface LogObjectValue {
@@ -146,6 +167,12 @@ public interface LogArchiveRecordValue extends RecordValue {
      *     -1 for a {@code .rec} object
      */
     long getBodyLength();
+
+    /**
+     * @return the highest record timestamp of the object's application entries in epoch millis, or
+     *     -1 if unknown or the object holds no application entry
+     */
+    long getLastRecordTimestamp();
   }
 
   @Value.Immutable
