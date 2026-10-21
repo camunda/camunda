@@ -54,4 +54,23 @@ class ExporterConfigurationTest {
     // then
     assertThat(exportingCfg.distributionInterval()).isEqualTo(Duration.ofSeconds(5));
   }
+
+  @Test
+  void shouldNotIncludeArgsInToString() {
+    // given
+    final var exporterCfg = new ExporterCfg();
+    exporterCfg.setClassName("io.camunda.Exporter");
+    exporterCfg.setArgs(
+        Map.of("password", "s3cr3t-password", "nested", Map.of("token", "s3cr3t-token")));
+
+    // when
+    final var result = exporterCfg.toString();
+
+    // then
+    assertThat(result)
+        .contains("io.camunda.Exporter")
+        .doesNotContain("s3cr3t-password")
+        .doesNotContain("s3cr3t-token")
+        .doesNotContain("password");
+  }
 }
