@@ -202,6 +202,13 @@ tasks.withType<Test>().configureEach {
   val junitOptions = options as JUnitPlatformOptions
   junitOptions.includeTags(*includedTags.toTypedArray())
   junitOptions.excludeTags(*excludedTags.toTypedArray())
+
+
+  // do not create reports to speed up the test suite
+  if (!project.hasProperty("createReports")) {
+      reports.html.required = false
+      reports.junitXml.required = false
+  }
 }
 
 tasks.named<Test>("test") {
