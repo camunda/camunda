@@ -383,13 +383,13 @@ class WebAppAuthorizationCheckPortConfigurationTest {
     final var readers =
         new PhysicalTenantSearchClientReaders(Map.of("tenant-missing", readersWithoutGrants()));
 
+    // when / then
     runner
         .withBean(PhysicalTenantSearchClientReaders.class, () -> readers)
         .withBean(PhysicalTenantSecurityProperties.class, () -> DEFAULT_SECURITY_PROPERTIES)
         .withUserConfiguration(WebAppAuthorizationCheckPortConfiguration.class)
         .run(
             ctx -> {
-              // then
               assertThat(ctx).hasFailed();
               assertThat(ctx.getStartupFailure())
                   .hasRootCauseInstanceOf(IllegalStateException.class)
