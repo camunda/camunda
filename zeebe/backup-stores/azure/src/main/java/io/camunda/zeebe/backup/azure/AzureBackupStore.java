@@ -73,6 +73,7 @@ public final class AzureBackupStore implements BackupStore {
 
   private static final Logger LOG = LoggerFactory.getLogger(AzureBackupStore.class);
   private final ExecutorService executor;
+  private final ExecutorService credentialExecutor;
   private final Semaphore deleteConcurrencyLimit = new Semaphore(DELETE_PARALLELISM);
   private final ReentrantLock containerCreationLock = new ReentrantLock();
   private final FileSetManager fileSetManager;
@@ -81,10 +82,23 @@ public final class AzureBackupStore implements BackupStore {
   private volatile boolean containerCreated;
 
   AzureBackupStore(final AzureBackupConfig config) {
-    this(config, buildClient(config));
+    this(config, newCredentialExecutor());
+  }
+
+  private AzureBackupStore(
+      final AzureBackupConfig config, final ExecutorService credentialExecutor) {
+    this(config, buildClient(config, credentialExecutor), credentialExecutor);
   }
 
   AzureBackupStore(final AzureBackupConfig config, final BlobServiceClient client) {
+    this(config, client, null);
+  }
+
+  AzureBackupStore(
+      final AzureBackupConfig config,
+      final BlobServiceClient client,
+      final ExecutorService credentialExecutor) {
+    this.credentialExecutor = credentialExecutor;
     executor =
         Executors.newThreadPerTaskExecutor(
             Thread.ofVirtual().name("zeebe-backup-azure-", 0).factory());
@@ -103,7 +117,8 @@ public final class AzureBackupStore implements BackupStore {
     manifestManager = new ManifestManager(blobContainerClient, createContainer, executor);
   }
 
-  public static BlobServiceClient buildClient(final AzureBackupConfig config) {
+  public static BlobServiceClient buildClient(
+      final AzureBackupConfig config, final ExecutorService credentialExecutor) {
     final var builder = new BlobServiceClientBuilder();
 
     httpClientOptions(config).map(HttpClient::createDefault).ifPresent(builder::httpClient);
@@ -131,9 +146,19 @@ public final class AzureBackupStore implements BackupStore {
           "No connection string, sas token or account credentials are configured, using DefaultAzureCredentialBuilder for authentication.");
       return builder
           .endpoint(config.endpoint())
-          .credential(new DefaultAzureCredentialBuilder().build())
+          .credential(
+              new DefaultAzureCredentialBuilder().executorService(credentialExecutor).build())
           .buildClient();
     }
+  }
+
+  // The SDK shared pool runs token tasks on virtual threads, which can deadlock when all carriers
+  // are pinned: https://github.com/Azure/azure-sdk-for-java/issues/46231
+  // The pool creates threads on demand and reaps them after 60s idle. The store owns the result
+  // and shuts it down in closeAsync.
+  static ExecutorService newCredentialExecutor() {
+    return Executors.newCachedThreadPool(
+        Thread.ofPlatform().daemon().name("zeebe-backup-azure-credential-", 0).factory());
   }
 
   BlobContainerClient getContainerClient(
@@ -346,8 +371,26 @@ public final class AzureBackupStore implements BackupStore {
           } catch (final Exception e) {
             LOG.error("Failed to shutdown of Azure Store Executor.");
             throw new RuntimeException(e);
+          } finally {
+            if (credentialExecutor != null) {
+              shutdownCredentialExecutor();
+            }
           }
         });
+  }
+
+  private void shutdownCredentialExecutor() {
+    try {
+      credentialExecutor.shutdown();
+      final var closed = credentialExecutor.awaitTermination(1, TimeUnit.MINUTES);
+      if (!closed) {
+        LOG.warn("Failed to orderly shutdown Azure Credential Executor within one minute.");
+        credentialExecutor.shutdownNow();
+      }
+    } catch (final Exception e) {
+      LOG.warn("Failed to shutdown Azure Credential Executor.", e);
+      credentialExecutor.shutdownNow();
+    }
   }
 
   @Override
