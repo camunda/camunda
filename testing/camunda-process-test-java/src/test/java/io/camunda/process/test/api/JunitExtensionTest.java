@@ -341,6 +341,23 @@ public class JunitExtensionTest {
   }
 
   @Test
+  void shouldConfigureClusterSecrets() throws Exception {
+    // given
+    final CamundaProcessTestExtension extension =
+        new CamundaProcessTestExtension(camundaRuntimeBuilder, processCoverageBuilder, NOOP)
+            .withClusterSecret("secret-1", "1")
+            .withClusterSecret("secret-2", "2");
+
+    // when
+    extension.beforeAll(extensionContext);
+    extension.beforeEach(extensionContext);
+
+    // then
+    verify(camundaRuntimeBuilder).withClusterSecret("secret-1", "1");
+    verify(camundaRuntimeBuilder).withClusterSecret("secret-2", "2");
+  }
+
+  @Test
   void shouldAddCustomContainerProviders() throws Exception {
     // given
     final CamundaProcessTestExtension extension =
