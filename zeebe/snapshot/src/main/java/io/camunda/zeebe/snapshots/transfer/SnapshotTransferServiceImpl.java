@@ -39,18 +39,25 @@ public class SnapshotTransferServiceImpl implements SnapshotSenderService {
   private final int partitionId;
   private final BiConsumer<Path, Path> copyForBootstrap;
   private final ConcurrencyControl concurrency;
+  private final int maximumChunkSize;
 
   public SnapshotTransferServiceImpl(
       final PersistedSnapshotStore snapshotStore,
       final TakeSnapshot takeSnapshot,
       final int partitionId,
       final BiConsumer<Path, Path> copyForBootstrap,
-      final ConcurrencyControl concurrency) {
+      final ConcurrencyControl concurrency,
+      final int maximumChunkSize) {
+    if (maximumChunkSize <= 0) {
+      throw new IllegalArgumentException(
+          "Expected maximumChunkSize to be positive, but was " + maximumChunkSize);
+    }
     this.snapshotStore = snapshotStore;
     this.takeSnapshot = takeSnapshot;
     this.partitionId = partitionId;
     this.copyForBootstrap = copyForBootstrap;
     this.concurrency = concurrency;
+    this.maximumChunkSize = maximumChunkSize;
   }
 
   @Override
@@ -73,6 +80,7 @@ public class SnapshotTransferServiceImpl implements SnapshotSenderService {
               final var snapshotId = snapshot.getId();
               try {
                 final var reader = new FileBasedSnapshotChunkReader(snapshot.getPath());
+                reader.setMaximumChunkSize(maximumChunkSize);
                 final var transfer = new PendingTransfer(snapshotId, null, reader);
                 final var chunk = transfer.next();
                 if (chunk == null) {
