@@ -3,10 +3,6 @@ plugins {
   `kotlin-dsl`
 }
 
-repositories {
-  mavenCentral()
-}
-
 gradlePlugin {
   plugins {
     create("settingsPomResolver") {
