@@ -58,6 +58,8 @@ class PhysicalTenantWebappComponentAccessIT {
 
   @Test
   void shouldRedirectToForbiddenWhenPhysicalTenantEnablesAuthorizations() {
+    // given: root authorizations off, this tenant's on, and the user holds no grant
+
     // when
     final HttpResponse<String> response = getOperateIn(TENANT_AUTHORIZATIONS_ON);
 
@@ -69,6 +71,8 @@ class PhysicalTenantWebappComponentAccessIT {
 
   @Test
   void shouldAllowAccessWhenPhysicalTenantInheritsDisabledAuthorizations() {
+    // given: root authorizations off, this tenant inherits off, and the user holds no grant
+
     // when
     final HttpResponse<String> response = getOperateIn(TENANT_AUTHORIZATIONS_OFF);
 
