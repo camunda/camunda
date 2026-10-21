@@ -84,7 +84,9 @@ public class SignalBroadcastProcessor implements DistributedTypedRecordProcessor
     final long eventKey = keyGenerator.nextKey();
     final var signalRecord = command.getValue();
 
-    final var isAuthNeeded = !command.isInternalCommand();
+    final var isAuthNeeded =
+        !command.isInternalCommand()
+            && command.getAuthInfo().getFormat() != AuthDataFormat.PRE_AUTHORIZED;
 
     // Check tenant authorization if not an internal command
     if (isAuthNeeded) {
