@@ -78,6 +78,9 @@ IT classes: same filter on the `it` task.
   `FROM-CACHE`), `BUILD SUCCESSFUL` with no test output means the tests passed. To confirm a
   filter matched, check `tests="N"` in `<project>/build/test-results/test/TEST-*.xml`. These
   reports can be left over from an earlier run if the task did not execute.
+- Rerunning the same test with unchanged inputs is `UP-TO-DATE` and does nothing. Add `--rerun`
+  to force only that task, not its dependencies, so compile tasks stay up to date:
+  `./gradlew :<project>:test --tests <Class> --rerun`.
 - Add `-i` to see test standard output. Each test's output starts with a header such as
   `ProcessEngineMetricsTest > shouldTrackActiveProcessInstanceGauge STANDARD_OUT`. It also prints
   Gradle's own `INFO` logs, so the output is noisy: filter it (e.g. `| grep ...`) or send it to a
