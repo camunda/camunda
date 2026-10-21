@@ -53,10 +53,13 @@ public final class LogArchiveView {
   private final long startIndex;
   private final long archivedIndex;
   private final long archivedPosition;
+  private final long mergedIndex;
+  private final long releasedIndex;
   private final long rootSeq;
   private final long lastSeq;
   private final List<IndexChunkJson> chunks;
   private final List<LogObjectJson> openObjects;
+  private final List<LogObjectJson> mergedObjects;
   private final List<ArchivedSnapshotJson> snapshots;
   private final List<CoveredCheckpointJson> checkpoints;
   private final @Nullable HandoverJson handover;
@@ -70,10 +73,13 @@ public final class LogArchiveView {
     startIndex = folder.startIndex;
     archivedIndex = folder.archivedIndex;
     archivedPosition = folder.archivedPosition;
+    mergedIndex = folder.mergedIndex;
+    releasedIndex = folder.releasedIndex;
     rootSeq = folder.rootSeq;
     lastSeq = folder.lastSeq;
     chunks = List.copyOf(folder.chunks);
     openObjects = List.copyOf(folder.openObjects);
+    mergedObjects = List.copyOf(folder.mergedObjects);
     snapshots = List.copyOf(folder.snapshots);
     checkpoints = List.copyOf(folder.checkpoints.values());
     handover = folder.handover;
@@ -213,6 +219,32 @@ public final class LogArchiveView {
   /** All objects not yet sealed into a chunk, in index order. */
   public List<LogObjectJson> openObjects() {
     return openObjects;
+  }
+
+  /** M: the last index covered by merged objects, {@code startIndex - 1} if none was merged. */
+  public long mergedIndex() {
+    return mergedIndex;
+  }
+
+  /**
+   * R: the last index released to the event plane (spec section 21), {@code startIndex - 1} if
+   * nothing was released.
+   */
+  public long releasedIndex() {
+    return releasedIndex;
+  }
+
+  /** Whether the cluster released part of the log; its objects are no longer restorable. */
+  public boolean hasReleased() {
+    return releasedIndex >= startIndex;
+  }
+
+  /**
+   * The merged objects above R, in index order. They replace the chunk and open objects for the
+   * index range up to {@link #mergedIndex()}.
+   */
+  public List<LogObjectJson> mergedObjects() {
+    return mergedObjects;
   }
 
   /** All archived snapshots, in seq order. */
@@ -377,10 +409,13 @@ public final class LogArchiveView {
     private long startIndex = -1;
     private long archivedIndex = -1;
     private long archivedPosition = -1;
+    private long mergedIndex = -1;
+    private long releasedIndex = -1;
     private long rootSeq;
     private long lastSeq;
     private final List<IndexChunkJson> chunks = new ArrayList<>();
     private final List<LogObjectJson> openObjects = new ArrayList<>();
+    private final List<LogObjectJson> mergedObjects = new ArrayList<>();
     private final List<ArchivedSnapshotJson> snapshots = new ArrayList<>();
     private final Map<Long, CoveredCheckpointJson> checkpoints = new LinkedHashMap<>();
     private @Nullable HandoverJson handover;
@@ -400,6 +435,9 @@ public final class LogArchiveView {
       folder.startIndex = root.startIndex();
       folder.archivedIndex = root.archivedIndex();
       folder.archivedPosition = root.archivedPosition();
+      folder.mergedIndex = root.mergedIndex();
+      folder.releasedIndex = root.releasedIndex();
+      folder.mergedObjects.addAll(root.mergedObjects());
       folder.rootSeq = root.seq();
       folder.lastSeq = root.seq();
       folder.chunks.addAll(root.chunks());
@@ -423,6 +461,8 @@ public final class LogArchiveView {
         case LOG_ARCHIVED -> applyLogArchived(entry);
         case SNAPSHOT_ARCHIVED -> applySnapshotArchived(entry);
         case INDEX_SEALED -> applyIndexSealed(entry);
+        case LOG_MERGED -> applyLogMerged(entry);
+        case LOG_RELEASED -> applyLogReleased(entry);
         case HANDOVER -> applyHandover(entry);
         case null, default -> throw inconsistent("unknown commit entry type " + entry.type());
       }
@@ -437,6 +477,38 @@ public final class LogArchiveView {
       parentTimelineId = Objects.requireNonNullElse(entry.parentTimelineId(), "");
       archivedIndex = startIndex - 1;
       archivedPosition = -1;
+      mergedIndex = startIndex - 1;
+      releasedIndex = startIndex - 1;
+      mergedObjects.clear();
+    }
+
+    private void applyLogMerged(final CommitEntry entry) {
+      requireStarted(entry);
+      if (entry.objects().size() != 1) {
+        throw inconsistent("LOG_MERGED entry %d has no single object".formatted(entry.seq()));
+      }
+      final var object = entry.objects().getFirst();
+      if (object.firstIndex() != mergedIndex + 1
+          || object.lastIndex() < object.firstIndex()
+          || object.lastIndex() > archivedIndex) {
+        throw inconsistent(
+            "commit entry %d merges object %s, expected it to start at index %d and end at or below %d"
+                .formatted(entry.seq(), object.key(), mergedIndex + 1, archivedIndex));
+      }
+      mergedObjects.add(object);
+      mergedIndex = object.lastIndex();
+    }
+
+    private void applyLogReleased(final CommitEntry entry) {
+      requireStarted(entry);
+      final var released = entry.releasedIndex();
+      if (released == null || released <= releasedIndex || released > mergedIndex) {
+        throw inconsistent(
+            "LOG_RELEASED entry %d releases index %s, expected it to be in (%d, %d]"
+                .formatted(entry.seq(), released, releasedIndex, mergedIndex));
+      }
+      mergedObjects.removeIf(object -> object.lastIndex() <= released);
+      releasedIndex = released;
     }
 
     private void applyLogArchived(final CommitEntry entry) {

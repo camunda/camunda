@@ -183,6 +183,19 @@ final class LogArchiveTransitionStepTest {
   }
 
   @Test
+  void shouldStartTheReleaserOnlyWithARetentionWindow() {
+    // given
+    brokerCfg.getData().getBackup().getLogArchive().setRetentionWindow(Duration.ofDays(7));
+    context.setZeebeDb(createDb());
+
+    // when
+    step.transitionTo(context, 3, Role.LEADER).join();
+
+    // then
+    verify(actorSchedulingService, times(4)).submitActor(any(), any());
+  }
+
+  @Test
   void shouldFailLeaderTransitionForUnsupportedStore() {
     // given
     brokerCfg.getData().getBackup().setStore(BackupStoreType.GCS);

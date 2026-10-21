@@ -106,6 +106,16 @@ public final class LogArchiveRestorePlanner {
     }
     final var snapshot = selectSnapshot(view, position);
     final long snapshotIndex = snapshot.map(ArchivedSnapshotJson::index).orElse(0L);
+    if (view.hasReleased() && snapshotIndex <= view.releasedIndex()) {
+      throw failure(
+          view,
+          "restore point checkpoint %d is below the restore floor of partition %d: its snapshot is at index %d, the log up to index %d was released"
+              .formatted(
+                  checkpoint.checkpointId(),
+                  view.partitionId(),
+                  snapshotIndex,
+                  view.releasedIndex()));
+    }
     final var objects = selectObjects(view, snapshotIndex, requiredPosition, checkpoint);
     return new LogArchiveRestorePlan(view.partitionId(), checkpoint, snapshot, objects);
   }
@@ -167,17 +177,31 @@ public final class LogArchiveRestorePlanner {
     final long position = checkpoint.checkpointPosition();
     final var selected = new ArrayList<LogObjectJson>();
 
+    // merged objects replace everything up to M; chunks and open objects only count above it
+    for (final var object : view.mergedObjects()) {
+      if (select(view, selected, object, snapshotIndex, requiredPosition, checkpoint)) {
+        return selected;
+      }
+    }
+    final long mergedIndex = view.mergedIndex();
     for (final var chunk : view.chunks()) {
-      if (chunk.lastIndex() < snapshotIndex && chunk.lastPosition() < requiredPosition) {
-        continue; // entirely covered by the snapshot and exported; do not read the chunk file
+      if (chunk.lastIndex() <= mergedIndex
+          || (chunk.lastIndex() < snapshotIndex && chunk.lastPosition() < requiredPosition)) {
+        continue; // merged, or entirely covered by the snapshot and exported; do not read the file
       }
       for (final var object : view.readChunk(chunk).objects()) {
+        if (object.lastIndex() <= mergedIndex) {
+          continue;
+        }
         if (select(view, selected, object, snapshotIndex, requiredPosition, checkpoint)) {
           return selected;
         }
       }
     }
     for (final var object : view.openObjects()) {
+      if (object.lastIndex() <= mergedIndex) {
+        continue;
+      }
       if (select(view, selected, object, snapshotIndex, requiredPosition, checkpoint)) {
         return selected;
       }

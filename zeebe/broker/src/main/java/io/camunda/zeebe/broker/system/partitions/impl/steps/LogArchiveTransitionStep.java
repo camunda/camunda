@@ -11,6 +11,8 @@ import io.atomix.raft.RaftServer.Role;
 import io.camunda.zeebe.backup.logarchive.leader.HttpLogArchiveEventPlaneClient;
 import io.camunda.zeebe.backup.logarchive.leader.LogArchiveAnnouncer;
 import io.camunda.zeebe.backup.logarchive.leader.LogArchivePublisher;
+import io.camunda.zeebe.backup.logarchive.leader.LogArchiveReleaser;
+import io.camunda.zeebe.backup.logarchive.leader.LogArchiveReleaser.ReleaseState;
 import io.camunda.zeebe.backup.logarchive.leader.LogArchiver;
 import io.camunda.zeebe.backup.logarchive.leader.LogArchiverRaftEntrySource;
 import io.camunda.zeebe.backup.logarchive.leader.LogArchiverTimeline;
@@ -25,6 +27,7 @@ import io.camunda.zeebe.broker.system.configuration.backup.LogArchiveCfg;
 import io.camunda.zeebe.broker.system.configuration.backup.LogArchiveStoreFactory;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionContext;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionStep;
+import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.management.LogArchiveIntent;
 import io.camunda.zeebe.scheduler.Actor;
@@ -165,6 +168,7 @@ public final class LogArchiveTransitionStep implements PartitionTransitionStep {
             logStream.newLogStreamWriter(),
             cfg.getSnapshotUploadInterval());
     final var announcer = createAnnouncer(context, cfg, store);
+    final var releaser = createReleaser(context, cfg, logStream.newLogStreamWriter());
     // The publisher checks the bucket against the recovered state before it publishes anything and
     // hands the outcome to the archiver and the uploader, which wait for it (spec section 8.4).
     final var publisher =
@@ -175,11 +179,15 @@ public final class LogArchiveTransitionStep implements PartitionTransitionStep {
             (meta, bucketAhead) -> {
               archiver.onRecoveryChecked(meta.copy(), bucketAhead);
               uploader.onRecoveryChecked(meta.copy(), bucketAhead);
+              if (releaser != null) {
+                releaser.onRecoveryChecked(meta.copy(), bucketAhead);
+              }
             },
             // the old backups receive the handover file; it is not owned (or closed) here
             context.getBackupStore(),
             announcer);
-    final var components = new LeaderComponents(store, archiver, uploader, publisher, announcer);
+    final var components =
+        new LeaderComponents(store, archiver, uploader, publisher, announcer, releaser);
     leaderComponents = components;
 
     final ActorFuture<Void> submitted = context.getConcurrencyControl().createFuture();
@@ -192,7 +200,12 @@ public final class LogArchiveTransitionStep implements PartitionTransitionStep {
             return;
           }
           // registered before this step completes, i.e. before the stream processor exists
-          processor.setListener(new FanOutListener(List.of(archiver, uploader, publisher)));
+          final var listeners =
+              new ArrayList<LogArchiveListener>(List.of(archiver, uploader, publisher));
+          if (releaser != null) {
+            listeners.add(releaser);
+          }
+          processor.setListener(new FanOutListener(listeners));
           processor.setPublication(publisher);
           context.getLogStorage().addCommitListener(archiver);
           context.setLogArchiveActivation(archiver);
@@ -219,6 +232,28 @@ public final class LogArchiveTransitionStep implements PartitionTransitionStep {
       return cluster;
     }
     return "default";
+  }
+
+  /** Returns null if no retention window is configured, so nothing is ever released. */
+  private static @Nullable LogArchiveReleaser createReleaser(
+      final PartitionTransitionContext context,
+      final LogArchiveCfg cfg,
+      final LogStreamWriter writer) {
+    final var window = cfg.getRetentionWindow();
+    final var zeebeDb = context.getZeebeDb();
+    if (window == null || zeebeDb == null) {
+      return null;
+    }
+    // read-only and used only by the releaser's actor, with a context of its own
+    final var state = new DbLogArchiveState(zeebeDb, zeebeDb.createContext());
+    return new LogArchiveReleaser(
+        context.getPartitionId(),
+        writer,
+        () ->
+            new ReleaseState(
+                state.meta(), state.backupCheckpoints(), state.snapshots(), state.mergedObjects()),
+        window,
+        cfg.getReleaseInterval());
   }
 
   /** Returns null if the event plane is not configured. */
@@ -334,12 +369,16 @@ public final class LogArchiveTransitionStep implements PartitionTransitionStep {
       LogArchiver archiver,
       SnapshotUploader uploader,
       LogArchivePublisher publisher,
-      @Nullable LogArchiveAnnouncer announcer) {
+      @Nullable LogArchiveAnnouncer announcer,
+      @Nullable LogArchiveReleaser releaser) {
 
     List<Actor> actors() {
       final List<Actor> actors = new ArrayList<>(List.of(archiver, uploader, publisher));
       if (announcer != null) {
         actors.add(announcer);
+      }
+      if (releaser != null) {
+        actors.add(releaser);
       }
       return actors;
     }
@@ -385,6 +424,26 @@ public final class LogArchiveTransitionStep implements PartitionTransitionStep {
     @Override
     public void onIndexSealed(final long chunkNo) {
       delegates.forEach(d -> d.onIndexSealed(chunkNo));
+    }
+
+    @Override
+    public void onLogMerged(final long mergedIndex, final long mergedPosition) {
+      delegates.forEach(d -> d.onLogMerged(mergedIndex, mergedPosition));
+    }
+
+    @Override
+    public void onMergeLogRejected(final long mergedIndex) {
+      delegates.forEach(d -> d.onMergeLogRejected(mergedIndex));
+    }
+
+    @Override
+    public void onLogReleased(final long releasedIndex) {
+      delegates.forEach(d -> d.onLogReleased(releasedIndex));
+    }
+
+    @Override
+    public void onReleaseLogRejected(final long releasedIndex) {
+      delegates.forEach(d -> d.onReleaseLogRejected(releasedIndex));
     }
 
     @Override
