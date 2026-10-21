@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="generator" content="Docusaurus v3.10.2">
 <title data-rh="true">FOSSA Reporting Runbook | Camunda Platform</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:url" content="https://camunda.github.io/camunda/pr-preview/pr-66005/fossa-reporting-runbook/"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-default-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-default-current"><meta data-rh="true" property="og:title" content="FOSSA Reporting Runbook | Camunda Platform"><meta data-rh="true" name="description" content="How to publish FOSSA attribution and SBOM reports for a component in the monorepo release. For"><meta data-rh="true" property="og:description" content="How to publish FOSSA attribution and SBOM reports for a component in the monorepo release. For"><link data-rh="true" rel="icon" href="/camunda/pr-preview/pr-66005/img/black-C.png"><link data-rh="true" rel="canonical" href="https://camunda.github.io/camunda/pr-preview/pr-66005/fossa-reporting-runbook/"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-66005/fossa-reporting-runbook/" hreflang="en"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-66005/fossa-reporting-runbook/" hreflang="x-default"><link rel="stylesheet" href="/camunda/pr-preview/pr-66005/assets/css/styles.44533d03.css">
-<script src="/camunda/pr-preview/pr-66005/assets/js/runtime~main.a5354ea3.js" defer="defer"></script>
-<script src="/camunda/pr-preview/pr-66005/assets/js/main.3f34d525.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-66005/assets/js/runtime~main.ab9dcf6a.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-66005/assets/js/main.2370a178.js" defer="defer"></script>
 </head>
 <body>
 <svg style="display: none;"><defs>
@@ -21,13 +21,13 @@ This runbook covers the plumbing only.</p>
 <li class=""><a href="/camunda/pr-preview/pr-66005/assets/files/check-licenses-ad9c000a8116c2aca7bd91b9123b581e.yml/" target="_blank" class=""><code>check-licenses.yml</code></a> scans each FOSSA project
 (<code>single-app</code>, <code>optimize</code>, <code>c8run</code>) on every tag and push.</li>
 <li class="">The <code>fossa-release*</code> jobs in
-<a href="/camunda/pr-preview/pr-66005/assets/files/camunda-platform-release-9dba831e1b5b6ae49afd2e590bf2572e.yml/" target="_blank" class=""><code>camunda-platform-release.yml</code></a> wait for
+<a href="/camunda/pr-preview/pr-66005/assets/files/camunda-platform-release-f24686e913cc7d392fa28f2f1c3b089b.yml/" target="_blank" class=""><code>camunda-platform-release.yml</code></a> wait for
 the scan at the release tag revision, then create a FOSSA release in two release groups
 (attribution as TXT, SBOM as CycloneDX JSON).</li>
 <li class="">The reports are served from the public FOSSA portal, not attached to GitHub releases.</li>
 </ol>
 <p>The steps live in the local composite action
-<a href="/camunda/pr-preview/pr-66005/assets/files/action-e53d33f989b2d0134503e72b181fda95.yml/" target="_blank" class=""><code>fossa-release-project</code></a>. Each project gets
+<a href="/camunda/pr-preview/pr-66005/assets/files/action-eafbbc39fbfb16dcacbd99082b9fa160.yml/" target="_blank" class=""><code>fossa-release-project</code></a>. Each project gets
 its own job, so a failure in one does not hide the result of another.</p>
 <h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="add-a-component">Add a component<a href="#add-a-component" class="hash-link" aria-label="Direct link to Add a component" title="Direct link to Add a component" translate="no">​</a></h2>
 <p><strong>Who:</strong> Engineering Operations, plus an Infra team member (FOSSA org Admin) for step 2.</p>
@@ -40,9 +40,11 @@ its own job, so a failure in one does not hide the result of another.</p>
 to public. The CI account <code>ci-camunda-camunda</code> lacks the rights, and the FOSSA UI search only
 shows groups visible to the searching account, so ask them to check for existing groups first.
 Note both group IDs from the group URL (<code>https://app.fossa.com/projects/group/&lt;id&gt;</code>).
+Ask them to store the API key under <code>products/camunda/ci/camunda</code> as
+<code>FOSSA_API_KEY_&lt;COMPONENT&gt;</code>, next to the single-app key.
 See <a href="https://github.com/camunda/infra-core/blob/stage/docs/scanning-tools/fossa.md" target="_blank" rel="noopener noreferrer" class="">infra FOSSA docs</a>.</li>
 <li class=""><strong>Add a job.</strong> In <code>camunda-platform-release.yml</code>, copy <code>fossa-release-optimize</code> and change the
-<code>project-id</code>, the group IDs and the <code>if</code> gate. Add the job to <code>needs</code> and to the <code>if</code> of
+<code>project-id</code>, the group IDs, <code>fossa-api-key-vault-key</code> and the <code>if</code> gate. Add the job to <code>needs</code> and to the <code>if</code> of
 <code>notify-on-success</code> and <code>notify-if-failed</code>.</li>
 <li class=""><strong>Dry run.</strong> Run <code>zeebe-release-stable-dry-run.yml</code> from the branch. The new job must print the
 FOSSA calls for its project locator, and the other <code>fossa-release*</code> jobs must be unchanged.</li>
@@ -77,6 +79,22 @@ That job and the notify jobs that depend on it run again, the rest of the releas
 results.</p>
 </li>
 </ol>
+</li>
+<li class=""><strong><code>fossa/release</code> fails partway.</strong> The step makes four calls in order: attribution release, SBOM
+release, attribution report, SBOM report. It does no lookup or rollback, so a re-run always starts
+again from the first call. Check the job log to see how far it got:<!-- -->
+<ul>
+<li class=""><strong>No release created</strong> (the first call failed): fix the cause, then re-run the job.</li>
+<li class=""><strong>Some releases created:</strong> the log prints each created release ID. Make only the missing calls
+locally with those IDs, as for a backfill. Do not re-run the job, it would create duplicate
+releases.</li>
+<li class=""><strong>Fails again:</strong> check the HTTP status in the log. 401/403 means the API key or group rights,
+404 a wrong group ID, 5xx a FOSSA outage. A re-run only helps for 5xx.</li>
+<li class=""><strong>If this happens again:</strong> make the local
+<a href="/camunda/pr-preview/pr-66005/assets/files/action-eafbbc39fbfb16dcacbd99082b9fa160.yml/" target="_blank" class=""><code>fossa-release-project</code></a> action look
+up each release by title before creating it, so a re-run skips the calls that already
+succeeded. Not done yet, as no partial failure has been seen so far.</li>
+</ul>
 </li>
 <li class=""><strong>Other failures.</strong> The failed job triggers <code>notify-if-failed</code>. The release manager dispatches it
 to Engineering Operations for plumbing issues. Wrong report content goes through the license

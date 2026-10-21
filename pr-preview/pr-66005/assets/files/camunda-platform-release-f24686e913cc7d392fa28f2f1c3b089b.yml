@@ -238,6 +238,7 @@ jobs:
           GIT_TRACE: ${{ runner.temp }}/git-trace.log
           GIT_TRACE_CURL: ${{ runner.temp }}/git-trace-curl.log
           GIT_TRACE_CURL_NO_DATA: "1"
+          APP_TOKEN: ${{ steps.github-token.outputs.token }}
         run: |
           # Perform a maven release
           # https://maven.apache.org/maven-release/maven-release-plugin/perform-mojo.html
@@ -257,6 +258,19 @@ jobs:
             PROFILE_FLAGS="-P\!include-optimize"
             ARGUMENTS_PROFILE="-P!include-optimize"
           fi
+
+          # release:perform clones into target/ and runs `git ls-remote` from
+          # java.io.tmpdir. actions/checkout's credentials only apply inside the work
+          # tree, and the scm.url that prepare recorded in release.properties carries
+          # no usable credentials, so both calls go out anonymously -- and fail
+          # whenever GitHub's edge refuses anonymous git requests. Authenticate every
+          # git call of this step instead.
+          git_auth=$(printf 'x-access-token:%s' "${APP_TOKEN}" | base64 -w0)
+          echo "::add-mask::${git_auth}"
+          export GIT_CONFIG_COUNT=1
+          export GIT_CONFIG_KEY_0=http.https://github.com/.extraheader
+          export GIT_CONFIG_VALUE_0="AUTHORIZATION: basic ${git_auth}"
+          unset APP_TOKEN
 
           ./mvnw release:perform -B \
             -DreleaseVersion="${RELEASE_VERSION}" \
@@ -1049,7 +1063,8 @@ jobs:
           project-id: "custom+50756/camunda/camunda@optimize"
           attribution-release-group-id: "11294" # https://app.fossa.com/projects/group/11294
           sbom-release-group-id: "11295"        # https://app.fossa.com/projects/group/11295
-          fossa-api-key-vault-path: secret/data/products/optimize/ci/fossa
+          fossa-api-key-vault-path: secret/data/products/camunda/ci/camunda
+          fossa-api-key-vault-key: FOSSA_API_KEY_OPTIMIZE
           release-number: ${{ env.RELEASE_VERSION }}
           revision-id: ${{ needs.release.outputs.releaseTagCommitSha }}
           dry-run: ${{ inputs.dryRun || inputs.releaseProcessDryRun }}
