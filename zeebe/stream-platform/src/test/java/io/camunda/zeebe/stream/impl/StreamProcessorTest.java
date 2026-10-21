@@ -123,15 +123,22 @@ public final class StreamProcessorTest {
   }
 
   @Test
-  public void shouldStartProcessingAfterSlowOnRecoveredListener() throws Exception {
+  public void shouldRecordDurationOfSlowOnRecoveredListener() throws Exception {
     // given
-    // A listener slower than the WARN threshold must not prevent recovery from completing. The
-    // WARN log itself is not asserted here because the module has no log-capture test dependency.
+    // A listener slower than the WARN threshold must not prevent recovery from completing, and its
+    // duration must be observable through the timer. The WARN log is not asserted because the
+    // module has no log-capture test dependency.
     final var mockProcessorLifecycleAware = streamPlatform.getMockProcessorLifecycleAware();
     final var slowBy = StreamProcessor.SLOW_ON_RECOVERED_LISTENER_THRESHOLD.plusMillis(100);
     doAnswer(
             invocation -> {
-              LockSupport.parkNanos(slowBy.toNanos());
+              // parkNanos can return early on an unpark permit, which the actor scheduler issues,
+              // so keep parking until the deadline has passed.
+              final long deadline = System.nanoTime() + slowBy.toNanos();
+              long remaining;
+              while ((remaining = deadline - System.nanoTime()) > 0) {
+                LockSupport.parkNanos(remaining);
+              }
               return null;
             })
         .when(mockProcessorLifecycleAware)
@@ -142,6 +149,19 @@ public final class StreamProcessorTest {
 
     // then
     verify(mockProcessorLifecycleAware, TIMEOUT).onRecovered(any());
+    final var meterRegistry = streamPlatform.getProcessorMeterRegistry();
+    await()
+        .atMost(Duration.ofSeconds(30))
+        .untilAsserted(
+            () ->
+                assertThat(
+                        meterRegistry
+                            .find("zeebe.stream.processor.on.recovered.listener.duration")
+                            .timers()
+                            .stream()
+                            .mapToDouble(timer -> timer.totalTime(TimeUnit.MILLISECONDS))
+                            .sum())
+                    .isGreaterThanOrEqualTo(slowBy.toMillis()));
   }
 
   @Test
