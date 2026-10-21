@@ -193,6 +193,8 @@ public class DecisionInstanceRestServiceIT extends OperateAbstractIT {
     final Map<String, List<DRDDataEntryDto>> result =
         mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {});
     assertThat(result).containsOnlyKeys("readableDecision");
+    assertThat(result.get("readableDecision").getFirst().getDecisionInstanceId())
+        .isEqualTo("instanceId");
   }
 
   public String getDecisionInstanceByIdUrl(final String id) {
