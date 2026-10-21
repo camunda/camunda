@@ -17,6 +17,7 @@ import type {
 } from '@camunda/camunda-api-zod-schemas/8.11';
 import {request} from '#/shared/http/request';
 import {mapQueryError} from '#/shared/http/mapQueryError';
+import {getErrorMessage} from '#/shared/http/getErrorMessage';
 import {endpoints} from '#/shared/http/endpoints';
 import {queries} from '#/shared/http/queries';
 import {patchListCaches, removeFromListCaches} from '#/shared/http/patchListCaches';
@@ -131,7 +132,11 @@ function useGlobalTaskListenerMutations() {
 				reconcileGlobalTaskListeners(ready !== undefined),
 			);
 		},
-		onError: () => toast.error(t('admin.globalTaskListeners.createGlobalTaskListenerError')),
+		onError: async (error) => {
+			toast.error(t('admin.globalTaskListeners.createGlobalTaskListenerError'), {
+				description: await getErrorMessage(error),
+			});
+		},
 	});
 
 	const update = useMutation({
@@ -151,7 +156,11 @@ function useGlobalTaskListenerMutations() {
 				isReady: (data) => isSameConfiguration(data, globalTaskListener),
 			}).then((ready) => reconcileGlobalTaskListeners(ready !== undefined));
 		},
-		onError: () => toast.error(t('admin.globalTaskListeners.updateGlobalTaskListenerError')),
+		onError: async (error) => {
+			toast.error(t('admin.globalTaskListeners.updateGlobalTaskListenerError'), {
+				description: await getErrorMessage(error),
+			});
+		},
 	});
 
 	const remove = useMutation({
@@ -182,7 +191,11 @@ function useGlobalTaskListenerMutations() {
 				},
 			}).then(reconcileGlobalTaskListeners);
 		},
-		onError: () => toast.error(t('admin.globalTaskListeners.deleteGlobalTaskListenerError')),
+		onError: async (error) => {
+			toast.error(t('admin.globalTaskListeners.deleteGlobalTaskListenerError'), {
+				description: await getErrorMessage(error),
+			});
+		},
 	});
 
 	return {create, update, remove};

@@ -143,6 +143,13 @@ describe('<AddMappingRuleModal />', () => {
 		await userEvent.click(screen.getByRole('button', {name: 'Save'}));
 
 		await expect.element(screen.getByText('Failed to create mapping rule')).toBeVisible();
+		await expect
+			.element(
+				screen.getByText(
+					"Expected to create mapping rule with claimName 'email' and claimValue 'demo@example.com', but a mapping rule with this claim already exists.",
+				),
+			)
+			.toBeVisible();
 	});
 
 	it('should call onClose when cancelled', async () => {

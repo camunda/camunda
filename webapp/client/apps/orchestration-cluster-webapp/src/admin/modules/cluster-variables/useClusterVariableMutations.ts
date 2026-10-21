@@ -16,6 +16,7 @@ import type {
 } from '@camunda/camunda-api-zod-schemas/8.11';
 import {request} from '#/shared/http/request';
 import {mapQueryError} from '#/shared/http/mapQueryError';
+import {getErrorMessage} from '#/shared/http/getErrorMessage';
 import {endpoints} from '#/shared/http/endpoints';
 import {queries} from '#/shared/http/queries';
 import {isFirstPageWithRoom, patchListCaches, removeFromListCaches} from '#/shared/http/patchListCaches';
@@ -120,7 +121,9 @@ function useClusterVariableMutations() {
 		onError: async (error) => {
 			// A duplicate name is corrected inline on the name field instead of a toast.
 			if (!(await isDuplicateClusterVariableError(error))) {
-				toast.error(t('admin.clusterVariables.createClusterVariableError'));
+				toast.error(t('admin.clusterVariables.createClusterVariableError'), {
+					description: await getErrorMessage(error),
+				});
 			}
 		},
 	});
@@ -141,7 +144,9 @@ function useClusterVariableMutations() {
 				isReady: (data) => data.value === clusterVariable.value,
 			}).then((ready) => reconcileClusterVariables(ready !== undefined));
 		},
-		onError: () => toast.error(t('admin.clusterVariables.updateClusterVariableError')),
+		onError: async (error) => {
+			toast.error(t('admin.clusterVariables.updateClusterVariableError'), {description: await getErrorMessage(error)});
+		},
 	});
 
 	const remove = useMutation({
@@ -173,7 +178,9 @@ function useClusterVariableMutations() {
 				},
 			}).then(reconcileClusterVariables);
 		},
-		onError: () => toast.error(t('admin.clusterVariables.deleteClusterVariableError')),
+		onError: async (error) => {
+			toast.error(t('admin.clusterVariables.deleteClusterVariableError'), {description: await getErrorMessage(error)});
+		},
 	});
 
 	return {create, update, remove};

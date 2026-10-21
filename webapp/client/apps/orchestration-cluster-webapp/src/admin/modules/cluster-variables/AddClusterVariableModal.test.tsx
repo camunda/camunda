@@ -246,7 +246,20 @@ describe('<AddClusterVariableModal />', () => {
 	});
 
 	it('should show an error toast when the creation fails', async ({worker}) => {
-		worker.use(mockCreateGlobalClusterVariableEndpoint({successResponse: new HttpResponse(null, {status: 500})}));
+		worker.use(
+			mockCreateGlobalClusterVariableEndpoint({
+				successResponse: HttpResponse.json(
+					{
+						type: 'about:blank',
+						title: 'INVALID_ARGUMENT',
+						status: 400,
+						detail: 'Invalid request to create cluster variables',
+						instance: '/v2/test',
+					},
+					{status: 400},
+				),
+			}),
+		);
 		const {screen, onClose} = await renderModal();
 
 		await userEvent.fill(screen.getByRole('textbox', {name: 'Name'}), 'my-variable');
@@ -254,6 +267,7 @@ describe('<AddClusterVariableModal />', () => {
 		await userEvent.click(screen.getByRole('button', {name: 'Create'}));
 
 		await expect.element(screen.getByText('Failed to create cluster variable')).toBeVisible();
+		await expect.element(screen.getByText('Invalid request to create cluster variables')).toBeVisible();
 		expect(onClose).not.toHaveBeenCalled();
 	});
 
