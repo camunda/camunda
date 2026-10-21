@@ -18,6 +18,8 @@ update both together. Run everything from the repo root.
 - `test` = unit tests (Surefire). `it` = `IT*`, `*IT`, `*ITCase` (Failsafe). Same source set.
 - `check` depends on `it`, so `check` runs unit and integration tests.
 - Never use `-Ptest.max.retries` to hide failures.
+- Do not use `-Pquickly`: it disables tests. To run tests, run `test` (or `it`). For the
+  distribution archive, run the `distZip` command in "Common commands".
 
 ## Single test: use the exact class name
 
@@ -58,11 +60,10 @@ IT classes: same filter on the `it` task.
 
 ## Properties
 
-- `-Pquickly`: drops Optimize projects, **disables tests and Spotless**. Use only for compile
-  checks.
 - `-PuseMavenLocal`: add Maven Local to resolution. Only when needed.
-- `-Ptest.max.forks=N` (test JVM forks), `-Ptest.jvm.maxheap=2g`, `-Pparallel.tests`,
-  `-Pjunit.thread.count=N`.
+- `-Ptest.max.forks=N`: test JVM forks. Keep the default `1`: forks of one task share a port
+  range and can hit bind failures. Update this once per-worker port isolation is merged.
+- `-Ptest.jvm.maxheap=2g`, `-Pparallel.tests`, `-Pjunit.thread.count=N`.
 - `-PincludeSlowTests`, `-PincludePerformanceTests`, `-PincludeStraceTests`,
   `-PincludeRandomTests`.
 - Build and configuration caches are on. Check `UP-TO-DATE` / `FROM-CACHE` with `--info`.
@@ -73,9 +74,10 @@ IT classes: same filter on the `it` task.
 - Frontend builds run only as part of `dist` assembly, not compile or tests. An archive built
   with `-Pskip.fe.build=true` is not frontend-complete: do not ship it.
 - Parity checks against Maven need the Maven ZIP built from the same revision.
-- The build logs only failed tests, not passed ones. `BUILD SUCCESSFUL` with no test output means
-  the tests passed. To confirm a filter matched, check `tests="N"` in
-  `<project>/build/test-results/test/TEST-*.xml`.
+- The build logs only failed tests, not passed ones. If the `test` task ran (not `UP-TO-DATE` or
+  `FROM-CACHE`), `BUILD SUCCESSFUL` with no test output means the tests passed. To confirm a
+  filter matched, check `tests="N"` in `<project>/build/test-results/test/TEST-*.xml`. These
+  reports can be left over from an earlier run if the task did not execute.
 - Add `-i` to see test standard output. Each test's output starts with a header such as
   `ProcessEngineMetricsTest > shouldTrackActiveProcessInstanceGauge STANDARD_OUT`. It also prints
   Gradle's own `INFO` logs, so the output is noisy: filter it (e.g. `| grep ...`) or send it to a
