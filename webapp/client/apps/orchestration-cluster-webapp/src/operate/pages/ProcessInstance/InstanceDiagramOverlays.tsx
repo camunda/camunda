@@ -15,6 +15,7 @@ import {DiagramOverlayContext} from '#/operate/shared/Diagram/DiagramOverlayCont
 import type {OverlayEntry} from '#/operate/shared/Diagram/overlayTypes';
 import {StateOverlay, type ElementState} from '#/operate/shared/StateOverlay/StateOverlay';
 import {getWaitStateLabel} from '#/operate/shared/utils/waitStates';
+import {ModificationBadgeOverlay} from '#/operate/pages/Processes/ModificationBadgeOverlay';
 
 const AgentTag = styled.span`
 	display: inline-block;
@@ -61,15 +62,6 @@ const WaitingTag = styled.span<{$centered: boolean}>`
 	border-radius: var(--cds-spacing-02);
 	font-variant-numeric: tabular-nums;
 	transform: ${({$centered}) => ($centered ? 'translateX(-50%)' : 'none')};
-`;
-
-const ModificationBadge = styled.span`
-	display: inline-block;
-	padding: var(--cds-spacing-01) var(--cds-spacing-03);
-	border-radius: var(--cds-spacing-02);
-	background: var(--cds-layer-01);
-	color: var(--cds-text-primary);
-	border: 1px solid var(--cds-border-subtle-01);
 `;
 
 type StatePayload = {elementState: ElementState | 'completedEndEvents'; count?: number};
@@ -159,13 +151,13 @@ function InstanceDiagramOverlays() {
 		}
 		if (type === 'instance-modification') {
 			const {newTokenCount, cancelledTokenCount} = payload as {newTokenCount: number; cancelledTokenCount: number};
-			return createPortal(
-				<ModificationBadge data-testid={`instance-modification-${elementId}`}>
-					{newTokenCount > 0 && `+${newTokenCount}`}
-					{cancelledTokenCount > 0 && ` −${cancelledTokenCount}`}
-				</ModificationBadge>,
-				container,
-				`modification-${elementId}`,
+			return (
+				<ModificationBadgeOverlay
+					key={`modification-${elementId}`}
+					container={container}
+					newTokenCount={newTokenCount}
+					cancelledTokenCount={cancelledTokenCount}
+				/>
 			);
 		}
 		return null;

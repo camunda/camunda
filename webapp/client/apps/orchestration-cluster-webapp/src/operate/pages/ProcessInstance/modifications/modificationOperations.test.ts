@@ -39,7 +39,7 @@ describe('modificationOperations', () => {
 		vi.unstubAllGlobals();
 	});
 
-	it('should stage a token with parent scopes that no staged addition or move has created yet', () => {
+	it('should share staged parent scopes and only create scopes for parents without running instances', () => {
 		const createId = createIdSequence();
 		const input = {businessObjects, elementId: 'user_task', bpmnProcessId: 'process', createId};
 		const first = createAddTokenModification(createModificationState(), input);
@@ -56,17 +56,78 @@ describe('modificationOperations', () => {
 		});
 		expect(
 			createAddTokenModification(createModificationState([cancelParent, {type: 'token', payload: first}]), input),
-		).toMatchObject({scopeId: 'scope-3', parentScopeIds: {}});
+		).toMatchObject({
+			scopeId: 'scope-3',
+			parentScopeIds: {inner_sub_process: 'scope-1', parent_sub_process: 'scope-2'},
+		});
 		expect(createAddTokenModification(createModificationState([cancelParent]), input).parentScopeIds).toEqual({
 			inner_sub_process: 'scope-5',
 			parent_sub_process: 'scope-6',
 		});
 		expect(createAddTokenModification(createModificationState([moveIntoParent]), input).parentScopeIds).toEqual({
+			inner_sub_process: 'm',
 			parent_sub_process: 'scope-8',
 		});
 		expect(
+			createAddTokenModification(createModificationState(), {
+				...input,
+				runningInstancesByElement: {parent_sub_process: 1, inner_sub_process: 0},
+			}).parentScopeIds,
+		).toEqual({inner_sub_process: 'scope-10'});
+		expect(
 			createAddTokenModification(createModificationState(), {businessObjects, elementId: 'unknown'}),
 		).toMatchObject({element: {id: 'unknown', name: 'unknown'}, parentScopeIds: {}});
+	});
+
+	it('should not share a staged parent scope when an ancestor runs in several instances', () => {
+		const staged = moveToken({
+			elementId: 'a',
+			targetElementId: 'user_task',
+			parentScopeIds: {inner_sub_process: 'staged'},
+		});
+		const input = {
+			businessObjects,
+			elementId: 'user_task',
+			bpmnProcessId: 'process',
+			createId: createIdSequence(),
+			runningInstancesByElement: {parent_sub_process: 2},
+		};
+
+		expect(createAddTokenModification(createModificationState([staged]), input).parentScopeIds).toEqual({
+			inner_sub_process: 'scope-1',
+		});
+	});
+
+	it('should place a single moved token under the ancestor it shares with its source instance', () => {
+		const state = createModificationState([], {
+			status: 'moving-token',
+			sourceElementIdForMoveOperation: 'service_task',
+			sourceElementInstanceKeyForMoveOperation: 'source-1',
+		});
+		const input = {
+			businessObjects,
+			affectedTokenCount: 1,
+			visibleAffectedTokenCount: 1,
+			bpmnProcessId: 'process',
+			ancestorScopeType: 'inferred' as const,
+			sourceAncestors: [
+				{elementId: 'parent_sub_process', instanceKey: 'outer-1'},
+				{elementId: 'process', instanceKey: 'instance'},
+			],
+			runningInstancesByElement: {parent_sub_process: 2, inner_sub_process: 1},
+			createId: createIdSequence(),
+		};
+
+		expect(createFinishMovingTokenAction(state, {...input, targetElementId: 'user_task'}).modification).toMatchObject({
+			ancestorElement: {elementId: 'parent_sub_process', instanceKey: 'outer-1'},
+			parentScopeIds: {inner_sub_process: 'scope-1'},
+		});
+		expect(
+			createFinishMovingTokenAction(state, {...input, targetElementId: 'inner_sub_process'}).modification,
+		).toMatchObject({ancestorElement: {elementId: 'parent_sub_process', instanceKey: 'outer-1'}, parentScopeIds: {}});
+		expect(
+			createFinishMovingTokenAction(state, {...input, sourceAncestors: [], targetElementId: 'user_task'}).modification,
+		).not.toHaveProperty('ancestorElement');
 	});
 
 	it('should generate unique scope ids with and without crypto.randomUUID', () => {

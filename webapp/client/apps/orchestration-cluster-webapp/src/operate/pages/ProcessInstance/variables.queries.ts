@@ -14,6 +14,11 @@ import {instanceRequest} from './processInstance.queries';
 const VARIABLES_PAGE_SIZE = 50;
 const DOCUMENT_VALUE_FILTER = '*camunda.document.type*';
 
+const variableQueryKeys = {
+	instanceVariables: (processInstanceKey: string) => ['processInstanceVariables', processInstanceKey] as const,
+	variableValues: () => ['variable'] as const,
+};
+
 function variablesQuery({
 	processInstanceKey,
 	scopeKey,
@@ -30,7 +35,7 @@ function variablesQuery({
 	const value = documentsOnly ? DOCUMENT_VALUE_FILTER : undefined;
 
 	return infiniteQueryOptions({
-		queryKey: ['processInstanceVariables', processInstanceKey, scopeKey, name, value] as const,
+		queryKey: [...variableQueryKeys.instanceVariables(processInstanceKey), scopeKey, name, value] as const,
 		queryFn:
 			scopeKey === null
 				? skipToken
@@ -57,10 +62,10 @@ function variablesQuery({
 
 function variableQuery(variableKey: string) {
 	return queryOptions({
-		queryKey: ['variable', variableKey] as const,
+		queryKey: [...variableQueryKeys.variableValues(), variableKey] as const,
 		queryFn: ({signal}) => instanceRequest<Variable>(endpoints.getVariable({variableKey}), signal),
 		staleTime: 5000,
 	});
 }
 
-export {VARIABLES_PAGE_SIZE, variablesQuery, variableQuery};
+export {VARIABLES_PAGE_SIZE, variableQueryKeys, variablesQuery, variableQuery};

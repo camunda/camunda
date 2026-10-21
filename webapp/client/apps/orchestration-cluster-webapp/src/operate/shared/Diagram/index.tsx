@@ -155,7 +155,6 @@ function Diagram({
 
 			viewer.onOverlayChange = setActiveOverlays;
 			setIsDiagramRendered(false);
-			setSelectedElement(undefined);
 
 			await viewer.render({
 				container: diagramCanvasRef.current,
@@ -171,6 +170,7 @@ function Diagram({
 			});
 
 			if (mounted) {
+				setSelectedElement(viewer.selectedElement);
 				setIsDiagramRendered(true);
 				resetMinimap();
 			}

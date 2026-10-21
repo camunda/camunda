@@ -41,8 +41,12 @@ function getVariablesForScope(state: ModificationState, scopeId: string) {
 	return Object.fromEntries<unknown>(variableModifications.map(({name, newValue}) => [name, JSON.parse(newValue)]));
 }
 
-function getVariableInstructions(state: ModificationState, scopeMap: ElementIdsByScope) {
+function getVariableInstructions(state: ModificationState, scopeMap: ElementIdsByScope, emittedScopeIds: Set<string>) {
 	return Object.entries(scopeMap).flatMap<VariableInstruction>(([scopeId, elementId]) => {
+		if (emittedScopeIds.has(scopeId)) {
+			return [];
+		}
+		emittedScopeIds.add(scopeId);
 		const variables = getVariablesForScope(state, scopeId);
 		return variables === undefined ? [] : [{variables, scopeId: elementId}];
 	});
@@ -57,6 +61,9 @@ function buildModificationInstructions(
 		moveInstructions: [],
 		terminateInstructions: [],
 	};
+	const emittedScopeIds = new Set<string>();
+	const activateScopeMaps: ElementIdsByScope[] = [];
+	const moveScopeMaps: ElementIdsByScope[] = [];
 
 	for (const modification of getElementModifications(state)) {
 		switch (modification.operation) {
@@ -73,8 +80,9 @@ function buildModificationInstructions(
 					...(modification.ancestorElement !== undefined && {
 						ancestorElementInstanceKey: modification.ancestorElement.instanceKey,
 					}),
-					variableInstructions: getVariableInstructions(state, getScopeMapForModification(modification)),
+					variableInstructions: [],
 				});
+				activateScopeMaps.push(getScopeMapForModification(modification));
 				break;
 			case 'MOVE_TOKEN':
 				instructions.moveInstructions.push({
@@ -85,11 +93,23 @@ function buildModificationInstructions(
 					...(modification.ancestorScopeType && {
 						ancestorScopeInstruction: {ancestorScopeType: modification.ancestorScopeType},
 					}),
-					variableInstructions: getVariableInstructions(state, getScopeMapForModification(modification)),
+					variableInstructions: [],
 				});
+				moveScopeMaps.push(getScopeMapForModification(modification));
 				break;
 		}
 	}
+
+	instructions.activateInstructions.forEach((instruction, index) => {
+		instruction.variableInstructions = getVariableInstructions(state, activateScopeMaps[index] ?? {}, emittedScopeIds);
+	});
+	instructions.moveInstructions.forEach((instruction, index) => {
+		instruction.variableInstructions = getVariableInstructions(
+			state,
+			moveScopeMaps[index] ?? {},
+			new Set(emittedScopeIds),
+		);
+	});
 
 	const rootVariables = getVariablesForScope(state, processInstanceKey);
 

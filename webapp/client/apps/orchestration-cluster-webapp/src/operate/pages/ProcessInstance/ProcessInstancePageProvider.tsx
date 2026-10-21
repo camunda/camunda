@@ -6,6 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import {useEffect, useRef} from 'react';
 import type {ProcessInstance} from '@camunda/camunda-api-zod-schemas/8.11';
 import {ProcessInstanceContext} from './useProcessInstancePage';
 import {ElementSelectionContext, useResolvedSelection} from './useProcessInstanceElementSelection';
@@ -14,6 +15,21 @@ import {IncidentsFilterContext, useIncidentsFilterState} from './useIncidentsFil
 import {isInstanceRunning} from '#/operate/shared/utils/processInstance';
 import {getProcessInstanceSelection, type ProcessInstanceSearch} from './processInstanceSearch';
 import {ProcessInstanceModificationContext, type ModificationController} from './useProcessInstanceModification';
+import {getElementModifications} from './modifications/modificationSelectors';
+import type {ElementModificationPayload} from './modifications/modificationReducer';
+
+function getNewScopeIds(elementModifications: ElementModificationPayload[]) {
+	return elementModifications.flatMap((modification) => {
+		switch (modification.operation) {
+			case 'ADD_TOKEN':
+				return [...Object.values(modification.parentScopeIds), modification.scopeId];
+			case 'MOVE_TOKEN':
+				return [...Object.values(modification.parentScopeIds), ...modification.scopeIds];
+			default:
+				return [];
+		}
+	});
+}
 
 function ProcessInstancePageProvider({
 	processInstanceId,
@@ -36,6 +52,21 @@ function ProcessInstancePageProvider({
 		isInstanceRunning(processInstance) && !modification?.isModificationModeEnabled,
 	);
 	const incidentsFilter = useIncidentsFilterState(processInstanceId);
+	const modificationState = modification?.state;
+	const elementModificationCount = useRef(0);
+	const {selectedElementId, selectedElementInstanceKey, resolvedElementInstance, clearSelection} = selection;
+	useEffect(() => {
+		const elementModifications = modificationState === undefined ? [] : getElementModifications(modificationState);
+		const previousCount = elementModificationCount.current;
+		elementModificationCount.current = elementModifications.length;
+		if (selectedElementId === null || elementModifications.length >= previousCount) {
+			return;
+		}
+		const elementInstanceKey = resolvedElementInstance?.elementInstanceKey ?? selectedElementInstanceKey;
+		if (elementInstanceKey !== null && !getNewScopeIds(elementModifications).includes(elementInstanceKey)) {
+			clearSelection();
+		}
+	}, [modificationState, selectedElementId, selectedElementInstanceKey, resolvedElementInstance, clearSelection]);
 	return (
 		<ProcessInstanceContext
 			value={{processInstanceId, processInstance, search, selection: getProcessInstanceSelection(search)}}

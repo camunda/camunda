@@ -46,6 +46,10 @@ function OverlayCount() {
 	return <span data-testid="overlay-count">{overlays.length}</span>;
 }
 
+function SelectedElementOverlay({selectedElementRef}: {selectedElementRef?: SVGElement}) {
+	return <span>{`Overlay for ${selectedElementRef?.getAttribute('data-element-id')}`}</span>;
+}
+
 describe('<Diagram />', () => {
 	it('should render diagram controls after XML import', async () => {
 		const screen = await render(<Diagram xml={BPMN_XML} />);
@@ -67,6 +71,19 @@ describe('<Diagram />', () => {
 		await userEvent.click(element!);
 
 		expect(onElementSelection).toHaveBeenCalledWith('startEvent_1', false);
+	});
+
+	it('should render the selected element overlay for the selected element', async () => {
+		const screen = await render(
+			<Diagram
+				xml={BPMN_XML}
+				selectableElements={['startEvent_1', 'endEvent_1']}
+				selectedElementIds={['endEvent_1']}
+				selectedElementOverlay={<SelectedElementOverlay />}
+			/>,
+		);
+
+		await expect.element(screen.getByText('Overlay for endEvent_1')).toBeVisible();
 	});
 
 	it('should expose overlay containers via DiagramOverlayContext', async () => {

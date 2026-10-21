@@ -180,6 +180,14 @@ function useHistoryController(instance: ProcessInstance) {
 		);
 		polling.current = false;
 	});
+	const previousState = useRef({instanceKey, state: instance.state});
+	useEffect(() => {
+		const previous = previousState.current;
+		previousState.current = {instanceKey, state: instance.state};
+		if (previous.instanceKey === instanceKey && previous.state === 'ACTIVE' && instance.state !== 'ACTIVE') {
+			void client.invalidateQueries({queryKey: ['instanceHistory', instanceKey]});
+		}
+	}, [client, instanceKey, instance.state]);
 	useEffect(() => {
 		if (!visible || forbidden || instance.state !== 'ACTIVE') {
 			return;
