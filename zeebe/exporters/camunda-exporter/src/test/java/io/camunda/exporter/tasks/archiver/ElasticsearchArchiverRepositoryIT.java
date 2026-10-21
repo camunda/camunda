@@ -1277,7 +1277,7 @@ final class ElasticsearchArchiverRepositoryIT {
 
     // then - only the existing doc counts as deleted
     assertThat(result).succeedsWithin(Duration.ofSeconds(30));
-    assertThat(result.join()).as("not_found items must not be counted as deleted").isEqualTo(1L);
+    assertThat(result.join()).as("not_found items must not be counted as deleted").isEqualTo(1);
     testClient.indices().refresh(r -> r.index(indexName));
     assertThat(testClient.count(c -> c.index(indexName)).count()).isEqualTo(0L);
   }
