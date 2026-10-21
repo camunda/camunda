@@ -8,7 +8,10 @@
 package io.camunda.operate.zeebeimport;
 
 import static io.camunda.operate.webapp.rest.FlowNodeInstanceRestService.FLOW_NODE_INSTANCE_URL;
+import static io.camunda.operate.webapp.rest.ProcessInstanceRestService.PROCESS_INSTANCE_URL;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import io.camunda.operate.util.ConversionUtils;
@@ -22,6 +25,7 @@ import io.camunda.operate.webapp.rest.dto.activity.FlowNodeInstanceRequestDto;
 import io.camunda.operate.webapp.rest.dto.activity.FlowNodeInstanceResponseDto;
 import io.camunda.operate.webapp.rest.dto.activity.FlowNodeStateDto;
 import io.camunda.operate.webapp.rest.dto.listview.SortValuesWrapper;
+import io.camunda.operate.webapp.rest.dto.metadata.FlowNodeMetadataRequestDto;
 import io.camunda.operate.webapp.zeebe.operation.CancelProcessInstanceHandler;
 import io.camunda.webapps.schema.entities.flownode.FlowNodeType;
 import io.camunda.zeebe.model.bpmn.Bpmn;
@@ -582,6 +586,95 @@ public class FlowNodeInstanceZeebeImportIT extends OperateZeebeAbstractIT {
     assertThat(instances)
         .filteredOn(ai -> !ai.getFlowNodeId().equals("taskB"))
         .allMatch(ai -> !ai.getState().equals(FlowNodeStateDto.INCIDENT));
+  }
+
+  @Test
+  public void shouldNotReturnFlowNodeMetadataOfOtherProcessInstance() throws Exception {
+    // given
+    final String processId = "demoProcess";
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess(processId)
+            .startEvent("start")
+            .serviceTask("task")
+            .zeebeJobType("task")
+            .endEvent()
+            .done();
+    deployProcess(process, processId + ".bpmn");
+    final Long processInstanceA =
+        ZeebeTestUtil.startProcessInstance(camundaClient, processId, null);
+    final Long processInstanceB =
+        ZeebeTestUtil.startProcessInstance(camundaClient, processId, null);
+    searchTestRule.processAllRecordsAndWait(processInstanceIsCreatedCheck, processInstanceA);
+    searchTestRule.processAllRecordsAndWait(processInstanceIsCreatedCheck, processInstanceB);
+    searchTestRule.processAllRecordsAndWait(flowNodeIsActiveCheck, processInstanceA, "task");
+    searchTestRule.processAllRecordsAndWait(flowNodeIsActiveCheck, processInstanceB, "task");
+    final String taskInstanceIdOfB =
+        tester.getAllFlowNodeInstances(processInstanceB).stream()
+            .filter(flowNodeInstance -> flowNodeInstance.getFlowNodeId().equals("task"))
+            .findFirst()
+            .orElseThrow()
+            .getId();
+
+    // when
+    final MvcResult mvcResult =
+        mockMvc
+            .perform(
+                post(String.format(
+                        PROCESS_INSTANCE_URL + "/%s/flow-node-metadata", processInstanceA))
+                    .content(
+                        mockMvcTestRule.json(
+                            new FlowNodeMetadataRequestDto()
+                                .setFlowNodeInstanceId(taskInstanceIdOfB)))
+                    .contentType(mockMvcTestRule.getContentType()))
+            .andExpect(status().isInternalServerError())
+            .andReturn();
+
+    // then
+    assertErrorMessageIsEqualTo(mvcResult, "No data found for flow node instance.");
+    assertThat(mvcResult.getResponse().getContentAsString())
+        .doesNotContain(taskInstanceIdOfB)
+        .doesNotContain("instanceMetadata");
+  }
+
+  @Test
+  public void shouldReturnFlowNodeMetadataOfOwnProcessInstance() throws Exception {
+    // given
+    final String processId = "demoProcess";
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess(processId)
+            .startEvent("start")
+            .serviceTask("task")
+            .zeebeJobType("task")
+            .endEvent()
+            .done();
+    deployProcess(process, processId + ".bpmn");
+    final Long processInstanceKey =
+        ZeebeTestUtil.startProcessInstance(camundaClient, processId, null);
+    searchTestRule.processAllRecordsAndWait(processInstanceIsCreatedCheck, processInstanceKey);
+    searchTestRule.processAllRecordsAndWait(flowNodeIsActiveCheck, processInstanceKey, "task");
+    final String taskInstanceId =
+        tester.getAllFlowNodeInstances(processInstanceKey).stream()
+            .filter(flowNodeInstance -> flowNodeInstance.getFlowNodeId().equals("task"))
+            .findFirst()
+            .orElseThrow()
+            .getId();
+
+    // when
+    final MvcResult mvcResult =
+        mockMvc
+            .perform(
+                post(String.format(
+                        PROCESS_INSTANCE_URL + "/%s/flow-node-metadata", processInstanceKey))
+                    .content(
+                        mockMvcTestRule.json(
+                            new FlowNodeMetadataRequestDto().setFlowNodeInstanceId(taskInstanceId)))
+                    .contentType(mockMvcTestRule.getContentType()))
+            .andExpect(status().isOk())
+            .andReturn();
+
+    // then
+    assertThat(mvcResult.getResponse().getContentAsString())
+        .contains(String.format("\"flowNodeInstanceId\":\"%s\"", taskInstanceId));
   }
 
   @Test
