@@ -58,6 +58,22 @@ final class FilesystemLogArchiveStoreTest extends LogArchiveStoreContractTest {
   }
 
   @Test
+  void shouldListWithoutTemporaryFilesOfPutsInFlight() throws IOException {
+    // given
+    store.put("log-archive/tl-0/p1/data/a.seg", new byte[] {1}).join();
+    Files.createDirectories(baseDir.resolve(".tmp"));
+    Files.write(baseDir.resolve(".tmp/put-1.tmp"), new byte[] {2});
+
+    // when
+    final var all = store.list("").join();
+    final var partial = store.list("log-archive/tl-0/p1/data/a").join();
+
+    // then
+    assertThat(all).containsExactly("log-archive/tl-0/p1/data/a.seg");
+    assertThat(partial).containsExactly("log-archive/tl-0/p1/data/a.seg");
+  }
+
+  @Test
   void shouldRejectKeysEscapingBasePath() {
     assertThatThrownBy(() -> store.put("../escape", new byte[] {1}).join())
         .hasRootCauseInstanceOf(IllegalArgumentException.class);

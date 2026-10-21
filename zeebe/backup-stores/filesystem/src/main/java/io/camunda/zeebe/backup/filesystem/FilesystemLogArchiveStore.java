@@ -10,11 +10,14 @@ package io.camunda.zeebe.backup.filesystem;
 import io.camunda.zeebe.backup.logarchive.store.LogArchiveStore;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
+import java.nio.file.SimpleFileVisitor;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -122,23 +125,58 @@ public final class FilesystemLogArchiveStore implements LogArchiveStore {
   public CompletableFuture<List<String>> list(final String prefix) {
     return supply(
         () -> {
-          if (!Files.isDirectory(basePath)) {
+          // walk only below the prefix's directory; objects are put and deleted concurrently
+          final int slash = prefix.lastIndexOf('/');
+          final var start =
+              basePath.resolve(slash < 0 ? "" : prefix.substring(0, slash)).normalize();
+          if (!start.startsWith(basePath) || !Files.isDirectory(start)) {
             return List.of();
           }
           final var keys = new ArrayList<String>();
-          try (final Stream<Path> files = Files.walk(basePath)) {
-            files
-                .filter(Files::isRegularFile)
-                .filter(p -> !p.startsWith(tmpPath))
-                .map(
-                    p ->
+          Files.walkFileTree(
+              start,
+              new SimpleFileVisitor<>() {
+                @Override
+                public FileVisitResult preVisitDirectory(
+                    final Path dir, final BasicFileAttributes attrs) {
+                  return dir.startsWith(tmpPath)
+                      ? FileVisitResult.SKIP_SUBTREE
+                      : FileVisitResult.CONTINUE;
+                }
+
+                @Override
+                public FileVisitResult visitFile(final Path file, final BasicFileAttributes attrs) {
+                  if (attrs.isRegularFile()) {
+                    final var key =
                         basePath
-                            .relativize(p)
+                            .relativize(file)
                             .toString()
-                            .replace(p.getFileSystem().getSeparator(), "/"))
-                .filter(k -> k.startsWith(prefix))
-                .forEach(keys::add);
-          }
+                            .replace(file.getFileSystem().getSeparator(), "/");
+                    if (key.startsWith(prefix)) {
+                      keys.add(key);
+                    }
+                  }
+                  return FileVisitResult.CONTINUE;
+                }
+
+                @Override
+                public FileVisitResult visitFileFailed(final Path file, final IOException e)
+                    throws IOException {
+                  if (e instanceof NoSuchFileException) {
+                    return FileVisitResult.CONTINUE;
+                  }
+                  throw e;
+                }
+
+                @Override
+                public FileVisitResult postVisitDirectory(final Path dir, final IOException e)
+                    throws IOException {
+                  if (e != null && !(e instanceof NoSuchFileException)) {
+                    throw e;
+                  }
+                  return FileVisitResult.CONTINUE;
+                }
+              });
           Collections.sort(keys);
           return keys;
         });
