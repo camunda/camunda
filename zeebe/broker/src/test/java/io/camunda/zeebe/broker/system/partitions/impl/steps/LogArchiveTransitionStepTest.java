@@ -22,7 +22,9 @@ import io.atomix.raft.partition.impl.RaftPartitionServer;
 import io.atomix.raft.storage.log.RaftLogReader;
 import io.camunda.zeebe.backup.logarchive.leader.LogArchiveAnnouncer;
 import io.camunda.zeebe.backup.logarchive.leader.LogArchiveCleaner;
+import io.camunda.zeebe.backup.logarchive.leader.LogArchiveHoldMover;
 import io.camunda.zeebe.backup.logarchive.leader.LogArchiveMerger;
+import io.camunda.zeebe.backup.logarchive.leader.LogArchiveReleaser;
 import io.camunda.zeebe.backup.logarchive.leader.LogArchiver;
 import io.camunda.zeebe.backup.logarchive.processing.LogArchiveListener;
 import io.camunda.zeebe.backup.logarchive.state.DbLogArchiveState;
@@ -205,7 +207,7 @@ final class LogArchiveTransitionStepTest {
   }
 
   @Test
-  void shouldStartTheReleaserOnlyWithARetentionWindow() {
+  void shouldStartTheReleaserAndTheHoldMoverOnlyWithARetentionWindow() {
     // given
     brokerCfg.getData().getBackup().getLogArchive().setRetentionWindow(Duration.ofDays(7));
     context.setZeebeDb(createDb());
@@ -213,8 +215,10 @@ final class LogArchiveTransitionStepTest {
     // when
     step.transitionTo(context, 3, Role.LEADER).join();
 
-    // then
-    verify(actorSchedulingService, times(6)).submitActor(any(), any());
+    // then - the five base components, the releaser and the hold mover
+    verify(actorSchedulingService, times(7)).submitActor(any(), any());
+    verify(actorSchedulingService).submitActor(any(LogArchiveReleaser.class), any());
+    verify(actorSchedulingService).submitActor(any(LogArchiveHoldMover.class), any());
   }
 
   @Test

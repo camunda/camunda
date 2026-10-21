@@ -17,6 +17,7 @@ import io.camunda.zeebe.backup.logarchive.format.SegmentIdentity;
 import io.camunda.zeebe.backup.logarchive.format.SegmentV1Decoder;
 import io.camunda.zeebe.backup.logarchive.format.SegmentV1Encoder;
 import io.camunda.zeebe.backup.logarchive.format.TestJournalRecords;
+import io.camunda.zeebe.backup.logarchive.model.CompactionModes;
 import io.camunda.zeebe.backup.logarchive.model.IndexChunkFile;
 import io.camunda.zeebe.backup.logarchive.model.LogArchiveJson;
 import io.camunda.zeebe.backup.logarchive.model.LogArchiveKeys;
@@ -430,6 +431,22 @@ final class LogArchiveMergerTest {
     // given - state written before merging existed has no merged index
     archive(range(1, 4), range(5, 8));
     stateView.meta.setMergedIndex(-1);
+    segmentFirstIndexes.add(9L);
+    startMerger(1);
+
+    // when
+    resumeTimeline();
+
+    // then
+    assertThat(written).isEmpty();
+    assertThat(merger.state()).isEqualTo(LogArchiveMerger.State.IDLE);
+  }
+
+  @Test
+  void shouldStayIdleOnAnAuthorityTimeline() {
+    // given - the authority compacts, the cluster only writes small objects
+    archive(range(1, 4), range(5, 8));
+    stateView.meta.setCompactionMode(CompactionModes.AUTHORITY);
     segmentFirstIndexes.add(9L);
     startMerger(1);
 

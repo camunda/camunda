@@ -60,7 +60,8 @@ public final class DbPositionSupplier implements StatePositionSupplier {
    * <p>The merged position M caps it as well (spec section 20.3), so that every replica keeps the
    * entries a merge still reads from its journal. M is -1 until the first merge with records, which
    * keeps the previous snapshot's bound like F does. A timeline started before merging existed has
-   * no merged index ({@code mergedIndex < 0}); it is never merged, so M does not cap it.
+   * no merged index ({@code mergedIndex < 0}); it is never merged, so M does not cap it. Neither
+   * does it on an authority timeline (spec section 25.2): nothing is merged there, so only F caps.
    */
   @Override
   public long getHighestBackupPosition() {
@@ -72,7 +73,9 @@ public final class DbPositionSupplier implements StatePositionSupplier {
             : Long.MAX_VALUE;
     final long archivedPosition = meta != null ? meta.getArchivedPosition() : Long.MAX_VALUE;
     final long mergedPosition =
-        meta != null && meta.getMergedIndex() >= 0 ? meta.getMergedPosition() : Long.MAX_VALUE;
+        meta != null && meta.getMergedIndex() >= 0 && !meta.isAuthority()
+            ? meta.getMergedPosition()
+            : Long.MAX_VALUE;
     return Math.min(backupPosition, Math.min(archivedPosition, mergedPosition));
   }
 }

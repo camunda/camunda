@@ -9,6 +9,7 @@ package io.camunda.zeebe.backup.logarchive.leader;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.zeebe.backup.logarchive.model.CompactionModes;
 import io.camunda.zeebe.backup.logarchive.model.LogArchiveKeys;
 import io.camunda.zeebe.backup.logarchive.state.DbLogArchiveState.OpenObject;
 import io.camunda.zeebe.backup.logarchive.state.DbLogArchiveState.UnmergedObject;
@@ -303,6 +304,22 @@ final class LogArchiveCleanerTest {
   void shouldDeleteNothingOnATimelineStartedBeforeMerging() {
     // given
     stateView.meta = meta(-1, -1, 10);
+    store.put(data(1, 8, 6));
+    start(null);
+    resumeTimeline();
+
+    // when
+    runAfter(GRACE);
+    runAfter(GRACE);
+
+    // then
+    assertThat(store.listCount).isZero();
+  }
+
+  @Test
+  void shouldDeleteNothingOnAnAuthorityTimeline() {
+    // given
+    stateView.meta = meta(8, 0, 10).setCompactionMode(CompactionModes.AUTHORITY);
     store.put(data(1, 8, 6));
     start(null);
     resumeTimeline();

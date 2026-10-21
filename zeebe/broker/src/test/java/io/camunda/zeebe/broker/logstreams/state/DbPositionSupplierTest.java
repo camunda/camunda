@@ -9,6 +9,7 @@ package io.camunda.zeebe.broker.logstreams.state;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.zeebe.backup.logarchive.model.CompactionModes;
 import io.camunda.zeebe.backup.logarchive.state.DbLogArchiveState;
 import io.camunda.zeebe.backup.logarchive.state.LogArchiveMeta;
 import io.camunda.zeebe.backup.processing.state.DbCheckpointState;
@@ -244,6 +245,27 @@ final class DbPositionSupplierTest {
     final long position = supplier.getHighestBackupPosition();
 
     // then - F alone caps compaction, as before
+    assertThat(position).isEqualTo(42);
+  }
+
+  @Test
+  void shouldIgnoreMergedPositionOnAnAuthorityTimeline() {
+    // given - nothing is merged on an authority timeline, so only F caps compaction
+    logArchiveState.setMeta(
+        new LogArchiveMeta()
+            .setTimelineId("tl-0")
+            .setStartIndex(1)
+            .setArchivedIndex(20)
+            .setArchivedPosition(42)
+            .setMergedIndex(0)
+            .setMergedPosition(-1)
+            .setCompactionMode(CompactionModes.AUTHORITY));
+    final var supplier = new DbPositionSupplier(zeebeDb, false, true);
+
+    // when
+    final long position = supplier.getHighestBackupPosition();
+
+    // then
     assertThat(position).isEqualTo(42);
   }
 

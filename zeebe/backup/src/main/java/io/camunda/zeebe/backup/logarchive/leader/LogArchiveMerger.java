@@ -235,8 +235,8 @@ public final class LogArchiveMerger extends Actor
     final List<UnmergedObject> run;
     try {
       meta = stateView.meta();
-      if (meta.getTimelineId().isEmpty() || meta.getMergedIndex() < 0) {
-        // no timeline yet, or one started before merging existed: nothing can be merged
+      if (meta.getTimelineId().isEmpty() || meta.getMergedIndex() < 0 || meta.isAuthority()) {
+        // no timeline yet, one started before merging existed, or one the authority compacts
         return;
       }
       run =
