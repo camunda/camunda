@@ -7,8 +7,6 @@
  */
 package io.camunda.exporter.rdbms.handlers;
 
-import static io.camunda.exporter.rdbms.utils.ExportUtil.nullIfStorageOrdinalIsMainIndex;
-
 import io.camunda.db.rdbms.write.domain.ProcessInstanceDbModel;
 import io.camunda.db.rdbms.write.domain.ProcessInstanceDbModel.ProcessInstanceDbModelBuilder;
 import io.camunda.db.rdbms.write.service.HistoryCleanupService;
@@ -19,6 +17,7 @@ import io.camunda.search.entities.ProcessInstanceEntity.ProcessInstanceState;
 import io.camunda.zeebe.exporter.common.cache.ExporterEntityCache;
 import io.camunda.zeebe.exporter.common.cache.process.CachedProcessEntity;
 import io.camunda.zeebe.exporter.common.utils.ProcessCacheUtil;
+import io.camunda.zeebe.exporter.common.utils.StorageOrdinalUtil;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
@@ -117,7 +116,7 @@ public class ProcessInstanceExportHandler
         .treePath(createTreePath(record).toTruncatedString())
         .tags(value.getTags())
         .businessId(emptyToNull(value.getBusinessId()))
-        .storageOrdinal(nullIfStorageOrdinalIsMainIndex(value.getStorageOrdinal()))
+        .storageOrdinal(StorageOrdinalUtil.ordinalIfOrdinalControlled(value).orElse(null))
         .build();
   }
 

@@ -20,12 +20,12 @@ import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.entities.flownode.FlowNodeState;
 import io.camunda.webapps.schema.entities.flownode.FlowNodeType;
 import io.camunda.webapps.schema.entities.listview.FlowNodeInstanceForListViewEntity;
+import io.camunda.zeebe.exporter.common.utils.StorageOrdinalUtil;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
-import io.camunda.zeebe.protocol.record.value.StorageOrdinalRelated;
 import java.util.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -95,9 +95,8 @@ public class ListViewFlowNodeFromProcessInstanceHandler
     entity.setActivityId(recordValue.getElementId());
     entity.setProcessInstanceKey(recordValue.getProcessInstanceKey());
     entity.setTenantId(tenantOrDefault(recordValue.getTenantId()));
-    if (recordValue.getStorageOrdinal() != StorageOrdinalRelated.MAIN_INDEX) {
-      entity.setStorageOrdinal(recordValue.getStorageOrdinal());
-    }
+    entity.setStorageOrdinal(
+        StorageOrdinalUtil.ordinalIfOrdinalControlled(recordValue).orElse(null));
 
     if (PI_AND_AI_FINISH_STATES.contains(intent)) {
       if (intent.equals(ELEMENT_TERMINATED)) {
