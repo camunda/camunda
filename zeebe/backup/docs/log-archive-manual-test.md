@@ -340,7 +340,7 @@ cuts the parent at the takeover position; 380 jobs after the restore.
 Scenario `j-merge` is `i-eventplane` with 8 MB journal segments (`J_SEGMENT_SIZE`; 128 MB in
 production) and merged objects in frames of 2 MB of entries (`J_FRAME_BYTES`; 32 MB in production), so
 every merged object has about four frames, cleaner `PT10S` / grace `PT30S`, `retentionWindow` `PT3M`, `releaseInterval` `PT10S`, backups every 30 s. The event
-plane is started by `event-plane.sh` with rollup period `PT2M`, delay `PT10S`, interval `PT10S` and
+plane is started by `event-plane.sh` with rollup period `PT4M`, delay `PT10S`, interval `PT10S` and
 retention `PT10M`. Export `SCENARIO=j-merge` in every shell that calls `event-plane.sh` (it defaults to
 `i-eventplane`). `bucket.sh merge j-merge` prints per partition the number of `LOG_MERGED` entries, the
 merged index, whether the merged ranges are contiguous, the newest `LOG_RELEASED` entry, the number of
