@@ -818,7 +818,7 @@
 	"publishConfig": {
 		"access": "public"
 	},
-	"packageManager": "npm@12.2.0",
+	"packageManager": "npm@12.2.1",
 	"devDependencies": {
 		"@kubb/adapter-oas": "5.11.1",
 		"@kubb/cli": "5.11.1",
