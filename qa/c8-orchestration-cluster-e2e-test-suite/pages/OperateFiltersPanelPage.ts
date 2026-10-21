@@ -136,7 +136,7 @@ export class OperateFiltersPanelPage {
     this.singleConditionNameInput = page.getByTestId('single-condition-name');
     this.singleConditionValueInput = page.getByTestId('single-condition-value');
     this.moreFiltersButton = this.page.getByRole('button', {
-      name: 'More filters',
+      name: 'More Filters',
     });
     this.dateFilterDialog = this.page.getByRole('dialog');
     this.fromTimeInput = page.getByTestId('fromTime');

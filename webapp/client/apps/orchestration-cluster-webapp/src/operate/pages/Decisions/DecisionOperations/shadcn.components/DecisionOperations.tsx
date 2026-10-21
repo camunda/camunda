@@ -96,7 +96,7 @@ const DecisionOperations: React.FC<Props> = ({definition}) => {
 				<OperationItems>
 					<DangerButton
 						type="DELETE"
-						title={t('operate.decisions.definitionDeletion.buttonTitle', {
+						title={t('operate.decisions.ds.definitionDeletion.buttonTitle', {
 							name: getDecisionDefinitionName(definition),
 							version: definition.version,
 						})}
@@ -129,7 +129,7 @@ const DecisionOperations: React.FC<Props> = ({definition}) => {
 				}
 				bodyContent={
 					<DataTable
-						aria-label={t('operate.decisions.definitionDeletion.details')}
+						aria-label={t('operate.decisions.ds.definitionDeletion.details')}
 						columns={[{id: 'drdName', header: t('operate.decisions.definitionDeletion.drdName'), accessorKey: 'name'}]}
 						data={[{name: definition.decisionRequirementsName || definition.decisionRequirementsId}]}
 					/>

@@ -21,6 +21,7 @@ import {isSpecificTenant} from '#/operate/shared/utils/isSpecificTenant';
 import {formatEvaluationDate} from '#/operate/shared/utils/formatEvaluationDate';
 import {useDecisionInstancesSearch} from '../useDecisionInstancesSearch';
 import type {DecisionsSearch} from '../decisionsFilter';
+import {BulkDeleteDialog} from './BulkDeleteDialog';
 import {useBulkDelete} from './useBulkDelete';
 
 type Props = {
@@ -98,7 +99,7 @@ const InstancesTable: React.FC<Props> = ({search}) => {
 		},
 		{
 			key: 'decisionEvaluationInstanceKey',
-			label: t('operate.decisions.instancesTable.decisionInstanceKey'),
+			label: t('operate.decisions.ds.instancesTable.decisionInstanceKey'),
 			render: (row: DecisionInstance) => (
 				<DecisionInstanceLink
 					to="/operate/decisions/$decisionInstanceId"
@@ -140,12 +141,12 @@ const InstancesTable: React.FC<Props> = ({search}) => {
 			sortKey: 'evaluationDate',
 			isDefault: true,
 			defaultOrder: 'DESC' as const,
-			label: t('operate.decisions.instancesTable.evaluationDate'),
+			label: t('operate.decisions.ds.instancesTable.evaluationDate'),
 			render: (row: DecisionInstance) => formatEvaluationDate(row.evaluationDate),
 		},
 		{
 			key: 'processInstanceKey',
-			label: t('operate.decisions.instancesTable.processInstanceKey'),
+			label: t('operate.decisions.ds.instancesTable.processInstanceKey'),
 			render: (row: DecisionInstance) =>
 				row.processInstanceKey ? (
 					<ProcessInstanceLink
@@ -167,15 +168,15 @@ const InstancesTable: React.FC<Props> = ({search}) => {
 			<ErrorMessage />
 		) : (
 			<>
-				<p>{t('operate.decisions.instancesTable.emptyMessage')}</p>
-				{filter === undefined && <p>{t('operate.decisions.instancesTable.emptyAdditionalInfo')}</p>}
+				<p>{t('operate.decisions.ds.instancesTable.emptyMessage')}</p>
+				{filter === undefined && <p>{t('operate.decisions.ds.instancesTable.emptyAdditionalInfo')}</p>}
 			</>
 		);
 
 	return (
 		<section className="flex h-full flex-col">
 			<PanelHeader
-				title={t('operate.decisions.instancesTable.title')}
+				title={t('operate.decisions.ds.instancesTable.title')}
 				count={totalCount}
 				hasMoreTotalItems={hasMoreTotalItems}
 			/>
@@ -188,7 +189,7 @@ const InstancesTable: React.FC<Props> = ({search}) => {
 				loadingNextPageLabel={t('operate.decisions.instancesTable.loadingNextPage')}
 				isFetching={isRefreshing}
 				emptyState={emptyState}
-				selectionType="checkbox"
+				selectionType={filter === undefined ? undefined : 'checkbox'}
 				selectAllLabel={t('operate.decisions.instancesTable.selectAll')}
 				selectRowLabel={(id) => t('operate.decisions.instancesTable.selectRow', {key: id})}
 				checkIsAllSelected={() => selection.isAllSelected}
@@ -206,7 +207,7 @@ const InstancesTable: React.FC<Props> = ({search}) => {
 					}
 				}}
 				onReset={selection.reset}
-				batchActions={filter !== undefined ? bulkDelete.batchActions : undefined}
+				batchActions={bulkDelete.batchActions}
 				selectionCountLabel={bulkDelete.selectionCountLabel}
 				batchActionsLabel={t('operate.decisions.toolbar.bulkActionsLabel')}
 				batchActionsCancelLabel={t('operate.decisions.toolbar.discard')}
@@ -221,7 +222,7 @@ const InstancesTable: React.FC<Props> = ({search}) => {
 				className={TABLE_CONTAINER_CLASSES}
 				data-testid="decision-instances-table"
 			/>
-			{bulkDelete.dialog}
+			<BulkDeleteDialog {...bulkDelete.dialogProps} />
 		</section>
 	);
 };

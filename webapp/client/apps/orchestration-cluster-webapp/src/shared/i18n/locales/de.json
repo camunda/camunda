@@ -1355,8 +1355,7 @@
 					"selectSingleTenant": "Um eine Entscheidungstabelle oder einen literalen Ausdruck zu sehen, wählen Sie einen einzelnen Mandanten aus",
 					"noDecisionSelected": "Es ist keine Entscheidung ausgewählt",
 					"selectDecisionInFilters": "Um eine Entscheidungstabelle oder einen literalen Ausdruck zu sehen, wählen Sie eine Entscheidung im Filterbereich aus",
-					"decisionNotFoundTitle": "Entscheidung konnte nicht gefunden werden",
-					"ariaLabel": "Entscheidungsbereich"
+					"decisionNotFoundTitle": "Entscheidung konnte nicht gefunden werden"
 				},
 				"filters": {
 					"tenant": "Mandant",
@@ -1428,6 +1427,40 @@
 					"details": "DRD-Details",
 					"drdName": "DRD-Name",
 					"successTitle": "Operation erstellt"
+				},
+				"ds": {
+					"definitionDeletion": {
+						"buttonTitle": "Entscheidungsdefinition \"{{name}} - Version {{version}}\" löschen",
+						"details": "DRD-Details"
+					},
+					"diagramPanel": {
+						"multipleTenantsSelected": "Die Entscheidung \"{{name}}\" ist in mehr als einem Mandanten vorhanden",
+						"multipleVersionsSelected": "Für die Entscheidung \"{{name}}\" ist mehr als eine Version ausgewählt",
+						"noDecisionSelected": "Es ist keine Entscheidung ausgewählt",
+						"selectDecisionInFilters": "Um eine Entscheidungstabelle oder einen literalen Ausdruck zu sehen, wählen Sie eine Entscheidung im Filterbereich aus",
+						"selectSingleTenant": "Um eine Entscheidungstabelle oder einen literalen Ausdruck zu sehen, wählen Sie einen einzelnen Mandanten aus",
+						"selectSingleVersion": "Um eine Entscheidungstabelle oder einen literalen Ausdruck zu sehen, wählen Sie eine einzelne Version aus"
+					},
+					"filters": {
+						"decisionInstanceKey": "Entscheidungsinstanzschlüssel",
+						"evaluationDateRange": "Auswertungsdatumsbereich",
+						"instancesStates": "Instanzstatus",
+						"processInstanceKey": "Prozessinstanzschlüssel",
+						"removeFilter": "Filter „{{label}}“ entfernen",
+						"searchByName": "Nach Entscheidungsname suchen",
+						"selectVersion": "Entscheidungsversion auswählen"
+					},
+					"instancesTable": {
+						"decisionInstanceKey": "Entscheidungsinstanzschlüssel",
+						"emptyAdditionalInfo": "Um Ergebnisse zu sehen, wählen Sie mindestens einen Instanzstatus aus",
+						"emptyMessage": "Es gibt keine Instanzen, die diesem Filter entsprechen",
+						"evaluationDate": "Auswertungsdatum",
+						"processInstanceKey": "Prozessinstanzschlüssel",
+						"title": "Entscheidungsinstanzen"
+					},
+					"toolbar": {
+						"deleteSuccessSubtitle": "Sie können den Fortschritt auf der Seite Batch-Operationen verfolgen"
+					}
 				}
 			},
 			"decisionInstance": {
@@ -2170,7 +2203,8 @@
 				"optionalFiltersMenu": {
 					"moreFilters": "Weitere Filter",
 					"allFiltersAdded": "Alle Filter wurden bereits hinzugefügt",
-					"removeFilter": "Entfernen"
+					"removeFilter": "Entfernen",
+					"moreFiltersDs": "Weitere Filter"
 				},
 				"dateRangeField": {
 					"custom": "Benutzerdefiniert",

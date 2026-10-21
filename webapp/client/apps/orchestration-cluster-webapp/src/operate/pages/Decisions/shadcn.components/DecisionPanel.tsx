@@ -75,8 +75,8 @@ const DecisionPanelBody: React.FC<Omit<Props, 'headerActions'>> = ({
 					<DiagramShell
 						status="empty"
 						emptyMessage={{
-							message: t('operate.decisions.diagramPanel.multipleVersionsSelected', {name: selectedDefinitionName}),
-							additionalInfo: t('operate.decisions.diagramPanel.selectSingleVersion'),
+							message: t('operate.decisions.ds.diagramPanel.multipleVersionsSelected', {name: selectedDefinitionName}),
+							additionalInfo: t('operate.decisions.ds.diagramPanel.selectSingleVersion'),
 						}}
 					/>
 				);
@@ -85,8 +85,8 @@ const DecisionPanelBody: React.FC<Omit<Props, 'headerActions'>> = ({
 					<DiagramShell
 						status="empty"
 						emptyMessage={{
-							message: t('operate.decisions.diagramPanel.multipleTenantsSelected', {name: selectedDefinitionName}),
-							additionalInfo: t('operate.decisions.diagramPanel.selectSingleTenant'),
+							message: t('operate.decisions.ds.diagramPanel.multipleTenantsSelected', {name: selectedDefinitionName}),
+							additionalInfo: t('operate.decisions.ds.diagramPanel.selectSingleTenant'),
 						}}
 					/>
 				);
@@ -95,8 +95,8 @@ const DecisionPanelBody: React.FC<Omit<Props, 'headerActions'>> = ({
 					<DiagramShell
 						status="empty"
 						emptyMessage={{
-							message: t('operate.decisions.diagramPanel.noDecisionSelected'),
-							additionalInfo: t('operate.decisions.diagramPanel.selectDecisionInFilters'),
+							message: t('operate.decisions.ds.diagramPanel.noDecisionSelected'),
+							additionalInfo: t('operate.decisions.ds.diagramPanel.selectDecisionInFilters'),
 						}}
 					/>
 				);

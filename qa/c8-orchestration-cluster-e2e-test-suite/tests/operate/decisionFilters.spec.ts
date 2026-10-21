@@ -221,7 +221,7 @@ test.describe('Decision Filter Reset', () => {
 
     await test.step('Show an optional filter', async () => {
       await operateDecisionsPage.displayOptionalFilter(
-        'Decision instance key(s)',
+        'Decision Instance Key(s)',
       );
       await expect(
         operateDecisionsPage.decisionInstanceKeysFilter,
