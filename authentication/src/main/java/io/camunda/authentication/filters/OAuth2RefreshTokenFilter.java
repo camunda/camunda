@@ -28,7 +28,9 @@ import org.springframework.security.oauth2.client.authentication.OAuth2Authentic
 import org.springframework.security.oauth2.client.web.OAuth2AuthorizedClientRepository;
 import org.springframework.security.oauth2.core.OAuth2AccessToken;
 import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
+import org.springframework.security.oauth2.core.OAuth2AuthorizationException;
 import org.springframework.security.oauth2.core.OAuth2Error;
+import org.springframework.security.oauth2.core.OAuth2ErrorCodes;
 import org.springframework.security.web.authentication.logout.CookieClearingLogoutHandler;
 import org.springframework.security.web.authentication.logout.LogoutHandler;
 import org.springframework.web.filter.OncePerRequestFilter;
@@ -125,6 +127,19 @@ public class OAuth2RefreshTokenFilter extends OncePerRequestFilter {
       }
 
     } catch (final OAuth2AuthenticationException e) {
+      logoutAndThrowAuthenticationException(
+          request, response, authenticationToken, "refresh_token_failed", e);
+    } catch (final OAuth2AuthorizationException e) {
+      // An expired or revoked refresh token surfaces as OAuth2AuthorizationException with
+      // invalid_grant, not as OAuth2AuthenticationException. Uncaught, it escapes to the servlet
+      // container, which logs it as ERROR. Other refresh failures keep propagating as before.
+      if (!OAuth2ErrorCodes.INVALID_GRANT.equals(e.getError().getErrorCode())) {
+        throw e;
+      }
+      LOG.warn(
+          "Refresh token rejected by the identity provider for client registration '{}' "
+              + "(invalid_grant); logging the user out",
+          authenticationToken.getAuthorizedClientRegistrationId());
       logoutAndThrowAuthenticationException(
           request, response, authenticationToken, "refresh_token_failed", e);
     }

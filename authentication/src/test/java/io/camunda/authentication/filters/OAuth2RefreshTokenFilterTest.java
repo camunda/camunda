@@ -35,6 +35,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.oauth2.client.ClientAuthorizationException;
 import org.springframework.security.oauth2.client.OAuth2AuthorizeRequest;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClient;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClientManager;
@@ -241,6 +242,53 @@ class OAuth2RefreshTokenFilterTest {
 
     assertThat(authenticationToken.isAuthenticated()).isFalse();
     verify(logoutHandler).logout(request, response, authenticationToken);
+  }
+
+  @Test
+  void shouldLogoutWhenIdentityProviderRejectsRefreshTokenWithInvalidGrant() {
+    // Given - DefaultOAuth2AuthorizedClientManager rethrows the provider's failure as-is
+    final OAuth2AuthorizedClient expiredClient = createExpiredAuthorizedClientWithRefreshToken();
+    when(securityContext.getAuthentication()).thenReturn(authenticationToken);
+    when(authorizedClientRepository.loadAuthorizedClient(
+            eq(CLIENT_REGISTRATION_ID), eq(authenticationToken), any()))
+        .thenReturn(expiredClient);
+    when(authorizedClientManager.authorize(any(OAuth2AuthorizeRequest.class)))
+        .thenThrow(
+            new ClientAuthorizationException(
+                new OAuth2Error("invalid_grant"), CLIENT_REGISTRATION_ID, "Token is not active"));
+
+    // When & Then - converted to the controlled logout flow instead of escaping to the container
+    assertThatThrownBy(() -> filter.doFilterInternal(request, response, filterChain))
+        .isInstanceOf(OAuth2AuthenticationException.class)
+        .hasCauseInstanceOf(ClientAuthorizationException.class)
+        .satisfies(
+            e ->
+                assertThat(((OAuth2AuthenticationException) e).getError().getErrorCode())
+                    .isEqualTo("refresh_token_failed"));
+
+    assertThat(authenticationToken.isAuthenticated()).isFalse();
+    verify(logoutHandler).logout(request, response, authenticationToken);
+  }
+
+  @Test
+  void shouldPropagateOtherRefreshFailuresUnchanged() {
+    // Given - the identity provider is failing, not the refresh token
+    final OAuth2AuthorizedClient expiredClient = createExpiredAuthorizedClientWithRefreshToken();
+    when(securityContext.getAuthentication()).thenReturn(authenticationToken);
+    when(authorizedClientRepository.loadAuthorizedClient(
+            eq(CLIENT_REGISTRATION_ID), eq(authenticationToken), any()))
+        .thenReturn(expiredClient);
+    final var failure =
+        new ClientAuthorizationException(
+            new OAuth2Error("server_error"), CLIENT_REGISTRATION_ID, "Internal error");
+    when(authorizedClientManager.authorize(any(OAuth2AuthorizeRequest.class))).thenThrow(failure);
+
+    // When & Then
+    assertThatThrownBy(() -> filter.doFilterInternal(request, response, filterChain))
+        .isSameAs(failure);
+
+    assertThat(authenticationToken.isAuthenticated()).isTrue();
+    verify(logoutHandler, never()).logout(any(), any(), any());
   }
 
   @Test
