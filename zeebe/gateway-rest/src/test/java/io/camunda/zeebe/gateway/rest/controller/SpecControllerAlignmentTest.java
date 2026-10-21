@@ -10,6 +10,7 @@ package io.camunda.zeebe.gateway.rest.controller;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.gateway.rest.util.OpenApiYamlLoader;
+import io.swagger.v3.oas.annotations.Hidden;
 import io.swagger.v3.oas.models.OpenAPI;
 import java.io.IOException;
 import java.lang.reflect.Method;
@@ -19,6 +20,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.EnumSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -33,17 +35,27 @@ import org.springframework.core.type.classreading.MetadataReader;
 import org.springframework.core.type.filter.AnnotationTypeFilter;
 import org.springframework.util.ClassUtils;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
 
 /**
- * Guards the REST API guideline (§2.16 of {@code docs/rest-api-endpoint-guidelines.md}) that every
- * operation in the OpenAPI spec must be backed by a controller method. Without this check, an
- * operation can be documented (and picked up by SDK generators) while no endpoint serves it.
+ * Guards the REST API guideline (§2.16 of {@code docs/rest-api-endpoint-guidelines.md}) that spec
+ * and controllers stay aligned in both directions:
+ *
+ * <ul>
+ *   <li>Every operation in the OpenAPI spec must be backed by a controller method. Without this
+ *       check, an operation can be documented (and picked up by SDK generators) while no endpoint
+ *       serves it.
+ *   <li>Every public controller endpoint must have a spec operation. Without this check, an
+ *       endpoint can ship undocumented and be invisible to SDK generators. Handlers (or
+ *       controllers) annotated with {@code @Hidden} are excluded from this direction only, since a
+ *       hidden handler still exists in code. Legacy {@code /v1} endpoints are exempt too.
+ * </ul>
  *
  * <p>Controllers are discovered by statically scanning for {@link CamundaRestController} and
  * reading their {@link RequestMapping} meta-annotations rather than by booting a Spring context:
  * several controllers are {@code @Conditional*}/{@code @Profile}-gated, so the mappings of a
  * context depend on its configuration, whereas the guideline asks whether a controller exists in
- * code.
+ * code. A mapping without an HTTP method constraint counts for every HTTP method.
  *
  * <p>The spec is loaded through {@link OpenApiYamlLoader#customizeOpenApiFromYaml}, the same code
  * path used at runtime, so the paths carry the same {@code /v2} prefixing as the served API. The
@@ -51,15 +63,16 @@ import org.springframework.web.bind.annotation.RequestMapping;
  * $ref}s between the per-domain YAML files do not resolve reliably from the packaged jar.
  *
  * <p>Both sides are reduced to a normalized {@link Endpoint}; path variable names are ignored as
- * only the existence of an endpoint is checked. The reverse direction (every controller endpoint
- * has a spec operation unless {@code @Hidden}) can be added by diffing {@link
- * #controllerEndpoints()} against {@link #specEndpoints()} the other way around.
+ * only the existence of an endpoint is checked.
  */
 final class SpecControllerAlignmentTest {
 
   private static final String SPEC_RELATIVE_PATH =
       "zeebe/gateway-protocol/src/main/proto/v2/rest-api.yaml";
   private static final String CONTROLLER_BASE_PACKAGE = "io.camunda.zeebe.gateway.rest";
+  // Pre-8.6 aliases that share handlers with documented /v2 endpoints (e.g. UserTaskController,
+  // TopologyController), so @Hidden cannot exclude them per path.
+  private static final String LEGACY_V1_PREFIX = "/v1/";
   private static final Pattern PATH_VARIABLE = Pattern.compile("\\{[^}]*}");
   private static final Pattern REPEATED_SLASHES = Pattern.compile("/{2,}");
 
@@ -67,7 +80,10 @@ final class SpecControllerAlignmentTest {
   void shouldBackEverySpecOperationWithAControllerMethod() {
     // given
     final Map<Endpoint, String> specEndpoints = specEndpoints();
-    final Set<Endpoint> controllerEndpoints = controllerEndpoints();
+    final Set<Endpoint> controllerEndpoints =
+        controllerEndpoints().stream()
+            .map(ControllerEndpoint::endpoint)
+            .collect(Collectors.toSet());
 
     // when
     final List<String> missing =
@@ -91,6 +107,44 @@ final class SpecControllerAlignmentTest {
                 + " (docs/rest-api-endpoint-guidelines.md §2.16). Add the controller method,"
                 + " or remove the operation from the spec.",
             String.join(System.lineSeparator(), missing))
+        .isEmpty();
+  }
+
+  @Test
+  void shouldDocumentEveryControllerEndpointInTheSpec() {
+    // given
+    final Set<Endpoint> specEndpoints = specEndpoints().keySet();
+    final Set<ControllerEndpoint> controllerEndpoints = controllerEndpoints();
+
+    // when
+    final List<String> undocumented =
+        controllerEndpoints.stream()
+            .filter(controllerEndpoint -> !controllerEndpoint.hidden())
+            .filter(
+                controllerEndpoint ->
+                    !controllerEndpoint.endpoint().path().startsWith(LEGACY_V1_PREFIX))
+            .filter(controllerEndpoint -> !specEndpoints.contains(controllerEndpoint.endpoint()))
+            .sorted(
+                Comparator.comparing(controllerEndpoint -> controllerEndpoint.endpoint().path()))
+            .map(
+                controllerEndpoint ->
+                    "%s (%s %s)"
+                        .formatted(
+                            controllerEndpoint.handler(),
+                            controllerEndpoint.endpoint().method(),
+                            controllerEndpoint.endpoint().path()))
+            .toList();
+
+    // then
+    assertThat(specEndpoints).as("operations found in the spec").isNotEmpty();
+    assertThat(controllerEndpoints).as("endpoints found on controllers").isNotEmpty();
+    assertThat(undocumented)
+        .as(
+            "Controller endpoints without a matching spec operation:%n%s%n%n"
+                + "Every public controller endpoint must have a spec operation"
+                + " (docs/rest-api-endpoint-guidelines.md §2.16). Add the operation to the spec"
+                + " and $ref it from rest-api.yaml, or annotate the handler with @Hidden.",
+            String.join(System.lineSeparator(), undocumented))
         .isEmpty();
   }
 
@@ -127,8 +181,11 @@ final class SpecControllerAlignmentTest {
         "Could not locate " + SPEC_RELATIVE_PATH + " by walking up from the working directory");
   }
 
-  /** Collects every normalized endpoint declared by a {@link CamundaRestController}. */
-  private static Set<Endpoint> controllerEndpoints() {
+  /**
+   * Collects every endpoint declared by a {@link CamundaRestController}, hidden ones included. A
+   * mapping without an HTTP method constraint counts for every HTTP method.
+   */
+  private static Set<ControllerEndpoint> controllerEndpoints() {
     return productionControllers().stream()
         .flatMap(
             controller ->
@@ -158,7 +215,8 @@ final class SpecControllerAlignmentTest {
         .collect(Collectors.toList());
   }
 
-  private static Stream<Endpoint> endpointsOf(final Class<?> controller, final Method method) {
+  private static Stream<ControllerEndpoint> endpointsOf(
+      final Class<?> controller, final Method method) {
     final var methodMapping =
         AnnotatedElementUtils.findMergedAnnotation(method, RequestMapping.class);
     if (methodMapping == null) {
@@ -166,11 +224,20 @@ final class SpecControllerAlignmentTest {
     }
     final var classMapping =
         AnnotatedElementUtils.findMergedAnnotation(controller, RequestMapping.class);
+    final String handler = controller.getSimpleName() + "#" + method.getName();
+    final boolean hidden =
+        AnnotatedElementUtils.hasAnnotation(method, Hidden.class)
+            || AnnotatedElementUtils.hasAnnotation(controller, Hidden.class);
     return fullPaths(classMapping, methodMapping).stream()
         .flatMap(
             path ->
-                Arrays.stream(methodMapping.method())
-                    .map(httpMethod -> new Endpoint(httpMethod.name(), normalize(path))));
+                httpMethods(classMapping, methodMapping).stream()
+                    .map(
+                        httpMethod ->
+                            new ControllerEndpoint(
+                                new Endpoint(httpMethod.name(), normalize(path)),
+                                handler,
+                                hidden)));
   }
 
   /** Every class-level path combined with every method-level path. */
@@ -182,6 +249,20 @@ final class SpecControllerAlignmentTest {
                 pathsOrEmpty(methodMapping).stream()
                     .map(path -> path.isEmpty() ? basePath : basePath + "/" + path))
         .toList();
+  }
+
+  /**
+   * Spring combines the HTTP method constraints of the class and the method mapping, and serves a
+   * mapping without any constraint for every method.
+   */
+  private static Set<RequestMethod> httpMethods(
+      final RequestMapping classMapping, final RequestMapping methodMapping) {
+    final Set<RequestMethod> methods = EnumSet.noneOf(RequestMethod.class);
+    if (classMapping != null) {
+      methods.addAll(Arrays.asList(classMapping.method()));
+    }
+    methods.addAll(Arrays.asList(methodMapping.method()));
+    return methods.isEmpty() ? EnumSet.allOf(RequestMethod.class) : methods;
   }
 
   private static List<String> pathsOrEmpty(final RequestMapping mapping) {
@@ -207,6 +288,9 @@ final class SpecControllerAlignmentTest {
     final String normalized = PATH_VARIABLE.matcher(path).replaceAll("{}");
     return REPEATED_SLASHES.matcher("/" + normalized).replaceAll("/");
   }
+
+  /** An {@link Endpoint} declared by a controller, with the handler method that serves it. */
+  private record ControllerEndpoint(Endpoint endpoint, String handler, boolean hidden) {}
 
   /** An HTTP method and a normalized path, with path variable names erased to {@code {}}. */
   private record Endpoint(String method, String path) {}

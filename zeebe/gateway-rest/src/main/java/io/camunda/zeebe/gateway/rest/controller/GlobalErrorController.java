@@ -10,6 +10,7 @@ package io.camunda.zeebe.gateway.rest.controller;
 import io.camunda.gateway.protocol.model.CamundaProblemDetail;
 import io.camunda.zeebe.gateway.rest.annotation.ClusterScoped;
 import io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper;
+import io.swagger.v3.oas.annotations.Hidden;
 import jakarta.servlet.http.HttpServletRequest;
 import java.net.URI;
 import java.util.Map;
@@ -38,6 +39,7 @@ public class GlobalErrorController implements ErrorController {
     this.errorAttributes = errorAttributes;
   }
 
+  @Hidden
   @RequestMapping("/error")
   public ResponseEntity<ProblemDetail> handleError(final HttpServletRequest request) {
     final WebRequest webRequest = new ServletWebRequest(request);
