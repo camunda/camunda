@@ -15,6 +15,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.configuration.UnifiedConfigurationHelper;
 import io.camunda.configuration.beanoverrides.TasklistPropertiesOverride;
+import io.camunda.security.configuration.SaasConfiguration;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.util.apps.nobeans.TestApplicationWithNoBeans;
@@ -22,7 +23,6 @@ import io.camunda.tasklist.webapp.security.TasklistProfileService;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
@@ -58,14 +58,21 @@ import org.springframework.web.context.WebApplicationContext;
 public class ClientConfigRestServiceIT {
 
   @Autowired private WebApplicationContext context;
-
-  @InjectMocks private SecurityConfiguration securityConfiguration;
+  @Autowired private SecurityConfiguration securityConfiguration;
+  @Autowired private ClientConfig clientConfig;
+  @Autowired private ClientConfigRestService clientConfigRestService;
 
   private MockMvc mockMvc;
 
   @BeforeEach
   public void setupMockMvc() {
     mockMvc = MockMvcBuilders.webAppContextSetup(context).build();
+  }
+
+  @AfterEach
+  public void resetSaasConfiguration() {
+    securityConfiguration.setSaas(new SaasConfiguration());
+    reinitializeClientConfig();
   }
 
   @Test
@@ -98,5 +105,26 @@ public class ClientConfigRestServiceIT {
                 + "\"isResourcePermissionsEnabled\":false,"
                 + "\"isUserAccessRestrictionsEnabled\":true,"
                 + "\"maxRequestSize\":10485760};");
+  }
+
+  @Test
+  public void testGetClientConfigForCantLogoutInSaas() throws Exception {
+    // given
+    securityConfiguration.getSaas().setOrganizationId("organizationId");
+    securityConfiguration.getSaas().setClusterId("clusterId");
+    reinitializeClientConfig();
+
+    // when
+    final MvcResult mvcResult =
+        mockMvc.perform(get("/tasklist/client-config.js")).andExpect(status().isOk()).andReturn();
+
+    // then
+    assertThat(mvcResult.getResponse().getContentAsString()).contains("\"canLogout\":false,");
+  }
+
+  /** The client config is computed once at startup, so it must be rebuilt after a change. */
+  private void reinitializeClientConfig() {
+    clientConfig.init();
+    clientConfigRestService.init();
   }
 }
