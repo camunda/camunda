@@ -35,6 +35,9 @@ import org.springframework.context.annotation.Configuration;
  * Builds the webapp-facing {@link AuthorizationCheckPort}, replacing the legacy {@code
  * ResourcePermissionPort}/{@code AuthorizationRepositoryPort} trio (issue #399).
  *
+ * <p>Each physical tenant's port, and the {@link WebAppAuthorizationEnabledPort} the webapp filter
+ * asks per request, use that tenant's own {@code authorizations.enabled} rather than the root one.
+ *
  * <p>Gated on the same condition as {@link AuthorizationScopeRepositoryConfiguration}'s root {@link
  * AuthorizationScopeRepositoryPort} bean (unconditional), rather than on secondary storage itself:
  * with secondary storage disabled there is exactly one authorization source and this bean seeds a
