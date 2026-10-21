@@ -1,20 +1,27 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
 import io.camunda.gradle.catalog.camundaCatalog
 import io.camunda.gradle.flags.asEnabledFlag
 import io.camunda.gradle.pom.SettingsPomResolver
 
 pluginManagement {
-  includeBuild("gradle/build-logic")
+    includeBuild("gradle/build-logic")
 
-  // Same mirror-first order as dependencyResolutionManagement below; the plugin portal is kept for
-  // portal-only plugins.
-  repositories {
-    maven("https://maven-central.storage-download.googleapis.com/maven2")
-    gradlePluginPortal()
-  }
+    // Same mirror-first order as dependencyResolutionManagement below; the plugin portal is kept for
+    // portal-only plugins.
+    repositories {
+        maven("https://maven-central.storage-download.googleapis.com/maven2")
+        gradlePluginPortal()
+    }
 }
 
 plugins {
-  id("io.camunda.gradle.settings-pom-resolver")
+    id("io.camunda.gradle.settings-pom-resolver")
 }
 
 val settingsPomResolver = extensions.getByType(SettingsPomResolver::class.java)
@@ -24,44 +31,44 @@ val pomVersions: Map<String, String> = settingsPomResolver.propertiesForPom("par
 val bomPomVersions: Map<String, String> = settingsPomResolver.propertiesForPom("bom/pom.xml")
 
 val testingCamundaProcessTestLangchain4jPomVersions: Map<String, String> =
-  settingsPomResolver.propertiesForPom("testing/camunda-process-test-langchain4j/pom.xml")
+    settingsPomResolver.propertiesForPom("testing/camunda-process-test-langchain4j/pom.xml")
 
 val langchain4jVersion =
-  settingsPomResolver.resolveProperty(
-    "version.langchain4j",
-    pomVersions,
-    testingCamundaProcessTestLangchain4jPomVersions,
-  )
+    settingsPomResolver.resolveProperty(
+        "version.langchain4j",
+        pomVersions,
+        testingCamundaProcessTestLangchain4jPomVersions,
+    )
 
 val optimizePomVersions: Map<String, String> =
-  settingsPomResolver.propertiesForPom("optimize/pom.xml")
+    settingsPomResolver.propertiesForPom("optimize/pom.xml")
 
 val camundaSpringBootStarterPomVersions: Map<String, String> =
-  settingsPomResolver.propertiesForPom("clients/camunda-spring-boot-starter/pom.xml")
+    settingsPomResolver.propertiesForPom("clients/camunda-spring-boot-starter/pom.xml")
 
 val camundaSpringBoot3StarterPomVersions: Map<String, String> =
-  settingsPomResolver.propertiesForPom("clients/camunda-spring-boot-3-starter/pom.xml")
+    settingsPomResolver.propertiesForPom("clients/camunda-spring-boot-3-starter/pom.xml")
 
 val rootPomVersion = settingsPomResolver.projectVersionForPom("pom.xml")
 
 fun pomVersion(key: String) = settingsPomResolver.resolveProperty(key, bomPomVersions, pomVersions)
 
 fun optimizePomVersion(key: String) =
-  settingsPomResolver.resolveProperty(key, pomVersions, optimizePomVersions)
+    settingsPomResolver.resolveProperty(key, pomVersions, optimizePomVersions)
 
 fun starterPomVersion(key: String): String {
-  val baseStarterVersion =
-    settingsPomResolver.resolveProperty(key, pomVersions, camundaSpringBootStarterPomVersions)
-  val springBoot3StarterVersion =
-    settingsPomResolver.resolveProperty(key, pomVersions, camundaSpringBoot3StarterPomVersions)
-  if (baseStarterVersion != springBoot3StarterVersion) {
-    error(
-      "Mismatched starter POM property $key: " +
-        "$baseStarterVersion in camunda-spring-boot-starter and " +
-        "$springBoot3StarterVersion in camunda-spring-boot-3-starter"
-    )
-  }
-  return baseStarterVersion
+    val baseStarterVersion =
+        settingsPomResolver.resolveProperty(key, pomVersions, camundaSpringBootStarterPomVersions)
+    val springBoot3StarterVersion =
+        settingsPomResolver.resolveProperty(key, pomVersions, camundaSpringBoot3StarterPomVersions)
+    if (baseStarterVersion != springBoot3StarterVersion) {
+        error(
+            "Mismatched starter POM property $key: " +
+                    "$baseStarterVersion in camunda-spring-boot-starter and " +
+                    "$springBoot3StarterVersion in camunda-spring-boot-3-starter"
+        )
+    }
+    return baseStarterVersion
 }
 
 val quickly = providers.gradleProperty("quickly").asEnabledFlag().getOrElse(false)
@@ -71,74 +78,73 @@ rootProject.name = "camunda-8-root"
 // Each project owns its version so isolated project configuration does not need to read mutable
 // state from the root project. Capture the parsed value as a plain String in the callback.
 rootPomVersion.let { versionFromMaven ->
-  gradle.lifecycle.beforeProject {
-    version = versionFromMaven
-  }
+    gradle.lifecycle.beforeProject {
+        version = versionFromMaven
+    }
 }
 
 // Aggregator projects do not apply the Java conventions and therefore do not have the lifecycle
 // tasks used by the shared CI commands. Register local placeholders after each project has been
 // configured instead of mutating subprojects from the root project.
 gradle.lifecycle.afterProject {
-  if ("test" !in tasks.names) {
-    tasks.register("test") {
-      group = "verification"
-      description = "No-op placeholder (module has no unit tests)"
+    if ("test" !in tasks.names) {
+        tasks.register("test") {
+            group = "verification"
+            description = "No-op placeholder (module has no unit tests)"
+        }
     }
-  }
-  if ("it" !in tasks.names) {
-    tasks.register("it") {
-      group = "verification"
-      description = "No-op placeholder (module has no integration tests)"
+    if ("it" !in tasks.names) {
+        tasks.register("it") {
+            group = "verification"
+            description = "No-op placeholder (module has no integration tests)"
+        }
     }
-  }
 }
 
 dependencyResolutionManagement {
-  // PREFER_SETTINGS: repositories declared here take precedence; subproject repositories are
-  // still allowed (e.g. gradle/build-logic/conventions/build.gradle.kts uses gradlePluginPortal()).
-  repositoriesMode = RepositoriesMode.PREFER_SETTINGS
+    // PREFER_SETTINGS: repositories declared here take precedence over any a subproject declares.
+    repositoriesMode = RepositoriesMode.PREFER_SETTINGS
 
-  repositories {
-    // Google-hosted Maven Central mirror first: shared CI/sandbox egress IPs get rate limited (HTTP
-    // 429) by repo.maven.apache.org. Central stays as fallback for anything the mirror lacks.
-    maven("https://maven-central.storage-download.googleapis.com/maven2")
-    mavenCentral()
+    repositories {
+        // Google-hosted Maven Central mirror first: shared CI/sandbox egress IPs get rate limited (HTTP
+        // 429) by repo.maven.apache.org. Central stays as fallback for anything the mirror lacks.
+        maven("https://maven-central.storage-download.googleapis.com/maven2")
+        mavenCentral()
 
-    ivy {
-      name = "NodeJsDist"
-      url = uri("https://nodejs.org/dist")
-      patternLayout { artifact("v[revision]/[artifact](-v[revision]-[classifier]).[ext]") }
-      metadataSources { artifact() }
-      content { includeModule("org.nodejs", "node") }
+        ivy {
+            name = "NodeJsDist"
+            url = uri("https://nodejs.org/dist")
+            patternLayout { artifact("v[revision]/[artifact](-v[revision]-[classifier]).[ext]") }
+            metadataSources { artifact() }
+            content { includeModule("org.nodejs", "node") }
+        }
+
+        // mavenLocal — only when explicitly requested via -PuseMavenLocal
+        if (providers.gradleProperty("useMavenLocal").isPresent) {
+            mavenLocal()
+        }
     }
 
-    // mavenLocal — only when explicitly requested via -PuseMavenLocal
-    if (providers.gradleProperty("useMavenLocal").isPresent) {
-      mavenLocal()
+    versionCatalogs {
+        // The catalog is built in code so versions come from the Maven POMs, which stay the single
+        // source of truth while Maven exists. Replace with a TOML catalog when Maven is removed.
+        create("libs") {
+            camundaCatalog(
+                pomVersion = { key -> pomVersion(key) },
+                optimizePomVersion = { key -> optimizePomVersion(key) },
+                starterPomVersion = { key -> starterPomVersion(key) },
+                langchain4jVersion = langchain4jVersion,
+            )
+        }
     }
-  }
-
-  versionCatalogs {
-    // The catalog is built in code so versions come from the Maven POMs, which stay the single
-    // source of truth while Maven exists. Replace with a TOML catalog when Maven is removed.
-    create("libs") {
-      camundaCatalog(
-        pomVersion = { key -> pomVersion(key) },
-        optimizePomVersion = { key -> optimizePomVersion(key) },
-        starterPomVersion = { key -> starterPomVersion(key) },
-        langchain4jVersion = langchain4jVersion,
-      )
-    }
-  }
 }
 
 private fun org.gradle.api.initialization.Settings.registerProject(
-  name: String,
-  directory: String,
+    name: String,
+    directory: String,
 ) {
-  include(name)
-  project(name).projectDir = settingsDir.resolve(directory)
+    include(name)
+    project(name).projectDir = settingsDir.resolve(directory)
 }
 
 registerProject(":operate-common", "operate/common")
@@ -146,18 +152,18 @@ registerProject(":operate-common", "operate/common")
 registerProject(":zeebe-gateway-grpc", "zeebe/gateway-grpc")
 
 if (!quickly) {
-  registerProject(":camunda-optimize", "optimize-distro")
-  registerProject(":optimize-commons", "optimize/util/optimize-commons")
-  registerProject(":optimize-backend", "optimize/backend")
-  registerProject(":upgrade-optimize", "optimize/upgrade")
-  registerProject(":optimize-client", "optimize/client")
+    registerProject(":camunda-optimize", "optimize-distro")
+    registerProject(":optimize-commons", "optimize/util/optimize-commons")
+    registerProject(":optimize-backend", "optimize/backend")
+    registerProject(":upgrade-optimize", "optimize/upgrade")
+    registerProject(":optimize-client", "optimize/client")
 }
 
 registerProject(":zeebe-qa-update-tests", "zeebe/qa/update-tests")
 
 registerProject(
-  ":camunda-spring-boot-starter-virtual-threads",
-  "clients/camunda-spring-boot-starter-virtual-threads",
+    ":camunda-spring-boot-starter-virtual-threads",
+    "clients/camunda-spring-boot-starter-virtual-threads",
 )
 
 registerProject(":zeebe-gateway", "zeebe/gateway")
@@ -187,8 +193,8 @@ registerProject(":camunda-security-services", "security/security-services")
 registerProject(":camunda-security-core", "security/security-core")
 
 registerProject(
-  ":camunda-process-test-json-test-cases",
-  "testing/camunda-process-test-json-test-cases",
+    ":camunda-process-test-json-test-cases",
+    "testing/camunda-process-test-json-test-cases",
 )
 
 registerProject(":camunda-process-test-langchain4j", "testing/camunda-process-test-langchain4j")
@@ -356,8 +362,8 @@ registerProject(":camunda-search-client", "search/search-client")
 registerProject(":camunda-client-java", "clients/java")
 
 registerProject(
-  ":camunda-spring-boot-protobuf-compatibility",
-  "clients/spring-boot-protobuf-compatibility",
+    ":camunda-spring-boot-protobuf-compatibility",
+    "clients/spring-boot-protobuf-compatibility",
 )
 
 registerProject(":rdbms-exporter", "zeebe/exporters/rdbms-exporter")
@@ -381,8 +387,8 @@ registerProject(":zeebe-build-tools", "build-tools")
 registerProject(":zeebe-elasticsearch-exporter", "zeebe/exporters/elasticsearch-exporter")
 
 registerProject(
-  ":camunda-search-client-query-transformer",
-  "search/search-client-query-transformer",
+    ":camunda-search-client-query-transformer",
+    "search/search-client-query-transformer",
 )
 
 registerProject(":camunda-archunit-tests", "qa/archunit-tests")
