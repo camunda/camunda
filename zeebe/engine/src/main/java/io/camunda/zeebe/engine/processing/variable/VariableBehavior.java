@@ -28,6 +28,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import org.agrona.DirectBuffer;
 import org.jspecify.annotations.Nullable;
 
@@ -47,7 +48,6 @@ public final class VariableBehavior {
 
   private final IndexedDocument indexedDocument = new IndexedDocument();
   private final VariableRecord variableRecord = new VariableRecord();
-  private final VariableMetadataRecord noMetadata = new VariableMetadataRecord();
   private final VariableSourceRecord variableSourceRecord;
 
   public VariableBehavior(
@@ -195,17 +195,16 @@ public final class VariableBehavior {
         final DocumentEntry entry = entryIterator.next();
         final VariableInstance variableInstance =
             variableState.getVariableInstanceLocal(currentScope, entry.getName());
-        final VariableMetadataRecord entryMetadata = metadataLookup.forVariable(entry.getName());
+        if (variableInstance == null) {
+          continue;
+        }
 
-        if (variableInstance != null
-            && hasChanged(variableInstance, entry.getValue(), entryMetadata)) {
-          applyEntryToRecord(entry);
-          variableRecord.setMetadata(metadataToWrite(entryMetadata, variableInstance));
-          stateWriter.appendFollowUpEvent(
-              variableInstance.getKey(), VariableIntent.UPDATED, variableRecord);
-          variableEvents.add(
-              new VariableEvent(
-                  currentScope, VariableIntent.UPDATED, getVariableRecordCopy(variableRecord)));
+        applyEntryToRecord(entry);
+        final Optional<VariableEvent> variableEvent =
+            updateVariable(
+                variableInstance, variableRecord, metadataLookup.forVariable(entry.getName()));
+        if (variableEvent.isPresent()) {
+          variableEvents.add(variableEvent.get());
           entryIterator.remove();
         }
       }
@@ -278,52 +277,61 @@ public final class VariableBehavior {
 
   private Optional<VariableEvent> setLocalVariable(
       final VariableRecord record, final @Nullable VariableMetadataRecord metadata) {
-    Optional<VariableEvent> event = Optional.empty();
     final VariableInstance variableInstance =
         variableState.getVariableInstanceLocal(record.getScopeKey(), record.getNameBuffer());
     if (variableInstance == null) {
-      record.setMetadata(metadataToWrite(metadata, null));
-      final long key = keyGenerator.nextKey();
-      stateWriter.appendFollowUpEvent(key, VariableIntent.CREATED, record);
-      event =
-          Optional.of(
-              new VariableEvent(
-                  record.getScopeKey(), VariableIntent.CREATED, getVariableRecordCopy(record)));
-    } else if (hasChanged(variableInstance, record.getValueBuffer(), metadata)) {
-      record.setMetadata(metadataToWrite(metadata, variableInstance));
-      stateWriter.appendFollowUpEvent(variableInstance.getKey(), VariableIntent.UPDATED, record);
-      event =
-          Optional.of(
-              new VariableEvent(
-                  record.getScopeKey(), VariableIntent.UPDATED, getVariableRecordCopy(record)));
+      return Optional.of(createVariable(record, metadata));
+    }
+    return updateVariable(variableInstance, record, metadata);
+  }
+
+  private VariableEvent createVariable(
+      final VariableRecord record, final @Nullable VariableMetadataRecord metadata) {
+    if (metadata != null) {
+      record.setMetadata(metadata);
+    } else {
+      record.getMetadata().setProtectionModes(Set.of());
+    }
+    stateWriter.appendFollowUpEvent(keyGenerator.nextKey(), VariableIntent.CREATED, record);
+    return new VariableEvent(
+        record.getScopeKey(), VariableIntent.CREATED, getVariableRecordCopy(record));
+  }
+
+  /**
+   * Updates the variable if its value changed, or if {@code metadata} differs from the stored one.
+   * Without {@code metadata} the variable keeps the metadata it has.
+   */
+  private Optional<VariableEvent> updateVariable(
+      final VariableInstance variableInstance,
+      final VariableRecord record,
+      final @Nullable VariableMetadataRecord metadata) {
+    if (!hasValueChanged(variableInstance, record)
+        && !hasMetadataChanged(variableInstance, metadata)) {
+      return Optional.empty();
     }
 
-    return event;
+    record.setMetadata(metadata != null ? metadata : variableInstance.getMetadata());
+    stateWriter.appendFollowUpEvent(variableInstance.getKey(), VariableIntent.UPDATED, record);
+    return Optional.of(
+        new VariableEvent(
+            record.getScopeKey(), VariableIntent.UPDATED, getVariableRecordCopy(record)));
+  }
+
+  private static boolean hasMetadataChanged(
+      final VariableInstance variableInstance, final @Nullable VariableMetadataRecord metadata) {
+    return metadata != null
+        && !metadata
+            .getProtectionModes()
+            .equals(variableInstance.getMetadata().getProtectionModes());
+  }
+
+  private static boolean hasValueChanged(
+      final VariableInstance variableInstance, final VariableRecord record) {
+    return !variableInstance.getValue().equals(record.getValueBuffer());
   }
 
   private void applyEntryToRecord(final DocumentEntry entry) {
     variableRecord.setName(entry.getName()).setValue(entry.getValue());
-  }
-
-  private boolean hasChanged(
-      final VariableInstance variableInstance,
-      final DirectBuffer value,
-      final @Nullable VariableMetadataRecord metadata) {
-    return !variableInstance.getValue().equals(value)
-        || (metadata != null
-            && !variableInstance
-                .getMetadata()
-                .getProtectionModes()
-                .equals(metadata.getProtectionModes()));
-  }
-
-  private VariableMetadataRecord metadataToWrite(
-      final @Nullable VariableMetadataRecord metadata,
-      final @Nullable VariableInstance variableInstance) {
-    if (metadata != null) {
-      return metadata;
-    }
-    return variableInstance != null ? variableInstance.getMetadata() : noMetadata;
   }
 
   private VariableRecord getVariableRecordCopy(final VariableRecord variableRecord) {
