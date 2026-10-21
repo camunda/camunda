@@ -9,6 +9,7 @@ package io.camunda.search.clients.transformers.filter;
 
 import static io.camunda.search.clients.query.SearchQueryBuilders.and;
 import static io.camunda.search.clients.query.SearchQueryBuilders.longTerms;
+import static io.camunda.search.clients.query.SearchQueryBuilders.matchNone;
 import static io.camunda.search.clients.query.SearchQueryBuilders.or;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringTerms;
 import static io.camunda.search.clients.query.SearchQueryBuilders.term;
@@ -26,6 +27,7 @@ import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.search.filter.AuthorizationFilter;
 import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
+import java.util.Objects;
 
 public final class AuthorizationFilterTransformer
     extends IndexFilterTransformer<AuthorizationFilter> {
@@ -43,10 +45,29 @@ public final class AuthorizationFilterTransformer
         filter.ownerType() == null ? null : term(OWNER_TYPE, filter.ownerType()));
   }
 
+  /**
+   * For the {@code AUTHORIZATION} resource, a resource ID is an authorization key. A user can still
+   * be granted the resource with any other ID, such as a resource type name like {@code GROUP}, but
+   * that can never match a key, so it grants nothing: such IDs are skipped instead of failing the
+   * search, and if none is left the search matches nothing.
+   */
   @Override
   protected SearchQuery toAuthorizationCheckSearchQuery(
       final RequiredAuthorization<?> authorization) {
-    return longTerms(ID, authorization.resourceIds().stream().map(Long::valueOf).toList());
+    final var authorizationKeys =
+        authorization.resourceIds().stream()
+            .map(AuthorizationFilterTransformer::toAuthorizationKey)
+            .filter(Objects::nonNull)
+            .toList();
+    return authorizationKeys.isEmpty() ? matchNone() : longTerms(ID, authorizationKeys);
+  }
+
+  private static Long toAuthorizationKey(final String resourceId) {
+    try {
+      return Long.valueOf(resourceId);
+    } catch (final NumberFormatException notAnAuthorizationKey) {
+      return null;
+    }
   }
 
   private SearchQuery buildOwnerTypeToOwnerIdsQuery(final AuthorizationFilter filter) {
