@@ -345,7 +345,7 @@ final class ElasticsearchArchiverRepositoryTest extends AbstractArchiverReposito
             .join();
 
     // then
-    assertThat(deleted).isEqualTo(3L);
+    assertThat(deleted).isEqualTo(3);
 
     final ArgumentCaptor<BulkRequest> captor = ArgumentCaptor.forClass(BulkRequest.class);
     verify(client).bulk(captor.capture());
