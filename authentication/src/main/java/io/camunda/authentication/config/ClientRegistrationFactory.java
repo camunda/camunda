@@ -27,13 +27,73 @@ public final class ClientRegistrationFactory {
 
   private ClientRegistrationFactory() {}
 
+  /**
+   * The issuer with its trailing slash removed, or with one added: {@code https://idp/v2.0/} and
+   * {@code https://idp/v2.0} give each other. Identity providers are inconsistent here (Entra ID's
+   * discovery document declares {@code .../v2.0}, Okta's has no trailing slash, Auth0's has one),
+   * and operators copy either form into {@code issuer-uri}.
+   *
+   * @return the other form, or {@code null} for a value that has no path to trim or is otherwise
+   *     not a plain issuer URL
+   */
+  static String withToggledTrailingSlash(final String issuer) {
+    if (issuer == null || issuer.isBlank() || issuer.contains("?") || issuer.contains("#")) {
+      return null;
+    }
+    if (!issuer.endsWith("/")) {
+      return issuer + "/";
+    }
+    final var trimmed = issuer.substring(0, issuer.length() - 1);
+    // Never trim into an empty or scheme-only authority, such as "https:/".
+    return trimmed.endsWith("/") || !trimmed.contains("://") || trimmed.endsWith(":/")
+        ? null
+        : trimmed;
+  }
+
+  /**
+   * Discovery from {@code issuer-uri}, tolerating a trailing slash the identity provider's document
+   * doesn't have (or has where the configuration doesn't). See camunda/camunda#61896.
+   *
+   * <p>{@code fromIssuerLocation} requires the document's {@code issuer} to equal the configured
+   * string exactly, and throws {@link IllegalStateException} when it doesn't — the one failure it
+   * reports with that type; an unreachable or unparseable document is an {@link
+   * IllegalArgumentException}. When the two differ only by a trailing slash, discovery is retried
+   * with the other form, and the registration takes the provider's issuer. That is what the
+   * provider's tokens carry in {@code iss}, and what {@link IssuerAwareTokenValidator} and {@link
+   * IssuerAwareJWSKeySelector} compare it with. Any other mismatch, or a retry that fails too,
+   * rethrows the original exception.
+   */
+  private static Builder discover(final String issuerUri) {
+    try {
+      return ClientRegistrations.fromIssuerLocation(issuerUri);
+    } catch (final IllegalStateException issuerMismatch) {
+      final var alternative = withToggledTrailingSlash(issuerUri);
+      if (alternative == null) {
+        throw issuerMismatch;
+      }
+      final Builder builder;
+      try {
+        builder = ClientRegistrations.fromIssuerLocation(alternative);
+      } catch (final RuntimeException retryFailure) {
+        issuerMismatch.addSuppressed(retryFailure);
+        throw issuerMismatch;
+      }
+      LOGGER.warn(
+          "The configured issuer-uri '{}' differs from the issuer '{}' that the identity provider's"
+              + " discovery document declares only by a trailing slash. Using '{}', which is what"
+              + " its tokens carry; set issuer-uri to it to remove this warning.",
+          issuerUri,
+          alternative,
+          alternative);
+      return builder;
+    }
+  }
+
   public static ClientRegistration createClientRegistration(
       final String registrationId, final OidcAuthenticationConfiguration configuration) {
     final Builder builder;
     if (configuration.getIssuerUri() != null) {
-      builder =
-          ClientRegistrations.fromIssuerLocation(configuration.getIssuerUri())
-              .registrationId(registrationId);
+      builder = discover(configuration.getIssuerUri()).registrationId(registrationId);
     } else {
       builder = ClientRegistration.withRegistrationId(registrationId);
     }
