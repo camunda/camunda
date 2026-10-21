@@ -1318,7 +1318,7 @@ components:
           minLength: 1
       x-properties-added-in-version:
         - propertyName: processDefinitionVersionTag
-          addedInVersion: "8.11"
+          addedInVersion: "8.10"
 
     ProcessInstanceCreationInstructionByKey:
       type: object
