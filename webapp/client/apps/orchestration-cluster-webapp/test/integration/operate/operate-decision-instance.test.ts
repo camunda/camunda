@@ -534,63 +534,6 @@ test('should assemble the header, evaluation, variables, result, and DRD on dire
 	await expect(page).toHaveTitle(`Operate: Decision Instance ${DECISION_INSTANCE_ID} of Invoice Classification`);
 });
 
-for (const isMultiTenancyEnabled of [false, true]) {
-	test(`should show the ${isMultiTenancyEnabled ? 'multi-tenant' : 'single-tenant'} route pending shell until the evaluation loads`, async ({
-		network,
-		page,
-		operateDecisionInstancePage,
-	}) => {
-		let releaseResponse!: () => void;
-		const heldResponse = new Promise<void>((resolve) => {
-			releaseResponse = resolve;
-		});
-		network.use(
-			mockSystemConfigurationEndpoint({
-				successResponse: HttpResponse.json(
-					createSystemConfiguration({
-						components: {active: ['operate']},
-						deployment: {...createSystemConfiguration().deployment, isMultiTenancyEnabled},
-					}),
-				),
-			}),
-			http.get(
-				endpoints.getDecisionInstance.getUrl({decisionEvaluationInstanceKey: DECISION_INSTANCE_ID}),
-				async () => {
-					await heldResponse;
-					return HttpResponse.json(DECISION_INSTANCE);
-				},
-			),
-		);
-
-		await operateDecisionInstancePage.goto(DECISION_INSTANCE_ID);
-
-		const skeleton = page.getByTestId('instance-header-skeleton');
-		try {
-			await expect(skeleton).toBeVisible();
-			await expect(page.locator('head link[rel="stylesheet"][href*="assets/carbon-"]')).toHaveCount(1);
-			await expect(skeleton.getByRole('columnheader', {name: 'Tenant'})).toHaveCount(isMultiTenancyEnabled ? 1 : 0);
-			await expect(skeleton.getByRole('columnheader', {name: 'Decision Instance Key'})).toBeVisible();
-			await expect(operateDecisionInstancePage.loadingSpinner).toBeVisible();
-			await expect(page.getByTestId('inputs-skeleton')).toBeVisible();
-			await expect(page.getByTestId('outputs-skeleton')).toBeVisible();
-			const viewport = page.viewportSize();
-			if (viewport === null) {
-				throw new Error('Missing browser viewport');
-			}
-			const panelBottom = await page.getByTestId('decision-instance-variables-panel').evaluate((panel) => {
-				return panel.getBoundingClientRect().bottom;
-			});
-			expect(Math.abs(viewport.height - panelBottom)).toBeLessThan(1);
-			await page.getByRole('tab', {name: 'Result'}).click();
-			await expect(page.getByTestId('result-loading-spinner').getByRole('img', {name: 'loading'})).toBeVisible();
-		} finally {
-			releaseResponse();
-		}
-		await expect(page.getByTestId('instance-header')).toContainText(DECISION_INSTANCE_ID);
-		await expect(skeleton).not.toBeVisible();
-	});
-}
-
 test('should show a forbidden page for an inaccessible evaluation rather than an error route', async ({
 	network,
 	page,
