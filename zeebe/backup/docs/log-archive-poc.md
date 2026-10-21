@@ -1644,3 +1644,135 @@ limit, and a restore from a snapshot in the middle of the object still reads all
   decode frame by frame from the file instead of from a byte array.
 
 The same reader serves consumers that rewind by position, so restore and consumers share it.
+
+## 25. Mode B: one authority over compaction and retention
+
+Background and diagrams: the "One Authority, Many Holds" page (model B). Sections 20 to 22 are mode A:
+the cluster compacts and deletes above the released index R, the event plane below it. In mode B one
+authority (the event plane, or later a component embedded on the leader) is the only one that
+rewrites or deletes objects, anywhere. The cluster only writes small objects and declares a restore
+hold: the range its restores need. Restore still needs nothing but the bucket and the cluster's code.
+
+Both modes live side by side. The mode is fixed per timeline.
+
+### 25.1 Mode per timeline
+
+- New config `logArchive.compactionMode`: `CLUSTER` (mode A, default) or `AUTHORITY` (mode B).
+- `START_TIMELINE`/`TIMELINE_STARTED` carry `compactionMode` (string, default `CLUSTER`), set by the
+  archiver from the config. Meta stores it. The commit entry `TIMELINE_STARTED` and `timeline.json`
+  carry it after `parentPosition`, omitted when `CLUSTER`, so existing golden bytes stay unchanged.
+  Readers treat a missing field as `CLUSTER`.
+- A running timeline keeps its mode. A changed config applies to the next timeline the archiver
+  starts (after a restore or a fork); the archiver does not start a new timeline for a mode change.
+
+### 25.2 Cluster in mode B
+
+- Merger, cleaner and releaser (sections 20 and 21) are not started; `MERGE_LOG` and `RELEASE_LOG`
+  are rejected on such a timeline. The cluster deletes nothing. The compaction cap is F again
+  (section 12), not M.
+- **Restore hold** H: the restore window covers every index ≥ H. `START_TIMELINE` sets H =
+  `startIndex`. Meta gets `holdIndex`.
+- New intents `MOVE_HOLD` (16, command) and `HOLD_MOVED` (17, event, takes a seq, commit entry type
+  `HOLD_MOVED`), record fields `holdIndex` and `holdSnapshotId`. `MOVE_HOLD` is valid when the
+  timeline matches, its mode is `AUTHORITY`, `holdIndex > meta.holdIndex`, and an archived snapshot
+  with exactly that index and id exists. Applier sets `meta.holdIndex`.
+- **Hold mover** `LogArchiveHoldMover`, a leader-only actor, every `releaseInterval`: with
+  `retentionWindow` set, the floor snapshot S as in 21.1 (oldest backup checkpoint in the window,
+  else the newest; the snapshot restore would pick for it). If `S.index > meta.holdIndex`, write
+  `MOVE_HOLD(S.index, S.id)`. Without `retentionWindow` the hold never moves, so nothing is ever
+  removed.
+- Commit entry `HOLD_MOVED`: `holdIndex`, `holdSnapshotId`, `archivedIndex`, `archivedPosition`.
+  Root gets `holdIndex` (and `compactionMode`).
+
+### 25.3 The maintenance log
+
+The authority's own append-only log, next to the cluster's commit log, with one writer:
+
+```
+log-archive/<tl>/p<n>/maintenance/<seq>.json     seq from 1, gap-free, 20-digit padding, create-only
+```
+
+```json
+{"formatVersion":1,"timelineId":"tl-0","partitionId":1,"seq":3,"type":"COMPACTED","basedOnCommitSeq":412,
+ "object":{"key":"data/…-…-c1.seg","level":1,"firstIndex":121,"lastIndex":240,"firstPosition":…,
+   "lastPosition":…,"entryCount":120,"sizeBytes":…,"sha256":"…","bodyLength":…,"lastRecordTimestamp":…}}
+{"formatVersion":1,"timelineId":"tl-0","partitionId":1,"seq":4,"type":"REMOVED","basedOnCommitSeq":430,
+ "upToIndex":120,"upToPosition":…}
+```
+
+- **`COMPACTED`**: the objects of the timeline whose ranges lie in `[object.firstIndex,
+  object.lastIndex]` are replaced by `object`. Valid when that range starts at the first index and
+  ends at the last index of current objects (fold as of `basedOnCommitSeq` and the earlier
+  maintenance entries), is contiguous, and lies at or below the archived index as of
+  `basedOnCommitSeq`.
+- **`REMOVED`**: every object with `lastIndex <= upToIndex` is gone. Valid when `upToIndex` is the
+  last index of a current object and `upToIndex < holdIndex` as of `basedOnCommitSeq` (the hold only
+  moves up, so it is below the current hold as well).
+- Keys of objects the authority writes: `data/<first>-<last>-c<n>.seg`, `n` = the maintenance seq
+  that commits it, so a retried compaction never collides with another one. Written create-only.
+- Order: object, then maintenance entry, then the catalog. Physical deletion of replaced or removed
+  objects follows after `deletionGrace`.
+- No checkpoints in the PoC (known limit): restore and rebuild read the maintenance log from seq 1.
+
+### 25.4 Restore in mode B
+
+- For a timeline whose `TIMELINE_STARTED` says `AUTHORITY`, restore folds the commit log as before
+  (merges and releases do not occur), then applies `maintenance/` in seq order: `COMPACTED` replaces
+  objects, `REMOVED` drops a prefix. Each entry is checked against the rules of 25.3; a violation (an
+  invalid range, a removal at or above the restore hold of its base commit) fails the restore with a
+  message naming the entry. For a `CLUSTER` timeline a `maintenance/` folder is ignored with a warning.
+- A restore point whose snapshot index is below the current hold is refused ("below the restore
+  hold"), as below the floor in 21.4.
+- Objects of any level and with several frames are read as today; large objects are section 24.
+
+### 25.5 Authority (event plane) in mode B
+
+All of it only for `AUTHORITY` timelines; `CLUSTER` timelines keep section 22.
+
+- **Catalog:** `la_timeline` gets `compaction_mode`, `hold_index`, `next_maintenance_seq`.
+  `HOLD_MOVED` sets `hold_index`. Maintenance entries are applied like commit entries (objects
+  replaced, rows removed) and recorded in the activity.
+- **L1 compaction:** runs of consecutive level-0 objects of a timeline on the current path, at or
+  below the archived index, are merged once their compressed sizes add up to `authority.l1TargetBytes`
+  (default 16MB) or the run is older than `authority.l1MaxAge` (default PT10M). Inside the restore
+  hold too. Never across a takeover.
+- **L2 compaction:** the daily rollup of section 22.2, with level-0 and level-1 inputs, only below
+  the hold (restore would otherwise read large objects, section 24).
+- **Verify before replace:** the new object is decoded and compared entry by entry with its inputs
+  (index, term, bytes) before the maintenance entry is written. The PoC uses the event plane's own
+  decoder; restore checks again when it reads (known limit: a shared reader library would make the
+  check independent of the compactor).
+- **Retention:** with a retention for the tenant (as 22.3), the longest prefix of whole objects that
+  are older than the retention and end below the hold, as one `REMOVED`.
+- **Deletion:** everything the authority replaces or removes, after `authority.deletionGrace`
+  (default PT5M), through the delete queue.
+- **Orphans:** keys in `data/` at or below the archived index that no current object and no pending
+  deletion references, older than `deletionGrace`, are deleted (uploads of old leaders, compactions
+  that never got a maintenance entry). Keys above the archived index are never touched.
+- **Rebuild:** with an empty catalog, the announcer delivers the commit entries from seq 1 as today;
+  the authority reads its maintenance log from the bucket and applies each entry once the commit
+  entry it is based on has been applied.
+- **One writer:** the PoC runs one event plane; a lease for several replicas is a known limit.
+- **UI:** the ownership bar shows the hold (H) for mode B instead of R; maintenance entries in the
+  activity; `maintenance/` objects classified in the bucket view (`-c<n>.seg` current or replaced).
+
+### 25.6 Tests and waves
+
+- Cluster unit tests: mode on the timeline (golden files unchanged for `CLUSTER`), `MOVE_HOLD` rules,
+  hold mover, components not started in mode B, compaction cap, restore fold of `maintenance/`
+  (valid, invalid range, removal into the hold, ignored for `CLUSTER`).
+- Event plane tests (H2): apply `HOLD_MOVED`, L1 and L2 compaction with verification, maintenance
+  entries written and applied, retention below the hold only, deletion after the grace period,
+  orphans, rebuild from both logs.
+- Integration test: a cluster in mode B restores from a bucket whose `maintenance/` log a test helper
+  wrote (compacted and removed ranges), and refuses an invalid one.
+- Manual scenario `k-authority` with the real event plane, plus a screencast.
+
+| Wave | Repo | Scope | Depends on |
+|---|---|---|---|
+| W16 | camunda | protocol, record, meta, processor: `compactionMode`, `MOVE_HOLD`/`HOLD_MOVED`, commit entry, root, goldens | spec |
+| W17 | camunda | config, hold mover, mode gating of merger/cleaner/releaser, compaction cap | W16 |
+| W18 | camunda | restore fold of `maintenance/`, hold checks | W16 |
+| W19 | event-plane | catalog, maintenance log, L1/L2 compaction with verification, retention, deletion, orphans, rebuild | spec |
+| W20 | event-plane | UI | W19 |
+| W21 | both | integration tests, scenario `k-authority`, screencast | W17, W18, W20 |
