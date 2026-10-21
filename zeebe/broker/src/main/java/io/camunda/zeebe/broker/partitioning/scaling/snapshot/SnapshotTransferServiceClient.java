@@ -24,9 +24,11 @@ import java.util.concurrent.CompletableFuture;
 public class SnapshotTransferServiceClient implements SnapshotTransferService {
 
   private final BrokerClient client;
+  private final Duration requestTimeout;
 
-  public SnapshotTransferServiceClient(final BrokerClient client) {
+  public SnapshotTransferServiceClient(final BrokerClient client, final Duration requestTimeout) {
     this.client = client;
+    this.requestTimeout = requestTimeout;
   }
 
   @Override
@@ -54,7 +56,7 @@ public class SnapshotTransferServiceClient implements SnapshotTransferService {
     final var brokerRequest = new SnapshotBrokerRequest(request);
     final var future = new CompletableActorFuture<SnapshotChunk>();
     client
-        .sendRequestWithRetry(brokerRequest, Duration.ofSeconds(30))
+        .sendRequestWithRetry(brokerRequest, requestTimeout)
         .thenCompose(
             response -> {
               if (response.isResponse()
