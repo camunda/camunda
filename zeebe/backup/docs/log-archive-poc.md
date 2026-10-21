@@ -1483,8 +1483,7 @@ With `retentionWindow` set (default: none, nothing is ever released):
   Everything up to R is released. Only merged objects are released, so the event plane only ever
   takes over objects of one journal segment's size or larger. R also never exceeds the cleaner's
   cleaned index (section 20.4), so the objects a merge replaced are deleted by the cluster before R
-  passes them. The event plane's queueing of replaced objects on `LOG_RELEASED` (section 22.1)
-  remains only as a backstop, e.g. for objects of crashed sweeps.
+  passes them, and the event plane only forgets them on `LOG_RELEASED` (section 22.1).
 
 The window and the clock are the leader's choice; the processor only checks that the proposal is
 safe.
@@ -1548,9 +1547,10 @@ own rollup, retention and deletion design (its `docs/11-storage.md`), applied to
 - **`LOG_MERGED`:** in the entry's transaction, move the timeline's `la_object` rows in
   `[firstIndex, lastIndex]` to `la_replaced`, insert the merged object, set `merged_index`. The event
   plane does not delete replaced objects above `released_index`: they are the cluster's.
-- **`LOG_RELEASED`:** set `released_index`/`released_position`, and queue every `la_replaced` row
-  with `last_index <= released_index` for deletion (released replaced objects the cluster has not
-  deleted yet; deleting twice is harmless).
+- **`LOG_RELEASED`:** set `released_index`/`released_position`, and delete the `la_replaced` rows
+  with `last_index <= released_index`: the cluster's cleaner deleted those objects before the
+  release (section 21.1). A replaced object left behind anyway (a crash between deleting and
+  releasing cannot cause it, but a bug could) shows as unknown in the bucket view.
 - Rows for objects released and removed stay out of the read API; the objects API answers a new
   field `start` (the first position still on the path) so readers see when retention removed records.
 
