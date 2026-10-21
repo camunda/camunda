@@ -154,6 +154,9 @@ final class LogArchiveBucket implements AutoCloseable {
     final var chunks = new ArrayList<IndexChunkJson>();
     long archivedIndex = startIndex - 1;
     long archivedPosition = -1;
+    final var merged = new ArrayList<LogObjectJson>();
+    long mergedIndex = startIndex - 1;
+    long releasedIndex = startIndex - 1;
     for (final var entry : commits.subList(1, commits.size())) {
       switch (entry.type()) {
         case LOG_ARCHIVED -> {
@@ -184,6 +187,30 @@ final class LogArchiveBucket implements AutoCloseable {
           assertThat(entry.chunk()).isNotNull();
           chunks.add(entry.chunk());
         }
+        case LOG_MERGED -> {
+          assertThat(entry.objects()).as("object of commit entry %d", entry.seq()).hasSize(1);
+          final var object = entry.objects().getFirst();
+          assertThat(object.firstIndex())
+              .as("first index of merged %s (commit entry %d)", object.key(), entry.seq())
+              .isEqualTo(mergedIndex + 1);
+          assertThat(object.lastIndex())
+              .as("merged %s ends at or below F", object.key())
+              .isBetween(object.firstIndex(), archivedIndex);
+          assertThat(object.key())
+              .isEqualTo(
+                  LogArchiveKeys.dataKey(object.firstIndex(), object.lastIndex(), object.term()));
+          assertThat(entry.mergedIndex()).isEqualTo(object.lastIndex());
+          mergedIndex = object.lastIndex();
+          merged.add(object);
+        }
+        case LOG_RELEASED -> {
+          assertThat(entry.releasedIndex())
+              .as("released index of commit entry %d is in (R, M]", entry.seq())
+              .isNotNull()
+              .isGreaterThan(releasedIndex)
+              .isLessThanOrEqualTo(mergedIndex);
+          releasedIndex = entry.releasedIndex();
+        }
         case HANDOVER -> {
           assertThat(entry.handover()).isNotNull();
           assertThat(entry.handover().checkpointPosition())
@@ -196,12 +223,22 @@ final class LogArchiveBucket implements AutoCloseable {
       }
     }
 
-    // objects: bytes match their description
+    // objects: the current ones (merged objects, then archived objects above M) are contiguous
+    // from the start index, exist and match their description; objects a merge replaced may be
+    // deleted already, so they are only checked if they still exist
+    final var current = new ArrayList<LogObjectJson>(merged);
+    final long finalMergedIndex = mergedIndex;
+    objects.stream().filter(o -> o.lastIndex() > finalMergedIndex).forEach(current::add);
     final var frames = new ArrayList<FrameRef>();
     long lastHighestPosition = -1;
-    for (final var object : objects) {
+    long expectedFirstIndex = startIndex;
+    for (final var object : current) {
+      assertThat(object.firstIndex())
+          .as("current objects are contiguous at %s", object.key())
+          .isEqualTo(expectedFirstIndex);
+      expectedFirstIndex = object.lastIndex() + 1;
       final var bytes = store.getIfExists(prefix + object.key()).join();
-      assertThat(bytes).as("archived object %s exists", object.key()).isPresent();
+      assertThat(bytes).as("current object %s exists", object.key()).isPresent();
       final byte[] content = bytes.orElseThrow();
       assertThat((long) content.length)
           .as("size of %s", object.key())
@@ -232,6 +269,7 @@ final class LogArchiveBucket implements AutoCloseable {
         frames.add(new FrameRef(frame.index(), frame.term(), frame.asqn(), frame.checksum()));
       }
     }
+    assertThat(expectedFirstIndex - 1).as("current objects end at F").isEqualTo(archivedIndex);
     assertThat(lastHighestPosition).isEqualTo(archivedPosition);
 
     // roots
@@ -253,6 +291,12 @@ final class LogArchiveBucket implements AutoCloseable {
     assertThat(view.chunks()).containsExactlyElementsOf(chunks);
     assertThat(view.snapshots()).containsExactlyElementsOf(snapshots);
     assertThat(objects(view)).containsExactlyElementsOf(objects);
+    assertThat(view.mergedIndex()).isEqualTo(mergedIndex);
+    assertThat(view.releasedIndex()).isEqualTo(releasedIndex);
+    final long finalReleasedIndex = releasedIndex;
+    assertThat(view.mergedObjects())
+        .containsExactlyElementsOf(
+            merged.stream().filter(o -> o.lastIndex() > finalReleasedIndex).toList());
 
     final var dataKeys = store.list(prefix + "data/").join();
     return new Archive(
@@ -265,7 +309,10 @@ final class LogArchiveBucket implements AutoCloseable {
         List.copyOf(chunks),
         List.copyOf(rootKeys),
         List.copyOf(dataKeys),
-        List.copyOf(frames));
+        List.copyOf(frames),
+        List.copyOf(merged),
+        mergedIndex,
+        releasedIndex);
   }
 
   /**
@@ -305,8 +352,10 @@ final class LogArchiveBucket implements AutoCloseable {
     assertThat(footer.lastPosition()).isEqualTo(object.lastPosition());
     assertThat(footer.bodyLength()).isEqualTo(object.bodyLength()).isPositive();
     assertThat(footer.level()).isZero();
-    assertThat(segment.frameOffsets()).containsExactly(0L);
-    assertThat(segment.frameFirstPositions()).containsExactly(object.firstPosition());
+    assertThat(segment.frameOffsets()).isNotEmpty().startsWith(0L);
+    assertThat(segment.frameFirstPositions())
+        .hasSameSizeAs(segment.frameOffsets())
+        .startsWith(object.firstPosition());
     if (object.firstPosition() >= 0) {
       assertThat(footer.latestTimestamp()).as("latest record timestamp").isPositive();
     } else {
@@ -355,7 +404,24 @@ final class LogArchiveBucket implements AutoCloseable {
       List<IndexChunkJson> chunks,
       List<String> rootKeys,
       List<String> dataKeys,
-      List<FrameRef> frames) {
+      List<FrameRef> frames,
+      List<LogObjectJson> mergedObjects,
+      long mergedIndex,
+      long releasedIndex) {
+
+    /** Data keys that neither an archived nor a merged object references. */
+    List<String> orphanKeys() {
+      final var referenced = new java.util.HashSet<String>();
+      objects.forEach(
+          o ->
+              referenced.add(
+                  LogArchiveKeys.partitionPrefix(view.timelineId(), view.partitionId()) + o.key()));
+      mergedObjects.forEach(
+          o ->
+              referenced.add(
+                  LogArchiveKeys.partitionPrefix(view.timelineId(), view.partitionId()) + o.key()));
+      return dataKeys.stream().filter(k -> !referenced.contains(k)).toList();
+    }
 
     long archivedIndex() {
       return view.archivedIndex();
@@ -375,7 +441,7 @@ final class LogArchiveBucket implements AutoCloseable {
               archivedPosition(),
               commits.size(),
               objects.size(),
-              dataKeys.size() - objects.size(),
+              orphanKeys().size(),
               chunks.size(),
               snapshots.size(),
               rootKeys.size());
