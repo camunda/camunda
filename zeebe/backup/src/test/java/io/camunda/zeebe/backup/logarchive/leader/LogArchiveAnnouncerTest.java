@@ -75,6 +75,36 @@ final class LogArchiveAnnouncerTest {
   }
 
   @Test
+  void shouldExposeTheSeqTheEventPlaneConfirmed() {
+    // given
+    recovered(TIMELINE, 0);
+    assertThat(announcer.confirmedNextSeq(TIMELINE)).isEqualTo(-1);
+
+    // when
+    announcer.published(TIMELINE, 1, entry(1));
+    announcer.published(TIMELINE, 2, entry(2));
+    scheduler.workUntilDone();
+
+    // then
+    assertThat(announcer.confirmedNextSeq(TIMELINE)).isEqualTo(3);
+    assertThat(announcer.confirmedNextSeq("tl-other")).isEqualTo(-1);
+  }
+
+  @Test
+  void shouldNotConfirmAnythingWhileTheEventPlaneFails() {
+    // given
+    recovered(TIMELINE, 0);
+    client.script = (r, n) -> new Answer(503, -1);
+
+    // when
+    announcer.published(TIMELINE, 1, entry(1));
+    scheduler.workUntilDone();
+
+    // then
+    assertThat(announcer.confirmedNextSeq(TIMELINE)).isEqualTo(-1);
+  }
+
+  @Test
   void shouldSendBatchesOfAtMostMaxBatchEntriesInOrder() {
     // given - the event plane is not reachable while the entries pile up
     recovered(TIMELINE, 0);
