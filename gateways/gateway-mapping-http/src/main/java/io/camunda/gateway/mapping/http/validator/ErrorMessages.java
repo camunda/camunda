@@ -32,6 +32,8 @@ public final class ErrorMessages {
   public static final String ERROR_MESSAGE_MISSING_TENANT =
       "Expected to handle request %s with multi-tenancy enabled, but no tenant identifier was provided";
   public static final String ERROR_MESSAGE_ONLY_ONE_FIELD = "Only one of %s is allowed";
+  public static final String ERROR_MESSAGE_VERSION_TAG_REQUIRES_ID =
+      "processDefinitionVersionTag can only be set when using processDefinitionId";
   public static final String ERROR_MESSAGE_INVALID_EMAIL = "The provided email '%s' is not valid";
   public static final String ERROR_MESSAGE_ALL_REQUIRED_FIELD = "All %s are required";
   public static final String ERROR_MESSAGE_TOO_MANY_CHARACTERS =

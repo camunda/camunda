@@ -62,10 +62,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeoutException;
+import java.util.stream.Stream;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mockito;
@@ -951,6 +955,248 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .expectBody()
         .json(expectedBody, JsonCompareMode.STRICT);
+  }
+
+  @Test
+  void shouldPassAllFieldsOfCreationByVersionTagToService() {
+    // given
+    final var mockResponse =
+        new ProcessInstanceCreationRecord()
+            .setProcessDefinitionKey(123L)
+            .setBpmnProcessId("bpmnProcessId")
+            .setProcessInstanceKey(123L)
+            .setTenantId("<default>");
+    when(processInstanceServices.createProcessInstance(
+            any(ProcessInstanceCreateRequest.class), any()))
+        .thenReturn(CompletableFuture.completedFuture(mockResponse));
+
+    final var request =
+        """
+            {
+                "processDefinitionId": "bpmnProcessId",
+                "processDefinitionVersionTag": "release-1",
+                "variables": { "foo": "bar" },
+                "operationReference": 123,
+                "startInstructions": [
+                    { "elementId": "Activity_1" }
+                ],
+                "runtimeInstructions": [
+                    { "afterElementId": "Activity_2", "type": "TERMINATE_PROCESS_INSTANCE" }
+                ],
+                "awaitCompletion": false,
+                "fetchVariables": ["foo"],
+                "requestTimeout": 456,
+                "tags": ["tag1"],
+                "businessId": "business-1"
+            }""";
+
+    // when / then
+    webClient
+        .post()
+        .uri(PROCESS_INSTANCES_START_URL)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isOk();
+
+    verify(processInstanceServices).createProcessInstance(createRequestCaptor.capture(), any());
+    final var capturedRequest = createRequestCaptor.getValue();
+    assertThat(capturedRequest.bpmnProcessId()).isEqualTo("bpmnProcessId");
+    assertThat(capturedRequest.versionTag()).isEqualTo("release-1");
+    assertThat(capturedRequest.version()).isEqualTo(-1);
+    assertThat(capturedRequest.processDefinitionKey()).isEqualTo(-1L);
+    assertThat(capturedRequest.variables()).isEqualTo(Map.of("foo", "bar"));
+    assertThat(capturedRequest.tenantId()).isEqualTo("<default>");
+    assertThat(capturedRequest.operationReference()).isEqualTo(123L);
+    assertThat(capturedRequest.startInstructions()).hasSize(1);
+    assertThat(capturedRequest.startInstructions().getFirst().getElementId())
+        .isEqualTo("Activity_1");
+    assertThat(capturedRequest.runtimeInstructions()).hasSize(1);
+    assertThat(capturedRequest.runtimeInstructions().getFirst().getType())
+        .isEqualTo(RuntimeInstructionType.TERMINATE_PROCESS_INSTANCE);
+    assertThat(capturedRequest.runtimeInstructions().getFirst().getAfterElementId())
+        .isEqualTo("Activity_2");
+    assertThat(capturedRequest.awaitCompletion()).isFalse();
+    assertThat(capturedRequest.fetchVariables()).containsExactly("foo");
+    assertThat(capturedRequest.requestTimeout()).isEqualTo(456L);
+    assertThat(capturedRequest.tags()).containsExactly("tag1");
+    assertThat(capturedRequest.businessId()).isEqualTo("business-1");
+  }
+
+  @Test
+  void shouldCreateProcessInstancesWithVersionTagForTenant() {
+    // given
+    when(multiTenancyCfg.isChecksEnabled()).thenReturn(true);
+    final var mockResponse =
+        new ProcessInstanceCreationRecord()
+            .setProcessDefinitionKey(123L)
+            .setBpmnProcessId("bpmnProcessId")
+            .setProcessInstanceKey(123L)
+            .setTenantId("tenantId");
+
+    when(authenticationProvider.getCamundaAuthentication())
+        .thenReturn(AUTHENTICATION_WITH_NON_DEFAULT_TENANT);
+    when(processInstanceServices.createProcessInstance(
+            any(ProcessInstanceCreateRequest.class), any()))
+        .thenReturn(CompletableFuture.completedFuture(mockResponse));
+
+    final var request =
+        """
+        {
+            "processDefinitionId": "bpmnProcessId",
+            "processDefinitionVersionTag": "release-1",
+            "tenantId": "tenantId"
+        }""";
+
+    // when / then
+    final ResponseSpec response =
+        webClient
+            .post()
+            .uri(PROCESS_INSTANCES_START_URL)
+            .accept(MediaType.APPLICATION_JSON)
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(request)
+            .exchange()
+            .expectStatus()
+            .isOk();
+
+    response
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_JSON)
+        .expectBody()
+        .json(EXPECTED_START_RESPONSE, JsonCompareMode.STRICT);
+
+    verify(processInstanceServices).createProcessInstance(createRequestCaptor.capture(), any());
+    final var capturedRequest = createRequestCaptor.getValue();
+    assertThat(capturedRequest.bpmnProcessId()).isEqualTo("bpmnProcessId");
+    assertThat(capturedRequest.versionTag()).isEqualTo("release-1");
+    assertThat(capturedRequest.version()).isEqualTo(-1);
+    assertThat(capturedRequest.processDefinitionKey()).isEqualTo(-1L);
+    assertThat(capturedRequest.tenantId()).isEqualTo("tenantId");
+  }
+
+  @Test
+  void shouldCreateProcessInstancesWithResultWithBpmnProcessIdAndVersionTag() {
+    // given
+    final var mockResponse =
+        new ProcessInstanceResultRecord()
+            .setProcessDefinitionKey(123L)
+            .setBpmnProcessId("bpmnProcessId")
+            .setProcessInstanceKey(123L)
+            .setTenantId("<default>");
+    when(processInstanceServices.createProcessInstanceWithResult(
+            any(ProcessInstanceCreateRequest.class), any()))
+        .thenReturn(CompletableFuture.completedFuture(mockResponse));
+
+    final var request =
+        """
+            {
+                "processDefinitionId": "bpmnProcessId",
+                "processDefinitionVersionTag": "release-1",
+                "awaitCompletion": true
+            }""";
+
+    // when / then
+    webClient
+        .post()
+        .uri(PROCESS_INSTANCES_START_URL)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isOk();
+
+    verify(processInstanceServices)
+        .createProcessInstanceWithResult(createRequestCaptor.capture(), any());
+    final var capturedRequest = createRequestCaptor.getValue();
+    assertThat(capturedRequest.bpmnProcessId()).isEqualTo("bpmnProcessId");
+    assertThat(capturedRequest.versionTag()).isEqualTo("release-1");
+    assertThat(capturedRequest.version()).isEqualTo(-1);
+  }
+
+  @Test
+  void shouldCreateProcessInstancesWithProcessDefinitionKeyAndIgnoredVersion() {
+    // given
+    final var mockResponse =
+        new ProcessInstanceCreationRecord()
+            .setProcessDefinitionKey(123L)
+            .setBpmnProcessId("bpmnProcessId")
+            .setProcessInstanceKey(123L)
+            .setTenantId("<default>");
+    when(processInstanceServices.createProcessInstance(
+            any(ProcessInstanceCreateRequest.class), any()))
+        .thenReturn(CompletableFuture.completedFuture(mockResponse));
+
+    final var request =
+        """
+            {
+                "processDefinitionKey": "123",
+                "processDefinitionVersion": 1
+            }""";
+
+    // when / then
+    webClient
+        .post()
+        .uri(PROCESS_INSTANCES_START_URL)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isOk();
+
+    verify(processInstanceServices).createProcessInstance(createRequestCaptor.capture(), any());
+    assertThat(createRequestCaptor.getValue().processDefinitionKey()).isEqualTo(123L);
+    assertThat(createRequestCaptor.getValue().versionTag()).isNull();
+  }
+
+  @ParameterizedTest
+  @MethodSource("invalidVersionTagRequests")
+  void shouldRejectCreateProcessInstancesWithInvalidVersionTagCombination(
+      final String request, final String expectedDetail) {
+    // when / then
+    webClient
+        .post()
+        .uri(PROCESS_INSTANCES_START_URL)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .jsonPath("$.detail")
+        .isEqualTo(expectedDetail);
+  }
+
+  static Stream<Arguments> invalidVersionTagRequests() {
+    return Stream.of(
+        Arguments.of(
+            """
+            {"processDefinitionKey": "123", "processDefinitionVersionTag": "release-1"}""",
+            "Only one of [processDefinitionKey, processDefinitionVersionTag] is allowed"),
+        Arguments.of(
+            """
+            {"processDefinitionId": "bpmnProcessId", "processDefinitionVersion": 1,
+             "processDefinitionVersionTag": "release-1"}""",
+            "Only one of [processDefinitionVersion, processDefinitionVersionTag] is allowed"),
+        Arguments.of(
+            """
+            {"processDefinitionVersionTag": "release-1"}""",
+            "processDefinitionVersionTag can only be set when using processDefinitionId"),
+        Arguments.of(
+            """
+            {"processDefinitionId": "bpmnProcessId", "processDefinitionVersionTag": ""}""",
+            "No processDefinitionVersionTag provided."),
+        Arguments.of(
+            """
+            {"processDefinitionId": "bpmnProcessId", "processDefinitionVersionTag": "  "}""",
+            "No processDefinitionVersionTag provided."));
   }
 
   @Test

@@ -703,10 +703,11 @@ ProcessInstanceCreationInstruction:
   x-polymorphic-schema: true
   description: |
     Instructions for creating a process instance. The process definition can be
-    specified either by id or by key.
+    specified either by id, by id and version tag, or by key.
   oneOf:
     - $ref: '#/components/schemas/ProcessInstanceCreationInstructionByKey'
     - $ref: '#/components/schemas/ProcessInstanceCreationInstructionById'
+    - $ref: '#/components/schemas/ProcessInstanceCreationInstructionByVersionTag'
 
 # Variant A — identified by key
 ProcessInstanceCreationInstructionByKey:
@@ -749,6 +750,27 @@ ProcessInstanceCreationInstructionById:
     tenantId:
       allOf:
         - $ref: 'identifiers.yaml#/components/schemas/TenantId'
+
+# Variant C — identified by id and version tag
+ProcessInstanceCreationInstructionByVersionTag:
+  type: object
+  title: Process creation by version tag
+  required:
+    - processDefinitionId
+    - processDefinitionVersionTag
+  additionalProperties: false
+  properties:
+    processDefinitionId:
+      allOf:
+        - $ref: 'identifiers.yaml#/components/schemas/ProcessDefinitionId'
+    processDefinitionVersionTag:
+      type: string
+      minLength: 1
+      description: The version tag of the process definition.
+    variables:
+      type: object
+      additionalProperties: true
+      description: Variables for the root scope.
 ```
 
 #### When to use a `discriminator`
@@ -787,7 +809,7 @@ Omit the discriminator when:
 
 |                  Wrapper schema                   |            File             |                                    Variants                                    |
 |---------------------------------------------------|-----------------------------|--------------------------------------------------------------------------------|
-| `ProcessInstanceCreationInstruction`              | `process-instances.yaml`    | `...ByKey`, `...ById`                                                          |
+| `ProcessInstanceCreationInstruction`              | `process-instances.yaml`    | `...ByKey`, `...ById`, `...ByVersionTag`                                       |
 | `ProcessInstanceCreationRuntimeInstruction`       | `process-instances.yaml`    | `...TerminateInstruction`                                                      |
 | `ProcessInstanceMigrationInstruction`             | `process-instances.yaml`    | `...ByProcessDefinitionKey`, `...ByProcessDefinitionId`                        |
 | `ProcessInstanceModificationTerminateInstruction` | `process-instances.yaml`    | `...ByIdInstruction`, `...ByKeyInstruction`                                    |

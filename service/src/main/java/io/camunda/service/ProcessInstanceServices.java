@@ -322,6 +322,7 @@ public final class ProcessInstanceServices
             .setBpmnProcessId(request.bpmnProcessId())
             .setKey(request.processDefinitionKey())
             .setVersion(request.version())
+            .setVersionTag(request.versionTag())
             .setTenantId(request.tenantId())
             .setVariables(getDocumentOrEmpty(request.variables()))
             .setStartInstructionsFromRecord(request.startInstructions())
@@ -352,6 +353,7 @@ public final class ProcessInstanceServices
             .setBpmnProcessId(request.bpmnProcessId())
             .setKey(request.processDefinitionKey())
             .setVersion(request.version())
+            .setVersionTag(request.versionTag())
             .setTenantId(request.tenantId())
             .setVariables(getDocumentOrEmpty(request.variables()))
             .setInstructions(request.startInstructions())
@@ -692,6 +694,7 @@ public final class ProcessInstanceServices
       Long processDefinitionKey,
       String bpmnProcessId,
       Integer version,
+      String versionTag,
       Map<String, Object> variables,
       String tenantId,
       Boolean awaitCompletion,
