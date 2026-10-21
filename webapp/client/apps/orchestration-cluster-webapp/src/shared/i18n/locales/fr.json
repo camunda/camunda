@@ -1583,7 +1583,32 @@
 					"viewDocuments": "Afficher les documents",
 					"viewDocumentsLabel": "Afficher les documents de la variable {{name}}",
 					"documentsLoadingHint": "Chargement de la valeur complète de la variable... D’autres documents peuvent exister pour cette variable.",
-					"documentsErrorHint": "Impossible de charger la valeur complète de la variable. D’autres documents peuvent exister pour cette variable."
+					"documentsErrorHint": "Impossible de charger la valeur complète de la variable. D’autres documents peuvent exister pour cette variable.",
+					"added": "Variable ajoutée",
+					"updated": "Variable mise à jour",
+					"saveFailed": "La variable n’a pas pu être enregistrée",
+					"fetchFailed": "La variable n’a pas pu être récupérée",
+					"addVariable": "Ajouter une variable",
+					"edit": "Modifier la variable {{name}}",
+					"editDescription": "Modifier",
+					"exit": "Quitter le mode édition",
+					"exitDescription": "Quitter",
+					"save": "Enregistrer la variable",
+					"saveDescription": "Enregistrer",
+					"deleteDescription": "Supprimer",
+					"editTitle": "Modifier la variable « {{name}} »",
+					"newVariableTitle": "Modifier une nouvelle variable",
+					"copy": "Copier les variables",
+					"copyTitle": "Cliquez pour copier les variables dans le presse-papiers",
+					"copyPaginated": "La copie est désactivée à partir de 50 variables",
+					"copyTruncated": "La copie est désactivée pour les valeurs de variable de plus de 8192 caractères",
+					"validation": {
+						"emptyName": "Le nom doit être renseigné",
+						"invalidName": "Le nom n’est pas valide",
+						"duplicateName": "Le nom doit être unique",
+						"invalidValue": "La valeur doit être au format JSON",
+						"emptyValue": "La valeur doit être renseignée"
+					}
 				},
 				"details": {
 					"title": "Détails",

@@ -19,6 +19,7 @@ import {renderWithRouter} from '#/vitest-modules/render-with-router';
 import {
 	mockGetDocumentEndpoint,
 	mockGetElementInstanceEndpoint,
+	mockGetProcessDefinitionXmlEndpoint,
 	mockGetVariableEndpoint,
 	mockQueryElementInstancesEndpoint,
 	mockQueryVariablesEndpoint,
@@ -493,7 +494,10 @@ describe('<ProcessInstanceVariables />', () => {
 		});
 
 		it('should hide the search and document filter in modification mode', async ({worker}) => {
-			worker.use(mockQueryVariablesEndpoint({successResponse: variablesResponse([createVariable({name: 'amount'})])}));
+			worker.use(
+				mockQueryVariablesEndpoint({successResponse: variablesResponse([createVariable({name: 'amount'})])}),
+				mockGetProcessDefinitionXmlEndpoint({successResponse: HttpResponse.text('')}),
+			);
 			const screen = await renderVariables('', {isModificationModeEnabled: true});
 
 			await expect.element(screen.getByTestId('variable-amount')).toBeVisible();
@@ -503,6 +507,7 @@ describe('<ProcessInstanceVariables />', () => {
 
 		it('should stop filtering by documents when entering modification mode', async ({worker}) => {
 			worker.use(
+				mockGetProcessDefinitionXmlEndpoint({successResponse: HttpResponse.text('')}),
 				mockQueryVariablesEndpoint({
 					schema: documentsOnlySchema,
 					successResponse: variablesResponse([

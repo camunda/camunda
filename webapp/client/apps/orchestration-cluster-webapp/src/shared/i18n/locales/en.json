@@ -1592,7 +1592,32 @@
 					"viewDocuments": "View documents",
 					"viewDocumentsLabel": "View documents for variable {{name}}",
 					"documentsLoadingHint": "Loading the full variable value... More documents may exist for this variable.",
-					"documentsErrorHint": "Failed to load the full variable value. More documents may exist for this variable."
+					"documentsErrorHint": "Failed to load the full variable value. More documents may exist for this variable.",
+					"added": "Variable added",
+					"updated": "Variable updated",
+					"saveFailed": "Variable could not be saved",
+					"fetchFailed": "Variable could not be fetched",
+					"addVariable": "Add Variable",
+					"edit": "Edit variable {{name}}",
+					"editDescription": "Edit",
+					"exit": "Exit edit mode",
+					"exitDescription": "Exit",
+					"save": "Save variable",
+					"saveDescription": "Save",
+					"deleteDescription": "Delete",
+					"editTitle": "Edit Variable \"{{name}}\"",
+					"newVariableTitle": "Edit a new Variable",
+					"copy": "Copy variables",
+					"copyTitle": "Click to copy variables to clipboard",
+					"copyPaginated": "Copying is disabled for 50 variables or more",
+					"copyTruncated": "Copying is disabled for variable values larger than 8192 characters",
+					"validation": {
+						"emptyName": "Name has to be filled",
+						"invalidName": "Name is invalid",
+						"duplicateName": "Name should be unique",
+						"invalidValue": "Value has to be JSON",
+						"emptyValue": "Value has to be filled"
+					}
 				},
 				"details": {
 					"title": "Details",
