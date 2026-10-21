@@ -1067,11 +1067,11 @@ public class ClusteringRule extends ExternalResource {
           gateway,
           jobStreamClient,
           brokerClient,
+          clusterTopologyService,
           scheduler,
           () -> cluster.stop().join(),
           meterRegistry::clear,
-          meterRegistry::close,
-          clusterTopologyService);
+          meterRegistry::close);
     }
   }
 
