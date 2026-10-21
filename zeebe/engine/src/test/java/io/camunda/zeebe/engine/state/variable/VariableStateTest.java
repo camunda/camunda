@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.state.variable;
 
+import static io.camunda.zeebe.protocol.record.value.ProtectionMode.REDACT;
 import static io.camunda.zeebe.test.util.MsgPackUtil.asMsgPack;
 import static io.camunda.zeebe.test.util.MsgPackUtil.assertEquality;
 import static io.camunda.zeebe.util.buffer.BufferUtil.cloneBuffer;
@@ -24,10 +25,12 @@ import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.state.mutable.MutableVariableState;
 import io.camunda.zeebe.engine.util.ProcessingStateRule;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
+import io.camunda.zeebe.protocol.impl.record.value.variable.VariableMetadataRecord;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 import org.agrona.DirectBuffer;
 import org.junit.After;
@@ -477,6 +480,61 @@ public final class VariableStateTest {
         .containsExactlyInAnyOrder(
             tuple(keyVariableB, child, wrapString("b"), wrapString("2")),
             tuple(keyVariableC, child, wrapString("c"), wrapString("3")));
+  }
+
+  @Test
+  public void shouldStoreMetadataWithVariable() {
+    // given
+    declareScope(parent);
+    final var metadata = new VariableMetadataRecord().setProtectionModes(Set.of(REDACT));
+
+    // when
+    variableState.setVariableLocal(
+        KEY_GENERATOR.incrementAndGet(),
+        parent,
+        PROCESS_KEY,
+        wrapString("x"),
+        wrapString("foo"),
+        metadata);
+
+    // then
+    assertThat(variableState.getVariableInstanceLocal(parent, wrapString("x")).getMetadata())
+        .satisfies(stored -> assertThat(stored.getProtectionModes()).containsExactly(REDACT));
+  }
+
+  @Test
+  public void shouldKeepMetadataWhenVariableIsSetWithoutMetadata() {
+    // given
+    declareScope(parent);
+    final var metadata = new VariableMetadataRecord().setProtectionModes(Set.of(REDACT));
+    variableState.setVariableLocal(
+        KEY_GENERATOR.incrementAndGet(),
+        parent,
+        PROCESS_KEY,
+        wrapString("x"),
+        wrapString("foo"),
+        metadata);
+
+    // when
+    setVariableLocal(parent, wrapString("x"), wrapString("bar"));
+
+    // then
+    final var stored = variableState.getVariableInstanceLocal(parent, wrapString("x"));
+    assertThat(stored.getValue()).isEqualTo(wrapString("bar"));
+    assertThat(stored.getMetadata().getProtectionModes()).containsExactly(REDACT);
+  }
+
+  @Test
+  public void shouldCreateVariableWithoutMetadataWhenSetWithoutMetadata() {
+    // given
+    declareScope(parent);
+
+    // when
+    setVariableLocal(parent, wrapString("x"), wrapString("foo"));
+
+    // then
+    assertThat(variableState.getVariableInstanceLocal(parent, wrapString("x")).getMetadata())
+        .satisfies(stored -> assertThat(stored.getProtectionModes()).isEmpty());
   }
 
   private void declareScope(final long key) {
