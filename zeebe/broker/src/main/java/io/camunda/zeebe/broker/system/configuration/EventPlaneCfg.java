@@ -27,6 +27,8 @@ public final class EventPlaneCfg {
   private String restoreHistory;
   private boolean restoreFromBucket = false;
   private Long restoreTo;
+  private boolean backupLog = false;
+  private Duration backupLogTimeout = Duration.ofMinutes(5);
 
   public boolean isEnabled() {
     return enabled;
@@ -134,9 +136,29 @@ public final class EventPlaneCfg {
     this.restoreTo = restoreTo;
   }
 
+  /**
+   * Backups keep their log in the Event Plane's bucket instead of copying the journal's segments.
+   */
+  public boolean isBackupLog() {
+    return backupLog;
+  }
+
+  public void setBackupLog(final boolean backupLog) {
+    this.backupLog = backupLog;
+  }
+
+  /** How long a backup waits for the bucket to hold its checkpoint. */
+  public Duration getBackupLogTimeout() {
+    return backupLogTimeout;
+  }
+
+  public void setBackupLogTimeout(final Duration backupLogTimeout) {
+    this.backupLogTimeout = backupLogTimeout;
+  }
+
   @Override
   public String toString() {
-    return "EventPlaneCfg{enabled=%s, clusterId=%s, store=%s, cutInterval=%s, maxSegmentSize=%s, pollInterval=%s, serviceUrl=%s, snapshotInterval=%s, restoreHistory=%s, restoreFromBucket=%s, restoreTo=%s}"
+    return "EventPlaneCfg{enabled=%s, clusterId=%s, store=%s, cutInterval=%s, maxSegmentSize=%s, pollInterval=%s, serviceUrl=%s, snapshotInterval=%s, restoreHistory=%s, restoreFromBucket=%s, restoreTo=%s, backupLog=%s, backupLogTimeout=%s}"
         .formatted(
             enabled,
             clusterId,
@@ -148,7 +170,9 @@ public final class EventPlaneCfg {
             snapshotInterval,
             restoreHistory,
             restoreFromBucket,
-            restoreTo);
+            restoreTo,
+            backupLog,
+            backupLogTimeout);
   }
 
   /** Where segments go: a directory, or an S3 bucket. */

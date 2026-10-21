@@ -251,4 +251,30 @@ final class ExperimentalCfgTest {
     // then
     assertThat(experimental.isContinuousBackups()).isTrue();
   }
+
+  @Test
+  void shouldKeepTheBackupsLogInTheEventPlaneNeverByDefault() {
+    // when
+    final var cfg = TestConfigReader.readConfig("empty", environment);
+    final var eventPlane = cfg.getExperimental().getEventPlane();
+
+    // then
+    assertThat(eventPlane.isBackupLog()).isFalse();
+    assertThat(eventPlane.getBackupLogTimeout()).isEqualTo(Duration.ofMinutes(5));
+  }
+
+  @Test
+  void shouldSetEventPlaneBackupLogFromEnv() {
+    // given
+    environment.put("zeebe.broker.experimental.eventPlane.backupLog", "true");
+    environment.put("zeebe.broker.experimental.eventPlane.backupLogTimeout", "90s");
+
+    // when
+    final var cfg = TestConfigReader.readConfig("empty", environment);
+    final var eventPlane = cfg.getExperimental().getEventPlane();
+
+    // then
+    assertThat(eventPlane.isBackupLog()).isTrue();
+    assertThat(eventPlane.getBackupLogTimeout()).isEqualTo(Duration.ofSeconds(90));
+  }
 }

@@ -394,6 +394,7 @@ dependencies {
   implementation(project(":camunda-secret-store-gcp"))
   implementation(project(":zeebe-rebalance"))
   implementation(project(":zeebe-restore"))
+  implementation(project(":zeebe-event-plane-common"))
   implementation(libs.org.slf4j.slf4j.api)
   implementation(libs.org.apache.logging.log4j.log4j.api)
   implementation(libs.org.apache.logging.log4j.log4j.core)

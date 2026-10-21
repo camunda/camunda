@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.eventplane.maintenance;
 
+import io.camunda.zeebe.eventplane.backup.BackupLog;
 import io.camunda.zeebe.eventplane.history.Histories;
 import io.camunda.zeebe.eventplane.history.HistoryManifest;
 import io.camunda.zeebe.eventplane.history.HistoryManifest.Base;
@@ -119,6 +120,27 @@ final class SegmentFixture {
             clock.instant().minus(age));
     store.put(ObjectNames.snapshotDescriptor(LOG, id), descriptor.toJson());
     return id;
+  }
+
+  /**
+   * Puts the backup log of a checkpoint of partition 1, which needs the entries of the history's
+   * path from the first index to the last, the way a backup does; returns its key.
+   */
+  String putBackupLog(
+      final UUID history, final long checkpointId, final long firstIndex, final long lastIndex)
+      throws IOException {
+    final var key = ObjectNames.backupLog(LOG, checkpointId);
+    final var backupLog =
+        new BackupLog(
+            BackupLog.VERSION,
+            checkpointId,
+            2 * lastIndex,
+            history,
+            firstIndex,
+            lastIndex,
+            clock.instant());
+    store.put(key, backupLog.toJson());
+    return key;
   }
 
   /** The ids of partition 1's snapshots that have a descriptor, sorted. */

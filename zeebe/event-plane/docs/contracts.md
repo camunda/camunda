@@ -9,7 +9,7 @@ then in the code.
 | Module | Package | Depends on |
 |---|---|---|
 | `zeebe/event-plane/segment` | `io.camunda.zeebe.eventplane.segment` | zstd-jni |
-| `zeebe/event-plane/common` | `io.camunda.zeebe.eventplane.store`, `.history`, `.notification`, `.snapshot` | segment (for `LogId`), Jackson, AWS SDK v2 (S3) |
+| `zeebe/event-plane/common` | `io.camunda.zeebe.eventplane.store`, `.history`, `.notification`, `.snapshot`, `.backup` | segment (for `LogId`), Jackson, AWS SDK v2 (S3) |
 | `zeebe/event-plane/publisher` | `io.camunda.zeebe.eventplane.publisher` | segment, common |
 | `zeebe/event-plane/consumer` | `io.camunda.zeebe.eventplane.consumer` | segment, common, zeebe-protocol-impl, zeebe-logstreams |
 | `zeebe/event-plane/maintenance` | `io.camunda.zeebe.eventplane.maintenance` | segment, common |
@@ -64,6 +64,7 @@ Cluster ids must not start with `_`.
 | A segment | `{cluster}/{tenant}/{partition}/{history}/{firstIndex}-{lastIndex}-L{level}-{ulid}.seg` |
 | A retention marker | `{cluster}/{tenant}/{partition}/retention/{ulid}.json` |
 | A snapshot's files and descriptor | `{cluster}/{tenant}/{partition}/snapshots/{snapshotId}/…`, `…/descriptor.json` |
+| A backup's log | `{cluster}/{tenant}/{partition}/backups/{checkpointId}.json` |
 | A consumer group | `_groups/{group}/group.json` |
 | A worker's heartbeat | `_groups/{group}/workers/{worker}.json` |
 | A cursor | `_groups/{group}/cursors/{cluster}/{tenant}/{partition}.json` |
@@ -196,6 +197,70 @@ holds; `restoreHistory` names the history that goes on, as for a backup. The clu
   snapshot; without any, the journal from index 1. A target past the bucket's last record fails.
 - It leaves the history file with the current history as `source`, the last restored entry as
   `index`, and the last record's position at or before it as `position`.
+- `restoreTo` is one position for every partition, and positions of different partitions aren't
+  comparable: it suits one partition only. A consistent restore of several partitions goes through
+  a checkpoint, with a backup whose log is in the bucket (below).
+
+## Backups whose log is in the bucket
+
+With `zeebe.broker.experimental.eventPlane.backupLog` true, a backup keeps its snapshot, status and
+descriptor in the backup store as before, but not the journal's segments: its log is the Event
+Plane's. `io.camunda.zeebe.restore.EventPlaneLogBackupStore` wraps the configured `BackupStore`:
+
+```java
+public static BackupStore wrap(
+    BackupStore delegate,
+    ObjectStore store,
+    String cluster,
+    String tenant,
+    Duration uploadTimeout,
+    PublishingHistory publishing)
+
+/** The history a partition's leader publishes in; empty until its publisher has started one. */
+@FunctionalInterface
+public interface PublishingHistory {
+  Optional<UUID> of(int partition);
+}
+```
+
+It owns the `ObjectStore`, and closes it with the delegate. Cluster and tenant are the publisher's.
+`uploadTimeout` is `zeebe.broker.experimental.eventPlane.backupLogTimeout`, 5 minutes by default. In
+the broker, `publishing` reads the partition's `PublisherService` when a backup is saved. The
+restore app saves no backups, and passes `PublishingHistory.NONE`.
+A backup's log, `io.camunda.zeebe.eventplane.backup.BackupLog`, at
+`{cluster}/{tenant}/{partition}/backups/{checkpointId}.json`:
+
+```json
+{"version":1,"checkpointId":17,"checkpointPosition":1052032,"history":"…",
+ "firstIndex":1090001,"lastIndex":1096704,"createdAt":"2026-10-21T12:00:00Z"}
+```
+
+- `history` is the one the partition's leader publishes in when it saves the backup, from
+  `publishing`. Its path through the partition holds the backup's log, also after a later restore
+  starts another history. Not the bucket's current history: right after a restore, that is still
+  the old one until the leader writes the new one's part, and the old one's segments past the
+  restore point hold the same positions with other records.
+- `firstIndex` is the first index of the segment on the path that holds the backup descriptor's
+  `firstLogPosition`, as a backup copies whole journal segments too; the path's first index if the
+  descriptor has none. `lastIndex` is the last index the path serves of the segment that holds
+  `checkpointPosition`. The backup needs the path's entries from `firstIndex` to `lastIndex`.
+- **Save:** waits, up to `uploadTimeout`, until the publisher has a history, the bucket has that
+  history's part, and the path's segments hold `checkpointPosition`, and fails the backup after
+  that. It finds the segments by their footers, walking back from the newest. Then it PUTs the backup's log, and saves the backup through the
+  delegate without segment files. So a completed backup always has its log in the bucket.
+- **Restore:** restores through the delegate. A backup with segment files, taken without
+  `backupLog`, is returned as it is. For one without, it reads the backup's log, and writes a
+  journal into the target folder, named as the partition's (`{tenant}-partition-{partition}`), with
+  the path's entries from `firstIndex` up to the first entry with a record past
+  `checkpointPosition`, as the restore from the bucket appends them. `PartitionRestoreService`
+  then reads that journal as a backup's.
+- **Delete** and **markFailed:** through the delegate first, then the backup's log is deleted.
+  Everything else goes to the delegate.
+- **Retention** keeps every backup's log: a segment that serves the path of a backup's history at
+  an index from `firstIndex` to `lastIndex` is never deleted, whatever its age. The retention
+  marker still moves on, so consumers don't see what only backups keep.
+- `BackupLog.fromJson` skips fields it doesn't know, and throws `InvalidBackupLogException` for
+  JSON that isn't a valid backup log.
 
 ## Service
 

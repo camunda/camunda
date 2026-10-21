@@ -399,6 +399,221 @@ final class RetentionTest extends StoreTestCase {
     assertThat(store.get(key)).isEmpty();
   }
 
+  @Test
+  void shouldKeepAnOldSegmentOnThePathThatABackupNeeds() throws Exception {
+    // given: the backup needs entries 4 and 5, which the old segment of 4 to 6 holds
+    final var unneeded = segments.put(HISTORY, 0, TEN_DAYS, entries(1, 3));
+    final var needed = segments.put(HISTORY, 0, TEN_DAYS, entries(4, 6));
+    segments.put(HISTORY, 0, THREE_DAYS, entries(7, 9));
+    segments.put(HISTORY, 0, ONE_DAY, entries(10, 12));
+    segments.putBackupLog(HISTORY, 17, 4, 5);
+
+    // when
+    final var report = maintenance().runOnce();
+
+    // then: the marker moves past the segment that is kept
+    assertThat(report).isEqualTo(new MaintenanceReport(0, 1, 1));
+    assertThat(segments.segments(HISTORY)).containsExactly("4-6 L0", "7-9 L0", "10-12 L0");
+    assertThat(store.writes()).contains("DELETE " + unneeded).doesNotContain("DELETE " + needed);
+    final var marker = store.get(segments.markers().getFirst()).orElseThrow();
+    assertThat(new String(marker, StandardCharsets.UTF_8))
+        .contains("\"firstIndex\":7,\"firstPosition\":13,");
+  }
+
+  @Test
+  void shouldMoveTheMarkerPastSegmentsThatOnlyBackupsKeep() throws Exception {
+    // given: the backup needs all the old segments below the cutoff
+    segments.put(HISTORY, 0, TEN_DAYS, entries(1, 3));
+    segments.put(HISTORY, 0, TEN_DAYS, entries(4, 6));
+    segments.put(HISTORY, 0, ONE_DAY, entries(7, 9));
+    segments.putBackupLog(HISTORY, 17, 1, 6);
+
+    // when
+    final var report = maintenance().runOnce();
+
+    // then
+    assertThat(report).isEqualTo(new MaintenanceReport(0, 0, 1));
+    assertThat(segments.segments(HISTORY)).containsExactly("1-3 L0", "4-6 L0", "7-9 L0");
+    final var marker = store.get(segments.markers().getFirst()).orElseThrow();
+    assertThat(new String(marker, StandardCharsets.UTF_8)).contains("\"firstIndex\":7,");
+  }
+
+  @Test
+  void shouldNotWriteAnotherMarkerWhileBackupsKeepTheSegmentsBelowIt() throws Exception {
+    // given
+    segments.put(HISTORY, 0, TEN_DAYS, entries(1, 3));
+    segments.put(HISTORY, 0, TEN_DAYS, entries(4, 6));
+    segments.put(HISTORY, 0, ONE_DAY, entries(7, 9));
+    segments.putBackupLog(HISTORY, 17, 1, 3);
+    maintenance().runOnce();
+    final var writesAfterTheFirst = store.writes().size();
+
+    // when
+    final var second = maintenance().runOnce();
+
+    // then
+    assertThat(second).isEqualTo(MaintenanceReport.NONE);
+    assertThat(store.writes()).hasSize(writesAfterTheFirst);
+    assertThat(segments.segments(HISTORY)).containsExactly("1-3 L0", "7-9 L0");
+    assertThat(segments.markers()).hasSize(1);
+  }
+
+  @Test
+  void shouldKeepAnOldSegmentOffThePathThatABackupOfItsHistoryNeeds() throws Exception {
+    // given: a restore at entry 6, position 12 left the first history's entries from 7 on off the
+    // path; a backup that was taken before the restore needs 7 to 9, not the segment of 10 to 12
+    segments.putHistory(RESTORED, Duration.ofDays(5), new Base(HISTORY, 6, 12));
+    segments.put(HISTORY, 0, TEN_DAYS, entries(1, 3));
+    segments.put(HISTORY, 0, TEN_DAYS, entries(4, 6));
+    segments.put(HISTORY, 0, TEN_DAYS, entries(7, 9));
+    segments.put(HISTORY, 0, TEN_DAYS, entries(10, 12));
+    segments.put(RESTORED, 0, THREE_DAYS, entries(7, 9));
+    segments.put(RESTORED, 0, ONE_DAY, entries(10, 12));
+    segments.putBackupLog(HISTORY, 17, 7, 9);
+
+    // when
+    final var report = maintenance().runOnce();
+
+    // then: the old segments of the path go, and the old one off it that no backup needs
+    assertThat(report).isEqualTo(new MaintenanceReport(0, 3, 1));
+    assertThat(segments.segments(HISTORY)).containsExactly("7-9 L0");
+    assertThat(segments.segments(RESTORED)).containsExactly("7-9 L0", "10-12 L0");
+  }
+
+  @Test
+  void shouldKeepWhatABackupNeedsOfEveryHistoryOnItsPath() throws Exception {
+    // given: a backup of the restored history needs 4 to 8, which the first history serves up to 6,
+    // where the restore took over; the first history's segment of 7 to 9 is off that path
+    segments.putHistory(RESTORED, Duration.ofDays(5), new Base(HISTORY, 6, 12));
+    segments.put(HISTORY, 0, TEN_DAYS, entries(1, 3));
+    segments.put(HISTORY, 0, TEN_DAYS, entries(4, 6));
+    segments.put(HISTORY, 0, TEN_DAYS, entries(7, 9));
+    segments.put(RESTORED, 0, TEN_DAYS, entries(7, 9));
+    segments.put(RESTORED, 0, ONE_DAY, entries(10, 12));
+    segments.putBackupLog(RESTORED, 17, 4, 8);
+
+    // when
+    final var report = maintenance().runOnce();
+
+    // then
+    assertThat(report).isEqualTo(new MaintenanceReport(0, 2, 1));
+    assertThat(segments.segments(HISTORY)).containsExactly("4-6 L0");
+    assertThat(segments.segments(RESTORED)).containsExactly("7-9 L0", "10-12 L0");
+  }
+
+  @Test
+  void shouldKeepWhatABackupNeedsOfAHistoryThatLeavesThePartitionOut() throws Exception {
+    // given: no path for the backup's history, so all of its own segments that the backup's range
+    // touches are held
+    segments.putHistory(OTHER, Duration.ofDays(40), Map.of(2, Base.NOTHING));
+    segments.put(HISTORY, 0, ONE_DAY, entries(1, 3));
+    segments.put(OTHER, 0, TEN_DAYS, entries(1, 3));
+    segments.put(OTHER, 0, TEN_DAYS, entries(4, 6));
+    segments.put(OTHER, 0, TEN_DAYS, entries(7, 9));
+    segments.putBackupLog(OTHER, 17, 4, 5);
+
+    // when
+    final var report = maintenance().runOnce();
+
+    // then
+    assertThat(report).isEqualTo(new MaintenanceReport(0, 2, 0));
+    assertThat(segments.segments(OTHER)).containsExactly("4-6 L0");
+  }
+
+  @Test
+  void shouldDeleteTheSegmentOnceTheBackupLogIsDeleted() throws Exception {
+    // given: a run that kept the old segment that the backup needs
+    segments.put(HISTORY, 0, TEN_DAYS, entries(1, 3));
+    segments.put(HISTORY, 0, TEN_DAYS, entries(4, 6));
+    segments.put(HISTORY, 0, ONE_DAY, entries(7, 9));
+    final var backupLog = segments.putBackupLog(HISTORY, 17, 4, 5);
+    maintenance().runOnce();
+    assertThat(segments.segments(HISTORY)).containsExactly("4-6 L0", "7-9 L0");
+
+    // when: the backup is deleted
+    store.delete(backupLog);
+    final var report = maintenance().runOnce();
+
+    // then: the marker is at the cutoff already
+    assertThat(report).isEqualTo(new MaintenanceReport(0, 1, 0));
+    assertThat(segments.segments(HISTORY)).containsExactly("7-9 L0");
+    assertThat(segments.markers()).hasSize(1);
+  }
+
+  @Test
+  void shouldNotApplyRetentionWhileABackupLogIsNotJson() throws Exception {
+    // given: two old snapshots, of which retention would delete the older
+    segments.put(HISTORY, 0, TEN_DAYS, entries(1, 3));
+    segments.put(HISTORY, 0, TEN_DAYS, entries(4, 6));
+    segments.put(HISTORY, 0, ONE_DAY, entries(7, 9));
+    final var olderSnapshot = segments.putSnapshot(HISTORY, TEN_DAYS, 2);
+    final var newerSnapshot = segments.putSnapshot(HISTORY, Duration.ofDays(9), 5);
+    segments.putBackupLog(HISTORY, 16, 1, 3);
+    store.put(
+        ObjectNames.backupLog(SegmentFixture.LOG, 17),
+        "{\"version\":".getBytes(StandardCharsets.UTF_8));
+    final int writesBefore = store.writes().size();
+
+    // when
+    final var report = maintenance().runOnce();
+
+    // then
+    assertThat(report).isEqualTo(MaintenanceReport.NONE);
+    assertThat(store.writes()).hasSize(writesBefore);
+    assertThat(segments.segments(HISTORY)).containsExactly("1-3 L0", "4-6 L0", "7-9 L0");
+    assertThat(segments.snapshots()).containsExactly(olderSnapshot, newerSnapshot);
+    assertThat(segments.markers()).isEmpty();
+  }
+
+  @Test
+  void shouldNotApplyRetentionWhileABackupLogIsNotValid() throws Exception {
+    // given: JSON that is not a backup log, such as one of a later version
+    segments.put(HISTORY, 0, TEN_DAYS, entries(1, 3));
+    segments.put(HISTORY, 0, ONE_DAY, entries(4, 6));
+    store.put(
+        ObjectNames.backupLog(SegmentFixture.LOG, 17),
+        "{\"version\":2}".getBytes(StandardCharsets.UTF_8));
+    final int writesBefore = store.writes().size();
+
+    // when
+    final var report = maintenance().runOnce();
+
+    // then
+    assertThat(report).isEqualTo(MaintenanceReport.NONE);
+    assertThat(store.writes()).hasSize(writesBefore);
+    assertThat(segments.segments(HISTORY)).containsExactly("1-3 L0", "4-6 L0");
+  }
+
+  @Test
+  void shouldSkipABackupLogThatWasDeletedAfterTheListing() throws Exception {
+    // given: the backup is deleted between the listing of its log and the GET
+    segments.put(HISTORY, 0, TEN_DAYS, entries(1, 3));
+    segments.put(HISTORY, 0, ONE_DAY, entries(4, 6));
+    store.vanish(segments.putBackupLog(HISTORY, 17, 1, 3));
+
+    // when
+    final var report = maintenance().runOnce();
+
+    // then: it needs nothing
+    assertThat(report).isEqualTo(new MaintenanceReport(0, 1, 1));
+    assertThat(segments.segments(HISTORY)).containsExactly("4-6 L0");
+  }
+
+  @Test
+  void shouldIgnoreObjectsInTheBackupsDirectoryThatAreNotBackupLogs() throws Exception {
+    // given
+    segments.put(HISTORY, 0, TEN_DAYS, entries(1, 3));
+    segments.put(HISTORY, 0, ONE_DAY, entries(4, 6));
+    store.put(ObjectNames.backupLogsPrefix(SegmentFixture.LOG) + "readme.txt", new byte[] {1});
+
+    // when
+    final var report = maintenance().runOnce();
+
+    // then
+    assertThat(report).isEqualTo(new MaintenanceReport(0, 1, 1));
+    assertThat(segments.segments(HISTORY)).containsExactly("4-6 L0");
+  }
+
   private static String descriptorKey(final String snapshotId) {
     return ObjectNames.snapshotDescriptor(SegmentFixture.LOG, snapshotId);
   }

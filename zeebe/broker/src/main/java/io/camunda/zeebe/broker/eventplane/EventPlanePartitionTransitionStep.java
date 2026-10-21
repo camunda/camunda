@@ -54,6 +54,7 @@ public final class EventPlanePartitionTransitionStep implements PartitionTransit
     }
     final var closing = publisher;
     publisher = null;
+    context.setEventPlanePublisher(null);
     final ActorFuture<Void> closed = context.getConcurrencyControl().createFuture();
     closing
         .closeAsync()
@@ -90,19 +91,8 @@ public final class EventPlanePartitionTransitionStep implements PartitionTransit
     if (publisher != null) {
       return CompletableActorFuture.completed(null);
     }
-    final var configuredId =
-        config.getClusterId() != null
-            ? config.getClusterId()
-            : context.getBrokerCfg().getCluster().getClusterId();
-    final var clusterKey =
-        configuredId != null
-            ? configuredId
-            : context
-                .getClusterConfigurationService()
-                .getCurrentClusterConfiguration()
-                .clusterId()
-                .orElse(context.getBrokerCfg().getCluster().getClusterName());
-    if (configuredId == null) {
+    final var clusterKey = EventPlaneClusterKey.of(context);
+    if (EventPlaneClusterKey.configured(context.getBrokerCfg()) == null) {
       LOG.warn(
           "The Event Plane names this cluster {} after its generated id. A restore that recreates"
               + " the topology generates a new one, and the Event Plane then sees a new cluster."
@@ -129,6 +119,7 @@ public final class EventPlanePartitionTransitionStep implements PartitionTransit
             context.getPersistedSnapshotStore(),
             config.getSnapshotInterval());
     publisher.start(config.getPollInterval());
+    context.setEventPlanePublisher(publisher);
     floorResend =
         context
             .getConcurrencyControl()

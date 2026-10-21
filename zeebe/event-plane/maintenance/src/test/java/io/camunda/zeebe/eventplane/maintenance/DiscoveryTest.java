@@ -95,6 +95,34 @@ final class DiscoveryTest extends StoreTestCase {
   }
 
   @Test
+  void shouldNotTreatTheBackupsDirectoryAsAHistoryAndLeaveItsObjectsAlone() throws Exception {
+    // given: backups' logs next to the log's histories, and an object below them that is named
+    // like a segment
+    segments.put(HISTORY, 0, TWO_DAYS, entries(1, 3));
+    segments.put(HISTORY, 0, TWO_DAYS, entries(4, 6));
+    segments.putHistory(HISTORY, Duration.ofDays(30), Base.NOTHING);
+    final var backupLog = segments.putBackupLog(HISTORY, 17, 1, 6);
+    final var lookalike =
+        ObjectNames.backupLogsPrefix(SegmentFixture.LOG)
+            + "00000000000000000001-00000000000000000003-L0-00000000000000000000000001.seg";
+    store.put(lookalike, "x".getBytes(StandardCharsets.UTF_8));
+    final var writesBefore = store.writes().size();
+
+    // when
+    final var histories = new StoreLayout(store).histories(SegmentFixture.LOG);
+    final var report = run();
+
+    // then: the segments are rolled up, and the backups' directory is not touched
+    assertThat(histories).containsExactly(HISTORY);
+    assertThat(report).isEqualTo(new MaintenanceReport(1, 2, 0));
+    assertThat(segments.segments(HISTORY)).containsExactly("1-6 L1");
+    assertThat(store.get(backupLog)).isPresent();
+    assertThat(store.get(lookalike)).isPresent();
+    assertThat(store.writes().subList(writesBefore, store.writes().size()))
+        .noneMatch(write -> write.contains("/backups/"));
+  }
+
+  @Test
   void shouldRunOnAnEmptyStore() throws Exception {
     // when
     final var report = run();

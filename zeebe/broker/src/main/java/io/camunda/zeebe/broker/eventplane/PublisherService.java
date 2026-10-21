@@ -45,7 +45,7 @@ import org.slf4j.LoggerFactory;
  * publisher keeps the segment it couldn't upload. If configured, it also uploads the partition's
  * latest snapshot, at most once per snapshot interval.
  */
-final class PublisherService implements AutoCloseable {
+public final class PublisherService implements AutoCloseable {
 
   private static final Logger LOG = LoggerFactory.getLogger(PublisherService.class);
 
@@ -62,7 +62,7 @@ final class PublisherService implements AutoCloseable {
   private final InstantSource clock = InstantSource.system();
   private final ScheduledExecutorService executor;
   private @Nullable PartitionPublisher publisher;
-  private @Nullable UUID publishedHistory;
+  private volatile @Nullable UUID publishedHistory;
   private Instant nextSnapshotUpload = Instant.MIN;
 
   PublisherService(
@@ -100,6 +100,14 @@ final class PublisherService implements AutoCloseable {
 
   void start(final Duration pollInterval) {
     executor.scheduleWithFixedDelay(this::poll, 0, pollInterval.toMillis(), TimeUnit.MILLISECONDS);
+  }
+
+  /**
+   * The history this publisher publishes in; empty until its thread has opened the publisher, which
+   * is set from that thread and read from others.
+   */
+  public Optional<UUID> publishedHistory() {
+    return Optional.ofNullable(publishedHistory);
   }
 
   /**

@@ -13,6 +13,7 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
+import io.camunda.zeebe.broker.system.configuration.EventPlaneCfg;
 import io.camunda.zeebe.broker.system.configuration.backup.BackupCfg.BackupStoreType;
 import io.camunda.zeebe.restore.PhysicalTenantRestoreConfigurations.PhysicalTenantBrokerConfigurations;
 import java.nio.file.Path;
@@ -96,6 +97,59 @@ final class BackupStoreComponentTest {
           .isInstanceOf(IllegalArgumentException.class)
           .hasMessageContaining(DEFAULT_PHYSICAL_TENANT_ID);
     }
+  }
+
+  @Test
+  void shouldReadTheBackupsLogFromTheEventPlaneWhenBackupLogIsOn(@TempDir final Path dir) {
+    // given
+    final var configuration = filesystemBackup(dir.resolve("backups"));
+    eventPlane(configuration, dir.resolve("event-plane"), true).setClusterId("my-cluster");
+    final var stores = storesFor(Map.of(DEFAULT_PHYSICAL_TENANT_ID, configuration));
+
+    // when / then
+    try (stores) {
+      assertThat(stores.forPhysicalTenant(DEFAULT_PHYSICAL_TENANT_ID))
+          .isInstanceOf(EventPlaneLogBackupStore.class);
+    }
+  }
+
+  @Test
+  void shouldNotReadTheBackupsLogFromTheEventPlaneWhenBackupLogIsOff(@TempDir final Path dir) {
+    // given
+    final var configuration = filesystemBackup(dir.resolve("backups"));
+    eventPlane(configuration, dir.resolve("event-plane"), false).setClusterId("my-cluster");
+    final var stores = storesFor(Map.of(DEFAULT_PHYSICAL_TENANT_ID, configuration));
+
+    // when / then
+    try (stores) {
+      assertThat(stores.forPhysicalTenant(DEFAULT_PHYSICAL_TENANT_ID))
+          .isNotInstanceOf(EventPlaneLogBackupStore.class);
+    }
+  }
+
+  @Test
+  void shouldNotOpenAStoreWhenTheEventPlaneHasNoClusterToReadFrom(@TempDir final Path dir) {
+    // given: no configured cluster id, and a bucket that has no cluster
+    final var configuration = filesystemBackup(dir.resolve("backups"));
+    eventPlane(configuration, dir.resolve("event-plane"), true);
+    final var stores = storesFor(Map.of(DEFAULT_PHYSICAL_TENANT_ID, configuration));
+
+    // when / then
+    try (stores) {
+      assertThatThrownBy(() -> stores.forPhysicalTenant(DEFAULT_PHYSICAL_TENANT_ID))
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessageContaining("eventPlane.clusterId");
+      assertThat(stores.openStores()).isEmpty();
+    }
+  }
+
+  private static EventPlaneCfg eventPlane(
+      final BrokerCfg configuration, final Path bucket, final boolean backupLog) {
+    final var eventPlane = configuration.getExperimental().getEventPlane();
+    eventPlane.setEnabled(true);
+    eventPlane.setBackupLog(backupLog);
+    eventPlane.getStore().setPath(bucket.toString());
+    return eventPlane;
   }
 
   private static PhysicalTenantBackupStores storesFor(final Map<String, BrokerCfg> configurations) {

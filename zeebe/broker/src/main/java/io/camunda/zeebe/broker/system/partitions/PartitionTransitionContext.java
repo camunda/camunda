@@ -16,6 +16,7 @@ import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.backup.processing.CheckpointRecordsProcessor;
 import io.camunda.zeebe.broker.PartitionListener;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
+import io.camunda.zeebe.broker.eventplane.PublisherService;
 import io.camunda.zeebe.broker.exporter.repo.ExporterDescriptor;
 import io.camunda.zeebe.broker.exporter.stream.ExporterDirector;
 import io.camunda.zeebe.broker.logstreams.AtomixLogStorage;
@@ -143,6 +144,14 @@ public interface PartitionTransitionContext extends PartitionContext {
   @Nullable BackupStore getBackupStore();
 
   void setBackupStore(@Nullable BackupStore backupStore);
+
+  /**
+   * The Event Plane's publisher of this partition while this broker leads it, or null. The backup
+   * store reads it from other threads, when a backup is saved.
+   */
+  @Nullable PublisherService getEventPlanePublisher();
+
+  void setEventPlanePublisher(@Nullable PublisherService publisher);
 
   /**
    * Returns a meter registry which already has some common tags for the partition (so you can omit

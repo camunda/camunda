@@ -19,6 +19,7 @@ import io.camunda.zeebe.backup.processing.CheckpointRecordsProcessor;
 import io.camunda.zeebe.broker.PartitionListener;
 import io.camunda.zeebe.broker.PartitionRaftListener;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
+import io.camunda.zeebe.broker.eventplane.PublisherService;
 import io.camunda.zeebe.broker.exporter.repo.ExporterDescriptor;
 import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
 import io.camunda.zeebe.broker.exporter.stream.ExporterDirector;
@@ -110,6 +111,7 @@ public class PartitionStartupAndTransitionContextImpl
   private CheckpointRecordsProcessor checkpointRecordsProcessor;
   private final TopologyManager topologyManager;
   private BackupStore backupStore;
+  private volatile PublisherService eventPlanePublisher;
   private AdminApiRequestHandler adminApiService;
   private PartitionAdminAccess adminAccess;
   private ControllableStreamClock clock;
@@ -388,6 +390,16 @@ public class PartitionStartupAndTransitionContextImpl
   @Override
   public void setBackupStore(final BackupStore backupStore) {
     this.backupStore = backupStore;
+  }
+
+  @Override
+  public PublisherService getEventPlanePublisher() {
+    return eventPlanePublisher;
+  }
+
+  @Override
+  public void setEventPlanePublisher(final PublisherService publisher) {
+    eventPlanePublisher = publisher;
   }
 
   @Override

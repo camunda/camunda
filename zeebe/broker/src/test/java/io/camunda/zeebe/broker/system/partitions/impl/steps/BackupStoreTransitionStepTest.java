@@ -9,6 +9,7 @@ package io.camunda.zeebe.broker.system.partitions.impl.steps;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -16,8 +17,10 @@ import io.atomix.raft.RaftServer.Role;
 import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.backup.azure.AzureBackupStoreException;
 import io.camunda.zeebe.backup.gcs.GcsBackupStoreException.ConfigurationException;
+import io.camunda.zeebe.broker.eventplane.PublisherService;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.DataCfg;
+import io.camunda.zeebe.broker.system.configuration.EventPlaneCfg;
 import io.camunda.zeebe.broker.system.configuration.backup.AzureBackupStoreConfig;
 import io.camunda.zeebe.broker.system.configuration.backup.BackupCfg;
 import io.camunda.zeebe.broker.system.configuration.backup.BackupCfg.BackupStoreType;
@@ -29,13 +32,18 @@ import io.camunda.zeebe.broker.system.partitions.TestPartitionTransitionContext;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.PartitionTransitionTestArgumentProviders.TransitionsThatShouldCloseService;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.PartitionTransitionTestArgumentProviders.TransitionsThatShouldDoNothing;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.PartitionTransitionTestArgumentProviders.TransitionsThatShouldInstallService;
+import io.camunda.zeebe.restore.EventPlaneLogBackupStore;
 import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
+import java.nio.file.Path;
 import java.time.Duration;
+import java.util.Optional;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
 import org.mockito.Answers;
@@ -248,6 +256,122 @@ class BackupStoreTransitionStepTest {
     assertThat(transitionContext.getBackupStore())
         .describedAs("Existing backup store must not be removed from the context.")
         .isEqualTo(existingBackupStore);
+  }
+
+  @Test
+  void shouldKeepTheLogInTheEventPlaneWhenBackupLogIsOn(@TempDir final Path directory) {
+    // given
+    setUpCurrentRole(null);
+    configureEventPlane(directory, true, true);
+
+    // when
+    transitionTo(Role.LEADER);
+
+    // then
+    final var installed = transitionContext.getBackupStore();
+    assertThat(installed)
+        .describedAs("Expected the backup store to keep its backups' log in the Event Plane")
+        .isInstanceOf(EventPlaneLogBackupStore.class);
+    installed.closeAsync().join();
+  }
+
+  @Test
+  void shouldCopyTheSegmentsWhenBackupLogIsOff(@TempDir final Path directory) {
+    // given
+    setUpCurrentRole(null);
+    configureEventPlane(directory, true, false);
+
+    // when
+    transitionTo(Role.LEADER);
+
+    // then
+    final var installed = transitionContext.getBackupStore();
+    assertThat(installed).isNotNull().isNotInstanceOf(EventPlaneLogBackupStore.class);
+    installed.closeAsync().join();
+  }
+
+  @Test
+  void shouldCopyTheSegmentsWhenTheEventPlaneIsOff(@TempDir final Path directory) {
+    // given
+    setUpCurrentRole(null);
+    configureEventPlane(directory, false, true);
+
+    // when
+    transitionTo(Role.LEADER);
+
+    // then
+    final var installed = transitionContext.getBackupStore();
+    assertThat(installed).isNotNull().isNotInstanceOf(EventPlaneLogBackupStore.class);
+    installed.closeAsync().join();
+  }
+
+  @Test
+  void shouldFailToInstallWhenTheEventPlaneStoreIsInvalid(@TempDir final Path directory) {
+    // given
+    setUpCurrentRole(null);
+    final var eventPlane = configureEventPlane(directory, true, true);
+    eventPlane.getStore().setType("unknown");
+    final var targetRole = Role.LEADER;
+
+    // when
+    step.prepareTransition(transitionContext, 1, targetRole).join();
+    final var transitionFuture = step.transitionTo(transitionContext, 1, targetRole);
+
+    // then
+    assertThat(transitionFuture)
+        .failsWithin(Duration.ofSeconds(5))
+        .withThrowableOfType(ExecutionException.class)
+        .withRootCauseInstanceOf(IllegalArgumentException.class);
+    assertThat(transitionContext.getBackupStore()).isNull();
+  }
+
+  @Test
+  void shouldPublishTheHistoryOfThePublisherThatTheContextHolds() {
+    // given: read when asked, as the Event Plane step installs the publisher after this step
+    final var publishing = BackupStoreTransitionStep.publishing(transitionContext);
+    final var firstHistory = UUID.randomUUID();
+    final var first = mock(PublisherService.class);
+    when(first.publishedHistory()).thenReturn(Optional.of(firstHistory));
+    final var secondHistory = UUID.randomUUID();
+    final var second = mock(PublisherService.class);
+    when(second.publishedHistory()).thenReturn(Optional.of(secondHistory));
+    final var notStarted = mock(PublisherService.class);
+    when(notStarted.publishedHistory()).thenReturn(Optional.empty());
+
+    // when / then: no publisher
+    assertThat(publishing.of(1)).isEmpty();
+
+    // when / then: a publisher that has started a history
+    transitionContext.setEventPlanePublisher(first);
+    assertThat(publishing.of(1)).hasValue(firstHistory);
+
+    // when / then: the publisher of the next leadership replaces it
+    transitionContext.setEventPlanePublisher(second);
+    assertThat(publishing.of(1)).hasValue(secondHistory);
+
+    // when / then: a publisher that hasn't started a history yet
+    transitionContext.setEventPlanePublisher(notStarted);
+    assertThat(publishing.of(1)).isEmpty();
+
+    // when / then: the leadership is gone
+    transitionContext.setEventPlanePublisher(first);
+    transitionContext.setEventPlanePublisher(null);
+    assertThat(publishing.of(1)).isEmpty();
+  }
+
+  private EventPlaneCfg configureEventPlane(
+      final Path directory, final boolean enabled, final boolean backupLog) {
+    final var cfg = new BrokerCfg();
+    final var backup = cfg.getData().getBackup();
+    backup.setStore(BackupStoreType.FILESYSTEM);
+    backup.getFilesystem().setBasePath(directory.resolve("backups").toString());
+    final var eventPlane = cfg.getExperimental().getEventPlane();
+    eventPlane.setEnabled(enabled);
+    eventPlane.setBackupLog(backupLog);
+    eventPlane.setClusterId("my-cluster");
+    eventPlane.getStore().setPath(directory.resolve("event-plane").toString());
+    transitionContext.setBrokerCfg(cfg);
+    return eventPlane;
   }
 
   private void configureStore(final BackupStoreType type) {

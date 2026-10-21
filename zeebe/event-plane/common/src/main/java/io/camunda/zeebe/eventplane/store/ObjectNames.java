@@ -103,6 +103,15 @@ public final class ObjectNames {
     return snapshotPrefix(log, snapshotId) + name("a file name", fileName);
   }
 
+  /** What the backup of a log at a checkpoint needs of the log. */
+  public static String backupLog(final LogId log, final long checkpointId) {
+    if (checkpointId < 0) {
+      throw new InvalidObjectNameException(
+          "a checkpoint id of 0 or more", String.valueOf(checkpointId));
+    }
+    return backupLogsPrefix(log) + "%020d.json".formatted(checkpointId);
+  }
+
   /** A consumer group. */
   public static String group(final String group) {
     return GROUPS + name("a group", group) + "/group.json";
@@ -159,6 +168,11 @@ public final class ObjectNames {
   /** The directory of a log's snapshots: a directory for each. */
   public static String snapshotsPrefix(final LogId log) {
     return logPrefix(log) + "snapshots/";
+  }
+
+  /** The directory of what the backups of a log need of it: an object for each backup. */
+  public static String backupLogsPrefix(final LogId log) {
+    return logPrefix(log) + "backups/";
   }
 
   /** The directory of one snapshot of a log: its files, and its descriptor. */

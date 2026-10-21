@@ -17,6 +17,7 @@ import io.camunda.zeebe.backup.management.BackupMetadataSyncer;
 import io.camunda.zeebe.broker.eventplane.EventPlaneStores;
 import io.camunda.zeebe.broker.partitioning.startup.RaftPartitionFactory;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
+import io.camunda.zeebe.broker.system.configuration.EventPlaneCfg;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDBSnapshotFileInfoProvider;
 import io.camunda.zeebe.eventplane.history.RestoredHistory;
 import io.camunda.zeebe.eventplane.store.ObjectNames;
@@ -321,7 +322,7 @@ public class RestoreManager implements CloseableSilently {
       final var restored =
           new BucketRestoreService(
                   store,
-                  bucketClusterId(store),
+                  bucketClusterId(eventPlane, store),
                   raftPartition,
                   configuration.getCluster().getNodeId(),
                   new RocksDBSnapshotFileInfoProvider(),
@@ -348,8 +349,9 @@ public class RestoreManager implements CloseableSilently {
    * The cluster id in the bucket's object names: the configured one, else the only cluster the
    * bucket has, as the cluster's generated id isn't known before its topology is restored.
    */
-  private String bucketClusterId(final ObjectStore store) throws IOException {
-    final var configured = configuration.getExperimental().getEventPlane().getClusterId();
+  public static String bucketClusterId(final EventPlaneCfg eventPlane, final ObjectStore store)
+      throws IOException {
+    final var configured = eventPlane.getClusterId();
     if (configured != null) {
       return configured;
     }

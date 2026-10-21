@@ -18,6 +18,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
+import java.util.OptionalLong;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -54,7 +55,7 @@ final class PathSegments {
         for (final var object : page) {
           final var name = parse(object.key());
           if (name != null && name.firstIndex() <= servesUpTo) {
-            listed.add(new PathSegment(object.key(), name, servesUpTo));
+            listed.add(new PathSegment(object.key(), name, servesUpTo, object.size()));
           }
         }
         if (page.size() < PAGE_SIZE) {
@@ -78,6 +79,16 @@ final class PathSegments {
                 .thenComparingLong(PathSegment::lastServed));
   }
 
+  /** The first index that a segment of the path holds, if any does. */
+  OptionalLong firstIndex() {
+    return segments.stream().mapToLong(segment -> segment.name().firstIndex()).min();
+  }
+
+  /** The last index that a segment of the path serves, if any does. */
+  OptionalLong lastIndex() {
+    return segments.stream().mapToLong(PathSegment::lastServed).max();
+  }
+
   private static @Nullable SegmentName parse(final String key) {
     if (!key.endsWith(SEGMENT_SUFFIX)) {
       return null;
@@ -95,8 +106,9 @@ final class PathSegments {
    * @param key its key
    * @param name what its key says
    * @param servesUpTo the last index for which its history serves the path
+   * @param size its size in bytes
    */
-  record PathSegment(String key, SegmentName name, long servesUpTo) {
+  record PathSegment(String key, SegmentName name, long servesUpTo, long size) {
 
     /** The last entry of the segment that serves the path. */
     long lastServed() {

@@ -10,13 +10,16 @@ Read from the prototype's code, not from a policy that ran against AWS.
 | Role | Objects | PUT | GET / HEAD | LIST | DELETE |
 |---|---|---|---|---|---|
 | Broker (publisher, snapshot upload) | its cluster's prefix | yes | its own history parts and snapshot descriptors | no | no |
+| Broker, with `backupLog` | its tenant's `histories/`, and its logs | backup logs, under `backups/` | yes: history parts, segment footers | yes: history parts, segments | backup logs, with their backups |
 | Restore (offline app) | its cluster's prefix | no | yes | yes | no |
-| Maintenance | the clusters it maintains | rollups, retention markers | yes | yes | segments, markers, snapshots |
+| Maintenance | the clusters it maintains | rollups, retention markers | yes, backup logs too | yes, backup logs too | segments, markers, snapshots; never what a backup log holds |
 | Worker of a group | the logs it reads | no | yes | yes | no |
 | Worker of a group | its group's home: `_groups/{group}/` | heartbeats, cursors | yes | yes | its own heartbeat, on close |
 | Service | everything it shows | no | yes | yes | no |
 
-So a broker never lists nor deletes, and only maintenance deletes data.
+So a broker never deletes data, and only maintenance does. Without `backupLog`, a broker never lists
+nor deletes at all. With it, a backup costs a few LISTs and one ranged GET per segment between the
+checkpoint and the backup's first log position, walking back from the newest segment.
 
 ## Requests per hour
 
