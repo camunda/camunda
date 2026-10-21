@@ -19,7 +19,7 @@
 		"lint:knip": "knip"
 	},
 	"dependencies": {
-		"@bpmn-io/c4-theme": "0.3.0",
+		"@bpmn-io/c4-theme": "0.3.1",
 		"@bpmn-io/element-template-icon-renderer": "1.0.0",
 		"@bpmn-io/form-js-viewer": "2.1.1",
 		"@bpmn-io/shadcn-theme": "0.0.1",
@@ -34,8 +34,8 @@
 		"@devbookhq/splitter": "1.4.2",
 		"@monaco-editor/react": "4.7.0",
 		"@tailwindcss/vite": "4.3.3",
-		"@tanstack/react-query": "5.104.3",
-		"@tanstack/react-query-devtools": "5.104.3",
+		"@tanstack/react-query": "5.104.4",
+		"@tanstack/react-query-devtools": "5.104.4",
 		"@tanstack/react-router": "1.170.45",
 		"@tanstack/react-router-devtools": "1.167.2",
 		"@tanstack/react-virtual": "3.14.21",
@@ -52,7 +52,7 @@
 		"dmn-js-shared": "17.13.0",
 		"final-form": "5.0.1",
 		"final-form-arrays": "4.0.1",
-		"i18next": "26.5.1",
+		"i18next": "26.5.2",
 		"i18next-browser-languagedetector": "8.2.1",
 		"lodash": "4.18.1",
 		"mobx": "7.0.6",
@@ -69,7 +69,7 @@
 		"styled-components": "6.6.0",
 		"tailwind-merge": "3.7.0",
 		"tailwindcss": "4.3.3",
-		"xstate": "5.33.2",
+		"xstate": "5.33.3",
 		"zod": "4.6.7"
 	},
 	"devDependencies": {
