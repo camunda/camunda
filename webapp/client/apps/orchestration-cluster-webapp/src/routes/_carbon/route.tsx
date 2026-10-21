@@ -12,7 +12,7 @@ import {NotFoundPage} from '#/shared/pages/NotFoundPage';
 import {GenericErrorPage} from '#/shared/pages/GenericErrorPage';
 import {Notifications} from '#/shared/notifications/components/Notifications';
 import {NetworkStatusWatcher} from '#/shared/notifications/components/NetworkStatusWatcher';
-import appCss from './carbon.scss?url';
+import appCss from '#/shared/theme/carbon.scss?url';
 
 const Route = createFileRoute('/_carbon')({
 	notFoundComponent: () => (
