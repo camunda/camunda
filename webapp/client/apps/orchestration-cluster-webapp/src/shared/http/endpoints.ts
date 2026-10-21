@@ -67,7 +67,15 @@ import {
 	type CreateClusterVariableRequestBody,
 	type UpdateClusterVariableRequestBody,
 	type QueryClusterVariablesRequestBody,
+	type Tenant,
+	type CreateTenantRequestBody,
+	type UpdateTenantRequestBody,
 	type QueryTenantsRequestBody,
+	type QueryUsersByTenantRequestBody,
+	type QueryGroupsByTenantRequestBody,
+	type QueryRolesByTenantRequestBody,
+	type QueryClientsByTenantRequestBody,
+	type QueryMappingRulesByTenantRequestBody,
 	type GlobalTaskListener,
 	type CreateGlobalTaskListenerRequestBody,
 	type UpdateGlobalTaskListenerRequestBody,
@@ -977,11 +985,32 @@ const endpoints = {
 			body: JSON.stringify(body),
 			headers: {'Content-Type': 'application/json'},
 		}),
+	getTenant: ({tenantId}: Pick<Tenant, 'tenantId'>) =>
+		new Request(getFullURL(unifiedAPIEndpoints.getTenant.getUrl({tenantId: tenantId})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.getTenant.method,
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	createTenant: (body: CreateTenantRequestBody) =>
+		new Request(getFullURL(unifiedAPIEndpoints.createTenant.getUrl()), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.createTenant.method,
+			body: JSON.stringify(body),
+			headers: {'Content-Type': 'application/json'},
+		}),
 
 	updateRole: ({roleId, ...body}: Pick<Role, 'roleId'> & UpdateRoleRequestBody) =>
 		new Request(getFullURL(unifiedAPIEndpoints.updateRole.getUrl({roleId})), {
 			...BASE_REQUEST_OPTIONS,
 			method: unifiedAPIEndpoints.updateRole.method,
+			body: JSON.stringify(body),
+			headers: {'Content-Type': 'application/json'},
+		}),
+	updateTenant: ({tenantId, ...body}: Pick<Tenant, 'tenantId'> & UpdateTenantRequestBody) =>
+		new Request(getFullURL(unifiedAPIEndpoints.updateTenant.getUrl({tenantId: tenantId})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.updateTenant.method,
 			body: JSON.stringify(body),
 			headers: {'Content-Type': 'application/json'},
 		}),
@@ -1000,11 +1029,31 @@ const endpoints = {
 			body: JSON.stringify(body),
 			headers: {'Content-Type': 'application/json'},
 		}),
+	deleteTenant: ({tenantId}: Pick<Tenant, 'tenantId'>) =>
+		new Request(getFullURL(unifiedAPIEndpoints.deleteTenant.getUrl({tenantId: tenantId})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.deleteTenant.method,
+		}),
+
+	queryUsersByTenant: ({tenantId, ...body}: Pick<Tenant, 'tenantId'> & QueryUsersByTenantRequestBody) =>
+		new Request(getFullURL(unifiedAPIEndpoints.queryUsersByTenant.getUrl({tenantId: tenantId})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.queryUsersByTenant.method,
+			body: JSON.stringify(body),
+			headers: {'Content-Type': 'application/json'},
+		}),
 
 	queryGroupsByRole: ({roleId, ...body}: {roleId: string} & QueryGroupsByRoleRequestBody) =>
 		new Request(getFullURL(unifiedAPIEndpoints.queryGroupsByRole.getUrl({roleId})), {
 			...BASE_REQUEST_OPTIONS,
 			method: unifiedAPIEndpoints.queryGroupsByRole.method,
+			body: JSON.stringify(body),
+			headers: {'Content-Type': 'application/json'},
+		}),
+	queryGroupsByTenant: ({tenantId, ...body}: Pick<Tenant, 'tenantId'> & QueryGroupsByTenantRequestBody) =>
+		new Request(getFullURL(unifiedAPIEndpoints.queryGroupsByTenant.getUrl({tenantId: tenantId})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.queryGroupsByTenant.method,
 			body: JSON.stringify(body),
 			headers: {'Content-Type': 'application/json'},
 		}),
@@ -1016,11 +1065,25 @@ const endpoints = {
 			body: JSON.stringify(body),
 			headers: {'Content-Type': 'application/json'},
 		}),
+	queryRolesByTenant: ({tenantId, ...body}: Pick<Tenant, 'tenantId'> & QueryRolesByTenantRequestBody) =>
+		new Request(getFullURL(unifiedAPIEndpoints.queryRolesByTenant.getUrl({tenantId: tenantId})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.queryRolesByTenant.method,
+			body: JSON.stringify(body),
+			headers: {'Content-Type': 'application/json'},
+		}),
 
 	queryClientsByRole: ({roleId, ...body}: {roleId: string} & QueryClientsByRoleRequestBody) =>
 		new Request(getFullURL(unifiedAPIEndpoints.queryClientsByRole.getUrl({roleId})), {
 			...BASE_REQUEST_OPTIONS,
 			method: unifiedAPIEndpoints.queryClientsByRole.method,
+			body: JSON.stringify(body),
+			headers: {'Content-Type': 'application/json'},
+		}),
+	queryClientsByTenant: ({tenantId, ...body}: Pick<Tenant, 'tenantId'> & QueryClientsByTenantRequestBody) =>
+		new Request(getFullURL(unifiedAPIEndpoints.queryClientsByTenant.getUrl({tenantId: tenantId})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.queryClientsByTenant.method,
 			body: JSON.stringify(body),
 			headers: {'Content-Type': 'application/json'},
 		}),
@@ -1072,6 +1135,77 @@ const endpoints = {
 			...BASE_REQUEST_OPTIONS,
 			method: unifiedAPIEndpoints.unassignClientFromRole.method,
 		}),
+	queryMappingRulesByTenant: ({tenantId, ...body}: Pick<Tenant, 'tenantId'> & QueryMappingRulesByTenantRequestBody) =>
+		new Request(getFullURL(unifiedAPIEndpoints.queryMappingRulesByTenant.getUrl({tenantId: tenantId})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.queryMappingRulesByTenant.method,
+			body: JSON.stringify(body),
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	assignUserToTenant: ({tenantId, username}: Pick<Tenant, 'tenantId'> & {username: string}) =>
+		new Request(getFullURL(unifiedAPIEndpoints.assignUserToTenant.getUrl({tenantId: tenantId, username: username})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.assignUserToTenant.method,
+		}),
+
+	unassignUserFromTenant: ({tenantId, username}: Pick<Tenant, 'tenantId'> & {username: string}) =>
+		new Request(
+			getFullURL(unifiedAPIEndpoints.unassignUserFromTenant.getUrl({tenantId: tenantId, username: username})),
+			{...BASE_REQUEST_OPTIONS, method: unifiedAPIEndpoints.unassignUserFromTenant.method},
+		),
+
+	assignGroupToTenant: ({tenantId, groupId}: Pick<Tenant, 'tenantId'> & {groupId: string}) =>
+		new Request(getFullURL(unifiedAPIEndpoints.assignGroupToTenant.getUrl({tenantId: tenantId, groupId: groupId})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.assignGroupToTenant.method,
+		}),
+
+	unassignGroupFromTenant: ({tenantId, groupId}: Pick<Tenant, 'tenantId'> & {groupId: string}) =>
+		new Request(
+			getFullURL(unifiedAPIEndpoints.unassignGroupFromTenant.getUrl({tenantId: tenantId, groupId: groupId})),
+			{...BASE_REQUEST_OPTIONS, method: unifiedAPIEndpoints.unassignGroupFromTenant.method},
+		),
+
+	assignRoleToTenant: ({tenantId, roleId}: Pick<Tenant, 'tenantId'> & {roleId: string}) =>
+		new Request(getFullURL(unifiedAPIEndpoints.assignRoleToTenant.getUrl({tenantId: tenantId, roleId: roleId})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.assignRoleToTenant.method,
+		}),
+
+	unassignRoleFromTenant: ({tenantId, roleId}: Pick<Tenant, 'tenantId'> & {roleId: string}) =>
+		new Request(getFullURL(unifiedAPIEndpoints.unassignRoleFromTenant.getUrl({tenantId: tenantId, roleId: roleId})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.unassignRoleFromTenant.method,
+		}),
+
+	assignClientToTenant: ({tenantId, clientId}: Pick<Tenant, 'tenantId'> & {clientId: string}) =>
+		new Request(getFullURL(unifiedAPIEndpoints.assignClientToTenant.getUrl({tenantId: tenantId, clientId: clientId})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.assignClientToTenant.method,
+		}),
+
+	unassignClientFromTenant: ({tenantId, clientId}: Pick<Tenant, 'tenantId'> & {clientId: string}) =>
+		new Request(
+			getFullURL(unifiedAPIEndpoints.unassignClientFromTenant.getUrl({tenantId: tenantId, clientId: clientId})),
+			{...BASE_REQUEST_OPTIONS, method: unifiedAPIEndpoints.unassignClientFromTenant.method},
+		),
+
+	assignMappingRuleToTenant: ({tenantId, mappingRuleId}: Pick<Tenant, 'tenantId'> & {mappingRuleId: string}) =>
+		new Request(
+			getFullURL(
+				unifiedAPIEndpoints.assignMappingRuleToTenant.getUrl({tenantId: tenantId, mappingRuleId: mappingRuleId}),
+			),
+			{...BASE_REQUEST_OPTIONS, method: unifiedAPIEndpoints.assignMappingRuleToTenant.method},
+		),
+
+	unassignMappingRuleFromTenant: ({tenantId, mappingRuleId}: Pick<Tenant, 'tenantId'> & {mappingRuleId: string}) =>
+		new Request(
+			getFullURL(
+				unifiedAPIEndpoints.unassignMappingRuleFromTenant.getUrl({tenantId: tenantId, mappingRuleId: mappingRuleId}),
+			),
+			{...BASE_REQUEST_OPTIONS, method: unifiedAPIEndpoints.unassignMappingRuleFromTenant.method},
+		),
 
 	// Served as `window.clientConfig = {...};` by the Admin client config controller.
 	getAdminClientConfig: () =>

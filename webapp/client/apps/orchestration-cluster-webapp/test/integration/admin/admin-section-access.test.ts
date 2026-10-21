@@ -12,12 +12,14 @@ import {
 	mockCurrentUserEndpoint,
 	mockLicenseEndpoint,
 	mockQueryMappingRulesEndpoint,
+	mockQueryTenantsEndpoint,
 	mockSystemConfigurationEndpoint,
 } from '#/shared-test-modules/mock-handlers';
 import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
 import {createLicense} from '#/shared-test-modules/api-mocks/license';
 import {createCurrentUser} from '#/shared-test-modules/api-mocks/current-user';
 import {createQueryMappingRulesResponse} from '#/shared-test-modules/api-mocks/mapping-rules';
+import {createQueryTenantsResponse} from '#/shared-test-modules/api-mocks/tenants';
 
 test.beforeEach(({network}) => {
 	network.use(
@@ -48,6 +50,7 @@ test.describe('Admin section access', () => {
 					}),
 				),
 			}),
+			mockQueryTenantsEndpoint({successResponse: HttpResponse.json(createQueryTenantsResponse())}),
 		);
 		await adminIndexPage.gotoSection('tenants');
 
