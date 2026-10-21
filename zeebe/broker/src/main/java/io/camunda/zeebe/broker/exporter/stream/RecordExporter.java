@@ -47,6 +47,9 @@ class RecordExporter {
 
     shouldExport = recordValue != null;
     if (shouldExport) {
+      // wrap() runs once per record while export() may be retried, so redact here, before the
+      // fan-out
+      VariableRedaction.apply(rawMetadata.getValueType(), recordValue);
       typedEvent.wrap(rawEvent, rawMetadata, recordValue);
       exporterIndex = 0;
     }
