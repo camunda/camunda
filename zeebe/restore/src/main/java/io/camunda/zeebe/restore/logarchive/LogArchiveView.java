@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.TreeMap;
 import java.util.stream.Stream;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
@@ -63,7 +64,10 @@ public final class LogArchiveView {
   private final List<ArchivedSnapshotJson> snapshots;
   private final List<CoveredCheckpointJson> checkpoints;
   private final @Nullable HandoverJson handover;
+  private final boolean authority;
+  private final long holdIndex;
   private final Map<Long, IndexChunkFile> chunkFiles = new HashMap<>();
+  private @Nullable List<LogObjectJson> maintainedObjects;
 
   private LogArchiveView(final LogArchiveStore store, final Folder folder) {
     this.store = store;
@@ -83,6 +87,8 @@ public final class LogArchiveView {
     snapshots = List.copyOf(folder.snapshots);
     checkpoints = List.copyOf(folder.checkpoints.values());
     handover = folder.handover;
+    authority = folder.authority;
+    holdIndex = folder.holdIndex;
   }
 
   /**
@@ -121,7 +127,13 @@ public final class LogArchiveView {
           "Log archive of partition %d of timeline '%s' has no start index"
               .formatted(partitionId, timelineId));
     }
-    return new LogArchiveView(store, folder);
+    final var view = new LogArchiveView(store, folder);
+    if (view.authority) {
+      view.maintainedObjects = MaintenanceFold.apply(view, folder.stateHistory());
+    } else {
+      MaintenanceFold.warnIfPresent(view);
+    }
+    return view;
   }
 
   private static Optional<RootFile> readRoot(
@@ -260,6 +272,35 @@ public final class LogArchiveView {
     return checkpoints;
   }
 
+  /** Whether the timeline is in mode B: an authority compacts and removes (spec section 25). */
+  public boolean isAuthority() {
+    return authority;
+  }
+
+  /**
+   * H, the restore hold of a timeline in mode B (spec section 25.2); {@code startIndex} until the
+   * hold moved, and also for a timeline in mode A.
+   */
+  public long holdIndex() {
+    return holdIndex;
+  }
+
+  /**
+   * Whether the hold of a timeline in mode B moved up from the start of the timeline, so that the
+   * log below it may be compacted away or removed.
+   */
+  public boolean hasMovedHold() {
+    return authority && holdIndex > startIndex;
+  }
+
+  /**
+   * The objects of a timeline in mode B after the maintenance log was applied, in index order;
+   * empty for a timeline in mode A, which uses merged objects, chunks and open objects.
+   */
+  public Optional<List<LogObjectJson>> maintainedObjects() {
+    return Optional.ofNullable(maintainedObjects);
+  }
+
   /** The handover from the old backups recorded in this timeline, empty if there is none. */
   public Optional<HandoverJson> handover() {
     return Optional.ofNullable(handover);
@@ -270,6 +311,14 @@ public final class LogArchiveView {
    * before it are not in this timeline.
    */
   public long firstArchivedPosition() {
+    if (maintainedObjects != null) {
+      for (final var object : maintainedObjects) {
+        if (object.firstPosition() >= 0) {
+          return object.firstPosition();
+        }
+      }
+      return -1;
+    }
     for (final var chunk : chunks) {
       if (chunk.firstPosition() >= 0) {
         return chunk.firstPosition();
@@ -419,6 +468,9 @@ public final class LogArchiveView {
     private final List<ArchivedSnapshotJson> snapshots = new ArrayList<>();
     private final Map<Long, CoveredCheckpointJson> checkpoints = new LinkedHashMap<>();
     private @Nullable HandoverJson handover;
+    private boolean authority;
+    private long holdIndex = -1;
+    private final TreeMap<Long, long[]> history = new TreeMap<>();
 
     private Folder(final String timelineId, final int partitionId) {
       this.timelineId = timelineId;
@@ -445,6 +497,9 @@ public final class LogArchiveView {
       folder.snapshots.addAll(root.snapshots());
       root.openCheckpoints().forEach(folder::addCheckpoint);
       folder.handover = root.handover();
+      folder.authority = root.isAuthority();
+      folder.holdIndex = root.holdIndex() == null ? root.startIndex() : root.holdIndex();
+      folder.history.put(root.seq(), new long[] {root.archivedIndex(), folder.holdIndex});
       return folder;
     }
 
@@ -464,9 +519,27 @@ public final class LogArchiveView {
         case LOG_MERGED -> applyLogMerged(entry);
         case LOG_RELEASED -> applyLogReleased(entry);
         case HANDOVER -> applyHandover(entry);
+        case HOLD_MOVED -> applyHoldMoved(entry);
         case null, default -> throw inconsistent("unknown commit entry type " + entry.type());
       }
       lastSeq = expectedSeq;
+      history.put(expectedSeq, new long[] {archivedIndex, holdIndex});
+    }
+
+    /** The archived index and hold after each seq the fold applied, and after the root. */
+    TreeMap<Long, long[]> stateHistory() {
+      return history;
+    }
+
+    private void applyHoldMoved(final CommitEntry entry) {
+      requireStarted(entry);
+      final var hold = entry.holdIndex();
+      if (hold == null || hold < holdIndex) {
+        throw inconsistent(
+            "HOLD_MOVED entry %d moves the hold to %s, below the hold %d"
+                .formatted(entry.seq(), hold, holdIndex));
+      }
+      holdIndex = hold;
     }
 
     private void applyTimelineStarted(final CommitEntry entry) {
@@ -480,6 +553,8 @@ public final class LogArchiveView {
       mergedIndex = startIndex - 1;
       releasedIndex = startIndex - 1;
       mergedObjects.clear();
+      authority = entry.isAuthority();
+      holdIndex = startIndex;
     }
 
     private void applyLogMerged(final CommitEntry entry) {
