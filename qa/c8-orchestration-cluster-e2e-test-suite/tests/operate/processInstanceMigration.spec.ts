@@ -892,17 +892,30 @@ test.describe.serial('Process Instance Migration', () => {
         maxRetries: 2,
       });
 
+      // The incident state-overlay on the diagram (derived from flow-node
+      // statistics, asserted just above) becomes visible before the incident is
+      // joined into the per-flow-node metadata response that feeds this popover.
+      // The popover's "Incident" section only renders once that metadata fetch
+      // returns the incident, and the fetch runs once per flow-node selection
+      // (no polling) — so the lever through this eventual-consistency window is
+      // reloading and re-selecting the node, not waiting on a stale selection.
+      // The previous budget (one reload) was far tighter than the ~3-attempt
+      // budget the overlay check above uses; give the metadata join the same
+      // room, and a longer per-attempt timeout to absorb the fetch latency after
+      // each click.
       await waitForAssertion({
         assertion: async () => {
           await operateDiagramPage.clickFlowNode('ExclusiveGateway2');
-          await expect(operateDiagramPage.popoverIncidentHeading).toBeVisible();
+          await expect(operateDiagramPage.popoverIncidentHeading).toBeVisible({
+            timeout: 30000,
+          });
         },
         onFailure: async () => {
           await sleep(5000);
           await page.reload();
           await operateDiagramPage.resetDiagramZoomButton.click();
         },
-        maxRetries: 2,
+        maxRetries: 5,
       });
     });
   });
