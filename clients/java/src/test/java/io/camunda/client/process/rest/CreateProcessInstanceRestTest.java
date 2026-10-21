@@ -499,8 +499,11 @@ public class CreateProcessInstanceRestTest extends ClientRestTest {
     // then
     final ProcessInstanceCreationInstruction request =
         gatewayService.getLastRequest(ProcessInstanceCreationInstruction.class);
+    assertThat(request.getProcessDefinitionKey()).isNull();
     assertThat(request.getProcessDefinitionId()).isEqualTo("testProcess");
     assertThat(request.getProcessDefinitionVersionTag()).isEqualTo("v1");
+    // check processDefinitionVersion in the raw JSON to ensure it is not present. The parsed model
+    // would have the default value -1 instead as the client omits null fields.
     assertThat(JsonUtil.fromJsonAsMap(RestGatewayService.getLastRequest().getBodyAsString()))
         .doesNotContainKey("processDefinitionVersion");
   }

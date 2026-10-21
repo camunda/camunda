@@ -198,7 +198,6 @@ public final class CreateProcessInstanceCommandImpl
   @Override
   public CreateProcessInstanceCommandStep3 versionTag(final String versionTag) {
     ArgumentUtil.ensureNotNullNorEmpty("versionTag", versionTag);
-    grpcRequestObjectBuilder.setVersion(LATEST_VERSION);
     grpcRequestObjectBuilder.setVersionTag(versionTag);
     httpRequestObject.setProcessDefinitionVersion(null);
     httpRequestObject.setProcessDefinitionVersionTag(versionTag);
