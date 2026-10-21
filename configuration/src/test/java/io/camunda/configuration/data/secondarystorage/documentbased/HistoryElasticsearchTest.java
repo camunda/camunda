@@ -198,7 +198,7 @@ public class HistoryElasticsearchTest {
     }
 
     @Test
-    void shouldDefaultArchiveByIdEnabledToTrue() {
+    void shouldDefaultRolloverBatchSize() {
       final ExporterConfiguration exporterConfiguration =
           getExporterConfiguration(brokerBasedProperties);
 
