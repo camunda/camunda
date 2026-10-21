@@ -102,6 +102,10 @@ const ProcessInstanceDetails: React.FC = () => {
 		...elementMessageSubscriptionQuery(key),
 		enabled: key !== '' && isMessageElement,
 	});
+	const agentElementInstanceKey =
+		isSelectedInstanceMultiInstanceBody || resolvedElementType === 'MULTI_INSTANCE_BODY'
+			? null
+			: selectedElementInstanceKey;
 	const {
 		data: agentInstances,
 		isLoading: isAgentInstancesLoading,
@@ -110,10 +114,7 @@ const ProcessInstanceDetails: React.FC = () => {
 		...elementAgentInstancesQuery({
 			processInstanceKey: processInstance.processInstanceKey,
 			elementId: agentElementId ?? '',
-			elementInstanceKey:
-				isSelectedInstanceMultiInstanceBody || resolvedElementType === 'MULTI_INSTANCE_BODY'
-					? null
-					: selectedElementInstanceKey,
+			elementInstanceKey: agentElementInstanceKey,
 		}),
 		enabled: Boolean(agentElementId),
 		refetchInterval: isRunning ? POLLING_INTERVAL_MS : false,
@@ -337,6 +338,7 @@ const ProcessInstanceDetails: React.FC = () => {
 			)}
 			{showAgentInstance && (
 				<AgentDetails
+					selectedElementInstanceKey={agentElementInstanceKey}
 					agentInstances={agentInstances?.items ?? []}
 					totalAgentsCount={agentInstances?.page.totalItems ?? 0}
 					hasMoreTotalItems={agentInstances?.page.hasMoreTotalItems ?? false}

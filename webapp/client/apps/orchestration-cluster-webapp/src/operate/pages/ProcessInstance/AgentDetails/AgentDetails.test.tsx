@@ -7,13 +7,59 @@
  */
 
 import i18n from 'i18next';
+import {HttpResponse} from 'msw';
+import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {afterEach, describe, expect} from 'vitest';
 import {userEvent} from 'vitest/browser';
 import {render} from 'vitest-browser-react';
+import {z} from 'zod';
 import type {AgentInstance} from '@camunda/camunda-api-zod-schemas/8.11';
 import {it} from '#/vitest-modules/test-extend';
-import {createAgentInstance} from '#/shared-test-modules/api-mocks/agent-instances';
+import {
+	createAgentInstance,
+	createAgentInstanceHistoryItem,
+	createQueryAgentInstanceHistoryResponse,
+} from '#/shared-test-modules/api-mocks/agent-instances';
+import {createDocumentReference} from '#/shared-test-modules/api-mocks/documents';
+import {mockQueryAgentInstanceHistoryEndpoint} from '#/shared-test-modules/mock-handlers';
 import {AgentDetails} from './AgentDetails';
+
+const latestMessageRequestSchema = z.object({
+	sort: z.tuple([
+		z.object({field: z.literal('producedAt'), order: z.literal('DESC')}),
+		z.object({field: z.literal('historyItemKey'), order: z.literal('DESC')}),
+	]),
+	filter: z.object({commitStatus: z.literal('COMMITTED'), role: z.literal('ASSISTANT')}),
+	page: z.object({limit: z.literal(1)}),
+});
+
+const historyRequestSchema = z.object({
+	filter: z.object({role: z.object({$in: z.array(z.string())})}),
+});
+
+function mockLatestMessage(response: Response) {
+	return mockQueryAgentInstanceHistoryEndpoint({
+		schema: latestMessageRequestSchema,
+		successResponse: response,
+		failureResponse: HttpResponse.json(createQueryAgentInstanceHistoryResponse()),
+	});
+}
+
+function mockHistory(response: Response) {
+	return mockQueryAgentInstanceHistoryEndpoint({
+		schema: historyRequestSchema,
+		successResponse: response,
+		failureResponse: HttpResponse.json(createQueryAgentInstanceHistoryResponse()),
+	});
+}
+
+function createWrapper() {
+	const queryClient = new QueryClient({defaultOptions: {queries: {retry: false}}});
+	const Wrapper = ({children}: {children: React.ReactNode}) => (
+		<QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+	);
+	return Wrapper;
+}
 
 function renderAgentDetails({
 	agentInstances = [createAgentInstance()],
@@ -28,15 +74,21 @@ function renderAgentDetails({
 } = {}) {
 	return render(
 		<AgentDetails
+			selectedElementInstanceKey={null}
 			agentInstances={agentInstances}
 			totalAgentsCount={totalAgentsCount}
 			hasMoreTotalItems={hasMoreTotalItems}
 			isError={isError}
 		/>,
+		{wrapper: createWrapper()},
 	);
 }
 
 describe('<AgentDetails />', () => {
+	it.beforeEach(({worker}) => {
+		worker.use(mockLatestMessage(HttpResponse.json(createQueryAgentInstanceHistoryResponse())));
+	});
+
 	afterEach(async () => {
 		await i18n.changeLanguage('en');
 	});
@@ -53,8 +105,117 @@ describe('<AgentDetails />', () => {
 		const screen = await renderAgentDetails({agentInstances: [createAgentInstance({status})]});
 
 		await expect.element(screen.getByRole('heading', {name: 'Agent Instance'})).toBeVisible();
-		await expect.element(screen.getByText(`Status: ${label}`)).toBeVisible();
-		await expect.element(screen.getByRole('button', {name: `Status: ${label}`})).not.toBeInTheDocument();
+		await expect
+			.element(screen.getByRole('button', {name: `Status: ${label}`}))
+			.toHaveAttribute('aria-expanded', 'true');
+		await expect.element(screen.getByText('The agent has not produced a message yet.')).toBeVisible();
+	});
+
+	it('should show the latest agent message in the open status section', async ({worker}) => {
+		worker.use(
+			mockLatestMessage(
+				HttpResponse.json(
+					createQueryAgentInstanceHistoryResponse([
+						createAgentInstanceHistoryItem({
+							role: 'ASSISTANT',
+							content: [{contentType: 'TEXT', text: 'Booking **confirmed**'}],
+							toolCalls: [{toolCallId: 'call-1', toolName: 'sendEmail', elementId: null, arguments: null}],
+						}),
+					]),
+				),
+			),
+		);
+		const screen = await renderAgentDetails();
+
+		const message = screen.getByTestId('agent-status-section').getByRole('article', {name: 'Assistant message'});
+		await expect.element(message).toMatchTextContent('Booking confirmed');
+		await expect.element(message.getByRole('strong')).toHaveTextContent('confirmed');
+		await expect.element(message.getByRole('list', {name: 'Tool calls'})).toHaveTextContent('sendEmail');
+	});
+
+	it('should show a hint when the latest agent message cannot be loaded', async ({worker}) => {
+		worker.use(mockQueryAgentInstanceHistoryEndpoint({successResponse: new HttpResponse(null, {status: 500})}));
+		const screen = await renderAgentDetails();
+
+		await expect.element(screen.getByText('Failed to load latest agent message.')).toBeVisible();
+	});
+
+	it('should refetch the latest agent message when the agent status changes', async ({worker}) => {
+		const latestMessage = (text: string) =>
+			mockLatestMessage(
+				HttpResponse.json(
+					createQueryAgentInstanceHistoryResponse([
+						createAgentInstanceHistoryItem({content: [{contentType: 'TEXT', text}]}),
+					]),
+				),
+			);
+		worker.use(latestMessage('First answer'));
+		const screen = await renderAgentDetails({agentInstances: [createAgentInstance({status: 'IDLE'})]});
+		await expect.element(screen.getByText('First answer')).toBeVisible();
+
+		worker.use(latestMessage('Final answer'));
+		await screen.rerender(
+			<AgentDetails
+				selectedElementInstanceKey={null}
+				agentInstances={[createAgentInstance({status: 'COMPLETED'})]}
+				totalAgentsCount={1}
+				hasMoreTotalItems={false}
+				isError={false}
+			/>,
+		);
+
+		await expect.element(screen.getByText('Final answer')).toBeVisible();
+		await expect.element(screen.getByText('First answer')).not.toBeInTheDocument();
+	});
+
+	it('should render the system prompt with its actions and documents', async () => {
+		const screen = await renderAgentDetails({
+			agentInstances: [
+				createAgentInstance({
+					definition: {
+						provider: 'openai',
+						model: 'gpt-4o',
+						systemPrompt: [
+							{contentType: 'TEXT', text: 'You are a helpful assistant.'},
+							{
+								contentType: 'DOCUMENT',
+								documentReference: createDocumentReference({metadata: {fileName: 'policy.pdf'}}),
+							},
+						],
+					},
+				}),
+			],
+		});
+
+		await userEvent.click(screen.getByRole('button', {name: 'System prompt'}));
+
+		const systemPrompt = screen.getByRole('article', {name: 'System prompt'});
+		await expect.element(systemPrompt).toMatchTextContent('You are a helpful assistant.');
+		await expect.element(systemPrompt.getByRole('button', {name: 'Expand'})).toBeInTheDocument();
+		await expect.element(systemPrompt.getByRole('button', {name: 'Copy to clipboard'})).toBeInTheDocument();
+		await expect.element(systemPrompt.getByRole('list', {name: 'Documents'})).toHaveTextContent('policy.pdf');
+	});
+
+	it('should load the conversation history once its section is opened', async ({worker}) => {
+		worker.use(
+			mockHistory(
+				HttpResponse.json(
+					createQueryAgentInstanceHistoryResponse([
+						createAgentInstanceHistoryItem({role: 'USER', content: [{contentType: 'TEXT', text: 'Book a flight'}]}),
+					]),
+				),
+			),
+		);
+		const screen = await renderAgentDetails();
+		await expect.element(screen.getByText('The agent has not produced a message yet.')).toBeVisible();
+		await expect.element(screen.getByText('Book a flight')).not.toBeInTheDocument();
+
+		await userEvent.click(screen.getByRole('button', {name: 'Conversation history'}));
+
+		await expect
+			.element(screen.getByRole('button', {name: 'Conversation history'}))
+			.toHaveAttribute('aria-expanded', 'true');
+		await expect.element(screen.getByRole('article', {name: 'User message'})).toMatchTextContent('Book a flight');
 	});
 
 	it('should render an error hint when the agent instances failed to load', async () => {
@@ -103,6 +264,7 @@ describe('<AgentDetails />', () => {
 
 		await screen.rerender(
 			<AgentDetails
+				selectedElementInstanceKey={null}
 				agentInstances={[
 					createAgentInstance({agentInstanceKey: '3', status: 'IDLE'}),
 					createAgentInstance({agentInstanceKey: '4', status: 'THINKING'}),

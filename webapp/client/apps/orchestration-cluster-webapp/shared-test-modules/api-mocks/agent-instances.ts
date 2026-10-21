@@ -6,7 +6,12 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import type {AgentInstance, QueryAgentInstancesResponseBody} from '@camunda/camunda-api-zod-schemas/8.11';
+import type {
+	AgentInstance,
+	AgentInstanceHistoryItem,
+	QueryAgentInstanceHistoryResponseBody,
+	QueryAgentInstancesResponseBody,
+} from '@camunda/camunda-api-zod-schemas/8.11';
 import {createPaginatedResponse} from './shared';
 
 function createAgentInstance(overrides?: Partial<AgentInstance>): AgentInstance {
@@ -52,4 +57,47 @@ function createQueryAgentInstancesResponse(
 	});
 }
 
-export {createAgentInstance, createQueryAgentInstancesResponse};
+function createAgentInstanceHistoryItem(overrides?: Partial<AgentInstanceHistoryItem>): AgentInstanceHistoryItem {
+	return {
+		historyItemKey: 'history-1',
+		historyItemId: 'history-id-1',
+		agentInstanceKey: 'agent-1',
+		elementInstanceKey: 'element-instance-1',
+		jobKey: 'job-1',
+		jobLeaseToken: 'lease-1',
+		loopIteration: 1,
+		role: 'ASSISTANT',
+		content: [],
+		toolCalls: [],
+		metrics: null,
+		commitStatus: 'COMMITTED',
+		producedAt: '2026-01-15T10:00:00.000Z',
+		tools: [],
+		model: null,
+		provider: null,
+		limits: {maxModelCalls: 0, maxToolCalls: 0, maxTokens: 0},
+		systemPrompt: [],
+		...overrides,
+	};
+}
+
+function createQueryAgentInstanceHistoryResponse(
+	items: AgentInstanceHistoryItem[] = [],
+	{
+		totalItems = items.length,
+		endCursor = null,
+		hasMoreTotalItems = false,
+	}: {totalItems?: number; endCursor?: string | null; hasMoreTotalItems?: boolean} = {},
+): QueryAgentInstanceHistoryResponseBody {
+	return createPaginatedResponse({
+		items,
+		page: {totalItems, startCursor: null, endCursor, hasMoreTotalItems},
+	});
+}
+
+export {
+	createAgentInstance,
+	createQueryAgentInstancesResponse,
+	createAgentInstanceHistoryItem,
+	createQueryAgentInstanceHistoryResponse,
+};
