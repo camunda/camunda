@@ -210,7 +210,8 @@ public final class LogArchiveCleaner extends Actor
     final Set<String> mergedKeys;
     try {
       meta = stateView.meta();
-      if (meta.getTimelineId().isEmpty() || meta.getMergedIndex() < 0) {
+      if (meta.getTimelineId().isEmpty() || meta.getMergedIndex() < 0 || meta.isAuthority()) {
+        // an authority timeline is compacted and retained by the authority, never by the cluster
         return;
       }
       if (!meta.getTimelineId().equals(timelineId)) {

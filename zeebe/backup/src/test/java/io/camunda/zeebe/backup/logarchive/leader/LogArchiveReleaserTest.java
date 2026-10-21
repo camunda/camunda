@@ -10,6 +10,7 @@ package io.camunda.zeebe.backup.logarchive.leader;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.backup.logarchive.leader.LogArchiveReleaser.ReleaseState;
+import io.camunda.zeebe.backup.logarchive.model.CompactionModes;
 import io.camunda.zeebe.backup.logarchive.state.LogArchiveMeta;
 import io.camunda.zeebe.logstreams.log.LogAppendEntry;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
@@ -168,6 +169,21 @@ final class LogArchiveReleaserTest {
   void shouldStayIdleForStateWrittenBeforeMergesExisted() {
     // given - only START_TIMELINE initialises these, so older state has -1
     meta = meta(-1, -1);
+    backups = List.of(backup(1, 10, -10));
+    snapshots = List.of(snapshot(80, 5));
+    merged = List.of(merged(1, 50));
+
+    // when
+    recoverAndTick();
+
+    // then
+    assertThat(writer.entries).isEmpty();
+  }
+
+  @Test
+  void shouldStayIdleOnAnAuthorityTimeline() {
+    // given
+    meta = meta(0, 0).setCompactionMode(CompactionModes.AUTHORITY);
     backups = List.of(backup(1, 10, -10));
     snapshots = List.of(snapshot(80, 5));
     merged = List.of(merged(1, 50));

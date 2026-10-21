@@ -42,13 +42,8 @@ public final class LogArchiveReleaseFloor {
       final List<LogObject> mergedObjects,
       final long nowMillis,
       final Duration retentionWindow) {
-    final var protectedCheckpoint =
-        protectedCheckpoint(backupCheckpoints, nowMillis, retentionWindow);
-    if (protectedCheckpoint.isEmpty()) {
-      return OptionalLong.empty();
-    }
     final var floorSnapshot =
-        floorSnapshot(snapshots, protectedCheckpoint.get().getCheckpointPosition());
+        floorSnapshot(backupCheckpoints, snapshots, nowMillis, retentionWindow);
     if (floorSnapshot.isEmpty()) {
       return OptionalLong.empty();
     }
@@ -57,6 +52,21 @@ public final class LogArchiveReleaseFloor {
         .mapToLong(LogObject::getLastIndex)
         .filter(lastIndex -> lastIndex < floorIndex)
         .max();
+  }
+
+  /**
+   * The floor snapshot S (spec section 21.1): the snapshot restore picks for the protected
+   * checkpoint. Shared by the releaser and the hold mover.
+   *
+   * @return empty if there is no backup checkpoint or no usable snapshot
+   */
+  public static Optional<ArchivedSnapshot> floorSnapshot(
+      final List<CoveredCheckpoint> backupCheckpoints,
+      final List<ArchivedSnapshot> snapshots,
+      final long nowMillis,
+      final Duration retentionWindow) {
+    return protectedCheckpoint(backupCheckpoints, nowMillis, retentionWindow)
+        .flatMap(c -> floorSnapshot(snapshots, c.getCheckpointPosition()));
   }
 
   /**

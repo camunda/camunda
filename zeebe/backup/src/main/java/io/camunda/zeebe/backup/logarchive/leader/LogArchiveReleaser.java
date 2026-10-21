@@ -145,7 +145,9 @@ public final class LogArchiveReleaser extends Actor
     final var meta = state.meta();
     if (meta.getTimelineId().isEmpty()
         || meta.getReleasedIndex() < 0
-        || meta.getMergedIndex() < 0) {
+        || meta.getMergedIndex() < 0
+        || meta.isAuthority()) {
+      // an authority timeline is compacted and retained by the authority, never by the cluster
       return;
     }
     final long cleaned = cleanedIndex.getAsLong();

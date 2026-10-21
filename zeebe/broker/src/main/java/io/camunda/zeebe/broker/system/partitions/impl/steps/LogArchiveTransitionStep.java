@@ -11,6 +11,8 @@ import io.atomix.raft.RaftServer.Role;
 import io.camunda.zeebe.backup.logarchive.leader.HttpLogArchiveEventPlaneClient;
 import io.camunda.zeebe.backup.logarchive.leader.LogArchiveAnnouncer;
 import io.camunda.zeebe.backup.logarchive.leader.LogArchiveCleaner;
+import io.camunda.zeebe.backup.logarchive.leader.LogArchiveHoldMover;
+import io.camunda.zeebe.backup.logarchive.leader.LogArchiveHoldMover.HoldState;
 import io.camunda.zeebe.backup.logarchive.leader.LogArchiveMerger;
 import io.camunda.zeebe.backup.logarchive.leader.LogArchivePublisher;
 import io.camunda.zeebe.backup.logarchive.leader.LogArchiveReleaser;
@@ -50,7 +52,8 @@ import org.slf4j.LoggerFactory;
  * <p>On every role it creates a fresh {@link LogArchiveRecordsProcessor}, which the following
  * {@link StreamProcessorTransitionStep} registers, so that followers replay log archive events. On
  * the leader it also starts the archiver, snapshot uploader, publisher, merger and cleaner (and the
- * announcer with the event plane) and registers them on that processor.
+ * announcer with the event plane, the releaser and the hold mover with a retention window) and
+ * registers them on that processor.
  *
  * <p>This step runs before the stream processor is created, so the listener and the publication are
  * registered on the processor before it can recover. The processor's {@code onRecovered} therefore
@@ -204,6 +207,7 @@ public final class LogArchiveTransitionStep implements PartitionTransitionStep {
             cfg.getCleanupGracePeriod());
     final var releaser =
         createReleaser(context, cfg, logStream.newLogStreamWriter(), cleaner::cleanedIndex);
+    final var holdMover = createHoldMover(context, cfg, logStream.newLogStreamWriter());
     // The publisher checks the bucket against the recovered state before it publishes anything and
     // hands the outcome to the archiver and the uploader, which wait for it (spec section 8.4).
     final var publisher =
@@ -219,13 +223,16 @@ public final class LogArchiveTransitionStep implements PartitionTransitionStep {
               if (releaser != null) {
                 releaser.onRecoveryChecked(meta.copy(), bucketAhead);
               }
+              if (holdMover != null) {
+                holdMover.onRecoveryChecked(meta.copy(), bucketAhead);
+              }
             },
             // the old backups receive the handover file; it is not owned (or closed) here
             context.getBackupStore(),
             announcer);
     final var components =
         new LeaderComponents(
-            store, archiver, uploader, publisher, merger, cleaner, announcer, releaser);
+            store, archiver, uploader, publisher, merger, cleaner, announcer, releaser, holdMover);
     leaderComponents = components;
 
     final ActorFuture<Void> submitted = context.getConcurrencyControl().createFuture();
@@ -243,6 +250,9 @@ public final class LogArchiveTransitionStep implements PartitionTransitionStep {
                   List.of(archiver, uploader, publisher, merger, cleaner));
           if (releaser != null) {
             listeners.add(releaser);
+          }
+          if (holdMover != null) {
+            listeners.add(holdMover);
           }
           processor.setListener(new FanOutListener(listeners));
           processor.setPublication(publisher);
@@ -293,6 +303,29 @@ public final class LogArchiveTransitionStep implements PartitionTransitionStep {
             new ReleaseState(
                 state.meta(), state.backupCheckpoints(), state.snapshots(), state.mergedObjects()),
         cleanedIndex,
+        window,
+        cfg.getReleaseInterval());
+  }
+
+  /**
+   * Returns null if no retention window is configured, so the hold never moves. The hold mover only
+   * acts on authority timelines; the releaser only on cluster timelines.
+   */
+  private static @Nullable LogArchiveHoldMover createHoldMover(
+      final PartitionTransitionContext context,
+      final LogArchiveCfg cfg,
+      final LogStreamWriter writer) {
+    final var window = cfg.getRetentionWindow();
+    final var zeebeDb = context.getZeebeDb();
+    if (window == null || zeebeDb == null) {
+      return null;
+    }
+    // read-only and used only by the hold mover's actor, with a context of its own
+    final var state = new DbLogArchiveState(zeebeDb, zeebeDb.createContext());
+    return new LogArchiveHoldMover(
+        context.getPartitionId(),
+        writer,
+        () -> new HoldState(state.meta(), state.backupCheckpoints(), state.snapshots()),
         window,
         cfg.getReleaseInterval());
   }
@@ -413,7 +446,8 @@ public final class LogArchiveTransitionStep implements PartitionTransitionStep {
       LogArchiveMerger merger,
       LogArchiveCleaner cleaner,
       @Nullable LogArchiveAnnouncer announcer,
-      @Nullable LogArchiveReleaser releaser) {
+      @Nullable LogArchiveReleaser releaser,
+      @Nullable LogArchiveHoldMover holdMover) {
 
     List<Actor> actors() {
       final List<Actor> actors =
@@ -423,6 +457,9 @@ public final class LogArchiveTransitionStep implements PartitionTransitionStep {
       }
       if (releaser != null) {
         actors.add(releaser);
+      }
+      if (holdMover != null) {
+        actors.add(holdMover);
       }
       return actors;
     }
