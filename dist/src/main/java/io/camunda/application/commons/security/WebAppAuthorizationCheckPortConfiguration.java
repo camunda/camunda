@@ -114,13 +114,25 @@ public class WebAppAuthorizationCheckPortConfiguration {
   }
 
   /**
-   * Lets the webapp authorization filter honour the request's physical tenant flag instead of the
-   * root one. An unknown tenant counts as enabled so the request reaches the check port, which
-   * fails hard for it.
+   * Tells the webapp authorization filter whether to check access. It uses the same flag as the
+   * check port: the request tenant's (an unknown tenant counts as on), the default tenant's without
+   * secondary storage, or the root one when another check port is used.
    */
   @Bean
   public WebAppAuthorizationEnabledPort webAppAuthorizationEnabledPort(
+      final AuthorizationCheckPort authorizationCheckPort,
+      final Optional<PhysicalTenantSearchClientReaders> physicalTenantSearchClientReaders,
+      final CamundaSecurityLibraryProperties securityProperties,
       final PhysicalTenantSecurityProperties physicalTenantSecurityProperties) {
+    if (!(authorizationCheckPort instanceof TenantAwareAuthorizationCheckPort)) {
+      return request -> securityProperties.getAuthorizations().isEnabled();
+    }
+    if (physicalTenantSearchClientReaders.isEmpty()) {
+      final boolean enabled =
+          authorizationsEnabled(
+              physicalTenantSecurityProperties, PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
+      return request -> enabled;
+    }
     return request -> {
       final var physicalTenantId =
           Objects.requireNonNullElse(
