@@ -17,7 +17,10 @@ package io.camunda.client.api.response;
 
 import java.time.OffsetDateTime;
 
-/** Response for the request to get the current time of the Zeebe engine's internal clock. */
+/**
+ * Response holding the time of the Zeebe engine's internal clock, returned when reading the clock
+ * or adding time to it.
+ */
 public interface ClockResponse {
 
   /**

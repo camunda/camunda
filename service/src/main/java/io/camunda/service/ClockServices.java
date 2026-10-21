@@ -11,6 +11,7 @@ import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
+import io.camunda.zeebe.gateway.impl.broker.request.BrokerClockAddRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerClockFetchRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerClockPinRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerClockResetRequest;
@@ -36,6 +37,11 @@ public final class ClockServices extends PhysicalTenantScopedApiServices<ClockSe
   public CompletableFuture<ClockRecord> pinClock(
       final long pinnedEpoch, final CamundaAuthentication authentication) {
     return sendBrokerRequest(new BrokerClockPinRequest(pinnedEpoch), authentication);
+  }
+
+  public CompletableFuture<ClockRecord> addClock(
+      final long offsetMillis, final CamundaAuthentication authentication) {
+    return sendBrokerRequest(new BrokerClockAddRequest(offsetMillis), authentication);
   }
 
   public CompletableFuture<ClockRecord> resetClock(final CamundaAuthentication authentication) {

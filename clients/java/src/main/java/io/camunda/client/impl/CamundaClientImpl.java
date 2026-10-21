@@ -23,6 +23,7 @@ import io.camunda.client.CredentialsProvider;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.command.ActivateAdHocSubProcessActivitiesCommandStep1;
 import io.camunda.client.api.command.ActivateJobsCommandStep1;
+import io.camunda.client.api.command.AddClockCommandStep1;
 import io.camunda.client.api.command.AssignClientToGroupCommandStep1;
 import io.camunda.client.api.command.AssignClientToTenantCommandStep1;
 import io.camunda.client.api.command.AssignGroupToTenantCommandStep1;
@@ -223,6 +224,7 @@ import io.camunda.client.api.statistics.request.UsageMetricsStatisticsRequest;
 import io.camunda.client.api.worker.JobClient;
 import io.camunda.client.api.worker.JobWorkerBuilderStep1;
 import io.camunda.client.impl.command.ActivateAdHocSubProcessActivitiesCommandImpl;
+import io.camunda.client.impl.command.AddClockCommandImpl;
 import io.camunda.client.impl.command.AssignClientToGroupCommandImpl;
 import io.camunda.client.impl.command.AssignClientToTenantCommandImpl;
 import io.camunda.client.impl.command.AssignGroupToTenantCommandImpl;
@@ -987,6 +989,11 @@ public final class CamundaClientImpl implements CamundaClient {
   @Override
   public PinClockCommandStep1 newPinClockCommand() {
     return new PinClockCommandImpl(httpClient, jsonMapper);
+  }
+
+  @Override
+  public AddClockCommandStep1 newAddClockCommand() {
+    return new AddClockCommandImpl(httpClient, jsonMapper);
   }
 
   @Override

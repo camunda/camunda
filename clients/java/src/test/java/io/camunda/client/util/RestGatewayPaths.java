@@ -49,6 +49,7 @@ public class RestGatewayPaths {
       URL_CLUSTER_VARIABLES + "/tenants/%s/%s";
   private static final String URL_CLUSTER_VARIABLES_SEARCH = URL_CLUSTER_VARIABLES + "/search";
   private static final String URL_CLOCK = REST_API_PATH + "/clock";
+  private static final String URL_CLOCK_ADD = REST_API_PATH + "/clock/add";
   private static final String URL_CLOCK_RESET = REST_API_PATH + "/clock/reset";
   private static final String URL_CONDITIONAL_EVALUATION =
       REST_API_PATH + "/conditionals/evaluation";
@@ -231,6 +232,13 @@ public class RestGatewayPaths {
    */
   public static String getClockPinUrl() {
     return URL_CLOCK;
+  }
+
+  /**
+   * @return add clock request URL
+   */
+  public static String getClockAddUrl() {
+    return URL_CLOCK_ADD;
   }
 
   /**

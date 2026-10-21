@@ -147,6 +147,15 @@ public class RestGatewayService {
     registerGet(RestGatewayPaths.getClockUrl(), response);
   }
 
+  /**
+   * Register the given response for add clock requests.
+   *
+   * @param response the response to provide upon an add clock request
+   */
+  public void onAddClockRequest(final ClockResult response) {
+    registerPost(RestGatewayPaths.getClockAddUrl(), response);
+  }
+
   public void onEvaluateDecisionRequest(final EvaluateDecisionResult response) {
     registerPost(RestGatewayPaths.getEvaluateDecisionUrl(), response);
   }

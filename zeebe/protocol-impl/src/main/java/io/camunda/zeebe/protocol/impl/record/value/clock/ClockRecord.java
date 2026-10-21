@@ -15,7 +15,7 @@ public final class ClockRecord extends UnifiedRecordValue implements ClockRecord
 
   // depending on the intent, the value may be a:
   // - timestamp (epoch milliseconds)
-  // - offset (in milliseconds)
+  // - offset (in milliseconds), either the duration to add (ADD) or the total offset (OFFSET)
   // - current time of the clock (epoch milliseconds), for FETCHED
   private final LongProperty timeProperty = new LongProperty("time", 0);
 

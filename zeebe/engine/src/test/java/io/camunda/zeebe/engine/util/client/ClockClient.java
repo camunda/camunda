@@ -12,6 +12,7 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.ClockIntent;
 import io.camunda.zeebe.protocol.record.value.ClockRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.Objects;
 import java.util.function.Function;
@@ -30,6 +31,17 @@ public class ClockClient {
   private static final Function<Long, Record<ClockRecordValue>> FETCH_SUCCESS_EXPECTATION =
       (position) ->
           RecordingExporter.clockRecords(ClockIntent.FETCHED)
+              .withSourceRecordPosition(position)
+              .getFirst();
+  private static final Function<Long, Record<ClockRecordValue>> ADD_SUCCESS_EXPECTATION =
+      (position) ->
+          RecordingExporter.clockRecords()
+              .onlyEvents()
+              .withSourceRecordPosition(position)
+              .getFirst();
+  private static final Function<Long, Record<ClockRecordValue>> OFFSET_SUCCESS_EXPECTATION =
+      (position) ->
+          RecordingExporter.clockRecords(ClockIntent.OFFSETTED)
               .withSourceRecordPosition(position)
               .getFirst();
   private static final Function<Long, Record<ClockRecordValue>> REJECTION_EXPECTATION =
@@ -91,6 +103,35 @@ public class ClockClient {
 
     final long position = writeCommand(ClockIntent.RESET);
     return Objects.requireNonNullElse(expectation, RESET_SUCCESS_EXPECTATION).apply(position);
+  }
+
+  /**
+   * Adds the given duration to the clock. The returned record is the PINNED event if the clock is
+   * pinned, or the OFFSETTED event otherwise.
+   */
+  public Record<ClockRecordValue> add(final Duration offset) {
+    return add(offset.toMillis());
+  }
+
+  public Record<ClockRecordValue> add(final long offsetMillis) {
+    record.offsetBy(offsetMillis);
+
+    final long position = writeCommand(ClockIntent.ADD);
+    return Objects.requireNonNullElse(expectation, ADD_SUCCESS_EXPECTATION).apply(position);
+  }
+
+  public Record<ClockRecordValue> add(final Duration offset, final String username) {
+    record.offsetBy(offset.toMillis());
+
+    final long position = writeCommand(ClockIntent.ADD, username);
+    return Objects.requireNonNullElse(expectation, ADD_SUCCESS_EXPECTATION).apply(position);
+  }
+
+  public Record<ClockRecordValue> offsetBy(final Duration offset) {
+    record.offsetBy(offset.toMillis());
+
+    final long position = writeCommand(ClockIntent.OFFSET);
+    return Objects.requireNonNullElse(expectation, OFFSET_SUCCESS_EXPECTATION).apply(position);
   }
 
   public Record<ClockRecordValue> fetch() {
