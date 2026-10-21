@@ -10,6 +10,7 @@ package io.camunda.configuration.cluster;
 
 import static io.camunda.zeebe.broker.system.configuration.ExperimentalCfg.DEFAULT_MAX_APPENDS_PER_FOLLOWER;
 import static io.camunda.zeebe.broker.system.configuration.ExperimentalCfg.DEFAULT_MAX_APPEND_BATCH_SIZE;
+import static io.camunda.zeebe.broker.system.configuration.ExperimentalRaftCfg.DEFAULT_BOOTSTRAP_SNAPSHOT_REQUEST_TIMEOUT;
 import static io.camunda.zeebe.broker.system.configuration.ExperimentalRaftCfg.DEFAULT_JOIN_CATCH_UP_TIMEOUT;
 import static io.camunda.zeebe.broker.system.configuration.ExperimentalRaftCfg.DEFAULT_PROMOTION_LAG_THRESHOLD;
 import static io.camunda.zeebe.broker.system.configuration.ExperimentalRaftCfg.DEFAULT_SNAPSHOT_CHUNK_SIZE;
@@ -128,6 +129,15 @@ public class Raft {
 
   /** Sets the maximum size of snapshot chunks sent by raft leaders to the followers. */
   private DataSize snapshotChunkSize = DEFAULT_SNAPSHOT_CHUNK_SIZE;
+
+  /**
+   * Sets the timeout for each request a new partition sends to fetch the bootstrap snapshot during
+   * partition scaling. The first request also includes creating the bootstrap snapshot on the
+   * leader of the source partition, so with a large state it may take tens of seconds. Raise it if
+   * bootstrapping new partitions fails with request timeouts. This is independent of
+   * snapshotRequestTimeout, which applies to snapshots replicated within a partition.
+   */
+  private Duration bootstrapSnapshotRequestTimeout = DEFAULT_BOOTSTRAP_SNAPSHOT_REQUEST_TIMEOUT;
 
   /**
    * Sets the timeout for configuration change requests such as joining or leaving. Since changes
@@ -340,6 +350,14 @@ public class Raft {
 
   public void setSnapshotChunkSize(final DataSize snapshotChunkSize) {
     this.snapshotChunkSize = snapshotChunkSize;
+  }
+
+  public Duration getBootstrapSnapshotRequestTimeout() {
+    return bootstrapSnapshotRequestTimeout;
+  }
+
+  public void setBootstrapSnapshotRequestTimeout(final Duration bootstrapSnapshotRequestTimeout) {
+    this.bootstrapSnapshotRequestTimeout = bootstrapSnapshotRequestTimeout;
   }
 
   public Duration getConfigurationChangeTimeout() {

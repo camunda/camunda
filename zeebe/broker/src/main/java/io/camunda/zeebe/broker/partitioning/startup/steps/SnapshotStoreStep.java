@@ -59,7 +59,12 @@ public class SnapshotStoreStep implements StartupStep<PartitionStartupContext> {
                             actor ->
                                 new SnapshotTransferServiceClient(
                                     context.brokerClient(),
-                                    context.partitionMetadata().id().group()),
+                                    context.partitionMetadata().id().group(),
+                                    context
+                                        .brokerConfig()
+                                        .getExperimental()
+                                        .getRaft()
+                                        .getBootstrapSnapshotRequestTimeout()),
                             snapshotStore.getSnapshotMetrics(),
                             snapshotStore);
                     return context
