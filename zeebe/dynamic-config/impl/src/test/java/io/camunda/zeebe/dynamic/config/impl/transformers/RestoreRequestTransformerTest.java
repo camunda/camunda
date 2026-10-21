@@ -61,7 +61,9 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.NoSuchElementException;
 import java.util.Optional;
+import java.util.OptionalLong;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.function.Function;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
@@ -339,6 +341,39 @@ final class RestoreRequestTransformerTest {
             new AwaitModeChangeOperation(memberOne, Mode.PROCESSING),
             new AwaitModeChangeOperation(memberTwo, Mode.PROCESSING),
             new UpdateIncarnationNumberOperation(memberOne));
+  }
+
+  @Test
+  void shouldRestoreEveryPartitionUpToItsOwnCheckpointPosition() {
+    // given - a restore resolved to a marker, which each partition holds at its own position
+    final var member = MemberId.from("0");
+    final var partitionState = PartitionState.active(1, DynamicPartitionConfig.init());
+    final var topology =
+        singleTenantCluster(
+            Map.of(
+                member,
+                BrokerPartitionState.initialize(Map.of(1, partitionState, 2, partitionState))
+                    .setMode(Mode.RECOVERING)));
+    final var partitionOne =
+        new PartitionRestore(new TreeSet<>(List.of(10L, 20L)), OptionalLong.of(150L));
+    final var partitionTwo =
+        new PartitionRestore(new TreeSet<>(List.of(10L, 25L)), OptionalLong.of(130L));
+    final var resolved =
+        new RestoreResolvedRequest(Map.of(1, partitionOne, 2, partitionTwo), false);
+    final var transformer =
+        new RestoreRequestTransformer(
+            restoreRequest(), registryWithValidator(validatorReturning(Either.right(resolved))));
+
+    // when
+    final var result = plannedOperations(transformer, topology);
+
+    // then
+    EitherAssert.assertThat(result).isRight();
+    assertThat(result.get())
+        .filteredOn(PartitionRestoreOperation.class::isInstance)
+        .containsExactlyInAnyOrder(
+            new PartitionRestoreOperation(member, 1, partitionOne),
+            new PartitionRestoreOperation(member, 2, partitionTwo));
   }
 
   @Test
