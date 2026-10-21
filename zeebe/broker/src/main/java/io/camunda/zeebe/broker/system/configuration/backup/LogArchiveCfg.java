@@ -31,6 +31,8 @@ public class LogArchiveCfg implements ConfigurationEntry {
   private Duration snapshotUploadInterval = Duration.ofMinutes(30);
   private int chunkSize = 1000;
   private int rootEvery = 100;
+  private @Nullable Duration retentionWindow;
+  private Duration releaseInterval = Duration.ofMinutes(1);
   private LogArchiveEventPlaneCfg eventPlane = new LogArchiveEventPlaneCfg();
   private @Nullable String testOnlyAdvertisedVersion;
 
@@ -49,6 +51,27 @@ public class LogArchiveCfg implements ConfigurationEntry {
 
   public void setTimeline(final String timeline) {
     this.timeline = timeline;
+  }
+
+  /**
+   * Restore points younger than this stay restorable; older log is released to the event plane
+   * (spec section 21). Null, the default, never releases anything.
+   */
+  public @Nullable Duration getRetentionWindow() {
+    return retentionWindow;
+  }
+
+  public void setRetentionWindow(final @Nullable Duration retentionWindow) {
+    this.retentionWindow = retentionWindow;
+  }
+
+  /** How often the releaser checks the restore floor. */
+  public Duration getReleaseInterval() {
+    return releaseInterval;
+  }
+
+  public void setReleaseInterval(final Duration releaseInterval) {
+    this.releaseInterval = releaseInterval;
   }
 
   public DataSize getCutMaxBytes() {
