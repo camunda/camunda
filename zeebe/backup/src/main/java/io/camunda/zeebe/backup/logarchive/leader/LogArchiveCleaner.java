@@ -48,9 +48,9 @@ import org.slf4j.LoggerFactory;
  * the state it recovered as of that state's last seq: until the event plane confirmed that seq, it
  * deletes nothing.
  *
- * <p>After every sweep, {@link #cleanedIndex()} is the highest index below which no garbage is
- * left, pending or undeleted; the releaser never releases past it, so the event plane never takes
- * over an object the cluster would have deleted (spec section 20.4).
+ * <p>After every sweep, {@link #cleanedIndex()} is the highest index at or below which no garbage
+ * object starts, pending or undeleted; the releaser never releases past it, so the event plane
+ * never takes over an object the cluster would have deleted (spec section 20.4).
  *
  * <p>Like the merger, the cleaner does nothing before the publisher's recovery check, and nothing
  * on a timeline the bucket is ahead of (its later history would look like garbage) until a fork
@@ -330,7 +330,9 @@ public final class LogArchiveCleaner extends Actor
     for (final var key : firstSeen.keySet()) {
       final var matcher = DATA_KEY.matcher(key.substring(key.indexOf("data/")));
       if (matcher.matches()) {
-        cleaned = Math.min(cleaned, Long.parseLong(matcher.group(2)) - 1);
+        // below its first index, not its last: the cluster may delete only objects above R, so an
+        // object that R reached into would stay behind for good
+        cleaned = Math.min(cleaned, Long.parseLong(matcher.group(1)) - 1);
       }
     }
     cleanedIndex = Math.max(cleanedIndex, cleaned);

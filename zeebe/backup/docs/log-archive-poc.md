@@ -1437,7 +1437,8 @@ remembers `(seq, mergedIndex)` of its merges; a new leader knows only `meta.merg
 plane then never lists an object the cluster has deleted.
 
 The cleaner exposes `cleanedIndex` C: after each sweep, the highest index such that no garbage key
-with `lastIndex <= C` is left, pending in its grace period or undeleted. It never goes down within
+with `firstIndex <= C` is left, pending in its grace period or undeleted (the first index, not the
+last: an object R reached into would no longer be the cluster's to delete). It never goes down within
 a term; before a leader's first completed sweep it is `meta.releasedIndex`. The releaser never
 releases past C (section 21.1), so the cluster alone deletes what its merges replaced.
 

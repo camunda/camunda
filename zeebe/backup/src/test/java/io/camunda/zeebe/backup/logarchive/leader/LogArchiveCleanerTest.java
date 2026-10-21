@@ -156,8 +156,8 @@ final class LogArchiveCleanerTest {
     // when - both are in their grace period
     runAfter(INTERVAL);
 
-    // then - clean only up to just below the first pending object
-    assertThat(cleaner.cleanedIndex()).isEqualTo(3);
+    // then - nothing is clean below the start of the first pending object
+    assertThat(cleaner.cleanedIndex()).isZero();
 
     // when
     runAfter(GRACE);
@@ -180,8 +180,8 @@ final class LogArchiveCleanerTest {
     // when - the first delete fails
     runAfter(GRACE);
 
-    // then
-    assertThat(cleaner.cleanedIndex()).isEqualTo(7);
+    // then - [5, 8] is still there, so the cleaned index stays below its start
+    assertThat(cleaner.cleanedIndex()).isEqualTo(4);
 
     // when
     runAfter(INTERVAL);
@@ -206,8 +206,8 @@ final class LogArchiveCleanerTest {
     // when
     runAfter(INTERVAL);
 
-    // then - the pending object keeps it just below its end
-    assertThat(cleaner.cleanedIndex()).isEqualTo(11);
+    // then - the pending object keeps it below its start
+    assertThat(cleaner.cleanedIndex()).isEqualTo(8);
   }
 
   @Test
