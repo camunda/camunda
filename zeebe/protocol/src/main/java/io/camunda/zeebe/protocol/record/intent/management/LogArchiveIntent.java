@@ -33,7 +33,9 @@ public enum LogArchiveIntent implements Intent {
   MERGE_LOG(12),
   LOG_MERGED(13),
   RELEASE_LOG(14),
-  LOG_RELEASED(15);
+  LOG_RELEASED(15),
+  MOVE_HOLD(16),
+  HOLD_MOVED(17);
 
   private final short value;
 
@@ -57,6 +59,7 @@ public enum LogArchiveIntent implements Intent {
       case HANDOVER_COMPLETED:
       case LOG_MERGED:
       case LOG_RELEASED:
+      case HOLD_MOVED:
         return true;
       default:
         return false;
@@ -97,6 +100,10 @@ public enum LogArchiveIntent implements Intent {
         return RELEASE_LOG;
       case 15:
         return LOG_RELEASED;
+      case 16:
+        return MOVE_HOLD;
+      case 17:
+        return HOLD_MOVED;
       default:
         return UNKNOWN;
     }
