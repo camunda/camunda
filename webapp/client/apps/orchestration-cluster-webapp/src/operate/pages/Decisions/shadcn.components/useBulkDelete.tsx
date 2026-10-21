@@ -64,7 +64,7 @@ function useBulkDelete({selectedCount, includedIds, excludedIds, filter, onDelet
 		notificationsStore.displayNotification({
 			kind: 'success',
 			title: t('operate.decisions.toolbar.deleteSuccessTitle', {operationType: operationTypeLabel}),
-			subtitle: t('operate.decisions.toolbar.deleteSuccessSubtitle'),
+			subtitle: t('operate.decisions.ds.toolbar.deleteSuccessSubtitle'),
 			isDismissable: true,
 			isActionable: true,
 			actionButtonLabel: t('operate.decisions.toolbar.deleteSuccessActionLabel'),
@@ -90,21 +90,15 @@ function useBulkDelete({selectedCount, includedIds, excludedIds, filter, onDelet
 			? t('operate.decisions.toolbar.itemSelected', {count: selectedCount})
 			: t('operate.decisions.toolbar.itemsSelected', {count: selectedCount});
 
-	const dialog = (
-		<BulkActionConfirmDialog
-			open={showDeleteModal}
-			title={t('operate.decisions.toolbar.deleteModalHeading')}
-			description={t('operate.decisions.toolbar.deleteModalBody', {count: selectedCount})}
-			confirmLabel={t('operate.decisions.toolbar.delete')}
-			cancelLabel={t('operate.decisions.toolbar.deleteModalCancel')}
-			isDestructive
-			onOpenChange={setShowDeleteModal}
-			onCancel={onDiscard}
-			onConfirm={() => void handleDelete()}
-		/>
-	);
+	const dialogProps: BulkDeleteDialogProps = {
+		open: showDeleteModal,
+		selectedCount,
+		onOpenChange: setShowDeleteModal,
+		onCancel: onDiscard,
+		onConfirm: () => void handleDelete(),
+	};
 
-	return {batchActions, selectionCountLabel, dialog};
+	return {batchActions, selectionCountLabel, dialogProps};
 }
 
 export {useBulkDelete};

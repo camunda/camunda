@@ -36,18 +36,21 @@ const OptionalFiltersMenu = <T extends string>({
 	const triggerRef = useRef<HTMLButtonElement>(null);
 	const unselectedOptionalFilters = optionalFilters.filter((filter) => !visibleFilters.includes(filter.id));
 
-	const label = t('operate.shared.optionalFiltersMenu.moreFilters');
+	const label = t('operate.shared.optionalFiltersMenu.moreFiltersDs');
 
 	if (unselectedOptionalFilters.length === 0) {
 		return (
 			<Tooltip>
 				<TooltipTrigger asChild>
-					<span className="inline-block self-start">
-						<Button variant="secondary" size="sm" disabled>
-							<Plus aria-hidden data-icon="inline-start" />
-							{label}
-						</Button>
-					</span>
+					<Button
+						variant="secondary"
+						size="sm"
+						aria-disabled
+						className="self-start opacity-50 aria-disabled:cursor-not-allowed"
+					>
+						<Plus aria-hidden data-icon="inline-start" />
+						{label}
+					</Button>
 				</TooltipTrigger>
 				<TooltipContent>{t('operate.shared.optionalFiltersMenu.allFiltersAdded')}</TooltipContent>
 			</Tooltip>

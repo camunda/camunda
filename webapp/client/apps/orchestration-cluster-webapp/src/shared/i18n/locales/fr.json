@@ -1358,8 +1358,7 @@
 					"selectSingleTenant": "Pour voir une table de décision ou une expression littérale, sélectionnez un seul locataire",
 					"noDecisionSelected": "Aucune décision n'est sélectionnée",
 					"selectDecisionInFilters": "Pour voir une table de décision ou une expression littérale, sélectionnez une décision dans le panneau de filtres",
-					"decisionNotFoundTitle": "La décision n'a pas pu être trouvée",
-					"ariaLabel": "Panneau de décision"
+					"decisionNotFoundTitle": "La décision n'a pas pu être trouvée"
 				},
 				"filters": {
 					"tenant": "Locataire",
@@ -1421,7 +1420,7 @@
 					"deleteSuccessActionLabel": "Voir les détails de l'opération"
 				},
 				"definitionDeletion": {
-					"buttonTitle": "Supprimer la définition de décision \"{{name}} - version {{version}}\"",
+					"buttonTitle": "Supprimer la définition de décision \"{{name}} - Version {{version}}\"",
 					"loadingMessage": "Suppression de la définition de décision en cours",
 					"title": "Supprimer le DRD",
 					"description": "Vous êtes sur le point de supprimer le DRD suivant :",
@@ -1433,6 +1432,40 @@
 					"details": "Détails du DRD",
 					"drdName": "Nom du DRD",
 					"successTitle": "Opération créée"
+				},
+				"ds": {
+					"definitionDeletion": {
+						"buttonTitle": "Supprimer la définition de décision \"{{name}} - version {{version}}\"",
+						"details": "Détails du DRD"
+					},
+					"diagramPanel": {
+						"multipleTenantsSelected": "La décision \"{{name}}\" existe dans plusieurs locataires",
+						"multipleVersionsSelected": "Plusieurs versions sont sélectionnées pour la décision \"{{name}}\"",
+						"noDecisionSelected": "Aucune décision n'est sélectionnée",
+						"selectDecisionInFilters": "Pour voir une table de décision ou une expression littérale, sélectionnez une décision dans le panneau de filtres",
+						"selectSingleTenant": "Pour voir une table de décision ou une expression littérale, sélectionnez un seul locataire",
+						"selectSingleVersion": "Pour voir une table de décision ou une expression littérale, sélectionnez une seule version"
+					},
+					"filters": {
+						"decisionInstanceKey": "Clé(s) d'instance de décision",
+						"evaluationDateRange": "Plage de dates d'évaluation",
+						"instancesStates": "États des instances",
+						"processInstanceKey": "Clé d'instance de processus",
+						"removeFilter": "Supprimer le filtre {{label}}",
+						"searchByName": "Rechercher par nom de décision",
+						"selectVersion": "Sélectionner une version de décision"
+					},
+					"instancesTable": {
+						"decisionInstanceKey": "Clé d'instance de décision",
+						"emptyAdditionalInfo": "Pour voir des résultats, sélectionnez au moins un état d'instance",
+						"emptyMessage": "Aucune instance ne correspond à cet ensemble de filtres",
+						"evaluationDate": "Date d'évaluation",
+						"processInstanceKey": "Clé d'instance de processus",
+						"title": "Instances de décision"
+					},
+					"toolbar": {
+						"deleteSuccessSubtitle": "Vous pouvez suivre son avancement dans la page Opérations par lot"
+					}
 				}
 			},
 			"decisionInstance": {
@@ -2182,7 +2215,8 @@
 				"optionalFiltersMenu": {
 					"moreFilters": "Plus de filtres",
 					"allFiltersAdded": "Tous les filtres sont déjà ajoutés",
-					"removeFilter": "Retirer"
+					"removeFilter": "Retirer",
+					"moreFiltersDs": "Plus de filtres"
 				},
 				"dateRangeField": {
 					"custom": "Personnalisé",

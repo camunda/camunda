@@ -1360,49 +1360,48 @@
 					"copyButtonDescription": "Decision ID / Click to copy"
 				},
 				"diagramPanel": {
-					"multipleVersionsSelected": "There is more than one version selected for decision \"{{name}}\"",
+					"multipleVersionsSelected": "There is more than one Version selected for Decision \"{{name}}\"",
 					"ariaLabel": "Decision Panel",
-					"selectSingleVersion": "To see a decision table or a literal expression, select a single version",
-					"multipleTenantsSelected": "Decision \"{{name}}\" exists in more than one tenant",
-					"selectSingleTenant": "To see a decision table or a literal expression, select a single tenant",
-					"noDecisionSelected": "There is no decision selected",
-					"selectDecisionInFilters": "To see a decision table or a literal expression, select a decision in the filters panel",
-					"decisionNotFoundTitle": "Couldn't find the decision",
-					"ariaLabel": "Decision Panel"
+					"selectSingleVersion": "To see a Decision Table or a Literal Expression, select a single Version",
+					"multipleTenantsSelected": "Decision \"{{name}}\" exists in more than one Tenant",
+					"selectSingleTenant": "To see a Decision Table or a Literal Expression, select a single Tenant",
+					"noDecisionSelected": "There is no Decision selected",
+					"selectDecisionInFilters": "To see a Decision Table or a Literal Expression, select a Decision in the Filters panel",
+					"decisionNotFoundTitle": "Couldn't find the decision"
 				},
 				"filters": {
 					"tenant": "Tenant",
 					"decisionSection": "Decision",
 					"name": "Name",
-					"searchByName": "Search by decision name",
+					"searchByName": "Search by Decision Name",
 					"version": "Version",
-					"selectVersion": "Select a decision version",
+					"selectVersion": "Select a Decision Version",
 					"allVersions": "All versions",
-					"instancesStates": "Instances states",
+					"instancesStates": "Instances States",
 					"evaluated": "Evaluated",
 					"failed": "Failed",
-					"decisionInstanceKey": "Decision instance key(s)",
+					"decisionInstanceKey": "Decision Instance Key(s)",
 					"decisionInstanceKeyPlaceholder": "separated by space or comma",
-					"processInstanceKey": "Process instance key",
+					"processInstanceKey": "Process Instance Key",
 					"businessId": "Business ID",
-					"evaluationDateRange": "Evaluation date range",
+					"evaluationDateRange": "Evaluation Date Range",
 					"evaluationDatePopoverTitle": "Filter decisions by evaluation date",
-					"removeFilter": "Remove {{label}} filter"
+					"removeFilter": "Remove {{label}} Filter"
 				},
 				"instancesTable": {
-					"title": "Decision instances",
+					"title": "Decision Instances",
 					"name": "Name",
-					"decisionInstanceKey": "Decision instance key",
+					"decisionInstanceKey": "Decision Instance Key",
 					"version": "Version",
 					"businessId": "Business ID",
 					"tenant": "Tenant",
-					"evaluationDate": "Evaluation date",
-					"processInstanceKey": "Process instance key",
+					"evaluationDate": "Evaluation Date",
+					"processInstanceKey": "Process Instance Key",
 					"none": "None",
 					"viewDecisionInstance": "View decision instance {{key}}",
 					"viewProcessInstance": "View process instance {{key}}",
-					"emptyMessage": "There are no instances matching this filter set",
-					"emptyAdditionalInfo": "To see some results, select at least one instance state",
+					"emptyMessage": "There are no Instances matching this filter set",
+					"emptyAdditionalInfo": "To see some results, select at least one Instance state",
 					"selectAll": "Select all rows",
 					"selectRow": "Select row {{key}}",
 					"stateEvaluated": "Evaluated",
@@ -1426,11 +1425,11 @@
 					"deleteModalBody_other": "{{count}} instances selected for delete operation. This permanently deletes the selected decision instances and their history. This cannot be undone.",
 					"deleteModalBodyTruncated": "{{count}}+ instances selected for delete operation. This permanently deletes the selected decision instances and their history. This cannot be undone.",
 					"deleteSuccessTitle": "The batch operation \"{{operationType}}\" has been started",
-					"deleteSuccessSubtitle": "You can track its progress in the batch operation page",
+					"deleteSuccessSubtitle": "You can track its progress in the Batch Operation page",
 					"deleteSuccessActionLabel": "Go to operation details"
 				},
 				"definitionDeletion": {
-					"buttonTitle": "Delete decision definition \"{{name}} - version {{version}}\"",
+					"buttonTitle": "Delete Decision Definition \"{{name}} - Version {{version}}\"",
 					"loadingMessage": "Deleting decision definition",
 					"title": "Delete DRD",
 					"description": "You are about to delete the following DRD:",
@@ -1439,9 +1438,43 @@
 					"warningDrd": "By deleting a decision definition, you will be deleting the DRD which contains this decision definition. All other decision tables and literal expressions that are part of the DRD will also be deleted.",
 					"warningIncidents": "Deleting the only existing version of a decision definition could result in process incidents.",
 					"documentation": "Read more about deleting a decision definition",
-					"details": "DRD details",
+					"details": "DRD Details",
 					"drdName": "DRD name",
 					"successTitle": "Operation created"
+				},
+				"ds": {
+					"diagramPanel": {
+						"multipleVersionsSelected": "There is more than one version selected for decision \"{{name}}\"",
+						"selectSingleVersion": "To see a decision table or a literal expression, select a single version",
+						"multipleTenantsSelected": "Decision \"{{name}}\" exists in more than one tenant",
+						"selectSingleTenant": "To see a decision table or a literal expression, select a single tenant",
+						"noDecisionSelected": "There is no decision selected",
+						"selectDecisionInFilters": "To see a decision table or a literal expression, select a decision in the filters panel"
+					},
+					"filters": {
+						"searchByName": "Search by decision name",
+						"selectVersion": "Select a decision version",
+						"instancesStates": "Instances states",
+						"decisionInstanceKey": "Decision instance key(s)",
+						"processInstanceKey": "Process instance key",
+						"evaluationDateRange": "Evaluation date range",
+						"removeFilter": "Remove {{label}} filter"
+					},
+					"instancesTable": {
+						"title": "Decision instances",
+						"decisionInstanceKey": "Decision instance key",
+						"evaluationDate": "Evaluation date",
+						"processInstanceKey": "Process instance key",
+						"emptyMessage": "There are no instances matching this filter set",
+						"emptyAdditionalInfo": "To see some results, select at least one instance state"
+					},
+					"toolbar": {
+						"deleteSuccessSubtitle": "You can track its progress in the batch operation page"
+					},
+					"definitionDeletion": {
+						"buttonTitle": "Delete decision definition \"{{name}} - version {{version}}\"",
+						"details": "DRD details"
+					}
 				}
 			},
 			"decisionInstance": {
@@ -2189,9 +2222,10 @@
 					"allTenants": "All tenants"
 				},
 				"optionalFiltersMenu": {
-					"moreFilters": "More filters",
+					"moreFilters": "More Filters",
 					"allFiltersAdded": "All filters are already added",
-					"removeFilter": "Remove"
+					"removeFilter": "Remove",
+					"moreFiltersDs": "More filters"
 				},
 				"dateRangeField": {
 					"custom": "Custom",

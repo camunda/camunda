@@ -67,7 +67,7 @@ class OperateProcessesPage extends BasePage {
 	}
 
 	async addOptionalFilter(label: string) {
-		await this.page.getByRole('button', {name: 'More filters'}).click();
+		await this.page.getByRole('button', {name: 'More Filters'}).click();
 		await this.page.getByRole('menuitem', {name: label}).click();
 	}
 

@@ -81,7 +81,7 @@ describe('Validations', () => {
 		const screen = await renderProcessesPage();
 		const getSearch = () => screen.router.state.location.search as Record<string, unknown>;
 
-		await screen.getByRole('button', {name: 'More filters'}).click();
+		await screen.getByRole('button', {name: 'More Filters'}).click();
 		await screen.getByTestId(`optional-filter-menuitem-${filter}`).click();
 
 		for (const invalidValue of invalidValues) {

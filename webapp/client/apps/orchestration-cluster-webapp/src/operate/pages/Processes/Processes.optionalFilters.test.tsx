@@ -87,7 +87,7 @@ describe('Optional Filters', () => {
 
 		const screen = await renderProcessesPage();
 
-		await expect.element(screen.getByRole('button', {name: 'More filters'})).toBeVisible();
+		await expect.element(screen.getByRole('button', {name: 'More Filters'})).toBeVisible();
 		await expect.element(screen.getByRole('heading', {name: 'Variables'})).not.toBeInTheDocument();
 		for (const label of OPTIONAL_FILTER_LABELS) {
 			await expect.element(screen.getByLabelText(label, {exact: true})).not.toBeInTheDocument();
@@ -109,14 +109,14 @@ describe('Optional Filters', () => {
 
 		const screen = await renderProcessesPage();
 
-		await userEvent.click(screen.getByRole('button', {name: 'More filters'}));
+		await userEvent.click(screen.getByRole('button', {name: 'More Filters'}));
 		await userEvent.click(screen.getByTestId(`optional-filter-menuitem-${filter}`));
 
 		await expect.element(screen.getByLabelText(label, {exact: true})).toBeVisible();
 
 		// Reopening must show the menu again with a remaining item, not merely lack the selected one —
 		// a menu that fails to reopen at all also satisfies a bare "selected item absent" assertion.
-		await userEvent.click(screen.getByRole('button', {name: 'More filters'}));
+		await userEvent.click(screen.getByRole('button', {name: 'More Filters'}));
 		await expect.element(screen.getByTestId(`optional-filter-menuitem-${filter}`)).not.toBeInTheDocument();
 		await expect.element(screen.getByTestId(`optional-filter-menuitem-${remainingFilter}`)).toBeVisible();
 	});
@@ -132,7 +132,7 @@ describe('Optional Filters', () => {
 
 		const screen = await renderProcessesPage();
 
-		await screen.getByRole('button', {name: 'More filters'}).click();
+		await screen.getByRole('button', {name: 'More Filters'}).click();
 		await screen.getByTestId(`optional-filter-menuitem-${filter}`).click();
 
 		await expect.element(screen.getByLabelText(label, {exact: true})).toBeVisible();
@@ -140,7 +140,7 @@ describe('Optional Filters', () => {
 
 		await screen.getByRole('button', {name: 'Cancel'}).click();
 
-		await screen.getByRole('button', {name: 'More filters'}).click();
+		await screen.getByRole('button', {name: 'More Filters'}).click();
 		await expect.element(screen.getByTestId(`optional-filter-menuitem-${filter}`)).not.toBeInTheDocument();
 	});
 
@@ -167,12 +167,12 @@ describe('Optional Filters', () => {
 			hasRetriesLeft: 'true',
 		});
 
-		await expect.element(screen.getByRole('button', {name: 'More filters'})).not.toBeInTheDocument();
+		await expect.element(screen.getByRole('button', {name: 'More Filters'})).not.toBeInTheDocument();
 
 		await userEvent.hover(screen.getByLabelText('Error Message', {exact: true}));
 		await screen.getByRole('button', {name: 'Remove Error Message Filter'}).click();
 
-		await expect.element(screen.getByRole('button', {name: 'More filters'})).toBeVisible();
+		await expect.element(screen.getByRole('button', {name: 'More Filters'})).toBeVisible();
 	});
 
 	it('should delete optional filters', async ({worker}) => {

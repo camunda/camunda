@@ -108,7 +108,7 @@ describe('Multi tenancy', () => {
 
 		const screen = await renderProcessesPage();
 
-		await expect.element(screen.getByRole('button', {name: 'More filters'})).toBeVisible();
+		await expect.element(screen.getByRole('button', {name: 'More Filters'})).toBeVisible();
 		await expect.element(screen.getByRole('combobox', {name: 'Select a tenant'})).not.toBeInTheDocument();
 	});
 
@@ -222,7 +222,7 @@ describe('Multi tenancy', () => {
 		});
 
 		await expect.element(screen.getByRole('combobox', {name: 'Select a tenant'})).toMatchTextContent('Tenant A');
-		await expect.element(screen.getByRole('button', {name: 'More filters'})).toBeVisible();
+		await expect.element(screen.getByRole('button', {name: 'More Filters'})).toBeVisible();
 		await expect.element(screen.getByText('There are no Instances matching this filter set')).toBeVisible();
 		const currentHash = () => (screen.router.state.location.search as Record<string, unknown>).incidentErrorHashCode;
 		await expect.poll(currentHash).toBe(-481);

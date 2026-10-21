@@ -61,18 +61,7 @@ const DecisionFilters: React.FC<Props> = ({
 						<Heading as="h3" variant="heading-xs">
 							{t('operate.decisions.filters.tenant')}
 						</Heading>
-						<TenantField
-							onChange={() => {
-								void navigate({
-									to: '.',
-									search: (prev) => ({
-										...prev,
-										decisionDefinitionId: undefined,
-										decisionDefinitionVersion: undefined,
-									}),
-								});
-							}}
-						/>
+						<TenantField />
 					</section>
 				)}
 				<section className="flex flex-col gap-3">
@@ -87,8 +76,8 @@ const DecisionFilters: React.FC<Props> = ({
 							size="sm"
 							options={decisionOptions}
 							value={decisionDefinitionId ?? ''}
-							placeholder={t('operate.decisions.filters.searchByName')}
-							searchPlaceholder={t('operate.decisions.filters.searchByName')}
+							placeholder={t('operate.decisions.ds.filters.searchByName')}
+							searchPlaceholder={t('operate.decisions.ds.filters.searchByName')}
 							onValueChange={(value) => {
 								void navigate({
 									to: '.',
@@ -117,7 +106,7 @@ const DecisionFilters: React.FC<Props> = ({
 							}}
 						>
 							<SelectTrigger id="decision-version-filter" size="sm" className="w-full">
-								<SelectValue placeholder={t('operate.decisions.filters.selectVersion')} />
+								<SelectValue placeholder={t('operate.decisions.ds.filters.selectVersion')} />
 							</SelectTrigger>
 							<SelectContent>
 								<SelectItem value={ALL_VERSIONS}>{t('operate.decisions.filters.allVersions')}</SelectItem>
@@ -133,7 +122,7 @@ const DecisionFilters: React.FC<Props> = ({
 			</div>
 			<section className="flex flex-col gap-3">
 				<Heading as="h3" variant="heading-xs">
-					{t('operate.decisions.filters.instancesStates')}
+					{t('operate.decisions.ds.filters.instancesStates')}
 				</Heading>
 				<div className="flex flex-col gap-2">
 					<Label htmlFor="filter-evaluated" className="cursor-pointer font-normal">
