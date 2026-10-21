@@ -31,9 +31,9 @@ import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-final class ProcessInstanceByIdArchiverJobTest {
+final class ProcessInstanceArchiverJobTest {
   private static final Logger LOGGER =
-      LoggerFactory.getLogger(ProcessInstanceByIdArchiverJobTest.class);
+      LoggerFactory.getLogger(ProcessInstanceArchiverJobTest.class);
 
   private final Executor executor = Runnable::run;
   private final HistoryConfiguration historyConfiguration = new HistoryConfiguration();
@@ -45,8 +45,8 @@ final class ProcessInstanceByIdArchiverJobTest {
   private final SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
   private final CamundaExporterMetrics metrics = new CamundaExporterMetrics(meterRegistry);
 
-  private final ProcessInstanceByIdArchiverJob job =
-      new ProcessInstanceByIdArchiverJob(
+  private final ProcessInstanceArchiverJob job =
+      new ProcessInstanceArchiverJob(
           historyConfiguration,
           repository,
           processInstanceTemplate,

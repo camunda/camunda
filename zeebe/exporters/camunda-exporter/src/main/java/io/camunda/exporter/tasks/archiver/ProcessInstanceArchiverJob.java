@@ -23,6 +23,11 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Executor;
 import org.slf4j.Logger;
 
+/**
+ * Archiver job for process instance data. This job handles the archiving of the process instance
+ * records itself and also delegates to the repository to move dependent records (decisions, flow
+ * node instances, variable updates, etc).
+ */
 public class ProcessInstanceArchiverJob implements ArchiverJob {
   private static final int MAX_LARGE_BATCH_SIZE = 5_000;
   private static final int SUB_BATCHES_PER_LARGE_BATCH = 10;
@@ -41,15 +46,15 @@ public class ProcessInstanceArchiverJob implements ArchiverJob {
   public ProcessInstanceArchiverJob(
       final HistoryConfiguration config,
       final ArchiverRepository repository,
-      final ListViewTemplate template,
-      final List<ProcessInstanceDependant> dependants,
+      final ListViewTemplate processInstanceTemplate,
+      final List<ProcessInstanceDependant> processInstanceDependants,
       final CamundaExporterMetrics metrics,
       final Logger logger,
       final Executor executor) {
     this.config = config;
     this.repository = repository;
-    this.template = template;
-    this.dependants = dependants;
+    template = processInstanceTemplate;
+    dependants = processInstanceDependants;
     this.metrics = metrics;
     this.logger = logger;
     this.executor = executor;
@@ -111,20 +116,69 @@ public class ProcessInstanceArchiverJob implements ArchiverJob {
     return CompletableFuture.completedFuture(0);
   }
 
-  protected CompletableFuture<Void> moveDependants(
+  public CompletableFuture<Void> moveDependants(
       final String finishDate, final List<String> processInstanceKeys) {
+    // get the usual process instance dependent archive tasks
     final List<CompletableFuture<?>> dependentFutures =
         getProcessDependentArchiveFutures(finishDate, processInstanceKeys);
+
+    // add archiving tasks to archive data from list-view in parallel with the dependent indexes.
+
+    // Note: We can archive all data except documents with `joinRelation: processInstance`.
+    // These must be moved last to avoid dangling data (i.e., child/dependent records that cannot
+    // be moved independently of their parent instance). We use fields from the parent
+    // document (e.g., `endDate`, `status`) to decide whether to archive documents from the
+    // main index.
+
+    // add archiving variables from the list view index as a parallel task
+    dependentFutures.add(
+        archive(
+            template.getFullQualifiedName(),
+            ListViewTemplate.PROCESS_INSTANCE_KEY,
+            finishDate,
+            processInstanceKeys,
+            Map.of(ListViewTemplate.JOIN_RELATION, ListViewTemplate.VARIABLES_JOIN_RELATION),
+            Map.of()));
+
+    // add archiving flownodes/activities from the list view index as a parallel task
+    dependentFutures.add(
+        archive(
+            template.getFullQualifiedName(),
+            ListViewTemplate.PROCESS_INSTANCE_KEY,
+            finishDate,
+            processInstanceKeys,
+            Map.of(ListViewTemplate.JOIN_RELATION, ListViewTemplate.ACTIVITIES_JOIN_RELATION),
+            Map.of()));
+
     return CompletableFuture.allOf(dependentFutures.toArray(CompletableFuture[]::new));
   }
 
   protected CompletableFuture<Integer> moveProcessInstances(
       final String finishDate, final List<String> processInstanceKeys) {
+    // 1. First archive docs from dependent indices and `joinRelation={variable OR activity}`
+    // from operate-list-view index (already done)
+    // 2. Then archive all docs except `joinRelation=processInstance` from operate-list-view index;
+    // we use this as a catch-all clause to move all related documents.
+    // 3. Then archive all `joinRelation=processInstance` docs from operate-list-view index
     return archive(
-        template.getFullQualifiedName(),
-        ListViewTemplate.PROCESS_INSTANCE_KEY,
-        finishDate,
-        processInstanceKeys);
+            template.getFullQualifiedName(),
+            ListViewTemplate.PROCESS_INSTANCE_KEY,
+            finishDate,
+            processInstanceKeys,
+            Map.of(),
+            Map.of(ListViewTemplate.JOIN_RELATION, ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION))
+        .thenComposeAsync(
+            ignored ->
+                archive(
+                    template.getFullQualifiedName(),
+                    ListViewTemplate.PROCESS_INSTANCE_KEY,
+                    finishDate,
+                    processInstanceKeys,
+                    Map.of(
+                        ListViewTemplate.JOIN_RELATION,
+                        ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION),
+                    Map.of()),
+            executor);
   }
 
   protected List<CompletableFuture<?>> getProcessDependentArchiveFutures(
@@ -155,11 +209,17 @@ public class ProcessInstanceArchiverJob implements ArchiverJob {
       final String idField,
       final String finishDate,
       final List<String> processInstanceKeys,
-      final Map<String, String> ignoredInclusionFilters,
-      final Map<String, String> ignoredExclusionFilters) {
+      final Map<String, String> inclusionFilters,
+      final Map<String, String> exclusionFilters) {
     return repository
-        .moveDocuments(
-            sourceIdxName, sourceIdxName + finishDate, idField, processInstanceKeys, executor)
+        .moveDocumentsById(
+            sourceIdxName,
+            sourceIdxName + finishDate,
+            idField,
+            processInstanceKeys,
+            inclusionFilters,
+            exclusionFilters,
+            executor)
         .thenApplyAsync(ok -> processInstanceKeys.size(), executor);
   }
 
@@ -173,18 +233,6 @@ public class ProcessInstanceArchiverJob implements ArchiverJob {
 
   @Override
   public String getCaption() {
-    return "Process instances archiver job";
-  }
-
-  public ListViewTemplate getTemplateDescriptor() {
-    return template;
-  }
-
-  public ArchiverRepository getRepository() {
-    return repository;
-  }
-
-  public Executor getExecutor() {
-    return executor;
+    return "Process instances by ID archiver job";
   }
 }

@@ -74,17 +74,6 @@ final class TestRepository extends NoopArchiverRepository {
     return CompletableFuture.completedFuture(null);
   }
 
-  @Override
-  public CompletableFuture<Void> moveDocuments(
-      final String sourceIndexName,
-      final String destinationIndexName,
-      final String idFieldName,
-      final List<String> ids,
-      final Executor executor) {
-    moves.add(new DocumentMove(sourceIndexName, destinationIndexName, idFieldName, ids, executor));
-    return CompletableFuture.completedFuture(null);
-  }
-
   record DocumentMove(
       String sourceIndexName,
       String destinationIndexName,

@@ -55,14 +55,11 @@ import org.opensearch.client.opensearch._types.query_dsl.TermsQuery;
 import org.opensearch.client.opensearch.core.BulkRequest;
 import org.opensearch.client.opensearch.core.BulkResponse;
 import org.opensearch.client.opensearch.core.CountRequest;
-import org.opensearch.client.opensearch.core.DeleteByQueryRequest;
-import org.opensearch.client.opensearch.core.DeleteByQueryResponse;
 import org.opensearch.client.opensearch.core.ReindexRequest;
 import org.opensearch.client.opensearch.core.ReindexResponse;
 import org.opensearch.client.opensearch.core.SearchRequest;
 import org.opensearch.client.opensearch.core.SearchResponse;
 import org.opensearch.client.opensearch.core.bulk.BulkOperation;
-import org.opensearch.client.opensearch.core.reindex.Source;
 import org.opensearch.client.opensearch.core.search.Hit;
 import org.opensearch.client.opensearch.generic.OpenSearchGenericClient;
 import org.opensearch.client.opensearch.generic.Requests;
@@ -282,64 +279,6 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
             .toList();
 
     return CompletableFuture.allOf(requests.toArray(new CompletableFuture[0]));
-  }
-
-  @Override
-  public CompletableFuture<Void> deleteDocuments(
-      final String sourceIndexName,
-      final String idFieldName,
-      final List<String> processInstanceKeys) {
-    final TermsQuery termsQuery = buildIdTermsQuery(idFieldName, processInstanceKeys);
-    final var request =
-        new DeleteByQueryRequest.Builder()
-            .index(sourceIndexName)
-            .slices(AUTO_SLICES)
-            .conflicts(Conflicts.Proceed)
-            .query(q -> q.terms(termsQuery))
-            .build();
-
-    final var timer = Timer.start();
-    return sendRequestAsync(() -> client.deleteByQuery(request))
-        .whenCompleteAsync(
-            (response, error) ->
-                metrics.measureArchiverDelete(response != null ? response.total() : null, timer),
-            executor)
-        .thenApplyAsync(DeleteByQueryResponse::total, executor)
-        .thenApplyAsync(ok -> null, executor);
-  }
-
-  @Override
-  public CompletableFuture<Void> reindexDocuments(
-      final String sourceIndexName,
-      final String destinationIndexName,
-      final String idFieldName,
-      final List<String> processInstanceKeys) {
-    final var source =
-        new Source.Builder()
-            .index(sourceIndexName)
-            .query(q -> q.terms(buildIdTermsQuery(idFieldName, processInstanceKeys)))
-            .build();
-    final var request =
-        new ReindexRequest.Builder()
-            .source(source)
-            .dest(dest -> dest.index(destinationIndexName))
-            .conflicts(Conflicts.Proceed)
-            .scroll(REINDEX_SCROLL_TIMEOUT)
-            .slices(AUTO_SLICES)
-            .build();
-
-    final var timer = Timer.start();
-    return sendRequestAsync(() -> client.reindex(request))
-        .whenCompleteAsync(
-            (response, error) ->
-                metrics.measureArchiverReindex(response != null ? response.total() : null, timer),
-            executor)
-        .thenApplyAsync(
-            response -> {
-              validateReindexResponse(sourceIndexName, response);
-              return null;
-            },
-            executor);
   }
 
   @Override

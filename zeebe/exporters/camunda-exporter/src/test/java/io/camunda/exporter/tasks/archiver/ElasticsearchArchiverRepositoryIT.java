@@ -134,34 +134,6 @@ final class ElasticsearchArchiverRepositoryIT {
   }
 
   @Test
-  void shouldDeleteDocuments() throws IOException {
-    // given
-    final var indexName = UUID.randomUUID().toString();
-    final var repository = createRepository();
-    final var documents =
-        List.of(new TestDocument("1"), new TestDocument("2"), new TestDocument("3"));
-    documents.forEach(doc -> index(indexName, doc));
-    testClient.indices().refresh(r -> r.index(indexName));
-
-    // when - delete the first two documents
-    final var result =
-        repository.deleteDocuments(
-            indexName, "id", documents.stream().limit(2).map(TestDocument::id).toList());
-
-    // then
-    assertThat(result).succeedsWithin(Duration.ofSeconds(30));
-    testClient.indices().refresh(r -> r.index(indexName));
-    final var remaining =
-        testClient.search(r -> r.index(indexName).requestCache(false), TestDocument.class);
-    assertThat(remaining.hits().hits())
-        .as("only the third document is remaining")
-        .hasSize(1)
-        .first()
-        .extracting(Hit::id)
-        .isEqualTo("3");
-  }
-
-  @Test
   void shouldSetIndexLifeCycle() throws IOException {
     // given
     final var taskIndex =
@@ -316,85 +288,6 @@ final class ElasticsearchArchiverRepositoryIT {
         .settings()
         .index()
         .lifecycle();
-  }
-
-  @Test
-  void shouldReindexDocuments() throws IOException {
-    // given
-    final var sourceIndexName = UUID.randomUUID().toString();
-    final var destIndexName = UUID.randomUUID().toString();
-    final var repository = createRepository();
-    final var documents =
-        List.of(new TestDocument("1"), new TestDocument("2"), new TestDocument("3"));
-    documents.forEach(doc -> index(sourceIndexName, doc));
-    testClient.indices().refresh(r -> r.index(sourceIndexName));
-    testClient.indices().create(r -> r.index(destIndexName));
-
-    // when - reindex the first two documents
-    final var result =
-        repository.reindexDocuments(
-            sourceIndexName,
-            destIndexName,
-            "id",
-            documents.stream().limit(2).map(TestDocument::id).toList());
-
-    // then
-    assertThat(result).succeedsWithin(Duration.ofSeconds(30));
-    testClient.indices().refresh(r -> r.index(destIndexName));
-    final var remaining =
-        testClient.search(r -> r.index(sourceIndexName).requestCache(false), TestDocument.class);
-    final var reindexed =
-        testClient.search(r -> r.index(destIndexName).requestCache(false), TestDocument.class);
-    assertThat(reindexed.hits().hits())
-        .as("only first two documents were reindexed")
-        .hasSize(2)
-        .map(Hit::id)
-        .containsExactlyInAnyOrder("1", "2");
-    assertThat(remaining.hits().hits())
-        .as("all documents are remaining")
-        .hasSize(3)
-        .extracting(Hit::id)
-        .containsExactlyInAnyOrder("1", "2", "3");
-  }
-
-  @Test
-  void shouldMoveDocuments() throws IOException {
-    // given
-    final var sourceIndexName = UUID.randomUUID().toString();
-    final var destIndexName = UUID.randomUUID().toString();
-    final var repository = createRepository();
-    final var documents =
-        List.of(new TestDocument("1"), new TestDocument("2"), new TestDocument("3"));
-    documents.forEach(doc -> index(sourceIndexName, doc));
-    testClient.indices().refresh(r -> r.index(sourceIndexName));
-    testClient.indices().create(r -> r.index(destIndexName));
-
-    // when - move the first two documents
-    final var result =
-        repository.moveDocuments(
-            sourceIndexName,
-            destIndexName,
-            "id",
-            documents.stream().limit(2).map(TestDocument::id).toList(),
-            Runnable::run);
-
-    // then
-    assertThat(result).succeedsWithin(Duration.ofSeconds(30));
-    testClient.indices().refresh(r -> r.index(sourceIndexName, destIndexName));
-    final var remaining =
-        testClient.search(r -> r.index(sourceIndexName).requestCache(false), TestDocument.class);
-    final var reindexed =
-        testClient.search(r -> r.index(destIndexName).requestCache(false), TestDocument.class);
-    assertThat(reindexed.hits().hits())
-        .as("only first two documents were reindexed")
-        .hasSize(2)
-        .map(Hit::id)
-        .containsExactlyInAnyOrder("1", "2");
-    assertThat(remaining.hits().hits())
-        .as("only the last document is remaining")
-        .hasSize(1)
-        .extracting(Hit::id)
-        .containsExactlyInAnyOrder("3");
   }
 
   @Test
@@ -686,7 +579,14 @@ final class ElasticsearchArchiverRepositoryIT {
                   .isEqualTo(bucketStart(now.minus(Duration.ofDays(4)), 3, dateFormatter));
             });
     repository
-        .moveDocuments(batchOperationIndex, destIndexName, "id", List.of("1", "2"), Runnable::run)
+        .moveDocumentsById(
+            batchOperationIndex,
+            destIndexName,
+            "id",
+            List.of("1", "2"),
+            Map.of(),
+            Map.of(),
+            Runnable::run)
         .join();
 
     final var secondBatchDocuments =
@@ -709,7 +609,14 @@ final class ElasticsearchArchiverRepositoryIT {
     // it should still have the same finish date since the rollover window is three days, and the
     // difference of both batches is only 2 days.
     repository
-        .moveDocuments(batchOperationIndex, destIndexName, "id", List.of("3", "4"), Runnable::run)
+        .moveDocumentsById(
+            batchOperationIndex,
+            destIndexName,
+            "id",
+            List.of("3", "4"),
+            Map.of(),
+            Map.of(),
+            Runnable::run)
         .join();
 
     // we create another batch of documents, which is two hours ago, since the default archive point

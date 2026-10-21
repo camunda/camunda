@@ -41,28 +41,6 @@ public interface ArchiverRepository extends AutoCloseable {
 
   CompletableFuture<Void> setLifeCycleToAllIndexes();
 
-  CompletableFuture<Void> deleteDocuments(
-      final String sourceIndexName,
-      final String idFieldName,
-      final List<String> processInstanceKeys);
-
-  CompletableFuture<Void> reindexDocuments(
-      final String sourceIndexName,
-      final String destinationIndexName,
-      final String idFieldName,
-      final List<String> processInstanceKeys);
-
-  default CompletableFuture<Void> moveDocuments(
-      final String sourceIndexName,
-      final String destinationIndexName,
-      final String idFieldName,
-      final List<String> ids,
-      final Executor executor) {
-    return reindexDocuments(sourceIndexName, destinationIndexName, idFieldName, ids)
-        .thenComposeAsync(ok -> setIndexLifeCycle(destinationIndexName), executor)
-        .thenComposeAsync(ok -> deleteDocuments(sourceIndexName, idFieldName, ids), executor);
-  }
-
   CompletableFuture<Void> moveDocumentsById(
       final String sourceIndexName,
       final String destinationIndexName,
@@ -123,23 +101,6 @@ public interface ArchiverRepository extends AutoCloseable {
 
     @Override
     public CompletableFuture<Void> setLifeCycleToAllIndexes() {
-      return CompletableFuture.completedFuture(null);
-    }
-
-    @Override
-    public CompletableFuture<Void> deleteDocuments(
-        final String sourceIndexName,
-        final String idFieldName,
-        final List<String> processInstanceKeys) {
-      return CompletableFuture.completedFuture(null);
-    }
-
-    @Override
-    public CompletableFuture<Void> reindexDocuments(
-        final String sourceIndexName,
-        final String destinationIndexName,
-        final String idFieldName,
-        final List<String> processInstanceKeys) {
       return CompletableFuture.completedFuture(null);
     }
 
