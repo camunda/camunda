@@ -79,8 +79,8 @@ public class SnapshotTransferServiceImpl implements SnapshotSenderService {
               }
               final var snapshotId = snapshot.getId();
               try {
-                final var reader = new FileBasedSnapshotChunkReader(snapshot.getPath());
-                reader.setMaximumChunkSize(maximumChunkSize);
+                final var reader =
+                    new FileBasedSnapshotChunkReader(snapshot.getPath(), maximumChunkSize);
                 final var transfer = new PendingTransfer(snapshotId, null, reader);
                 final var chunk = transfer.next();
                 if (chunk == null) {
