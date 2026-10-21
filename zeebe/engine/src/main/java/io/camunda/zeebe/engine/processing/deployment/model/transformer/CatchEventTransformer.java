@@ -42,7 +42,7 @@ import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.time.format.DateTimeParseException;
 import java.util.Collection;
-import java.util.Optional;
+import java.util.List;
 
 public final class CatchEventTransformer implements ModelElementTransformer<CatchEvent> {
 
@@ -228,22 +228,30 @@ public final class CatchEventTransformer implements ModelElementTransformer<Catc
     final Collection<Association> associations =
         element.getParentElement().getChildElementsByType(Association.class);
 
-    final Optional<String> compensationHandlerId =
+    final ExecutableProcess process = context.getCurrentProcess();
+    final List<Association> boundaryEventAssociations =
         associations.stream()
             .filter(association -> association.getSource().getId().equals(element.getId()))
-            .findFirst()
-            .map(association -> association.getTarget().getId());
+            .toList();
 
-    compensationHandlerId.ifPresent(
-        id -> {
-          final ExecutableActivity compensationHandler =
-              context.getCurrentProcess().getElementById(id, ExecutableActivity.class);
+    if (!boundaryEventAssociations.isEmpty()) {
+      // the boundary event can also be associated with a text annotation, which is not part of the
+      // process, so the handler is the first associated element that belongs to the process
+      final ExecutableActivity compensationHandler =
+          boundaryEventAssociations.stream()
+              .map(association -> association.getTarget().getId())
+              .filter(id -> process.getElementById(id) != null)
+              .findFirst()
+              .map(id -> process.getElementById(id, ExecutableActivity.class))
+              .orElse(null);
 
-          final var compensation = new ExecutableCompensation(eventDefinition.getId());
-          compensation.setCompensationHandler(compensationHandler);
+      // keep the compensation even without a handler, the MultiInstanceActivityTransformer
+      // expects it on every compensation boundary event
+      final var compensation = new ExecutableCompensation(eventDefinition.getId());
+      compensation.setCompensationHandler(compensationHandler);
 
-          executableElement.setCompensation(compensation);
-        });
+      executableElement.setCompensation(compensation);
+    }
 
     executableElement.setEventType(BpmnEventType.COMPENSATION);
   }
