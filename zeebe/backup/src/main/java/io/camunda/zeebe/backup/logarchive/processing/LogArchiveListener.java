@@ -43,6 +43,26 @@ public interface LogArchiveListener {
   /** An {@code INDEX_SEALED} event was committed. */
   default void onIndexSealed(final long chunkNo) {}
 
+  /** A {@code LOG_MERGED} event was committed. The arguments are M after applying it. */
+  default void onLogMerged(final long mergedIndex, final long mergedPosition) {}
+
+  /**
+   * A {@code MERGE_LOG} command was rejected.
+   *
+   * @param mergedIndex the current M; the merger looks for the next merge from it
+   */
+  default void onMergeLogRejected(final long mergedIndex) {}
+
+  /** A {@code LOG_RELEASED} event was committed. The argument is R after applying it. */
+  default void onLogReleased(final long releasedIndex) {}
+
+  /**
+   * A {@code RELEASE_LOG} command was rejected.
+   *
+   * @param releasedIndex the current R
+   */
+  default void onReleaseLogRejected(final long releasedIndex) {}
+
   /** A {@code PUBLISHED} event was committed. */
   default void onPublished(final long publishedSeq) {}
 

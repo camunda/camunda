@@ -26,6 +26,7 @@ final class LogArchiveJsonTest {
     return Stream.of(
         Arguments.of("log-object.json", BucketJsonFixtures.logObject()),
         Arguments.of("log-object-legacy.json", BucketJsonFixtures.legacyLogObject()),
+        Arguments.of("log-object-merged.json", BucketJsonFixtures.mergedLogObject()),
         Arguments.of("archived-snapshot.json", BucketJsonFixtures.archivedSnapshot()),
         Arguments.of("index-chunk.json", BucketJsonFixtures.indexChunk()),
         Arguments.of("covered-checkpoint.json", BucketJsonFixtures.coveredCheckpoint()),
@@ -35,6 +36,8 @@ final class LogArchiveJsonTest {
         Arguments.of(
             "commit-entry-snapshot-archived.json", BucketJsonFixtures.commitSnapshotArchived()),
         Arguments.of("commit-entry-index-sealed.json", BucketJsonFixtures.commitIndexSealed()),
+        Arguments.of("commit-entry-log-merged.json", BucketJsonFixtures.commitLogMerged()),
+        Arguments.of("commit-entry-log-released.json", BucketJsonFixtures.commitLogReleased()),
         Arguments.of("index-chunk-file.json", BucketJsonFixtures.indexChunkFile()),
         Arguments.of("root-file.json", BucketJsonFixtures.rootFile()),
         Arguments.of("latest-hint.json", BucketJsonFixtures.latestHint()),
@@ -138,6 +141,71 @@ final class LogArchiveJsonTest {
 
     // then
     assertThat(file).isEqualTo(new TimelineFile(1, "t", 1, "", 1, 1, 0, 0, 0));
+  }
+
+  @Test
+  void shouldOmitLastRecordTimestampOfLogObjectWhenUnknown() {
+    // when
+    final Map<String, Object> unknown =
+        readAsMap(LogArchiveJson.write(BucketJsonFixtures.logObject()));
+    final Map<String, Object> known =
+        readAsMap(LogArchiveJson.write(BucketJsonFixtures.mergedLogObject()));
+
+    // then
+    assertThat(unknown).doesNotContainKey("lastRecordTimestamp");
+    assertThat(known).containsEntry("lastRecordTimestamp", 1792137599000L);
+  }
+
+  @Test
+  void shouldReadLogObjectWithoutLastRecordTimestampAsUnknown() {
+    // given - as written before the field existed
+    final byte[] json = readGoldenUnchecked("log-object.json");
+
+    // when
+    final var object = LogArchiveJson.read(json, LogObjectJson.class);
+
+    // then
+    assertThat(object.lastRecordTimestamp()).isEqualTo(-1L);
+  }
+
+  @Test
+  void shouldReadRootWithoutMergeAndReleaseFieldsAsNothingMergedOrReleased() {
+    // given - as written before merging and releasing existed
+    final String json =
+        "{\"formatVersion\":1,\"timelineId\":\"tl-0\",\"parentTimelineId\":\"\",\"partitionId\":1,"
+            + "\"seq\":4,\"startIndex\":501,\"archivedIndex\":900,\"archivedPosition\":950,"
+            + "\"chunks\":[],\"openObjects\":[],\"openCheckpoints\":[],\"snapshots\":[]}";
+
+    // when
+    final var root = LogArchiveJson.read(json.getBytes(StandardCharsets.UTF_8), RootFile.class);
+
+    // then
+    assertThat(root.mergedIndex()).isEqualTo(500);
+    assertThat(root.mergedPosition()).isEqualTo(-1);
+    assertThat(root.releasedIndex()).isEqualTo(500);
+    assertThat(root.releasedPosition()).isEqualTo(-1);
+    assertThat(root.mergedObjects()).isEmpty();
+  }
+
+  @Test
+  void shouldOmitMergeAndReleaseFieldsOfCommitEntriesOfOtherTypes() {
+    // when
+    final Map<String, Object> archived =
+        readAsMap(LogArchiveJson.write(BucketJsonFixtures.commitLogArchived()));
+    final Map<String, Object> merged =
+        readAsMap(LogArchiveJson.write(BucketJsonFixtures.commitLogMerged()));
+    final Map<String, Object> released =
+        readAsMap(LogArchiveJson.write(BucketJsonFixtures.commitLogReleased()));
+
+    // then
+    assertThat(archived)
+        .doesNotContainKeys("mergedIndex", "mergedPosition", "releasedIndex", "releasedPosition");
+    assertThat(merged)
+        .containsKeys("mergedIndex", "mergedPosition")
+        .doesNotContainKeys("releasedIndex", "releasedPosition");
+    assertThat(released)
+        .containsKeys("releasedIndex", "releasedPosition")
+        .doesNotContainKeys("mergedIndex", "mergedPosition", "objects");
   }
 
   @Test
@@ -264,6 +332,14 @@ final class LogArchiveJsonTest {
         LogArchiveJsonTest.class.getResourceAsStream("/logarchive/golden/" + name)) {
       assertThat(in).as("golden file %s", name).isNotNull();
       return in.readAllBytes();
+    }
+  }
+
+  private static byte[] readGoldenUnchecked(final String name) {
+    try {
+      return readGolden(name);
+    } catch (final IOException e) {
+      throw new AssertionError(e);
     }
   }
 

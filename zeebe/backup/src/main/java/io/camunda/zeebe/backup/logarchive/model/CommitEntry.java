@@ -30,12 +30,18 @@ import org.jspecify.annotations.Nullable;
  * @param recordTimestamp timestamp of the event record that this entry describes, in epoch millis
  * @param startIndex only for {@link Type#TIMELINE_STARTED}
  * @param parentTimelineId only for {@link Type#TIMELINE_STARTED}
- * @param startedAt only for {@link Type#TIMELINE_STARTED}, the event's record timestamp
+ * @param startedAt only for {@link Type#TIMELINE_STARTED}, the archiver's clock in epoch millis
+ *     when it wrote {@code START_TIMELINE} (spec section 19.3), not the event's record timestamp
  * @param parentIndex only for {@link Type#TIMELINE_STARTED}, the Raft index of the last entry the
  *     timeline shares with its parent, -1 if unknown
  * @param parentPosition only for {@link Type#TIMELINE_STARTED}, the position of the last record the
  *     timeline shares with its parent, -1 if unknown
- * @param objects only for {@link Type#LOG_ARCHIVED}
+ * @param mergedIndex only for {@link Type#LOG_MERGED}, M after applying
+ * @param mergedPosition only for {@link Type#LOG_MERGED}, the merged position after applying
+ * @param releasedIndex only for {@link Type#LOG_RELEASED}, R after applying
+ * @param releasedPosition only for {@link Type#LOG_RELEASED}, the released position after applying
+ * @param objects only for {@link Type#LOG_ARCHIVED}, and {@link Type#LOG_MERGED} (the one merged
+ *     object)
  * @param checkpoints only for {@link Type#LOG_ARCHIVED}
  * @param snapshot only for {@link Type#SNAPSHOT_ARCHIVED}
  * @param chunk only for {@link Type#INDEX_SEALED}
@@ -50,6 +56,10 @@ import org.jspecify.annotations.Nullable;
   "recordTimestamp",
   "archivedIndex",
   "archivedPosition",
+  "mergedIndex",
+  "mergedPosition",
+  "releasedIndex",
+  "releasedPosition",
   "startIndex",
   "parentTimelineId",
   "startedAt",
@@ -71,6 +81,10 @@ public record CommitEntry(
     long recordTimestamp,
     long archivedIndex,
     long archivedPosition,
+    @JsonInclude(JsonInclude.Include.NON_NULL) @Nullable Long mergedIndex,
+    @JsonInclude(JsonInclude.Include.NON_NULL) @Nullable Long mergedPosition,
+    @JsonInclude(JsonInclude.Include.NON_NULL) @Nullable Long releasedIndex,
+    @JsonInclude(JsonInclude.Include.NON_NULL) @Nullable Long releasedPosition,
     @JsonInclude(JsonInclude.Include.NON_NULL) @Nullable Long startIndex,
     @JsonInclude(JsonInclude.Include.NON_NULL) @Nullable String parentTimelineId,
     @JsonInclude(JsonInclude.Include.NON_NULL) @Nullable Long startedAt,
@@ -121,6 +135,53 @@ public record CommitEntry(
         null);
   }
 
+  /** A commit entry of a type without merge and release fields. */
+  public CommitEntry(
+      final int formatVersion,
+      final String timelineId,
+      final int partitionId,
+      final long seq,
+      final Type type,
+      final long recordPosition,
+      final long recordTimestamp,
+      final long archivedIndex,
+      final long archivedPosition,
+      final @Nullable Long startIndex,
+      final @Nullable String parentTimelineId,
+      final @Nullable Long startedAt,
+      final @Nullable Long parentIndex,
+      final @Nullable Long parentPosition,
+      final List<LogObjectJson> objects,
+      final List<CoveredCheckpointJson> checkpoints,
+      final @Nullable ArchivedSnapshotJson snapshot,
+      final @Nullable IndexChunkJson chunk,
+      final @Nullable HandoverJson handover) {
+    this(
+        formatVersion,
+        timelineId,
+        partitionId,
+        seq,
+        type,
+        recordPosition,
+        recordTimestamp,
+        archivedIndex,
+        archivedPosition,
+        null,
+        null,
+        null,
+        null,
+        startIndex,
+        parentTimelineId,
+        startedAt,
+        parentIndex,
+        parentPosition,
+        objects,
+        checkpoints,
+        snapshot,
+        chunk,
+        handover);
+  }
+
   public CommitEntry {
     objects = objects == null ? List.of() : List.copyOf(objects);
     checkpoints = checkpoints == null ? List.of() : List.copyOf(checkpoints);
@@ -132,6 +193,8 @@ public record CommitEntry(
     LOG_ARCHIVED,
     SNAPSHOT_ARCHIVED,
     INDEX_SEALED,
-    HANDOVER
+    HANDOVER,
+    LOG_MERGED,
+    LOG_RELEASED
   }
 }

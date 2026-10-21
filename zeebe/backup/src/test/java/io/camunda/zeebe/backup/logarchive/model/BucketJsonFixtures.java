@@ -48,6 +48,22 @@ final class BucketJsonFixtures {
         SHA256);
   }
 
+  /** A merged object: several archived objects replaced by one, with the last record timestamp. */
+  static LogObjectJson mergedLogObject() {
+    return new LogObjectJson(
+        "data/00000000000002600001-00000000000002731000-t7.seg",
+        7,
+        2600001,
+        2731000,
+        4800000,
+        4929000,
+        131000,
+        88123456,
+        SHA256,
+        88100000,
+        1792137599000L);
+  }
+
   static ArchivedSnapshotJson archivedSnapshot() {
     return new ArchivedSnapshotJson(
         "snap-2731000", 2731000, 7, 4930000, 4929000, 4928000, 4929500, 3, 88123456);
@@ -86,6 +102,60 @@ final class BucketJsonFixtures {
         null,
         List.of(logObject()),
         List.of(coveredCheckpoint()),
+        null,
+        null);
+  }
+
+  static CommitEntry commitLogMerged() {
+    return new CommitEntry(
+        1,
+        "tl-0",
+        1,
+        4130,
+        CommitEntry.Type.LOG_MERGED,
+        4932300,
+        1792137605000L,
+        2731480,
+        4931877,
+        2731000L,
+        4929000L,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        List.of(mergedLogObject()),
+        List.of(),
+        null,
+        null,
+        null);
+  }
+
+  static CommitEntry commitLogReleased() {
+    return new CommitEntry(
+        1,
+        "tl-0",
+        1,
+        4131,
+        CommitEntry.Type.LOG_RELEASED,
+        4932400,
+        1792137606000L,
+        2731480,
+        4931877,
+        null,
+        null,
+        2600000L,
+        4799000L,
+        null,
+        null,
+        null,
+        null,
+        null,
+        List.of(),
+        List.of(),
+        null,
         null,
         null);
   }
@@ -165,10 +235,16 @@ final class BucketJsonFixtures {
         1,
         2731480,
         4931877,
+        2731000,
+        4929000,
+        2600000,
+        4799000,
         List.of(indexChunk()),
         List.of(logObject()),
         List.of(coveredCheckpoint()),
-        List.of(archivedSnapshot()));
+        List.of(mergedLogObject()),
+        List.of(archivedSnapshot()),
+        null);
   }
 
   static LatestHint latestHint() {

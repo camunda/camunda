@@ -36,9 +36,13 @@ public final class LogArchiveMeta extends UnpackedObject implements DbValue {
   private final LongProperty handoverCheckpointIdProperty =
       new LongProperty("handoverCheckpointId", -1L);
   private final LongProperty handoverPositionProperty = new LongProperty("handoverPosition", -1L);
+  private final LongProperty mergedIndexProperty = new LongProperty("mergedIndex", -1L);
+  private final LongProperty mergedPositionProperty = new LongProperty("mergedPosition", -1L);
+  private final LongProperty releasedIndexProperty = new LongProperty("releasedIndex", -1L);
+  private final LongProperty releasedPositionProperty = new LongProperty("releasedPosition", -1L);
 
   public LogArchiveMeta() {
-    super(11);
+    super(15);
     declareProperty(timelineIdProperty)
         .declareProperty(parentTimelineIdProperty)
         .declareProperty(startIndexProperty)
@@ -49,7 +53,11 @@ public final class LogArchiveMeta extends UnpackedObject implements DbValue {
         .declareProperty(nextChunkNoProperty)
         .declareProperty(firstArchivedPositionProperty)
         .declareProperty(handoverCheckpointIdProperty)
-        .declareProperty(handoverPositionProperty);
+        .declareProperty(handoverPositionProperty)
+        .declareProperty(mergedIndexProperty)
+        .declareProperty(mergedPositionProperty)
+        .declareProperty(releasedIndexProperty)
+        .declareProperty(releasedPositionProperty);
   }
 
   /** The id of the current timeline, empty if no timeline was started yet. */
@@ -157,6 +165,52 @@ public final class LogArchiveMeta extends UnpackedObject implements DbValue {
     return this;
   }
 
+  /**
+   * M, the highest merged journal index: every archived object up to it was replaced by a merged
+   * object. {@code startIndex - 1} while nothing is merged.
+   */
+  public long getMergedIndex() {
+    return mergedIndexProperty.getValue();
+  }
+
+  public LogArchiveMeta setMergedIndex(final long mergedIndex) {
+    mergedIndexProperty.setValue(mergedIndex);
+    return this;
+  }
+
+  /** M as a log position, -1 until a merged object with application entries exists. */
+  public long getMergedPosition() {
+    return mergedPositionProperty.getValue();
+  }
+
+  public LogArchiveMeta setMergedPosition(final long mergedPosition) {
+    mergedPositionProperty.setValue(mergedPosition);
+    return this;
+  }
+
+  /**
+   * R, the highest released journal index: every object up to it belongs to the event plane. {@code
+   * startIndex - 1} while nothing is released.
+   */
+  public long getReleasedIndex() {
+    return releasedIndexProperty.getValue();
+  }
+
+  public LogArchiveMeta setReleasedIndex(final long releasedIndex) {
+    releasedIndexProperty.setValue(releasedIndex);
+    return this;
+  }
+
+  /** R as a log position, -1 until a released object with application entries exists. */
+  public long getReleasedPosition() {
+    return releasedPositionProperty.getValue();
+  }
+
+  public LogArchiveMeta setReleasedPosition(final long releasedPosition) {
+    releasedPositionProperty.setValue(releasedPosition);
+    return this;
+  }
+
   /** Whether a handover is recorded on this timeline. */
   public boolean hasHandover() {
     return getHandoverCheckpointId() >= 0;
@@ -183,12 +237,16 @@ public final class LogArchiveMeta extends UnpackedObject implements DbValue {
         .setNextChunkNo(getNextChunkNo())
         .setFirstArchivedPosition(getFirstArchivedPosition())
         .setHandoverCheckpointId(getHandoverCheckpointId())
-        .setHandoverPosition(getHandoverPosition());
+        .setHandoverPosition(getHandoverPosition())
+        .setMergedIndex(getMergedIndex())
+        .setMergedPosition(getMergedPosition())
+        .setReleasedIndex(getReleasedIndex())
+        .setReleasedPosition(getReleasedPosition());
   }
 
   @Override
   public String toString() {
-    return "LogArchiveMeta{timelineId=%s, parentTimelineId=%s, startIndex=%d, archivedIndex=%d, archivedPosition=%d, nextSeq=%d, lastPublishedSeq=%d, nextChunkNo=%d, firstArchivedPosition=%d, handoverCheckpointId=%d, handoverPosition=%d}"
+    return "LogArchiveMeta{timelineId=%s, parentTimelineId=%s, startIndex=%d, archivedIndex=%d, archivedPosition=%d, nextSeq=%d, lastPublishedSeq=%d, nextChunkNo=%d, firstArchivedPosition=%d, handoverCheckpointId=%d, handoverPosition=%d, mergedIndex=%d, mergedPosition=%d, releasedIndex=%d, releasedPosition=%d}"
         .formatted(
             getTimelineId(),
             getParentTimelineId(),
@@ -200,6 +258,10 @@ public final class LogArchiveMeta extends UnpackedObject implements DbValue {
             getNextChunkNo(),
             getFirstArchivedPosition(),
             getHandoverCheckpointId(),
-            getHandoverPosition());
+            getHandoverPosition(),
+            getMergedIndex(),
+            getMergedPosition(),
+            getReleasedIndex(),
+            getReleasedPosition());
   }
 }

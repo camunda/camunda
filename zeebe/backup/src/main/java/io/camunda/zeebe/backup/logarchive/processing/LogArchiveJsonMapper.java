@@ -24,6 +24,7 @@ import io.camunda.zeebe.backup.logarchive.state.LogArchiveMeta;
 import io.camunda.zeebe.protocol.impl.record.value.management.ArchivedSnapshot;
 import io.camunda.zeebe.protocol.impl.record.value.management.IndexChunk;
 import io.camunda.zeebe.protocol.impl.record.value.management.LogArchiveRecord;
+import io.camunda.zeebe.protocol.impl.record.value.management.LogObject;
 import io.camunda.zeebe.protocol.record.intent.management.LogArchiveIntent;
 import io.camunda.zeebe.protocol.record.value.management.LogArchiveRecordValue.ArchivedSnapshotValue;
 import io.camunda.zeebe.protocol.record.value.management.LogArchiveRecordValue.CoveredCheckpointValue;
@@ -47,7 +48,8 @@ public final class LogArchiveJsonMapper {
    * Maps an event of the processor to its commit entry.
    *
    * @param eventIntent one of {@code TIMELINE_STARTED}, {@code LOG_ARCHIVED}, {@code
-   *     SNAPSHOT_ARCHIVED}, {@code INDEX_SEALED}, {@code HANDOVER_COMPLETED}
+   *     SNAPSHOT_ARCHIVED}, {@code INDEX_SEALED}, {@code HANDOVER_COMPLETED}, {@code LOG_MERGED},
+   *     {@code LOG_RELEASED}
    * @param event the event record as written to the log, including seq, archivedIndex,
    *     archivedPosition and the covered checkpoints
    * @param recordPosition see {@link LogArchiveRecordsProcessor#recordPositionOf}
@@ -63,6 +65,8 @@ public final class LogArchiveJsonMapper {
     final var type = typeOf(eventIntent);
     final boolean timeline = type == CommitEntry.Type.TIMELINE_STARTED;
     final boolean logArchived = type == CommitEntry.Type.LOG_ARCHIVED;
+    final boolean logMerged = type == CommitEntry.Type.LOG_MERGED;
+    final boolean logReleased = type == CommitEntry.Type.LOG_RELEASED;
     return new CommitEntry(
         LogArchiveJson.FORMAT_VERSION,
         event.getTimelineId(),
@@ -73,12 +77,16 @@ public final class LogArchiveJsonMapper {
         recordTimestamp,
         event.getArchivedIndex(),
         event.getArchivedPosition(),
+        logMerged ? event.getMergedIndex() : null,
+        logMerged ? event.getMergedPosition() : null,
+        logReleased ? event.getReleasedIndex() : null,
+        logReleased ? event.getReleasedPosition() : null,
         timeline ? event.getStartIndex() : null,
         timeline ? event.getParentTimelineId() : null,
         timeline ? event.getStartedAt() : null,
         timeline ? event.getParentIndex() : null,
         timeline ? event.getParentPosition() : null,
-        logArchived
+        logArchived || logMerged
             ? event.getObjects().stream().map(LogArchiveJsonMapper::logObject).toList()
             : List.of(),
         logArchived
@@ -148,6 +156,7 @@ public final class LogArchiveJsonMapper {
       final long seq,
       final List<IndexChunk> chunks,
       final List<OpenObject> openObjects,
+      final List<LogObject> mergedObjects,
       final List<ArchivedSnapshot> snapshots) {
     return new RootFile(
         LogArchiveJson.FORMAT_VERSION,
@@ -158,12 +167,17 @@ public final class LogArchiveJsonMapper {
         meta.getStartIndex(),
         meta.getArchivedIndex(),
         meta.getArchivedPosition(),
+        meta.getMergedIndex(),
+        meta.getMergedPosition(),
+        meta.getReleasedIndex(),
+        meta.getReleasedPosition(),
         chunks.stream().map(LogArchiveJsonMapper::chunk).toList(),
         openObjects.stream().map(open -> logObject(open.object())).toList(),
         openObjects.stream()
             .flatMap(open -> open.checkpoints().stream())
             .map(LogArchiveJsonMapper::checkpoint)
             .toList(),
+        mergedObjects.stream().map(LogArchiveJsonMapper::logObject).toList(),
         snapshots.stream().map(LogArchiveJsonMapper::snapshot).toList(),
         meta.hasHandover()
             ? new HandoverJson(meta.getHandoverCheckpointId(), meta.getHandoverPosition())
@@ -249,7 +263,8 @@ public final class LogArchiveJsonMapper {
         (int) object.getEntryCount(),
         object.getSizeBytes(),
         object.getSha256(),
-        object.getBodyLength());
+        object.getBodyLength(),
+        object.getLastRecordTimestamp());
   }
 
   public static CoveredCheckpointJson checkpoint(final CoveredCheckpointValue checkpoint) {
@@ -294,6 +309,8 @@ public final class LogArchiveJsonMapper {
       case SNAPSHOT_ARCHIVED -> CommitEntry.Type.SNAPSHOT_ARCHIVED;
       case INDEX_SEALED -> CommitEntry.Type.INDEX_SEALED;
       case HANDOVER_COMPLETED -> CommitEntry.Type.HANDOVER;
+      case LOG_MERGED -> CommitEntry.Type.LOG_MERGED;
+      case LOG_RELEASED -> CommitEntry.Type.LOG_RELEASED;
       default ->
           throw new IllegalArgumentException("Intent %s has no commit entry".formatted(intent));
     };

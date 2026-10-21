@@ -59,6 +59,8 @@ final class LogArchiveEventApplier {
       case SNAPSHOT_ARCHIVED -> applySnapshotArchived(event);
       case INDEX_SEALED -> applyIndexSealed(event);
       case HANDOVER_COMPLETED -> applyHandoverCompleted(event);
+      case LOG_MERGED -> applyLogMerged(event);
+      case LOG_RELEASED -> applyLogReleased(event);
       case PUBLISHED -> {
         applyPublished(event);
         return null;
@@ -91,6 +93,8 @@ final class LogArchiveEventApplier {
             .setParentTimelineId(event.getParentTimelineId())
             .setStartIndex(event.getStartIndex())
             .setArchivedIndex(event.getStartIndex() - 1)
+            .setMergedIndex(event.getStartIndex() - 1)
+            .setReleasedIndex(event.getStartIndex() - 1)
             .setNextSeq(event.getSeq() + 1)
             .setHandoverCheckpointId(handoverCheckpointId)
             .setHandoverPosition(handoverPosition);
@@ -117,6 +121,7 @@ final class LogArchiveEventApplier {
     final var covered = coverPendingCheckpoints(meta, objects, attached);
     for (int i = 0; i < objects.size(); i++) {
       state.insertOpenObject(objects.get(i), attached.get(i));
+      state.insertUnmergedObject(objects.get(i));
     }
 
     if (event.getCheckpoints().isEmpty()) {
@@ -210,6 +215,42 @@ final class LogArchiveEventApplier {
         .setHandoverPosition(event.getHandoverPosition())
         .setNextSeq(event.getSeq() + 1);
     store(meta, event);
+  }
+
+  /**
+   * Replaces the archived objects of the merged range by the merged object and moves M to its last
+   * index. M only gains a position if the merged object holds application entries.
+   */
+  private void applyLogMerged(final LogArchiveRecord event) {
+    final var meta = state.meta();
+    final var merged = event.getObjects().getFirst();
+    state.deleteUnmergedObjectsUpTo(merged.getLastIndex());
+    state.insertMergedObject(merged);
+    meta.setMergedIndex(merged.getLastIndex());
+    if (merged.getLastPosition() >= 0) {
+      meta.setMergedPosition(merged.getLastPosition());
+    }
+    meta.setNextSeq(event.getSeq() + 1);
+    store(meta, event);
+    event.setMergedIndex(meta.getMergedIndex()).setMergedPosition(meta.getMergedPosition());
+  }
+
+  /**
+   * Hands every merged object up to the proposed index over to the event plane: the cluster drops
+   * its rows. R only gains a position if a released object holds application entries.
+   */
+  private void applyLogReleased(final LogArchiveRecord event) {
+    final var meta = state.meta();
+    final long releasedIndex = event.getReleasedIndex();
+    for (final var object : state.mergedObjects()) {
+      if (object.getLastIndex() <= releasedIndex && object.getLastPosition() >= 0) {
+        meta.setReleasedPosition(object.getLastPosition());
+      }
+    }
+    state.deleteMergedObjectsUpTo(releasedIndex);
+    meta.setReleasedIndex(releasedIndex).setNextSeq(event.getSeq() + 1);
+    store(meta, event);
+    event.setReleasedIndex(meta.getReleasedIndex()).setReleasedPosition(meta.getReleasedPosition());
   }
 
   private void applyPublished(final LogArchiveRecord event) {

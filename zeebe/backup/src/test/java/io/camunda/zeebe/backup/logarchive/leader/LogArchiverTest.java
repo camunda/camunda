@@ -313,6 +313,7 @@ final class LogArchiverTest {
     assertThat(decoded.identity()).isEqualTo(new SegmentIdentity(CLUSTER_ID, TENANT_ID, PARTITION));
     assertThat(decoded.footer().bodyLength()).isEqualTo(object.getBodyLength());
     assertThat(decoded.footer().latestTimestamp()).isEqualTo(1_003);
+    assertThat(object.getLastRecordTimestamp()).isEqualTo(1_003);
     assertThat(decoded.frames())
         .extracting(f -> f.index(), f -> f.asqn(), f -> f.checksum(), f -> f.serializedRecord())
         .containsExactly(

@@ -23,6 +23,8 @@ import org.jspecify.annotations.Nullable;
  * @param sha256 lowercase hex SHA-256 of the whole object
  * @param bodyLength length of the body of a {@code .seg} object, which is where its metadata
  *     starts; -1 for a {@code .rec} object, in which case the JSON omits it
+ * @param lastRecordTimestamp highest record timestamp of the application entries in epoch millis;
+ *     -1 if unknown or the object holds none, in which case the JSON omits it
  */
 @JsonPropertyOrder({
   "key",
@@ -34,7 +36,8 @@ import org.jspecify.annotations.Nullable;
   "entryCount",
   "sizeBytes",
   "sha256",
-  "bodyLength"
+  "bodyLength",
+  "lastRecordTimestamp"
 })
 public record LogObjectJson(
     String key,
@@ -46,8 +49,34 @@ public record LogObjectJson(
     int entryCount,
     long sizeBytes,
     String sha256,
-    @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NoBodyLength.class)
-        long bodyLength) {
+    @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NoValue.class) long bodyLength,
+    @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NoValue.class)
+        long lastRecordTimestamp) {
+
+  public LogObjectJson(
+      final String key,
+      final long term,
+      final long firstIndex,
+      final long lastIndex,
+      final long firstPosition,
+      final long lastPosition,
+      final int entryCount,
+      final long sizeBytes,
+      final String sha256,
+      final long bodyLength) {
+    this(
+        key,
+        term,
+        firstIndex,
+        lastIndex,
+        firstPosition,
+        lastPosition,
+        entryCount,
+        sizeBytes,
+        sha256,
+        bodyLength,
+        -1L);
+  }
 
   public LogObjectJson(
       final String key,
@@ -69,10 +98,14 @@ public record LogObjectJson(
         entryCount,
         sizeBytes,
         sha256,
+        -1L,
         -1L);
   }
 
-  /** Reads a missing body length as -1, which a record's canonical constructor cannot express. */
+  /**
+   * Reads a missing body length or last record timestamp as -1, which a record's canonical
+   * constructor cannot express.
+   */
   @JsonCreator
   static LogObjectJson fromJson(
       @JsonProperty("key") final String key,
@@ -84,7 +117,8 @@ public record LogObjectJson(
       @JsonProperty("entryCount") final int entryCount,
       @JsonProperty("sizeBytes") final long sizeBytes,
       @JsonProperty("sha256") final String sha256,
-      @JsonProperty("bodyLength") final @Nullable Long bodyLength) {
+      @JsonProperty("bodyLength") final @Nullable Long bodyLength,
+      @JsonProperty("lastRecordTimestamp") final @Nullable Long lastRecordTimestamp) {
     return new LogObjectJson(
         key,
         term,
@@ -95,11 +129,12 @@ public record LogObjectJson(
         entryCount,
         sizeBytes,
         sha256,
-        bodyLength == null ? -1L : bodyLength);
+        bodyLength == null ? -1L : bodyLength,
+        lastRecordTimestamp == null ? -1L : lastRecordTimestamp);
   }
 
-  /** Jackson value filter: a body length of -1 is not written. */
-  static final class NoBodyLength {
+  /** Jackson value filter: a value of -1 is not written. */
+  static final class NoValue {
     @Override
     public boolean equals(final @Nullable Object value) {
       return value instanceof final Long l && l == -1L;

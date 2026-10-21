@@ -76,6 +76,14 @@ public final class DbLogArchiveState {
   private final ColumnFamily<DbLong, ObjectDbValue<CoveredCheckpoint>>
       backupCheckpointsColumnFamily;
 
+  private final DbLong unmergedObjectKey = new DbLong();
+  private final UnmergedObjectDbValue unmergedObjectValue = new UnmergedObjectDbValue();
+  private final ColumnFamily<DbLong, UnmergedObjectDbValue> unmergedObjectsColumnFamily;
+
+  private final DbLong mergedObjectKey = new DbLong();
+  private final ObjectDbValue<LogObject> mergedObjectValue = new ObjectDbValue<>(LogObject::new);
+  private final ColumnFamily<DbLong, ObjectDbValue<LogObject>> mergedObjectsColumnFamily;
+
   public DbLogArchiveState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
     metaKey.wrapString(META_KEY);
@@ -109,6 +117,18 @@ public final class DbLogArchiveState {
             transactionContext,
             backupCheckpointKey,
             backupCheckpointValue);
+    unmergedObjectsColumnFamily =
+        zeebeDb.createColumnFamily(
+            ZbColumnFamilies.LOG_ARCHIVE_UNMERGED_OBJECTS,
+            transactionContext,
+            unmergedObjectKey,
+            unmergedObjectValue);
+    mergedObjectsColumnFamily =
+        zeebeDb.createColumnFamily(
+            ZbColumnFamilies.LOG_ARCHIVE_MERGED_OBJECTS,
+            transactionContext,
+            mergedObjectKey,
+            mergedObjectValue);
   }
 
   // ---------------------------------------------------------------------------------------------
@@ -241,6 +261,23 @@ public final class DbLogArchiveState {
     return List.copyOf(result.values());
   }
 
+  /** All archived objects above M (without the merged ones) in index order. */
+  public List<UnmergedObject> unmergedObjects() {
+    final var result = new ArrayList<UnmergedObject>();
+    unmergedObjectsColumnFamily.forEach(
+        (key, value) ->
+            result.add(
+                new UnmergedObject(key.getValue(), value.lastIndex(), value.lastPosition())));
+    return result;
+  }
+
+  /** All merged objects above the released index in index order. */
+  public List<LogObject> mergedObjects() {
+    final var result = new ArrayList<LogObject>();
+    mergedObjectsColumnFamily.forEach(value -> result.add(new LogObject().copy(value.value())));
+    return result;
+  }
+
   // ---------------------------------------------------------------------------------------------
   // Mutations: appliers only
   // ---------------------------------------------------------------------------------------------
@@ -274,6 +311,42 @@ public final class DbLogArchiveState {
     snapshotKey.wrapLong(seq);
     snapshotValue.value().copy(snapshot);
     snapshotsColumnFamily.insert(snapshotKey, snapshotValue);
+  }
+
+  public void insertUnmergedObject(final LogObjectValue object) {
+    unmergedObjectKey.wrapLong(object.getFirstIndex());
+    unmergedObjectValue.set(object.getLastIndex(), object.getLastPosition());
+    unmergedObjectsColumnFamily.insert(unmergedObjectKey, unmergedObjectValue);
+  }
+
+  /** Deletes the unmerged objects that start at or below {@code lastIndex}. */
+  public void deleteUnmergedObjectsUpTo(final long lastIndex) {
+    unmergedObjectsColumnFamily.whileTrue(
+        (key, value) -> {
+          if (key.getValue() > lastIndex) {
+            return false;
+          }
+          unmergedObjectsColumnFamily.deleteExisting(key);
+          return true;
+        });
+  }
+
+  public void insertMergedObject(final LogObjectValue object) {
+    mergedObjectKey.wrapLong(object.getFirstIndex());
+    mergedObjectValue.value().copy(object);
+    mergedObjectsColumnFamily.insert(mergedObjectKey, mergedObjectValue);
+  }
+
+  /** Deletes the merged objects that end at or below {@code lastIndex}. */
+  public void deleteMergedObjectsUpTo(final long lastIndex) {
+    mergedObjectsColumnFamily.whileTrue(
+        (key, value) -> {
+          if (value.value().getLastIndex() > lastIndex) {
+            return false;
+          }
+          mergedObjectsColumnFamily.deleteExisting(key);
+          return true;
+        });
   }
 
   public void insertOutbox(final long seq, final byte[] commitEntryJson) {
@@ -338,6 +411,8 @@ public final class DbLogArchiveState {
     clear(chunksColumnFamily);
     clear(snapshotsColumnFamily);
     clear(outboxColumnFamily);
+    clear(unmergedObjectsColumnFamily);
+    clear(mergedObjectsColumnFamily);
     // Pending checkpoints are kept: one created before the new timeline starts can still lie in
     // its archived range and is then a valid restore point. Those below the first archived
     // position are dropped when the range is archived.
@@ -347,6 +422,11 @@ public final class DbLogArchiveState {
       final ColumnFamily<K, V> columnFamily) {
     columnFamily.forEachKey(columnFamily::deleteExisting);
   }
+
+  /**
+   * An archived object that is not merged yet: its index range and its last application position.
+   */
+  public record UnmergedObject(long firstIndex, long lastIndex, long lastPosition) {}
 
   /** An open object and the checkpoints attached to it. */
   public record OpenObject(LogObject object, List<CoveredCheckpoint> checkpoints) {

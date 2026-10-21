@@ -156,6 +156,55 @@ final class UnifiedRecordValueTest {
     assertThat(record.getObjects()).isEmpty();
     assertThat(record.getCheckpoints()).isEmpty();
     assertThat(record.getSnapshot().getIndex()).isEqualTo(-1L);
+    assertThat(record.getMergedIndex()).isEqualTo(-1L);
+    assertThat(record.getMergedPosition()).isEqualTo(-1L);
+    assertThat(record.getReleasedIndex()).isEqualTo(-1L);
+    assertThat(record.getReleasedPosition()).isEqualTo(-1L);
+  }
+
+  @Test
+  void shouldRoundTripMergeAndReleaseFields() {
+    // given
+    final var original =
+        new LogArchiveRecord()
+            .setTimelineId("t1")
+            .addObject(
+                new LogObject()
+                    .setKey("data/1.seg")
+                    .setFirstIndex(1L)
+                    .setLastIndex(9L)
+                    .setLastRecordTimestamp(1700L))
+            .setMergedIndex(9L)
+            .setMergedPosition(90L)
+            .setReleasedIndex(5L)
+            .setReleasedPosition(50L);
+    final var buffer = new UnsafeBuffer(new byte[original.getLength()]);
+    original.write(buffer, 0);
+
+    // when
+    final var copy = new LogArchiveRecord();
+    copy.wrap(buffer);
+
+    // then
+    assertThat(copy.getMergedIndex()).isEqualTo(9L);
+    assertThat(copy.getMergedPosition()).isEqualTo(90L);
+    assertThat(copy.getReleasedIndex()).isEqualTo(5L);
+    assertThat(copy.getReleasedPosition()).isEqualTo(50L);
+    assertThat(copy.getObjects())
+        .extracting(o -> o.getLastRecordTimestamp())
+        .containsExactly(1700L);
+  }
+
+  @Test
+  void shouldDefaultLastRecordTimestampOfLogObject() {
+    // given
+    final var object = new LogObject();
+
+    // when
+    final var copy = new LogObject().copy(object);
+
+    // then
+    assertThat(copy.getLastRecordTimestamp()).isEqualTo(-1L);
   }
 
   private static Stream<SuspensionBatchRecord> suspensionBatchRecords() {

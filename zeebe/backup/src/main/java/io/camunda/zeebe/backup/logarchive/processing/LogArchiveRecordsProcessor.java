@@ -154,6 +154,8 @@ public final class LogArchiveRecordsProcessor
           case SEAL_INDEX -> validateSealIndex(command, meta);
           case CONFIRM_PUBLISHED -> validateConfirmPublished(command, meta);
           case COMPLETE_HANDOVER -> validateCompleteHandover(command, meta);
+          case MERGE_LOG -> validateMergeLog(command, meta);
+          case RELEASE_LOG -> validateReleaseLog(command, meta);
           default ->
               throw new IllegalArgumentException(
                   "Unknown log archive intent %s".formatted(record.getIntent()));
@@ -284,6 +286,12 @@ public final class LogArchiveRecordsProcessor
           event.setSeq(meta.getNextSeq()).setSnapshot(commandValue.getSnapshot());
       case SEAL_INDEX -> event.setSeq(meta.getNextSeq()).setChunk(commandValue.getChunk());
       case CONFIRM_PUBLISHED -> event.setPublishedSeq(commandValue.getPublishedSeq());
+      case MERGE_LOG -> {
+        event.setSeq(meta.getNextSeq());
+        commandValue.getObjects().forEach(event::addObject);
+      }
+      case RELEASE_LOG ->
+          event.setSeq(meta.getNextSeq()).setReleasedIndex(commandValue.getReleasedIndex());
       case COMPLETE_HANDOVER ->
           // the position is that of the confirmed handover backup, validated to match the command;
           // a partition without one took no part in the handover and records it from its start
@@ -341,6 +349,9 @@ public final class LogArchiveRecordsProcessor
             case SNAPSHOT_ARCHIVED -> currentListener.onSnapshotArchived(snapshotId);
             case INDEX_SEALED -> currentListener.onIndexSealed(chunkNo);
             case PUBLISHED -> currentListener.onPublished(publishedSeq);
+            case LOG_MERGED ->
+                currentListener.onLogMerged(newMeta.getMergedIndex(), newMeta.getMergedPosition());
+            case LOG_RELEASED -> currentListener.onLogReleased(newMeta.getReleasedIndex());
             default -> {}
           }
         });
@@ -391,6 +402,7 @@ public final class LogArchiveRecordsProcessor
             seq,
             state.chunks(),
             state.openObjects(),
+            state.mergedObjects(),
             state.snapshots()));
   }
 
@@ -414,6 +426,8 @@ public final class LogArchiveRecordsProcessor
       case SEAL_INDEX -> LogArchiveIntent.INDEX_SEALED;
       case CONFIRM_PUBLISHED -> LogArchiveIntent.PUBLISHED;
       case COMPLETE_HANDOVER -> LogArchiveIntent.HANDOVER_COMPLETED;
+      case MERGE_LOG -> LogArchiveIntent.LOG_MERGED;
+      case RELEASE_LOG -> LogArchiveIntent.LOG_RELEASED;
       default -> throw new IllegalArgumentException("Not a command: " + command);
     };
   }
@@ -441,6 +455,8 @@ public final class LogArchiveRecordsProcessor
             .rejectionReason(rejection.reason()));
 
     final long archivedIndex = meta.getArchivedIndex();
+    final long mergedIndex = meta.getMergedIndex();
+    final long releasedIndex = meta.getReleasedIndex();
     final var snapshotId = commandValue.getSnapshot().getId();
     // a lost or invalid seal is retried once per rejection while the chunk is still full
     final var retrySeal =
@@ -461,6 +477,8 @@ public final class LogArchiveRecordsProcessor
           switch (intent) {
             case ARCHIVE_LOG -> currentListener.onArchiveLogRejected(archivedIndex);
             case ARCHIVE_SNAPSHOT -> currentListener.onSnapshotRejected(snapshotId);
+            case MERGE_LOG -> currentListener.onMergeLogRejected(mergedIndex);
+            case RELEASE_LOG -> currentListener.onReleaseLogRejected(releasedIndex);
             default ->
                 currentListener.onCommandRejected(intent, rejection.type(), rejection.reason());
           }
@@ -550,6 +568,90 @@ public final class LogArchiveRecordsProcessor
       return invalidState(
           "Expected the log objects to continue at index %d, but they start at %d"
               .formatted(meta.getArchivedIndex() + 1, objects.getFirst().getFirstIndex()));
+    }
+    return null;
+  }
+
+  /**
+   * Spec section 20.1. A merge is a proposal: it must continue at M + 1 and end at the boundary of
+   * an archived object, and describe the run it replaces.
+   */
+  private @Nullable Rejection validateMergeLog(
+      final LogArchiveRecord command, final LogArchiveMeta meta) {
+    final var timelineRejection = validateTimeline(command, meta);
+    if (timelineRejection != null) {
+      return timelineRejection;
+    }
+    final var objects = command.getObjects();
+    if (objects.size() != 1) {
+      return invalidArgument("Expected exactly one merged log object, but got " + objects.size());
+    }
+    final var object = objects.getFirst();
+    if (object.getFirstIndex() > object.getLastIndex()
+        || object.getEntryCount() != object.getLastIndex() - object.getFirstIndex() + 1) {
+      return invalidArgument(
+          "Expected merged log object '%s' to have firstIndex <= lastIndex and an entryCount equal to the number of indexes, but got [%d, %d] with entryCount %d"
+              .formatted(
+                  object.getKey(),
+                  object.getFirstIndex(),
+                  object.getLastIndex(),
+                  object.getEntryCount()));
+    }
+    if (object.getFirstIndex() != meta.getMergedIndex() + 1) {
+      return invalidState(
+          "Expected the merged log object to continue at index %d, but it starts at %d"
+              .formatted(meta.getMergedIndex() + 1, object.getFirstIndex()));
+    }
+    if (object.getLastIndex() > meta.getArchivedIndex()) {
+      return invalidState(
+          "Expected the merged log object to end at or below the archived index %d, but it ends at %d"
+              .formatted(meta.getArchivedIndex(), object.getLastIndex()));
+    }
+    long lastPosition = -1;
+    boolean endsAtBoundary = false;
+    for (final var row : state.unmergedObjects()) {
+      if (row.firstIndex() > object.getLastIndex()) {
+        break;
+      }
+      lastPosition = Math.max(lastPosition, row.lastPosition());
+      endsAtBoundary = row.lastIndex() == object.getLastIndex();
+    }
+    if (!endsAtBoundary) {
+      return invalidState(
+          "Expected the merged log object to end at the last index of an archived object, but %d is not one"
+              .formatted(object.getLastIndex()));
+    }
+    if (object.getLastPosition() != lastPosition) {
+      return invalidState(
+          "Expected the merged log object to end at position %d, the highest of the objects it replaces, but got %d"
+              .formatted(lastPosition, object.getLastPosition()));
+    }
+    return null;
+  }
+
+  /** Spec section 21.2: only a merged object's end can be released, and a snapshot must remain. */
+  private @Nullable Rejection validateReleaseLog(
+      final LogArchiveRecord command, final LogArchiveMeta meta) {
+    final var timelineRejection = validateTimeline(command, meta);
+    if (timelineRejection != null) {
+      return timelineRejection;
+    }
+    final long releasedIndex = command.getReleasedIndex();
+    if (releasedIndex <= meta.getReleasedIndex()) {
+      return invalidState(
+          "Expected a released index greater than %d, but got %d"
+              .formatted(meta.getReleasedIndex(), releasedIndex));
+    }
+    if (state.mergedObjects().stream()
+        .noneMatch(object -> object.getLastIndex() == releasedIndex)) {
+      return invalidState(
+          "Expected the released index to be the last index of a merged object, but %d is not one"
+              .formatted(releasedIndex));
+    }
+    if (state.snapshots().stream().noneMatch(snapshot -> snapshot.getIndex() > releasedIndex)) {
+      return invalidState(
+          "Expected an archived snapshot above the released index %d, but there is none"
+              .formatted(releasedIndex));
     }
     return null;
   }

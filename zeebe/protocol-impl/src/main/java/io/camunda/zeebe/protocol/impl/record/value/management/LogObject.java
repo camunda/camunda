@@ -31,9 +31,11 @@ public final class LogObject extends ObjectValue implements LogObjectValue {
   private final LongProperty sizeBytesProperty = new LongProperty("sizeBytes", 0L);
   private final StringProperty sha256Property = new StringProperty("sha256", "");
   private final LongProperty bodyLengthProperty = new LongProperty("bodyLength", -1L);
+  private final LongProperty lastRecordTimestampProperty =
+      new LongProperty("lastRecordTimestamp", -1L);
 
   public LogObject() {
-    super(10);
+    super(11);
     declareProperty(keyProperty)
         .declareProperty(termProperty)
         .declareProperty(firstIndexProperty)
@@ -43,7 +45,8 @@ public final class LogObject extends ObjectValue implements LogObjectValue {
         .declareProperty(entryCountProperty)
         .declareProperty(sizeBytesProperty)
         .declareProperty(sha256Property)
-        .declareProperty(bodyLengthProperty);
+        .declareProperty(bodyLengthProperty)
+        .declareProperty(lastRecordTimestampProperty);
   }
 
   @Override
@@ -96,6 +99,11 @@ public final class LogObject extends ObjectValue implements LogObjectValue {
     return bodyLengthProperty.getValue();
   }
 
+  @Override
+  public long getLastRecordTimestamp() {
+    return lastRecordTimestampProperty.getValue();
+  }
+
   public LogObject setKey(final String key) {
     keyProperty.setValue(key);
     return this;
@@ -146,6 +154,11 @@ public final class LogObject extends ObjectValue implements LogObjectValue {
     return this;
   }
 
+  public LogObject setLastRecordTimestamp(final long lastRecordTimestamp) {
+    lastRecordTimestampProperty.setValue(lastRecordTimestamp);
+    return this;
+  }
+
   public LogObject copy(final LogObjectValue object) {
     setKey(object.getKey());
     setTerm(object.getTerm());
@@ -157,6 +170,7 @@ public final class LogObject extends ObjectValue implements LogObjectValue {
     setSizeBytes(object.getSizeBytes());
     setSha256(object.getSha256());
     setBodyLength(object.getBodyLength());
+    setLastRecordTimestamp(object.getLastRecordTimestamp());
     return this;
   }
 
