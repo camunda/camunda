@@ -24,7 +24,7 @@ import java.time.Instant;
  * Controls the clock of the Camunda runtime through the public clock API of the {@link
  * CamundaClient}. The client is created once and closed together with this clock client.
  */
-public final class CamundaClockClientImpl implements CamundaClockClient, AutoCloseable {
+public final class CamundaClockClientImpl implements CamundaClockClient {
 
   private final CamundaClient client;
 

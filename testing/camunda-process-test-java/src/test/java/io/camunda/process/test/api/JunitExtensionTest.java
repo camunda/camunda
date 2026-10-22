@@ -33,7 +33,7 @@ import io.camunda.process.test.api.similarity.SemanticSimilarityConfig;
 import io.camunda.process.test.api.testCases.TestCaseRunner;
 import io.camunda.process.test.impl.cleanup.CleanupStrategy;
 import io.camunda.process.test.impl.cleanup.CleanupStrategyFactory;
-import io.camunda.process.test.impl.client.CamundaManagementClient;
+import io.camunda.process.test.impl.client.CamundaClockClient;
 import io.camunda.process.test.impl.coverage.CoverageCollector;
 import io.camunda.process.test.impl.coverage.CoverageCollectorBuilder;
 import io.camunda.process.test.impl.runtime.CamundaProcessTestContainerRuntime;
@@ -79,7 +79,7 @@ public class JunitExtensionTest {
 
   @Mock private CoverageCollector processCoverage;
   @Mock private CamundaProcessTestContainerRuntime camundaContainerRuntime;
-  @Mock private CamundaManagementClient camundaManagementClient;
+  @Mock private CamundaClockClient camundaClockClient;
   @Mock private CamundaProcessTestResultCollector camundaProcessTestResultCollector;
   @Mock private CamundaProcessTestContainerProvider containerProvider;
   @Mock private CleanupStrategyFactory cleanupStrategyFactory;
@@ -220,6 +220,42 @@ public class JunitExtensionTest {
 
     // then
     verify(camundaContainerRuntime).start();
+    verify(camundaContainerRuntime).close();
+  }
+
+  @Test
+  void shouldCloseClockClient() throws Exception {
+    // given
+    final CamundaProcessTestExtension extension =
+        new CamundaProcessTestExtension(camundaRuntimeBuilder, processCoverageBuilder, NOOP);
+
+    extension.beforeAll(extensionContext);
+    setClockClientMock(extension);
+    extension.beforeEach(extensionContext);
+
+    // when
+    extension.afterAll(extensionContext);
+
+    // then
+    verify(camundaClockClient).close();
+  }
+
+  @Test
+  void shouldIgnoreFailureWhenClosingClockClient() throws Exception {
+    // given
+    final CamundaProcessTestExtension extension =
+        new CamundaProcessTestExtension(camundaRuntimeBuilder, processCoverageBuilder, NOOP);
+
+    extension.beforeAll(extensionContext);
+    setClockClientMock(extension);
+    extension.beforeEach(extensionContext);
+
+    doThrow(new RuntimeException("Expected: failed to close")).when(camundaClockClient).close();
+
+    // when
+    extension.afterAll(extensionContext);
+
+    // then
     verify(camundaContainerRuntime).close();
   }
 
@@ -374,6 +410,26 @@ public class JunitExtensionTest {
     verify(camundaRuntimeBuilder).withContainerProvidersServiceLoaderEnabled(true);
   }
 
+  private void setClockClientMock(final CamundaProcessTestExtension extension) {
+    setField(extension, "camundaClockClient", camundaClockClient);
+  }
+
+  private void setField(
+      final CamundaProcessTestExtension extension, final String fieldName, final Object value) {
+    try {
+      final Field field = extension.getClass().getDeclaredField(fieldName);
+      field.setAccessible(true);
+      // beforeAll builds a real client; close it so that replacing it doesn't leak it
+      final Object previousValue = field.get(extension);
+      if (previousValue instanceof AutoCloseable) {
+        ((AutoCloseable) previousValue).close();
+      }
+      field.set(extension, value);
+    } catch (final Throwable t) {
+      ExceptionUtils.throwAsUncheckedException(t);
+    }
+  }
+
   @CamundaProcessTest
   private static final class MainProcessTest {
     static class NestedProcessTest {}
@@ -435,7 +491,7 @@ public class JunitExtensionTest {
       extension.beforeAll(extensionContext);
       extension.beforeEach(extensionContext);
 
-      setManagementClientDummy(extension);
+      setClockClientMock(extension);
       setTestResultCollectorMock(extension);
 
       when(extensionContext.getExecutionException())
@@ -460,7 +516,7 @@ public class JunitExtensionTest {
       extension.beforeAll(extensionContext);
       extension.beforeEach(extensionContext);
 
-      setManagementClientDummy(extension);
+      setClockClientMock(extension);
       setTestResultCollectorMock(extension);
 
       when(extensionContext.getExecutionException()).thenReturn(Optional.empty());
@@ -482,7 +538,7 @@ public class JunitExtensionTest {
       extension.beforeAll(extensionContext);
       extension.beforeEach(extensionContext);
 
-      setManagementClientDummy(extension);
+      setClockClientMock(extension);
 
       extension.afterEach(extensionContext);
 
@@ -500,12 +556,12 @@ public class JunitExtensionTest {
       extension.beforeAll(extensionContext);
       extension.beforeEach(extensionContext);
 
-      setManagementClientDummy(extension);
+      setClockClientMock(extension);
 
       extension.afterEach(extensionContext);
 
       // then
-      verify(camundaManagementClient).resetTime();
+      verify(camundaClockClient).resetTime();
     }
 
     @Test
@@ -519,22 +575,12 @@ public class JunitExtensionTest {
       extension.beforeAll(extensionContext);
       extension.beforeEach(extensionContext);
 
-      setManagementClientDummy(extension);
+      setClockClientMock(extension);
 
       extension.afterEach(extensionContext);
 
       // then
-      verify(camundaManagementClient, never()).resetTime();
-    }
-
-    private void setManagementClientDummy(final CamundaProcessTestExtension extension) {
-      try {
-        final Field cmcField = extension.getClass().getDeclaredField("camundaManagementClient");
-        cmcField.setAccessible(true);
-        cmcField.set(extension, camundaManagementClient);
-      } catch (final Throwable t) {
-        ExceptionUtils.throwAsUncheckedException(t);
-      }
+      verify(camundaClockClient, never()).resetTime();
     }
 
     private void setTestResultCollectorMock(final CamundaProcessTestExtension extension) {

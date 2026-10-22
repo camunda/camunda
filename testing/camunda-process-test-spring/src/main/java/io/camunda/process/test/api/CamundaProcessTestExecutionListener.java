@@ -23,6 +23,8 @@ import io.camunda.process.test.api.runtime.CamundaProcessTestContainerProvider;
 import io.camunda.process.test.impl.assertions.CamundaDataSource;
 import io.camunda.process.test.impl.assertions.util.InstantProbeAwaitBehavior;
 import io.camunda.process.test.impl.cleanup.CleanupStrategy;
+import io.camunda.process.test.impl.client.CamundaClockClient;
+import io.camunda.process.test.impl.client.CamundaClockClientImpl;
 import io.camunda.process.test.impl.client.CamundaManagementClient;
 import io.camunda.process.test.impl.configuration.AssertionConfiguration;
 import io.camunda.process.test.impl.configuration.CamundaProcessTestRuntimeConfiguration;
@@ -101,6 +103,7 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
   private CamundaProcessTestResultCollector processTestResultCollector;
   private CamundaProcessTestContext camundaProcessTestContext;
   private CamundaManagementClient camundaManagementClient;
+  private CamundaClockClient camundaClockClient;
   private CamundaDataSource dataSource;
   private boolean clockResetEnabled = true;
   private Instant testCaseStartTime;
@@ -137,12 +140,13 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
     runtime.start();
 
     camundaManagementClient = createManagementClient();
+    camundaClockClient = new CamundaClockClientImpl(runtime.getCamundaClientBuilderFactory());
 
     camundaProcessTestContext =
         new CamundaProcessTestContextImpl(
             runtime,
             createdClients::add,
-            camundaManagementClient,
+            camundaClockClient,
             CamundaAssert::getAwaitBehavior,
             jsonMapper,
             conditionalBehaviorEngine,
@@ -272,10 +276,18 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
       LOG.warn("Failed to report process coverage, skipping.", t);
     }
 
-    runtime.close();
-
     CamundaAssert.setJudgeConfig(null);
     CamundaAssert.setSemanticSimilarityConfig(null);
+
+    if (camundaClockClient != null) {
+      try {
+        camundaClockClient.close();
+      } catch (final Exception e) {
+        LOG.debug("Failed to close the clock client, continue.", e);
+      }
+    }
+
+    runtime.close();
   }
 
   private void initializeJsonMapper(final JsonMapper jsonMapper) {
@@ -340,7 +352,7 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
   private void resetRuntimeClock() {
     try {
       LOG.debug("Resetting the time");
-      camundaManagementClient.resetTime();
+      camundaClockClient.resetTime();
       LOG.debug("Time reset");
     } catch (final Throwable t) {
       LOG.warn(
@@ -352,7 +364,7 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
 
   private Instant readCurrentRuntimeTime() {
     try {
-      return camundaManagementClient.getCurrentTime();
+      return camundaClockClient.getCurrentTime();
     } catch (final Exception e) {
       LOG.warn(
           "Failed to read the current runtime time. Test case isolation by start time will be "

@@ -26,6 +26,8 @@ import io.camunda.process.test.impl.assertions.CamundaDataSource;
 import io.camunda.process.test.impl.assertions.util.InstantProbeAwaitBehavior;
 import io.camunda.process.test.impl.cleanup.CleanupStrategy;
 import io.camunda.process.test.impl.cleanup.CleanupStrategyFactory;
+import io.camunda.process.test.impl.client.CamundaClockClient;
+import io.camunda.process.test.impl.client.CamundaClockClientImpl;
 import io.camunda.process.test.impl.client.CamundaManagementClient;
 import io.camunda.process.test.impl.coverage.CoverageCollector;
 import io.camunda.process.test.impl.coverage.CoverageCollectorBuilder;
@@ -128,6 +130,7 @@ public class CamundaProcessTestExtension
   private JsonMapper jsonMapper;
 
   private CamundaManagementClient camundaManagementClient;
+  private CamundaClockClient camundaClockClient;
   private CamundaDataSource dataSource;
   private boolean clockResetEnabled = CamundaProcessTestRuntimeDefaults.CLOCK_RESET_ENABLED;
   private DataDeletionMode dataDeletionMode = CamundaProcessTestRuntimeDefaults.DATA_DELETION_MODE;
@@ -185,12 +188,13 @@ public class CamundaProcessTestExtension
     runtime.start();
 
     camundaManagementClient = createManagementClient();
+    camundaClockClient = new CamundaClockClientImpl(runtime.getCamundaClientBuilderFactory());
 
     camundaProcessTestContext =
         new CamundaProcessTestContextImpl(
             runtime,
             createdClients::add,
-            camundaManagementClient,
+            camundaClockClient,
             CamundaAssert::getAwaitBehavior,
             jsonMapper,
             conditionalBehaviorEngine,
@@ -469,7 +473,7 @@ public class CamundaProcessTestExtension
   private void resetRuntimeClock() {
     try {
       LOG.debug("Resetting the time");
-      camundaManagementClient.resetTime();
+      camundaClockClient.resetTime();
       LOG.debug("Time reset");
     } catch (final Throwable t) {
       LOG.warn(
@@ -481,7 +485,7 @@ public class CamundaProcessTestExtension
 
   private Instant readCurrentRuntimeTime() {
     try {
-      return camundaManagementClient.getCurrentTime();
+      return camundaClockClient.getCurrentTime();
     } catch (final Exception e) {
       LOG.warn(
           "Failed to read the current runtime time. Test case isolation by start time will be "
@@ -506,6 +510,14 @@ public class CamundaProcessTestExtension
 
     CamundaAssert.setJudgeConfig(null);
     CamundaAssert.setSemanticSimilarityConfig(null);
+
+    if (camundaClockClient != null) {
+      try {
+        camundaClockClient.close();
+      } catch (final Exception e) {
+        LOG.debug("Failed to close the clock client, continue.", e);
+      }
+    }
 
     runtime.close();
   }
