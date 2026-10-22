@@ -377,9 +377,16 @@ jobs:
           # Each attempt starts from a clean tree: a timed-out install can leave
           # node_modules half-extracted and a partially written generated lockfile,
           # which makes the next attempt fail deterministically (e.g. ENOTEMPTY).
+          # The per-attempt bound must clear the time a healthy cold install
+          # actually needs: with no npm cache and the lockfile removed, a full
+          # re-resolve of this suite routinely runs past 5 minutes on a slow
+          # registry/runner night, so a 300s bound was guillotining every leg of
+          # the matrix mid-download. Allow 10 minutes before treating an attempt
+          # as hung; the step still fails fast on a real npm error (non-timeout
+          # exit) and the retry loop still recovers a genuinely stalled fetch.
           for attempt in 1 2 3; do
             rm -rf node_modules package-lock.json
-            timeout 300 npm install && exit 0
+            timeout 600 npm install && exit 0
             if [ "$attempt" -lt 3 ]; then
               echo "npm install failed (attempt ${attempt}/3); retrying in 15s..."
               sleep 15
