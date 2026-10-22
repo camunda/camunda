@@ -16,6 +16,7 @@ import io.camunda.zeebe.engine.util.RecordToWrite;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ElementInstanceWalkRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
+import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
@@ -35,6 +36,7 @@ import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import org.assertj.core.groups.Tuple;
 import org.junit.ClassRule;
@@ -606,6 +608,264 @@ public final class SuspendProcessInstanceTest {
             .withProcessInstanceKey(processInstanceKey)
             .getFirst();
     assertThat(processInstanceSuspended.getIntent()).isEqualTo(ProcessInstanceIntent.SUSPENDED);
+  }
+
+  @Test
+  public void shouldNotSuspendUserTaskAgainWhenWalkRestartsFromRoot() {
+    // given - the same setup as shouldRestartFromRootWhenTargetAndParentAreGone
+    final String processId = Strings.newRandomValidBpmnId();
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(processId)
+                .startEvent()
+                .parallelGateway("fork")
+                .subProcess("sub")
+                .embeddedSubProcess()
+                .startEvent()
+                .userTask("inner", t -> t.zeebeUserTask())
+                .endEvent()
+                .subProcessDone()
+                .endEvent()
+                .moveToNode("fork")
+                .userTask("task", t -> t.zeebeUserTask())
+                .endEvent()
+                .done())
+        .deploy();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(processId).create();
+    final long subProcessKey =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId("sub")
+            .getFirst()
+            .getKey();
+    final var innerTask =
+        RecordingExporter.userTaskRecords(UserTaskIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId("inner")
+            .getFirst();
+    final var remainingTask =
+        RecordingExporter.userTaskRecords(UserTaskIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId("task")
+            .getFirst();
+    ENGINE.userTask().withKey(innerTask.getKey()).complete();
+    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
+        .withProcessInstanceKey(processInstanceKey)
+        .withRecordKey(subProcessKey)
+        .await();
+
+    // when - the walk already suspended the remaining task before its target and parent were
+    // removed, so the restart from the root visits that task a second time
+    ENGINE.pauseProcessing(1);
+    ENGINE.stop();
+    ENGINE.writeRecords(
+        RecordToWrite.event()
+            .key(processInstanceKey)
+            .processInstance(ProcessInstanceIntent.SUSPENDING, new ProcessInstanceRecord()),
+        RecordToWrite.event()
+            .key(remainingTask.getKey())
+            .userTask(
+                UserTaskIntent.SUSPENDED,
+                new UserTaskRecord()
+                    .setUserTaskKey(remainingTask.getKey())
+                    .setProcessInstanceKey(processInstanceKey)
+                    .setElementInstanceKey(remainingTask.getValue().getElementInstanceKey())),
+        RecordToWrite.command()
+            .key(processInstanceKey)
+            .elementInstanceWalk(
+                ElementInstanceWalkIntent.SUSPEND,
+                new ElementInstanceWalkRecord()
+                    .setProcessInstanceKey(processInstanceKey)
+                    .setElementInstanceKey(innerTask.getValue().getElementInstanceKey())
+                    .setParentKey(subProcessKey)
+                    .setIndex(-1)));
+    ENGINE.start();
+
+    // then - the task keeps its one SUSPENDED event
+    final long suspendedPosition =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.SUSPENDED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst()
+            .getPosition();
+    assertThat(userTaskEventCounts(processInstanceKey, UserTaskIntent.SUSPENDED, suspendedPosition))
+        .containsExactly(Map.entry(remainingTask.getKey(), 1L));
+  }
+
+  @Test
+  public void shouldEmitUserTaskEventsOnceWhenSuspendIsSentDuringWalk() {
+    // given - two parallel user tasks, and a suspension walk that is still in flight when a
+    // second SUSPEND restarts the suspension from the root
+    final String processId = Strings.newRandomValidBpmnId();
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(processId)
+                .startEvent()
+                .parallelGateway("fork")
+                .userTask("a", t -> t.zeebeUserTask())
+                .endEvent()
+                .moveToNode("fork")
+                .userTask("b", t -> t.zeebeUserTask())
+                .endEvent()
+                .done())
+        .deploy();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(processId).create();
+    final List<Record<UserTaskRecordValue>> createdTasks =
+        RecordingExporter.userTaskRecords(UserTaskIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .limit(2)
+            .toList();
+    final List<Long> userTaskKeys = createdTasks.stream().map(Record::getKey).toList();
+
+    // when - both walks interleave, so the second visits tasks the first already suspended
+    ENGINE.pauseProcessing(1);
+    ENGINE.stop();
+    ENGINE.writeRecords(
+        RecordToWrite.event()
+            .key(processInstanceKey)
+            .processInstance(ProcessInstanceIntent.SUSPENDING, new ProcessInstanceRecord()),
+        RecordToWrite.command()
+            .key(processInstanceKey)
+            .elementInstanceWalk(
+                ElementInstanceWalkIntent.SUSPEND,
+                new ElementInstanceWalkRecord()
+                    .setProcessInstanceKey(processInstanceKey)
+                    .setElementInstanceKey(processInstanceKey)
+                    .setParentKey(-1)
+                    .setIndex(-1)),
+        RecordToWrite.command()
+            .key(processInstanceKey)
+            .processInstance(
+                ProcessInstanceIntent.SUSPEND,
+                new ProcessInstanceRecord().setProcessInstanceKey(processInstanceKey)));
+    ENGINE.start();
+    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.SUSPENDED)
+        .withProcessInstanceKey(processInstanceKey)
+        .await();
+    final long resumedPosition =
+        ENGINE.processInstance().withInstanceKey(processInstanceKey).resume().getPosition();
+
+    // then - both walks visited each task, so the test really covers overlapping walks
+    final var walkVisits =
+        RecordingExporter.records()
+            .limit(r -> r.getPosition() >= resumedPosition)
+            .filter(r -> r.getIntent() == ElementInstanceWalkIntent.SUSPEND)
+            .filter(r -> r.getRecordType() == RecordType.COMMAND)
+            .map(r -> (ElementInstanceWalkRecordValue) r.getValue())
+            .filter(r -> r.getProcessInstanceKey() == processInstanceKey)
+            .collect(
+                Collectors.groupingBy(
+                    ElementInstanceWalkRecordValue::getElementInstanceKey, Collectors.counting()));
+    assertThat(createdTasks)
+        .allSatisfy(
+            task ->
+                assertThat(walkVisits.get(task.getValue().getElementInstanceKey()))
+                    .isGreaterThanOrEqualTo(2L));
+
+    // and - each task is suspended and resumed exactly once
+    assertThat(userTaskEventCounts(processInstanceKey, UserTaskIntent.SUSPENDED, resumedPosition))
+        .containsOnlyKeys(userTaskKeys)
+        .allSatisfy((key, count) -> assertThat(count).isOne());
+    assertThat(userTaskEventCounts(processInstanceKey, UserTaskIntent.RESUMED, resumedPosition))
+        .containsOnlyKeys(userTaskKeys)
+        .allSatisfy((key, count) -> assertThat(count).isOne());
+  }
+
+  @Test
+  public void shouldSuspendUserTaskAgainAfterResume() {
+    // given
+    final String processId = Strings.newRandomValidBpmnId();
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(processId)
+                .startEvent()
+                .userTask("task", t -> t.zeebeUserTask())
+                .endEvent()
+                .done())
+        .deploy();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(processId).create();
+    final long userTaskKey =
+        RecordingExporter.userTaskRecords(UserTaskIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst()
+            .getKey();
+    ENGINE.processInstance().withInstanceKey(processInstanceKey).suspend();
+    ENGINE.processInstance().withInstanceKey(processInstanceKey).resume();
+
+    // when
+    ENGINE.processInstance().withInstanceKey(processInstanceKey).suspend();
+    RecordingExporter.processInstanceRecords(SUSPENDED)
+        .withRecordKey(processInstanceKey)
+        .skip(1)
+        .await();
+    ENGINE.processInstance().withInstanceKey(processInstanceKey).resume();
+    final long resumedPosition =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.RESUMED)
+            .withRecordKey(processInstanceKey)
+            .skip(1)
+            .getFirst()
+            .getPosition();
+
+    // then - resume cleared the tracking, so the second suspension suspends the task again
+    assertThat(userTaskEventCounts(processInstanceKey, UserTaskIntent.SUSPENDED, resumedPosition))
+        .containsExactly(Map.entry(userTaskKey, 2L));
+    assertThat(userTaskEventCounts(processInstanceKey, UserTaskIntent.RESUMED, resumedPosition))
+        .containsExactly(Map.entry(userTaskKey, 2L));
+  }
+
+  @Test
+  public void shouldStopTrackingSuspendedUserTaskWhenProcessInstanceIsCanceled() {
+    // given
+    final String processId = Strings.newRandomValidBpmnId();
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(processId)
+                .startEvent()
+                .userTask("task", t -> t.zeebeUserTask())
+                .endEvent()
+                .done())
+        .deploy();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(processId).create();
+    final long userTaskKey =
+        RecordingExporter.userTaskRecords(UserTaskIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst()
+            .getKey();
+    ENGINE.processInstance().withInstanceKey(processInstanceKey).suspend();
+    assertThat(
+            ENGINE
+                .getProcessingState()
+                .getUserTaskState()
+                .isSuspended(processInstanceKey, userTaskKey))
+        .isTrue();
+
+    // when
+    ENGINE.processInstance().withInstanceKey(processInstanceKey).cancel();
+
+    // then - the canceled task no longer counts as suspended, so no entry is left behind
+    RecordingExporter.userTaskRecords(UserTaskIntent.CANCELED)
+        .withProcessInstanceKey(processInstanceKey)
+        .await();
+    assertThat(
+            ENGINE
+                .getProcessingState()
+                .getUserTaskState()
+                .isSuspended(processInstanceKey, userTaskKey))
+        .isFalse();
+  }
+
+  /** Counts the given user task events per user task key, up to the given position. */
+  private static Map<Long, Long> userTaskEventCounts(
+      final long processInstanceKey, final UserTaskIntent intent, final long untilPosition) {
+    return RecordingExporter.records()
+        .limit(r -> r.getPosition() >= untilPosition)
+        .filter(r -> r.getIntent() == intent)
+        .filter(
+            r -> ((UserTaskRecordValue) r.getValue()).getProcessInstanceKey() == processInstanceKey)
+        .collect(Collectors.groupingBy(Record::getKey, Collectors.counting()));
   }
 
   /** Returns the element instance keys of user tasks suspended until the given one is suspended. */
