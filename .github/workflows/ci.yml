@@ -976,6 +976,7 @@ jobs:
     steps:
       - uses: camunda/infra-global-github-actions/start-build-monitor@main
       - uses: actions/checkout@v4
+        timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
         with:
           persist-credentials: false
       # Consume the shared distball's io.camunda SNAPSHOTs instead of a full reactor build.
@@ -1061,6 +1062,7 @@ jobs:
     steps:
       - uses: camunda/infra-global-github-actions/start-build-monitor@main
       - uses: actions/checkout@v4
+        timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
         with:
           persist-credentials: false
       - uses: ./.github/actions/setup-build
