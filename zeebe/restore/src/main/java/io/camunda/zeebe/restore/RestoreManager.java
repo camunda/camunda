@@ -181,7 +181,7 @@ public class RestoreManager implements CloseableSilently {
         RestorePointResolver.resolve(metadataByPartition, from, to, exportedPositions);
     verifyLastBackupsHoldThePartitions(restorableBackups, exportedPositions.size());
 
-    final var partitions = toPartitionRestores(restorableBackups);
+    final var partitions = restorableBackups.partitions();
     LOG.info(
         "Restoring RDBMS backups in range [{},{}] to global checkpoint {}: {}",
         from,
@@ -200,7 +200,7 @@ public class RestoreManager implements CloseableSilently {
 
     final var restorableBackups = RestorePointResolver.resolve(metadataByPartition, from, to, null);
 
-    final var partitions = toPartitionRestores(restorableBackups);
+    final var partitions = restorableBackups.partitions();
     LOG.info(
         "Restoring time-range backups in range [{},{}] to global checkpoint {}: {}",
         from,
@@ -210,28 +210,14 @@ public class RestoreManager implements CloseableSilently {
     return partitions;
   }
 
-  /** What each partition is restored from: the checkpoints the resolver picked for it. */
-  private static Map<Integer, PartitionRestore> toPartitionRestores(
-      final RestorableBackups restorableBackups) {
-    return restorableBackups.backupsByPartitionId().entrySet().stream()
-        .collect(
-            Collectors.toMap(
-                Entry::getKey,
-                e ->
-                    PartitionRestore.ofBackups(
-                        e.getValue().stream()
-                            .map(BackupMetadata.CheckpointEntry::checkpointId)
-                            .toList())));
-  }
-
   /**
    * The partitions to restore are those of the last backups, which have to be the ones the RDBMS
    * holds exported positions for.
    */
   private void verifyLastBackupsHoldThePartitions(
       final RestorableBackups restorableBackups, final int exportedPartitionCount) {
-    restorableBackups.backupsByPartitionId().values().stream()
-        .map(backups -> backups.getLast().checkpointId())
+    restorableBackups.partitions().values().stream()
+        .map(restore -> restore.backupIds().last())
         .distinct()
         .sorted()
         .forEach(
