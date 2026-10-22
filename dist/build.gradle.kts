@@ -1,5 +1,6 @@
 import buildlogic.DistributionDependencyReportExtension
 import buildlogic.OpenApiDefaults
+import buildlogic.registerBuildDockerImage
 import buildlogic.reproducibleArchive
 import buildlogic.requiredVersion
 import buildlogic.filterMavenResources
@@ -277,6 +278,8 @@ tasks.named<Tar>("distTar") {
 }
 
 tasks.named<Zip>("distZip") { reproducibleArchive() }
+
+registerBuildDockerImage(distTar.flatMap { it.archiveFile })
 
 dependencies {
   implementation(project(":camunda-cluster"))
