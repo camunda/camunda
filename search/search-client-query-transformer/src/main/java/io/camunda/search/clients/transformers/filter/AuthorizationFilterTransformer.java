@@ -27,10 +27,15 @@ import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.search.filter.AuthorizationFilter;
 import io.camunda.security.auth.Authorization;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
-import java.util.Objects;
+import java.util.ArrayList;
+import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public final class AuthorizationFilterTransformer
     extends IndexFilterTransformer<AuthorizationFilter> {
+
+  private static final Logger LOG = LoggerFactory.getLogger(AuthorizationFilterTransformer.class);
 
   public AuthorizationFilterTransformer(final IndexDescriptor indexDescriptor) {
     super(indexDescriptor);
@@ -53,11 +58,22 @@ public final class AuthorizationFilterTransformer
    */
   @Override
   protected SearchQuery toAuthorizationCheckSearchQuery(final Authorization<?> authorization) {
-    final var authorizationKeys =
-        authorization.resourceIds().stream()
-            .map(AuthorizationFilterTransformer::toAuthorizationKey)
-            .filter(Objects::nonNull)
-            .toList();
+    final List<Long> authorizationKeys = new ArrayList<>();
+    final List<String> skippedResourceIds = new ArrayList<>();
+    for (final String resourceId : authorization.resourceIds()) {
+      final Long authorizationKey = toAuthorizationKey(resourceId);
+      if (authorizationKey == null) {
+        skippedResourceIds.add(resourceId);
+      } else {
+        authorizationKeys.add(authorizationKey);
+      }
+    }
+    // DEBUG: this runs on every search of an affected user, and a skipped ID grants nothing anyway
+    if (!skippedResourceIds.isEmpty()) {
+      LOG.debug(
+          "Skipping AUTHORIZATION resource IDs that are not authorization keys, so grant nothing: {}",
+          skippedResourceIds);
+    }
     return authorizationKeys.isEmpty() ? matchNone() : longTerms(ID, authorizationKeys);
   }
 
