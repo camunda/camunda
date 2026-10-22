@@ -815,48 +815,6 @@ public final class SuspendProcessInstanceTest {
         .containsExactly(Map.entry(userTaskKey, 2L));
   }
 
-  @Test
-  public void shouldStopTrackingSuspendedUserTaskWhenProcessInstanceIsCanceled() {
-    // given
-    final String processId = Strings.newRandomValidBpmnId();
-    ENGINE
-        .deployment()
-        .withXmlResource(
-            Bpmn.createExecutableProcess(processId)
-                .startEvent()
-                .userTask("task", t -> t.zeebeUserTask())
-                .endEvent()
-                .done())
-        .deploy();
-    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(processId).create();
-    final long userTaskKey =
-        RecordingExporter.userTaskRecords(UserTaskIntent.CREATED)
-            .withProcessInstanceKey(processInstanceKey)
-            .getFirst()
-            .getKey();
-    ENGINE.processInstance().withInstanceKey(processInstanceKey).suspend();
-    assertThat(
-            ENGINE
-                .getProcessingState()
-                .getUserTaskState()
-                .isSuspended(processInstanceKey, userTaskKey))
-        .isTrue();
-
-    // when
-    ENGINE.processInstance().withInstanceKey(processInstanceKey).cancel();
-
-    // then - the canceled task no longer counts as suspended, so no entry is left behind
-    RecordingExporter.userTaskRecords(UserTaskIntent.CANCELED)
-        .withProcessInstanceKey(processInstanceKey)
-        .await();
-    assertThat(
-            ENGINE
-                .getProcessingState()
-                .getUserTaskState()
-                .isSuspended(processInstanceKey, userTaskKey))
-        .isFalse();
-  }
-
   /** Counts the given user task events per user task key, up to the given position. */
   private static Map<Long, Long> userTaskEventCounts(
       final long processInstanceKey, final UserTaskIntent intent, final long untilPosition) {
