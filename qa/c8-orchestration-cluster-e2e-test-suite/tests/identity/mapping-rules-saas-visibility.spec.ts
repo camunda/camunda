@@ -109,6 +109,9 @@ test.describe('mapping rules tab of role and group details on SaaS', () => {
         LOGIN_CREDENTIALS.username,
         LOGIN_CREDENTIALS.password,
       );
+      // login() returns once the form is submitted: wait for the redirect away from the login
+      // page, so the navigation below does not race the pending login requests.
+      await page.waitForURL((url) => !url.pathname.endsWith('/login'));
 
       for (const detailsPath of [
         `${Paths.roles()}/${ROLE_ID}`,
