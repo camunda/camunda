@@ -183,7 +183,7 @@ describe('<Toolbar /> (shadcn)', () => {
 		await userEvent.click(screen.getByRole('button', {name: 'Cancel'}));
 
 		await expect.element(screen.getByRole('alertdialog')).not.toBeInTheDocument();
-		expect(onDiscard).toHaveBeenCalledOnce();
+		expect(onDiscard).toHaveBeenCalledTimes(1);
 	});
 
 	it('should show a permission warning when the delete request is forbidden', async ({worker}) => {
