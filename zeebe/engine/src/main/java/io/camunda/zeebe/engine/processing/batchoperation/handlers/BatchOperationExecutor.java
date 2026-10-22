@@ -12,8 +12,8 @@ import io.camunda.zeebe.engine.state.batchoperation.PersistedBatchOperation;
 public interface BatchOperationExecutor {
 
   /**
-   * @param storageOrdinal the storage ordinal of the item, set on every record written for it, 0
-   *     when not known
+   * @param itemStorageOrdinal the storage ordinal of the item, set on every record written for it,
+   *     0 when not known
    */
-  void execute(long itemKey, int storageOrdinal, PersistedBatchOperation batchOperation);
+  void execute(long itemKey, int itemStorageOrdinal, PersistedBatchOperation batchOperation);
 }

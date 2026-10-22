@@ -34,7 +34,9 @@ public class DeleteProcessInstanceBatchOperationExecutor implements BatchOperati
 
   @Override
   public void execute(
-      final long itemKey, final int storageOrdinal, final PersistedBatchOperation batchOperation) {
+      final long itemKey,
+      final int itemStorageOrdinal,
+      final PersistedBatchOperation batchOperation) {
     LOGGER.trace("Delete process instance with key '{}'", itemKey);
 
     final var authentication = batchOperation.getAuthentication();

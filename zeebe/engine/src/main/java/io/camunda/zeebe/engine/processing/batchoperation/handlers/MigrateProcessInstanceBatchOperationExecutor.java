@@ -38,7 +38,7 @@ public class MigrateProcessInstanceBatchOperationExecutor implements BatchOperat
   @Override
   public void execute(
       final long processInstanceKey,
-      final int storageOrdinal,
+      final int itemStorageOrdinal,
       final PersistedBatchOperation batchOperation) {
     LOGGER.trace("Migrate process instance with key '{}'", processInstanceKey);
 
@@ -48,7 +48,7 @@ public class MigrateProcessInstanceBatchOperationExecutor implements BatchOperat
     final var claims = brokerRequestAuthorizationConverter.convert(authentication);
     final var command = new ProcessInstanceMigrationRecord();
     command.setProcessInstanceKey(processInstanceKey);
-    command.setStorageOrdinal(storageOrdinal);
+    command.setStorageOrdinal(itemStorageOrdinal);
     command.setTargetProcessDefinitionKey(migrationPlan.getTargetProcessDefinitionKey());
     migrationPlan
         .getMappingInstructions()
