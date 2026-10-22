@@ -37,8 +37,11 @@ its own job, so a failure in one does not hide the result of another.
 3. **Add a job.** In `camunda-platform-release.yml`, copy `fossa-release-optimize` and change the
    `project-id`, the group IDs, `fossa-api-key-vault-key` and the `if` gate. Add the job to `needs` and to the `if` of
    `notify-on-success` and `notify-if-failed`.
-4. **Dry run.** Run `zeebe-release-stable-dry-run.yml` from the branch. The new job must print the
-   FOSSA calls for its project locator, and the other `fossa-release*` jobs must be unchanged.
+4. **Dry run.** Dispatch `camunda-platform-release-main-dry-run.yml` with both the workflow ref and
+   its `branch` input set to the branch containing the changes. Run with `includeOptimize: true`
+   and `includeOptimize: false`, checking that the new job prints the expected FOSSA calls or is
+   skipped respectively. Check that the other `fossa-release*` jobs are unchanged. Use
+   `zeebe-release-stable-dry-run.yml` to validate stable branches after backporting.
 5. **Backfill.** For releases already shipped, replay the `fossa/release` calls per tag with
    `dry-run: true` first. Check beforehand that each tag revision has a completed scan.
 6. **Link the docs.** Add the portal links to the
