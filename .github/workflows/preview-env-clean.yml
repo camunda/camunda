@@ -50,7 +50,7 @@ jobs:
         vault-auth-secret-id: ${{ secrets.VAULT_SECRET_ID}}
         vault-url: ${{ secrets.VAULT_ADDR }}
 
-    - uses: camunda/infra-global-github-actions/preview-env/clean@b66111b4f2f415dcbf6e5d14e9976575ede4e5ed # preview-env-1.0.15
+    - uses: camunda/infra-global-github-actions/preview-env/clean@379e8654a5f25f22566f80c2e99a611fca365263 # preview-env-1.0.16
       with:
         labels: deploy-preview
         pull-request: ${{ inputs.pull-request }}
