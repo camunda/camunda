@@ -27,6 +27,7 @@ public class WhiteListedCommands {
           JobIntent.TIME_OUT,
           UserTaskIntent.COMPLETE,
           UserTaskIntent.ASSIGN,
+          UserTaskIntent.CLAIM,
           ProcessInstanceIntent.CANCEL,
           DeploymentIntent.CREATE,
           DeploymentIntent.DISTRIBUTE,
