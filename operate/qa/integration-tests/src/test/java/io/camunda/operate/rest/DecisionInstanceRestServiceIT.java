@@ -160,6 +160,43 @@ public class DecisionInstanceRestServiceIT extends OperateAbstractIT {
         .isEqualTo(decisionInstanceId);
   }
 
+  @Test
+  public void testDecisionInstanceDrdOmitsDecisionsWithoutReadPermission() throws Exception {
+    // given
+    when(decisionInstanceReader.getDecisionInstance("instanceId"))
+        .thenReturn(new DecisionInstanceDto().setDecisionId("readableDecision"));
+    when(decisionInstanceReader.getDecisionInstanceDRDData("instanceId"))
+        .thenReturn(
+            Map.of(
+                "readableDecision",
+                List.of(
+                    new DRDDataEntryDto(
+                        "instanceId", "readableDecision", DecisionInstanceState.EVALUATED)),
+                "restrictedDecision",
+                List.of(
+                    new DRDDataEntryDto(
+                        "otherInstanceId",
+                        "restrictedDecision",
+                        DecisionInstanceState.EVALUATED))));
+    when(permissionsService.permissionsEnabled()).thenReturn(true);
+    when(permissionsService.hasPermissionForDecision(
+            "readableDecision", PermissionType.READ_DECISION_INSTANCE))
+        .thenReturn(true);
+    when(permissionsService.hasPermissionForDecision(
+            "restrictedDecision", PermissionType.READ_DECISION_INSTANCE))
+        .thenReturn(false);
+
+    // when
+    final MvcResult mvcResult = getRequest(getDecisionInstanceDrdByIdUrl("instanceId"));
+
+    // then
+    final Map<String, List<DRDDataEntryDto>> result =
+        mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {});
+    assertThat(result).containsOnlyKeys("readableDecision");
+    assertThat(result.get("readableDecision").getFirst().getDecisionInstanceId())
+        .isEqualTo("instanceId");
+  }
+
   public String getDecisionInstanceByIdUrl(final String id) {
     return DecisionInstanceRestService.DECISION_INSTANCE_URL + "/" + id;
   }

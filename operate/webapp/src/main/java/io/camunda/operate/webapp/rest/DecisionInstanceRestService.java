@@ -24,6 +24,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -74,7 +75,20 @@ public class DecisionInstanceRestService extends InternalAPIErrorController {
     if (result.isEmpty()) {
       throw new NotFoundException("Decision instance not found: " + decisionInstanceId);
     }
-    return result;
+    return filterByReadPermission(result);
+  }
+
+  private Map<String, List<DRDDataEntryDto>> filterByReadPermission(
+      final Map<String, List<DRDDataEntryDto>> drdData) {
+    if (!permissionsService.permissionsEnabled()) {
+      return drdData;
+    }
+    return drdData.entrySet().stream()
+        .filter(
+            entry ->
+                permissionsService.hasPermissionForDecision(
+                    entry.getKey(), PermissionType.READ_DECISION_INSTANCE))
+        .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
   }
 
   private void checkIdentityReadPermission(final String decisionInstanceId) {
