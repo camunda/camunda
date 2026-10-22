@@ -7,7 +7,7 @@
  */
 
 import {OperationModel, ValidationScenario} from '../model/types.js';
-import {makeId} from './common.js';
+import {countMatchingVariants, makeId} from './common.js';
 
 interface Opts {
   onlyOperations?: Set<string>;
@@ -34,6 +34,8 @@ export function generateOneOfMultiAmbiguous(
     for (const r of a.required) merged[r] = placeholder(a.properties?.[r]);
     for (const r of b.required) merged[r] = placeholder(b.properties?.[r]);
     for (const r of c.required) merged[r] = placeholder(c.properties?.[r]);
+    // A body that is valid for exactly one variant is a valid request, not an ambiguous one.
+    if (countMatchingVariants(op.rootOneOf, merged) === 1) continue;
     out.push({
       id: makeId([op.operationId, 'oneofMultiAmbiguous']),
       operationId: op.operationId,

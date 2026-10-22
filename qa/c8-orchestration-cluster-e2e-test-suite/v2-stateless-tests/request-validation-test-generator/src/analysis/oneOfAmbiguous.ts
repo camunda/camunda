@@ -7,7 +7,12 @@
  */
 
 import {OperationModel, ValidationScenario} from '../model/types.js';
-import {makeId} from './common.js';
+import {
+  countMatchingVariants,
+  forbiddenProperties,
+  makeId,
+  matchesVariant,
+} from './common.js';
 
 interface Opts {
   onlyOperations?: Set<string>;
@@ -36,6 +41,20 @@ export function generateOneOfAmbiguous(
         const merged: Record<string, any> = {};
         for (const r of a.required) merged[r] = placeholder(a.properties?.[r]);
         for (const r of b.required) merged[r] = placeholder(b.properties?.[r]);
+        // The variants can exclude each other with `not`, so the merged body may be valid for
+        // exactly one variant. Try to break that variant's `not` with a property the other variant
+        // declares. Skipped pairs do not count toward the cap.
+        if (countMatchingVariants(root.oneOf, merged) === 1) {
+          const matched = [a, b].find((v) => matchesVariant(v, merged));
+          if (!matched) continue;
+          const other = matched === a ? b : a;
+          const extra = forbiddenProperties(matched).find(
+            (k) => other.properties && k in other.properties && !(k in merged),
+          );
+          if (!extra) continue;
+          merged[extra] = placeholder(other.properties[extra]);
+          if (countMatchingVariants(root.oneOf, merged) === 1) continue;
+        }
         out.push({
           id: makeId([op.operationId, 'oneofAmbiguous', String(i), String(j)]),
           operationId: op.operationId,
