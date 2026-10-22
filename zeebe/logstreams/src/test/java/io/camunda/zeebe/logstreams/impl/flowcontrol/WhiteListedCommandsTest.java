@@ -31,7 +31,7 @@ final class WhiteListedCommandsTest {
   @ParameterizedTest
   @EnumSource(
       value = UserTaskIntent.class,
-      names = {"COMPLETE", "ASSIGN"})
+      names = {"COMPLETE", "ASSIGN", "CLAIM"})
   void shouldWhitelistUserTaskCommandsEquivalentToJobCommands(final UserTaskIntent intent) {
     // when - then
     assertThat(WhiteListedCommands.isWhitelisted(intent)).isTrue();
@@ -40,10 +40,10 @@ final class WhiteListedCommandsTest {
   @Test
   void shouldNotWhitelistOtherUserTaskCommands() {
     // given
-    final Intent claim = UserTaskIntent.CLAIM;
+    final Intent update = UserTaskIntent.UPDATE;
 
     // when - then
-    assertThat(WhiteListedCommands.isWhitelisted(claim)).isFalse();
+    assertThat(WhiteListedCommands.isWhitelisted(update)).isFalse();
   }
 
   @Test
