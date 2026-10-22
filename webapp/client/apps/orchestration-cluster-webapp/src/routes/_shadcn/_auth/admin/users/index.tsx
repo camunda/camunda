@@ -15,6 +15,7 @@ import {assertAdminSectionAvailable} from '#/admin/adminSections';
 import {AdminUsersPage} from '#/admin/pages/AdminUsersPage';
 import {getUsersRequestBody, usersSearchSchema, type UsersSearch} from '#/admin/modules/users/searchSchema';
 import {ForbiddenError} from '#/shared/errors';
+import {adminListQuery} from '#/admin/modules/shared/adminListQuery';
 import {queries} from '#/shared/http/queries';
 import {ForbiddenPage} from '#/shared/pages/shadcn.components/ForbiddenPage';
 import {GenericErrorPage} from '#/shared/pages/shadcn.components/GenericErrorPage';
@@ -26,10 +27,7 @@ export const Route = createFileRoute('/_shadcn/_auth/admin/users/')({
 	},
 	loaderDeps: ({search}) => ({search}),
 	loader: async ({context: {queryClient}, deps: {search}}) => {
-		await queryClient.query({
-			...queries.queryUsers(getUsersRequestBody(search)),
-			staleTime: 'static',
-		});
+		await queryClient.query(adminListQuery(queries.queryUsers(getUsersRequestBody(search))));
 	},
 	errorComponent: function AdminUsersErrorPage({error, reset}: ErrorComponentProps) {
 		if (error instanceof ForbiddenError) {
@@ -49,7 +47,7 @@ export const Route = createFileRoute('/_shadcn/_auth/admin/users/')({
 	component: function AdminUsersRoute() {
 		const search = Route.useSearch();
 		const navigate = useNavigate();
-		const {data} = useSuspenseQuery(queries.queryUsers(getUsersRequestBody(search)));
+		const {data} = useSuspenseQuery(adminListQuery(queries.queryUsers(getUsersRequestBody(search))));
 
 		const handleSearchChange = useCallback(
 			(next: Partial<UsersSearch>) => {
