@@ -72,7 +72,7 @@ public class RestorePointResolver {
   /** Finds all backup-type checkpoints that are required to cover the common checkpoint. */
   private static @NonNull RestorableBackups findRequiredBackups(
       @NonNull final List<RestorableCheckpoints> allRestorableCheckpoints,
-      @NonNull final CommonCheckpoint common,
+      final CommonCheckpoint common,
       final @Nullable Instant from,
       final @Nullable Map<Integer, Long> exportedPositions) {
     final var commonCheckpoint = common.checkpointId();
@@ -194,8 +194,8 @@ public class RestorePointResolver {
    * {@code bound}, or -1 if none is.
    */
   private static int lastBackupAtOrBefore(
-      @NonNull final List<CheckpointEntry> backups,
-      @NonNull final ToLongFunction<CheckpointEntry> key,
+      final List<CheckpointEntry> backups,
+      final ToLongFunction<CheckpointEntry> key,
       final long bound) {
     var last = -1;
     while (last + 1 < backups.size() && key.applyAsLong(backups.get(last + 1)) <= bound) {
@@ -212,8 +212,8 @@ public class RestorePointResolver {
    */
   private static void verifyLogCanEndAtRestorePoint(
       final int partitionId,
-      @NonNull final List<CheckpointEntry> backups,
-      @NonNull final CheckpointEntry restorePoint) {
+      final List<CheckpointEntry> backups,
+      final CheckpointEntry restorePoint) {
     final var position = restorePoint.checkpointPosition();
     final var lastBackupPosition = backups.getLast().checkpointPosition();
     final var lowestPosition =
@@ -293,7 +293,7 @@ public class RestorePointResolver {
    * Finds the common checkpoint closest to the given timestamp for all partitions. If no timestamp
    * is provided, uses the latest common checkpoint.
    */
-  private static @NonNull CommonCheckpoint findCommonCheckpoint(
+  private static CommonCheckpoint findCommonCheckpoint(
       @NonNull final List<RestorableCheckpoints> allRestorableCheckpoints,
       @Nullable final Map<Integer, Long> exportedPositions,
       @Nullable final Instant to) {
@@ -511,7 +511,7 @@ public class RestorePointResolver {
    * @param entriesByPartition the checkpoint as each partition recorded it, by partition id
    */
   private record CommonCheckpoint(
-      long checkpointId, @NonNull Map<Integer, @NonNull CheckpointEntry> entriesByPartition) {}
+      long checkpointId, Map<Integer, CheckpointEntry> entriesByPartition) {}
 
   /**
    * @param globalCheckpointId the checkpoint every partition is restored to, a backup or a marker
@@ -519,5 +519,5 @@ public class RestorePointResolver {
    *     at the global checkpoint as the partition recorded it.
    */
   public record RestorableBackups(
-      long globalCheckpointId, @NonNull Map<Integer, @NonNull PartitionRestore> partitions) {}
+      long globalCheckpointId, Map<Integer, PartitionRestore> partitions) {}
 }
