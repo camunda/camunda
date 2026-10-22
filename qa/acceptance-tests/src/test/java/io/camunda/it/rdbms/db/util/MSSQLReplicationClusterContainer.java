@@ -188,6 +188,7 @@ public final class MSSQLReplicationClusterContainer
     transferCertsToReplica();
     initReplica();
     waitForReplication();
+    waitForReplicaCommitTime();
     return CompletableFuture.completedFuture(Unit.unit());
   }
 
@@ -393,6 +394,48 @@ public final class MSSQLReplicationClusterContainer
               }
             });
     LOG.info("MSSQL replica is in sync with primary");
+  }
+
+  /**
+   * A rejoined secondary reports a NULL {@code last_commit_time} until it redoes a commit made
+   * after the rejoin, and {@code ReplicationStatusMapper} skips such rows. The exporter, paused by
+   * the outage, is the only writer here, so without a fresh commit the replica would never become
+   * visible to it again and exporting would stay paused. Commits on the primary until the replica
+   * reports a commit time.
+   */
+  private void waitForReplicaCommitTime() {
+    LOG.info("Waiting for MSSQL replica to report a commit time");
+    await()
+        .atMost(Duration.ofSeconds(60))
+        .pollInterval(Duration.ofMillis(500))
+        .ignoreExceptions()
+        .untilAsserted(
+            () -> {
+              try (final Connection conn =
+                      DriverManager.getConnection(getJdbcUrl(), SA_USER, SA_PASSWORD);
+                  final Statement stmt = conn.createStatement()) {
+                stmt.execute(
+                    """
+                    IF OBJECT_ID(N'dbo.test_replication_heartbeat') IS NULL
+                      CREATE TABLE dbo.test_replication_heartbeat (id INT IDENTITY PRIMARY KEY)
+                    """);
+                stmt.execute("INSERT INTO dbo.test_replication_heartbeat DEFAULT VALUES");
+                try (final ResultSet rs =
+                    stmt.executeQuery(
+                        """
+                        SELECT COUNT(*) FROM sys.dm_hadr_database_replica_states
+                        WHERE is_local = 0
+                          AND last_commit_time IS NOT NULL
+                        """)) {
+                  rs.next();
+                  final int count = rs.getInt(1);
+                  if (count < 1) {
+                    throw new AssertionError("Expected replica to report a commit time");
+                  }
+                }
+              }
+            });
+    LOG.info("MSSQL replica reports a commit time");
   }
 
   private String primaryMasterJdbcUrl() {
