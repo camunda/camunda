@@ -8,8 +8,10 @@
 package io.camunda.it.auth;
 
 import static io.camunda.client.api.search.enums.PermissionType.*;
+import static io.camunda.client.api.search.enums.ResourceType.BATCH;
 import static io.camunda.client.api.search.enums.ResourceType.PROCESS_DEFINITION;
 import static io.camunda.client.api.search.enums.ResourceType.RESOURCE;
+import static io.camunda.it.util.TestHelper.waitForBatchOperationStatus;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOfType;
 
@@ -18,6 +20,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ProblemException;
+import io.camunda.client.api.search.enums.BatchOperationState;
 import io.camunda.client.api.search.enums.BatchOperationType;
 import io.camunda.qa.util.auth.Authenticated;
 import io.camunda.qa.util.auth.Permissions;
@@ -36,6 +39,7 @@ import java.net.http.HttpResponse.BodyHandlers;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.StreamSupport;
 import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
 import org.awaitility.Awaitility;
@@ -67,7 +71,8 @@ class ProcessInstanceAuthorizationIT {
               new Permissions(RESOURCE, CREATE, List.of("*")),
               new Permissions(PROCESS_DEFINITION, CREATE_PROCESS_INSTANCE, List.of("*")),
               new Permissions(PROCESS_DEFINITION, READ_PROCESS_DEFINITION, List.of("*")),
-              new Permissions(PROCESS_DEFINITION, READ_PROCESS_INSTANCE, List.of("*"))));
+              new Permissions(PROCESS_DEFINITION, READ_PROCESS_INSTANCE, List.of("*")),
+              new Permissions(BATCH, READ, List.of("*"))));
 
   @UserDefinition
   private static final TestUser USER1_USER =
@@ -322,6 +327,16 @@ class ProcessInstanceAuthorizationIT {
     // then
     assertThat(result.getBatchOperationKey()).isNotEmpty();
     assertThat(result.getBatchOperationType()).isEqualTo(BatchOperationType.RESOLVE_INCIDENT);
+
+    // wait for the batch operation to finish, so it is not still initializing when the broker is
+    // shut down after all tests; this does not unblock an initialization that has stalled
+    waitForBatchOperationStatus(
+        adminClient,
+        result.getBatchOperationKey(),
+        Set.of(
+            BatchOperationState.COMPLETED,
+            BatchOperationState.PARTIALLY_COMPLETED,
+            BatchOperationState.FAILED));
   }
 
   @Test
