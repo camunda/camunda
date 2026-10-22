@@ -67,13 +67,19 @@ def run_verify(
 
     wait_for_pods(ctx, "app=camunda-platform", "Camunda platform pods")
     wait_for_pods(ctx, "app.kubernetes.io/component=zeebe-client", "load test client pods")
-    wait_for_testruns(ctx)
     verify_connected(ctx, metrics_port, connectivity_timeout)
-    verify_metrics(
-        ctx,
-        lambda: PrometheusClient(prometheus_url, prometheus_user, prometheus_password, ""),
-        k6_metrics_timeout,
-    )
+
+    try:
+        wait_for_testruns(ctx)
+        verify_metrics(
+            ctx,
+            lambda: PrometheusClient(prometheus_url, prometheus_user, prometheus_password, ""),
+            k6_metrics_timeout,
+        )
+    except VerifyError as error:
+        # TODO: verification temporarily disabled: remove the try/except block + warning once
+        # http://github.com/grafana/k6-operator/pull/938 has been fixed, released and deployed.
+        log(f"k6 verification failed (but continuing anyway): {error}")
 
 
 @click.command("verify", help=VERIFY_HELP, epilog=VERIFY_EPILOG)
