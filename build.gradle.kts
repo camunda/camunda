@@ -29,7 +29,7 @@ tasks.register<PrintGradleProjectInventoryTask>("printGradleProjectInventory") {
 
 tasks.register("buildDistball") {
   group = "distribution"
-  description = "Builds the distribution tar (-Pdist.tar.gzip=true: tar.gz), with frontend assets."
+  description = "Builds the uncompressed distribution tar, with frontend assets."
   dependsOn(":camunda-zeebe:distTar")
 }
 
