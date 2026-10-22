@@ -49,6 +49,8 @@ There you'll find anything to get started using Camunda 8, best practices, and r
 - Snapshot artifact staleness and missing artifact alerts
 - Helm chart integration test failures and preview environment smoke test failures
 
+**[FOSSA Reporting Runbook](./fossa-reporting-runbook.md)** - How to publish FOSSA attribution and SBOM reports for a component in the monorepo release, including release group creation, workflow wiring, dry run and backfill.
+
 ### Infrastructure Services
 
 **[Infrastructure Services](./infrastructure-services.md)** - Overview of the infrastructure services
