@@ -61,7 +61,7 @@ public class VariablesQueryControllerTest extends RestControllerTest {
               "scopeKey": "2",
               "processInstanceKey": "3",
               "rootProcessInstanceKey": "4",
-              "metadata": null,
+              "metadata": {"protectionModes": []},
               "tenantId": "<default>"
           }""";
   private static final String EXPECT_SINGLE_TRUNCATED_VARIABLE_RESPONSE =
@@ -73,7 +73,7 @@ public class VariablesQueryControllerTest extends RestControllerTest {
               "scopeKey": "2",
               "processInstanceKey": "3",
               "rootProcessInstanceKey": "4",
-              "metadata": null,
+              "metadata": {"protectionModes": []},
               "tenantId": "<default>"
           }""";
   private static final String EXPECTED_SEARCH_RESPONSE =
@@ -87,7 +87,7 @@ public class VariablesQueryControllerTest extends RestControllerTest {
                         "scopeKey": "2",
                         "processInstanceKey": "3",
                         "rootProcessInstanceKey": "4",
-                        "metadata": null,
+                        "metadata": {"protectionModes": []},
                         "tenantId": "<default>",
                         "isTruncated": false
                   },
@@ -98,7 +98,7 @@ public class VariablesQueryControllerTest extends RestControllerTest {
                         "scopeKey": "2",
                         "processInstanceKey": "3",
                         "rootProcessInstanceKey": "4",
-                        "metadata": null,
+                        "metadata": {"protectionModes": []},
                         "tenantId": "<default>",
                         "isTruncated": true
                   }
@@ -122,7 +122,7 @@ public class VariablesQueryControllerTest extends RestControllerTest {
                         "scopeKey": "2",
                         "processInstanceKey": "3",
                         "rootProcessInstanceKey": "4",
-                        "metadata": null,
+                        "metadata": {"protectionModes": []},
                         "tenantId": "<default>",
                         "isTruncated": false
                   },
@@ -133,7 +133,7 @@ public class VariablesQueryControllerTest extends RestControllerTest {
                         "scopeKey": "2",
                         "processInstanceKey": "3",
                         "rootProcessInstanceKey": "4",
-                        "metadata": null,
+                        "metadata": {"protectionModes": []},
                         "tenantId": "<default>",
                         "isTruncated": false
                   }
