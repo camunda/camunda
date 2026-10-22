@@ -16,7 +16,10 @@ import java.sql.ResultSet;
 import java.sql.Statement;
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.GenericContainer;
@@ -220,6 +223,29 @@ public final class PostgresReplicationClusterContainer
     LOG.info("Resetting PostgreSQL replica apply delay");
     executeOnReplica("ALTER SYSTEM RESET recovery_min_apply_delay");
     reloadReplicaConfiguration();
+  }
+
+  /**
+   * Commits a transaction on the primary every {@code interval} until the returned handle is
+   * closed. Assigning a transaction id is enough to make the commit write a WAL commit record,
+   * which is what {@code recovery_min_apply_delay} holds back and what {@code pg_stat_replication}
+   * measures {@code replay_lag} against.
+   */
+  public AutoCloseable startCommitHeartbeat(final Duration interval) {
+    final ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
+    executor.scheduleWithFixedDelay(
+        this::commitHeartbeat, 0, interval.toMillis(), TimeUnit.MILLISECONDS);
+    return executor::shutdownNow;
+  }
+
+  private void commitHeartbeat() {
+    try (final Connection conn = primaryConnection();
+        final Statement stmt = conn.createStatement()) {
+      stmt.execute("SELECT pg_current_xact_id()");
+    } catch (final Exception e) {
+      // keep the schedule alive; a single missed heartbeat only delays the next lag sample
+      LOG.warn("Failed to commit heartbeat transaction on PostgreSQL primary", e);
+    }
   }
 
   private Connection replicaConnection() throws Exception {
