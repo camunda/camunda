@@ -257,6 +257,45 @@ public class VariableIT {
   }
 
   @TestTemplate
+  public void shouldFilterVariablesByExistenceOfProtectionModes(
+      final CamundaRdbmsTestApplication testApplication) {
+    // given
+    final var rdbmsService = testApplication.getRdbmsService();
+    final var name = "var-name-" + nextStringId();
+    final var unprotected = VariableFixtures.createRandomized(b -> b.name(name));
+    final var protectedVariable =
+        VariableFixtures.createRandomized(
+            b -> b.name(name).protectionModes(Set.of(ProtectionModeDbModel.REDACT)));
+    createAndSaveVariables(rdbmsService, List.of(unprotected, protectedVariable));
+
+    // when
+    final var withoutModes =
+        rdbmsService
+            .getVariableReader()
+            .search(
+                new VariableQuery(
+                    new VariableFilter.Builder().names(name).hasProtectionModes(false).build(),
+                    VariableSort.of(b -> b),
+                    SearchQueryPage.of(b -> b.from(0).size(10))));
+    final var withModes =
+        rdbmsService
+            .getVariableReader()
+            .search(
+                new VariableQuery(
+                    new VariableFilter.Builder().names(name).hasProtectionModes(true).build(),
+                    VariableSort.of(b -> b),
+                    SearchQueryPage.of(b -> b.from(0).size(10))));
+
+    // then
+    assertThat(withoutModes.items())
+        .extracting(VariableEntity::variableKey)
+        .containsExactly(unprotected.variableKey());
+    assertThat(withModes.items())
+        .extracting(VariableEntity::variableKey)
+        .containsExactly(protectedVariable.variableKey());
+  }
+
+  @TestTemplate
   public void shouldCombineProtectionModeFilterWithOtherFilters(
       final CamundaRdbmsTestApplication testApplication) {
     // given
