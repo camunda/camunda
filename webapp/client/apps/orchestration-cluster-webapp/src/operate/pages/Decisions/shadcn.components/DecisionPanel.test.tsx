@@ -33,6 +33,12 @@ const DEFINITION = createDecisionDefinition({
 });
 
 describe('<DecisionPanel />', () => {
+	it('should expose the panel as a labelled region', async () => {
+		const screen = await renderDecisionPanel({decisionDefinitionSelection: {kind: 'no-match'}});
+
+		await expect.element(screen.getByRole('region', {name: 'Decision Panel'})).toBeVisible();
+	});
+
 	it('should show an empty message when no decision is selected', async () => {
 		const screen = await renderDecisionPanel({decisionDefinitionSelection: {kind: 'no-match'}});
 
