@@ -46,6 +46,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.ObjectProvider;
@@ -217,6 +218,10 @@ public class OidcOverrideBeansConfiguration {
    * so a tenant that itself fronts multiple IdPs still resolves each token with the issuing
    * provider's claims.
    *
+   * <p>A token that the tenant's scoped decoder verified carries the principal claims of the
+   * provider that verified it, and is mapped with those; the issuer-keyed converters serve tokens
+   * without them.
+   *
    * <p>The {@link OidcClaimsProvider} (UserInfo augmentation) is built per tenant from the tenant's
    * own configuration via {@link ScopedOidcClaimsProviderFactory}, mirroring the gRPC path: a
    * tenant can enable UserInfo augmentation even when the cluster default disables it, and vice
@@ -261,8 +266,29 @@ public class OidcOverrideBeansConfiguration {
     final var claimsProvider =
         scopedOidcClaimsProviderFactory.buildClaimsProvider(
             authentication, "physical tenant '" + physicalTenantId + "'");
+    // The tenant's scoped decoder tags each token it verifies with the principal claims of the
+    // provider that verified it (a VerifiedJwt, camunda-security-library ADR-0038). Mapping by
+    // those
+    // claims, rather than by issuer, keeps a provider's settings also when its issuer-uri differs
+    // from the token's iss only by a trailing slash (#61896). The issuer map stays for tokens that
+    // carry no such tag.
+    final Map<OidcPrincipalClaims, LazyTokenClaimsConverter> byPrincipalClaims =
+        new ConcurrentHashMap<>();
     return new OidcTokenAuthenticationConverter(
-        defaultClaimsConverter, claimsProvider, new TokenClaimsConvertersByIssuer(byIssuer));
+        defaultClaimsConverter,
+        claimsProvider,
+        new TokenClaimsConvertersByIssuer(
+            byIssuer,
+            claims ->
+                byPrincipalClaims.computeIfAbsent(
+                    claims,
+                    c ->
+                        new LazyTokenClaimsConverter(
+                            c.usernameClaim(),
+                            c.clientIdClaim(),
+                            c.preferUsernameClaim(),
+                            membershipPort,
+                            membershipResolutionContextPropagator))));
   }
 
   private static boolean hasText(final String value) {
