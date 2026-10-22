@@ -40,6 +40,9 @@
             "variables": {
               "enabled": false
             },
+            "variablesMetadata": {
+              "enabled": false
+            },
             "startInstructions": {
               "properties": {
                 "elementId": {

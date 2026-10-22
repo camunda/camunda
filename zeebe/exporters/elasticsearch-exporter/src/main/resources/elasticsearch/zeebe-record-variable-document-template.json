@@ -28,6 +28,9 @@
             "variables": {
               "enabled": false
             },
+            "variablesMetadata": {
+              "enabled": false
+            },
             "tenantId": {
               "type": "keyword"
             }
