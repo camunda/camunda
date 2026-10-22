@@ -94,9 +94,8 @@ public class ActorThread extends Thread implements Consumer<Runnable> {
   private void doWork() {
     submittedCallbacks.drain(this);
 
-    if (clock.update()) {
-      timerJobQueue.processExpiredTimers(clock);
-    }
+    clock.update();
+    timerJobQueue.processExpiredTimers(clock);
 
     currentTask = taskScheduler.getNextTask();
 
