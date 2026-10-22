@@ -215,7 +215,7 @@
                 }
               }
             },
-            "version": "12.1.0"
+            "version": "13.2.3"
           }
         }
       },
@@ -313,7 +313,7 @@
                 "wideLayout": true
               }
             },
-            "version": "12.1.0"
+            "version": "13.2.3"
           }
         }
       },
@@ -411,7 +411,7 @@
                 "wideLayout": true
               }
             },
-            "version": "12.1.0"
+            "version": "13.2.3"
           }
         }
       },
@@ -678,7 +678,7 @@
                 }
               }
             },
-            "version": "12.1.0"
+            "version": "13.2.3"
           }
         }
       },
@@ -1764,7 +1764,7 @@
                 "wideLayout": true
               }
             },
-            "version": "12.1.0"
+            "version": "13.2.3"
           }
         }
       },
@@ -1870,7 +1870,7 @@
                 "wideLayout": true
               }
             },
-            "version": "12.1.0"
+            "version": "13.2.3"
           }
         }
       },
@@ -2350,7 +2350,7 @@
                 }
               }
             },
-            "version": "12.1.0"
+            "version": "13.2.3"
           }
         }
       },
@@ -3120,7 +3120,7 @@
                 }
               }
             },
-            "version": "12.1.0"
+            "version": "13.2.3"
           }
         }
       },
@@ -3375,7 +3375,7 @@
                 }
               }
             },
-            "version": "12.1.0"
+            "version": "13.2.3"
           }
         }
       },
@@ -3684,7 +3684,7 @@
                 "wideLayout": true
               }
             },
-            "version": "12.1.0"
+            "version": "13.2.3"
           }
         }
       },
@@ -4167,7 +4167,7 @@
                 }
               }
             },
-            "version": "12.1.0"
+            "version": "13.2.3"
           }
         }
       },
@@ -4927,6 +4927,14 @@
                 "overrides": []
               },
               "options": {
+                "barShape": "flat",
+                "barWidthFactor": 0.5,
+                "effects": {
+                  "barGlow": false,
+                  "centerGlow": false,
+                  "gradient": false
+                },
+                "endpointMarker": "point",
                 "minVizHeight": 75,
                 "minVizWidth": 75,
                 "orientation": "auto",
@@ -4937,12 +4945,17 @@
                   "fields": "",
                   "values": false
                 },
+                "segmentCount": 1,
+                "segmentSpacing": 0.3,
+                "shape": "gauge",
                 "showThresholdLabels": false,
                 "showThresholdMarkers": true,
-                "sizing": "auto"
+                "sizing": "auto",
+                "sparkline": false,
+                "textMode": "auto"
               }
             },
-            "version": "12.1.0"
+            "version": "13.2.3"
           }
         }
       },
@@ -5200,7 +5213,7 @@
                 }
               }
             },
-            "version": "12.1.0"
+            "version": "13.2.3"
           }
         }
       },
@@ -5326,7 +5339,7 @@
                 }
               }
             },
-            "version": ""
+            "version": "13.2.3"
           }
         }
       },
@@ -5546,7 +5559,7 @@
                 "wideLayout": true
               }
             },
-            "version": "12.1.0"
+            "version": "13.2.3"
           }
         }
       },
@@ -5886,7 +5899,7 @@
                 "sortBy": []
               }
             },
-            "version": "12.1.0"
+            "version": "13.2.3"
           }
         }
       },
@@ -5977,7 +5990,7 @@
                 "wideLayout": true
               }
             },
-            "version": "12.1.0"
+            "version": "13.2.3"
           }
         }
       },
@@ -6093,7 +6106,7 @@
                 }
               }
             },
-            "version": "12.1.0"
+            "version": "13.2.3"
           }
         }
       },
@@ -6282,6 +6295,7 @@
                       "type": "linear"
                     },
                     "showPoints": "never",
+                    "showValues": false,
                     "spanNulls": false,
                     "stacking": {
                       "group": "A",
@@ -6323,7 +6337,7 @@
                 }
               }
             },
-            "version": "12.1.0"
+            "version": "13.2.3"
           }
         }
       },
@@ -6397,6 +6411,7 @@
                       "type": "linear"
                     },
                     "showPoints": "never",
+                    "showValues": false,
                     "spanNulls": false,
                     "stacking": {
                       "group": "A",
@@ -6438,7 +6453,7 @@
                 }
               }
             },
-            "version": "12.1.0"
+            "version": "13.2.3"
           }
         }
       },
@@ -6512,6 +6527,7 @@
                       "type": "linear"
                     },
                     "showPoints": "never",
+                    "showValues": false,
                     "spanNulls": false,
                     "stacking": {
                       "group": "A",
@@ -6553,7 +6569,7 @@
                 }
               }
             },
-            "version": "12.1.0"
+            "version": "13.2.3"
           }
         }
       },
@@ -6627,6 +6643,7 @@
                       "type": "linear"
                     },
                     "showPoints": "never",
+                    "showValues": false,
                     "spanNulls": false,
                     "stacking": {
                       "group": "A",
@@ -6668,7 +6685,7 @@
                 }
               }
             },
-            "version": "12.1.0"
+            "version": "13.2.3"
           }
         }
       },
@@ -6763,6 +6780,7 @@
                       "type": "linear"
                     },
                     "showPoints": "never",
+                    "showValues": false,
                     "spanNulls": false,
                     "stacking": {
                       "group": "A",
@@ -6804,7 +6822,7 @@
                 }
               }
             },
-            "version": "12.1.0"
+            "version": "13.2.3"
           }
         }
       },
@@ -6899,6 +6917,7 @@
                       "type": "linear"
                     },
                     "showPoints": "never",
+                    "showValues": false,
                     "spanNulls": false,
                     "stacking": {
                       "group": "A",
@@ -6940,7 +6959,7 @@
                 }
               }
             },
-            "version": "12.1.0"
+            "version": "13.2.3"
           }
         }
       },
@@ -7014,6 +7033,7 @@
                       "type": "linear"
                     },
                     "showPoints": "never",
+                    "showValues": false,
                     "spanNulls": false,
                     "stacking": {
                       "group": "A",
@@ -7059,7 +7079,7 @@
                 }
               }
             },
-            "version": "12.1.0"
+            "version": "13.2.3"
           }
         }
       },
@@ -7133,6 +7153,7 @@
                       "type": "linear"
                     },
                     "showPoints": "never",
+                    "showValues": false,
                     "spanNulls": false,
                     "stacking": {
                       "group": "A",
@@ -7178,7 +7199,7 @@
                 }
               }
             },
-            "version": "12.1.0"
+            "version": "13.2.3"
           }
         }
       },
@@ -7252,6 +7273,7 @@
                       "type": "linear"
                     },
                     "showPoints": "never",
+                    "showValues": false,
                     "spanNulls": false,
                     "stacking": {
                       "group": "A",
@@ -7297,7 +7319,7 @@
                 }
               }
             },
-            "version": "12.1.0"
+            "version": "13.2.3"
           }
         }
       },
@@ -7410,7 +7432,7 @@
                 }
               }
             },
-            "version": "12.1.0"
+            "version": "13.2.3"
           }
         }
       },
@@ -7484,6 +7506,7 @@
                       "type": "linear"
                     },
                     "showPoints": "never",
+                    "showValues": false,
                     "spanNulls": false,
                     "stacking": {
                       "group": "A",
@@ -7529,7 +7552,7 @@
                 }
               }
             },
-            "version": "12.1.0"
+            "version": "13.2.3"
           }
         }
       },
@@ -7603,6 +7626,7 @@
                       "type": "linear"
                     },
                     "showPoints": "never",
+                    "showValues": false,
                     "spanNulls": false,
                     "stacking": {
                       "group": "A",
@@ -7644,7 +7668,7 @@
                 }
               }
             },
-            "version": "12.1.0"
+            "version": "13.2.3"
           }
         }
       },
@@ -7739,6 +7763,7 @@
                       "type": "linear"
                     },
                     "showPoints": "never",
+                    "showValues": false,
                     "spanNulls": false,
                     "stacking": {
                       "group": "A",
@@ -7780,7 +7805,7 @@
                 }
               }
             },
-            "version": "12.1.0"
+            "version": "13.2.3"
           }
         }
       },
@@ -7893,7 +7918,7 @@
                 }
               }
             },
-            "version": "12.1.0"
+            "version": "13.2.3"
           }
         }
       },
@@ -8011,7 +8036,7 @@
                 }
               }
             },
-            "version": "12.1.0"
+            "version": "13.2.3"
           }
         }
       },
@@ -8085,6 +8110,7 @@
                       "type": "linear"
                     },
                     "showPoints": "never",
+                    "showValues": false,
                     "spanNulls": false,
                     "stacking": {
                       "group": "A",
@@ -8126,7 +8152,7 @@
                 }
               }
             },
-            "version": "12.1.0"
+            "version": "13.2.3"
           }
         }
       },
@@ -8239,6 +8265,9 @@
                     "cellOptions": {
                       "type": "auto"
                     },
+                    "footer": {
+                      "reducers": []
+                    },
                     "inspect": false
                   },
                   "decimals": 3,
@@ -8266,7 +8295,7 @@
                     },
                     "properties": [
                       {
-                        "id": "custom.hidden",
+                        "id": "custom.hideFrom.viz",
                         "value": true
                       }
                     ]
@@ -8327,14 +8356,6 @@
               },
               "options": {
                 "cellHeight": "sm",
-                "footer": {
-                  "countRows": false,
-                  "fields": "",
-                  "reducer": [
-                    "sum"
-                  ],
-                  "show": false
-                },
                 "showHeader": true,
                 "sortBy": [
                   {
@@ -8344,7 +8365,7 @@
                 ]
               }
             },
-            "version": "12.1.0"
+            "version": "13.2.3"
           }
         }
       },
@@ -8418,6 +8439,7 @@
                       "type": "linear"
                     },
                     "showPoints": "never",
+                    "showValues": false,
                     "spanNulls": false,
                     "stacking": {
                       "group": "A",
@@ -8459,7 +8481,7 @@
                 }
               }
             },
-            "version": "12.1.0"
+            "version": "13.2.3"
           }
         }
       },
@@ -8533,6 +8555,7 @@
                       "type": "linear"
                     },
                     "showPoints": "never",
+                    "showValues": false,
                     "spanNulls": false,
                     "stacking": {
                       "group": "A",
@@ -8574,7 +8597,7 @@
                 }
               }
             },
-            "version": "12.1.0"
+            "version": "13.2.3"
           }
         }
       },
@@ -8690,6 +8713,7 @@
                       "type": "linear"
                     },
                     "showPoints": "never",
+                    "showValues": false,
                     "spanNulls": false,
                     "stacking": {
                       "group": "A",
@@ -8731,7 +8755,7 @@
                 }
               }
             },
-            "version": "12.1.0"
+            "version": "13.2.3"
           }
         }
       },
@@ -8826,6 +8850,7 @@
                       "type": "linear"
                     },
                     "showPoints": "never",
+                    "showValues": false,
                     "spanNulls": false,
                     "stacking": {
                       "group": "A",
@@ -8867,7 +8892,7 @@
                 }
               }
             },
-            "version": "12.1.0"
+            "version": "13.2.3"
           }
         }
       },
@@ -8941,6 +8966,7 @@
                       "type": "linear"
                     },
                     "showPoints": "never",
+                    "showValues": false,
                     "spanNulls": false,
                     "stacking": {
                       "group": "A",
@@ -8982,7 +9008,7 @@
                 }
               }
             },
-            "version": "12.1.0"
+            "version": "13.2.3"
           }
         }
       },
@@ -9056,6 +9082,7 @@
                       "type": "linear"
                     },
                     "showPoints": "never",
+                    "showValues": false,
                     "spanNulls": false,
                     "stacking": {
                       "group": "A",
@@ -9097,7 +9124,7 @@
                 }
               }
             },
-            "version": "12.1.0"
+            "version": "13.2.3"
           }
         }
       },
@@ -9171,6 +9198,7 @@
                       "type": "linear"
                     },
                     "showPoints": "never",
+                    "showValues": false,
                     "spanNulls": false,
                     "stacking": {
                       "group": "A",
@@ -9212,7 +9240,7 @@
                 }
               }
             },
-            "version": "12.1.0"
+            "version": "13.2.3"
           }
         }
       },
@@ -9286,6 +9314,7 @@
                       "type": "linear"
                     },
                     "showPoints": "never",
+                    "showValues": false,
                     "spanNulls": false,
                     "stacking": {
                       "group": "A",
@@ -9327,7 +9356,7 @@
                 }
               }
             },
-            "version": "12.1.0"
+            "version": "13.2.3"
           }
         }
       },
@@ -9620,7 +9649,7 @@
           {
             "kind": "RowsLayoutRow",
             "spec": {
-              "collapse": false,
+              "collapse": true,
               "layout": {
                 "kind": "GridLayout",
                 "spec": {
@@ -9699,7 +9728,7 @@
           {
             "kind": "RowsLayoutRow",
             "spec": {
-              "collapse": false,
+              "collapse": true,
               "layout": {
                 "kind": "GridLayout",
                 "spec": {
@@ -9857,7 +9886,7 @@
           {
             "kind": "RowsLayoutRow",
             "spec": {
-              "collapse": false,
+              "collapse": true,
               "layout": {
                 "kind": "GridLayout",
                 "spec": {
@@ -9923,7 +9952,7 @@
           {
             "kind": "RowsLayoutRow",
             "spec": {
-              "collapse": true,
+              "collapse": false,
               "layout": {
                 "kind": "GridLayout",
                 "spec": {
