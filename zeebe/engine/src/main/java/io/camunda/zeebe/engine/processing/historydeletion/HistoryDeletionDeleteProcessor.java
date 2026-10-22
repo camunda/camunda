@@ -69,12 +69,20 @@ public class HistoryDeletionDeleteProcessor implements TypedRecordProcessor<Hist
   private void deleteProcessInstance(final TypedRecord<HistoryDeletionRecord> command) {
     final var recordValue = command.getValue();
 
+    // read once before any check so every rejection of a still active instance carries the
+    // ordinal stored for it, not the one the caller knew
+    final var processInstance = elementInstanceState.getInstance(recordValue.getResourceKey());
+    final boolean instanceExists = processInstance != null;
+    if (instanceExists) {
+      recordValue.setResourceStorageOrdinal(processInstance.getValue().getStorageOrdinal());
+    }
+
     validateAuthorization(
             command,
             AuthorizationResourceType.PROCESS_DEFINITION,
             PermissionType.DELETE_PROCESS_INSTANCE,
             recordValue.getProcessId())
-        .flatMap(this::validateProcessInstanceDoesNotExist)
+        .flatMap(record -> validateProcessInstanceDoesNotExist(record, instanceExists))
         .ifRightOrLeft(
             validRecord -> writeHistoryDeletionEvent(recordValue, command),
             rejection -> {
@@ -142,16 +150,12 @@ public class HistoryDeletionDeleteProcessor implements TypedRecordProcessor<Hist
   }
 
   private Either<Rejection, HistoryDeletionRecord> validateProcessInstanceDoesNotExist(
-      final HistoryDeletionRecord record) {
-    final var processInstanceKey = record.getResourceKey();
-    final var processInstance = elementInstanceState.getInstance(processInstanceKey);
-    if (processInstance != null) {
-      // the command may carry an unknown ordinal (0), the rejection reports the stored one
-      record.setResourceStorageOrdinal(processInstance.getValue().getStorageOrdinal());
+      final HistoryDeletionRecord record, final boolean instanceExists) {
+    if (instanceExists) {
       final var rejection =
           new Rejection(
               RejectionType.INVALID_STATE,
-              String.format(ERROR_MESSAGE_PROCESS_INSTANCE_EXISTS, processInstanceKey));
+              String.format(ERROR_MESSAGE_PROCESS_INSTANCE_EXISTS, record.getResourceKey()));
       return Either.left(rejection);
     }
     return Either.right(record);

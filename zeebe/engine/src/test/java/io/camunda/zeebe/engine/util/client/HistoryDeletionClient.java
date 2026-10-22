@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.util.client;
 
+import io.camunda.zeebe.engine.util.AuthorizationUtil;
 import io.camunda.zeebe.protocol.impl.record.value.history.HistoryDeletionRecord;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.HistoryDeletionIntent;
@@ -67,6 +68,13 @@ public class HistoryDeletionClient {
 
   public Record<HistoryDeletionRecordValue> delete() {
     final long position = writer.writeCommand(HistoryDeletionIntent.DELETE, record);
+    return expectation.apply(position);
+  }
+
+  public Record<HistoryDeletionRecordValue> delete(final String username) {
+    final long position =
+        writer.writeCommand(
+            HistoryDeletionIntent.DELETE, record, AuthorizationUtil.getUsernameAuthInfo(username));
     return expectation.apply(position);
   }
 
