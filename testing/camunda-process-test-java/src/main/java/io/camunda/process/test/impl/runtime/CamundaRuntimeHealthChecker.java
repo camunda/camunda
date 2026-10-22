@@ -16,10 +16,12 @@
 package io.camunda.process.test.impl.runtime;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.response.PartitionBrokerHealth;
 import io.camunda.client.api.response.PartitionInfo;
 import io.camunda.client.api.response.Topology;
 import io.camunda.process.test.api.CamundaClientBuilderFactory;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
@@ -27,12 +29,16 @@ import org.awaitility.Awaitility;
 import org.awaitility.core.ConditionTimeoutException;
 
 /**
- * Checks the health of a Camunda cluster by querying the topology endpoint and verifying that all
- * partitions are healthy.
+ * Checks the health of a Camunda cluster by querying the topology endpoint, verifying that all
+ * partitions are healthy, and probing that the broker processes commands.
  */
 public class CamundaRuntimeHealthChecker {
 
   private static final Duration DEFAULT_TIMEOUT = Duration.ofSeconds(10);
+
+  private static final int HTTP_BAD_REQUEST = 400;
+
+  private static final byte[] PROBE_RESOURCE = "not a BPMN model".getBytes(StandardCharsets.UTF_8);
 
   /**
    * Waits until the cluster is ready (all partitions healthy, at least one partition available)
@@ -102,7 +108,32 @@ public class CamundaRuntimeHealthChecker {
         throw new IllegalStateException(
             String.format("Cluster is unhealthy. [topology: %s]", topology));
       }
+      probeCommandApi(camundaClient);
       return topology;
+    }
+  }
+
+  /**
+   * Deploys a resource that is not a valid BPMN model. The engine can only reject a resource once
+   * the partition processes commands, so a client error proves that deployments are accepted. This
+   * is stricter than the topology, which can report healthy partitions while the command API
+   * handler of the partition leader is not registered yet (HTTP 500). The rejected deployment
+   * changes no engine state.
+   */
+  private static void probeCommandApi(final CamundaClient camundaClient) {
+    try {
+      camundaClient
+          .newDeployResourceCommand()
+          .useRest()
+          .addResourceBytes(PROBE_RESOURCE, "camunda-process-test-readiness-probe.bpmn")
+          .send()
+          .join();
+      throw new IllegalStateException(
+          "Expected the engine to reject the readiness probe resource, but it was accepted.");
+    } catch (final ProblemException e) {
+      if (e.code() != HTTP_BAD_REQUEST) {
+        throw e;
+      }
     }
   }
 }
