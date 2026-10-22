@@ -19,6 +19,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableBatchOperationState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationCreationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationError;
+import io.camunda.zeebe.protocol.record.value.StorageOrdinalRelated;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
@@ -235,9 +236,9 @@ public class DbBatchOperationState implements MutableBatchOperationState {
   }
 
   @Override
-  @Deprecated
+  @Deprecated(since = "8.11.0")
   public void addChunk(final long key, final long batchOperationKey, final Set<Long> itemKeys) {
-    addChunk(key, batchOperationKey, 0, itemKeys);
+    addChunk(key, batchOperationKey, StorageOrdinalRelated.MAIN_INDEX, itemKeys);
   }
 
   @Override

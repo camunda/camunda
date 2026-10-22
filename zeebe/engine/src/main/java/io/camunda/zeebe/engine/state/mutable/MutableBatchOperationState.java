@@ -108,10 +108,10 @@ public interface MutableBatchOperationState extends BatchOperationState {
   /**
    * Adds a chunk without a storage ordinal, stored as 0.
    *
-   * @deprecated kept for the chunk CREATED applier version 2, use {@link #addChunk(long, long, int,
-   *     Set)}
+   * @deprecated since 8.11.0, kept for the chunk CREATED applier version 2, which must not change.
+   *     New code uses {@link #addChunk(long, long, int, Set)}
    */
-  @Deprecated
+  @Deprecated(since = "8.11.0")
   void addChunk(long chunkKey, long batchOperationKey, Set<Long> itemKeys);
 
   /**
