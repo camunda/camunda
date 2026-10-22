@@ -21,6 +21,7 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
+import io.camunda.zeebe.protocol.record.value.StorageOrdinalRelated;
 import io.camunda.zeebe.util.DateUtil;
 import java.util.List;
 import java.util.Optional;
@@ -89,11 +90,16 @@ public class IncidentExportHandler implements RdbmsExportHandler<IncidentRecordV
         .jobKey(mapIfGreaterZero(value.getJobKey()))
         .treePath(buildTreePath(record))
         .tenantId(value.getTenantId())
+        .storageOrdinal(mapIfNotMainIndex(value.getStorageOrdinal()))
         .build();
   }
 
   private Long mapIfGreaterZero(final long key) {
     return key > 0 ? key : null;
+  }
+
+  private Integer mapIfNotMainIndex(final int storageOrdinal) {
+    return storageOrdinal != StorageOrdinalRelated.MAIN_INDEX ? storageOrdinal : null;
   }
 
   private ErrorType mapErrorType(final io.camunda.zeebe.protocol.record.value.ErrorType errorType) {

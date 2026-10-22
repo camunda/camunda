@@ -247,4 +247,45 @@ public class SearchIncidentTest extends ClientRestTest {
     // then
     assertThat(incident.getState()).isEqualTo(IncidentState.UNKNOWN_ENUM_VALUE);
   }
+
+  @Test
+  void shouldMapStorageOrdinal() {
+    // given
+    final IncidentResult result = incidentResult().storageOrdinal(3);
+
+    // when
+    final IncidentImpl incident = new IncidentImpl(result);
+
+    // then
+    assertThat(incident.getStorageOrdinal()).isEqualTo(3);
+  }
+
+  @Test
+  void shouldMapNullStorageOrdinal() {
+    // given
+    final IncidentResult result = incidentResult().storageOrdinal(null);
+
+    // when
+    final IncidentImpl incident = new IncidentImpl(result);
+
+    // then
+    assertThat(incident.getStorageOrdinal()).isNull();
+  }
+
+  private static IncidentResult incidentResult() {
+    return new IncidentResult()
+        .incidentKey("1")
+        .processDefinitionKey("2")
+        .processDefinitionId("processId")
+        .processInstanceKey("3")
+        .rootProcessInstanceKey("4")
+        .errorType(IncidentErrorTypeEnum.JOB_NO_RETRIES)
+        .errorMessage("error")
+        .elementId("element")
+        .elementInstanceKey("5")
+        .creationTime(OffsetDateTime.now().toString())
+        .state(IncidentStateEnum.ACTIVE)
+        .jobKey("6")
+        .tenantId("tenant");
+  }
 }

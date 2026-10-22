@@ -23,6 +23,7 @@ function createIncident(overrides?: Partial<Incident>): Incident {
 		state: 'ACTIVE',
 		jobKey: '2251799813685291',
 		tenantId: '<default>',
+		storageOrdinal: null,
 		...overrides,
 	};
 }

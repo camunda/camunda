@@ -24,6 +24,7 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
+import io.camunda.zeebe.protocol.record.value.StorageOrdinalRelated;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
@@ -106,6 +107,10 @@ public class IncidentHandler
         .setCreationTime(
             OffsetDateTime.ofInstant(Instant.ofEpochMilli(record.getTimestamp()), ZoneOffset.UTC))
         .setTenantId(ExporterUtil.tenantOrDefault(recordValue.getTenantId()));
+
+    if (recordValue.getStorageOrdinal() != StorageOrdinalRelated.MAIN_INDEX) {
+      entity.setStorageOrdinal(recordValue.getStorageOrdinal());
+    }
 
     final long rootProcessInstanceKey = recordValue.getRootProcessInstanceKey();
     if (rootProcessInstanceKey > 0) {

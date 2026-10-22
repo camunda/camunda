@@ -8,11 +8,12 @@
 package io.camunda.exporter.index;
 
 import com.google.common.base.Strings;
+import io.camunda.zeebe.protocol.record.value.StorageOrdinalRelated;
 import java.util.Optional;
 import java.util.regex.Pattern;
 
 record OrdinalIndex(IndexFamily indexFamily, int ordinal, String name) implements TargetIndex {
-  static final int DEFAULT_ORDINAL = 0;
+  static final int DEFAULT_ORDINAL = StorageOrdinalRelated.MAIN_INDEX;
   static final Pattern ORDINAL_INDEX_PATTERN =
       Pattern.compile("^(.*)" + Pattern.quote(ORDINAL_SUFFIX_START) + "(\\d{5,})$");
 

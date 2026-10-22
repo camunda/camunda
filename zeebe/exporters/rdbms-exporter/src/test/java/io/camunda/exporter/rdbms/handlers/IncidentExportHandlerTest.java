@@ -7,6 +7,7 @@
  */
 package io.camunda.exporter.rdbms.handlers;
 
+import static io.camunda.zeebe.protocol.record.value.StorageOrdinalRelated.MAIN_INDEX;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -48,6 +49,50 @@ class IncidentExportHandlerTest {
   @BeforeEach
   void setUp() {
     handler = new IncidentExportHandler(incidentWriter, processCache, MAX_TREE_PATH_SIZE);
+  }
+
+  @Test
+  void shouldExportStorageOrdinal() {
+    // given
+    final IncidentRecordValue value =
+        ImmutableIncidentRecordValue.builder()
+            .from(factory.generateObject(IncidentRecordValue.class))
+            .withElementInstancePath(List.of(List.of(111L, 123L)))
+            .withProcessInstanceKey(111L)
+            .withStorageOrdinal(42)
+            .build();
+    final Record<IncidentRecordValue> record =
+        factory.generateRecord(
+            ValueType.INCIDENT, r -> r.withIntent(IncidentIntent.CREATED).withValue(value));
+
+    // when
+    handler.export(record);
+
+    // then
+    verify(incidentWriter).create(incidentCaptor.capture());
+    assertThat(incidentCaptor.getValue().storageOrdinal()).isEqualTo(42);
+  }
+
+  @Test
+  void shouldNotSetExportStorageOrdinalIfMainIndex() {
+    // given
+    final IncidentRecordValue value =
+        ImmutableIncidentRecordValue.builder()
+            .from(factory.generateObject(IncidentRecordValue.class))
+            .withElementInstancePath(List.of(List.of(111L, 123L)))
+            .withProcessInstanceKey(111L)
+            .withStorageOrdinal(MAIN_INDEX)
+            .build();
+    final Record<IncidentRecordValue> record =
+        factory.generateRecord(
+            ValueType.INCIDENT, r -> r.withIntent(IncidentIntent.CREATED).withValue(value));
+
+    // when
+    handler.export(record);
+
+    // then
+    verify(incidentWriter).create(incidentCaptor.capture());
+    assertThat(incidentCaptor.getValue().storageOrdinal()).isNull();
   }
 
   // Regression test for https://github.com/camunda/camunda/issues/50014.

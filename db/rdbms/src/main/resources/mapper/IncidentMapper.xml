@@ -36,7 +36,8 @@
     i.STATE,
     i.CREATION_DATE,
     i.JOB_KEY,
-    i.TENANT_ID
+    i.TENANT_ID,
+    i.STORAGE_ORDINAL
     FROM ${prefix}INCIDENT i
     <include refid="io.camunda.db.rdbms.sql.IncidentMapper.searchFilter"/>
     ) t
@@ -186,6 +187,7 @@
       <arg column="TENANT_ID" javaType="java.lang.String"
         typeHandler="io.camunda.db.rdbms.sql.typehandler.NullToEmptyStringTypeHandler"
         name="tenantId"/>
+      <arg column="STORAGE_ORDINAL" javaType="java.lang.Integer" name="storageOrdinal"/>
     </constructor>
 
   </resultMap>
@@ -205,11 +207,12 @@
                           CREATION_DATE,
                           JOB_KEY,
                           TENANT_ID,
+                          STORAGE_ORDINAL,
                           PARTITION_ID,
                           TREE_PATH)
     VALUES (#{incidentKey}, #{flowNodeInstanceKey}, #{flowNodeId}, #{processInstanceKey}, #{rootProcessInstanceKey},
             #{processDefinitionId}, #{processDefinitionKey}, #{errorMessage}, #{errorMessageHash}, #{errorType},
-            #{state}, #{creationDate, jdbcType=TIMESTAMP}, #{jobKey}, #{tenantId}, #{partitionId}, #{treePath})
+            #{state}, #{creationDate, jdbcType=TIMESTAMP}, #{jobKey}, #{tenantId}, #{storageOrdinal}, #{partitionId}, #{treePath})
   </insert>
 
   <update id="update" parameterType="io.camunda.db.rdbms.write.domain.IncidentDbModel">
@@ -399,7 +402,8 @@
       i.STATE,
       i.CREATION_DATE,
       i.JOB_KEY,
-      i.TENANT_ID
+      i.TENANT_ID,
+      i.STORAGE_ORDINAL
     FROM ${prefix}INCIDENT i
     WHERE i.INCIDENT_KEY = #{incidentKey}
   </select>
