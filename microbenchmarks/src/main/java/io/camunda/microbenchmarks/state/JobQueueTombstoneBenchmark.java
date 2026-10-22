@@ -23,12 +23,15 @@ import io.camunda.zeebe.util.buffer.BufferUtil;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Fork;
+import org.openjdk.jmh.annotations.Level;
 import org.openjdk.jmh.annotations.Measurement;
 import org.openjdk.jmh.annotations.Mode;
 import org.openjdk.jmh.annotations.OutputTimeUnit;
@@ -85,6 +88,9 @@ public class JobQueueTombstoneBenchmark {
   private long nextKey = 1;
   private long[] pickedKeys;
   private int pickedCount;
+  private SimpleMeterRegistry meterRegistry;
+  private long cycles;
+  private Map<String, Double> iteratorCountsAtIterationStart;
 
   public static void main(final String[] args) throws RunnerException {
     final var options =
@@ -95,15 +101,18 @@ public class JobQueueTombstoneBenchmark {
   @Setup
   public void setup() throws Exception {
     dbDirectory = Files.createTempDirectory("job-queue-benchmark");
+    meterRegistry = new SimpleMeterRegistry();
     final var columnFamilyOptions = new Properties();
     columnFamilyOptions.setProperty(
         "min_tombstones_for_range_conversion", String.valueOf(minTombstonesForRangeConversion));
     zeebeDb =
         new ZeebeRocksDbFactory<ZbColumnFamilies>(
-                new RocksDbConfiguration().setColumnFamilyOptions(columnFamilyOptions),
+                new RocksDbConfiguration()
+                    .setColumnFamilyOptions(columnFamilyOptions)
+                    .setStatisticsEnabled(true),
                 new ConsistencyChecksSettings(),
                 new AccessMetricsConfiguration(Kind.NONE),
-                SimpleMeterRegistry::new)
+                () -> meterRegistry)
             .createDb(dbDirectory.toFile());
     transactionContext = zeebeDb.createContext();
     jobState = new DbJobState(zeebeDb, transactionContext);
@@ -113,6 +122,37 @@ public class JobQueueTombstoneBenchmark {
     for (int created = 0; created < backlog; created += batchSize) {
       createJobs();
     }
+  }
+
+  @Setup(Level.Iteration)
+  public void startIteration() {
+    cycles = 0;
+    iteratorCountsAtIterationStart = iteratorCounts();
+  }
+
+  /**
+   * Prints the RocksDB iterator work per cycle to explain the timing: seeks, forward steps, and
+   * internal keys skipped (tombstones and shadowed versions) while iterating.
+   */
+  @TearDown(Level.Iteration)
+  public void reportIteration() {
+    final var end = iteratorCounts();
+    final var report = new StringBuilder("[iterator work per cycle]");
+    for (final var name : List.of("seek", "next", "skip")) {
+      final var delta = end.get(name) - iteratorCountsAtIterationStart.get(name);
+      report.append(String.format(" %s=%.1f", name, delta / cycles));
+    }
+    System.err.println(report);
+  }
+
+  private Map<String, Double> iteratorCounts() {
+    zeebeDb.exportMetrics();
+    final var counts = new HashMap<String, Double>();
+    for (final var name : List.of("seek", "next", "skip")) {
+      final var gauge = meterRegistry.find("zeebe.rocksdb.iterators." + name).gauge();
+      counts.put(name, gauge == null ? Double.NaN : gauge.value());
+    }
+    return counts;
   }
 
   @TearDown
@@ -126,6 +166,7 @@ public class JobQueueTombstoneBenchmark {
     createJobs();
     activateOldestJobs();
     completeActivatedJobs();
+    cycles++;
     return nextKey;
   }
 
