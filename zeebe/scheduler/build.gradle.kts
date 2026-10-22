@@ -24,5 +24,5 @@ description = "Zeebe Scheduler"
 
 tasks.test {
   // SkynetTest keeps ~1M actors alive at once, which does not fit into Gradle's 512m default
-  maxHeapSize = "4g"
+  maxHeapSize = "2g"
 }
