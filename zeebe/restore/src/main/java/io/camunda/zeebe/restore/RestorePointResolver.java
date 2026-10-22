@@ -319,40 +319,18 @@ public class RestorePointResolver {
       final var entriesByPartition = new HashMap<Integer, CheckpointEntry>();
       boolean missing = false;
       for (final var restorableCheckpoints : allRestorableCheckpoints) {
-        final var checkpointInfo =
-            findCheckpointInfo(restorableCheckpoints.checkpoints(), candidate.checkpointId());
-        if (checkpointInfo == null) {
-          LOG.atTrace()
-              .addKeyValue("partition", restorableCheckpoints.partitionId())
-              .log("Candidate checkpoint {} not found", candidate.checkpointId());
-          missing = true;
-          break;
-        }
-        if (!restorableCheckpoints.hasBackupUpTo(candidate.checkpointId())) {
-          LOG.atTrace()
-              .addKeyValue("partition", restorableCheckpoints.partitionId())
-              .log(
-                  "Candidate checkpoint {} has no backup at or before it to restore from",
-                  candidate.checkpointId());
-          missing = true;
-          break;
-        }
         final var exportedPosition =
             exportedPositions != null
                 ? exportedPositions.get(restorableCheckpoints.partitionId())
                 : null;
-        if (exportedPosition != null && checkpointInfo.checkpointPosition() < exportedPosition) {
-          LOG.atTrace()
-              .addKeyValue("partition", restorableCheckpoints.partitionId())
-              .log(
-                  "Candidate checkpoint {} has checkpoint position {}, below the required exported position {}",
-                  candidate.checkpointId(),
-                  checkpointInfo.checkpointPosition(),
-                  exportedPosition);
+        final var entry =
+            findEntryForCandidate(
+                restorableCheckpoints, candidate.checkpointId(), exportedPosition);
+        if (entry == null) {
           missing = true;
           break;
         }
-        entriesByPartition.put(restorableCheckpoints.partitionId(), checkpointInfo);
+        entriesByPartition.put(restorableCheckpoints.partitionId(), entry);
       }
       if (!missing) {
         LOG.atDebug().log("Found common checkpoint {}", candidate.checkpointId());
@@ -366,6 +344,33 @@ public class RestorePointResolver {
                     .collect(
                         Collectors.toMap(
                             RestorableCheckpoints::partitionId, rc -> rc.checkpoints().size()))));
+  }
+
+  /**
+   * Returns the partition's entry for the candidate checkpoint, or null if the partition cannot be
+   * restored to it.
+   */
+  private static @Nullable CheckpointEntry findEntryForCandidate(
+      final RestorableCheckpoints restorableCheckpoints,
+      final long candidateId,
+      @Nullable final Long exportedPosition) {
+    final var entry = findCheckpointInfo(restorableCheckpoints.checkpoints(), candidateId);
+    final String reason;
+    if (entry == null) {
+      reason = "is not found";
+    } else if (!restorableCheckpoints.hasBackupUpTo(candidateId)) {
+      reason = "has no backup at or before it to restore from";
+    } else if (exportedPosition != null && entry.checkpointPosition() < exportedPosition) {
+      reason =
+          "has checkpoint position %d, below the required exported position %d"
+              .formatted(entry.checkpointPosition(), exportedPosition);
+    } else {
+      return entry;
+    }
+    LOG.atTrace()
+        .addKeyValue("partition", restorableCheckpoints.partitionId())
+        .log("Candidate checkpoint {} {}", candidateId, reason);
+    return null;
   }
 
   /** Finds all checkpoints that fit within the given range. */
