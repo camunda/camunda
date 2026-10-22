@@ -42,7 +42,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.SortedMap;
-import java.util.SortedSet;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
@@ -218,7 +217,7 @@ public final class RestoreRequestTransformer implements ConfigurationChangeReque
                                 Set.of(schemaInitialization)))));
 
     final Map<Integer, Set<OperationId>> restoresOf = new TreeMap<>();
-    final var restored = restoredPartitions(partitionsPerMember, resolved.backups().keySet());
+    final var restored = restoredPartitions(partitionsPerMember, resolved.partitions().keySet());
     restored.forEach(
         (memberId, partitions) ->
             partitions.forEach(
@@ -228,9 +227,7 @@ public final class RestoreRequestTransformer implements ConfigurationChangeReque
                         .add(
                             builder.add(
                                 new PartitionRestoreOperation(
-                                    memberId,
-                                    partitionId,
-                                    toSortedSet(resolved.backups().get(partitionId))),
+                                    memberId, partitionId, resolved.partitions().get(partitionId)),
                                 Set.of(
                                     Objects.requireNonNull(
                                         preRestoreOf.get(memberId).get(partitionId)))))));
@@ -242,7 +239,8 @@ public final class RestoreRequestTransformer implements ConfigurationChangeReque
         builder.add(
             new UpdateRoutingState(
                 partitionsPerMember.firstKey(),
-                Optional.of(restoredRoutingState(currentRoutingState, resolved.backups().size()))),
+                Optional.of(
+                    restoredRoutingState(currentRoutingState, resolved.partitions().size()))),
             restoreIo);
 
     final SortedMap<MemberId, OperationId> modeChanges = new TreeMap<>();
@@ -281,10 +279,10 @@ public final class RestoreRequestTransformer implements ConfigurationChangeReque
       final SortedMap<MemberId, Set<Integer>> partitionsPerMember,
       final RestoreResolvedRequest resolved,
       final Optional<RoutingState> currentRoutingState) {
-    final var partitionCount = resolved.backups().size();
+    final var partitionCount = resolved.partitions().size();
     final var wiped = new TreeSet<Integer>();
     partitionsPerMember.values().forEach(wiped::addAll);
-    wiped.removeAll(resolved.backups().keySet());
+    wiped.removeAll(resolved.partitions().keySet());
     LOG.info(
         "Restoring physical tenant '{}' with partitions 1..{}. Routing state"
             + " updates from {} to {}. Partitions dropped: {}",
@@ -332,14 +330,6 @@ public final class RestoreRequestTransformer implements ConfigurationChangeReque
             .toList();
     return !brokersHoldingPartitions.isEmpty()
         && brokersHoldingPartitions.stream().allMatch(broker -> broker.mode() == Mode.RECOVERING);
-  }
-
-  private static SortedSet<Long> toSortedSet(final long[] backupIds) {
-    final var set = new TreeSet<Long>();
-    for (final long id : backupIds) {
-      set.add(id);
-    }
-    return set;
   }
 
   private static Exception mapFailure(final Exception exception) {

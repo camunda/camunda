@@ -27,13 +27,13 @@ import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ModeChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionPreRestoreOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionRestoreOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionRestore;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupPhase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangeState;
 import java.time.Instant;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.TreeSet;
 import java.util.function.UnaryOperator;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -291,9 +291,11 @@ final class CurrentClusterConfigurationSerializerTest {
         Set.of(
             builder.add(new PartitionPreRestoreOperation(MEMBER, 1)),
             builder.add(new PartitionPreRestoreOperation(OTHER_MEMBER, 1)));
-    builder.add(new PartitionRestoreOperation(MEMBER, 1, new TreeSet<>(Set.of(1L))), preRestores);
     builder.add(
-        new PartitionRestoreOperation(OTHER_MEMBER, 1, new TreeSet<>(Set.of(1L))), preRestores);
+        new PartitionRestoreOperation(MEMBER, 1, PartitionRestore.ofBackups(1L)), preRestores);
+    builder.add(
+        new PartitionRestoreOperation(OTHER_MEMBER, 1, PartitionRestore.ofBackups(1L)),
+        preRestores);
     return builder.build();
   }
 

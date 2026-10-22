@@ -29,6 +29,7 @@ import io.camunda.zeebe.dynamic.config.state.OperationId;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionRestore;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.GlobalPhase;
@@ -49,6 +50,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.OptionalLong;
 import java.util.Set;
 import java.util.SortedMap;
 import java.util.SortedSet;
@@ -138,6 +140,18 @@ public final class ClusterTopologyDomain extends DomainContextBase {
                 new PartitionDistributorConfig.ZoneSpec("zone-c", 1, 200))),
         new PartitionDistributorConfig.ZoneAwareConfig(
             List.of(new PartitionDistributorConfig.ZoneSpec("zone-a", 2, 1000))));
+  }
+
+  @Provide
+  Arbitrary<PartitionRestore> partitionRestores() {
+    return Combinators.combine(Arbitraries.longs().set().ofMinSize(1), optionalLongs())
+        .as((backupIds, position) -> new PartitionRestore(new TreeSet<>(backupIds), position));
+  }
+
+  @Provide
+  Arbitrary<OptionalLong> optionalLongs() {
+    return Arbitraries.oneOf(
+        Arbitraries.just(OptionalLong.empty()), Arbitraries.longs().map(OptionalLong::of));
   }
 
   @Provide

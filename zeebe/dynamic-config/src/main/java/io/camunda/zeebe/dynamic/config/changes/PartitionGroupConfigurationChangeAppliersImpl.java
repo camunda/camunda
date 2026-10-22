@@ -150,7 +150,7 @@ public final class PartitionGroupConfigurationChangeAppliersImpl
           new PartitionPreRestoreApplier(op.memberId(), op.partitionId(), restoreChangeExecutor);
       case final PartitionRestoreOperation op ->
           new PartitionRestoreApplier(
-              op.memberId(), op.partitionId(), op.backupIds(), restoreChangeExecutor);
+              op.memberId(), op.partitionId(), op.restore(), restoreChangeExecutor);
       case final SchemaInitializationOperation op ->
           new SchemaInitializationApplier(op.memberId(), restoreChangeExecutor);
     };
