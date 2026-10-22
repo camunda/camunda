@@ -63,13 +63,16 @@ public class GroupController {
   private final ServiceRegistry serviceRegistry;
   private final CamundaAuthenticationProvider authenticationProvider;
   private final GroupMapper groupMapper;
+  private final MappingRuleMembershipPolicy mappingRuleMembershipPolicy;
 
   public GroupController(
       final ServiceRegistry serviceRegistry,
       final CamundaAuthenticationProvider authenticationProvider,
-      final IdentifierValidator identifierValidator) {
+      final IdentifierValidator identifierValidator,
+      final MappingRuleMembershipPolicy mappingRuleMembershipPolicy) {
     this.serviceRegistry = serviceRegistry;
     this.authenticationProvider = authenticationProvider;
+    this.mappingRuleMembershipPolicy = mappingRuleMembershipPolicy;
     groupMapper =
         new GroupMapper(new GroupRequestValidator(new GroupValidator(identifierValidator)));
   }
@@ -134,8 +137,11 @@ public class GroupController {
       @PhysicalTenantId final String physicalTenantId,
       @PathVariable final String groupId,
       @PathVariable final String mappingRuleId) {
-    return groupMapper
-        .toGroupMemberRequest(groupId, mappingRuleId, EntityType.MAPPING_RULE)
+    return mappingRuleMembershipPolicy
+        .requireManageable()
+        .flatMap(
+            manageable ->
+                groupMapper.toGroupMemberRequest(groupId, mappingRuleId, EntityType.MAPPING_RULE))
         .fold(
             RestErrorMapper::mapProblemToCompletedResponse,
             request -> assignMember(physicalTenantId, request));
@@ -170,8 +176,11 @@ public class GroupController {
       @PhysicalTenantId final String physicalTenantId,
       @PathVariable final String groupId,
       @PathVariable final String mappingRuleId) {
-    return groupMapper
-        .toGroupMemberRequest(groupId, mappingRuleId, EntityType.MAPPING_RULE)
+    return mappingRuleMembershipPolicy
+        .requireManageable()
+        .flatMap(
+            manageable ->
+                groupMapper.toGroupMemberRequest(groupId, mappingRuleId, EntityType.MAPPING_RULE))
         .fold(
             RestErrorMapper::mapProblemToCompletedResponse,
             request -> unassignMember(physicalTenantId, request));
