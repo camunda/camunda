@@ -15,7 +15,7 @@ on:
 jobs:
   auto-merge:
     # Only run for PRs from release branches created by release automation
-    if: startsWith(github.head_ref, 'release-') && github.actor == 'camundait'
+    if: startsWith(github.head_ref, 'release-') && github.event.pull_request.user.login == 'camundait'
     name: Auto-merge release to stable
     runs-on: ubuntu-latest
     timeout-minutes: 240
@@ -28,7 +28,7 @@ jobs:
         shell: bash
     env:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      DRY_RUN: ${{ vars.AUTO_MERGE_DRY_RUN || 'true' }}
+      DRY_RUN: ${{ vars.AUTO_MERGE_DRY_RUN || 'false' }}
       MERGE_QUEUE_TIMEOUT_MINUTES: ${{ vars.MERGE_QUEUE_TIMEOUT_MINUTES || '180' }}
     
     steps:
@@ -222,6 +222,7 @@ jobs:
           repository-name: ${{ github.event.repository.name }}
       
       - name: Import Secrets
+        if: always() && env.DRY_RUN != 'true'
         id: secrets
         uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
         with:
