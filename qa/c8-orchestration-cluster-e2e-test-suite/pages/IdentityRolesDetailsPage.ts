@@ -157,6 +157,13 @@ export class IdentityRolesDetailsPage {
       .first();
     await expect(option).toBeVisible({timeout: 30000});
     await option.click({timeout: 20000});
+    // The MultiSelect keeps its cmdk popover open after a selection so more
+    // users could be picked, and the open popover overlays the footer and
+    // intercepts the click on the confirm "Assign user" button. Dismiss it with
+    // Escape first -- that closes the top Radix layer (the popover), not the
+    // dialog underneath -- then wait for the listbox to unmount.
+    await this.page.keyboard.press('Escape');
+    await expect(this.assignUserModalSearchResult).toBeHidden();
     await this.assignUserModalAssignButton.click();
     await expect(this.assignUserModal).toBeHidden();
   }

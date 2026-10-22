@@ -193,6 +193,13 @@ export class IdentityTenantsPage {
     const userOption = this.assignUserOption(user.id);
     await expect(userOption).toBeVisible({timeout: 30000});
     await userOption.click();
+    // The MultiSelect keeps its cmdk popover open after a selection so more
+    // users could be picked, and the open popover overlays the footer and
+    // intercepts the click on the confirm "Assign user" button. Dismiss it with
+    // Escape first -- that closes the top Radix layer (the popover), not the
+    // dialog underneath -- then wait for the listbox to unmount.
+    await this.page.keyboard.press('Escape');
+    await expect(this.assignUserSearchboxResult).toBeHidden();
     // The assign-user search is debounced + server-driven, so the option can
     // outlast the 10s default actionTimeout on a loaded cluster.
     await this.confirmAssignmentButton.click();
