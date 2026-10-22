@@ -1829,6 +1829,11 @@ final class JsonSerializableToJsonTest {
               return new VariableDocumentRecord()
                   .setUpdateSemantics(VariableDocumentUpdateSemantic.LOCAL)
                   .setVariables(new UnsafeBuffer(MsgPackConverter.convertToMsgPack(value)))
+                  .setVariablesMetadata(
+                      Map.of(
+                          "foo",
+                          new VariableMetadataRecord()
+                              .setProtectionModes(Set.of(ProtectionMode.REDACT))))
                   .setScopeKey(scopeKey);
             },
         """
@@ -1838,7 +1843,12 @@ final class JsonSerializableToJsonTest {
                     "foo": 1
                   },
                   "scopeKey": 3,
-                  "tenantId": "<default>"
+                  "tenantId": "<default>",
+                  "variablesMetadata": {
+                    "foo": {
+                      "protectionModes": ["REDACT"]
+                    }
+                  }
                 }
                 """
       },
@@ -1861,7 +1871,8 @@ final class JsonSerializableToJsonTest {
                   "updateSemantics": "PROPAGATE",
                   "variables": {},
                   "scopeKey": 3,
-                  "tenantId": "<default>"
+                  "tenantId": "<default>",
+                  "variablesMetadata": {}
                 }
                 """
       },
@@ -1898,6 +1909,11 @@ final class JsonSerializableToJsonTest {
                   .setRootProcessInstanceKey(rootProcessInstanceKey)
                   .setStorageOrdinal(storageOrdinal)
                   .setBusinessId(businessId)
+                  .setVariablesMetadata(
+                      Map.of(
+                          "foo",
+                          new VariableMetadataRecord()
+                              .setProtectionModes(Set.of(ProtectionMode.REDACT))))
                   .setVersionTag("v1.0");
             },
         """
@@ -1922,6 +1938,11 @@ final class JsonSerializableToJsonTest {
                   "storageOrdinal": 6,
                   "businessId": "business-id-456",
                   "versionTag": "v1.0",
+                  "variablesMetadata": {
+                    "foo": {
+                      "protectionModes": ["REDACT"]
+                    }
+                  },
                   "elementInstanceKey": -1
                 }
                 """
@@ -1950,6 +1971,7 @@ final class JsonSerializableToJsonTest {
                   "storageOrdinal": 0,
                   "businessId": "",
                   "versionTag": "",
+                  "variablesMetadata": {},
                   "elementInstanceKey": -1
                 }
                 """
