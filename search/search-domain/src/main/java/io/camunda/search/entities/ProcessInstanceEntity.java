@@ -47,7 +47,8 @@ public record ProcessInstanceEntity(
     @Nullable String businessId,
     // not set by the primary handler; populated once the exporter/appliers for SUSPEND/RESUME land.
     @Nullable OffsetDateTime suspendedDate,
-    // absent on data exported before storage ordinals were introduced.
+    // absent on data exported before storage ordinals were introduced or for process instances
+    // exported without archiverless enabled
     @Nullable Integer storageOrdinal)
     implements TenantOwnedEntity {
 
