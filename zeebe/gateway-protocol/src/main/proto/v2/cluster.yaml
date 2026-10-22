@@ -139,6 +139,14 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/Unauthorized'
         "403":
           $ref: 'common-responses.yaml#/components/responses/Forbidden'
+        "404":
+          description: >
+            A requested backup has no completed backup on at least one partition, or the physical
+            tenant does not exist. More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
         "409":
           description: The cluster is not in recovery mode, so the restore cannot be accepted.
         "500":
