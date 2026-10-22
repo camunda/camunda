@@ -223,8 +223,8 @@ jobs:
           # INC-6630 for the same class of issue with unbounded external network calls in CI).
           #
           # snyk exit codes: 0 = no issues, 1 = vulnerabilities found (a valid result),
-          # 2 = error / re-run recommended, 3 = no supported projects. `timeout` returns 124 when
-          # it kills a stuck call. Only 2 and 124 are transient, so we retry those and pass every
+          # 2 = error / re-run recommended, 3 = no supported projects. `timeout` returns 124 on
+          # timeout, or 137 on hard kill. Retry 2, 124 and 137 and pass every
           # other code straight through - retrying a legitimate vuln finding (1) would needlessly
           # double every scan that has findings and defeat the purpose of this bound.
           function runSnykWithRetry() {
@@ -236,7 +236,7 @@ jobs:
             while true; do
               local status=0
               timeout --kill-after=10s "${perAttemptTimeoutSecs}s" snyk "$@" || status=$?
-              if [ "${status}" -ne 2 ] && [ "${status}" -ne 124 ]; then
+              if [ "${status}" -ne 2 ] && [ "${status}" -ne 124 ] && [ "${status}" -ne 137 ]; then
                 return "${status}"
               fi
               if [ "${attempt}" -ge "${maxAttempts}" ]; then
