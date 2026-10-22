@@ -21,6 +21,7 @@ import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.test.util.BufferAssert;
 import io.camunda.zeebe.test.util.MsgPackUtil;
 import java.time.InstantSource;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.function.Consumer;
@@ -152,6 +153,109 @@ public class UserTaskStateTest {
     final UserTaskRecord readRecord = userTaskState.getUserTask(key);
     assertThat(readRecord).hasAssignee("test");
     assertThat(writtenRecord).hasAssignee("foo");
+  }
+
+  @Test
+  public void shouldTrackSuspendedUserTask() {
+    // when
+    userTaskState.markSuspended(4321, 5_000);
+
+    // then
+    Assertions.assertThat(userTaskState.isSuspended(4321, 5_000)).isTrue();
+    Assertions.assertThat(userTaskState.isSuspended(4321, 5_001)).isFalse();
+    Assertions.assertThat(userTaskState.isSuspended(4322, 5_000)).isFalse();
+  }
+
+  @Test
+  public void shouldIterateSuspendedUserTasksFromCursor() {
+    // given
+    userTaskState.markSuspended(4321, 5_002);
+    userTaskState.markSuspended(4321, 5_000);
+    userTaskState.markSuspended(4321, 5_001);
+    final List<Long> visited = new ArrayList<>();
+
+    // when
+    userTaskState.forEachSuspendedUserTask(4321, 5_001, visited::add);
+
+    // then
+    Assertions.assertThat(visited).containsExactly(5_001L, 5_002L);
+  }
+
+  @Test
+  public void shouldIterateAllSuspendedUserTasksWithoutCursor() {
+    // given
+    userTaskState.markSuspended(4321, 5_001);
+    userTaskState.markSuspended(4321, 5_000);
+    final List<Long> visited = new ArrayList<>();
+
+    // when
+    userTaskState.forEachSuspendedUserTask(4321, -1, visited::add);
+
+    // then
+    Assertions.assertThat(visited).containsExactly(5_000L, 5_001L);
+  }
+
+  @Test
+  public void shouldStopIteratingSuspendedUserTasksWhenVisitorReturnsFalse() {
+    // given
+    userTaskState.markSuspended(4321, 5_000);
+    userTaskState.markSuspended(4321, 5_001);
+    final List<Long> visited = new ArrayList<>();
+
+    // when
+    userTaskState.forEachSuspendedUserTask(4321, -1, key -> !visited.add(key));
+
+    // then
+    Assertions.assertThat(visited).containsExactly(5_000L);
+  }
+
+  @Test
+  public void shouldNotIterateSuspendedUserTasksOfOtherProcessInstances() {
+    // given
+    userTaskState.markSuspended(4320, 5_000);
+    userTaskState.markSuspended(4321, 5_001);
+    userTaskState.markSuspended(4322, 5_002);
+    final List<Long> visited = new ArrayList<>();
+
+    // when
+    userTaskState.forEachSuspendedUserTask(4321, -1, visited::add);
+
+    // then
+    Assertions.assertThat(visited).containsExactly(5_001L);
+  }
+
+  @Test
+  public void shouldRemoveSuspendedEntryOnUnmark() {
+    // given
+    userTaskState.markSuspended(4321, 5_000);
+
+    // when
+    userTaskState.unmarkSuspended(4321, 5_000);
+
+    // then
+    Assertions.assertThat(userTaskState.isSuspended(4321, 5_000)).isFalse();
+  }
+
+  @Test
+  public void shouldIgnoreUnmarkOfUntrackedUserTask() {
+    // when
+    userTaskState.unmarkSuspended(4321, 5_000);
+
+    // then
+    Assertions.assertThat(userTaskState.isSuspended(4321, 5_000)).isFalse();
+  }
+
+  @Test
+  public void shouldRemoveSuspendedEntryOnDelete() {
+    // given
+    userTaskState.create(createUserTask(5_000));
+    userTaskState.markSuspended(4321, 5_000);
+
+    // when
+    userTaskState.delete(5_000);
+
+    // then
+    Assertions.assertThat(userTaskState.isSuspended(4321, 5_000)).isFalse();
   }
 
   private UserTaskRecord createUserTask(final long userTaskKey) {
