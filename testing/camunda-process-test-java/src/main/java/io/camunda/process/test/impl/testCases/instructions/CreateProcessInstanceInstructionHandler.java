@@ -23,9 +23,16 @@ import io.camunda.process.test.api.testCases.instructions.createProcessInstance.
 import io.camunda.process.test.api.testCases.instructions.createProcessInstance.CreateProcessInstanceTerminateRuntimeInstruction;
 import io.camunda.process.test.impl.testCases.AssertionFacade;
 import io.camunda.process.test.impl.testCases.TestCaseInstructionHandler;
+import io.camunda.process.test.impl.testCases.TestRunContext;
 
 public class CreateProcessInstanceInstructionHandler
     implements TestCaseInstructionHandler<CreateProcessInstanceInstruction> {
+
+  private final TestRunContext runContext;
+
+  public CreateProcessInstanceInstructionHandler(final TestRunContext runContext) {
+    this.runContext = runContext;
+  }
 
   @Override
   public void execute(
@@ -47,7 +54,7 @@ public class CreateProcessInstanceInstructionHandler
             .newCreateInstanceCommand()
             .bpmnProcessId(processDefinitionId)
             .latestVersion()
-            .variables(instruction.getVariables());
+            .variables(runContext.applyRunId(instruction.getVariables()));
 
     instruction
         .getStartInstructions()

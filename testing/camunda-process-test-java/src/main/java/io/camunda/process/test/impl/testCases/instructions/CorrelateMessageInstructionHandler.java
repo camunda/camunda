@@ -21,9 +21,16 @@ import io.camunda.process.test.api.CamundaProcessTestContext;
 import io.camunda.process.test.api.testCases.instructions.CorrelateMessageInstruction;
 import io.camunda.process.test.impl.testCases.AssertionFacade;
 import io.camunda.process.test.impl.testCases.TestCaseInstructionHandler;
+import io.camunda.process.test.impl.testCases.TestRunContext;
 
 public class CorrelateMessageInstructionHandler
     implements TestCaseInstructionHandler<CorrelateMessageInstruction> {
+
+  private final TestRunContext runContext;
+
+  public CorrelateMessageInstructionHandler(final TestRunContext runContext) {
+    this.runContext = runContext;
+  }
 
   @Override
   public void execute(
@@ -48,7 +55,7 @@ public class CorrelateMessageInstructionHandler
               .withoutCorrelationKey();
     }
 
-    command.variables(instruction.getVariables());
+    command.variables(runContext.applyRunId(instruction.getVariables()));
 
     command.send().join();
   }

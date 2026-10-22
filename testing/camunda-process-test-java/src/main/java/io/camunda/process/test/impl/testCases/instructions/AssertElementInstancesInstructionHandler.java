@@ -24,11 +24,18 @@ import io.camunda.process.test.api.testCases.instructions.AssertElementInstances
 import io.camunda.process.test.api.testCases.instructions.assertElementInstances.ElementInstancesState;
 import io.camunda.process.test.impl.testCases.AssertionFacade;
 import io.camunda.process.test.impl.testCases.TestCaseInstructionHandler;
+import io.camunda.process.test.impl.testCases.TestRunContext;
 import java.util.List;
 import java.util.stream.Collectors;
 
 public class AssertElementInstancesInstructionHandler
     implements TestCaseInstructionHandler<AssertElementInstancesInstruction> {
+
+  private final TestRunContext runContext;
+
+  public AssertElementInstancesInstructionHandler(final TestRunContext runContext) {
+    this.runContext = runContext;
+  }
 
   @Override
   public void execute(
@@ -39,7 +46,7 @@ public class AssertElementInstancesInstructionHandler
 
     final ProcessInstanceSelector processInstanceSelector =
         InstructionSelectorFactory.buildProcessInstanceSelector(
-            instruction.getProcessInstanceSelector());
+            instruction.getProcessInstanceSelector(), runContext);
 
     final List<ElementSelector> elementSelectors = buildElementSelectors(instruction);
 

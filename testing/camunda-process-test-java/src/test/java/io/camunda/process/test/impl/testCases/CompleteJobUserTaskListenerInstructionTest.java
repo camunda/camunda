@@ -62,7 +62,7 @@ public class CompleteJobUserTaskListenerInstructionTest {
   private CompleteUserTaskJobResultStep1 jobResult;
 
   private final CompleteJobUserTaskListenerInstructionHandler instructionHandler =
-      new CompleteJobUserTaskListenerInstructionHandler();
+      new CompleteJobUserTaskListenerInstructionHandler(TestRunContext.disabled());
 
   @Test
   void shouldCompleteJobByJobType() {

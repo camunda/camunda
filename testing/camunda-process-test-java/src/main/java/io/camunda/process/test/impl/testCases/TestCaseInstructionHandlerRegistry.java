@@ -61,34 +61,38 @@ public class TestCaseInstructionHandlerRegistry {
       new HashMap<>();
 
   public TestCaseInstructionHandlerRegistry() {
+    this(TestRunContext.fromSystemProperties());
+  }
+
+  public TestCaseInstructionHandlerRegistry(final TestRunContext runContext) {
     register(new AssertDecisionInstructionHandler());
-    register(new AssertElementInstanceInstructionHandler());
-    register(new AssertElementInstancesInstructionHandler());
-    register(new AssertProcessInstanceInstructionHandler());
-    register(new AssertProcessInstanceMessageSubscriptionInstructionHandler());
-    register(new AssertUserTaskInstructionHandler());
-    register(new AssertVariableInstructionHandler());
-    register(new AssertVariablesInstructionHandler());
-    register(new BroadcastSignalInstructionHandler());
-    register(new CompleteJobInstructionHandler());
-    register(new CompleteJobAdHocSubProcessInstructionHandler());
-    register(new CompleteJobUserTaskListenerInstructionHandler());
-    register(new CompleteUserTaskInstructionHandler());
+    register(new AssertElementInstanceInstructionHandler(runContext));
+    register(new AssertElementInstancesInstructionHandler(runContext));
+    register(new AssertProcessInstanceInstructionHandler(runContext));
+    register(new AssertProcessInstanceMessageSubscriptionInstructionHandler(runContext));
+    register(new AssertUserTaskInstructionHandler(runContext));
+    register(new AssertVariableInstructionHandler(runContext));
+    register(new AssertVariablesInstructionHandler(runContext));
+    register(new BroadcastSignalInstructionHandler(runContext));
+    register(new CompleteJobInstructionHandler(runContext));
+    register(new CompleteJobAdHocSubProcessInstructionHandler(runContext));
+    register(new CompleteJobUserTaskListenerInstructionHandler(runContext));
+    register(new CompleteUserTaskInstructionHandler(runContext));
     register(new ConditionalBehaviorInstructionHandler(this));
-    register(new CreateProcessInstanceInstructionHandler());
-    register(new EvaluateConditionalStartEventInstructionHandler());
+    register(new CreateProcessInstanceInstructionHandler(runContext));
+    register(new EvaluateConditionalStartEventInstructionHandler(runContext));
     register(new EvaluateDecisionInstructionHandler());
     register(new IncreaseTimeInstructionHandler());
     register(new MockChildProcessInstructionHandler());
     register(new MockDmnDecisionInstructionHandler());
     register(new MockJobWorkerCompleteJobInstructionHandler());
     register(new MockJobWorkerThrowBpmnErrorInstructionHandler());
-    register(new PublishMessageInstructionHandler());
-    register(new CorrelateMessageInstructionHandler());
-    register(new ResolveIncidentInstructionHandler());
+    register(new PublishMessageInstructionHandler(runContext));
+    register(new CorrelateMessageInstructionHandler(runContext));
+    register(new ResolveIncidentInstructionHandler(runContext));
     register(new SetTimeInstructionHandler());
-    register(new ThrowBpmnErrorFromJobInstructionHandler());
-    register(new UpdateVariablesInstructionHandler());
+    register(new ThrowBpmnErrorFromJobInstructionHandler(runContext));
+    register(new UpdateVariablesInstructionHandler(runContext));
   }
 
   /** Registers the given handler under the instruction interface it declares. */
