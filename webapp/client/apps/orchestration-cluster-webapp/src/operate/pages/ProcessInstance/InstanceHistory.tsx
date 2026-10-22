@@ -54,6 +54,8 @@ import {isMultiInstance} from '#/operate/shared/utils/elements';
 import {useInstanceHistory} from './useInstanceHistory';
 import {instanceRequest} from './processInstance.queries';
 import {ElementInstanceIcon} from './ElementInstanceIcon';
+import {FilteredInstanceHistory} from './FilteredInstanceHistory';
+import {InstanceHistorySearch} from './InstanceHistorySearch';
 import {
 	HistoryModificationIcons,
 	HistoryAddIcon,
@@ -118,11 +120,13 @@ function HistoryTreeItem({ref, ...props}: ComponentProps<typeof HistoryTreeNode>
 	return <HistoryTreeNode {...props} ref={ref ? observeGroup : undefined} />;
 }
 function InstanceHistory({showHeader = true}: {showHeader?: boolean}) {
-	const {processInstance, processInstanceId} = useProcessInstancePage();
+	const {processInstance, processInstanceId, search} = useProcessInstancePage();
 	const {t} = useTranslation();
 	const history = useInstanceHistory();
 	const {isModificationModeEnabled, state: modificationState} = useProcessInstanceModification();
 	const selection = useProcessInstanceElementSelection();
+	const searchText = (search.elementSearch ?? '').trim();
+	const isFiltered = !isModificationModeEnabled && (searchText !== '' || search.elementStatus !== undefined);
 	const xml = useDiagramXml(processInstance.processDefinitionKey);
 	const businessObjects = xml.data?.businessObjects;
 	const statistics = useInstanceStatistics(
@@ -196,9 +200,9 @@ function InstanceHistory({showHeader = true}: {showHeader?: boolean}) {
 		if (scrollRef.current) {
 			scrollRef.current.scrollTop = 0;
 		}
-		setVisible(xml.isSuccess);
+		setVisible(xml.isSuccess && !isFiltered);
 		return () => setVisible(false);
-	}, [setVisible, xml.isSuccess, processInstanceId]);
+	}, [setVisible, xml.isSuccess, isFiltered, processInstanceId]);
 	const root: ElementInstance = {
 		...processInstance,
 		elementId: processInstance.processDefinitionId,
@@ -293,7 +297,7 @@ function InstanceHistory({showHeader = true}: {showHeader?: boolean}) {
 		});
 	}
 	const rootQuery = history.windows.get(processInstanceId)?.query;
-	const error = xml.error ?? history.pageError ?? rootQuery?.error;
+	const error = xml.error ?? (isFiltered ? undefined : (history.pageError ?? rootQuery?.error));
 	const forbidden = history.forbidden || error instanceof ForbiddenError;
 	return (
 		<HistoryPanel aria-label={t('operate.processInstance.history.title')}>
@@ -323,6 +327,7 @@ function InstanceHistory({showHeader = true}: {showHeader?: boolean}) {
 						})}
 				</HistoryHeader>
 			)}
+			{xml.isSuccess && !isModificationModeEnabled && !forbidden && <InstanceHistorySearch key={processInstanceId} />}
 			{forbidden ? (
 				<InlineNotification
 					kind="error"
@@ -345,32 +350,45 @@ function InstanceHistory({showHeader = true}: {showHeader?: boolean}) {
 						}
 					}}
 				/>
-			) : xml.isPending || rootQuery?.isPending ? (
+			) : xml.isPending ? (
 				<SkeletonText />
 			) : (
-				<HistoryScroll ref={scrollRef} onFocus={handleFocus} onBlur={handleBlur}>
-					<FeatureFlags enableTreeviewControllable>
-						<TreeView
-							label={t('operate.processInstance.history.title')}
-							hideLabel
-							selected={selected}
-							active={selected[0] ?? ''}
-						>
-							<HistoryModificationContext
-								value={{placeholders, modificationsByElement, expandedPlaceholders, togglePlaceholder}}
-							>
-								<HistoryNode
-									item={root}
-									hierarchy={[processInstanceId]}
-									scrollRef={scrollRef}
-									focusTarget={focusTarget}
-									migrationDate={migration.data}
-									businessObjects={businessObjects}
-								/>
-							</HistoryModificationContext>
-						</TreeView>
-					</FeatureFlags>
-				</HistoryScroll>
+				<>
+					{isFiltered ? (
+						<FilteredInstanceHistory
+							processInstanceKey={processInstanceId}
+							searchText={searchText}
+							statusFilter={search.elementStatus}
+							businessObjects={businessObjects}
+						/>
+					) : rootQuery?.isPending ? (
+						<SkeletonText />
+					) : (
+						<HistoryScroll ref={scrollRef} onFocus={handleFocus} onBlur={handleBlur}>
+							<FeatureFlags enableTreeviewControllable>
+								<TreeView
+									label={t('operate.processInstance.history.title')}
+									hideLabel
+									selected={selected}
+									active={selected[0] ?? ''}
+								>
+									<HistoryModificationContext
+										value={{placeholders, modificationsByElement, expandedPlaceholders, togglePlaceholder}}
+									>
+										<HistoryNode
+											item={root}
+											hierarchy={[processInstanceId]}
+											scrollRef={scrollRef}
+											focusTarget={focusTarget}
+											migrationDate={migration.data}
+											businessObjects={businessObjects}
+										/>
+									</HistoryModificationContext>
+								</TreeView>
+							</FeatureFlags>
+						</HistoryScroll>
+					)}
+				</>
 			)}
 		</HistoryPanel>
 	);

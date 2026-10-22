@@ -50,6 +50,7 @@ function ProcessInstancePageProvider({
 		search,
 		history.handleForbidden,
 		isInstanceRunning(processInstance) && !modification?.isModificationModeEnabled,
+		history.sortOrder,
 	);
 	const incidentsFilter = useIncidentsFilterState(processInstanceId);
 	const modificationState = modification?.state;

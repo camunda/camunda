@@ -120,6 +120,96 @@ const HistoryCancelIcon = styled(Error)`
 const HistoryWarningIcon = styled(WarningAltFilled)`
 	color: var(--cds-support-warning);
 `;
+const SearchControls = styled.div`
+	display: flex;
+	flex-direction: column;
+	align-items: flex-start;
+	gap: var(--cds-spacing-04);
+	padding: var(--cds-spacing-05);
+	border-bottom: solid 1px var(--cds-border-subtle-01);
+`;
+const SearchRow = styled.div`
+	display: flex;
+	align-items: center;
+	gap: var(--cds-spacing-03);
+	width: 100%;
+	.cds--search {
+		flex: 1;
+		min-width: 0;
+	}
+`;
+const FilterSwitcher = styled.div`
+	display: inline-flex;
+	gap: var(--cds-spacing-01);
+	padding: var(--cds-spacing-01);
+	border-radius: 6px;
+	background-color: var(--cds-layer-accent-01);
+`;
+const FilterSwitcherButton = styled.button`
+	${styles.label01};
+	appearance: none;
+	border: none;
+	cursor: pointer;
+	padding: var(--cds-spacing-02) var(--cds-spacing-04);
+	border-radius: 4px;
+	background-color: transparent;
+	color: var(--cds-text-secondary);
+	box-shadow: none;
+	&[aria-pressed='true'] {
+		background-color: var(--cds-layer-01);
+		color: var(--cds-text-primary);
+		box-shadow: 0 1px 2px var(--cds-shadow);
+	}
+	&:hover {
+		background-color: var(--cds-layer-hover-01);
+	}
+	&[aria-pressed='true']:hover {
+		background-color: var(--cds-layer-01);
+	}
+	&:focus-visible {
+		outline: 2px solid var(--cds-focus);
+		outline-offset: -2px;
+	}
+`;
+const SearchResultsScroll = styled.div`
+	overflow-y: auto;
+	overflow-anchor: none;
+	flex: 1;
+	min-height: 0;
+`;
+const TREE_DEPTH_ONE_LEAF_INDENT = 'calc(var(--cds-spacing-05) + var(--cds-spacing-06))';
+const SearchResultIcon = styled.span`
+	display: flex;
+	flex-shrink: 0;
+	margin-inline-start: ${TREE_DEPTH_ONE_LEAF_INDENT};
+`;
+const ResultsCount = styled.output`
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	padding: 0;
+	margin: -1px;
+	overflow: hidden;
+	clip: rect(0, 0, 0, 0);
+	white-space: nowrap;
+	border: 0;
+`;
+const EmptyResults = styled.div`
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	flex: 1;
+	padding: var(--cds-spacing-06);
+`;
+const DimmableResults = styled.div<{$dimmed: boolean}>`
+	display: flex;
+	flex-direction: column;
+	flex: 1;
+	min-height: 0;
+	transition: opacity 150ms ease;
+	opacity: ${({$dimmed}) => ($dimmed ? 0.5 : 1)};
+	pointer-events: ${({$dimmed}) => ($dimmed ? 'none' : 'auto')};
+`;
 const BottomPanel = styled.div`
 	height: 100%;
 	min-height: 0;
@@ -154,6 +244,15 @@ export {
 	HistoryMetadata,
 	HistoryTimestamp,
 	HistoryStatus,
+	SearchControls,
+	SearchRow,
+	FilterSwitcher,
+	FilterSwitcherButton,
+	SearchResultsScroll,
+	SearchResultIcon,
+	ResultsCount,
+	EmptyResults,
+	DimmableResults,
 	BottomPanel,
 	TabPanel,
 };

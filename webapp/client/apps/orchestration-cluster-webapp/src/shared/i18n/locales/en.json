@@ -1502,7 +1502,36 @@
 					"migrated": "Migrated {{date}}",
 					"forbidden": "You do not have permission to view instance history",
 					"error": "Instance history could not be fetched. Please refresh.",
-					"anchorError": "Could not select the ad-hoc instance. Please try again."
+					"anchorError": "Could not select the ad-hoc instance. Please try again.",
+					"search": {
+						"label": "Search instance history",
+						"placeholder": "Element name or ID",
+						"statusFilter": "Instance status filter",
+						"status": {
+							"all": "All",
+							"active": "Active",
+							"incidents": "Incidents"
+						},
+						"latestFirst": "Latest first",
+						"oldestFirst": "Oldest first",
+						"results": "Search results",
+						"error": "Search results could not be fetched",
+						"matchingElements": "{{count}} matching elements",
+						"matchingElements_one": "{{count}} matching element",
+						"matchingElements_other": "{{count}} matching elements",
+						"noActive": {
+							"heading": "No active elements",
+							"description": "All elements have finished executing"
+						},
+						"noIncidents": {
+							"heading": "No elements with incidents",
+							"description": "There are currently no incidents"
+						},
+						"noMatches": {
+							"heading": "No matching elements",
+							"description": "Try a different name or ID"
+						}
+					}
 				},
 				"diagram": {
 					"downloadXml": "Download XML",
