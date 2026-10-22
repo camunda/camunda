@@ -27,6 +27,7 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.CamundaClientBuilder;
+import io.camunda.client.api.ProblemDetail;
 import io.camunda.client.api.command.ClientException;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.response.BrokerInfo;
@@ -164,7 +165,12 @@ public class CamundaProcessTestRemoteRuntimeTest {
             .addResourceBytes(any(byte[].class), anyString())
             .send()
             .join())
-        .thenThrow(new ProblemException(400, "Bad Request", null));
+        .thenThrow(
+            new ProblemException(
+                400,
+                "Bad Request",
+                new ProblemDetail()
+                    .setDetail("Command 'CREATE' rejected with code 'INVALID_ARGUMENT'")));
 
     final CamundaProcessTestRuntime camundaRuntime =
         CamundaProcessTestContainerRuntime.newBuilder()

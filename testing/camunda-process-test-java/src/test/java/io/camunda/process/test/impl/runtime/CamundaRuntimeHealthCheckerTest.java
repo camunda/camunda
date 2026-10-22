@@ -28,6 +28,7 @@ import static org.mockito.Mockito.when;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.CamundaClientBuilder;
 import io.camunda.client.api.CamundaFuture;
+import io.camunda.client.api.ProblemDetail;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.response.BrokerInfo;
 import io.camunda.client.api.response.DeploymentEvent;
@@ -57,7 +58,7 @@ public class CamundaRuntimeHealthCheckerTest {
     when(builder.build()).thenReturn(client);
     givenHealthyTopology();
     final CamundaFuture<DeploymentEvent> notReady = failedFuture(problem(500));
-    final CamundaFuture<DeploymentEvent> ready = failedFuture(problem(400));
+    final CamundaFuture<DeploymentEvent> ready = failedFuture(brokerRejection());
     when(client
             .newDeployResourceCommand()
             .useRest()
@@ -96,6 +97,30 @@ public class CamundaRuntimeHealthCheckerTest {
   }
 
   @Test
+  void shouldNotBeReadyWhenGatewayRejectsProbe() {
+    // given
+    when(builder.build()).thenReturn(client);
+    givenHealthyTopology();
+    final CamundaFuture<DeploymentEvent> gatewayRejection =
+        failedFuture(
+            problem(
+                400,
+                "Expected to handle request Deploy Resources with tenant identifier 'other', but"
+                    + " multi-tenancy is disabled"));
+    when(client
+            .newDeployResourceCommand()
+            .useRest()
+            .addResourceBytes(any(byte[].class), anyString())
+            .send())
+        .thenReturn(gatewayRejection);
+
+    // when / then
+    assertThatThrownBy(
+            () -> CamundaRuntimeHealthChecker.waitUntilClusterReady(factory, Duration.ofSeconds(1)))
+        .isInstanceOf(RuntimeException.class);
+  }
+
+  @Test
   void shouldNotProbeWhenPartitionsAreUnhealthy() {
     // given
     when(builder.build()).thenReturn(client);
@@ -124,7 +149,18 @@ public class CamundaRuntimeHealthCheckerTest {
   }
 
   private static ProblemException problem(final int code) {
-    return new ProblemException(code, "problem", null);
+    return problem(code, "problem");
+  }
+
+  private static ProblemException problem(final int code, final String detail) {
+    return new ProblemException(code, "problem", new ProblemDetail().setDetail(detail));
+  }
+
+  private static ProblemException brokerRejection() {
+    return problem(
+        400,
+        "Command 'CREATE' rejected with code 'INVALID_ARGUMENT': Expected to deploy new resources,"
+            + " but encountered the following errors:");
   }
 
   private static <T> CamundaFuture<T> completedFuture(final T value) {
