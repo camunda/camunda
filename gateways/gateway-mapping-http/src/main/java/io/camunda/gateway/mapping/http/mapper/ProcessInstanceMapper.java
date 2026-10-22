@@ -121,7 +121,8 @@ public class ProcessInstanceMapper {
                     toRuntimeInstructions(request.getRuntimeInstructions()),
                     request.getFetchVariables(),
                     request.getTags(),
-                    request.getBusinessId()));
+                    request.getBusinessId(),
+                    RequestMapper.toVariablesMetadata(request.getVariablesMetadata())));
   }
 
   public Either<ProblemDetail, ProcessInstanceCreateRequest> toCreateProcessInstance(
@@ -147,7 +148,8 @@ public class ProcessInstanceMapper {
                     toRuntimeInstructions(request.getRuntimeInstructions()),
                     request.getFetchVariables(),
                     request.getTags(),
-                    request.getBusinessId()));
+                    request.getBusinessId(),
+                    RequestMapper.toVariablesMetadata(request.getVariablesMetadata())));
   }
 
   public Either<ProblemDetail, ProcessInstanceCreateRequest> toCreateProcessInstance(
@@ -172,7 +174,8 @@ public class ProcessInstanceMapper {
                     toRuntimeInstructions(request.getRuntimeInstructions()),
                     request.getFetchVariables(),
                     request.getTags(),
-                    request.getBusinessId()));
+                    request.getBusinessId(),
+                    RequestMapper.toVariablesMetadata(request.getVariablesMetadata())));
   }
 
   private Either<ProblemDetail, String> validateCreateProcessInstance(
