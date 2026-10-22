@@ -99,8 +99,8 @@ public final class ProcessInstanceResumeJobsProcessorTest {
   }
 
   @Test
-  void shouldAppendCompleteResumingWhenNoParkedJobsRemain() {
-    // given - the instance has no job at all, so there is nothing left to un-park
+  void shouldAppendCompleteResumingWhenNoParkedJobsOrUserTasksRemain() {
+    // given - the instance has no job and no suspended user task
     rootInstance(ProcessInstanceIntent.ELEMENT_ACTIVATED);
 
     // when
@@ -112,6 +112,29 @@ public final class ProcessInstanceResumeJobsProcessorTest {
             eq(PROCESS_INSTANCE_KEY),
             eq(ProcessInstanceIntent.COMPLETE_RESUMING),
             any(ProcessInstanceRecord.class));
+    verify(commandWriter, never())
+        .appendFollowUpCommand(anyLong(), eq(ProcessInstanceIntent.RESUME_USER_TASKS), any());
+  }
+
+  @Test
+  void shouldHandOffToUserTaskResumeWhenNoParkedJobsRemain() {
+    // given - no job left, but a suspended user task
+    rootInstance(ProcessInstanceIntent.ELEMENT_ACTIVATED);
+    processingState.getUserTaskState().markSuspended(PROCESS_INSTANCE_KEY, 300L);
+
+    // when
+    processor.processRecord(resumeJobsCommand());
+
+    // then - the suspended user tasks are resumed next, starting from the beginning
+    final var followUp = ArgumentCaptor.forClass(ProcessInstanceRecord.class);
+    verify(commandWriter)
+        .appendFollowUpCommand(
+            eq(PROCESS_INSTANCE_KEY),
+            eq(ProcessInstanceIntent.RESUME_USER_TASKS),
+            followUp.capture());
+    assertThat(followUp.getValue().getResumeFromUserTaskKey()).isEqualTo(-1L);
+    verify(commandWriter, never())
+        .appendFollowUpCommand(anyLong(), eq(ProcessInstanceIntent.COMPLETE_RESUMING), any());
     verify(commandWriter, never())
         .appendFollowUpCommand(anyLong(), eq(ProcessInstanceIntent.RESUME_JOBS), any());
     verify(jobActivationBehavior, never()).publishWork(anyLong(), any(), any());
