@@ -57,19 +57,6 @@ public final class ClientRegistrationFactory {
   }
 
   /**
-   * Discovery from {@code issuer-uri}, tolerating a trailing slash the identity provider's document
-   * doesn't have (or has where the configuration doesn't). See camunda/camunda#61896.
-   *
-   * <p>{@code fromIssuerLocation} requires the document's {@code issuer} to equal the configured
-   * string exactly, and throws {@link IllegalStateException} when it doesn't — the one failure it
-   * reports with that type; an unreachable or unparseable document is an {@link
-   * IllegalArgumentException}. When the two differ only by a trailing slash, discovery is retried
-   * with the other form, and the registration takes the provider's issuer. That is what the
-   * provider's tokens carry in {@code iss}, and what {@link IssuerAwareTokenValidator} and {@link
-   * IssuerAwareJWSKeySelector} compare it with. Any other mismatch, or a retry that fails too,
-   * rethrows the original exception.
-   */
-  /**
    * The issuer the discovery document declared, read from Spring's mismatch message ({@code The
    * Issuer "<declared>" provided in the configuration metadata did not match the requested issuer
    * "<requested>"}), as {@code fromIssuerLocation} does not expose the document. {@code null} if
@@ -88,6 +75,19 @@ public final class ClientRegistrationFactory {
     return end < 0 ? null : message.substring(MISMATCH_PREFIX.length(), end);
   }
 
+  /**
+   * Discovery from {@code issuer-uri}, tolerating a trailing slash the identity provider's document
+   * doesn't have (or has where the configuration doesn't). See camunda/camunda#61896.
+   *
+   * <p>{@code fromIssuerLocation} requires the document's {@code issuer} to equal the configured
+   * string exactly, and throws {@link IllegalStateException} when it doesn't — the one failure it
+   * reports with that type; an unreachable or unparseable document is an {@link
+   * IllegalArgumentException}. When the two differ only by a trailing slash, discovery is retried
+   * with the other form, and the registration takes the provider's issuer. That is what the
+   * provider's tokens carry in {@code iss}, and what {@link IssuerAwareTokenValidator} and {@link
+   * IssuerAwareJWSKeySelector} compare it with. Any other mismatch, or a retry that fails too,
+   * rethrows the original exception.
+   */
   private static Builder discover(final String issuerUri) {
     try {
       return ClientRegistrations.fromIssuerLocation(issuerUri);
