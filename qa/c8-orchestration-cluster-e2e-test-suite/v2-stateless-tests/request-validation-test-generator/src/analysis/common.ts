@@ -150,3 +150,58 @@ export function validParamValue(schema: any, name = ''): string {
 export function deriveOperationKey(op: OperationModel): string {
   return op.operationId || `${op.method}_${op.path}`;
 }
+
+/**
+ * The property sets a `not` clause forbids, one set per alternative.
+ *
+ * The spec uses two forms. `not: {required: [a, b]}` is one alternative and a body breaks it when
+ * it carries both `a` and `b`. `not: {anyOf: [{required: [a]}, {required: [b]}]}` is one
+ * alternative per branch and a body breaks it when it carries `a` or `b`. Any other form yields no
+ * alternatives, so it never counts as broken.
+ */
+function notAlternatives(variant: any): string[][] {
+  const not = variant?.not;
+  if (!not) return [];
+  if (Array.isArray(not.required)) return [not.required];
+  if (Array.isArray(not.anyOf))
+    return not.anyOf
+      .filter((branch: any) => Array.isArray(branch?.required))
+      .map((branch: any) => branch.required);
+  return [];
+}
+
+/**
+ * Whether a body is valid for one `oneOf` variant: it carries every `required` property and does
+ * not break the variant's `not` clause.
+ *
+ * Merging the `required` sets of two variants does not always give an invalid body. When the
+ * variants exclude each other with `not`, as `ProcessInstanceCreationInstruction` does, the merged
+ * body can still be a valid body of exactly one variant, and the server rightly accepts it.
+ */
+export function matchesVariant(
+  variant: any,
+  body: Record<string, any>,
+): boolean {
+  if (!Array.isArray(variant?.required)) return false;
+  if (!variant.required.every((r: string) => r in body)) return false;
+  return !notAlternatives(variant).some((props) =>
+    props.every((p) => p in body),
+  );
+}
+
+/** How many variants of a `oneOf` the body is valid for. `oneOf` accepts the body only at 1. */
+export function countMatchingVariants(
+  variants: any[],
+  body: Record<string, any>,
+): number {
+  return variants.filter((v) => matchesVariant(v, body)).length;
+}
+
+/**
+ * The properties a variant's `not` clause forbids, without duplicates.
+ *
+ * Adding one of these to a body that matches the variant makes the variant stop matching.
+ */
+export function forbiddenProperties(variant: any): string[] {
+  return [...new Set(notAlternatives(variant).flat())];
+}
