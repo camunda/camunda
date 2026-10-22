@@ -56,6 +56,25 @@ RUN jlink \
      --output /jre && \
    rm -rf /jre/lib/src.zip
 
+# INC-8766: eMudhra's compromised intermediate CAs chain to emSign ECC Root CA - G3, which every
+# Temurin 21 cacerts still trusts. Remove that root by fingerprint, as Mozilla, Ubuntu and Alpine
+# did. The build fails if G3 is still trusted, or if AAA Certificate Services (which cross-signed
+# the same intermediates) is, so this keeps holding after a JDK bump and is a no-op once Temurin
+# ships without G3.
+SHELL ["/bin/bash", "-eo", "pipefail", "-c"]
+RUN g3=86A1ECBA089C4A8D3BBE2734C612BA341D813E043CF9E8A862CD5C57A36BBE6B; \
+    aaa=D7A7A0FB5D7E2731D771E9484EBCDEF71D5F0C3E0A2948782BC83EE0EA699EF4; \
+    ks=/jre/lib/security/cacerts; \
+    fingerprints() { \
+      keytool -list -v -keystore "$ks" -storepass changeit \
+        | awk '/^Alias name: /{a=substr($0,13)} $1=="SHA256:"{f=$2; gsub(":","",f); print f"\t"a}'; \
+    }; \
+    alias=$(fingerprints | awk -F'\t' -v fp="$g3" '$1==fp{print $2}'); \
+    if [ -n "$alias" ]; then keytool -delete -keystore "$ks" -storepass changeit -alias "$alias"; fi; \
+    remaining=$(fingerprints | cut -f1); \
+    [ "$(wc -l <<< "$remaining")" -gt 100 ]; \
+    ! grep -qxE "$g3|$aaa" <<< "$remaining"
+
 ### Java base image
 FROM base AS java
 WORKDIR /
