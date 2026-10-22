@@ -32,7 +32,12 @@ const CopyVariablesButton: React.FC<{scopeKey: string}> = ({scopeKey}) => {
 	);
 	const pages = data?.pages ?? [];
 	const variables = pages.flatMap(({items}) => items);
-	const isPaginated = pages.length >= 2 || hasNextPage;
+	const firstPage = pages[0];
+	const isPaginated =
+		pages.length >= 2 ||
+		hasNextPage ||
+		firstPage?.page.hasMoreTotalItems === true ||
+		variables.length < (firstPage?.page.totalItems ?? 0);
 	const isTruncated = variables.some((variable) => variable.isTruncated);
 	const disabledReason = isPaginated
 		? t('operate.processInstance.variables.copyPaginated')

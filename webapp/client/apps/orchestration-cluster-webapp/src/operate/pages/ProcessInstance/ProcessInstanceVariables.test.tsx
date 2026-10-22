@@ -47,7 +47,7 @@ afterEach(async () => {
 
 function variablesResponse(
 	items: Variable[],
-	page?: {totalItems?: number; hasMoreTotalItems?: boolean; endCursor?: string},
+	page?: {totalItems?: number; hasMoreTotalItems?: boolean; endCursor?: string | null},
 ) {
 	return HttpResponse.json(createQueryVariablesByUserTaskResponse({items, page}));
 }
@@ -91,9 +91,25 @@ describe('<ProcessInstanceVariables />', () => {
 			canCopy: false,
 		},
 		{description: 'a capped total of 50 variables', count: 50, totalItems: 50, hasMoreTotalItems: true, canCopy: false},
+		{
+			description: 'an incomplete total without a next cursor',
+			count: 50,
+			totalItems: 51,
+			hasMoreTotalItems: false,
+			endCursor: null,
+			canCopy: false,
+		},
+		{
+			description: 'a capped total without a next cursor',
+			count: 50,
+			totalItems: 50,
+			hasMoreTotalItems: true,
+			endCursor: null,
+			canCopy: false,
+		},
 	])(
 		'should preserve safe aggregate copying for $description',
-		async ({count, totalItems, hasMoreTotalItems, canCopy}, {worker}) => {
+		async ({count, totalItems, hasMoreTotalItems, endCursor = 'last-item-cursor', canCopy}, {worker}) => {
 			const writeText = vi.spyOn(navigator.clipboard, 'writeText').mockResolvedValue();
 			onTestFinished(() => writeText.mockRestore());
 			const items = Array.from({length: count}, (_, index) =>
@@ -105,7 +121,7 @@ describe('<ProcessInstanceVariables />', () => {
 			);
 			worker.use(
 				mockQueryVariablesEndpoint({
-					successResponse: variablesResponse(items, {totalItems, hasMoreTotalItems, endCursor: 'last-item-cursor'}),
+					successResponse: variablesResponse(items, {totalItems, hasMoreTotalItems, endCursor}),
 				}),
 			);
 			const screen = await renderVariables();
