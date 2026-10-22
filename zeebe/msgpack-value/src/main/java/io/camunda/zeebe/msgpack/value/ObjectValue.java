@@ -8,6 +8,7 @@
 package io.camunda.zeebe.msgpack.value;
 
 import io.camunda.zeebe.msgpack.property.BaseProperty;
+import io.camunda.zeebe.msgpack.property.PropertyGroup;
 import io.camunda.zeebe.msgpack.property.UndeclaredProperty;
 import io.camunda.zeebe.msgpack.spec.MsgPackReader;
 import io.camunda.zeebe.msgpack.spec.MsgPackWriter;
@@ -16,7 +17,7 @@ import java.util.List;
 import java.util.Objects;
 
 public class ObjectValue extends BaseValue {
-  private final List<BaseProperty<? extends BaseValue>> declaredProperties;
+  private final ArrayList<BaseProperty<? extends BaseValue>> declaredProperties;
   private final List<UndeclaredProperty> undeclaredProperties = new ArrayList<>(0);
   private final List<UndeclaredProperty> recycledProperties = new ArrayList<>(0);
 
@@ -34,6 +35,17 @@ public class ObjectValue extends BaseValue {
 
   public ObjectValue declareProperty(final BaseProperty<? extends BaseValue> prop) {
     declaredProperties.add(prop);
+    return this;
+  }
+
+  /**
+   * Declares all properties of the group as if each was declared via {@link
+   * #declareProperty(BaseProperty)}. The size hint passed to the constructor only has to cover the
+   * properties declared directly, the group's own count is added here.
+   */
+  public ObjectValue declareProperties(final PropertyGroup group) {
+    declaredProperties.ensureCapacity(declaredProperties.size() + group.propertyCount());
+    group.declareOn(this);
     return this;
   }
 
