@@ -61,12 +61,14 @@ import io.camunda.gateway.protocol.model.JobResultUserTask;
 import io.camunda.gateway.protocol.model.JobUpdateRequest;
 import io.camunda.gateway.protocol.model.MessageCorrelationRequest;
 import io.camunda.gateway.protocol.model.MessagePublicationRequest;
+import io.camunda.gateway.protocol.model.ProtectionModeEnum;
 import io.camunda.gateway.protocol.model.SetVariableRequest;
 import io.camunda.gateway.protocol.model.SignalBroadcastRequest;
 import io.camunda.gateway.protocol.model.TenantFilterEnum;
 import io.camunda.gateway.protocol.model.UserTaskAssignmentRequest;
 import io.camunda.gateway.protocol.model.UserTaskCompletionRequest;
 import io.camunda.gateway.protocol.model.UserTaskUpdateRequest;
+import io.camunda.gateway.protocol.model.VariableMetadata;
 import io.camunda.search.filter.DecisionInstanceFilter;
 import io.camunda.service.AdHocSubProcessActivityServices.AdHocSubProcessActivateActivitiesRequest;
 import io.camunda.service.AdHocSubProcessActivityServices.AdHocSubProcessActivateActivitiesRequest.AdHocSubProcessActivateActivityReference;
@@ -87,8 +89,11 @@ import io.camunda.zeebe.protocol.impl.record.value.job.JobResult;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobResultActivateElement;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobResultCorrections;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
+import io.camunda.zeebe.protocol.impl.record.value.variable.VariableMetadataRecord;
 import io.camunda.zeebe.protocol.record.value.JobResultType;
+import io.camunda.zeebe.protocol.record.value.ProtectionMode;
 import io.camunda.zeebe.protocol.record.value.TenantFilter;
+import io.camunda.zeebe.protocol.record.value.VariableMetadataValue;
 import io.camunda.zeebe.util.Either;
 import jakarta.servlet.http.Part;
 import java.io.IOException;
@@ -98,6 +103,7 @@ import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -528,6 +534,30 @@ public class RequestMapper {
     }
   }
 
+  public static Map<String, VariableMetadataValue> toVariablesMetadata(
+      final @Nullable Map<String, VariableMetadata> variablesMetadata) {
+    if (variablesMetadata == null) {
+      return Map.of();
+    }
+    final var result = new LinkedHashMap<String, VariableMetadataValue>();
+    variablesMetadata.forEach(
+        (name, metadata) ->
+            result.put(
+                name,
+                new VariableMetadataRecord()
+                    .setProtectionModes(
+                        metadata.getProtectionModes().stream()
+                            .map(RequestMapper::toProtectionMode)
+                            .toList())));
+    return result;
+  }
+
+  private static ProtectionMode toProtectionMode(final ProtectionModeEnum mode) {
+    return switch (mode) {
+      case REDACT -> ProtectionMode.REDACT;
+    };
+  }
+
   public static Either<ProblemDetail, SetVariablesRequest> toVariableRequest(
       final SetVariableRequest variableRequest, final long elementInstanceKey) {
     return getResult(
@@ -537,7 +567,8 @@ public class RequestMapper {
                 elementInstanceKey,
                 variableRequest.getVariables(),
                 variableRequest.getLocal(),
-                variableRequest.getOperationReference()));
+                variableRequest.getOperationReference(),
+                toVariablesMetadata(variableRequest.getVariablesMetadata())));
   }
 
   public static Either<ProblemDetail, PublicationMessageRequest> toMessagePublicationRequest(
