@@ -176,6 +176,11 @@ const mockGetElementInstanceEndpoint = createEndpointMock({
 	method: endpoints.getElementInstance.method,
 });
 
+const mockUpdateElementInstanceVariablesEndpoint = createEndpointMock({
+	endpoint: endpoints.updateElementInstanceVariables.getUrl({elementInstanceKey: ':elementInstanceKey'}),
+	method: endpoints.updateElementInstanceVariables.method,
+});
+
 const mockQueryAgentInstancesEndpoint = createEndpointMock({
 	endpoint: endpoints.queryAgentInstances.getUrl(),
 	method: endpoints.queryAgentInstances.method,
@@ -772,6 +777,7 @@ export {
 	mockGetDocumentEndpoint,
 	mockGetVariableEndpoint,
 	mockQueryVariablesEndpoint,
+	mockUpdateElementInstanceVariablesEndpoint,
 	mockQueryJobsEndpoint,
 	mockGetProcessDefinitionXmlEndpoint,
 	mockGetProcessDefinitionXmlByKeyEndpoint,

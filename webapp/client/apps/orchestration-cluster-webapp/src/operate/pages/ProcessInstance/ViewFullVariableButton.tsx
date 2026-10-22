@@ -7,24 +7,28 @@
  */
 
 import {useRef, useState} from 'react';
+import {useForm} from 'react-final-form';
 import {useQueryClient} from '@tanstack/react-query';
 import {useTranslation} from 'react-i18next';
 import {Button} from '@carbon/react';
-import {Maximize} from '@carbon/react/icons';
 import {RichTextEditorModal} from '#/operate/shared/Editors/RichTextEditorModal';
 import {notificationsStore} from '#/shared/notifications/notifications.store';
 import {variableQuery} from './variables.queries';
+import {MaximizeButton} from './MaximizeButton';
+import type {VariableFormValues} from './variableFormValues';
 import {InlineLoading} from './variables.styled';
 
 type Props = {
 	variableKey: string;
 	variableName: string;
 	buttonLabel?: string;
+	canEdit?: boolean;
 };
 
-const ViewFullVariableButton: React.FC<Props> = ({variableKey, variableName, buttonLabel}) => {
+const ViewFullVariableButton: React.FC<Props> = ({variableKey, variableName, buttonLabel, canEdit = false}) => {
 	const {t} = useTranslation();
 	const queryClient = useQueryClient();
+	const form = useForm<VariableFormValues>();
 	const [isLoading, setIsLoading] = useState(false);
 	const [fullValue, setFullValue] = useState<string | null>(null);
 	const triggerRef = useRef<HTMLButtonElement>(null);
@@ -51,18 +55,7 @@ const ViewFullVariableButton: React.FC<Props> = ({variableKey, variableName, but
 		<>
 			{isLoading && <InlineLoading data-testid="variable-operation-spinner" />}
 			{buttonLabel === undefined ? (
-				<Button
-					kind="ghost"
-					hasIconOnly
-					renderIcon={Maximize}
-					size="sm"
-					aria-label={t('operate.processInstance.variables.open')}
-					iconDescription={t('operate.processInstance.variables.openDescription')}
-					tooltipPosition="top"
-					ref={triggerRef}
-					aria-busy={isLoading}
-					onClick={open}
-				/>
+				<MaximizeButton ref={triggerRef} isBusy={isLoading} onClick={open} />
 			) : (
 				<Button kind="ghost" size="sm" ref={triggerRef} aria-busy={isLoading} onClick={open}>
 					{buttonLabel}
@@ -74,11 +67,22 @@ const ViewFullVariableButton: React.FC<Props> = ({variableKey, variableName, but
 					variableName={variableName}
 					isVisible
 					readOnly
+					allowModeToggle={canEdit}
 					onClose={() => {
 						setFullValue(null);
 						triggerRef.current?.focus();
 					}}
+					onApply={(value) => {
+						if (form.getState().submitting) {
+							return;
+						}
+						form.reset({name: variableName, value: fullValue, variableKey});
+						form.change('value', value);
+						void form.submit();
+						setFullValue(null);
+					}}
 					title={t('operate.processInstance.variables.fullValueTitle', {name: variableName})}
+					editModeTitle={t('operate.processInstance.variables.editTitle', {name: variableName})}
 				/>
 			)}
 		</>

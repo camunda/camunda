@@ -1613,7 +1613,32 @@
 					"viewDocuments": "Ver documentos",
 					"viewDocumentsLabel": "Ver documentos de la variable {{name}}",
 					"documentsLoadingHint": "Cargando el valor completo de la variable... Puede haber más documentos para esta variable.",
-					"documentsErrorHint": "No se pudo cargar el valor completo de la variable. Puede haber más documentos para esta variable."
+					"documentsErrorHint": "No se pudo cargar el valor completo de la variable. Puede haber más documentos para esta variable.",
+					"added": "Variable añadida",
+					"updated": "Variable actualizada",
+					"saveFailed": "No se pudo guardar la variable",
+					"fetchFailed": "No se pudo obtener la variable",
+					"addVariable": "Añadir variable",
+					"edit": "Editar variable {{name}}",
+					"editDescription": "Editar",
+					"exit": "Salir del modo de edición",
+					"exitDescription": "Salir",
+					"save": "Guardar variable",
+					"saveDescription": "Guardar",
+					"deleteDescription": "Eliminar",
+					"editTitle": "Editar variable \"{{name}}\"",
+					"newVariableTitle": "Editar una nueva variable",
+					"copy": "Copiar variables",
+					"copyTitle": "Haz clic para copiar las variables al portapapeles",
+					"copyPaginated": "La copia está deshabilitada para 50 variables o más",
+					"copyTruncated": "La copia está deshabilitada para valores de variables de más de 8192 caracteres",
+					"validation": {
+						"emptyName": "El nombre es obligatorio",
+						"invalidName": "El nombre no es válido",
+						"duplicateName": "El nombre debe ser único",
+						"invalidValue": "El valor debe ser JSON",
+						"emptyValue": "El valor es obligatorio"
+					}
 				},
 				"details": {
 					"title": "Detalles",

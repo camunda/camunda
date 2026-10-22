@@ -50,8 +50,6 @@ import {InstanceDiagram} from './InstanceDiagram';
 import {InstanceHistory} from './InstanceHistory';
 import {ProcessInstanceOperations} from './ProcessInstanceOperations/ProcessInstanceOperations';
 
-vi.mock('#/shared/feature-flags', () => ({ENABLE_PROCESS_MIGRATION: true, ENABLE_PROCESS_INSTANCE_MODIFICATION: true}));
-
 const PROCESS_INSTANCE_ID = '2251799813685280';
 const PROCESS_XML_WITH_CALL_ACTIVITY =
 	'<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"><process id="my-process"><callActivity id="call-activity" /></process></definitions>';

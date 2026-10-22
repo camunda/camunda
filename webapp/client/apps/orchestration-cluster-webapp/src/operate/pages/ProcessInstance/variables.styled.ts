@@ -7,7 +7,7 @@
  */
 
 import styled from 'styled-components';
-import {InlineLoading as BaseInlineLoading} from '@carbon/react';
+import {InlineLoading as BaseInlineLoading, Button, Layer, Loading} from '@carbon/react';
 import {styles} from '@carbon/type';
 import {StructuredList as BaseStructuredList} from '#/operate/shared/StructuredList/StructuredList';
 
@@ -78,7 +78,67 @@ const InlineLoading = styled(BaseInlineLoading)`
 	justify-content: end;
 `;
 
+const Form = styled.form`
+	height: 100%;
+	display: flex;
+	flex-direction: column;
+`;
+
+const ModificationAddVariableButton = styled(Button)`
+	align-self: flex-end;
+`;
+
+const VariablesContainer = styled.div`
+	height: 100%;
+	position: relative;
+`;
+
+const VariablesContent = styled.div`
+	position: absolute;
+	width: 100%;
+	height: 100%;
+	top: 0;
+	left: 0;
+	display: flex;
+	flex-direction: column;
+	justify-content: space-between;
+`;
+
+const FooterContainer = styled.div`
+	margin-top: auto;
+	border-top: 1px solid var(--cds-border-subtle-01);
+`;
+
+const NewVariableLayer = styled(Layer)`
+	width: 100%;
+	padding: var(--cds-spacing-02) var(--cds-spacing-07) var(--cds-spacing-02) var(--cds-spacing-05);
+	display: grid;
+	grid-template-columns: 1fr 2fr auto;
+	grid-gap: var(--cds-spacing-05);
+`;
+
+const SavingLoadingContainer = styled.div`
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 2rem;
+	height: 2rem;
+	flex-shrink: 0;
+`;
+
+const SavingLoading = styled(Loading)`
+	align-self: center;
+`;
+
 export {
+	Form,
+	ModificationAddVariableButton,
+	VariablesContainer,
+	VariablesContent,
+	FooterContainer,
+	NewVariableLayer,
+	SavingLoadingContainer,
+	SavingLoading,
 	Content,
 	EmptyMessageContainer,
 	FilterSwitcherContainer,

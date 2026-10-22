@@ -22,6 +22,7 @@ import {
 	type QueryAgentInstanceHistoryRequestBody,
 	type QueryProcessInstanceIncidentsRequestBody,
 	type QueryElementInstanceIncidentsRequestBody,
+	type UpdateElementInstanceVariablesRequestBody,
 	type UpdateJobRequestBody,
 	type CancelProcessInstanceRequestBody,
 	type DeleteProcessInstanceRequestBody,
@@ -517,6 +518,14 @@ const endpoints = {
 		new Request(getFullURL(unifiedAPIEndpoints.getElementInstance.getUrl({elementInstanceKey})), {
 			...BASE_REQUEST_OPTIONS,
 			method: unifiedAPIEndpoints.getElementInstance.method,
+		}),
+
+	updateElementInstanceVariables: (elementInstanceKey: string, body: UpdateElementInstanceVariablesRequestBody) =>
+		new Request(getFullURL(unifiedAPIEndpoints.updateElementInstanceVariables.getUrl({elementInstanceKey})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.updateElementInstanceVariables.method,
+			body: JSON.stringify(body),
+			headers: {'Content-Type': 'application/json'},
 		}),
 
 	queryAgentInstances: (body: QueryAgentInstancesRequestBody) =>

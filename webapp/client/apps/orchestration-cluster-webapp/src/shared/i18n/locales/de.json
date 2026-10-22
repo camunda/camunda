@@ -1613,7 +1613,32 @@
 					"viewDocuments": "Dokumente anzeigen",
 					"viewDocumentsLabel": "Dokumente für Variable {{name}} anzeigen",
 					"documentsLoadingHint": "Der vollständige Variablenwert wird geladen... Für diese Variable gibt es möglicherweise weitere Dokumente.",
-					"documentsErrorHint": "Der vollständige Variablenwert konnte nicht geladen werden. Für diese Variable gibt es möglicherweise weitere Dokumente."
+					"documentsErrorHint": "Der vollständige Variablenwert konnte nicht geladen werden. Für diese Variable gibt es möglicherweise weitere Dokumente.",
+					"added": "Variable hinzugefügt",
+					"updated": "Variable aktualisiert",
+					"saveFailed": "Variable konnte nicht gespeichert werden",
+					"fetchFailed": "Variable konnte nicht abgerufen werden",
+					"addVariable": "Variable hinzufügen",
+					"edit": "Variable {{name}} bearbeiten",
+					"editDescription": "Bearbeiten",
+					"exit": "Bearbeitungsmodus verlassen",
+					"exitDescription": "Verlassen",
+					"save": "Variable speichern",
+					"saveDescription": "Speichern",
+					"deleteDescription": "Löschen",
+					"editTitle": "Variable \"{{name}}\" bearbeiten",
+					"newVariableTitle": "Neue Variable bearbeiten",
+					"copy": "Variablen kopieren",
+					"copyTitle": "Klicken, um Variablen in die Zwischenablage zu kopieren",
+					"copyPaginated": "Kopieren ist bei 50 oder mehr Variablen deaktiviert",
+					"copyTruncated": "Kopieren ist bei Variablenwerten mit mehr als 8192 Zeichen deaktiviert",
+					"validation": {
+						"emptyName": "Name muss ausgefüllt sein",
+						"invalidName": "Name ist ungültig",
+						"duplicateName": "Name muss eindeutig sein",
+						"invalidValue": "Wert muss JSON sein",
+						"emptyValue": "Wert muss ausgefüllt sein"
+					}
 				},
 				"details": {
 					"title": "Details",

@@ -26,6 +26,10 @@ class OperateProcessInstancePage extends BasePage {
 		return this.page.getByRole('button', {name: `${label} Instance ${key}`});
 	}
 
+	diagramElement(elementId: string) {
+		return this.page.locator(`[data-element-id="${elementId}"]`);
+	}
+
 	get actionsMenu() {
 		return this.page.getByRole('button', {name: 'Actions'});
 	}

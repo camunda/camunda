@@ -35,8 +35,6 @@ import {ProcessInstanceModificationContext} from '../useProcessInstanceModificat
 import {initialModificationState} from '../modifications/modificationReducer';
 import {ProcessInstanceOperations} from './ProcessInstanceOperations';
 
-vi.mock('#/shared/feature-flags', () => ({ENABLE_PROCESS_MIGRATION: true, ENABLE_PROCESS_INSTANCE_MODIFICATION: true}));
-
 const ACTIONS = [
 	{
 		action: 'Retry',
@@ -431,10 +429,13 @@ describe('<ProcessInstanceOperations />', () => {
 			} else {
 				await userEvent.tab();
 				await userEvent.keyboard('{Enter}');
-				for (const label of state === 'ACTIVE' ? ['Retry', 'Suspend', 'Cancel', 'Migrate'] : ['Resume', 'Cancel']) {
+				for (const label of state === 'ACTIVE'
+					? ['Retry', 'Suspend', 'Cancel', 'Modify', 'Migrate']
+					: ['Resume', 'Cancel']) {
 					await expect.element(screen.getByRole('menuitem', {name: label})).toBeEnabled();
 				}
 				if (state === 'SUSPENDED') {
+					await expect.element(screen.getByRole('menuitem', {name: 'Modify'})).not.toBeInTheDocument();
 					await expect.element(screen.getByRole('menuitem', {name: 'Migrate'})).not.toBeInTheDocument();
 				}
 				await userEvent.keyboard('{Escape}');
