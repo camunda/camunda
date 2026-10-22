@@ -126,6 +126,18 @@
 
       <dependency>
         <groupId>io.camunda</groupId>
+        <artifactId>camunda-process-test-json-test-cases</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.camunda</groupId>
+        <artifactId>camunda-process-test-coverage</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.camunda</groupId>
         <artifactId>camunda-process-test-spring</artifactId>
         <version>${project.version}</version>
       </dependency>

@@ -50,7 +50,8 @@ public class CreateProcessInstanceInstructionTest {
   @Mock private AssertionFacade assertionFacade;
 
   private final CreateProcessInstanceInstructionHandler instructionHandler =
-      new CreateProcessInstanceInstructionHandler(new CreatedProcessInstanceRegistry());
+      new CreateProcessInstanceInstructionHandler(
+          new CreatedProcessInstanceRegistry(), TestRunContext.disabled());
 
   @Test
   void shouldCreateProcessInstanceByProcessDefinitionId() {
@@ -202,6 +203,41 @@ public class CreateProcessInstanceInstructionTest {
     verify(mockCommand).send();
 
     verifyNoMoreInteractions(camundaClient, processTestContext, mockCommand, assertionFacade);
+  }
+
+  @Test
+  void shouldTagStartedInstanceWithRunIdWhenIsolationEnabled() {
+    // given
+    final String runId = "run-1";
+    final CreateProcessInstanceInstructionHandler isolatingHandler =
+        new CreateProcessInstanceInstructionHandler(
+            new CreatedProcessInstanceRegistry(), TestRunContext.enabled(runId));
+
+    final CreateProcessInstanceInstruction instruction =
+        ImmutableCreateProcessInstanceInstruction.builder()
+            .processDefinitionSelector(
+                ImmutableProcessDefinitionSelector.builder()
+                    .processDefinitionId(PROCESS_DEFINITION_ID)
+                    .build())
+            .putAllVariables(Collections.singletonMap("a", 1))
+            .build();
+
+    // when
+    isolatingHandler.execute(instruction, processTestContext, camundaClient, assertionFacade);
+
+    // then
+    final Map<String, Object> expectedVariables = new HashMap<>();
+    expectedVariables.put("a", 1);
+    expectedVariables.put(TestRunContext.RUN_ID_VARIABLE_NAME, runId);
+
+    final CreateProcessInstanceCommandStep3 mockCommand =
+        camundaClient
+            .newCreateInstanceCommand()
+            .bpmnProcessId(PROCESS_DEFINITION_ID)
+            .latestVersion()
+            .variables(expectedVariables);
+
+    verify(mockCommand).send();
   }
 
   @Test

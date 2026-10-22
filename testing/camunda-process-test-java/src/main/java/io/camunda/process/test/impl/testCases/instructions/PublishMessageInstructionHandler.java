@@ -21,10 +21,17 @@ import io.camunda.process.test.api.CamundaProcessTestContext;
 import io.camunda.process.test.api.testCases.instructions.PublishMessageInstruction;
 import io.camunda.process.test.impl.testCases.AssertionFacade;
 import io.camunda.process.test.impl.testCases.TestCaseInstructionHandler;
+import io.camunda.process.test.impl.testCases.TestRunContext;
 import java.time.Duration;
 
 public class PublishMessageInstructionHandler
     implements TestCaseInstructionHandler<PublishMessageInstruction> {
+
+  private final TestRunContext runContext;
+
+  public PublishMessageInstructionHandler(final TestRunContext runContext) {
+    this.runContext = runContext;
+  }
 
   @Override
   public void execute(
@@ -49,7 +56,7 @@ public class PublishMessageInstructionHandler
               .withoutCorrelationKey();
     }
 
-    command.variables(instruction.getVariables());
+    command.variables(runContext.applyRunId(instruction.getVariables()));
 
     instruction.getTimeToLive().ifPresent(ttl -> command.timeToLive(Duration.ofMillis(ttl)));
 

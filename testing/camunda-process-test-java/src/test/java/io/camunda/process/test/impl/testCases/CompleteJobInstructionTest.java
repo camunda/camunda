@@ -56,7 +56,7 @@ public class CompleteJobInstructionTest {
   @Captor private ArgumentCaptor<JobSelector> jobSelectorCaptor;
 
   private final CompleteJobInstructionHandler instructionHandler =
-      new CompleteJobInstructionHandler();
+      new CompleteJobInstructionHandler(TestRunContext.disabled());
 
   @Test
   void shouldCompleteJobByJobType() {
