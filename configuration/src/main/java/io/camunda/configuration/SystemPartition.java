@@ -9,6 +9,7 @@ package io.camunda.configuration;
 
 import java.time.Duration;
 import org.jspecify.annotations.Nullable;
+import org.springframework.boot.context.properties.NestedConfigurationProperty;
 import org.springframework.util.unit.DataSize;
 
 /**
@@ -47,6 +48,9 @@ public class SystemPartition {
    * file.
    */
   private Duration snapshotPeriod = Duration.ofMinutes(5);
+
+  /** Experimental, opt-in detection of regions gone from the cluster. */
+  @NestedConfigurationProperty private FailureDetector failureDetector = new FailureDetector();
 
   public boolean isEnabled() {
     return enabled;
@@ -88,6 +92,14 @@ public class SystemPartition {
     this.snapshotPeriod = snapshotPeriod;
   }
 
+  public FailureDetector getFailureDetector() {
+    return failureDetector;
+  }
+
+  public void setFailureDetector(final FailureDetector failureDetector) {
+    this.failureDetector = failureDetector;
+  }
+
   @Override
   public String toString() {
     return "SystemPartition{"
@@ -101,6 +113,8 @@ public class SystemPartition {
         + logSegmentSize
         + ", snapshotPeriod="
         + snapshotPeriod
+        + ", failureDetector="
+        + failureDetector
         + '}';
   }
 }

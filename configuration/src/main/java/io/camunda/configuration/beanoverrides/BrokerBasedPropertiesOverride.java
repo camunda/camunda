@@ -577,6 +577,17 @@ public class BrokerBasedPropertiesOverride {
         .getCluster()
         .getSystemPartition()
         .setSnapshotPeriod(cluster.getSystemPartition().getSnapshotPeriod());
+    final var failureDetector = cluster.getSystemPartition().getFailureDetector();
+    final var failureDetectorOverride =
+        override.getCluster().getSystemPartition().getFailureDetector();
+    failureDetectorOverride.setType(failureDetector.getType());
+    final var swim = failureDetector.getSwim();
+    final var swimOverride = failureDetectorOverride.getSwim();
+    swimOverride.setReportInterval(swim.getReportInterval());
+    swimOverride.setReportTimeout(swim.getReportTimeout());
+    swimOverride.setDetectionWindow(swim.getDetectionWindow());
+    swimOverride.setRecoveryWindow(swim.getRecoveryWindow());
+    swimOverride.setMinObservers(swim.getMinObservers());
 
     populateFromMembership(override, camunda);
     populateFromRaftProperties(override, camunda);

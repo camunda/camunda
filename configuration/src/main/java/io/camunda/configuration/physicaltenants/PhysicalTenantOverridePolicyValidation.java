@@ -89,6 +89,10 @@ final class PhysicalTenantOverridePolicyValidation {
               // StaticConfigurationGenerator resolves it from the root BrokerCfg only, unlike
               // its partition-count sibling.
               "cluster.replication-factor",
+              // the system partition is a single cluster-wide Raft group, replicated on brokers
+              // chosen from the cluster's zones, and carries the cluster's failure detection;
+              // none of it is a per-tenant concern
+              "cluster.system-partition",
               // camunda.system.* — system / process-wide settings
               "system.cpu-thread-count",
               "system.io-thread-count",

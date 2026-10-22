@@ -17,7 +17,7 @@ import org.springframework.util.unit.DataSize;
  * Configuration of the system partition: a metadata-only Raft group replicated on {@link
  * #getReplicationFactor() replication factor} brokers of the cluster, spread across zones and
  * including brokers of control zones which host no data partitions. It carries cluster coordination
- * data.
+ * data, and optionally detects regions gone from the cluster.
  */
 public final class SystemPartitionCfg implements ConfigurationEntry {
   public static final Duration DEFAULT_HEARTBEAT_INTERVAL = Duration.ofSeconds(1);
@@ -30,6 +30,7 @@ public final class SystemPartitionCfg implements ConfigurationEntry {
   private @Nullable Integer replicationFactor;
   private DataSize logSegmentSize = DEFAULT_LOG_SEGMENT_SIZE;
   private Duration snapshotPeriod = DEFAULT_SNAPSHOT_PERIOD;
+  private FailureDetectorCfg failureDetector = new FailureDetectorCfg();
 
   @Override
   public void init(final BrokerCfg globalConfig, final String brokerBase) {
@@ -42,6 +43,7 @@ public final class SystemPartitionCfg implements ConfigurationEntry {
                 .formatted(brokers, replicationFactor));
       }
     }
+    failureDetector.init(globalConfig, brokerBase);
   }
 
   /** Returns the number of brokers the system partition can be replicated on. */
@@ -97,6 +99,14 @@ public final class SystemPartitionCfg implements ConfigurationEntry {
     this.snapshotPeriod = snapshotPeriod;
   }
 
+  public FailureDetectorCfg getFailureDetector() {
+    return failureDetector;
+  }
+
+  public void setFailureDetector(final FailureDetectorCfg failureDetector) {
+    this.failureDetector = failureDetector;
+  }
+
   @Override
   public String toString() {
     return "SystemPartitionCfg{"
@@ -110,6 +120,8 @@ public final class SystemPartitionCfg implements ConfigurationEntry {
         + logSegmentSize
         + ", snapshotPeriod="
         + snapshotPeriod
+        + ", failureDetector="
+        + failureDetector
         + '}';
   }
 }

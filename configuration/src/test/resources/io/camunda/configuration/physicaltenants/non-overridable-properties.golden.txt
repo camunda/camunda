@@ -90,6 +90,17 @@ cluster.raft.snapshot-request-timeout
 cluster.receive-on-legacy-subject
 cluster.replication-factor
 cluster.size
+cluster.system-partition.enabled
+cluster.system-partition.failure-detector.swim.detection-window
+cluster.system-partition.failure-detector.swim.min-observers
+cluster.system-partition.failure-detector.swim.recovery-window
+cluster.system-partition.failure-detector.swim.report-interval
+cluster.system-partition.failure-detector.swim.report-timeout
+cluster.system-partition.failure-detector.type
+cluster.system-partition.heartbeat-interval
+cluster.system-partition.log-segment-size
+cluster.system-partition.replication-factor
+cluster.system-partition.snapshot-period
 cluster.zone
 data.primary-storage.directory
 data.primary-storage.disk.free-space.processing
