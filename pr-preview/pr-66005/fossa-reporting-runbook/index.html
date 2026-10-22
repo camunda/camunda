@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="generator" content="Docusaurus v3.10.2">
 <title data-rh="true">FOSSA Reporting Runbook | Camunda Platform</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:url" content="https://camunda.github.io/camunda/pr-preview/pr-66005/fossa-reporting-runbook/"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-default-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-default-current"><meta data-rh="true" property="og:title" content="FOSSA Reporting Runbook | Camunda Platform"><meta data-rh="true" name="description" content="How to publish FOSSA attribution and SBOM reports for a component in the monorepo release. For"><meta data-rh="true" property="og:description" content="How to publish FOSSA attribution and SBOM reports for a component in the monorepo release. For"><link data-rh="true" rel="icon" href="/camunda/pr-preview/pr-66005/img/black-C.png"><link data-rh="true" rel="canonical" href="https://camunda.github.io/camunda/pr-preview/pr-66005/fossa-reporting-runbook/"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-66005/fossa-reporting-runbook/" hreflang="en"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-66005/fossa-reporting-runbook/" hreflang="x-default"><link rel="stylesheet" href="/camunda/pr-preview/pr-66005/assets/css/styles.44533d03.css">
-<script src="/camunda/pr-preview/pr-66005/assets/js/runtime~main.ab9dcf6a.js" defer="defer"></script>
-<script src="/camunda/pr-preview/pr-66005/assets/js/main.0824a278.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-66005/assets/js/runtime~main.39d5fd4a.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-66005/assets/js/main.728c86fc.js" defer="defer"></script>
 </head>
 <body>
 <svg style="display: none;"><defs>
@@ -46,8 +46,11 @@ See <a href="https://github.com/camunda/infra-core/blob/stage/docs/scanning-tool
 <li class=""><strong>Add a job.</strong> In <code>camunda-platform-release.yml</code>, copy <code>fossa-release-optimize</code> and change the
 <code>project-id</code>, the group IDs, <code>fossa-api-key-vault-key</code> and the <code>if</code> gate. Add the job to <code>needs</code> and to the <code>if</code> of
 <code>notify-on-success</code> and <code>notify-if-failed</code>.</li>
-<li class=""><strong>Dry run.</strong> Run <code>zeebe-release-stable-dry-run.yml</code> from the branch. The new job must print the
-FOSSA calls for its project locator, and the other <code>fossa-release*</code> jobs must be unchanged.</li>
+<li class=""><strong>Dry run.</strong> Dispatch <code>camunda-platform-release-main-dry-run.yml</code> with both the workflow ref and
+its <code>branch</code> input set to the branch containing the changes. Run with <code>includeOptimize: true</code>
+and <code>includeOptimize: false</code>, checking that the new job prints the expected FOSSA calls or is
+skipped respectively. Check that the other <code>fossa-release*</code> jobs are unchanged. Use
+<code>zeebe-release-stable-dry-run.yml</code> to validate stable branches after backporting.</li>
 <li class=""><strong>Backfill.</strong> For releases already shipped, replay the <code>fossa/release</code> calls per tag with
 <code>dry-run: true</code> first. Check beforehand that each tag revision has a completed scan.</li>
 <li class=""><strong>Link the docs.</strong> Add the portal links to the
