@@ -11,6 +11,7 @@ import io.camunda.zeebe.dmn.DecisionEvaluationResult;
 import io.camunda.zeebe.dmn.EvaluatedDecision;
 import java.util.List;
 import org.agrona.DirectBuffer;
+import org.jspecify.annotations.Nullable;
 
 /** The result of an unsuccessful attempt to evaluate a decision. */
 public final class EvaluationFailure implements DecisionEvaluationResult {
@@ -48,7 +49,7 @@ public final class EvaluationFailure implements DecisionEvaluationResult {
   }
 
   @Override
-  public DirectBuffer getOutput() {
+  public @Nullable DirectBuffer getOutput() {
     return null;
   }
 

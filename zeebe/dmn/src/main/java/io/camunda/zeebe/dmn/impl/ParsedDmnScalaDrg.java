@@ -24,6 +24,7 @@ import org.camunda.bpm.model.dmn.instance.Definitions;
 import org.camunda.bpm.model.dmn.instance.ExtensionElements;
 import org.camunda.dmn.parser.ParsedDecisionTable;
 import org.camunda.dmn.parser.ParsedDmn;
+import org.jspecify.annotations.Nullable;
 
 public final class ParsedDmnScalaDrg implements ParsedDecisionRequirementsGraph {
 
@@ -80,7 +81,7 @@ public final class ParsedDmnScalaDrg implements ParsedDecisionRequirementsGraph 
   }
 
   @Override
-  public String getFailureMessage() {
+  public @Nullable String getFailureMessage() {
     return null;
   }
 
@@ -147,7 +148,7 @@ public final class ParsedDmnScalaDrg implements ParsedDecisionRequirementsGraph 
     return decisions;
   }
 
-  private static ParsedDmnScalaDecisionTable getParsedDecisionTable(
+  private static @Nullable ParsedDmnScalaDecisionTable getParsedDecisionTable(
       final org.camunda.dmn.parser.ParsedDecision parsedDecision) {
     if (!(parsedDecision.logic() instanceof final ParsedDecisionTable table)) {
       return null;

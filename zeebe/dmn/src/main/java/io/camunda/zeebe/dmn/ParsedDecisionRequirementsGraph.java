@@ -8,6 +8,7 @@
 package io.camunda.zeebe.dmn;
 
 import java.util.Collection;
+import org.jspecify.annotations.Nullable;
 
 /**
  * A parsed DMN decision requirements graph (DRG). A DRG shows how a decision can be made, and
@@ -20,17 +21,17 @@ public interface ParsedDecisionRequirementsGraph {
   /**
    * @return the id of the DRG, or {@code null} if the DMN is not valid
    */
-  String getId();
+  @Nullable String getId();
 
   /**
    * @return the name of the DRG, or {@code null} if the DMN is not valid
    */
-  String getName();
+  @Nullable String getName();
 
   /**
    * @return the namespace of the DRG, or {@code null} if the DMN is not valid
    */
-  String getNamespace();
+  @Nullable String getNamespace();
 
   /**
    * @return the decisions that are contained in the DRG, or an empty collection if the DMN is not
@@ -49,5 +50,5 @@ public interface ParsedDecisionRequirementsGraph {
    *
    * @return the failure message if the DMN is not valid, or {@code null} if the DMN is valid
    */
-  String getFailureMessage();
+  @Nullable String getFailureMessage();
 }

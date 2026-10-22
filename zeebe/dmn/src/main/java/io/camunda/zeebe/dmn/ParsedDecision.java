@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.dmn;
 
+import org.jspecify.annotations.Nullable;
+
 /**
  * A parsed DMN decision. A decision denotes the act of choosing among multiple possible options. It
  * is contained in a {@link ParsedDecisionRequirementsGraph decision requirements graph (DRG)} that
@@ -31,5 +33,5 @@ public interface ParsedDecision {
    *     {@code null} (for example, when the decision uses a literal expression or context instead
    *     of a decision table)
    */
-  ParsedDecisionTable getDecisionTable();
+  @Nullable ParsedDecisionTable getDecisionTable();
 }
