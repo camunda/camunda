@@ -69,6 +69,7 @@
     <version.gson>2.14.0</version.gson>
     <version.guava>33.7.2-jre</version.guava>
     <version.hamcrest>3.0</version.hamcrest>
+    <version.hibernate-validator>9.1.5.Final</version.hibernate-validator>
     <version.icu4j>78.3</version.icu4j>
     <version.json-schema-validator>3.0.8</version.json-schema-validator>
     <version.maven-surefire-common>3.5.6</version.maven-surefire-common>
@@ -1558,6 +1559,18 @@
         <groupId>com.google.guava</groupId>
         <artifactId>guava</artifactId>
         <version>${version.guava}</version>
+      </dependency>
+
+      <!--
+        Override of the version managed by the imported Spring Boot BOM (importing a BOM ignores
+        properties of this POM, so the managed version must be pinned explicitly). Includes the fix
+        HV-2256 (escape message parameters by default) for CVE-2026-93879. Remove once the Spring
+        Boot version in use manages a release containing this fix.
+      -->
+      <dependency>
+        <groupId>org.hibernate.validator</groupId>
+        <artifactId>hibernate-validator</artifactId>
+        <version>${version.hibernate-validator}</version>
       </dependency>
 
       <dependency>
