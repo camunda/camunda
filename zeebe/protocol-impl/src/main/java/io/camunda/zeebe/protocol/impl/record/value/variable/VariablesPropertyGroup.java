@@ -16,6 +16,7 @@ import io.camunda.zeebe.protocol.record.value.VariableMetadataValue;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Objects;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
@@ -90,6 +91,27 @@ public final class VariablesPropertyGroup implements PropertyGroup {
   public void reset() {
     variablesProp.reset();
     metadataProp.reset();
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(getVariablesBuffer(), getMetadata());
+  }
+
+  /**
+   * Compares the metadata as a map rather than as encoded bytes: the encoding follows the iteration
+   * order of the map it was set from, which says nothing about whether two groups are equal.
+   */
+  @Override
+  public boolean equals(final Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (!(o instanceof final VariablesPropertyGroup that)) {
+      return false;
+    }
+    return Objects.equals(getVariablesBuffer(), that.getVariablesBuffer())
+        && Objects.equals(getMetadata(), that.getMetadata());
   }
 
   private static Map<String, Object> toDocument(final VariableMetadataValue metadata) {

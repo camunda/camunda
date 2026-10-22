@@ -17,6 +17,7 @@ package io.camunda.zeebe.protocol.record.value;
 
 import io.camunda.zeebe.protocol.record.ImmutableProtocol;
 import io.camunda.zeebe.protocol.record.RecordValueWithVariables;
+import java.util.Map;
 import org.immutables.value.Value;
 
 @Value.Immutable
@@ -33,4 +34,11 @@ public interface VariableDocumentRecordValue extends RecordValueWithVariables, T
    *     VariableDocumentUpdateSemantic}
    */
   VariableDocumentUpdateSemantic getUpdateSemantics();
+
+  /**
+   * @return the metadata of the variables of this document by variable name, empty if none of the
+   *     variables comes with metadata
+   * @since 8.11
+   */
+  Map<String, VariableMetadataValue> getVariablesMetadata();
 }

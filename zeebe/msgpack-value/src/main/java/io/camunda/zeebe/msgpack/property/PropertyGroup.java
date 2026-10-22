@@ -13,6 +13,10 @@ import io.camunda.zeebe.msgpack.value.ObjectValue;
  * A set of related properties that are declared together on the owning {@link ObjectValue}. The
  * properties are written as sibling keys of the owner, so a group adds no nesting to the encoding.
  *
+ * <p>By convention an owner declares its groups last, in a statement of their own after the chain
+ * of {@code declareProperty} calls, so that the size hint passed to the constructor equals the
+ * number of properties in that chain.
+ *
  * @see ObjectValue#declareProperties(PropertyGroup)
  */
 public interface PropertyGroup {
