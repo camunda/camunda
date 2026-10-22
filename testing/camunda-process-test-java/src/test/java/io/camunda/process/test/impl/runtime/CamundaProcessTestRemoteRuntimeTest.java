@@ -18,6 +18,8 @@ package io.camunda.process.test.impl.runtime;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -26,6 +28,7 @@ import static org.mockito.Mockito.when;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.CamundaClientBuilder;
 import io.camunda.client.api.command.ClientException;
+import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.response.BrokerInfo;
 import io.camunda.client.api.response.PartitionBrokerHealth;
 import io.camunda.client.api.response.PartitionInfo;
@@ -153,6 +156,15 @@ public class CamundaProcessTestRemoteRuntimeTest {
 
     when(topology.getBrokers()).thenReturn(Collections.singletonList(brokerInfo));
     when(topology.getGatewayVersion()).thenReturn("testing");
+
+    // the engine rejects the invalid resource of the readiness probe
+    when(camundaClient
+            .newDeployResourceCommand()
+            .useRest()
+            .addResourceBytes(any(byte[].class), anyString())
+            .send()
+            .join())
+        .thenThrow(new ProblemException(400, "Bad Request", null));
 
     final CamundaProcessTestRuntime camundaRuntime =
         CamundaProcessTestContainerRuntime.newBuilder()
