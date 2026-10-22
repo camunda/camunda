@@ -249,7 +249,7 @@ internal fun VersionCatalogBuilder.catalogSpringBootLibraries() {
       "org.hibernate.validator",
       "hibernate-validator",
     )
-    .withoutVersion()
+    .versionRef("hibernate-validator")
   library(
       "org-springframework-boot-spring-boot-jdbc",
       "org.springframework.boot",

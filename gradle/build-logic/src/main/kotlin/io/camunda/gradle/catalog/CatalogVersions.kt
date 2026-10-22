@@ -90,6 +90,7 @@ internal fun VersionCatalogBuilder.catalogVersions(
   version("guava", pomVersion("version.guava"))
   version("h2", pomVersion("version.h2"))
   version("hamcrest", pomVersion("version.hamcrest"))
+  version("hibernate-validator", pomVersion("version.hibernate-validator"))
   version("httpcomponents", pomVersion("version.httpcomponents"))
   version("identity", pomVersion("version.identity"))
   version("immutables", pomVersion("version.immutables"))
