@@ -87,7 +87,6 @@ apply the documented policy for transitive patch-version differences.
 
 - `-Pskip.fe.build=true` disables frontend npm tasks while keeping the active project graph.
 - `-Pquickly` omits Optimize projects, disables tests and Spotless, and skips frontend builds.
-- `-PuseMavenLocal` adds Maven Local to dependency resolution when explicitly needed.
 - `-Ptest.max.forks=N` sets the number of Gradle test JVM forks; default is `1`. Keep the default
   until the shared test-port slot handling supports multiple forks.
 - `-Ptest.max.retries=N` sets the maximum retries for failed tests; default is `0`. Do not use

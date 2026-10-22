@@ -106,7 +106,10 @@ dependencyResolutionManagement {
     repositoriesMode = RepositoriesMode.PREFER_SETTINGS
 
     repositories {
-        // Google-hosted Maven Central mirror first: shared CI/sandbox egress IPs get rate limited (HTTP
+        // ~/.m2 first so artifacts already downloaded by Maven are reused instead of re-fetched.
+        mavenLocal()
+
+        // Google-hosted Maven Central mirror next: shared CI/sandbox egress IPs get rate limited (HTTP
         // 429) by repo.maven.apache.org. Central stays as fallback for anything the mirror lacks.
         maven("https://maven-central.storage-download.googleapis.com/maven2")
         mavenCentral()
@@ -117,11 +120,6 @@ dependencyResolutionManagement {
             patternLayout { artifact("v[revision]/[artifact](-v[revision]-[classifier]).[ext]") }
             metadataSources { artifact() }
             content { includeModule("org.nodejs", "node") }
-        }
-
-        // mavenLocal — only when explicitly requested via -PuseMavenLocal
-        if (providers.gradleProperty("useMavenLocal").isPresent) {
-            mavenLocal()
         }
     }
 
