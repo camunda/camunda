@@ -1,16 +1,20 @@
 import buildlogic.DistributionDependencyReportExtension
 import buildlogic.OpenApiDefaults
+import buildlogic.reproducibleArchive
 import buildlogic.requiredVersion
 import buildlogic.filterMavenResources
 import io.camunda.gradle.pom.PomResolver
 import org.gradle.api.artifacts.VersionCatalogsExtension
 import org.gradle.api.file.FileTree
 import org.gradle.api.tasks.WriteProperties
+import org.gradle.api.tasks.bundling.Tar
+import org.gradle.api.tasks.bundling.Zip
 import org.gradle.jvm.tasks.Jar
 import org.openapitools.generator.gradle.plugin.tasks.GenerateTask
 
 plugins {
   id("buildlogic.server-conventions")
+  distribution
   id("buildlogic.distribution-dependency-report-conventions")
   alias(libs.plugins.spring.boot)
   id("buildlogic.openapi-conventions")
@@ -109,7 +113,6 @@ val versionCatalog = extensions.getByType<VersionCatalogsExtension>().named("lib
 val elasticsearchVersion = versionCatalog.requiredVersion("co-elastic-clients-elasticsearch-java")
 val distName = "camunda-zeebe"
 val distVersion = project.version.toString()
-val distDirectory = layout.buildDirectory.dir(distName)
 val parentPom = providers.fileContents(layout.settingsDirectory.file("parent/pom.xml"))
 val distPom = providers.fileContents(layout.projectDirectory.file("pom.xml"))
 val jvmModuleOpens =
@@ -245,56 +248,27 @@ val distContents =
     from(generateDistReadme)
   }
 
-val assembleDist =
-  tasks.register<Sync>("assembleDist") {
-    dependsOn(
-      tasks.named("jar"),
-      generateDistReadme,
-      generateDistScripts,
-      copyOpenApiYaml,
-    )
-    into(distDirectory)
-    with(distContents)
+distributions {
+  main {
+    distributionBaseName.set(distName)
+    contents { with(distContents) }
   }
+}
 
 // npm builds only run when producing a dist artifact, not during tests or compilation.
-tasks.named("assembleDist") {
-  dependsOn(
-    ":identity-webjar:npmBuild",
-    ":operate-webjar:npmBuild",
-    ":webapp-webjar:npmBuild",
-  )
-}
-
-val distTar =
-  tasks.register<Tar>("distTar") {
-    group = "build"
-    description = "Create the Camunda distribution tar.gz archive"
-    dependsOn(assembleDist)
-    compression = Compression.GZIP
-    archiveBaseName.set(distName)
-    archiveVersion.set(distVersion)
-    archiveExtension.set("tar.gz")
-    destinationDirectory.set(layout.buildDirectory.dir("distributions"))
-
-    into("$distName-$distVersion") { with(distContents) }
+tasks
+  .matching { it.name in setOf("installDist", "distTar", "distZip") }
+  .configureEach {
+    dependsOn(
+      ":identity-webjar:npmBuild",
+      ":operate-webjar:npmBuild",
+      ":webapp-webjar:npmBuild",
+    )
   }
 
-val distZip =
-  tasks.register<Zip>("distZip") {
-    group = "build"
-    description = "Create the Camunda distribution zip archive"
-    dependsOn(assembleDist)
-    archiveBaseName.set(distName)
-    archiveVersion.set(distVersion)
-    destinationDirectory.set(layout.buildDirectory.dir("distributions"))
+tasks.named<Tar>("distTar") { reproducibleArchive() }
 
-    into("$distName-$distVersion") { with(distContents) }
-  }
-
-tasks.named("assemble") {
-  dependsOn(assembleDist, distTar, distZip)
-}
+tasks.named<Zip>("distZip") { reproducibleArchive() }
 
 dependencies {
   implementation(project(":camunda-cluster"))
@@ -478,8 +452,6 @@ description = "Zeebe Distribution"
 tasks.named("bootJar") { enabled = false }
 
 tasks.named<Jar>("jar") { archiveClassifier.set("") }
-
-tasks.named("assemble") { dependsOn(assembleDist) }
 
 configurations.named("runtimeClasspath") {
   exclude(group = "org.springframework.boot", module = "spring-boot-starter-logging")
