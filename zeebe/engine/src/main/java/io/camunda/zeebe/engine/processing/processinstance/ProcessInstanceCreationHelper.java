@@ -323,7 +323,9 @@ public class ProcessInstanceCreationHelper {
   }
 
   public void setVariablesFromDocument(
-      final ProcessInstanceRecord processInstance, final DirectBuffer variablesBuffer)
+      final ProcessInstanceRecord processInstance,
+      final DirectBuffer variablesBuffer,
+      final VariableMetadataLookup metadataLookup)
       throws VariableValidationException {
     variableBehavior.mergeLocalDocument(
         processInstance.getProcessInstanceKey(),
@@ -334,7 +336,7 @@ public class ProcessInstanceCreationHelper {
         processInstance.getBpmnProcessIdBuffer(),
         processInstance.getTenantId(),
         variablesBuffer,
-        VariableMetadataLookup.NONE);
+        metadataLookup);
   }
 
   public void activateElementsForStartInstructions(
