@@ -489,6 +489,7 @@ public class ElasticsearchProcessStore implements ProcessStore {
       throws IOException {
     final DeleteByQueryRequest query =
         new DeleteByQueryRequest(indexName).setQuery(QueryBuilders.termsQuery(idField, id));
+    query.setConflicts("proceed");
     final BulkByScrollResponse response = esClient.deleteByQuery(query, RequestOptions.DEFAULT);
     LOGGER.debug("Delete document {} in {} response: {}", id, indexName, response.getStatus());
     return response.getDeleted();
