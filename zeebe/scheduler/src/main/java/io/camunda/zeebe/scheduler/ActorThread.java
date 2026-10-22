@@ -16,11 +16,13 @@ import io.camunda.zeebe.util.Loggers;
 import io.camunda.zeebe.util.error.FatalErrorHandler;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.VarHandle;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.locks.LockSupport;
 import java.util.function.Consumer;
 import org.agrona.concurrent.IdleStrategy;
 import org.agrona.concurrent.ManyToManyConcurrentArrayQueue;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.MDC;
 
@@ -44,6 +46,7 @@ public class ActorThread extends Thread implements Consumer<Runnable> {
   protected ActorTaskRunnerIdleStrategy idleStrategy;
   ActorTask currentTask;
   private final ActorMetrics actorMetrics;
+  private @Nullable Map<String, String> appliedActorContext;
   private final CompletableFuture<Void> terminationFuture = new CompletableFuture<>();
   private final ActorClock clock;
   private final int threadId;
@@ -111,17 +114,41 @@ public class ActorThread extends Thread implements Consumer<Runnable> {
         }
       }
     } else {
+      clearActorContext();
       idleStrategy.onIdle();
     }
   }
 
-  private void executeCurrentTask() {
-    final var properties = currentTask.getActor().getContext();
-    boolean resubmit = false;
+  /**
+   * Makes the context of the actor to execute available as MDC. Updating the MDC is surprisingly
+   * expensive as it copies the underlying map on every put and remove, so the context stays applied
+   * as long as the thread keeps executing the same actor, and is only reset once the thread runs
+   * out of work or switches to another actor.
+   */
+  private void applyActorContext(final Map<String, String> context) {
+    if (context == appliedActorContext) {
+      return;
+    }
 
-    for (final var property : properties.entrySet()) {
+    clearActorContext();
+    for (final var property : context.entrySet()) {
       MDC.put(property.getKey(), property.getValue());
     }
+    appliedActorContext = context;
+  }
+
+  private void clearActorContext() {
+    final var context = appliedActorContext;
+    if (context != null) {
+      context.keySet().forEach(MDC::remove);
+      appliedActorContext = null;
+    }
+  }
+
+  private void executeCurrentTask() {
+    boolean resubmit = false;
+
+    applyActorContext(currentTask.getActor().getContext());
 
     idleStrategy.onTaskExecuted();
 
@@ -132,7 +159,6 @@ public class ActorThread extends Thread implements Consumer<Runnable> {
       LOG.error("Unexpected error occurred in task {}", currentTask, e);
     } finally {
       clock.update();
-      properties.keySet().forEach(MDC::remove);
     }
 
     if (resubmit) {
