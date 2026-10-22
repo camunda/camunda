@@ -39,6 +39,7 @@ public final class CompletableActorFuture<V extends @Nullable Object> implements
   private static final long STATE_OFFSET;
 
   private static final VarHandle BLOCKED_CALLBACKS;
+  private static final VarHandle COMPLETION_LATCH;
 
   private static final int AWAITING_RESULT = 1;
   private static final int COMPLETING = 2;
@@ -58,6 +59,9 @@ public final class CompletableActorFuture<V extends @Nullable Object> implements
       BLOCKED_CALLBACKS =
           MethodHandles.lookup()
               .findVarHandle(CompletableActorFuture.class, "blockedCallbacks", CallbackNode.class);
+      COMPLETION_LATCH =
+          MethodHandles.lookup()
+              .findVarHandle(CompletableActorFuture.class, "completionLatch", CountDownLatch.class);
     } catch (final ReflectiveOperationException ex) {
       throw new ExceptionInInitializerError(ex);
     }
@@ -71,6 +75,8 @@ public final class CompletableActorFuture<V extends @Nullable Object> implements
   // Most futures never have a callback registered, so these are kept as a lock-free stack of nodes
   // that costs nothing until the first callback is added. See #notifyAllBlocked().
   private volatile @Nullable CallbackNode<V> blockedCallbacks;
+
+  private volatile @Nullable CountDownLatch completionLatch;
 
   private volatile int state = CLOSED;
 
@@ -195,10 +201,7 @@ public final class CompletableActorFuture<V extends @Nullable Object> implements
           throw new TimeoutException("Timeout after: " + timeout + " " + unit);
         }
 
-        final var latch = new CountDownLatch(1);
-        addBlockedCallback((ignoredValue, ignoredError) -> latch.countDown());
-        // the future may have been completed before the callback was added, in which case it will
-        // not be notified anymore
+        final var latch = completionLatch();
         if (!isDone()) {
           latch.await(remaining, TimeUnit.NANOSECONDS);
         }
@@ -432,6 +435,40 @@ public final class CompletableActorFuture<V extends @Nullable Object> implements
           next.getClass().getName());
       return thenApply(next, Runnable::run);
     }
+  }
+
+  /**
+   * Returns a latch that is counted down the next time the future completes or is closed. The latch
+   * is shared by all blocking waiters, so abandoned waits (timeouts, interrupts) do not retain
+   * anything on a future that stays pending.
+   *
+   * <p>Invariant: a latch with a non-zero count has a callback registered that will count it down.
+   */
+  private CountDownLatch completionLatch() {
+    var current = completionLatch;
+    while (current == null || current.getCount() == 0) {
+      final var fresh = new CountDownLatch(1);
+      addBlockedCallback((ignoredValue, ignoredError) -> fresh.countDown());
+      if (COMPLETION_LATCH.compareAndSet(this, current, fresh)) {
+        // the future may have been completed before the callback was added, in which case the
+        // callback will not be notified anymore
+        if (isDone()) {
+          fresh.countDown();
+        }
+        return fresh;
+      }
+      current = completionLatch;
+    }
+    return current;
+  }
+
+  /** Visible for testing: the number of callbacks waiting for this future to complete. */
+  int pendingCallbackCount() {
+    int count = 0;
+    for (var node = blockedCallbacks; node != null; node = node.next) {
+      count++;
+    }
+    return count;
   }
 
   private void addBlockedCallback(final BiConsumer<V, @Nullable Throwable> callback) {

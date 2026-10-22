@@ -8,6 +8,7 @@
 package io.camunda.zeebe.scheduler.future;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.time.Duration;
 import java.util.List;
@@ -15,6 +16,8 @@ import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
@@ -164,6 +167,88 @@ public class CompletableActorFutureTest {
           .withMessageContaining("Expected");
       // does not contain 3 as the computation is not spawned
       assertThat(map.keySet()).containsExactly(1);
+    }
+  }
+
+  @Nested
+  public class BlockingGet {
+
+    @Test
+    void shouldNotRetainCallbacksForRepeatedTimeouts() {
+      // given
+      final var future = new CompletableActorFuture<String>();
+
+      // when
+      for (int i = 0; i < 100; i++) {
+        assertThatThrownBy(() -> future.get(1, TimeUnit.MILLISECONDS))
+            .isInstanceOf(TimeoutException.class);
+      }
+
+      // then
+      assertThat(future.pendingCallbackCount()).isLessThanOrEqualTo(1);
+    }
+
+    @Test
+    void shouldNotRetainCallbacksForInterruptedWaits() {
+      // given
+      final var future = new CompletableActorFuture<String>();
+
+      // when
+      for (int i = 0; i < 100; i++) {
+        Thread.currentThread().interrupt();
+        assertThatThrownBy(() -> future.get(1, TimeUnit.MINUTES))
+            .isInstanceOf(InterruptedException.class);
+      }
+
+      // then
+      assertThat(future.pendingCallbackCount()).isLessThanOrEqualTo(1);
+    }
+
+    @Test
+    void shouldWakeUpAllWaitersOnCompletion() throws Exception {
+      // given
+      final var future = new CompletableActorFuture<String>();
+      final var executor = Executors.newFixedThreadPool(3);
+      try {
+        final var waiters =
+            IntStream.range(0, 3)
+                .mapToObj(i -> executor.submit(() -> future.get(10, TimeUnit.SECONDS)))
+                .toList();
+
+        // when
+        future.complete("done");
+
+        // then
+        for (final var waiter : waiters) {
+          assertThat(waiter.get(10, TimeUnit.SECONDS)).isEqualTo("done");
+        }
+      } finally {
+        executor.shutdownNow();
+      }
+    }
+
+    @Test
+    void shouldWaitAgainAfterFutureIsReused() throws Exception {
+      // given
+      final var future = new CompletableActorFuture<String>();
+      future.complete("first");
+      assertThat(future.get()).isEqualTo("first");
+      future.close();
+      future.setAwaitingResult();
+      assertThatThrownBy(() -> future.get(1, TimeUnit.MILLISECONDS))
+          .isInstanceOf(TimeoutException.class);
+
+      // when
+      final var executor = Executors.newSingleThreadExecutor();
+      try {
+        final var waiter = executor.submit(() -> future.get(10, TimeUnit.SECONDS));
+        future.complete("second");
+
+        // then
+        assertThat(waiter.get(10, TimeUnit.SECONDS)).isEqualTo("second");
+      } finally {
+        executor.shutdownNow();
+      }
     }
   }
 }
