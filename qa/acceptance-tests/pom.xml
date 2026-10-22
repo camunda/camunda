@@ -21,7 +21,7 @@
 
   <name>Camunda QA Acceptance Tests</name>
   <properties>
-    <version.maven-surefire-junit5-tree-reporter>2.0.0</version.maven-surefire-junit5-tree-reporter>
+    <version.maven-surefire-junit5-tree-reporter>2.1.0</version.maven-surefire-junit5-tree-reporter>
     <identity-packages>io/camunda/it/auth/*,io/camunda/it/identity/*,io/camunda/it/csrf/*,io/camunda/it/logout/*,io/camunda/it/oidc/*</identity-packages>
     <!-- Timeout for forked processes in seconds. Sized for the default CI job budget (20 minutes);
      long-running callers must raise this via -D failsafe.timeout=<seconds> to match their own job timeout. -->
