@@ -28,6 +28,7 @@ import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.PR
 import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.STATE;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.elasticsearch._types.Conflicts;
 import co.elastic.clients.elasticsearch._types.SortOrder;
 import co.elastic.clients.elasticsearch._types.aggregations.Aggregation;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
@@ -475,8 +476,16 @@ public class ElasticsearchProcessStore implements ProcessStore {
       throws IOException {
     final var res =
         esClient.deleteByQuery(
-            q -> q.index(indexName).query(ElasticsearchUtil.termsQuery(idField, id)));
-    LOGGER.debug("Delete document {} in {} failures: {}", id, indexName, res.failures());
+            q ->
+                q.index(indexName)
+                    .query(ElasticsearchUtil.termsQuery(idField, id))
+                    .conflicts(Conflicts.Proceed));
+    LOGGER.debug(
+        "Delete document {} in {} versionConflicts: {} failures: {}",
+        id,
+        indexName,
+        res.versionConflicts(),
+        res.failures());
     return res.deleted() == null ? 0 : res.deleted();
   }
 
