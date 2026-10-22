@@ -16,27 +16,29 @@ import io.camunda.zeebe.scheduler.ActorTask;
 import io.camunda.zeebe.scheduler.ActorThread;
 import io.camunda.zeebe.scheduler.FutureUtil;
 import io.camunda.zeebe.util.Loggers;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.VarHandle;
 import java.util.Collection;
 import java.util.concurrent.CompletionException;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.locks.Condition;
-import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import org.agrona.UnsafeApi;
-import org.agrona.concurrent.ManyToOneConcurrentLinkedQueue;
 import org.jspecify.annotations.Nullable;
 
 /** Completable future implementation that is garbage free and reusable */
 @SuppressWarnings("restriction")
 public final class CompletableActorFuture<V extends @Nullable Object> implements ActorFuture<V> {
   private static final long STATE_OFFSET;
+
+  private static final VarHandle BLOCKED_CALLBACKS;
 
   private static final int AWAITING_RESULT = 1;
   private static final int COMPLETING = 2;
@@ -51,18 +53,26 @@ public final class CompletableActorFuture<V extends @Nullable Object> implements
     } catch (final Exception ex) {
       throw new RuntimeException(ex);
     }
+
+    try {
+      BLOCKED_CALLBACKS =
+          MethodHandles.lookup()
+              .findVarHandle(CompletableActorFuture.class, "blockedCallbacks", CallbackNode.class);
+    } catch (final ReflectiveOperationException ex) {
+      throw new ExceptionInInitializerError(ex);
+    }
   }
 
   private long completedAt;
   private @Nullable V value;
   private @Nullable String failure;
   private @Nullable Throwable failureCause;
-  private final ManyToOneConcurrentLinkedQueue<BiConsumer<V, @Nullable Throwable>>
-      blockedCallbacks = new ManyToOneConcurrentLinkedQueue<>();
 
-  private final ReentrantLock completionLock = new ReentrantLock();
+  // Most futures never have a callback registered, so these are kept as a lock-free stack of nodes
+  // that costs nothing until the first callback is added. See #notifyAllBlocked().
+  private volatile @Nullable CallbackNode<V> blockedCallbacks;
+
   private volatile int state = CLOSED;
-  private @Nullable Condition isDoneCondition;
 
   public CompletableActorFuture() {
     setAwaitingResult();
@@ -88,7 +98,6 @@ public final class CompletableActorFuture<V extends @Nullable Object> implements
 
   public void setAwaitingResult() {
     state = AWAITING_RESULT;
-    isDoneCondition = completionLock.newCondition();
   }
 
   public static CompletableActorFuture<Void> completed() {
@@ -178,18 +187,21 @@ public final class CompletableActorFuture<V extends @Nullable Object> implements
       }
     } else {
       // blocking get for non-actor threads
-      completionLock.lock();
-      try {
-        long remaining = unit.toNanos(timeout);
+      final long deadline = System.nanoTime() + unit.toNanos(timeout);
 
-        while (!isDone()) {
-          if (remaining <= 0) {
-            throw new TimeoutException("Timeout after: " + timeout + " " + unit);
-          }
-          remaining = requireNonNull(isDoneCondition).awaitNanos(unit.toNanos(timeout));
+      while (!isDone()) {
+        final long remaining = deadline - System.nanoTime();
+        if (remaining <= 0) {
+          throw new TimeoutException("Timeout after: " + timeout + " " + unit);
         }
-      } finally {
-        completionLock.unlock();
+
+        final var latch = new CountDownLatch(1);
+        addBlockedCallback((ignoredValue, ignoredError) -> latch.countDown());
+        // the future may have been completed before the callback was added, in which case it will
+        // not be notified anymore
+        if (!isDone()) {
+          latch.await(remaining, TimeUnit.NANOSECONDS);
+        }
       }
     }
 
@@ -261,7 +273,7 @@ public final class CompletableActorFuture<V extends @Nullable Object> implements
 
   @Override
   public void block(final ActorTask onCompletion) {
-    blockedCallbacks.add((resIgnore, errorIgnore) -> onCompletion.tryWakeup());
+    addBlockedCallback((resIgnore, errorIgnore) -> onCompletion.tryWakeup());
   }
 
   @Override
@@ -306,7 +318,7 @@ public final class CompletableActorFuture<V extends @Nullable Object> implements
     if (!isDone()) {
       // If future is already completed, blockedCallbacks are not notified again. So there is no
       // need to add the consumer.
-      blockedCallbacks.add(checkedConsumer);
+      addBlockedCallback(checkedConsumer);
     }
 
     // Do not replace the following if(isDone()) with an else. The future might be completed after
@@ -422,26 +434,35 @@ public final class CompletableActorFuture<V extends @Nullable Object> implements
     }
   }
 
-  private void notifyAllBlocked() {
-    notifyBlockedCallBacks();
-
-    try {
-      completionLock.lock();
-      if (isDoneCondition != null) {
-        // condition is null if the future was created with `completed` or `completedExceptionally`,
-        // i.e. the future was never waiting for a result.
-        isDoneCondition.signalAll();
-      }
-    } finally {
-      completionLock.unlock();
-    }
+  private void addBlockedCallback(final BiConsumer<V, @Nullable Throwable> callback) {
+    final var node = new CallbackNode<>(callback);
+    CallbackNode<V> head;
+    do {
+      head = blockedCallbacks;
+      node.next = head;
+    } while (!BLOCKED_CALLBACKS.compareAndSet(this, head, node));
   }
 
-  private void notifyBlockedCallBacks() {
-    while (!blockedCallbacks.isEmpty()) {
-      final var callBack = blockedCallbacks.poll();
-      if (callBack != null) {
-        callBack.accept(value, failureCause);
+  private void notifyAllBlocked() {
+    // callbacks may be added by other callbacks, or concurrently by other threads
+    while (true) {
+      @SuppressWarnings("unchecked")
+      var pending = (CallbackNode<V>) BLOCKED_CALLBACKS.getAndSet(this, (CallbackNode<V>) null);
+      if (pending == null) {
+        return;
+      }
+
+      // the stack is in reverse order of registration
+      CallbackNode<V> inOrder = null;
+      while (pending != null) {
+        final var next = pending.next;
+        pending.next = inOrder;
+        inOrder = pending;
+        pending = next;
+      }
+
+      for (var node = inOrder; node != null; node = node.next) {
+        node.callback.accept(value, failureCause);
       }
     }
   }
@@ -489,5 +510,14 @@ public final class CompletableActorFuture<V extends @Nullable Object> implements
 
   public long getCompletedAt() {
     return completedAt;
+  }
+
+  private static final class CallbackNode<V extends @Nullable Object> {
+    private final BiConsumer<V, @Nullable Throwable> callback;
+    private @Nullable CallbackNode<V> next;
+
+    private CallbackNode(final BiConsumer<V, @Nullable Throwable> callback) {
+      this.callback = callback;
+    }
   }
 }
