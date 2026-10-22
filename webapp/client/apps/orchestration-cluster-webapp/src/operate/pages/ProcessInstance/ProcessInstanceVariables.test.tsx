@@ -7,7 +7,7 @@
  */
 
 import {useState} from 'react';
-import {afterEach, describe, expect, vi} from 'vitest';
+import {afterEach, describe, expect, onTestFinished, vi} from 'vitest';
 import {userEvent} from 'vitest/browser';
 import {cleanup} from 'vitest-browser-react';
 import {HttpResponse} from 'msw';
@@ -47,7 +47,7 @@ afterEach(async () => {
 
 function variablesResponse(
 	items: Variable[],
-	page?: {totalItems?: number; hasMoreTotalItems?: boolean; endCursor?: string},
+	page?: {totalItems?: number; hasMoreTotalItems?: boolean; endCursor?: string | null},
 ) {
 	return HttpResponse.json(createQueryVariablesByUserTaskResponse({items, page}));
 }
@@ -80,6 +80,68 @@ function renderVariables(search = '', {isModificationModeEnabled: initialModific
 }
 
 describe('<ProcessInstanceVariables />', () => {
+	it.for([
+		{description: '49 complete variables', count: 49, totalItems: 49, hasMoreTotalItems: false, canCopy: true},
+		{description: '50 complete variables', count: 50, totalItems: 50, hasMoreTotalItems: false, canCopy: true},
+		{
+			description: 'a 51st variable beyond the first page',
+			count: 50,
+			totalItems: 51,
+			hasMoreTotalItems: false,
+			canCopy: false,
+		},
+		{description: 'a capped total of 50 variables', count: 50, totalItems: 50, hasMoreTotalItems: true, canCopy: false},
+		{
+			description: 'an incomplete total without a next cursor',
+			count: 50,
+			totalItems: 51,
+			hasMoreTotalItems: false,
+			endCursor: null,
+			canCopy: false,
+		},
+		{
+			description: 'a capped total without a next cursor',
+			count: 50,
+			totalItems: 50,
+			hasMoreTotalItems: true,
+			endCursor: null,
+			canCopy: false,
+		},
+	])(
+		'should preserve safe aggregate copying for $description',
+		async ({count, totalItems, hasMoreTotalItems, endCursor = 'last-item-cursor', canCopy}, {worker}) => {
+			const writeText = vi.spyOn(navigator.clipboard, 'writeText').mockResolvedValue();
+			onTestFinished(() => writeText.mockRestore());
+			const items = Array.from({length: count}, (_, index) =>
+				createVariable({
+					name: `value_${String(index).padStart(2, '0')}`,
+					value: String(index),
+					variableKey: String(index + 1),
+				}),
+			);
+			worker.use(
+				mockQueryVariablesEndpoint({
+					successResponse: variablesResponse(items, {totalItems, hasMoreTotalItems, endCursor}),
+				}),
+			);
+			const screen = await renderVariables();
+			await expect.element(screen.getByTestId(`variable-${items.at(-1)!.name}`)).toBeVisible();
+			const copy = screen.getByRole('button', {name: 'Copy variables'});
+
+			if (!canCopy) {
+				await expect.element(copy).toBeDisabled();
+				expect(writeText).not.toHaveBeenCalled();
+				return;
+			}
+
+			await expect.element(copy).toBeEnabled();
+			await userEvent.click(copy);
+
+			const expected = JSON.stringify(Object.fromEntries(items.map(({name, value}) => [name, JSON.parse(value)])));
+			await expect.poll(() => writeText.mock.calls).toEqual([[expected]]);
+		},
+	);
+
 	it('should show the process instance variables sorted by name', async ({worker}) => {
 		worker.use(
 			mockQueryVariablesEndpoint({
@@ -108,6 +170,7 @@ describe('<ProcessInstanceVariables />', () => {
 		const screen = await renderVariables();
 
 		await expect.element(screen.getByText('The element has no variables')).toBeVisible();
+		await expect.element(screen.getByRole('button', {name: 'Copy variables'})).toBeDisabled();
 		await expect.element(screen.getByRole('searchbox')).not.toBeInTheDocument();
 	});
 
@@ -249,6 +312,7 @@ describe('<ProcessInstanceVariables />', () => {
 		);
 		const screen = await renderVariables();
 
+		await expect.element(screen.getByRole('button', {name: 'Copy variables'})).toBeDisabled();
 		await userEvent.click(screen.getByRole('button', {name: 'Show all'}));
 
 		const dialog = screen.getByRole('dialog', {name: 'Full value of payload'});

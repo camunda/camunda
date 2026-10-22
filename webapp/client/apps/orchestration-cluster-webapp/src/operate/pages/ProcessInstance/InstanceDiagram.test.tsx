@@ -300,6 +300,15 @@ describe('<InstanceDiagram />', () => {
 		await expect.element(screen.getByTestId('instance-state-task_1-active')).toHaveTextContent('2');
 		await expect.element(screen.getByTestId('instance-state-end_1-completedEndEvents')).toBeVisible();
 		await expect.element(screen.getByTestId('instance-waiting-task_1')).toHaveTextContent('2 waiting');
+		const waitingStyle = getComputedStyle(screen.getByTestId('instance-waiting-task_1').element());
+		expect(waitingStyle).toMatchObject({
+			display: 'inline-flex',
+			fontSize: '12px',
+			fontWeight: '600',
+			padding: '4px 12px',
+			borderRadius: '11px',
+		});
+		expect(Number.parseFloat(waitingStyle.lineHeight)).toBeCloseTo(16, 1);
 		await expect
 			.element(screen.getByTestId('instance-agent-call_1'))
 			.toHaveTextContent('Thinking... + 1 more active agent');

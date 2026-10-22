@@ -1630,7 +1630,7 @@
 					"newVariableTitle": "Editar una nueva variable",
 					"copy": "Copiar variables",
 					"copyTitle": "Haz clic para copiar las variables al portapapeles",
-					"copyPaginated": "La copia está deshabilitada para 50 variables o más",
+					"copyPaginated": "La copia está deshabilitada para más de 50 variables",
 					"copyTruncated": "La copia está deshabilitada para valores de variables de más de 8192 caracteres",
 					"validation": {
 						"emptyName": "El nombre es obligatorio",

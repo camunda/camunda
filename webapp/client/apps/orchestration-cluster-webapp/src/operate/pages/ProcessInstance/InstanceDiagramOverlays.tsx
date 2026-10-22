@@ -54,12 +54,17 @@ const AgentShine = styled.span`
 `;
 
 const WaitingTag = styled.span<{$centered: boolean}>`
-	display: inline-block;
+	display: inline-flex;
+	align-items: center;
 	white-space: nowrap;
-	padding: var(--cds-spacing-01) var(--cds-spacing-03);
+	font-size: var(--cds-label-01-font-size);
+	font-weight: var(--cds-heading-compact-01-font-weight);
+	line-height: var(--cds-label-01-line-height);
+	letter-spacing: var(--cds-label-01-letter-spacing);
+	padding: var(--cds-spacing-02) var(--cds-spacing-04);
 	background: var(--cds-support-warning);
 	color: #000;
-	border-radius: var(--cds-spacing-02);
+	border-radius: 11px;
 	font-variant-numeric: tabular-nums;
 	transform: ${({$centered}) => ($centered ? 'translateX(-50%)' : 'none')};
 `;

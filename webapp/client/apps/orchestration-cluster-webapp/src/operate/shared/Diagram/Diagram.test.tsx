@@ -7,8 +7,9 @@
  */
 
 import {render} from 'vitest-browser-react';
-import {describe, it, expect, vi} from 'vitest';
+import {describe, expect, vi} from 'vitest';
 import {userEvent} from 'vitest/browser';
+import {it} from '#/vitest-modules/test-extend';
 import {useContext} from 'react';
 import {createPortal} from 'react-dom';
 import {Diagram} from './index';
@@ -57,6 +58,14 @@ describe('<Diagram />', () => {
 		await expect.element(screen.getByRole('button', {name: 'Reset diagram zoom'})).toBeVisible();
 		await expect.element(screen.getByRole('button', {name: 'Zoom in diagram'})).toBeVisible();
 		await expect.element(screen.getByRole('button', {name: 'Zoom out diagram'})).toBeVisible();
+	});
+
+	it('should hide BPMN branding after XML import', async () => {
+		const screen = await render(<Diagram xml={BPMN_XML} />);
+
+		await expect.element(screen.getByRole('button', {name: 'Reset diagram zoom'})).toBeVisible();
+		await expect.element(screen.getByTitle('Powered by bpmn.io')).toBeInTheDocument();
+		await expect.element(screen.getByTitle('Powered by bpmn.io')).not.toBeVisible();
 	});
 
 	it('should call onElementSelection when a selectable element is clicked', async () => {
