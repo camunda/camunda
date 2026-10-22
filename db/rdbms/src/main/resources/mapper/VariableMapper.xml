@@ -126,6 +126,14 @@
           </foreach>
         )
       </if>
+      <if test="filter.hasProtectionModes != null">
+        AND
+        <if test="!filter.hasProtectionModes">NOT</if>
+        EXISTS (
+          SELECT 1 FROM ${prefix}VARIABLE_PROTECTION_MODE PM2
+          WHERE PM2.VAR_KEY = ${prefix}VARIABLE.VAR_KEY
+        )
+      </if>
       <!-- advanced filters on variable name / values -->
       <if test="filter.valueOperations != null and !filter.valueOperations.isEmpty()">
         <foreach collection="filter.valueOperations" item="operation">

@@ -8,7 +8,9 @@
 package io.camunda.search.clients.transformers.filter;
 
 import static io.camunda.search.clients.query.SearchQueryBuilders.and;
+import static io.camunda.search.clients.query.SearchQueryBuilders.exists;
 import static io.camunda.search.clients.query.SearchQueryBuilders.longOperations;
+import static io.camunda.search.clients.query.SearchQueryBuilders.not;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringOperations;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringTerms;
 import static io.camunda.search.clients.query.SearchQueryBuilders.term;
@@ -53,6 +55,7 @@ public class VariableFilterTransformer extends IndexFilterTransformer<VariableFi
     ofNullable(getTenantIdQuery(filter.tenantIds())).ifPresent(queries::add);
     ofNullable(getIsTruncatedQuery(filter.isTruncated())).ifPresent(queries::add);
     ofNullable(getProtectionModesQuery(filter.protectionModes())).ifPresent(queries::add);
+    ofNullable(getHasProtectionModesQuery(filter.hasProtectionModes())).ifPresent(queries::add);
     return and(queries);
   }
 
@@ -90,6 +93,14 @@ public class VariableFilterTransformer extends IndexFilterTransformer<VariableFi
 
   private SearchQuery getProtectionModesQuery(final List<ProtectionMode> protectionModes) {
     return stringTerms(PROTECTION_MODES, protectionModes.stream().map(Enum::name).toList());
+  }
+
+  private SearchQuery getHasProtectionModesQuery(final Boolean hasProtectionModes) {
+    if (hasProtectionModes == null) {
+      return null;
+    }
+    final var exists = exists(PROTECTION_MODES);
+    return hasProtectionModes ? exists : not(exists);
   }
 
   private SearchQuery getIsTruncatedQuery(final Boolean isTruncated) {
