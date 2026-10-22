@@ -1,0 +1,60 @@
+# Cuts the control region's broker off from region A, in both directions, for testing that SWIM
+# failure detection does not condemn a region that only one observer lost sight of. Region B stays
+# reachable from both, so it still sees both sides.
+#
+#   apply:  kubectl apply -f cut-control-from-region-a.yaml
+#   heal:   kubectl delete -f cut-control-from-region-a.yaml
+#
+# Adjust for another deployment:
+#   - metadata.namespace: the control region's namespace (the policy applies to its broker only)
+#   - the namespace in the two NotIn lists: region A's namespace, the one to cut off
+#   - the ipBlock: the cluster DNS service IP, i.e. the nameserver in a broker's /etc/resolv.conf
+#     (`kubectl exec <broker> -- cat /etc/resolv.conf`); without it nothing resolves in the pod
+#
+# Things to know:
+#   - Only namespaces are matched, so traffic to anything that is not a pod, such as the DNS service
+#     IP, is denied unless allowed explicitly; the DNS rule below is that exception.
+#   - NetworkPolicy keeps connections that are already open, so restart the control broker after
+#     applying it for the cut to take hold, or rely on new connections only.
+#   - A restarted broker only becomes ready once it caught up with the Raft leader. Cut off from a
+#     leader in region A it never does, and its failure detector does not start; this is why the
+#     leader should be in region B, or the cut applied while the control broker already leads.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: swim-cut-control-from-region-a
+  namespace: {namespace to apply}
+spec:
+  egress:
+  - to:
+    - namespaceSelector:
+        matchExpressions:
+        - key: kubernetes.io/metadata.name
+          operator: NotIn
+          values:
+          - {namespace to cutoff}
+  - ports:
+    - port: 53
+      protocol: UDP
+    - port: 53
+      protocol: TCP
+    to:
+    - ipBlock:
+        cidr: 10.105.128.10/32
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: kube-system
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchExpressions:
+        - key: kubernetes.io/metadata.name
+          operator: NotIn
+          values:
+          - {namespace to cutoff}
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/component: zeebe-broker
+  policyTypes:
+  - Ingress
+  - Egress
