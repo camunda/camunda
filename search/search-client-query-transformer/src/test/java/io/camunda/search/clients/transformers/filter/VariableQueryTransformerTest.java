@@ -10,6 +10,7 @@ package io.camunda.search.clients.transformers.filter;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.search.clients.query.SearchBoolQuery;
+import io.camunda.search.clients.query.SearchExistsQuery;
 import io.camunda.search.clients.query.SearchMatchNoneQuery;
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.clients.query.SearchTermQuery;
@@ -43,6 +44,44 @@ public class VariableQueryTransformerTest extends AbstractTransformerTest {
               assertThat(term.field()).isEqualTo(VariableTemplate.PROTECTION_MODES);
               assertThat(term.value().stringValue()).isEqualTo("REDACT");
             });
+  }
+
+  @Test
+  public void shouldQueryVariablesWithoutProtectionModes() {
+    // given
+    final var filter = FilterBuilders.variable((f) -> f.hasProtectionModes(false));
+
+    // when
+    final var searchRequest = transformQuery(filter);
+
+    // then
+    assertThat(searchRequest.queryOption())
+        .isInstanceOfSatisfying(
+            SearchBoolQuery.class,
+            (bool) ->
+                assertThat(bool.mustNot())
+                    .singleElement()
+                    .extracting(q -> q.queryOption())
+                    .isInstanceOfSatisfying(
+                        SearchExistsQuery.class,
+                        exists ->
+                            assertThat(exists.field())
+                                .isEqualTo(VariableTemplate.PROTECTION_MODES)));
+  }
+
+  @Test
+  public void shouldQueryVariablesWithProtectionModes() {
+    // given
+    final var filter = FilterBuilders.variable((f) -> f.hasProtectionModes(true));
+
+    // when
+    final var searchRequest = transformQuery(filter);
+
+    // then
+    assertThat(searchRequest.queryOption())
+        .isInstanceOfSatisfying(
+            SearchExistsQuery.class,
+            exists -> assertThat(exists.field()).isEqualTo(VariableTemplate.PROTECTION_MODES));
   }
 
   @Test
