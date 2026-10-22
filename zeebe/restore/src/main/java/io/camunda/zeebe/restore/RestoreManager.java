@@ -134,16 +134,7 @@ public class RestoreManager implements CloseableSilently {
     final var restorableBackups =
         RestorePointResolver.resolve(metadataByPartition, from, to, exportedPositions);
 
-    final var partitions =
-        restorableBackups.backupsByPartitionId().entrySet().stream()
-            .collect(
-                Collectors.toMap(
-                    Entry::getKey,
-                    e ->
-                        PartitionRestore.ofBackups(
-                            e.getValue().stream()
-                                .map(BackupMetadata.CheckpointEntry::checkpointId)
-                                .toList())));
+    final var partitions = restorableBackups.partitions();
 
     LOG.info(
         "Restoring RDBMS backups in range [{},{}] to global checkpoint {}: {}",
@@ -176,16 +167,7 @@ public class RestoreManager implements CloseableSilently {
 
     final var restorableBackups = RestorePointResolver.resolve(metadataByPartition, from, to, null);
 
-    final var partitions =
-        restorableBackups.backupsByPartitionId().entrySet().stream()
-            .collect(
-                Collectors.toMap(
-                    Entry::getKey,
-                    e ->
-                        PartitionRestore.ofBackups(
-                            e.getValue().stream()
-                                .map(BackupMetadata.CheckpointEntry::checkpointId)
-                                .toList())));
+    final var partitions = restorableBackups.partitions();
 
     LOG.info(
         "Restoring time-range backups in range [{},{}] to global checkpoint {}: {}",

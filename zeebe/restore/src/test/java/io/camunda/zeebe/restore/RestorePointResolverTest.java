@@ -37,8 +37,8 @@ final class RestorePointResolverTest {
 
     // then
     assertThat(result.globalCheckpointId()).isEqualTo(1);
-    assertThat(result.backupsByPartitionId()).hasSize(1);
-    assertThat(result.backupsByPartitionId().get(1)).containsExactly(cp);
+    assertThat(result.partitions()).hasSize(1);
+    assertThat(result.partitions().get(1).backupIds()).containsExactly(cp.checkpointId());
   }
 
   @Test
@@ -62,8 +62,10 @@ final class RestorePointResolverTest {
 
     // then – it picks the checkpoint closest to now (= checkpoint 2)
     assertThat(result.globalCheckpointId()).isEqualTo(2);
-    assertThat(result.backupsByPartitionId().get(1)).containsExactly(cp1p1, cp2p1);
-    assertThat(result.backupsByPartitionId().get(2)).containsExactly(cp1p2, cp2p2);
+    assertThat(result.partitions().get(1).backupIds())
+        .containsExactly(cp1p1.checkpointId(), cp2p1.checkpointId());
+    assertThat(result.partitions().get(2).backupIds())
+        .containsExactly(cp1p2.checkpointId(), cp2p2.checkpointId());
   }
 
   @Test
@@ -88,8 +90,8 @@ final class RestorePointResolverTest {
 
     // then – checkpoint 1 is closest to 'to'
     assertThat(result.globalCheckpointId()).isOne();
-    assertThat(result.backupsByPartitionId().get(1)).containsExactly(cp1p1);
-    assertThat(result.backupsByPartitionId().get(2)).containsExactly(cp1p2);
+    assertThat(result.partitions().get(1).backupIds()).containsExactly(cp1p1.checkpointId());
+    assertThat(result.partitions().get(2).backupIds()).containsExactly(cp1p2.checkpointId());
   }
 
   @Test
@@ -110,7 +112,8 @@ final class RestorePointResolverTest {
 
     // then – marker is excluded from backups, only backup-type entries are included
     assertThat(result.globalCheckpointId()).isEqualTo(3);
-    assertThat(result.backupsByPartitionId().get(1)).containsExactly(backup1, backup2);
+    assertThat(result.partitions().get(1).backupIds())
+        .containsExactly(backup1.checkpointId(), backup2.checkpointId());
   }
 
   @Test
@@ -131,7 +134,8 @@ final class RestorePointResolverTest {
 
     // then – stops at checkpoint 2, does not include checkpoint 3
     assertThat(result.globalCheckpointId()).isEqualTo(2);
-    assertThat(result.backupsByPartitionId().get(1)).containsExactly(cp1, cp2);
+    assertThat(result.partitions().get(1).backupIds())
+        .containsExactly(cp1.checkpointId(), cp2.checkpointId());
   }
 
   @Test
@@ -157,7 +161,7 @@ final class RestorePointResolverTest {
     // then – range [3,4] is filtered out (start=t3 > from=t2), and within range [1,2],
     // cp1 is trimmed because its timestamp (t1) is before 'from' (t2)
     assertThat(result.globalCheckpointId()).isEqualTo(2);
-    assertThat(result.backupsByPartitionId().get(1)).containsExactly(cp2);
+    assertThat(result.partitions().get(1).backupIds()).containsExactly(cp2.checkpointId());
   }
 
   @Test
@@ -183,7 +187,8 @@ final class RestorePointResolverTest {
     // then – only checkpoints from range [1,2]
     // cp1.firstLogPosition=50 <= 100 ✓, cp3.firstLogPosition=250 > 100 ✗
     assertThat(result.globalCheckpointId()).isEqualTo(2);
-    assertThat(result.backupsByPartitionId().get(1)).containsExactly(cp1, cp2);
+    assertThat(result.partitions().get(1).backupIds())
+        .containsExactly(cp1.checkpointId(), cp2.checkpointId());
   }
 
   @Test
@@ -243,7 +248,7 @@ final class RestorePointResolverTest {
 
     // then – MANUAL_BACKUP should be included (shouldCreateBackup() = true)
     assertThat(result.globalCheckpointId()).isEqualTo(1);
-    assertThat(result.backupsByPartitionId().get(1)).containsExactly(cp);
+    assertThat(result.partitions().get(1).backupIds()).containsExactly(cp.checkpointId());
   }
 
   @Test
@@ -270,7 +275,8 @@ final class RestorePointResolverTest {
 
     // then – only backup-type checkpoints, stopping at checkpoint 4
     assertThat(result.globalCheckpointId()).isEqualTo(4);
-    assertThat(result.backupsByPartitionId().get(1)).containsExactly(backup1, backup2);
+    assertThat(result.partitions().get(1).backupIds())
+        .containsExactly(backup1.checkpointId(), backup2.checkpointId());
   }
 
   @Test
@@ -305,10 +311,10 @@ final class RestorePointResolverTest {
 
     // then
     assertThat(result.globalCheckpointId()).isEqualTo(2);
-    assertThat(result.backupsByPartitionId()).hasSize(3);
-    assertThat(result.backupsByPartitionId().get(1)).hasSize(2);
-    assertThat(result.backupsByPartitionId().get(2)).hasSize(2);
-    assertThat(result.backupsByPartitionId().get(3)).hasSize(2);
+    assertThat(result.partitions()).hasSize(3);
+    assertThat(result.partitions().get(1).backupIds()).hasSize(2);
+    assertThat(result.partitions().get(2).backupIds()).hasSize(2);
+    assertThat(result.partitions().get(3).backupIds()).hasSize(2);
   }
 
   @Test
@@ -373,8 +379,8 @@ final class RestorePointResolverTest {
 
     // then
     assertThat(result.globalCheckpointId()).isEqualTo(2);
-    assertThat(result.backupsByPartitionId().get(1)).hasSize(2); // cp1, cp2
-    assertThat(result.backupsByPartitionId().get(2)).hasSize(2);
+    assertThat(result.partitions().get(1).backupIds()).hasSize(2); // cp1, cp2
+    assertThat(result.partitions().get(2).backupIds()).hasSize(2);
   }
 
   @Test
@@ -396,7 +402,7 @@ final class RestorePointResolverTest {
 
     // then
     assertThat(result.globalCheckpointId()).isEqualTo(2);
-    assertThat(result.backupsByPartitionId().get(1)).containsExactly(backup);
+    assertThat(result.partitions().get(1).backupIds()).containsExactly(backup.checkpointId());
   }
 
   @Test
@@ -419,7 +425,8 @@ final class RestorePointResolverTest {
 
     // then – cp1 trimmed by from, cp4 excluded by to → only cp2 and cp3
     assertThat(result.globalCheckpointId()).isEqualTo(3);
-    assertThat(result.backupsByPartitionId().get(1)).containsExactly(cp2, cp3);
+    assertThat(result.partitions().get(1).backupIds())
+        .containsExactly(cp2.checkpointId(), cp3.checkpointId());
   }
 
   @Test
@@ -462,7 +469,8 @@ final class RestorePointResolverTest {
 
     // then – only checkpoints from range [3,4]
     assertThat(result.globalCheckpointId()).isEqualTo(4);
-    assertThat(result.backupsByPartitionId().get(1)).containsExactly(cp3, cp4);
+    assertThat(result.partitions().get(1).backupIds())
+        .containsExactly(cp3.checkpointId(), cp4.checkpointId());
   }
 
   @Test
@@ -505,7 +513,8 @@ final class RestorePointResolverTest {
 
     // then – only backups up to checkpoint 2 are returned
     assertThat(result.globalCheckpointId()).isEqualTo(2);
-    assertThat(result.backupsByPartitionId().get(1)).containsExactly(cp1, cp2);
+    assertThat(result.partitions().get(1).backupIds())
+        .containsExactly(cp1.checkpointId(), cp2.checkpointId());
   }
 
   @Test
@@ -569,10 +578,10 @@ final class RestorePointResolverTest {
     // then – checkpoint 3 is selected (cp2 on P2 has checkpointPosition=210 >= 200)
     assertThat(result.globalCheckpointId()).isEqualTo(3);
     // P1 has no exported position → all checkpoints kept
-    assertThat(result.backupsByPartitionId().get(1)).hasSize(2);
+    assertThat(result.partitions().get(1).backupIds()).hasSize(2);
     // P2 cp2 (pos=110) is kept as the safe starting snapshot (last before exportedPosition=200) but
     // cp1 is discarded based on the exporter position.
-    assertThat(result.backupsByPartitionId().get(2)).hasSize(2);
+    assertThat(result.partitions().get(2).backupIds()).hasSize(2);
   }
 
   @Test
@@ -704,7 +713,8 @@ final class RestorePointResolverTest {
 
     // then – no exception, both backups included
     assertThat(result.globalCheckpointId()).isEqualTo(2);
-    assertThat(result.backupsByPartitionId().get(1)).containsExactly(cp1, cp2);
+    assertThat(result.partitions().get(1).backupIds())
+        .containsExactly(cp1.checkpointId(), cp2.checkpointId());
   }
 
   @Test
@@ -723,7 +733,8 @@ final class RestorePointResolverTest {
 
     // then – overlapping is fine, no exception
     assertThat(result.globalCheckpointId()).isEqualTo(2);
-    assertThat(result.backupsByPartitionId().get(1)).containsExactly(cp1, cp2);
+    assertThat(result.partitions().get(1).backupIds())
+        .containsExactly(cp1.checkpointId(), cp2.checkpointId());
   }
 
   @Test
@@ -760,7 +771,7 @@ final class RestorePointResolverTest {
 
     // then
     assertThat(result.globalCheckpointId()).isEqualTo(1);
-    assertThat(result.backupsByPartitionId().get(1)).containsExactly(cp);
+    assertThat(result.partitions().get(1).backupIds()).containsExactly(cp.checkpointId());
   }
 
   @Test
@@ -790,7 +801,7 @@ final class RestorePointResolverTest {
 
     // then – both partitions resolve successfully
     assertThat(result.globalCheckpointId()).isEqualTo(2);
-    assertThat(result.backupsByPartitionId()).hasSize(2);
+    assertThat(result.partitions()).hasSize(2);
   }
 
   @Test
@@ -843,7 +854,8 @@ final class RestorePointResolverTest {
     // then – cp1 is trimmed, but cp2 is kept as the starting snapshot because its exporter
     // position is guaranteed to be <= the RDBMS exported position
     assertThat(result.globalCheckpointId()).isEqualTo(4);
-    assertThat(result.backupsByPartitionId().get(1)).containsExactly(cp2, cp3, cp4);
+    assertThat(result.partitions().get(1).backupIds())
+        .containsExactly(cp2.checkpointId(), cp3.checkpointId(), cp4.checkpointId());
   }
 
   @Test
@@ -867,7 +879,8 @@ final class RestorePointResolverTest {
 
     // then – cp1 and cp2 trimmed, only cp3 and cp4 are restored
     assertThat(result.globalCheckpointId()).isEqualTo(4);
-    assertThat(result.backupsByPartitionId().get(1)).containsExactly(cp3, cp4);
+    assertThat(result.partitions().get(1).backupIds())
+        .containsExactly(cp3.checkpointId(), cp4.checkpointId());
   }
 
   @Test
@@ -900,8 +913,10 @@ final class RestorePointResolverTest {
 
     // then – P1 starts from cp2 (last before 250), P2 starts from cp3 (last before 350)
     assertThat(result.globalCheckpointId()).isEqualTo(4);
-    assertThat(result.backupsByPartitionId().get(1)).containsExactly(cp2p1, cp3p1, cp4p1);
-    assertThat(result.backupsByPartitionId().get(2)).containsExactly(cp3p2, cp4p2);
+    assertThat(result.partitions().get(1).backupIds())
+        .containsExactly(cp2p1.checkpointId(), cp3p1.checkpointId(), cp4p1.checkpointId());
+    assertThat(result.partitions().get(2).backupIds())
+        .containsExactly(cp3p2.checkpointId(), cp4p2.checkpointId());
   }
 
   @Test
@@ -925,7 +940,8 @@ final class RestorePointResolverTest {
 
     // then – cp1 must not be trimmed; it is the safe starting snapshot
     assertThat(result.globalCheckpointId()).isEqualTo(4);
-    assertThat(result.backupsByPartitionId().get(1)).containsExactly(cp1, cp3, cp4);
+    assertThat(result.partitions().get(1).backupIds())
+        .containsExactly(cp1.checkpointId(), cp3.checkpointId(), cp4.checkpointId());
   }
 
   @Test
@@ -950,7 +966,8 @@ final class RestorePointResolverTest {
 
     // then – cp1 is trimmed (before 'from'), marker is skipped, restore starts from cp3
     assertThat(result.globalCheckpointId()).isEqualTo(4);
-    assertThat(result.backupsByPartitionId().get(1)).containsExactly(cp3, cp4);
+    assertThat(result.partitions().get(1).backupIds())
+        .containsExactly(cp3.checkpointId(), cp4.checkpointId());
   }
 
   private static CheckpointEntry entry(
