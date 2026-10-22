@@ -74,7 +74,7 @@ public class PartitionRestoreService {
 
   /**
    * Downloads backups, restores them to the partition's data directory. Backups are truncated to
-   * checkpoint positions.
+   * checkpoint positions, and the last one to the restore's checkpoint position when it has one.
    *
    * @param restore what the partition is restored from
    */
@@ -89,6 +89,7 @@ public class PartitionRestoreService {
             .withMetaStore(new InMemory())
             .build()) {
       Backup previousBackup = null;
+      final long lastBackupId = restore.backupIds().last();
       for (final var backupId : restore.backupIds()) {
         final var restoreTarget =
             rootDirectory.resolve("restoring-partition" + partitionId + "-backup-" + backupId);
@@ -98,7 +99,12 @@ public class PartitionRestoreService {
           // Only take the first snapshot, all others are redundant because we have the full log.
           moveSnapshotFiles(backup);
         }
-        copyBetweenCheckpoints(previousBackup, backup, restoreTarget, restoredJournal);
+        final var checkpointPosition = backup.descriptor().checkpointPosition();
+        final var untilPosition =
+            backupId == lastBackupId
+                ? restore.checkpointPosition().orElse(checkpointPosition)
+                : checkpointPosition;
+        copyBetweenCheckpoints(previousBackup, untilPosition, restoreTarget, restoredJournal);
         previousBackup = backup;
         FileUtil.deleteFolder(restoreTarget);
       }
@@ -122,15 +128,15 @@ public class PartitionRestoreService {
 
   /**
    * This copies records from the journal in the source directory to the target journal. Records
-   * outside of the checkpoint range <code>(previousBackup.checkpointPosition,
-   * sourceBackup.checkpointPosition]</code> are skipped.
+   * outside of the range <code>(previousBackup.checkpointPosition, untilPosition]</code> are
+   * skipped.
    *
    * <p>If this is the first backup we are restoring, the target journal will be reset to match the
    * index of the source journal.
    */
   private void copyBetweenCheckpoints(
       final Backup previousBackup,
-      final Backup sourceBackup,
+      final long untilPosition,
       final Path sourceDirectory,
       final Journal targetJournal) {
     try (final var sourceJournal =
@@ -151,8 +157,7 @@ public class PartitionRestoreService {
         targetJournal.reset(sourceReader.getNextIndex());
       }
 
-      copyUntilCheckpoint(
-          targetJournal, sourceReader, sourceBackup.descriptor().checkpointPosition());
+      copyUntilCheckpoint(targetJournal, sourceReader, untilPosition);
     }
   }
 
