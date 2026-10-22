@@ -197,7 +197,7 @@ jobs:
             while true; do
               local status=0
               timeout --kill-after=10s "${perAttemptTimeoutSecs}s" snyk "$@" || status=$?
-              if [ "${status}" -ne 2 ] && [ "${status}" -ne 124 ]; then
+              if [ "${status}" -ne 2 ] && [ "${status}" -ne 124 ] && [ "${status}" -ne 137 ]; then
                 return "${status}"
               fi
               if [ "${attempt}" -ge "${maxAttempts}" ]; then
