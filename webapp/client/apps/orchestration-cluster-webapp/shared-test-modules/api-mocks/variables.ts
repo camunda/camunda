@@ -18,7 +18,7 @@ function createVariable(overrides?: Partial<Variable>): Variable {
 		scopeKey: '2251799813685282',
 		processInstanceKey: '2251799813685280',
 		rootProcessInstanceKey: null,
-		metadata: null,
+		metadata: {protectionModes: []},
 		...overrides,
 	};
 }
