@@ -41,6 +41,7 @@ import io.camunda.zeebe.protocol.record.value.ProcessInstanceModificationRecordV
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.RuntimeInstructionType;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
+import io.camunda.zeebe.protocol.record.value.VariableMetadataValue;
 import io.camunda.zeebe.test.util.MsgPackUtil;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.util.ArrayList;
@@ -137,6 +138,12 @@ public final class ProcessInstanceClient {
 
     public ProcessInstanceCreationClient withVariables(final String variables) {
       processInstanceCreationRecord.setVariables(MsgPackUtil.asMsgPack(variables));
+      return this;
+    }
+
+    public ProcessInstanceCreationClient withVariablesMetadata(
+        final Map<String, ? extends VariableMetadataValue> variablesMetadata) {
+      processInstanceCreationRecord.setVariablesMetadata(variablesMetadata);
       return this;
     }
 
