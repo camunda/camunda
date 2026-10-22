@@ -59,13 +59,16 @@ public class RoleController {
   private final ServiceRegistry serviceRegistry;
   private final CamundaAuthenticationProvider authenticationProvider;
   private final RoleMapper roleMapper;
+  private final MappingRuleMembershipPolicy mappingRuleMembershipPolicy;
 
   public RoleController(
       final ServiceRegistry serviceRegistry,
       final CamundaAuthenticationProvider authenticationProvider,
-      final IdentifierValidator identifierValidator) {
+      final IdentifierValidator identifierValidator,
+      final MappingRuleMembershipPolicy mappingRuleMembershipPolicy) {
     this.serviceRegistry = serviceRegistry;
     this.authenticationProvider = authenticationProvider;
+    this.mappingRuleMembershipPolicy = mappingRuleMembershipPolicy;
     roleMapper = new RoleMapper(new RoleRequestValidator(new RoleValidator(identifierValidator)));
   }
 
@@ -296,8 +299,11 @@ public class RoleController {
       @PhysicalTenantId final String physicalTenantId,
       @PathVariable final String roleId,
       @PathVariable final String mappingRuleId) {
-    return roleMapper
-        .toRoleMemberRequest(roleId, mappingRuleId, EntityType.MAPPING_RULE)
+    return mappingRuleMembershipPolicy
+        .requireManageable()
+        .flatMap(
+            manageable ->
+                roleMapper.toRoleMemberRequest(roleId, mappingRuleId, EntityType.MAPPING_RULE))
         .fold(
             RestErrorMapper::mapProblemToCompletedResponse,
             request -> addMemberToRole(physicalTenantId, request));
@@ -308,8 +314,11 @@ public class RoleController {
       @PhysicalTenantId final String physicalTenantId,
       @PathVariable final String roleId,
       @PathVariable final String mappingRuleId) {
-    return roleMapper
-        .toRoleMemberRequest(roleId, mappingRuleId, EntityType.MAPPING_RULE)
+    return mappingRuleMembershipPolicy
+        .requireManageable()
+        .flatMap(
+            manageable ->
+                roleMapper.toRoleMemberRequest(roleId, mappingRuleId, EntityType.MAPPING_RULE))
         .fold(
             RestErrorMapper::mapProblemToCompletedResponse,
             request -> removeMemberFromRole(physicalTenantId, request));
