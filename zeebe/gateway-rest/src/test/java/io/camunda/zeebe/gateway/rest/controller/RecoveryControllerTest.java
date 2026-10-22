@@ -41,6 +41,7 @@ import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.AwaitModeCh
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ModeChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionPreRestoreOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionRestoreOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionRestore;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupPhase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.Phase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangeState;
@@ -53,7 +54,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
-import java.util.TreeSet;
 import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -423,7 +423,7 @@ public class RecoveryControllerTest extends RestControllerTest {
             OperationGraph.sequential(
                 List.<ClusterConfigurationChangeOperation>of(
                     new PartitionPreRestoreOperation(broker, 1),
-                    new PartitionRestoreOperation(broker, 1, new TreeSet<>(List.of(10L, 11L))),
+                    new PartitionRestoreOperation(broker, 1, PartitionRestore.ofBackups(10L, 11L)),
                     new ModeChangeOperation(broker, Mode.PROCESSING))),
             new TreeMap<>(
                 Map.of(

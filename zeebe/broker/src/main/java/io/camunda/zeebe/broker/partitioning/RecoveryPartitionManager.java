@@ -33,6 +33,7 @@ import io.camunda.zeebe.dynamic.config.changes.PartitionScalingChangeExecutor;
 import io.camunda.zeebe.dynamic.config.changes.RestoreChangeExecutor;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.ExportingState;
+import io.camunda.zeebe.dynamic.config.state.PartitionRestore;
 import io.camunda.zeebe.dynamic.config.state.RoutingState;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.restore.PartitionRestoreService;
@@ -68,7 +69,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.SortedSet;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutorService;
@@ -448,8 +448,7 @@ public final class RecoveryPartitionManager
   }
 
   @Override
-  public ActorFuture<Void> restore(
-      final int partitionId, @NonNull final SortedSet<Long> backupIds) {
+  public ActorFuture<Void> restore(final int partitionId, @NonNull final PartitionRestore restore) {
     final var result = concurrencyControl.<Void>createFuture();
     concurrencyControl.run(
         () -> {
@@ -483,11 +482,10 @@ public final class RecoveryPartitionManager
                               .formatted(partitionId, partitionGroup)));
                   return;
                 }
-                final var ids = backupIds.stream().mapToLong(Long::longValue).toArray();
                 final var partitionDir = partitionDirectory(metadata.id());
 
                 CompletableFuture.runAsync(
-                        () -> restorePartition(metadata, store, ids), executor.get())
+                        () -> restorePartition(metadata, store, restore), executor.get())
                     .thenRunAsync(() -> verifyRestoredPartition(metadata), executor.get())
                     .whenCompleteAsync(
                         (ok, error) -> {
@@ -511,8 +509,7 @@ public final class RecoveryPartitionManager
                             result.completeExceptionally(
                                 FuturesUtil.unwrapCompletionException(error));
                           } else {
-                            LOG.info(
-                                "Restored partition {} from backups {}", partitionId, backupIds);
+                            LOG.info("Restored partition {} from {}", partitionId, restore);
                             result.complete(null);
                           }
                         },
@@ -550,7 +547,7 @@ public final class RecoveryPartitionManager
   }
 
   private void restorePartition(
-      final PartitionMetadata metadata, final BackupStore store, final long[] backupIds) {
+      final PartitionMetadata metadata, final BackupStore store, final PartitionRestore restore) {
     final var registry = MicrometerUtil.wrap(meterRegistry, PartitionKeyNames.tags(metadata.id()));
     final var factory = new RaftPartitionFactory(brokerCfg);
     try {
@@ -561,7 +558,7 @@ public final class RecoveryPartitionManager
               brokerInfo.getNodeId(),
               new RocksDBSnapshotFileInfoProvider(),
               registry);
-      restoreService.restore(backupIds, BackupValidator.none());
+      restoreService.restore(restore, BackupValidator.none());
     } catch (final Exception e) {
       throw new CompletionException("Failed to restore partition %s".formatted(metadata.id()), e);
     } finally {

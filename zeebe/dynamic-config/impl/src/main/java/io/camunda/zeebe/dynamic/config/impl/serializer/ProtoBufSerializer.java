@@ -103,6 +103,7 @@ import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ScaleUpOper
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.SchemaInitializationOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.UpdateIncarnationNumberOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.UpdateRoutingState;
+import io.camunda.zeebe.dynamic.config.state.PartitionRestore;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.GlobalPhase;
@@ -122,6 +123,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
+import java.util.OptionalLong;
 import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.TreeSet;
@@ -652,11 +654,7 @@ public class ProtoBufSerializer
                   .setPartitionId(op.partitionId())
                   .build());
       case final PartitionRestoreOperation op ->
-          builder.setPartitionRestore(
-              Topology.PartitionRestoreOperation.newBuilder()
-                  .setPartitionId(op.partitionId())
-                  .addAllBackupIds(op.backupIds())
-                  .build());
+          builder.setPartitionRestore(encodePartitionRestore(op));
       case final SchemaInitializationOperation ignored ->
           builder.setSchemaInitialization(Topology.SchemaInitializationOperation.newBuilder());
     }
@@ -1005,10 +1003,7 @@ public class ProtoBufSerializer
       return new PartitionPreRestoreOperation(
           memberId, topologyChangeOperation.getPartitionPreRestore().getPartitionId());
     } else if (topologyChangeOperation.hasPartitionRestore()) {
-      return new PartitionRestoreOperation(
-          memberId,
-          topologyChangeOperation.getPartitionRestore().getPartitionId(),
-          new TreeSet<>(topologyChangeOperation.getPartitionRestore().getBackupIdsList()));
+      return decodePartitionRestore(memberId, topologyChangeOperation.getPartitionRestore());
     } else if (topologyChangeOperation.hasSchemaInitialization()) {
       return new SchemaInitializationOperation(memberId);
     } else {
@@ -2552,11 +2547,7 @@ public class ProtoBufSerializer
                   .setPartitionId(op.partitionId())
                   .build());
       case final PartitionRestoreOperation op ->
-          builder.setPartitionRestore(
-              Topology.PartitionRestoreOperation.newBuilder()
-                  .setPartitionId(op.partitionId())
-                  .addAllBackupIds(op.backupIds())
-                  .build());
+          builder.setPartitionRestore(encodePartitionRestore(op));
       case final SchemaInitializationOperation ignored ->
           builder.setSchemaInitialization(Topology.SchemaInitializationOperation.newBuilder());
       case final RemovePhysicalTenantOperation ignored ->
@@ -2663,10 +2654,7 @@ public class ProtoBufSerializer
       return new PartitionPreRestoreOperation(
           memberId, proto.getPartitionPreRestore().getPartitionId());
     } else if (proto.hasPartitionRestore()) {
-      return new PartitionRestoreOperation(
-          memberId,
-          proto.getPartitionRestore().getPartitionId(),
-          new TreeSet<>(proto.getPartitionRestore().getBackupIdsList()));
+      return decodePartitionRestore(memberId, proto.getPartitionRestore());
     } else if (proto.hasSchemaInitialization()) {
       return new SchemaInitializationOperation(memberId);
     } else if (proto.hasRemovePhysicalTenant()) {
@@ -2724,5 +2712,27 @@ public class ProtoBufSerializer
         .setSeconds(instant.getEpochSecond())
         .setNanos(instant.getNano())
         .build();
+  }
+
+  private static Topology.PartitionRestoreOperation encodePartitionRestore(
+      final PartitionRestoreOperation operation) {
+    final var builder =
+        Topology.PartitionRestoreOperation.newBuilder()
+            .setPartitionId(operation.partitionId())
+            .addAllBackupIds(operation.restore().backupIds());
+    operation.restore().checkpointPosition().ifPresent(builder::setCheckpointPosition);
+    return builder.build();
+  }
+
+  private static PartitionRestoreOperation decodePartitionRestore(
+      final MemberId memberId, final Topology.PartitionRestoreOperation operation) {
+    return new PartitionRestoreOperation(
+        memberId,
+        operation.getPartitionId(),
+        new PartitionRestore(
+            new TreeSet<>(operation.getBackupIdsList()),
+            operation.hasCheckpointPosition()
+                ? OptionalLong.of(operation.getCheckpointPosition())
+                : OptionalLong.empty()));
   }
 }

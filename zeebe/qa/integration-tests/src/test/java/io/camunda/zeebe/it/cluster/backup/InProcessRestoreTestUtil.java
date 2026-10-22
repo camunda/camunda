@@ -42,6 +42,7 @@ import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -326,10 +327,7 @@ public final class InProcessRestoreTestUtil {
 
   /**
    * Deploys a single-service-task process and creates instances until every partition has at least
-   * one instance with a pending job, returning the created process instance keys. Instances are
-   * created one at a time and re-checked on every poll, so no fixed instance count has to be
-   * guessed up front (round-robin distribution does not guarantee full coverage after a fixed
-   * number).
+   * one instance with a pending job, returning the created process instance keys.
    */
   public static List<Long> deployAndCreateInstancesOnEveryPartition(
       final CamundaClient client,
@@ -350,7 +348,17 @@ public final class InProcessRestoreTestUtil {
             .join()
             .getKey();
     new ZeebeResourcesHelper(client).waitUntilDeploymentIsDone(deploymentKey);
+    return createInstancesOnEveryPartition(client, processId, partitionsCount);
+  }
 
+  /**
+   * Creates instances of the latest version of the given process until every partition has at least
+   * one, returning the created process instance keys. Instances are created one at a time and
+   * re-checked on every poll, so no fixed instance count has to be guessed up front (round-robin
+   * distribution does not guarantee full coverage after a fixed number).
+   */
+  public static List<Long> createInstancesOnEveryPartition(
+      final CamundaClient client, final String processId, final int partitionsCount) {
     final List<Long> processInstanceKeys = new ArrayList<>();
     Awaitility.await("every partition has at least one process instance with a pending job")
         .timeout(Duration.ofSeconds(60))
@@ -730,24 +738,32 @@ public final class InProcessRestoreTestUtil {
     }
   }
 
-  /** Waits until the jobs of the given process instances can be activated again. */
-  static void awaitJobsOfInstancesActivatable(
-      final CamundaClient client, final String jobType, final List<Long> processInstanceKeys) {
+  /**
+   * Waits until the jobs of the given process instances can be activated again, and returns the
+   * process instance keys of every job activated meanwhile. Activated jobs are locked, so a poll
+   * that sees only some of them must not hide them from the next one: the keys add up over polls.
+   */
+  static Set<Long> awaitJobsOfInstancesActivatable(
+      final CamundaClient client,
+      final String jobType,
+      final Collection<Long> processInstanceKeys) {
+    final Set<Long> activatedInstanceKeys = new HashSet<>();
     Awaitility.await("the jobs of the restored instances can be activated")
         .timeout(Duration.ofSeconds(60))
         .ignoreExceptions()
         .untilAsserted(
-            () ->
-                assertThat(
-                        client
-                            .newActivateJobsCommand()
-                            .jobType(jobType)
-                            .maxJobsToActivate(1000)
-                            .send()
-                            .join()
-                            .getJobs())
-                    .extracting(ActivatedJob::getProcessInstanceKey)
-                    .containsAll(processInstanceKeys));
+            () -> {
+              client
+                  .newActivateJobsCommand()
+                  .jobType(jobType)
+                  .maxJobsToActivate(1000)
+                  .send()
+                  .join()
+                  .getJobs()
+                  .forEach(job -> activatedInstanceKeys.add(job.getProcessInstanceKey()));
+              assertThat(activatedInstanceKeys).containsAll(processInstanceKeys);
+            });
+    return activatedInstanceKeys;
   }
 
   private static RequestHandlingAllPartitions requestHandlingOver(final int partitionCount) {

@@ -134,7 +134,7 @@ public record RestoreStatus(ChangePlan plan, List<BrokerRestoreStatus> brokers) 
       case final PartitionRestoreOperation restore -> {
         final var accumulator =
             accumulatorOf(brokerPartitionMap, restore.memberId().id(), restore.partitionId());
-        accumulator.backupIds = restore.backupIds();
+        accumulator.backupIds = restore.restore().backupIds();
         if (completedAt != null) {
           accumulator.restoredAt = completedAt;
         }
