@@ -323,6 +323,10 @@ public class CamundaProcessTestExtension
       throw e;
     }
 
+    // wait until the cluster is ready to accept new operations, retrying until success or timeout.
+    // Reading the time below needs a ready cluster.
+    runtime.waitUntilClusterReady(Duration.ofSeconds(10));
+
     // initialize assertions
     testCaseStartTime = readCurrentRuntimeTime();
     dataSource =
@@ -334,9 +338,6 @@ public class CamundaProcessTestExtension
 
     // initialize result collector
     processTestResultCollector = new CamundaProcessTestResultCollector(dataSource);
-
-    // wait until the cluster is ready to accept new operations, retrying until success or timeout
-    runtime.waitUntilClusterReady(Duration.ofSeconds(10));
 
     // deploy resources if present
     testDeploymentService.deployTestResources(

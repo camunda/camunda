@@ -189,6 +189,10 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
         .getApplicationContext()
         .publishEvent(new CamundaClientCreatedSpringEvent(this, client));
 
+    // wait until the cluster is ready to accept new operations, retrying until success or timeout.
+    // Reading the time below needs a ready cluster.
+    runtime.waitUntilClusterReady(Duration.ofSeconds(10));
+
     // initialize assertions
     testCaseStartTime = readCurrentRuntimeTime();
     final CamundaProcessTestRuntimeConfiguration runtimeConfiguration =
@@ -199,9 +203,6 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
 
     // initialize result collector
     processTestResultCollector = new CamundaProcessTestResultCollector(dataSource);
-
-    // wait until the cluster is ready to accept new operations, retrying until success or timeout
-    runtime.waitUntilClusterReady(Duration.ofSeconds(10));
 
     // deploy resources
     testDeploymentService.deployTestResources(
