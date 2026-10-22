@@ -16,12 +16,15 @@
 package io.camunda.process.test.api;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -58,6 +61,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.net.URI;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -71,6 +75,7 @@ import org.mockito.Answers;
 import org.mockito.ArgumentCaptor;
 import org.mockito.ArgumentMatchers;
 import org.mockito.Captor;
+import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationContext;
@@ -431,6 +436,41 @@ public class ExecutionListenerTest {
   }
 
   @Test
+  void shouldNotUsePreviousTestCaseIfClusterIsNotReady() throws Exception {
+    // given
+    final CamundaProcessTestExecutionListener listener =
+        new CamundaProcessTestExecutionListener(
+            camundaRuntimeBuilder, processCoverageBuilder, NOOP);
+    final Instant previousTestCaseStartTime = Instant.parse("2026-03-01T10:00:00Z");
+
+    listener.beforeTestClass(testContext);
+    setClientMocks(listener);
+    when(camundaClockClient.getCurrentTime()).thenReturn(previousTestCaseStartTime);
+
+    // a previous test case that passed
+    listener.beforeTestMethod(testContext);
+    setTestResultCollectorMock(listener);
+    listener.afterTestMethod(testContext);
+
+    // a test case that fails because the cluster is not ready
+    final RuntimeException exception = new RuntimeException("Expected: cluster not ready");
+    doThrow(exception).when(camundaContainerRuntime).waitUntilClusterReady(any());
+    assertThatThrownBy(() -> listener.beforeTestMethod(testContext)).isEqualTo(exception);
+    // lenient: afterTestMethod doesn't check the outcome of a test case that never started
+    lenient().when(testContext.getTestException()).thenReturn(exception);
+
+    // when
+    listener.afterTestMethod(testContext);
+
+    // then
+    verify(camundaProcessTestResultCollector, never()).collect();
+
+    final ArgumentCaptor<Instant> testCaseStartTimes = ArgumentCaptor.forClass(Instant.class);
+    verify(cleanupStrategy, times(2)).cleanup(any(), any(), testCaseStartTimes.capture());
+    assertThat(testCaseStartTimes.getAllValues()).containsExactly(previousTestCaseStartTime, null);
+  }
+
+  @Test
   void shouldResetClockInBetweenTests() throws Exception {
     // given
     final CamundaProcessTestExecutionListener listener =
@@ -677,6 +717,64 @@ public class ExecutionListenerTest {
 
       // when/then
       assertThatThrownBy(() -> listener.beforeTestMethod(testContext)).isEqualTo(exception);
+    }
+
+    @Test
+    void shouldReadCurrentTimeOnceClusterIsReady() {
+      // given
+      final CamundaProcessTestExecutionListener listener =
+          new CamundaProcessTestExecutionListener(
+              camundaRuntimeBuilder, processCoverageBuilder, NOOP);
+
+      listener.beforeTestClass(testContext);
+      setField(listener, "camundaClockClient", camundaClockClient);
+
+      // when
+      listener.beforeTestMethod(testContext);
+
+      // then
+      final InOrder inOrder = inOrder(camundaContainerRuntime, camundaClockClient);
+      inOrder.verify(camundaContainerRuntime).waitUntilClusterReady(any());
+      inOrder.verify(camundaClockClient).getCurrentTime();
+    }
+
+    @Test
+    void shouldNotReadCurrentTimeIfClusterIsNotReady() {
+      // given
+      final CamundaProcessTestExecutionListener listener =
+          new CamundaProcessTestExecutionListener(
+              camundaRuntimeBuilder, processCoverageBuilder, NOOP);
+
+      doThrow(new RuntimeException("Expected: cluster not ready"))
+          .when(camundaContainerRuntime)
+          .waitUntilClusterReady(any());
+
+      listener.beforeTestClass(testContext);
+      setField(listener, "camundaClockClient", camundaClockClient);
+
+      // when
+      assertThatThrownBy(() -> listener.beforeTestMethod(testContext))
+          .hasMessage("Expected: cluster not ready");
+
+      // then
+      verify(camundaClockClient, never()).getCurrentTime();
+    }
+
+    @Test
+    void shouldStartTestCaseIfCurrentTimeCannotBeRead() {
+      // given
+      final CamundaProcessTestExecutionListener listener =
+          new CamundaProcessTestExecutionListener(
+              camundaRuntimeBuilder, processCoverageBuilder, NOOP);
+
+      listener.beforeTestClass(testContext);
+      setField(listener, "camundaClockClient", camundaClockClient);
+
+      when(camundaClockClient.getCurrentTime())
+          .thenThrow(new RuntimeException("Expected: time cannot be read"));
+
+      // when / then
+      assertThatCode(() -> listener.beforeTestMethod(testContext)).doesNotThrowAnyException();
     }
   }
 

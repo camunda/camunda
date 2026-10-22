@@ -309,6 +309,11 @@ public class CamundaProcessTestExtension
               + "Make sure that you registering the extension on a static field.");
     }
 
+    // forget the previous test case, so that afterEach doesn't use it if this method fails
+    testCaseStartTime = null;
+    dataSource = null;
+    processTestResultCollector = null;
+
     // inject fields
     try {
       injectField(context, CamundaClient.class, camundaProcessTestContext::createClient);
@@ -323,6 +328,10 @@ public class CamundaProcessTestExtension
       throw e;
     }
 
+    // wait until the cluster is ready to accept new operations, retrying until success or timeout.
+    // Reading the time below needs a ready cluster.
+    runtime.waitUntilClusterReady(Duration.ofSeconds(10));
+
     // initialize assertions
     testCaseStartTime = readCurrentRuntimeTime();
     dataSource =
@@ -334,9 +343,6 @@ public class CamundaProcessTestExtension
 
     // initialize result collector
     processTestResultCollector = new CamundaProcessTestResultCollector(dataSource);
-
-    // wait until the cluster is ready to accept new operations, retrying until success or timeout
-    runtime.waitUntilClusterReady(Duration.ofSeconds(10));
 
     // deploy resources if present
     testDeploymentService.deployTestResources(
@@ -392,19 +398,22 @@ public class CamundaProcessTestExtension
     // stop conditional behavior engine before cleanup
     conditionalBehaviorEngine.stop();
 
-    try {
-      final CoverageTestData coverageData = CoverageTestDataCollector.collectData(dataSource);
-      coverageCollector.collectTestRunCoverage(
-          context.getRequiredTestClass(),
-          getCoverageTestName(context),
-          getDisplayName(context),
-          coverageData);
-    } catch (final Throwable t) {
-      LOG.warn("Failed to collect test process coverage, skipping.", t);
-    }
+    // no data source means that beforeEach failed before the test case could start
+    if (dataSource != null) {
+      try {
+        final CoverageTestData coverageData = CoverageTestDataCollector.collectData(dataSource);
+        coverageCollector.collectTestRunCoverage(
+            context.getRequiredTestClass(),
+            getCoverageTestName(context),
+            getDisplayName(context),
+            coverageData);
+      } catch (final Throwable t) {
+        LOG.warn("Failed to collect test process coverage, skipping.", t);
+      }
 
-    if (isTestFailed(context)) {
-      printTestResults();
+      if (isTestFailed(context)) {
+        printTestResults();
+      }
     }
     CamundaAssert.reset();
     closeCreatedClients();

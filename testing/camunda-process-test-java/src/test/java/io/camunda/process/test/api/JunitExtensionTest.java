@@ -16,9 +16,12 @@
 package io.camunda.process.test.api;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.inOrder;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -44,6 +47,7 @@ import io.camunda.process.test.utils.FakeChatModelAdapterProvider;
 import java.lang.reflect.Field;
 import java.net.URI;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -60,6 +64,8 @@ import org.junit.jupiter.api.extension.ExtensionContext.Store;
 import org.junit.jupiter.api.extension.TestInstances;
 import org.junit.platform.commons.util.ExceptionUtils;
 import org.mockito.Answers;
+import org.mockito.ArgumentCaptor;
+import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -466,6 +472,61 @@ public class JunitExtensionTest {
       // when/then
       assertThatThrownBy(() -> extension.beforeEach(extensionContext)).isEqualTo(exception);
     }
+
+    @Test
+    void shouldReadCurrentTimeOnceClusterIsReady() throws Exception {
+      // given
+      final CamundaProcessTestExtension extension =
+          new CamundaProcessTestExtension(camundaRuntimeBuilder, processCoverageBuilder, NOOP);
+
+      extension.beforeAll(extensionContext);
+      setField(extension, "camundaClockClient", camundaClockClient);
+
+      // when
+      extension.beforeEach(extensionContext);
+
+      // then
+      final InOrder inOrder = inOrder(camundaContainerRuntime, camundaClockClient);
+      inOrder.verify(camundaContainerRuntime).waitUntilClusterReady(any());
+      inOrder.verify(camundaClockClient).getCurrentTime();
+    }
+
+    @Test
+    void shouldNotReadCurrentTimeIfClusterIsNotReady() {
+      // given
+      final CamundaProcessTestExtension extension =
+          new CamundaProcessTestExtension(camundaRuntimeBuilder, processCoverageBuilder, NOOP);
+
+      doThrow(new RuntimeException("Expected: cluster not ready"))
+          .when(camundaContainerRuntime)
+          .waitUntilClusterReady(any());
+
+      extension.beforeAll(extensionContext);
+      setClockClientMock(extension);
+
+      // when
+      assertThatThrownBy(() -> extension.beforeEach(extensionContext))
+          .hasMessage("Expected: cluster not ready");
+
+      // then
+      verify(camundaClockClient, never()).getCurrentTime();
+    }
+
+    @Test
+    void shouldStartTestCaseIfCurrentTimeCannotBeRead() {
+      // given
+      final CamundaProcessTestExtension extension =
+          new CamundaProcessTestExtension(camundaRuntimeBuilder, processCoverageBuilder, NOOP);
+
+      extension.beforeAll(extensionContext);
+      setClockClientMock(extension);
+
+      when(camundaClockClient.getCurrentTime())
+          .thenThrow(new RuntimeException("Expected: time cannot be read"));
+
+      // when / then
+      assertThatCode(() -> extension.beforeEach(extensionContext)).doesNotThrowAnyException();
+    }
   }
 
   @Nested
@@ -581,6 +642,41 @@ public class JunitExtensionTest {
 
       // then
       verify(camundaClockClient, never()).resetTime();
+    }
+
+    @Test
+    void shouldNotUsePreviousTestCaseIfClusterIsNotReady() throws Exception {
+      // given
+      final CamundaProcessTestExtension extension =
+          new CamundaProcessTestExtension(camundaRuntimeBuilder, processCoverageBuilder, NOOP);
+      final Instant previousTestCaseStartTime = Instant.parse("2026-03-01T10:00:00Z");
+
+      extension.beforeAll(extensionContext);
+      setClockClientMock(extension);
+      when(camundaClockClient.getCurrentTime()).thenReturn(previousTestCaseStartTime);
+
+      // a previous test case that passed
+      extension.beforeEach(extensionContext);
+      setTestResultCollectorMock(extension);
+      extension.afterEach(extensionContext);
+
+      // a test case that fails because the cluster is not ready
+      final RuntimeException exception = new RuntimeException("Expected: cluster not ready");
+      doThrow(exception).when(camundaContainerRuntime).waitUntilClusterReady(any());
+      assertThatThrownBy(() -> extension.beforeEach(extensionContext)).isEqualTo(exception);
+      // lenient: afterEach doesn't check the outcome of a test case that never started
+      lenient().when(extensionContext.getExecutionException()).thenReturn(Optional.of(exception));
+
+      // when
+      extension.afterEach(extensionContext);
+
+      // then
+      verify(camundaProcessTestResultCollector, never()).collect();
+
+      final ArgumentCaptor<Instant> testCaseStartTimes = ArgumentCaptor.forClass(Instant.class);
+      verify(cleanupStrategy, times(2)).cleanup(any(), any(), testCaseStartTimes.capture());
+      assertThat(testCaseStartTimes.getAllValues())
+          .containsExactly(previousTestCaseStartTime, null);
     }
 
     private void setTestResultCollectorMock(final CamundaProcessTestExtension extension) {
