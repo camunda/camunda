@@ -1633,7 +1633,7 @@
 					"newVariableTitle": "Modifier une nouvelle variable",
 					"copy": "Copier les variables",
 					"copyTitle": "Cliquez pour copier les variables dans le presse-papiers",
-					"copyPaginated": "La copie est désactivée à partir de 50 variables",
+					"copyPaginated": "La copie est désactivée pour plus de 50 variables",
 					"copyTruncated": "La copie est désactivée pour les valeurs de variable de plus de 8192 caractères",
 					"validation": {
 						"emptyName": "Le nom doit être renseigné",

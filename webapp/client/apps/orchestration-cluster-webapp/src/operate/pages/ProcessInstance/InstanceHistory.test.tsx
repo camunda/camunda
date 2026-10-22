@@ -537,6 +537,20 @@ describe('InstanceHistory', () => {
 		await userEvent.click(row(rootItem.element()));
 		await expect.poll(() => screen.router.state.location.search).toEqual({tenantId: 'tenant'});
 	});
+	it('should match the legacy history heading and right-aligned controls', async ({worker}) => {
+		const screen = await renderTree(worker);
+		const panel = screen.getByRole('region', {name: 'Instance History'});
+		const heading = panel.getByRole('heading', {name: 'Instance History'});
+
+		await expect.element(heading).toBeVisible();
+		expect(getComputedStyle(heading.element()).fontWeight).toBe('600');
+		const panelBounds = panel.element().getBoundingClientRect();
+		const headingBounds = heading.element().getBoundingClientRect();
+		const controlsBounds = panel.getByText('Execution count', {exact: true}).element().getBoundingClientRect();
+		expect(headingBounds.left - panelBounds.left).toBeCloseTo(16);
+		expect(panelBounds.right - controlsBounds.right).toBeCloseTo(16);
+		expect(controlsBounds.left).toBeGreaterThan(headingBounds.right);
+	});
 	it('should retry XML before reading disabled history and wait for successful recovery', async ({worker}) => {
 		let xmlStatus = 500;
 		let xmlReads = 0;

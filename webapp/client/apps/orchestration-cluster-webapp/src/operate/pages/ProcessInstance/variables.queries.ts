@@ -55,8 +55,13 @@ function variablesQuery({
 							signal,
 						),
 		initialPageParam: null as string | null,
-		getNextPageParam: ({items, page}) =>
-			items.length < VARIABLES_PAGE_SIZE || page.endCursor === null ? undefined : page.endCursor,
+		getNextPageParam: (lastPage, allPages) => {
+			const loadedItems = new Set(allPages.flatMap(({items}) => items.map(({variableKey}) => variableKey))).size;
+			const hasMoreItems = lastPage.page.hasMoreTotalItems || loadedItems < lastPage.page.totalItems;
+			return lastPage.items.length === 0 || lastPage.page.endCursor === null || !hasMoreItems
+				? undefined
+				: lastPage.page.endCursor;
+		},
 	});
 }
 
