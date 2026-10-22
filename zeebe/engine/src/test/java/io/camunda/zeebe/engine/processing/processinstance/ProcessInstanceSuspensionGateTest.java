@@ -16,13 +16,14 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.BufferedCommandIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
-import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
+import io.camunda.zeebe.protocol.record.intent.TimerIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.BufferedCommandRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.ClassRule;
@@ -64,22 +65,23 @@ public final class ProcessInstanceSuspensionGateTest {
 
   @Test
   public void shouldClearBufferedCommandsWhenCancellingSuspendedProcessInstance() {
-    // given - suspending a user task buffers its RESUME command
+    // given - a timer that becomes due while suspended buffers its trigger
     final String processId = Strings.newRandomValidBpmnId();
     ENGINE
         .deployment()
         .withXmlResource(
             Bpmn.createExecutableProcess(processId)
                 .startEvent()
-                .userTask("task", t -> t.zeebeUserTask())
+                .intermediateCatchEvent("timer", c -> c.timerWithDuration("PT1S"))
                 .endEvent()
                 .done())
         .deploy();
     final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(processId).create();
-    RecordingExporter.userTaskRecords(UserTaskIntent.CREATED)
+    RecordingExporter.timerRecords(TimerIntent.CREATED)
         .withProcessInstanceKey(processInstanceKey)
         .await();
     ENGINE.processInstance().withInstanceKey(processInstanceKey).suspend();
+    ENGINE.increaseTime(Duration.ofSeconds(1));
     RecordingExporter.records()
         .withValueType(ValueType.BUFFERED_COMMAND)
         .withIntent(BufferedCommandIntent.BUFFERED)

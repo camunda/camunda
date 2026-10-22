@@ -83,15 +83,16 @@ public enum ProcessInstanceIntent implements ProcessInstanceRelatedIntent {
 
   /**
    * Represents the internal command that finalizes the resume lifecycle once every parked job and
-   * suspended user task has been resumed. {@link #RESUME_USER_TASKS} writes this command once none
-   * are left; a dedicated processor reacts by writing {@link #RESUMED}.
+   * suspended user task has been resumed. {@link #RESUME_JOBS} writes this command once none are
+   * left; a dedicated processor reacts by writing {@link #RESUMED}.
    */
   COMPLETE_RESUMING((short) 22, false),
 
   /**
    * Represents the internal command that un-parks suspended jobs of the instance, appending itself
-   * again until none are left, then handing off to {@link #RESUME_USER_TASKS}. The drain processor
-   * writes the first cycle when the buffered-command drain is complete.
+   * again until none are left, then handing off to {@link #COMPLETE_RESUMING}. {@link
+   * #RESUME_USER_TASKS} writes the first cycle once no suspended user task is left, or the drain
+   * processor when the drain is complete and the instance has no suspended user task.
    */
   RESUME_JOBS((short) 23, false),
 
@@ -103,8 +104,8 @@ public enum ProcessInstanceIntent implements ProcessInstanceRelatedIntent {
 
   /**
    * Represents the internal command that resumes suspended user tasks of the instance, appending
-   * itself again until none are left, then handing off to {@link #COMPLETE_RESUMING}. {@link
-   * #RESUME_JOBS} writes the first cycle once no suspended job is left.
+   * itself again until none are left, then handing off to {@link #RESUME_JOBS}. The drain processor
+   * writes the first cycle when the buffered-command drain is complete.
    */
   RESUME_USER_TASKS((short) 25, false);
 
