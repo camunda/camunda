@@ -38,6 +38,10 @@ There you'll find anything to get started using Camunda 8, best practices, and r
 - ChatOps commands and flaky test handling
 - Comprehensive troubleshooting guide
 
+### CI Runbooks
+
+**[FOSSA Reporting Runbook](./fossa-reporting-runbook.md)** - How to publish FOSSA attribution and SBOM reports for a component in the monorepo release, including release group creation, workflow wiring, dry run and backfill.
+
 ### Release Process
 
 **[Release Process](./release)** - Complete software release procedures and guidelines including:
