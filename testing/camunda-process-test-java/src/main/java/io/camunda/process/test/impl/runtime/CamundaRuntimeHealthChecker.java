@@ -16,6 +16,7 @@
 package io.camunda.process.test.impl.runtime;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.ProblemDetail;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.response.PartitionBrokerHealth;
 import io.camunda.client.api.response.PartitionInfo;
@@ -37,6 +38,12 @@ public class CamundaRuntimeHealthChecker {
   private static final Duration DEFAULT_TIMEOUT = Duration.ofSeconds(10);
 
   private static final int HTTP_BAD_REQUEST = 400;
+
+  /**
+   * Part of the problem detail of a command that the broker rejected. A client error without it was
+   * produced by the gateway, e.g. when it validates the tenant, before reaching the broker.
+   */
+  private static final String BROKER_REJECTION_MARKER = "rejected with code 'INVALID_ARGUMENT'";
 
   private static final byte[] PROBE_RESOURCE = "not a BPMN model".getBytes(StandardCharsets.UTF_8);
 
@@ -115,7 +122,7 @@ public class CamundaRuntimeHealthChecker {
 
   /**
    * Deploys a resource that is not a valid BPMN model. The engine can only reject a resource once
-   * the partition processes commands, so a client error proves that deployments are accepted. This
+   * the partition processes commands, so its rejection proves that deployments are accepted. This
    * is stricter than the topology, which can report healthy partitions while the command API
    * handler of the partition leader is not registered yet (HTTP 500). The rejected deployment
    * changes no engine state.
@@ -131,9 +138,16 @@ public class CamundaRuntimeHealthChecker {
       throw new IllegalStateException(
           "Expected the engine to reject the readiness probe resource, but it was accepted.");
     } catch (final ProblemException e) {
-      if (e.code() != HTTP_BAD_REQUEST) {
+      if (e.code() != HTTP_BAD_REQUEST || !isBrokerRejection(e)) {
         throw e;
       }
     }
+  }
+
+  private static boolean isBrokerRejection(final ProblemException exception) {
+    final ProblemDetail details = exception.details();
+    return details != null
+        && details.getDetail() != null
+        && details.getDetail().contains(BROKER_REJECTION_MARKER);
   }
 }
