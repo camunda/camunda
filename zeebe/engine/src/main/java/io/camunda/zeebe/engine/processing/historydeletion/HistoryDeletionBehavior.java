@@ -19,6 +19,7 @@ import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 import io.camunda.zeebe.protocol.record.intent.HistoryDeletionIntent;
 import io.camunda.zeebe.protocol.record.value.BatchOperationType;
 import io.camunda.zeebe.protocol.record.value.HistoryDeletionType;
+import io.camunda.zeebe.protocol.record.value.StorageOrdinalRelated;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import org.agrona.concurrent.UnsafeBuffer;
 
@@ -55,7 +56,8 @@ public final class HistoryDeletionBehavior {
         MsgPackConverter.convertToMsgPack(filter),
         new HistoryDeletionRecord()
             .setResourceKey(processDefinitionKey)
-            .setResourceType(HistoryDeletionType.PROCESS_DEFINITION));
+            .setResourceType(HistoryDeletionType.PROCESS_DEFINITION)
+            .setResourceStorageOrdinal(StorageOrdinalRelated.NOT_ORDINAL_CONTROLLED));
   }
 
   /**
@@ -74,7 +76,8 @@ public final class HistoryDeletionBehavior {
         MsgPackConverter.convertToMsgPack(filter),
         new HistoryDeletionRecord()
             .setResourceKey(decisionRequirementsKey)
-            .setResourceType(HistoryDeletionType.DECISION_REQUIREMENTS));
+            .setResourceType(HistoryDeletionType.DECISION_REQUIREMENTS)
+            .setResourceStorageOrdinal(StorageOrdinalRelated.NOT_ORDINAL_CONTROLLED));
   }
 
   private long createBatchOperation(

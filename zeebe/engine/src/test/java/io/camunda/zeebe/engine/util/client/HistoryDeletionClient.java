@@ -60,6 +60,11 @@ public class HistoryDeletionClient {
     return this;
   }
 
+  public HistoryDeletionClient withResourceStorageOrdinal(final int resourceStorageOrdinal) {
+    record.setResourceStorageOrdinal(resourceStorageOrdinal);
+    return this;
+  }
+
   public Record<HistoryDeletionRecordValue> delete() {
     final long position = writer.writeCommand(HistoryDeletionIntent.DELETE, record);
     return expectation.apply(position);
