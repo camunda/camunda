@@ -95,9 +95,13 @@ public class ActorThread extends Thread implements Consumer<Runnable> {
   }
 
   private void doWork() {
-    submittedCallbacks.drain(this);
+    if (!submittedCallbacks.isEmpty()) {
+      clearActorContext();
+      submittedCallbacks.drain(this);
+    }
 
     if (clock.update()) {
+      clearActorContext();
       timerJobQueue.processExpiredTimers(clock);
     }
 
@@ -122,8 +126,10 @@ public class ActorThread extends Thread implements Consumer<Runnable> {
   /**
    * Makes the context of the actor to execute available as MDC. Updating the MDC is surprisingly
    * expensive as it copies the underlying map on every put and remove, so the context stays applied
-   * as long as the thread keeps executing the same actor, and is only reset once the thread runs
-   * out of work or switches to another actor.
+   * as long as the thread keeps executing the same actor. It is reset when the thread switches to
+   * another actor or runs out of work, and before any other work that runs on the thread
+   * (callbacks, timers, error handling), so it never leaks into code that does not belong to the
+   * actor.
    */
   private void applyActorContext(final Map<String, String> context) {
     if (context == appliedActorContext) {
@@ -251,6 +257,7 @@ public class ActorThread extends Thread implements Consumer<Runnable> {
       try {
         doWork();
       } catch (final Exception e) {
+        clearActorContext();
         LOG.error("Unexpected error occurred while in the actor thread {}", getName(), e);
       }
     }
