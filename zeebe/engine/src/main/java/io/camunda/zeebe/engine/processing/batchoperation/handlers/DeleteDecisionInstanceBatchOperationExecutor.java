@@ -44,6 +44,7 @@ public class DeleteDecisionInstanceBatchOperationExecutor implements BatchOperat
     final var command = new HistoryDeletionRecord();
     command.setResourceKey(itemKey);
     command.setResourceType(HistoryDeletionType.DECISION_INSTANCE);
+    command.setResourceStorageOrdinal(itemStorageOrdinal);
 
     commandWriter.appendFollowUpCommand(
         itemKey,
