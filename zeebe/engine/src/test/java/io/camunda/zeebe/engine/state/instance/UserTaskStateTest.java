@@ -14,7 +14,7 @@ import io.camunda.zeebe.db.ZeebeDbInconsistentException;
 import io.camunda.zeebe.engine.state.immutable.UserTaskState.LifecycleState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.state.mutable.MutableUserTaskState;
-import io.camunda.zeebe.engine.util.ProcessingStateRule;
+import io.camunda.zeebe.engine.util.ProcessingStateExtension;
 import io.camunda.zeebe.msgpack.value.DocumentValue;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
@@ -26,19 +26,18 @@ import java.util.List;
 import java.util.function.Consumer;
 import org.agrona.DirectBuffer;
 import org.assertj.core.api.Assertions;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
+@ExtendWith(ProcessingStateExtension.class)
 public class UserTaskStateTest {
 
-  @Rule public final ProcessingStateRule stateRule = new ProcessingStateRule();
-
+  private MutableProcessingState processingState;
   private MutableUserTaskState userTaskState;
 
-  @Before
+  @BeforeEach
   public void setUp() {
-    final MutableProcessingState processingState = stateRule.getProcessingState();
     userTaskState = processingState.getUserTaskState();
   }
 
