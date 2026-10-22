@@ -36,6 +36,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejection
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.processing.variable.VariableBehavior;
+import io.camunda.zeebe.engine.processing.variable.VariableMetadataLookup;
 import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
 import io.camunda.zeebe.engine.state.immutable.AsyncRequestState;
 import io.camunda.zeebe.engine.state.immutable.AsyncRequestState.AsyncRequest;
@@ -1395,7 +1396,8 @@ public final class ProcessInstanceModificationModifyProcessor
                     processInstance.getValue().getStorageOrdinal(),
                     process.getBpmnProcessId(),
                     process.getTenantId(),
-                    variableDocument);
+                    variableDocument,
+                    VariableMetadataLookup.NONE);
               } catch (final ValidationException e) {
                 throw new IllegalArgumentException(
                     "Variable validation failed for element '%s' in process instance '%d': %s"

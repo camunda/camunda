@@ -347,6 +347,9 @@ public final class EventAppliers implements EventApplier {
     final var variableApplier = new VariableApplier(variableState);
     register(VariableIntent.CREATED, variableApplier);
     register(VariableIntent.UPDATED, variableApplier);
+    final var variableV2Applier = new VariableV2Applier(variableState);
+    register(VariableIntent.CREATED, 2, variableV2Applier);
+    register(VariableIntent.UPDATED, 2, variableV2Applier);
     register(VariableIntent.MIGRATED, new VariableMigratedApplier());
     register(VariableDocumentIntent.UPDATING, new VariableDocumentUpdatingApplier(variableState));
     register(VariableDocumentIntent.UPDATED, new VariableDocumentUpdatedApplier(variableState));
