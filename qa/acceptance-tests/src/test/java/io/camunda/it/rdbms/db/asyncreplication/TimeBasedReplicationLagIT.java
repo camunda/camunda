@@ -109,10 +109,11 @@ public abstract class TimeBasedReplicationLagIT<R extends ReplicationClusterCont
         .untilAsserted(
             () -> {
               assertThat(exporterGauge(PAUSED_GAUGE).gauge().value()).isEqualTo(1.0);
-              // an unmeasured lag is reported as NaN, which never satisfies this
+              // an unmeasured lag is reported as NaN, which AssertJ orders above any number
               assertThat(exporterGauge(REPLICA_LAG_GAUGE).gauges())
                   .extracting(Gauge::value)
-                  .anySatisfy(lagMs -> assertThat(lagMs).isGreaterThan(MAX_LAG.toMillis()));
+                  .anySatisfy(
+                      lagMs -> assertThat(lagMs).isNotNaN().isGreaterThan(MAX_LAG.toMillis()));
             });
   }
 
