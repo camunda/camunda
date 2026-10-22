@@ -17,9 +17,11 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RecordValue;
+import io.camunda.zeebe.protocol.record.intent.BufferedCommandIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.TimerIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
+import io.camunda.zeebe.protocol.record.value.BufferedCommandRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;
 import io.camunda.zeebe.test.util.Strings;
@@ -115,15 +117,20 @@ public final class ResumeProcessInstanceUserTaskTest {
     final long resumedPosition =
         ENGINE.processInstance().withInstanceKey(processInstanceKey).resume().getPosition();
 
-    // then - the task is resumed without a RESUME command
-    assertThat(
-            RecordingExporter.records()
-                .limit(r -> r.getPosition() >= resumedPosition)
-                .filter(r -> isUserTaskOf(r, processInstanceKey))
-                .map(Record::getIntent)
-                .toList())
-        .contains(UserTaskIntent.RESUMED)
-        .doesNotContain(UserTaskIntent.RESUME);
+    // then - the task is resumed without any buffered command
+    final List<Record<RecordValue>> records =
+        RecordingExporter.records().limit(r -> r.getPosition() >= resumedPosition).toList();
+    assertThat(records)
+        .filteredOn(r -> isUserTaskOf(r, processInstanceKey))
+        .extracting(Record::getIntent)
+        .contains(UserTaskIntent.RESUMED);
+    assertThat(records)
+        .filteredOn(r -> r.getIntent() == BufferedCommandIntent.BUFFERED)
+        .filteredOn(
+            r ->
+                ((BufferedCommandRecordValue) r.getValue()).getProcessInstanceKey()
+                    == processInstanceKey)
+        .isEmpty();
   }
 
   @Test

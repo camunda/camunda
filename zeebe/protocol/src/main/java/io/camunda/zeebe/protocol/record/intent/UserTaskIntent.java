@@ -133,14 +133,6 @@ public enum UserTaskIntent implements ProcessInstanceRelatedIntent {
   SUSPENDED(24),
 
   /**
-   * Represents the `RESUME` command for a user task. The engine buffers it while suspending the
-   * process instance and drains it on resume, which writes {@link #RESUMED}.
-   *
-   * @apiNote The engine manages this command internally. It shouldn't be used via client APIs.
-   */
-  RESUME(25),
-
-  /**
    * Represents the intent indicating that the user task was resumed because its process instance
    * was resumed. The task keeps the lifecycle state it had before it was suspended.
    *
@@ -216,8 +208,6 @@ public enum UserTaskIntent implements ProcessInstanceRelatedIntent {
         return CANCEL;
       case 24:
         return SUSPENDED;
-      case 25:
-        return RESUME;
       case 26:
         return RESUMED;
       default:
