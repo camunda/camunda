@@ -38,7 +38,7 @@ async function waitForVariableValue(queryClient: QueryClient, variableKey: strin
 			queryKey: ['savedVariable', variableKey],
 			queryFn: ({signal}) => instanceRequest<Variable>(endpoints.getVariable({variableKey}), signal),
 		},
-		{isReady: (savedVariable) => isSameJson(savedVariable.value, value)},
+		{isReady: (savedVariable) => isSameJson(savedVariable.value, value), retry: Infinity},
 	);
 
 	if (variable === undefined) {
@@ -78,6 +78,7 @@ async function saveVariable(
 		{
 			isReady: ({items}) =>
 				items.some((item) => item.name === name && (item.isTruncated || isSameJson(item.value, value))),
+			retry: Infinity,
 		},
 	);
 	const savedVariable = result?.items.find((item) => item.name === name);
