@@ -8,6 +8,7 @@
 package io.camunda.zeebe.exporter.opensearch;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import org.apache.http.HttpHost;
 import org.apache.http.HttpResponse;
@@ -29,6 +30,18 @@ import org.opensearch.client.RestClient;
 @Execution(ExecutionMode.CONCURRENT)
 final class RestClientFactoryTest {
   private final OpensearchExporterConfiguration config = new OpensearchExporterConfiguration();
+
+  @Test
+  void shouldNotExposeUrlCredentialsInErrorForInvalidUrl() {
+    // given
+    config.url = "http://admin:s3cr3t@localhost:notaport";
+
+    // when / then
+    assertThatThrownBy(() -> RestClientFactory.of(config))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessage("Invalid OpenSearch url at position 0")
+        .hasNoCause();
+  }
 
   @Test
   void shouldConfigureMultipleHosts() {

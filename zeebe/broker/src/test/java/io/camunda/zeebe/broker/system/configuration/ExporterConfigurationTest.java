@@ -10,6 +10,7 @@ package io.camunda.zeebe.broker.system.configuration;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
 
@@ -61,5 +62,24 @@ class ExporterConfigurationTest {
 
     // then
     assertThat(exportingCfg.getSkipRecords()).isEqualTo(Set.of(1L, 2L, 3L));
+  }
+
+  @Test
+  void shouldNotIncludeArgsInToString() {
+    // given
+    final var exporterCfg = new ExporterCfg();
+    exporterCfg.setClassName("io.camunda.Exporter");
+    exporterCfg.setArgs(
+        Map.of("password", "s3cr3t-password", "nested", Map.of("token", "s3cr3t-token")));
+
+    // when
+    final var result = exporterCfg.toString();
+
+    // then
+    assertThat(result)
+        .contains("io.camunda.Exporter")
+        .doesNotContain("s3cr3t-password")
+        .doesNotContain("s3cr3t-token")
+        .doesNotContain("password");
   }
 }
