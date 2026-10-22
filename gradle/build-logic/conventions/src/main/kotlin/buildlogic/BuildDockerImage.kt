@@ -1,11 +1,13 @@
 package buildlogic
 
+import java.io.File
 import javax.inject.Inject
 import org.gradle.api.DefaultTask
 import org.gradle.api.file.ConfigurableFileCollection
 import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.provider.Property
+import org.gradle.api.provider.ProviderFactory
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.InputFile
 import org.gradle.api.tasks.InputFiles
@@ -22,7 +24,9 @@ import org.gradle.process.ExecOperations
  * The image lives in the container daemon, so the task is only skipped when up to date and is never
  * restored from the build cache. The image id file is the output that records the last build.
  */
-abstract class BuildDockerImage @Inject constructor(private val execOperations: ExecOperations) :
+abstract class BuildDockerImage
+@Inject
+constructor(private val execOperations: ExecOperations, providers: ProviderFactory) :
   DefaultTask() {
 
   @get:InputFile
@@ -35,13 +39,30 @@ abstract class BuildDockerImage @Inject constructor(private val execOperations: 
 
   @get:Input abstract val image: Property<String>
 
-  /** `docker` or `podman`; `build` is common to both, unlike `buildx`. */
+  /**
+   * `docker` or `podman`; `build` is common to both, unlike `buildx`. Defaults to -Pcontainer.cli,
+   * else docker if installed, else podman.
+   */
   @get:Input abstract val cli: Property<String>
 
   /** The Docker build context; [distball] is passed relative to it. */
   @get:Internal abstract val contextDirectory: DirectoryProperty
 
   @get:OutputFile abstract val imageIdFile: RegularFileProperty
+
+  init {
+    cli.convention(
+      providers
+        .gradleProperty("container.cli")
+        .orElse(
+          providers.environmentVariable("PATH").map { path ->
+            listOf("docker", "podman").firstOrNull { name ->
+              path.split(File.pathSeparator).any { File(it, name).canExecute() }
+            } ?: "docker"
+          }
+        )
+    )
+  }
 
   @TaskAction
   fun build() {

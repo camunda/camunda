@@ -1,6 +1,5 @@
 package buildlogic
 
-import java.io.File
 import org.gradle.api.Project
 import org.gradle.api.attributes.Usage
 import org.gradle.api.file.RegularFile
@@ -16,8 +15,7 @@ fun Project.dockerImageName(): Provider<String> =
 
 /**
  * Registers `buildDockerImage`, which builds the Camunda container image from the distribution tar
- * [distball]. The image is tagged with [dockerImageName] and built with docker if installed, else
- * podman (-Pcontainer.cli).
+ * [distball]. The image is tagged with [dockerImageName].
  */
 fun Project.registerBuildDockerImage(
   distball: Provider<RegularFile>
@@ -33,17 +31,6 @@ fun Project.registerBuildDockerImage(
         layout.settingsDirectory.file("zeebe/docker/utils/jvm.options"),
       )
       image.set(dockerImageName())
-      cli.set(
-        providers
-          .gradleProperty("container.cli")
-          .orElse(
-            providers.environmentVariable("PATH").map { path ->
-              listOf("docker", "podman").firstOrNull { name ->
-                path.split(File.pathSeparator).any { File(it, name).canExecute() }
-              } ?: "docker"
-            }
-          )
-      )
       contextDirectory.set(layout.settingsDirectory)
       imageIdFile.set(layout.buildDirectory.file("docker/image.iid"))
     }
