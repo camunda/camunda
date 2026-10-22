@@ -33,6 +33,9 @@ export const docsUrl = "https://docs.camunda.io";
 
 export const isSaaS = Boolean(getClientConfigString("organizationId"));
 
+// Mapping rules can be managed only outside SaaS, where the mapping rules page exists.
+export const canManageMappingRules = isOIDC && !isSaaS;
+
 export function getApiBaseUrl() {
   return getBasePathBeforeAdmin() + apiBaseUrl;
 }

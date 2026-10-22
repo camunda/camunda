@@ -27,7 +27,7 @@ import Members from "src/pages/groups/detail/members";
 import Roles from "src/pages/groups/detail/roles";
 import MappingRules from "src/pages/groups/detail/mapping-rules";
 import Clients from "src/pages/groups/detail/clients";
-import { isOIDC } from "src/configuration";
+import { canManageMappingRules, isOIDC } from "src/configuration";
 
 const Details: FC = () => {
   const navigate = useNavigate();
@@ -107,11 +107,15 @@ const Details: FC = () => {
                 },
                 ...(isOIDC
                   ? [
-                      {
-                        key: "mapping-rules",
-                        label: t("mappingRules"),
-                        content: <MappingRules groupId={group.groupId} />,
-                      },
+                      ...(canManageMappingRules
+                        ? [
+                            {
+                              key: "mapping-rules",
+                              label: t("mappingRules"),
+                              content: <MappingRules groupId={group.groupId} />,
+                            },
+                          ]
+                        : []),
                       {
                         key: "clients",
                         label: t("clients"),
