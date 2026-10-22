@@ -7,9 +7,14 @@
  */
 package io.camunda.zeebe.broker.system.syspartition;
 
+import io.atomix.cluster.ClusterMembershipService;
+import io.atomix.cluster.MemberId;
+import io.atomix.cluster.messaging.ClusterCommunicationService;
 import io.camunda.zeebe.broker.partitioning.startup.RaftPartitionFactory;
 import io.camunda.zeebe.broker.raft.ZeebeEntryValidator;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
+import io.camunda.zeebe.broker.system.syspartition.detector.FailureDetectorFactory;
+import io.camunda.zeebe.broker.system.syspartition.detector.RegionLayout;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
@@ -28,11 +33,21 @@ import java.time.InstantSource;
 public final class SystemPartitionFactory {
   private final BrokerCfg brokerCfg;
   private final MeterRegistry brokerMeterRegistry;
+  private final ClusterMembershipService membershipService;
+  private final ClusterCommunicationService communicationService;
+  private final MemberId localMemberId;
 
   public SystemPartitionFactory(
-      final BrokerCfg brokerCfg, final MeterRegistry brokerMeterRegistry) {
+      final BrokerCfg brokerCfg,
+      final MeterRegistry brokerMeterRegistry,
+      final ClusterMembershipService membershipService,
+      final ClusterCommunicationService communicationService,
+      final MemberId localMemberId) {
     this.brokerCfg = brokerCfg;
     this.brokerMeterRegistry = brokerMeterRegistry;
+    this.membershipService = membershipService;
+    this.communicationService = communicationService;
+    this.localMemberId = localMemberId;
   }
 
   public ActorFuture<SystemPartition> create(final ActorSchedulingService scheduler) {
@@ -79,6 +94,15 @@ public final class SystemPartitionFactory {
                       systemPartition.keyValueReader(),
                       brokerCfg.getCluster().getClusterId(),
                       InstantSource.system()));
+              FailureDetectorFactory.install(
+                  brokerCfg.getCluster().getSystemPartition().getFailureDetector(),
+                  systemPartition,
+                  membershipService,
+                  communicationService,
+                  localMemberId,
+                  SystemPartition.members(brokerCfg),
+                  RegionLayout.of(brokerCfg),
+                  meterRegistry);
               return systemPartition;
             });
   }

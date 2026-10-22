@@ -22,7 +22,12 @@ public enum SystemPartitionKeyType {
    */
   CLUSTER_ID(1),
   /** When the cluster was first bootstrapped, set once alongside {@link #CLUSTER_ID}. */
-  CLUSTER_CREATION_TIME(2);
+  CLUSTER_CREATION_TIME(2),
+  /**
+   * The decision to fail over from a failed region to a surviving one, put by the failure
+   * detector's leader, with the evidence it was decided on.
+   */
+  REGION_FAILOVER(3);
 
   private final long id;
 
