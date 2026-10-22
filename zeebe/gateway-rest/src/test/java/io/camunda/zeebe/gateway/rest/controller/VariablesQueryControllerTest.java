@@ -569,6 +569,14 @@ public class VariablesQueryControllerTest extends RestControllerTest {
         Arguments.of("{\"protectionMode\": {\"$in\": []}}", new VariableFilter.Builder().build()));
     streamBuilder.add(
         Arguments.of(
+            "{\"protectionMode\": {\"$exists\": false}}",
+            new VariableFilter.Builder().hasProtectionModes(false).build()));
+    streamBuilder.add(
+        Arguments.of(
+            "{\"protectionMode\": {\"$exists\": true}}",
+            new VariableFilter.Builder().hasProtectionModes(true).build()));
+    streamBuilder.add(
+        Arguments.of(
             "{\"name\": \"ssn\", \"protectionMode\": \"REDACT\"}",
             new VariableFilter.Builder()
                 .names("ssn")
