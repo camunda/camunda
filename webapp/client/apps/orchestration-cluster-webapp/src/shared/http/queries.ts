@@ -40,6 +40,15 @@ import type {
 	User,
 	QueryUsersRequestBody,
 	QueryUsersResponseBody,
+	QueryUsersByGroupRequestBody,
+	QueryUsersByGroupResponseBody,
+	QueryClientsByGroupRequestBody,
+	QueryClientsByGroupResponseBody,
+	QueryRolesByGroupRequestBody,
+	QueryRolesByGroupResponseBody,
+	QueryMappingRulesByGroupRequestBody,
+	QueryMappingRulesByGroupResponseBody,
+	Group,
 	ClusterVariable,
 	QueryClusterVariablesRequestBody,
 	QueryClusterVariablesResponseBody,
@@ -121,6 +130,17 @@ const queryKeys = {
 	queryMappingRules: (body: QueryMappingRulesRequestBody) => ['queryMappingRules', body] as const,
 	users: (body: QueryUsersRequestBody) => ['users', body] as const,
 	user: (username: string) => ['user', username] as const,
+	groups: (body: QueryGroupsRequestBody) => ['groups', body] as const,
+	group: (groupId: string) => ['group', groupId] as const,
+	roles: (body: QueryRolesRequestBody) => ['roles', body] as const,
+	groupUsers: (groupId: string, body: QueryUsersByGroupRequestBody) =>
+		['groupMembers', groupId, 'users', body] as const,
+	groupClients: (groupId: string, body: QueryClientsByGroupRequestBody) =>
+		['groupMembers', groupId, 'clients', body] as const,
+	groupRoles: (groupId: string, body: QueryRolesByGroupRequestBody) =>
+		['groupMembers', groupId, 'roles', body] as const,
+	groupMappingRules: (groupId: string, body: QueryMappingRulesByGroupRequestBody) =>
+		['groupMembers', groupId, 'mappingRules', body] as const,
 	queryClusterVariables: (body: QueryClusterVariablesRequestBody) => ['queryClusterVariables', body] as const,
 	getClusterVariable: (variable: Pick<ClusterVariable, 'name' | 'scope' | 'tenantId'>) =>
 		['getClusterVariable', variable] as const,
@@ -527,6 +547,66 @@ const queries = {
 			queryKey: queryKeys.user(username),
 			queryFn: async (): Promise<User> => {
 				const {response, error} = await request(endpoints.getUser({username}));
+				if (error !== null) {
+					throw mapQueryError(error);
+				}
+				return response.json();
+			},
+		}),
+
+	getGroup: (groupId: string) =>
+		queryOptions({
+			queryKey: queryKeys.group(groupId),
+			queryFn: async (): Promise<Group> => {
+				const {response, error} = await request(endpoints.getGroup({groupId}));
+				if (error !== null) {
+					throw mapQueryError(error);
+				}
+				return response.json();
+			},
+		}),
+
+	queryUsersByGroup: (groupId: string, body: QueryUsersByGroupRequestBody) =>
+		queryOptions({
+			queryKey: queryKeys.groupUsers(groupId, body),
+			queryFn: async (): Promise<QueryUsersByGroupResponseBody> => {
+				const {response, error} = await request(endpoints.queryUsersByGroup({groupId, ...body}));
+				if (error !== null) {
+					throw mapQueryError(error);
+				}
+				return response.json();
+			},
+		}),
+
+	queryClientsByGroup: (groupId: string, body: QueryClientsByGroupRequestBody) =>
+		queryOptions({
+			queryKey: queryKeys.groupClients(groupId, body),
+			queryFn: async (): Promise<QueryClientsByGroupResponseBody> => {
+				const {response, error} = await request(endpoints.queryClientsByGroup({groupId, ...body}));
+				if (error !== null) {
+					throw mapQueryError(error);
+				}
+				return response.json();
+			},
+		}),
+
+	queryRolesByGroup: (groupId: string, body: QueryRolesByGroupRequestBody) =>
+		queryOptions({
+			queryKey: queryKeys.groupRoles(groupId, body),
+			queryFn: async (): Promise<QueryRolesByGroupResponseBody> => {
+				const {response, error} = await request(endpoints.queryRolesByGroup({groupId, ...body}));
+				if (error !== null) {
+					throw mapQueryError(error);
+				}
+				return response.json();
+			},
+		}),
+
+	queryMappingRulesByGroup: (groupId: string, body: QueryMappingRulesByGroupRequestBody) =>
+		queryOptions({
+			queryKey: queryKeys.groupMappingRules(groupId, body),
+			queryFn: async (): Promise<QueryMappingRulesByGroupResponseBody> => {
+				const {response, error} = await request(endpoints.queryMappingRulesByGroup({groupId, ...body}));
 				if (error !== null) {
 					throw mapQueryError(error);
 				}

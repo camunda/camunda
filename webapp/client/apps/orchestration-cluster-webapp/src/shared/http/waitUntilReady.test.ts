@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {QueryClient} from '@tanstack/react-query';
+import {QueryClient, QueryObserver} from '@tanstack/react-query';
 import {afterEach, describe, expect, it, vi} from 'vitest';
 import {waitUntilGone, waitUntilReady} from './waitUntilReady';
 
@@ -58,6 +58,60 @@ describe('waitUntilReady', () => {
 
 		// then
 		expect(data).toEqual({attempt: 3});
+	});
+
+	it('should keep applying isReady when an observer of the same key swaps in its own read', async () => {
+		// given
+		vi.useFakeTimers();
+		const queryClient = new QueryClient();
+		const queryKey = ['waitUntilReady-test-observer'];
+		const observer = new QueryObserver(queryClient, {queryKey, queryFn: () => Promise.resolve({ready: false})});
+		const unsubscribe = observer.subscribe(() => {});
+
+		// when
+		const promise = waitUntilReady(
+			queryClient,
+			{queryKey, queryFn: () => Promise.resolve({ready: false})},
+			{isReady: (data) => data.ready, retry: 2, retryDelay: 100},
+		);
+		await vi.advanceTimersByTimeAsync(1000);
+		const data = await promise;
+		unsubscribe();
+
+		// then
+		expect(data).toBeUndefined();
+	});
+
+	it('should write the confirmed data to the real query key', async () => {
+		// given
+		const queryClient = new QueryClient();
+		const queryKey = ['waitUntilReady-test-write'];
+		queryClient.setQueryData(queryKey, {value: 'stale'});
+
+		// when
+		await waitUntilReady(queryClient, {queryKey, queryFn: () => Promise.resolve({value: 'fresh'})});
+
+		// then
+		expect(queryClient.getQueryData(queryKey)).toEqual({value: 'fresh'});
+	});
+
+	it('should not overwrite an entry that was updated while it waited', async () => {
+		// given
+		const queryClient = new QueryClient();
+		const queryKey = ['waitUntilReady-test-newer'];
+		queryClient.setQueryData(queryKey, {value: 'initial'});
+
+		// when
+		await waitUntilReady(queryClient, {
+			queryKey,
+			queryFn: () => {
+				queryClient.setQueryData(queryKey, {value: 'newer'});
+				return Promise.resolve({value: 'snapshot'});
+			},
+		});
+
+		// then
+		expect(queryClient.getQueryData(queryKey)).toEqual({value: 'newer'});
 	});
 
 	it('should give up quietly once the retry budget is exhausted', async () => {

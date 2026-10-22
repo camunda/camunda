@@ -45,6 +45,7 @@ import { Route as ShadcnAuthAdminAuthorizationsIndexRouteImport } from './routes
 import { Route as ShadcnAuthAdminClusterVariablesIndexRouteImport } from './routes/_shadcn/_auth/admin/cluster-variables/index'
 import { Route as ShadcnAuthAdminGlobalTaskListenersIndexRouteImport } from './routes/_shadcn/_auth/admin/global-task-listeners/index'
 import { Route as ShadcnAuthAdminGroupsIndexRouteImport } from './routes/_shadcn/_auth/admin/groups/index'
+import { Route as ShadcnAuthAdminGroupsGroupIdRouteImport } from './routes/_shadcn/_auth/admin/groups/$groupId'
 import { Route as ShadcnAuthAdminMappingRulesIndexRouteImport } from './routes/_shadcn/_auth/admin/mapping-rules/index'
 import { Route as ShadcnAuthAdminMcpProcessesIndexRouteImport } from './routes/_shadcn/_auth/admin/mcp-processes/index'
 import { Route as ShadcnAuthAdminOperationsLogIndexRouteImport } from './routes/_shadcn/_auth/admin/operations-log/index'
@@ -268,6 +269,12 @@ const ShadcnAuthAdminGroupsIndexRoute =
     path: '/groups/',
     getParentRoute: () => ShadcnAuthAdminRouteRoute,
   } as any)
+const ShadcnAuthAdminGroupsGroupIdRoute =
+  ShadcnAuthAdminGroupsGroupIdRouteImport.update({
+    id: '/groups/$groupId',
+    path: '/groups/$groupId',
+    getParentRoute: () => ShadcnAuthAdminRouteRoute,
+  } as any)
 const ShadcnAuthAdminMappingRulesIndexRoute =
   ShadcnAuthAdminMappingRulesIndexRouteImport.update({
     id: '/mapping-rules/',
@@ -469,6 +476,7 @@ export interface FileRoutesByFullPath {
   '/tasklist/$userTaskKey': typeof ShadcnAuthTasklistTasksUserTaskKeyRouteRouteWithChildren
   '/operate/batch-operations/$batchOperationKey': typeof CarbonAuthOperateBatchOperationsBatchOperationKeyRoute
   '/operate/decisions/$decisionInstanceId': typeof CarbonAuthOperateDecisionsDecisionInstanceIdRoute
+  '/admin/groups/$groupId': typeof ShadcnAuthAdminGroupsGroupIdRoute
   '/admin/roles/$roleId': typeof ShadcnAuthAdminRolesRoleIdRoute
   '/admin/tenants/$tenantId': typeof ShadcnAuthAdminTenantsTenantIdRoute
   '/admin/users/$username': typeof ShadcnAuthAdminUsersUsernameRoute
@@ -522,6 +530,7 @@ export interface FileRoutesByTo {
   '/operate-preview': typeof ShadcnAuthOperatePreviewIndexRoute
   '/operate/batch-operations/$batchOperationKey': typeof CarbonAuthOperateBatchOperationsBatchOperationKeyRoute
   '/operate/decisions/$decisionInstanceId': typeof CarbonAuthOperateDecisionsDecisionInstanceIdRoute
+  '/admin/groups/$groupId': typeof ShadcnAuthAdminGroupsGroupIdRoute
   '/admin/roles/$roleId': typeof ShadcnAuthAdminRolesRoleIdRoute
   '/admin/tenants/$tenantId': typeof ShadcnAuthAdminTenantsTenantIdRoute
   '/admin/users/$username': typeof ShadcnAuthAdminUsersUsernameRoute
@@ -588,6 +597,7 @@ export interface FileRoutesById {
   '/_shadcn/_auth/tasklist/_tasks/$userTaskKey': typeof ShadcnAuthTasklistTasksUserTaskKeyRouteRouteWithChildren
   '/_carbon/_auth/operate/batch-operations/$batchOperationKey': typeof CarbonAuthOperateBatchOperationsBatchOperationKeyRoute
   '/_carbon/_auth/operate/decisions/$decisionInstanceId': typeof CarbonAuthOperateDecisionsDecisionInstanceIdRoute
+  '/_shadcn/_auth/admin/groups/$groupId': typeof ShadcnAuthAdminGroupsGroupIdRoute
   '/_shadcn/_auth/admin/roles/$roleId': typeof ShadcnAuthAdminRolesRoleIdRoute
   '/_shadcn/_auth/admin/tenants/$tenantId': typeof ShadcnAuthAdminTenantsTenantIdRoute
   '/_shadcn/_auth/admin/users/$username': typeof ShadcnAuthAdminUsersUsernameRoute
@@ -651,6 +661,7 @@ export interface FileRouteTypes {
     | '/tasklist/$userTaskKey'
     | '/operate/batch-operations/$batchOperationKey'
     | '/operate/decisions/$decisionInstanceId'
+    | '/admin/groups/$groupId'
     | '/admin/roles/$roleId'
     | '/admin/tenants/$tenantId'
     | '/admin/users/$username'
@@ -704,6 +715,7 @@ export interface FileRouteTypes {
     | '/operate-preview'
     | '/operate/batch-operations/$batchOperationKey'
     | '/operate/decisions/$decisionInstanceId'
+    | '/admin/groups/$groupId'
     | '/admin/roles/$roleId'
     | '/admin/tenants/$tenantId'
     | '/admin/users/$username'
@@ -769,6 +781,7 @@ export interface FileRouteTypes {
     | '/_shadcn/_auth/tasklist/_tasks/$userTaskKey'
     | '/_carbon/_auth/operate/batch-operations/$batchOperationKey'
     | '/_carbon/_auth/operate/decisions/$decisionInstanceId'
+    | '/_shadcn/_auth/admin/groups/$groupId'
     | '/_shadcn/_auth/admin/roles/$roleId'
     | '/_shadcn/_auth/admin/tenants/$tenantId'
     | '/_shadcn/_auth/admin/users/$username'
@@ -1062,6 +1075,13 @@ declare module '@tanstack/react-router' {
       path: '/groups'
       fullPath: '/admin/groups/'
       preLoaderRoute: typeof ShadcnAuthAdminGroupsIndexRouteImport
+      parentRoute: typeof ShadcnAuthAdminRouteRoute
+    }
+    '/_shadcn/_auth/admin/groups/$groupId': {
+      id: '/_shadcn/_auth/admin/groups/$groupId'
+      path: '/groups/$groupId'
+      fullPath: '/admin/groups/$groupId'
+      preLoaderRoute: typeof ShadcnAuthAdminGroupsGroupIdRouteImport
       parentRoute: typeof ShadcnAuthAdminRouteRoute
     }
     '/_shadcn/_auth/admin/mapping-rules/': {
@@ -1439,6 +1459,7 @@ const CarbonRouteRouteWithChildren = CarbonRouteRoute._addFileChildren(
 interface ShadcnAuthAdminRouteRouteChildren {
   ShadcnAuthAdminSplatRoute: typeof ShadcnAuthAdminSplatRoute
   ShadcnAuthAdminIndexRoute: typeof ShadcnAuthAdminIndexRoute
+  ShadcnAuthAdminGroupsGroupIdRoute: typeof ShadcnAuthAdminGroupsGroupIdRoute
   ShadcnAuthAdminRolesRoleIdRoute: typeof ShadcnAuthAdminRolesRoleIdRoute
   ShadcnAuthAdminTenantsTenantIdRoute: typeof ShadcnAuthAdminTenantsTenantIdRoute
   ShadcnAuthAdminUsersUsernameRoute: typeof ShadcnAuthAdminUsersUsernameRoute
@@ -1457,6 +1478,7 @@ interface ShadcnAuthAdminRouteRouteChildren {
 const ShadcnAuthAdminRouteRouteChildren: ShadcnAuthAdminRouteRouteChildren = {
   ShadcnAuthAdminSplatRoute: ShadcnAuthAdminSplatRoute,
   ShadcnAuthAdminIndexRoute: ShadcnAuthAdminIndexRoute,
+  ShadcnAuthAdminGroupsGroupIdRoute: ShadcnAuthAdminGroupsGroupIdRoute,
   ShadcnAuthAdminRolesRoleIdRoute: ShadcnAuthAdminRolesRoleIdRoute,
   ShadcnAuthAdminTenantsTenantIdRoute: ShadcnAuthAdminTenantsTenantIdRoute,
   ShadcnAuthAdminUsersUsernameRoute: ShadcnAuthAdminUsersUsernameRoute,

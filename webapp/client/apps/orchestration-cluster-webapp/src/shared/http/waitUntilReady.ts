@@ -30,21 +30,26 @@ function isNotFoundError(error: unknown): boolean {
 	);
 }
 
+// Retries run under a private key: a retrying query re-reads its options on every attempt, so an
+// observer of the real key re-rendering mid-wait would swap in its own `queryFn` and the readiness
+// check would silently stop being applied.
 async function waitUntilReady<TData, TQueryKey extends QueryKey = QueryKey>(
 	queryClient: QueryClient,
 	query: {queryKey: TQueryKey; queryFn?: QueryFunction<TData, TQueryKey, never> | undefined},
 	{isReady = () => true, retry = DEFAULT_RETRY, retryDelay = DEFAULT_RETRY_DELAY}: WaitUntilReadyOptions<TData> = {},
 ): Promise<TData | undefined> {
-	const {queryFn} = query;
+	const {queryKey, queryFn} = query;
 	if (queryFn === undefined) {
 		return undefined;
 	}
 
+	const cachedBeforeWait = queryClient.getQueryData(queryKey);
+
 	try {
-		return await queryClient.query({
-			queryKey: query.queryKey,
+		const data = await queryClient.query({
+			queryKey: ['waitUntilReady', ...queryKey],
 			queryFn: async (context) => {
-				const data = await queryFn(context);
+				const data = await queryFn({...context, queryKey});
 				if (!isReady(data)) {
 					throw new Error('Not ready yet');
 				}
@@ -52,7 +57,13 @@ async function waitUntilReady<TData, TQueryKey extends QueryKey = QueryKey>(
 			},
 			retry,
 			retryDelay,
+			gcTime: 0,
 		});
+		// Skip the write if the real key was updated meanwhile: that entry is newer than this snapshot.
+		if (queryClient.getQueryData(queryKey) === cachedBeforeWait) {
+			queryClient.setQueryData<TData>(queryKey as QueryKey, data as TData);
+		}
+		return data;
 	} catch {
 		return undefined;
 	}
