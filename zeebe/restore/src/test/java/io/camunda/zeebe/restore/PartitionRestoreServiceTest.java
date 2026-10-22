@@ -28,6 +28,7 @@ import io.camunda.zeebe.logstreams.log.LogStreamWriter.WriteFailure;
 import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
 import io.camunda.zeebe.restore.PartitionRestoreService.BackupValidator;
 import io.camunda.zeebe.restore.PartitionRestoreService.BackupValidator.BackupNotValidException;
+import io.camunda.zeebe.restore.PartitionRestoreService.RestoredCheckpoint;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.scheduler.SchedulingHints;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
@@ -158,9 +159,10 @@ class PartitionRestoreServiceTest {
     final var backup = takeBackup(backupId, 4);
 
     // when
-    restoreService.restore(backupId, BackupValidator.none());
+    final var checkpoint = restoreService.restore(backupId, BackupValidator.none());
 
     // then
+    assertThat(checkpoint).isEqualTo(new RestoredCheckpoint(4, 4));
     assertThat(dataDirectoryToRestore).isNotEmptyDirectory();
 
     final Set<String> restoredSegmentFiles = getRegularFiles(dataDirectoryToRestore);

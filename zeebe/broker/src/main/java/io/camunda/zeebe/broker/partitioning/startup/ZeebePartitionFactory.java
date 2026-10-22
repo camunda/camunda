@@ -18,6 +18,7 @@ import io.camunda.zeebe.broker.PartitionListener;
 import io.camunda.zeebe.broker.PartitionRaftListener;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.clustering.ClusterServices;
+import io.camunda.zeebe.broker.eventplane.EventPlanePartitionTransitionStep;
 import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
 import io.camunda.zeebe.broker.logstreams.state.DbPositionSupplier;
 import io.camunda.zeebe.broker.partitioning.topology.ClusterConfigurationService;
@@ -237,6 +238,7 @@ public final class ZeebePartitionFactory {
         new SnapshotAfterMigrationTransitionStep(),
         new SnapshotApiHandlerTransitionStep(),
         new ExporterDirectorPartitionTransitionStep(),
+        new EventPlanePartitionTransitionStep(),
         new BackupApiRequestHandlerStep(),
         new AdminApiRequestHandlerStep());
   }

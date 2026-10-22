@@ -8,8 +8,13 @@
 package io.camunda.zeebe.restore;
 
 import io.camunda.zeebe.backup.api.BackupStore;
+import io.camunda.zeebe.broker.eventplane.EventPlaneStores;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.backup.BackupCfg.BackupStoreFactory;
+import io.camunda.zeebe.eventplane.store.ObjectStore;
+import io.camunda.zeebe.restore.EventPlaneLogBackupStore.PublishingHistory;
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -62,8 +67,53 @@ final class PhysicalTenantBackupStores implements AutoCloseable {
                 "No backup store configured for physical tenant '%s', cannot restore it from backup."
                     .formatted(tenantId));
           }
-          return store;
+          return keepLogInEventPlane(store, configuration, tenantId);
         });
+  }
+
+  /**
+   * With the Event Plane and its {@code backupLog} on, wraps the store so that it reads the
+   * backups' log from the Event Plane's bucket. The restore saves no backups, so it publishes no
+   * history.
+   */
+  private static BackupStore keepLogInEventPlane(
+      final BackupStore store, final BrokerCfg configuration, final String physicalTenantId) {
+    final var eventPlane = configuration.getExperimental().getEventPlane();
+    if (!eventPlane.isEnabled() || !eventPlane.isBackupLog()) {
+      return store;
+    }
+    final var bucket = EventPlaneStores.open(eventPlane.getStore());
+    final String cluster;
+    try {
+      cluster = RestoreManager.bucketClusterId(eventPlane, bucket);
+    } catch (final IOException e) {
+      discard(store, bucket, e);
+      throw new UncheckedIOException(
+          "Expected to list the clusters in the Event Plane's bucket for physical tenant '%s', but got %s"
+              .formatted(physicalTenantId, e.getMessage()),
+          e);
+    } catch (final RuntimeException e) {
+      discard(store, bucket, e);
+      throw e;
+    }
+    return EventPlaneLogBackupStore.wrap(
+        store,
+        bucket,
+        cluster,
+        physicalTenantId,
+        eventPlane.getBackupLogTimeout(),
+        PublishingHistory.NONE);
+  }
+
+  /** Closes what a failed wrap leaves open, which {@link #close()} doesn't know of. */
+  private static void discard(
+      final BackupStore store, final ObjectStore bucket, final Exception failure) {
+    store.closeAsync();
+    try {
+      bucket.close();
+    } catch (final IOException e) {
+      failure.addSuppressed(e);
+    }
   }
 
   /** Only the stores that were actually created, so a tenant never restored is never opened. */

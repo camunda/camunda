@@ -99,7 +99,8 @@ final class TestRestorableBackupStore implements BackupStore {
 
   @Override
   public CompletableFuture<Void> delete(final BackupIdentifier id) {
-    return null;
+    backups.remove(id);
+    return CompletableFuture.completedFuture(null);
   }
 
   @Override

@@ -7,12 +7,15 @@
  */
 package io.camunda.zeebe.restore;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.zeebe.backup.api.BackupRange;
 import io.camunda.zeebe.backup.api.Checkpoint;
 import io.camunda.zeebe.backup.management.BackupMetadataSyncer;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
+import io.camunda.zeebe.broker.system.configuration.EventPlaneCfg;
+import io.camunda.zeebe.eventplane.store.FileSystemStore;
 import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.nio.file.Path;
@@ -22,6 +25,51 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 final class RestoreManagerTest {
+
+  @Test
+  void shouldNameTheConfiguredClusterInTheBucket(@TempDir final Path bucket) throws Exception {
+    // given
+    final var eventPlane = new EventPlaneCfg();
+    eventPlane.setClusterId("configured-cluster");
+
+    // when
+    try (final var store = new FileSystemStore(bucket)) {
+      store.put("other-cluster/default/1/history.json", new byte[0]);
+
+      // then
+      assertThat(RestoreManager.bucketClusterId(eventPlane, store)).isEqualTo("configured-cluster");
+    }
+  }
+
+  @Test
+  void shouldNameTheOnlyClusterInTheBucketWhenNoneIsConfigured(@TempDir final Path bucket)
+      throws Exception {
+    // given: the consumer groups' objects are no cluster
+    try (final var store = new FileSystemStore(bucket)) {
+      store.put("only-cluster/default/1/history.json", new byte[0]);
+      store.put("_groups/group/group.json", new byte[0]);
+
+      // when / then
+      assertThat(RestoreManager.bucketClusterId(new EventPlaneCfg(), store))
+          .isEqualTo("only-cluster");
+    }
+  }
+
+  @Test
+  void shouldNotGuessTheClusterOfABucketWithSeveralWhenNoneIsConfigured(@TempDir final Path bucket)
+      throws Exception {
+    // given
+    try (final var store = new FileSystemStore(bucket)) {
+      store.put("cluster-a/default/1/history.json", new byte[0]);
+      store.put("cluster-b/default/1/history.json", new byte[0]);
+
+      // when / then
+      assertThatThrownBy(() -> RestoreManager.bucketClusterId(new EventPlaneCfg(), store))
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessageContaining("cluster-a")
+          .hasMessageContaining("cluster-b");
+    }
+  }
 
   @Test
   void shouldFailWhenNoCommonCheckpointExistsUsingTimeRange(@TempDir final Path dir) {

@@ -207,6 +207,21 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
+      <artifactId>zeebe-event-plane-publisher</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-event-plane-segment</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-event-plane-common</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
       <artifactId>zeebe-restore</artifactId>
     </dependency>
 

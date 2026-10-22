@@ -71,9 +71,9 @@ public class PartitionRestoreService {
    * Downloads a single backup and restores it to the partition's data directory. The backup is
    * truncated to the checkpoint position.
    */
-  public void restore(final long backupId, final BackupValidator validator)
+  public RestoredCheckpoint restore(final long backupId, final BackupValidator validator)
       throws IOException, FlushException {
-    restore(new long[] {backupId}, validator);
+    return restore(new long[] {backupId}, validator);
   }
 
   /**
@@ -81,8 +81,9 @@ public class PartitionRestoreService {
    * checkpoint positions.
    *
    * @param backupIds ids of the backups to restore from
+   * @return the last restored entry, which holds the last backup's checkpoint
    */
-  public void restore(final long[] backupIds, final BackupValidator validator)
+  public RestoredCheckpoint restore(final long[] backupIds, final BackupValidator validator)
       throws IOException, FlushException {
     validateAndSortBackupIds(backupIds);
 
@@ -108,11 +109,15 @@ public class PartitionRestoreService {
         FileUtil.deleteFolder(restoreTarget);
       }
       restoredJournal.flush();
-    }
 
-    // TODO: As an additional consistency check:
-    // - Validate journal.firstIndex <= snapshotIndex + 1
-    // - Verify journal.lastEntry.asqn == checkpointPosition
+      // TODO: As an additional consistency check:
+      // - Validate journal.firstIndex <= snapshotIndex + 1
+      // - Verify journal.lastEntry.asqn == checkpointPosition
+      // there is at least one backup, so there is a previous one now
+      return new RestoredCheckpoint(
+          restoredJournal.getLastIndex(),
+          requireNonNull(previousBackup).descriptor().checkpointPosition());
+    }
   }
 
   /** Ensures that we have a valid array of backup ids. */
@@ -289,6 +294,9 @@ public class PartitionRestoreService {
     validator.validateStatus(validStatus);
     return validStatus.id();
   }
+
+  /** The journal's last entry after a restore: its index, and the checkpoint's position. */
+  public record RestoredCheckpoint(long index, long position) {}
 
   @FunctionalInterface
   public interface BackupValidator {

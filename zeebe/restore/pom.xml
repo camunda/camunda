@@ -98,6 +98,17 @@
       <artifactId>jackson-core</artifactId>
     </dependency>
 
+    <!-- The restore from the Event Plane's bucket: its store, histories, snapshots and segments -->
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-event-plane-common</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-event-plane-segment</artifactId>
+    </dependency>
+
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-logstreams</artifactId>

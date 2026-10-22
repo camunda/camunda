@@ -54,6 +54,10 @@ dependencies {
   api(project(":zeebe-cluster-config-api"))
   implementation(project(":zeebe-cluster-config-impl"))
   implementation(project(":zeebe-restore"))
+  implementation(project(":zeebe-event-plane-publisher"))
+  implementation(project(":zeebe-event-plane-segment"))
+  // EventPlaneStores.open, which the restore uses, returns the common module's ObjectStore
+  api(project(":zeebe-event-plane-common"))
   implementation(libs.io.netty.netty.common)
   testImplementation(libs.io.camunda.identity.sdk)
   implementation(libs.io.micrometer.micrometer.core)
