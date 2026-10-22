@@ -8,12 +8,15 @@
 
 import {Page, Route} from '@playwright/test';
 
-export async function mockOIDCModeUI(page: Page): Promise<void> {
+export async function mockOIDCModeUI(
+  page: Page,
+  overrides: Record<string, string> = {isOidc: 'true'},
+): Promise<void> {
   await page.route('**/config.js', async (route: Route) => {
     const response = await route.fetch();
     const originalBody = await response.text();
 
-    let config: Record<string, string> = {};
+    let config: Record<string, unknown> = {};
 
     const match = originalBody.match(
       /window\.clientConfig\s*=\s*(\{[\s\S]*\});?/,
@@ -23,10 +26,8 @@ export async function mockOIDCModeUI(page: Page): Promise<void> {
       config = eval('(' + match[1] + ')');
     }
 
-    Object.keys(config).forEach((key) => {
-      if (key === 'isOidc') {
-        config[key] = 'true';
-      }
+    Object.entries(overrides).forEach(([key, value]) => {
+      config[key] = value;
     });
 
     await route.fulfill({
