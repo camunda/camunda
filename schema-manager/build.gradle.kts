@@ -1,7 +1,10 @@
 import buildlogic.filterMavenResources
 import buildlogic.projectVersionToken
 
-plugins { id("buildlogic.server-conventions") }
+plugins {
+  id("buildlogic.server-conventions")
+  id("buildlogic.docker-image-test-conventions")
+}
 
 tasks.named<ProcessResources>("processTestResources") {
   val resourceTokens = project.projectVersionToken()

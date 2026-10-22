@@ -1,4 +1,7 @@
-plugins { id("buildlogic.server-conventions") }
+plugins {
+  id("buildlogic.server-conventions")
+  id("buildlogic.docker-image-test-conventions")
+}
 
 dependencies {
   implementation(project(":configuration"))

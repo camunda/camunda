@@ -1,9 +1,11 @@
 import buildlogic.ArtifactKind
 import buildlogic.DistributionDependencyReportExtension
 import buildlogic.OpenApiDefaults
+import buildlogic.dockerImageName
 import buildlogic.registerBuildDockerImage
 import buildlogic.reproducibleArchive
 import buildlogic.requiredVersion
+import buildlogic.useDockerImage
 import buildlogic.filterMavenResources
 import buildlogic.projectArtifact
 import io.camunda.gradle.pom.PomResolver
@@ -12,6 +14,7 @@ import org.gradle.api.file.FileTree
 import org.gradle.api.tasks.WriteProperties
 import org.gradle.api.tasks.bundling.Tar
 import org.gradle.api.tasks.bundling.Zip
+import org.gradle.api.tasks.testing.Test
 import org.gradle.jvm.tasks.Jar
 import org.gradle.process.CommandLineArgumentProvider
 import org.openapitools.generator.gradle.plugin.tasks.GenerateTask
@@ -333,7 +336,22 @@ dependencies {
   )
 }
 
-registerBuildDockerImage(distTar.flatMap { it.archiveFile })
+val buildDockerImage = registerBuildDockerImage(distTar.flatMap { it.archiveFile })
+
+tasks.register<Test>("dockerIt") {
+  group = "verification"
+  description = "Runs the container tests against the image built by buildDockerImage."
+  testClassesDirs = sourceSets["test"].output.classesDirs
+  classpath = sourceSets["test"].runtimeClasspath
+  include("**/*DockerIT.class")
+  val image = dockerImageName()
+  useDockerImage(image, layout.files(buildDockerImage))
+  systemProperty("camunda.docker.test.enabled", "true")
+  systemProperty("camunda.docker.test.image", image.get())
+}
+
+// The container tests need the image and are run by dockerIt.
+tasks.named<Test>("it") { exclude("**/*DockerIT.class") }
 
 dependencies {
   implementation(project(":camunda-cluster"))
