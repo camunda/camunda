@@ -19,7 +19,9 @@ import io.camunda.configuration.PrimaryStorageBackup.BackupStoreType;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.db.rdbms.sql.ExporterPositionMapper;
 import io.camunda.management.backups.BackupInfo;
+import io.camunda.management.backups.CheckpointType;
 import io.camunda.management.backups.PartitionBackupInfo;
+import io.camunda.management.backups.PartitionCheckpointState;
 import io.camunda.management.backups.StateCode;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.qa.util.actuator.BackupActuator;
@@ -33,8 +35,11 @@ import java.nio.file.Path;
 import java.sql.SQLException;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import javax.sql.DataSource;
 import org.awaitility.Awaitility;
@@ -58,6 +63,7 @@ import org.springframework.util.unit.DataSize;
 final class RdbmsRangeRestoreIT implements ClockSupport {
 
   private static final Logger LOG = LoggerFactory.getLogger(RdbmsRangeRestoreIT.class);
+  private static final Duration MARKER_INTERVAL = Duration.ofHours(1);
   // H2 in-memory DB URL shared across broker and restore app JVM lifecycles.
   // DB_CLOSE_DELAY=-1 keeps the DB alive after last connection closes.
   // This is necessary so that the broker can restart without losing the exported data
@@ -151,22 +157,8 @@ final class RdbmsRangeRestoreIT implements ClockSupport {
     }
     takeAndAwaitBackup();
 
-    final var exporterActuator = ExportersActuator.of(broker);
-    exporterActuator.disableExporter(RDBMS_EXPORTER_NAME);
-
-    Awaitility.await("Until backup is greater or equal to exported position")
-        .pollDelay(Duration.ofSeconds(2))
-        .atMost(Duration.ofSeconds(300))
-        .untilAsserted(
-            () -> {
-              final var backup = takeAndAwaitBackup();
-              final var position = exporterPositionMapper.findOne(1).lastExportedPosition();
-              final var details = backup.getDetails().getFirst();
-              assertThat(details)
-                  .returns(1, PartitionBackupInfo::getPartitionId)
-                  .returns(StateCode.COMPLETED, PartitionBackupInfo::getState);
-              assertThat(details.getCheckpointPosition()).isGreaterThanOrEqualTo(position);
-            });
+    disableRdbmsExporter();
+    awaitBackupCoversExportedPosition();
 
     // when - stop broker, delete data, restore from time range with RDBMS
     broker.stop();
@@ -193,22 +185,8 @@ final class RdbmsRangeRestoreIT implements ClockSupport {
     }
     takeAndAwaitBackup();
 
-    final var exporterActuator = ExportersActuator.of(broker);
-    exporterActuator.disableExporter(RDBMS_EXPORTER_NAME);
-
-    Awaitility.await("Until backup is greater or equal to exported position")
-        .pollDelay(Duration.ofSeconds(2))
-        .atMost(Duration.ofSeconds(300))
-        .untilAsserted(
-            () -> {
-              final var backup = takeAndAwaitBackup();
-              final var position = exporterPositionMapper.findOne(1).lastExportedPosition();
-              final var details = backup.getDetails().getFirst();
-              assertThat(details)
-                  .returns(1, PartitionBackupInfo::getPartitionId)
-                  .returns(StateCode.COMPLETED, PartitionBackupInfo::getState);
-              assertThat(details.getCheckpointPosition()).isGreaterThanOrEqualTo(position);
-            });
+    disableRdbmsExporter();
+    awaitBackupCoversExportedPosition();
     // when - stop broker, delete data, restore from time range with RDBMS
     broker.stop();
     FileUtil.deleteFolder(workingDirectory);
@@ -219,6 +197,40 @@ final class RdbmsRangeRestoreIT implements ClockSupport {
     broker.start();
 
     completeJobs(4);
+  }
+
+  @Test
+  void shouldRestoreToAMarkerCheckpoint() throws Exception {
+    // given - instances created before and after a marker; the next backup holds both
+    final List<Long> createdBeforeMarker;
+    final Instant markerTimestamp;
+    try (final var client = broker.newClientBuilder().build()) {
+      final var processKey = deployTestProcess(client);
+      takeAndAwaitBackup();
+      disableRdbmsExporter();
+      awaitBackupCoversExportedPosition();
+
+      createdBeforeMarker = createInstances(client, processKey);
+      markerTimestamp = awaitMarkerCoveringExportedPosition();
+      createInstances(client, processKey);
+      takeAndAwaitBackup();
+    }
+
+    // when
+    broker.stop();
+    FileUtil.deleteFolder(workingDirectory);
+    FileUtil.ensureDirectoryExists(workingDirectory);
+    try (final var restore = testRestoreApp().withTimeRange(null, markerTimestamp)) {
+      restore.start();
+    }
+    broker.start();
+
+    // then - the partition ends at the marker
+    try (final var client = broker.newClientBuilder().build()) {
+      assertThat(awaitJobsOfInstancesActivatable(client, createdBeforeMarker))
+          .describedAs("only the instances created before the marker survive the restore")
+          .containsExactlyInAnyOrderElementsOf(createdBeforeMarker);
+    }
   }
 
   private void completeJobs(final int expectedJobCount) {
@@ -239,6 +251,111 @@ final class RdbmsRangeRestoreIT implements ClockSupport {
         }
       }
     }
+  }
+
+  private static List<Long> createInstances(final CamundaClient client, final long processKey) {
+    return List.of(
+        client
+            .newCreateInstanceCommand()
+            .processDefinitionKey(processKey)
+            .send()
+            .join()
+            .getProcessInstanceKey(),
+        client
+            .newCreateInstanceCommand()
+            .processDefinitionKey(processKey)
+            .send()
+            .join()
+            .getProcessInstanceKey());
+  }
+
+  /**
+   * Waits until the jobs of the given process instances can be activated again, and returns the
+   * process instance keys of every job activated meanwhile. Activated jobs are locked, so a poll
+   * that sees only some of them must not hide them from the next one: the keys add up over polls.
+   */
+  private static Set<Long> awaitJobsOfInstancesActivatable(
+      final CamundaClient client, final List<Long> processInstanceKeys) {
+    final Set<Long> activatedInstanceKeys = new HashSet<>();
+    await("the jobs of the restored instances can be activated")
+        .timeout(Duration.ofSeconds(60))
+        .ignoreExceptions()
+        .untilAsserted(
+            () -> {
+              client
+                  .newActivateJobsCommand()
+                  .jobType("task")
+                  .maxJobsToActivate(1000)
+                  .send()
+                  .join()
+                  .getJobs()
+                  .forEach(job -> activatedInstanceKeys.add(job.getProcessInstanceKey()));
+              assertThat(activatedInstanceKeys).containsAll(processInstanceKeys);
+            });
+    return activatedInstanceKeys;
+  }
+
+  /**
+   * Disables the RDBMS exporter once it has recorded an exported position.
+   *
+   * <p>The exporter records its position only when it opens, and fails to open until the RDBMS
+   * schema is ready. Its director retries the open with a backoff on the pinned actor clock, so
+   * until the clock moves on, a retry can stay pending. Disabled before it opened, the exporter
+   * never records a position, and no backup can ever cover it.
+   */
+  private void disableRdbmsExporter() {
+    await("the RDBMS exporter recorded a position")
+        .atMost(Duration.ofSeconds(60))
+        .ignoreExceptions()
+        .untilAsserted(
+            () -> {
+              progressClock(broker, 1000);
+              assertThat(exporterPositionMapper.findOne(1)).isNotNull();
+            });
+    ExportersActuator.of(broker).disableExporter(RDBMS_EXPORTER_NAME);
+  }
+
+  private void awaitBackupCoversExportedPosition() {
+    Awaitility.await("Until backup is greater or equal to exported position")
+        .pollDelay(Duration.ofSeconds(2))
+        .atMost(Duration.ofSeconds(300))
+        .untilAsserted(
+            () -> {
+              final var backup = takeAndAwaitBackup();
+              final var position = exporterPositionMapper.findOne(1).lastExportedPosition();
+              final var details = backup.getDetails().getFirst();
+              assertThat(details)
+                  .returns(1, PartitionBackupInfo::getPartitionId)
+                  .returns(StateCode.COMPLETED, PartitionBackupInfo::getState);
+              assertThat(details.getCheckpointPosition()).isGreaterThanOrEqualTo(position);
+            });
+  }
+
+  /**
+   * Moves the pinned clock past the marker interval, so the checkpoint scheduler takes a marker
+   * checkpoint, and returns the marker's timestamp. Asserts that the marker is at or after the
+   * exported position, which a restore to it requires.
+   */
+  private Instant awaitMarkerCoveringExportedPosition() {
+    final var previousCheckpointId =
+        backupActuator.state().getCheckpointStates().stream()
+            .mapToLong(PartitionCheckpointState::getCheckpointId)
+            .max()
+            .orElseThrow();
+    progressClock(broker, MARKER_INTERVAL.plusSeconds(1).toMillis());
+    final var marker =
+        Awaitility.await("a marker checkpoint is taken")
+            .atMost(Duration.ofSeconds(30))
+            .ignoreExceptions()
+            .until(
+                () -> backupActuator.state().getCheckpointStates().getFirst(),
+                state ->
+                    state.getCheckpointType() == CheckpointType.MARKER
+                        && state.getCheckpointId() > previousCheckpointId);
+    assertThat(marker.getCheckpointPosition())
+        .describedAs("marker position")
+        .isGreaterThanOrEqualTo(exporterPositionMapper.findOne(1).lastExportedPosition());
+    return marker.getCheckpointTimestamp().toInstant();
   }
 
   private static long deployTestProcess(final CamundaClient client) {
@@ -311,6 +428,9 @@ final class RdbmsRangeRestoreIT implements ClockSupport {
 
     // Enable continuous backups
     cfg.getData().getPrimaryStorage().getBackup().setContinuous(true);
+    // A marker is taken at startup, as no checkpoint exists yet, and then an interval after the
+    // latest checkpoint, which only a test moving the pinned clock by the interval reaches
+    cfg.getData().getPrimaryStorage().getBackup().setCheckpointInterval(MARKER_INTERVAL);
 
     // Use smaller log segments for faster checkpoint creation.
     // Max message size must be <= log segment size (enforced by RaftPartitionFactory).
