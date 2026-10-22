@@ -32,6 +32,8 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseW
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.processing.variable.VariableBehavior;
 import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
+import io.camunda.zeebe.engine.state.immutable.AsyncRequestState;
+import io.camunda.zeebe.engine.state.immutable.AsyncRequestState.AsyncRequest;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
@@ -40,6 +42,8 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationVariableInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.AsyncRequestIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceModificationIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
@@ -156,6 +160,7 @@ public final class ProcessInstanceModificationModifyProcessor
   private final TypedResponseWriter responseWriter;
   private final ElementInstanceState elementInstanceState;
   private final ProcessState processState;
+  private final AsyncRequestState asyncRequestState;
   private final BpmnJobBehavior jobBehavior;
   private final BpmnIncidentBehavior incidentBehavior;
   private final TypedRejectionWriter rejectionWriter;
@@ -169,6 +174,7 @@ public final class ProcessInstanceModificationModifyProcessor
       final Writers writers,
       final ElementInstanceState elementInstanceState,
       final ProcessState processState,
+      final AsyncRequestState asyncRequestState,
       final BpmnBehaviors bpmnBehaviors,
       final AuthorizationCheckBehavior authCheckBehavior) {
     stateWriter = writers.state();
@@ -176,6 +182,7 @@ public final class ProcessInstanceModificationModifyProcessor
     rejectionWriter = writers.rejection();
     this.elementInstanceState = elementInstanceState;
     this.processState = processState;
+    this.asyncRequestState = asyncRequestState;
     jobBehavior = bpmnBehaviors.jobBehavior();
     incidentBehavior = bpmnBehaviors.incidentBehavior();
     catchEventBehavior = bpmnBehaviors.catchEventBehavior();
@@ -815,8 +822,10 @@ public final class ProcessInstanceModificationModifyProcessor
       final var elementInstanceRecord = currentElement.getValue();
       final BpmnElementType elementType = currentElement.getValue().getBpmnElementType();
 
-      stateWriter.appendFollowUpEvent(
-          elementInstanceKey, ProcessInstanceIntent.ELEMENT_TERMINATING, elementInstanceRecord);
+      if (!currentElement.isTerminating()) {
+        stateWriter.appendFollowUpEvent(
+            elementInstanceKey, ProcessInstanceIntent.ELEMENT_TERMINATING, elementInstanceRecord);
+      }
       elementInstancesToTerminate.push(currentElement);
 
       jobBehavior.cancelJob(currentElement);
@@ -837,26 +846,64 @@ public final class ProcessInstanceModificationModifyProcessor
     final var childInstances = new ArrayList<ElementInstance>();
     if (elementType.isContainerElement()) {
       elementInstanceState.getChildren(elementInstanceKey).stream()
-          .filter(ElementInstance::canTerminate)
+          .filter(ProcessInstanceModificationModifyProcessor::shouldTerminateWithParent)
           .forEach(childInstances::add);
     } else if (elementType == BpmnElementType.CALL_ACTIVITY) {
       final var calledActivityElementInstance =
           elementInstanceState.getInstance(currentElement.getCalledChildInstanceKey());
-      if (calledActivityElementInstance != null && calledActivityElementInstance.canTerminate()) {
+      if (calledActivityElementInstance != null
+          && shouldTerminateWithParent(calledActivityElementInstance)) {
         childInstances.add(calledActivityElementInstance);
       }
     }
     return childInstances;
   }
 
+  /**
+   * A terminating child can be blocked, for example by a canceling task listener job without
+   * retries. It is terminated together with its parent, otherwise it would be left behind.
+   */
+  private static boolean shouldTerminateWithParent(final ElementInstance child) {
+    return child.canTerminate() || child.isTerminating();
+  }
+
   private void terminateElements(final Stack<ElementInstance> elementsTerminating) {
     while (!elementsTerminating.isEmpty()) {
       final var currentElement = elementsTerminating.pop();
-      stateWriter.appendFollowUpEvent(
-          currentElement.getKey(),
-          ProcessInstanceIntent.ELEMENT_TERMINATED,
-          currentElement.getValue());
+      final long elementInstanceKey = currentElement.getKey();
+      final var elementInstanceRecord = currentElement.getValue();
+      findCancelRequest(currentElement)
+          .ifPresentOrElse(
+              cancelRequest -> {
+                stateWriter.appendFollowUpEvent(
+                    elementInstanceKey,
+                    ProcessInstanceIntent.ELEMENT_TERMINATED,
+                    elementInstanceRecord,
+                    metadata ->
+                        metadata
+                            .operationReference(cancelRequest.operationReference())
+                            .batchOperationReference(cancelRequest.batchOperationReference()));
+                stateWriter.appendFollowUpEvent(
+                    cancelRequest.key(), AsyncRequestIntent.PROCESSED, cancelRequest.record());
+              },
+              () ->
+                  stateWriter.appendFollowUpEvent(
+                      elementInstanceKey,
+                      ProcessInstanceIntent.ELEMENT_TERMINATED,
+                      elementInstanceRecord));
     }
+  }
+
+  /**
+   * A canceled process instance has a pending cancel request until it is terminated. The request is
+   * completed with the termination, as the regular termination of the process does.
+   */
+  private Optional<AsyncRequest> findCancelRequest(final ElementInstance elementInstance) {
+    if (elementInstance.getValue().getBpmnElementType() != BpmnElementType.PROCESS) {
+      return Optional.empty();
+    }
+    return asyncRequestState.findRequest(
+        elementInstance.getKey(), ValueType.PROCESS_INSTANCE, ProcessInstanceIntent.CANCEL);
   }
 
   private void terminateFlowScopes(

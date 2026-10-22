@@ -390,8 +390,29 @@ public final class BpmnUserTaskBehavior {
             });
   }
 
+  /**
+   * Cancels the user task of the element instance without waiting for canceling task listeners. A
+   * user task that is already {@code CANCELING}, for example because a listener job has no retries
+   * left, is canceled as well. The corrections of canceling listeners that already completed are
+   * kept.
+   */
   public void cancelUserTask(final ElementInstance elementInstance) {
-    userTaskCanceling(elementInstance).ifPresent(this::userTaskCanceled);
+    userTaskCanceling(elementInstance)
+        .or(() -> findCancelingUserTask(elementInstance))
+        .ifPresent(this::userTaskCanceled);
+  }
+
+  private Optional<UserTaskRecord> findCancelingUserTask(final ElementInstance elementInstance) {
+    final long userTaskKey = elementInstance.getUserTaskKey();
+    if (userTaskKey <= 0
+        || userTaskState.getLifecycleState(userTaskKey) != LifecycleState.CANCELING) {
+      return Optional.empty();
+    }
+    // corrections of completed canceling listeners are only stored in the intermediate record
+    final UserTaskRecord cancelingUserTask =
+        userTaskState.getIntermediateState(userTaskKey).getRecord().copy();
+    cancelingUserTask.setDiffAsChangedAttributes(userTaskState.getUserTask(userTaskKey));
+    return Optional.of(cancelingUserTask);
   }
 
   public void cancelUserTask(final BpmnElementContext elementInstanceContext) {

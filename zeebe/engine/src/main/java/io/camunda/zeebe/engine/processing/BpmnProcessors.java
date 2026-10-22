@@ -284,6 +284,7 @@ public final class BpmnProcessors {
             writers,
             processingState.getElementInstanceState(),
             processingState.getProcessState(),
+            processingState.getAsyncRequestState(),
             bpmnBehaviors,
             authCheckBehavior);
     typedRecordProcessors.onCommand(
