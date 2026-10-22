@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 import io.camunda.zeebe.protocol.record.value.HistoryDeletionRecordValue;
 import io.camunda.zeebe.protocol.record.value.HistoryDeletionType;
@@ -26,7 +27,8 @@ import org.junit.rules.TestWatcher;
  * Asserts the "resourceStorageOrdinal" (the storage ordinal of the resource to delete) on history
  * deletion records. Definition scoped resources carry {@link
  * StorageOrdinalRelated#NOT_ORDINAL_CONTROLLED} on the follow-up command and on the DELETED event,
- * whatever the command carried.
+ * whatever the command carried. Process instance deletions differ: rejecting an active instance
+ * carries the ordinal from state, deleting a finished instance passes the command ordinal through.
  */
 public final class HistoryDeletionStorageOrdinalTest {
 
@@ -113,6 +115,52 @@ public final class HistoryDeletionStorageOrdinalTest {
     assertThat(followUp.getResourceType()).isEqualTo(HistoryDeletionType.DECISION_REQUIREMENTS);
     assertThat(followUp.getResourceStorageOrdinal())
         .isEqualTo(StorageOrdinalRelated.NOT_ORDINAL_CONTROLLED);
+  }
+
+  @Test
+  public void shouldRejectActiveProcessInstanceDeletionWithItsStorageOrdinal() {
+    // given
+    final var processId = Strings.newRandomValidBpmnId();
+    engine
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(processId).startEvent().userTask().endEvent().done())
+        .deploy();
+    final var processInstanceKey = engine.processInstance().ofBpmnProcessId(processId).create();
+
+    // when
+    final var rejection =
+        engine.historyDeletion().processInstance(processInstanceKey).expectRejection().delete();
+
+    // then
+    assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.INVALID_STATE);
+    assertThat(rejection.getValue().getResourceStorageOrdinal()).isEqualTo(FIXED_ORDINAL);
+  }
+
+  @Test
+  public void shouldPassThroughStorageOrdinalOfDeletedProcessInstance() {
+    // given
+    final var processId = Strings.newRandomValidBpmnId();
+    engine
+        .deployment()
+        .withXmlResource(Bpmn.createExecutableProcess(processId).startEvent().endEvent().done())
+        .deploy();
+    final var processInstanceKey = engine.processInstance().ofBpmnProcessId(processId).create();
+    RecordingExporter.processInstanceRecords()
+        .withProcessInstanceKey(processInstanceKey)
+        .limitToProcessInstanceCompleted()
+        .await();
+
+    // when
+    final var deleted =
+        engine
+            .historyDeletion()
+            .processInstance(processInstanceKey)
+            .withResourceStorageOrdinal(5)
+            .delete();
+
+    // then
+    assertThat(deleted.getValue().getResourceStorageOrdinal()).isEqualTo(5);
   }
 
   private long deployProcess() {
