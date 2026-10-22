@@ -18,12 +18,17 @@ import type {
 	GetSystemConfigurationResponseBody,
 } from '@camunda/camunda-api-zod-schemas/8.11';
 import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
-import {createAgentInstance, createQueryAgentInstancesResponse} from '#/shared-test-modules/api-mocks/agent-instances';
+import {
+	createAgentInstance,
+	createQueryAgentInstanceHistoryResponse,
+	createQueryAgentInstancesResponse,
+} from '#/shared-test-modules/api-mocks/agent-instances';
 import {it} from '#/vitest-modules/test-extend';
 import {renderWithRouter} from '#/vitest-modules/render-with-router';
 import {
 	mockGetElementInstanceEndpoint,
 	mockQueryAgentInstancesEndpoint,
+	mockQueryAgentInstanceHistoryEndpoint,
 	mockGetProcessDefinitionXmlEndpoint,
 	mockQueryDecisionInstancesEndpoint,
 	mockQueryElementInstanceInspectionEndpoint,
@@ -153,6 +158,9 @@ function handlers({
 		mockGetElementInstanceEndpoint({successResponse: HttpResponse.json(elementInstance)}),
 		mockQueryJobsEndpoint({successResponse: HttpResponse.json(createQueryJobsResponse())}),
 		mockQueryAgentInstancesEndpoint({successResponse: HttpResponse.json(createQueryAgentInstancesResponse())}),
+		mockQueryAgentInstanceHistoryEndpoint({
+			successResponse: HttpResponse.json(createQueryAgentInstanceHistoryResponse()),
+		}),
 		mockQueryElementInstanceInspectionEndpoint({
 			successResponse: HttpResponse.json(createQueryElementInstanceInspectionResponse()),
 		}),

@@ -141,4 +141,11 @@ function useInstanceDiagramData(instance: ProcessInstance, hasDiagram: boolean) 
 	return {statistics, sequenceFlows, agents};
 }
 
-export {useInstanceDiagramData, useInstanceStatistics, elementDrilldownQuery, calledProcessQuery, calledDecisionQuery};
+export {
+	ACTIVE_AGENT_STATUSES,
+	useInstanceDiagramData,
+	useInstanceStatistics,
+	elementDrilldownQuery,
+	calledProcessQuery,
+	calledDecisionQuery,
+};

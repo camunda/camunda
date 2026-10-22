@@ -181,6 +181,11 @@ const mockQueryAgentInstancesEndpoint = createEndpointMock({
 	method: endpoints.queryAgentInstances.method,
 });
 
+const mockQueryAgentInstanceHistoryEndpoint = createEndpointMock({
+	endpoint: endpoints.queryAgentInstanceHistory.getUrl({agentInstanceKey: ':agentInstanceKey'}),
+	method: endpoints.queryAgentInstanceHistory.method,
+});
+
 const mockGetProcessInstanceEndpoint = createEndpointMock({
 	endpoint: endpoints.getProcessInstance.getUrl({processInstanceKey: ':processInstanceKey'}),
 	method: endpoints.getProcessInstance.method,
@@ -795,6 +800,7 @@ export {
 	mockQueryElementInstancesEndpoint,
 	mockGetElementInstanceEndpoint,
 	mockQueryAgentInstancesEndpoint,
+	mockQueryAgentInstanceHistoryEndpoint,
 	mockGetProcessInstanceEndpoint,
 	mockQueryProcessInstanceIncidentsEndpoint,
 	mockQueryElementInstanceIncidentsEndpoint,

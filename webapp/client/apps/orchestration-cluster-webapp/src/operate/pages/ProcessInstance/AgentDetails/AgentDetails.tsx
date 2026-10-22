@@ -10,7 +10,17 @@ import {useId, useState} from 'react';
 import {useTranslation} from 'react-i18next';
 import type {TFunction} from 'i18next';
 import {Accordion, AccordionItem, Tag} from '@carbon/react';
-import {CheckmarkOutline, Chip, CircleDash, MeterAlt, Time, Tools, WarningFilled} from '@carbon/react/icons';
+import {
+	Chat,
+	CheckmarkOutline,
+	Chip,
+	CircleDash,
+	DocumentBlank,
+	MeterAlt,
+	Time,
+	Tools,
+	WarningFilled,
+} from '@carbon/react/icons';
 import type {AgentInstance, AgentInstanceStatus} from '@camunda/camunda-api-zod-schemas/8.11';
 import {SectionHeading} from '../details.styled';
 import {
@@ -20,12 +30,14 @@ import {
 	ModelInfo,
 	ModelInfoLabel,
 	SecondaryText,
-	StatusRow,
 } from './agentDetails.styled';
 import {AgentSectionTitle} from './AgentSectionTitle';
 import {AgentSelector} from './AgentSelector';
 import {AvailableTools} from './AvailableTools';
+import {ConversationHistory} from './ConversationHistory';
+import {ConversationMessage} from './ConversationMessage';
 import {getTotalTokens} from './getTotalTokens';
+import {LatestAgentMessage} from './LatestAgentMessage';
 import {ModelCallsMetric} from './ModelCallsMetric';
 import {TokensUsedMetric} from './TokensUsedMetric';
 import {ToolsCalledMetric} from './ToolsCalledMetric';
@@ -62,20 +74,29 @@ function StatusIcon({status}: {status: AgentInstanceStatus}) {
 }
 
 type AgentDetailsProps = {
+	selectedElementInstanceKey: string | null;
 	agentInstances: AgentInstance[];
 	totalAgentsCount: number;
 	hasMoreTotalItems: boolean;
 	isError: boolean;
 };
 
-const AgentDetails: React.FC<AgentDetailsProps> = ({agentInstances, totalAgentsCount, hasMoreTotalItems, isError}) => {
+const AgentDetails: React.FC<AgentDetailsProps> = ({
+	selectedElementInstanceKey,
+	agentInstances,
+	totalAgentsCount,
+	hasMoreTotalItems,
+	isError,
+}) => {
 	const {t, i18n} = useTranslation();
 	const headingId = useId();
 	const [selectedAgentInstanceKey, setSelectedAgentInstanceKey] = useState<string | null>(null);
+	const [isConversationHistoryOpen, setIsConversationHistoryOpen] = useState(false);
 
 	const agentInstance =
 		agentInstances.find((agent) => agent.agentInstanceKey === selectedAgentInstanceKey) ?? agentInstances[0] ?? null;
 	const heading = t('operate.processInstance.details.agent.heading');
+	const conversationHistoryTitle = t('operate.processInstance.details.agent.conversationHistory');
 
 	if (isError || !agentInstance) {
 		return (
@@ -98,7 +119,19 @@ const AgentDetails: React.FC<AgentDetailsProps> = ({agentInstances, totalAgentsC
 			: undefined;
 
 	return (
-		<AgentDetailsContainer aria-labelledby={headingId} data-testid="agent-details">
+		<AgentDetailsContainer
+			aria-labelledby={headingId}
+			data-testid="agent-details"
+			onKeyDown={(event) => {
+				if (
+					event.key === 'Escape' &&
+					event.target instanceof HTMLElement &&
+					event.target.innerText === conversationHistoryTitle
+				) {
+					setIsConversationHistoryOpen(false);
+				}
+			}}
+		>
 			<AgentHeader>
 				<SectionHeading id={headingId}>{heading}</SectionHeading>
 				{selectableAgentInstances.length > 1 ? (
@@ -112,14 +145,23 @@ const AgentDetails: React.FC<AgentDetailsProps> = ({agentInstances, totalAgentsC
 					<SecondaryText>{agentInstance.agentInstanceKey}</SecondaryText>
 				)}
 			</AgentHeader>
-			<StatusRow data-testid="agent-status-section">
-				<AgentSectionTitle icon={<StatusIcon status={agentInstance.status} />}>
-					{t('operate.processInstance.details.agent.statusTitle', {
-						status: getStatusLabel(t, agentInstance.status),
-					})}
-				</AgentSectionTitle>
-			</StatusRow>
 			<Accordion align="start">
+				<AccordionItem
+					data-testid="agent-status-section"
+					open
+					title={
+						<AgentSectionTitle icon={<StatusIcon status={agentInstance.status} />}>
+							{t('operate.processInstance.details.agent.statusTitle', {
+								status: getStatusLabel(t, agentInstance.status),
+							})}
+						</AgentSectionTitle>
+					}
+				>
+					<LatestAgentMessage
+						agentInstanceKey={agentInstance.agentInstanceKey}
+						agentInstanceStatus={agentInstance.status}
+					/>
+				</AccordionItem>
 				<AccordionItem
 					data-testid="agent-usage-section"
 					aria-label={t('operate.processInstance.details.agent.usage')}
@@ -151,6 +193,31 @@ const AgentDetails: React.FC<AgentDetailsProps> = ({agentInstances, totalAgentsC
 						/>
 						<ToolsCalledMetric toolCalls={metrics.toolCalls} maxToolCalls={limits.maxToolCalls} />
 					</MetricsRow>
+				</AccordionItem>
+				<AccordionItem
+					data-testid="agent-conversation-history-section"
+					open={isConversationHistoryOpen}
+					onHeadingClick={({isOpen}) => setIsConversationHistoryOpen(isOpen)}
+					title={<AgentSectionTitle icon={<Chat size={16} />}>{conversationHistoryTitle}</AgentSectionTitle>}
+				>
+					<ConversationHistory
+						agentInstanceKey={agentInstance.agentInstanceKey}
+						agentInstanceStatus={agentInstance.status}
+						availableTools={agentInstance.tools}
+						isVisible={isConversationHistoryOpen}
+						selectedElementInstanceKey={selectedElementInstanceKey}
+						agentsElementInstanceKeys={agentInstance.elementInstanceKeys}
+					/>
+				</AccordionItem>
+				<AccordionItem
+					data-testid="agent-system-prompt-section"
+					title={
+						<AgentSectionTitle icon={<DocumentBlank size={16} />}>
+							{t('operate.processInstance.details.agent.systemPrompt')}
+						</AgentSectionTitle>
+					}
+				>
+					<ConversationMessage actor="SYSTEM" content={definition.systemPrompt} />
 				</AccordionItem>
 				<AccordionItem
 					data-testid="agent-available-tools-section"
