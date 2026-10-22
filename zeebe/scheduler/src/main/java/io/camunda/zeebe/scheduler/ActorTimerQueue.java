@@ -16,7 +16,7 @@ import org.slf4j.Logger;
 
 public final class ActorTimerQueue extends DeadlineTimerWheel {
   private static final Logger LOG = Loggers.ACTOR_LOGGER;
-  private static final int DEFAULT_TICKS_PER_WHEEL = 32;
+  private static final int DEFAULT_TICKS_PER_WHEEL = 128;
   private final Long2ObjectHashMap<TimerSubscription> timerJobMap = new Long2ObjectHashMap<>();
 
   private final TimerHandler timerHandler =
