@@ -330,6 +330,11 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/ProtectionModeEnum"
+        $exists:
+          description: |
+            Checks if the variable has any protection mode. Use `false` to match the variables
+            that are not protected.
+          type: boolean
 
     VariableValueFilterProperty:
       type: object

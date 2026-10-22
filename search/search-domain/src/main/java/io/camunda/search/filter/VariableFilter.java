@@ -26,7 +26,8 @@ public record VariableFilter(
     List<Operation<Long>> variableKeyOperations,
     List<String> tenantIds,
     Boolean isTruncated,
-    List<ProtectionMode> protectionModes)
+    List<ProtectionMode> protectionModes,
+    Boolean hasProtectionModes)
     implements FilterBase {
 
   public static final class Builder implements ObjectBuilder<VariableFilter> {
@@ -39,6 +40,7 @@ public record VariableFilter(
     private List<String> tenantIds;
     private Boolean isTruncated;
     private List<ProtectionMode> protectionModes;
+    private Boolean hasProtectionModes;
 
     public Builder nameOperations(final List<Operation<String>> operations) {
       nameOperations = addValuesToList(nameOperations, operations);
@@ -173,6 +175,12 @@ public record VariableFilter(
       return this;
     }
 
+    /** {@code true} matches variables with any protection mode, {@code false} those with none. */
+    public Builder hasProtectionModes(final Boolean value) {
+      hasProtectionModes = value;
+      return this;
+    }
+
     public Builder copyFrom(final VariableFilter sourceFilter) {
       return nameOperations(sourceFilter.nameOperations)
           .valueUntypedOperations(sourceFilter.valueOperations)
@@ -182,7 +190,8 @@ public record VariableFilter(
           .variableKeyOperations(sourceFilter.variableKeyOperations())
           .tenantIds(sourceFilter.tenantIds())
           .isTruncated(sourceFilter.isTruncated())
-          .protectionModes(sourceFilter.protectionModes());
+          .protectionModes(sourceFilter.protectionModes())
+          .hasProtectionModes(sourceFilter.hasProtectionModes());
     }
 
     @Override
@@ -196,7 +205,8 @@ public record VariableFilter(
           Objects.requireNonNullElseGet(variableKeyOperations, Collections::emptyList),
           Objects.requireNonNullElseGet(tenantIds, Collections::emptyList),
           isTruncated,
-          Objects.requireNonNullElseGet(protectionModes, Collections::emptyList));
+          Objects.requireNonNullElseGet(protectionModes, Collections::emptyList),
+          hasProtectionModes);
     }
   }
 }
