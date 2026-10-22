@@ -63,6 +63,8 @@ Container tests build the image first: `:camunda-zeebe:dockerIt` runs the `*Dock
 `it` task of every module that applies `buildlogic.docker-image-test-conventions` (schema-manager,
 the acceptance, testcontainer, Zeebe integration and update tests) runs after `buildDockerImage` and
 reruns when the image changes. They read the image from `-Pdocker.image`.
+A run that requests only `it` or `dockerIt` tasks skips the frontend build, because these tests only
+exercise the backend. Pass `-Pskip.fe.build=false` to build it anyway.
 
 Frontend builds are triggered by distribution assembly, not by compilation, tests, or a standalone
 webjar `jar` task. An archive built with `-Pskip.fe.build=true` is **not frontend-complete** and must
