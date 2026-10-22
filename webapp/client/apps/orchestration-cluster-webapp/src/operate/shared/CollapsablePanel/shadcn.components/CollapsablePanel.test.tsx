@@ -22,9 +22,20 @@ describe('<CollapsablePanel />', () => {
 		);
 
 		await expect.element(screen.getByTestId('collapsed-panel')).toBeInTheDocument();
-		await expect.element(screen.getByText('Content')).not.toBeInTheDocument();
+		await expect.element(screen.getByText('Content')).not.toBeVisible();
 
 		await userEvent.click(screen.getByRole('button', {name: 'Expand Filters'}));
+
+		expect(onToggle).toHaveBeenCalledTimes(1);
+	});
+
+	it('should expand when clicking anywhere on the collapsed rail', async () => {
+		const onToggle = vi.fn();
+		const screen = await render(
+			<CollapsablePanel label="Filters" panelPosition="LEFT" isCollapsed onToggle={onToggle} maxWidth={300} />,
+		);
+
+		await userEvent.click(screen.getByTestId('collapsed-panel'));
 
 		expect(onToggle).toHaveBeenCalledTimes(1);
 	});
