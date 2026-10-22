@@ -33,6 +33,13 @@ export function generateOneOfAmbiguous(
         const b = root.oneOf[j];
         if (!a || !b || a.type !== 'object' || b.type !== 'object') continue;
         if (!Array.isArray(a.required) || !Array.isArray(b.required)) continue;
+        // If one required set contains the other, the merged body is just a valid body of the
+        // larger variant, so it is not ambiguous. Skipped pairs do not count toward the cap.
+        if (
+          a.required.every((r: string) => b.required.includes(r)) ||
+          b.required.every((r: string) => a.required.includes(r))
+        )
+          continue;
         const merged: Record<string, any> = {};
         for (const r of a.required) merged[r] = placeholder(a.properties?.[r]);
         for (const r of b.required) merged[r] = placeholder(b.properties?.[r]);
