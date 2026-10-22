@@ -22,6 +22,7 @@ import io.camunda.configuration.beans.RestoreProperties;
 import io.camunda.db.rdbms.sql.ExporterPositionMapper;
 import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
+import io.camunda.zeebe.dynamic.config.state.PartitionRestore;
 import io.camunda.zeebe.dynamic.nodeid.NodeIdProvider;
 import io.camunda.zeebe.dynamic.nodeid.fs.DataDirectoryProvider;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -149,10 +150,10 @@ public class RestoreApp implements ApplicationRunner {
         new RestoreManager(configuration, backupStore, exporterPositionMapper, meterRegistry)) {
       // Resolved before any data is touched. Their partitions are the ones to restore, which can be
       // fewer than are configured when the cluster was scaled up since the backups were taken.
-      final var backupIdsByPartition = resolveBackups(restoreManager);
+      final var partitionRestores = resolveBackups(restoreManager);
       final var restoredPartitionCount =
-          backupIdsByPartition != null
-              ? backupIdsByPartition.size()
+          partitionRestores != null
+              ? partitionRestores.size()
               : configuration.getCluster().getPartitionsCount();
 
       final var preRestoreActionResult =
@@ -160,7 +161,7 @@ public class RestoreApp implements ApplicationRunner {
 
       final PostRestoreActionContext postRestoreActionContext;
       if (!preRestoreActionResult.skipRestore()) {
-        restore(restoreManager, backupIdsByPartition);
+        restore(restoreManager, partitionRestores);
         postRestoreActionContext =
             new PostRestoreActionContext(
                 restoreId, configuration.getCluster().getNodeId(), false, restoredPartitionCount);
@@ -181,7 +182,8 @@ public class RestoreApp implements ApplicationRunner {
    * The backups to restore each partition from, or none when there is nothing to restore from: no
    * backup ID, no time range and no RDBMS to take the restore point from.
    */
-  private @Nullable Map<Integer, long[]> resolveBackups(final RestoreManager restoreManager) {
+  private @Nullable Map<Integer, PartitionRestore> resolveBackups(
+      final RestoreManager restoreManager) {
     if (backupId != null) {
       return restoreManager.resolveBackups(backupId);
     } else if (hasTimeRange() || exporterPositionMapper != null) {
@@ -192,23 +194,23 @@ public class RestoreApp implements ApplicationRunner {
 
   private void restore(
       final RestoreManager restoreManager,
-      final @Nullable Map<Integer, long[]> backupIdsByPartition)
+      final @Nullable Map<Integer, PartitionRestore> partitionRestores)
       throws IOException, ExecutionException, InterruptedException {
-    if (backupIdsByPartition == null) {
+    if (partitionRestores == null) {
       return;
     }
     LOG.info(
         "Starting to restore partitions {} from backups (backupId={}, from={}, to={}) with the following configuration: {}",
-        backupIdsByPartition.keySet(),
+        partitionRestores.keySet(),
         backupId,
         from,
         to,
         restoreConfiguration);
     restoreManager.restore(
-        backupIdsByPartition,
+        partitionRestores,
         restoreConfiguration.validateConfig(),
         restoreConfiguration.ignoreFilesInTarget());
-    LOG.info("Successfully restored partitions {}", backupIdsByPartition.keySet());
+    LOG.info("Successfully restored partitions {}", partitionRestores.keySet());
   }
 
   private void validateParameters() {

@@ -31,6 +31,7 @@ import io.camunda.zeebe.dynamic.config.serializer.ProtoBufSerializer;
 import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.UpdateRoutingState;
+import io.camunda.zeebe.dynamic.config.state.PartitionRestore;
 import io.camunda.zeebe.journal.CheckedJournalException.FlushException;
 import io.camunda.zeebe.restore.PartitionRestoreService.BackupValidator;
 import io.camunda.zeebe.restore.RestorePointResolver.RestorableBackups;
@@ -133,17 +134,18 @@ public class RestoreManager implements CloseableSilently {
    * scaled up since the backup was taken.
    *
    * @param backupIds the backup IDs to use for all partitions
-   * @return a map from partition ID to backup IDs
+   * @return what each partition is restored from, by partition id
    */
-  public Map<Integer, long[]> resolveBackups(final long[] backupIds) {
+  public Map<Integer, PartitionRestore> resolveBackups(final long[] backupIds) {
     final var latestBackupId =
         Arrays.stream(backupIds)
             .max()
             .orElseThrow(() -> new IllegalArgumentException("No backup ID specified"));
     final var partitionCount = backupPartitionCount(latestBackupId);
+    final var restore = PartitionRestore.ofBackups(backupIds);
     return IntStream.rangeClosed(1, partitionCount)
         .boxed()
-        .collect(Collectors.toMap(partition -> partition, partition -> backupIds));
+        .collect(Collectors.toMap(partition -> partition, partition -> restore));
   }
 
   /**
@@ -151,9 +153,9 @@ public class RestoreManager implements CloseableSilently {
    * any data. With RDBMS as secondary storage, the partitions are those the RDBMS holds exported
    * positions for, which have to be the partitions of the last backups restored.
    *
-   * @return a map from partition ID to backup IDs
+   * @return what each partition is restored from, by partition id
    */
-  public Map<Integer, long[]> resolveBackups(
+  public Map<Integer, PartitionRestore> resolveBackups(
       @Nullable final Instant from, @Nullable final Instant to) {
     if (exporterPositionMapper == null) {
       if (from == null) {
@@ -166,7 +168,7 @@ public class RestoreManager implements CloseableSilently {
     }
   }
 
-  private Map<Integer, long[]> resolveRdbmsBackups(
+  private Map<Integer, PartitionRestore> resolveRdbmsBackups(
       @Nullable final Instant from, @Nullable final Instant to) {
     final var exportedPositions =
         exportedPositions(configuration.getCluster().getPartitionsCount());
@@ -179,17 +181,17 @@ public class RestoreManager implements CloseableSilently {
         RestorePointResolver.resolve(metadataByPartition, from, to, exportedPositions);
     verifyLastBackupsHoldThePartitions(restorableBackups, exportedPositions.size());
 
-    final var backupIdsByPartition = toBackupIdsByPartition(restorableBackups);
+    final var partitions = toPartitionRestores(restorableBackups);
     LOG.info(
         "Restoring RDBMS backups in range [{},{}] to global checkpoint {}: {}",
         from,
         to,
         restorableBackups.globalCheckpointId(),
-        backupIdsByPartition);
-    return backupIdsByPartition;
+        partitions);
+    return partitions;
   }
 
-  private Map<Integer, long[]> resolveTimeRangeBackups(
+  private Map<Integer, PartitionRestore> resolveTimeRangeBackups(
       final Instant from, @Nullable final Instant to) {
     final var partitionCount = configuration.getCluster().getPartitionsCount();
 
@@ -198,27 +200,28 @@ public class RestoreManager implements CloseableSilently {
 
     final var restorableBackups = RestorePointResolver.resolve(metadataByPartition, from, to, null);
 
-    final var backupIdsByPartition = toBackupIdsByPartition(restorableBackups);
+    final var partitions = toPartitionRestores(restorableBackups);
     LOG.info(
         "Restoring time-range backups in range [{},{}] to global checkpoint {}: {}",
         from,
         to,
         restorableBackups.globalCheckpointId(),
-        backupIdsByPartition);
-    return backupIdsByPartition;
+        partitions);
+    return partitions;
   }
 
-  /** Converts the checkpoints to restore of each partition to their backup IDs. */
-  private static Map<Integer, long[]> toBackupIdsByPartition(
+  /** What each partition is restored from: the checkpoints the resolver picked for it. */
+  private static Map<Integer, PartitionRestore> toPartitionRestores(
       final RestorableBackups restorableBackups) {
     return restorableBackups.backupsByPartitionId().entrySet().stream()
         .collect(
             Collectors.toMap(
                 Entry::getKey,
                 e ->
-                    e.getValue().stream()
-                        .mapToLong(BackupMetadata.CheckpointEntry::checkpointId)
-                        .toArray()));
+                    PartitionRestore.ofBackups(
+                        e.getValue().stream()
+                            .map(BackupMetadata.CheckpointEntry::checkpointId)
+                            .toList())));
   }
 
   /**
@@ -272,19 +275,18 @@ public class RestoreManager implements CloseableSilently {
   }
 
   /**
-   * Restores partitions from backups, where each partition may restore from different backup IDs.
+   * Restores partitions, where each partition may restore from different backups.
    *
    * <p>This is useful when partitions have different safe start checkpoints based on their exported
    * positions, but all need to reach the same global checkpoint. Only the given partitions are
    * restored, placed on the brokers as a cluster with that many partitions would place them.
    *
-   * @param backupIdsByPartition map from partition ID to the backup IDs to restore for that
-   *     partition
+   * @param partitions what each partition is restored from, by partition id
    * @param validateConfig whether to validate the backup configuration
    * @param ignoreFilesInTarget files to ignore when checking if the data directory is empty
    */
   public void restore(
-      final Map<Integer, long[]> backupIdsByPartition,
+      final Map<Integer, PartitionRestore> partitions,
       final boolean validateConfig,
       final List<String> ignoreFilesInTarget)
       throws IOException, ExecutionException, InterruptedException {
@@ -292,19 +294,19 @@ public class RestoreManager implements CloseableSilently {
 
     verifyDataFolderIsEmpty(dataDirectory, ignoreFilesInTarget);
 
-    final var partitionCount = backupIdsByPartition.size();
+    final var partitionCount = partitions.size();
     try {
       final var partitionsToRestore = collectPartitions(partitionCount);
       final var tasks = new ArrayList<Callable<Void>>(partitionsToRestore.size());
       for (final var partition : partitionsToRestore) {
         final var partitionId = partition.partition().id().id();
-        final var backupIds = backupIdsByPartition.get(partitionId);
-        if (backupIds == null || backupIds.length == 0) {
+        final var restore = partitions.get(partitionId);
+        if (restore == null || restore.backupIds().isEmpty()) {
           throw new IllegalArgumentException("No backup IDs provided for partition " + partitionId);
         }
         tasks.add(
             () -> {
-              restorePartition(partition, backupIds, partitionCount, validateConfig);
+              restorePartition(partition, restore, partitionCount, validateConfig);
               return null;
             });
       }
@@ -354,7 +356,7 @@ public class RestoreManager implements CloseableSilently {
 
   private void restorePartition(
       final InstrumentedRaftPartition partition,
-      final long[] backupIds,
+      final PartitionRestore restore,
       final int partitionCount,
       final boolean validateConfig)
       throws IOException, FlushException {
@@ -377,11 +379,8 @@ public class RestoreManager implements CloseableSilently {
             new ChecksumProviderRocksDBImpl(),
             partition.registry());
     try {
-      restoreService.restore(backupIds, validator);
-      LOG.info(
-          "Successfully restored partition {} from backups {}.",
-          raftPartition.id().id(),
-          backupIds);
+      restoreService.restore(restore, validator);
+      LOG.info("Successfully restored partition {} from {}.", raftPartition.id().id(), restore);
     } finally {
       MicrometerUtil.close(registry);
     }
