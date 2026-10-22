@@ -25,6 +25,7 @@ import io.camunda.zeebe.protocol.record.intent.HistoryDeletionIntent;
 import io.camunda.zeebe.protocol.record.mapper.AuthzModelMapper;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
+import io.camunda.zeebe.protocol.record.value.StorageOrdinalRelated;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.Either;
 
@@ -85,6 +86,7 @@ public class HistoryDeletionDeleteProcessor implements TypedRecordProcessor<Hist
 
   private void deleteProcessDefinition(final TypedRecord<HistoryDeletionRecord> command) {
     final var recordValue = command.getValue();
+    recordValue.setResourceStorageOrdinal(StorageOrdinalRelated.NOT_ORDINAL_CONTROLLED);
     writeHistoryDeletionEvent(recordValue, command);
   }
 
@@ -135,6 +137,7 @@ public class HistoryDeletionDeleteProcessor implements TypedRecordProcessor<Hist
 
   private void deleteDecisionRequirements(final TypedRecord<HistoryDeletionRecord> command) {
     final var recordValue = command.getValue();
+    recordValue.setResourceStorageOrdinal(StorageOrdinalRelated.NOT_ORDINAL_CONTROLLED);
     writeHistoryDeletionEvent(recordValue, command);
   }
 
