@@ -144,7 +144,10 @@ public class HistoryDeletionDeleteProcessor implements TypedRecordProcessor<Hist
   private Either<Rejection, HistoryDeletionRecord> validateProcessInstanceDoesNotExist(
       final HistoryDeletionRecord record) {
     final var processInstanceKey = record.getResourceKey();
-    if (elementInstanceState.getInstance(processInstanceKey) != null) {
+    final var processInstance = elementInstanceState.getInstance(processInstanceKey);
+    if (processInstance != null) {
+      // the command may carry an unknown ordinal (0), the rejection reports the stored one
+      record.setResourceStorageOrdinal(processInstance.getValue().getStorageOrdinal());
       final var rejection =
           new Rejection(
               RejectionType.INVALID_STATE,
