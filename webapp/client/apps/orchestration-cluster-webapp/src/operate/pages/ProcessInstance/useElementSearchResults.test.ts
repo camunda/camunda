@@ -11,7 +11,7 @@ import {
 	createElementInstance,
 	createQueryElementInstancesResponse,
 } from '#/shared-test-modules/api-mocks/element-instances';
-import {getNextSearchOffset, PAGE_LIMIT} from './useElementSearchResults';
+import {getNextSearchOffset, isWindowPastShrunkResults, PAGE_LIMIT} from './useElementSearchResults';
 
 function response(count: number, total: number, hasMoreTotalItems: boolean) {
 	const body = createQueryElementInstancesResponse(
@@ -42,5 +42,31 @@ describe('getNextSearchOffset', () => {
 	it.for([0, 10])('should stop on a short page of %i items before the total is reached', (count) => {
 		// when / then
 		expect(getNextSearchOffset(response(count, 10000, true), 100)).toBeNull();
+	});
+});
+
+describe('isWindowPastShrunkResults', () => {
+	const items = (count: number) =>
+		Array.from({length: count}, (_, index) => createElementInstance({elementInstanceKey: String(index + 1)}));
+
+	it('should detect a later window that holds less than a page after the results shrank', () => {
+		// when / then
+		expect(isWindowPastShrunkResults({items: items(10), totalCount: 60, firstOffset: PAGE_LIMIT})).toBe(true);
+		expect(isWindowPastShrunkResults({items: [], totalCount: 30, firstOffset: PAGE_LIMIT})).toBe(true);
+	});
+
+	it('should keep a window that starts at the first page', () => {
+		// when / then
+		expect(isWindowPastShrunkResults({items: items(10), totalCount: 10, firstOffset: 0})).toBe(false);
+	});
+
+	it('should keep a later window that still holds a full page', () => {
+		// when / then
+		expect(isWindowPastShrunkResults({items: items(PAGE_LIMIT), totalCount: 400, firstOffset: PAGE_LIMIT})).toBe(false);
+	});
+
+	it('should keep a window when there are no results at all', () => {
+		// when / then
+		expect(isWindowPastShrunkResults({items: [], totalCount: 0, firstOffset: PAGE_LIMIT})).toBe(false);
 	});
 });

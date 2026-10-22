@@ -50,6 +50,18 @@ function getNextSearchOffset({items, page}: QueryElementInstancesResponseBody, o
 	return items.length === PAGE_LIMIT && next < page.totalItems ? next : null;
 }
 
+function isWindowPastShrunkResults({
+	items,
+	totalCount,
+	firstOffset,
+}: {
+	items: ElementInstance[];
+	totalCount: number;
+	firstOffset: number;
+}) {
+	return items.length < PAGE_LIMIT && totalCount > 0 && firstOffset > 0;
+}
+
 function uniqueByKey(items: ElementInstance[]) {
 	const seen = new Set<string>();
 	return items.filter(({elementInstanceKey}) => {
@@ -86,11 +98,11 @@ function useElementSearchResults(request: QueryElementInstancesRequestBody) {
 	});
 	const {data, isPlaceholderData} = query;
 	useEffect(() => {
-		if (data && !isPlaceholderData && data.items.length < PAGE_LIMIT && data.totalCount > 0 && data.firstOffset > 0) {
+		if (data && !isPlaceholderData && isWindowPastShrunkResults(data)) {
 			void client.resetQueries({queryKey});
 		}
 	}, [client, data, isPlaceholderData, queryKey]);
 	return query;
 }
 
-export {buildElementSearchRequest, getNextSearchOffset, useElementSearchResults, PAGE_LIMIT};
+export {buildElementSearchRequest, getNextSearchOffset, isWindowPastShrunkResults, useElementSearchResults, PAGE_LIMIT};

@@ -268,6 +268,17 @@ describe('InstanceHistory search and filters', () => {
 		await expect.element(screen.getByText('1 matching element', {exact: true})).toHaveAttribute('aria-live', 'polite');
 	});
 
+	it('should announce an empty result in the live region', async ({worker}) => {
+		// given
+		mockHistory(worker, {results: [], total: 0});
+
+		// when
+		const screen = await render('elementSearch=ship');
+
+		// then
+		await expect.element(screen.getByText('0 matching elements', {exact: true})).toHaveAttribute('aria-live', 'polite');
+	});
+
 	it('should show the forbidden notification when the search is forbidden', async ({worker}) => {
 		// given
 		mockHistory(worker, {status: 403});
@@ -277,6 +288,7 @@ describe('InstanceHistory search and filters', () => {
 
 		// then
 		await expect.element(screen.getByText('You do not have permission to view instance history')).toBeVisible();
+		await expect.element(screen.getByRole('searchbox', {name: 'Search instance history'})).not.toBeInTheDocument();
 	});
 
 	it('should show the error message when the search fails', async ({worker}) => {

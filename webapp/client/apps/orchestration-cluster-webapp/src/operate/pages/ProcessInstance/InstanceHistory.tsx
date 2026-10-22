@@ -327,7 +327,7 @@ function InstanceHistory({showHeader = true}: {showHeader?: boolean}) {
 						})}
 				</HistoryHeader>
 			)}
-			{xml.isSuccess && !isModificationModeEnabled && <InstanceHistorySearch key={processInstanceId} />}
+			{xml.isSuccess && !isModificationModeEnabled && !forbidden && <InstanceHistorySearch key={processInstanceId} />}
 			{forbidden ? (
 				<InlineNotification
 					kind="error"

@@ -39,6 +39,10 @@ import {
 
 const ROW_HEIGHT = 32;
 
+function countRowsAbove(items: ElementInstance[] | undefined, elementInstanceKey: string | undefined) {
+	return items?.findIndex((item) => item.elementInstanceKey === elementInstanceKey) ?? -1;
+}
+
 function SearchResultRow({item, businessObjects}: {item: ElementInstance; businessObjects?: BusinessObjects}) {
 	const selection = useProcessInstanceElementSelection();
 	const label = item.elementName ?? item.elementId;
@@ -93,24 +97,21 @@ function FilteredInstanceHistory({
 	const query = useElementSearchResults(request);
 	const isPaging = query.isFetchingNextPage || query.isFetchingPreviousPage || query.isPlaceholderData;
 
-	// Pages can overlap when live data shifts rows, and duplicates are dropped, so compensate by the rows that
-	// were actually added or removed above the previous first row rather than by a full page.
 	async function fetchPreviousPage(scrollDown: (distance: number) => void) {
-		const firstKey = query.data?.items[0]?.elementInstanceKey;
+		const previousFirstKey = query.data?.items[0]?.elementInstanceKey;
 		const result = await query.fetchPreviousPage();
-		const addedAbove = result.data?.items.findIndex((item) => item.elementInstanceKey === firstKey) ?? -1;
-		if (!result.isFetchPreviousPageError && addedAbove > 0) {
-			scrollDown(addedAbove * ROW_HEIGHT);
+		const rowsAdded = countRowsAbove(result.data?.items, previousFirstKey);
+		if (!result.isFetchPreviousPageError && rowsAdded > 0) {
+			scrollDown(rowsAdded * ROW_HEIGHT);
 		}
 	}
 
 	async function fetchNextPage(scrollUp: (distance: number) => void) {
-		const keys = query.data?.items.map((item) => item.elementInstanceKey) ?? [];
+		const previousItems = query.data?.items;
 		const result = await query.fetchNextPage();
-		const firstKey = result.data?.items[0]?.elementInstanceKey;
-		const removedAbove = firstKey === undefined ? -1 : keys.indexOf(firstKey);
-		if (!result.isFetchNextPageError && removedAbove > 0) {
-			scrollUp(removedAbove * ROW_HEIGHT);
+		const rowsRemoved = countRowsAbove(previousItems, result.data?.items[0]?.elementInstanceKey);
+		if (!result.isFetchNextPageError && rowsRemoved > 0) {
+			scrollUp(rowsRemoved * ROW_HEIGHT);
 		}
 	}
 	const forbiddenError = query.error instanceof ForbiddenError ? query.error : undefined;
@@ -136,15 +137,20 @@ function FilteredInstanceHistory({
 	if (query.data.items.length === 0) {
 		const emptyKey = emptyStateKey(searchText, statusFilter);
 		return (
-			<DimmableResults inert={query.isPlaceholderData || undefined} $dimmed={query.isPlaceholderData}>
-				<EmptyResults>
-					<EmptyState
-						heading={t(`operate.processInstance.history.search.${emptyKey}.heading`)}
-						description={t(`operate.processInstance.history.search.${emptyKey}.description`)}
-						icon={<Search size={32} />}
-					/>
-				</EmptyResults>
-			</DimmableResults>
+			<>
+				<ResultsCount aria-live="polite">
+					{t('operate.processInstance.history.search.matchingElements', {count: query.data.totalCount})}
+				</ResultsCount>
+				<DimmableResults inert={query.isPlaceholderData || undefined} $dimmed={query.isPlaceholderData}>
+					<EmptyResults>
+						<EmptyState
+							heading={t(`operate.processInstance.history.search.${emptyKey}.heading`)}
+							description={t(`operate.processInstance.history.search.${emptyKey}.description`)}
+							icon={<Search size={32} />}
+						/>
+					</EmptyResults>
+				</DimmableResults>
+			</>
 		);
 	}
 

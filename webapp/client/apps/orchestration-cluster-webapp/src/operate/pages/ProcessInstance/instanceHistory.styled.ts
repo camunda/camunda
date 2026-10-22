@@ -177,11 +177,11 @@ const SearchResultsScroll = styled.div`
 	flex: 1;
 	min-height: 0;
 `;
-// Search results render at tree depth 0; the extra spacing-06 lines their icons up with depth-1 leaves in the tree.
+const TREE_DEPTH_ONE_LEAF_INDENT = 'calc(var(--cds-spacing-05) + var(--cds-spacing-06))';
 const SearchResultIcon = styled.span`
 	display: flex;
 	flex-shrink: 0;
-	margin-inline-start: calc(var(--cds-spacing-05) + var(--cds-spacing-06));
+	margin-inline-start: ${TREE_DEPTH_ONE_LEAF_INDENT};
 `;
 const ResultsCount = styled.output`
 	position: absolute;

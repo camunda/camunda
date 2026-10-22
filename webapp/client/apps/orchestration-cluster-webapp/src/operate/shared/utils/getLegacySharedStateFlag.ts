@@ -16,7 +16,9 @@ type LegacySharedStateFlag =
 	| 'hideInputMappingsHelperBanner'
 	| 'hideOutputMappingsHelperBanner';
 
-function getLegacySharedState<T>(key: string, schema: z.ZodType<T>): T | undefined {
+type LegacySharedStateKey = LegacySharedStateFlag | 'instanceHistorySortOrder';
+
+function getLegacySharedState<T>(key: LegacySharedStateKey, schema: z.ZodType<T>): T | undefined {
 	try {
 		const result = z.object({[key]: schema}).safeParse(JSON.parse(localStorage.getItem('sharedState') ?? '{}'));
 		return result.success ? result.data[key] : undefined;
