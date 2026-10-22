@@ -8,17 +8,18 @@
 package io.camunda.zeebe.dmn.impl;
 
 import io.camunda.zeebe.dmn.ParsedDecisionRule;
+import org.jspecify.annotations.Nullable;
 
 public class ParsedDmnScalaDecisionRule implements ParsedDecisionRule {
 
-  private final String id;
+  private final @Nullable String id;
 
-  public ParsedDmnScalaDecisionRule(final String id) {
+  public ParsedDmnScalaDecisionRule(final @Nullable String id) {
     this.id = id;
   }
 
   @Override
-  public String getId() {
+  public @Nullable String getId() {
     return id;
   }
 }
