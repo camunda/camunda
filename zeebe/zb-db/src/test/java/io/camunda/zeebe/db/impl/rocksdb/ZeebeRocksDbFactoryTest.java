@@ -296,6 +296,27 @@ final class ZeebeRocksDbFactoryTest {
   }
 
   @Test
+  void shouldEnableRangeTombstoneConversionByDefault() {
+    // given
+    final var configuration = new RocksDbConfiguration();
+    final var resources =
+        RocksDbResources.of(configuration, new RuntimeInfo(1024 * 1024 * 1024, 3));
+    final var factory =
+        new ZeebeRocksDbFactory<>(
+            configuration,
+            new ConsistencyChecksSettings(),
+            new AccessMetricsConfiguration(Kind.NONE),
+            SimpleMeterRegistry::new,
+            resources);
+
+    // when
+    final var defaults = factory.createDefaultColumnFamilyOptionsAsProperties(resources);
+
+    // then
+    assertThat(defaults).containsEntry("min_tombstones_for_range_conversion", "100");
+  }
+
+  @Test
   void shouldFailIfPropertiesDoesNotExist(final @TempDir File pathName) {
     // given
     final var customProperties = new Properties();
