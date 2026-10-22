@@ -142,7 +142,7 @@ public final class BatchOperationExecutionExecuteProcessor
           command.getPartitionId());
 
       appendBatchOperationExecutionExecutedEvent(batchOperation, NextItems.EMPTY);
-      appendBatchOperationExecutionCompletedEvent(command, batchOperation);
+      appendBatchOperationExecutionCompletedEvent(command, batchOperation.getStorageOrdinal());
 
       metrics.stopTotalExecutionLatencyMeasure(batchKey);
       return;
@@ -238,13 +238,12 @@ public final class BatchOperationExecutionExecuteProcessor
   }
 
   private void appendBatchOperationExecutionCompletedEvent(
-      final TypedRecord<BatchOperationExecutionRecord> command,
-      final PersistedBatchOperation batchOperation) {
+      final TypedRecord<BatchOperationExecutionRecord> command, final int storageOrdinal) {
     final var executionRecord = command.getValue();
     final var batchInternalComplete =
         new BatchOperationPartitionLifecycleRecord()
             .setBatchOperationKey(executionRecord.getBatchOperationKey())
-            .setStorageOrdinal(batchOperation.getStorageOrdinal())
+            .setStorageOrdinal(storageOrdinal)
             .setSourcePartitionId(command.getPartitionId());
 
     LOGGER.debug(

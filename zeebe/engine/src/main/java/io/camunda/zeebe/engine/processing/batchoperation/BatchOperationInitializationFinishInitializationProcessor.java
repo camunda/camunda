@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.engine.processing.batchoperation;
 
-import io.camunda.zeebe.engine.metrics.BatchOperationMetrics;
 import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
@@ -29,15 +28,11 @@ public final class BatchOperationInitializationFinishInitializationProcessor
 
   private final StateWriter stateWriter;
   private final BatchOperationState batchOperationState;
-  private final BatchOperationMetrics metrics;
 
   public BatchOperationInitializationFinishInitializationProcessor(
-      final Writers writers,
-      final ProcessingState processingState,
-      final BatchOperationMetrics metrics) {
+      final Writers writers, final ProcessingState processingState) {
     stateWriter = writers.state();
     batchOperationState = processingState.getBatchOperationState();
-    this.metrics = metrics;
   }
 
   @Override
