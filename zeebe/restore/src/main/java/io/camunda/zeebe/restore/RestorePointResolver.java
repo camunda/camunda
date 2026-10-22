@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.restore;
 
+import static java.util.Objects.requireNonNull;
+
 import io.camunda.zeebe.backup.common.BackupMetadata;
 import io.camunda.zeebe.backup.common.BackupMetadata.CheckpointEntry;
 import io.camunda.zeebe.dynamic.config.state.PartitionRestore;
@@ -17,7 +19,9 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.OptionalLong;
 import java.util.Queue;
+import java.util.TreeSet;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.function.ToLongFunction;
 import java.util.stream.Collectors;
@@ -68,9 +72,10 @@ public class RestorePointResolver {
   /** Finds all backup-type checkpoints that are required to cover the common checkpoint. */
   private static @NonNull RestorableBackups findRequiredBackups(
       @NonNull final List<RestorableCheckpoints> allRestorableCheckpoints,
-      final long commonCheckpoint,
+      @NonNull final CommonCheckpoint common,
       final @Nullable Instant from,
       final @Nullable Map<Integer, Long> exportedPositions) {
+    final var commonCheckpoint = common.checkpointId();
     LOG.atDebug().log(
         "Finding restorable backups with commonCheckpoint={}, partitionCount={}",
         commonCheckpoint,
@@ -106,9 +111,16 @@ public class RestorePointResolver {
       LOG.atDebug()
           .addKeyValue("partition", partitionId)
           .log("Found required backups: requiredBackups={}", backups.size());
+      // non-null: findCommonCheckpoint only returns a checkpoint every partition has
+      final var restorePoint = requireNonNull(common.entriesByPartition().get(partitionId));
+      verifyLogCanEndAtRestorePoint(partitionId, backups, restorePoint);
       partitions.put(
           partitionId,
-          PartitionRestore.ofBackups(backups.stream().map(CheckpointEntry::checkpointId).toList()));
+          new PartitionRestore(
+              backups.stream()
+                  .map(CheckpointEntry::checkpointId)
+                  .collect(Collectors.toCollection(TreeSet::new)),
+              OptionalLong.of(restorePoint.checkpointPosition())));
     }
     return new RestorableBackups(commonCheckpoint, partitions);
   }
@@ -193,6 +205,35 @@ public class RestorePointResolver {
   }
 
   /**
+   * Sanity check that the partition's restored log can end at the restore point. The log starts at
+   * the first backup's snapshot and continues past the second to last backup, so the restore point
+   * must be after that backup, or be the only backup itself, whose snapshot can be ahead of any
+   * earlier position.
+   */
+  private static void verifyLogCanEndAtRestorePoint(
+      final int partitionId,
+      @NonNull final List<CheckpointEntry> backups,
+      @NonNull final CheckpointEntry restorePoint) {
+    final var position = restorePoint.checkpointPosition();
+    final var lastBackupPosition = backups.getLast().checkpointPosition();
+    final var lowestPosition =
+        backups.size() == 1
+            ? lastBackupPosition
+            : backups.get(backups.size() - 2).checkpointPosition() + 1;
+    if (position < lowestPosition || position > lastBackupPosition) {
+      throw new IllegalStateException(
+          String.format(
+              "Cannot restore partition %d up to checkpoint %d at position %d: it must be in [%d, %d], where a log restored from backups %s can end",
+              partitionId,
+              restorePoint.checkpointId(),
+              position,
+              lowestPosition,
+              lastBackupPosition,
+              backups.stream().map(CheckpointEntry::checkpointId).toList()));
+    }
+  }
+
+  /**
    * Sanity check that the backups are actually contiguous. This should already be the case because
    * they are all from the same range, but it doesn't hurt to double-check.
    */
@@ -252,7 +293,7 @@ public class RestorePointResolver {
    * Finds the common checkpoint closest to the given timestamp for all partitions. If no timestamp
    * is provided, uses the latest common checkpoint.
    */
-  private static long findCommonCheckpoint(
+  private static @NonNull CommonCheckpoint findCommonCheckpoint(
       @NonNull final List<RestorableCheckpoints> allRestorableCheckpoints,
       @Nullable final Map<Integer, Long> exportedPositions,
       @Nullable final Instant to) {
@@ -275,6 +316,7 @@ public class RestorePointResolver {
     CheckpointEntry candidate;
     while ((candidate = candidates.poll()) != null) {
       LOG.atTrace().log("Evaluating common checkpoint candidate {}", candidate.checkpointId());
+      final var entriesByPartition = new HashMap<Integer, CheckpointEntry>();
       boolean missing = false;
       for (final var restorableCheckpoints : allRestorableCheckpoints) {
         final var checkpointInfo =
@@ -310,10 +352,11 @@ public class RestorePointResolver {
           missing = true;
           break;
         }
+        entriesByPartition.put(restorableCheckpoints.partitionId(), checkpointInfo);
       }
       if (!missing) {
         LOG.atDebug().log("Found common checkpoint {}", candidate.checkpointId());
-        return candidate.checkpointId();
+        return new CommonCheckpoint(candidate.checkpointId(), entriesByPartition);
       }
     }
     throw new IllegalStateException(
@@ -459,8 +502,16 @@ public class RestorePointResolver {
   }
 
   /**
-   * @param globalCheckpointId the checkpoint every partition is restored to
-   * @param partitions what each partition is restored from, by partition id
+   * @param checkpointId the checkpoint every partition is restored to, a backup or a marker
+   * @param entriesByPartition the checkpoint as each partition recorded it, by partition id
+   */
+  private record CommonCheckpoint(
+      long checkpointId, @NonNull Map<Integer, @NonNull CheckpointEntry> entriesByPartition) {}
+
+  /**
+   * @param globalCheckpointId the checkpoint every partition is restored to, a backup or a marker
+   * @param partitions what each partition is restored from, by partition id. Its restored log ends
+   *     at the global checkpoint as the partition recorded it.
    */
   public record RestorableBackups(
       long globalCheckpointId, @NonNull Map<Integer, @NonNull PartitionRestore> partitions) {}
