@@ -24,6 +24,7 @@ import io.camunda.zeebe.engine.state.immutable.IncidentState;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationJobUpdatePlan;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationProcessInstanceMigrationPlan;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationProcessInstanceModificationPlan;
+import io.camunda.zeebe.protocol.impl.record.value.history.HistoryDeletionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceMigrationRecord;
@@ -129,6 +130,34 @@ class BatchOperationExecutorStorageOrdinalTest {
 
     // then
     assertThat(writtenRecord(JobRecord.class).getStorageOrdinal()).isEqualTo(STORAGE_ORDINAL);
+  }
+
+  @Test
+  void shouldStampDeleteProcessInstanceCommand() {
+    // given
+    final var executor =
+        new DeleteProcessInstanceBatchOperationExecutor(commandWriter, authorizationConverter);
+
+    // when
+    executor.execute(ITEM_KEY, STORAGE_ORDINAL, batchOperation);
+
+    // then
+    assertThat(writtenRecord(HistoryDeletionRecord.class).getResourceStorageOrdinal())
+        .isEqualTo(STORAGE_ORDINAL);
+  }
+
+  @Test
+  void shouldStampDeleteDecisionInstanceCommand() {
+    // given
+    final var executor =
+        new DeleteDecisionInstanceBatchOperationExecutor(commandWriter, authorizationConverter);
+
+    // when
+    executor.execute(ITEM_KEY, STORAGE_ORDINAL, batchOperation);
+
+    // then
+    assertThat(writtenRecord(HistoryDeletionRecord.class).getResourceStorageOrdinal())
+        .isEqualTo(STORAGE_ORDINAL);
   }
 
   @Test
