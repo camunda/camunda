@@ -358,6 +358,14 @@ components:
           description: JSON object representing the variables to set in the element’s scope.
           additionalProperties: true
           type: object
+        variablesMetadata:
+          description: |
+            Metadata of the variables, keyed by variable name. Use it to set how a variable is
+            treated, for example to protect its value. A variable without an entry keeps the
+            metadata it has, or has none.
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/VariableMetadata'
         local:
           description: |-
             If set to `true`, the variables are merged strictly into the local scope (as specified
@@ -387,3 +395,5 @@ components:
           addedInVersionOverride: "8.6"
         - propertyName: "operationReference"
           addedInVersionOverride: "8.6"
+        - propertyName: "variablesMetadata"
+          addedInVersion: "8.11"
