@@ -16,7 +16,7 @@ import {endpoints} from '#/shared/http/endpoints';
 import {notificationsStore} from '#/shared/notifications/notifications.store';
 import {formatOperationType} from '#/operate/shared/utils/formatOperationType';
 import {handleOperationError} from '#/operate/shared/utils/handleOperationError';
-import {buildInstanceKeyCriterion, type DecisionInstancesFilter} from './decisionsFilter';
+import {applyInstanceSelection, type DecisionInstancesFilter} from './decisionsFilter';
 
 type Props = {
 	selectedCount: number;
@@ -40,8 +40,7 @@ const Toolbar: React.FC<Props> = ({selectedCount, includedIds, excludedIds, filt
 		setShowDeleteModal(false);
 		setIsDeleting(true);
 
-		const criterion = buildInstanceKeyCriterion(includedIds, excludedIds);
-		const requestFilter = criterion ? {...filter, decisionEvaluationInstanceKey: criterion} : filter;
+		const requestFilter = applyInstanceSelection(filter, includedIds, excludedIds);
 
 		const {response, error} = await request(
 			endpoints.createDecisionInstancesDeletionBatchOperation({filter: requestFilter}),

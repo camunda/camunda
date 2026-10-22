@@ -89,5 +89,41 @@ function mapDecisionInstancesSort(sort: string | undefined): ResolvedDecisionIns
 	return result.success ? [result.data] : DEFAULT_SORT;
 }
 
-export {mapDecisionInstancesFilter, mapDecisionInstancesSort, buildInstanceKeyCriterion};
+const NO_MATCH_KEY = '-1';
+
+type KeyCriterion = {$eq?: string; $in?: string[]; $notIn?: string[]};
+
+function mergeKeyCriteria(base: KeyCriterion | undefined, selection: KeyCriterion): KeyCriterion {
+	const merged = {...base, ...selection};
+	if (base?.$in && selection.$in) {
+		const baseIds = new Set(base.$in);
+		const intersection = selection.$in.filter((id) => baseIds.has(id));
+		// The backend ignores an empty $in, which would drop the restriction and match every instance.
+		merged.$in = intersection.length > 0 ? intersection : [NO_MATCH_KEY];
+	}
+	if (base?.$notIn && selection.$notIn) {
+		merged.$notIn = [...new Set([...base.$notIn, ...selection.$notIn])];
+	}
+	return merged;
+}
+
+/**
+ * Narrows a filter to the selected instances. The selection's $in/$notIn is combined with an
+ * active instance-key filter, so excluding rows can't widen the scope beyond the filter.
+ */
+function applyInstanceSelection(
+	filter: DecisionInstancesFilter,
+	includedIds: string[],
+	excludedIds: string[],
+): DecisionInstancesFilter {
+	const criterion = buildInstanceKeyCriterion(includedIds, excludedIds);
+	if (!criterion) {
+		return filter;
+	}
+	const baseKey = filter.decisionEvaluationInstanceKey;
+	const baseCriterion = typeof baseKey === 'string' ? {$eq: baseKey} : baseKey;
+	return {...filter, decisionEvaluationInstanceKey: mergeKeyCriteria(baseCriterion, criterion)};
+}
+
+export {mapDecisionInstancesFilter, mapDecisionInstancesSort, applyInstanceSelection};
 export type {DecisionsSearch, DecisionInstancesFilter};
