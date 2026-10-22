@@ -14,7 +14,6 @@ import java.time.Duration;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Objects;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
@@ -33,6 +32,16 @@ public abstract class Actor implements AutoCloseable, AsyncClosable, Concurrency
   public static final String ACTOR_PROP_PHYSICAL_TENANT = "physicalTenant";
 
   private static final int MAX_CLOSE_TIMEOUT = 300;
+
+  /** {@link Class#getSimpleName()} is comparatively expensive and actors are created frequently. */
+  private static final ClassValue<String> SIMPLE_CLASS_NAMES =
+      new ClassValue<>() {
+        @Override
+        protected String computeValue(final Class<?> type) {
+          return type.getSimpleName();
+        }
+      };
+
   protected final ActorControl actor = new ActorControl(this);
   private final Map<String, String> context;
   private final String name;
@@ -52,7 +61,7 @@ public abstract class Actor implements AutoCloseable, AsyncClosable, Concurrency
       @Nullable final String name,
       @Nullable final PartitionId partitionId,
       @Nullable final Map<String, String> additionalContext) {
-    final var actorName = Objects.requireNonNullElse(name, getClass().getSimpleName());
+    final var actorName = name != null ? name : SIMPLE_CLASS_NAMES.get(getClass());
     this.name = partitionId != null ? buildActorName(actorName, partitionId.number()) : actorName;
     context = buildContext(this.name, partitionId, additionalContext);
   }
@@ -87,6 +96,10 @@ public abstract class Actor implements AutoCloseable, AsyncClosable, Concurrency
       final String name,
       final PartitionId partitionId,
       final Map<String, String> additionalContext) {
+    if (partitionId == null && (additionalContext == null || additionalContext.isEmpty())) {
+      return Map.of(ACTOR_PROP_NAME, name);
+    }
+
     final var context =
         new HashMap<String, String>(
             3); // most actors have a name and associated partition but no additional context
