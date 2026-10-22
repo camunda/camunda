@@ -12148,7 +12148,6 @@
                 {
                   "name": "metadata",
                   "type": "object",
-                  "nullable": true,
                   "children": {
                     "required": [
                       {
@@ -12271,7 +12270,6 @@
                 {
                   "name": "metadata",
                   "type": "object",
-                  "nullable": true,
                   "children": {
                     "required": [
                       {
@@ -12364,7 +12362,6 @@
                 {
                   "name": "metadata",
                   "type": "object",
-                  "nullable": true,
                   "children": {
                     "required": [
                       {
@@ -12448,7 +12445,6 @@
           {
             "name": "metadata",
             "type": "object",
-            "nullable": true,
             "children": {
               "required": [
                 {

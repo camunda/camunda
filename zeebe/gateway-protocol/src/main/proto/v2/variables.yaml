@@ -279,8 +279,7 @@ components:
           allOf:
             - $ref: 'keys.yaml#/components/schemas/ProcessInstanceKey'
         metadata:
-          description: Metadata of this variable. `null` when the variable has no metadata.
-          nullable: true
+          description: Metadata of this variable.
           allOf:
             - $ref: '#/components/schemas/VariableMetadata'
       x-properties-added-in-version:
