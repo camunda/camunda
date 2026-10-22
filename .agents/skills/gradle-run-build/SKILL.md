@@ -19,7 +19,7 @@ update both together. Run everything from the repo root.
 - `check` depends on `it`, so `check` runs unit and integration tests.
 - Never use `-Ptest.max.retries` to hide failures.
 - Do not use `-Pquickly`: it disables tests. To run tests, run `test` (or `it`). For the
-  distribution archive, run the commands in "Common commands".
+  distribution archive or the container image, run the commands in "Common commands".
 
 ## Single test: use the exact class name
 
@@ -56,11 +56,13 @@ IT classes: same filter on the `it` task.
 ./gradlew buildDistball                                # dist tar incl. frontend build
 ./gradlew buildDistballZip                             # dist zip incl. frontend build
 ./gradlew -Pskip.fe.build=true buildDistball           # backend-only dist, skips frontend
+./gradlew buildDockerImage                             # image; -Pdocker.image=name:tag
 ./gradlew -p gradle/build-logic test                   # build-logic tests (not run by CI)
 ```
 
 ## Properties
 
+- `-Pcontainer.cli=docker|podman`: CLI for `buildDockerImage` (default: docker, else podman).
 - `-PuseMavenLocal`: add Maven Local to resolution. Only when needed.
 - `-Ptest.max.forks=N`: test JVM forks. Keep the default `1`: forks of one task share a port
   range and can hit bind failures. Update this once per-worker port isolation is merged.

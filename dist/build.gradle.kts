@@ -1,5 +1,6 @@
 import buildlogic.DistributionDependencyReportExtension
 import buildlogic.OpenApiDefaults
+import buildlogic.registerBuildDockerImage
 import buildlogic.reproducibleArchive
 import buildlogic.requiredVersion
 import buildlogic.filterMavenResources
@@ -266,9 +267,13 @@ tasks
     )
   }
 
-tasks.named<Tar>("distTar") { reproducibleArchive() }
+// distTar is uncompressed: the container image build extracts it right away and the jars are
+// already compressed, so gzip only adds build time.
+val distTar = tasks.named<Tar>("distTar") { reproducibleArchive() }
 
 tasks.named<Zip>("distZip") { reproducibleArchive() }
+
+registerBuildDockerImage(distTar.flatMap { it.archiveFile })
 
 dependencies {
   implementation(project(":camunda-cluster"))
