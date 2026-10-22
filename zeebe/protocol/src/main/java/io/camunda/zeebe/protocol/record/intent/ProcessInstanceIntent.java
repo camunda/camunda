@@ -82,15 +82,15 @@ public enum ProcessInstanceIntent implements ProcessInstanceRelatedIntent {
   RESUMING((short) 21),
 
   /**
-   * Represents the internal command that finalizes the resume lifecycle once every parked job has
-   * been un-parked. {@link #RESUME_JOBS} writes this command once none are left; a dedicated
-   * processor reacts by writing {@link #RESUMED}.
+   * Represents the internal command that finalizes the resume lifecycle once every parked job and
+   * suspended user task has been resumed. {@link #RESUME_USER_TASKS} writes this command once none
+   * are left; a dedicated processor reacts by writing {@link #RESUMED}.
    */
   COMPLETE_RESUMING((short) 22, false),
 
   /**
    * Represents the internal command that un-parks suspended jobs of the instance, appending itself
-   * again until none are left, then handing off to {@link #COMPLETE_RESUMING}. The drain processor
+   * again until none are left, then handing off to {@link #RESUME_USER_TASKS}. The drain processor
    * writes the first cycle when the buffered-command drain is complete.
    */
   RESUME_JOBS((short) 23, false),
@@ -99,10 +99,17 @@ public enum ProcessInstanceIntent implements ProcessInstanceRelatedIntent {
    * Marks the instance as suspending while its subscriptions are closed and jobs are suspended,
    * before {@link #SUSPENDED} is written in the same processing batch.
    */
-  SUSPENDING((short) 24);
+  SUSPENDING((short) 24),
+
+  /**
+   * Represents the internal command that resumes suspended user tasks of the instance, appending
+   * itself again until none are left, then handing off to {@link #COMPLETE_RESUMING}. {@link
+   * #RESUME_JOBS} writes the first cycle once no suspended job is left.
+   */
+  RESUME_USER_TASKS((short) 25, false);
 
   private static final Set<ProcessInstanceIntent> PROCESS_INSTANCE_COMMANDS =
-      EnumSet.of(CANCEL, SUSPEND, RESUME, COMPLETE_RESUMING, RESUME_JOBS);
+      EnumSet.of(CANCEL, SUSPEND, RESUME, COMPLETE_RESUMING, RESUME_JOBS, RESUME_USER_TASKS);
   private static final Set<ProcessInstanceIntent> BPMN_ELEMENT_COMMANDS =
       EnumSet.of(
           ACTIVATE_ELEMENT,
@@ -179,6 +186,8 @@ public enum ProcessInstanceIntent implements ProcessInstanceRelatedIntent {
         return RESUME_JOBS;
       case 24:
         return SUSPENDING;
+      case 25:
+        return RESUME_USER_TASKS;
       default:
         return Intent.UNKNOWN;
     }
