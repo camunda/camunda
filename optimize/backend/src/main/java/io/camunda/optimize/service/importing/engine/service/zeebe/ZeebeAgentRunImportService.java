@@ -39,6 +39,7 @@ public class ZeebeAgentRunImportService implements ImportService<ZeebeAgentInsta
   private final DatabaseImportJobExecutor databaseImportJobExecutor;
   private final AgentRunWriter agentRunWriter;
   private final AgentDefinitionWriter agentDefinitionWriter;
+  private final AgentRunEnrichmentService enrichmentService;
   private final ConfigurationService configurationService;
   private final int partitionId;
   private final DatabaseClient databaseClient;
@@ -47,12 +48,14 @@ public class ZeebeAgentRunImportService implements ImportService<ZeebeAgentInsta
       final ConfigurationService configurationService,
       final AgentRunWriter agentRunWriter,
       final AgentDefinitionWriter agentDefinitionWriter,
+      final AgentRunEnrichmentService enrichmentService,
       final int partitionId,
       final DatabaseClient databaseClient) {
     databaseImportJobExecutor =
         new DatabaseImportJobExecutor(getClass().getSimpleName(), configurationService);
     this.agentRunWriter = agentRunWriter;
     this.agentDefinitionWriter = agentDefinitionWriter;
+    this.enrichmentService = enrichmentService;
     this.configurationService = configurationService;
     this.partitionId = partitionId;
     this.databaseClient = databaseClient;
@@ -68,6 +71,7 @@ public class ZeebeAgentRunImportService implements ImportService<ZeebeAgentInsta
           new AgentRunDatabaseImportJob(
               agentRunWriter,
               agentDefinitionWriter,
+              enrichmentService,
               configurationService,
               importCompleteCallback,
               databaseClient,

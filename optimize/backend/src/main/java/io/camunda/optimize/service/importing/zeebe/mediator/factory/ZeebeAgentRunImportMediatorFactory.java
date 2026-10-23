@@ -14,6 +14,7 @@ import io.camunda.optimize.service.db.writer.AgentDefinitionWriter;
 import io.camunda.optimize.service.db.writer.AgentRunWriter;
 import io.camunda.optimize.service.importing.ImportIndexHandlerRegistry;
 import io.camunda.optimize.service.importing.ImportMediator;
+import io.camunda.optimize.service.importing.engine.service.zeebe.AgentRunEnrichmentService;
 import io.camunda.optimize.service.importing.engine.service.zeebe.ZeebeAgentRunImportService;
 import io.camunda.optimize.service.importing.zeebe.db.ZeebeAgentInstanceFetcher;
 import io.camunda.optimize.service.importing.zeebe.mediator.ZeebeAgentRunImportMediator;
@@ -29,6 +30,7 @@ public class ZeebeAgentRunImportMediatorFactory extends AbstractZeebeImportMedia
 
   private final AgentRunWriter agentRunWriter;
   private final AgentDefinitionWriter agentDefinitionWriter;
+  private final AgentRunEnrichmentService enrichmentService;
 
   public ZeebeAgentRunImportMediatorFactory(
       final BeanFactory beanFactory,
@@ -36,6 +38,7 @@ public class ZeebeAgentRunImportMediatorFactory extends AbstractZeebeImportMedia
       final ConfigurationService configurationService,
       final AgentRunWriter agentRunWriter,
       final AgentDefinitionWriter agentDefinitionWriter,
+      final AgentRunEnrichmentService enrichmentService,
       final ObjectMapper objectMapper,
       final DatabaseClient databaseClient) {
     super(
@@ -46,6 +49,7 @@ public class ZeebeAgentRunImportMediatorFactory extends AbstractZeebeImportMedia
         databaseClient);
     this.agentRunWriter = agentRunWriter;
     this.agentDefinitionWriter = agentDefinitionWriter;
+    this.enrichmentService = enrichmentService;
   }
 
   @Override
@@ -64,6 +68,7 @@ public class ZeebeAgentRunImportMediatorFactory extends AbstractZeebeImportMedia
                 configurationService,
                 agentRunWriter,
                 agentDefinitionWriter,
+                enrichmentService,
                 zeebeDataSourceDto.getPartitionId(),
                 databaseClient),
             configurationService,

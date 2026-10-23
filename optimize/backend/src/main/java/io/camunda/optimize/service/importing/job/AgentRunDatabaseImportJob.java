@@ -11,6 +11,7 @@ import io.camunda.optimize.service.db.DatabaseClient;
 import io.camunda.optimize.service.db.writer.AgentDefinitionWriter;
 import io.camunda.optimize.service.db.writer.AgentRunWriter;
 import io.camunda.optimize.service.importing.DatabaseImportJob;
+import io.camunda.optimize.service.importing.engine.service.zeebe.AgentRunEnrichmentService;
 import io.camunda.optimize.service.importing.engine.service.zeebe.AgentRunRecordFolder.FoldResult;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -20,11 +21,13 @@ public class AgentRunDatabaseImportJob extends DatabaseImportJob<FoldResult> {
 
   private final AgentRunWriter agentRunWriter;
   private final AgentDefinitionWriter agentDefinitionWriter;
+  private final AgentRunEnrichmentService enrichmentService;
   private final ConfigurationService configurationService;
 
   public AgentRunDatabaseImportJob(
       final AgentRunWriter agentRunWriter,
       final AgentDefinitionWriter agentDefinitionWriter,
+      final AgentRunEnrichmentService enrichmentService,
       final ConfigurationService configurationService,
       final Runnable importCompleteCallback,
       final DatabaseClient databaseClient,
@@ -32,6 +35,7 @@ public class AgentRunDatabaseImportJob extends DatabaseImportJob<FoldResult> {
     super(importCompleteCallback, databaseClient, ValueType.AGENT_INSTANCE.name(), partitionId);
     this.agentRunWriter = agentRunWriter;
     this.agentDefinitionWriter = agentDefinitionWriter;
+    this.enrichmentService = enrichmentService;
     this.configurationService = configurationService;
   }
 
@@ -46,5 +50,7 @@ public class AgentRunDatabaseImportJob extends DatabaseImportJob<FoldResult> {
         agentDefinitionWriter.generateAgentRunRollupImports(
             foldedRuns.stream().map(FoldResult::run).toList()),
         configurationService.getSkipDataAfterNestedDocLimitReached());
+    enrichmentService.enrichRuns(
+        foldedRuns.stream().map(folded -> folded.run().getAgentInstanceId()).toList());
   }
 }

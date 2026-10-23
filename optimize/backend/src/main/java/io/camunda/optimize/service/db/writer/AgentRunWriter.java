@@ -18,6 +18,7 @@ import io.camunda.optimize.dto.optimize.query.agent.AgentRunDto;
 import io.camunda.optimize.service.importing.engine.service.zeebe.AgentRunRecordFolder.FoldResult;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.springframework.stereotype.Component;
 
 /**
@@ -158,6 +159,17 @@ public class AgentRunWriter {
       doc.hitLimit = !hit.isEmpty();
       """;
 
+  private static final Set<String> ENRICHMENT_FIELDS =
+      Set.of(
+          AgentRunDto.Fields.processInstanceState,
+          AgentRunDto.Fields.processInstanceEndDate,
+          AgentRunDto.Fields.hasIncident,
+          AgentRunDto.Fields.incidentCount,
+          AgentRunDto.Fields.incidentFlowNodeIds,
+          AgentRunDto.Fields.processUserTaskCount,
+          AgentRunDto.Fields.toolCallsByTool,
+          AgentRunDto.Fields.enrichedAt);
+
   private final ObjectMapper objectMapper;
 
   public AgentRunWriter(final ObjectMapper objectMapper) {
@@ -190,6 +202,25 @@ public class AgentRunWriter {
                                 "dateFormatPattern",
                                 OPTIMIZE_DATE_FORMAT),
                             objectMapper))
+                    .build())
+        .toList();
+  }
+
+  /** Overwrites only the enrichment fields of existing runs. */
+  public List<ImportRequestDto> generateEnrichmentImports(final List<AgentRunDto> enrichedRuns) {
+    return enrichedRuns.stream()
+        .map(
+            enriched ->
+                ImportRequestDto.builder()
+                    .importName(IMPORT_NAME)
+                    .type(RequestType.UPDATE)
+                    .id(enriched.getAgentInstanceId())
+                    .indexName(AGENT_INSTANCE_INDEX_NAME)
+                    .source(enriched)
+                    .retryNumberOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT)
+                    .scriptData(
+                        DatabaseWriterUtil.createScriptData(
+                            ENRICHMENT_FIELDS, enriched, objectMapper))
                     .build())
         .toList();
   }

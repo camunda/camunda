@@ -20,6 +20,7 @@ public class ProcessInstanceDatabaseImportJob extends DatabaseImportJob<ProcessI
   private final ProcessInstanceWriter zeebeProcessInstanceWriter;
   private final ConfigurationService configurationService;
   private final String sourceExportIndex;
+  private final String recordType;
 
   public ProcessInstanceDatabaseImportJob(
       final ProcessInstanceWriter zeebeProcessInstanceWriter,
@@ -33,6 +34,7 @@ public class ProcessInstanceDatabaseImportJob extends DatabaseImportJob<ProcessI
     this.zeebeProcessInstanceWriter = zeebeProcessInstanceWriter;
     this.configurationService = configurationService;
     this.sourceExportIndex = sourceExportIndex;
+    this.recordType = recordType;
   }
 
   @Override
@@ -44,5 +46,6 @@ public class ProcessInstanceDatabaseImportJob extends DatabaseImportJob<ProcessI
         "Zeebe process instances",
         importRequests,
         configurationService.getSkipDataAfterNestedDocLimitReached());
+    zeebeProcessInstanceWriter.notifyImported(recordType, processInstances);
   }
 }
