@@ -27,13 +27,89 @@ The broker already has request flow control. The spike modelled it to find out i
 
 The request limiter keeps the backlog of each partition small. It does not divide the capacity between the tenants. The results below show this. Without the write rate limit, a tenant that sends too much gets more than its share. The weights then have no effect.
 
+## Symbols and formulas
+
+All rates are in records each second. The other sections refer to the formulas by their number, for example (F5).
+
+### Symbols
+
+| Symbol | Meaning | Default |
+| --- | --- | --- |
+| `B` | Count of brokers | 3 |
+| `C` | CPU limit of one broker, in CPUs | 2 |
+| `P_t` | Count of partitions of tenant `t` | 3 |
+| `RF_t` | Replication factor of tenant `t` | 3 |
+| `w_t` | Weight of tenant `t` | 1 |
+| `R` | Records that one CPU processes each second on a leader. The controller uses this assumed value. | 10 000 |
+| `R_true` | The real value of `R` on the hardware. The controller does not know it. | Set by each scenario |
+| `L`, `F` | Relative CPU cost of a record on a leader (`LEADER`) and on a follower (`FOLLOWER`) | 1, 0.6 |
+| `λ` | Share of the replicas on a broker that the broker leads | Calculated |
+| `c` | Ceiling of a broker: the limit of each partition for a tenant with `w_t = w̄` | Calculated |
+| `θ` | Throttled ratio: share of the CFS periods in a window in which the CPU was throttled | Measured |
+| `W` | Length of a window | 10 s |
+| `d`, `s` | Decrease factor, increase step | 0.9, 0.05 |
+| `θ_max`, `n` | Throttled ratio threshold, count of throttled windows | 0.1, 2 |
+
+### Topology
+
+```
+(F1)  N    = Σ_t (P_t × RF_t) / B                       replicas on one broker
+(F2)  w̄    = Σ_t (P_t × RF_t × w_t) / Σ_t (P_t × RF_t)  mean weight over all replicas
+(F3)  λ_up   = Σ_t P_t / (B × N)                        leader share, all brokers run
+(F4)  λ_down = min(1, Σ_t P_t / ((B − 1) × N))          leader share, one broker is down
+(F5)  cost(λ) = λ × L + (1 − λ) × F                     CPU cost of one replica, relative to a leader
+```
+
+### Bounds and limit
+
+```
+(F6)  ceiling(λ) = R × min(1, C / (N × cost(λ)))   ceiling at which the CPU of a broker is just sufficient, a maximum of R
+(F7)  floor = ceiling(1)                           the broker leads all its replicas
+(F8)  start = ceiling(λ_down)                      v1: the maximum of c is also start
+(F9)  limit_t = c × w_t / w̄                        write rate limit of one partition of tenant t
+(F10) rate_t ≤ P_t × limit_t                       write rate limit of tenant t
+```
+
+### Controller
+
+```
+(F11) θ = nr_throttled / nr_periods                over one window W
+(F12) c ← max(floor, d × c)                        after n windows in sequence with θ > θ_max
+(F13) c ← min(start, c + s × start)                on a rejection at the limit, a maximum of once in each window, only when θ ≤ θ_max
+(F14) c ← clamp(c × start_new / start_old)         when the topology changes
+```
+
+### Capacity and fair share
+
+```
+(F15) c_true   = R_true × C / (N × cost(λ_up))     ceiling that the hardware sustains, all brokers run
+(F16) K        = B × C × R_true / (L + (RF − 1) × F)
+                                                   records each second for the cluster, when all tenants have the same RF
+(F17) fair_t   = min(demand_t, x × w_t)            x is the value so that Σ_t fair_t = K
+(F18) v1_t     = min(fair_t, P_t × start × w_t / w̄)
+                                                   expected value in v1
+```
+
+(F17) is the weighted max-min fair share. A tenant that sends less than its share keeps its rate. The other tenants divide the remaining capacity in proportion to their weights.
+
+(F15) and (F16) give the same capacity when all `T` tenants have the same partitions, replication factor and weight. Then `K / T = P_t × c_true`.
+
+### Limits of the controller
+
+```
+(F19) start / c_true = (R / R_true) × cost(λ_up) / cost(λ_down)
+(F20) c_true ≥ floor  ⇔  R / R_true ≤ cost(1) / cost(λ_up)
+```
+
+(F19) gives the headroom of the start value. With `R = R_true`, the start value is less than `c_true` because `cost(λ_down) > cost(λ_up)`. This CPU stays free for a failover. (F20) gives the largest error of `R` that the controller can correct. Below the floor, the controller cannot decrease the ceiling.
+
 ## Code
 
 | Class | Location | Function |
 | --- | --- | --- |
 | `AutomaticWriteRateLimitCfg` | `src/main/.../flowcontrol/automatic` | The parameters and their start values. |
-| `WriteRateLimitTopology` | `src/main/.../flowcontrol/automatic` | The tenants, partitions, replication factors and weights of the cluster. |
-| `WriteRateLimitBounds` | `src/main/.../flowcontrol/automatic` | The floor, the start value and the limit of a tenant (`ceiling × w_t / w̄`). |
+| `WriteRateLimitTopology` | `src/main/.../flowcontrol/automatic` | The tenants, partitions, replication factors and weights of the cluster (F1 to F4). |
+| `WriteRateLimitBounds` | `src/main/.../flowcontrol/automatic` | The floor (F7), the start value (F8) and the limit of a tenant (F9). |
 | `AutomaticWriteRateController` | `src/main/.../flowcontrol/automatic` | The AIMD controller of one broker. |
 | `WriteRateLimitSimulation` | `src/test/.../flowcontrol/automatic` | A simulation of a cluster in time steps of 100 ms. |
 | `AutomaticWriteRateLimitSimulationTest` | `src/test/.../flowcontrol/automatic` | The scenarios. Each test prints a table with one row for each window. |
@@ -50,21 +126,38 @@ Each broker has one controller and one ceiling. The ceiling stays between the fl
 
 | Rule | Condition | Action |
 | --- | --- | --- |
-| CPU guard | More than 10% of the CFS periods are throttled, for 2 windows in sequence | Multiply the ceiling by 0.9 |
+| CPU guard | `θ > θ_max` (10%) for `n` (2) windows in sequence | Decrease the ceiling (F12) |
 | No data | All leader partitions with writes have an active exporter throttle | Keep the ceiling, block increases |
-| Increase | The window is not throttled, and a partition rejects a write at its limit | Add 5% of the start value, a maximum of one step in each window |
+| Increase | `θ ≤ θ_max`, and a partition rejects a write at its limit | Increase the ceiling (F13), a maximum of one step in each window |
 
 CPU throttling is the only signal that decreases the ceiling. Finding 2 gives the signals that the spike tested and the reasons to remove them.
 
 ## Model of the simulation
 
-- Each broker has a CPU limit. Each replica uses a maximum of one core.
-- One record costs `LEADER / R_true × cost` CPU seconds on a leader and `FOLLOWER / R_true × cost` on a follower. `R_true` is the real capacity of the hardware. The controller does not know it.
-- When the CPU demand of a broker is more than its limit, each replica gets a share in proportion to its demand. The time step then counts as throttled.
+- Each broker has a CPU limit `C`. Each replica uses a maximum of one core.
+- The simulation steps in ticks of `Δt` = 100 ms.
+- One record of tenant `t` costs CPU seconds on a replica:
+
+  ```
+  (S1) cpu_record = role × k_t / R_true       role = L on a leader, F on a follower. k_t = relative cost of the records of tenant t (default 1).
+  (S2) demand_r   = min(pending_r × cpu_record, Δt)
+  (S3) D          = Σ_r demand_r               CPU demand of the broker in one tick
+  (S4) share      = min(1, C × Δt / D)         each replica gets share × demand_r
+  ```
+
+  A tick with `D > C × Δt` counts as throttled. `θ` (F11) is the count of throttled ticks divided by the count of ticks in the window.
 - The partitions of a tenant get their replicas and priorities as in `RoundRobinPartitionDistributor` and `PartitionPriorityAssigner`. The leader is the replica with the highest priority on a broker that runs.
-- Each leader has a request limiter with the default configuration of the broker: `StabilizingAIMDLimit` in a `WindowedLimit`. The expected RTT is 200 ms, the start limit is 100, and the backoff ratio is 0.9.
-- The request limiter applies before the write rate limit, as in `FlowControl`. The latency of a request is 5 ms plus the backlog divided by the processing rate.
-- The leader accepts `min(admitted, limit × step)` records. When the exporter backlog is more than 10 000 records, the exporter throttle sets the limit to the export rate. The partition is then excluded.
+- Each leader has a request limiter with the default configuration of the broker: `StabilizingAIMDLimit` in a `WindowedLimit`. The request limiter applies before the write rate limit, as in `FlowControl`.
+
+  ```
+  (S5) latency    = 5 ms + backlog / processing rate
+  (S6) limit_req  ← 0.9 × limit_req   when latency > 200 ms (expected RTT)
+       limit_req  ← limit_req + 1     when latency ≤ 200 ms and in-flight ≥ limit_req / 2
+  (S7) admitted   = min(offered, max(0, limit_req − backlog) × Δt / 5 ms)
+  ```
+
+  The start value of `limit_req` is 100. The limit changes approximately once each second.
+- The leader accepts `min(admitted, limit_t × Δt)` records (F9). When the exporter backlog is more than 10 000 records, the exporter throttle sets the limit to the export rate. The partition is then excluded.
 - A broker that stops loses its queues. After a restart, the broker starts at the start value.
 
 ### Limits of the model
@@ -79,71 +172,63 @@ Setup, if not stated otherwise: 3 brokers with 2 CPUs, 3 tenants with 3 partitio
 
 ### Calculations
 
-The inputs of the default setup:
-
-| Input | Value |
-| --- | --- |
-| Brokers `B` | 3 |
-| CPUs for each broker | 2 |
-| Tenants | 3, each with 3 partitions and replication factor 3 |
-| `R` (assumed by the controller) | 10 000 records each second for one CPU on a leader |
-| `LEADER`, `FOLLOWER` | 1, 0.6 |
+The values below use the defaults of the symbols table.
 
 `R` is a rate for one CPU on a leader. It is not a rate for one tenant.
 
-**Step 1: replicas on one broker.** The cluster has `3 tenants × 3 partitions × 3 replicas = 27` replicas. Each broker has `27 / 3 = 9` replicas.
-
-**Step 2: cost of one replica.** `λ` is the share of the replicas that the broker leads.
+**Step 1: topology.**
 
 ```
-cost(λ) = λ × LEADER + (1 − λ) × FOLLOWER
-cost(1)   = 1        (the broker leads all its replicas)
-cost(1/2) = 0.8      (one broker is down)
-cost(1/3) = 0.733    (all brokers run)
+(F1)  N      = 3 tenants × 3 partitions × 3 replicas / 3 brokers = 9
+(F2)  w̄      = 1                          all weights are 1
+(F3)  λ_up   = 9 / (3 × 9)  = 1/3
+(F4)  λ_down = 9 / (2 × 9)  = 1/2
+(F5)  cost(1)   = 1
+      cost(1/2) = 0.5 × 1 + 0.5 × 0.6     = 0.8
+      cost(1/3) = 1/3 × 1 + 2/3 × 0.6     = 0.733
 ```
 
-With one broker down, the 9 leaders go to 2 brokers. `λ = ΣP × B / ((B − 1) × ΣP × RF) = 9 × 3 / (2 × 27) = 1/2`.
-
-**Step 3: ceiling for each partition.** The broker divides its CPU over its replicas.
+**Step 2: bounds of the ceiling.** For each tenant, multiply by `P_t = 3`.
 
 ```
-ceiling(λ) = R × CPUs / (replicas × cost(λ))
-floor      = 10 000 × 2 / (9 × 1)     = 2 222   → 6 667 for each tenant
-start      = 10 000 × 2 / (9 × 0.8)   = 2 778   → 8 333 for each tenant
+(F7)  floor = 10 000 × 2 / (9 × 1)        = 2 222   → 6 667 for each tenant
+(F8)  start = 10 000 × 2 / (9 × 0.8)      = 2 778   → 8 333 for each tenant
 ```
 
-**Step 4: capacity.** The capacity uses `R_true` and `λ = 1/3`, because all brokers run.
+**Step 3: capacity.**
 
 ```
-capacity(R_true) = R_true × 2 / (9 × 0.733)
-R_true = 10 000  → 3 030 for each partition → 9 091 for each tenant
-R_true =  8 000  → 2 424 for each partition → 7 273 for each tenant
-R_true =  6 000  → 1 818 for each partition → 5 455 for each tenant
+(F15) c_true = R_true × 2 / (9 × 0.733)
+      R_true = 10 000  → 3 030 for each partition → 9 091 for each tenant
+      R_true =  8 000  → 2 424 for each partition → 7 273 for each tenant
+      R_true =  6 000  → 1 818 for each partition → 5 455 for each tenant
+
+(F16) K = 3 × 2 × R_true / (1 + 2 × 0.6) = 6 × R_true / 2.2
+      R_true = 10 000  → 27 273 for the cluster
+      R_true =  8 000  → 21 818 for the cluster
 ```
 
-The same value for the full cluster: one record costs `(1 + 2 × 0.6) / R_true = 2.2 / R_true` CPU seconds, on the leader and the two followers. The cluster has 6 CPUs. With `R_true` = 10 000, the cluster does `6 × 10 000 / 2.2 = 27 273` records each second, so 9 091 for each tenant. With `R_true` = 8 000, the cluster does 21 818 records each second, so 7 273 for each tenant.
-
-**Step 5: fair share of each scenario.** A tenant that sends less than its share keeps its rate. The other tenants divide the remaining capacity by weight.
+**Step 4: fair share of each scenario (F17).**
 
 | Scenario | Calculation | Fair share |
 | --- | --- | --- |
-| All tenants flood, `R_true` = `R` | `27 273 / 3` | 9 091 each |
+| All tenants flood, `R_true` = `R` | `x = 27 273 / 3` | 9 091 each |
 | Tenant a floods, b and c send 7 500 | b and c send less than 9 091 and keep 7 500. Tenant a gets `27 273 − 2 × 7 500`. | a 12 273, b and c 7 500 |
-| Weights 2:1:1, all tenants flood, `R_true` = 8 000 | `21 818 × 2/4` and `21 818 × 1/4` | 10 909, 5 454, 5 454 |
-| Tenant a floods, b and c send 7 500, `R_true` = 8 000 | `21 818 / 3 = 7 273`. Tenants b and c send more than 7 273. | 7 273 each |
-| All tenants flood, `R_true` = 8 000 | `21 818 / 3` | 7 273 each |
+| Weights 2:1:1, all tenants flood, `R_true` = 8 000 | `x = 21 818 / (2 + 1 + 1)`. Tenant a gets `2x`, b and c get `x`. | 10 909, 5 454, 5 454 |
+| Tenant a floods, b and c send 7 500, `R_true` = 8 000 | `x = 21 818 / 3 = 7 273`. Tenants b and c send more than 7 273. | 7 273 each |
+| All tenants flood, `R_true` = 8 000 | `x = 21 818 / 3` | 7 273 each |
 
-**Step 6: expected value in v1.** In v1, the limit of a tenant is a maximum of `start × w_t / w̄` for each partition. The expected value is the lower of this limit and the fair share.
+**Step 5: expected value in v1 (F18).**
 
 - With `R_true` = `R`, the limit is `3 × 2 778 = 8 333` for each tenant. This is less than the fair share of 9 091 and 12 273.
-- With weights 2:1:1, `w̄ = 4/3`. The limit of tenant a is `3 × 2 778 × 2 / (4/3) = 12 500`. The limit of tenants b and c is 6 250. These limits are more than the fair share with `R_true` = 8 000. The controller decreases the ceiling, so the fair share applies.
+- With weights 2:1:1, `w̄ = (9 × 2 + 9 × 1 + 9 × 1) / 27 = 4/3` (F2). The limit of tenant a is `3 × 2 778 × 2 / (4/3) = 12 500`. The limit of tenants b and c is `3 × 2 778 × 1 / (4/3) = 6 250`. These limits are more than the fair share with `R_true` = 8 000. The controller decreases the ceiling, so the fair share applies.
 - With `R_true` = 8 000, the capacity of 7 273 is less than 8 333. The controller decreases the ceiling, so the fair share applies.
 
 ### Start value
 
 The start value is less than the capacity of 9 091 for each tenant for two reasons:
 
-1. The start value keeps CPU free for a failover. It uses `λ = 1/2`, not `λ = 1/3` (step 2).
+1. The start value keeps CPU free for a failover (F19). `start / c_true = 0.733 / 0.8 = 0.917` when `R = R_true`.
 2. In v1, the ceiling cannot go above the start value (Finding 4). A tenant cannot use the share that another tenant does not use.
 
 ### Fairness
@@ -174,12 +259,16 @@ Other results:
 
 ## Known gaps
 
-1. **Expensive records.** The limit counts records, not CPU. A tenant with expensive records causes CPU throttling. The CPU guard then decreases the ceiling of all tenants. The solution direction gives this gap in section 5. The spike keeps records each second as the unit.
-2. **Bottleneck that is not CPU.** The controller sees only CPU throttling. When the disk or the network is the bottleneck, the ceiling does not decrease. The request limiter then protects the queues, but without weights. A solution needs a capacity signal for that resource, not a backlog signal.
-3. **Not work-conserving.** See Finding 4.
-4. **AIMD probe.** When `R` is too high, the ceiling oscillates around the sustainable value. Each increase step causes some CPU throttling, between 36% and 52% of the windows in the results. The tenants get 96% to 98% of their fair share.
-5. **Unbalanced failover.** See Finding 1.
-6. **Floor.** See Finding 3.
+1. **Measurement of the CPU load.** The controller needs `θ` (F11) for each window. This is a requirement. On cgroup v2, `cpu.stat` gives `nr_periods` and `nr_throttled`. The broker does not read these values today. When the broker cannot read them, for example without a CPU limit, the mechanism is off. Without a measurement of the CPU, the broker needs another estimate of its load. Possible estimates:
+   - The CPU usage of the container (`usage_usec` in `cpu.stat`) divided by `C × W`.
+   - The idle time of the actor scheduler threads.
+   - The processing rate of the leaders, compared with the rate that `R` predicts.
+2. **Expensive records.** The limit counts records, not CPU. A tenant with expensive records causes CPU throttling. The CPU guard then decreases the ceiling of all tenants. The solution direction gives this gap in section 5. The spike keeps records each second as the unit.
+3. **Bottleneck that is not CPU.** The controller sees only CPU throttling. When the disk or the network is the bottleneck, the ceiling does not decrease. The request limiter then protects the queues, but without weights. A solution needs a capacity signal for that resource, not a backlog signal.
+4. **Not work-conserving.** See Finding 4.
+5. **AIMD probe.** When `R` is too high, the ceiling oscillates around `c_true` (F15). The step of (F13) and the factor of (F12) set the amplitude. Each increase step causes some CPU throttling, between 36% and 52% of the windows in the results. The tenants get 96% to 98% of their fair share.
+6. **Unbalanced failover.** See Finding 1.
+7. **Floor.** See Finding 3.
 
 ## Finding 1: the start value does not hold when the failover is not balanced
 
@@ -190,7 +279,7 @@ Setup: 3 brokers, 3 tenants, 3 partitions for each tenant, replication factor 3.
 - `PartitionPriorityAssigner` changes the order of the secondary priorities after each round of partitions. One round has one partition for each broker.
 - With 3 partitions on 3 brokers, each tenant has only one round. The second priority is always the next broker in the ring.
 - Each tenant starts its distribution at broker 0. So all tenants have the same pattern.
-- When broker 0 stops, broker 1 gets all the leaders of broker 0. Broker 1 then leads 6 of its 9 replicas (`λ = 2/3`). The start value uses `λ = 1/2`.
+- When broker 0 stops, broker 1 gets all the leaders of broker 0. Broker 1 then leads 6 of its 9 replicas (`λ = 2/3`). The start value uses `λ_down = 1/2` (F4). `cost(2/3) = 0.867` (F5), so the CPU demand is 8% more than at `λ_down`.
 - The CPU of broker 1 throttles. Its controller decreases its ceiling to the floor. Broker 2 does not change.
 - After the restart, the leadership goes back. The ceiling of broker 1 goes back to the start value on demand.
 - With 6 partitions for each tenant, the leaders of a stopped broker go to the two other brokers in equal parts. The start value then holds.
@@ -249,7 +338,7 @@ The spike also measured the latency of each partition, to use it as a threshold 
 | `R_true` = 8 000, after 210 seconds | 100% | 80 to 82 ms | 105 to 109 ms | 10% to 19% |
 | One tenant with records of cost 3 | 67% to 100% | 44 to 76 ms | 98 to 160 ms | 1% to 26% |
 
-The latency follows the current limit of the request limiter, not its expected RTT. The latency is approximately the limit divided by the processing rate. `StabilizingAIMDLimit` adds 1 to the limit in each update, approximately once each second. The latency gets near 200 ms only after 6 to 7 minutes of overload. So a latency threshold reacts late, and its value depends on the throughput of the partition.
+The latency follows the current limit of the request limiter, not its expected RTT. By Little's law, `latency ≈ limit_req / processing rate` (S5, S7). Example: `100 / 2 424 = 41 ms`. `StabilizingAIMDLimit` adds 1 to the limit in each update, approximately once each second (S6). The latency is 200 ms when `limit_req = 0.2 s × 2 424 = 485`. From 100, this takes approximately 385 seconds. So a latency threshold reacts late, and its value depends on the throughput of the partition.
 
 ### Step 4: rejections of the request limiter
 
@@ -291,15 +380,22 @@ The request limiter also solves the problem of step 1. The backlog stays small, 
 
 ## Finding 3: the floor does not protect the tenants when `R` is much too high
 
-The controller can correct an `R` that is too high only down to the floor. In the default setup, the floor is 80% of the start value. With all brokers up, the sustainable ceiling is `R_true × 2 / (9 × 0.733)` (step 4 of the calculations). This value is equal to the floor of 2 222 when `R_true = 2 222 × 9 × 0.733 / 2 = 7 333`. `R / R_true = 10 000 / 7 333 = 1.36`. So the controller can correct an `R` that is a maximum of approximately 36% too high.
+The controller can correct an `R` that is too high only down to the floor (F20):
 
-With `R_true` = 6 000, the sustainable ceiling is approximately 1 818. The floor is 2 222. The ceiling stays at the floor and the CPU throttles all the time. The floor is a promise only when `R` is approximately correct. The load test must measure `R` with a margin.
+```
+R / R_true ≤ cost(1) / cost(λ_up) = 1 / 0.733 = 1.36
+R_true ≥ 10 000 / 1.36 = 7 333
+```
+
+So the controller can correct an `R` that is a maximum of approximately 36% too high.
+
+With `R_true` = 6 000, `c_true` is 1 818 (F15). The floor is 2 222 (F7). The ceiling stays at the floor and the CPU throttles all the time. The floor is a promise only when `R` is approximately correct. The load test must measure `R` with a margin.
 
 ## Finding 4: the limit is not work-conserving
 
 A mechanism is work-conserving when it never leaves capacity idle while a tenant wants more. In v1, the ceiling cannot go above the start value. So the maximum of each tenant does not change.
 
-Example: tenant a floods, b and c send 7 500 records each second, and `R_true` = `R`. The CPU is not throttled. Tenant a stays at 8 333 records each second, but the broker can do approximately 12 000 for tenant a. The share that b and c do not use is lost.
+Example: tenant a floods, b and c send 7 500 records each second, and `R_true` = `R`. The CPU is not throttled. Tenant a stays at `3 × start = 8 333` records each second. The cluster can do `K − 2 × 7 500 = 12 273` for tenant a (F16, F17). The share that b and c do not use is lost.
 
 | | Maximum = start value (v1) | Ceiling can go above the start value when the CPU is idle |
 | --- | --- | --- |
@@ -311,6 +407,6 @@ The spike keeps v1.
 
 ## Weights
 
-The spike calculates `w̄` from the topology, with the replicas spread evenly over all brokers. So all brokers use the same `w̄`, and a tenant gets the same share after a leader change. If each broker used its real replicas, the limit of a tenant would change after a leader change.
+The spike calculates `w̄` from the topology (F2), with the replicas spread evenly over all brokers. So all brokers use the same `w̄`, and a tenant gets the same share after a leader change. If each broker used its real replicas, the limit of a tenant would change after a leader change.
 
 The ceiling is still different on each broker, because each broker has its own controller. After a leader change, a tenant can get a different limit when the two brokers have different ceilings.
