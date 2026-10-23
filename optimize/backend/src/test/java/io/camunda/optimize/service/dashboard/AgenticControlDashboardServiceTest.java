@@ -384,6 +384,22 @@ public class AgenticControlDashboardServiceTest {
   }
 
   @Test
+  void shouldFormatRatesAsPercentagesAndKeepDecimalsForAverages() {
+    // when
+    final Map<String, ProcessReportDataDto> reports = seedAndCaptureReportsById();
+
+    // then
+    assertThat(reports.get(AGENT_INCIDENT_RATE_REPORT_ID).getConfiguration().getValueFormat())
+        .isEqualTo("percentage");
+    assertThat(reports.get(AGENT_ADOPTION_RATE_REPORT_ID).getConfiguration().getValueFormat())
+        .isEqualTo("percentage");
+    assertThat(reports.get(AGENT_ITERATIONS_REPORT_ID).getConfiguration().getValueFormat())
+        .isEqualTo("frequency");
+    assertThat(reports.get(AGENT_DURATION_P50_REPORT_ID).getConfiguration().getValueFormat())
+        .isNull();
+  }
+
+  @Test
   void shouldSortBarTilesByValueDescending() {
     // when
     final Map<String, ProcessReportDataDto> reports = seedAndCaptureReportsById();

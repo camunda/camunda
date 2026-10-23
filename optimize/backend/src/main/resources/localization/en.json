@@ -32,6 +32,17 @@
       "all": "All versions",
       "latest": "Latest version",
       "version": "Version {version}"
+    },
+    "agentHealth": "Agent health",
+    "volume": "Volume",
+    "costAndUsage": "Cost and usage",
+    "agentFilter": {
+      "label": "Agent",
+      "placeholder": "All agents"
+    },
+    "modelFilter": {
+      "label": "Model",
+      "placeholder": "All models"
     }
   },
   "navigation": {
@@ -335,7 +346,12 @@
       "totalTokens": "Total tokens",
       "inputTokens": "Input tokens",
       "outputTokens": "Output tokens",
-      "toolCalls": "Tool calls"
+      "toolCalls": "Tool calls",
+      "modelCalls": "Model calls",
+      "humanSteps": "Human steps",
+      "incidentRate": "Incident rate",
+      "limitHitRate": "Limit hit rate",
+      "adoptionRate": "Adoption rate"
     },
     "groupBy": {
       "label": "Group by",
@@ -1497,6 +1513,10 @@
       "zoomIn": "Zoom in diagram",
       "zoomOut": "Zoom out diagram",
       "resetZoom": "Reset diagram zoom"
+    },
+    "agentRun": {
+      "label": "Agent run",
+      "label-plural": "Agent runs"
     }
   },
   "apiErrors": {

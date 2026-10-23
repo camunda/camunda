@@ -510,6 +510,7 @@ public class AgenticControlDashboardService {
       final DimensionDto dimensions) {
     final SingleReportConfigurationDto configuration =
         SingleReportConfigurationDto.builder().subtitle(descriptionKey).build();
+    configuration.setValueFormat(valueFormatFor(viewProperties.getFirst()));
     if (!aggregationTypes.isEmpty()) {
       configuration.setAggregationTypes(aggregationTypes.toArray(AggregationDto[]::new));
     }
@@ -532,6 +533,20 @@ public class AgenticControlDashboardService {
     reportWriter.createOrUpdateSingleProcessReport(
         reportId, null, reportData, nameKey, descriptionKey, null);
     return buildTile(reportId, position, dimensions, Map.of(TILE_CONFIG_SECTION, section));
+  }
+
+  // Rates are percentages; averages such as iterations per run need decimals, which the raw
+  // frequency formatter keeps. Durations use the default duration format of the view property.
+  private static String valueFormatFor(final ViewProperty viewProperty) {
+    if (ViewProperty.INCIDENT_RATE.equals(viewProperty)
+        || ViewProperty.LIMIT_HIT_RATE.equals(viewProperty)
+        || ViewProperty.ADOPTION_RATE.equals(viewProperty)) {
+      return "percentage";
+    }
+    if (ViewProperty.DURATION.equals(viewProperty)) {
+      return null;
+    }
+    return "frequency";
   }
 
   private static StartDateGroupByDto weeklyStartDate() {
