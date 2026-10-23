@@ -61,18 +61,21 @@ public class GroupController {
   private final RoleServices roleServices;
   private final CamundaAuthenticationProvider authenticationProvider;
   private final SecurityConfiguration securityConfiguration;
+  private final MappingRuleMembershipPolicy mappingRuleMembershipPolicy;
 
   public GroupController(
       final GroupServices groupServices,
       final MappingRuleServices mappingRuleServices,
       final RoleServices roleServices,
       final CamundaAuthenticationProvider authenticationProvider,
-      final SecurityConfiguration securityConfiguration) {
+      final SecurityConfiguration securityConfiguration,
+      final MappingRuleMembershipPolicy mappingRuleMembershipPolicy) {
     this.groupServices = groupServices;
     this.mappingRuleServices = mappingRuleServices;
     this.roleServices = roleServices;
     this.authenticationProvider = authenticationProvider;
     this.securityConfiguration = securityConfiguration;
+    this.mappingRuleMembershipPolicy = mappingRuleMembershipPolicy;
   }
 
   @CamundaPostMapping
@@ -126,11 +129,15 @@ public class GroupController {
   @CamundaPutMapping(path = "/{groupId}/mapping-rules/{mappingRuleId}")
   public CompletableFuture<ResponseEntity<Object>> assignMappingRuleToGroup(
       @PathVariable final String groupId, @PathVariable final String mappingRuleId) {
-    return RequestMapper.toGroupMemberRequest(
-            groupId,
-            mappingRuleId,
-            EntityType.MAPPING_RULE,
-            securityConfiguration.getCompiledIdValidationPattern())
+    return mappingRuleMembershipPolicy
+        .requireManageable()
+        .flatMap(
+            manageable ->
+                RequestMapper.toGroupMemberRequest(
+                    groupId,
+                    mappingRuleId,
+                    EntityType.MAPPING_RULE,
+                    securityConfiguration.getCompiledIdValidationPattern()))
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::assignMember);
   }
 
@@ -159,11 +166,15 @@ public class GroupController {
   @CamundaDeleteMapping(path = "/{groupId}/mapping-rules/{mappingRuleId}")
   public CompletableFuture<ResponseEntity<Object>> unassignMappingRuleFromGroup(
       @PathVariable final String groupId, @PathVariable final String mappingRuleId) {
-    return RequestMapper.toGroupMemberRequest(
-            groupId,
-            mappingRuleId,
-            EntityType.MAPPING_RULE,
-            securityConfiguration.getCompiledIdValidationPattern())
+    return mappingRuleMembershipPolicy
+        .requireManageable()
+        .flatMap(
+            manageable ->
+                RequestMapper.toGroupMemberRequest(
+                    groupId,
+                    mappingRuleId,
+                    EntityType.MAPPING_RULE,
+                    securityConfiguration.getCompiledIdValidationPattern()))
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::unassignMember);
   }
 

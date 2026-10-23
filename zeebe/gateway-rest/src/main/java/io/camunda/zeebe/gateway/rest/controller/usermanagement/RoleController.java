@@ -57,16 +57,19 @@ public class RoleController {
   private final MappingRuleServices mappingServices;
   private final CamundaAuthenticationProvider authenticationProvider;
   private final SecurityConfiguration securityConfiguration;
+  private final MappingRuleMembershipPolicy mappingRuleMembershipPolicy;
 
   public RoleController(
       final RoleServices roleServices,
       final MappingRuleServices mappingServices,
       final CamundaAuthenticationProvider authenticationProvider,
-      final SecurityConfiguration securityConfiguration) {
+      final SecurityConfiguration securityConfiguration,
+      final MappingRuleMembershipPolicy mappingRuleMembershipPolicy) {
     this.roleServices = roleServices;
     this.mappingServices = mappingServices;
     this.authenticationProvider = authenticationProvider;
     this.securityConfiguration = securityConfiguration;
+    this.mappingRuleMembershipPolicy = mappingRuleMembershipPolicy;
   }
 
   @CamundaPostMapping
@@ -283,22 +286,30 @@ public class RoleController {
   @CamundaPutMapping(path = "/{roleId}/mapping-rules/{mappingRuleId}")
   public CompletableFuture<ResponseEntity<Object>> assignRoleToMappingRule(
       @PathVariable final String roleId, @PathVariable final String mappingRuleId) {
-    return RequestMapper.toRoleMemberRequest(
-            roleId,
-            mappingRuleId,
-            EntityType.MAPPING_RULE,
-            securityConfiguration.getCompiledIdValidationPattern())
+    return mappingRuleMembershipPolicy
+        .requireManageable()
+        .flatMap(
+            manageable ->
+                RequestMapper.toRoleMemberRequest(
+                    roleId,
+                    mappingRuleId,
+                    EntityType.MAPPING_RULE,
+                    securityConfiguration.getCompiledIdValidationPattern()))
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::addMemberToRole);
   }
 
   @CamundaDeleteMapping(path = "/{roleId}/mapping-rules/{mappingRuleId}")
   public CompletableFuture<ResponseEntity<Object>> unassignRoleFromMappingRule(
       @PathVariable final String roleId, @PathVariable final String mappingRuleId) {
-    return RequestMapper.toRoleMemberRequest(
-            roleId,
-            mappingRuleId,
-            EntityType.MAPPING_RULE,
-            securityConfiguration.getCompiledIdValidationPattern())
+    return mappingRuleMembershipPolicy
+        .requireManageable()
+        .flatMap(
+            manageable ->
+                RequestMapper.toRoleMemberRequest(
+                    roleId,
+                    mappingRuleId,
+                    EntityType.MAPPING_RULE,
+                    securityConfiguration.getCompiledIdValidationPattern()))
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::removeMemberFromRole);
   }
 
