@@ -120,7 +120,7 @@ const Header: React.FC<Props> = observer(({currentUser, license}) => {
 					profile: {
 						label: t('headerProfileLabel'),
 						user: {
-							name: displayName,
+							name: displayName ?? currentUser.username,
 							email: '',
 						},
 					},
