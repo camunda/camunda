@@ -1839,3 +1839,65 @@ current path then follow consumer retention like any other part of the path; the
   rule.
 
 Not implemented in the PoC.
+
+### 25.8 On-demand backups
+
+**Today.** `POST /actuator/backups` creates a `MANUAL_BACKUP` checkpoint and uploads a
+self-contained backup (snapshot plus journal segments). Without continuous backup nothing expires
+it; it lives until it is deleted through the API, and operators rely on that (for example a backup
+taken before an upgrade and kept for months). With continuous backup it joins the ranges, and
+`BackupRetention`, which does not look at the type, deletes it by age like a scheduled backup.
+
+**In the PoC** (with the log archive, after the handover, 18.6) a `MANUAL_BACKUP` checkpoint is
+created but nothing is uploaded; it reports `COMPLETED` once archived. It is a named restore point:
+the checkpoint, an archived snapshot before it and the log from that snapshot up to it. It is
+protected like any backup checkpoint, by the window only. Once it is older than the window, mode B
+may roll its range up to L2 or remove it, and mode A releases it. The API stays, but an on-demand
+backup no longer outlives the window.
+
+**Recommended: a pinned restore point.** This extends the rule of 25.7 (holds per restore point):
+a restore point is protected while it is inside the window or while it is pinned. An on-demand
+backup is pinned until it is deleted through the API; creating and deleting it are entries in the
+commit log, so the pin is as durable as the restore point.
+
+- A pin keeps only its own range: the snapshot and the log from the snapshot index to the
+  checkpoint index. That is one snapshot and a short slice of log, not everything since.
+- This needs holds as ranges instead of a single floor index. With one floor, one old pinned
+  backup would freeze compaction and retention of the whole timeline above it; with ranges, the
+  authority compacts and removes around it (the pinned range may still be compacted, it is not
+  removed).
+- Restore does not change; the pin is one more reason the range is still there.
+- A pin on an old timeline keeps that timeline's range alive until it is deleted (for example a
+  backup taken before an upgrade that was later rolled back by a restore).
+
+**Alternative: export.** The on-demand backup is written out as a self-contained copy, the snapshot
+plus the log slice in today's backup format, under its own prefix. Gains: portable (another bucket
+or region), restorable without the archive and by versions that do not know the archive, and
+independent of bugs in the archive or the authority. Costs: a second copy, which model B avoids, and
+a second format to restore from. Recommended as an explicit option ("on-demand backup, exported")
+next to the pin, not as the default.
+
+**Upgrades with on-demand backups.**
+
+- Backups taken before the upgrade are old-style and are never modified (section 18). They stay
+  restorable by the old restore code, also by the version before the upgrade, so the usual "back up,
+  upgrade, roll back if needed" works for the upgrade that turns on the log archive.
+- They keep the old retention. If continuous backup retention is configured, `BackupRetention`
+  deletes them by age like any other old backup, including the one taken right before the upgrade.
+  After the handover no old backups are uploaded any more, so its anchor stays at the last old
+  backup and the old side shrinks to the window before it and then stays (to be confirmed by a
+  test). An operator who wants the pre-upgrade backup kept longer must not rely on that.
+- On-demand backups taken after the handover live only in the archive. A version without the log
+  archive cannot restore them, and disabling the log archive after the handover is refused (18.6).
+  A rollback to a version before the log archive needs a backup from before the handover or an
+  exported one: another reason to offer the export.
+- Later upgrades may change the archive format (for example the large-object format of section 24).
+  While a restore point is pinned or inside the window, readers must keep reading the format its
+  objects have, and the authority must not rewrite a held range into a format the oldest version a
+  restore may run with cannot read. Format changes therefore need a version a cluster announces
+  (like the upgrade gate of 18.1) before the authority may write it.
+- Restoring a pre-upgrade backup after the handover starts a new branch that takes old backups again
+  until its own handover (18.5); its on-demand backups follow the same rules from there. Manual ids
+  can repeat across branches, so a restore names the timeline when an id is ambiguous.
+
+Not implemented in the PoC.
