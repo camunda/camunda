@@ -272,14 +272,16 @@ test.describe('Operate processes page', () => {
 			const submitted = page.waitForRequest((request) => request.url().endsWith('/v2/process-instances/modification'));
 			await page.getByRole('dialog').getByRole('button', {name: 'Apply'}).click();
 
-			expect((await submitted).postDataJSON()).toMatchObject({
+			const body = (await submitted).postDataJSON();
+			expect(body).toMatchObject({
 				filter: {
 					processDefinitionId: {$eq: 'my_simple_process'},
 					processInstanceKey: {$in: ['1001']},
-					state: {$eq: 'ACTIVE'},
+					$or: [{state: {$eq: 'ACTIVE'}, hasIncident: false}, {hasIncident: true}],
 				},
 				moveInstructions: [{sourceElementId: 'task-1', targetElementId: 'end_event'}],
 			});
+			expect(body.filter.state).toBeUndefined();
 			await expect(frameTitle).not.toBeVisible();
 			await expect(page).toHaveURL(/process=my_simple_process.*version=1.*elementId=task-1/);
 			await expect(page.getByRole('checkbox', {name: 'Select instance 1001'})).toBeChecked();

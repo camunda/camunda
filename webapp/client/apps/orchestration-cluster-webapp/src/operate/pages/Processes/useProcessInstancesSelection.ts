@@ -18,7 +18,7 @@ import {useInstancesSelection} from '#/operate/shared/hooks/useInstancesSelectio
 import {narrowTopLevelState} from './narrowTopLevelState';
 
 type ProcessBulkAction = 'delete' | 'cancel' | 'retry' | 'suspend' | 'resume';
-const ALLOWED_BATCH_STATES: Partial<Record<ProcessBulkAction, readonly ProcessInstanceState[]>> = {
+const ALLOWED_BATCH_STATES: Partial<Record<ProcessBulkAction | 'modify', readonly ProcessInstanceState[]>> = {
 	cancel: ['ACTIVE', 'SUSPENDED'],
 	suspend: ['ACTIVE'],
 };
@@ -63,15 +63,34 @@ function useProcessInstancesSelection(
 	const finished = selected.filter(({state}) => state === 'COMPLETED' || state === 'TERMINATED');
 	const incidents = running.filter(({hasIncident}) => hasIncident);
 	const suspended = selected.filter(({state}) => state === 'SUSPENDED');
+	const cancelable = [...running, ...suspended];
 	const hasStateFilter = search.active || search.incidents || search.completed || search.canceled || search.suspended;
+	const hasRunning = mode === 'INCLUDE' ? running.length > 0 : !hasStateFilter || search.active || search.incidents;
 	const eligibility = {
 		delete: mode === 'INCLUDE' ? finished.length > 0 : !hasStateFilter || search.completed || search.canceled,
-		cancel: mode === 'INCLUDE' ? running.length > 0 : !hasStateFilter || search.active || search.incidents,
+		cancel:
+			mode === 'INCLUDE'
+				? cancelable.length > 0
+				: !hasStateFilter || search.active || search.incidents || search.suspended,
 		retry: mode === 'INCLUDE' ? incidents.length > 0 : !hasStateFilter || search.incidents,
-		// Suspend targets the same running set as Cancel — legacy suspends any active instance
+		// Suspend targets the same running set as Move and Migrate — legacy suspends any active instance
 		// regardless of incident state, it does not require re-selecting by incident status.
-		suspend: mode === 'INCLUDE' ? running.length > 0 : !hasStateFilter || search.active || search.incidents,
+		suspend: hasRunning,
 		resume: mode === 'INCLUDE' ? suspended.length > 0 : !hasStateFilter || search.suspended,
+		running: hasRunning,
+	};
+
+	const withSelection = (
+		baseFilter: CreateCancellationBatchOperationRequestBody['filter'] | undefined,
+		included: string[],
+	): CreateCancellationBatchOperationRequestBody['filter'] => {
+		const criterion = buildInstanceKeyCriterion(mode === 'INCLUDE' ? included : [], selection.excludedIds);
+		const baseKey = baseFilter?.processInstanceKey;
+		const baseCriterion = typeof baseKey === 'string' ? {$eq: baseKey} : baseKey;
+		return {
+			...baseFilter,
+			...(criterion ? {processInstanceKey: {...baseCriterion, ...criterion}} : {}),
+		};
 	};
 
 	return {
@@ -85,22 +104,22 @@ function useProcessInstancesSelection(
 		incidentCount: incidents.length,
 		suspendedCount: suspended.length,
 		toggle: selection.select,
-		getRequest: (action: ProcessBulkAction): CreateCancellationBatchOperationRequestBody => {
-			const eligible = action === 'delete' ? finished : action === 'resume' ? suspended : running;
+		getRequest: (action: ProcessBulkAction | 'modify'): CreateCancellationBatchOperationRequestBody => {
+			const eligible =
+				action === 'delete' ? finished : action === 'resume' ? suspended : action === 'cancel' ? cancelable : running;
 			const included =
 				eligible.length > 0 ? eligible.map(({processInstanceKey}) => processInstanceKey) : selection.includedIds;
-			const criterion = buildInstanceKeyCriterion(mode === 'INCLUDE' ? included : [], selection.excludedIds);
-			const baseKey = filter?.processInstanceKey;
-			const baseCriterion = typeof baseKey === 'string' ? {$eq: baseKey} : baseKey;
 			const allowedStates = ALLOWED_BATCH_STATES[action];
-			const baseFilter = filter && allowedStates ? narrowTopLevelState(filter, allowedStates) : filter;
-			return {
-				filter: {
-					...baseFilter,
-					...(criterion ? {processInstanceKey: {...baseCriterion, ...criterion}} : {}),
-				},
-			};
+			const baseFilter =
+				action === 'modify'
+					? mapProcessInstancesFilter({...search, suspended: false})
+					: filter && allowedStates
+						? narrowTopLevelState(filter, allowedStates)
+						: filter;
+			return {filter: withSelection(baseFilter, included)};
 		},
+		getModificationStatisticsFilter: (): CreateCancellationBatchOperationRequestBody['filter'] =>
+			withSelection(filter, selection.includedIds),
 	};
 }
 

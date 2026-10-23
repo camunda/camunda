@@ -174,6 +174,77 @@ describe('Processes batch modification', () => {
 		await expect.element(screen.getByRole('button', {name: 'Move'})).toHaveAttribute('title', reason);
 	});
 
+	it('should disable Move for a suspended-only selection that Cancel accepts', async ({worker}) => {
+		mockPage(worker);
+		worker.use(
+			mockQueryProcessInstancesEndpoint({
+				successResponse: HttpResponse.json(
+					createQueryProcessInstancesResponse({
+						items: [
+							createProcessInstance({processInstanceKey: '1', state: 'ACTIVE'}),
+							createProcessInstance({processInstanceKey: '4', state: 'SUSPENDED'}),
+						],
+						page: {totalItems: 2},
+					}),
+				),
+			}),
+		);
+		const screen = await renderPage();
+
+		await selectInstance(screen, '4');
+
+		await expect.element(screen.getByRole('button', {name: 'Cancel', exact: true})).toBeEnabled();
+		await expect.element(screen.getByRole('button', {name: 'Move'})).toBeDisabled();
+		await expect
+			.element(screen.getByRole('button', {name: 'Move'}))
+			.toHaveAttribute('title', 'You can only move element instances in active or incident state.');
+	});
+
+	it('should move only the active instances of a mixed active and suspended selection', async ({worker}) => {
+		mockPage(worker);
+		worker.use(
+			mockQueryProcessInstancesEndpoint({
+				successResponse: HttpResponse.json(
+					createQueryProcessInstancesResponse({
+						items: [
+							createProcessInstance({processInstanceKey: '1', state: 'ACTIVE'}),
+							createProcessInstance({processInstanceKey: '2', state: 'ACTIVE'}),
+							createProcessInstance({processInstanceKey: '4', state: 'SUSPENDED'}),
+						],
+						page: {totalItems: 3},
+					}),
+				),
+			}),
+			mockCreateModificationBatchOperationEndpoint({
+				schema: z.looseObject({
+					filter: z.looseObject({
+						processInstanceKey: z.strictObject({$in: z.tuple([z.literal('1')])}),
+					}),
+				}),
+				successResponse: accepted(),
+				failureResponse: new HttpResponse(null, {status: 400}),
+			}),
+			mockGetBatchOperationEndpoint({
+				successResponse: HttpResponse.json(
+					createBatchOperation({batchOperationKey: 'batch-1', batchOperationType: 'MODIFY_PROCESS_INSTANCE'}),
+				),
+			}),
+		);
+		storeStateLocally(HELPER_STORAGE_KEY, true);
+		const screen = await renderPage();
+		await selectInstance(screen, '1');
+		await selectInstance(screen, '4');
+
+		await userEvent.click(screen.getByRole('button', {name: 'Move'}));
+		await clickDiagramElement('end_event');
+		await userEvent.click(screen.getByRole('button', {name: 'Review Modification'}));
+		await userEvent.click(screen.getByRole('dialog').getByRole('button', {name: 'Apply'}));
+
+		await expect
+			.element(screen.getByText('The batch operation "Modify Process Instance" has been started'))
+			.toBeVisible();
+	});
+
 	it('should ask for a diagram element while the diagram is loading', async ({worker}) => {
 		mockPage(worker);
 		worker.use(mockGetProcessDefinitionXmlEndpoint({successResponse: HttpResponse.text(BPMN_XML), delay: 'infinite'}));
@@ -343,7 +414,12 @@ describe('Processes batch modification', () => {
 						processDefinitionVersion: z.undefined().optional(),
 						businessId: z.strictObject({$eq: z.literal('invoice-123')}),
 						processInstanceKey: z.strictObject({$in: z.tuple([z.literal('1')])}),
-						state: z.strictObject({$eq: z.literal('ACTIVE')}),
+						state: z.undefined().optional(),
+						$or: z.tuple([
+							z.strictObject({state: z.strictObject({$eq: z.literal('ACTIVE')}), hasIncident: z.literal(false)}),
+							z.strictObject({state: z.strictObject({$eq: z.literal('SUSPENDED')})}),
+							z.strictObject({hasIncident: z.literal(true), state: z.strictObject({$neq: z.literal('SUSPENDED')})}),
+						]),
 						elementId: z.strictObject({$eq: z.literal('task-1')}),
 					}),
 				}),
@@ -430,30 +506,57 @@ describe('Processes batch modification', () => {
 		await expect.element(screen.getByText('Batch Modification Mode')).toBeVisible();
 	});
 
-	it('should not count or move active instances outside a selection of only suspended instances', async ({worker}) => {
+	it('should count the suspended selection and move it without a state restriction, like legacy', async ({worker}) => {
 		mockPage(worker);
-		const statisticsFilters: unknown[] = [];
-		const onRequest = async ({request}: {request: Request}) => {
-			if (request.url.endsWith('/statistics/element-instances')) {
-				statisticsFilters.push((await request.clone().json()).filter);
-			}
-		};
-		worker.events.on('request:start', onRequest);
+		worker.use(
+			mockGetProcessDefinitionStatisticsEndpoint({
+				schema: z.object({
+					filter: z.object({state: z.strictObject({$eq: z.literal('SUSPENDED')})}),
+				}),
+				successResponse: statistics(2, 0),
+				failureResponse: statistics(0, 0),
+			}),
+			mockCreateModificationBatchOperationEndpoint({
+				schema: z.strictObject({
+					filter: z.looseObject({
+						state: z.undefined().optional(),
+						$or: z.undefined().optional(),
+						elementId: z.strictObject({$eq: z.literal('task-1')}),
+						elementInstanceState: z.strictObject({$eq: z.literal('ACTIVE')}),
+					}),
+					moveInstructions: z.tuple([
+						z.strictObject({sourceElementId: z.literal('task-1'), targetElementId: z.literal('end_event')}),
+					]),
+				}),
+				successResponse: accepted(),
+				failureResponse: new HttpResponse(null, {status: 400}),
+			}),
+			mockGetBatchOperationEndpoint({
+				successResponse: HttpResponse.json(
+					createBatchOperation({batchOperationKey: 'batch-1', batchOperationType: 'MODIFY_PROCESS_INSTANCE'}),
+				),
+			}),
+		);
+		const screen = await renderPage();
+		await enterMode(screen);
+		await screen.router.navigate({to: '.', search: (prev) => ({...prev, active: false, incidents: false})});
 
-		try {
-			const screen = await renderPage();
-			await enterMode(screen);
-			await screen.router.navigate({to: '.', search: (prev) => ({...prev, active: false, incidents: false})});
-			statisticsFilters.length = 0;
+		await userEvent.click(screen.getByRole('checkbox', {name: 'Select all items'}), {force: true});
+		await clickDiagramElement('end_event');
 
-			await userEvent.click(screen.getByRole('checkbox', {name: 'Select all items'}), {force: true});
-			await clickDiagramElement('end_event');
+		await expect
+			.element(
+				screen.getByText(
+					'Modification scheduled: Move 2 instances from “Review invoice” to “end_event”. Press “Review Modification” button to confirm.',
+				),
+			)
+			.toBeVisible();
+		await userEvent.click(screen.getByRole('button', {name: 'Review Modification'}));
+		await userEvent.click(screen.getByRole('dialog').getByRole('button', {name: 'Apply'}));
 
-			await expect.element(screen.getByRole('button', {name: 'Review Modification'})).toBeDisabled();
-			expect(statisticsFilters).not.toContainEqual(expect.objectContaining({state: {$eq: 'ACTIVE'}}));
-		} finally {
-			worker.events.removeListener('request:start', onRequest);
-		}
+		await expect
+			.element(screen.getByText('The batch operation "Modify Process Instance" has been started'))
+			.toBeVisible();
 	});
 
 	it('should review the planned move', async ({worker}) => {
@@ -568,7 +671,11 @@ describe('Processes batch modification', () => {
 						processDefinitionId: z.strictObject({$eq: z.literal('my_simple_process')}),
 						processDefinitionVersion: z.literal(1),
 						tenantId: z.strictObject({$eq: z.literal('tenant-a')}),
-						state: z.strictObject({$eq: z.literal('ACTIVE')}),
+						state: z.undefined().optional(),
+						$or: z.tuple([
+							z.strictObject({state: z.strictObject({$eq: z.literal('ACTIVE')}), hasIncident: z.literal(false)}),
+							z.strictObject({hasIncident: z.literal(true)}),
+						]),
 						processInstanceKey,
 					}),
 					moveInstructions: z.tuple([
