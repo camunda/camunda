@@ -8,15 +8,14 @@
 package io.camunda.zeebe.protocol.impl.record.value.variable;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import io.camunda.zeebe.msgpack.property.DocumentProperty;
 import io.camunda.zeebe.msgpack.property.EnumProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.value.StringValue;
-import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.protocol.record.value.VariableDocumentRecordValue;
 import io.camunda.zeebe.protocol.record.value.VariableDocumentUpdateSemantic;
+import io.camunda.zeebe.protocol.record.value.VariableMetadataValue;
 import java.util.Map;
 import java.util.Objects;
 import org.agrona.DirectBuffer;
@@ -26,7 +25,6 @@ public final class VariableDocumentRecord extends UnifiedRecordValue
   // Static StringValue keys for property names
   private static final StringValue SCOPE_KEY_KEY = new StringValue("scopeKey");
   private static final StringValue UPDATE_SEMANTICS_KEY = new StringValue("updateSemantics");
-  private static final StringValue VARIABLES_KEY = new StringValue("variables");
 
   private final LongProperty scopeKeyProperty = new LongProperty(SCOPE_KEY_KEY);
   private final EnumProperty<VariableDocumentUpdateSemantic> updateSemanticsProperty =
@@ -34,19 +32,19 @@ public final class VariableDocumentRecord extends UnifiedRecordValue
           UPDATE_SEMANTICS_KEY,
           VariableDocumentUpdateSemantic.class,
           VariableDocumentUpdateSemantic.PROPAGATE);
-  private final DocumentProperty variablesProperty = new DocumentProperty(VARIABLES_KEY);
+  private final VariablesPropertyGroup variablesPropertyGroup = new VariablesPropertyGroup();
 
   public VariableDocumentRecord() {
-    super(3);
-    declareProperty(scopeKeyProperty)
-        .declareProperty(updateSemanticsProperty)
-        .declareProperty(variablesProperty);
+    super(2);
+    declareProperty(scopeKeyProperty).declareProperty(updateSemanticsProperty);
+    declareProperties(variablesPropertyGroup);
   }
 
   public VariableDocumentRecord wrap(final VariableDocumentRecord other) {
     setScopeKey(other.getScopeKey())
         .setVariables(other.getVariablesBuffer())
-        .setUpdateSemantics(other.getUpdateSemantics());
+        .setUpdateSemantics(other.getUpdateSemantics())
+        .setVariablesMetadata(other.getVariablesMetadata());
 
     return this;
   }
@@ -74,22 +72,33 @@ public final class VariableDocumentRecord extends UnifiedRecordValue
 
   @Override
   public Map<String, Object> getVariables() {
-    return MsgPackConverter.convertToMap(variablesProperty.getValue());
+    return variablesPropertyGroup.getVariables();
   }
 
   public VariableDocumentRecord setVariables(final DirectBuffer variables) {
-    variablesProperty.setValue(variables);
+    variablesPropertyGroup.setVariables(variables);
+    return this;
+  }
+
+  @Override
+  public Map<String, VariableMetadataValue> getVariablesMetadata() {
+    return variablesPropertyGroup.getMetadata();
+  }
+
+  public VariableDocumentRecord setVariablesMetadata(
+      final Map<String, ? extends VariableMetadataValue> variablesMetadata) {
+    variablesPropertyGroup.setMetadata(variablesMetadata);
     return this;
   }
 
   @JsonIgnore
   public DirectBuffer getVariablesBuffer() {
-    return variablesProperty.getValue();
+    return variablesPropertyGroup.getVariablesBuffer();
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(scopeKeyProperty, updateSemanticsProperty, variablesProperty);
+    return Objects.hash(scopeKeyProperty, updateSemanticsProperty, variablesPropertyGroup);
   }
 
   @Override
@@ -105,7 +114,7 @@ public final class VariableDocumentRecord extends UnifiedRecordValue
     final VariableDocumentRecord that = (VariableDocumentRecord) o;
     return Objects.equals(scopeKeyProperty, that.scopeKeyProperty)
         && Objects.equals(updateSemanticsProperty, that.updateSemanticsProperty)
-        && Objects.equals(variablesProperty, that.variablesProperty);
+        && Objects.equals(variablesPropertyGroup, that.variablesPropertyGroup);
   }
 
   @Override

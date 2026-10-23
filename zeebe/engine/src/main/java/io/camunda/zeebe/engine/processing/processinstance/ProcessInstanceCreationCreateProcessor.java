@@ -17,6 +17,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWr
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.processing.variable.VariableMetadataLookup;
 import io.camunda.zeebe.engine.processing.variable.VariableValidationException;
 import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
 import io.camunda.zeebe.msgpack.value.DocumentValue;
@@ -28,6 +29,7 @@ import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.util.Map;
 
 public final class ProcessInstanceCreationCreateProcessor
     implements TypedRecordProcessor<ProcessInstanceCreationRecord> {
@@ -111,7 +113,10 @@ public final class ProcessInstanceCreationCreateProcessor
         helper.initProcessInstanceRecord(
             process, processInstanceKey, record.getTags(), record.getBusinessIdBuffer());
 
-    helper.setVariablesFromDocument(processInstance, record.getVariablesBuffer());
+    helper.setVariablesFromDocument(
+        processInstance,
+        record.getVariablesBuffer(),
+        VariableMetadataLookup.of(record.getVariablesMetadata()));
 
     if (record.startInstructions().isEmpty()) {
       commandWriter.appendFollowUpCommand(
@@ -130,13 +135,18 @@ public final class ProcessInstanceCreationCreateProcessor
     // Prevent buffer cloning overhead if response will not be returned.
     final var variablesBuffer =
         command.hasRequestMetadata() ? BufferUtil.cloneBuffer(record.getVariablesBuffer()) : null;
+    // getVariablesMetadata() returns a detached copy, so it survives the reset below
+    final var variablesMetadata =
+        command.hasRequestMetadata() ? record.getVariablesMetadata() : null;
     record.setVariables(DocumentValue.EMPTY_DOCUMENT);
+    record.setVariablesMetadata(Map.of());
 
     stateWriter.appendFollowUpEvent(entityKey, ProcessInstanceCreationIntent.CREATED, record);
 
     if (command.hasRequestMetadata()) {
-      // set variables back to return them in the response
+      // set variables and their metadata back to return them in the response
       record.setVariables(variablesBuffer);
+      record.setVariablesMetadata(variablesMetadata);
       responseWriter.writeAcceptedResponseOnCommand(
           entityKey, ProcessInstanceCreationIntent.CREATED, record, command);
     }

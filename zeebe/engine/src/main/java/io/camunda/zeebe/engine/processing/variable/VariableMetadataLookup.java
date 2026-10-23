@@ -8,6 +8,9 @@
 package io.camunda.zeebe.engine.processing.variable;
 
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableMetadataRecord;
+import io.camunda.zeebe.protocol.record.value.VariableMetadataValue;
+import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.util.Map;
 import org.agrona.DirectBuffer;
 import org.jspecify.annotations.Nullable;
 
@@ -21,6 +24,22 @@ public interface VariableMetadataLookup {
 
   /** For callers that provide no metadata for any variable. */
   VariableMetadataLookup NONE = name -> null;
+
+  /**
+   * @param metadata the metadata by variable name, e.g. from a command record
+   * @return a lookup that provides the given metadata, and none for the variables without an entry
+   */
+  static VariableMetadataLookup of(final Map<String, ? extends VariableMetadataValue> metadata) {
+    if (metadata.isEmpty()) {
+      return NONE;
+    }
+    return name -> {
+      final var value = metadata.get(BufferUtil.bufferAsString(name));
+      return value == null
+          ? null
+          : new VariableMetadataRecord().setProtectionModes(value.getProtectionModes());
+    };
+  }
 
   /**
    * @param name the name of the variable
