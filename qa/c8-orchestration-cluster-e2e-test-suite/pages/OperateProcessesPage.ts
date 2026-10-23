@@ -24,6 +24,7 @@ const getProcessInstancesTable = (page: Page): Locator =>
 
 class OperateProcessesPage {
   private page: Page;
+  private selectAllRowsLabel: Locator;
   readonly resultsText: Locator;
   readonly noMatchingInstancesMessage: Locator;
   readonly processNameFilter: Locator;
@@ -170,6 +171,10 @@ class OperateProcessesPage {
         name: /^(Select|Unselect) all (rows|items)$/,
       },
     );
+    this.selectAllRowsLabel = getProcessInstancesTable(page)
+      .getByRole('columnheader')
+      .filter({has: page.getByRole('checkbox')})
+      .locator('label');
     this.retryButton = page.getByRole('button', {name: 'Retry', exact: true});
     // Exact: row actions are named "Suspend Instance <key>", which a substring
     // match would hit instead of the toolbar.
@@ -428,9 +433,9 @@ class OperateProcessesPage {
           // still read as checked after the selection behind it was reset, and
           // clicking it again would then deselect instead of select.
           if (await selectAll.isChecked()) {
-            await selectAll.press('Space');
+            await this.selectAllRowsLabel.click();
           }
-          await selectAll.press('Space');
+          await this.selectAllRowsLabel.click();
         }
         await expect(toolbarButton).toBeEnabled({timeout: 5000});
         await toolbarButton.click({timeout: 5000});
@@ -577,9 +582,9 @@ class OperateProcessesPage {
         // in-flight re-query, and clicking it again would then deselect. Clear
         // that stale state first, then select afresh.
         if (await selectAll.isChecked()) {
-          await selectAll.press('Space');
+          await this.selectAllRowsLabel.click();
         }
-        await selectAll.press('Space');
+        await this.selectAllRowsLabel.click();
       }
       await expect(this.cancelBatchOperationButton).toBeVisible({
         timeout: 5000,
