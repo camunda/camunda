@@ -90,6 +90,7 @@ public class OtelSdkManager implements AutoCloseable {
       final AnalyticsExporterContext context,
       final AnalyticsExporterMetadata metadata,
       final MeterRegistry meterRegistry) {
+    ExportFailureLogFilter.install();
     this.metadata = metadata;
     this.defaultSamplingRate = config.getSamplingRate();
     counters.clear();
