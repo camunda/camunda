@@ -15,12 +15,17 @@ import io.camunda.optimize.service.db.writer.AgentRunWriter;
 import io.camunda.optimize.service.db.writer.ProcessInstanceImportListener;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.zeebe.protocol.record.ValueType;
+import jakarta.annotation.PreDestroy;
+import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
@@ -33,9 +38,11 @@ import org.springframework.stereotype.Component;
  * <ul>
  *   <li>Main path: the agent run import enriches the runs it just wrote, by ID (real-time read).
  *   <li>Catch-up path: after any other process-instance import (flow nodes, completion, incidents,
- *       user tasks), the runs of those process instances are re-enriched. Their lookup is a search,
- *       so a run written within the refresh interval can be missed here; the main path covers it,
- *       because it reads the process instance after that data was written.
+ *       user tasks), the runs of those process instances are re-enriched, once right away and once
+ *       more after the index refresh interval. The lookup is a search, so a run written at the same
+ *       moment by the agent import is not visible to the first attempt; when both imports land
+ *       together, the main path can also read the process instance just before the other data, so
+ *       only the delayed attempt is guaranteed to see both.
  * </ul>
  *
  * <p>Failures are logged and swallowed: enrichment must never block the imports that trigger it.
@@ -46,6 +53,8 @@ public class AgentRunEnrichmentService implements ProcessInstanceImportListener 
   private static final Logger LOG =
       org.slf4j.LoggerFactory.getLogger(AgentRunEnrichmentService.class);
   // Variables never feed agent metrics, and the nested agent import is mirrored by the flat one.
+  // Longer than the default index refresh interval of 1s, so runs written meanwhile are searchable.
+  private static final Duration CATCH_UP_DELAY = Duration.ofSeconds(3);
   private static final Set<String> IGNORED_RECORD_TYPES =
       Set.of(ValueType.VARIABLE.name(), ValueType.AGENT_INSTANCE.name());
 
@@ -53,6 +62,13 @@ public class AgentRunEnrichmentService implements ProcessInstanceImportListener 
   private final AgentRunWriter agentRunWriter;
   private final DatabaseClient databaseClient;
   private final ConfigurationService configurationService;
+  private final ScheduledExecutorService delayedCatchUp =
+      Executors.newSingleThreadScheduledExecutor(
+          runnable -> {
+            final Thread thread = new Thread(runnable, "agent-run-enrichment-catch-up");
+            thread.setDaemon(true);
+            return thread;
+          });
 
   public AgentRunEnrichmentService(
       final AgentRunEnrichmentReader reader,
@@ -80,16 +96,29 @@ public class AgentRunEnrichmentService implements ProcessInstanceImportListener 
     if (IGNORED_RECORD_TYPES.contains(recordType) || processInstances.isEmpty()) {
       return;
     }
+    final Set<String> processInstanceIds =
+        processInstances.stream()
+            .map(ProcessInstanceDto::getProcessInstanceId)
+            .collect(Collectors.toSet());
+    catchUp(recordType, processInstanceIds);
+    delayedCatchUp.schedule(
+        () -> catchUp(recordType, processInstanceIds),
+        CATCH_UP_DELAY.toMillis(),
+        TimeUnit.MILLISECONDS);
+  }
+
+  @PreDestroy
+  void stopDelayedCatchUp() {
+    delayedCatchUp.shutdownNow();
+  }
+
+  private void catchUp(final String recordType, final Set<String> processInstanceIds) {
     try {
-      enrich(
-          reader.getRunsByProcessInstanceIds(
-              processInstances.stream()
-                  .map(ProcessInstanceDto::getProcessInstanceId)
-                  .collect(Collectors.toSet())));
+      enrich(reader.getRunsByProcessInstanceIds(processInstanceIds));
     } catch (final RuntimeException e) {
       LOG.warn(
           "Could not catch up agent runs of {} process instances after {} import",
-          processInstances.size(),
+          processInstanceIds.size(),
           recordType,
           e);
     }
