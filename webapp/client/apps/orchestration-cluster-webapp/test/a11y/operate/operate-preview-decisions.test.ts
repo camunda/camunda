@@ -71,7 +71,7 @@ test('should have no accessibility violations with a selected row and the bulk d
 }) => {
 	await operatePreviewDecisionsPage.goto('?evaluated=true&failed=true');
 	await page.getByRole('checkbox', {name: 'Select row 1'}).click();
-	await expect(page.getByRole('status')).toHaveText('1 item selected');
+	await expect(page.getByRole('status').filter({hasText: '1 item selected'})).toBeVisible();
 	await page.getByRole('button', {name: 'Delete', exact: true}).click();
 	await expect(page.getByRole('alertdialog')).toBeVisible();
 
