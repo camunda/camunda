@@ -69,7 +69,14 @@ public final class ActorTimerQueue extends DeadlineTimerWheel {
       }
     }
 
-    // yielding before the wheel caught up, so the next call must continue even if the clock is
+    if (expiredTimers < MAX_EXPIRED_TIMERS_PER_CALL) {
+      // a full revolution visited every spoke, so no timer with a deadline <= now is left and the
+      // wheel can skip straight to now instead of catching up over many calls
+      currentTickTime(now);
+      return;
+    }
+
+    // yielding before every due timer fired, so the next call must continue even if the clock is
     // still at the same millisecond
     lastPolledMillis = Long.MIN_VALUE;
   }
