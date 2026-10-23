@@ -95,7 +95,7 @@ class AuthorizationEntityValidatorTest {
       final AuthorizationResourceType resourceType,
       final String resourceId,
       final boolean localUserEnabled,
-      final boolean localGroupEnabled) {
+      final boolean groupMustExist) {
 
     // given
     final AuthorizationRecord record =
@@ -103,7 +103,7 @@ class AuthorizationEntityValidatorTest {
 
     when(command.getValue()).thenReturn(record);
 
-    when(authConfig.isCamundaGroupsEnabled()).thenReturn(localGroupEnabled);
+    when(authConfig.isExternalGroupsEnabled()).thenReturn(!groupMustExist);
     when(authConfig.isCamundaUsersEnabled()).thenReturn(localUserEnabled);
     // when
     final Either<Rejection, AuthorizationRecord> result = checker.ownerAndResourceExists(command);
@@ -135,7 +135,7 @@ class AuthorizationEntityValidatorTest {
       final AuthorizationResourceType resourceType,
       final String resourceId,
       final boolean localUserEnabled,
-      final boolean localGroupEnabled,
+      final boolean groupMustExist,
       final String expectedErrorMessage) {
 
     // given
@@ -144,7 +144,7 @@ class AuthorizationEntityValidatorTest {
 
     when(command.getValue()).thenReturn(record);
 
-    when(authConfig.isCamundaGroupsEnabled()).thenReturn(localGroupEnabled);
+    when(authConfig.isExternalGroupsEnabled()).thenReturn(!groupMustExist);
     when(authConfig.isCamundaUsersEnabled()).thenReturn(localUserEnabled);
 
     // when

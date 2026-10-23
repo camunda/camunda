@@ -39,7 +39,7 @@ public class ApiFiltersConfiguration {
 
   @VisibleForTesting
   public static final String GROUPS_API_DISABLED_ERROR_MESSAGE =
-      "Groups API is disabled because the application, or this physical tenant, is configured in group claim mode. To use the Groups API, reconfigure it to manage group mode by removing the '%s' property, or the physical tenant's override of it."
+      "Groups API is disabled because every OIDC provider of the application, or of this physical tenant, is configured in group claim mode. To use the Groups API, reconfigure a provider to manage group mode by removing its groups claim: the '%s' property, 'camunda.security.authentication.providers.oidc.<provider>.groupsClaim' of a named provider, or the physical tenant's override of either."
           .formatted(GROUPS_CLAIM_PROPERTY);
 
   @VisibleForTesting

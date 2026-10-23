@@ -65,7 +65,9 @@ public class AuthorizationEntityValidator {
       final TypedRecord<AuthorizationRecord> command) {
     final var record = command.getValue();
     final boolean localUserEnabled = securityConfig.getAuthentication().isCamundaUsersEnabled();
-    final boolean localGroupEnabled = securityConfig.getAuthentication().isCamundaGroupsEnabled();
+    // The groups of an IdP's groups claim exist only in the IdP, so they can't be required to exist
+    // here. With several IdPs, a group can't be told apart from a group of one of them.
+    final boolean groupMustExist = !securityConfig.getAuthentication().isExternalGroupsEnabled();
     LOG.trace(
         "Checking owner/resource existence for {} '{}' on resource type '{}'",
         record.getOwnerType(),
@@ -73,7 +75,7 @@ public class AuthorizationEntityValidator {
         record.getResourceType());
     switch (record.getOwnerType()) {
       case GROUP:
-        if (localGroupEnabled && groupState.get(record.getOwnerId()).isEmpty()) {
+        if (groupMustExist && groupState.get(record.getOwnerId()).isEmpty()) {
           LOG.debug("Owner group '{}' does not exist", record.getOwnerId());
           return Either.left(
               new Rejection(
@@ -114,7 +116,7 @@ public class AuthorizationEntityValidator {
     if (!record.getResourceId().equals("*")) {
       switch (record.getResourceType()) {
         case GROUP:
-          if (localGroupEnabled && groupState.get(record.getResourceId()).isEmpty()) {
+          if (groupMustExist && groupState.get(record.getResourceId()).isEmpty()) {
             LOG.debug("Resource group '{}' does not exist", record.getResourceId());
             return Either.left(
                 new Rejection(
