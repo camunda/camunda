@@ -37,17 +37,26 @@ public final class JobReservationFencingCheck {
   private static final String TOKEN_MISMATCH_MESSAGE =
       "Expected to process job with key '%d', but the supplied reservation token does not match "
           + "the one its process instance was created with.";
+  private static final String TOKEN_NOT_RESERVED_MESSAGE =
+      "Expected to process job with key '%d', but a reservation token was supplied while the job's "
+          + "process instance was not created with one.";
 
   private JobReservationFencingCheck() {}
 
   public static JobCommandCheck forCommand() {
     return (command, jobRecord) -> {
       final var storedToken = jobRecord.getJobReservationToken();
+      final var suppliedToken = command.getValue().getJobReservationToken();
       if (storedToken.isEmpty()) {
+        if (!suppliedToken.isEmpty()) {
+          return Either.left(
+              new Rejection(
+                  RejectionType.INVALID_STATE,
+                  TOKEN_NOT_RESERVED_MESSAGE.formatted(command.getKey())));
+        }
         return Either.right(jobRecord);
       }
 
-      final var suppliedToken = command.getValue().getJobReservationToken();
       if (suppliedToken.isEmpty()) {
         return Either.left(
             new Rejection(
