@@ -2543,7 +2543,10 @@ jobs:
       use-shared-distball: ${{ github.event.pull_request.head.repo.fork != true }}
 
   zeebe-ci:
-    if: needs.detect-changes.outputs.zeebe-changes == 'true'
+    # Same gate as every other Java build/test job: skip unless Java code, Maven build files or
+    # relevant CI files changed. `zeebe-changes` is too coarse for this (any file under zeebe/ or
+    # clients/ matches, including Gradle build files and Markdown), see Operate/Optimize for its use.
+    if: needs.detect-changes.outputs.java-code-changes == 'true'
     name: "Zeebe"
     needs: [ detect-changes ]
     uses: ./.github/workflows/ci-zeebe.yml
