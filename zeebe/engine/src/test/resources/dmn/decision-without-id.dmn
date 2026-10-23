@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="https://www.omg.org/spec/DMN/20191111/MODEL/"
+  xmlns:zeebe="http://camunda.org/schema/zeebe/1.0"
+  id="decision_without_id" name="Decision without ID"
+  namespace="http://camunda.org/schema/1.0/dmn">
+  <decision name="No ID">
+    <extensionElements>
+      <zeebe:versionTag value="v1.0" />
+    </extensionElements>
+    <literalExpression>
+      <text>1</text>
+    </literalExpression>
+  </decision>
+</definitions>
