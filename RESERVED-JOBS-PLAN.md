@@ -98,8 +98,18 @@ The root-instance lookup is what makes a call activity's child instance inherit 
 `context.getProcessInstanceKey()` would be the child's own key, and the child's record never went
 through `initProcessInstanceRecord`.
 
-No new job state, no change to the activatable index, and no new re-dispatch edge cases: the token
-lives on the job record, so timeout, retry backoff and incident resolution keep it automatically.
+The token lives on the job record, so timeout, retry backoff and incident resolution keep it
+automatically — no new job state and no new re-dispatch edge cases.
+
+**A reserved (or call-activity-stub) job is kept out of the activatable-by-priority poll index.**
+`DbJobState.makeJobActivatableByPriority` skips the index upsert when the stored job is withheld
+from workers (the twin of `JobWorkerDispatch.withheldFromWorkersReason`), so a poll never walks a
+parked job. `JobReleasedApplier` re-adds a released job to the index once its token is cleared. An
+earlier shape inserted every reserved job and skipped it on each poll walk — O(parked) cost that
+degraded activation for the whole job type as parked instances accumulated (raised in review). The
+skip moves that from "insert then step over on every poll" to "never indexed." This is one extra
+engine special-case in `DbJobState`, but it is the fix for the slowdown; it does **not** by itself
+bound how long an instance may stay parked (see open item 6).
 
 ### API (REST v2 only)
 
@@ -183,8 +193,15 @@ in secondary storage (the only `JOB_LEASE_TOKEN` column belongs to `AGENT_HISTOR
 gets copied onto every job record of a reserved instance.
 
 Rejections are `409 INVALID_STATE`: _"a matching reservation token must be provided because the
-job's process instance was created with one"_ when absent, and _"the supplied reservation token does
-not match the one its process instance was created with"_ when wrong.
+job's process instance was created with one"_ when absent, _"the supplied reservation token does
+not match the one its process instance was created with"_ when wrong, and _"a reservation token was
+supplied while the job's process instance was not created with one"_ when a token is sent for an
+unreserved job. That last case was raised in review ("what should the engine do with a token sent
+for a job that isn't reserved?"): it now **rejects rather than silently ignores** — a caller sends a
+token only when it believes the job is exclusively its own, so a token on an unreserved job means
+that belief is already wrong (the lookup landed on a foreign or production job) and must fail loud.
+A consequence: after a job is **released**, its token is cleared, so a caller must stop sending the
+token on that job or it will be rejected.
 
 The token is caller-chosen, so it should be unique per recording session — not to keep it secret,
 but so two recordings on the same cluster never pick the same token and step on each other. It is
@@ -211,31 +228,58 @@ instance completes with the right one.
 
 ## Open items before this could be a PR
 
-1. **Where the token lives.** The token sits on `ProcessInstanceRecord`, so it ends up in exported
-   records and the webapps schema. Not a security risk — it is an isolation label, not a secret, and
-   a reserved job is never handed to a worker. It is just untidy to carry a per-session token
-   through exported data; a side state keyed by `processInstanceKey` (see
-   `state/suspension/DbSuspensionState.java`) would keep it engine-only if we ever want that. Not a
-   blocker for a PR.
-2. **Caller-chosen vs engine-minted token.** A caller-chosen token keeps the spike simple and fits
-   Test Studio's flow. Letting the engine create the token instead (`exclusiveJobDispatch: true`,
-   token returned in the response) is the cleaner public API, and it matches the documented rule
-   that only the engine creates a job token.
-3. **gRPC and the Java client are not changed, so the whole feature is REST-only.** Test Studio
-   does not need them (it is a UI that talks REST), and recorded CPT tests run against a clean
-   engine with no other workers, so they need no token. Since `jobReservationToken` is on neither
-   the gRPC create-instance request nor its job commands, a reserved instance cannot be created or
-   driven over gRPC at all. Adding a `reserveJobs(token)` client step and a gRPC `oneof` variant is
-   extra work if we ever want it.
+1. **Where the token lives — decide now, not at GA.** The token is a declared property on
+   `ProcessInstanceRecord` (and `JobRecord`), so it travels on the process-instance record of
+   *every* instance — whether the feature is used or not — and lands in exported data and the
+   webapps schema. Not a security risk — it is an isolation label, not a secret, and a reserved job
+   is never handed to a worker. Review pushed back on two grounds: excluding it from exports (a
+   mixin, like `ProcessInstanceMixin`) stops it reaching secondary storage but it would still ride
+   every instance's record; and the cleaner alternative — engine-only side state keyed by the root
+   `processInstanceKey` (see `state/suspension/DbSuspensionState.java`) — avoids both.
+   **Recommendation: move it to side state.** Cost is pure plumbing: a new column family + state
+   class + snapshot/replay wiring, an explicit write at creation, and explicit cleanup on
+   termination (today the field dies with the instance for free). `BpmnJobBehavior` would read the
+   token from that state instead of the root record; the token stays on `JobRecord` (the hot
+   activation path reads it per poll). Not yet implemented on the branch.
+2. **API shape — token as a top-level field, not a runtime instruction (recommended).** On the
+   branch the token rides a `RESERVE_JOBS` variant of `runtimeInstructions`. Review flagged two
+   problems with that: (a) `runtimeInstructions` entries carry a *required* `afterElementId`, which
+   `RESERVE_JOBS` does not provide — the branch works around it by scoping the after-element
+   validation to `TERMINATE_PROCESS_INSTANCE`, but the schema is now internally inconsistent (the
+   terminate variant requires `afterElementId` and not `type`; the reserve variant requires `type`
+   and `jobReservationToken` and no `afterElementId`); and (b) `reserveJobs` is an instruction while
+   `stubCallActivities` / `holdTimers` are top-level boolean flags — two shapes for the same kind of
+   instance-wide switch. The embedded "if a reviewer asks to move it into runtimeInstructions"
+   defence argued from code-generator limitations; that is the wrong axis — the shape should be
+   chosen on API-design grounds. **Recommendation: drop the `RESERVE_JOBS` instruction and add a
+   top-level `jobReservationToken` string on the create request**, a sibling of `stubCallActivities`
+   and `holdTimers`. That removes the second polymorphic variant entirely (so the generated-type
+   churn the branch documents disappears), fixes the `afterElementId` inconsistency, and gives both
+   switches one shape. It keeps the token **caller-chosen**, so CPT's per-run token model and the
+   release flow are unchanged.
 
-   The clean-engine argument only covers CPT's `MANAGED` and `SHARED` runtime modes. In `REMOTE`
-   mode CPT runs against a live cluster, where competing workers are exactly the problem this
-   switch solves - and CPT drives everything through `CamundaClient`, so it cannot set the switch
-   or carry the token at all. Test Studio is expected to execute recorded tests through CPT, which
-   turns this from a deferred nicety into a follow-up: the client work above, plus re-basing CPT's
-   own mocks, which are job workers and would be starved by the reservation. Note also that
-   `POST /jobs/{jobKey}/release` is absent from the `rest-api.yaml` bundle the client generator
-   reads, so it would not appear in a generated client even once the rest is wired up.
+   A further option is **engine-minted** (`reserveJobs: true` boolean, engine returns the token in
+   `CreateProcessInstanceResult`), which matches the rule that only the engine creates a job token —
+   but it changes CPT from "one token per run" to "capture the minted token per instance," so it is
+   a larger follow-up and a decision for the Principal review, not assumed here.
+
+3. **Java client + CPT support — now implemented (commit `00d7275`), gRPC still out.** The Java
+   client gained `reserveJobs(token)` / `stubCallActivities(flag)` on create,
+   `withJobReservationToken` on complete / fail / throw-error / update, `forCallActivity()
+   .runCalledProcess()`, and a REST-only `newReleaseJobCommand`; `POST /jobs/{jobKey}/release` is
+   now referenced from the `rest-api.yaml` bundle so the generator emits its model. CPT replays a
+   recording that uses either switch: a per-run reservation token on the context attached to every
+   job command, warn-not-reject conflict detection against `MOCK_JOB_WORKER_*`, and
+   cancel-on-teardown of every instance a run isolated. The feature stays **REST-only by design** —
+   the setters write the REST request and `send()` fails over gRPC rather than silently dropping the
+   switch, because `gateway.proto` has no counterpart.
+
+   Remaining: the end-to-end example (`IsolatedOrderJsonTest`) ships `@Disabled` because the default
+   runtime image is built from `main` and lacks these engine changes — a build-from-source
+   acceptance test is still to do. **CPT lookups are not instance-scoped** (see CPT section below)
+   — that is solved by the separate run-ID isolation work (product-hub #3546, camunda/camunda
+
+   # 66932), which this recording work should depend on rather than restate.
 
 4. **Reserved jobs cannot be updated without the token**, unlike leased ones. `JobLeaseFencingCheck`
    deliberately lets an operator update a leased job's retries or timeout with no token; the
@@ -248,6 +292,17 @@ instance completes with the right one.
    `shouldRejectUpdateOfReservedJobWithoutToken` and `shouldUpdateReservedJobWithMatchingToken`.
 
 5. An ADR, docs, and a decision on whether the instruction stays alpha for its first release.
+
+6. **Bounding a parked instance's lifetime.** The poll-index skip (above) fixes the *performance*
+   cost of parked reserved jobs, but nothing yet bounds how long an instance stays parked. A
+   reserved job stays `ACTIVATABLE` until completed, released, or the instance is cancelled, so an
+   abandoned recording (closed tab, crashed run) leaks an instance forever. CPT already cancels the
+   instances a run isolated on teardown (`CreatedProcessInstanceRegistry` + cancel-on-teardown,
+   commit `00d7275`), which covers CPT-in-CI. **Still unbounded: Test Studio (crashed tab) and any
+   raw API caller.** Review called this not acceptable without a mitigation. Options: a soft engine
+   TTL / sweeper on reserved instances (e.g. cancel after N hours), and/or a Test Studio "abandon
+   test" action plus server-side token persistence so a reopened session can reattach or cancel.
+   Decision needed before this ships beyond alpha.
 
 ## Connectors
 

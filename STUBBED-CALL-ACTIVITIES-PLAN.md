@@ -58,6 +58,11 @@ Deliberate design points, in case a reviewer asks:
   `BpmnJobActivationBehavior.publishWork` for a push/notify) ask only that. `JobReleaseProcessor`
   deliberately asks the two reasons separately: a reserved job is released back to the workers,
   while a stub job has no worker to release it to.
+- **Withheld jobs are kept out of the activatable-by-priority poll index.** The same predicate
+  (`DbJobState.makeJobActivatableByPriority` skips the index upsert for a stub or reserved job) means
+  a poll never walks a stub job. A stub job is never released, so it is never indexed; a reserved job
+  is indexed only when released. Without this, every poll for the job's type would step over the
+  parked stub/reserved jobs — O(parked) cost that degrades over time (raised in review).
 
 ## Tests
 
@@ -82,13 +87,24 @@ the test robust against the next field added to `JobRecord`.
 
 These are in addition to the ones `RESERVED-JOBS-PLAN.md` lists, which apply here too.
 
-1. **gRPC and the Java client** are untouched for both switches, for the same reason - and with
-   the same caveat: that reason holds only for CPT's `MANAGED` and `SHARED` runtime modes. In
-   `REMOTE` mode CPT replays against a live cluster, where `mockChildProcess`'s deployed stub is
-   the very cluster-wide hijack this switch removes. Re-basing `mockChildProcess` on
-   `stubCallActivities` is the natural follow-up once the client exposes it.
+1. **Java client + CPT support — now implemented (commit `00d7275`), gRPC still out.** The client
+   exposes `stubCallActivities(flag)` on create and `forCallActivity().runCalledProcess()` as a job
+   result; CPT replays `STUB_CALL_ACTIVITY_COMPLETE` / `STUB_CALL_ACTIVITY_THROW_ERROR` /
+   `RUN_CALLED_PROCESS`, each selecting the call activity by `elementSelector` and resolving to the
+   stub job internally. REST-only, like the reservation switch. The existing `mockChildProcess` stays
+   (re-pointing published API is breaking); the isolated stub is added alongside it, and Test Studio
+   warns that `mockChildProcess` is not isolated. Re-basing `mockChildProcess` on `stubCallActivities`
+   remains a possible follow-up.
 2. The same ADR and alpha-status decisions as the reserved-jobs work, and firmer here: this changes
    BPMN execution semantics, not only who may act on a job.
+3. **API shape.** `stubCallActivities` is already a top-level boolean flag; the reservation token
+   should match it (see `RESERVED-JOBS-PLAN.md` open item 2 — drop the `RESERVE_JOBS` instruction for
+   a top-level field) so both instance-wide switches share one shape.
+4. **DMN mocking is out of scope here (raised in review).** CPT also mocks DMN decisions
+   (`MOCK_DMN_DECISION`), which this branch does not address. A DMN decision is engine-evaluated like
+   a called process, so an isolated mock would mirror this call-activity stub (an instance-scoped
+   wait/stand-in) rather than CPT's current cluster-wide deployment. Not a use case for the current
+   recording work; noted as the likely shape if it becomes one.
 
 ## Decisions taken on the stub job's inherited behavior
 
