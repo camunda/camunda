@@ -12,6 +12,7 @@ import {useQuery, useSuspenseQuery} from '@tanstack/react-query';
 import {useBlocker, useLocation, useNavigate} from '@tanstack/react-router';
 import {Form} from 'react-final-form';
 import {Button, Checkbox, ComboBox, Dropdown, Stack} from '@carbon/react';
+import type {ProcessDefinition} from '@camunda/camunda-api-zod-schemas/8.11';
 import {queries} from '#/shared/http/queries';
 import {ForbiddenError} from '#/shared/errors';
 import {getClientConfig} from '#/shared/config/getClientConfig';
@@ -40,7 +41,7 @@ import {MigrationView} from './MigrationView';
 import {ENABLE_PROCESS_MIGRATION} from '#/shared/feature-flags';
 import {getInstanceMigration} from './instanceMigration';
 import {useDiagramXml} from './useDiagramXml';
-import {selectedDefinitionsQuery} from '#/operate/shared/queries/processDefinitions.queries';
+import {latestDefinitionsQuery, selectedDefinitionsQuery} from '#/operate/shared/queries/processDefinitions.queries';
 import type {BatchModificationScope} from './useBatchModificationStatistics';
 import {setVariableConditions, useVariableConditions} from './VariablesFilter/variableFilterStore';
 
@@ -59,7 +60,14 @@ type Props = {
 	sort?: string;
 } & OptionalFilterValues & {tenantId?: string};
 
-type ProcessItem = {id: string; label: string};
+type ProcessItem = {
+	id: string;
+	processDefinitionId: string;
+	tenantId?: string;
+	name: string;
+	label: string;
+	version: number;
+};
 
 const SESSION_FILTER_FIELDS = new Set(['variableName', 'variableValues']);
 
@@ -95,12 +103,13 @@ const Processes: React.FC<Props> = ({
 	const {t} = useTranslation();
 	const navigate = useNavigate();
 	const specificTenantId = isSpecificTenant(tenantId) ? tenantId : undefined;
-	const {data} = useSuspenseQuery(
-		queries.queryProcessDefinitions({
-			page: {limit: 1000},
-			filter: specificTenantId ? {tenantId: specificTenantId} : undefined,
-		}),
-	);
+	const isMultiTenancyEnabled = getClientConfig().deployment.isMultiTenancyEnabled;
+	const {data} = useSuspenseQuery(latestDefinitionsQuery(specificTenantId));
+	const {data: tenantsById} = useQuery({
+		...queries.getCurrentUser(),
+		select: ({tenants}) => Object.fromEntries(tenants.map(({tenantId, name}) => [tenantId, name])),
+		enabled: isMultiTenancyEnabled,
+	});
 	const {
 		data: selectedDefinitions,
 		error: selectedDefinitionsError,
@@ -174,14 +183,21 @@ const Processes: React.FC<Props> = ({
 	);
 
 	const processItems = useMemo<ProcessItem[]>(() => {
-		const seen = new Set<string>();
-		const items = data.items.reduce<ProcessItem[]>((acc, def) => {
-			if (!seen.has(def.processDefinitionId)) {
-				seen.add(def.processDefinitionId);
-				acc.push({id: def.processDefinitionId, label: def.name ?? def.processDefinitionId});
-			}
-			return acc;
-		}, []);
+		const toItem = (definition: ProcessDefinition): ProcessItem => {
+			const name = definition.name ?? definition.processDefinitionId;
+			return {
+				id: `${definition.processDefinitionId}##${definition.tenantId}`,
+				processDefinitionId: definition.processDefinitionId,
+				tenantId: definition.tenantId,
+				name,
+				label:
+					isMultiTenancyEnabled && specificTenantId === undefined
+						? `${name} - ${tenantsById?.[definition.tenantId] ?? definition.tenantId}`
+						: name,
+				version: definition.version,
+			};
+		};
+		const items = data.map(toItem).sort((a, b) => a.label.localeCompare(b.label));
 		const selected = isDefinitionsReady
 			? selectedDefinitions?.find(
 					(definition) =>
@@ -189,11 +205,11 @@ const Processes: React.FC<Props> = ({
 						(specificTenantId === undefined || definition.tenantId === specificTenantId),
 				)
 			: undefined;
-		if (selected !== undefined && !seen.has(selected.processDefinitionId)) {
-			items.push({id: selected.processDefinitionId, label: selected.name ?? selected.processDefinitionId});
+		if (selected !== undefined && !items.some(({id}) => id === toItem(selected).id)) {
+			items.push(toItem(selected));
 		}
 		return items;
-	}, [data, isDefinitionsReady, process, selectedDefinitions, specificTenantId]);
+	}, [data, isDefinitionsReady, isMultiTenancyEnabled, process, selectedDefinitions, specificTenantId, tenantsById]);
 
 	const matchingDefinitions = useMemo(
 		() =>
@@ -212,10 +228,27 @@ const Processes: React.FC<Props> = ({
 			return [];
 		}
 		const versions = [...new Set(matchingDefinitions.map((def) => def.version))].sort((a, b) => b - a);
-		return ['all', ...versions];
-	}, [isDefinitionsReady, matchingDefinitions]);
+		return versions.length > 1 || version === undefined ? ['all', ...versions] : versions;
+	}, [isDefinitionsReady, matchingDefinitions, version]);
 
-	const selectedProcess = processItems.find((i) => i.id === process) ?? null;
+	const selectedProcess = useMemo<ProcessItem | null>(() => {
+		const candidates = processItems.filter(
+			(item) =>
+				item.processDefinitionId === process && (specificTenantId === undefined || item.tenantId === specificTenantId),
+		);
+		const [first] = candidates;
+		if (first === undefined || candidates.length === 1) {
+			return first ?? null;
+		}
+		const versionTenants = new Set(
+			matchingDefinitions
+				.filter((definition) => version === undefined || definition.version === version)
+				.map((definition) => definition.tenantId),
+		);
+		const tenantItem =
+			versionTenants.size === 1 ? candidates.find((item) => versionTenants.has(item.tenantId ?? '')) : undefined;
+		return tenantItem ?? {...first, id: first.processDefinitionId, tenantId: undefined, label: first.name};
+	}, [matchingDefinitions, process, processItems, specificTenantId, version]);
 	const selectedVersion = version ?? 'all';
 
 	const processDefinitionSelection = useMemo<ProcessDefinitionSelection>(() => {
@@ -371,7 +404,7 @@ const Processes: React.FC<Props> = ({
 								}}
 							>
 								<Stack gap={5}>
-									{getClientConfig().deployment.isMultiTenancyEnabled && (
+									{isMultiTenancyEnabled && (
 										<div>
 											<Title>{t('operate.processes.filters.tenant')}</Title>
 											{/* Like legacy, the tenant filter stays usable in the mode; only process, version and element lock. */}
@@ -388,19 +421,22 @@ const Processes: React.FC<Props> = ({
 												items={processItems}
 												itemToString={(item) => item?.label ?? ''}
 												selectedItem={selectedProcess}
-												disabled={mode !== 'list'}
+												disabled={mode !== 'list' || (isMultiTenancyEnabled && tenantId === undefined)}
 												title={notChangeableTitle}
 												size="sm"
 												onChange={({selectedItem}) => {
-													if (selectedItem?.id === process) {
+													if (selectedItem?.id === selectedProcess?.id) {
 														return;
 													}
 													void navigate({
 														to: '.',
 														search: (prev) => ({
 															...prev,
-															process: selectedItem?.id,
-															version: undefined,
+															...(isMultiTenancyEnabled && selectedItem?.tenantId !== undefined
+																? {tenantId: selectedItem.tenantId}
+																: {}),
+															process: selectedItem?.processDefinitionId,
+															version: selectedItem?.version,
 															elementId: undefined,
 														}),
 													});

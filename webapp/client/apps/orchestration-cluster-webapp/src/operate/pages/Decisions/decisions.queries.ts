@@ -7,11 +7,10 @@
  */
 
 import {queryOptions} from '@tanstack/react-query';
-import type {QueryDecisionDefinitionsResponseBody} from '@camunda/camunda-api-zod-schemas/8.11';
-import {request} from '#/shared/http/request';
-import {mapQueryError} from '#/shared/http/mapQueryError';
-import {endpoints} from '#/shared/http/endpoints';
+import type {DecisionDefinition} from '@camunda/camunda-api-zod-schemas/8.11';
 import {queries} from '#/shared/http/queries';
+
+const PAGE_LIMIT = 1000;
 
 type DecisionDefinitionSelectionOptions = {
 	decisionDefinitionId?: string;
@@ -22,14 +21,17 @@ type DecisionDefinitionSelectionOptions = {
 function decisionDefinitionsOptions(tenantId?: string) {
 	return queryOptions({
 		queryKey: ['decisionDefinitions', tenantId] as const,
-		queryFn: async (): Promise<QueryDecisionDefinitionsResponseBody> => {
-			const {response, error} = await request(
-				endpoints.queryDecisionDefinitions({page: {limit: 1000}, filter: tenantId ? {tenantId} : undefined}),
-			);
-			if (error !== null) {
-				throw mapQueryError(error);
-			}
-			return response.json();
+		queryFn: async ({client}): Promise<DecisionDefinition[]> => {
+			const filter = {isLatestVersion: true, ...(tenantId ? {tenantId} : {})};
+			const fetchFrom = async (after?: string): Promise<DecisionDefinition[]> => {
+				const {items, page} = await client.fetchQuery(
+					queries.queryDecisionDefinitions({filter, page: {limit: PAGE_LIMIT, after}}),
+				);
+				return items.length === 0 || page.endCursor === null || page.endCursor === after
+					? items
+					: [...items, ...(await fetchFrom(page.endCursor))];
+			};
+			return fetchFrom();
 		},
 	});
 }

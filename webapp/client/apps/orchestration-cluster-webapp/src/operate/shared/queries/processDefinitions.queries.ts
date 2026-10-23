@@ -78,6 +78,23 @@ const selectedDefinitionsQuery = (process: string, tenantId?: string, options?: 
 		options,
 	);
 
+const latestDefinitionsQuery = (tenantId?: string) =>
+	queryOptions({
+		queryKey: ['operationsLogDefinitions', 'latest', tenantId] as const,
+		queryFn: async ({client}): Promise<ProcessDefinition[]> => {
+			const filter = {isLatestVersion: true, ...(tenantId ? {tenantId} : {})};
+			const fetchFrom = async (after?: string): Promise<ProcessDefinition[]> => {
+				const {items, page} = await client.fetchQuery(
+					queries.queryProcessDefinitions({filter, page: {limit: PAGE_LIMIT, after}}),
+				);
+				return items.length === 0 || page.endCursor === null || page.endCursor === after
+					? items
+					: [...items, ...(await fetchFrom(page.endCursor))];
+			};
+			return fetchFrom();
+		},
+	});
+
 const resolvedDefinitionQuery = (process: string, tenantId: string | undefined, version: number) =>
 	operationsLogDefinitionsQuery({
 		processDefinitionId: {$eq: process},
@@ -85,4 +102,4 @@ const resolvedDefinitionQuery = (process: string, tenantId: string | undefined, 
 		version,
 	});
 
-export {operationsLogDefinitionsQuery, selectedDefinitionsQuery, resolvedDefinitionQuery};
+export {operationsLogDefinitionsQuery, selectedDefinitionsQuery, latestDefinitionsQuery, resolvedDefinitionQuery};

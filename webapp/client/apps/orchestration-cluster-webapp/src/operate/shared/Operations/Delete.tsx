@@ -16,9 +16,10 @@ type Props = {
 	processInstanceKey: ProcessInstance['processInstanceKey'];
 	onExecute: () => void;
 	disabled?: boolean;
+	title?: string;
 };
 
-const Delete: React.FC<Props> = ({processInstanceKey, onExecute, disabled = false}) => {
+const Delete: React.FC<Props> = ({processInstanceKey, onExecute, disabled = false, title}) => {
 	const {t} = useTranslation();
 	const [isDeleteModalVisible, setIsDeleteModalVisible] = useState(false);
 
@@ -27,8 +28,9 @@ const Delete: React.FC<Props> = ({processInstanceKey, onExecute, disabled = fals
 			<DangerButton
 				type="DELETE"
 				onClick={() => setIsDeleteModalVisible(true)}
-				title={t('operate.shared.operations.deleteTitle', {processInstanceKey})}
+				title={title ?? t('operate.shared.operations.deleteInstance')}
 				disabled={disabled}
+				isIconOnly
 				size="sm"
 			/>
 			{isDeleteModalVisible && (

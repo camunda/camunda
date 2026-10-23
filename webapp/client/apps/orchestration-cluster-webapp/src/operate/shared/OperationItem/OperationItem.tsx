@@ -43,7 +43,6 @@ const OperationItem: React.FC<ItemProps> = ({title, onClick, type, disabled, siz
 				onClick={onClick}
 				disabled={disabled}
 				data-testid={testId}
-				title={title}
 				aria-label={title}
 				hasIconOnly
 				size={size}

@@ -24,6 +24,7 @@ import {
 import {
 	drainingByIdKey,
 	drainingProcessDefinitionsQuery,
+	getInstancesByProcessRefetchInterval,
 	instancesByProcessInfiniteQuery,
 } from '#/operate/pages/Dashboard/InstancesByProcess/instancesByProcess.queries';
 import {InstancesByProcessVersions} from './InstancesByProcessVersions';
@@ -43,7 +44,11 @@ const InstancesByProcess: React.FC = () => {
 		isFetchingPreviousPage,
 		isFetchNextPageError,
 		isFetchPreviousPageError,
-	} = useInfiniteQuery({...instancesByProcessInfiniteQuery(), refetchInterval: 5000});
+	} = useInfiniteQuery({
+		...instancesByProcessInfiniteQuery(),
+		// Mirrors legacy: poll only while the list is still on a single page.
+		refetchInterval: (query) => getInstancesByProcessRefetchInterval(query.state.data?.pages.length ?? 1),
+	});
 
 	const {data: draining} = useQuery(drainingProcessDefinitionsQuery());
 

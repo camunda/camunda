@@ -20,6 +20,7 @@ import {endpoints} from '#/shared/http/endpoints';
 
 const PAGE_SIZE = 50;
 const MAX_PAGES = 5;
+const LIST_REFETCH_INTERVAL = 5000;
 const DRAINING_REFETCH_INTERVAL = 5000;
 const DRAINING_PAGE_LIMIT = 1000;
 
@@ -83,6 +84,10 @@ type PageRange = {from: number; limit: number};
 // or duplicate rows.
 const pageStartOffsetByEndOffset = new Map<number, PageRange>();
 
+function getInstancesByProcessRefetchInterval(pageCount: number) {
+	return pageCount === 1 ? LIST_REFETCH_INTERVAL : false;
+}
+
 const instancesByProcessInfiniteQuery = () =>
 	infiniteQueryOptions({
 		queryKey: ['instancesByProcess'] as const,
@@ -145,6 +150,7 @@ export {
 	instancesByProcessVersionsQuery,
 	drainingProcessDefinitionsQuery,
 	drainingByIdKey,
+	getInstancesByProcessRefetchInterval,
 	PAGE_SIZE,
 	type DrainingLookup,
 };

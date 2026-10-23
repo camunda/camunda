@@ -17,6 +17,7 @@ import {endpoints} from '#/shared/http/endpoints';
 
 const PAGE_SIZE = 50;
 const MAX_PAGES = 5;
+const LIST_REFETCH_INTERVAL = 5000;
 
 type PageRange = {from: number; limit: number};
 
@@ -29,6 +30,10 @@ type PageRange = {from: number; limit: number};
 // or duplicate rows.
 const pageStartOffsetByEndOffset = new Map<number, PageRange>();
 
+function getIncidentsByErrorRefetchInterval(pageCount: number) {
+	return pageCount === 1 ? LIST_REFETCH_INTERVAL : false;
+}
+
 const incidentsByErrorInfiniteQuery = () =>
 	infiniteQueryOptions({
 		queryKey: ['incidentsByError'] as const,
@@ -36,6 +41,10 @@ const incidentsByErrorInfiniteQuery = () =>
 			const {response, error} = await request(
 				endpoints.getIncidentProcessInstanceStatisticsByError({
 					page: pageParam,
+					sort: [
+						{field: 'activeInstancesWithErrorCount', order: 'DESC'},
+						{field: 'errorMessage', order: 'ASC'},
+					],
 				}),
 			);
 			if (error !== null) {
@@ -80,6 +89,11 @@ const incidentsByErrorDefinitionsQuery = (errorHashCode: number) =>
 			const {response, error} = await request(
 				endpoints.getIncidentProcessInstanceStatisticsByDefinition({
 					filter: {errorHashCode},
+					sort: [
+						{field: 'activeInstancesWithErrorCount', order: 'DESC'},
+						{field: 'processDefinitionKey', order: 'DESC'},
+						{field: 'tenantId', order: 'DESC'},
+					],
 				}),
 			);
 			if (error !== null) {
@@ -89,4 +103,4 @@ const incidentsByErrorDefinitionsQuery = (errorHashCode: number) =>
 		},
 	});
 
-export {incidentsByErrorInfiniteQuery, incidentsByErrorDefinitionsQuery, PAGE_SIZE};
+export {incidentsByErrorInfiniteQuery, incidentsByErrorDefinitionsQuery, getIncidentsByErrorRefetchInterval, PAGE_SIZE};

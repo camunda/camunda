@@ -475,6 +475,21 @@ test.describe('Operate processes page', () => {
 		operateProcessesPage,
 	}) => {
 		network.use(
+			mockQueryProcessDefinitionsEndpoint({
+				successResponse: HttpResponse.json(
+					createQueryProcessDefinitionsResponse({
+						items: [
+							createProcessDefinition({name: 'Order Process', processDefinitionId: 'order-process', version: 1}),
+							createProcessDefinition({
+								name: 'Order Process',
+								processDefinitionId: 'order-process',
+								processDefinitionKey: 'order-process-2',
+								version: 2,
+							}),
+						],
+					}),
+				),
+			}),
 			mockGetProcessDefinitionXmlEndpoint({successResponse: HttpResponse.text(BPMN_XML)}),
 			mockGetProcessDefinitionStatisticsEndpoint({
 				successResponse: HttpResponse.json(createGetProcessDefinitionStatisticsResponse([])),
@@ -561,10 +576,12 @@ test.describe('Operate processes page', () => {
 					);
 				}
 				return HttpResponse.json(
-					createQueryProcessDefinitionsResponse({
-						items: [tenantAVersions[0]!, ...otherDefinitions],
-						page: {totalItems: 2000, hasMoreTotalItems: true, endCursor: 'global-next'},
-					}),
+					isCursorForwardPagination(body.page) && body.page.after === 'global-next'
+						? createQueryProcessDefinitionsResponse()
+						: createQueryProcessDefinitionsResponse({
+								items: [tenantAVersions[0]!, ...otherDefinitions],
+								page: {totalItems: 2000, hasMoreTotalItems: true, endCursor: 'global-next'},
+							}),
 				);
 			}),
 		);
@@ -602,10 +619,12 @@ test.describe('Operate processes page', () => {
 									}),
 								],
 							})
-						: createQueryProcessDefinitionsResponse({
-								items: otherDefinitions,
-								page: {totalItems: 1001, hasMoreTotalItems: true, endCursor: 'global-next'},
-							}),
+						: isCursorForwardPagination(body.page) && body.page.after === 'global-next'
+							? createQueryProcessDefinitionsResponse()
+							: createQueryProcessDefinitionsResponse({
+									items: otherDefinitions,
+									page: {totalItems: 1001, hasMoreTotalItems: true, endCursor: 'global-next'},
+								}),
 				);
 			}),
 			mockGetProcessDefinitionXmlEndpoint({successResponse: HttpResponse.text(BPMN_XML)}),

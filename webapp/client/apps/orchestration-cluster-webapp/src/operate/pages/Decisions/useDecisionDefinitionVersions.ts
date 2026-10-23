@@ -37,7 +37,7 @@ function useDecisionDefinitionVersions(decisionDefinitionId?: string, tenantId?:
 		initialPageParam: undefined as string | undefined,
 		getNextPageParam: (lastPage, _pages, lastPageParam) => {
 			const nextCursor = lastPage.page.endCursor ?? undefined;
-			return lastPage.page.hasMoreTotalItems && nextCursor !== lastPageParam ? nextCursor : undefined;
+			return lastPage.items.length > 0 && nextCursor !== lastPageParam ? nextCursor : undefined;
 		},
 		select: ({pages}) => pages.flatMap((page) => page.items),
 		staleTime: 'static',

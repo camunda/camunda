@@ -78,6 +78,36 @@ function paginatedItemsResponse(offset: number) {
 }
 
 describe('<BatchItemsTable />', () => {
+	it.for([
+		{state: 'ACTIVE', processInstanceKey: '2251799813685601'},
+		{state: 'FAILED', processInstanceKey: '2251799813685602'},
+		{state: 'COMPLETED', processInstanceKey: '2251799813685603'},
+	] as const)(
+		'should highlight only completed items when the item state is $state and no error message is present',
+		async ({state, processInstanceKey}, {worker}) => {
+			worker.use(
+				mockQueryBatchOperationItemsEndpoint({
+					successResponse: HttpResponse.json(
+						createQueryBatchOperationItemsResponse({
+							items: [createBatchOperationItem({state, processInstanceKey, errorMessage: null})],
+						}),
+					),
+				}),
+			);
+			const screen = await renderBatchItemsTable('MIGRATE_PROCESS_INSTANCE');
+			const row = screen.getByRole('row', {
+				name: new RegExp(`View process instance ${processInstanceKey}`),
+			});
+
+			await expect.element(row).toBeVisible();
+			if (state === 'COMPLETED') {
+				await expect.poll(() => getComputedStyle(row.element()).boxShadow).not.toBe('none');
+			} else {
+				await expect.poll(() => getComputedStyle(row.element()).boxShadow).toBe('none');
+			}
+		},
+	);
+
 	it('should show a skeleton instead of the empty state until the first response arrives', async ({worker}) => {
 		worker.use(
 			mockQueryBatchOperationItemsEndpoint({
@@ -170,7 +200,7 @@ describe('<BatchItemsTable />', () => {
 
 		await expect.element(screen.getByText("Couldn't fetch data")).toBeVisible();
 		await expect.element(link).toBeVisible();
-		await userEvent.hover(screen.getByTestId('item-state-with-error'));
+		await userEvent.click(screen.getByRole('button', {name: /Show failure details for item/}));
 		await expect.element(screen.getByText('Failure reason: Failed to migrate')).toBeVisible();
 		worker.use(
 			mockQueryBatchOperationItemsEndpoint({
@@ -440,13 +470,16 @@ describe('<BatchItemsTable />', () => {
 		await expect.element(screen.getByRole('link', {name: 'View process instance 2251799813685250'})).toBeVisible();
 	});
 
-	it('should render a failed item with its state', async ({worker}) => {
+	it('should show the failure reason of a failed item in an expandable row', async ({worker}) => {
 		worker.use(
 			mockQueryBatchOperationItemsEndpoint({
 				successResponse: HttpResponse.json(
 					createQueryBatchOperationItemsResponse({
-						items: [createBatchOperationItem({state: 'FAILED', errorMessage: 'Something went wrong'})],
-						page: {totalItems: 1, startCursor: null, endCursor: null, hasMoreTotalItems: false},
+						items: [
+							createBatchOperationItem({itemKey: 'failed-item', state: 'FAILED', errorMessage: 'Something went wrong'}),
+							createBatchOperationItem({itemKey: 'completed-item', state: 'COMPLETED'}),
+						],
+						page: {totalItems: 2, startCursor: null, endCursor: null, hasMoreTotalItems: false},
 					}),
 				),
 			}),
@@ -455,5 +488,13 @@ describe('<BatchItemsTable />', () => {
 		const screen = await renderBatchItemsTable('CANCEL_PROCESS_INSTANCE');
 
 		await expect.element(screen.getByText(/^Failed$/)).toBeVisible();
+		await expect.element(screen.getByText('Failure reason: Something went wrong')).not.toBeInTheDocument();
+		await expect
+			.element(screen.getByRole('button', {name: 'Show failure details for item completed-item'}))
+			.not.toBeInTheDocument();
+
+		await userEvent.click(screen.getByRole('button', {name: 'Show failure details for item failed-item'}));
+
+		await expect.element(screen.getByText('Failure reason: Something went wrong')).toBeVisible();
 	});
 });

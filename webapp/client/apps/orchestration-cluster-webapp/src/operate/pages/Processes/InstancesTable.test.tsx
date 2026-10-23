@@ -79,6 +79,14 @@ function renderSearchHarness(initial: ProcessesSearch, next: ProcessesSearch) {
 	return renderWithRouter(Harness, {path: '/operate/processes'});
 }
 
+function getRowAction(
+	screen: Pick<Awaited<ReturnType<typeof renderInstancesTable>>, 'getByRole'>,
+	key: string,
+	name: string,
+) {
+	return screen.getByRole('row', {name: new RegExp(`View instance ${key}\\b`)}).getByRole('button', {name});
+}
+
 const EMPTY_BATCH_OPERATION_ITEMS_RESPONSE = HttpResponse.json(createQueryBatchOperationItemsResponse({items: []}));
 
 describe('<InstancesTable />', () => {
@@ -111,6 +119,41 @@ describe('<InstancesTable />', () => {
 
 		await expect.element(screen.getByText('Order Process')).toBeVisible();
 		await expect.element(screen.getByText('Payment Process')).toBeVisible();
+	});
+
+	it('should keep the header and the operations column visible while scrolling a narrow table', async ({worker}) => {
+		worker.use(
+			mockQueryProcessInstancesEndpoint({
+				successResponse: HttpResponse.json(
+					createQueryProcessInstancesResponse({
+						items: Array.from({length: 20}, (_, index) =>
+							createProcessInstance({processInstanceKey: String(index + 1), state: 'ACTIVE'}),
+						),
+					}),
+				),
+			}),
+			mockQueryBatchOperationItemsEndpoint({successResponse: EMPTY_BATCH_OPERATION_ITEMS_RESPONSE}),
+		);
+
+		const screen = await renderWithRouter(
+			() => (
+				<div style={{height: '240px', width: '480px', display: 'flex', flexDirection: 'column'}}>
+					<InstancesTable search={BASE_SEARCH} />
+				</div>
+			),
+			{path: '/operate/processes'},
+		);
+		const operationsHeader = screen.getByRole('columnheader', {name: 'Operations'});
+		const lastRow = screen.getByRole('row').last();
+
+		await expect.element(operationsHeader).toBeInViewport({ratio: 1});
+		await expect.element(lastRow).not.toBeInViewport();
+
+		await userEvent.wheel(screen.getByRole('table'), {delta: {y: 2000}});
+
+		await expect.element(lastRow).toBeInViewport();
+		await expect.element(operationsHeader).toBeInViewport({ratio: 1});
+		await expect.element(lastRow.getByRole('cell').last()).toBeInViewport({ratio: 1});
 	});
 
 	it('should show a loading table instead of the empty state while initially fetching', async ({worker}) => {
@@ -1034,10 +1077,10 @@ describe('<InstancesTable />', () => {
 
 		const screen = await renderInstancesTable();
 
-		await expect.element(screen.getByRole('button', {name: 'Suspend Instance 1'})).toBeVisible();
-		await expect.element(screen.getByRole('button', {name: 'Resume Instance 2'})).toBeVisible();
-		await expect.element(screen.getByRole('button', {name: 'Resume Instance 1'})).not.toBeInTheDocument();
-		await expect.element(screen.getByRole('button', {name: 'Suspend Instance 2'})).not.toBeInTheDocument();
+		await expect.element(getRowAction(screen, '1', 'Suspend Instance')).toBeVisible();
+		await expect.element(getRowAction(screen, '2', 'Resume Instance')).toBeVisible();
+		await expect.element(getRowAction(screen, '1', 'Resume Instance')).not.toBeInTheDocument();
+		await expect.element(getRowAction(screen, '2', 'Suspend Instance')).not.toBeInTheDocument();
 	});
 
 	it('should wait for a suspend command to take effect before clearing the spinner', async ({worker}) => {
@@ -1061,7 +1104,7 @@ describe('<InstancesTable />', () => {
 		);
 
 		const screen = await renderInstancesTable();
-		await userEvent.click(screen.getByRole('button', {name: 'Suspend Instance 1'}));
+		await userEvent.click(getRowAction(screen, '1', 'Suspend Instance'));
 
 		await expect.element(screen.getByTestId('operation-spinner')).toBeVisible();
 
@@ -1089,7 +1132,7 @@ describe('<InstancesTable />', () => {
 		);
 		const screen = await renderInstancesTable({...BASE_SEARCH, batchOperationKey: 'batch-op-1'});
 		await expect.element(screen.getByRole('columnheader', {name: 'Operation State'})).toBeVisible();
-		await userEvent.click(screen.getByRole('button', {name: 'Suspend Instance 1'}));
+		await userEvent.click(getRowAction(screen, '1', 'Suspend Instance'));
 		await expect.element(screen.getByTestId('operation-spinner')).toBeVisible();
 
 		worker.use(
@@ -1105,7 +1148,7 @@ describe('<InstancesTable />', () => {
 
 		await expect.element(screen.getByRole('button', {name: 'Show failure details for instance 1'})).toBeVisible();
 		await expect.element(screen.getByTestId('operation-spinner')).toBeVisible();
-		await expect.element(screen.getByRole('button', {name: 'Suspend Instance 1'})).toBeDisabled();
+		await expect.element(getRowAction(screen, '1', 'Suspend Instance')).toBeDisabled();
 	});
 
 	it('should keep an expanded failure visible while a row action is in flight', async ({worker}) => {
@@ -1131,7 +1174,7 @@ describe('<InstancesTable />', () => {
 		await userEvent.click(screen.getByRole('button', {name: 'Show failure details for instance 1'}));
 		await expect.element(screen.getByText('Before')).toBeVisible();
 
-		await userEvent.click(screen.getByRole('button', {name: 'Suspend Instance 1'}));
+		await userEvent.click(getRowAction(screen, '1', 'Suspend Instance'));
 		await expect.element(screen.getByTestId('operation-spinner')).toBeVisible();
 
 		worker.use(
@@ -1150,7 +1193,7 @@ describe('<InstancesTable />', () => {
 			.element(screen.getByRole('button', {name: 'Show failure details for instance 1'}))
 			.toHaveAttribute('aria-expanded', 'true');
 		await expect.element(screen.getByTestId('operation-spinner')).toBeVisible();
-		await expect.element(screen.getByRole('button', {name: 'Suspend Instance 1'})).toBeDisabled();
+		await expect.element(getRowAction(screen, '1', 'Suspend Instance')).toBeDisabled();
 	});
 
 	it('should wait for a resume command to take effect before clearing the spinner', async ({worker}) => {
@@ -1174,7 +1217,8 @@ describe('<InstancesTable />', () => {
 		);
 
 		const screen = await renderInstancesTable();
-		await userEvent.click(screen.getByRole('button', {name: 'Resume Instance 1'}));
+		await userEvent.hover(screen.getByRole('columnheader', {name: /^(Sort by )?Name$/}));
+		await userEvent.click(getRowAction(screen, '1', 'Resume Instance'));
 
 		await expect.element(screen.getByTestId('operation-spinner')).toBeVisible();
 
@@ -1206,7 +1250,7 @@ describe('<InstancesTable />', () => {
 
 		const screen = await renderInstancesTable();
 
-		await userEvent.click(screen.getByRole('button', {name: 'Suspend Instance 1'}));
+		await userEvent.click(getRowAction(screen, '1', 'Suspend Instance'));
 
 		await expect.element(screen.getByText('Failed to suspend process instance')).toBeVisible();
 		await expect.element(screen.getByText('Internal Server Error')).toBeVisible();
@@ -1231,7 +1275,7 @@ describe('<InstancesTable />', () => {
 
 		const screen = await renderInstancesTable();
 
-		await userEvent.click(screen.getByRole('button', {name: 'Resume Instance 1'}));
+		await userEvent.click(getRowAction(screen, '1', 'Resume Instance'));
 
 		await expect.element(screen.getByText('Failed to resume process instance')).toBeVisible();
 		await expect.element(screen.getByText('Internal Server Error')).toBeVisible();
@@ -1256,7 +1300,7 @@ describe('<InstancesTable />', () => {
 
 		const screen = await renderInstancesTable();
 
-		await userEvent.click(screen.getByRole('button', {name: 'Suspend Instance 1'}));
+		await userEvent.click(getRowAction(screen, '1', 'Suspend Instance'));
 
 		await expect.element(screen.getByText("You don't have permission to perform this operation")).toBeVisible();
 		await expect.element(screen.getByText('Contact the administrator if you need access.')).toBeVisible();
@@ -1282,7 +1326,7 @@ describe('<InstancesTable />', () => {
 
 		const screen = await renderInstancesTable();
 
-		await userEvent.click(screen.getByRole('button', {name: 'Resume Instance 1'}));
+		await userEvent.click(getRowAction(screen, '1', 'Resume Instance'));
 
 		await expect.element(screen.getByText("You don't have permission to perform this operation")).toBeVisible();
 		await expect.element(screen.getByText('Contact the administrator if you need access.')).toBeVisible();
@@ -1313,7 +1357,7 @@ describe('<InstancesTable />', () => {
 		);
 
 		const screen = await renderInstancesTable();
-		await userEvent.click(screen.getByRole('button', {name: 'Suspend Instance 1'}));
+		await userEvent.click(getRowAction(screen, '1', 'Suspend Instance'));
 
 		await expect.element(screen.getByTestId('operation-spinner')).toBeVisible();
 

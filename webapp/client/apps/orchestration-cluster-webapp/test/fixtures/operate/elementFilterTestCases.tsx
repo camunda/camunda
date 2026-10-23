@@ -469,10 +469,12 @@ function registerElementFilterTests() {
 						);
 					}
 					return HttpResponse.json(
-						createQueryProcessDefinitionsResponse({
-							items: [TENANT_A_VERSIONS[0]!, ...UNRELATED_DEFINITIONS],
-							page: {totalItems: 2000, hasMoreTotalItems: true, endCursor: 'global-next'},
-						}),
+						isCursorForwardPagination(body.page) && body.page.after === 'global-next'
+							? createQueryProcessDefinitionsResponse()
+							: createQueryProcessDefinitionsResponse({
+									items: [TENANT_A_VERSIONS[0]!, ...UNRELATED_DEFINITIONS],
+									page: {totalItems: 2000, hasMoreTotalItems: true, endCursor: 'global-next'},
+								}),
 					);
 				}),
 				mockQueryProcessInstancesEndpoint({successResponse: EMPTY_INSTANCES}),
@@ -499,11 +501,15 @@ function registerElementFilterTests() {
 					const processFilter = body.filter?.processDefinitionId;
 					return HttpResponse.json(
 						(typeof processFilter === 'string' ? processFilter : processFilter?.$eq) === 'unique'
-							? createQueryProcessDefinitionsResponse({items: [unique]})
-							: createQueryProcessDefinitionsResponse({
-									items: [...UNRELATED_DEFINITIONS, TENANT_A_VERSIONS[0]!],
-									page: {totalItems: 1001, hasMoreTotalItems: true, endCursor: 'global-next'},
-								}),
+							? createQueryProcessDefinitionsResponse({
+									items: [unique, {...unique, processDefinitionKey: 'unique-2', version: 2}],
+								})
+							: isCursorForwardPagination(body.page) && body.page.after === 'global-next'
+								? createQueryProcessDefinitionsResponse()
+								: createQueryProcessDefinitionsResponse({
+										items: [...UNRELATED_DEFINITIONS, TENANT_A_VERSIONS[0]!],
+										page: {totalItems: 1001, hasMoreTotalItems: true, endCursor: 'global-next'},
+									}),
 					);
 				}),
 				mockQueryProcessInstancesEndpoint({successResponse: EMPTY_INSTANCES}),

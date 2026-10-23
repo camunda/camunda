@@ -18,7 +18,10 @@ import {EmptyState} from '#/operate/components/EmptyState/shadcn.components/Empt
 import emptyStateIconUrl from '#/operate/assets/empty-state-process-instances-by-name.svg';
 import {ExpandableList} from '#/operate/pages/Dashboard/shadcn.components/ExpandableList';
 import {ExpandedRowErrorFallback} from '#/operate/pages/Dashboard/shadcn.components/ExpandedRowErrorFallback';
-import {incidentsByErrorInfiniteQuery} from '#/operate/pages/Dashboard/IncidentsByError/incidentsByError.queries';
+import {
+	getIncidentsByErrorRefetchInterval,
+	incidentsByErrorInfiniteQuery,
+} from '#/operate/pages/Dashboard/IncidentsByError/incidentsByError.queries';
 import {IncidentsByErrorDefinitions} from './IncidentsByErrorDefinitions';
 
 const IncidentsByError: React.FC = () => {
@@ -35,7 +38,11 @@ const IncidentsByError: React.FC = () => {
 		isFetchingPreviousPage,
 		isFetchNextPageError,
 		isFetchPreviousPageError,
-	} = useInfiniteQuery({...incidentsByErrorInfiniteQuery(), refetchInterval: 5000});
+	} = useInfiniteQuery({
+		...incidentsByErrorInfiniteQuery(),
+		// Mirrors legacy: poll only while the list is still on a single page.
+		refetchInterval: (query) => getIncidentsByErrorRefetchInterval(query.state.data?.pages.length ?? 1),
+	});
 
 	const items = useMemo(() => data?.pages.flatMap((page) => page.items) ?? [], [data]);
 	const hasItems = items.length > 0;

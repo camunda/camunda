@@ -13,19 +13,26 @@ import {Delete} from './Delete';
 import {ResolveIncident} from './ResolveIncident';
 import {Suspend} from './Suspend';
 import {Resume} from './Resume';
-import type {OperationConfig} from './types';
+import {EmptyOperationSlot} from './styled';
+import type {OperationSlot} from './types';
 
 type Props = {
-	operation: OperationConfig;
+	operation: OperationSlot;
 	processInstanceKey: string;
 };
 
 const OperationRenderer: React.FC<Props> = ({operation, processInstanceKey}) => {
 	const {t} = useTranslation();
+
+	if (operation === null) {
+		return <EmptyOperationSlot />;
+	}
+
 	const baseProps = {
 		processInstanceKey,
 		onExecute: operation.onExecute,
 		disabled: operation.disabled,
+		title: operation.label,
 	};
 
 	switch (operation.type) {

@@ -456,6 +456,8 @@ const InstancesTable: React.FC<Props> = ({
 					columns={columns}
 					rows={processInstances}
 					rowKey={(row) => row.processInstanceKey}
+					stickyHeader
+					stickyRightColumn="operations"
 					expansionScope={batchOperationKey}
 					rowOperationError={
 						isOperationStateColumnVisible

@@ -8,6 +8,7 @@
 
 import {afterEach, beforeEach, describe, expect} from 'vitest';
 import {HttpResponse} from 'msw';
+import {userEvent} from 'vitest/browser';
 import {z} from 'zod';
 import {it} from '#/vitest-modules/test-extend';
 import {renderWithRouter} from '#/vitest-modules/render-with-router';
@@ -29,7 +30,16 @@ import {DecisionsHarness} from './DecisionsHarness';
 
 const DECISION_DEFINITIONS = HttpResponse.json(
 	createQueryDecisionDefinitionsResponse({
-		items: [createDecisionDefinition({name: 'Invoice Approval', decisionDefinitionId: 'invoice-approval', version: 1})],
+		items: [
+			createDecisionDefinition({name: 'Invoice Approval', decisionDefinitionId: 'invoice-approval', version: 1}),
+			createDecisionDefinition({
+				name: 'Invoice Approval',
+				decisionDefinitionId: 'invoice-approval',
+				decisionDefinitionKey: 'tenant-a-invoice-approval',
+				version: 3,
+				tenantId: '<tenant-A>',
+			}),
+		],
 	}),
 );
 
@@ -37,11 +47,11 @@ const EMPTY_DECISION_INSTANCES = HttpResponse.json(createQueryDecisionInstancesR
 
 const TENANT_A_SCOPED_REQUEST_SCHEMA = z.strictObject({
 	page: z.strictObject({limit: z.literal(1000)}),
-	filter: z.strictObject({tenantId: z.literal('<tenant-A>')}),
+	filter: z.strictObject({isLatestVersion: z.literal(true), tenantId: z.literal('<tenant-A>')}),
 });
 const UNSCOPED_REQUEST_SCHEMA = z.strictObject({
 	page: z.strictObject({limit: z.literal(1000)}),
-	filter: z.never().optional(),
+	filter: z.strictObject({isLatestVersion: z.literal(true)}),
 });
 const FAILURE_RESPONSE = new HttpResponse(null, {status: 400});
 
@@ -152,7 +162,11 @@ describe('Multi tenancy', () => {
 		worker.use(
 			mockQueryDecisionDefinitionsEndpoint({
 				schema: TENANT_A_SCOPED_REQUEST_SCHEMA,
-				successResponse: DECISION_DEFINITIONS,
+				successResponse: HttpResponse.json(
+					createQueryDecisionDefinitionsResponse({
+						items: [createDecisionDefinition({name: 'Invoice Approval', tenantId: '<tenant-A>'})],
+					}),
+				),
 				failureResponse: FAILURE_RESPONSE,
 			}),
 			mockQueryDecisionInstancesEndpoint({successResponse: EMPTY_DECISION_INSTANCES}),
@@ -179,6 +193,66 @@ describe('Multi tenancy', () => {
 		const screen = await renderDecisionsPage({tenantId: 'all'});
 
 		await screen.getByRole('combobox', {name: 'Name'}).click();
-		await expect.element(screen.getByRole('option', {name: 'Invoice Approval'})).toBeVisible();
+		await expect.element(screen.getByRole('option', {name: 'Invoice Approval - Default Tenant'})).toBeVisible();
+		await expect.element(screen.getByRole('option', {name: 'Invoice Approval - Tenant A'})).toBeVisible();
+	});
+
+	it('should select the tenant and its latest version with a decision from all tenants', async ({worker}) => {
+		worker.use(
+			mockQueryDecisionDefinitionsEndpoint({successResponse: DECISION_DEFINITIONS}),
+			mockQueryDecisionInstancesEndpoint({successResponse: EMPTY_DECISION_INSTANCES}),
+			mockCurrentUserEndpoint({successResponse: CURRENT_USER}),
+			mockGetDecisionDefinitionXmlEndpoint({successResponse: HttpResponse.text(DMN_XML)}),
+		);
+
+		const screen = await renderDecisionsPage({tenantId: 'all'});
+		await screen.getByRole('combobox', {name: 'Name'}).fill('Invoice Approval - Tenant A');
+		await userEvent.keyboard('{Enter}');
+
+		const getSearch = () => screen.router.state.location.search as Record<string, unknown>;
+		await expect
+			.poll(getSearch)
+			.toMatchObject({tenantId: '<tenant-A>', decisionDefinitionId: 'invoice-approval', decisionDefinitionVersion: 3});
+	});
+
+	it('should show the tenant of the bookmarked version with all tenants and switch to another tenant', async ({
+		worker,
+	}) => {
+		worker.use(
+			mockQueryDecisionDefinitionsEndpoint({successResponse: DECISION_DEFINITIONS}),
+			mockQueryDecisionInstancesEndpoint({successResponse: EMPTY_DECISION_INSTANCES}),
+			mockCurrentUserEndpoint({successResponse: CURRENT_USER}),
+			mockGetDecisionDefinitionXmlEndpoint({successResponse: HttpResponse.text(DMN_XML)}),
+		);
+
+		const screen = await renderDecisionsPage({
+			tenantId: 'all',
+			decisionDefinitionId: 'invoice-approval',
+			decisionDefinitionVersion: '3',
+		});
+		const nameCombobox = screen.getByRole('combobox', {name: 'Name'});
+
+		await expect.element(nameCombobox).toHaveValue('Invoice Approval - Tenant A');
+
+		await nameCombobox.fill('Invoice Approval - Default Tenant');
+		await userEvent.keyboard('{Enter}');
+
+		const getSearch = () => screen.router.state.location.search as Record<string, unknown>;
+		await expect
+			.poll(getSearch)
+			.toMatchObject({tenantId: '<default>', decisionDefinitionId: 'invoice-approval', decisionDefinitionVersion: 1});
+	});
+
+	it('should disable the decision name until a tenant is selected', async ({worker}) => {
+		worker.use(
+			mockQueryDecisionDefinitionsEndpoint({successResponse: DECISION_DEFINITIONS}),
+			mockQueryDecisionInstancesEndpoint({successResponse: EMPTY_DECISION_INSTANCES}),
+			mockCurrentUserEndpoint({successResponse: CURRENT_USER}),
+		);
+
+		const screen = await renderDecisionsPage();
+
+		await expect.element(screen.getByRole('combobox', {name: 'Select a tenant'})).toBeVisible();
+		await expect.element(screen.getByRole('combobox', {name: 'Name'})).toBeDisabled();
 	});
 });
