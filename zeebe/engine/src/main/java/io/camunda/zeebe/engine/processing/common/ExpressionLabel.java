@@ -83,6 +83,16 @@ public record ExpressionLabel(@Nullable String kind, @Nullable String target) {
     return new ExpressionLabel("signal name expression", event(eventId));
   }
 
+  /** Labels an expression as the error code expression of an error end event. */
+  public static ExpressionLabel errorCodeExpression(final DirectBuffer eventId) {
+    return new ExpressionLabel("error code expression", event(eventId));
+  }
+
+  /** Labels an expression as the escalation code expression of a throwing escalation event. */
+  public static ExpressionLabel escalationCodeExpression(final DirectBuffer eventId) {
+    return new ExpressionLabel("escalation code expression", event(eventId));
+  }
+
   private static String businessRuleTask(final DirectBuffer businessRuleTaskId) {
     return "business rule task '%s'".formatted(BufferUtil.bufferAsString(businessRuleTaskId));
   }
