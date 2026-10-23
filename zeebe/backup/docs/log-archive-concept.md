@@ -16,8 +16,8 @@ locally in each configuration is in [`log-archive-run-locally.md`](log-archive-r
 - **Event plane.** Consumers read the same copy. One authority compacts it and applies retention,
   removes only what lies below the restore hold, and records every change in a log of its own that
   restore checks.
-- **Cost.** At the same RPO, 2.7 to 27 times cheaper than continuous backup plus a separate copy for
-  consumers; an RPO of seconds becomes possible.
+- **Cost.** Far cheaper than frequent backups plus a separate copy for consumers, and about the same
+  as backups every 15 minutes, with an RPO of seconds instead of minutes.
 - **Recommendation.** Build it. The one real risk is restore correctness, handled by checking restore
   points continuously and keeping mistakes repairable (section 7).
 
@@ -60,106 +60,84 @@ Two features need the history of every partition's log:
 
 Built separately, that means two copies of the same data, written by two implementations.
 
-### 1.1 Two copies cost twice
+### 1.1 What one copy costs, compared with two
 
-Each copy pays for its storage and for its write requests (PUTs). Object storage charges per
-request, so a copy that is kept fresh pays mostly for requests. A backup that uploads full
-snapshots pays mostly for storage.
+Restore and replay together, for an example cluster: 8 partitions, 1 GB of state each, 1 MB/s of
+log each, everything kept for 7 days, on S3. Per month:
 
-An illustrative calculation for one cluster. The assumptions are illustrative, not measured on a
-real cluster:
+|                    Setup                     | Cost per month |     RPO      |
+|----------------------------------------------|----------------|--------------|
+| Continuous backup every 15 minutes + a copy for consumers | about $210 | 15 minutes |
+| Continuous backup every minute + a copy for consumers     | about $2,200 | 1 minute |
+| Log archive, one copy for both                | about $180     | a few seconds |
+
+Why: every continuous backup uploads the whole state again, so a lower RPO quickly gets expensive.
+The log archive uploads each piece of log once and a snapshot every 30 minutes; most of what it pays
+is for writing every few seconds.
+
+The state size shifts the picture a little: with 100 MB per partition, backups every 15 minutes are
+somewhat cheaper than the archive (about $100 against $125); with 10 GB, the archive costs about
+half (about $740 against $1,320).
+
+How the numbers come about:
+
+**Assumptions** (illustrative, not measured on a real cluster):
 
 |      Assumption       |                                                Value                                                 |
 |-----------------------|------------------------------------------------------------------------------------------------------|
-| Cluster               | 8 partitions, each writing 1 MB/s of log (86.4 GB per day and partition) and holding 1 GB of state   |
-| Retention             | 7 days, for restore and for replay; a month has 2.59 M seconds                                       |
+| Cluster               | 8 partitions, each writing 1 MB/s of log and holding 1 GB of state                                   |
+| Retention             | 7 days, for restore and for replay                                                                   |
 | Prices                | S3 Standard list prices (us-east-1): $0.023 per GB-month, $0.005 per 1,000 PUTs; check current prices |
-| Continuous backup     | a backup every minute (or every 15 minutes); each uploads a full snapshot (1 GB, about 20 files) and the journal segment it ends in, as a whole 128 MB file (segment files are preallocated to their maximum size), plus 3 small metadata writes; uncompressed (compression is an optional S3 store setting) |
-| Copy for consumers    | log only, zstd-compressed about 8x, one object every 2 s per partition (0.5 PUT/s); its metadata lives in its own database, not in the bucket |
-| Log archive           | log as for consumers plus one commit entry per object; a full snapshot every 30 minutes (48 a day, 22 PUTs each: about 20 files, the descriptor and a commit entry); snapshots inside the window kept, older ones deleted (snapshot retention is not built yet) |
+| Compression           | the log compresses about 8 times with zstd (the PoC measured 7 to 11 times on its test load)        |
+| Freshness for consumers | new log reaches the bucket every 2 seconds                                                         |
 
-The compression ratio comes from the PoC's test load (7x to 11x); real data differs. How backups
-choose their segments and that segment files are uploaded at full size was checked in the code
-**[code]**, not measured.
+**Where the money goes.** Each setup pays for storage and for write requests (PUTs):
 
-Amounts are per month for the whole cluster, in whole dollars; every total is the sum of the
-rounded figures above it.
+- **Continuous backup** uploads a full snapshot (the whole state, 1 GB) and the journal segment it
+  ends in (a 128 MB file, uploaded whole because segment files are preallocated) with every backup,
+  and keeps every backup for 7 days. Its cost is set by the state size and how often it backs up,
+  which is also its RPO. How backups choose their files was read in the code **[code]**.
+- **A separate copy for consumers** stores the compressed log and writes one object every 2 seconds
+  per partition.
+- **The log archive** stores the compressed log once, writes one object and one commit entry every 2
+  seconds per partition, and uploads a full snapshot every 30 minutes, kept for 7 days. Its RPO is a
+  few seconds.
 
-**Continuous backup.** One backup of one partition is about 1.128 GB:
+**Worked example:** 1 GB of state, continuous backup every 15 minutes, per month for the cluster.
 
-- **Snapshot: 1 GB.** The assumed state size. Every backup uploads all files of its snapshot;
-  nothing is shared with earlier backups.
-- **Log: 0.128 GB.** A backup uploads the journal segments from the one that holds its snapshot's
-  index to the newest one. The snapshot is taken for the backup, so its index lies in the newest
-  segment, and that is usually the only one. Segment files are preallocated to the default maximum
-  of 128 MB and uploaded as whole files, so the upload is 128 MB however much of the segment is
-  filled. Right after a segment rollover it is two segments (256 MB); this is ignored here.
-- **Metadata:** a few KB (manifest written twice, `metadata.json` once): ignored for storage,
-  counted as 3 PUTs.
-- **One upload per partition:** only the partition's leader takes the backup, not every replica.
+|                     | Two copies: backup every 15 min + copy for consumers | One copy: log archive              |
+|---------------------|-------------------------------------------------------|------------------------------------|
+| Log storage         | $14 (the consumer copy)                               | $14                                |
+| Snapshot storage    | $139 (672 backups of 1.128 GB per partition)          | $62 (336 snapshots of 1 GB per partition) |
+| PUTs                | $3 (backups) + $52 (consumer copy)                    | $104 (objects and commit entries) + $1 (snapshots) |
+| **Total**           | **$208**                                              | **$181**                           |
+| RPO for restore     | at least 15 minutes                                   | a few seconds                      |
 
-Backups kept per partition: 7 days × 1,440 a day = 10,080 at one a minute, 7 × 96 = 672 at one
-every 15 minutes. Each backup is 24 PUTs: about 20 snapshot files, 1 segment, 3 metadata writes.
+**The same for other backup intervals and state sizes,** totals per month:
 
-|                         |              Every minute               |           Every 15 minutes           |
-|-------------------------|-----------------------------------------|--------------------------------------|
-| Backups kept            | 8 × 10,080 × 1.128 GB = 91.0 TB         | 8 × 672 × 1.128 GB = 6.1 TB          |
-| Storage                 | $2,092                                  | $139                                 |
-| PUTs (24 per backup)    | 8 × 43,200 × 24 = 8.3 M: $41            | 8 × 2,880 × 24 = 0.55 M: $3          |
-| Total                   | **$2,133**                              | **$142**                             |
-| Upload volume           | 1.128 GB per partition every minute     | 1.128 GB per partition every 15 minutes |
-| RPO                     | at least 1 minute                       | at least 15 minutes                  |
-
-**A separate copy for consumers:** 8 × 86.4 GB × 7 days ÷ 8 (compression) = 0.6 TB: $14, plus
-8 partitions × 0.5 PUT/s × 2.59 M seconds = 10.4 M PUTs: $52. **$66** per month.
-
-**The log archive, serving both:**
-
-|                                       |                Per month                |
-|---------------------------------------|-----------------------------------------|
-| Log, compressed (0.6 TB)              | $14                                     |
-| Snapshots kept (8 × 48 a day × 7 days × 1 GB = 2.7 TB) | $62                                   |
-| PUTs: objects and commit entries (8 × 1 PUT/s × 2.59 M s = 20.7 M) | $104                              |
-| PUTs: snapshots (8 × 48 a day × 30 days × 22 = 0.25 M) | $1                                |
-| Total                                 | **$181**                                |
-| RPO                                   | seconds                                 |
-
-**Compared at the same RPO.** The archive's RPO is set by how often it cuts an object, and its
-cost falls with it: every cut is 2 PUTs per partition. Its storage stays the same ($14 + $62 + $1 =
-$77). Continuous backup's RPO is set by its backup interval, and every backup uploads a full
-snapshot.
-
-Both sides of the comparison provide restore and replay. The log archive does both from one copy;
-continuous backup needs the separate copy for consumers ($66) on top.
-
-|  RPO target   | Log archive (restore and replay) | Continuous backup + copy for consumers |   Difference    |
-|---------------|----------------------------------|----------------------------------------|-----------------|
-| a few seconds | $181 (cut every 2 s)             | not feasible                           | –               |
-| 10 seconds    | $98 (cut every 10 s)             | not feasible                           | –               |
-| 1 minute      | $80 (cut every 60 s)             | $2,133 + $66 = $2,199                  | 27 times more   |
-| 5 minutes     | $78 (cut every 5 min)            | $426 + $66 = $492                      | 6.3 times more  |
-| 15 minutes    | $77 (cut every 15 min)           | $142 + $66 = $208                      | 2.7 times more  |
-
-The archive's figures are its fixed $77 plus the PUTs of its cuts ($104, $21, $3, $1 and $0).
-Continuous backup is not feasible for an RPO of seconds: every backup uploads 1.1 GB per partition.
-
-**Uploaded per day** (whole cluster): continuous backup 13 TB at one backup a minute, 2.6 TB at
-5 minutes, 0.87 TB at 15 minutes; the log archive 0.47 TB (86 GB of compressed log and 384 GB of
-snapshots), whatever its RPO.
+| State per partition | Backup every minute + copy | Backup every 15 min + copy | Log archive |
+|---------------------|----------------------------|----------------------------|-------------|
+| 100 MB              | $530                       | $97                        | $125        |
+| 500 MB              | $1,272                     | $146                       | $150        |
+| 1 GB                | $2,199                     | $208                       | $181        |
+| 5 GB                | $9,618                     | $703                       | $428        |
+| 10 GB               | $18,892                    | $1,321                     | $737        |
+| **RPO**             | at least 1 minute          | at least 15 minutes        | a few seconds |
 
 What the numbers say:
 
-- **At the same RPO, the log archive is always cheaper,** and the gap grows as the RPO shrinks:
-  continuous backup uploads the whole state with every backup, the archive the new log and a
-  snapshot every 30 minutes.
-- **An RPO of seconds is only possible with the archive.** Continuous backup cannot take a full
-  backup every few seconds.
-- **The gap also grows with state size.** Continuous backup pays the state once per backup, the
-  archive once per snapshot interval (30 minutes here), independent of the RPO.
-- **A second copy for consumers comes on top** for continuous backup; the archive's commit entries
-  double its PUTs, but they replace the consumer copy's database as the record of what exists.
-- Left out on both sides: read requests (restores, consumers) and, for the archive, the compaction
-  of layer 3, which adds a few PUTs and reads.
+- **Against frequent backups the archive is far cheaper**, 4 to 26 times here. Frequent backups are
+  the only way continuous backup gets a low RPO, and each one uploads the whole state.
+- **Against backups every 15 minutes it costs about the same for a small state and less for a large
+  one**, while its RPO drops from 15 minutes to a few seconds.
+- **The archive's largest item is the PUTs for freshness** ($104). New log every 10 seconds instead of
+  every 2 brings them to $21, if consumers and restore can live with that.
+- **Its snapshots can be taken less often** without changing the RPO, since the log covers the time in
+  between; a restore then replays more log.
+- **Restore alone** (no consumers): the archive only needs to be as fresh as the RPO. At an RPO of 15
+  minutes and 1 GB of state it costs $77, against $142 for continuous backup.
+
+Left out on both sides: read requests (restores, consumers) and the archive's compaction (layer 3).
 
 ### 1.2 Two implementations to maintain
 
@@ -1176,7 +1154,7 @@ catch.
 
 ### Why not let the event plane keep its own copy?
 
-Because it costs twice (1.1), needs two implementations that can drift apart (1.2), and the second
+Because it pays for storage and freshness twice (1.1), needs two implementations that can drift apart (1.2), and the second
 copy would still lack what restore needs: snapshots and a restore point every few seconds. Two
 copies do keep restore and consumers fully independent. One copy keeps them independent where it
 matters: restore reads only the bucket and needs no event plane (4.6), and what restore needs is
@@ -1189,6 +1167,33 @@ is removed only below every hold, and the restore hold is one of them. A long co
 therefore never shortens the restore window, and a short restore window never cuts what consumers
 keep. The remaining risk is a bug in the one component that deletes, which 4.7 makes detectable and
 repairable.
+
+### Wouldn't incremental snapshots change the picture?
+
+Yes, for both sides. RocksDB never changes a data file once written, so a backup or the archive
+could upload only the files that are new since the last snapshot. Most of today's snapshot cost
+then disappears, on both sides. What remains is different (example cluster of 1.1, assuming
+snapshot storage becomes small; how much state changes between snapshots is not known):
+
+|                                                     |                     What remains                      | Per month  |      RPO      |
+|-----------------------------------------------------|-------------------------------------------------------|------------|---------------|
+| Incremental backups every 15 minutes + consumer copy | a whole 128 MB segment per backup (~$16), the consumer copy (~$66) | about $85  | 15 minutes    |
+| Incremental backups every minute + consumer copy     | whole segments (~$240) and PUTs (~$14), the consumer copy | about $320 | 1 minute      |
+| Log archive with incremental snapshots               | log storage (~$14), PUTs for new log every 2 seconds (~$104) | about $120 | a few seconds |
+
+So with incremental snapshots everywhere:
+
+- **At an RPO of 15 minutes, two copies are cheaper.** The archive then pays almost only for being
+  fresh every 2 seconds.
+- **At an RPO of a minute or less, the archive stays clearly cheaper.** Continuous backup still
+  uploads a whole journal segment with every backup; avoiding that means uploading only new log,
+  often, which is what the archive does.
+- **Freshness is a dial.** New log every 10 seconds brings the archive to about $37; a consumer copy
+  that is also only 10 seconds fresh brings two copies at 15 minutes to about $40.
+
+Cost alone then no longer decides, except at a low RPO. What decides is an RPO of seconds, one copy
+and one implementation instead of two, and one retention model. Incremental snapshots are open for
+the archive as well (open points).
 
 ### What if consumers need the data in another shape?
 
@@ -1263,8 +1268,8 @@ cost of one window of both copies.
 
 ## 7. Recommendation
 
-**Build it.** One copy serves restore and replay. At the same RPO it costs less than continuous
-backup, and it is the only way to reach an RPO of seconds (1.1). The PoC shows that the critical
+**Build it.** One copy serves restore and replay. It costs far less than frequent backups, about
+the same as backups every 15 minutes, and it is the only way to reach an RPO of seconds (1.1). The PoC shows that the critical
 parts work: a restore needs nothing but the bucket, the handover leaves old backups untouched, and a
 restore can read objects the event plane compacted.
 
