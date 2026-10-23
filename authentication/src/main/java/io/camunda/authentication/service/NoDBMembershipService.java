@@ -7,10 +7,8 @@
  */
 package io.camunda.authentication.service;
 
-import io.camunda.security.core.oidc.OidcGroupsExtractor;
 import io.camunda.security.core.port.out.MembershipPort;
 import io.camunda.security.core.port.out.MembershipQuery;
-import io.camunda.security.oidc.OidcClaimExtractor;
 import io.camunda.security.spring.CamundaSecurityLibraryProperties;
 import io.camunda.spring.utils.ConditionalOnSecondaryStorageDisabled;
 import java.util.List;
@@ -25,13 +23,10 @@ import org.springframework.stereotype.Service;
 @ConditionalOnSecondaryStorageDisabled
 public class NoDBMembershipService implements MembershipPort {
 
-  private final OidcGroupsExtractor oidcGroupsExtractor;
-  private final boolean isGroupsClaimConfigured;
+  private final ProviderGroupsClaims groupsClaims;
 
   public NoDBMembershipService(final CamundaSecurityLibraryProperties cslProperties) {
-    oidcGroupsExtractor =
-        new OidcGroupsExtractor(cslProperties.getAuthentication().getOidc().getGroupsClaim());
-    isGroupsClaimConfigured = cslProperties.getAuthentication().getOidc().isGroupsClaimConfigured();
+    groupsClaims = new ProviderGroupsClaims(cslProperties.getAuthentication());
   }
 
   @Override
@@ -41,16 +36,8 @@ public class NoDBMembershipService implements MembershipPort {
 
   @Override
   public List<String> groupIds(final MembershipQuery query) {
-    if (!isGroupsClaimConfigured) {
-      return List.of();
-    }
-    return OidcClaimExtractor.extractOrFallback(
-            () -> oidcGroupsExtractor.extract(query.tokenClaims()),
-            List.<String>of(),
-            "membership.groupIds.noDb")
-        .stream()
-        .distinct()
-        .toList();
+    // Without a DB, only the users of a provider with a groups claim have groups.
+    return groupsClaims.groupIds(query.tokenClaims(), "membership.groupIds.noDb").orElse(List.of());
   }
 
   @Override
