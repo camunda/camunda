@@ -12,6 +12,7 @@ import io.camunda.security.api.model.config.MultiTenancyConfiguration;
 import io.camunda.security.api.model.config.initialization.InitializationConfiguration;
 import io.camunda.security.spring.CamundaSecurityLibraryProperties;
 import io.camunda.security.validation.IdentifierValidator;
+import io.camunda.zeebe.gateway.rest.controller.usermanagement.MappingRuleMembershipPolicy;
 import io.camunda.zeebe.util.VisibleForTesting;
 import jakarta.annotation.PostConstruct;
 import java.util.regex.PatternSyntaxException;
@@ -54,6 +55,11 @@ public class CamundaSecurityConfiguration {
     return new IdentifierValidator(
         properties.getCompiledIdValidationPattern(),
         properties.getCompiledGroupIdValidationPattern());
+  }
+
+  @Bean
+  public MappingRuleMembershipPolicy mappingRuleMembershipPolicy() {
+    return MappingRuleMembershipPolicy.of(properties);
   }
 
   @PostConstruct

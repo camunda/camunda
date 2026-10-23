@@ -15,6 +15,7 @@ import io.camunda.search.filter.Operator;
 import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.spring.CamundaSecurityLibraryProperties;
 import io.camunda.security.validation.IdentifierValidator;
+import io.camunda.zeebe.gateway.rest.controller.usermanagement.MappingRuleMembershipPolicy;
 import io.camunda.zeebe.gateway.rest.interceptor.SecondaryStorageInterceptor;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
@@ -213,6 +214,11 @@ public abstract class RestControllerTest extends RestTest {
     @Bean
     public IdentifierValidator identifierValidator() {
       return new IdentifierValidator(ID_PATTERN, ID_PATTERN);
+    }
+
+    @Bean
+    public MappingRuleMembershipPolicy mappingRuleMembershipPolicy() {
+      return new MappingRuleMembershipPolicy(true);
     }
   }
 }

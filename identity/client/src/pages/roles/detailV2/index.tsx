@@ -24,6 +24,7 @@ import Members from "src/pages/roles/detailV2/members";
 import Groups from "src/pages/roles/detailV2/groups";
 import MappingRules from "src/pages/roles/detailV2/mapping-rules";
 import Clients from "src/pages/roles/detailV2/clients";
+import { canManageMappingRules } from "src/configuration";
 
 type DetailsProps = {
   isOIDC: boolean;
@@ -78,11 +79,15 @@ const Details: FC<DetailsProps> = ({
                 },
                 ...(isOIDC
                   ? [
-                      {
-                        key: "mapping-rules",
-                        label: t("mappingRules"),
-                        content: <MappingRules roleId={role.roleId} />,
-                      },
+                      ...(canManageMappingRules
+                        ? [
+                            {
+                              key: "mapping-rules",
+                              label: t("mappingRules"),
+                              content: <MappingRules roleId={role.roleId} />,
+                            },
+                          ]
+                        : []),
                       {
                         key: "clients",
                         label: t("clients"),
