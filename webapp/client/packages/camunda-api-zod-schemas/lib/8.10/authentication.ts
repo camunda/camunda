@@ -10,7 +10,10 @@ import {z} from 'zod';
 import {API_VERSION, type Endpoint} from './common';
 
 const currentUserSchema = z.object({
-	username: z.string(),
+	// An unprotected API answers a caller without an identity with `anonymous: true` and a `null`
+	// username instead of a 401. Earlier 8.10 patch releases do not send the flag.
+	anonymous: z.boolean().optional(),
+	username: z.string().nullable(),
 	displayName: z.string(),
 	email: z.string(),
 	authorizedComponents: z.array(z.string()),
