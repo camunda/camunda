@@ -62,7 +62,7 @@ public class ZeebePositionBasedImportIndexIT extends AbstractCCSMIT {
 
     // then
     assertThat(positionBasedHandlers)
-        .hasSize(12)
+        .hasSize(13)
         .allSatisfy(
             handler -> {
               assertThat(handler.getPersistedPositionOfLastEntity()).isZero();
