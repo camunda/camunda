@@ -47,8 +47,8 @@ public class UserTaskAssignedV3ApplierTest {
   @Test
   public void shouldTransitionUserTaskLifecycleToCreatedOnApply() {
     // given
-    final long userTaskKey = new Random().nextLong();
-    final long elementInstanceKey = new Random().nextLong();
+    final long userTaskKey = new Random().nextLong(Long.MAX_VALUE);
+    final long elementInstanceKey = new Random().nextLong(Long.MAX_VALUE);
     final String assignee = "initial_assignee";
 
     final var userTaskRecord =
@@ -76,8 +76,8 @@ public class UserTaskAssignedV3ApplierTest {
   @Test
   public void shouldClearIntermediateStateAndAssigneeWhenUserTaskAssigned() {
     // given
-    final long userTaskKey = new Random().nextLong();
-    final long elementInstanceKey = new Random().nextLong();
+    final long userTaskKey = new Random().nextLong(Long.MAX_VALUE);
+    final long elementInstanceKey = new Random().nextLong(Long.MAX_VALUE);
     final String initialAssignee = "initial_assignee";
 
     final var userTaskRecord =

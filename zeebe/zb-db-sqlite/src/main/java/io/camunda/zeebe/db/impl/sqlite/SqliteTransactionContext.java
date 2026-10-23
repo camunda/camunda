@@ -31,10 +31,24 @@ final class SqliteTransactionContext implements TransactionContext, ZeebeDbTrans
   private boolean inTransaction;
   private boolean holdsWriter;
   private boolean hasWritten;
+  private long modifications;
   private @Nullable SqliteConnection reader;
 
   SqliteTransactionContext(final SqliteDb<?> db) {
     this.db = db;
+  }
+
+  /**
+   * Counts the writes of this context. An iteration that sees it change knows that the rows it has
+   * read ahead may be stale. Writes of other contexts are not counted, an iteration does not see
+   * them anyway.
+   */
+  long modifications() {
+    return modifications;
+  }
+
+  void modified() {
+    modifications++;
   }
 
   boolean belongsTo(final SqliteDb<?> other) {

@@ -48,8 +48,8 @@ public class UserTaskCreatedV2ApplierTest {
   @Test
   void shouldTransitionUserTaskLifecycleToCreatedOnApply() {
     // given
-    final long userTaskKey = new Random().nextLong();
-    final long elementInstanceKey = new Random().nextLong();
+    final long userTaskKey = new Random().nextLong(Long.MAX_VALUE);
+    final long elementInstanceKey = new Random().nextLong(Long.MAX_VALUE);
 
     final var userTaskRecord =
         new UserTaskRecord().setUserTaskKey(userTaskKey).setElementInstanceKey(elementInstanceKey);
@@ -73,8 +73,8 @@ public class UserTaskCreatedV2ApplierTest {
 
   @Test
   public void shouldCleanIntermediateStateButNotAssigneeWhenUserTaskCreated() {
-    final long userTaskKey = new Random().nextLong();
-    final long elementInstanceKey = new Random().nextLong();
+    final long userTaskKey = new Random().nextLong(Long.MAX_VALUE);
+    final long elementInstanceKey = new Random().nextLong(Long.MAX_VALUE);
     final String initialAssignee = "initial_assignee";
 
     final var userTaskRecord =
@@ -101,8 +101,8 @@ public class UserTaskCreatedV2ApplierTest {
 
   @Test
   public void shouldUpdateUserTaskWithCorrectionsWhenUserTaskCreated() {
-    final long userTaskKey = new Random().nextLong();
-    final long elementInstanceKey = new Random().nextLong();
+    final long userTaskKey = new Random().nextLong(Long.MAX_VALUE);
+    final long elementInstanceKey = new Random().nextLong(Long.MAX_VALUE);
 
     // user task record with assignee set
     final var userTaskRecord =

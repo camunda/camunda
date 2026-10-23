@@ -41,8 +41,8 @@ public class UserTaskCreatingV2ApplierTest {
   @Test
   void shouldTransitionUserTaskLifecycleToCreatingOnApply() {
     // given
-    final long userTaskKey = new Random().nextLong();
-    final long elementInstanceKey = new Random().nextLong();
+    final long userTaskKey = new Random().nextLong(Long.MAX_VALUE);
+    final long elementInstanceKey = new Random().nextLong(Long.MAX_VALUE);
 
     final var userTaskRecord =
         new UserTaskRecord().setUserTaskKey(userTaskKey).setElementInstanceKey(elementInstanceKey);
@@ -59,8 +59,8 @@ public class UserTaskCreatingV2ApplierTest {
   @Test
   public void shouldStoreIntermediateStateAndInitialAssigneeWhenCreatingUserTask() {
     // given
-    final long userTaskKey = new Random().nextLong();
-    final long elementInstanceKey = new Random().nextLong();
+    final long userTaskKey = new Random().nextLong(Long.MAX_VALUE);
+    final long elementInstanceKey = new Random().nextLong(Long.MAX_VALUE);
     final String initialAssignee = "initial_assignee";
 
     final var userTaskRecord =
@@ -88,8 +88,8 @@ public class UserTaskCreatingV2ApplierTest {
   public void
       shouldStoreIntermediateStateAndNoInitialAssigneeWhenCreatingUserTaskWithoutAssignee() {
     // given
-    final long userTaskKey = new Random().nextLong();
-    final long elementInstanceKey = new Random().nextLong();
+    final long userTaskKey = new Random().nextLong(Long.MAX_VALUE);
+    final long elementInstanceKey = new Random().nextLong(Long.MAX_VALUE);
 
     final var userTaskRecord =
         new UserTaskRecord().setUserTaskKey(userTaskKey).setElementInstanceKey(elementInstanceKey);
@@ -112,10 +112,10 @@ public class UserTaskCreatingV2ApplierTest {
   @Test
   public void shouldStoreRootProcessInstanceKeyWhenCreatingUserTask() {
     // given
-    final long userTaskKey = new Random().nextLong();
-    final long elementInstanceKey = new Random().nextLong();
-    final long processInstanceKey = new Random().nextLong();
-    final long rootProcessInstanceKey = new Random().nextLong();
+    final long userTaskKey = new Random().nextLong(Long.MAX_VALUE);
+    final long elementInstanceKey = new Random().nextLong(Long.MAX_VALUE);
+    final long processInstanceKey = new Random().nextLong(Long.MAX_VALUE);
+    final long rootProcessInstanceKey = new Random().nextLong(Long.MAX_VALUE);
 
     final var userTaskRecord =
         new UserTaskRecord()

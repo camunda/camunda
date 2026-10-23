@@ -142,6 +142,18 @@ public final class SqliteDb<
         this, columnFamily, table, state, sqliteContext, keyInstance, valueInstance);
   }
 
+  /**
+   * Whether the foreign keys of written keys and values are checked, which is off in production.
+   */
+  boolean foreignKeyChecksEnabled() {
+    return consistencyChecksSettings.enableForeignKeyChecks();
+  }
+
+  /** The state of the table, or null if no column family has used it yet. */
+  @Nullable TableState tableState(final String table) {
+    return tableStates.get(table);
+  }
+
   /** Whether the checks that are too expensive for production are enabled. */
   boolean preconditionsEnabled() {
     return consistencyChecksSettings.enablePreconditions();

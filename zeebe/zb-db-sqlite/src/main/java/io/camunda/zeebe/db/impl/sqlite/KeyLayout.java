@@ -310,7 +310,7 @@ final class KeyLayout {
       order = String.join(", ", columnNames);
     }
     final var where = conditions.isEmpty() ? "" : " WHERE " + String.join(" AND ", conditions);
-    return "SELECT %s FROM %s%s ORDER BY %s"
+    return "SELECT %s FROM %s%s ORDER BY %s LIMIT ?"
         .formatted(selectList(spec.withValue()), table, where, order);
   }
 
@@ -336,12 +336,13 @@ final class KeyLayout {
   }
 
   /**
-   * Binds the parameters of {@link #scanSql(String, ScanSpec)}.
+   * Binds the parameters of {@link #scanSql(String, ScanSpec)} except for the trailing row limit.
    *
    * @param prefix the serialized prefix, ignored unless the spec has one
    * @param start the serialized start key, ignored unless the spec has one or is a reverse scan
+   * @return the index of the row limit parameter
    */
-  void bindScan(
+  int bindScan(
       final PreparedStatement statement,
       final ScanSpec spec,
       final byte[] prefix,
@@ -350,8 +351,7 @@ final class KeyLayout {
       final int startLength)
       throws SQLException {
     if (spec.reverse()) {
-      bindKey(statement, 1, start, startLength);
-      return;
+      return bindKey(statement, 1, start, startLength);
     }
 
     final var shape = spec.prefix();
@@ -372,9 +372,10 @@ final class KeyLayout {
         parameter = bindKeyColumns(statement, parameter, start, startLength, first, 1);
       }
       if (remaining > 0) {
-        bindKeyColumns(statement, parameter, start, startLength, first, remaining);
+        parameter = bindKeyColumns(statement, parameter, start, startLength, first, remaining);
       }
     }
+    return parameter;
   }
 
   /**
@@ -571,11 +572,23 @@ final class KeyLayout {
             default -> throw new IllegalStateException("Not an integer component: " + type);
           };
       if (value < 0) {
-        throw new IllegalStateException(
+        throw new OutOfDomainKeyException(
             "Expected a non-negative %s component, but got %d; the key declares it nonNegative()"
                 .formatted(type, value));
       }
       return value;
+    }
+  }
+
+  /**
+   * A key component is outside of the domain its key declares, so no row can have it.
+   *
+   * <p>Reading such a key is a lookup that finds nothing, which is what RocksDB does, so reads
+   * catch this and miss. Writing it would store a row out of order, so writes let it propagate.
+   */
+  static final class OutOfDomainKeyException extends IllegalStateException {
+    OutOfDomainKeyException(final String message) {
+      super(message);
     }
   }
 

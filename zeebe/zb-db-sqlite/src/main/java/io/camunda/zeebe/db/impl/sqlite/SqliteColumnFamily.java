@@ -15,6 +15,7 @@ import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.db.KeyValuePairVisitor;
 import io.camunda.zeebe.db.KeyVisitor;
 import io.camunda.zeebe.db.ZeebeDbInconsistentException;
+import io.camunda.zeebe.db.impl.sqlite.KeyLayout.OutOfDomainKeyException;
 import io.camunda.zeebe.db.impl.sqlite.KeyLayout.PrefixShape;
 import io.camunda.zeebe.db.impl.sqlite.KeyLayout.ScanSpec;
 import io.camunda.zeebe.db.impl.sqlite.TableState.Cursor;
@@ -22,6 +23,7 @@ import io.camunda.zeebe.protocol.ColumnFamilyScope;
 import io.camunda.zeebe.protocol.ScopedColumnFamily;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -51,6 +53,12 @@ final class SqliteColumnFamily<
   /** The same limit as RocksDB's, which has two prefix buffers per column family. */
   private static final int MAX_NESTED_ITERATIONS = 2;
 
+  private static final int INITIAL_BATCH_SIZE = 1;
+  private static final int MAX_BATCH_SIZE = 256;
+
+  /** A batch stops growing once it holds this many bytes, however few rows that is. */
+  private static final int MAX_BATCH_BYTES = 1 << 20;
+
   private final SqliteDb<?> db;
   private final ColumnFamilyType columnFamily;
   private final String table;
@@ -74,6 +82,7 @@ final class SqliteColumnFamily<
   private final Map<PrefixShape, String> countPrefixSql = new HashMap<>();
   private final Map<ScanSpec, String> scanSql = new HashMap<>();
   private int iterationDepth;
+  private final @Nullable SqliteForeignKeyChecker foreignKeyChecker;
 
   SqliteColumnFamily(
       final SqliteDb<?> db,
@@ -91,7 +100,17 @@ final class SqliteColumnFamily<
     this.keyInstance = keyInstance;
     this.valueInstance = valueInstance;
     layout = state.layout();
+    foreignKeyChecker =
+        db.foreignKeyChecksEnabled() ? new SqliteForeignKeyChecker(db, context) : null;
     buildSql();
+  }
+
+  private void assertForeignKeysExist(final KeyType key, final ValueType value)
+      throws SQLException {
+    if (foreignKeyChecker != null) {
+      foreignKeyChecker.assertExists(key);
+      foreignKeyChecker.assertExists(value);
+    }
   }
 
   /** The layout of the table changes if it falls back to an opaque key, the SQL follows. */
@@ -128,11 +147,13 @@ final class SqliteColumnFamily<
         () -> {
           final var keyLength = key.write(keyBuffer, 0);
           final var valueBytes = valueBytes(value);
+          assertForeignKeysExist(key, value);
           final var statement = writeStatement(insertSql);
           final int next = layout.bindKey(statement, 1, keyBuffer.byteArray(), keyLength);
           statement.setBytes(next, valueBytes);
           try {
             statement.executeUpdate();
+            context.modified();
           } catch (final SQLException e) {
             if (SqliteDb.isPrimaryKeyViolation(e)) {
               throw new ZeebeDbInconsistentException(
@@ -148,10 +169,13 @@ final class SqliteColumnFamily<
     inTransaction(
         () -> {
           final var keyLength = key.write(keyBuffer, 0);
+          assertForeignKeysExist(key, value);
           final var statement = writeStatement(updateSql);
           statement.setBytes(1, valueBytes(value));
           layout.bindKey(statement, 2, keyBuffer.byteArray(), keyLength);
-          if (statement.executeUpdate() == 0) {
+          final int updated = statement.executeUpdate();
+          context.modified();
+          if (updated == 0) {
             throw new ZeebeDbInconsistentException(
                 "Key " + keyInstance + " in ColumnFamily " + columnFamily + " does not exist");
           }
@@ -164,10 +188,12 @@ final class SqliteColumnFamily<
         () -> {
           final var keyLength = key.write(keyBuffer, 0);
           final var valueBytes = valueBytes(value);
+          assertForeignKeysExist(key, value);
           final var statement = writeStatement(upsertSql);
           final int next = layout.bindKey(statement, 1, keyBuffer.byteArray(), keyLength);
           statement.setBytes(next, valueBytes);
           statement.executeUpdate();
+          context.modified();
         });
   }
 
@@ -215,7 +241,9 @@ final class SqliteColumnFamily<
         () -> {
           final var keyLength = key.write(keyBuffer, 0);
           final var statement = readStatement(existsSql);
-          layout.bindKey(statement, 1, keyBuffer.byteArray(), keyLength);
+          if (!bindKeyForRead(statement, keyLength)) {
+            return;
+          }
           try (final var result = statement.executeQuery()) {
             exists[0] = result.next();
           }
@@ -257,7 +285,11 @@ final class SqliteColumnFamily<
           final var shape = layout.prefixShape(prefixBytes, prefixLength);
           final var sql = countPrefixSql.computeIfAbsent(shape, this::countPrefixSql);
           final var statement = readStatement(sql);
-          layout.bindPrefix(statement, shape, prefixBytes, prefixLength);
+          try {
+            layout.bindPrefix(statement, shape, prefixBytes, prefixLength);
+          } catch (final OutOfDomainKeyException e) {
+            return;
+          }
           try (final var result = statement.executeQuery()) {
             count[0] = result.next() ? result.getLong(1) : 0;
           }
@@ -276,7 +308,9 @@ final class SqliteColumnFamily<
         () -> {
           final var keyLength = key.write(keyBuffer, 0);
           final var statement = readStatement(getSql);
-          layout.bindKey(statement, 1, keyBuffer.byteArray(), keyLength);
+          if (!bindKeyForRead(statement, keyLength)) {
+            return;
+          }
           try (final var result = statement.executeQuery()) {
             if (result.next()) {
               value[0] = result.getBytes(1);
@@ -293,8 +327,29 @@ final class SqliteColumnFamily<
       assertNotAheadOfIteration(key, keyLength);
     }
     final var statement = writeStatement(deleteSql);
-    layout.bindKey(statement, 1, keyBuffer.byteArray(), keyLength);
-    return statement.executeUpdate();
+    if (!bindKeyForRead(statement, keyLength)) {
+      return 0;
+    }
+    final int deleted = statement.executeUpdate();
+    context.modified();
+    return deleted;
+  }
+
+  /**
+   * Binds a key that is only looked up, which includes the key of a delete. A key outside of the
+   * domain its key declares matches no row, so it misses, as in RocksDB. Writing such a key throws
+   * instead, because it would be stored out of order.
+   *
+   * @return false if the key is out of domain and the statement must not run
+   */
+  private boolean bindKeyForRead(final PreparedStatement statement, final int keyLength)
+      throws SQLException {
+    try {
+      layout.bindKey(statement, 1, keyBuffer.byteArray(), keyLength);
+      return true;
+    } catch (final OutOfDomainKeyException e) {
+      return false;
+    }
   }
 
   /**
@@ -309,7 +364,9 @@ final class SqliteColumnFamily<
       }
       if (cursor.isAhead(keyBuffer.byteArray(), keyLength)) {
         final var statement = readStatement(existsSql);
-        layout.bindKey(statement, 1, keyBuffer.byteArray(), keyLength);
+        if (!bindKeyForRead(statement, keyLength)) {
+          return;
+        }
         try (final var result = statement.executeQuery()) {
           if (result.next()) {
             throw new IllegalStateException(
@@ -526,12 +583,12 @@ final class SqliteColumnFamily<
     // the buffers are shared with point operations of the visitor, so copy the keys right away
     byte[] prefixBytes = new byte[0];
     var shape = new PrefixShape(0, 0);
+    byte[] startBytes = new byte[0];
     if (prefix != null) {
       final int length = prefix.write(keyBuffer, 0);
       prefixBytes = Arrays.copyOf(keyBuffer.byteArray(), length);
       shape = layout.prefixShape(prefixBytes, length);
     }
-    byte[] startBytes = new byte[0];
     if (startAt != null) {
       final int length = startAt.write(keyBuffer, 0);
       startBytes = Arrays.copyOf(keyBuffer.byteArray(), length);
@@ -544,40 +601,201 @@ final class SqliteColumnFamily<
               prefixBytes, prefixBytes.length - shape.partialBytes(), prefixBytes.length);
       hasUpperBound = KeyLayout.upperBound(partial) != null;
     }
-    final var spec = new ScanSpec(shape, hasUpperBound, startAt != null, reverse, withValue);
-    final var sql = scanSql.computeIfAbsent(spec, s -> layout.scanSql(table, s));
 
-    final var connection = context.read();
-    final var statement = connection.acquireCursorStatement(sql);
     final @Nullable Cursor cursor =
         db.preconditionsEnabled() ? new Cursor(context, reverse, prefixBytes) : null;
+    if (cursor != null) {
+      state.cursors().add(cursor);
+    }
     try {
-      layout.bindScan(
-          statement, spec, prefixBytes, prefixBytes.length, startBytes, startBytes.length);
-      if (cursor != null) {
-        state.cursors().add(cursor);
-      }
-      try (final var rows = statement.executeQuery()) {
-        final int keyColumns = layout.columnNames().size();
-        boolean visitNext = true;
-        while (visitNext && rows.next()) {
-          final var keyBytes = layout.readKey(rows, 1);
-          if (cursor != null) {
-            cursor.moveTo(keyBytes);
-          }
-          keyInstance.wrap(new UnsafeBuffer(keyBytes), 0, keyBytes.length);
-          if (withValue) {
-            final var valueBytes = rows.getBytes(keyColumns + 1);
-            valueInstance.wrap(new UnsafeBuffer(valueBytes), 0, valueBytes.length);
-          }
-          visitNext = visitor.visit();
-        }
-      }
+      scanInBatches(
+          cursor,
+          shape,
+          hasUpperBound,
+          prefixBytes,
+          startAt != null,
+          startBytes,
+          reverse,
+          withValue,
+          visitor);
     } finally {
       if (cursor != null) {
         state.cursors().remove(cursor);
       }
-      connection.releaseCursorStatement(sql, statement);
+    }
+  }
+
+  /**
+   * Reads the rows in batches, and no statement is open while the visitor runs.
+   *
+   * <p>SQLite does not define what a running statement returns if its table is modified, and it can
+   * return a row it has visited again after the visitor updated it. Each batch is therefore read
+   * completely before it is visited, and the next one starts after the last visited key (keyset
+   * pagination), so a key is never visited twice whatever the visitor does.
+   *
+   * <p>The visitor may modify the table, so the rows that are read ahead may be stale. If the table
+   * was modified by a visit, the remaining rows of the batch are dropped and read again from the
+   * current state, which gives the visitor the same fresh view of the rows ahead that RocksDB gives
+   * and makes rows that it deleted ahead disappear instead of being skipped.
+   *
+   * <p>A reader keeps its snapshot across the batches, so an iteration that does not write sees the
+   * committed state as of its start, like a SQLite cursor does.
+   *
+   * <p>The memory held is one batch: at most {@link #MAX_BATCH_SIZE} rows, and at most {@link
+   * #MAX_BATCH_BYTES} bytes plus the row that crosses the limit. The batch starts with one row and
+   * doubles while the visitor does not modify the table, so a scan that stops early reads little,
+   * and it falls back to a single row after a modification, so a visitor that writes in every visit
+   * does not read rows ahead only to drop them.
+   */
+  private void scanInBatches(
+      final @Nullable Cursor cursor,
+      final PrefixShape shape,
+      final boolean hasUpperBound,
+      final byte[] prefixBytes,
+      final boolean hasStartKey,
+      final byte[] startBytes,
+      final boolean reverse,
+      final boolean withValue,
+      final RowVisitor visitor)
+      throws SQLException {
+    final var snapshotConnection = context.read();
+    snapshotConnection.beginSnapshot();
+    try {
+      scanBatches(
+          cursor,
+          shape,
+          hasUpperBound,
+          prefixBytes,
+          hasStartKey,
+          startBytes,
+          reverse,
+          withValue,
+          visitor);
+    } finally {
+      snapshotConnection.endSnapshot();
+    }
+  }
+
+  private void scanBatches(
+      final @Nullable Cursor cursor,
+      final PrefixShape shape,
+      final boolean hasUpperBound,
+      final byte[] prefixBytes,
+      final boolean hasStartKey,
+      final byte[] startBytes,
+      final boolean reverse,
+      final boolean withValue,
+      final RowVisitor visitor)
+      throws SQLException {
+    final int keyColumns = layout.columnNames().size();
+    byte @Nullable [] lastVisited = null;
+    byte[] start = startBytes;
+    int batchSize = INITIAL_BATCH_SIZE;
+    boolean exhausted = false;
+
+    while (!exhausted) {
+      final boolean resuming = lastVisited != null;
+      final var spec =
+          new ScanSpec(shape, hasUpperBound, hasStartKey || resuming, reverse, withValue);
+      final var sql = scanSql.computeIfAbsent(spec, s -> layout.scanSql(table, s));
+      // the start key is included by the query, so a resumed batch reads it once more and skips it
+      final int limit = resuming ? batchSize + 1 : batchSize;
+
+      final long modifications = context.modifications();
+      boolean fullBatch = false;
+      final var keys = new ArrayList<byte[]>();
+      final var values = new ArrayList<byte[]>();
+      final var connection = context.read();
+      final var statement = connection.acquireCursorStatement(sql);
+      try {
+        final int limitParameter;
+        try {
+          limitParameter =
+              layout.bindScan(
+                  statement, spec, prefixBytes, prefixBytes.length, start, start.length);
+        } catch (final OutOfDomainKeyException e) {
+          // a prefix or start key out of the domain of its key matches no row, a read misses
+          return;
+        }
+        statement.setInt(limitParameter, limit);
+        try (final var rows = statement.executeQuery()) {
+          long bytes = 0;
+          while (rows.next()) {
+            final var key = layout.readKey(rows, 1);
+            keys.add(key);
+            bytes += key.length;
+            if (withValue) {
+              final var value = rows.getBytes(keyColumns + 1);
+              values.add(value);
+              bytes += value.length;
+            }
+            // a resumed batch starts with the row that was visited last, which is not new progress,
+            // so the size limit applies once the batch holds a row that was not visited yet
+            final int rowsAlreadyVisited = resuming ? 1 : 0;
+            if (bytes >= MAX_BATCH_BYTES && keys.size() > rowsAlreadyVisited) {
+              fullBatch = true;
+              break;
+            }
+          }
+        }
+      } finally {
+        connection.releaseCursorStatement(sql, statement);
+      }
+      exhausted = !fullBatch && keys.size() < limit;
+
+      int index = 0;
+      if (resuming && !keys.isEmpty() && Arrays.equals(keys.get(0), start)) {
+        index = 1;
+      }
+      boolean visitNext = true;
+      boolean stale = false;
+      for (; index < keys.size() && visitNext && !stale; index++) {
+        final var keyBytes = keys.get(index);
+        if (cursor != null) {
+          assertAdvanced(lastVisited, keyBytes, reverse);
+          cursor.moveTo(keyBytes);
+        }
+        lastVisited = keyBytes;
+        start = keyBytes;
+        keyInstance.wrap(new UnsafeBuffer(keyBytes), 0, keyBytes.length);
+        if (withValue) {
+          final var valueBytes = values.get(index);
+          valueInstance.wrap(new UnsafeBuffer(valueBytes), 0, valueBytes.length);
+        }
+        visitNext = visitor.visit();
+        stale = context.modifications() != modifications;
+      }
+      if (!visitNext) {
+        return;
+      }
+      if (stale) {
+        // read what is left from the current state, it may have been changed by the visitor
+        exhausted = false;
+        batchSize = 1;
+      } else {
+        batchSize = Math.min(batchSize * 2, MAX_BATCH_SIZE);
+      }
+    }
+  }
+
+  /**
+   * A scan must move strictly in its direction. This is what the keyset pagination guarantees, it
+   * is checked with the preconditions so that a regression fails loudly instead of the engine
+   * handling a row twice.
+   */
+  private void assertAdvanced(
+      final byte @Nullable [] lastVisited, final byte[] key, final boolean reverse) {
+    if (lastVisited == null) {
+      return;
+    }
+    final int order =
+        Arrays.compareUnsigned(key, 0, key.length, lastVisited, 0, lastVisited.length);
+    if (reverse ? order >= 0 : order <= 0) {
+      throw new IllegalStateException(
+          ("Expected the iteration over ColumnFamily %s to visit keys in strictly %s order, "
+                  + "but it visited a key that does not come after the previous one, which means "
+                  + "that SQLite revisited a row that was changed during the iteration")
+              .formatted(columnFamily, reverse ? "descending" : "ascending"));
     }
   }
 
