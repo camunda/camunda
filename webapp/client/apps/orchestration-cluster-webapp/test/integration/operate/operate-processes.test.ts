@@ -277,11 +277,15 @@ test.describe('Operate processes page', () => {
 				filter: {
 					processDefinitionId: {$eq: 'my_simple_process'},
 					processInstanceKey: {$in: ['1001']},
-					$or: [{state: {$eq: 'ACTIVE'}, hasIncident: false}, {hasIncident: true}],
+					state: {$eq: 'ACTIVE'},
+					$or: [
+						{state: {$eq: 'ACTIVE'}, hasIncident: false},
+						{state: {$eq: 'SUSPENDED'}},
+						{hasIncident: true, state: {$neq: 'SUSPENDED'}},
+					],
 				},
 				moveInstructions: [{sourceElementId: 'task-1', targetElementId: 'end_event'}],
 			});
-			expect(body.filter.state).toBeUndefined();
 			await expect(frameTitle).not.toBeVisible();
 			await expect(page).toHaveURL(/process=my_simple_process.*version=1.*elementId=task-1/);
 			await expect(page.getByRole('checkbox', {name: 'Select instance 1001'})).toBeChecked();
