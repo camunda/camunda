@@ -64,9 +64,8 @@ public class BasicAuthUnprotectedApiSessionIT {
       // given — logging in via POST /login creates a session on the BASIC webapp chain
 
       // then — it must be recognised on the unprotected API chain, not treated as anonymous
-      assertCurrentUserStatus(
+      assertCurrentUserIsLoggedIn(
           loggedIn,
-          HttpStatus.OK,
           "session created on the BASIC webapp chain must be recognised on the unprotected API"
               + " chain");
 
@@ -79,16 +78,24 @@ public class BasicAuthUnprotectedApiSessionIT {
     }
   }
 
-  private static void assertCurrentUserStatus(
-      final TestLoggedInWebappClient client, final HttpStatus expected, final String reason) {
-    final var response = client.send(ME_ENDPOINT).get();
-    assertThat(response.statusCode()).as(reason).isEqualTo(expected.value());
+  /** The unprotected API identifies a caller with a session as the user who logged in. */
+  private static void assertCurrentUserIsLoggedIn(
+      final TestLoggedInWebappClient client, final String reason) throws IOException {
+    assertIsLoggedInCurrentUser(client.send(ME_ENDPOINT).get(), reason);
   }
 
   /** The unprotected API answers a caller without an identity with an anonymous current user. */
   private static void assertCurrentUserIsAnonymous(
       final TestLoggedInWebappClient client, final String reason) throws IOException {
     assertIsAnonymousCurrentUser(client.send(ME_ENDPOINT).get(), reason);
+  }
+
+  private static void assertIsLoggedInCurrentUser(
+      final HttpResponse<String> response, final String reason) throws IOException {
+    assertThat(response.statusCode()).as(reason).isEqualTo(HttpStatus.OK.value());
+    final var currentUser = JSON.readTree(response.body());
+    assertThat(currentUser.path("anonymous").asBoolean(true)).as(reason).isFalse();
+    assertThat(currentUser.path("username").asText()).as(reason).isEqualTo(DEFAULT_USER_USERNAME);
   }
 
   private static void assertIsAnonymousCurrentUser(

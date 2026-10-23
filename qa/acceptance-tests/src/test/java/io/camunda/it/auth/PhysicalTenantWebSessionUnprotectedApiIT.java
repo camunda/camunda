@@ -71,9 +71,8 @@ public class PhysicalTenantWebSessionUnprotectedApiIT {
       // and a physical tenant configured alongside it
 
       // then — it must be recognised on the unprotected API chain, not treated as anonymous
-      assertCurrentUserStatus(
+      assertCurrentUserIsLoggedIn(
           loggedIn,
-          HttpStatus.OK,
           "session created on the default webapp chain must be recognised on the unprotected API"
               + " chain with persistent sessions and physical tenants configured");
 
@@ -96,9 +95,8 @@ public class PhysicalTenantWebSessionUnprotectedApiIT {
       // given/when — a session created via the tenant-scoped /login
 
       // then — recognised on the tenant's own unprotected API chain, not treated as anonymous
-      assertScopedCurrentUserStatus(
+      assertScopedCurrentUserIsLoggedIn(
           loggedIn,
-          HttpStatus.OK,
           "session created on the PT-scoped webapp chain must be recognised on that tenant's"
               + " unprotected API chain");
 
@@ -112,16 +110,24 @@ public class PhysicalTenantWebSessionUnprotectedApiIT {
     }
   }
 
-  private static void assertCurrentUserStatus(
-      final TestLoggedInWebappClient client, final HttpStatus expected, final String reason) {
-    final var response = client.send(ME_ENDPOINT).get();
-    assertThat(response.statusCode()).as(reason).isEqualTo(expected.value());
+  /** The unprotected API identifies a caller with a session as the user who logged in. */
+  private static void assertCurrentUserIsLoggedIn(
+      final TestLoggedInWebappClient client, final String reason) throws IOException {
+    assertIsLoggedInCurrentUser(client.send(ME_ENDPOINT).get(), reason);
   }
 
   /** The unprotected API answers a caller without an identity with an anonymous current user. */
   private static void assertCurrentUserIsAnonymous(
       final TestLoggedInWebappClient client, final String reason) throws IOException {
     assertIsAnonymousCurrentUser(client.send(ME_ENDPOINT).get(), reason);
+  }
+
+  private static void assertIsLoggedInCurrentUser(
+      final HttpResponse<String> response, final String reason) throws IOException {
+    assertThat(response.statusCode()).as(reason).isEqualTo(HttpStatus.OK.value());
+    final var currentUser = JSON.readTree(response.body());
+    assertThat(currentUser.path("anonymous").asBoolean(true)).as(reason).isFalse();
+    assertThat(currentUser.path("username").asText()).as(reason).isEqualTo(DEFAULT_USER_USERNAME);
   }
 
   private static void assertIsAnonymousCurrentUser(
@@ -146,11 +152,10 @@ public class PhysicalTenantWebSessionUnprotectedApiIT {
     }
   }
 
-  private static void assertScopedCurrentUserStatus(
-      final TestLoggedInWebappClient client, final HttpStatus expected, final String reason) {
+  private static void assertScopedCurrentUserIsLoggedIn(
+      final TestLoggedInWebappClient client, final String reason) throws IOException {
     // relative path so it resolves under the tenant-scoped root, not the default API surface
-    final var response = client.send("v2/authentication/me").get();
-    assertThat(response.statusCode()).as(reason).isEqualTo(expected.value());
+    assertIsLoggedInCurrentUser(client.send("v2/authentication/me").get(), reason);
   }
 
   private static void assertScopedCurrentUserIsAnonymous(
