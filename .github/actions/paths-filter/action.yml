@@ -353,8 +353,8 @@ runs:
           - '**/src/main/**'
           - '**/src/test/**'
           - '**/src/it/**'
-          # extra source root registered via build-helper-maven-plugin (configuration module)
-          - '**/src/build/**'
+          # extra source root registered via build-helper-maven-plugin in the configuration module
+          - 'configuration/src/build/**'
 
         maven-change:
           - 'bom/**'
