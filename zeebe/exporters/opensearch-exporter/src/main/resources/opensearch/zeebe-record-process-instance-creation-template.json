@@ -59,9 +59,6 @@
                 },
                 "afterElementId": {
                   "type": "keyword"
-                },
-                "jobReservationToken": {
-                  "type": "keyword"
                 }
               }
             },
@@ -85,6 +82,9 @@
             },
             "holdTimers": {
               "type": "boolean"
+            },
+            "jobReservationToken": {
+              "type": "keyword"
             },
             "elementInstanceKey": {
               "enabled": false

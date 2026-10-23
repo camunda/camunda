@@ -24,8 +24,8 @@ import io.camunda.client.api.command.CommandWithTenantStep;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.client.protocol.rest.ProblemDetail;
+import io.camunda.client.protocol.rest.ProcessInstanceCreationConfigureExecutionInstruction;
 import io.camunda.client.protocol.rest.ProcessInstanceCreationInstruction;
-import io.camunda.client.protocol.rest.ProcessInstanceCreationReserveJobsInstruction;
 import io.camunda.client.protocol.rest.ProcessInstanceCreationRuntimeInstruction;
 import io.camunda.client.protocol.rest.ProcessInstanceCreationStartInstruction;
 import io.camunda.client.protocol.rest.ProcessInstanceCreationTerminateInstruction;
@@ -331,10 +331,11 @@ public class CreateProcessInstanceRestTest extends ClientRestTest {
     final List<ProcessInstanceCreationRuntimeInstruction> runtimeInstructions =
         request.getRuntimeInstructions();
     assertThat(runtimeInstructions).hasSize(1);
-    final ProcessInstanceCreationReserveJobsInstruction runtimeInstruction =
-        (ProcessInstanceCreationReserveJobsInstruction) runtimeInstructions.get(0);
+    final ProcessInstanceCreationConfigureExecutionInstruction runtimeInstruction =
+        (ProcessInstanceCreationConfigureExecutionInstruction) runtimeInstructions.get(0);
+    assertThat(runtimeInstruction.getReserveJobs()).isTrue();
     assertThat(runtimeInstruction.getJobReservationToken()).isEqualTo("ts-8f2c");
-    assertThat(runtimeInstruction.getType()).isEqualTo("RESERVE_JOBS");
+    assertThat(runtimeInstruction.getType()).isEqualTo("CONFIGURE_EXECUTION");
   }
 
   @Test
@@ -361,7 +362,10 @@ public class CreateProcessInstanceRestTest extends ClientRestTest {
     // then
     final ProcessInstanceCreationInstruction request =
         gatewayService.getLastRequest(ProcessInstanceCreationInstruction.class);
-    assertThat(request.getStubCallActivities()).isTrue();
+    final ProcessInstanceCreationConfigureExecutionInstruction runtimeInstruction =
+        (ProcessInstanceCreationConfigureExecutionInstruction)
+            request.getRuntimeInstructions().get(0);
+    assertThat(runtimeInstruction.getStubCallActivities()).isTrue();
   }
 
   @Test
@@ -375,7 +379,10 @@ public class CreateProcessInstanceRestTest extends ClientRestTest {
     // then
     final ProcessInstanceCreationInstruction request =
         gatewayService.getLastRequest(ProcessInstanceCreationInstruction.class);
-    assertThat(request.getHoldTimers()).isTrue();
+    final ProcessInstanceCreationConfigureExecutionInstruction runtimeInstruction =
+        (ProcessInstanceCreationConfigureExecutionInstruction)
+            request.getRuntimeInstructions().get(0);
+    assertThat(runtimeInstruction.getHoldTimers()).isTrue();
   }
 
   @Test

@@ -65,7 +65,6 @@ public class ProcessInstanceCreationHelper {
       "Expected to create process instance by either process definition key or version tag, but both were provided: key '%d', version tag '%s'";
   private static final String ERROR_MESSAGE_NOT_FOUND_BY_KEY =
       "Expected to find process definition with key '%d', but none found";
-  private static final DirectBuffer EMPTY_TOKEN = wrapString("");
   private static final String ERROR_MESSAGE_NO_NONE_START_EVENT =
       "Expected to create instance of process with none start event, but there is no such event";
   private static final String ERROR_MESSAGE_BUSINESS_ID_ALREADY_EXISTS =
@@ -211,15 +210,11 @@ public class ProcessInstanceCreationHelper {
   }
 
   /**
-   * Returns the token of the record's reserve-jobs instruction, or an empty buffer when it carries
-   * none.
+   * Returns the reservation token the instance was created with (from its configure-execution
+   * instruction), or an empty buffer when it was not reserved.
    */
   public static DirectBuffer jobReservationTokenOf(final ProcessInstanceCreationRecord record) {
-    return record.runtimeInstructions().stream()
-        .filter(instruction -> instruction.getType() == RuntimeInstructionType.RESERVE_JOBS)
-        .findFirst()
-        .map(ProcessInstanceCreationRuntimeInstruction::getJobReservationTokenBuffer)
-        .orElse(EMPTY_TOKEN);
+    return record.getJobReservationTokenBuffer();
   }
 
   private Either<Rejection, DeployedProcess> getProcess(

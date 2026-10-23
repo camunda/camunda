@@ -16,7 +16,6 @@ import io.camunda.gateway.protocol.model.ProcessInstanceCreationInstructionByKey
 import io.camunda.gateway.protocol.model.ProcessInstanceCreationInstructionByVersionTag;
 import io.camunda.gateway.protocol.model.ProcessInstanceCreationStartInstruction;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceCreateRequest;
-import io.camunda.zeebe.protocol.record.value.RuntimeInstructionType;
 import io.camunda.zeebe.util.Either;
 import java.util.List;
 import java.util.function.Consumer;
@@ -115,11 +114,14 @@ public class SimpleRequestMapper {
       mapCreateProcessInstanceRuntimeInstruction(
           final io.camunda.gateway.protocol.model.simple.ProcessInstanceCreationRuntimeInstruction
               instruction) {
-    if (RuntimeInstructionType.RESERVE_JOBS.name().equals(instruction.getType())) {
-      return io.camunda.gateway.protocol.model.ProcessInstanceCreationReserveJobsInstruction.Builder
-          .create()
+    if ("CONFIGURE_EXECUTION".equals(instruction.getType())) {
+      return io.camunda.gateway.protocol.model.ProcessInstanceCreationConfigureExecutionInstruction
+          .Builder.create()
           .type(instruction.getType())
+          .reserveJobs(instruction.getReserveJobs())
           .jobReservationToken(instruction.getJobReservationToken())
+          .stubCallActivities(instruction.getStubCallActivities())
+          .holdTimers(instruction.getHoldTimers())
           .build();
     }
     return io.camunda.gateway.protocol.model.ProcessInstanceCreationTerminateInstruction.Builder

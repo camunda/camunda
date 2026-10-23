@@ -9,15 +9,14 @@ package io.camunda.gateway.mapping.http.validator;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.gateway.protocol.model.ProcessInstanceCreationConfigureExecutionInstruction;
 import io.camunda.gateway.protocol.model.ProcessInstanceCreationInstructionById;
 import io.camunda.gateway.protocol.model.ProcessInstanceCreationInstructionByKey;
 import io.camunda.gateway.protocol.model.ProcessInstanceCreationInstructionByVersionTag;
-import io.camunda.gateway.protocol.model.ProcessInstanceCreationReserveJobsInstruction;
 import io.camunda.gateway.protocol.model.ProcessInstanceFilter;
 import io.camunda.gateway.protocol.model.ProcessInstanceMigrationBatchOperationPlan;
 import io.camunda.gateway.protocol.model.ProcessInstanceMigrationBatchOperationRequest;
 import io.camunda.search.filter.Operation;
-import io.camunda.zeebe.protocol.record.value.RuntimeInstructionType;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -85,7 +84,7 @@ class ProcessInstanceRequestValidatorTest {
         .get()
         .extracting(ProblemDetail::getDetail)
         .asString()
-        .contains("2 instructions of type RESERVE_JOBS");
+        .contains("2 instructions of type CONFIGURE_EXECUTION");
   }
 
   @Test
@@ -158,9 +157,11 @@ class ProcessInstanceRequestValidatorTest {
         .contains("exceeds the limit of 128 characters");
   }
 
-  private static ProcessInstanceCreationReserveJobsInstruction reserveJobs(final String token) {
-    return ProcessInstanceCreationReserveJobsInstruction.Builder.create()
-        .type(RuntimeInstructionType.RESERVE_JOBS.name())
+  private static ProcessInstanceCreationConfigureExecutionInstruction reserveJobs(
+      final String token) {
+    return ProcessInstanceCreationConfigureExecutionInstruction.Builder.create()
+        .type("CONFIGURE_EXECUTION")
+        .reserveJobs(true)
         .jobReservationToken(token)
         .build();
   }

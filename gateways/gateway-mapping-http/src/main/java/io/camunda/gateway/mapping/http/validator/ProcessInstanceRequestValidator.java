@@ -26,11 +26,11 @@ import io.camunda.gateway.protocol.model.CancelProcessInstanceRequest;
 import io.camunda.gateway.protocol.model.DirectAncestorKeyInstruction;
 import io.camunda.gateway.protocol.model.MigrateProcessInstanceMappingInstruction;
 import io.camunda.gateway.protocol.model.ProcessInstanceBusinessIdAssignmentInstruction;
+import io.camunda.gateway.protocol.model.ProcessInstanceCreationConfigureExecutionInstruction;
 import io.camunda.gateway.protocol.model.ProcessInstanceCreationInstruction;
 import io.camunda.gateway.protocol.model.ProcessInstanceCreationInstructionById;
 import io.camunda.gateway.protocol.model.ProcessInstanceCreationInstructionByKey;
 import io.camunda.gateway.protocol.model.ProcessInstanceCreationInstructionByVersionTag;
-import io.camunda.gateway.protocol.model.ProcessInstanceCreationReserveJobsInstruction;
 import io.camunda.gateway.protocol.model.ProcessInstanceCreationRuntimeInstruction;
 import io.camunda.gateway.protocol.model.ProcessInstanceMigrationBatchOperationRequest;
 import io.camunda.gateway.protocol.model.ProcessInstanceMigrationInstruction;
@@ -50,7 +50,6 @@ import io.camunda.gateway.protocol.model.SuspendProcessInstanceRequest;
 import io.camunda.search.entities.ProcessInstanceEntity.ProcessInstanceState;
 import io.camunda.search.filter.Operator;
 import io.camunda.search.filter.ProcessInstanceFilter;
-import io.camunda.zeebe.protocol.record.value.RuntimeInstructionType;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -462,21 +461,28 @@ public class ProcessInstanceRequestValidator {
     if (instructions == null) {
       return;
     }
-    var reserveJobsCount = 0;
+    var configureExecutionCount = 0;
     for (final var instruction : instructions) {
-      if (instruction instanceof final ProcessInstanceCreationReserveJobsInstruction reserveJobs) {
-        reserveJobsCount++;
-        if (reserveJobs.getJobReservationToken() == null) {
-          violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("jobReservationToken"));
-        } else {
-          validateJobReservationToken(reserveJobs.getJobReservationToken(), violations);
+      if (instruction
+          instanceof final ProcessInstanceCreationConfigureExecutionInstruction config) {
+        configureExecutionCount++;
+        final var reserveJobs = Boolean.TRUE.equals(config.getReserveJobs());
+        final var token = config.getJobReservationToken();
+        if (reserveJobs) {
+          if (token == null) {
+            violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("jobReservationToken"));
+          } else {
+            validateJobReservationToken(token, violations);
+          }
+        } else if (token != null && !token.isBlank()) {
+          violations.add("jobReservationToken may only be set when reserveJobs is true");
         }
       }
     }
-    if (reserveJobsCount > 1) {
+    if (configureExecutionCount > 1) {
       violations.add(
           ERROR_MESSAGE_TOO_MANY_RUNTIME_INSTRUCTIONS_OF_TYPE.formatted(
-              reserveJobsCount, RuntimeInstructionType.RESERVE_JOBS));
+              configureExecutionCount, "CONFIGURE_EXECUTION"));
     }
   }
 

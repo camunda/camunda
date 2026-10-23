@@ -18,7 +18,5 @@ package io.camunda.zeebe.protocol.record.value;
 /** Defines the types of runtime instructions that can be used in process instance creation. */
 public enum RuntimeInstructionType {
   /** Instruction to terminate a process instance. */
-  TERMINATE_PROCESS_INSTANCE,
-  /** Instruction to reserve the jobs of a process instance for the caller. */
-  RESERVE_JOBS
+  TERMINATE_PROCESS_INSTANCE
 }

@@ -1919,10 +1919,7 @@ final class JsonSerializableToJsonTest {
                       new ProcessInstanceCreationRuntimeInstruction()
                           .setType(RuntimeInstructionType.TERMINATE_PROCESS_INSTANCE)
                           .setAfterElementId("element"))
-                  .addRuntimeInstruction(
-                      new ProcessInstanceCreationRuntimeInstruction()
-                          .setType(RuntimeInstructionType.RESERVE_JOBS)
-                          .setJobReservationToken("recorder-session-1"))
+                  .setJobReservationToken("recorder-session-1")
                   .setProcessInstanceKey(instanceKey)
                   .setTags(Set.of("tag1", "tag2"))
                   .setRootProcessInstanceKey(rootProcessInstanceKey)
@@ -1954,13 +1951,7 @@ final class JsonSerializableToJsonTest {
                   "runtimeInstructions": [
                     {
                       "type": "TERMINATE_PROCESS_INSTANCE",
-                      "afterElementId": "element",
-                      "jobReservationToken": ""
-                    },
-                    {
-                      "type": "RESERVE_JOBS",
-                      "afterElementId": "",
-                      "jobReservationToken": "recorder-session-1"
+                      "afterElementId": "element"
                     }
                   ],
                   "tags": ["tag1", "tag2"],
@@ -1970,6 +1961,7 @@ final class JsonSerializableToJsonTest {
                   "versionTag": "v1.0",
                   "stubCallActivities": false,
                   "holdTimers": false,
+                  "jobReservationToken": "recorder-session-1",
                   "variablesMetadata": {
                     "foo": {
                       "protectionModes": ["REDACT"]
@@ -2005,6 +1997,7 @@ final class JsonSerializableToJsonTest {
                   "versionTag": "",
                   "stubCallActivities": false,
                   "holdTimers": false,
+                  "jobReservationToken": "",
                   "variablesMetadata": {},
                   "elementInstanceKey": -1
                 }

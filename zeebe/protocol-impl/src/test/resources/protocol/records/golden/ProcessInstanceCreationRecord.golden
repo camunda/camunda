@@ -52,6 +52,8 @@ public final class ProcessInstanceCreationRecord extends UnifiedRecordValue
   private static final StringValue VERSION_TAG_KEY = new StringValue("versionTag");
   private static final StringValue STUB_CALL_ACTIVITIES_KEY = new StringValue("stubCallActivities");
   private static final StringValue HOLD_TIMERS_KEY = new StringValue("holdTimers");
+  private static final StringValue JOB_RESERVATION_TOKEN_KEY =
+      new StringValue("jobReservationToken");
 
   private final StringProperty bpmnProcessIdProperty = new StringProperty(BPMN_PROCESS_ID_KEY, "");
   private final LongProperty processDefinitionKeyProperty =
@@ -82,9 +84,11 @@ public final class ProcessInstanceCreationRecord extends UnifiedRecordValue
   private final BooleanProperty stubCallActivitiesProperty =
       new BooleanProperty(STUB_CALL_ACTIVITIES_KEY, false);
   private final BooleanProperty holdTimersProperty = new BooleanProperty(HOLD_TIMERS_KEY, false);
+  private final StringProperty jobReservationTokenProperty =
+      new StringProperty(JOB_RESERVATION_TOKEN_KEY, "");
 
   public ProcessInstanceCreationRecord() {
-    super(16);
+    super(17);
     declareProperty(bpmnProcessIdProperty)
         .declareProperty(processDefinitionKeyProperty)
         .declareProperty(processInstanceKeyProperty)
@@ -99,7 +103,8 @@ public final class ProcessInstanceCreationRecord extends UnifiedRecordValue
         .declareProperty(businessIdProperty)
         .declareProperty(versionTagProperty)
         .declareProperty(stubCallActivitiesProperty)
-        .declareProperty(holdTimersProperty);
+        .declareProperty(holdTimersProperty)
+        .declareProperty(jobReservationTokenProperty);
     declareProperties(variablesPropertyGroup);
   }
 
@@ -347,6 +352,27 @@ public final class ProcessInstanceCreationRecord extends UnifiedRecordValue
   public ProcessInstanceCreationRecord setHoldTimers(final boolean holdTimers) {
     holdTimersProperty.setValue(holdTimers);
     return this;
+  }
+
+  @Override
+  public String getJobReservationToken() {
+    return BufferUtil.bufferAsString(jobReservationTokenProperty.getValue());
+  }
+
+  public ProcessInstanceCreationRecord setJobReservationToken(final String jobReservationToken) {
+    jobReservationTokenProperty.setValue(jobReservationToken);
+    return this;
+  }
+
+  public ProcessInstanceCreationRecord setJobReservationToken(
+      final DirectBuffer jobReservationToken) {
+    jobReservationTokenProperty.setValue(jobReservationToken);
+    return this;
+  }
+
+  @JsonIgnore
+  public DirectBuffer getJobReservationTokenBuffer() {
+    return jobReservationTokenProperty.getValue();
   }
 
   @Override

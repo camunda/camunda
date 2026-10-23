@@ -12,9 +12,9 @@ import static org.assertj.core.api.Assertions.tuple;
 
 import io.camunda.gateway.protocol.model.AdvancedStringFilter;
 import io.camunda.gateway.protocol.model.MigrateProcessInstanceMappingInstruction;
+import io.camunda.gateway.protocol.model.ProcessInstanceCreationConfigureExecutionInstruction;
 import io.camunda.gateway.protocol.model.ProcessInstanceCreationInstructionById;
 import io.camunda.gateway.protocol.model.ProcessInstanceCreationInstructionByKey;
-import io.camunda.gateway.protocol.model.ProcessInstanceCreationReserveJobsInstruction;
 import io.camunda.gateway.protocol.model.ProcessInstanceCreationTerminateInstruction;
 import io.camunda.gateway.protocol.model.ProcessInstanceFilter;
 import io.camunda.gateway.protocol.model.ProcessInstanceMigrationBatchOperationPlan;
@@ -34,9 +34,11 @@ class ProcessInstanceMapperTest {
 
   private final ProcessInstanceMapper mapper = new ProcessInstanceMapper();
 
-  private static ProcessInstanceCreationReserveJobsInstruction reserveJobs(final String token) {
-    return ProcessInstanceCreationReserveJobsInstruction.Builder.create()
-        .type(RuntimeInstructionType.RESERVE_JOBS.name())
+  private static ProcessInstanceCreationConfigureExecutionInstruction reserveJobs(
+      final String token) {
+    return ProcessInstanceCreationConfigureExecutionInstruction.Builder.create()
+        .type("CONFIGURE_EXECUTION")
+        .reserveJobs(true)
         .jobReservationToken(token)
         .build();
   }
@@ -53,15 +55,10 @@ class ProcessInstanceMapperTest {
     // when
     final var result = mapper.toCreateProcessInstance(instruction, false);
 
-    // then
+    // then the configure-execution switches are lifted onto the request, not kept as instructions
     assertThat(result.isRight()).isTrue();
-    assertThat(result.get().runtimeInstructions())
-        .singleElement()
-        .satisfies(
-            mapped -> {
-              assertThat(mapped.getType()).isEqualTo(RuntimeInstructionType.RESERVE_JOBS);
-              assertThat(mapped.getJobReservationToken()).isEqualTo("recorder-session-1");
-            });
+    assertThat(result.get().jobReservationToken()).isEqualTo("recorder-session-1");
+    assertThat(result.get().runtimeInstructions()).isEmpty();
   }
 
   @Test
@@ -78,17 +75,12 @@ class ProcessInstanceMapperTest {
 
     // then
     assertThat(result.isRight()).isTrue();
-    assertThat(result.get().runtimeInstructions())
-        .singleElement()
-        .satisfies(
-            mapped -> {
-              assertThat(mapped.getType()).isEqualTo(RuntimeInstructionType.RESERVE_JOBS);
-              assertThat(mapped.getJobReservationToken()).isEqualTo("recorder-session-1");
-            });
+    assertThat(result.get().jobReservationToken()).isEqualTo("recorder-session-1");
+    assertThat(result.get().runtimeInstructions()).isEmpty();
   }
 
   @Test
-  void shouldMapTerminateAndReserveJobsInstructionsTogether() {
+  void shouldMapTerminateAndConfigureExecutionInstructionsTogether() {
     // given
     final var instruction =
         ProcessInstanceCreationInstructionById.Builder.create()
@@ -104,16 +96,14 @@ class ProcessInstanceMapperTest {
     // when
     final var result = mapper.toCreateProcessInstance(instruction, false);
 
-    // then
+    // then the terminate instruction stays in the list; the reservation is lifted onto the request
     assertThat(result.isRight()).isTrue();
+    assertThat(result.get().jobReservationToken()).isEqualTo("recorder-session-1");
     assertThat(result.get().runtimeInstructions())
         .extracting(
             ProcessInstanceCreationRuntimeInstruction::getType,
-            ProcessInstanceCreationRuntimeInstruction::getAfterElementId,
-            ProcessInstanceCreationRuntimeInstruction::getJobReservationToken)
-        .containsExactly(
-            tuple(RuntimeInstructionType.TERMINATE_PROCESS_INSTANCE, "Activity_1", ""),
-            tuple(RuntimeInstructionType.RESERVE_JOBS, "", "recorder-session-1"));
+            ProcessInstanceCreationRuntimeInstruction::getAfterElementId)
+        .containsExactly(tuple(RuntimeInstructionType.TERMINATE_PROCESS_INSTANCE, "Activity_1"));
   }
 
   @Test
@@ -122,7 +112,12 @@ class ProcessInstanceMapperTest {
     final var instruction =
         ProcessInstanceCreationInstructionById.Builder.create()
             .processDefinitionId("process")
-            .stubCallActivities(true)
+            .runtimeInstructions(
+                List.of(
+                    ProcessInstanceCreationConfigureExecutionInstruction.Builder.create()
+                        .type("CONFIGURE_EXECUTION")
+                        .stubCallActivities(true)
+                        .build()))
             .build();
 
     // when
@@ -139,7 +134,12 @@ class ProcessInstanceMapperTest {
     final var instruction =
         ProcessInstanceCreationInstructionByKey.Builder.create()
             .processDefinitionKey("123")
-            .stubCallActivities(true)
+            .runtimeInstructions(
+                List.of(
+                    ProcessInstanceCreationConfigureExecutionInstruction.Builder.create()
+                        .type("CONFIGURE_EXECUTION")
+                        .stubCallActivities(true)
+                        .build()))
             .build();
 
     // when
@@ -164,8 +164,8 @@ class ProcessInstanceMapperTest {
     // then
     assertThat(result.isRight()).isTrue();
     assertThat(result.get().stubCallActivities())
-        .describedAs("the schema's default applies, so call activities run for real")
-        .isFalse();
+        .describedAs("no configure-execution instruction, so call activities run for real")
+        .isNull();
   }
 
   @Test
@@ -181,6 +181,7 @@ class ProcessInstanceMapperTest {
 
     // then
     assertThat(result.isRight()).isTrue();
+    assertThat(result.get().jobReservationToken()).isNull();
     assertThat(result.get().runtimeInstructions()).isEmpty();
   }
 

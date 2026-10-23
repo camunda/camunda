@@ -344,6 +344,10 @@ public final class ProcessInstanceServices
       brokerRequest.setHoldTimers(request.holdTimers());
     }
 
+    if (request.jobReservationToken() != null) {
+      brokerRequest.setJobReservationToken(request.jobReservationToken());
+    }
+
     if (request.operationReference() != null) {
       brokerRequest.setOperationReference(request.operationReference());
     }
@@ -378,6 +382,10 @@ public final class ProcessInstanceServices
 
     if (request.holdTimers() != null) {
       brokerRequest.setHoldTimers(request.holdTimers());
+    }
+
+    if (request.jobReservationToken() != null) {
+      brokerRequest.setJobReservationToken(request.jobReservationToken());
     }
 
     if (request.operationReference() != null) {
@@ -722,7 +730,8 @@ public final class ProcessInstanceServices
       Set<String> tags,
       String businessId,
       Boolean stubCallActivities,
-      Boolean holdTimers) {
+      Boolean holdTimers,
+      String jobReservationToken) {
 
     ProcessDefinitionIdentifier processDefinitionIdentifier() {
       if (processDefinitionKey > 0L) {

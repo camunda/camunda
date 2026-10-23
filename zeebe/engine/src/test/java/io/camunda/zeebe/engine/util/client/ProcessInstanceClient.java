@@ -132,10 +132,7 @@ public final class ProcessInstanceClient {
     }
 
     public ProcessInstanceCreationClient withJobReservationToken(final String jobReservationToken) {
-      processInstanceCreationRecord.addRuntimeInstruction(
-          new ProcessInstanceCreationRuntimeInstruction()
-              .setType(RuntimeInstructionType.RESERVE_JOBS)
-              .setJobReservationToken(jobReservationToken));
+      processInstanceCreationRecord.setJobReservationToken(jobReservationToken);
       return this;
     }
 

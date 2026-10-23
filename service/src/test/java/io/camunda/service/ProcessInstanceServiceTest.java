@@ -821,7 +821,8 @@ public final class ProcessInstanceServiceTest {
         null, // tags
         null, // businessId
         null, // stubCallActivities
-        null // holdTimers
+        null, // holdTimers
+        null // jobReservationToken
         );
   }
 
@@ -845,7 +846,8 @@ public final class ProcessInstanceServiceTest {
             null, // tags
             null, // businessId
             null, // stubCallActivities
-            null // holdTimers
+            null, // holdTimers
+            null // jobReservationToken
             );
 
     final var mockResponse =
@@ -886,7 +888,8 @@ public final class ProcessInstanceServiceTest {
             null, // tags
             null, // businessId
             null, // stubCallActivities
-            null // holdTimers
+            null, // holdTimers
+            null // jobReservationToken
             );
 
     final var mockResponse =
@@ -928,7 +931,8 @@ public final class ProcessInstanceServiceTest {
             null, // tags
             null, // businessId
             null, // stubCallActivities
-            null // holdTimers
+            null, // holdTimers
+            null // jobReservationToken
             );
 
     final var mockResponse =
@@ -1188,7 +1192,8 @@ public final class ProcessInstanceServiceTest {
           null, // tags
           businessId, // businessId
           null, // stubCallActivities
-          null // holdTimers
+          null, // holdTimers
+          null // jobReservationToken
           );
     }
 
@@ -1210,7 +1215,8 @@ public final class ProcessInstanceServiceTest {
           null, // tags
           businessId, // businessId
           null, // stubCallActivities
-          null // holdTimers
+          null, // holdTimers
+          null // jobReservationToken
           );
     }
   }

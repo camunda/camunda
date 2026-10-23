@@ -77,6 +77,12 @@ public final class BrokerCreateProcessInstanceWithResultRequest
     return this;
   }
 
+  public BrokerCreateProcessInstanceWithResultRequest setJobReservationToken(
+      final String jobReservationToken) {
+    requestDto.setJobReservationToken(jobReservationToken);
+    return this;
+  }
+
   public BrokerCreateProcessInstanceWithResultRequest setBusinessId(final String businessId) {
     this.businessId = businessId;
     requestDto.setBusinessId(businessId != null ? businessId : "");
