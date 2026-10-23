@@ -46,7 +46,8 @@ const DS_DROPDOWN_MENU_HIDES_BACKGROUND_RULES = [
 
 const GROUPS = [createGroup({groupId: 'engineering', name: 'Engineering', description: 'The engineering team'})];
 
-test.beforeEach(({network}) => {
+test.beforeEach(async ({network, adminGroupsPage}) => {
+	await adminGroupsPage.mockClientConfig();
 	network.use(
 		mockCurrentUserEndpoint({successResponse: HttpResponse.json(createCurrentUser())}),
 		mockSystemConfigurationEndpoint({

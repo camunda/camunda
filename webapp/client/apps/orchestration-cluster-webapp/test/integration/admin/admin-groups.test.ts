@@ -49,7 +49,8 @@ function mockSystemConfiguration(isLoginDelegated: boolean) {
 	});
 }
 
-test.beforeEach(({network}) => {
+test.beforeEach(async ({network, adminGroupsPage}) => {
+	await adminGroupsPage.mockClientConfig();
 	network.use(
 		mockCurrentUserEndpoint({successResponse: HttpResponse.json(createCurrentUser())}),
 		mockSystemConfiguration(false),

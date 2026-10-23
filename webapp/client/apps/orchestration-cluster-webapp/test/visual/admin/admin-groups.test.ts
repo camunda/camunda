@@ -31,7 +31,8 @@ const GROUPS = [
 	createGroup({groupId: 'operations', name: 'Operations', description: 'The operations team'}),
 ];
 
-test.beforeEach(({network}) => {
+test.beforeEach(async ({network, adminGroupsPage}) => {
+	await adminGroupsPage.mockClientConfig();
 	network.use(
 		mockCurrentUserEndpoint({successResponse: HttpResponse.json(createCurrentUser())}),
 		mockSystemConfigurationEndpoint({

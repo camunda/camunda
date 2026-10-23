@@ -35,11 +35,10 @@ import {DEFAULT_PAGE_SIZE} from '#/admin/modules/groups/searchSchema';
 
 type ModalState = {type: 'edit'} | {type: 'delete'} | null;
 
-const OIDC_ONLY_KINDS: readonly MemberKind[] = ['mappingRules', 'clients'];
-
 type AdminGroupDetailPageProps = {
 	group: Group;
 	isOidc: boolean;
+	canManageMappingRules: boolean;
 	activeTab: MemberKind;
 	onTabChange: (tab: MemberKind) => void;
 	onDeleted: () => void;
@@ -48,6 +47,7 @@ type AdminGroupDetailPageProps = {
 const AdminGroupDetailPage: React.FC<AdminGroupDetailPageProps> = ({
 	group,
 	isOidc,
+	canManageMappingRules,
 	activeTab,
 	onTabChange,
 	onDeleted,
@@ -56,7 +56,12 @@ const AdminGroupDetailPage: React.FC<AdminGroupDetailPageProps> = ({
 	const queryClient = useQueryClient();
 	const [modalState, setModalState] = useState<ModalState>(null);
 	const closeModal = () => setModalState(null);
-	const visibleKinds = MEMBER_KINDS.filter((kind) => isOidc || !OIDC_ONLY_KINDS.includes(kind));
+	const visibleKinds = MEMBER_KINDS.filter((kind) => {
+		if (kind === 'mappingRules') {
+			return canManageMappingRules;
+		}
+		return kind !== 'clients' || isOidc;
+	});
 	const selectedTab = visibleKinds.includes(activeTab) ? activeTab : 'users';
 	const prefetchTab = (kind: MemberKind) => {
 		queryClient

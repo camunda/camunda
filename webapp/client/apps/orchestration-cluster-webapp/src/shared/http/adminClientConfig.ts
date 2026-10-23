@@ -15,6 +15,11 @@ const adminClientConfigSchema = z.object({
 	idPattern: z.string().nullish(),
 	resourcePermissions: z.record(z.string(), z.array(permissionTypeSchema)).default({}),
 	defaultRoleIds: z.array(z.string()).default([]),
+	// Served as a string, like the config's other flags.
+	isAdditionalIdpConfigured: z
+		.enum(['true', 'false'])
+		.transform((value) => value === 'true')
+		.default(false),
 });
 
 type AdminClientConfig = z.infer<typeof adminClientConfigSchema>;

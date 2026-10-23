@@ -7,8 +7,16 @@
  */
 
 import {BasePage} from '#/pages/BasePage';
+import {createAdminClientConfigScript} from '#/shared-test-modules/api-mocks/authorizations';
 
 class AdminGroupsPage extends BasePage {
+	// MSW's Playwright integration skips `.js` URLs as static assets, so the script is stubbed via `page.route`.
+	async mockClientConfig(script = createAdminClientConfigScript()) {
+		await this.page.route('**/admin/config.js', (route) =>
+			route.fulfill({status: 200, contentType: 'text/javascript', body: script}),
+		);
+	}
+
 	async goto() {
 		return this.page.goto('/admin/groups');
 	}

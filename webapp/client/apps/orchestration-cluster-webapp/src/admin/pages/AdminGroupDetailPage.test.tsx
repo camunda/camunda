@@ -43,6 +43,7 @@ async function renderPage(overrides: Partial<AdminGroupDetailPageProps> = {}) {
 				<AdminGroupDetailPage
 					group={createGroup({groupId: 'ops', name: 'Operations', description: 'The ops team'})}
 					isOidc={false}
+					canManageMappingRules={overrides.isOidc ?? false}
 					activeTab="users"
 					onTabChange={onTabChange}
 					onDeleted={onDeleted}
@@ -142,6 +143,16 @@ describe('<AdminGroupDetailPage />', () => {
 
 		await expect.element(screen.getByRole('tab', {name: 'Mapping rules'})).toBeVisible();
 		await expect.element(screen.getByRole('tab', {name: 'Clients'})).toBeVisible();
+	});
+
+	it('should offer clients but not mapping rules when mapping rules cannot be managed', async ({worker}) => {
+		worker.use(mockQueryUsersByGroupEndpoint({successResponse: HttpResponse.json(createPage([]))}));
+
+		const {screen} = await renderPage({isOidc: true, canManageMappingRules: false, activeTab: 'mappingRules'});
+
+		await expect.element(screen.getByRole('tab', {name: 'Clients'})).toBeVisible();
+		await expect.element(screen.getByRole('tab', {name: 'Mapping rules'})).not.toBeInTheDocument();
+		await expect.element(screen.getByRole('tab', {name: 'Users', selected: true})).toBeVisible();
 	});
 
 	it('should fall back to the users tab when the active tab is not available', async ({worker}) => {

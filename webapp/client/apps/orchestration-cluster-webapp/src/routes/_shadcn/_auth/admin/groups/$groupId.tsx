@@ -11,7 +11,7 @@ import {createFileRoute, notFound, useNavigate, type ErrorComponentProps} from '
 import {useSuspenseQuery} from '@tanstack/react-query';
 import {z} from 'zod';
 import {PageLayout} from '@camunda/design-system';
-import {assertAdminSectionAvailable, getAdminSectionConfig} from '#/admin/adminSections';
+import {assertAdminSectionAvailable, canManageMappingRuleMembers, getAdminSectionConfig} from '#/admin/adminSections';
 import {MEMBER_KINDS, type MemberKind} from '#/admin/modules/groups/members';
 import {AdminGroupDetailPage} from '#/admin/pages/AdminGroupDetailPage';
 import {ForbiddenError} from '#/shared/errors';
@@ -28,7 +28,7 @@ export const Route = createFileRoute('/_shadcn/_auth/admin/groups/$groupId')({
 	},
 	loader: async ({context: {queryClient}, params: {groupId}}) => {
 		try {
-			await queryClient.query(queries.getGroup(groupId));
+			await Promise.all([queryClient.query(queries.getGroup(groupId)), queryClient.query(queries.adminClientConfig())]);
 		} catch (error) {
 			const result = requestErrorSchema.safeParse(error);
 
@@ -60,6 +60,8 @@ export const Route = createFileRoute('/_shadcn/_auth/admin/groups/$groupId')({
 		const navigate = useNavigate();
 		const {tab} = Route.useSearch();
 		const {data: group} = useSuspenseQuery(queries.getGroup(groupId));
+		const {data: clientConfig} = useSuspenseQuery(queries.adminClientConfig());
+		const sectionConfig = getAdminSectionConfig();
 
 		const handleTabChange = useCallback(
 			(nextTab: MemberKind) => {
@@ -75,7 +77,8 @@ export const Route = createFileRoute('/_shadcn/_auth/admin/groups/$groupId')({
 		return (
 			<AdminGroupDetailPage
 				group={group}
-				isOidc={getAdminSectionConfig().isOidc}
+				isOidc={sectionConfig.isOidc}
+				canManageMappingRules={canManageMappingRuleMembers(sectionConfig, clientConfig.isAdditionalIdpConfigured)}
 				activeTab={tab ?? 'users'}
 				onTabChange={handleTabChange}
 				onDeleted={handleDeleted}
