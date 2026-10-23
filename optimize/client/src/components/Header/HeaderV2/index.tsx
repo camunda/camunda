@@ -10,7 +10,6 @@ import './c4-ui.scss';
 import {ComponentProps, useEffect, useLayoutEffect, useMemo, useState} from 'react';
 import {useHistory, useLocation} from 'react-router-dom';
 import {
-  C3LicenseTag,
   C3UserConfigurationProvider,
   preview_C3ToolsArea as C3ToolsArea,
   preview_useCamundaTools as useCamundaTools,
@@ -36,6 +35,7 @@ import {useDocs, useErrorHandling, useUiConfig, useUser} from 'hooks';
 
 import {getUserToken} from '../service';
 import ForwardRefLink from './ForwardRefLink';
+import HeaderBadges from './HeaderBadges';
 import InfoMenu from './InfoMenu';
 import LogoutAwareUserMenu from './LogoutAwareUserMenu';
 import useBreadcrumbs from './useBreadcrumbs';
@@ -77,8 +77,7 @@ function HeaderV2Body({noActions, isCloud}: {noActions?: boolean; isCloud: boole
   const {getBaseDocsUrl} = useDocs();
   const {user} = useUser();
   const {mightFail} = useErrorHandling();
-  const {enterpriseMode, optimizeVersion, validLicense, licenseType, commercial, expiresAt} =
-    useUiConfig();
+  const {enterpriseMode, optimizeVersion} = useUiConfig();
   const [logoutHidden, setLogoutHidden] = useState(false);
 
   useEffect(() => {
@@ -153,7 +152,6 @@ function HeaderV2Body({noActions, isCloud}: {noActions?: boolean; isCloud: boole
   const breadcrumb = useBreadcrumbs();
   const sidebarChildren = useSidebarChildren(noActions);
   const hasSidebar = sidebarChildren.length > 0;
-  const showLicenseTag = !noActions && licenseType !== 'saas';
 
   return (
     <ToolsProvider>
@@ -174,17 +172,7 @@ function HeaderV2Body({noActions, isCloud}: {noActions?: boolean; isCloud: boole
                 </ForwardRefLink>
               }
               breadcrumb={breadcrumb}
-              trailing={
-                showLicenseTag ? (
-                  <div className="HeaderV2-license-tag flex items-center">
-                    <C3LicenseTag
-                      isProductionLicense={validLicense}
-                      isCommercial={commercial}
-                      expiresAt={expiresAt ?? undefined}
-                    />
-                  </div>
-                ) : undefined
-              }
+              trailing={<HeaderBadges hideLicense={noActions} />}
               globalActions={globalActions}
               actions={
                 noActions ? undefined : (
