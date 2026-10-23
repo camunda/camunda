@@ -75,17 +75,92 @@ CPU throttling is the only signal that decreases the ceiling. Finding 2 gives th
 
 ## Results
 
-Setup, if not stated otherwise: 3 brokers with 2 CPUs, 3 tenants with 3 partitions each, replication factor 3, `R` = 10 000. The values are records each second for each tenant, as a mean over the last 2 minutes of a 5-minute run.
+Setup, if not stated otherwise: 3 brokers with 2 CPUs, 3 tenants with 3 partitions each, replication factor 3, `R` = 10 000. The values are records each second for each tenant, as a sum over its 3 partitions. Each value is a mean over the last 2 minutes of a 5-minute run.
 
-| Scenario | Expected | Both mechanisms | Request limiter only |
-| --- | --- | --- | --- |
-| All tenants flood, `R_true` = `R` | 8 333 each, no throttling | 8 333 each, CPU throttled 0% | 8 550 each, CPU throttled 86% |
-| Tenant a floods, b and c send 7 500 | a 8 333, b and c 7 500 | a 8 333, b and c 7 500, CPU throttled 0% | a 12 664, b and c 7 284, CPU throttled 98% |
-| Weights 2:1:1, all tenants flood, `R_true` = 8 000 | 10 909, 5 454, 5 454 | 10 451, 5 413, 5 413, CPU throttled 44% | 7 027 each, the weights have no effect |
-| Tenant a floods, b and c send 7 500, `R_true` = 8 000 | 7 273 each | 7 110, 7 098, 7 098, CPU throttled 52% | a 8 529, b and c 6 650 |
-| All tenants flood, `R_true` = 8 000 | 7 273 each | 7 015, 7 017, 7 017, CPU throttled 36% | 7 027 each |
+### Calculations
 
-When `R_true` is 8 000, the broker can do `2 × 8 000 / 2.2 = 7 273` records each second for each partition, over all tenants. The factor 2.2 is one leader and two followers (`1 + 2 × 0.6`). So the fair share is 7 273 records each second for each tenant. All tenants want more than this value, so all tenants have the same share.
+The inputs of the default setup:
+
+| Input | Value |
+| --- | --- |
+| Brokers `B` | 3 |
+| CPUs for each broker | 2 |
+| Tenants | 3, each with 3 partitions and replication factor 3 |
+| `R` (assumed by the controller) | 10 000 records each second for one CPU on a leader |
+| `LEADER`, `FOLLOWER` | 1, 0.6 |
+
+`R` is a rate for one CPU on a leader. It is not a rate for one tenant.
+
+**Step 1: replicas on one broker.** The cluster has `3 tenants × 3 partitions × 3 replicas = 27` replicas. Each broker has `27 / 3 = 9` replicas.
+
+**Step 2: cost of one replica.** `λ` is the share of the replicas that the broker leads.
+
+```
+cost(λ) = λ × LEADER + (1 − λ) × FOLLOWER
+cost(1)   = 1        (the broker leads all its replicas)
+cost(1/2) = 0.8      (one broker is down)
+cost(1/3) = 0.733    (all brokers run)
+```
+
+With one broker down, the 9 leaders go to 2 brokers. `λ = ΣP × B / ((B − 1) × ΣP × RF) = 9 × 3 / (2 × 27) = 1/2`.
+
+**Step 3: ceiling for each partition.** The broker divides its CPU over its replicas.
+
+```
+ceiling(λ) = R × CPUs / (replicas × cost(λ))
+floor      = 10 000 × 2 / (9 × 1)     = 2 222   → 6 667 for each tenant
+start      = 10 000 × 2 / (9 × 0.8)   = 2 778   → 8 333 for each tenant
+```
+
+**Step 4: capacity.** The capacity uses `R_true` and `λ = 1/3`, because all brokers run.
+
+```
+capacity(R_true) = R_true × 2 / (9 × 0.733)
+R_true = 10 000  → 3 030 for each partition → 9 091 for each tenant
+R_true =  8 000  → 2 424 for each partition → 7 273 for each tenant
+R_true =  6 000  → 1 818 for each partition → 5 455 for each tenant
+```
+
+The same value for the full cluster: one record costs `(1 + 2 × 0.6) / R_true = 2.2 / R_true` CPU seconds, on the leader and the two followers. The cluster has 6 CPUs. With `R_true` = 10 000, the cluster does `6 × 10 000 / 2.2 = 27 273` records each second, so 9 091 for each tenant. With `R_true` = 8 000, the cluster does 21 818 records each second, so 7 273 for each tenant.
+
+**Step 5: fair share of each scenario.** A tenant that sends less than its share keeps its rate. The other tenants divide the remaining capacity by weight.
+
+| Scenario | Calculation | Fair share |
+| --- | --- | --- |
+| All tenants flood, `R_true` = `R` | `27 273 / 3` | 9 091 each |
+| Tenant a floods, b and c send 7 500 | b and c send less than 9 091 and keep 7 500. Tenant a gets `27 273 − 2 × 7 500`. | a 12 273, b and c 7 500 |
+| Weights 2:1:1, all tenants flood, `R_true` = 8 000 | `21 818 × 2/4` and `21 818 × 1/4` | 10 909, 5 454, 5 454 |
+| Tenant a floods, b and c send 7 500, `R_true` = 8 000 | `21 818 / 3 = 7 273`. Tenants b and c send more than 7 273. | 7 273 each |
+| All tenants flood, `R_true` = 8 000 | `21 818 / 3` | 7 273 each |
+
+**Step 6: expected value in v1.** In v1, the limit of a tenant is a maximum of `start × w_t / w̄` for each partition. The expected value is the lower of this limit and the fair share.
+
+- With `R_true` = `R`, the limit is `3 × 2 778 = 8 333` for each tenant. This is less than the fair share of 9 091 and 12 273.
+- With weights 2:1:1, `w̄ = 4/3`. The limit of tenant a is `3 × 2 778 × 2 / (4/3) = 12 500`. The limit of tenants b and c is 6 250. These limits are more than the fair share with `R_true` = 8 000. The controller decreases the ceiling, so the fair share applies.
+- With `R_true` = 8 000, the capacity of 7 273 is less than 8 333. The controller decreases the ceiling, so the fair share applies.
+
+### Start value
+
+The start value is less than the capacity of 9 091 for each tenant for two reasons:
+
+1. The start value keeps CPU free for a failover. It uses `λ = 1/2`, not `λ = 1/3` (step 2).
+2. In v1, the ceiling cannot go above the start value (Finding 4). A tenant cannot use the share that another tenant does not use.
+
+### Fairness
+
+The column "Fair share" gives the result of a work-conserving mechanism with the full capacity. The column "Expected in v1" adds the limit of the start value.
+
+| Scenario | Fair share | Expected in v1 | Both mechanisms | Request limiter only |
+| --- | --- | --- | --- | --- |
+| All tenants flood, `R_true` = `R` | 9 091 each | 8 333 each, no throttling | 8 333 each, CPU throttled 0% | 8 550 each, CPU throttled 86% |
+| Tenant a floods, b and c send 7 500 | a 12 273, b and c 7 500 | a 8 333, b and c 7 500 | a 8 333, b and c 7 500, CPU throttled 0% | a 12 664, b and c 7 284, CPU throttled 98% |
+| Weights 2:1:1, all tenants flood, `R_true` = 8 000 | 10 909, 5 454, 5 454 | Same as fair share | 10 451, 5 413, 5 413, CPU throttled 44% | 7 027 each, the weights have no effect |
+| Tenant a floods, b and c send 7 500, `R_true` = 8 000 | 7 273 each | Same as fair share | 7 110, 7 098, 7 098, CPU throttled 52% | a 8 529, b and c 6 650 |
+| All tenants flood, `R_true` = 8 000 | 7 273 each | Same as fair share | 7 015, 7 017, 7 017, CPU throttled 36% | 7 027 each |
+
+When `R_true` is 8 000, the capacity is less than the start value. The controller then decreases the ceiling to the capacity, and the start value has no effect. In the second row, tenant a can use the capacity that b and c do not use: `27 273 − 2 × 7 500 = 12 273`. In v1, tenant a stays at 8 333.
+
+With the request limiter only, tenant a gets more than b and c in the second and fourth rows. Tenants b and c then get less than they send, or less than their fair share.
 
 Other results:
 
@@ -216,7 +291,7 @@ The request limiter also solves the problem of step 1. The backlog stays small, 
 
 ## Finding 3: the floor does not protect the tenants when `R` is much too high
 
-The controller can correct an `R` that is too high only down to the floor. In the default setup, the floor is 80% of the start value. With all brokers up, the sustainable ceiling is `R_true × 2 / (9 × 0.733)`. This value is equal to the floor when `R_true` is 7 333. So the controller can correct an `R` that is a maximum of approximately 36% too high.
+The controller can correct an `R` that is too high only down to the floor. In the default setup, the floor is 80% of the start value. With all brokers up, the sustainable ceiling is `R_true × 2 / (9 × 0.733)` (step 4 of the calculations). This value is equal to the floor of 2 222 when `R_true = 2 222 × 9 × 0.733 / 2 = 7 333`. `R / R_true = 10 000 / 7 333 = 1.36`. So the controller can correct an `R` that is a maximum of approximately 36% too high.
 
 With `R_true` = 6 000, the sustainable ceiling is approximately 1 818. The floor is 2 222. The ceiling stays at the floor and the CPU throttles all the time. The floor is a promise only when `R` is approximately correct. The load test must measure `R` with a margin.
 
