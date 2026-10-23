@@ -17,10 +17,23 @@ inputs:
     description: Package manager to use (yarn or npm)
     required: false
     default: "yarn"
+  infra-tools:
+    description: Pre-fill the tool cache from camunda/infra-tools first (PoC, camunda/team-infrastructure#1138).
+    required: false
+    default: "false"
 
 runs:
   using: composite
   steps:
+    - name: Pre-fill tool cache with Node (infra-tools PoC)
+      if: inputs.infra-tools == 'true'
+      continue-on-error: true
+      uses: camunda/infra-tools/cache@e711227cffecd643b5a6ca2669a9ee58862279b3 # 0.3.0
+      env:
+        INFRA_TOOLS_MIRROR: ${{ runner.environment == 'self-hosted' && 'europe-west1-docker.pkg.dev/ci-30-162810/ci-tools' || '' }}
+      with:
+        tools: node@${{ inputs.node-version }}
+
     - name: Setup Node
       uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
       with:

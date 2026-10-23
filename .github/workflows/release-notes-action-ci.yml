@@ -25,6 +25,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
+      packages: read  # infra-tools PoC: the package is internal
       contents: read # checkout
     env:
       TEST_PRODUCT: Orchestration Cluster
@@ -33,6 +34,13 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Print metadata
         uses: ./.github/actions/print-metadata
+      - name: Pre-fill tool cache with node (infra-tools PoC)
+        continue-on-error: true
+        uses: camunda/infra-tools/cache@e711227cffecd643b5a6ca2669a9ee58862279b3 # 0.3.0
+        env:
+          INFRA_TOOLS_MIRROR: ${{ runner.environment == 'self-hosted' && 'europe-west1-docker.pkg.dev/ci-30-162810/ci-tools' || '' }}
+        with:
+          tools: node@24
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 24

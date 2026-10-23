@@ -10,19 +10,42 @@ inputs:
     description: 'Version of codeowners-cli to install (e.g. v1.12.0)'
     required: false
     default: 'v1.12.0'
+  infra-tools:
+    description: Install from camunda/infra-tools first (PoC, camunda/team-infrastructure#1138).
+    required: false
+    default: "false"
 
 runs:
   using: composite
   steps:
+    - name: codeowners-cli selector for infra-tools (PoC)
+      id: infra-tools-selector
+      if: inputs.infra-tools == 'true'
+      shell: bash
+      env:
+        VERSION: ${{ inputs.version }}
+      run: echo "selector=codeowners-cli@${VERSION#v}" >> "${GITHUB_OUTPUT}"
+
+    - name: Install codeowners-cli (infra-tools PoC)
+      id: infra-tools
+      if: inputs.infra-tools == 'true'
+      continue-on-error: true
+      uses: camunda/infra-tools@e711227cffecd643b5a6ca2669a9ee58862279b3 # 0.3.0
+      env:
+        INFRA_TOOLS_MIRROR: ${{ runner.environment == 'self-hosted' && 'europe-west1-docker.pkg.dev/ci-30-162810/ci-tools' || '' }}
+      with:
+        tools: ${{ steps.infra-tools-selector.outputs.selector }}
+
     - name: Restore cached codeowners-cli
       id: cache
+      if: steps.infra-tools.outcome != 'success'
       uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
       with:
         path: ${{ runner.temp }}/codeowners-cli/${{ inputs.version }}
         key: codeowners-cli-${{ runner.os }}-${{ runner.arch }}-${{ inputs.version }}
 
     - name: Download codeowners-cli
-      if: steps.cache.outputs.cache-hit != 'true'
+      if: steps.infra-tools.outcome != 'success' && steps.cache.outputs.cache-hit != 'true'
       shell: bash
       run: |
         set -euo pipefail
@@ -44,6 +67,7 @@ runs:
         rm -f "${archive_path}"
 
     - name: Add codeowners-cli to PATH
+      if: steps.infra-tools.outcome != 'success'
       shell: bash
       run: echo "${RUNNER_TEMP}/codeowners-cli/${{ inputs.version }}" >> "${GITHUB_PATH}"
 

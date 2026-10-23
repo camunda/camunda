@@ -87,6 +87,7 @@ jobs:
     # Run on self-hosted to make building Zeebe much faster
     runs-on: gcp-perf-core-8-default
     permissions:
+      packages: read  # infra-tools PoC: the package is internal
       security-events: write # required to upload SARIF files
     steps:
       - name: Install Snyk CLI
@@ -96,6 +97,7 @@ jobs:
           ref: ${{ inputs.ref }}
       - uses: ./.github/actions/setup-build
         with:
+          infra-tools: 'true'
           dockerhub-readonly: true
           maven-cache-key-modifier: snyk
           vault-address: ${{ secrets.VAULT_ADDR }}

@@ -55,6 +55,7 @@ jobs:
     runs-on: gcp-perf-core-8-default
     timeout-minutes: 15
     permissions:
+      packages: read  # infra-tools PoC: the package is internal
       contents: read
       id-token: write  # google-github-actions/auth (WIF) mints a GitHub OIDC token
     steps:
@@ -67,6 +68,7 @@ jobs:
           test_product: "${{ inputs.componentName }}"
       - uses: ./.github/actions/setup-build
         with:
+          infra-tools: 'true'
           maven-cache-key-modifier: ut-be-${{inputs.componentName}}
           vault-address: ${{ secrets.VAULT_ADDR }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
@@ -79,6 +81,7 @@ jobs:
         timeout-minutes: 3
         uses: ./.github/actions/gcs-build-cache-auth
         with:
+          infra-tools: 'true'
           vault-addr: ${{ secrets.VAULT_ADDR }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}

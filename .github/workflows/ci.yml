@@ -176,7 +176,8 @@ jobs:
     needs: [ detect-changes ]
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    permissions: { }  # GITHUB_TOKEN unused in this job
+    permissions:
+      packages: read  # infra-tools PoC: the package is internal
     env:
       # renovate: datasource=github-releases depName=rhysd/actionlint
       ACTIONLINT_VERSION: '1.7.12'
@@ -198,13 +199,22 @@ jobs:
             constant expression "false" in condition
             unexpected key "queue" for "concurrency" section\. expected one of "cancel-in-progress", "group"
           use_shellcheck: true
+      - name: Install conftest (infra-tools PoC)
+        continue-on-error: true
+        uses: camunda/infra-tools@e711227cffecd643b5a6ca2669a9ee58862279b3 # 0.3.0
+        with:
+          tools: conftest@${{ env.CONFTEST_VERSION }}
       - run: |
-          .github/scripts/download-with-retry.sh \
-            "https://github.com/open-policy-agent/conftest/releases/download/v${CONFTEST_VERSION}/conftest_${CONFTEST_VERSION}_Linux_x86_64.tar.gz" \
-            "${RUNNER_TEMP}/conftest.tar.gz"
-          tar xzf "${RUNNER_TEMP}/conftest.tar.gz" -C "${RUNNER_TEMP}" conftest
-          rm -f "${RUNNER_TEMP}/conftest.tar.gz"
-          "${RUNNER_TEMP}/conftest" test --rego-version v0 -o github --policy .github .github/workflows/*.y*ml
+          conftest="$(command -v conftest || true)"
+          if [[ -z "${conftest}" ]]; then
+            .github/scripts/download-with-retry.sh \
+              "https://github.com/open-policy-agent/conftest/releases/download/v${CONFTEST_VERSION}/conftest_${CONFTEST_VERSION}_Linux_x86_64.tar.gz" \
+              "${RUNNER_TEMP}/conftest.tar.gz"
+            tar xzf "${RUNNER_TEMP}/conftest.tar.gz" -C "${RUNNER_TEMP}" conftest
+            rm -f "${RUNNER_TEMP}/conftest.tar.gz"
+            conftest="${RUNNER_TEMP}/conftest"
+          fi
+          "${conftest}" test --rego-version v0 -o github --policy .github .github/workflows/*.y*ml
       - name: Observe build status
         if: always()
         continue-on-error: true
@@ -272,7 +282,8 @@ jobs:
     needs: [ detect-changes ]
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    permissions: { }  # GITHUB_TOKEN unused in this job
+    permissions:
+      packages: read  # infra-tools PoC: the package is internal
     steps:
       - uses: camunda/infra-global-github-actions/start-build-monitor@95c6f97de08ce6befa8e1b222140676204d792fb # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -281,6 +292,7 @@ jobs:
           persist-credentials: false
       - uses: ./.github/actions/setup-build
         with:
+          infra-tools: 'true'
           maven-cache-key-modifier: maven-spotless-linter
           vault-address: ${{ secrets.VAULT_ADDR }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
@@ -328,6 +340,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
+      packages: read  # infra-tools PoC: the package is internal
       contents: read
     env:
       TEST_OWNER: '@camunda/reliability-testing'
@@ -337,12 +350,34 @@ jobs:
         timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
         with:
           persist-credentials: false
+      - name: go selector for infra-tools (PoC)
+        id: infra-tools-go-selector
+        shell: bash
+        run: echo "selector=go@$(sed -nE 's/^go ([0-9]+\.[0-9]+).*/\1/p' load-tests/setup/test/go.mod)" >> "${GITHUB_OUTPUT}"
+      - name: Pre-fill tool cache with go (infra-tools PoC)
+        id: infra-tools-go
+        continue-on-error: true
+        uses: camunda/infra-tools/cache@e711227cffecd643b5a6ca2669a9ee58862279b3 # 0.3.0
+        env:
+          INFRA_TOOLS_MIRROR: ${{ runner.environment == 'self-hosted' && 'europe-west1-docker.pkg.dev/ci-30-162810/ci-tools' || '' }}
+        with:
+          tools: ${{ steps.infra-tools-go-selector.outputs.selector }}
       - name: Set up Go
         uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
+          go-version: ${{ fromJSON(steps.infra-tools-go.outputs.versions || '{}').go || '' }}
           go-version-file: load-tests/setup/test/go.mod
           cache-dependency-path: load-tests/setup/test/go.sum
+      - name: Install helm (infra-tools PoC)
+        id: infra-tools-helm
+        continue-on-error: true
+        uses: camunda/infra-tools@e711227cffecd643b5a6ca2669a9ee58862279b3 # 0.3.0
+        env:
+          INFRA_TOOLS_MIRROR: ${{ runner.environment == 'self-hosted' && 'europe-west1-docker.pkg.dev/ci-30-162810/ci-tools' || '' }}
+        with:
+          tools: helm@4
       - name: Set up Helm
+        if: steps.infra-tools-helm.outcome != 'success'
         uses: jdx/mise-action@fc42bcc7ddbf51124c30f95a877a0c5168a3bfde # v5.2.1
         with:
           minimum_release_age: 15d
@@ -377,7 +412,8 @@ jobs:
     needs: [ detect-changes ]
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    permissions: {}
+    permissions:
+      packages: read  # infra-tools PoC: the package is internal
     env:
       TEST_OWNER: '@camunda/reliability-testing'
     steps:
@@ -386,6 +422,14 @@ jobs:
         timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
         with:
           persist-credentials: false
+      - name: Pre-fill tool cache with node (infra-tools PoC)
+        id: infra-tools-node
+        continue-on-error: true
+        uses: camunda/infra-tools/cache@e711227cffecd643b5a6ca2669a9ee58862279b3 # 0.3.0
+        env:
+          INFRA_TOOLS_MIRROR: ${{ runner.environment == 'self-hosted' && 'europe-west1-docker.pkg.dev/ci-30-162810/ci-tools' || '' }}
+        with:
+          tools: node@26
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 26
@@ -419,6 +463,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
+      packages: read  # infra-tools PoC: the package is internal
       contents: read
     env:
       TEST_OWNER: '@camunda/reliability-testing'
@@ -428,7 +473,16 @@ jobs:
         timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
         with:
           persist-credentials: false
+      - name: Install helm (infra-tools PoC)
+        id: infra-tools-helm
+        continue-on-error: true
+        uses: camunda/infra-tools@e711227cffecd643b5a6ca2669a9ee58862279b3 # 0.3.0
+        env:
+          INFRA_TOOLS_MIRROR: ${{ runner.environment == 'self-hosted' && 'europe-west1-docker.pkg.dev/ci-30-162810/ci-tools' || '' }}
+        with:
+          tools: helm@4
       - name: Set up Helm
+        if: steps.infra-tools-helm.outcome != 'success'
         uses: jdx/mise-action@fc42bcc7ddbf51124c30f95a877a0c5168a3bfde # v5.2.1
         with:
           minimum_release_age: 15d
@@ -458,7 +512,8 @@ jobs:
     needs: [ detect-changes ]
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    permissions: { }  # GITHUB_TOKEN unused in this job
+    permissions:
+      packages: read  # infra-tools PoC: the package is internal
     steps:
       - uses: camunda/infra-global-github-actions/start-build-monitor@95c6f97de08ce6befa8e1b222140676204d792fb # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -467,6 +522,7 @@ jobs:
           persist-credentials: false
       - uses: ./.github/actions/setup-build
         with:
+          infra-tools: 'true'
           maven-cache-key-modifier: validate-pom-metadata
           vault-address: ${{ secrets.VAULT_ADDR }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
@@ -493,6 +549,7 @@ jobs:
     uses: ./.github/workflows/release-notes-action-ci.yml
     secrets: inherit
     permissions:
+      packages: read  # infra-tools PoC: the package is internal
       contents: read
 
   codeowners-check:
@@ -501,7 +558,8 @@ jobs:
     needs: [ detect-changes ]
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    permissions: { }  # GITHUB_TOKEN unused in this job
+    permissions:
+      packages: read  # infra-tools PoC: the package is internal
     steps:
       - uses: camunda/infra-global-github-actions/start-build-monitor@95c6f97de08ce6befa8e1b222140676204d792fb # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -509,6 +567,8 @@ jobs:
         with:
           persist-credentials: false
       - uses: ./.github/actions/codeowners-setup-cli
+        with:
+          infra-tools: 'true'
       - name: Check for unowned files
         run: |
           set -euo pipefail
@@ -534,7 +594,8 @@ jobs:
     name: "Java Checks"
     needs: [ detect-changes ]
     timeout-minutes: 20
-    permissions: { }  # GITHUB_TOKEN unused in this job
+    permissions:
+      packages: read  # infra-tools PoC: the package is internal
     runs-on: gcp-perf-core-8-default
     steps:
       - uses: camunda/infra-global-github-actions/start-build-monitor@95c6f97de08ce6befa8e1b222140676204d792fb # main
@@ -544,6 +605,7 @@ jobs:
           persist-credentials: false
       - uses: ./.github/actions/setup-build
         with:
+          infra-tools: 'true'
           maven-cache-key-modifier: java-checks
           vault-address: ${{ secrets.VAULT_ADDR }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
@@ -567,7 +629,8 @@ jobs:
     needs: [ detect-changes ]
     runs-on: gcp-core-16-default
     timeout-minutes: 30
-    permissions: { }  # GITHUB_TOKEN unused in this job
+    permissions:
+      packages: read  # infra-tools PoC: the package is internal
     strategy:
       fail-fast: false
       # The matrix is necessary to run separate analyses
@@ -594,6 +657,7 @@ jobs:
           persist-credentials: false
       - uses: ./.github/actions/setup-build
         with:
+          infra-tools: 'true'
           maven-cache-key-modifier: dependency-cycle-check
           vault-address: ${{ secrets.VAULT_ADDR }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
@@ -644,6 +708,7 @@ jobs:
     if: needs.detect-changes.outputs.camunda-docker-tests == 'true' || needs.detect-changes.outputs.java-code-changes == 'true' || needs.detect-changes.outputs.frontend-changes == 'true' || needs.detect-changes.outputs.rdbms-integration-tests == 'true'
     needs: [ detect-changes ]
     permissions:
+      packages: read  # infra-tools PoC: the package is internal
       contents: read
       id-token: write  # google-github-actions/auth (WIF) mints a GitHub OIDC token
     uses: ./.github/workflows/ci-build-distball-reusable.yml
@@ -661,7 +726,8 @@ jobs:
     needs: [ detect-changes ]
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    permissions: { }  # GITHUB_TOKEN unused in this job
+    permissions:
+      packages: read  # infra-tools PoC: the package is internal
     steps:
       - uses: camunda/infra-global-github-actions/start-build-monitor@95c6f97de08ce6befa8e1b222140676204d792fb # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -671,21 +737,25 @@ jobs:
       - uses: ./.github/actions/build-frontend
         id: build-operate-fe
         with:
+          infra-tools: 'true'
           directory: ./operate/client
           package-manager: "npm"
       - uses: ./.github/actions/build-frontend
         id: build-webapp-fe
         with:
+          infra-tools: 'true'
           directory: ./webapp/client
           package-manager: "npm"
       - uses: ./.github/actions/build-frontend
         id: build-identity-fe
         with:
+          infra-tools: 'true'
           directory: ./identity/client
           package-manager: "npm"
       - uses: ./.github/actions/build-frontend
         id: build-optimize-fe
         with:
+          infra-tools: 'true'
           directory: ./optimize/client
       # Share the built frontend bundles so the snapshot deploy jobs download them
       # instead of rebuilding (see issue #52693).
@@ -730,7 +800,8 @@ jobs:
     needs: [ detect-changes ]
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    permissions: { }  # GITHUB_TOKEN unused in this job
+    permissions:
+      packages: read  # infra-tools PoC: the package is internal
     steps:
       - uses: camunda/infra-global-github-actions/start-build-monitor@95c6f97de08ce6befa8e1b222140676204d792fb # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -740,6 +811,7 @@ jobs:
       - uses: ./.github/actions/build-frontend
         id: build-process-test-coverage-fe
         with:
+          infra-tools: 'true'
           directory: ./testing/camunda-process-test-coverage
           package-manager: "npm"
       - name: Observe build status
@@ -1071,7 +1143,8 @@ jobs:
     name: "General / Unit - Back End"
     needs: [ detect-changes, setup-tests ]
     timeout-minutes: 20
-    permissions: { }  # GITHUB_TOKEN unused in this job
+    permissions:
+      packages: read  # infra-tools PoC: the package is internal
     runs-on: gcp-perf-core-16-default
     outputs:
       flakyTests: ${{ steps.analyze-test-run.outputs.flakyTests }}
@@ -1083,6 +1156,7 @@ jobs:
           persist-credentials: false
       - uses: ./.github/actions/setup-build
         with:
+          infra-tools: 'true'
           maven-cache-key-modifier: ut-general-unit-tests
           vault-address: ${{ secrets.VAULT_ADDR }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
@@ -1140,7 +1214,8 @@ jobs:
     name: "Zeebe / Unit - ${{matrix.component}}"
     needs: [ detect-changes, setup-tests ]
     timeout-minutes: 20
-    permissions: { }  # GITHUB_TOKEN unused in this job
+    permissions:
+      packages: read  # infra-tools PoC: the package is internal
     runs-on: gcp-perf-core-16-default
     outputs:
       flakyTests: ${{ steps.analyze-test-run.outputs.flakyTests }}
@@ -1192,6 +1267,7 @@ jobs:
           test_owner: "${{ matrix.owner }}"
       - uses: ./.github/actions/setup-build
         with:
+          infra-tools: 'true'
           maven-cache-key-modifier: ut-zeebe
           vault-address: ${{ secrets.VAULT_ADDR }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
@@ -1279,6 +1355,7 @@ jobs:
     if: needs.detect-changes.outputs.java-code-changes == 'true'
     needs: [ detect-changes, generate-db-versions, build-distball ]
     permissions:
+      packages: read  # infra-tools PoC: the package is internal
       contents: read
       id-token: write  # granted through to the reusable workflow's WIF GCS auth
       actions: write   # reusable workflow's send-slack-notification job declares it; validated at startup even though ci.yml never triggers it
@@ -1302,6 +1379,7 @@ jobs:
     if: needs.detect-changes.outputs.java-code-changes == 'true'
     needs: [ detect-changes, generate-db-versions, build-distball ]
     permissions:
+      packages: read  # infra-tools PoC: the package is internal
       contents: read
       id-token: write  # granted through to the reusable workflow's WIF GCS auth
       actions: write   # reusable workflow's send-slack-notification job declares it; validated at startup even though ci.yml never triggers it
@@ -1329,6 +1407,7 @@ jobs:
     if: needs.detect-changes.outputs.java-code-changes == 'true'
     needs: [ detect-changes, generate-db-versions, build-distball ]
     permissions:
+      packages: read  # infra-tools PoC: the package is internal
       contents: read
       id-token: write  # granted through to the reusable workflow's WIF GCS auth
       actions: write   # reusable workflow's send-slack-notification job declares it; validated at startup even though ci.yml never triggers it
@@ -1493,6 +1572,7 @@ jobs:
     outputs:
       flakyTests: ${{ steps.analyze-test-run.outputs.flakyTests }}
     permissions:
+      packages: read  # infra-tools PoC: the package is internal
       contents: read
       id-token: write  # google-github-actions/auth (WIF) mints a GitHub OIDC token for the GCS distball download
     env:
@@ -1516,6 +1596,7 @@ jobs:
       # See build-distball.
       - uses: ./.github/actions/setup-build
         with:
+          infra-tools: 'true'
           dockerhub-readonly: true
           maven-cache-key-modifier: it-rdbms
           vault-address: ${{ secrets.VAULT_ADDR }}
@@ -1528,6 +1609,7 @@ jobs:
         timeout-minutes: 3
         uses: ./.github/actions/gcs-build-cache-auth
         with:
+          infra-tools: 'true'
           vault-addr: ${{ secrets.VAULT_ADDR }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
@@ -1588,6 +1670,7 @@ jobs:
     outputs:
       flakyTests: ${{ steps.analyze-test-run.outputs.flakyTests }}
     permissions:
+      packages: read  # infra-tools PoC: the package is internal
       contents: read
       id-token: write  # google-github-actions/auth (WIF) mints a GitHub OIDC token for the GCS distball download
     env:
@@ -1611,6 +1694,7 @@ jobs:
       # See build-distball.
       - uses: ./.github/actions/setup-build
         with:
+          infra-tools: 'true'
           dockerhub-readonly: true
           maven-cache-key-modifier: it-async-repl
           vault-address: ${{ secrets.VAULT_ADDR }}
@@ -1623,6 +1707,7 @@ jobs:
         timeout-minutes: 3
         uses: ./.github/actions/gcs-build-cache-auth
         with:
+          infra-tools: 'true'
           vault-addr: ${{ secrets.VAULT_ADDR }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
@@ -1681,6 +1766,7 @@ jobs:
     needs: [ detect-changes, setup-tests, build-distball ]
     timeout-minutes: 30
     permissions:
+      packages: read  # infra-tools PoC: the package is internal
       contents: read
       id-token: write  # google-github-actions/auth (WIF) mints a GitHub OIDC token
     runs-on: ${{ matrix.runs-on }}
@@ -1755,6 +1841,7 @@ jobs:
       # The GCS build-cache auth step below authenticates gcloud for the download below.
       - uses: ./.github/actions/setup-build
         with:
+          infra-tools: 'true'
           dockerhub-readonly: true
           maven-cache-key-modifier: build-shared
           vault-address: ${{ secrets.VAULT_ADDR }}
@@ -1768,6 +1855,7 @@ jobs:
         timeout-minutes: 3
         uses: ./.github/actions/gcs-build-cache-auth
         with:
+          infra-tools: 'true'
           vault-addr: ${{ secrets.VAULT_ADDR }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
@@ -1872,7 +1960,8 @@ jobs:
     name: "General / Unit - ArchUnit"
     needs: [ detect-changes ]
     timeout-minutes: 20
-    permissions: { }  # GITHUB_TOKEN unused in this job
+    permissions:
+      packages: read  # infra-tools PoC: the package is internal
     runs-on: gcp-perf-core-16-default
     env:
       TEST_PRODUCT: Camunda
@@ -1889,6 +1978,7 @@ jobs:
         uses: ./.github/actions/print-metadata
       - uses: ./.github/actions/setup-build
         with:
+          infra-tools: 'true'
           maven-cache-key-modifier: archunit-tests
           vault-address: ${{ secrets.VAULT_ADDR }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
@@ -1947,6 +2037,7 @@ jobs:
       flakyTests: ${{ steps.analyze-test-run.outputs.flakyTests }}
     timeout-minutes: 30
     permissions:
+      packages: read  # infra-tools PoC: the package is internal
       security-events: write
     services:
       # local registry is used as this job needs to push as it builds multi-platform images
@@ -1980,6 +2071,7 @@ jobs:
           sarif_file: ./hadolint.sarif
       - uses: ./.github/actions/setup-build
         with:
+          infra-tools: 'true'
           maven-cache-key-modifier: build-shared
           dockerhub-readonly: true
           vault-address: ${{ secrets.VAULT_ADDR }}
@@ -2111,6 +2203,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
+      packages: read  # infra-tools PoC: the package is internal
       pull-requests: write  # read prior state from + write updated state to the gate's PR comment
       contents: read
     steps:
@@ -2154,8 +2247,17 @@ jobs:
         if: steps.bypass.outputs.present != 'true'
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
 
-      - name: Setup jq
+      - name: Install jq (infra-tools PoC)
+        id: infra-tools-jq
         if: steps.bypass.outputs.present != 'true'
+        continue-on-error: true
+        uses: camunda/infra-tools@e711227cffecd643b5a6ca2669a9ee58862279b3 # 0.3.0
+        env:
+          INFRA_TOOLS_MIRROR: ${{ runner.environment == 'self-hosted' && 'europe-west1-docker.pkg.dev/ci-30-162810/ci-tools' || '' }}
+        with:
+          tools: jq@1.8.2
+      - name: Setup jq
+        if: (steps.bypass.outputs.present != 'true') && steps.infra-tools-jq.outcome != 'success'
         uses: dcarbone/install-jq-action@4fcb5062d7ce9bc4382d1a352d19ba3ba2c317c1 # v4.0.1
         with:
           version: 1.8.2
@@ -2284,9 +2386,20 @@ jobs:
         with:
           credentials_json: ${{ steps.secrets.outputs.gcloud_sa_key }}
 
+      - name: Pre-fill tool cache with gcloud (infra-tools PoC)
+        id: infra-tools-gcloud
+        if: steps.check.outputs.has_flaky_tests == 'true'
+        continue-on-error: true
+        uses: camunda/infra-tools/cache@e711227cffecd643b5a6ca2669a9ee58862279b3 # 0.3.0
+        env:
+          INFRA_TOOLS_MIRROR: ${{ runner.environment == 'self-hosted' && 'europe-west1-docker.pkg.dev/ci-30-162810/ci-tools' || '' }}
+        with:
+          tools: gcloud
       - name: Setup Google Cloud SDK
         if: steps.check.outputs.has_flaky_tests == 'true'
         uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db # v3
+        with:
+          version: ${{ fromJSON(steps.infra-tools-gcloud.outputs.versions || '{}').gcloud || 'latest' }}
 
       - name: Query known flaky tests from BigQuery
         if: steps.check.outputs.has_flaky_tests == 'true'
@@ -2348,7 +2461,8 @@ jobs:
     needs: [ detect-changes ]
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    permissions: { }  # GITHUB_TOKEN unused in this job
+    permissions:
+      packages: read  # infra-tools PoC: the package is internal
     env:
       TEST_OWNER: '@camunda/operate-admin-pod'
       CLIENT_DIR: identity/client
@@ -2361,6 +2475,14 @@ jobs:
         timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
         with:
           persist-credentials: false
+      - name: Pre-fill tool cache with node (infra-tools PoC)
+        id: infra-tools-node
+        continue-on-error: true
+        uses: camunda/infra-tools/cache@e711227cffecd643b5a6ca2669a9ee58862279b3 # 0.3.0
+        env:
+          INFRA_TOOLS_MIRROR: ${{ runner.environment == 'self-hosted' && 'europe-west1-docker.pkg.dev/ci-30-162810/ci-tools' || '' }}
+        with:
+          tools: node@26
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 26
@@ -2408,12 +2530,21 @@ jobs:
     outputs:
       submitted: ${{ steps.submit.outcome }}
     permissions:
+      packages: read  # infra-tools PoC: the package is internal
       contents: write  # required by Dependency Submission API
     steps:
       - uses: camunda/infra-global-github-actions/start-build-monitor@95c6f97de08ce6befa8e1b222140676204d792fb # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+      - name: Pre-fill tool cache with java (infra-tools PoC)
+        id: infra-tools-java
+        continue-on-error: true
+        uses: camunda/infra-tools/cache@e711227cffecd643b5a6ca2669a9ee58862279b3 # 0.3.0
+        env:
+          INFRA_TOOLS_MIRROR: ${{ runner.environment == 'self-hosted' && 'europe-west1-docker.pkg.dev/ci-30-162810/ci-tools' || '' }}
+        with:
+          tools: java@21
       - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
         with:
           distribution: temurin
@@ -2516,6 +2647,7 @@ jobs:
     uses: ./.github/workflows/ci-operate.yml
     secrets: inherit
     permissions:
+      packages: read  # infra-tools PoC: the package is internal
       contents: read
       id-token: write  # granted through to the reusable back-end UT's WIF GCS auth
     with:
@@ -2532,6 +2664,7 @@ jobs:
     uses: ./.github/workflows/ci-optimize.yml
     secrets: inherit
     permissions:
+      packages: read  # infra-tools PoC: the package is internal
       contents: read
       id-token: write  # granted through to the reusable back-end UT's WIF GCS auth
     with:
@@ -2557,7 +2690,8 @@ jobs:
     needs: [ detect-changes ]
     uses: ./.github/workflows/ci-webapp-client.yml
     secrets: inherit
-    permissions: { }
+    permissions:
+      packages: read  # infra-tools PoC: the package is internal
 
   c8-e2e-test-suite:
     if: needs.detect-changes.outputs.c8-e2e-test-suite-changes == 'true'
@@ -2565,7 +2699,8 @@ jobs:
     needs: [ detect-changes ]
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    permissions: {} # GITHUB_TOKEN unused in this job
+    permissions:
+      packages: read  # infra-tools PoC: the package is internal
     env:
       SUITE_DIR: qa/c8-orchestration-cluster-e2e-test-suite
     defaults:
@@ -2577,6 +2712,14 @@ jobs:
         timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
         with:
           persist-credentials: false
+      - name: Pre-fill tool cache with node (infra-tools PoC)
+        id: infra-tools-node
+        continue-on-error: true
+        uses: camunda/infra-tools/cache@e711227cffecd643b5a6ca2669a9ee58862279b3 # 0.3.0
+        env:
+          INFRA_TOOLS_MIRROR: ${{ runner.environment == 'self-hosted' && 'europe-west1-docker.pkg.dev/ci-30-162810/ci-tools' || '' }}
+        with:
+          tools: node@26
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 26
@@ -2613,6 +2756,7 @@ jobs:
     uses: ./.github/workflows/ci-c8-orchestration-cluster-e2e-suite-reusable.yml
     secrets: inherit
     permissions:
+      packages: read  # infra-tools PoC: the package is internal
       contents: read
     with:
       base: ${{ needs.detect-changes.outputs.c8-e2e-suite-base }}
@@ -2678,7 +2822,8 @@ jobs:
     needs: [ detect-changes ]
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    permissions: {}  # GITHUB_TOKEN unused in this job
+    permissions:
+      packages: read  # infra-tools PoC: the package is internal
     env:
       # renovate: datasource=npm depName=@camunda8/spectral-cli
       SPECTRAL_VERSION: '6.16.1'
@@ -2688,6 +2833,14 @@ jobs:
         timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
         with:
           persist-credentials: false
+      - name: Pre-fill tool cache with node (infra-tools PoC)
+        id: infra-tools-node
+        continue-on-error: true
+        uses: camunda/infra-tools/cache@e711227cffecd643b5a6ca2669a9ee58862279b3 # 0.3.0
+        env:
+          INFRA_TOOLS_MIRROR: ${{ runner.environment == 'self-hosted' && 'europe-west1-docker.pkg.dev/ci-30-162810/ci-tools' || '' }}
+        with:
+          tools: node@26
       - name: Setup Node.js for Spectral
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
@@ -2753,6 +2906,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
+      packages: read  # infra-tools PoC: the package is internal
       contents: read
     env:
       VERIFIER_DIR: .github/scripts/x-added-in-version-check
@@ -2763,6 +2917,14 @@ jobs:
         timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
         with:
           persist-credentials: false
+      - name: Pre-fill tool cache with node (infra-tools PoC)
+        id: infra-tools-node
+        continue-on-error: true
+        uses: camunda/infra-tools/cache@e711227cffecd643b5a6ca2669a9ee58862279b3 # 0.3.0
+        env:
+          INFRA_TOOLS_MIRROR: ${{ runner.environment == 'self-hosted' && 'europe-west1-docker.pkg.dev/ci-30-162810/ci-tools' || '' }}
+        with:
+          tools: node@26
       - name: Setup Node.js
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
@@ -2821,7 +2983,8 @@ jobs:
     needs: [ detect-changes ]
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    permissions: {}  # GITHUB_TOKEN unused in this job
+    permissions:
+      packages: read  # infra-tools PoC: the package is internal
     env:
       TEST_OWNER: '@camunda/orchestration-cluster-webapps'
       TEST_PRODUCT: Orchestration Cluster Webapp
@@ -2835,6 +2998,14 @@ jobs:
           persist-credentials: false
       - name: Print metadata
         uses: ./.github/actions/print-metadata
+      - name: Pre-fill tool cache with node (infra-tools PoC)
+        id: infra-tools-node
+        continue-on-error: true
+        uses: camunda/infra-tools/cache@e711227cffecd643b5a6ca2669a9ee58862279b3 # 0.3.0
+        env:
+          INFRA_TOOLS_MIRROR: ${{ runner.environment == 'self-hosted' && 'europe-west1-docker.pkg.dev/ci-30-162810/ci-tools' || '' }}
+        with:
+          tools: node@26
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: 26
@@ -2883,7 +3054,8 @@ jobs:
     needs: [ detect-changes ]
     runs-on: ubuntu-latest
     timeout-minutes: 22
-    permissions: {}  # GITHUB_TOKEN unused in this job
+    permissions:
+      packages: read  # infra-tools PoC: the package is internal
     env:
       # renovate: datasource=npm depName=renovate
       RENOVATE_VERSION: '44.171.1'
@@ -2893,6 +3065,14 @@ jobs:
         timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
         with:
           persist-credentials: false
+      - name: Pre-fill tool cache with node (infra-tools PoC)
+        id: infra-tools-node
+        continue-on-error: true
+        uses: camunda/infra-tools/cache@e711227cffecd643b5a6ca2669a9ee58862279b3 # 0.3.0
+        env:
+          INFRA_TOOLS_MIRROR: ${{ runner.environment == 'self-hosted' && 'europe-west1-docker.pkg.dev/ci-30-162810/ci-tools' || '' }}
+        with:
+          tools: node@26
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 26
@@ -2989,7 +3169,8 @@ jobs:
     needs: [ detect-changes ]
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    permissions: {}
+    permissions:
+      packages: read  # infra-tools PoC: the package is internal
     steps:
       - uses: camunda/infra-global-github-actions/start-build-monitor@95c6f97de08ce6befa8e1b222140676204d792fb # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -2999,9 +3180,20 @@ jobs:
       - name: Install repository script test dependencies
         if: needs.detect-changes.outputs.scripts-changes == 'true'
         run: python3 -m pip install --quiet pytest -r .github/actions/read-db-versions/requirements.txt
+      - name: Pre-fill tool cache with uv (infra-tools PoC)
+        id: infra-tools-uv
+        if: needs.detect-changes.outputs.load-test-scripts-changes == 'true'
+        continue-on-error: true
+        uses: camunda/infra-tools/cache@e711227cffecd643b5a6ca2669a9ee58862279b3 # 0.3.0
+        env:
+          INFRA_TOOLS_MIRROR: ${{ runner.environment == 'self-hosted' && 'europe-west1-docker.pkg.dev/ci-30-162810/ci-tools' || '' }}
+        with:
+          tools: uv
       - name: Install load-test script test dependencies
         if: needs.detect-changes.outputs.load-test-scripts-changes == 'true'
         uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+        with:
+          version: ${{ fromJSON(steps.infra-tools-uv.outputs.versions || '{}').uv || 'latest' }}
       - name: Run repository script unit tests
         if: needs.detect-changes.outputs.scripts-changes == 'true'
         run: pytest --verbose --color=yes --tb=short .github/scripts .github/actions/adjust-pom-for-license-analysis .github/actions/read-db-versions
@@ -3026,6 +3218,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 3
     permissions:
+      packages: read  # infra-tools PoC: the package is internal
       actions: read
       checks: read
       id-token: write
@@ -3117,6 +3310,7 @@ jobs:
         timeout-minutes: 3
         uses: ./.github/actions/gcs-build-cache-auth
         with:
+          infra-tools: 'true'
           vault-addr: ${{ secrets.VAULT_ADDR }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
@@ -3156,7 +3350,8 @@ jobs:
     # Exceeds the 30min Unified CI ceiling (docs/monorepo-docs/ci.md); pending EngOps exception.
     # Covers ~6min setup + up to 2x20min deploy attempts; retry only re-runs the deploy step.
     timeout-minutes: 48
-    permissions: { }  # GITHUB_TOKEN unused in this job
+    permissions:
+      packages: read  # infra-tools PoC: the package is internal
     if: always() && needs.check-results.result == 'success' && github.repository == 'camunda/camunda' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/stable/'))
     concurrency:
       group: ${{ needs.utils-get-concurrency-group-for-maven-snapshot.outputs.concurrency_group_name }}
@@ -3206,6 +3401,7 @@ jobs:
           fi
       - uses: ./.github/actions/setup-build
         with:
+          infra-tools: 'true'
           maven-cache-key-modifier: snapshots
           vault-address: ${{ secrets.VAULT_ADDR }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
@@ -3228,6 +3424,7 @@ jobs:
       - uses: ./.github/actions/build-frontend
         id: build-cpt-coverage-fe
         with:
+          infra-tools: 'true'
           directory: ./testing/camunda-process-test-coverage
           package-manager: "npm"
       # compile and generate-sources to ensure that the Javadoc can be properly generated; compile is
@@ -3286,7 +3483,8 @@ jobs:
     needs: [ check-results, build-platform-frontend, utils-get-snapshot-docker-tag, utils-get-concurrency-group-for-docker-snapshot ]
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    permissions: { }  # GITHUB_TOKEN unused in this job
+    permissions:
+      packages: read  # infra-tools PoC: the package is internal
     if: always() && needs.check-results.result == 'success' && github.repository == 'camunda/camunda' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/stable/'))
     concurrency:
       group: ${{ needs.utils-get-concurrency-group-for-docker-snapshot.outputs.concurrency_group_name }}
@@ -3300,6 +3498,7 @@ jobs:
           persist-credentials: false
       - uses: ./.github/actions/setup-build
         with:
+          infra-tools: 'true'
           dockerhub: true
           vault-address: ${{ secrets.VAULT_ADDR }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
@@ -3362,7 +3561,8 @@ jobs:
     needs: [ check-results, build-platform-frontend, utils-get-snapshot-docker-tag, utils-get-concurrency-group-for-optimize-docker-snapshot ]
     runs-on: ubuntu-latest
     timeout-minutes: 25
-    permissions: { }  # GITHUB_TOKEN unused in this job
+    permissions:
+      packages: read  # infra-tools PoC: the package is internal
     if: always() && needs.check-results.result == 'success' && github.repository == 'camunda/camunda' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/stable/'))
     concurrency:
       group: ${{ needs.utils-get-concurrency-group-for-optimize-docker-snapshot.outputs.concurrency_group_name }}
@@ -3378,6 +3578,7 @@ jobs:
           persist-credentials: false
       - uses: ./.github/actions/setup-build
         with:
+          infra-tools: 'true'
           dockerhub: true
           vault-address: ${{ secrets.VAULT_ADDR }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}

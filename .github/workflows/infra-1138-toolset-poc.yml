@@ -1,0 +1,311 @@
+---
+# DO NOT MERGE: measures camunda/infra-tools against the setup ci.yml uses (camunda/team-infrastructure#1138).
+# Each job sets up one tool as ci.yml does (baseline), or with infra-tools before the same setup step, pulling from ghcr.io
+# (infra-tools) or, on the dev self-hosted runner only, from the Artifact Registry copy (infra-tools-gar).
+name: infra-1138 toolset PoC
+
+on:
+  pull_request:
+    paths:
+      - .github/workflows/infra-1138-toolset-poc.yml
+
+permissions:
+  contents: read
+  packages: read
+
+env:
+  INFRA_TOOLS_INDEX: ghcr.io/camunda/infra-tools:test-1138-tools
+
+jobs:
+  measure:
+    name: ${{ matrix.tool }} (${{ matrix.runner }}, ${{ matrix.mode }}, ${{ matrix.attempt }})
+    strategy:
+      fail-fast: false
+      matrix:
+        tool: [java, node, maven, gcloud]
+        runner: [ubuntu-latest, ubuntu-24.04-arm, dev-gcp-core-2-default]
+        mode: [baseline, infra-tools, infra-tools-gar]
+        attempt: [1, 2, 3]
+        exclude:
+          # Artifact Registry access uses the GKE Workload Identity of the dev runners.
+          - runner: ubuntu-latest
+            mode: infra-tools-gar
+          - runner: ubuntu-24.04-arm
+            mode: infra-tools-gar
+    # Built with fromJSON so actionlint does not reject the dev runner label (not in the shared actionlint config).
+    runs-on: ${{ fromJSON(format('"{0}"', matrix.runner)) }}
+    timeout-minutes: 15
+    env:
+      INFRA_TOOLS_MIRROR: ${{ matrix.mode == 'infra-tools-gar' && 'europe-west1-docker.pkg.dev/ci-30-162810/main' || '' }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          sparse-checkout: |
+            .github
+            .mvn
+            mvnw
+          sparse-checkout-cone-mode: false
+
+      # Maven runs on Java: set up outside the measured steps, in both modes.
+      - if: matrix.tool == 'maven'
+        uses: ./.github/actions/setup-java-with-retry
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Start
+        id: start
+        env:
+          TOOL: ${{ matrix.tool }}
+        run: |
+          case "${TOOL}" in
+          java) folder=Java_Temurin-Hotspot_jdk ;;
+          *) folder="${TOOL}" ;;
+          esac
+          before="$(find "${RUNNER_TOOL_CACHE}/${folder}" -mindepth 1 -maxdepth 1 -type d -printf '%f ' 2>/dev/null || true)"
+          echo "tool cache before: ${before:-none}"
+          echo "before=${before}" >>"${GITHUB_OUTPUT}"
+          echo "at=$(date +%s.%N)" >>"${GITHUB_OUTPUT}"
+
+      # infra-tools mode: pre-fill the tool cache (tools with a setup-* action) or install (plain tools).
+      - name: infra-tools cache
+        id: cache
+        if: matrix.mode != 'baseline' && matrix.tool != 'maven'
+        uses: camunda/infra-tools/cache@e711227cffecd643b5a6ca2669a9ee58862279b3 # 0.3.0
+        with:
+          tools: ${{ matrix.tool == 'java' && 'java@21' || matrix.tool == 'node' && 'node@26' || 'gcloud' }}
+          index: ${{ env.INFRA_TOOLS_INDEX }}
+      - name: infra-tools
+        id: setup
+        if: matrix.mode != 'baseline' && matrix.tool == 'maven'
+        uses: camunda/infra-tools@e711227cffecd643b5a6ca2669a9ee58862279b3 # 0.3.0
+        with:
+          tools: maven@3.9
+          index: ${{ env.INFRA_TOOLS_INDEX }}
+
+      # Same setup as ci.yml, in both modes.
+      - name: Setup Java (setup-build)
+        if: matrix.tool == 'java'
+        uses: ./.github/actions/setup-java-with-retry
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Setup Node (ci.yml)
+        if: matrix.tool == 'node'
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 26
+      - name: Maven wrapper (ci.yml)
+        if: matrix.tool == 'maven'
+        env:
+          MVNW_VERBOSE: 'true'  # logs the download URL, read by the report
+        run: ./mvnw --version --batch-mode
+      - name: Setup gcloud (gcs-build-cache-auth)
+        if: matrix.tool == 'gcloud' && matrix.mode == 'baseline'
+        uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db # v3
+      # `latest` (the default) bypasses the tool cache, so infra-tools mode pins the version it installed (spec Q6).
+      - name: Setup gcloud (pinned)
+        if: matrix.tool == 'gcloud' && matrix.mode != 'baseline'
+        uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db # v3
+        with:
+          version: ${{ fromJSON(steps.cache.outputs.versions).gcloud }}
+
+      - name: Stop
+        if: always()
+        env:
+          TOOL: ${{ matrix.tool }}
+          RUNNER: ${{ matrix.runner }}
+          MODE: ${{ matrix.mode }}
+          ATTEMPT: ${{ matrix.attempt }}
+          START: ${{ steps.start.outputs.at }}
+          BEFORE: ${{ steps.start.outputs.before }}
+          VERSIONS: ${{ steps.cache.outputs.versions || steps.setup.outputs.versions }}
+          OUTCOME: ${{ job.status }}
+        run: |
+          seconds="$(jq -n --argjson now "$(date +%s.%N)" --argjson start "${START:-0}" '$now - $start | . * 10 | round / 10')"
+          case "${TOOL}" in
+          java) bin=java; version="$(java -version 2>&1 | head -1)" ;;
+          node) bin=node; version="$(node --version)" ;;
+          maven) bin=./mvnw; version="$(./mvnw --version --batch-mode 2>/dev/null | head -1)" ;;
+          gcloud) bin=gcloud; version="$(gcloud --version 2>/dev/null | head -1)" ;;
+          esac
+          path="$(command -v "${bin}" || echo "${bin}")"
+          mkdir -p poc
+          jq -nc --arg tool "${TOOL}" --arg runner "${RUNNER}" --arg mode "${MODE}" --argjson attempt "${ATTEMPT}" \
+            --argjson seconds "${seconds}" --arg before "${BEFORE}" --arg versions "${VERSIONS}" --arg outcome "${OUTCOME}" \
+            --arg version "${version}" --arg path "${path}" \
+            '{$tool, $runner, $mode, $attempt, $seconds, $before, $versions, $outcome, $version, $path}' | tee poc/result.json
+      - if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: poc-${{ matrix.tool }}-${{ matrix.runner }}-${{ matrix.mode }}-${{ matrix.attempt }}
+          path: poc/result.json
+
+  # ClamAV as in camunda/Appsec-GHA-check clamav-scan.yml (install + version only): Ubuntu mirrors (baseline) vs the
+  # infra-tools apt source set by the action (apt-get install without apt-get update).
+  clamav:
+    name: clamav (${{ matrix.runner }}, ${{ matrix.mode }}, ${{ matrix.attempt }})
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: [ubuntu-latest, ubuntu-24.04-arm, dev-gcp-core-2-default]
+        mode: [baseline, infra-tools, infra-tools-gar]
+        attempt: [1, 2, 3]
+        exclude:
+          - runner: ubuntu-latest
+            mode: infra-tools-gar
+          - runner: ubuntu-24.04-arm
+            mode: infra-tools-gar
+    # Built with fromJSON so actionlint does not reject the dev runner label (not in the shared actionlint config).
+    runs-on: ${{ fromJSON(format('"{0}"', matrix.runner)) }}
+    timeout-minutes: 15
+    env:
+      INFRA_TOOLS_MIRROR: ${{ matrix.mode == 'infra-tools-gar' && 'europe-west1-docker.pkg.dev/ci-30-162810/main' || '' }}
+    steps:
+      - name: Start
+        id: start
+        run: echo "at=$(date +%s.%N)" >>"${GITHUB_OUTPUT}"
+      - name: Install ClamAV (Ubuntu mirrors, as clamav-scan.yml)
+        if: matrix.mode == 'baseline'
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends clamav | tee /tmp/apt.log
+      - name: infra-tools (apt source)
+        if: matrix.mode != 'baseline'
+        uses: camunda/infra-tools@e711227cffecd643b5a6ca2669a9ee58862279b3 # 0.3.0
+      - name: Install ClamAV (infra-tools apt source)
+        if: matrix.mode != 'baseline'
+        run: sudo apt-get install -y --no-install-recommends clamav | tee /tmp/apt.log
+      - name: Stop
+        if: always()
+        env:
+          RUNNER: ${{ matrix.runner }}
+          MODE: ${{ matrix.mode }}
+          ATTEMPT: ${{ matrix.attempt }}
+          START: ${{ steps.start.outputs.at }}
+          OUTCOME: ${{ job.status }}
+        run: |
+          seconds="$(jq -n --argjson now "$(date +%s.%N)" --argjson start "${START:-0}" '$now - $start | . * 10 | round / 10')"
+          version="$(clamscan --version 2>/dev/null | head -1 || true)"
+          sources="$(grep -oE '^Get:[0-9]+ [^ ]+' /tmp/apt.log 2>/dev/null | awk '{print $2}' | sed -E 's#^(oci://)?([^/]+).*#\2#' | sort | uniq -c | awk '{print $2" ("$1")"}' | paste -sd ' ' -)"
+          echo "packages downloaded from: ${sources:-none}"
+          mkdir -p poc
+          jq -nc --arg tool clamav --arg runner "${RUNNER}" --arg mode "${MODE}" --argjson attempt "${ATTEMPT}" \
+            --argjson seconds "${seconds}" --arg outcome "${OUTCOME}" --arg version "${version}" --arg sources "${sources}" \
+            '{$tool, $runner, $mode, $attempt, $seconds, before: "", versions: "", $outcome, $version, path: "", $sources}' | tee poc/result.json
+      - if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: poc-clamav-${{ matrix.runner }}-${{ matrix.mode }}-${{ matrix.attempt }}
+          path: poc/result.json
+
+  report:
+    needs: [measure, clamav]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      actions: read  # job logs, to find where each baseline downloaded its tool from
+    steps:
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          pattern: poc-*
+          path: poc
+      - name: Report
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_ID: ${{ github.run_id }}
+        shell: python3 {0}
+        run: |
+          import glob, json, os, re, statistics, subprocess
+
+          rows = [json.load(open(f)) for f in glob.glob('poc/*/result.json')]
+          repo = os.environ['GITHUB_REPOSITORY']
+
+          def gh(path, *args):
+              return subprocess.run(['gh', 'api', path, *args], capture_output=True, text=True).stdout
+
+          # gh refuses logs with terminal escape codes; curl drops the token on the redirect to the log storage.
+          def job_log(job_id):
+              return subprocess.run(['curl', '-sSL', '-H', f'Authorization: Bearer {os.environ["GH_TOKEN"]}',
+                                     f'https://api.github.com/repos/{repo}/actions/jobs/{job_id}/logs'], capture_output=True, text=True).stdout
+
+          # Where each baseline job got its tool: the download URL in its log, else the tool cache or a preinstalled path.
+          KEYWORD = {'java': 'jdk', 'node': '/node', 'maven': 'apache-maven', 'gcloud': 'google-cloud', 'clamav': '.deb'}
+          CACHE_HIT = {'java': r'Resolved Java \S+ from tool-cache', 'node': r'Found in cache @'}
+          listing = gh(f'repos/{repo}/actions/runs/{os.environ["RUN_ID"]}/jobs?per_page=100', '--paginate', '--jq', '.jobs[] | "\\(.id)\\t\\(.name)"')
+          job_ids = {name: job_id for job_id, name in (line.split('\t', 1) for line in listing.splitlines() if '\t' in line)}
+
+          def baseline_source(r):
+              if r['tool'] == 'clamav':
+                  return 'apt: ' + (r.get('sources') or 'unknown')
+              name = f"{r['tool']} ({r['runner']}, {r['mode']}, {r['attempt']})"
+              log = job_log(job_ids[name]) if name in job_ids else ''
+              urls = [u for u in re.findall(r'https://[^\s"\'<>]+?\.(?:tar\.gz|tgz|zip|tar\.xz)\b', log) if KEYWORD[r['tool']] in u]
+              if urls:
+                  host, *path = urls[0].split('/')[2:5]
+                  return 'download: ' + '/'.join([host] + (path[:2] if host == 'github.com' else []))
+              if r['tool'] in CACHE_HIT and re.search(CACHE_HIT[r['tool']], log):
+                  return 'runner tool cache'
+              path = r['path'] or ''
+              # setup-gcloud does not log its URL; it installs into the runner temp folder, so every job downloads.
+              if r['tool'] == 'gcloud' and '/_temp/' in path:
+                  return 'download: dl.google.com (into runner temp)'
+              if path.startswith('/') and not path.startswith(('/opt/hostedtoolcache', '/home/runner/_work/_tool')):
+                  return f'preinstalled ({os.path.dirname(path)})'
+              return 'unknown'
+
+          for r in rows:
+              r['source'] = baseline_source(r) if r['mode'] == 'baseline' else ''
+
+          def short(v):
+              m = re.search(r'\d+(\.\d+)+', v or '')
+              return m.group(0) if m else '?'
+
+          def stat(rs):
+              ok = sorted(r['seconds'] for r in rs if r['outcome'] == 'success')
+              failed = len(rs) - len(ok)
+              text = f'{statistics.median(ok):.1f} s ({max(ok):.1f})' if ok else 'failed'
+              return (statistics.median(ok) if ok else None), text + (f', {failed} failed' if ok and failed else '')
+
+          MODES = [('baseline', 'Baseline'), ('infra-tools', 'infra-tools (ghcr.io)'), ('infra-tools-gar', 'infra-tools (Artifact Registry)')]
+
+          def table(group):
+              cells = {}
+              for r in group:
+                  cells.setdefault((r['tool'], r['runner']), {}).setdefault(r['mode'], []).append(r)
+              present = [m for m in MODES if any(m[0] in c for c in cells.values())]
+              header = ['Tool', 'Runner', 'Baseline', 'Baseline source'] + [label for m, label in present if m != 'baseline'] \
+                  + [f'Difference, {label}' for m, label in present if m != 'baseline'] + ['Version']
+              out = ['| ' + ' | '.join(header) + ' |', '|' + ' --- |' * len(header)]
+              for (tool, runner), modes in sorted(cells.items()):
+                  stats = {m: stat(modes.get(m, [])) for m, _ in present}
+                  b = stats['baseline'][0]
+                  sources = ', '.join(sorted({r['source'] for r in modes.get('baseline', [])})) or '–'
+                  diffs = [f'{stats[m][0] - b:+.1f} s' if b is not None and stats[m][0] is not None else '–' for m, _ in present if m != 'baseline']
+                  versions = sorted({short(r.get('version')) for rs in modes.values() for r in rs})
+                  out.append('| ' + ' | '.join([tool, runner, stats['baseline'][1], sources]
+                             + [stats[m][1] for m, _ in present if m != 'baseline'] + diffs + [' / '.join(versions)]) + ' |')
+              return out
+
+          hosted = [r for r in rows if not r['runner'].startswith(('gcp-', 'dev-gcp-', 'aws-'))]
+          self_hosted = [r for r in rows if r not in hosted]
+          runs = max(r['attempt'] for r in rows) if rows else 0
+          text = '\n'.join([
+              '## infra-tools PoC: tool setup time',
+              '',
+              f'Time of the infra-tools step plus the usual setup step: median of {runs} runs, maximum in brackets.',
+              'Baseline is the setup ci.yml uses. A negative difference means infra-tools is faster.',
+              '',
+              '### GitHub-hosted runners',
+              '',
+              *table(hosted),
+              '',
+              '### Self-hosted runners',
+              '',
+              *table(self_hosted),
+              '',
+          ])
+          print(text)
+          with open(os.environ['GITHUB_STEP_SUMMARY'], 'a') as f:
+              f.write(text)

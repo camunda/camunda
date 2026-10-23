@@ -45,6 +45,10 @@ inputs:
     description: JDK version to install
     required: false
     default: "21"
+  infra-tools:
+    description: Pre-fill the tool cache from camunda/infra-tools first (PoC, camunda/team-infrastructure#1138).
+    required: false
+    default: "false"
   maven-cache-key-modifier:
     description: A modifier to use for maven cache key
     required: false
@@ -168,6 +172,23 @@ runs:
         secret/data/products/camunda/ci/github-actions REGISTRY_MINIMUS_PSW | minimus-token;
         secret/data/products/camunda/ci/harbor username | harbor-username;
         secret/data/products/camunda/ci/harbor password | harbor-password
+  - name: Pre-fill tool cache with Java (infra-tools PoC)
+    if: inputs.infra-tools == 'true' && inputs.java-distribution == 'temurin'
+    continue-on-error: true
+    uses: camunda/infra-tools/cache@e711227cffecd643b5a6ca2669a9ee58862279b3 # 0.3.0
+    env:
+      INFRA_TOOLS_MIRROR: ${{ runner.environment == 'self-hosted' && 'europe-west1-docker.pkg.dev/ci-30-162810/ci-tools' || '' }}
+    with:
+      tools: java@${{ inputs.java-version }}
+  # ./mvnw uses this Maven when .mvn/wrapper asks for the same version.
+  - name: Install Maven for ./mvnw (infra-tools PoC)
+    if: inputs.infra-tools == 'true'
+    continue-on-error: true
+    uses: camunda/infra-tools@e711227cffecd643b5a6ca2669a9ee58862279b3 # 0.3.0
+    env:
+      INFRA_TOOLS_MIRROR: ${{ runner.environment == 'self-hosted' && 'europe-west1-docker.pkg.dev/ci-30-162810/ci-tools' || '' }}
+    with:
+      tools: maven@3.9
   - name: Setup Java
     # Retries setup-java through transient network/setup failures (INC-7417). The pin for
     # setup-java itself lives in that action, not here.

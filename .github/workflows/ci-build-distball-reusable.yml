@@ -33,6 +33,7 @@ jobs:
     runs-on: gcp-perf-core-8-default
     timeout-minutes: 30
     permissions:
+      packages: read  # infra-tools PoC: the package is internal
       contents: read
       id-token: write  # google-github-actions/auth (WIF) mints a GitHub OIDC token
     steps:
@@ -46,6 +47,7 @@ jobs:
         uses: ./.github/actions/is-fork
       - uses: ./.github/actions/setup-build
         with:
+          infra-tools: 'true'
           maven-cache-key-modifier: build-shared
           dockerhub-readonly: true
           vault-address: ${{ secrets.VAULT_ADDR }}
@@ -107,6 +109,7 @@ jobs:
         timeout-minutes: 3
         uses: ./.github/actions/gcs-build-cache-auth
         with:
+          infra-tools: 'true'
           vault-addr: ${{ secrets.VAULT_ADDR }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
