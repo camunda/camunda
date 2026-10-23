@@ -66,6 +66,26 @@ class MeAuthorizationsUnprotectedApiIT {
     assertThat(responseBody.path("items")).isEmpty();
   }
 
+  @Test
+  void shouldReturnAnAnonymousCurrentUserForCallerOnUnprotectedApi(
+      @Authenticated(USERNAME) final CamundaClient client) throws Exception {
+    // when
+    final var request =
+        HttpRequest.newBuilder()
+            .uri(createUri(client, "v2/authentication/me"))
+            .header("Authorization", basicAuthentication())
+            .GET()
+            .build();
+    final var response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+
+    // then - the unprotected API never reads the presented credentials, so instead of a 401 that
+    // no credentials could resolve, the caller learns that it is anonymous
+    assertThat(response.statusCode()).isEqualTo(HttpURLConnection.HTTP_OK);
+    final var responseBody = JSON.readTree(response.body());
+    assertThat(responseBody.path("anonymous").asBoolean()).isTrue();
+    assertThat(responseBody.path("username").isNull()).isTrue();
+  }
+
   private static String basicAuthentication() {
     return "Basic " + Base64.getEncoder().encodeToString((USERNAME + ":" + PASSWORD).getBytes());
   }
