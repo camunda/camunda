@@ -1667,9 +1667,9 @@ Both modes live side by side. The mode is fixed per timeline.
 
 ### 25.2 Cluster in mode B
 
-- Merger, cleaner and releaser (sections 20 and 21) are not started; `MERGE_LOG` and `RELEASE_LOG`
-  are rejected on such a timeline. The cluster deletes nothing. The compaction cap is F again
-  (section 12), not M.
+- Merger, cleaner and releaser (sections 20 and 21) are started but stay idle on such a timeline;
+  `MERGE_LOG` and `RELEASE_LOG` are rejected on it. The cluster deletes nothing. The compaction cap
+  is F again (section 12), not M.
 - **Restore hold** H: the restore window covers every index ≥ H. `START_TIMELINE` sets H =
   `startIndex`. Meta gets `holdIndex`.
 - New intents `MOVE_HOLD` (16, command) and `HOLD_MOVED` (17, event, takes a seq, commit entry type
@@ -1843,10 +1843,11 @@ Not implemented in the PoC.
 ### 25.8 On-demand backups
 
 **Today.** `POST /actuator/backups` creates a `MANUAL_BACKUP` checkpoint and uploads a
-self-contained backup (snapshot plus journal segments). Without continuous backup nothing expires
-it; it lives until it is deleted through the API, and operators rely on that (for example a backup
-taken before an upgrade and kept for months). With continuous backup it joins the ranges, and
-`BackupRetention`, which does not look at the type, deletes it by age like a scheduled backup.
+self-contained backup (snapshot plus journal segments). Unless backup retention is configured (a
+window and a cleanup schedule, with or without continuous backup), nothing expires it; it lives
+until it is deleted through the API, and operators rely on that (for example a backup taken before
+an upgrade and kept for months). With retention, `BackupRetention`, which does not look at the
+type, deletes it by age like a scheduled backup; with continuous backup it also joins the ranges.
 
 **In the PoC** (with the log archive, after the handover, 18.6) a `MANUAL_BACKUP` checkpoint is
 created but nothing is uploaded; it reports `COMPLETED` once archived. It is a named restore point:
