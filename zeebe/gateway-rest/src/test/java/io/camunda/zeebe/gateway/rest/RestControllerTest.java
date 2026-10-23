@@ -14,6 +14,7 @@ import io.camunda.search.filter.Operation;
 import io.camunda.search.filter.Operator;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.zeebe.gateway.rest.config.JacksonConfig;
+import io.camunda.zeebe.gateway.rest.controller.usermanagement.MappingRuleMembershipPolicy;
 import io.camunda.zeebe.gateway.rest.interceptor.SecondaryStorageInterceptor;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
@@ -24,6 +25,8 @@ import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.params.provider.Arguments;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -33,7 +36,7 @@ import org.springframework.test.web.reactive.server.WebTestClient;
     properties = {
       "spring.autoconfigure.exclude=org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration"
     })
-@Import(JacksonConfig.class)
+@Import({JacksonConfig.class, RestControllerTest.WebMvcTestConfig.class})
 public abstract class RestControllerTest {
   public static final List<List<Operation<Long>>> LONG_OPERATIONS =
       List.of(
@@ -211,5 +214,13 @@ public abstract class RestControllerTest {
       return "{%s}".formatted(keyValueTpl).formatted(filterKey, filterValue);
     }
     return "{\"%s\": {%s}}".formatted(filterKey, filterValue);
+  }
+
+  @TestConfiguration
+  public static class WebMvcTestConfig {
+    @Bean
+    public MappingRuleMembershipPolicy mappingRuleMembershipPolicy() {
+      return new MappingRuleMembershipPolicy(true);
+    }
   }
 }
