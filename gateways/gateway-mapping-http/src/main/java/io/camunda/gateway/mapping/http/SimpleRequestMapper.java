@@ -15,9 +15,13 @@ import io.camunda.gateway.protocol.model.ProcessInstanceCreationInstructionById;
 import io.camunda.gateway.protocol.model.ProcessInstanceCreationInstructionByKey;
 import io.camunda.gateway.protocol.model.ProcessInstanceCreationInstructionByVersionTag;
 import io.camunda.gateway.protocol.model.ProcessInstanceCreationStartInstruction;
+import io.camunda.gateway.protocol.model.ProtectionModeEnum;
+import io.camunda.gateway.protocol.model.VariableMetadata;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceCreateRequest;
 import io.camunda.zeebe.util.Either;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Consumer;
 import org.apache.commons.lang3.StringUtils;
 import org.jspecify.annotations.Nullable;
@@ -57,6 +61,8 @@ public class SimpleRequestMapper {
 
     // like the generated constructors, keep the field defaults for values the request leaves null
     setIfPresent(request.getVariables(), instruction::setVariables);
+    setIfPresent(
+        mapVariablesMetadata(request.getVariablesMetadata()), instruction::setVariablesMetadata);
     setIfPresent(request.getTenantId(), instruction::setTenantId);
     setIfPresent(request.getOperationReference(), instruction::setOperationReference);
     instruction.setStartInstructions(
@@ -71,6 +77,26 @@ public class SimpleRequestMapper {
 
     return PROCESS_INSTANCE_MAPPER.toCreateProcessInstance(
         (ProcessInstanceCreationInstruction) instruction, multiTenancyEnabled);
+  }
+
+  private static @Nullable Map<String, VariableMetadata> mapVariablesMetadata(
+      final @Nullable Map<String, io.camunda.gateway.protocol.model.simple.VariableMetadata>
+          variablesMetadata) {
+    if (variablesMetadata == null) {
+      return null;
+    }
+    final var result = new LinkedHashMap<String, VariableMetadata>();
+    variablesMetadata.forEach(
+        (name, metadata) ->
+            result.put(
+                name,
+                VariableMetadata.Builder.create()
+                    .protectionModes(
+                        metadata.getProtectionModes().stream()
+                            .map(mode -> ProtectionModeEnum.valueOf(mode.name()))
+                            .toList())
+                    .build()));
+    return result;
   }
 
   private static <T> void setIfPresent(final @Nullable T value, final Consumer<T> setter) {
