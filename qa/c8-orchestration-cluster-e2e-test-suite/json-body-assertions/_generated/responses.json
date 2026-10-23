@@ -1310,10 +1310,6 @@
       "schema": {
         "required": [
           {
-            "name": "anonymous",
-            "type": "boolean"
-          },
-          {
             "name": "authorizedComponents",
             "type": "array<string>"
           },
@@ -1376,7 +1372,12 @@
             "nullable": true
           }
         ],
-        "optional": []
+        "optional": [
+          {
+            "name": "anonymous",
+            "type": "boolean"
+          }
+        ]
       }
     },
     {
