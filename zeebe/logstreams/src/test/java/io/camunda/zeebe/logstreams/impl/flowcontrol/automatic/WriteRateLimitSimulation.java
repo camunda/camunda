@@ -46,6 +46,10 @@ import org.jspecify.annotations.Nullable;
  *       rate of the leader. A queued command holds its slot; a free slot serves one command per
  *       {@link #BASE_LATENCY}. A new leader starts with a new request limiter.
  *   <li>Admitted records queue up on the leader and on every follower that is up.
+ *   <li>Rejecting one record, by either limiter, costs {@code rejectionCost × LEADER / trueR}
+ *       CPU-seconds on the leader in the same tick. Rejections are not bound to the one core of the
+ *       replica. When the broker is throttled, they get the same proportional share and the rest is
+ *       lost: the client times out instead of getting a rejection.
  *   <li>Processing one record costs {@code LEADER / trueR × tenantCost} CPU-seconds on a leader
  *       (exporting included) and {@code FOLLOWER / trueR × tenantCost} on a follower. A replica
  *       uses at most one core. When the demand of a broker exceeds its CPU limit, every replica
@@ -218,6 +222,11 @@ final class WriteRateLimitSimulation {
     if (admitted > accepted + EPSILON && !excluded) {
       leader.controller.onRejected(nowMillis);
     }
+    leader.rejectionCpu +=
+        (offered - accepted)
+            * tenant.rejectionCost
+            * cfg.leaderCost()
+            / leader.trueRecordsPerCpuSecond;
 
     partition.offeredInWindow += offered;
     partition.acceptedInWindow += accepted;
@@ -248,12 +257,15 @@ final class WriteRateLimitSimulation {
         demand += cpu;
       }
     }
+    demand += broker.rejectionCpu;
 
     final var capacity = broker.cpuLimit * dt;
     final var share = demand > capacity + EPSILON ? capacity / demand : 1;
     if (share < 1) {
       broker.throttledTicks++;
     }
+    broker.rejectionCpuInWindow += broker.rejectionCpu * share;
+    broker.rejectionCpu = 0;
     for (final var w : work) {
       final var processed = w.cpu * share / w.costPerRecord;
       w.partition.pending.merge(broker.id, -processed, Double::sum);
@@ -329,6 +341,7 @@ final class WriteRateLimitSimulation {
             .ifPresent(l -> partitionLimits.put(tenant.spec.id(), l));
       }
       final var throttledRatio = (double) broker.throttledTicks / ticksPerWindow;
+      final var rejectionCpuRatio = broker.rejectionCpuInWindow / (broker.cpuLimit * windowSeconds);
       final var requestLimit =
           tenants.values().stream()
               .flatMap(t -> t.partitions.stream())
@@ -351,6 +364,7 @@ final class WriteRateLimitSimulation {
               broker.id,
               broker.controller.ceiling(),
               throttledRatio,
+              rejectionCpuRatio,
               decision,
               leaders.size(),
               backlog,
@@ -358,6 +372,7 @@ final class WriteRateLimitSimulation {
               partitionLimits,
               tenantRates));
       broker.throttledTicks = 0;
+      broker.rejectionCpuInWindow = 0;
     }
 
     for (final var tenant : tenants.values()) {
@@ -403,11 +418,12 @@ final class WriteRateLimitSimulation {
     final var sb = new StringBuilder();
     sb.append(
         String.format(
-            "%6s %6s %9s %9s %-24s %7s %8s %7s  %s%n",
+            "%6s %6s %9s %9s %7s %-24s %7s %8s %7s  %s%n",
             "t[s]",
             "broker",
             "ceiling",
             "throttled",
+            "rejCpu",
             "decision",
             "leaders",
             "backlog",
@@ -417,11 +433,12 @@ final class WriteRateLimitSimulation {
     for (final var s : samples) {
       sb.append(
           String.format(
-              "%6s %6d %9.1f %9.2f %-24s %7d %8d %7.0f  %s%n",
+              "%6s %6d %9.1f %9.2f %7.2f %-24s %7d %8d %7.0f  %s%n",
               s.second() == lastSecond ? "" : s.second(),
               s.brokerId(),
               s.ceiling(),
               s.throttledRatio(),
+              s.rejectionCpuRatio(),
               s.decision(),
               s.leaders(),
               s.backlog(),
@@ -445,6 +462,7 @@ final class WriteRateLimitSimulation {
       int brokerId,
       double ceiling,
       double throttledRatio,
+      double rejectionCpuRatio,
       Decision decision,
       int leaders,
       long backlog,
@@ -459,6 +477,7 @@ final class WriteRateLimitSimulation {
     double floodFactor = FLOOD_FACTOR;
     double cost = 1;
     double exportRatePerPartition = Double.MAX_VALUE;
+    double rejectionCost;
     double acceptedInWindow;
 
     SimTenant(final Tenant spec) {
@@ -485,6 +504,12 @@ final class WriteRateLimitSimulation {
 
     SimTenant withCost(final double cost) {
       this.cost = cost;
+      return this;
+    }
+
+    /** CPU cost of a rejected record, relative to processing a record on a leader (ρ). */
+    SimTenant withRejectionCost(final double rejectionCost) {
+      this.rejectionCost = rejectionCost;
       return this;
     }
 
@@ -527,6 +552,8 @@ final class WriteRateLimitSimulation {
     boolean up = true;
     AutomaticWriteRateController controller;
     int throttledTicks;
+    double rejectionCpu;
+    double rejectionCpuInWindow;
 
     Broker(final int id, final double cpuLimit, final double trueRecordsPerCpuSecond) {
       this.id = id;

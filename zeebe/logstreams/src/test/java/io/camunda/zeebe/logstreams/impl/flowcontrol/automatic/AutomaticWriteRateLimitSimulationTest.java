@@ -17,6 +17,8 @@ import java.time.Duration;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 /**
  * Scenarios from the "automatic write rate limit" solution direction, run against {@link
@@ -371,6 +373,66 @@ class AutomaticWriteRateLimitSimulationTest {
     assertThat(sim.samples()).allSatisfy(s -> assertThat(s.throttledRatio()).isZero());
   }
 
+  @Test
+  void shouldNotLowerCeilingWhenRejectionsCostLittleCpu() {
+    // given - each broker rejects about 17 000 records/s of a; at ρ = 0.1 this is 0.17 CPU, and
+    // the CPU has 0.29 left at the start value
+    sim = noisyNeighbourWithRejectionCost(0.1);
+
+    // when
+    sim.run(Duration.ofMinutes(5));
+
+    // then
+    assertThat(sim.samples())
+        .allSatisfy(
+            s -> {
+              assertThat(s.throttledRatio()).isZero();
+              assertThat(s.rejectionCpuRatio()).isPositive();
+            });
+    assertThat(meanRate(sim, "a")).isCloseTo(3 * START_3_TENANTS, within(1.0));
+    assertThat(meanRate(sim, "b")).isCloseTo(7_500, within(1.0));
+  }
+
+  /**
+   * Known gap. The rejections of the flooding tenant use the CPU that b and c need. The CPU guard
+   * cannot tell this from an overload, so it lowers the ceiling of every tenant to the floor, where
+   * it stays while a floods. Lowering the ceiling adds rejections, but the loop does not run away:
+   * one record less saves L + (RF - 1) × F = 2.2 and costs ρ in CPU per broker.
+   */
+  @Test
+  void shouldLowerCeilingOfAllTenantsWhenRejectionsOfFloodingTenantThrottleCpu() {
+    // given
+    sim = noisyNeighbourWithRejectionCost(0.3);
+
+    // when
+    sim.run(Duration.ofMinutes(5));
+
+    // then
+    assertThat(sim.samplesSince(sim.now() - 120))
+        .allSatisfy(
+            s -> {
+              assertThat(s.throttledRatio()).isOne();
+              assertThat(s.ceiling()).isCloseTo(FLOOR_3_TENANTS, within(0.1));
+            });
+    assertThat(meanRate(sim, "b")).isCloseTo(3 * FLOOR_3_TENANTS, within(1.0));
+  }
+
+  @ParameterizedTest
+  @ValueSource(doubles = {0.1, 0.2, 0.3, 0.6, 1.0})
+  void shouldGiveOtherTenantsMoreThanRequestLimiterAloneWhenRejectionsCostCpu(final double rho) {
+    // given
+    final var withoutWriteRateLimit = noisyNeighbourWithRejectionCost(rho).withoutWriteRateLimit();
+    sim = noisyNeighbourWithRejectionCost(rho);
+
+    // when
+    withoutWriteRateLimit.run(Duration.ofMinutes(5));
+    sim.run(Duration.ofMinutes(5));
+
+    // then
+    assertThat(meanRate(sim, "b")).isGreaterThan(meanRate(withoutWriteRateLimit, "b"));
+    assertThat(meanRate(sim, "a")).isLessThan(meanRate(withoutWriteRateLimit, "a"));
+  }
+
   /** Each broker is down for one minute, then up for one minute. */
   private void rollingRestart() {
     for (int broker = 0; broker < 3; broker++) {
@@ -387,6 +449,18 @@ class AutomaticWriteRateLimitSimulationTest {
     simulation.tenant("b").offering(2_500);
     simulation.tenant("c").offering(2_500);
     simulation.brokers().forEach(b -> b.withTrueRecordsPerCpuSecond(trueRecordsPerCpuSecond));
+    return simulation;
+  }
+
+  /**
+   * Same as {@link #noisyNeighbour(double)} with R_true = R; a rejected record of any tenant costs
+   * ρ × the CPU of a record on a leader. REST has a higher ρ than gRPC.
+   */
+  private static WriteRateLimitSimulation noisyNeighbourWithRejectionCost(final double rho) {
+    final var simulation = noisyNeighbour(10_000);
+    simulation.tenant("a").withRejectionCost(rho);
+    simulation.tenant("b").withRejectionCost(rho);
+    simulation.tenant("c").withRejectionCost(rho);
     return simulation;
   }
 
