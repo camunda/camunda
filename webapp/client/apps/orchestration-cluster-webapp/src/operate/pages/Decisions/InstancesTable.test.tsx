@@ -6,7 +6,8 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {afterEach, beforeEach, describe, expect} from 'vitest';
+import {afterEach, beforeEach, describe, expect, vi} from 'vitest';
+import {userEvent} from 'vitest/browser';
 import {HttpResponse} from 'msw';
 import {it} from '#/vitest-modules/test-extend';
 import {renderWithRouter} from '#/vitest-modules/render-with-router';
@@ -22,6 +23,7 @@ import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-
 import {Notifications} from '#/shared/notifications/components/Notifications';
 import {notificationsStore} from '#/shared/notifications/notifications.store';
 import {InstancesTable} from './InstancesTable';
+import {Toolbar} from './Toolbar';
 import type {DecisionsSearch} from './decisionsFilter';
 
 const BASE_SEARCH: DecisionsSearch = {evaluated: true, failed: true};
@@ -142,6 +144,62 @@ describe('<InstancesTable />', () => {
 			await screen.getByRole('button', {name: 'Discard'}).click();
 
 			await expect.element(screen.getByRole('button', {name: 'Delete'})).not.toBeInTheDocument();
+		});
+
+		it('should mark a select-all count as truncated when more instances exist than counted', async ({worker}) => {
+			worker.use(
+				mockQueryDecisionInstancesEndpoint({
+					successResponse: HttpResponse.json(
+						createQueryDecisionInstancesResponse({
+							items: [
+								createDecisionInstance({decisionEvaluationInstanceKey: '1'}),
+								createDecisionInstance({decisionEvaluationInstanceKey: '2'}),
+							],
+							page: {totalItems: 10000, hasMoreTotalItems: true},
+						}),
+					),
+				}),
+			);
+
+			const screen = await renderInstancesTable();
+
+			// force: Carbon's checkbox label visually covers the native input, failing real-browser actionability
+			await screen.getByRole('checkbox', {name: 'Select row 1'}).click({force: true});
+			await screen.getByRole('checkbox', {name: 'Select row 2'}).click({force: true});
+			await expect.element(screen.getByText('2 items selected')).toBeVisible();
+
+			await screen.getByRole('button', {name: 'Discard'}).click();
+
+			await screen.getByRole('checkbox', {name: 'Select all rows'}).click({force: true});
+			await expect.element(screen.getByText('10000+ items selected')).toBeVisible();
+
+			await screen.getByRole('button', {name: 'Delete'}).click();
+			await expect
+				.element(screen.getByRole('dialog'))
+				.toMatchTextContent('10000+ instances selected for delete operation.');
+		});
+
+		it('should keep the truncation marker after exclusions reduce the counted selection to one', async () => {
+			const screen = await renderWithRouter(
+				() => (
+					<Toolbar
+						selectedCount={1}
+						isCountTruncated
+						includedIds={[]}
+						excludedIds={Array.from({length: 9999}, (_, index) => `${index + 1}`)}
+						filter={{}}
+						onDeleted={vi.fn()}
+						onDiscard={vi.fn()}
+					/>
+				),
+				{path: DECISIONS_LIST_PATH},
+			);
+
+			await expect.element(screen.getByText('1+ items selected')).toBeVisible();
+			await userEvent.click(screen.getByRole('button', {name: 'Delete'}));
+			await expect
+				.element(screen.getByRole('dialog'))
+				.toMatchTextContent('1+ instances selected for delete operation.');
 		});
 
 		it('should delete the selected instance and show a success notification', async ({worker}) => {

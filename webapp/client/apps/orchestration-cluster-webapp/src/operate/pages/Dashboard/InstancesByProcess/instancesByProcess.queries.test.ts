@@ -8,7 +8,11 @@
 
 import {describe, expect, it} from 'vitest';
 import type {GetProcessDefinitionInstanceStatisticsResponseBody} from '@camunda/camunda-api-zod-schemas/8.11';
-import {instancesByProcessInfiniteQuery, PAGE_SIZE} from './instancesByProcess.queries';
+import {
+	getInstancesByProcessRefetchInterval,
+	instancesByProcessInfiniteQuery,
+	PAGE_SIZE,
+} from './instancesByProcess.queries';
 
 const createPage = ({
 	itemCount,
@@ -25,6 +29,16 @@ const createPage = ({
 	}) as unknown as GetProcessDefinitionInstanceStatisticsResponseBody;
 
 describe('instancesByProcessInfiniteQuery', () => {
+	it('polls while only one page is loaded, and stops after multiple pages are loaded', () => {
+		// when
+		const onePageInterval = getInstancesByProcessRefetchInterval(1);
+		const multiPageInterval = getInstancesByProcessRefetchInterval(2);
+
+		// then
+		expect(onePageInterval).toBe(5000);
+		expect(multiPageInterval).toBe(false);
+	});
+
 	it('should return the next offset when there are more items and progress was made', () => {
 		// given
 		const query = instancesByProcessInfiniteQuery();

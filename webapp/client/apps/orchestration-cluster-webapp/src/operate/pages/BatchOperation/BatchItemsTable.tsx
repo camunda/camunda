@@ -213,6 +213,21 @@ const BatchItemsTable: React.FC<Props> = ({batchOperationKey, batchOperationType
 						columns={columns}
 						rows={items}
 						rowKey={(row) => row.itemKey}
+						rowOperationError={(row) =>
+							row.errorMessage
+								? {
+										message: (
+											<>
+												<strong>{t('operate.batchOperation.itemsTable.failureReason')}</strong> {row.errorMessage}
+											</>
+										),
+										expandLabel: t('operate.batchOperation.itemsTable.expandFailure', {key: row.itemKey}),
+									}
+								: null
+						}
+						failureDetailsLabel={t('operate.batchOperation.itemsTable.failureDetails')}
+						expansionScope={batchOperationKey}
+						rowSucceeded={(row) => row.state === 'COMPLETED'}
 						isFetching={isFetching && !isError && !isFetchingPreviousPage && !isFetchingNextPage}
 						emptyState={
 							isError ? undefined : <EmptyMessage message={t('operate.batchOperation.itemsTable.emptyMessage')} />

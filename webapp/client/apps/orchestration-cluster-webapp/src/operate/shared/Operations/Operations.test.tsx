@@ -49,10 +49,27 @@ describe('<Operations />', () => {
 			{wrapper: getWrapper()},
 		);
 
-		await expect.element(screen.getByTitle(`Retry Instance ${PROCESS_INSTANCE_KEY}`)).toBeVisible();
-		await expect.element(screen.getByTitle(`Cancel Instance ${PROCESS_INSTANCE_KEY}`)).toBeVisible();
-		await expect.element(screen.getByTitle(`Modify Instance ${PROCESS_INSTANCE_KEY}`)).toBeVisible();
-		await expect.element(screen.getByTitle(`Delete Instance ${PROCESS_INSTANCE_KEY}`)).toBeVisible();
+		await expect.element(screen.getByRole('button', {name: 'Retry Instance'})).toBeVisible();
+		await expect.element(screen.getByRole('button', {name: 'Cancel Instance'})).toBeVisible();
+		await expect.element(screen.getByRole('button', {name: `Modify Instance ${PROCESS_INSTANCE_KEY}`})).toBeVisible();
+		await expect.element(screen.getByRole('button', {name: 'Delete Instance'})).toBeVisible();
+	});
+
+	it('should render delete as an icon-only button with a tooltip', async () => {
+		const screen = await render(
+			<Operations
+				operations={[null, null, {type: 'DELETE_PROCESS_INSTANCE', onExecute: vi.fn()}]}
+				processInstanceKey={PROCESS_INSTANCE_KEY}
+			/>,
+			{wrapper: getWrapper()},
+		);
+		const deleteButton = screen.getByRole('button', {name: 'Delete Instance'});
+
+		await expect.element(deleteButton).not.toHaveTextContent('Delete');
+
+		await userEvent.hover(deleteButton);
+
+		await expect.element(screen.getByRole('tooltip')).toHaveTextContent('Delete Instance');
 	});
 
 	it('should render no buttons when operations array is empty', async () => {
@@ -60,10 +77,10 @@ describe('<Operations />', () => {
 			wrapper: getWrapper(),
 		});
 
-		expect(screen.getByTitle(`Retry Instance ${PROCESS_INSTANCE_KEY}`).elements()).toHaveLength(0);
-		expect(screen.getByTitle(`Cancel Instance ${PROCESS_INSTANCE_KEY}`).elements()).toHaveLength(0);
-		expect(screen.getByTitle(`Modify Instance ${PROCESS_INSTANCE_KEY}`).elements()).toHaveLength(0);
-		expect(screen.getByTitle(`Delete Instance ${PROCESS_INSTANCE_KEY}`).elements()).toHaveLength(0);
+		expect(screen.getByRole('button', {name: 'Retry Instance'}).elements()).toHaveLength(0);
+		expect(screen.getByRole('button', {name: 'Cancel Instance'}).elements()).toHaveLength(0);
+		expect(screen.getByRole('button', {name: `Modify Instance ${PROCESS_INSTANCE_KEY}`}).elements()).toHaveLength(0);
+		expect(screen.getByRole('button', {name: 'Delete Instance'}).elements()).toHaveLength(0);
 	});
 
 	it('should execute resolve incident operation', async () => {

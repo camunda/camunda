@@ -25,6 +25,7 @@ import {LinkWrapper, LoadingRow} from '#/operate/pages/Dashboard/styled';
 import {
 	drainingByIdKey,
 	drainingProcessDefinitionsQuery,
+	getInstancesByProcessRefetchInterval,
 	instancesByProcessInfiniteQuery,
 	PAGE_SIZE,
 } from './instancesByProcess.queries';
@@ -43,7 +44,10 @@ const InstancesByProcess: React.FC = () => {
 		hasPreviousPage,
 		isFetchingNextPage,
 		isFetchingPreviousPage,
-	} = useInfiniteQuery({...instancesByProcessInfiniteQuery(), refetchInterval: 5000});
+	} = useInfiniteQuery({
+		...instancesByProcessInfiniteQuery(),
+		refetchInterval: (query) => getInstancesByProcessRefetchInterval(query.state.data?.pages.length ?? 1),
+	});
 
 	const {data: draining} = useQuery(drainingProcessDefinitionsQuery());
 

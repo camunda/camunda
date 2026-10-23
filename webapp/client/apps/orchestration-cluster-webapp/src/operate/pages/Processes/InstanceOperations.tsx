@@ -9,7 +9,7 @@
 import {useMemo} from 'react';
 import type {BatchOperationType, ProcessInstance} from '@camunda/camunda-api-zod-schemas/8.11';
 import {Operations} from '#/operate/shared/Operations/Operations';
-import type {OperationConfig} from '#/operate/shared/Operations/types';
+import type {OperationSlot} from '#/operate/shared/Operations/types';
 import {useProcessInstanceOperations, type OperationType} from './useProcessInstanceOperations';
 
 type Props = {
@@ -29,54 +29,49 @@ const InstanceOperations: React.FC<Props> = ({processInstance, activeOperations}
 	// operation running against this instance from elsewhere (a batch operation, another tab).
 	const isLoading = pendingOperations.size > 0 || activeOperations.length > 0;
 
-	const operations = useMemo<OperationConfig[]>(() => {
+	const operations = useMemo<OperationSlot[]>(() => {
 		const isBusyWith = (operationType: OperationType) =>
 			pendingOperations.has(operationType) || activeOperations.includes(operationType);
 
-		const configs: OperationConfig[] = [];
+		const incidentOperation: OperationSlot =
+			isActive && hasIncident
+				? {
+						type: 'RESOLVE_INCIDENT',
+						onExecute: () => void resolveIncidents(),
+						disabled: isBusyWith('RESOLVE_INCIDENT'),
+					}
+				: null;
 
-		if (isActive && hasIncident) {
-			configs.push({
-				type: 'RESOLVE_INCIDENT',
-				onExecute: () => void resolveIncidents(),
-				disabled: isBusyWith('RESOLVE_INCIDENT'),
-			});
-		}
+		const stateChangeOperation: OperationSlot = isActive
+			? {
+					type: 'SUSPEND_PROCESS_INSTANCE',
+					onExecute: () => void suspend(),
+					disabled: isBusyWith('SUSPEND_PROCESS_INSTANCE'),
+				}
+			: isSuspended
+				? {
+						type: 'RESUME_PROCESS_INSTANCE',
+						onExecute: () => void resume(),
+						disabled: isBusyWith('RESUME_PROCESS_INSTANCE'),
+					}
+				: null;
 
-		if (isActive) {
-			configs.push({
-				type: 'SUSPEND_PROCESS_INSTANCE',
-				onExecute: () => void suspend(),
-				disabled: isBusyWith('SUSPEND_PROCESS_INSTANCE'),
-			});
-		}
+		const destructiveOperation: OperationSlot =
+			isActive || isSuspended
+				? {
+						type: 'CANCEL_PROCESS_INSTANCE',
+						onExecute: () => void cancel(),
+						disabled: isBusyWith('CANCEL_PROCESS_INSTANCE'),
+					}
+				: isFinished
+					? {
+							type: 'DELETE_PROCESS_INSTANCE',
+							onExecute: () => void remove(),
+							disabled: isBusyWith('DELETE_PROCESS_INSTANCE'),
+						}
+					: null;
 
-		if (isSuspended) {
-			configs.push({
-				type: 'RESUME_PROCESS_INSTANCE',
-				onExecute: () => void resume(),
-				disabled: isBusyWith('RESUME_PROCESS_INSTANCE'),
-			});
-		}
-
-		// Legacy offers cancel on a suspended instance too.
-		if (isActive || isSuspended) {
-			configs.push({
-				type: 'CANCEL_PROCESS_INSTANCE',
-				onExecute: () => void cancel(),
-				disabled: isBusyWith('CANCEL_PROCESS_INSTANCE'),
-			});
-		}
-
-		if (isFinished) {
-			configs.push({
-				type: 'DELETE_PROCESS_INSTANCE',
-				onExecute: () => void remove(),
-				disabled: isBusyWith('DELETE_PROCESS_INSTANCE'),
-			});
-		}
-
-		return configs;
+		return [incidentOperation, stateChangeOperation, destructiveOperation];
 	}, [
 		activeOperations,
 		cancel,

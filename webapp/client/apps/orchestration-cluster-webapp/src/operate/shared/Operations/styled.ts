@@ -6,13 +6,20 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Stack} from '@carbon/react';
 import styled from 'styled-components';
 
-const OperationsContainer = styled(Stack)`
-	.cds--popover[role='tooltip'] {
-		display: none;
-	}
+const LoadingSlot = styled.li`
+	align-items: center;
+	block-size: 2rem;
+	display: flex;
+	flex: 0 0 2rem;
+	inline-size: 2rem;
 `;
 
-export {OperationsContainer};
+const EmptyOperationSlot = styled.li.attrs({'aria-hidden': true})`
+	block-size: 2rem;
+	flex: 0 0 2rem;
+	inline-size: 2rem;
+`;
+
+export {EmptyOperationSlot, LoadingSlot};

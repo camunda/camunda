@@ -7,14 +7,14 @@
  */
 
 import {useTranslation} from 'react-i18next';
+import {InlineLoading, Stack} from '@carbon/react';
 import {OperationItems} from '#/operate/shared/OperationItems/OperationItems';
-import {InlineLoading} from '@carbon/react';
-import {OperationsContainer} from './styled';
+import {LoadingSlot} from './styled';
 import {OperationRenderer} from './OperationRenderer';
-import type {OperationConfig} from './types';
+import type {OperationSlot} from './types';
 
 type Props = {
-	operations: OperationConfig[];
+	operations: OperationSlot[];
 	processInstanceKey: string;
 	isLoading?: boolean;
 	loadingMessage?: string;
@@ -24,19 +24,21 @@ const Operations: React.FC<Props> = ({operations, processInstanceKey, isLoading 
 	const {t} = useTranslation();
 
 	return (
-		<OperationsContainer orientation="horizontal">
-			{isLoading ? (
-				<InlineLoading
-					data-testid="operation-spinner"
-					title={loadingMessage || t('operate.shared.operations.loadingMessage', {processInstanceKey})}
-				/>
-			) : null}
+		<Stack orientation="horizontal">
 			<OperationItems>
-				{operations.map((operation) => (
-					<OperationRenderer key={operation.type} operation={operation} processInstanceKey={processInstanceKey} />
+				<LoadingSlot aria-hidden={isLoading ? undefined : true}>
+					{isLoading ? (
+						<InlineLoading
+							data-testid="operation-spinner"
+							iconDescription={loadingMessage || t('operate.shared.operations.loadingMessage', {processInstanceKey})}
+						/>
+					) : null}
+				</LoadingSlot>
+				{operations.map((operation, index) => (
+					<OperationRenderer key={index} operation={operation} processInstanceKey={processInstanceKey} />
 				))}
 			</OperationItems>
-		</OperationsContainer>
+		</Stack>
 	);
 };
 

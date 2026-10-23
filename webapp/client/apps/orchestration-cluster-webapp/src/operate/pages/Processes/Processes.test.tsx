@@ -11,6 +11,7 @@ import {renderWithRouter} from '#/vitest-modules/render-with-router';
 import {afterEach, beforeEach, describe, expect} from 'vitest';
 import {userEvent} from 'vitest/browser';
 import {HttpResponse} from 'msw';
+import {z} from 'zod';
 import {queryProcessDefinitionsRequestBodySchema, type ProcessDefinition} from '@camunda/camunda-api-zod-schemas/8.11';
 import {
 	mockDeleteResourceEndpoint,
@@ -149,7 +150,7 @@ describe('<Processes />', () => {
 		await expect.element(screen.getByRole('combobox', {name: 'Element'})).toBeEnabled();
 	});
 
-	it('should navigate resetting version and elementId when a process is selected', async ({worker}) => {
+	it('should preselect the latest version and reset elementId when a process is selected', async ({worker}) => {
 		worker.use(
 			mockQueryProcessInstancesEndpoint({successResponse: EMPTY_PROCESS_INSTANCES}),
 			mockQueryProcessDefinitionsEndpoint({successResponse: PROCESS_DEFINITIONS}),
@@ -170,9 +171,84 @@ describe('<Processes />', () => {
 		await userEvent.keyboard('{Enter}');
 
 		const getSearch = () => screen.router.state.location.search as Record<string, unknown>;
-		await expect.poll(getSearch).toMatchObject({process: 'order-process'});
-		expect(getSearch().version).toBeUndefined();
+		await expect.poll(getSearch).toMatchObject({process: 'order-process', version: 2});
 		expect(getSearch().elementId).toBeUndefined();
+	});
+
+	it('should offer only the existing version for a single-version process', async ({worker}) => {
+		worker.use(
+			mockQueryProcessInstancesEndpoint({successResponse: EMPTY_PROCESS_INSTANCES}),
+			mockQueryProcessDefinitionsEndpoint({successResponse: PROCESS_DEFINITIONS}),
+			mockGetProcessDefinitionXmlEndpoint({successResponse: HttpResponse.text(BPMN_XML)}),
+			mockGetProcessDefinitionStatisticsEndpoint({
+				successResponse: HttpResponse.json(createGetProcessDefinitionStatisticsResponse([])),
+			}),
+		);
+
+		const screen = await renderPage({process: 'payment-process', version: 1});
+
+		await expect.element(screen.getByRole('combobox', {name: 'Version'})).toMatchTextContent('1');
+		await screen.getByRole('combobox', {name: 'Name'}).fill('Payment Process');
+		await userEvent.keyboard('{Tab}{ArrowDown}');
+
+		await expect.element(screen.getByRole('option', {name: '1'})).toBeVisible();
+		await expect.element(screen.getByRole('option', {name: 'All versions'})).not.toBeInTheDocument();
+	});
+
+	it('should list the process names when the reported total overestimates the definitions', async ({worker}) => {
+		worker.use(
+			mockQueryProcessInstancesEndpoint({successResponse: EMPTY_PROCESS_INSTANCES}),
+			mockQueryProcessDefinitionsEndpoint({
+				once: true,
+				successResponse: HttpResponse.json(
+					createQueryProcessDefinitionsResponse({
+						items: [createProcessDefinition({name: 'Payment Process', processDefinitionId: 'payment-process'})],
+						page: {totalItems: 5, endCursor: 'next-page'},
+					}),
+				),
+			}),
+			mockQueryProcessDefinitionsEndpoint({
+				successResponse: HttpResponse.json(createQueryProcessDefinitionsResponse({page: {totalItems: 5}})),
+			}),
+		);
+
+		const screen = await renderPage();
+		await screen.getByRole('combobox', {name: 'Name'}).click({force: true});
+
+		await expect.element(screen.getByRole('option', {name: 'Payment Process'})).toBeVisible();
+	});
+
+	it('should list the latest process versions of every page sorted by name', async ({worker}) => {
+		worker.use(
+			mockQueryProcessInstancesEndpoint({successResponse: EMPTY_PROCESS_INSTANCES}),
+			mockQueryProcessDefinitionsEndpoint({
+				once: true,
+				successResponse: HttpResponse.json(
+					createQueryProcessDefinitionsResponse({
+						items: [createProcessDefinition({name: 'Payment Process', processDefinitionId: 'payment-process'})],
+						page: {totalItems: 2, endCursor: 'next-page'},
+					}),
+				),
+			}),
+			mockQueryProcessDefinitionsEndpoint({
+				schema: z.object({
+					filter: z.object({isLatestVersion: z.literal(true)}),
+					page: z.object({after: z.literal('next-page')}),
+				}),
+				successResponse: HttpResponse.json(
+					createQueryProcessDefinitionsResponse({
+						items: [createProcessDefinition({name: 'Order Process', processDefinitionId: 'order-process'})],
+					}),
+				),
+				failureResponse: new HttpResponse(null, {status: 400}),
+			}),
+		);
+
+		const screen = await renderPage();
+		await screen.getByRole('combobox', {name: 'Name'}).click({force: true});
+
+		await expect.element(screen.getByRole('option').nth(0)).toHaveTextContent('Order Process');
+		await expect.element(screen.getByRole('option').nth(1)).toHaveTextContent('Payment Process');
 	});
 
 	it('should navigate resetting elementId when a version is selected', async ({worker}) => {

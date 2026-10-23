@@ -31,6 +31,17 @@ import {IncidentsByError} from './IncidentsByError';
 
 const REQUEST_SCHEMA = z.object({
 	page: z.object({from: z.number(), limit: z.literal(50)}),
+	sort: z.tuple([
+		z.object({field: z.literal('activeInstancesWithErrorCount'), order: z.literal('DESC')}),
+		z.object({field: z.literal('errorMessage'), order: z.literal('ASC')}),
+	]),
+});
+const DEFINITIONS_REQUEST_SCHEMA = z.object({
+	sort: z.tuple([
+		z.object({field: z.literal('activeInstancesWithErrorCount'), order: z.literal('DESC')}),
+		z.object({field: z.literal('processDefinitionKey'), order: z.literal('DESC')}),
+		z.object({field: z.literal('tenantId'), order: z.literal('DESC')}),
+	]),
 });
 const FAILURE_RESPONSE = new HttpResponse(null, {status: 400});
 const ERROR_RESPONSE = new HttpResponse(null, {status: 500});
@@ -174,6 +185,32 @@ describe('<IncidentsByError />', () => {
 		await expect
 			.element(screen.getByTestId('incident-byError').getByRole('link').nth(1))
 			.toHaveAttribute('href', expect.stringContaining('errorMessage=Connection+timeout&incidentErrorHashCode=0'));
+	});
+
+	it('should request the affected processes ordered by most affected instances', async ({worker}) => {
+		sessionStorage.setItem('clientConfig', JSON.stringify(createSystemConfiguration()));
+		worker.use(
+			mockGetIncidentProcessInstanceStatisticsByErrorEndpoint({
+				schema: REQUEST_SCHEMA,
+				successResponse: PAGE_1_RESPONSE,
+				failureResponse: FAILURE_RESPONSE,
+			}),
+			mockGetIncidentProcessInstanceStatisticsByDefinitionEndpoint({
+				schema: DEFINITIONS_REQUEST_SCHEMA,
+				successResponse: HttpResponse.json(
+					createPaginatedResponse({
+						items: [createIncidentProcessInstanceStatisticsByDefinition({processDefinitionName: 'Orders'})],
+						page: {totalItems: 1, startCursor: null, endCursor: null, hasMoreTotalItems: false},
+					}),
+				),
+				failureResponse: FAILURE_RESPONSE,
+			}),
+		);
+
+		const screen = await renderWithRouter(() => <IncidentsByError />, {path: '/operate'});
+		await userEvent.click(screen.getByRole('button', {name: 'Expand current row'}).first());
+
+		await expect.element(screen.getByRole('link', {name: /Orders/})).toBeVisible();
 	});
 
 	it('should truncate long incident messages to 100 characters at a word boundary in drill-down links', async ({

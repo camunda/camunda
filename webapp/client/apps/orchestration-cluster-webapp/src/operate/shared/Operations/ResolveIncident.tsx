@@ -14,16 +14,17 @@ type Props = {
 	processInstanceKey: ProcessInstance['processInstanceKey'];
 	onExecute: () => void;
 	disabled?: boolean;
+	title?: string;
 };
 
-const ResolveIncident: React.FC<Props> = ({processInstanceKey, onExecute, disabled = false}) => {
+const ResolveIncident: React.FC<Props> = ({onExecute, disabled = false, title}) => {
 	const {t} = useTranslation();
 
 	return (
 		<OperationItem
 			type="RESOLVE_INCIDENT"
 			onClick={onExecute}
-			title={t('operate.shared.operations.retryTitle', {processInstanceKey})}
+			title={title ?? t('operate.shared.operations.retryInstance')}
 			disabled={disabled}
 			size="sm"
 		/>

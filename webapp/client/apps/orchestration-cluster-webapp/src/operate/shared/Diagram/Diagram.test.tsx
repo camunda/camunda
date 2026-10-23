@@ -95,6 +95,19 @@ describe('<Diagram />', () => {
 		await expect.element(screen.getByText('Overlay for endEvent_1')).toBeVisible();
 	});
 
+	it('should outline a programmatically selected element', async () => {
+		const screen = await render(
+			<Diagram
+				xml={BPMN_XML}
+				selectableElements={['startEvent_1', 'endEvent_1']}
+				selectedElementIds={['endEvent_1']}
+			/>,
+		);
+
+		await expect.element(screen.getByRole('button', {name: 'Reset diagram zoom'})).toBeVisible();
+		await expect.poll(() => document.querySelector('[data-element-id="endEvent_1"] .djs-outline')).not.toBeNull();
+	});
+
 	it('should expose overlay containers via DiagramOverlayContext', async () => {
 		const screen = await render(
 			<Diagram
