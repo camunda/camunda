@@ -7,7 +7,8 @@
  */
 
 import {useEffect, useMemo, useRef} from 'react';
-import type {CurrentUser, QueryUserTasksResponseBody} from '@camunda/camunda-api-zod-schemas/8.11';
+import type {QueryUserTasksResponseBody} from '@camunda/camunda-api-zod-schemas/8.11';
+import type {AuthenticatedCurrentUser} from '#/shared/http/currentUser';
 import {useVirtualizer} from '@tanstack/react-virtual';
 import {NoTasks} from './NoTasks';
 import {Task} from './Task';
@@ -19,7 +20,7 @@ const LIST_PADDING = 8;
 
 type Props = {
 	pages: QueryUserTasksResponseBody[];
-	currentUser: CurrentUser;
+	currentUser: AuthenticatedCurrentUser;
 	hasNextPage: boolean;
 	hasPreviousPage: boolean;
 	onScrollDown: () => Promise<void>;

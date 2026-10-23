@@ -8,7 +8,7 @@
 
 import { queryOptions } from "@tanstack/react-query";
 import { getApiBaseUrl } from "src/configuration/urlConfig";
-import { unwrap } from "../request";
+import { ApiError, unwrap } from "../request";
 import { queryKeys } from "../queryKeys";
 import { getAuthentication } from ".";
 
@@ -16,7 +16,17 @@ export const authenticationQueries = {
   me: () =>
     queryOptions({
       queryKey: queryKeys.authentication.me,
-      queryFn: () => unwrap(getAuthentication(undefined)(getApiBaseUrl())),
+      queryFn: async () => {
+        const currentUser = await unwrap(
+          getAuthentication(undefined)(getApiBaseUrl()),
+        );
+        // An unprotected API answers a caller without a session with an anonymous user instead
+        // of a 401, because no credentials can authenticate it there. Handle it like the 401.
+        if ("anonymous" in currentUser && currentUser.anonymous === true) {
+          throw new ApiError(401, null);
+        }
+        return currentUser;
+      },
       meta: { skipErrorNotification: true },
     }),
 };
