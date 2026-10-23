@@ -1,10 +1,10 @@
 {
   "metadata": {
-    "sourceRepo": "camunda/camunda",
-    "commit": "local",
-    "generatedAt": "2026-10-21T03:56:28.145Z",
+    "sourceRepo": "https://github.com/camunda/camunda",
+    "commit": "7884bd6ec3d87015985b1cf5381279c209a89e72",
+    "generatedAt": "2026-10-23T12:12:16.288Z",
     "specPath": "zeebe/gateway-protocol/src/main/proto/v2/rest-api.yaml",
-    "specSha256": "c13bcdddfab42a1fb7932312918863678102ea12ef86a74491c21074bd861bab"
+    "specSha256": "d13a72d2deba43759e2c4ce0c542c684bbc957d9161663fb7d24d0963caf0d5e"
   },
   "responses": [
     {
@@ -2560,6 +2560,20 @@
       }
     },
     {
+      "path": "/clock/add",
+      "method": "POST",
+      "status": "200",
+      "schema": {
+        "required": [
+          {
+            "name": "timestamp",
+            "type": "string"
+          }
+        ],
+        "optional": []
+      }
+    },
+    {
       "path": "/cluster-variables/global",
       "method": "POST",
       "status": "200",
@@ -4742,6 +4756,11 @@
                   ]
                 },
                 {
+                  "name": "storageOrdinal",
+                  "type": "number",
+                  "nullable": true
+                },
+                {
                   "name": "tenantId",
                   "type": "string"
                 }
@@ -5535,6 +5554,11 @@
                   ]
                 },
                 {
+                  "name": "storageOrdinal",
+                  "type": "number",
+                  "nullable": true
+                },
+                {
                   "name": "tenantId",
                   "type": "string"
                 }
@@ -5654,6 +5678,11 @@
               "RESOLVED",
               "UNKNOWN"
             ]
+          },
+          {
+            "name": "storageOrdinal",
+            "type": "number",
+            "nullable": true
           },
           {
             "name": "tenantId",
@@ -8134,6 +8163,11 @@
                     "RESOLVED",
                     "UNKNOWN"
                   ]
+                },
+                {
+                  "name": "storageOrdinal",
+                  "type": "number",
+                  "nullable": true
                 },
                 {
                   "name": "tenantId",
