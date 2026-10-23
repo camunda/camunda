@@ -12,7 +12,6 @@ import com.google.common.primitives.Longs;
 import java.util.Collection;
 import java.util.OptionalLong;
 import java.util.SortedSet;
-import org.jspecify.annotations.NullMarked;
 
 /**
  * What one partition is restored from.
@@ -21,7 +20,6 @@ import org.jspecify.annotations.NullMarked;
  * @param checkpointPosition the position of the resolved checkpoint (a backup or a marker) on this
  *     partition, where its restored log ends. Empty ends the log at the last backup's checkpoint.
  */
-@NullMarked
 public record PartitionRestore(SortedSet<Long> backupIds, OptionalLong checkpointPosition) {
 
   public PartitionRestore {
