@@ -75,6 +75,14 @@ public class ImportProperties {
 
   private int maxEmptyRuns = DEFAULT_MAX_EMPTY_RUNS;
 
+  /**
+   * When enabled, the importer publishes the gauge {@code operate.import.position} with the highest
+   * Zeebe log position imported per partition. Compare it with Zeebe's {@code
+   * zeebe.exporter.last.exported.position} and {@code zeebe.log.appender.last.committed.position}
+   * of the same partition to see how far the importer is behind.
+   */
+  private boolean importPositionMetricEnabled = false;
+
   public boolean isStartLoadingDataOnStartup() {
     return startLoadingDataOnStartup;
   }
@@ -210,6 +218,16 @@ public class ImportProperties {
 
   public ImportProperties setMaxEmptyRuns(final int maxEmptyRuns) {
     this.maxEmptyRuns = maxEmptyRuns;
+    return this;
+  }
+
+  public boolean isImportPositionMetricEnabled() {
+    return importPositionMetricEnabled;
+  }
+
+  public ImportProperties setImportPositionMetricEnabled(
+      final boolean importPositionMetricEnabled) {
+    this.importPositionMetricEnabled = importPositionMetricEnabled;
     return this;
   }
 }
