@@ -19,6 +19,7 @@ import io.camunda.zeebe.protocol.EnumValue;
 import io.camunda.zeebe.protocol.ScopedColumnFamily;
 import java.util.ArrayList;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 
 final class SqliteLargeScanTest extends ConformanceDbTestBase {
 
@@ -28,6 +29,28 @@ final class SqliteLargeScanTest extends ConformanceDbTestBase {
   protected <T extends Enum<? extends EnumValue> & EnumValue & ScopedColumnFamily>
       ZeebeDbFactory<T> factory() {
     return new SqliteDbFactory<>();
+  }
+
+  @Test
+  @Timeout(60)
+  void shouldVisitAllRowsWhenSingleValueExceedsBatchSizeLimit() {
+    // given every value alone is larger than the size limit of a batch, which must still advance
+    final var cf = columnFamily(Cf.ONE, new DbLong(), new DbString());
+    final var hugeValue = dbString("x".repeat(1_500_000));
+    for (long i = 0; i < 4; i++) {
+      cf.insert(dbLong(i), hugeValue);
+    }
+
+    // when
+    final var visited = new ArrayList<Long>();
+    cf.whileTrue(
+        (k, v) -> {
+          visited.add(k.getValue());
+          return true;
+        });
+
+    // then
+    assertThat(visited).containsExactly(0L, 1L, 2L, 3L);
   }
 
   @Test

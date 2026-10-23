@@ -729,7 +729,10 @@ final class SqliteColumnFamily<
               values.add(value);
               bytes += value.length;
             }
-            if (bytes >= MAX_BATCH_BYTES) {
+            // a resumed batch starts with the row that was visited last, which is not new progress,
+            // so the size limit applies once the batch holds a row that was not visited yet
+            final int rowsAlreadyVisited = resuming ? 1 : 0;
+            if (bytes >= MAX_BATCH_BYTES && keys.size() > rowsAlreadyVisited) {
               fullBatch = true;
               break;
             }
