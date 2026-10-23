@@ -1341,8 +1341,7 @@
 			"decisions": {
 				"title": "Decisiones",
 				"scaffold": {
-					"filtersPanelPlaceholder": "Marcador de posición del panel de filtros",
-					"decisionPanelPlaceholder": "Marcador de posición del panel de decisión"
+					"filtersPanelPlaceholder": "Marcador de posición del panel de filtros"
 				},
 				"diagramHeader": {
 					"title": "Decisión",
@@ -1355,7 +1354,8 @@
 					"selectSingleTenant": "Para ver una tabla de decisión o una expresión literal, seleccione un solo inquilino",
 					"noDecisionSelected": "No hay ninguna decisión seleccionada",
 					"selectDecisionInFilters": "Para ver una tabla de decisión o una expresión literal, seleccione una decisión en el panel de filtros",
-					"decisionNotFoundTitle": "No se pudo encontrar la decisión"
+					"decisionNotFoundTitle": "No se pudo encontrar la decisión",
+					"ariaLabel": "Panel de decisión"
 				},
 				"filters": {
 					"tenant": "Inquilino",
@@ -2138,6 +2138,8 @@
 					"resultCountMore": "{{count}}+ resultados"
 				},
 				"diagramShell": {
+					"loading": "Cargando diagrama",
+					"content": "Contenido del diagrama",
 					"forbiddenMessage": "Permisos insuficientes para ver la definición",
 					"forbiddenAdditionalInfo": "Póngase en contacto con el propietario o administrador de su organización para obtener los permisos necesarios"
 				},
@@ -2202,7 +2204,8 @@
 					"copy": "Copiar",
 					"copied": "Copiado",
 					"copyToClipboard": "Copiar al portapapeles",
-					"copiedToClipboard": "Copiado al portapapeles"
+					"copiedToClipboard": "Copiado al portapapeles",
+					"copyFailed": "No se pudo copiar al portapapeles"
 				},
 				"filterMultiSelect": {
 					"chooseOption": "Elegir opción(es)"
