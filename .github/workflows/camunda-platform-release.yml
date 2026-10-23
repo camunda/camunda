@@ -1070,32 +1070,30 @@ jobs:
               ' \
             | tail -1 || true)
 
-          # The /logs endpoint returns a ZIP archive, so download it to a temp file and stream
-          # it through `unzip -p` before grepping. Capturing the binary archive into a shell
-          # variable and grepping it directly never matches the compressed Maven output.
-          logs_zip=""
+          # The job /logs endpoint currently returns plain text, but GitHub documents it as a
+          # downloadable archive. Detect a ZIP by its "PK" magic bytes and unpack it; otherwise
+          # read the log as-is.
+          deployment_id=""
           if [[ -z "${job_id}" ]]; then
             echo "::warning::Could not locate the Maven Release job via the API"
           else
-            logs_zip=$(mktemp)
-            if ! curl -fsSL \
+            logs_file=$(mktemp)
+            if curl -fsSL \
                 -H "Authorization: Bearer ${GH_TOKEN}" \
                 -H "Accept: application/vnd.github+json" \
-                -o "${logs_zip}" \
+                -o "${logs_file}" \
                 "${api}/actions/jobs/${job_id}/logs"; then
-              rm -f "${logs_zip}"
-              logs_zip=""
+              deployment_id=$(
+                if [[ "$(head -c 2 "${logs_file}")" == "PK" ]]; then
+                  unzip -p "${logs_file}"
+                else
+                  cat "${logs_file}"
+                fi \
+                | grep -oE 'deploymentId: [0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}' \
+                | tail -1 \
+                | awk '{print $2}' || true)
             fi
-          fi
-
-          if [[ -n "${logs_zip}" ]]; then
-            deployment_id=$(unzip -p "${logs_zip}" \
-              | grep -oE 'deploymentId: [0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}' \
-              | tail -1 \
-              | awk '{print $2}' || true)
-            rm -f "${logs_zip}"
-          else
-            deployment_id=""
+            rm -f "${logs_file}"
           fi
 
           if [[ -n "${deployment_id}" ]]; then
@@ -1238,32 +1236,30 @@ jobs:
               ' \
             | tail -1 || true)
 
-          # The /logs endpoint returns a ZIP archive, so download it to a temp file and stream
-          # it through `unzip -p` before grepping. Capturing the binary archive into a shell
-          # variable and grepping it directly never matches the compressed Maven output.
-          logs_zip=""
+          # The job /logs endpoint currently returns plain text, but GitHub documents it as a
+          # downloadable archive. Detect a ZIP by its "PK" magic bytes and unpack it; otherwise
+          # read the log as-is.
+          deployment_id=""
           if [[ -z "${job_id}" ]]; then
             echo "::warning::Could not locate the Maven Release job via the API"
           else
-            logs_zip=$(mktemp)
-            if ! curl -fsSL \
+            logs_file=$(mktemp)
+            if curl -fsSL \
                 -H "Authorization: Bearer ${GH_TOKEN}" \
                 -H "Accept: application/vnd.github+json" \
-                -o "${logs_zip}" \
+                -o "${logs_file}" \
                 "${api}/actions/jobs/${job_id}/logs"; then
-              rm -f "${logs_zip}"
-              logs_zip=""
+              deployment_id=$(
+                if [[ "$(head -c 2 "${logs_file}")" == "PK" ]]; then
+                  unzip -p "${logs_file}"
+                else
+                  cat "${logs_file}"
+                fi \
+                | grep -oE 'deploymentId: [0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}' \
+                | tail -1 \
+                | awk '{print $2}' || true)
             fi
-          fi
-
-          if [[ -n "${logs_zip}" ]]; then
-            deployment_id=$(unzip -p "${logs_zip}" \
-              | grep -oE 'deploymentId: [0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}' \
-              | tail -1 \
-              | awk '{print $2}' || true)
-            rm -f "${logs_zip}"
-          else
-            deployment_id=""
+            rm -f "${logs_file}"
           fi
 
           if [[ -n "${deployment_id}" ]]; then
