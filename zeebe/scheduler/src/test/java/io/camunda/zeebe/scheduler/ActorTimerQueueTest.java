@@ -24,6 +24,8 @@ import io.camunda.zeebe.scheduler.clock.ActorClock;
 import io.camunda.zeebe.scheduler.clock.DefaultActorClock;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 final class ActorTimerQueueTest {
 
@@ -50,6 +52,28 @@ final class ActorTimerQueueTest {
     // given
     when(clock.getTimeMillis()).thenReturn(1_000L);
     final var queue = new ActorTimerQueue(clock);
+    final var timers = new TimerSubscription[20];
+    for (int i = 0; i < timers.length; i++) {
+      timers[i] = timerWithDeadline(1_003L + i * 7L);
+      queue.schedule(timers[i], clock);
+    }
+
+    // when
+    when(clock.getTimeMillis()).thenReturn(2_000L);
+    queue.processExpiredTimers(clock);
+
+    // then
+    for (final var timer : timers) {
+      verify(timer).onTimerExpired(any(), anyLong());
+    }
+  }
+
+  @ParameterizedTest
+  @ValueSource(ints = {2, 8, 32, 128, 1024})
+  void shouldExpireAllDueTimersInSingleCallForAnyWheelSize(final int ticksPerWheel) {
+    // given - timers spread over more or fewer spokes than the wheel has
+    when(clock.getTimeMillis()).thenReturn(1_000L);
+    final var queue = new ActorTimerQueue(clock, ticksPerWheel);
     final var timers = new TimerSubscription[20];
     for (int i = 0; i < timers.length; i++) {
       timers[i] = timerWithDeadline(1_003L + i * 7L);
