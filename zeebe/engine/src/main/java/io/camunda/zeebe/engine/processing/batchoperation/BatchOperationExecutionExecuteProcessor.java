@@ -123,8 +123,6 @@ public final class BatchOperationExecutionExecuteProcessor
       return;
     }
 
-    executionRecord.setStorageOrdinal(batchOperation.getStorageOrdinal());
-
     // if suspended, skip execution and stop the EXECUTE-loop
     if (batchOperation.isSuspended()) {
       final var message = "Batch operation '%d' is suspended.".formatted(batchKey);

@@ -92,8 +92,6 @@ public final class BatchOperationPartitionLifecycleFailPartitionProcessor
       return;
     }
 
-    command.getValue().setStorageOrdinal(bo.getStorageOrdinal());
-
     // we need this event for every partition that failed, so that the lead partition state can
     // collect all of them. That's why in this case, we don't append this event in the normal
     // FailProcessor. (Would be duplicated otherwise)

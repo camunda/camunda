@@ -100,8 +100,6 @@ public final class BatchOperationPartitionLifecycleCompletePartitionProcessor
       return;
     }
 
-    command.getValue().setStorageOrdinal(bo.getStorageOrdinal());
-
     // mark the source partition as finished. This information is directly applied and present
     // in the batch operation state
     stateWriter.appendFollowUpEvent(
