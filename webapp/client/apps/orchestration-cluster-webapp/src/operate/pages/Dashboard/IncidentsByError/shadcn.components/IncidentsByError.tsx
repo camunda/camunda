@@ -40,7 +40,6 @@ const IncidentsByError: React.FC = () => {
 		isFetchPreviousPageError,
 	} = useInfiniteQuery({
 		...incidentsByErrorInfiniteQuery(),
-		// Mirrors legacy: poll only while the list is still on a single page.
 		refetchInterval: (query) => getIncidentsByErrorRefetchInterval(query.state.data?.pages.length ?? 1),
 	});
 

@@ -46,7 +46,6 @@ const InstancesByProcess: React.FC = () => {
 		isFetchPreviousPageError,
 	} = useInfiniteQuery({
 		...instancesByProcessInfiniteQuery(),
-		// Mirrors legacy: poll only while the list is still on a single page.
 		refetchInterval: (query) => getInstancesByProcessRefetchInterval(query.state.data?.pages.length ?? 1),
 	});
 
