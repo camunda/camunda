@@ -14,8 +14,8 @@ const currentUserSchema = z.object({
 	// username instead of a 401. Earlier 8.10 patch releases do not send the flag.
 	anonymous: z.boolean().optional(),
 	username: z.string().nullable(),
-	displayName: z.string(),
-	email: z.string(),
+	displayName: z.string().nullable(),
+	email: z.string().nullable(),
 	authorizedComponents: z.array(z.string()),
 	tenants: z.array(
 		z.object({
