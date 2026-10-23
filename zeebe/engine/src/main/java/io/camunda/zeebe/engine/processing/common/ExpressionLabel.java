@@ -78,8 +78,17 @@ public record ExpressionLabel(@Nullable String kind, @Nullable String target) {
     return new ExpressionLabel("version tag expression", businessRuleTask(businessRuleTaskId));
   }
 
+  /** Labels an expression as the signal name expression of a throwing or catching event. */
+  public static ExpressionLabel signalNameExpression(final DirectBuffer eventId) {
+    return new ExpressionLabel("signal name expression", event(eventId));
+  }
+
   private static String businessRuleTask(final DirectBuffer businessRuleTaskId) {
     return "business rule task '%s'".formatted(BufferUtil.bufferAsString(businessRuleTaskId));
+  }
+
+  private static String event(final DirectBuffer eventId) {
+    return "event '%s'".formatted(BufferUtil.bufferAsString(eventId));
   }
 
   /**
