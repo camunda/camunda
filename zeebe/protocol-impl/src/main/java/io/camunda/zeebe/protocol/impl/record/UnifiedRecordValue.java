@@ -37,6 +37,7 @@ import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRequiremen
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentDistributionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.FormRecord;
+import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessDefinitionRestoreRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.ResourceRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.ResourceReexportRecord;
@@ -189,6 +190,7 @@ public class UnifiedRecordValue extends UnpackedObject implements RecordValue {
       case ValueType.SIGNAL -> new SignalRecord();
       case ValueType.COMMAND_DISTRIBUTION -> new CommandDistributionRecord();
       case ValueType.PROCESS_INSTANCE_BATCH -> new ProcessInstanceBatchRecord();
+      case ValueType.PROCESS_DEFINITION_RESTORE -> new ProcessDefinitionRestoreRecord();
       case ValueType.BUFFERED_COMMAND -> new BufferedCommandRecord();
       case ValueType.PROCESS_INSTANCE_BUSINESS_ID -> new ProcessInstanceBusinessIdRecord();
       case ValueType.RESOURCE_DELETION -> new ResourceDeletionRecord();

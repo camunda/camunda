@@ -16,7 +16,15 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.camunda.zeebe.db.ColumnFamily;
+import io.camunda.zeebe.db.TransactionContext;
+import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.ZeebeDbInconsistentException;
+import io.camunda.zeebe.db.impl.DbCompositeKey;
+import io.camunda.zeebe.db.impl.DbLong;
+import io.camunda.zeebe.db.impl.DbString;
+import io.camunda.zeebe.db.impl.DbTenantAwareKey;
+import io.camunda.zeebe.db.impl.DbTenantAwareKey.PlacementType;
 import io.camunda.zeebe.el.ExpressionLanguageMetrics;
 import io.camunda.zeebe.engine.processing.deployment.model.BpmnFactory;
 import io.camunda.zeebe.engine.processing.deployment.model.element.AbstractFlowElement;
@@ -30,6 +38,7 @@ import io.camunda.zeebe.engine.util.ProcessingStateExtension;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.protocol.Protocol;
+import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
@@ -53,6 +62,8 @@ public final class ProcessStateTest {
   private static final String TENANT_ID = "defaultTenant";
   private MutableProcessState processState;
   private MutableProcessingState processingState;
+  private ZeebeDb<ZbColumnFamilies> zeebeDb;
+  private TransactionContext transactionContext;
 
   @BeforeEach
   public void setUp() {
@@ -904,6 +915,122 @@ public final class ProcessStateTest {
     final var updatedProcess =
         processState.getProcessByKeyAndTenant(processDefinitionKey, processRecord.getTenantId());
     assertThat(updatedProcess.getState()).isEqualTo(PersistedProcessState.PENDING_DELETION);
+  }
+
+  @Test
+  public void shouldRestoreStrayPendingDeletionProcessBackToActive() {
+    // given
+    final long processDefinitionKey = 100L;
+    final var processRecord = creatingProcessRecord(processingState).setKey(processDefinitionKey);
+    processState.putProcess(processDefinitionKey, processRecord);
+    processState.updateProcessState(processRecord, PersistedProcessState.PENDING_DELETION);
+
+    // when
+    processState.restoreFromPendingDeletion(processRecord.getTenantId(), processDefinitionKey);
+
+    // then
+    final var restored =
+        processState.getProcessByKeyAndTenant(processDefinitionKey, processRecord.getTenantId());
+    assertThat(restored.getState()).isEqualTo(PersistedProcessState.ACTIVE);
+  }
+
+  @Test
+  public void shouldRestoreTheByVersionCopyOfAStrayPendingDeletionProcess() {
+    // given - the write bug left PENDING_DELETION in both the by-key and the by-version copy
+    final long processDefinitionKey = 100L;
+    final var processRecord = creatingProcessRecord(processingState).setKey(processDefinitionKey);
+    processState.putProcess(processDefinitionKey, processRecord);
+    processState.updateProcessState(processRecord, PersistedProcessState.PENDING_DELETION);
+
+    final var tenantId = new DbString();
+    final var processId = new DbString();
+    final var version = new DbLong();
+    final var tenantAwareKey =
+        new DbTenantAwareKey<>(
+            tenantId, new DbCompositeKey<>(processId, version), PlacementType.PREFIX);
+    final ColumnFamily<DbTenantAwareKey<DbCompositeKey<DbString, DbLong>>, PersistedProcess>
+        byVersion =
+            zeebeDb.createColumnFamily(
+                ZbColumnFamilies.PROCESS_CACHE_BY_ID_AND_VERSION,
+                transactionContext,
+                tenantAwareKey,
+                new PersistedProcess());
+    tenantId.wrapString(processRecord.getTenantId());
+    processId.wrapString(processRecord.getBpmnProcessId());
+    version.wrapLong(processRecord.getVersion());
+    final var stale = byVersion.get(tenantAwareKey);
+    stale.setState(PersistedProcessState.PENDING_DELETION);
+    byVersion.update(tenantAwareKey, stale);
+
+    // when
+    processState.restoreFromPendingDeletion(processRecord.getTenantId(), processDefinitionKey);
+
+    // then
+    assertThat(byVersion.get(tenantAwareKey).getState()).isEqualTo(PersistedProcessState.ACTIVE);
+  }
+
+  @Test
+  public void shouldNotRestoreProcessThatIsNotPendingDeletion() {
+    // given - an ACTIVE process never touched by the stray PENDING_DELETION bug
+    final long processDefinitionKey = 100L;
+    final var processRecord = creatingProcessRecord(processingState).setKey(processDefinitionKey);
+    processState.putProcess(processDefinitionKey, processRecord);
+
+    // when
+    processState.restoreFromPendingDeletion(processRecord.getTenantId(), processDefinitionKey);
+
+    // then - still ACTIVE, restoring is a no-op
+    final var process =
+        processState.getProcessByKeyAndTenant(processDefinitionKey, processRecord.getTenantId());
+    assertThat(process.getState()).isEqualTo(PersistedProcessState.ACTIVE);
+  }
+
+  @Test
+  public void shouldNotRestoreDrainingProcess() {
+    // given - DRAINING must never be treated as a stray PENDING_DELETION row
+    final long processDefinitionKey = 100L;
+    final var processRecord = creatingProcessRecord(processingState).setKey(processDefinitionKey);
+    processState.putProcess(processDefinitionKey, processRecord);
+    processState.markDraining(processRecord);
+
+    // when
+    processState.restoreFromPendingDeletion(processRecord.getTenantId(), processDefinitionKey);
+
+    // then
+    final var process =
+        processState.getProcessByKeyAndTenant(processDefinitionKey, processRecord.getTenantId());
+    assertThat(process.getState()).isEqualTo(PersistedProcessState.DRAINING);
+  }
+
+  @Test
+  public void shouldNotRestoreProcessThatNoLongerExists() {
+    // when - restoring a definition key that was never persisted
+    processState.restoreFromPendingDeletion(TENANT_ID, 404L);
+
+    // then - no exception, nothing to restore
+    final var process = processState.getProcessByKeyAndTenant(404L, TENANT_ID);
+    assertThat(process).isNull();
+  }
+
+  @Test
+  public void shouldReturnFalseWhenProcessDefinitionRestoreHasNotRun() {
+    // when
+    final boolean hasRun = processState.hasRunProcessDefinitionRestore();
+
+    // then
+    assertThat(hasRun).isFalse();
+  }
+
+  @Test
+  public void shouldReturnTrueAfterProcessDefinitionRestoreIsMarkedAsRun() {
+    // given
+    processState.markProcessDefinitionRestoreAsRun();
+
+    // when
+    final boolean hasRun = processState.hasRunProcessDefinitionRestore();
+
+    // then
+    assertThat(hasRun).isTrue();
   }
 
   @Test

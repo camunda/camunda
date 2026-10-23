@@ -77,6 +77,9 @@ import io.camunda.zeebe.engine.processing.message.MessageEventProcessors;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.metrics.job.JobMetricsProcessors;
 import io.camunda.zeebe.engine.processing.metrics.usage.UsageMetricsProcessors;
+import io.camunda.zeebe.engine.processing.resource.ProcessDefinitionRestoreContinueProcessor;
+import io.camunda.zeebe.engine.processing.resource.ProcessDefinitionRestoreStartProcessor;
+import io.camunda.zeebe.engine.processing.resource.ProcessDefinitionRestoreTrigger;
 import io.camunda.zeebe.engine.processing.resource.ProcessDeleteCompleteProcessor;
 import io.camunda.zeebe.engine.processing.resource.ResourceDeletionDeleteProcessor;
 import io.camunda.zeebe.engine.processing.resource.ResourceFetchProcessor;
@@ -109,6 +112,7 @@ import io.camunda.zeebe.protocol.record.intent.ConditionalEvaluationIntent;
 import io.camunda.zeebe.protocol.record.intent.DecisionEvaluationIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessDefinitionRestoreIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.protocol.record.intent.ResourceDeletionIntent;
 import io.camunda.zeebe.protocol.record.intent.ResourceIntent;
@@ -906,6 +910,19 @@ public final class EngineProcessors {
         ValueType.RESOURCE_REEXPORT,
         ResourceReexportIntent.REEXPORT,
         new ResourceReexportReexportProcessor(writers, processingState));
+
+    // Startup cleanup to restore stray resting PENDING_DELETION process definitions
+    typedRecordProcessors.withListener(
+        new ProcessDefinitionRestoreTrigger(
+            config.isEnableProcessDefinitionRestore(), processingState.getProcessState()));
+    typedRecordProcessors.onCommand(
+        ValueType.PROCESS_DEFINITION_RESTORE,
+        ProcessDefinitionRestoreIntent.START,
+        new ProcessDefinitionRestoreStartProcessor(writers, processingState.getProcessState()));
+    typedRecordProcessors.onCommand(
+        ValueType.PROCESS_DEFINITION_RESTORE,
+        ProcessDefinitionRestoreIntent.CONTINUE,
+        new ProcessDefinitionRestoreContinueProcessor(writers, processingState));
   }
 
   private static void addSignalBroadcastProcessors(

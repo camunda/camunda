@@ -69,6 +69,8 @@ final class EngineCfgTest {
         .isEqualTo(EngineConfiguration.DEFAULT_BUSINESS_ID_UNIQUENESS_ENABLED);
     assertThat(configuration.isEnableRpaReexportMigration())
         .isEqualTo(EngineConfiguration.DEFAULT_ENABLE_RPA_REEXPORT_MIGRATION);
+    assertThat(configuration.isEnableProcessDefinitionRestore())
+        .isEqualTo(EngineConfiguration.DEFAULT_ENABLE_PROCESS_DEFINITION_RESTORE);
     assertThat(configuration.getGroupNameCacheCapacity())
         .isEqualTo(EngineConfiguration.DEFAULT_GROUP_NAME_CACHE_CAPACITY);
     assertThat(configuration.isCandidateGroupNameResolution())
@@ -134,6 +136,7 @@ final class EngineCfgTest {
     assertThat(configuration.getExpressionEvaluationTimeout()).isEqualTo(Duration.ofSeconds(2));
     assertThat(configuration.isBusinessIdUniquenessEnabled()).isTrue();
     assertThat(configuration.isEnableRpaReexportMigration()).isFalse();
+    assertThat(configuration.isEnableProcessDefinitionRestore()).isFalse();
     assertThat(configuration.getGroupNameCacheCapacity()).isEqualTo(2000);
     assertThat(configuration.isCandidateGroupNameResolution()).isFalse();
     assertThat(configuration.isArchiverlessEnabled()).isTrue();
