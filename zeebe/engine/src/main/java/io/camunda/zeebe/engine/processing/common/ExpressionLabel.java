@@ -9,6 +9,8 @@ package io.camunda.zeebe.engine.processing.common;
 
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Describes the business role of an expression and, optionally, the specific element it belongs to,
@@ -38,7 +40,8 @@ import org.agrona.DirectBuffer;
  *     to (e.g. {@code "sequence flow 's2'"}), or {@code null} if not applicable; must be {@code
  *     null} if {@code kind} is {@code null}
  */
-public record ExpressionLabel(String kind, String target) {
+@NullMarked
+public record ExpressionLabel(@Nullable String kind, @Nullable String target) {
 
   /** A label that adds no additional context to the failure message. */
   public static final ExpressionLabel NONE = new ExpressionLabel(null, null);
@@ -63,6 +66,20 @@ public record ExpressionLabel(String kind, String target) {
     return new ExpressionLabel(
         "condition expression",
         "sequence flow '%s'".formatted(BufferUtil.bufferAsString(sequenceFlowId)));
+  }
+
+  /** Labels an expression as the decision id expression of a business rule task. */
+  public static ExpressionLabel decisionIdExpression(final DirectBuffer businessRuleTaskId) {
+    return new ExpressionLabel("decision id expression", businessRuleTask(businessRuleTaskId));
+  }
+
+  /** Labels an expression as the version tag expression of a business rule task. */
+  public static ExpressionLabel versionTagExpression(final DirectBuffer businessRuleTaskId) {
+    return new ExpressionLabel("version tag expression", businessRuleTask(businessRuleTaskId));
+  }
+
+  private static String businessRuleTask(final DirectBuffer businessRuleTaskId) {
+    return "business rule task '%s'".formatted(BufferUtil.bufferAsString(businessRuleTaskId));
   }
 
   /**

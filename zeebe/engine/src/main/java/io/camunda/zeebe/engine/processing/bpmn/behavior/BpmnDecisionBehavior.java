@@ -13,6 +13,7 @@ import io.camunda.zeebe.el.Expression;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.camunda.zeebe.engine.processing.common.DecisionBehavior;
 import io.camunda.zeebe.engine.processing.common.EventTriggerBehavior;
+import io.camunda.zeebe.engine.processing.common.ExpressionLabel;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCalledDecision;
@@ -71,9 +72,8 @@ public final class BpmnDecisionBehavior {
   public Either<Failure, DecisionEvaluationResult> evaluateDecision(
       final ExecutableCalledDecision element, final BpmnElementContext context) {
     final var scopeKey = context.getElementInstanceKey();
-    final var tenantId = context.getTenantId();
 
-    final var decisionIdOrFailure = evalDecisionIdExpression(element, scopeKey, tenantId);
+    final var decisionIdOrFailure = evalDecisionIdExpression(element, context);
     if (decisionIdOrFailure.isLeft()) {
       return Either.left(decisionIdOrFailure.getLeft());
     }
@@ -136,9 +136,7 @@ public final class BpmnDecisionBehavior {
     return switch (bindingType) {
       case deployment -> getDecisionVersionInSameDeployment(decisionId, context);
       case latest -> getLatestDecisionVersion(decisionId, context.getTenantId());
-      case versionTag ->
-          getLatestDecisionVersionWithVersionTag(
-              decisionId, versionTag, context.getElementInstanceKey(), context.getTenantId());
+      case versionTag -> getLatestDecisionVersionWithVersionTag(decisionId, versionTag, context);
     };
   }
 
@@ -158,12 +156,14 @@ public final class BpmnDecisionBehavior {
   }
 
   private Either<Failure, PersistedDecision> getLatestDecisionVersionWithVersionTag(
-      final String decisionId,
-      final Expression versionTag,
-      final long scopeKey,
-      final String tenantId) {
+      final String decisionId, final Expression versionTag, final BpmnElementContext context) {
+    final var tenantId = context.getTenantId();
     return expressionBehavior
-        .evaluateStringExpression(versionTag, scopeKey, tenantId)
+        .evaluateStringExpression(
+            versionTag,
+            context.getElementInstanceKey(),
+            tenantId,
+            ExpressionLabel.versionTagExpression(context.getElementId()))
         .flatMap(
             evaluatedVersionTag ->
                 decisionBehavior.findDecisionByIdAndVersionTagAndTenant(
@@ -171,8 +171,12 @@ public final class BpmnDecisionBehavior {
   }
 
   private Either<Failure, String> evalDecisionIdExpression(
-      final ExecutableCalledDecision element, final long scopeKey, final String tenantId) {
-    return expressionBehavior.evaluateStringExpression(element.getDecisionId(), scopeKey, tenantId);
+      final ExecutableCalledDecision element, final BpmnElementContext context) {
+    return expressionBehavior.evaluateStringExpression(
+        element.getDecisionId(),
+        context.getElementInstanceKey(),
+        context.getTenantId(),
+        ExpressionLabel.decisionIdExpression(context.getElementId()));
   }
 
   private void writeDecisionEvaluationEvent(

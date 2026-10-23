@@ -159,8 +159,21 @@ public final class ExpressionProcessor {
    */
   public Either<Failure, String> evaluateStringExpression(
       final Expression expression, final long scopeKey, final String tenantId) {
-    return evaluateExpressionAsEither(expression, scopeKey, tenantId)
-        .flatMap(result -> typeCheck(result, ResultType.STRING, scopeKey))
+    return evaluateStringExpression(expression, scopeKey, tenantId, ExpressionLabel.NONE);
+  }
+
+  /**
+   * Like {@link #evaluateStringExpression(Expression, long, String)}, but labels the failure
+   * message, if any, with the given {@link ExpressionLabel} so it identifies what failed and what
+   * it targets. Pass {@link ExpressionLabel#NONE} for the generic wording.
+   */
+  public Either<Failure, String> evaluateStringExpression(
+      final Expression expression,
+      final long scopeKey,
+      final String tenantId,
+      final ExpressionLabel label) {
+    return evaluateExpressionAsEither(expression, scopeKey, tenantId, label)
+        .flatMap(result -> typeCheck(result, ResultType.STRING, scopeKey, label))
         .map(EvaluationResult::getString);
   }
 
