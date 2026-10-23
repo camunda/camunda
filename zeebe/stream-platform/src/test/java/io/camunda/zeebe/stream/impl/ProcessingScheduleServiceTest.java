@@ -24,6 +24,7 @@ import io.camunda.zeebe.logstreams.log.WriteContext;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.testing.ControlledActorSchedulerExtension;
 import io.camunda.zeebe.stream.api.scheduling.ProcessingScheduleService;
+import io.camunda.zeebe.stream.api.scheduling.RegeneratingTask;
 import io.camunda.zeebe.stream.api.scheduling.ScheduledCommandCache.NoopScheduledCommandCache;
 import io.camunda.zeebe.stream.api.scheduling.SimpleProcessingScheduleService.ScheduledTask;
 import io.camunda.zeebe.stream.api.scheduling.Task;
@@ -50,7 +51,10 @@ import org.assertj.core.data.Percentage;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 class ProcessingScheduleServiceTest {
 
@@ -60,12 +64,13 @@ class ProcessingScheduleServiceTest {
   private final TestCommandCache commandCache = new TestCommandCache();
   private LifecycleSupplier lifecycleSupplier;
   private final TestWriter testWriter = new TestWriter();
+  private ProcessingScheduleServiceImpl processingScheduleService;
   private TestScheduleServiceActorDecorator scheduleService;
 
   @BeforeEach
   void before() {
     lifecycleSupplier = new LifecycleSupplier();
-    final var processingScheduleService =
+    processingScheduleService =
         new ProcessingScheduleServiceImpl(
             lifecycleSupplier,
             lifecycleSupplier,
@@ -297,6 +302,69 @@ class ProcessingScheduleServiceTest {
   }
 
   @Test
+  @Timeout(value = 30, threadMode = Timeout.ThreadMode.SEPARATE_THREAD)
+  void shouldRunSelfReschedulingRegeneratingTaskOncePerPeriodWhenRateLimited() {
+    // given a task that schedules its next execution itself, while the write stays rate limited
+    testWriter.acceptWrites.set(() -> false);
+    final var executions = new AtomicInteger(0);
+    final var task =
+        new RegeneratingTask() {
+          @Override
+          public TaskResult execute(final TaskResultBuilder builder) {
+            // unique key, as the test cache shares one staged cache between results
+            builder.appendCommandRecord(
+                executions.incrementAndGet(), ACTIVATE_ELEMENT, Records.processInstance(1));
+            processingScheduleService.runDelayed(Duration.ofSeconds(1), this);
+            return builder.build();
+          }
+
+          @Override
+          public void onResultAbandoned() {}
+        };
+
+    // when
+    scheduleService.runDelayed(Duration.ofSeconds(1), task);
+    actorScheduler.workUntilDone();
+    for (int period = 0; period < 5; period++) {
+      actorScheduler.updateClock(Duration.ofSeconds(1));
+      actorScheduler.workUntilDone();
+    }
+
+    // then
+    assertThat(executions)
+        .describedAs("abandoning a result does not schedule a second execution")
+        .hasValue(5);
+  }
+
+  @ParameterizedTest
+  @EnumSource(
+      value = LogStreamWriter.WriteFailure.class,
+      names = {"WRITE_LIMIT_EXHAUSTED", "REQUEST_LIMIT_EXHAUSTED"})
+  void shouldKeepRetryingPlainTaskInPlaceWhenRateLimited(
+      final LogStreamWriter.WriteFailure rateLimited) {
+    // given a rate limit that is lifted after more attempts than a regenerating task gets
+    final var attempts = new AtomicInteger(0);
+    final var executions = new AtomicInteger(0);
+    testWriter.failure = rateLimited;
+    testWriter.acceptWrites.set(() -> attempts.incrementAndGet() > 5);
+
+    // when
+    scheduleService.runDelayed(
+        Duration.ZERO,
+        builder -> {
+          executions.incrementAndGet();
+          builder.appendCommandRecord(1, ACTIVATE_ELEMENT, Records.processInstance(1));
+          return builder.build();
+        });
+    actorScheduler.workUntilDone();
+
+    // then
+    assertThat(executions).describedAs("the task is not run again").hasValue(1);
+    assertThat(attempts).describedAs("the same result is retried until accepted").hasValue(6);
+    assertThat(testWriter.entries).hasSize(1);
+  }
+
+  @Test
   void shouldNotRunScheduledTasksAfterClosed() {
     // given
     final var mockedTask = spy(new DummyTask());
@@ -371,6 +439,53 @@ class ProcessingScheduleServiceTest {
     assertThat(commandCache.stagedCache().contains(ACTIVATE_ELEMENT, 1)).isTrue();
     assertThat(commandCache.stagedCache().persisted()).isFalse();
     assertThat(commandCache.contains(ACTIVATE_ELEMENT, 1)).isFalse();
+  }
+
+  @ParameterizedTest
+  @EnumSource(
+      value = LogStreamWriter.WriteFailure.class,
+      names = {"WRITE_LIMIT_EXHAUSTED", "REQUEST_LIMIT_EXHAUSTED"})
+  void shouldAbandonResultOfRegeneratingTaskWhenRateLimitStaysExhausted(
+      final LogStreamWriter.WriteFailure rateLimited) {
+    // given
+    final var attempts = new AtomicInteger(0);
+    final var executions = new AtomicInteger(0);
+    testWriter.failure = rateLimited;
+    testWriter.acceptWrites.set(() -> attempts.incrementAndGet() > 1);
+
+    // when
+    scheduleService.runDelayed(
+        Duration.ZERO,
+        new RegeneratingTask() {
+          @Override
+          public TaskResult execute(final TaskResultBuilder builder) {
+            executions.incrementAndGet();
+            builder.appendCommandRecord(1, ACTIVATE_ELEMENT, Records.processInstance(1));
+            return builder.build();
+          }
+
+          @Override
+          public void onResultAbandoned() {
+            processingScheduleService.runDelayed(Duration.ofSeconds(1), this);
+          }
+        });
+    actorScheduler.workUntilDone();
+
+    // then - the first attempt fails, and the result is abandoned: nothing is written
+    assertThat(attempts).hasValue(1);
+    assertThat(executions).hasValue(1);
+    assertThat(testWriter.entries).isEmpty();
+    assertThat(commandCache.contains(ACTIVATE_ELEMENT, 1))
+        .describedAs("the result is removed from the scheduled command cache")
+        .isFalse();
+
+    // when the task runs again, because it rescheduled itself when its result was abandoned
+    actorScheduler.updateClock(Duration.ofSeconds(2));
+    actorScheduler.workUntilDone();
+
+    // then
+    assertThat(executions).hasValue(2);
+    assertThat(testWriter.entries).hasSize(1);
   }
 
   @Test
@@ -619,6 +734,7 @@ class ProcessingScheduleServiceTest {
   private static final class TestWriter implements LogStreamWriter {
     private final List<LogAppendEntry> entries = new CopyOnWriteArrayList<>();
     private final AtomicReference<BooleanSupplier> acceptWrites = new AtomicReference<>(() -> true);
+    private volatile WriteFailure failure = WriteFailure.WRITE_LIMIT_EXHAUSTED;
 
     @Override
     public boolean canWriteEvents(final int eventCount, final int batchSize) {
@@ -631,7 +747,7 @@ class ProcessingScheduleServiceTest {
         final List<LogAppendEntry> appendEntries,
         final long sourcePosition) {
       if (!acceptWrites.get().getAsBoolean()) {
-        return Either.left(WriteFailure.WRITE_LIMIT_EXHAUSTED);
+        return Either.left(failure);
       }
 
       entries.addAll(appendEntries);
