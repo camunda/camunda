@@ -260,3 +260,9 @@
 /.github/workflows/c8-orchestration-cluster-nightly-main-api-rdbms.yml            @camunda/test-automation-team
 /.github/workflows/c8-orchestration-cluster-nightly-main-e2e.yml                  @camunda/test-automation-team
 /.github/workflows/trigger-coverage-gate.yml                                      @camunda/test-automation-team
+
+# AI PR review trial (camunda/pr-review-agent): each pod owns its caller and config
+/.github/workflows/ai-pr-review-operate-admin.yml   @camunda/operate-admin-pod
+/.github/pr-review-agent/operate-admin.yml          @camunda/operate-admin-pod
+/.github/workflows/ai-pr-review-tasklist.yml        @camunda/employee-engagement-tasklist
+/.github/pr-review-agent/tasklist.yml               @camunda/employee-engagement-tasklist
