@@ -59,7 +59,12 @@ test('should match the resized decisions panels snapshot after dragging the resi
 	await expect(page).toHaveScreenshot();
 });
 
-test('should match the filters panel snapshot with populated optional filters', async ({page}) => {
+test('should match the filters panel snapshot with populated optional filters', async ({network, page}) => {
+	network.use(
+		mockQueryDecisionInstancesEndpoint({
+			successResponse: HttpResponse.json(createQueryDecisionInstancesResponse()),
+		}),
+	);
 	await page.goto(
 		'/operate-preview/decisions?evaluated=true&failed=true&businessId=eq_order-1&processInstanceKey=2251799813685249&evaluationDateFrom=2024-01-01T00:00:00.000Z&evaluationDateTo=2024-01-02T00:00:00.000Z',
 	);
