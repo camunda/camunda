@@ -1901,3 +1901,36 @@ next to the pin, not as the default.
   can repeat across branches, so a restore names the timeline when an id is ambiguous.
 
 Not implemented in the PoC.
+
+### 25.9 Known limits: deleting backups
+
+From reading the code (not run). The PoC does not change `CheckpointDeleteBackupProcessor`,
+`BackupRetention` or the delete API.
+
+- **Old backups are deleted as before.** The handover never deletes them (section 18); retention
+  deletes them by age and `DELETE /actuator/backups/{id}` works for them, both unchanged. After the
+  handover nothing is uploaded any more, so retention's anchor stays at the last old backup and its
+  window is measured from there, not from now: the old side shrinks to the window before the
+  handover and then stays, together with the `handover/<H>.json` files. Nothing removes that rest.
+- **Deleting a backup taken after the handover does nothing.** The API writes `DELETE_BACKUP`; the
+  processor removes the checkpoint from `CHECKPOINTS` (where archive checkpoints never are, it holds
+  confirmed old backups only), deletes it from the old store (where nothing exists for it) and does
+  not touch `LOG_ARCHIVE_BACKUP_CHECKPOINTS`. The delete reports success, but the backup is still
+  listed as `COMPLETED`, still restorable and still counts for the hold floor. Retention does not see
+  archive checkpoints at all (they are not in the old store); within the window that is fine, since
+  the hold moving past them lets their log go, but their checkpoints and snapshots stay (no snapshot
+  retention, 25.7).
+- **Two retention windows.** The old backup retention window and `logArchive.retentionWindow` are
+  configured separately; if they differ, restore points before and after the handover age
+  differently.
+
+Needed:
+
+1. A delete entry in the commit log for an archive checkpoint: it leaves status and listing, is no
+   longer a restore target (restore refuses it), ends its protection or its pin (25.8), and its
+   snapshot may go with snapshot retention (25.7).
+2. The old side after the handover: delete old backups once the archive covers the window on its
+   own, or keep them on purpose and document it.
+3. One retention window for both sides, or a startup check that they agree.
+
+Not implemented in the PoC.
