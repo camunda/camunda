@@ -250,13 +250,17 @@ export class OperateFiltersPanelPage {
   async selectVersion(option: string) {
     await expect(this.processNameFilter).toBeVisible();
     await expect(this.processVersionFilter).toBeEnabled();
-    // The version dropdown can fail to open, or render before its options have
-    // loaded; retry opening it until the target option is present.
     await expect(async () => {
-      await this.processVersionFilter.click();
-      await expect(this.getOptionByName(option)).toBeVisible({timeout: 5_000});
+      if (
+        (await this.processVersionFilter.getAttribute('aria-expanded')) !==
+        'true'
+      ) {
+        await this.processVersionFilter.click();
+      }
+      const optionLocator = this.getOptionByName(option);
+      await expect(optionLocator).toBeVisible({timeout: 5_000});
+      await optionLocator.click({timeout: 5_000});
     }).toPass({timeout: 30_000});
-    await this.getOptionByName(option).click({timeout: 30000});
   }
 
   async selectFlowNode(option: string) {

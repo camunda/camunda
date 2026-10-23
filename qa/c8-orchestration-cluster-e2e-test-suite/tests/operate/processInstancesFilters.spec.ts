@@ -820,6 +820,7 @@ test.describe('Process Instances Filters', () => {
           await page.reload();
         },
       });
+      await operateFiltersPanelPage.selectVersion('1');
       await expect(operateDiagramPage.diagram).toBeVisible();
     });
 
@@ -919,9 +920,7 @@ test.describe('Process Instances Filters', () => {
 
     await test.step('Click on the "Process" link button in the header and assert the results', async () => {
       await operateHomePage.clickProcessesTab();
-      await expect(
-        operateFiltersPanelPage.processInstanceKeysFilter,
-      ).toBeHidden();
+      await expect(page).not.toHaveURL(/[?&](?:processInstanceKey|variable)=/);
       await operateFiltersPanelPage.validateCheckedState(
         [
           operateFiltersPanelPage.activeInstancesCheckbox,
