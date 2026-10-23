@@ -184,9 +184,9 @@ paths:
                 $ref: "problem-detail.yaml#/components/schemas/ProblemDetail"
         "409":
           description: >-
-            The process definition is still draining and `deleteHistory` is `true`. Its history can
-            only be deleted once the drain finishes, so retry without `deleteHistory` or after the
-            definition is deleted.
+            The process definition is still draining, so its history cannot be deleted yet. Retry
+            with `deleteHistory` set to `true` once the definition is fully deleted; the batch
+            operation is then created immediately.
           content:
             application/problem+json:
               schema:
