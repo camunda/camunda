@@ -169,7 +169,7 @@ public class ProcessInstanceRestService extends InternalAPIErrorController {
       @PathVariable @ValidLongId final String processInstanceId,
       @PathVariable final String variableId) {
     checkIdentityReadPermission(Long.parseLong(processInstanceId));
-    return variableReader.getVariable(variableId);
+    return variableReader.getVariable(processInstanceId, variableId);
   }
 
   @Operation(summary = "Get listeners by process instance id")

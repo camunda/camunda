@@ -82,11 +82,14 @@ public class VariableReader extends AbstractReader
   }
 
   @Override
-  public VariableDto getVariable(final String id) {
+  public VariableDto getVariable(final String processInstanceId, final String id) {
     final IdsQueryBuilder idsQ = idsQuery().addIds(id);
+    final TermQueryBuilder processInstanceIdQ = termQuery(PROCESS_INSTANCE_KEY, processInstanceId);
     final SearchRequest searchRequest =
         ElasticsearchUtil.createSearchRequest(variableTemplate, ALL)
-            .source(new SearchSourceBuilder().query(idsQ));
+            .source(
+                new SearchSourceBuilder()
+                    .query(constantScoreQuery(joinWithAnd(idsQ, processInstanceIdQ))));
     try {
       final SearchResponse response = tenantAwareClient.search(searchRequest);
 
