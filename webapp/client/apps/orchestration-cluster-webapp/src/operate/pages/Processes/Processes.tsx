@@ -9,12 +9,13 @@
 import {useEffect, useMemo, useState} from 'react';
 import {useTranslation} from 'react-i18next';
 import {useQuery, useSuspenseQuery} from '@tanstack/react-query';
-import {useBlocker, useLocation, useNavigate} from '@tanstack/react-router';
+import {useBlocker, useLocation, useNavigate, useRouter} from '@tanstack/react-router';
 import {Form} from 'react-final-form';
 import {Button, Checkbox, ComboBox, Dropdown, Stack} from '@carbon/react';
 import type {ProcessDefinition} from '@camunda/camunda-api-zod-schemas/8.11';
 import {queries} from '#/shared/http/queries';
 import {ForbiddenError} from '#/shared/errors';
+import {notificationsStore} from '#/shared/notifications/notifications.store';
 import {getClientConfig} from '#/shared/config/getClientConfig';
 import {isSpecificTenant} from '#/operate/shared/utils/isSpecificTenant';
 import {ProcessesLayout, type ProcessesMode} from './ProcessesLayout';
@@ -70,6 +71,14 @@ type ProcessItem = {
 };
 
 const SESSION_FILTER_FIELDS = new Set(['variableName', 'variableValues']);
+const UNKNOWN_PROCESS_PARAMS = new Set(['process', 'version', 'processDefinitionId', 'processDefinitionVersion']);
+const DEFAULT_STATE_PARAMS = new Set([
+	'active=true',
+	'incidents=true',
+	'suspended=true',
+	'completed=false',
+	'canceled=false',
+]);
 
 // The variable fields follow session storage; re-initialising on their change would discard unsubmitted URL filter edits.
 function areUrlFilterValuesEqual(previous: Record<string, unknown> = {}, next: Record<string, unknown> = {}) {
@@ -102,6 +111,7 @@ const Processes: React.FC<Props> = ({
 }) => {
 	const {t} = useTranslation();
 	const navigate = useNavigate();
+	const router = useRouter();
 	const specificTenantId = isSpecificTenant(tenantId) ? tenantId : undefined;
 	const isMultiTenancyEnabled = getClientConfig().deployment.isMultiTenancyEnabled;
 	const {data} = useSuspenseQuery(latestDefinitionsQuery(specificTenantId));
@@ -116,6 +126,7 @@ const Processes: React.FC<Props> = ({
 		isPending: isDefinitionsPending,
 		isFetching: isDefinitionsFetching,
 		isError: isDefinitionsError,
+		dataUpdatedAt: definitionsUpdatedAt,
 		refetch: refetchSelectedDefinitions,
 	} = useQuery({
 		...selectedDefinitionsQuery(process ?? '', specificTenantId, {retry: false, requireComplete: true}),
@@ -126,6 +137,11 @@ const Processes: React.FC<Props> = ({
 		Boolean(process) && (isDefinitionsPending || (isDefinitionsError && isDefinitionsFetching));
 	const isDefinitionsReady =
 		Boolean(process) && selectedDefinitions !== undefined && !isDefinitionsLoading && !isDefinitionsError;
+	const selectionKey = `${process ?? ''}|${version ?? ''}|${specificTenantId ?? ''}`;
+	const [definitionsBaseline, setDefinitionsBaseline] = useState({selectionKey, updatedAt: definitionsUpdatedAt});
+	if (definitionsBaseline.selectionKey !== selectionKey) {
+		setDefinitionsBaseline({selectionKey, updatedAt: definitionsUpdatedAt});
+	}
 	const [visibleFilters, setVisibleFilters] = useState<OptionalFilter[]>([]);
 	const instanceMigrationState = useLocation({select: ({state}) => state.operateInstanceMigration});
 	const [migration, setMigration] = useState(() =>
@@ -282,6 +298,38 @@ const Processes: React.FC<Props> = ({
 
 		return {kind: 'single-version', definition};
 	}, [isDefinitionsReady, matchingDefinitions, specificTenantId, version]);
+	useEffect(() => {
+		if (!isDefinitionsReady || isDefinitionsFetching || processDefinitionSelection.kind !== 'no-match') {
+			return;
+		}
+		if (definitionsUpdatedAt <= definitionsBaseline.updatedAt) {
+			void refetchSelectedDefinitions();
+			return;
+		}
+		const {pathname, search, hash} = router.history.location;
+		const remainingParams = search
+			.slice(1)
+			.split('&')
+			.filter(
+				(param) =>
+					param !== '' && !DEFAULT_STATE_PARAMS.has(param) && !UNKNOWN_PROCESS_PARAMS.has(param.split('=')[0] ?? ''),
+			);
+		router.history.push(`${pathname}${remainingParams.length > 0 ? `?${remainingParams.join('&')}` : ''}${hash}`);
+		notificationsStore.displayNotification({
+			kind: 'error',
+			title: t('operate.processes.diagramPanel.processNotFoundTitle'),
+			isDismissable: true,
+		});
+	}, [
+		isDefinitionsReady,
+		isDefinitionsFetching,
+		processDefinitionSelection,
+		definitionsUpdatedAt,
+		definitionsBaseline,
+		refetchSelectedDefinitions,
+		router,
+		t,
+	]);
 	const selectedDefinitionKey =
 		processDefinitionSelection.kind === 'single-version'
 			? processDefinitionSelection.definition.processDefinitionKey

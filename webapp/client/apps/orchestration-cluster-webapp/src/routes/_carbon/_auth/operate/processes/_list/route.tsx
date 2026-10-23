@@ -7,6 +7,7 @@
  */
 
 import {createFileRoute, Outlet} from '@tanstack/react-router';
+import {t} from 'i18next';
 import {Processes} from '#/operate/pages/Processes/Processes';
 import {processesSearchSchema, stripLegacyProcessFilters} from '#/operate/pages/Processes/processesFilter';
 import {latestDefinitionsQuery} from '#/operate/shared/queries/processDefinitions.queries';
@@ -17,6 +18,7 @@ const Route = createFileRoute('/_carbon/_auth/operate/processes/_list')({
 	search: {middlewares: [stripLegacyProcessFilters]},
 	loaderDeps: ({search: {tenantId}}) => ({tenantId: isSpecificTenant(tenantId) ? tenantId : undefined}),
 	loader: ({context: {queryClient}, deps: {tenantId}}) => queryClient.ensureQueryData(latestDefinitionsQuery(tenantId)),
+	head: () => ({meta: [{title: t('operate.processes.pageTitle')}]}),
 	component: function ProcessesRoute() {
 		return (
 			<>

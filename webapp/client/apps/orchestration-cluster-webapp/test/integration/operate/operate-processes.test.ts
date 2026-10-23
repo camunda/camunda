@@ -36,6 +36,7 @@ import {
 	mockDeleteResourceEndpoint,
 	mockQueryElementInstancesEndpoint,
 	mockQueryVariablesEndpoint,
+	mockQueryAgentInstancesEndpoint,
 } from '#/shared-test-modules/mock-handlers';
 import {createCurrentUser} from '#/shared-test-modules/api-mocks/current-user';
 import {createLicense} from '#/shared-test-modules/api-mocks/license';
@@ -89,6 +90,7 @@ function getProcessInstanceShellHandlers({
 		mockGetProcessDefinitionXmlEndpoint({successResponse: HttpResponse.text(PROCESS_INSTANCE_XML)}),
 		mockQueryElementInstancesEndpoint({successResponse: HttpResponse.json(createPaginatedResponse())}),
 		mockQueryVariablesEndpoint({successResponse: HttpResponse.json(createPaginatedResponse())}),
+		mockQueryAgentInstancesEndpoint({successResponse: HttpResponse.json(createPaginatedResponse())}),
 	] as const;
 }
 
@@ -194,6 +196,7 @@ test.describe('Operate processes page', () => {
 		await page.getByRole('dialog').getByRole('button', {name: 'Continue'}).click();
 		await page.getByRole('button', {name: 'Next'}).click();
 		await expect(page.getByText('Migration step 2 - confirm')).toBeVisible();
+		await expect(page).toHaveTitle('Operate: Process Instances');
 		await page.getByRole('button', {name: 'Confirm'}).click();
 		const confirmation = page.getByRole('dialog', {name: 'Migration confirmation'});
 		await confirmation.getByRole('textbox', {name: 'Type MIGRATE to confirm'}).fill('MIGRATE');
@@ -395,11 +398,28 @@ test.describe('Operate processes page', () => {
 		await expect(page.getByRole('checkbox', {name: 'Select all items'})).not.toBeChecked();
 	});
 
-	test('should render the filters panel with the process combobox', async ({operateProcessesPage}) => {
+	test('should render the filters panel with the process combobox', async ({page, operateProcessesPage}) => {
 		await operateProcessesPage.goto();
 
 		await expect(operateProcessesPage.filtersPanel).toBeVisible();
 		await expect(operateProcessesPage.processCombobox).toBeVisible();
+		await expect(page).toHaveTitle('Operate: Process Instances');
+	});
+
+	test('should drop an unknown process from the URL and notify that it could not be found', async ({
+		page,
+		operateProcessesPage,
+	}) => {
+		await operateProcessesPage.goto('?processDefinitionId=testProcess&processDefinitionVersion=1');
+
+		await expect(page.getByRole('status').getByText('Process could not be found')).toBeVisible();
+		await expect(page).toHaveURL('/operate/processes');
+		await expect(operateProcessesPage.processCombobox).toHaveValue('');
+
+		await operateProcessesPage.goto('?process=testProcess&version=1&canceled=true&elementId=task-1');
+
+		await expect(page).toHaveURL(/^[^?]*\/operate\/processes\?canceled=true&elementId=task-1$/);
+		await expect(page.getByRole('checkbox', {name: 'Canceled'})).toBeChecked();
 	});
 
 	test('should synchronize the element combobox and diagram with URL history and instance requests', async ({
@@ -668,6 +688,8 @@ test.describe('Operate processes page', () => {
 		await expect(operateProcessesPage.elementCombobox).toBeDisabled();
 		await expect(operateProcessesPage.elementCombobox).toHaveValue('task-1');
 		await expect(operateProcessesPage.filtersPanel.getByRole('button', {name: 'Retry loading elements'})).toBeVisible();
+		await expect(page.getByRole('status').getByText('Process could not be found')).toHaveCount(0);
+		await expect(page).toHaveURL(/process=order-process/);
 
 		lookupFailureStatus = undefined;
 		await operateProcessesPage.filtersPanel.getByRole('button', {name: 'Retry loading elements'}).click();

@@ -19,6 +19,45 @@ import {
 	mockGetProcessDefinitionXmlEndpoint,
 } from '#/shared-test-modules/mock-handlers';
 
+test('should preserve legacy history bookmarks and their tenant and element selection on mobile', async ({
+	network,
+	page,
+	operateProcessInstancePage,
+}) => {
+	const instance = createProcessInstance({processInstanceKey: '2251799813756081', state: 'COMPLETED'});
+	const element = createElementInstance({
+		processInstanceKey: instance.processInstanceKey,
+		elementInstanceKey: '2251799813756082',
+		elementInstanceScopeKey: instance.processInstanceKey,
+		elementId: 'task-1',
+		elementName: 'Review invoice',
+		state: 'COMPLETED',
+	});
+	network.use(
+		...processInstanceHeaderHandlers(instance),
+		mockQueryElementInstancesEndpoint({
+			successResponse: HttpResponse.json(createPaginatedResponse({items: [element]})),
+		}),
+		mockGetElementInstanceEndpoint({successResponse: HttpResponse.json(element)}),
+	);
+	await page.setViewportSize({width: 800, height: 768});
+	await operateProcessInstancePage.goto(
+		instance.processInstanceKey,
+		`/instance-history?tenantId=tenant-a&elementId=task-1&elementInstanceKey=${element.elementInstanceKey}`,
+	);
+
+	await expect(page).toHaveURL(new RegExp(`/operate/processes/${instance.processInstanceKey}/history\\?`));
+	expect(new URL(page.url()).searchParams.get('tenantId')).toBe('tenant-a');
+	expect(new URL(page.url()).searchParams.get('elementId')).toBe('task-1');
+	expect(new URL(page.url()).searchParams.get('elementInstanceKey')).toBe(JSON.stringify(element.elementInstanceKey));
+	await expect(operateProcessInstancePage.historyTree).toBeVisible();
+	await expect(operateProcessInstancePage.historyTab).toHaveAttribute('aria-current', 'page');
+	await page.reload();
+	await expect(operateProcessInstancePage.historyTree).toBeVisible();
+	await expect(operateProcessInstancePage.historyTab).toHaveAttribute('aria-current', 'page');
+	expect(new URL(page.url()).searchParams.get('elementInstanceKey')).toBe(JSON.stringify(element.elementInstanceKey));
+});
+
 test('should select history instances from a direct tenant URL and clear only selection from the root', async ({
 	network,
 	page,
