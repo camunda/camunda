@@ -68,6 +68,20 @@ public record ExpressionLabel(@Nullable String kind, @Nullable String target) {
         "sequence flow '%s'".formatted(BufferUtil.bufferAsString(sequenceFlowId)));
   }
 
+  /** Labels an expression as the decision id expression of a business rule task. */
+  public static ExpressionLabel decisionIdExpression(final DirectBuffer businessRuleTaskId) {
+    return new ExpressionLabel("decision id expression", businessRuleTask(businessRuleTaskId));
+  }
+
+  /** Labels an expression as the version tag expression of a business rule task. */
+  public static ExpressionLabel versionTagExpression(final DirectBuffer businessRuleTaskId) {
+    return new ExpressionLabel("version tag expression", businessRuleTask(businessRuleTaskId));
+  }
+
+  private static String businessRuleTask(final DirectBuffer businessRuleTaskId) {
+    return "business rule task '%s'".formatted(BufferUtil.bufferAsString(businessRuleTaskId));
+  }
+
   /**
    * @return {@code true} if this label has a {@code kind} and should be used to add context to a
    *     failure message, {@code false} if it is {@link #NONE}
