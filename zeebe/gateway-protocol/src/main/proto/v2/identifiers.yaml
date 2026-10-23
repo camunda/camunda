@@ -104,7 +104,7 @@ components:
       x-semantic-type: GroupId
       x-semantic-client-minted: true
       minLength: 1
-      maxLength: 256
+      maxLength: 255
       # No `pattern` constraint: groupId validation is deployment-scoped.
       # `SecurityConfiguration.getCompiledGroupIdValidationPattern()` returns
       # `DEFAULT_EXTERNAL_ID_REGEX` (`.*`) when OIDC `groupsClaim` is
