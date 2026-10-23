@@ -39,6 +39,7 @@ const clientConfig: AdminAuthorizationsPageProps['clientConfig'] = {
 		SECRET: ['READ'],
 	},
 	defaultRoleIds: ['admin'],
+	isAdditionalIdpConfigured: false,
 };
 
 function getWrapper(queryClient: QueryClient) {

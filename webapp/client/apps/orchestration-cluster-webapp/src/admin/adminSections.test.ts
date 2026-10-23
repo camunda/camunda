@@ -8,7 +8,12 @@
 
 import {describe, expect, it} from 'vitest';
 import {ADMIN_NAV_ITEMS} from '#/shared/header/useSidebarNavigation.shadcn';
-import {getAdminLandingSection, isAdminSectionAvailable, type AdminSectionConfig} from './adminSections';
+import {
+	canManageMappingRuleMembers,
+	getAdminLandingSection,
+	isAdminSectionAvailable,
+	type AdminSectionConfig,
+} from './adminSections';
 
 const ALL_CONFIGS: AdminSectionConfig[] = [false, true].flatMap((isOidc) =>
 	[false, true].flatMap((isSaas) =>
@@ -58,6 +63,23 @@ describe('admin section availability', () => {
 		expect(isAdminSectionAvailable('roles', SELF_MANAGED)).toBe(true);
 		expect(isAdminSectionAvailable('roles', saasWithOidc)).toBe(true);
 		expect(isAdminSectionAvailable('operations-log', saasWithOidc)).toBe(true);
+	});
+});
+
+describe('mapping rule members', () => {
+	it('should be manageable with OIDC outside SaaS', () => {
+		expect(canManageMappingRuleMembers({...SELF_MANAGED, isOidc: true}, false)).toBe(true);
+	});
+
+	it('should be manageable on SaaS only with an additional IdP', () => {
+		const saas: AdminSectionConfig = {...SELF_MANAGED, isOidc: true, isSaas: true};
+
+		expect(canManageMappingRuleMembers(saas, false)).toBe(false);
+		expect(canManageMappingRuleMembers(saas, true)).toBe(true);
+	});
+
+	it('should not be manageable without OIDC', () => {
+		expect(canManageMappingRuleMembers(SELF_MANAGED, true)).toBe(false);
 	});
 });
 

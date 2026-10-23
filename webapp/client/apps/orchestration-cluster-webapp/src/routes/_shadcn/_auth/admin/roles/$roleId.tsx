@@ -11,7 +11,7 @@ import {createFileRoute, notFound, useNavigate, type ErrorComponentProps} from '
 import {useSuspenseQuery} from '@tanstack/react-query';
 import {z} from 'zod';
 import {PageLayout} from '@camunda/design-system';
-import {assertAdminSectionAvailable, getAdminSectionConfig} from '#/admin/adminSections';
+import {assertAdminSectionAvailable, canManageMappingRuleMembers, getAdminSectionConfig} from '#/admin/adminSections';
 import {MEMBER_KINDS, type MemberKind} from '#/admin/modules/roles/members';
 import {AdminRoleDetailPage} from '#/admin/pages/AdminRoleDetailPage';
 import {ForbiddenError} from '#/shared/errors';
@@ -61,7 +61,8 @@ export const Route = createFileRoute('/_shadcn/_auth/admin/roles/$roleId')({
 		const {tab} = Route.useSearch();
 		const {data: role} = useSuspenseQuery(queries.getRole(roleId));
 		const {data: clientConfig} = useSuspenseQuery(queries.adminClientConfig());
-		const {isOidc, isCamundaGroupsEnabled} = getAdminSectionConfig();
+		const sectionConfig = getAdminSectionConfig();
+		const {isOidc, isCamundaGroupsEnabled} = sectionConfig;
 
 		const handleTabChange = useCallback(
 			(nextTab: MemberKind) => {
@@ -78,6 +79,7 @@ export const Route = createFileRoute('/_shadcn/_auth/admin/roles/$roleId')({
 			<AdminRoleDetailPage
 				role={role}
 				isOidc={isOidc}
+				canManageMappingRules={canManageMappingRuleMembers(sectionConfig, clientConfig.isAdditionalIdpConfigured)}
 				isCamundaGroupsEnabled={isCamundaGroupsEnabled}
 				defaultRoleIds={clientConfig.defaultRoleIds}
 				activeTab={tab ?? 'users'}

@@ -50,6 +50,15 @@ function getAdminSectionConfig(): AdminSectionConfig {
 	};
 }
 
+/**
+ * Whether mapping rules can be assigned to and unassigned from roles and groups. Mirrors the
+ * server's MappingRuleMembershipPolicy: with OIDC, outside SaaS, and on SaaS only once an
+ * additional IdP is configured.
+ */
+function canManageMappingRuleMembers(config: AdminSectionConfig, isAdditionalIdpConfigured: boolean): boolean {
+	return config.isOidc && (!config.isSaas || isAdditionalIdpConfigured);
+}
+
 function isAdminSectionAvailable(section: AdminSectionKey, config: AdminSectionConfig): boolean {
 	return SECTION_AVAILABILITY[section]?.(config) ?? true;
 }
@@ -71,6 +80,7 @@ export {
 	type AdminSectionConfig,
 	type AdminSectionKey,
 	assertAdminSectionAvailable,
+	canManageMappingRuleMembers,
 	getAdminLandingSection,
 	getAdminSectionConfig,
 	isAdminSectionAvailable,

@@ -45,6 +45,7 @@ async function renderPage(overrides: Partial<AdminRoleDetailPageProps> = {}) {
 				<AdminRoleDetailPage
 					role={createRole({roleId: 'ops', name: 'Operations', description: 'The ops role'})}
 					isOidc={false}
+					canManageMappingRules={overrides.isOidc ?? false}
 					isCamundaGroupsEnabled={true}
 					defaultRoleIds={[]}
 					activeTab="users"
@@ -104,6 +105,16 @@ describe('<AdminRoleDetailPage />', () => {
 
 		await expect.element(screen.getByRole('tab', {name: 'Mapping rules'})).toBeVisible();
 		await expect.element(screen.getByRole('tab', {name: 'Clients'})).toBeVisible();
+	});
+
+	it('should offer clients but not mapping rules when mapping rules cannot be managed', async ({worker}) => {
+		worker.use(mockQueryUsersByRoleEndpoint({successResponse: HttpResponse.json(createMembersPage([]))}));
+
+		const {screen} = await renderPage({isOidc: true, canManageMappingRules: false, activeTab: 'mappingRules'});
+
+		await expect.element(screen.getByRole('tab', {name: 'Clients'})).toBeVisible();
+		await expect.element(screen.getByRole('tab', {name: 'Mapping rules'})).not.toBeInTheDocument();
+		await expect.element(screen.getByRole('tab', {name: 'Users', selected: true})).toBeVisible();
 	});
 
 	it('should fall back to the users tab when the active tab is not available', async ({worker}) => {

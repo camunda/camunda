@@ -33,11 +33,10 @@ import {MEMBER_KINDS, type MemberKind} from '#/admin/modules/roles/members';
 
 type ModalState = {type: 'edit'} | {type: 'delete'} | null;
 
-const OIDC_ONLY_KINDS: readonly MemberKind[] = ['mappingRules', 'clients'];
-
 type AdminRoleDetailPageProps = {
 	role: Role;
 	isOidc: boolean;
+	canManageMappingRules: boolean;
 	isCamundaGroupsEnabled: boolean;
 	defaultRoleIds: string[];
 	activeTab: MemberKind;
@@ -48,6 +47,7 @@ type AdminRoleDetailPageProps = {
 const AdminRoleDetailPage: React.FC<AdminRoleDetailPageProps> = ({
 	role,
 	isOidc,
+	canManageMappingRules,
 	isCamundaGroupsEnabled,
 	defaultRoleIds,
 	activeTab,
@@ -58,7 +58,12 @@ const AdminRoleDetailPage: React.FC<AdminRoleDetailPageProps> = ({
 	const [modalState, setModalState] = useState<ModalState>(null);
 	const isDefaultRole = defaultRoleIds.includes(role.roleId);
 	const closeModal = () => setModalState(null);
-	const visibleKinds = MEMBER_KINDS.filter((kind) => isOidc || !OIDC_ONLY_KINDS.includes(kind));
+	const visibleKinds = MEMBER_KINDS.filter((kind) => {
+		if (kind === 'mappingRules') {
+			return canManageMappingRules;
+		}
+		return kind !== 'clients' || isOidc;
+	});
 	const selectedTab = visibleKinds.includes(activeTab) ? activeTab : 'users';
 
 	return (
