@@ -11,7 +11,6 @@ import './c4-ui.css';
 import {useEffect, useLayoutEffect, useMemo} from 'react';
 import {observer} from 'mobx-react';
 import {
-  C3LicenseTag,
   preview_C3ToolsArea as C3ToolsArea,
   preview_useCamundaTools as useCamundaTools,
   type UseCamundaToolsOptions,
@@ -36,10 +35,10 @@ import {useCurrentUser} from 'modules/queries/useCurrentUser';
 import {useCurrentPage} from 'modules/hooks/useCurrentPage';
 import {notificationsStore} from 'modules/stores/notifications';
 import {currentTheme} from 'modules/stores/currentTheme';
-import {licenseTagStore} from 'modules/stores/licenseTag';
 import {getClientConfig} from 'modules/utils/getClientConfig';
 import {tracking} from 'modules/tracking';
 import {ForwardRefLink} from './ForwardRefLink';
+import {HeaderBadges} from './HeaderBadges';
 import {InfoMenu} from './InfoMenu';
 import {LogoutAwareUserMenu} from './LogoutAwareUserMenu';
 import {useBreadcrumbs} from './useBreadcrumbs';
@@ -175,8 +174,6 @@ const AppHeaderV2: React.FC<{hideNavLinks?: boolean}> = observer(
     const isPaidPlan =
       typeof currentUser?.salesPlanType === 'string' &&
       ['paid-cc', 'enterprise'].includes(currentUser.salesPlanType);
-    const {isTagVisible, isProductionLicense, isCommercial, expiresAt} =
-      licenseTagStore.state;
 
     useEffect(() => {
       if (currentUser !== undefined) {
@@ -187,11 +184,6 @@ const AppHeaderV2: React.FC<{hideNavLinks?: boolean}> = observer(
         });
       }
     }, [currentUser]);
-
-    useEffect(() => {
-      licenseTagStore.fetchLicense();
-      return licenseTagStore.reset;
-    }, []);
 
     return (
       <ToolsProvider>
@@ -217,17 +209,7 @@ const AppHeaderV2: React.FC<{hideNavLinks?: boolean}> = observer(
                   </ForwardRefLink>
                 }
                 breadcrumb={breadcrumb}
-                trailing={
-                  isTagVisible ? (
-                    <div className="operate-nav-v2-license-tag">
-                      <C3LicenseTag
-                        isProductionLicense={isProductionLicense}
-                        isCommercial={isCommercial}
-                        expiresAt={expiresAt ?? undefined}
-                      />
-                    </div>
-                  ) : undefined
-                }
+                trailing={<HeaderBadges />}
                 globalActions={[
                   ...(isSaas
                     ? [
