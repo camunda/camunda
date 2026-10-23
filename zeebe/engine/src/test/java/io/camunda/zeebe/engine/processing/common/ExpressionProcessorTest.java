@@ -368,6 +368,62 @@ class ExpressionProcessorTest {
   }
 
   @Nested
+  @TestInstance(Lifecycle.PER_CLASS)
+  class EvaluateStringExpressionWithLabelTest {
+
+    @Test
+    void shouldUseLabelKindAndTargetInFailureMessage() {
+      // given
+      final var processor =
+          new ExpressionProcessor(EXPRESSION_LANGUAGE, DEFAULT_CONTEXT_LOOKUP, DEFAULT_TIMEOUT);
+      final var parsedExpression = EXPRESSION_LANGUAGE.parseExpression("=x");
+      final var label = new ExpressionLabel("decision id expression", "business rule task 't'");
+
+      // when
+      final var result =
+          processor.evaluateStringExpression(parsedExpression, -1L, "tenant_1", label);
+
+      // then
+      assertThat(result)
+          .isLeft()
+          .extracting(r -> r.getLeft().getMessage())
+          .isEqualTo(
+              """
+              Expected result of the decision id expression 'x' of business rule task 't' to be 'STRING', but was 'NULL'. \
+              The evaluation reported the following warnings:
+              [NO_VARIABLE_FOUND] No variable found with name 'x'""");
+    }
+
+    @Test
+    void shouldUseLabelInGenuineEvaluationFailureMessage() {
+      // given
+      final var processor =
+          new ExpressionProcessor(
+              EXPRESSION_LANGUAGE,
+              new InMemoryVariableEvaluationContext(Map.of("foo", "bar")),
+              DEFAULT_TIMEOUT);
+      final var parsedExpression =
+          EXPRESSION_LANGUAGE.parseExpression("=assert(foo, foo = \"baz\")");
+      final var label = new ExpressionLabel("decision id expression", "business rule task 't'");
+
+      // when
+      final var result =
+          processor.evaluateStringExpression(parsedExpression, -1L, "tenant_1", label);
+
+      // then
+      assertThat(result)
+          .isLeft()
+          .extracting(r -> r.getLeft().getMessage())
+          .isEqualTo(
+              """
+              Assertion failure on evaluate the expression 'assert(foo, foo = "baz")': The \
+              condition is not fulfilled (decision id expression of business rule task 't') \
+              The evaluation reported the following warnings:
+              [ASSERT_FAILURE] The condition is not fulfilled""");
+    }
+  }
+
+  @Nested
   class EvaluateBooleanExpressionWithStringTest {
 
     @Test
