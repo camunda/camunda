@@ -17,8 +17,9 @@ import org.jspecify.annotations.NullMarked;
 /**
  * Drops the reservation from a job, which is what makes it visible to job workers again: the hide
  * in {@code JobBatchCollector} and {@code BpmnJobActivationBehavior#publishWork} both read the
- * token off the stored job record. The job's state and its place in the activatable index are left
- * untouched — a released job was activatable all along, it was only skipped.
+ * token off the stored job record. A reserved job is kept out of the activatable-by-priority poll
+ * index at creation ({@code DbJobState#makeJobActivatableByPriority}), so clearing the token also
+ * re-adds it to that index — only then can a poll reach it.
  */
 @NullMarked
 public final class JobReleasedApplier implements TypedEventApplier<JobIntent, JobRecord> {
@@ -32,5 +33,7 @@ public final class JobReleasedApplier implements TypedEventApplier<JobIntent, Jo
   @Override
   public void applyState(final long key, final JobRecord value) {
     jobState.updateJobRecord(key, value);
+    jobState.makeJobActivatableByPriority(
+        value.getTypeBuffer(), key, value.getTenantId(), value.getPriority());
   }
 }
