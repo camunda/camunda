@@ -167,7 +167,7 @@ class OperateProcessesPage {
     this.selectAllRowsCheckbox = getProcessInstancesTable(page).getByRole(
       'checkbox',
       {
-        name: /^Select all (rows|items)$/,
+        name: /^(Select|Unselect) all (rows|items)$/,
       },
     );
     this.retryButton = page.getByRole('button', {name: 'Retry', exact: true});
