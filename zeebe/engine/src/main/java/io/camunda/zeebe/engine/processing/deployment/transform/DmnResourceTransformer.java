@@ -187,6 +187,13 @@ public final class DmnResourceTransformer implements DeploymentResourceTransform
 
   private Either<Failure, ?> checkDecision(
       final DeploymentResource resource, final ParsedDecision decision) {
+    if (Strings.isNullOrEmpty(decision.getId())) {
+      return Either.left(
+          new Failure(
+              String.format(
+                  "Expected the decision '%s' to have an ID, but it has none in resource '%s'",
+                  decision.getName(), resource.getResourceName())));
+    }
     return checkFieldLength(
             decision.getId(),
             config.maxIdFieldLength(),
