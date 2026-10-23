@@ -1787,15 +1787,12 @@ mode A as well (section 21.4: parent timelines are never released).
 
 - **The hold of an old timeline never ends.** Only a leader on a timeline moves its hold. After a
   restore or a fork, the old timeline has no leader, so its hold stays where it was, and nothing
-  above it is ever rolled up to L2 or removed. Its restore points stay valid restore targets for the
-  retention window (`--logArchive.timeline=<old>`), but not longer. Needed: a rule for when such a
-  hold ends, decided by the cluster because it concerns restore. Options: the new timeline's cluster
-  ends the parent's hold once the window since the takeover has passed (an entry in its own commit
-  log, for example `PARENT_HOLD_ENDED`), or holds are defined along the current path, so a parent is
-  held only as far as the child's hold reaches into it.
+  above it is ever rolled up to L2 or removed. Its restore points stay valid restore targets
+  (`--logArchive.timeline=<old>`) for as long as the bucket exists, not only for the retention
+  window. Nothing deletes archived snapshots either, on any timeline. Recommended rule below.
 - **The dead branch stays.** The part of the old timeline after the takeover is not on the current
   path. Restore needs it only to go back to a point after the restore (undoing it); consumers never
-  need it. It should go with the same rule as the old timeline's hold; today it stays for good.
+  need it. Today it stays for good; with the rule below it goes with its restore points.
 - **A compaction can straddle a takeover that did not exist yet.** The authority compacted
   `3582–4037` of the old timeline before the restore made index 3841 a takeover point. Any later
   restore can turn any point into a takeover, so this cannot be avoided. It stays correct: readers
@@ -1807,3 +1804,38 @@ mode A as well (section 21.4: parent timelines are never released).
   the takeover. The path takes the parent up to the takeover. If it preferred the child's copy from
   the child's start, the parent's objects from there on would be needed only for restores of the
   parent itself and could be cleaned up earlier (an optimisation, not a correctness issue).
+
+**How others handle it.** Systems with a timeline concept allow restoring from a parent and end
+it by normal retention, without a rule of their own for parents:
+
+- Postgres (with pgBackRest or Barman): every recovery starts a new timeline; a history file
+  records the parent and the switch point. `recovery_target_timeline` restores to any timeline,
+  including the parent or a dead branch. Retention runs per backup (count or recovery window),
+  across timelines; WAL that only expired backups need goes with them. The history files stay.
+- Neon: a restore resets a branch and keeps the old state as a backup branch, so it can be undone.
+  Point-in-time restore on any branch is limited by a history retention window; data a child
+  branch reads from its parent is kept while the child exists. Dead branches are deleted by hand.
+- Delta Lake, Iceberg: `RESTORE` is a new version on a linear history, so the versions after the
+  restore point stay reachable until `VACUUM` or snapshot expiry removes them by age.
+- Today's continuous backup (no timelines): after a restore to backup B, the restored state only
+  knows the checkpoints and ranges up to B, and the next metadata sync overwrites the partition's
+  metadata file with that state. The old history's backups after B are no longer in any range,
+  so they stop being restore targets at the next sync. `BackupRetention` lists the store rather
+  than the metadata, so it still deletes their files once they are older than the window.
+
+**Recommended rule: holds per restore point, not per timeline.** A restore point (a backup
+checkpoint with its snapshot) is protected while it is inside the retention window, on whatever
+timeline it lives. A timeline's hold is the lowest snapshot index among its protected restore
+points; a timeline without protected restore points is not held for restore. Its objects on the
+current path then follow consumer retention like any other part of the path; the rest may go. Then:
+
+- The parent stays restorable for the window after the takeover and then ends by itself, as in
+  Postgres. A restore can be undone within the window.
+- The dead branch goes with its last restore point.
+- Archived snapshots of restore points that are no longer protected can be deleted (snapshot
+  retention, missing today).
+- The cluster on the current timeline computes and writes the holds of all timelines in the
+  bucket, because they concern restore. The authority keeps following the holds and needs no new
+  rule.
+
+Not implemented in the PoC.
