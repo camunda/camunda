@@ -279,3 +279,40 @@ Uses the `ZeebeProcessDefinitionImportService` shape, not the process-instance s
    - `DELETED` agent definitions
    - multi-tenant authorization on the filter-options endpoint
    - a migration plan for removing the nested model
+
+## 10. Prototype results (2026-10-23)
+
+### Setup
+
+- 2,000 generated process instances, `--agent-rate 0.3`, which gives 282 agent runs (275 in finished process instances).
+- Optimize was run from source against ES 8.19, with Keycloak and Identity.
+- Every tile was evaluated through `POST api/report/{id}/evaluate` without a date filter. The results were compared with an independent recomputation from the raw `zeebe-record-*` indices.
+
+### Results
+
+| Tile | Optimize | Raw-record check |
+|---|---|---|
+| Agent incident rate | 10.91 % | 10.91 % |
+| Runs hitting a limit | 13.09 % | 13.09 % |
+| Run duration P50 / P95 | 27,560,920 / 82,010,906 ms | same |
+| Avg iterations per run | 3.55 | 3.55 |
+| Human steps per run | 1.21 | 1.21 |
+| Agent runs | 275 | 275 |
+| Agentic adoption rate | 28.5 % | 28.5 % |
+| Agent runs by agent | 98 / 97 / 80 | same |
+| Tool calls per tool | 179 / 110 / 48 / 47 | same |
+| Avg tokens per run | 7,444.89 | 7,444.89 |
+| Token usage over time (sum of buckets) | 2,047,345 | 2,047,345 |
+| Token usage per model | 547,278 / 507,679 / 407,230 / 311,747 / 273,411 | same |
+
+The filters were also checked against ES:
+
+- agent filter: 97 runs
+- model filter `o3-mini`: 47 runs
+- last 30 days: 45 runs
+
+### Findings
+
+- **Refresh-lag race.** The race described in §4 happened in practice: 9 of 282 runs stayed without process state. It was fixed by repeating each catch-up after 3 s (`53f2355`).
+- **Tool elements.** Only the ad-hoc sub-process template has tool elements. Tool calls of AI Agent Task and External Agent runs therefore only show in the run's `toolCalls` total, not in "Tool calls per tool".
+- **Adoption with an agent filter.** The agent/model selection narrows the numerator only, so "adoption" for one agent is that agent's share of all agentic process instances.
