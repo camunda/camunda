@@ -13,6 +13,7 @@ import {captureScreenshot, captureFailureVideo} from '@setup';
 import {navigateToAppHome, hideHelperModals} from '@pages/UtilitiesPage';
 import {waitForAssertion} from 'utils/waitForAssertion';
 import {assertJsonEqual} from '../../utils/assertJsonEqual';
+import {searchVariableByNameAndProcessInstanceKey} from 'utils/requestHelpers/variable-requestHelpers';
 
 type ProcessInstance = {
   processInstanceKey: string;
@@ -77,6 +78,7 @@ test.describe('Process Instance Modifications', () => {
     test.beforeEach(
       async ({
         page,
+        request,
         operateHomePage,
         operateProcessInstancePage,
         operateProcessInstanceViewModificationModePage,
@@ -84,6 +86,10 @@ test.describe('Process Instance Modifications', () => {
         instance = await createSingleInstance('withoutIncidentsProcess', 1, {
           test: 123,
           foo: 'bar',
+        });
+        await searchVariableByNameAndProcessInstanceKey(request, {
+          processInstanceKey: instance.processInstanceKey,
+          name: 'foo',
         });
         await navigateToAppHome(page, 'operate');
         await expect(operateHomePage.operateBanner).toBeVisible();
@@ -203,6 +209,7 @@ test.describe('Process Instance Modifications', () => {
     test.beforeEach(
       async ({
         page,
+        request,
         operateHomePage,
         operateProcessInstancePage,
         operateProcessInstanceViewModificationModePage,
@@ -210,6 +217,10 @@ test.describe('Process Instance Modifications', () => {
         instance = await createSingleInstance('withoutIncidentsProcess', 1, {
           test: 123,
           foo: 'bar',
+        });
+        await searchVariableByNameAndProcessInstanceKey(request, {
+          processInstanceKey: instance.processInstanceKey,
+          name: 'foo',
         });
         await navigateToAppHome(page, 'operate');
         await expect(operateHomePage.operateBanner).toBeVisible();
@@ -389,11 +400,15 @@ test.describe('Process Instance Modifications', () => {
     let instance: ProcessInstance;
 
     test.beforeEach(
-      async ({page, operateHomePage, operateProcessInstancePage}) => {
+      async ({page, request, operateHomePage, operateProcessInstancePage}) => {
         instance = await createSingleInstance('Process_EmbeddedSubprocess', 1, {
           meow: 0,
           testVariableNumber: 123,
           testVariableString: 'bar',
+        });
+        await searchVariableByNameAndProcessInstanceKey(request, {
+          processInstanceKey: instance.processInstanceKey,
+          name: 'testVariableString',
         });
         await navigateToAppHome(page, 'operate');
         await expect(operateHomePage.operateBanner).toBeVisible();
@@ -557,7 +572,6 @@ test.describe('Process Instance Modifications', () => {
       });
 
       test('JSON editor updates variable value correctly', async ({
-        page,
         operateProcessInstancePage,
         operateProcessInstanceViewModificationModePage,
       }) => {
@@ -579,10 +593,11 @@ test.describe('Process Instance Modifications', () => {
           'value',
         );
 
-        await operateProcessInstanceViewModificationModePage
-          .newVariableByIndex(0)
-          .readModeValue.click();
-        await page.keyboard.insertText('meow');
+        await operateProcessInstanceViewModificationModePage.fillMonacoEditor(
+          operateProcessInstanceViewModificationModePage.newVariableByIndex(0)
+            .writeModeValue,
+          'meow',
+        );
         await operateProcessInstanceViewModificationModePage.checkNewVariableErrorMessageText(
           0,
           'Value has to be JSON',

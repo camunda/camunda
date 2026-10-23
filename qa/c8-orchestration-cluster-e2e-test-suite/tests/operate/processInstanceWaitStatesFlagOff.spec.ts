@@ -119,7 +119,7 @@ test.describe.serial('Wait States Flag Off', () => {
 
       await page.getByRole('treeitem', {name: 'task', exact: true}).click();
       const detailsTabButton = page
-        .getByLabel('Process Instance Bottom Panel Tabs')
+        .getByLabel(/^Process Instance (?:Bottom Panel )?Tabs$/i)
         .getByRole('link', {name: /^Details$/i});
       await detailsTabButton.click();
       await expect(

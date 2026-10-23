@@ -192,8 +192,8 @@ class OperateProcessInstancePage {
       .getByRole('button', {name: 'Retry Incident'})
       .first();
     this.incidentsTab = page
-      .getByLabel('Process Instance Bottom Panel Tabs')
-      .getByRole('link', {name: /^Incidents$/i});
+      .getByLabel(/^Process Instance (?:Bottom Panel )?Tabs$/i)
+      .getByRole('link', {name: /^Incidents(?:\s*\d+)?$/i});
     this.variablePanelEmptyText = page.getByText(
       'to view the variables, select a single element instance in the instance history',
     );
@@ -214,10 +214,10 @@ class OperateProcessInstancePage {
     this.executionCountToggleOn = page.getByLabel('show execution count');
     this.executionCountToggleOff = page.getByLabel('hide execution count');
     this.listenersTabButton = page
-      .getByLabel('Process Instance Bottom Panel Tabs')
+      .getByLabel(/^Process Instance (?:Bottom Panel )?Tabs$/i)
       .getByRole('link', {name: /^Listeners$/i});
     this.detailsTabButton = page
-      .getByLabel('Process Instance Bottom Panel Tabs')
+      .getByLabel(/^Process Instance (?:Bottom Panel )?Tabs$/i)
       .getByRole('link', {name: /^Details$/i});
     this.jobPriorityValue = page
       .getByRole('table', {name: 'Element Instance Details', exact: true})
@@ -230,7 +230,7 @@ class OperateProcessInstancePage {
     this.openTasklistLink = page.getByRole('link', {name: 'Open Tasklist'});
     this.waitingStatus = page.getByText(/^Waiting for /);
     this.variablesTabButton = page
-      .getByLabel('Process Instance Bottom Panel Tabs')
+      .getByLabel(/^Process Instance (?:Bottom Panel )?Tabs$/i)
       .getByRole('link', {name: /^Variables$/i});
     this.operationsLogTabButton = page.getByRole('link', {
       name: /^Operations Log$/i,
@@ -397,7 +397,7 @@ class OperateProcessInstancePage {
           inputField: this.page
             .getByRole('dialog')
             .getByRole('code')
-            .getByRole('textbox', {name: 'Editor content'}),
+            .getByRole('textbox'),
           copyButton: this.page
             .getByRole('dialog')
             .getByRole('button', {name: /copy/i}),
@@ -608,7 +608,9 @@ class OperateProcessInstancePage {
 
   async editVariableValueModificationMode(variableName: string, value: string) {
     const scope = this.getVariableTestId(variableName);
-    await this.getEditVariableFieldSelector(variableName).click();
+    const editor = this.getEditVariableFieldSelector(variableName);
+    await expect(editor).toBeVisible();
+    await editor.focus();
     await this.clearVariableValueInput(scope);
     await this.fillVariableValueInput(value, scope);
     await this.page.keyboard.press('Tab');
@@ -643,8 +645,8 @@ class OperateProcessInstancePage {
       ? scope.getByRole('group').filter({has: this.page.getByRole('textbox')})
       : this.editor;
     await expect(editor).toBeVisible();
-    // ControlOrMeta: on macOS, Control+A moves the cursor instead of selecting.
-    await this.page.keyboard.press('ControlOrMeta+A');
+    await this.page.keyboard.press('Control+A');
+    await this.page.keyboard.press('Meta+A');
     await this.page.keyboard.press('Backspace');
   }
 
@@ -1137,6 +1139,7 @@ class OperateProcessInstancePage {
   ): Promise<void> {
     const historyItems = this.instanceHistory.getByRole('treeitem', {
       name: itemName,
+      exact: true,
     });
     await expect(historyItems).toHaveCount(expectedStatus.length);
     const states = await Promise.all(

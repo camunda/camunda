@@ -412,6 +412,7 @@ test.describe('Process Instance History', () => {
         );
       }
       await operateProcessInstanceViewModificationModePage.applyChanges();
+      await page.reload();
       await operateDiagramPage.verifyStateOverlay(
         activityCollectMoney,
         'active',

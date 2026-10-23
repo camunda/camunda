@@ -167,10 +167,6 @@ export class OperateProcessInstanceViewModificationModePage {
         name: 'Name',
         exact: true,
       }),
-      // A new variable's value renders no separate read-only display, and
-      // reading the value group's text picks up its visually hidden "Value"
-      // label. Target the editor's textbox instead -- it holds just the value
-      // and is focused by clicking it.
       readModeValue: this.newVariableRow(index)
         .getByRole('group', {name: 'Value', exact: true})
         .getByRole('textbox'),
@@ -194,7 +190,7 @@ export class OperateProcessInstanceViewModificationModePage {
         inputField: this.page
           .getByRole('dialog')
           .getByRole('code')
-          .getByRole('textbox', {name: 'Editor content'}),
+          .getByRole('textbox'),
       },
       valueErrorMessage: this.newVariableRow(index)
         .getByRole('cell')
@@ -232,7 +228,7 @@ export class OperateProcessInstanceViewModificationModePage {
         inputField: this.page
           .getByRole('dialog')
           .getByRole('code')
-          .getByRole('textbox', {name: 'Editor content'}),
+          .getByRole('textbox'),
       },
       valueErrorMessage: this.variableRow(name).locator(
         `[id="${name}-error-msg"]`,
@@ -494,10 +490,6 @@ export class OperateProcessInstanceViewModificationModePage {
   };
 
   getEditVariableFieldSelector(variableName: string) {
-    // Reading the value group's text returns accessibility noise (e.g. the
-    // "Selection deleted" live-region announcement) alongside the value.
-    // Target the editor's textbox instead; clicking it focuses the editor just
-    // as clicking the group did.
     return this.variableRow(variableName)
       .getByRole('group', {name: variableName, exact: true})
       .getByRole('textbox', {name: variableName, exact: true});
@@ -582,7 +574,9 @@ export class OperateProcessInstanceViewModificationModePage {
   }
 
   async editVariableValue(variableName: string, value: string) {
-    await this.getEditVariableFieldSelector(variableName).click();
+    const editor = this.getEditVariableFieldSelector(variableName);
+    await expect(editor).toBeVisible();
+    await editor.focus();
 
     await this.expectEditorToBeLoaded();
 
@@ -619,17 +613,20 @@ export class OperateProcessInstanceViewModificationModePage {
   }
 
   async editNewVariableJSONInModal(variableIndex: number, json: string) {
-    await this.clearMonacoEditor();
-
     await this.newVariableByIndex(variableIndex).jsonEditorButton.click();
     const jsonEditorModal =
       this.newVariableByIndex(variableIndex).jsonEditorModal;
     await expect(jsonEditorModal.header).toBeVisible();
-    // await expect(jsonEditorModal.inputField).toBeVisible();
-    // await expect(jsonEditorModal.inputField).toBeEnabled();
     await expect(this.page.getByRole('dialog').getByRole('code')).toBeVisible();
+    await expect(jsonEditorModal.inputField).toBeVisible();
+    await jsonEditorModal.inputField.focus();
+    await this.clearMonacoEditor();
     await this.fillMonacoEditor(jsonEditorModal.inputField, json);
-    await jsonEditorModal.applyButton.click();
+    // Monaco validates asynchronously and ignores Apply while the value is invalid.
+    await expect(async () => {
+      await jsonEditorModal.applyButton.click();
+      await expect(jsonEditorModal.header).toBeHidden({timeout: 1000});
+    }).toPass({timeout: 10_000});
     await this.page.keyboard.press('Tab');
   }
 
@@ -644,10 +641,9 @@ export class OperateProcessInstanceViewModificationModePage {
     const jsonEditorModal =
       this.editableExistingVariableByName(variableName).jsonEditorModal;
     await expect(jsonEditorModal.header).toBeVisible();
-    // await expect(jsonEditorModal.inputField).toBeVisible();
-    // await expect(jsonEditorModal.inputField).toBeEnabled();
     await expect(this.page.getByRole('dialog').getByRole('code')).toBeVisible();
-    await jsonEditorModal.inputField.evaluate((el: HTMLElement) => el.focus());
+    await expect(jsonEditorModal.inputField).toBeVisible();
+    await jsonEditorModal.inputField.focus();
     await this.clearMonacoEditor();
     await this.fillMonacoEditor(jsonEditorModal.inputField, json);
     await jsonEditorModal.applyButton.click();
@@ -659,7 +655,8 @@ export class OperateProcessInstanceViewModificationModePage {
   }
 
   async fillMonacoEditor(editor: Locator, value: string) {
-    await editor.evaluate((el: HTMLElement) => el.focus());
+    await expect(editor).toBeVisible();
+    await editor.focus();
     await this.page.keyboard.insertText(value);
   }
 
@@ -734,6 +731,7 @@ export class OperateProcessInstanceViewModificationModePage {
 
   async clearMonacoEditor() {
     await this.page.keyboard.press('Control+A');
+    await this.page.keyboard.press('Meta+A');
     await this.page.keyboard.press('Backspace');
   }
 

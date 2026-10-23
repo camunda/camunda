@@ -87,7 +87,8 @@ class OperateHomePage {
 
   async clearVariableValueInput(): Promise<void> {
     await expect(this.variableValueEditor).toBeVisible();
-    await this.page.keyboard.press('ControlOrMeta+A');
+    await this.page.keyboard.press('Control+A');
+    await this.page.keyboard.press('Meta+A');
     await this.page.keyboard.press('Backspace');
   }
 
