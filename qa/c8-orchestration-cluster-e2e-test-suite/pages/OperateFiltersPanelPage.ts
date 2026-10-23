@@ -152,9 +152,10 @@ export class OperateFiltersPanelPage {
         .getByRole('textbox', {name: 'Name', exact: true})
         .nth(index);
     this.getConditionRowValueInput = (index: number) =>
-      this.variableFilterDialog
-        .getByRole('textbox', {name: 'Value', exact: true})
-        .nth(index);
+      this.getConditionRow(index).getByRole('textbox', {
+        name: 'Value',
+        exact: true,
+      });
     this.moreFiltersButton = this.page.getByRole('button', {
       name: 'More Filters',
     });
@@ -171,6 +172,12 @@ export class OperateFiltersPanelPage {
     this.applyButton = this.page.getByText('Apply');
     this.getOptionByName = (name: string, exact = true) =>
       this.page.getByRole('option', {name, exact});
+  }
+
+  private getConditionRow(index: number): Locator {
+    return this.getConditionRowNameInput(index).locator(
+      'xpath=ancestor::div[.//*[@role="combobox"]][1]',
+    );
   }
 
   async validateCheckedState(
@@ -317,17 +324,17 @@ export class OperateFiltersPanelPage {
   }
 
   async selectOperator(index: number, operatorLabel: string) {
-    await this.variableFilterDialog
+    await this.getConditionRow(index)
       .getByRole('combobox', {name: 'Operator', exact: true})
-      .nth(index)
       .click();
-    await this.page.getByRole('option', {name: operatorLabel}).click();
+    await this.page
+      .getByRole('option', {name: operatorLabel, exact: true})
+      .click();
   }
 
   async openJsonEditorForRow(index: number) {
-    await this.variableFilterDialog
-      .getByRole('button', {name: 'Open JSON editor'})
-      .nth(index)
+    await this.getConditionRow(index)
+      .getByRole('button', {name: 'Open JSON editor', exact: true})
       .click();
   }
 

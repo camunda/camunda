@@ -227,7 +227,7 @@ test.describe('Process Instances Filters', () => {
     });
   });
 
-  test('Variable filtering with single and multiple values', async ({
+  test('Variable filtering with value-less conditions and single or multiple values', async ({
     page,
     operateProcessesPage,
     operateFiltersPanelPage,
@@ -249,11 +249,19 @@ test.describe('Process Instances Filters', () => {
       await sleep(200);
     });
 
-    await test.step('Add Variable Filter via modal', async () => {
+    await test.step('Add a value-less condition followed by an equality condition', async () => {
       await operateFiltersPanelPage.displayOptionalFilter('Variables');
       await operateFiltersPanelPage.openVariableFilterModal();
+      await operateFiltersPanelPage
+        .getConditionRowNameInput(0)
+        .fill('filtersTest');
+      await operateFiltersPanelPage.selectOperator(0, 'exists');
+      await expect(
+        operateFiltersPanelPage.getConditionRowValueInput(0),
+      ).toBeHidden();
+      await operateFiltersPanelPage.addCondition();
       await operateFiltersPanelPage.fillConditionRow(
-        0,
+        1,
         'filtersTest',
         orderProcessFiltersValue,
       );
@@ -287,7 +295,7 @@ test.describe('Process Instances Filters', () => {
 
     await test.step('Re-open modal and verify JSON editor', async () => {
       await operateFiltersPanelPage.openVariableFilterModal();
-      await operateFiltersPanelPage.openJsonEditorForRow(0);
+      await operateFiltersPanelPage.openJsonEditorForRow(1);
       await expect(
         operateFiltersPanelPage.variableFilterDialog.getByText(
           'Edit value: filtersTest',
@@ -309,9 +317,9 @@ test.describe('Process Instances Filters', () => {
 
     await test.step('Edit condition to use oneOf operator for multiple values', async () => {
       await operateFiltersPanelPage.openVariableFilterModal();
-      await operateFiltersPanelPage.selectOperator(0, 'is one of');
+      await operateFiltersPanelPage.selectOperator(1, 'is one of');
       await operateFiltersPanelPage.fillConditionRow(
-        0,
+        1,
         'filtersTest',
         `[${orderProcessFiltersValue}, 456]`,
       );
