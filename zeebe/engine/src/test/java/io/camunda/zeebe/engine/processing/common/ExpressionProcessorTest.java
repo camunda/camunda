@@ -372,6 +372,29 @@ class ExpressionProcessorTest {
   class EvaluateStringExpressionWithLabelTest {
 
     @Test
+    void shouldUseGenericWordingWhenLabelIsNone() {
+      // given
+      final var processor =
+          new ExpressionProcessor(EXPRESSION_LANGUAGE, DEFAULT_CONTEXT_LOOKUP, DEFAULT_TIMEOUT);
+      final var parsedExpression = EXPRESSION_LANGUAGE.parseExpression("=x");
+
+      // when
+      final var result =
+          processor.evaluateStringExpression(
+              parsedExpression, -1L, "tenant_1", ExpressionLabel.NONE);
+
+      // then
+      assertThat(result)
+          .isLeft()
+          .extracting(r -> r.getLeft().getMessage())
+          .isEqualTo(
+              """
+              Expected result of the expression 'x' to be 'STRING', but was 'NULL'. \
+              The evaluation reported the following warnings:
+              [NO_VARIABLE_FOUND] No variable found with name 'x'""");
+    }
+
+    @Test
     void shouldUseLabelKindAndTargetInFailureMessage() {
       // given
       final var processor =
