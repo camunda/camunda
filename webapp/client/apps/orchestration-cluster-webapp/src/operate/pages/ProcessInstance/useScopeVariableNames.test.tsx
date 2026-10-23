@@ -66,7 +66,7 @@ describe('useScopeVariableNames', () => {
 				items: Array.from({length: 50}, (_, index) =>
 					createVariable({name: `variable-${index}`, variableKey: `${index}`}),
 				),
-				page: {endCursor: 'cursor-1'},
+				page: {endCursor: 'cursor-1', totalItems: 51},
 			}),
 		);
 		worker.use(
@@ -94,7 +94,10 @@ describe('useScopeVariableNames', () => {
 			mockQueryVariablesEndpoint({
 				schema: nextPageSchema,
 				successResponse: HttpResponse.json(
-					createQueryVariablesByUserTaskResponse({items: [createVariable({name: 'last-variable'})]}),
+					createQueryVariablesByUserTaskResponse({
+						items: [createVariable({name: 'last-variable'})],
+						page: {totalItems: 51},
+					}),
 				),
 				failureResponse: firstPage,
 			}),

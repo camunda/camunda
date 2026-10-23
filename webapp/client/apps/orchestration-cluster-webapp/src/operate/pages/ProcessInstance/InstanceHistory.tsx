@@ -25,6 +25,7 @@ import {
 	Toggle,
 	InlineNotification,
 	SkeletonText,
+	Stack,
 	Tag,
 	TreeView,
 } from '@carbon/react';
@@ -302,29 +303,31 @@ function InstanceHistory({showHeader = true}: {showHeader?: boolean}) {
 	return (
 		<HistoryPanel aria-label={t('operate.processInstance.history.title')}>
 			{showHeader && (
-				<HistoryHeader>
-					<h2>{t('operate.processInstance.history.title')}</h2>
-					{!isModificationModeEnabled &&
-						(['timestamps', 'executionCount'] as const).map((control) => {
-							const label = t(
-								control === 'timestamps'
-									? 'operate.processInstance.history.timestamps'
-									: 'operate.processInstance.history.executionCount',
-							);
-							return (
-								<Toggle
-									key={control}
-									id={`history-${control}`}
-									aria-label={label}
-									labelA={label}
-									labelB={label}
-									size="sm"
-									toggled={history[control]}
-									disabled={!xml.isSuccess}
-									onToggle={control === 'timestamps' ? history.setTimestamps : history.setExecutionCount}
-								/>
-							);
-						})}
+				<HistoryHeader title={t('operate.processInstance.history.title')} size="sm">
+					{!isModificationModeEnabled && (
+						<Stack orientation="horizontal" gap={5}>
+							{(['timestamps', 'executionCount'] as const).map((control) => {
+								const label = t(
+									control === 'timestamps'
+										? 'operate.processInstance.history.timestamps'
+										: 'operate.processInstance.history.executionCount',
+								);
+								return (
+									<Toggle
+										key={control}
+										id={`history-${control}`}
+										aria-label={label}
+										labelA={label}
+										labelB={label}
+										size="sm"
+										toggled={history[control]}
+										disabled={!xml.isSuccess}
+										onToggle={control === 'timestamps' ? history.setTimestamps : history.setExecutionCount}
+									/>
+								);
+							})}
+						</Stack>
+					)}
 				</HistoryHeader>
 			)}
 			{xml.isSuccess && !isModificationModeEnabled && !forbidden && <InstanceHistorySearch key={processInstanceId} />}

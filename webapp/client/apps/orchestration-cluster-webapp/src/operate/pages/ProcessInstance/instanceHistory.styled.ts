@@ -10,6 +10,7 @@ import styled, {css} from 'styled-components';
 import {Add, Error, WarningAltFilled} from '@carbon/react/icons';
 import {TreeNode} from '@carbon/react';
 import {styles} from '@carbon/type';
+import {PanelHeader} from '#/operate/shared/PanelHeader/PanelHeader';
 
 const HistoryPanel = styled.section`
 	height: 100%;
@@ -17,14 +18,19 @@ const HistoryPanel = styled.section`
 	flex-direction: column;
 	background: var(--cds-layer-01);
 `;
-const HistoryHeader = styled.div`
-	display: flex;
-	align-items: center;
-	gap: var(--cds-spacing-05);
-	padding: var(--cds-spacing-04);
-	flex-wrap: wrap;
+const HistoryHeader = styled(PanelHeader)`
+	justify-content: space-between;
+	gap: var(--cds-spacing-03);
+
 	h2 {
-		font-size: var(--cds-body-compact-01-font-size);
+		min-width: 0;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
+	.cds--stack-horizontal {
+		flex-shrink: 0;
 	}
 `;
 const HistoryScroll = styled.div`

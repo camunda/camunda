@@ -1630,7 +1630,7 @@
 					"newVariableTitle": "Neue Variable bearbeiten",
 					"copy": "Variablen kopieren",
 					"copyTitle": "Klicken, um Variablen in die Zwischenablage zu kopieren",
-					"copyPaginated": "Kopieren ist bei 50 oder mehr Variablen deaktiviert",
+					"copyPaginated": "Kopieren ist bei mehr als 50 Variablen deaktiviert",
 					"copyTruncated": "Kopieren ist bei Variablenwerten mit mehr als 8192 Zeichen deaktiviert",
 					"validation": {
 						"emptyName": "Name muss ausgefüllt sein",

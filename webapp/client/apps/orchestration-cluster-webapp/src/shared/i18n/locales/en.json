@@ -1642,7 +1642,7 @@
 					"newVariableTitle": "Edit a new Variable",
 					"copy": "Copy variables",
 					"copyTitle": "Click to copy variables to clipboard",
-					"copyPaginated": "Copying is disabled for 50 variables or more",
+					"copyPaginated": "Copying is disabled for more than 50 variables",
 					"copyTruncated": "Copying is disabled for variable values larger than 8192 characters",
 					"validation": {
 						"emptyName": "Name has to be filled",
