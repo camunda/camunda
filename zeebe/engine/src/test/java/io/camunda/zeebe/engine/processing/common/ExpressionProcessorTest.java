@@ -239,6 +239,38 @@ class ExpressionProcessorTest {
 
   @Nested
   @TestInstance(Lifecycle.PER_CLASS)
+  class EvaluateAnyExpressionToBufferWithLabelTest {
+
+    @Test
+    void shouldUseLabelInGenuineEvaluationFailureMessage() {
+      // given
+      final var processor =
+          new ExpressionProcessor(
+              EXPRESSION_LANGUAGE,
+              new InMemoryVariableEvaluationContext(Map.of("foo", 5)),
+              DEFAULT_TIMEOUT);
+      final var parsedExpression = EXPRESSION_LANGUAGE.parseExpression("=assert(foo, foo > 100)");
+      final var label = new ExpressionLabel("script expression", "script task 't'");
+
+      // when
+      final var result =
+          processor.evaluateAnyExpressionToBuffer(parsedExpression, -1L, "tenant_1", label);
+
+      // then
+      assertThat(result)
+          .isLeft()
+          .extracting(r -> r.getLeft().getMessage())
+          .isEqualTo(
+              """
+              Assertion failure on evaluate the expression 'assert(foo, foo > 100)': The \
+              condition is not fulfilled (script expression of script task 't') \
+              The evaluation reported the following warnings:
+              [ASSERT_FAILURE] The condition is not fulfilled""");
+    }
+  }
+
+  @Nested
+  @TestInstance(Lifecycle.PER_CLASS)
   class EvaluateBooleanExpressionWithLabelTest {
 
     @Test

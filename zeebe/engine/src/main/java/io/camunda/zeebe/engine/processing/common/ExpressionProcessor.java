@@ -360,8 +360,21 @@ public final class ExpressionProcessor {
    */
   public Either<Failure, DirectBuffer> evaluateAnyExpressionToBuffer(
       final Expression expression, final long scopeKey, final String tenantId) {
-    final var evaluationResult = evaluateExpressionAsEither(expression, scopeKey, tenantId);
-    return evaluationResult.map(EvaluationResult::toBuffer);
+    return evaluateAnyExpressionToBuffer(expression, scopeKey, tenantId, ExpressionLabel.NONE);
+  }
+
+  /**
+   * Like {@link #evaluateAnyExpressionToBuffer(Expression, long, String)}, but labels the failure
+   * message, if any, with the given {@link ExpressionLabel}. Any result type is accepted, so only
+   * evaluation failures and timeouts carry the label.
+   */
+  public Either<Failure, DirectBuffer> evaluateAnyExpressionToBuffer(
+      final Expression expression,
+      final long scopeKey,
+      final String tenantId,
+      final ExpressionLabel label) {
+    return evaluateExpressionAsEither(expression, scopeKey, tenantId, label)
+        .map(EvaluationResult::toBuffer);
   }
 
   /**
