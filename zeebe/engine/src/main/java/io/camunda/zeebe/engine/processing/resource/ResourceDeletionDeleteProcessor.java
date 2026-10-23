@@ -59,6 +59,7 @@ import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.BatchOperationType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.protocol.record.value.ResourceType;
+import io.camunda.zeebe.protocol.record.value.StorageOrdinalRelated;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
@@ -138,6 +139,7 @@ public class ResourceDeletionDeleteProcessor
   @Override
   public void processNewCommand(final TypedRecord<ResourceDeletionRecord> command) {
     final var value = command.getValue();
+    value.setStorageOrdinal(StorageOrdinalRelated.NOT_ORDINAL_CONTROLLED);
     final long eventKey = keyGenerator.nextKey();
 
     final var result = tryDeleteResources(command, eventKey);
@@ -158,6 +160,7 @@ public class ResourceDeletionDeleteProcessor
   @Override
   public void processDistributedCommand(final TypedRecord<ResourceDeletionRecord> command) {
     final var value = command.getValue();
+    value.setStorageOrdinal(StorageOrdinalRelated.NOT_ORDINAL_CONTROLLED);
 
     tryDeleteResources(command, command.getKey());
 
