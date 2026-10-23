@@ -17,10 +17,12 @@ import org.slf4j.Logger;
 public final class ActorTimerQueue extends DeadlineTimerWheel {
   private static final Logger LOG = Loggers.ACTOR_LOGGER;
   private static final int DEFAULT_TICKS_PER_WHEEL = 32;
-  // bounds the work done per call, so expiring timers cannot starve the actor tasks of the thread
-  private static final int MAX_POLLS_PER_CALL = 64;
   private static final int MAX_EXPIRED_TIMERS_PER_CALL = 256;
   private final Long2ObjectHashMap<TimerSubscription> timerJobMap = new Long2ObjectHashMap<>();
+  // one poll scans one spoke, so a full revolution is needed to visit every timer that is due.
+  // Bounds the work done per call, so a large clock jump cannot starve the actor tasks of the
+  // thread
+  private final int maxPollsPerCall;
   private long lastPolledMillis = Long.MIN_VALUE;
 
   private final TimerHandler timerHandler =
@@ -42,6 +44,7 @@ public final class ActorTimerQueue extends DeadlineTimerWheel {
 
   public ActorTimerQueue(final ActorClock clock, final int ticksPerWheel) {
     super(TimeUnit.MILLISECONDS, clock.getTimeMillis(), 1, ticksPerWheel);
+    maxPollsPerCall = ticksPerWheel;
   }
 
   public void processExpiredTimers(final ActorClock clock) {
@@ -55,7 +58,7 @@ public final class ActorTimerQueue extends DeadlineTimerWheel {
 
     // poll advances the wheel by at most one tick, so keep polling until it has caught up with now
     int expiredTimers = 0;
-    for (int polls = 0; polls < MAX_POLLS_PER_CALL; polls++) {
+    for (int polls = 0; polls < maxPollsPerCall; polls++) {
       final long tickTime = currentTickTime();
       expiredTimers += poll(now, timerHandler, MAX_EXPIRED_TIMERS_PER_CALL - expiredTimers);
 
