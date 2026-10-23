@@ -114,6 +114,45 @@ describe('waitUntilReady', () => {
 		expect(queryClient.getQueryData(queryKey)).toEqual({value: 'newer'});
 	});
 
+	it("should apply each call's own isReady when calls with the same key overlap", async () => {
+		// given
+		vi.useFakeTimers();
+		const queryClient = new QueryClient();
+		const queryKey = ['waitUntilReady-test-overlap'];
+		let count = 10;
+		const queryFn = () => Promise.resolve({count});
+
+		// when
+		const first = waitUntilReady(
+			queryClient,
+			{queryKey, queryFn},
+			{isReady: (data) => data.count <= 9, retry: 5, retryDelay: 100},
+		);
+		const second = waitUntilReady(
+			queryClient,
+			{queryKey, queryFn},
+			{isReady: (data) => data.count <= 8, retry: 5, retryDelay: 100},
+		);
+		await vi.advanceTimersByTimeAsync(10);
+		count = 9;
+		await vi.advanceTimersByTimeAsync(250);
+		const firstResult = await first;
+		const secondSettled = vi.fn();
+		void second.then(secondSettled);
+		await vi.advanceTimersByTimeAsync(0);
+
+		// then
+		expect(firstResult).toEqual({count: 9});
+		expect(secondSettled).not.toHaveBeenCalled();
+
+		// when
+		count = 8;
+		await vi.advanceTimersByTimeAsync(1000);
+
+		// then
+		expect(await second).toEqual({count: 8});
+	});
+
 	it('should give up quietly once the retry budget is exhausted', async () => {
 		// given
 		vi.useFakeTimers();

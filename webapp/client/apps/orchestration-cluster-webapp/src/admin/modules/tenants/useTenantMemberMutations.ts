@@ -138,8 +138,7 @@ function useTenantMemberMutations(tab: TenantTab, tenantId: string) {
 		const ready = await waitUntilReady(
 			queryClient,
 			{
-				// A key of its own keeps a second reconciliation from joining this poll and its readiness check.
-				queryKey: [...query.queryKey, crypto.randomUUID()],
+				queryKey: query.queryKey,
 				queryFn: query.queryFn as unknown as QueryFunction<{page: {totalItems: number}}, QueryKey, never>,
 			},
 			{isReady: ({page}) => isReady(page.totalItems)},
