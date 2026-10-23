@@ -7,6 +7,7 @@
  */
 
 import {createPortal} from 'react-dom';
+import {useTranslation} from 'react-i18next';
 import {Modifications, PlusIcon, MinusIcon} from './styled';
 
 type Props = {
@@ -16,12 +17,25 @@ type Props = {
 };
 
 const ModificationBadgeOverlay: React.FC<Props> = ({container, newTokenCount, cancelledTokenCount}) => {
+	const {t} = useTranslation();
+
 	if (newTokenCount === 0 && cancelledTokenCount === 0) {
 		return null;
 	}
 
 	return createPortal(
-		<Modifications data-testid="modifications-overlay">
+		<Modifications
+			data-testid="modifications-overlay"
+			role="img"
+			aria-label={[
+				newTokenCount > 0 ? t('operate.shared.modificationBadge.added', {count: newTokenCount}) : undefined,
+				cancelledTokenCount > 0
+					? t('operate.shared.modificationBadge.canceled', {count: cancelledTokenCount})
+					: undefined,
+			]
+				.filter((part) => part !== undefined)
+				.join(', ')}
+		>
 			{newTokenCount > 0 && (
 				<>
 					<PlusIcon data-testid="badge-plus-icon" />

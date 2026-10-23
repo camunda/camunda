@@ -46,9 +46,9 @@ const REQUEST_SCHEMA = z.object({
 const FAILURE_RESPONSE = new HttpResponse(null, {status: 400});
 const ERROR_RESPONSE = new HttpResponse(null, {status: 500});
 const NO_DRAINING_RESPONSE = HttpResponse.json(createQueryProcessDefinitionsResponse());
-const ALPHA_PROCESS_LINK_NAME = '1 Alpha Process – 6 instances in 1 version 5';
-const BETA_PROCESS_LINK_NAME = '0 Beta Process – 3 instances in 1 version 3';
-const GAMMA_PROCESS_LINK_NAME = '1 Gamma Process – 3 instances in 1 version 2';
+const ALPHA_PROCESS_LINK_NAME = '1 instance with incidents Alpha Process – 6 instances in 1 version 5 active instances';
+const BETA_PROCESS_LINK_NAME = '0 instances with incidents Beta Process – 3 instances in 1 version 3 active instances';
+const GAMMA_PROCESS_LINK_NAME = '1 instance with incidents Gamma Process – 3 instances in 1 version 2 active instances';
 
 const PAGE_1_RESPONSE = HttpResponse.json(
 	createPaginatedResponse({
@@ -146,7 +146,11 @@ describe('<InstancesByProcess />', () => {
 		await userEvent.wheel(screen.getByTestId('instances-by-process-list'), {delta: {y: 10000}});
 
 		await expect
-			.element(screen.getByRole('link', {name: '0 Page Two Process – 1 instance in 1 version 1'}))
+			.element(
+				screen.getByRole('link', {
+					name: '0 instances with incidents Page Two Process – 1 instance in 1 version 1 active instance',
+				}),
+			)
 			.toBeVisible();
 	});
 
@@ -181,7 +185,9 @@ describe('<InstancesByProcess />', () => {
 		const screen = await renderWithRouter(() => <InstancesByProcess />, {path: '/operate'});
 
 		const alphaProcessLink = screen.getByRole('link', {name: ALPHA_PROCESS_LINK_NAME});
-		const betaProcessLink = screen.getByRole('link', {name: '0 Beta Process – 0 instances in 1 version 0'});
+		const betaProcessLink = screen.getByRole('link', {
+			name: '0 instances with incidents Beta Process – 0 instances in 1 version 0 active instances',
+		});
 
 		await expect.element(alphaProcessLink).toBeVisible();
 		await expect
