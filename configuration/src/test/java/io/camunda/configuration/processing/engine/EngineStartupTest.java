@@ -90,4 +90,81 @@ public class EngineStartupTest {
           .isFalse();
     }
   }
+
+  @Nested
+  @TestPropertySource(
+      properties = {
+        "camunda.processing.engine.startup.process-definition-restore-enabled=false",
+      })
+  class WithOnlyUnifiedConfigSetForProcessDefinitionRestore {
+    final BrokerBasedProperties brokerCfg;
+
+    WithOnlyUnifiedConfigSetForProcessDefinitionRestore(
+        @Autowired final BrokerBasedProperties brokerCfg) {
+      this.brokerCfg = brokerCfg;
+    }
+
+    @Test
+    void shouldSetProcessDefinitionRestoreEnabled() {
+      assertThat(
+              brokerCfg
+                  .getExperimental()
+                  .getEngine()
+                  .getStartup()
+                  .isProcessDefinitionRestoreEnabled())
+          .isFalse();
+    }
+  }
+
+  @Nested
+  @TestPropertySource(
+      properties = {
+        "zeebe.broker.experimental.engine.startup.processDefinitionRestoreEnabled=false",
+      })
+  class WithOnlyLegacySetForProcessDefinitionRestore {
+    final BrokerBasedProperties brokerCfg;
+
+    WithOnlyLegacySetForProcessDefinitionRestore(@Autowired final BrokerBasedProperties brokerCfg) {
+      this.brokerCfg = brokerCfg;
+    }
+
+    @Test
+    void shouldSetProcessDefinitionRestoreEnabledFromLegacy() {
+      assertThat(
+              brokerCfg
+                  .getExperimental()
+                  .getEngine()
+                  .getStartup()
+                  .isProcessDefinitionRestoreEnabled())
+          .isFalse();
+    }
+  }
+
+  @Nested
+  @TestPropertySource(
+      properties = {
+        // new properties
+        "camunda.processing.engine.startup.process-definition-restore-enabled=false",
+        // legacy properties (should be ignored when new ones are present)
+        "zeebe.broker.experimental.engine.startup.processDefinitionRestoreEnabled=true",
+      })
+  class WithNewAndLegacySetForProcessDefinitionRestore {
+    final BrokerBasedProperties brokerCfg;
+
+    WithNewAndLegacySetForProcessDefinitionRestore(
+        @Autowired final BrokerBasedProperties brokerCfg) {
+      this.brokerCfg = brokerCfg;
+    }
+
+    @Test
+    void shouldSetProcessDefinitionRestoreEnabledFromNew() {
+      assertThat(
+              brokerCfg
+                  .getExperimental()
+                  .getEngine()
+                  .getStartup()
+                  .isProcessDefinitionRestoreEnabled())
+          .isFalse();
+    }
+  }
 }

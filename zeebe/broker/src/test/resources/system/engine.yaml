@@ -48,6 +48,7 @@ zeebe:
           businessIdUniquenessEnabled: true
         startup:
           rpaReexportMigrationEnabled: false
+          processDefinitionRestoreEnabled: false
         storageOrdinals:
           enableArchiverless: true
           fixedStorageOrdinal: 1001

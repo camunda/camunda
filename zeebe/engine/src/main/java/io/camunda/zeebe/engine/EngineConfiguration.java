@@ -109,6 +109,8 @@ public final class EngineConfiguration {
 
   public static final boolean DEFAULT_ENABLE_RPA_REEXPORT_MIGRATION = true;
 
+  public static final boolean DEFAULT_ENABLE_PROCESS_DEFINITION_RESTORE = true;
+
   public static final boolean DEFAULT_ENGINE_STORAGE_ORDINALS_ENABLE_ARCHIVERLESS = false;
   public static final int DEFAULT_ENGINE_STORAGE_ORDINALS_FIXED_STORAGE_ORDINAL = -1;
 
@@ -176,6 +178,7 @@ public final class EngineConfiguration {
   private boolean includeVariablesInJobCompletedEvent =
       DEFAULT_JOBS_INCLUDE_VARIABLES_IN_JOB_COMPLETED_EVENT;
   private boolean enableRpaReexportMigration = DEFAULT_ENABLE_RPA_REEXPORT_MIGRATION;
+  private boolean enableProcessDefinitionRestore = DEFAULT_ENABLE_PROCESS_DEFINITION_RESTORE;
   private InputMappingMode inputMappingMode = InputMappingMode.COMBINED;
   private @Nullable InputMappingMode inputComparisonMode = null;
   private OutputMappingMode outputMappingMode = OutputMappingMode.COMBINED;
@@ -766,6 +769,16 @@ public final class EngineConfiguration {
   public EngineConfiguration setEnableRpaReexportMigration(
       final boolean enableRpaReexportMigration) {
     this.enableRpaReexportMigration = enableRpaReexportMigration;
+    return this;
+  }
+
+  public boolean isEnableProcessDefinitionRestore() {
+    return enableProcessDefinitionRestore;
+  }
+
+  public EngineConfiguration setEnableProcessDefinitionRestore(
+      final boolean enableProcessDefinitionRestore) {
+    this.enableProcessDefinitionRestore = enableProcessDefinitionRestore;
     return this;
   }
 

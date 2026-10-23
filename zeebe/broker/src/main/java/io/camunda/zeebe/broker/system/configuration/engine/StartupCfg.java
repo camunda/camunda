@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.broker.system.configuration.engine;
 
+import static io.camunda.zeebe.engine.EngineConfiguration.DEFAULT_ENABLE_PROCESS_DEFINITION_RESTORE;
 import static io.camunda.zeebe.engine.EngineConfiguration.DEFAULT_ENABLE_RPA_REEXPORT_MIGRATION;
 
 import io.camunda.zeebe.broker.system.configuration.ConfigurationEntry;
@@ -14,6 +15,7 @@ import io.camunda.zeebe.broker.system.configuration.ConfigurationEntry;
 public class StartupCfg implements ConfigurationEntry {
 
   private boolean rpaReexportMigrationEnabled = DEFAULT_ENABLE_RPA_REEXPORT_MIGRATION;
+  private boolean processDefinitionRestoreEnabled = DEFAULT_ENABLE_PROCESS_DEFINITION_RESTORE;
 
   public boolean isRpaReexportMigrationEnabled() {
     return rpaReexportMigrationEnabled;
@@ -23,8 +25,21 @@ public class StartupCfg implements ConfigurationEntry {
     this.rpaReexportMigrationEnabled = rpaReexportMigrationEnabled;
   }
 
+  public boolean isProcessDefinitionRestoreEnabled() {
+    return processDefinitionRestoreEnabled;
+  }
+
+  public void setProcessDefinitionRestoreEnabled(final boolean processDefinitionRestoreEnabled) {
+    this.processDefinitionRestoreEnabled = processDefinitionRestoreEnabled;
+  }
+
   @Override
   public String toString() {
-    return "StartupCfg{" + "rpaReexportMigrationEnabled=" + rpaReexportMigrationEnabled + '}';
+    return "StartupCfg{"
+        + "rpaReexportMigrationEnabled="
+        + rpaReexportMigrationEnabled
+        + ", processDefinitionRestoreEnabled="
+        + processDefinitionRestoreEnabled
+        + '}';
   }
 }

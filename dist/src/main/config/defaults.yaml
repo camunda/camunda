@@ -1725,6 +1725,9 @@ camunda: # Type: io.camunda.configuration.Camunda
         wake-delay: "50ms" # Type: Duration, Env: CAMUNDA_PROCESSING_ENGINE_SECRETS_WAKEDELAY
       
       startup: # Type: io.camunda.configuration.processing.engine.EngineStartup  
+        # Configures whether the one-time cleanup that restores stray resting PENDING_DELETION process
+        # definitions back to ACTIVE runs on broker startup.
+        process-definition-restore-enabled: null # Type: Boolean, Env: CAMUNDA_PROCESSING_ENGINE_STARTUP_PROCESSDEFINITIONRESTOREENABLED
         # Configures whether the one-time migration that re-exports existing RPA resources runs on broker
         # startup.
         rpa-reexport-migration-enabled: null # Type: Boolean, Env: CAMUNDA_PROCESSING_ENGINE_STARTUP_RPAREEXPORTMIGRATIONENABLED

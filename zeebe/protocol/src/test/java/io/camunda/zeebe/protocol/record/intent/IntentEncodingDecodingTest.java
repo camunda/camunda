@@ -164,6 +164,9 @@ final class IntentEncodingDecodingTest {
     result.addAll(buildParameterSets(ResourceIntent.class, ResourceIntent::from));
     result.addAll(buildParameterSets(ResourceDeletionIntent.class, ResourceDeletionIntent::from));
     result.addAll(buildParameterSets(ResourceReexportIntent.class, ResourceReexportIntent::from));
+    result.addAll(
+        buildParameterSets(
+            ProcessDefinitionRestoreIntent.class, ProcessDefinitionRestoreIntent::from));
     result.addAll(buildParameterSets(RoleIntent.class, RoleIntent::from));
     result.addAll(
         buildParameterSets(RuntimeInstructionIntent.class, RuntimeInstructionIntent::from));

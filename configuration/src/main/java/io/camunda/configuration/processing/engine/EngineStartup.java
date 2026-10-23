@@ -7,6 +7,7 @@
  */
 package io.camunda.configuration.processing.engine;
 
+import static io.camunda.zeebe.engine.EngineConfiguration.DEFAULT_ENABLE_PROCESS_DEFINITION_RESTORE;
 import static io.camunda.zeebe.engine.EngineConfiguration.DEFAULT_ENABLE_RPA_REEXPORT_MIGRATION;
 
 import io.camunda.configuration.UnifiedConfigurationHelper;
@@ -23,11 +24,20 @@ public class EngineStartup {
   private static final Set<String> LEGACY_RPA_REEXPORT_MIGRATION_ENABLED_PROPERTIES =
       Set.of("zeebe.broker.experimental.engine.startup.rpaReexportMigrationEnabled");
 
+  private static final Set<String> LEGACY_PROCESS_DEFINITION_RESTORE_ENABLED_PROPERTIES =
+      Set.of("zeebe.broker.experimental.engine.startup.processDefinitionRestoreEnabled");
+
   /**
    * Configures whether the one-time migration that re-exports existing RPA resources runs on broker
    * startup.
    */
   private boolean rpaReexportMigrationEnabled = DEFAULT_ENABLE_RPA_REEXPORT_MIGRATION;
+
+  /**
+   * Configures whether the one-time cleanup that restores stray resting PENDING_DELETION process
+   * definitions back to ACTIVE runs on broker startup.
+   */
+  private boolean processDefinitionRestoreEnabled = DEFAULT_ENABLE_PROCESS_DEFINITION_RESTORE;
 
   public boolean isRpaReexportMigrationEnabled() {
     return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
@@ -40,5 +50,18 @@ public class EngineStartup {
 
   public void setRpaReexportMigrationEnabled(final boolean rpaReexportMigrationEnabled) {
     this.rpaReexportMigrationEnabled = rpaReexportMigrationEnabled;
+  }
+
+  public boolean isProcessDefinitionRestoreEnabled() {
+    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
+        PREFIX + ".process-definition-restore-enabled",
+        processDefinitionRestoreEnabled,
+        Boolean.class,
+        BackwardsCompatibilityMode.SUPPORTED,
+        LEGACY_PROCESS_DEFINITION_RESTORE_ENABLED_PROPERTIES);
+  }
+
+  public void setProcessDefinitionRestoreEnabled(final boolean processDefinitionRestoreEnabled) {
+    this.processDefinitionRestoreEnabled = processDefinitionRestoreEnabled;
   }
 }
