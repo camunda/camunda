@@ -445,8 +445,22 @@ public final class ExpressionProcessor {
    */
   public Either<Failure, String> evaluateMessageCorrelationKeyExpression(
       final Expression expression, final long scopeKey, final String tenantId) {
+    return evaluateMessageCorrelationKeyExpression(
+        expression, scopeKey, tenantId, ExpressionLabel.NONE);
+  }
+
+  /**
+   * Like {@link #evaluateMessageCorrelationKeyExpression(Expression, long, String)}, but labels the
+   * failure message of a failing or timed out evaluation with the given {@link ExpressionLabel}.
+   * The type mismatch message already names the correlation key, so it stays unchanged.
+   */
+  public Either<Failure, String> evaluateMessageCorrelationKeyExpression(
+      final Expression expression,
+      final long scopeKey,
+      final String tenantId,
+      final ExpressionLabel label) {
     final var expectedTypes = Set.of(ResultType.STRING, ResultType.NUMBER);
-    return evaluateExpressionAsEither(expression, scopeKey, tenantId)
+    return evaluateExpressionAsEither(expression, scopeKey, tenantId, label)
         .flatMap(result -> typeCheckCorrelationKey(scopeKey, expectedTypes, result, expression))
         .map(this::toStringFromStringOrNumber);
   }

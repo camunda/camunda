@@ -775,4 +775,62 @@ class ExpressionProcessorTest {
           .contains("Assertion failure on evaluate the expression");
     }
   }
+
+  @Nested
+  @TestInstance(Lifecycle.PER_CLASS)
+  class EvaluateMessageCorrelationKeyExpressionWithLabelTest {
+
+    @Test
+    void shouldUseLabelInGenuineEvaluationFailureMessage() {
+      // given
+      final var processor =
+          new ExpressionProcessor(
+              EXPRESSION_LANGUAGE,
+              new InMemoryVariableEvaluationContext(Map.of("foo", 5)),
+              DEFAULT_TIMEOUT);
+      final var parsedExpression = EXPRESSION_LANGUAGE.parseExpression("=assert(foo, foo > 100)");
+      final var label = new ExpressionLabel("correlation key expression", "element 'c'");
+
+      // when
+      final var result =
+          processor.evaluateMessageCorrelationKeyExpression(
+              parsedExpression, -1L, "tenant_1", label);
+
+      // then
+      assertThat(result)
+          .isLeft()
+          .extracting(r -> r.getLeft().getMessage())
+          .isEqualTo(
+              """
+              Assertion failure on evaluate the expression 'assert(foo, foo > 100)': The \
+              condition is not fulfilled (correlation key expression of element 'c') \
+              The evaluation reported the following warnings:
+              [ASSERT_FAILURE] The condition is not fulfilled""");
+    }
+
+    @Test
+    void shouldKeepCorrelationKeyTypeMismatchMessage() {
+      // given: the type mismatch message already names the correlation key
+      final var processor =
+          new ExpressionProcessor(EXPRESSION_LANGUAGE, DEFAULT_CONTEXT_LOOKUP, DEFAULT_TIMEOUT);
+      final var parsedExpression = EXPRESSION_LANGUAGE.parseExpression("=x");
+      final var label = new ExpressionLabel("correlation key expression", "element 'c'");
+
+      // when
+      final var result =
+          processor.evaluateMessageCorrelationKeyExpression(
+              parsedExpression, -1L, "tenant_1", label);
+
+      // then
+      assertThat(result)
+          .isLeft()
+          .extracting(r -> r.getLeft().getMessage())
+          .isEqualTo(
+              """
+              Failed to extract the correlation key for 'x': \
+              The value must be either a string or a number, but was 'NULL'. \
+              The evaluation reported the following warnings:
+              [NO_VARIABLE_FOUND] No variable found with name 'x'""");
+    }
+  }
 }
