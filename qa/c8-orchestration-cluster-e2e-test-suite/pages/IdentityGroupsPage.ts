@@ -231,6 +231,11 @@ export class IdentityGroupsPage {
       .first();
     await expect(option).toBeVisible({timeout: 30000});
     await option.click({timeout: 20000});
+    // Selecting an option leaves the MultiSelect's cmdk popover open; it
+    // overlaps the modal's "Assign user" submit button and intercepts the
+    // click. Dismiss the popover before confirming.
+    await this.page.keyboard.press('Escape');
+    await expect(this.searchBoxResult).toBeHidden();
     await this.assignUserButtonModal.click();
     await expect(this.assignUserModal).toBeHidden();
     // Wait for the member row rather than sleeping for a fixed 8s: both
