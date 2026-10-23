@@ -153,7 +153,8 @@ outputs:
   zeebe-changes:
     description: >-
       Output whether any file under zeebe/ or clients/ (or a webapps/Maven build file) has changed.
-      Deliberately coarse and not used to gate the Zeebe CI, which follows `java-code-changes`.
+      Deliberately coarse: it also matches non-Java files, so the Zeebe CI combines it with
+      `java-code-changes`. It also feeds the Operate/Optimize back-end test switches.
     value: >-
       ${{
         github.event_name == 'push' ||
@@ -376,8 +377,8 @@ runs:
           - 'mvnw.cmd'
           - '.github/scripts/validate-flattened-poms.sh'
 
-        # Includes the files the Dockerfiles copy in from zeebe/docker so image checks still run
-        # for them now that the Zeebe CI is gated on java-code-changes only.
+        # Includes the files the Dockerfiles copy in from zeebe/docker (non-Java, so they no longer
+        # start the Zeebe CI, which also requires java-code-changes) so the Docker checks still run.
         dockerfile-change:
           - '*.Dockerfile'
           - 'zeebe/docker/**'
