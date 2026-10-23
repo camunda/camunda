@@ -19,6 +19,7 @@ import {useBatchModificationStatistics, type BatchModificationScope} from './use
 type Props = {
 	blocker: ProcessesNavigationBlocker;
 	scope: BatchModificationScope;
+	hasActiveScope: boolean;
 	processDefinitionSelection: ProcessDefinitionSelection;
 	isDefinitionChanged: boolean;
 	sourceElementId?: string;
@@ -32,6 +33,7 @@ type Props = {
 function BatchModificationFooter({
 	blocker,
 	scope,
+	hasActiveScope,
 	processDefinitionSelection,
 	isDefinitionChanged,
 	sourceElementId,
@@ -54,7 +56,7 @@ function BatchModificationFooter({
 			: getProcessDefinitionName(processDefinitionSelection.definition);
 	const count = useBatchModificationStatistics({definitionKey, sourceElementId, scope});
 	const isTargetElementSelected = targetElementId !== undefined;
-	const isScopeReviewable = scope.selectedCount >= 1 && !isDefinitionChanged;
+	const isScopeReviewable = scope.selectedCount >= 1 && hasActiveScope && !isDefinitionChanged;
 	const isExitConfirmationOpen = isExitOpen || blocker.status === 'blocked';
 
 	return (

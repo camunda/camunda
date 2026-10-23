@@ -159,6 +159,7 @@ const InstancesTable: React.FC<Props> = ({
 	const isSubmitting = operation.matches('submitting') || modification.matches('submitting');
 	const {acceptedKey, acceptedIdentity} = operation.context;
 	const {reset, filterIdentity} = selection;
+	const modificationFilter = selection.getModificationFilter();
 	const selectionFilter = selection.getModificationStatisticsFilter();
 	const scopeIdentity = JSON.stringify({filter: selectionFilter, selectedCount: selection.selectedCount});
 	useEffect(() => {
@@ -515,6 +516,7 @@ const InstancesTable: React.FC<Props> = ({
 				<BatchModificationFooter
 					blocker={navigationBlocker}
 					scope={{filter: selectionFilter, selectedCount: selection.selectedCount}}
+					hasActiveScope={modificationFilter !== null}
 					processDefinitionSelection={processDefinitionSelection}
 					isDefinitionChanged={isDefinitionChanged}
 					sourceElementId={search.elementId}
@@ -526,7 +528,12 @@ const InstancesTable: React.FC<Props> = ({
 					})}
 					onExit={exitMode}
 					onSubmit={(moveInstruction) => {
-						if (selection.selectedCount < 1 || modeDefinition === null || isDefinitionChanged) {
+						if (
+							selection.selectedCount < 1 ||
+							modificationFilter === null ||
+							modeDefinition === null ||
+							isDefinitionChanged
+						) {
 							return;
 						}
 						exitMode();
@@ -535,7 +542,7 @@ const InstancesTable: React.FC<Props> = ({
 							action: 'modify',
 							body: {
 								filter: {
-									...selection.getRequest('modify').filter,
+									...modificationFilter,
 									tenantId: {$eq: modeDefinition.tenantId},
 								},
 								moveInstructions: [moveInstruction],

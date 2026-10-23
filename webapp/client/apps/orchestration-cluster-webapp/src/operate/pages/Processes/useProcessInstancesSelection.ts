@@ -15,10 +15,11 @@ import type {
 import {mapProcessInstancesFilter, type ProcessesSearch} from './processesFilter';
 import {buildInstanceKeyCriterion} from '#/operate/shared/utils/buildInstanceKeyCriterion';
 import {useInstancesSelection} from '#/operate/shared/hooks/useInstancesSelection';
+import {getActiveInstancesFilter} from './getActiveInstancesFilter';
 import {narrowTopLevelState} from './narrowTopLevelState';
 
 type ProcessBulkAction = 'delete' | 'cancel' | 'retry' | 'suspend' | 'resume';
-const ALLOWED_BATCH_STATES: Partial<Record<ProcessBulkAction | 'modify', readonly ProcessInstanceState[]>> = {
+const ALLOWED_BATCH_STATES: Partial<Record<ProcessBulkAction, readonly ProcessInstanceState[]>> = {
 	cancel: ['ACTIVE', 'SUSPENDED'],
 	suspend: ['ACTIVE'],
 };
@@ -104,20 +105,24 @@ function useProcessInstancesSelection(
 		incidentCount: incidents.length,
 		suspendedCount: suspended.length,
 		toggle: selection.select,
-		getRequest: (action: ProcessBulkAction | 'modify'): CreateCancellationBatchOperationRequestBody => {
+		getRequest: (action: ProcessBulkAction): CreateCancellationBatchOperationRequestBody => {
 			const eligible =
 				action === 'delete' ? finished : action === 'resume' ? suspended : action === 'cancel' ? cancelable : running;
 			const included =
 				eligible.length > 0 ? eligible.map(({processInstanceKey}) => processInstanceKey) : selection.includedIds;
 			const allowedStates = ALLOWED_BATCH_STATES[action];
-			const baseFilter =
-				action === 'modify'
-					? mapProcessInstancesFilter({...search, suspended: false})
-					: filter && allowedStates
-						? narrowTopLevelState(filter, allowedStates)
-						: filter;
+			const baseFilter = filter && allowedStates ? narrowTopLevelState(filter, allowedStates) : filter;
 			return {filter: withSelection(baseFilter, included)};
 		},
+		getModificationFilter: (): CreateCancellationBatchOperationRequestBody['filter'] | null =>
+			hasRunning
+				? getActiveInstancesFilter(
+						withSelection(
+							filter,
+							running.map(({processInstanceKey}) => processInstanceKey),
+						),
+					)
+				: null,
 		getModificationStatisticsFilter: (): CreateCancellationBatchOperationRequestBody['filter'] =>
 			withSelection(filter, selection.includedIds),
 	};
