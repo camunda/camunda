@@ -25,8 +25,6 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.state.deployment.DeployedDrg;
 import io.camunda.zeebe.engine.state.deployment.PersistedDecision;
 import io.camunda.zeebe.engine.state.immutable.DecisionState;
-import io.camunda.zeebe.model.bpmn.impl.BpmnModelConstants;
-import io.camunda.zeebe.model.bpmn.impl.ZeebeConstants;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRequirementsRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
@@ -42,7 +40,6 @@ import java.util.Optional;
 import java.util.function.LongSupplier;
 import java.util.stream.Stream;
 import org.agrona.DirectBuffer;
-import org.camunda.bpm.model.dmn.instance.ExtensionElements;
 
 public final class DmnResourceTransformer implements DeploymentResourceTransformer {
 
@@ -421,14 +418,7 @@ public final class DmnResourceTransformer implements DeploymentResourceTransform
   private Optional<String> getOptionalVersionTag(
       final ParsedDecisionRequirementsGraph parsedDrg, final String decisionId) {
     if (parsedDrg instanceof final ParsedDmnScalaDrg dmn) {
-      final var decisionElement = dmn.getParsedDmn().model().getModelElementById(decisionId);
-      return Optional.ofNullable(
-              decisionElement.getUniqueChildElementByType(ExtensionElements.class))
-          .map(
-              extensionElements ->
-                  extensionElements.getUniqueChildElementByNameNs(
-                      BpmnModelConstants.ZEEBE_NS, ZeebeConstants.ELEMENT_VERSION_TAG))
-          .map(versionTag -> versionTag.getAttributeValue(ZeebeConstants.ATTRIBUTE_VALUE));
+      return dmn.getVersionTag(decisionId);
     }
     return Optional.empty();
   }
