@@ -27,13 +27,15 @@ class OperateDecisionsPage {
   readonly viewDecisionInstanceLink: (decisionInstanceId: string) => Locator;
   readonly decisionNameFilter: Locator;
   readonly decisionVersionFilter: Locator;
-  readonly decisionViewer: Locator;
+  readonly decisionTableName: (name: string) => Locator;
+  readonly decisionTableAnnotation: (annotation: string) => Locator;
   readonly decisionInstanceKeysFilter: Locator;
   readonly filterRegion: Locator;
   readonly clearSelectedItemButton: Locator;
   readonly moreFiltersButton: Locator;
   readonly evaluatedCheckbox: Locator;
   readonly failedCheckbox: Locator;
+  readonly decisionInstancesTable: Locator;
   readonly decisionInstancesList: Locator;
   readonly businessIdFilter: Locator;
   readonly businessIdFilterType: Locator;
@@ -55,7 +57,10 @@ class OperateDecisionsPage {
     this.decisionInstanceKeysFilter = page.getByLabel(
       /^decision instance key\(s\)$/i,
     );
-    this.decisionViewer = page.getByTestId('decision-viewer');
+    this.decisionTableName = (name: string) =>
+      page.getByTitle(`Decision name: ${name}`, {exact: true});
+    this.decisionTableAnnotation = (annotation: string) =>
+      page.getByRole('cell', {name: annotation, exact: true});
     this.filterRegion = page.getByRole('region', {name: /filter/i});
     this.clearSelectedItemButton = page.getByRole('button', {
       name: 'Clear selected item',
@@ -63,7 +68,14 @@ class OperateDecisionsPage {
     this.moreFiltersButton = page.getByRole('button', {name: 'More Filters'});
     this.evaluatedCheckbox = page.getByRole('checkbox', {name: 'Evaluated'});
     this.failedCheckbox = page.getByRole('checkbox', {name: 'Failed'});
-    this.decisionInstancesList = page.getByTestId('data-list');
+    this.decisionInstancesTable = page.getByRole('table').filter({
+      has: page.getByRole('columnheader', {
+        name: /^(Sort by )?Decision Instance Key$/,
+      }),
+    });
+    this.decisionInstancesList = this.decisionInstancesTable
+      .getByRole('rowgroup')
+      .filter({hasNot: page.getByRole('columnheader')});
     this.businessIdFilter = page.getByRole('textbox', {
       name: 'Business ID',
       exact: true,
@@ -73,6 +85,18 @@ class OperateDecisionsPage {
     });
     this.getOptionByName = (name: string, exact = true) =>
       this.filterRegion.getByRole('option', {name, exact});
+  }
+
+  async getCellInColumn(row: Locator, columnHeader: string): Promise<Locator> {
+    await expect(row).toBeVisible();
+    const headers = await this.decisionInstancesTable
+      .getByRole('columnheader')
+      .allInnerTexts();
+    const columnIndex = headers
+      .map((header) => header.trim())
+      .indexOf(columnHeader);
+    expect(columnIndex).toBeGreaterThanOrEqual(0);
+    return row.getByRole('cell').nth(columnIndex);
   }
 
   async clickViewDecisionInstanceLink(

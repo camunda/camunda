@@ -106,10 +106,15 @@ test.describe.serial('Wait States Flag Off', () => {
       await page.goto(
         `${ISOLATED_BASE_URL}/operate/processes/${processInstanceKey}`,
       );
-      await expect(page.getByTestId('instance-header')).toBeVisible();
+      await expect(
+        page.getByRole('group', {name: 'Instance header', exact: true}),
+      ).toBeVisible();
 
       await expect(
-        page.getByTestId('waiting-state-overlay').first(),
+        page
+          .locator('[data-container-id]')
+          .getByText(/^(Waiting|\d+ waiting)$/)
+          .first(),
       ).toBeHidden();
 
       await page.getByRole('treeitem', {name: 'task', exact: true}).click();
@@ -117,8 +122,12 @@ test.describe.serial('Wait States Flag Off', () => {
         .getByLabel('Process Instance Bottom Panel Tabs')
         .getByRole('link', {name: /^Details$/i});
       await detailsTabButton.click();
-      await expect(page.getByTestId('instance-header')).toBeVisible();
-      await expect(page.getByTestId('waiting-status')).toBeHidden();
+      await expect(
+        page.getByRole('group', {name: 'Instance header', exact: true}),
+      ).toBeVisible();
+      await expect(
+        page.getByRole('heading', {name: 'Status', exact: true}),
+      ).toBeHidden();
 
       expect(waitStatesRequests).toHaveLength(0);
     });

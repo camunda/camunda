@@ -90,20 +90,20 @@ test.describe('Decision Instances', () => {
       await operateDecisionsPage.selectDecisionName('Decision 1');
       await operateDecisionsPage.selectVersion(decision1Version1!.version);
       await expect(
-        operateDecisionsPage.decisionViewer.getByText('Decision 1'),
+        operateDecisionsPage.decisionTableName('Decision 1'),
       ).toBeVisible();
       await expect(
-        operateDecisionsPage.decisionViewer.getByText('Version 1'),
+        operateDecisionsPage.decisionTableAnnotation('Version 1'),
       ).toBeVisible();
     });
 
     await test.step('Switch to Decision 1 Version 2', async () => {
       await operateDecisionsPage.selectVersion(decision1Version2!.version);
       await expect(
-        operateDecisionsPage.decisionViewer.getByText('Decision 1'),
+        operateDecisionsPage.decisionTableName('Decision 1'),
       ).toBeVisible();
       await expect(
-        operateDecisionsPage.decisionViewer.getByText('Version 2'),
+        operateDecisionsPage.decisionTableAnnotation('Version 2'),
       ).toBeVisible();
     });
 
@@ -111,27 +111,27 @@ test.describe('Decision Instances', () => {
       await operateDecisionsPage.clearComboBox();
       await operateDecisionsPage.selectDecisionName('Decision 2');
       await expect(
-        operateDecisionsPage.decisionViewer.getByText('Decision 2'),
+        operateDecisionsPage.decisionTableName('Decision 2'),
       ).toBeVisible();
     });
 
     await test.step('Select Decision 2 Version 1', async () => {
       await operateDecisionsPage.selectVersion(decision2Version1!.version);
       await expect(
-        operateDecisionsPage.decisionViewer.getByText('Decision 2'),
+        operateDecisionsPage.decisionTableName('Decision 2'),
       ).toBeVisible();
       await expect(
-        operateDecisionsPage.decisionViewer.getByText('Version 1'),
+        operateDecisionsPage.decisionTableAnnotation('Version 1'),
       ).toBeVisible();
     });
 
     await test.step('Switch to Decision 2 Version 2', async () => {
       await operateDecisionsPage.selectVersion(decision2Version2!.version);
       await expect(
-        operateDecisionsPage.decisionViewer.getByText('Decision 2'),
+        operateDecisionsPage.decisionTableName('Decision 2'),
       ).toBeVisible();
       await expect(
-        operateDecisionsPage.decisionViewer.getByText('Version 2'),
+        operateDecisionsPage.decisionTableAnnotation('Version 2'),
       ).toBeVisible();
     });
   });

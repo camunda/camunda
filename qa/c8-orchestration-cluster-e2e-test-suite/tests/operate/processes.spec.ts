@@ -144,8 +144,9 @@ test.describe('Processes', () => {
       await waitForAssertion({
         assertion: async () => {
           await expect(
-            operateProcessesPage.dataList.getByTestId(
-              `INCIDENT-icon-${instanceWithAnIncident.processInstanceKey}`,
+            operateProcessesPage.getStateIcon(
+              instanceWithAnIncident.processInstanceKey,
+              'incident',
             ),
           ).toBeVisible();
         },
@@ -155,8 +156,9 @@ test.describe('Processes', () => {
       });
 
       await expect(
-        operateProcessesPage.dataList.getByTestId(
-          `ACTIVE-icon-${instanceWithoutAnIncident.processInstanceKey}`,
+        operateProcessesPage.getStateIcon(
+          instanceWithoutAnIncident.processInstanceKey,
+          'active',
         ),
       ).toBeVisible();
     });
@@ -272,8 +274,6 @@ test.describe('Processes', () => {
       );
 
       await expect(operateDiagramPage.diagram).toBeInViewport();
-
-      await expect(operateDiagramPage.diagramSpinner).toBeHidden();
 
       await expect(
         operateProcessesPage.noMatchingInstancesMessage,

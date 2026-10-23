@@ -216,14 +216,10 @@ test.describe('Process Instances Filters', () => {
     await test.step('Escalating to modal pre-fills the inline values', async () => {
       await operateFiltersPanelPage.openVariableFilterModal();
       await expect(
-        operateFiltersPanelPage.variableFilterDialog.getByTestId(
-          'variable-filter-name-0',
-        ),
+        operateFiltersPanelPage.getConditionRowNameInput(0),
       ).toHaveValue('filtersTest');
       await expect(
-        operateFiltersPanelPage.variableFilterDialog.getByTestId(
-          'variable-filter-value-0',
-        ),
+        operateFiltersPanelPage.getConditionRowValueInput(0),
       ).toHaveValue(orderProcessFiltersValue);
       await operateFiltersPanelPage.variableFilterDialog
         .getByRole('button', {name: 'Cancel'})
@@ -390,7 +386,9 @@ test.describe('Process Instances Filters', () => {
       await operateFiltersPanelPage.clickCompletedInstancesCheckbox();
 
       let totalBefore = await readTotalResultsCount(page);
-      const endDate = await operateProcessesPage.endDateCell.innerText();
+      const endDate = await (
+        await operateProcessesPage.getEndDateCell()
+      ).innerText();
       const day =
         endDate === '--' ? new Date().getDate() : new Date(endDate).getDate();
 
@@ -520,15 +518,12 @@ test.describe('Process Instances Filters', () => {
 
       await waitForAssertion({
         assertion: async () => {
-          const variableProcessInstanceKeys = new Set<string>();
-          for (const element of await operateProcessesPage.processInstancesTable
-            .getByTestId('cell-processInstanceKey')
-            .elementHandles()) {
-            variableProcessInstanceKeys.add(await element.innerText());
-          }
-          expect(
-            variableProcessInstanceKeys.has(variableProcessInstanceKey),
-          ).toBeTruthy();
+          await expect(
+            operateProcessesPage.processInstancesTable.getByRole('link', {
+              name: `View instance ${variableProcessInstanceKey}`,
+              exact: true,
+            }),
+          ).toBeVisible();
         },
         onFailure: async () => {
           await page.reload();

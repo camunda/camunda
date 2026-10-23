@@ -59,9 +59,6 @@ test.describe('Call Activities', () => {
         id: processInstanceKey,
       });
 
-      await expect(
-        operateProcessInstancePage.instanceHeaderSkeleton,
-      ).toBeHidden();
       await expect(operateProcessInstancePage.instanceHeader).toBeVisible();
       await expect(
         operateProcessInstancePage.instanceHeader

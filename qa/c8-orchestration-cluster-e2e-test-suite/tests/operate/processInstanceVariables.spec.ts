@@ -97,7 +97,7 @@ test.describe('Process Instance Variables', () => {
 
     await test.step('Click edit variable button and verify Save Variable button is enabled', async () => {
       await operateProcessInstancePage.clickEditVariableButton('aa');
-      await operateProcessInstancePage.clickVariableValueInput();
+      await operateProcessInstancePage.clickVariableValueInput('aa');
       await operateProcessInstancePage.clearVariableValueInput();
       await operateProcessInstancePage.fillVariableValueInput(
         '"editedTestValue"',
@@ -107,18 +107,12 @@ test.describe('Process Instance Variables', () => {
       });
     });
 
-    await test.step('Click Save Variable button and verify that both edit variable spinner and operation spinner are displayed', async () => {
+    await test.step('Click Save Variable button and wait for the variable to leave edit mode', async () => {
       await operateProcessInstancePage.saveVariableButton.click();
-      await expect(operateProcessInstancePage.variableSpinner).toBeVisible();
-    });
-
-    await test.step('Verify that both spinners disappear after saving the variable', async () => {
-      await expect(operateProcessInstancePage.variableSpinner).toBeHidden({
-        timeout: 60000,
-      });
-      await expect(operateProcessInstancePage.operationSpinner).toBeHidden({
-        timeout: 60000,
-      });
+      await expect(
+        operateProcessInstancePage.existingVariableByName('aa')
+          .editVariableModal.button,
+      ).toBeVisible({timeout: 60000});
     });
 
     await test.step('Refresh the page and verify the variable is still there', async () => {
@@ -160,16 +154,9 @@ test.describe('Process Instance Variables', () => {
       await expect(operateProcessInstancePage.saveVariableButton).toBeEnabled();
     });
 
-    await test.step('Click Save Variable button and verify that variable spinner and toast are displayed', async () => {
+    await test.step('Click Save Variable button and verify that the toast is displayed', async () => {
       await operateProcessInstancePage.clickSaveVariableButton();
-      await expect(operateProcessInstancePage.variableSpinner).toBeVisible();
       await expect(operateProcessInstancePage.variableAddedBanner).toBeVisible({
-        timeout: 60000,
-      });
-    });
-
-    await test.step('Verify that the spinner disappears after saving the variable', async () => {
-      await expect(operateProcessInstancePage.variableSpinner).toBeHidden({
         timeout: 60000,
       });
     });
@@ -249,7 +236,10 @@ test.describe('Process Instance Variables', () => {
       await expect(page.getByText('hr', {exact: true})).toBeVisible();
       await page.getByText('hr', {exact: true}).scrollIntoViewIfNeeded();
 
-      await expectInViewport(page.getByTestId('variable-aa'), false);
+      await expectInViewport(
+        operateProcessInstancePage.getVariableTestId('aa'),
+        false,
+      );
       await expect(page.getByText('by', {exact: true})).toBeVisible();
       await expect(page.getByText('jp', {exact: true})).toBeVisible();
 
@@ -258,7 +248,10 @@ test.describe('Process Instance Variables', () => {
         operateProcessInstancePage.variablesList.getByRole('row'),
       ).toHaveCount(251);
 
-      await expectInViewport(page.getByTestId('variable-jp'), false);
+      await expectInViewport(
+        operateProcessInstancePage.getVariableTestId('jp'),
+        false,
+      );
       await expect(page.getByText('aa', {exact: true})).toBeVisible();
       await expect(page.getByText('by', {exact: true})).toBeVisible();
     });
@@ -355,11 +348,8 @@ test.describe('Process Instance Variables', () => {
       await variable.editVariableModal.jsonEditorModal.applyButton.click();
     });
 
-    await test.step('Verify variable is saved without an extra Save click (spinners disappear)', async () => {
-      await expect(operateProcessInstancePage.variableSpinner).toBeHidden({
-        timeout: 60000,
-      });
-      await expect(operateProcessInstancePage.operationSpinner).toBeHidden({
+    await test.step('Verify variable is saved without an extra Save click', async () => {
+      await expect(variable.editVariableModal.button).toBeVisible({
         timeout: 60000,
       });
     });
@@ -369,9 +359,7 @@ test.describe('Process Instance Variables', () => {
       await waitForAssertion({
         assertion: async () => {
           await expect(
-            operateProcessInstancePage.variablesList.getByTestId(
-              `variable-${JSON_VARIABLE_NAME}`,
-            ),
+            operateProcessInstancePage.getVariableTestId(JSON_VARIABLE_NAME),
           ).toContainText('Bob');
         },
         onFailure: async () => {
@@ -559,10 +547,7 @@ test.describe('Process Instance Variables', () => {
 
     await test.step('Click Save and verify the variable is persisted', async () => {
       await operateProcessInstancePage.clickSaveVariableButton();
-      await expect(operateProcessInstancePage.variableSpinner).toBeHidden({
-        timeout: 60000,
-      });
-      await expect(operateProcessInstancePage.operationSpinner).toBeHidden({
+      await expect(variable.editVariableModal.button).toBeVisible({
         timeout: 60000,
       });
     });
