@@ -8,7 +8,6 @@
 
 import {infiniteQueryOptions, queryOptions} from '@tanstack/react-query';
 import type {
-	CurrentUser,
 	License,
 	Form,
 	UserTask,
@@ -86,6 +85,7 @@ import type {
 	QueryGroupsResponseBody,
 } from '@camunda/camunda-api-zod-schemas/8.11';
 import {request} from './request';
+import {isAnonymousCurrentUser, type AuthenticatedCurrentUser} from './currentUser';
 import {endpoints} from './endpoints';
 import {mapQueryError} from './mapQueryError';
 import {parseAdminClientConfig, type AdminClientConfig} from './adminClientConfig';
@@ -178,8 +178,10 @@ const queries = {
 	getCurrentUser: () =>
 		queryOptions({
 			queryKey: queryKeys.currentUser(),
-			queryFn: async (): Promise<CurrentUser> => {
-				const {response, error} = await request(endpoints.getCurrentUser());
+			queryFn: async (): Promise<AuthenticatedCurrentUser> => {
+				const {response, error} = await request(endpoints.getCurrentUser(), {
+					isUnauthenticated: isAnonymousCurrentUser,
+				});
 				if (error !== null) {
 					throw mapQueryError(error);
 				}

@@ -29,7 +29,7 @@ import {
 	Zap,
 } from '@camunda/design-system/icons';
 import {camundaAppIcons, type NavIcon, type SidebarNode} from '@camunda/design-system';
-import type {CurrentUser} from '@camunda/camunda-api-zod-schemas/8.11';
+import type {AuthenticatedCurrentUser} from '#/shared/http/currentUser';
 import {getAdminSectionConfig, isAdminSectionAvailable, type AdminSectionKey} from '#/admin/adminSections';
 import {hasComponentAccess} from '#/shared/componentAccess';
 import {useActiveComponentHomeRoute} from '#/shared/useActiveComponentHomeRoute';
@@ -140,7 +140,7 @@ const ADMIN_NAV_ITEMS: AdminNavItem[] = [
 	},
 ];
 
-function useSidebarNavigation(currentUser: CurrentUser): SidebarNavigation {
+function useSidebarNavigation(currentUser: AuthenticatedCurrentUser): SidebarNavigation {
 	const {t} = useTranslation();
 	const matchRoute = useMatchRoute();
 	const {authorizedComponents} = currentUser;

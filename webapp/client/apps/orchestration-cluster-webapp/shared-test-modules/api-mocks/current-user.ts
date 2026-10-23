@@ -7,8 +7,9 @@
  */
 
 import type {CurrentUser} from '@camunda/camunda-api-zod-schemas/8.11';
+import type {AuthenticatedCurrentUser} from '../../src/shared/http/currentUser';
 
-function createCurrentUser(overrides?: Partial<CurrentUser>): CurrentUser {
+function createCurrentUser(overrides?: Partial<AuthenticatedCurrentUser>): AuthenticatedCurrentUser {
 	return {
 		username: 'demo',
 		displayName: 'Demo User',
@@ -20,8 +21,26 @@ function createCurrentUser(overrides?: Partial<CurrentUser>): CurrentUser {
 		tenants: [],
 		groups: [],
 		canLogout: true,
+		anonymous: false,
 		...overrides,
 	};
 }
 
-export {createCurrentUser};
+/** What an unprotected API answers a caller without a session with. */
+function createAnonymousCurrentUser(): CurrentUser {
+	return {
+		username: null,
+		displayName: null,
+		email: null,
+		salesPlanType: null,
+		authorizedComponents: [],
+		roles: [],
+		c8Links: {},
+		tenants: [],
+		groups: [],
+		canLogout: false,
+		anonymous: true,
+	};
+}
+
+export {createAnonymousCurrentUser, createCurrentUser};
