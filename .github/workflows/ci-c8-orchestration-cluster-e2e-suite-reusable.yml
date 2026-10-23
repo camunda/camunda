@@ -232,10 +232,6 @@ jobs:
           rm -rf node_modules package-lock.json
           npm install
 
-      - name: Install Playwright Browsers
-        working-directory: ${{ env.SUITE_DIR }}
-        run: npx playwright install --with-deps chromium
-
       - name: Run API tests
         working-directory: ${{ env.SUITE_DIR }}
         env:
@@ -424,10 +420,6 @@ jobs:
         run: |
           rm -rf node_modules package-lock.json
           npm install
-
-      - name: Install Playwright Browsers
-        working-directory: ${{ env.SUITE_DIR }}
-        run: npx playwright install --with-deps chromium
 
       - name: Run API tests
         working-directory: ${{ env.SUITE_DIR }}
