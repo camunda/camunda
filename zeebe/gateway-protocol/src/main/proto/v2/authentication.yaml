@@ -162,4 +162,4 @@ components:
           type: boolean
       x-properties-added-in-version:
         - propertyName: "anonymous"
-          addedInVersion: "8.11"
+          addedInVersion: "8.10"
