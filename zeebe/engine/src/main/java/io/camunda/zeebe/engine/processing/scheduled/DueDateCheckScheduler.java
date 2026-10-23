@@ -21,7 +21,6 @@ import java.time.InstantSource;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
-import org.jspecify.annotations.NonNull;
 
 /**
  * The Due Date Checker is a special purpose checker (for due date related tasks) that doesn't
@@ -56,7 +55,7 @@ public final class DueDateCheckScheduler implements StreamProcessorLifecycleAwar
   private final RegeneratingTask checkerTask =
       new RegeneratingTask() {
         @Override
-        public @NonNull TaskResult execute(final @NonNull TaskResultBuilder taskResultBuilder) {
+        public TaskResult execute(final TaskResultBuilder taskResultBuilder) {
           return DueDateCheckScheduler.this.execute(taskResultBuilder);
         }
 

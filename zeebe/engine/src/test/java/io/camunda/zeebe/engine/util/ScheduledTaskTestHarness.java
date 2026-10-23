@@ -31,8 +31,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.IntFunction;
 import java.util.function.IntPredicate;
-import org.jspecify.annotations.NonNull;
-import org.jspecify.annotations.Nullable;
 
 /**
  * Runs the scheduled tasks of a {@link StreamProcessorLifecycleAware} on a real {@link
@@ -98,7 +96,7 @@ public final class ScheduledTaskTestHarness {
     private final AtomicInteger attempts = new AtomicInteger();
     private final AtomicInteger maxEventsPerBatch = new AtomicInteger(Integer.MAX_VALUE);
     private final List<Intent> writtenIntents = new CopyOnWriteArrayList<>();
-    private final AtomicReference<IntFunction<@Nullable WriteFailure>> failure =
+    private final AtomicReference<IntFunction<WriteFailure>> failure =
         new AtomicReference<>(attempt -> null);
 
     /** Lets a batch hold at most the given number of events, so a task can't add more to it. */
@@ -107,7 +105,7 @@ public final class ScheduledTaskTestHarness {
     }
 
     /** Fails every write with the given failure until {@link #stopFailing()} is called. */
-    public void failWith(final @NonNull WriteFailure writeFailure) {
+    public void failWith(final WriteFailure writeFailure) {
       failure.set(attempt -> writeFailure);
     }
 
@@ -123,7 +121,7 @@ public final class ScheduledTaskTestHarness {
      *     failed attempts
      * @param writeFailure the failure to fail the write with
      */
-    public void failWhile(final IntPredicate condition, final @NonNull WriteFailure writeFailure) {
+    public void failWhile(final IntPredicate condition, final WriteFailure writeFailure) {
       failure.set(attempt -> condition.test(attempt) ? writeFailure : null);
     }
 
@@ -143,9 +141,9 @@ public final class ScheduledTaskTestHarness {
     }
 
     @Override
-    public @NonNull Either<WriteFailure, Long> tryWrite(
-        final @NonNull WriteContext context,
-        final @NonNull List<LogAppendEntry> appendEntries,
+    public Either<WriteFailure, Long> tryWrite(
+        final WriteContext context,
+        final List<LogAppendEntry> appendEntries,
         final long sourcePosition) {
       final var writeFailure = failure.get().apply(attempts.incrementAndGet());
       if (writeFailure != null) {
@@ -160,7 +158,7 @@ public final class ScheduledTaskTestHarness {
       implements ReadonlyStreamProcessorContext {
 
     @Override
-    public @NonNull ProcessingScheduleService getScheduleService() {
+    public ProcessingScheduleService getScheduleService() {
       return scheduleService;
     }
 
@@ -175,7 +173,7 @@ public final class ScheduledTaskTestHarness {
     }
 
     @Override
-    public @NonNull StreamClock getClock() {
+    public StreamClock getClock() {
       throw new UnsupportedOperationException("The harness does not provide a stream clock");
     }
   }
@@ -188,72 +186,65 @@ public final class ScheduledTaskTestHarness {
       implements ProcessingScheduleService {
 
     @Override
-    public @NonNull ScheduledTask runDelayed(
-        final @NonNull Duration delay, final @NonNull Runnable task) {
+    public ScheduledTask runDelayed(final Duration delay, final Runnable task) {
       return delegate.runDelayed(delay, task);
     }
 
     @Override
-    public @NonNull ScheduledTask runDelayed(
-        final @NonNull Duration delay, final @NonNull Task task) {
+    public ScheduledTask runDelayed(final Duration delay, final Task task) {
       return delegate.runDelayed(delay, task);
     }
 
     @Override
-    public @NonNull ScheduledTask runAt(final long timestamp, final @NonNull Task task) {
+    public ScheduledTask runAt(final long timestamp, final Task task) {
       return delegate.runAt(timestamp, task);
     }
 
     @Override
-    public @NonNull ScheduledTask runAt(final long timestamp, final @NonNull Runnable task) {
+    public ScheduledTask runAt(final long timestamp, final Runnable task) {
       return delegate.runAt(timestamp, task);
     }
 
     @Override
-    public void runAtFixedRate(final @NonNull Duration delay, final @NonNull Runnable task) {
+    public void runAtFixedRate(final Duration delay, final Runnable task) {
       delegate.runAtFixedRate(delay, task);
     }
 
     @Override
-    public void runAtFixedRate(final @NonNull Duration delay, final @NonNull Task task) {
+    public void runAtFixedRate(final Duration delay, final Task task) {
       delegate.runAtFixedRate(delay, task);
     }
 
     @Override
-    public void runAtFixedRateAsync(final @NonNull Duration delay, final @NonNull Task task) {
+    public void runAtFixedRateAsync(final Duration delay, final Task task) {
       throw unsupportedAsync();
     }
 
     @Override
-    public @NonNull ScheduledTask runDelayedAsync(
-        final @NonNull Duration delay, final @NonNull Task task) {
+    public ScheduledTask runDelayedAsync(final Duration delay, final Task task) {
       throw unsupportedAsync();
     }
 
     @Override
-    public @NonNull ScheduledTask runAtAsync(final long timestamp, final @NonNull Task task) {
+    public ScheduledTask runAtAsync(final long timestamp, final Task task) {
       throw unsupportedAsync();
     }
 
     @Override
     public void runAtFixedRateAsync(
-        final @NonNull Duration delay,
-        final @NonNull Task task,
-        final @NonNull AsyncTaskGroup taskGroup) {
+        final Duration delay, final Task task, final AsyncTaskGroup taskGroup) {
       throw unsupportedAsync();
     }
 
     @Override
-    public @NonNull ScheduledTask runDelayedAsync(
-        final @NonNull Duration delay,
-        final @NonNull Task task,
-        final @NonNull AsyncTaskGroup taskGroup) {
+    public ScheduledTask runDelayedAsync(
+        final Duration delay, final Task task, final AsyncTaskGroup taskGroup) {
       throw unsupportedAsync();
     }
 
     @Override
-    public @NonNull ScheduledTask runAtAsync(
-        final long timestamp, final @NonNull Task task, final @NonNull AsyncTaskGroup taskGroup) {
+    public ScheduledTask runAtAsync(
+        final long timestamp, final Task task, final AsyncTaskGroup taskGroup) {
       throw unsupportedAsync();
     }
 
