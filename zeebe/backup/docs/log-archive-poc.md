@@ -1738,7 +1738,7 @@ All of it only for `AUTHORITY` timelines; `CLUSTER` timelines keep section 22.
 - **L1 compaction:** runs of consecutive level-0 objects of a timeline on the current path, at or
   below the archived index, are merged once their compressed sizes add up to `authority.l1TargetBytes`
   (default 16MB) or the run is older than `authority.l1MaxAge` (default PT10M). Inside the restore
-  hold too. Never across a takeover.
+  hold too. Never across a known takeover (see 25.7: a later restore can still make any point a takeover).
 - **L2 compaction:** the daily rollup of section 22.2, with level-0 and level-1 inputs, only below
   the hold (restore would otherwise read large objects, section 24).
 - **Verify before replace:** the new object is decoded and compared entry by entry with its inputs
@@ -1779,3 +1779,31 @@ All of it only for `AUTHORITY` timelines; `CLUSTER` timelines keep section 22.
 | W19 | event-plane | catalog, maintenance log, L1/L2 compaction with verification, retention, deletion, orphans, rebuild | spec |
 | W20 | event-plane | UI | W19 |
 | W21 | both | integration tests, scenario `k-authority`, screencast | W17, W18, W20 |
+
+### 25.7 Known limits: timelines nobody writes to any more
+
+Observed in a manual run (restore of a mode B timeline to a recent backup, 2026-10-23); they apply to
+mode A as well (section 21.4: parent timelines are never released).
+
+- **The hold of an old timeline never ends.** Only a leader on a timeline moves its hold. After a
+  restore or a fork, the old timeline has no leader, so its hold stays where it was, and nothing
+  above it is ever rolled up to L2 or removed. Its restore points stay valid restore targets for the
+  retention window (`--logArchive.timeline=<old>`), but not longer. Needed: a rule for when such a
+  hold ends, decided by the cluster because it concerns restore. Options: the new timeline's cluster
+  ends the parent's hold once the window since the takeover has passed (an entry in its own commit
+  log, for example `PARENT_HOLD_ENDED`), or holds are defined along the current path, so a parent is
+  held only as far as the child's hold reaches into it.
+- **The dead branch stays.** The part of the old timeline after the takeover is not on the current
+  path. Restore needs it only to go back to a point after the restore (undoing it); consumers never
+  need it. It should go with the same rule as the old timeline's hold; today it stays for good.
+- **A compaction can straddle a takeover that did not exist yet.** The authority compacted
+  `3582–4037` of the old timeline before the restore made index 3841 a takeover point. Any later
+  restore can turn any point into a takeover, so this cannot be avoided. It stays correct: readers
+  stop at the path's position inside an object (per-object `lastPosition`, section 19.4) and the
+  entries are byte-identical. It only means that removing the dead branch later needs either a split
+  of such an object or waiting until all of it may go.
+- **The restored range exists twice.** The new timeline re-archives from its restored journal's
+  first index (so it is restorable without its parent), which overlaps the parent's objects up to
+  the takeover. The path takes the parent up to the takeover. If it preferred the child's copy from
+  the child's start, the parent's objects from there on would be needed only for restores of the
+  parent itself and could be cleaned up earlier (an optimisation, not a correctness issue).
