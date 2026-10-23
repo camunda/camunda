@@ -47,6 +47,8 @@ All rates are in records each second. The other sections refer to the formulas b
 | $`c`$ | Ceiling of a broker: the limit of each partition for a tenant with $`w_t = \bar{w}`$ | Calculated |
 | $`\theta`$ | Throttled ratio: share of the CFS periods in a window in which the CPU was throttled | Measured |
 | $`W`$ | Length of a window | 10 s |
+| $`X_t`$, $`r_t`$ | Rate that tenant $`t`$ sends to one partition, and rate that the partition accepts | Set by each scenario |
+| $`\rho_t`$ | CPU cost of a rejected record of tenant $`t`$, relative to the CPU cost of a record on a leader. REST has a higher $`\rho`$ than gRPC. | 0 |
 | $`d`$, $`s`$ | Decrease factor, increase step | 0.9, 0.05 |
 | $`\theta_{\max}`$, $`n`$ | Throttled ratio threshold, count of throttled windows | 0.1, 2 |
 
@@ -140,7 +142,7 @@ CPU throttling is the only signal that decreases the ceiling. Finding 2 gives th
   | --- | --- | --- |
   | S1 | $`\text{cpu}_{\text{record}} = \dfrac{\text{role} \cdot k_t}{R_{\text{true}}}`$ | CPU seconds of one record. $`\text{role} = L`$ on a leader and $`F`$ on a follower. $`k_t`$ is the relative cost of the records of tenant $`t`$, default 1. |
   | S2 | $`\text{demand}_r = \min(\text{pending}_r \cdot \text{cpu}_{\text{record}}, \Delta t)`$ | CPU demand of replica $`r`$ in one tick |
-  | S3 | $`D = \sum_r \text{demand}_r`$ | CPU demand of the broker in one tick |
+  | S3 | $`D = \sum_r \text{demand}_r + \text{reject}`$ | CPU demand of the broker in one tick. $`\text{reject}`$ is the CPU of the rejections (S8). |
   | S4 | $`\text{share} = \min\left(1, \dfrac{C \cdot \Delta t}{D}\right)`$ | Each replica gets $`\text{share} \cdot \text{demand}_r`$ |
 
   A tick with $`D > C \times \Delta t`$ counts as throttled. $`\theta`$ (F11) is the count of throttled ticks divided by the count of ticks in the window.
@@ -157,6 +159,13 @@ CPU throttling is the only signal that decreases the ceiling. Finding 2 gives th
   The start value of $`\text{limit}_{\text{req}}`$ is 100. The limit changes approximately once each second.
 - A tenant that floods sends $`2 \cdot R_{\text{true}}`$ records each second to each partition. This is two times the rate of one core on a leader. One replica uses a maximum of one core, so a partition cannot process this rate.
 - The leader accepts $`\min(\text{admitted}, \text{limit}_t \times \Delta t)`$ records (F9). When the exporter backlog is more than 10 000 records, the exporter throttle sets the limit to the export rate. The partition is then excluded.
+- A rejected record uses CPU on the leader. The request limiter and the write rate limit both reject in the sequencer. Before the sequencer, the gateway parsed and authenticated the request, and the command API decoded it.
+
+  | No. | Formula | Meaning |
+  | --- | --- | --- |
+  | S8 | $`\text{cpu}_{\text{reject}} = \dfrac{\rho_t \cdot L}{R_{\text{true}}}`$ | CPU seconds of one record that the leader rejects. All the records that the leader does not accept count: $`X_t - r_t`$ each second. |
+
+  The rejections do not use the core of a replica. When the broker throttles, the rejections get the same share as the replicas (S4). The CPU that the rejections do not get is lost: the client gets a timeout, not a rejection.
 - A broker that stops loses its queues. After a restart, the broker starts at the start value.
 
 ### Limits of the model
@@ -164,6 +173,7 @@ CPU throttling is the only signal that decreases the ceiling. Finding 2 gives th
 1. One record is one command. Real commands write follow-up records. So a real backlog is larger than the request limit, and a real latency is higher.
 2. The rate of a flood is constant. A real client with retries sends more after a rejection. A real client with a limit of requests in flight sends less.
 3. A throttled broker gives CPU in proportion to demand. Real CFS gives a more equal share to each thread that can run. Real CFS can protect a small tenant better than the simulation shows.
+4. A replica with a backlog has a higher demand (S2). So in a throttled tick, the processing gets more CPU than the rejections. In real CFS, the share depends on the count of threads that reject and the count of threads that process (limit 3).
 
 ## Results
 
@@ -273,6 +283,7 @@ Other results:
 5. **AIMD probe.** When $`R`$ is too high, the ceiling oscillates around $`c_{\text{true}}`$ (F15). The step of (F13) and the factor of (F12) set the amplitude. Each increase step causes some CPU throttling, between 36% and 52% of the windows in the results. The tenants get 96% to 98% of their fair share.
 6. **Unbalanced failover.** See Finding 1.
 7. **Floor.** See Finding 3.
+8. **Rejections use CPU.** See Finding 5.
 
 ## Finding 1: the start value does not hold when the failover is not balanced
 
@@ -410,6 +421,70 @@ Example: tenant a floods, b and c send 7 500 records each second, and $`R_{\text
 | Complexity | Low | A rule to go above the start value, and a test for a tenant that increases its rate |
 
 The spike keeps v1.
+
+## Finding 5: the rejections of a tenant that floods decrease the ceiling of all tenants
+
+### Observation
+
+Setup: tenant a floods, b and c send 7 500 records each second, $`R_{\text{true}} = R`$. All tenants have the same $`\rho`$. The values for b and c are equal.
+
+Flood of $`2 \cdot R_{\text{true}}`$ for each partition:
+
+| $`\rho`$ | CPU throttled | Mean ceiling | CPU of the rejections | a | b and c | b and c, request limiter only |
+| --- | --- | --- | --- | --- | --- | --- |
+| 0 | 0% | 2 778 | 0% | 8 333 | 7 500 | 7 408 |
+| 0.1 | 0% | 2 778 | 9% | 8 333 | 7 500 | 7 130 |
+| 0.15 | 0% | 2 778 | 13% | 8 333 | 7 500 | 7 000 |
+| 0.2 | 58% | 2 424 | 17% | 7 528 | 7 380 | 6 839 |
+| 0.25 | 66% | 2 269 | 22% | 6 943 | 6 944 | 6 658 |
+| 0.3 | 100% | 2 222, the floor | 27% | 6 667 | 6 667 | 6 635 |
+| 0.6 | 100% | 2 222, the floor | 27% | 6 667 | 6 667 | 5 926 |
+| 1.0 | 100% | 2 222, the floor | 40% | 5 485 | 5 485 | 5 061 |
+
+With a flood of $`1.5 \cdot R_{\text{true}}`$, the CPU starts to throttle between $`\rho = 0.2`$ and $`0.25`$. The ceiling goes to the floor between $`\rho = 0.4`$ and $`0.6`$.
+
+- The CPU guard cannot see the difference between an overload and rejections. It decreases the ceiling of all tenants. So the flood of tenant a decreases the rate of b and c.
+- While tenant a floods, the ceiling stays at the floor. (F13) needs $`\theta \le \theta_{\max}`$ to increase the ceiling.
+- Tenants b and c get more than with the request limiter only, for all values of $`\rho`$.
+- At $`\rho = 1`$, b and c get less than the floor. The floor does not protect them.
+- In the simulation, the floor holds up to $`\rho = 0.6`$ because of limit 4 of the model. The real value of $`\rho`$ at which the floor fails is not known.
+
+Tests: `shouldNotLowerCeilingWhenRejectionsCostLittleCpu`, `shouldLowerCeilingOfAllTenantsWhenRejectionsOfFloodingTenantThrottleCpu` and `shouldGiveOtherTenantsMoreThanRequestLimiterAloneWhenRejectionsCostCpu`.
+
+### Formulas
+
+When each broker leads one partition of each tenant ($`P_t = B`$):
+
+| No. | Formula | Meaning |
+| --- | --- | --- |
+| F21 | $`\text{cpu}_{\text{broker}} = \dfrac{1}{R_{\text{true}}} \sum_t \left( r_t \cdot (L + (RF - 1) \cdot F) + \rho_t \cdot L \cdot (X_t - r_t) \right)`$ | CPU of one broker. The CPU throttles when $`\text{cpu}_{\text{broker}} > C`$. |
+| F22 | $`g = \dfrac{\rho \cdot L}{L + (RF - 1) \cdot F}`$ | Gain of the loop. One accepted record less removes $`L + (RF - 1) \cdot F`$ of CPU from the cluster and adds $`\rho \cdot L`$. |
+
+The loop is: a lower ceiling causes more rejections, the rejections use more CPU, and the CPU guard decreases the ceiling again. The loop continues without limit only when $`g \ge 1`$, that is when $`\rho \ge 2.2`$ with the defaults. Below that value, each decrease removes more CPU than it adds, and the ceiling stops at a lower value. The floor (F12) stops the decrease in all cases.
+
+Calculation with a flood of $`2 \cdot R_{\text{true}}`$ (F21):
+
+```math
+\begin{aligned}
+&\text{Start value: } r = 2\,778, 2\,500, 2\,500 & \rho &> \frac{(2 - 7\,778 \cdot 2.2 / 10\,000) \cdot 10\,000}{20\,000 - 2\,778} = 0.17 \\
+&\text{Floor: } r = 2\,222 \text{ each} & \rho &> \frac{(2 - 6\,667 \cdot 2.2 / 10\,000) \cdot 10\,000}{(20\,000 - 2\,222) + 2 \cdot (2\,500 - 2\,222)} = 0.29
+\end{aligned}
+```
+
+The first line gives the value of $`\rho`$ at which the CPU starts to throttle. The second line gives the value of $`\rho`$ at which the ceiling stays at the floor. With a flood of $`1.5 \cdot R_{\text{true}}`$, the values are 0.24 and 0.40.
+
+### Unknowns
+
+- The value of $`\rho`$ for gRPC and for REST. REST has a higher value. The load test must measure both.
+- The rate of a real flood. A client with retries and no backoff sends more after each rejection. This increases $`X_t - r_t`$.
+- The CPU share of the rejections in real CFS (limit 3 and limit 4 of the model).
+
+### Possible solutions
+
+1. Measure $`\rho`$ for gRPC and REST in the load test. Compare the result with the thresholds of (F21).
+2. Reject early and at a low cost, before the gateway parses the payload. Send a retry delay with the rejection, so that the clients use a backoff. This decreases $`\rho`$ and $`X_t`$.
+3. Do not decrease the ceiling when the rejections cause the throttling. This needs a measured $`\rho`$ and an $`R`$ that the controller can trust.
+4. Limit the requests of each tenant in the gateway, before the broker. This is necessary when the rejections of one tenant alone use most of $`C`$.
 
 ## Weights
 
