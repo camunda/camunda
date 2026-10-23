@@ -93,7 +93,9 @@ public class AdminClientConfigController {
     final var saasConfiguration = cslProperties.getSaas();
 
     config.put(IS_OIDC, String.valueOf(isOidcAuthentication(cslProperties)));
-    config.put(IS_CAMUNDA_GROUPS_ENABLED, String.valueOf(isCamundaGroupsEnabled(cslProperties)));
+    config.put(
+        IS_CAMUNDA_GROUPS_ENABLED,
+        String.valueOf(cslProperties.getAuthentication().isCamundaGroupsEnabled()));
     config.put(
         IS_TENANTS_API_ENABLED, String.valueOf(cslProperties.getMultiTenancy().isApiEnabled()));
     config.put(IS_ADDITIONAL_IDP_CONFIGURED, String.valueOf(isAdditionalIdpConfigured));
@@ -124,14 +126,6 @@ public class AdminClientConfigController {
     return namedProviders.values().stream()
         .filter(Objects::nonNull)
         .anyMatch(oidc -> StringUtils.hasText(oidc.getClientId()));
-  }
-
-  private boolean isCamundaGroupsEnabled(final CamundaSecurityLibraryProperties cslProperties) {
-    final var authentication = cslProperties.getAuthentication();
-    final var oidcConfig = authentication.getOidc();
-    return oidcConfig == null
-        || oidcConfig.getGroupsClaim() == null
-        || oidcConfig.getGroupsClaim().isEmpty();
   }
 
   @GetMapping(path = "/admin/config.js", produces = "text/javascript;charset=UTF-8")

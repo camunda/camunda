@@ -14,6 +14,7 @@ import static io.camunda.zeebe.auth.Authorization.USER_GROUPS_CLAIMS;
 import static io.camunda.zeebe.auth.Authorization.USER_TOKEN_CLAIMS;
 
 import io.camunda.security.api.model.CamundaAuthentication;
+import io.camunda.security.api.model.config.AuthenticationConfiguration;
 import io.camunda.security.configuration.EngineSecurityConfig;
 import java.util.HashMap;
 import java.util.List;
@@ -32,14 +33,13 @@ import java.util.Map;
  */
 public class BrokerRequestAuthorizationConverter {
 
-  private final boolean camundaGroupsEnabled;
-  private final boolean groupsClaimConfigured;
+  private final AuthenticationConfiguration authentication;
+  private final boolean externalGroupsEnabled;
   private final boolean shouldIncludeAuthorizationClaims;
 
   public BrokerRequestAuthorizationConverter(final EngineSecurityConfig securityConfiguration) {
-    camundaGroupsEnabled = securityConfiguration.getAuthentication().isCamundaGroupsEnabled();
-    final var oidc = securityConfiguration.getAuthentication().getOidc();
-    groupsClaimConfigured = oidc != null && oidc.isGroupsClaimConfigured();
+    authentication = securityConfiguration.getAuthentication();
+    externalGroupsEnabled = authentication.isExternalGroupsEnabled();
     shouldIncludeAuthorizationClaims =
         securityConfiguration.isAuthorizationsEnabled()
             || securityConfiguration.isMultiTenancyChecksEnabled();
@@ -54,12 +54,11 @@ public class BrokerRequestAuthorizationConverter {
     // authenticatedGroupIds() is supplier-backed on the lazy MembershipPort path: read it only
     // when groups will actually end up in the broker request. The engine's
     // ClaimsExtractor.getGroups() falls back to its own membershipState when USER_GROUPS_CLAIMS
-    // is absent, so we only need to pass groups in the OIDC claim-extracted case
-    // (!camundaGroupsEnabled && groupsClaimConfigured). Otherwise reading the field would
-    // trigger an avoidable provider call (and in the no-claim case, a DB lookup that the broker
-    // would never consume).
+    // is absent, so we only need to pass groups that came from the groups claim of the caller's
+    // provider. Otherwise reading the field would trigger an avoidable provider call (and for a
+    // provider without a groups claim, a DB lookup that the broker would never consume).
     final boolean readGroups =
-        shouldIncludeAuthorizationClaims && !camundaGroupsEnabled && groupsClaimConfigured;
+        shouldIncludeAuthorizationClaims && readsGroupsFromClaim(authentication.claims());
     return convert(
         authentication.isAnonymous(),
         authentication.authenticatedUsername(),
@@ -90,7 +89,7 @@ public class BrokerRequestAuthorizationConverter {
     }
 
     if (shouldIncludeAuthorizationClaims) {
-      if (!camundaGroupsEnabled && !groups.isEmpty()) {
+      if (externalGroupsEnabled && !groups.isEmpty()) {
         claims.put(USER_GROUPS_CLAIMS, groups);
       }
 
@@ -100,5 +99,11 @@ public class BrokerRequestAuthorizationConverter {
     }
 
     return claims;
+  }
+
+  /** Whether the provider that issued the token gives its users' groups in a groups claim. */
+  private boolean readsGroupsFromClaim(final Map<String, Object> tokenClaims) {
+    return externalGroupsEnabled
+        && authentication.getGroupsClaim(TokenIssuer.of(tokenClaims)) != null;
   }
 }
