@@ -7,17 +7,20 @@
  */
 package io.camunda.optimize.service.db.report.plan.process;
 
+import io.camunda.optimize.dto.optimize.query.report.single.process.group.AgentGroupByDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.group.AssigneeGroupByDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.group.CandidateGroupGroupByDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.group.DurationGroupByDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.group.EndDateGroupByDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.group.FlowNodesGroupByDto;
+import io.camunda.optimize.dto.optimize.query.report.single.process.group.ModelGroupByDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.group.NoneGroupByDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessDefinitionKeyGroupByDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessDefinitionVersionGroupByDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.group.RunningDateGroupByDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.group.StartDateGroupByDto;
+import io.camunda.optimize.dto.optimize.query.report.single.process.group.ToolGroupByDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.group.UserTasksGroupByDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.group.VariableGroupByDto;
 
@@ -49,7 +52,13 @@ public enum ProcessGroupBy {
   PROCESS_GROUP_BY_VARIABLE(new VariableGroupByDto()),
   // Same FlowNodesGroupByDto shape as PROCESS_GROUP_BY_FLOW_NODE, but routes to a dedicated
   // interpreter that aggregates over the agentInstances nested path instead of flowNodeInstances.
-  PROCESS_GROUP_BY_AGENT_FLOW_NODE(new FlowNodesGroupByDto());
+  PROCESS_GROUP_BY_AGENT_FLOW_NODE(new FlowNodesGroupByDto()),
+  // Agent run group-bys read the flat agent-instance index. The start date one shares the DTO with
+  // process instance start date but uses the agent index for its date range.
+  PROCESS_GROUP_BY_AGENT_RUN_START_DATE(new StartDateGroupByDto()),
+  PROCESS_GROUP_BY_AGENT_RUN_AGENT(new AgentGroupByDto()),
+  PROCESS_GROUP_BY_AGENT_RUN_MODEL(new ModelGroupByDto()),
+  PROCESS_GROUP_BY_AGENT_RUN_TOOL(new ToolGroupByDto());
 
   private final ProcessGroupByDto<?> dto;
   private final boolean topNLimitSupported;

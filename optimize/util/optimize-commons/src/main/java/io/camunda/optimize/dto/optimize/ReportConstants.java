@@ -20,6 +20,7 @@ public final class ReportConstants {
   public static final String VIEW_VARIABLE_ENTITY = "variable";
   public static final String VIEW_INCIDENT_ENTITY = "incident";
   public static final String VIEW_AGENT_INSTANCE_ENTITY = "agentInstance";
+  public static final String VIEW_AGENT_RUN_ENTITY = "agentRun";
 
   public static final String VIEW_FREQUENCY_PROPERTY = "frequency";
   public static final String VIEW_DURATION_PROPERTY = "duration";
@@ -30,6 +31,11 @@ public final class ReportConstants {
   public static final String VIEW_OUTPUT_TOKENS_PROPERTY = "outputTokens";
   public static final String VIEW_TOOL_CALLS_PROPERTY = "toolCalls";
   public static final String VIEW_TOTAL_TOKENS_PROPERTY = "totalTokens";
+  public static final String VIEW_MODEL_CALLS_PROPERTY = "modelCalls";
+  public static final String VIEW_HUMAN_STEPS_PROPERTY = "humanSteps";
+  public static final String VIEW_INCIDENT_RATE_PROPERTY = "incidentRate";
+  public static final String VIEW_LIMIT_HIT_RATE_PROPERTY = "limitHitRate";
+  public static final String VIEW_ADOPTION_RATE_PROPERTY = "adoptionRate";
 
   public static final String GROUP_BY_FLOW_NODES_TYPE = "flowNodes";
   public static final String GROUP_BY_USER_TASKS_TYPE = "userTasks";
@@ -43,6 +49,9 @@ public final class ReportConstants {
   public static final String GROUP_BY_DURATION = "duration";
   public static final String GROUP_BY_PROCESS_DEFINITION_KEY = "processDefinitionKey";
   public static final String GROUP_BY_PROCESS_DEFINITION_VERSION = "processDefinitionVersion";
+  public static final String GROUP_BY_AGENT = "agent";
+  public static final String GROUP_BY_MODEL = "model";
+  public static final String GROUP_BY_TOOL = "tool";
 
   public static final String GROUP_BY_EVALUATION_DATE_TYPE = "evaluationDateTime";
   public static final String GROUP_BY_INPUT_VARIABLE_TYPE = "inputVariable";

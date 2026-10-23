@@ -7,15 +7,21 @@
  */
 package io.camunda.optimize.service.db.report.plan.process;
 
+import static io.camunda.optimize.dto.optimize.query.report.single.ViewProperty.ADOPTION_RATE;
 import static io.camunda.optimize.dto.optimize.query.report.single.ViewProperty.AUTOMATION_RATE;
 import static io.camunda.optimize.dto.optimize.query.report.single.ViewProperty.DURATION;
 import static io.camunda.optimize.dto.optimize.query.report.single.ViewProperty.FREQUENCY;
+import static io.camunda.optimize.dto.optimize.query.report.single.ViewProperty.HUMAN_STEPS;
+import static io.camunda.optimize.dto.optimize.query.report.single.ViewProperty.INCIDENT_RATE;
 import static io.camunda.optimize.dto.optimize.query.report.single.ViewProperty.INPUT_TOKENS;
+import static io.camunda.optimize.dto.optimize.query.report.single.ViewProperty.LIMIT_HIT_RATE;
+import static io.camunda.optimize.dto.optimize.query.report.single.ViewProperty.MODEL_CALLS;
 import static io.camunda.optimize.dto.optimize.query.report.single.ViewProperty.OUTPUT_TOKENS;
 import static io.camunda.optimize.dto.optimize.query.report.single.ViewProperty.PERCENTAGE;
 import static io.camunda.optimize.dto.optimize.query.report.single.ViewProperty.TOOL_CALLS;
 import static io.camunda.optimize.dto.optimize.query.report.single.ViewProperty.TOTAL_TOKENS;
 import static io.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity.AGENT_INSTANCE;
+import static io.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity.AGENT_RUN;
 import static io.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity.FLOW_NODE;
 import static io.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity.INCIDENT;
 import static io.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity.PROCESS_INSTANCE;
@@ -46,7 +52,17 @@ public enum ProcessView {
   PROCESS_VIEW_AGENT_OUTPUT_TOKENS(new ProcessViewDto(AGENT_INSTANCE, OUTPUT_TOKENS)),
   PROCESS_VIEW_AGENT_TOOL_CALLS(new ProcessViewDto(AGENT_INSTANCE, TOOL_CALLS)),
   PROCESS_VIEW_AGENT_TOTAL_TOKENS(new ProcessViewDto(AGENT_INSTANCE, TOTAL_TOKENS)),
-  PROCESS_VIEW_FLOW_NODE_TOOL_CALLS(new ProcessViewDto(FLOW_NODE, TOOL_CALLS));
+  PROCESS_VIEW_FLOW_NODE_TOOL_CALLS(new ProcessViewDto(FLOW_NODE, TOOL_CALLS)),
+  // Agent run views read the flat agent-instance index, one document per run.
+  PROCESS_VIEW_AGENT_RUN_FREQUENCY(new ProcessViewDto(AGENT_RUN, FREQUENCY)),
+  PROCESS_VIEW_AGENT_RUN_DURATION(new ProcessViewDto(AGENT_RUN, DURATION)),
+  PROCESS_VIEW_AGENT_RUN_TOTAL_TOKENS(new ProcessViewDto(AGENT_RUN, TOTAL_TOKENS)),
+  PROCESS_VIEW_AGENT_RUN_MODEL_CALLS(new ProcessViewDto(AGENT_RUN, MODEL_CALLS)),
+  PROCESS_VIEW_AGENT_RUN_HUMAN_STEPS(new ProcessViewDto(AGENT_RUN, HUMAN_STEPS)),
+  PROCESS_VIEW_AGENT_RUN_TOOL_CALLS(new ProcessViewDto(AGENT_RUN, TOOL_CALLS)),
+  PROCESS_VIEW_AGENT_RUN_INCIDENT_RATE(new ProcessViewDto(AGENT_RUN, INCIDENT_RATE)),
+  PROCESS_VIEW_AGENT_RUN_LIMIT_HIT_RATE(new ProcessViewDto(AGENT_RUN, LIMIT_HIT_RATE)),
+  PROCESS_VIEW_AGENT_RUN_ADOPTION_RATE(new ProcessViewDto(AGENT_RUN, ADOPTION_RATE));
 
   private final ProcessViewDto processViewDto;
   private final ProcessPartDto processPartDto;
