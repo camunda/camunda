@@ -12,3 +12,29 @@ export async function loadAgenticDashboard() {
   const response = await get('api/dashboard/agentic');
   return response.json();
 }
+
+export interface AgentOption {
+  agentId: string;
+  name: string;
+  processDefinitionKey: string;
+}
+
+export interface ModelOption {
+  model: string;
+  provider: string | null;
+}
+
+export interface AgenticFilterOptions {
+  agents: AgentOption[];
+  models: ModelOption[];
+}
+
+export async function loadAgenticFilterOptions(
+  processDefinitionKey: string | null
+): Promise<AgenticFilterOptions> {
+  const response = await get(
+    'api/dashboard/agentic/filter-options',
+    processDefinitionKey ? {processDefinitionKey} : {}
+  );
+  return response.json();
+}

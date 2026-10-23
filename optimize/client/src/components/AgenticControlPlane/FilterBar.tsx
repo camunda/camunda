@@ -7,12 +7,14 @@
  */
 
 import {useState, useEffect} from 'react';
-import {ComboBox, MenuItemSelectable} from '@carbon/react';
+import {ComboBox, FilterableMultiSelect, MenuItemSelectable} from '@carbon/react';
 
 import {MenuDropdown} from 'components';
 import {loadDefinitions, loadVersions} from 'services';
 import type {Definition, Version} from 'services';
 import {t} from 'translation';
+
+import {loadAgenticFilterOptions, type AgenticFilterOptions} from './service';
 
 import './FilterBar.scss';
 
@@ -39,6 +41,15 @@ interface FilterBarProps {
   onProcessScopeChange: (key: string | null) => void;
   versions: string[];
   onVersionsChange: (versions: string[]) => void;
+  agentIds: string[];
+  onAgentIdsChange: (agentIds: string[]) => void;
+  models: string[];
+  onModelsChange: (models: string[]) => void;
+}
+
+interface Item {
+  id: string;
+  label: string;
 }
 
 function formatSpecificVersion(version: string, versionTag: string | null | undefined): string {
@@ -67,14 +78,26 @@ export function FilterBar({
   onProcessScopeChange,
   versions,
   onVersionsChange,
+  agentIds,
+  onAgentIdsChange,
+  models,
+  onModelsChange,
 }: FilterBarProps) {
   const selected = DATE_PRESETS.find((p) => p.id === preset)!;
   const [processDefinitions, setProcessDefinitions] = useState<Definition[]>([]);
   const [availableVersions, setAvailableVersions] = useState<Version[]>([]);
+  const [filterOptions, setFilterOptions] = useState<AgenticFilterOptions>({
+    agents: [],
+    models: [],
+  });
 
   useEffect(() => {
     loadDefinitions('process', null).then(setProcessDefinitions);
   }, []);
+
+  useEffect(() => {
+    loadAgenticFilterOptions(processScope).then(setFilterOptions);
+  }, [processScope]);
 
   useEffect(() => {
     if (processScope) {
@@ -86,6 +109,14 @@ export function FilterBar({
 
   const selectedProcess = processDefinitions.find((d) => d.key === processScope) ?? null;
   const selectedVersion = versions[0] ?? ALL_VERSIONS;
+  const agentItems: Item[] = filterOptions.agents.map(({agentId, name}) => ({
+    id: agentId,
+    label: name,
+  }));
+  const modelItems: Item[] = filterOptions.models.map(({model, provider}) => ({
+    id: model,
+    label: provider ? `${model} (${provider})` : model,
+  }));
 
   return (
     <div className="FilterBar">
@@ -128,6 +159,35 @@ export function FilterBar({
             />
           ))}
         </MenuDropdown>
+      </div>
+      <div className="agentScope">
+        <span className="label">{t('agenticControlPlane.agentFilter.label')}</span>
+        <FilterableMultiSelect<Item>
+          // Options change with the process scope; remount so stale selections are dropped.
+          key={`agents-${processScope ?? '__all__'}`}
+          id="agent-filter"
+          size="sm"
+          items={agentItems}
+          itemToString={(item) => item?.label ?? ''}
+          initialSelectedItems={agentItems.filter(({id}) => agentIds.includes(id))}
+          onChange={({selectedItems}) => onAgentIdsChange(selectedItems.map(({id}) => id))}
+          placeholder={t('agenticControlPlane.agentFilter.placeholder') as string}
+          titleText=""
+        />
+      </div>
+      <div className="modelScope">
+        <span className="label">{t('agenticControlPlane.modelFilter.label')}</span>
+        <FilterableMultiSelect<Item>
+          key={`models-${processScope ?? '__all__'}`}
+          id="model-filter"
+          size="sm"
+          items={modelItems}
+          itemToString={(item) => item?.label ?? ''}
+          initialSelectedItems={modelItems.filter(({id}) => models.includes(id))}
+          onChange={({selectedItems}) => onModelsChange(selectedItems.map(({id}) => id))}
+          placeholder={t('agenticControlPlane.modelFilter.placeholder') as string}
+          titleText=""
+        />
       </div>
       <div className="dateRange">
         <span className="label">{t('agenticControlPlane.dateRange')}</span>

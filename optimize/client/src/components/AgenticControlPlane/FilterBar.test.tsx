@@ -8,12 +8,13 @@
 
 import {runAllEffects} from '__mocks__/react';
 import {shallow, ShallowWrapper} from 'enzyme';
-import {ComboBox, MenuItemSelectable} from '@carbon/react';
+import {ComboBox, FilterableMultiSelect, MenuItemSelectable} from '@carbon/react';
 
 import {MenuDropdown} from 'components';
 import {loadDefinitions, loadVersions} from 'services';
 
 import {FilterBar, DATE_PRESETS} from './FilterBar';
+import {loadAgenticFilterOptions} from './service';
 
 jest.mock('services', () => ({
   ...jest.requireActual('services'),
@@ -28,6 +29,19 @@ jest.mock('services', () => ({
   ]),
 }));
 
+jest.mock('./service', () => ({
+  loadAgenticFilterOptions: jest.fn().mockResolvedValue({
+    agents: [
+      {agentId: 'loan:review', name: 'Review agent', processDefinitionKey: 'loan'},
+      {agentId: 'loan:risk', name: 'Risk agent', processDefinitionKey: 'loan'},
+    ],
+    models: [
+      {model: 'gpt-4o', provider: 'openai'},
+      {model: 'claude', provider: null},
+    ],
+  }),
+}));
+
 const props = {
   preset: '30d',
   onPresetChange: jest.fn(),
@@ -35,7 +49,21 @@ const props = {
   onProcessScopeChange: jest.fn(),
   versions: ['all'],
   onVersionsChange: jest.fn(),
+  agentIds: [],
+  onAgentIdsChange: jest.fn(),
+  models: [],
+  onModelsChange: jest.fn(),
 };
+
+type Item = {id: string; label: string};
+
+function agentFilter(node: ShallowWrapper) {
+  return node.find('.agentScope').find(FilterableMultiSelect);
+}
+
+function modelFilter(node: ShallowWrapper) {
+  return node.find('.modelScope').find(FilterableMultiSelect);
+}
 
 function dateRangeDropdown(node: ShallowWrapper) {
   return node.find('.dateRange').find(MenuDropdown);
@@ -216,4 +244,44 @@ it('should mark the specific selected version as selected', async () => {
   const selected = versionItems(node).filterWhere((n) => n.prop('selected'));
   expect(selected).toHaveLength(1);
   expect(selected.prop('label')).toBe('Version 2 (v2-tag)');
+});
+
+it('should load agent and model options for the selected process', async () => {
+  shallow(<FilterBar {...props} processScope="loan" />);
+
+  await runAllEffects();
+
+  expect(loadAgenticFilterOptions).toHaveBeenCalledWith('loan');
+});
+
+it('should offer agents by name and models with their provider', async () => {
+  const node = shallow(<FilterBar {...props} />);
+
+  await runAllEffects();
+  await flushPromises();
+
+  expect(agentFilter(node).prop('items')).toEqual([
+    {id: 'loan:review', label: 'Review agent'},
+    {id: 'loan:risk', label: 'Risk agent'},
+  ]);
+  expect(modelFilter(node).prop('items')).toEqual([
+    {id: 'gpt-4o', label: 'gpt-4o (openai)'},
+    {id: 'claude', label: 'claude'},
+  ]);
+});
+
+it('should report the selected agent ids and models', async () => {
+  const node = shallow(<FilterBar {...props} />);
+
+  await runAllEffects();
+
+  (agentFilter(node).prop('onChange') as (e: {selectedItems: Item[]}) => void)({
+    selectedItems: [{id: 'loan:risk', label: 'Risk agent'}],
+  });
+  (modelFilter(node).prop('onChange') as (e: {selectedItems: Item[]}) => void)({
+    selectedItems: [{id: 'gpt-4o', label: 'gpt-4o (openai)'}],
+  });
+
+  expect(props.onAgentIdsChange).toHaveBeenCalledWith(['loan:risk']);
+  expect(props.onModelsChange).toHaveBeenCalledWith(['gpt-4o']);
 });

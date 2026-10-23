@@ -10,6 +10,7 @@ import {
   formatTooltip,
   formatTooltipTitle,
   getAxisIdx,
+  getSecondaryAxisProperty,
   getLabel,
   getTooltipLabelColor,
   hasReportPersistedTooltips,
@@ -159,6 +160,22 @@ describe('getAxisIdx', () => {
     const measures = [{property: 'frequency'}, {property: 'duration'}];
     expect(getAxisIdx(measures, 0)).toBe(0);
     expect(getAxisIdx(measures, 1)).toBe(1);
+  });
+
+  it('should use a second axis for total tokens when mixed with a run count', () => {
+    const measures = [{property: 'totalTokens'}, {property: 'frequency'}];
+    expect(getAxisIdx(measures, 0)).toBe(1);
+    expect(getAxisIdx(measures, 1)).toBe(0);
+  });
+});
+
+describe('getSecondaryAxisProperty', () => {
+  it('should only add a second axis when a count is mixed with another scale', () => {
+    expect(getSecondaryAxisProperty([{property: 'totalTokens'}])).toBeNull();
+    expect(getSecondaryAxisProperty([{property: 'frequency'}])).toBeNull();
+    expect(getSecondaryAxisProperty([{property: 'frequency'}, {property: 'totalTokens'}])).toBe(
+      'totalTokens'
+    );
   });
 });
 

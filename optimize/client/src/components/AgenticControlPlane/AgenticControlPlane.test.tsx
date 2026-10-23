@@ -77,10 +77,10 @@ it('should pass the default Last 30 days filter to DashboardRenderer', async () 
       },
     },
   ];
-  expect(node.find('.kpi-section').find('DashboardRenderer').prop('filter')).toEqual(
+  expect(node.find('.agentHealth-section').find('DashboardRenderer').prop('filter')).toEqual(
     expectedFilter
   );
-  expect(node.find('.token-section').find('DashboardRenderer').prop('filter')).toEqual(
+  expect(node.find('.costAndUsage-section').find('DashboardRenderer').prop('filter')).toEqual(
     expectedFilter
   );
 });
@@ -105,10 +105,10 @@ it('should update the filter when the date preset changes', async () => {
       },
     },
   ];
-  expect(node.find('.kpi-section').find('DashboardRenderer').prop('filter')).toEqual(
+  expect(node.find('.agentHealth-section').find('DashboardRenderer').prop('filter')).toEqual(
     expectedFilter
   );
-  expect(node.find('.token-section').find('DashboardRenderer').prop('filter')).toEqual(
+  expect(node.find('.costAndUsage-section').find('DashboardRenderer').prop('filter')).toEqual(
     expectedFilter
   );
 });
@@ -130,7 +130,7 @@ it('should pass the loaded tiles to DashboardRenderer', async () => {
 
   await runAllEffects();
 
-  expect(node.find('.kpi-section').find('DashboardRenderer').prop('tiles')).toEqual(tiles);
+  expect(node.find('.agentHealth-section').find('DashboardRenderer').prop('tiles')).toEqual(tiles);
 });
 
 it('should hide visibleInL0Only tiles when a process is selected', async () => {
@@ -146,7 +146,10 @@ it('should hide visibleInL0Only tiles when a process is selected', async () => {
 
   (node.find('FilterBar').prop('onProcessScopeChange') as (v: string) => void)('my-process');
 
-  const visibleTiles = node.find('.kpi-section').find('DashboardRenderer').prop('tiles') as {
+  const visibleTiles = node
+    .find('.agentHealth-section')
+    .find('DashboardRenderer')
+    .prop('tiles') as {
     id: string;
   }[];
   expect(visibleTiles.map((t) => t.id)).toEqual(['l1-tile', 'common-tile']);
@@ -163,7 +166,10 @@ it('should hide visibleInL1Only tiles when no process is selected (L0)', async (
   const node = shallow(<AgenticControlPlane />);
   await runAllEffects();
 
-  const visibleTiles = node.find('.kpi-section').find('DashboardRenderer').prop('tiles') as {
+  const visibleTiles = node
+    .find('.agentHealth-section')
+    .find('DashboardRenderer')
+    .prop('tiles') as {
     id: string;
   }[];
   expect(visibleTiles.map((t) => t.id)).toEqual(['l0-tile', 'common-tile']);
@@ -175,7 +181,7 @@ it('should include definitions in evaluate calls when a process is selected', as
 
   (node.find('FilterBar').prop('onProcessScopeChange') as (v: string) => void)('my-process');
 
-  const loadTile = node.find('.kpi-section').find('DashboardRenderer').prop('loadTile') as (
+  const loadTile = node.find('.agentHealth-section').find('DashboardRenderer').prop('loadTile') as (
     id: string,
     filter: unknown[],
     params: unknown
@@ -191,7 +197,7 @@ it('should pass empty definitions in evaluate calls when no process is selected'
   const node = shallow(<AgenticControlPlane />);
   await runAllEffects();
 
-  const loadTile = node.find('.kpi-section').find('DashboardRenderer').prop('loadTile') as (
+  const loadTile = node.find('.agentHealth-section').find('DashboardRenderer').prop('loadTile') as (
     id: string,
     filter: unknown[],
     params: unknown
@@ -208,7 +214,7 @@ it('should include the selected version in evaluate definitions', async () => {
   (node.find('FilterBar').prop('onProcessScopeChange') as (v: string) => void)('my-process');
   (node.find('FilterBar').prop('onVersionsChange') as (v: string[]) => void)(['3']);
 
-  const loadTile = node.find('.kpi-section').find('DashboardRenderer').prop('loadTile') as (
+  const loadTile = node.find('.agentHealth-section').find('DashboardRenderer').prop('loadTile') as (
     id: string,
     filter: unknown[],
     params: unknown
@@ -243,7 +249,7 @@ it('should reset the version to all when the process scope changes', async () =>
 
   expect(node.find('FilterBar').prop('versions')).toEqual(['all']);
 
-  const loadTile = node.find('.kpi-section').find('DashboardRenderer').prop('loadTile') as (
+  const loadTile = node.find('.agentHealth-section').find('DashboardRenderer').prop('loadTile') as (
     id: string,
     filter: unknown[],
     params: unknown
@@ -255,12 +261,12 @@ it('should reset the version to all when the process scope changes', async () =>
   ]);
 });
 
-it('should render a reliabilityAndToolCalls tile in its section in both L0 and L1', async () => {
+it('should render a volume tile in its section in both L0 and L1', async () => {
   // the Total tool calls tile carries no L0/L1-only flag, so it must show in both scopes
   const tiles = [
     {
       id: 'tool-calls',
-      configuration: {section: 'reliabilityAndToolCalls'},
+      configuration: {section: 'volume'},
       position: {x: 0, y: 6},
       dimensions: {width: 18, height: 2},
     },
@@ -273,7 +279,7 @@ it('should render a reliabilityAndToolCalls tile in its section in both L0 and L
   // L0 (fleet view — no process selected)
   expect(
     (
-      node.find('.reliabilityAndToolCalls-section').find('DashboardRenderer').prop('tiles') as {
+      node.find('.volume-section').find('DashboardRenderer').prop('tiles') as {
         id: string;
       }[]
     ).map((t) => t.id)
@@ -284,7 +290,7 @@ it('should render a reliabilityAndToolCalls tile in its section in both L0 and L
 
   expect(
     (
-      node.find('.reliabilityAndToolCalls-section').find('DashboardRenderer').prop('tiles') as {
+      node.find('.volume-section').find('DashboardRenderer').prop('tiles') as {
         id: string;
       }[]
     ).map((t) => t.id)
@@ -293,36 +299,85 @@ it('should render a reliabilityAndToolCalls tile in its section in both L0 and L
 
 it('should inject the configured top-N limit when evaluating a tile with a topN config', async () => {
   const tiles = [
-    {id: 'consumers', configuration: {section: 'token', topN: '10'}, position: {x: 0, y: 0}},
+    {id: 'consumers', configuration: {section: 'costAndUsage', topN: '10'}, position: {x: 0, y: 0}},
   ];
   (loadAgenticDashboard as jest.Mock).mockReturnValueOnce({tiles, availableFilters: []});
 
   const node = shallow(<AgenticControlPlane />);
   await runAllEffects();
 
-  const loadTile = node.find('.token-section').find('DashboardRenderer').prop('loadTile') as (
-    id: string,
-    filter: unknown[],
-    params: unknown
-  ) => void;
+  const loadTile = node
+    .find('.costAndUsage-section')
+    .find('DashboardRenderer')
+    .prop('loadTile') as (id: string, filter: unknown[], params: unknown) => void;
   loadTile('consumers', [], {});
 
   expect(evaluateReport).toHaveBeenCalledWith('consumers', [], {limit: 10}, [], 'week');
 });
 
 it('should not inject a limit for token tiles without a topN config', async () => {
-  const tiles = [{id: 'token-trend', configuration: {section: 'token'}, position: {x: 0, y: 0}}];
+  const tiles = [
+    {id: 'token-trend', configuration: {section: 'costAndUsage'}, position: {x: 0, y: 0}},
+  ];
   (loadAgenticDashboard as jest.Mock).mockReturnValueOnce({tiles, availableFilters: []});
 
   const node = shallow(<AgenticControlPlane />);
   await runAllEffects();
 
-  const loadTile = node.find('.token-section').find('DashboardRenderer').prop('loadTile') as (
-    id: string,
-    filter: unknown[],
-    params: unknown
-  ) => void;
+  const loadTile = node
+    .find('.costAndUsage-section')
+    .find('DashboardRenderer')
+    .prop('loadTile') as (id: string, filter: unknown[], params: unknown) => void;
   loadTile('token-trend', [], {});
 
   expect(evaluateReport).toHaveBeenCalledWith('token-trend', [], {}, [], 'week');
+});
+
+it('should add an agent run filter for the selected agents and models', async () => {
+  const node = shallow(<AgenticControlPlane />);
+
+  await runAllEffects();
+
+  (node.find('FilterBar').prop('onAgentIdsChange') as (v: string[]) => void)(['loan:review']);
+  (node.find('FilterBar').prop('onModelsChange') as (v: string[]) => void)(['gpt-4o']);
+
+  const filter = node
+    .find('.agentHealth-section')
+    .find('DashboardRenderer')
+    .prop('filter') as unknown as {
+    type: string;
+  }[];
+  expect(filter).toContainEqual({
+    type: 'agentRun',
+    filterLevel: 'instance',
+    data: {agentIds: ['loan:review'], models: ['gpt-4o'], providers: []},
+  });
+});
+
+it('should clear the agent and model selection when the process scope changes', async () => {
+  const node = shallow(<AgenticControlPlane />);
+
+  await runAllEffects();
+
+  (node.find('FilterBar').prop('onAgentIdsChange') as (v: string[]) => void)(['loan:review']);
+  (node.find('FilterBar').prop('onProcessScopeChange') as (v: string) => void)('other-process');
+
+  expect(node.find('FilterBar').prop('agentIds')).toEqual([]);
+  const filter = node
+    .find('.agentHealth-section')
+    .find('DashboardRenderer')
+    .prop('filter') as unknown as {
+    type: string;
+  }[];
+  expect(filter.map(({type}) => type)).toEqual(['instanceEndDate']);
+});
+
+it('should render the three Phase 2 sections', async () => {
+  const node = shallow(<AgenticControlPlane />);
+
+  await runAllEffects();
+
+  expect(node.find('.agentHealth-section')).toExist();
+  expect(node.find('.volume-section')).toExist();
+  expect(node.find('.costAndUsage-section')).toExist();
 });

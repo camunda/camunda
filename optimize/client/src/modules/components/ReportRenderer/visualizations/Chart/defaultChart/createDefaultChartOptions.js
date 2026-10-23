@@ -19,6 +19,7 @@ import {
   canBeInterpolated,
   hasReportPersistedTooltips,
   getAxesConfig,
+  getSecondaryAxisProperty,
 } from '../service';
 import {getColorFor, determineBarColor} from '../colorsUtils';
 
@@ -140,9 +141,8 @@ export function createBarOptions({
   const isHyperNumber = isHyper && visualization === 'number';
   const stacked = stackedBar && isHyper && ['bar', 'barLine'].includes(visualization);
   const targetLine = !stacked && targetValue && getFormattedTargetValue(targetValue);
-  const hasMultipleAxes = ['frequency', 'duration'].every((prop) =>
-    measures.some(({property}) => property === prop)
-  );
+  const secondaryAxisProperty = getSecondaryAxisProperty(measures);
+  const hasMultipleAxes = secondaryAxisProperty !== null;
   const hasCountMeasure = measures.some(({property}) => property === 'frequency');
   const topPadding = isPersistedTooltips && !horizontalBar;
   const {axis0, axis1, groupBy} = getAxesConfig(horizontalBar);
@@ -187,7 +187,7 @@ export function createBarOptions({
       },
       title: {
         display: true,
-        text: `${t('common.' + entity + '.label')} ${t('report.view.duration')}`,
+        text: `${t('common.' + entity + '.label')} ${t('report.view.' + secondaryAxisProperty)}`,
         color: getColorFor('label', isDark),
         font: {
           size: 14,
@@ -195,7 +195,9 @@ export function createBarOptions({
         },
       },
       ticks: {
-        ...createDurationFormattingOptions(targetLine, maxDuration, logScale),
+        ...(secondaryAxisProperty === 'duration'
+          ? createDurationFormattingOptions(targetLine, maxDuration, logScale)
+          : {}),
         beginAtZero: true,
         color: getColorFor('label', isDark),
       },

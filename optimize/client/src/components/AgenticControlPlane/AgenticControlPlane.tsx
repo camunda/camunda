@@ -45,9 +45,19 @@ interface RollingFilter {
   };
 }
 
+interface AgentRunFilter {
+  type: 'agentRun';
+  filterLevel: 'instance';
+  data: {agentIds: string[]; models: string[]; providers: string[]};
+}
+
 function presetToGroupByDateUnit(presetId: string): string {
-  if (presetId === '7d') return 'day';
-  if (presetId === '30d') return 'week';
+  if (presetId === '7d') {
+    return 'day';
+  }
+  if (presetId === '30d') {
+    return 'week';
+  }
   return 'month';
 }
 
@@ -70,6 +80,8 @@ export function AgenticControlPlane() {
   const [dashboard, setDashboard] = useState<{tiles: DashboardTile[]} | null>(null);
   const [processScope, setProcessScope] = useState<string | null>(null);
   const [versions, setVersions] = useState<string[]>([ALL_VERSIONS]);
+  const [agentIds, setAgentIds] = useState<string[]>([]);
+  const [models, setModels] = useState<string[]>([]);
   const {mightFail} = useErrorHandling();
 
   useEffect(() => {
@@ -79,11 +91,22 @@ export function AgenticControlPlane() {
   const handleProcessScopeChange = useCallback((key: string | null) => {
     setProcessScope(key);
     setVersions([ALL_VERSIONS]);
+    // Agents and models are listed per process, so a selection from another process no longer
+    // applies.
+    setAgentIds([]);
+    setModels([]);
   }, []);
 
   const selectedPreset = DATE_PRESETS.find((p) => p.id === preset)!;
   const definitions = processScope ? [{key: processScope, versions}] : [];
-  const filter = [presetToFilter(selectedPreset)];
+  const filter: (RollingFilter | AgentRunFilter)[] = [presetToFilter(selectedPreset)];
+  if (agentIds.length > 0 || models.length > 0) {
+    filter.push({
+      type: 'agentRun',
+      filterLevel: 'instance',
+      data: {agentIds, models, providers: []},
+    });
+  }
 
   const scopedEvaluateReport = useCallback(
     (
@@ -106,14 +129,14 @@ export function AgenticControlPlane() {
     return map;
   }, [dashboard]);
 
-  const scopedEvaluateTokenTrendReport = useCallback(
+  const scopedEvaluateDateAwareReport = useCallback(
     (
       id: ReportEvaluationPayload,
       tileFilter: Parameters<typeof evaluateReport>[1],
       query: Parameters<typeof evaluateReport>[2]
     ) => {
-      // The top consumers tile only renders the top N processes; the backend computes that
-      // subset server-side when a limit is supplied, so we never fetch every process.
+      // Tiles with a top N only render that many groups; the backend computes that subset
+      // server-side when a limit is supplied, so we never fetch every group.
       const limit = typeof id === 'string' ? tileLimitById[id] : undefined;
       const scopedQuery = limit ? {...query, limit} : query;
       return evaluateReport(
@@ -143,19 +166,23 @@ export function AgenticControlPlane() {
     return true;
   });
 
+  // Volume and cost tiles include weekly lines whose bucket size follows the date range.
   const sections = [
-    {key: 'kpi', loadTile: scopedEvaluateReport},
     {
-      key: 'token',
-      titleKey: 'agenticControlPlane.tokenUsage',
-      loadTile: scopedEvaluateTokenTrendReport,
-    },
-    {
-      key: 'reliabilityAndToolCalls',
-      titleKey: 'agenticControlPlane.reliabilityAndToolCalls',
+      key: 'agentHealth',
+      titleKey: 'agenticControlPlane.agentHealth',
       loadTile: scopedEvaluateReport,
     },
-    {key: 'duration', titleKey: 'agenticControlPlane.duration', loadTile: scopedEvaluateReport},
+    {
+      key: 'volume',
+      titleKey: 'agenticControlPlane.volume',
+      loadTile: scopedEvaluateDateAwareReport,
+    },
+    {
+      key: 'costAndUsage',
+      titleKey: 'agenticControlPlane.costAndUsage',
+      loadTile: scopedEvaluateDateAwareReport,
+    },
   ];
 
   return (
@@ -171,11 +198,16 @@ export function AgenticControlPlane() {
         onProcessScopeChange={handleProcessScopeChange}
         versions={versions}
         onVersionsChange={setVersions}
+        agentIds={agentIds}
+        onAgentIdsChange={setAgentIds}
+        models={models}
+        onModelsChange={setModels}
       />
       {sections.map(({key, titleKey, loadTile}) => {
         const tiles = visibleTiles?.filter(
           (tile) =>
-            ((tile.configuration as AgenticTileConfiguration | undefined)?.section ?? 'kpi') === key
+            ((tile.configuration as AgenticTileConfiguration | undefined)?.section ??
+              'agentHealth') === key
         );
         return (
           <div key={key}>
@@ -187,7 +219,13 @@ export function AgenticControlPlane() {
             )}
             <div className={`${key}-section`}>
               <DashboardRenderer
-                key={`${processScope ?? '__all__'}-${versions.join(',')}-${key}`}
+                key={[
+                  processScope ?? '__all__',
+                  versions.join(','),
+                  agentIds.join(','),
+                  models.join(','),
+                  key,
+                ].join('-')}
                 loadTile={loadTile}
                 tiles={tiles}
                 filter={filter}
