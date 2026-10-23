@@ -18,6 +18,23 @@ abstract class View {
 
 abstract class BasePage extends View {
 	abstract goto(...args: unknown[]): Promise<Response | null>;
+
+	async seedSaasBootConfig({organizationId, clusterId}: {organizationId: string; clusterId: string}) {
+		await this.page.route('**/*', async (route) => {
+			if (route.request().resourceType() !== 'document') {
+				return route.fallback();
+			}
+
+			const response = await route.fetch();
+			const html = await response.text();
+			const body = html.replace(
+				'<html ',
+				`<html data-organization-id="${organizationId}" data-cluster-id="${clusterId}" `,
+			);
+
+			return route.fulfill({response, body});
+		});
+	}
 }
 
 export {BasePage, View};

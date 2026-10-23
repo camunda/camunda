@@ -15,6 +15,7 @@ import {
 	type QueryElementInstanceInspectionRequestBody,
 } from '@camunda/camunda-api-zod-schemas/8.11';
 import {createEndpointMock} from './mock-endpoint';
+import {SAAS_AUDIENCE} from './api-mocks/saas';
 
 const mockQueryUserTasksEndpoint = createEndpointMock({
 	endpoint: endpoints.queryUserTasks.getUrl(),
@@ -278,6 +279,26 @@ const mockLicenseEndpoint = createEndpointMock({
 
 const mockSaasTokenEndpoint = createEndpointMock({
 	endpoint: '/v2/authentication/me/token',
+	method: 'GET',
+});
+
+const mockC3OrganizationsEndpoint = createEndpointMock({
+	endpoint: `https://accounts.${SAAS_AUDIENCE}/external/organizations/my`,
+	method: 'GET',
+});
+
+const mockC3ClustersEndpoint = createEndpointMock({
+	endpoint: `https://console.${SAAS_AUDIENCE}/external/organizations/:organizationId/clusters`,
+	method: 'GET',
+});
+
+const mockC3NotificationsEndpoint = createEndpointMock({
+	endpoint: `https://notifications.${SAAS_AUDIENCE}/notifications/orgs/:organizationId`,
+	method: 'GET',
+});
+
+const mockC3NotificationEventsEndpoint = createEndpointMock({
+	endpoint: `https://notifications.${SAAS_AUDIENCE}/notifications/events`,
 	method: 'GET',
 });
 
@@ -771,6 +792,10 @@ export {
 	mockSystemConfigurationEndpoint,
 	mockLicenseEndpoint,
 	mockSaasTokenEndpoint,
+	mockC3OrganizationsEndpoint,
+	mockC3ClustersEndpoint,
+	mockC3NotificationsEndpoint,
+	mockC3NotificationEventsEndpoint,
 	mockGetUserTaskEndpoint,
 	mockGetUserTaskFormEndpoint,
 	mockQueryVariablesByUserTaskEndpoint,

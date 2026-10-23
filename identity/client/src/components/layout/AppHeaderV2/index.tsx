@@ -11,7 +11,6 @@ import {
   AppSidebar,
   CamundaLogo,
   Text,
-  useIsMobile,
   type GlobalActionButton,
   type UserMenuItem,
 } from "@camunda/design-system";
@@ -25,12 +24,11 @@ import { logout } from "src/utility/auth";
 import { useNotifications } from "src/components/notifications";
 import useTranslate from "src/utility/localization";
 import { isSaaS } from "src/configuration";
-import { licenseQueries } from "src/utility/api/headers/queries.ts";
 import { authenticationQueries } from "src/utility/api/authentication/queries.ts";
 
 import { ForwardRefLink } from "./ForwardRefLink";
+import { HeaderBadges } from "./HeaderBadges";
 import { InfoMenu } from "./InfoMenu";
-import { LicenseBadges } from "./LicenseBadges";
 import { LogoutAwareUserMenu } from "./LogoutAwareUserMenu";
 import { ThemeSelector } from "./ThemeSelector";
 import { useBreadcrumbs } from "./useBreadcrumbs";
@@ -83,13 +81,11 @@ const SaasThemeSelector = () => {
 };
 
 const AppHeaderV2 = ({ hideNavLinks = false }: { hideNavLinks?: boolean }) => {
-  const { data: license } = useQuery(licenseQueries.current());
   const { data: camundaUser } = useQuery(authenticationQueries.me());
   const { enqueueNotification } = useNotifications();
   const { t } = useTranslate("authentication");
   const { t: tNav, i18n } = useTranslate("navigation");
   const { pathname, search } = useLocation();
-  const isMobile = useIsMobile();
 
   const logoutWithNotification = useCallback(() => {
     enqueueNotification({
@@ -181,7 +177,7 @@ const AppHeaderV2 = ({ hideNavLinks = false }: { hideNavLinks?: boolean }) => {
           </ForwardRefLink>
         }
         breadcrumb={breadcrumb}
-        trailing={isMobile ? undefined : <LicenseBadges license={license} />}
+        trailing={<HeaderBadges />}
         globalActions={globalActions}
         actions={
           camundaUser === undefined ? undefined : (
