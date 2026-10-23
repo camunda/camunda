@@ -39,6 +39,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import org.assertj.core.api.Assertions;
 import org.instancio.Instancio;
@@ -69,6 +70,19 @@ public class CreateProcessInstanceRestTest extends ClientRestTest {
     final ProcessInstanceCreationInstruction request =
         gatewayService.getLastRequest(ProcessInstanceCreationInstruction.class);
     assertThat(request.getProcessDefinitionKey()).isEqualTo("123");
+  }
+
+  @Test
+  public void shouldNotSendVariablesMetadataWhenNotSet() {
+    // given
+    gatewayService.onCreateProcessInstanceRequest(DUMMY_RESPONSE);
+
+    // when
+    client.newCreateInstanceCommand().bpmnProcessId("testProcess").latestVersion().send().join();
+
+    // then
+    // brokers that predate variablesMetadata reject the property, even as an empty object
+    assertThat(gatewayService.getLastRequest(Map.class)).doesNotContainKey("variablesMetadata");
   }
 
   @Test
