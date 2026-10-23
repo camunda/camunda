@@ -156,6 +156,28 @@ class RestoreValidatorTest {
     assertThat(result).isFalse();
   }
 
+  @Test
+  void shouldExpectOnlyTheRestoredPartitionsWhenMoreAreConfigured() throws IOException {
+    // given - 5 partitions configured, but backups of 3 restored
+    brokerCfg.getCluster().setPartitionsCount(5);
+
+    for (int i = 1; i <= 3; i++) {
+      final Path partitionDir = getPartitionDir(i);
+      Files.createDirectories(partitionDir);
+      Files.writeString(partitionDir.resolve("segment-1.log"), "data");
+    }
+
+    final Path topologyFile =
+        dataDirectory.resolve(ClusterConfigurationManagerService.TOPOLOGY_FILE_NAME);
+    Files.writeString(topologyFile, "topology");
+
+    // when
+    final boolean result = RestoreValidator.validate(brokerCfg, 3);
+
+    // then
+    assertThat(result).isTrue();
+  }
+
   private Path getPartitionDir() {
     return getPartitionDir(1);
   }

@@ -7,10 +7,20 @@
  */
 package io.camunda.zeebe.restore;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
+import io.camunda.db.rdbms.sql.ExporterPositionMapper;
+import io.camunda.db.rdbms.write.domain.ExporterPositionModel;
 import io.camunda.zeebe.backup.api.BackupRange;
 import io.camunda.zeebe.backup.api.Checkpoint;
+import io.camunda.zeebe.backup.common.BackupDescriptorImpl;
+import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
+import io.camunda.zeebe.backup.common.BackupImpl;
+import io.camunda.zeebe.backup.common.NamedFileSetImpl;
 import io.camunda.zeebe.backup.management.BackupMetadataSyncer;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
@@ -20,7 +30,11 @@ import java.nio.file.DirectoryNotEmptyException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.OptionalLong;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -136,5 +150,171 @@ final class RestoreManagerTest {
           .isInstanceOf(IllegalStateException.class)
           .hasMessageContaining("Could not find common checkpoint");
     }
+  }
+
+  @Test
+  void shouldResolveThePartitionsOfTheLatestBackup(@TempDir final Path dir) {
+    // given - a cluster scaled up to 5 partitions, with backups taken while it had 3
+    final var configuration = new BrokerCfg();
+    configuration.getData().setDirectory(dir.toString());
+    configuration.getCluster().setPartitionsCount(5);
+    final var backupStore = new TestRestorableBackupStore();
+    saveBackup(backupStore, 1, 3);
+    saveBackup(backupStore, 2, 3);
+
+    try (final var restoreManager =
+        new RestoreManager(configuration, backupStore, new SimpleMeterRegistry())) {
+
+      // when
+      final var backupIdsByPartition = restoreManager.resolveBackups(new long[] {1, 2});
+
+      // then - only the backups' partitions are restored
+      assertThat(backupIdsByPartition).containsOnlyKeys(1, 2, 3);
+      assertThat(backupIdsByPartition.values())
+          .allSatisfy(ids -> assertThat(ids).containsExactly(1, 2));
+    }
+  }
+
+  @Test
+  void shouldRejectBackupWithMorePartitionsThanConfigured(@TempDir final Path dir) {
+    // given
+    final var configuration = new BrokerCfg();
+    configuration.getData().setDirectory(dir.toString());
+    configuration.getCluster().setPartitionsCount(2);
+    final var backupStore = new TestRestorableBackupStore();
+    saveBackup(backupStore, 1, 3);
+
+    try (final var restoreManager =
+        new RestoreManager(configuration, backupStore, new SimpleMeterRegistry())) {
+
+      // when/then
+      assertThatThrownBy(() -> restoreManager.resolveBackups(new long[] {1}))
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessageContaining("it has 3 partitions, but only 2 are configured");
+    }
+  }
+
+  @Test
+  void shouldResolveThePartitionsTheRdbmsHoldsExportedPositionsFor(@TempDir final Path dir) {
+    // given - a cluster scaled up to 5 partitions, with an RDBMS restored to backups of 3
+    final var configuration = new BrokerCfg();
+    configuration.getData().setDirectory(dir.toString());
+    configuration.getCluster().setPartitionsCount(5);
+    final var backupStore = new TestRestorableBackupStore();
+    storeCheckpoint(backupStore, 3, 1);
+    saveBackup(backupStore, 1, 3);
+    final var exporterPositionMapper = exportedPositions(Map.of(1, 50L, 2, 50L, 3, 50L));
+
+    try (final var restoreManager =
+        new RestoreManager(
+            configuration, backupStore, exporterPositionMapper, new SimpleMeterRegistry())) {
+
+      // when
+      final var backupIdsByPartition = restoreManager.resolveBackups(null, null);
+
+      // then
+      assertThat(backupIdsByPartition).containsOnlyKeys(1, 2, 3);
+    }
+  }
+
+  @Test
+  void shouldRejectRdbmsWithAGapInTheExportedPositions(@TempDir final Path dir) {
+    // given
+    final var configuration = new BrokerCfg();
+    configuration.getData().setDirectory(dir.toString());
+    configuration.getCluster().setPartitionsCount(3);
+    final var exporterPositionMapper = exportedPositions(Map.of(1, 50L, 3, 50L));
+
+    try (final var restoreManager =
+        new RestoreManager(
+            configuration,
+            new TestRestorableBackupStore(),
+            exporterPositionMapper,
+            new SimpleMeterRegistry())) {
+
+      // when/then
+      assertThatThrownBy(() -> restoreManager.resolveBackups(null, null))
+          .isInstanceOf(IllegalStateException.class)
+          .hasMessageContaining("exported position for partition 3 but none for partition 2");
+    }
+  }
+
+  @Test
+  void shouldRejectRdbmsHoldingFewerPartitionsThanTheBackup(@TempDir final Path dir) {
+    // given - backups of 3 partitions, but exported positions for only 2
+    final var configuration = new BrokerCfg();
+    configuration.getData().setDirectory(dir.toString());
+    configuration.getCluster().setPartitionsCount(3);
+    final var backupStore = new TestRestorableBackupStore();
+    storeCheckpoint(backupStore, 2, 1);
+    saveBackup(backupStore, 1, 3);
+    final var exporterPositionMapper = exportedPositions(Map.of(1, 50L, 2, 50L));
+
+    try (final var restoreManager =
+        new RestoreManager(
+            configuration, backupStore, exporterPositionMapper, new SimpleMeterRegistry())) {
+
+      // when/then
+      assertThatThrownBy(() -> restoreManager.resolveBackups(null, null))
+          .isInstanceOf(IllegalStateException.class)
+          .hasMessageContaining(
+              "backup 1 was taken with 3 partitions, but the RDBMS holds exported positions for 2");
+    }
+  }
+
+  private static void saveBackup(
+      final TestRestorableBackupStore backupStore, final long backupId, final int partitionCount) {
+    for (int partition = 1; partition <= partitionCount; partition++) {
+      backupStore.save(
+          new BackupImpl(
+              new BackupIdentifierImpl(0, partition, backupId),
+              new BackupDescriptorImpl(
+                  Optional.empty(),
+                  OptionalLong.empty(),
+                  100,
+                  partitionCount,
+                  "8.9.0",
+                  Instant.parse("2024-01-01T10:00:00Z"),
+                  CheckpointType.MANUAL_BACKUP),
+              new NamedFileSetImpl(Map.of()),
+              new NamedFileSetImpl(Map.of())));
+    }
+  }
+
+  /** Records a backup checkpoint at position 100 in the metadata of the first partitions. */
+  private static void storeCheckpoint(
+      final TestRestorableBackupStore backupStore,
+      final int partitionCount,
+      final long checkpointId) {
+    final var metadataSyncer = new BackupMetadataSyncer(backupStore, new SimpleMeterRegistry());
+    for (int partition = 1; partition <= partitionCount; partition++) {
+      metadataSyncer
+          .store(
+              partition,
+              List.of(
+                  new Checkpoint(
+                      CheckpointType.MANUAL_BACKUP,
+                      checkpointId,
+                      Instant.parse("2024-01-01T10:00:00Z").toEpochMilli(),
+                      100,
+                      1)),
+              List.of(new BackupRange(checkpointId, checkpointId)))
+          .join();
+    }
+  }
+
+  private static ExporterPositionMapper exportedPositions(final Map<Integer, Long> positions) {
+    final var mapper = mock(ExporterPositionMapper.class);
+    when(mapper.findOne(anyInt()))
+        .thenAnswer(
+            invocation -> {
+              final int partition = invocation.getArgument(0);
+              final var position = positions.get(partition);
+              return position == null
+                  ? null
+                  : new ExporterPositionModel(
+                      partition, "exporter", position, LocalDateTime.now(), LocalDateTime.now());
+            });
+    return mapper;
   }
 }
