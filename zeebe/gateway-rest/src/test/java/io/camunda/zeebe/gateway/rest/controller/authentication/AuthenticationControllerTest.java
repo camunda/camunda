@@ -57,6 +57,7 @@ import org.springframework.test.json.JsonCompareMode;
 @EnableConfigurationProperties(CamundaSecurityLibraryProperties.class)
 public class AuthenticationControllerTest extends RestControllerTest {
 
+  private static final String ME_URL = "/v2/authentication/me";
   private static final String ME_AUTHORIZATIONS_URL = "/v2/authentication/me/authorizations/search";
 
   @MockitoBean private CamundaUserPort camundaUserPort;
@@ -117,12 +118,79 @@ public class AuthenticationControllerTest extends RestControllerTest {
                   "roles": ["test role"],
                   "salesPlanType": null,
                   "c8Links": {},
-                  "canLogout": true
+                  "canLogout": true,
+                  "anonymous": false
                 }""",
             JsonCompareMode.STRICT);
 
     // then
     verify(camundaUserPort, times(1)).getCurrentUser();
+  }
+
+  @Test
+  void getCurrentUserShouldReturnAnonymousUserForAnonymousAuthenticationOnUnprotectedApi() {
+    // given
+    securityProperties.getAuthentication().setUnprotectedApi(true);
+    when(authenticationProvider.getCamundaAuthentication())
+        .thenReturn(CamundaAuthentication.anonymous());
+
+    // when / then
+    webClient
+        .get()
+        .uri(ME_URL)
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectBody()
+        .json(
+            """
+                {
+                  "anonymous": true,
+                  "username": null,
+                  "displayName": null,
+                  "email": null,
+                  "authorizedComponents": [],
+                  "tenants": [],
+                  "groups": [],
+                  "roles": [],
+                  "salesPlanType": null,
+                  "c8Links": {},
+                  "canLogout": false
+                }""",
+            JsonCompareMode.STRICT);
+  }
+
+  @Test
+  void getCurrentUserShouldReturnUnauthorizedForAnonymousAuthenticationOnProtectedApi() {
+    // given
+    when(authenticationProvider.getCamundaAuthentication())
+        .thenReturn(CamundaAuthentication.anonymous());
+
+    // when / then
+    webClient
+        .get()
+        .uri(ME_URL)
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isUnauthorized();
+  }
+
+  @Test
+  void getCurrentUserShouldReturnUnauthorizedWhenNoAuthenticationIsResolvedOnUnprotectedApi() {
+    // given
+    securityProperties.getAuthentication().setUnprotectedApi(true);
+    when(authenticationProvider.getCamundaAuthentication()).thenReturn(null);
+
+    // when / then
+    webClient
+        .get()
+        .uri(ME_URL)
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isUnauthorized();
   }
 
   @Test
