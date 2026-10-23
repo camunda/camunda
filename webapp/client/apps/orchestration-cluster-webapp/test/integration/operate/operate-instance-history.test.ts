@@ -43,19 +43,23 @@ test('should preserve legacy history bookmarks and their tenant and element sele
 	await page.setViewportSize({width: 800, height: 768});
 	await operateProcessInstancePage.goto(
 		instance.processInstanceKey,
-		`/instance-history?tenantId=tenant-a&elementId=task-1&elementInstanceKey=${element.elementInstanceKey}`,
+		`/instance-history?tenantId=tenant-a&elementId=task-1&elementInstanceKey=${element.elementInstanceKey}&legacyOnly=stale&elementStatus=obsolete`,
 	);
 
 	await expect(page).toHaveURL(new RegExp(`/operate/processes/${instance.processInstanceKey}/history\\?`));
 	expect(new URL(page.url()).searchParams.get('tenantId')).toBe('tenant-a');
 	expect(new URL(page.url()).searchParams.get('elementId')).toBe('task-1');
 	expect(new URL(page.url()).searchParams.get('elementInstanceKey')).toBe(JSON.stringify(element.elementInstanceKey));
+	expect(new URL(page.url()).searchParams.get('legacyOnly')).toBe('stale');
+	expect(new URL(page.url()).searchParams.get('elementStatus')).toBeNull();
 	await expect(operateProcessInstancePage.historyTree).toBeVisible();
 	await expect(operateProcessInstancePage.historyTab).toHaveAttribute('aria-current', 'page');
 	await page.reload();
 	await expect(operateProcessInstancePage.historyTree).toBeVisible();
 	await expect(operateProcessInstancePage.historyTab).toHaveAttribute('aria-current', 'page');
 	expect(new URL(page.url()).searchParams.get('elementInstanceKey')).toBe(JSON.stringify(element.elementInstanceKey));
+	expect(new URL(page.url()).searchParams.get('legacyOnly')).toBe('stale');
+	expect(new URL(page.url()).searchParams.get('elementStatus')).toBeNull();
 });
 
 test('should select history instances from a direct tenant URL and clear only selection from the root', async ({
