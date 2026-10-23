@@ -206,7 +206,7 @@ final class ActorTimerQueueTest {
   }
 
   @Test
-  void shouldYieldWhenCatchingUpOnALargeClockJumpAndContinueOnNextCall() {
+  void shouldJumpToNowWhenCatchingUpOnALargeClockJump() {
     // given
     when(clock.getTimeMillis()).thenReturn(1_000L);
     final var queue = new ActorTimerQueue(clock);
@@ -216,14 +216,10 @@ final class ActorTimerQueueTest {
     // when - far more ticks than a single call polls
     when(clock.getTimeMillis()).thenReturn(10_000L);
     queue.processExpiredTimers(clock);
-    final long tickAfterFirstCall = queue.currentTickTime();
-    for (int i = 0; i < 100 && queue.timerCount() > 0; i++) {
-      queue.processExpiredTimers(clock);
-    }
 
     // then
-    assertThat(tickAfterFirstCall).isLessThan(10_000L);
     verify(timer).onTimerExpired(TimeUnit.MILLISECONDS, 10_000L);
+    assertThat(queue.currentTickTime()).isGreaterThanOrEqualTo(10_000L);
   }
 
   private TimerSubscription timerWithDeadline(final long deadline) {
