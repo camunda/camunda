@@ -12,6 +12,7 @@ import io.camunda.security.configuration.InitializationConfiguration;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.validation.IdentifierValidator;
+import io.camunda.zeebe.gateway.rest.controller.usermanagement.MappingRuleMembershipPolicy;
 import io.camunda.zeebe.protocol.record.value.AuthorizationScope;
 import io.camunda.zeebe.util.VisibleForTesting;
 import jakarta.annotation.PostConstruct;
@@ -51,6 +52,11 @@ public class CamundaSecurityConfiguration {
   public MultiTenancyConfiguration multiTenancyConfiguration(
       final SecurityConfiguration securityConfiguration) {
     return securityConfiguration.getMultiTenancy();
+  }
+
+  @Bean
+  public MappingRuleMembershipPolicy mappingRuleMembershipPolicy() {
+    return MappingRuleMembershipPolicy.of(camundaSecurityProperties);
   }
 
   @Bean
