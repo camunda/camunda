@@ -22,6 +22,7 @@ import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
+import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.collection.Maps;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
@@ -34,6 +35,7 @@ public final class MessageIncidentTest {
 
   @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
   private static final String PROCESS_ID = "process";
+  private static final String FAILING_CORRELATION_KEY = "assert(orderId, orderId != null)";
   private static final BpmnModelInstance PROCESS =
       Bpmn.createExecutableProcess(PROCESS_ID)
           .startEvent()
@@ -244,6 +246,85 @@ public final class MessageIncidentTest {
         .hasJobKey(-1L)
         .hasVariableScopeKey(failureEvent.getKey())
         .hasTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+  }
+
+  @Test
+  public void shouldNameCorrelationKeyExpressionOfCatchEventIfItsEvaluationFailed() {
+    // given
+    final var processId = Strings.newRandomValidBpmnId();
+    final var elementId = Strings.newRandomValidBpmnId();
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(processId)
+                .startEvent()
+                .intermediateCatchEvent(
+                    elementId,
+                    e ->
+                        e.message(
+                            m ->
+                                m.name("cancel")
+                                    .zeebeCorrelationKeyExpression(FAILING_CORRELATION_KEY)))
+                .done())
+        .deploy();
+
+    // when
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(processId).create();
+
+    // then
+    assertCorrelationKeyEvaluationIncident(processInstanceKey, elementId);
+  }
+
+  @Test
+  public void shouldNameCorrelationKeyExpressionOfReceiveTaskIfItsEvaluationFailed() {
+    // given
+    final var processId = Strings.newRandomValidBpmnId();
+    final var elementId = Strings.newRandomValidBpmnId();
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(processId)
+                .startEvent()
+                .receiveTask(elementId)
+                .message(
+                    m -> m.name("cancel").zeebeCorrelationKeyExpression(FAILING_CORRELATION_KEY))
+                .done())
+        .deploy();
+
+    // when
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(processId).create();
+
+    // then
+    assertCorrelationKeyEvaluationIncident(processInstanceKey, elementId);
+  }
+
+  private static void assertCorrelationKeyEvaluationIncident(
+      final long processInstanceKey, final String elementId) {
+    final var element =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId(elementId)
+            .getFirst();
+
+    final var incident =
+        RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    Assertions.assertThat(incident.getValue())
+        .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
+        .hasErrorMessage(
+            """
+            Assertion failure on evaluate the expression 'assert(orderId, orderId != null)': \
+            The condition is not fulfilled (correlation key expression of element '%s') \
+            The evaluation reported the following warnings:
+            [NO_VARIABLE_FOUND] No variable found with name 'orderId'
+            [NO_VARIABLE_FOUND] No variable found with name 'orderId'
+            [ASSERT_FAILURE] The condition is not fulfilled"""
+                .formatted(elementId))
+        .hasElementId(elementId)
+        .hasElementInstanceKey(element.getKey())
+        .hasVariableScopeKey(element.getKey());
   }
 
   @Test
