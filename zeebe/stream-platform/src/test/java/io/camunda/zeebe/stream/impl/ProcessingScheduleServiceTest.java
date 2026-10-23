@@ -363,7 +363,9 @@ class ProcessingScheduleServiceTest {
     assertThat(attempts).describedAs("the same result is retried until accepted").hasValue(6);
     assertThat(testWriter.entries).hasSize(1);
   }
- @Test void shouldNotRunScheduledTasksAfterClosed() {
+
+  @Test
+  void shouldNotRunScheduledTasksAfterClosed() {
     // given
     final var mockedTask = spy(new DummyTask());
     scheduleService.runDelayed(Duration.ofMillis(200), mockedTask);
