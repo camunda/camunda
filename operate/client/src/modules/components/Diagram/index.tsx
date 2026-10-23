@@ -226,7 +226,12 @@ const Diagram: React.FC<Props> = observer(
         ref={diagramRef}
         $isFullscreen={isFullscreen}
       >
-        <DiagramCanvas ref={diagramCanvasRef} data-testid="diagram-canvas" />
+        <DiagramCanvas
+          ref={diagramCanvasRef}
+          data-testid="diagram-canvas"
+          role="region"
+          aria-label="Diagram"
+        />
         {isDiagramRendered && (
           <>
             <DiagramControls

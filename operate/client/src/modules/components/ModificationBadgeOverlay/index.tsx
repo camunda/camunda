@@ -25,7 +25,16 @@ const ModificationBadgeOverlay: React.FC<Props> = ({
   }
 
   return createPortal(
-    <Modifications data-testid="modifications-overlay">
+    <Modifications
+      data-testid="modifications-overlay"
+      role="img"
+      aria-label={[
+        newTokenCount > 0 ? `${newTokenCount} added` : undefined,
+        cancelledTokenCount > 0 ? `${cancelledTokenCount} canceled` : undefined,
+      ]
+        .filter((part) => part !== undefined)
+        .join(', ')}
+    >
       {newTokenCount > 0 && (
         <>
           <PlusIcon data-testid="badge-plus-icon" />

@@ -7,6 +7,7 @@
  */
 
 import {createPortal} from 'react-dom';
+import {useTranslation} from 'react-i18next';
 import {observer} from 'mobx-react-lite';
 import {CheckmarkOutline, Error, RadioButtonChecked, WarningFilled} from '@carbon/react/icons';
 import type {ProcessDefinitionStatistic, DecisionInstanceState} from '@camunda/camunda-api-zod-schemas/8.11';
@@ -14,6 +15,16 @@ import {themeStore} from '#/shared/theme/theme';
 import {Container} from './styled';
 
 type ElementState = keyof Omit<ProcessDefinitionStatistic, 'elementId'>;
+
+const STATE_LABEL_KEYS: Record<string, string> = {
+	active: 'operate.shared.stateOverlay.active',
+	incidents: 'operate.shared.stateOverlay.incidents',
+	canceled: 'operate.shared.stateOverlay.canceled',
+	completed: 'operate.shared.stateOverlay.completed',
+	completedEndEvents: 'operate.shared.stateOverlay.completed',
+	EVALUATED: 'operate.shared.stateOverlay.evaluated',
+	FAILED: 'operate.shared.stateOverlay.failed',
+};
 
 type Props = {
 	state: (ElementState | 'completedEndEvents') | DecisionInstanceState;
@@ -26,14 +37,17 @@ type Props = {
 
 const StateOverlay: React.FC<Props> = observer(
 	({state, container, count, isFaded = false, testId = `state-overlay-${state}`, title}) => {
+		const {t} = useTranslation();
 		const showStatistic = count !== undefined;
+		const labelKey = STATE_LABEL_KEYS[state];
+		const label = title ?? (labelKey === undefined ? state : t(labelKey));
 
 		return createPortal(
 			<Container
 				data-testid={testId}
 				title={title}
-				role={title === undefined ? undefined : 'img'}
-				aria-label={title === undefined ? undefined : showStatistic ? `${title}: ${count}` : title}
+				role="img"
+				aria-label={showStatistic ? `${label}: ${count}` : label}
 				$theme={themeStore.actualTheme}
 				$state={state}
 				$isFaded={isFaded}

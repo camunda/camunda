@@ -53,6 +53,8 @@ const InstanceHeader: React.FC<Props> = ({
   return (
     <Container
       data-testid="instance-header"
+      role="group"
+      aria-label="Instance header"
       $hideBottomBorder={hideBottomBorder}
     >
       <StateIcon state={state} size={24} data-testid={`${state}-icon`} />

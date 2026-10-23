@@ -16,6 +16,26 @@ function getContainer() {
 }
 
 describe('<StateOverlay />', () => {
+	it.for(
+		(
+			[
+				{state: 'active', label: 'Active'},
+				{state: 'incidents', label: 'Incidents'},
+				{state: 'canceled', label: 'Canceled'},
+				{state: 'completed', label: 'Completed'},
+				{state: 'completedEndEvents', label: 'Completed'},
+				{state: 'EVALUATED', label: 'Evaluated'},
+				{state: 'FAILED', label: 'Failed'},
+			] as const
+		).flatMap(({state, label}) => [undefined, 0, 3].map((count) => ({state, label, count}))),
+	)('should name the $state overlay with count $count', async ({state, label, count}) => {
+		const screen = await render(<StateOverlay state={state} container={getContainer()} count={count} />);
+
+		await expect
+			.element(screen.getByRole('img', {name: count === undefined ? label : `${label}: ${count}`, exact: true}))
+			.toBeVisible();
+	});
+
 	it('renders the count when provided', async () => {
 		const screen = await render(
 			<StateOverlay state="active" container={getContainer()} count={3} testId="active-overlay" />,

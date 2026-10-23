@@ -2182,7 +2182,8 @@
 				},
 				"instanceHeader": {
 					"incidentsCount_one": "{{count}} incident",
-					"incidentsCount_other": "{{count}} incidents"
+					"incidentsCount_other": "{{count}} incidents",
+					"label": "En-tête de l'instance"
 				},
 				"editors": {
 					"value": "Valeur",
@@ -2258,6 +2259,38 @@
 					"countMultiple": "{{amount}} documents",
 					"pdfPreviewFailed": "Impossible de charger l’aperçu PDF « {{fileName}} ».",
 					"preparingPdfPreview": "Préparation de l’aperçu PDF…"
+				},
+				"diagram": {
+					"label": "Diagramme"
+				},
+				"stateIcon": {
+					"active": "État actif",
+					"incident": "État incident",
+					"completed": "État terminé",
+					"terminated": "État arrêté",
+					"suspended": "État suspendu",
+					"evaluated": "État évalué",
+					"failed": "État échoué",
+					"unspecified": "État non spécifié",
+					"unknown": "État inconnu"
+				},
+				"stateOverlay": {
+					"active": "Actif",
+					"incidents": "Incidents",
+					"canceled": "Annulé",
+					"completed": "Terminé",
+					"evaluated": "Évalué",
+					"failed": "Échoué"
+				},
+				"modificationBadge": {
+					"added": "{{count}} ajouté(s)",
+					"canceled": "{{count}} annulé(s)"
+				},
+				"instancesBar": {
+					"incidents_one": "{{count}} instance avec incidents",
+					"incidents_other": "{{count}} instances avec incidents",
+					"active_one": "{{count}} instance active",
+					"active_other": "{{count}} instances actives"
 				}
 			}
 		}

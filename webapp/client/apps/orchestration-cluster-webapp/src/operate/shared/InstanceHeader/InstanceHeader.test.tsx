@@ -7,7 +7,8 @@
  */
 
 import {render} from 'vitest-browser-react';
-import {describe, it, expect} from 'vitest';
+import {describe, expect} from 'vitest';
+import {it} from '#/vitest-modules/test-extend';
 import {InstanceHeader} from './InstanceHeader';
 import {InstanceHeaderSkeleton} from './InstanceHeaderSkeleton';
 
@@ -25,7 +26,8 @@ describe('<InstanceHeader />', () => {
 		await expect.element(screen.getByText('orderProcess')).toBeVisible();
 		await expect.element(screen.getByText('Process Instance Key')).toBeVisible();
 		await expect.element(screen.getByText('2251799813685467')).toBeVisible();
-		await expect.element(screen.getByTestId('ACTIVE-icon')).toBeVisible();
+		await expect.element(screen.getByRole('group', {name: 'Instance header', exact: true})).toBeVisible();
+		await expect.element(screen.getByRole('img', {name: 'active state', exact: true})).toBeVisible();
 	});
 
 	it('should show the incidents count when there is at least one incident', async () => {

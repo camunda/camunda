@@ -159,10 +159,18 @@ describe('<Dashboard />', () => {
 
 		await expect.element(screen.getByTestId('instances-by-process-list')).toBeVisible();
 		await expect
-			.element(screen.getByRole('link', {name: '3 Process One – 13 instances in 1 version 10'}))
+			.element(
+				screen.getByRole('link', {
+					name: '3 instances with incidents Process One – 13 instances in 1 version 10 active instances',
+				}),
+			)
 			.toBeVisible();
 		await expect
-			.element(screen.getByRole('link', {name: '2 Process Two – 7 instances in 2+ versions 5'}))
+			.element(
+				screen.getByRole('link', {
+					name: '2 instances with incidents Process Two – 7 instances in 2+ versions 5 active instances',
+				}),
+			)
 			.toBeVisible();
 	});
 

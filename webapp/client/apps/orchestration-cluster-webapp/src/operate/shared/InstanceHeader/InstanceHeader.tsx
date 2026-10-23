@@ -53,7 +53,12 @@ const InstanceHeader: React.FC<InstanceHeaderProps> = ({
 	const {t} = useTranslation();
 
 	return (
-		<Container data-testid="instance-header" $hideBottomBorder={hideBottomBorder}>
+		<Container
+			data-testid="instance-header"
+			role="group"
+			aria-label={t('operate.shared.instanceHeader.label')}
+			$hideBottomBorder={hideBottomBorder}
+		>
 			<StateIcon state={state} size={24} />
 
 			<NameContainer title={instanceName}>

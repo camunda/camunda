@@ -2179,7 +2179,8 @@
 				},
 				"instanceHeader": {
 					"incidentsCount_one": "{{count}} Vorfall",
-					"incidentsCount_other": "{{count}} Vorfälle"
+					"incidentsCount_other": "{{count}} Vorfälle",
+					"label": "Instanzkopfzeile"
 				},
 				"editors": {
 					"value": "Wert",
@@ -2255,6 +2256,38 @@
 					"countMultiple": "{{amount}} Dokumente",
 					"pdfPreviewFailed": "PDF-Vorschau für „{{fileName}}“ konnte nicht geladen werden.",
 					"preparingPdfPreview": "PDF-Vorschau wird vorbereitet…"
+				},
+				"diagram": {
+					"label": "Diagramm"
+				},
+				"stateIcon": {
+					"active": "Status aktiv",
+					"incident": "Status Vorfall",
+					"completed": "Status abgeschlossen",
+					"terminated": "Status beendet",
+					"suspended": "Status angehalten",
+					"evaluated": "Status ausgewertet",
+					"failed": "Status fehlgeschlagen",
+					"unspecified": "Status nicht angegeben",
+					"unknown": "Status unbekannt"
+				},
+				"stateOverlay": {
+					"active": "Aktiv",
+					"incidents": "Vorfälle",
+					"canceled": "Abgebrochen",
+					"completed": "Abgeschlossen",
+					"evaluated": "Ausgewertet",
+					"failed": "Fehlgeschlagen"
+				},
+				"modificationBadge": {
+					"added": "{{count}} hinzugefügt",
+					"canceled": "{{count}} abgebrochen"
+				},
+				"instancesBar": {
+					"incidents_one": "{{count}} Instanz mit Vorfällen",
+					"incidents_other": "{{count}} Instanzen mit Vorfällen",
+					"active_one": "{{count}} aktive Instanz",
+					"active_other": "{{count}} aktive Instanzen"
 				}
 			}
 		}
