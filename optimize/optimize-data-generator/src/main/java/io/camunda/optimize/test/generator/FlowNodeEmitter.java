@@ -18,12 +18,12 @@ import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 /**
@@ -47,86 +47,14 @@ class FlowNodeEmitter {
   static final long INCIDENT_KEY_MULTIPLIER = 3_000L;
   static final long AGENT_INSTANCE_KEY_MULTIPLIER = 4_000L;
 
-  // Predefined LLM model/provider pairs
-  private static final String[][] LLM_CHOICES = {
-    {"gpt-4o", "openai"},
-    {"claude-sonnet-4-20250514", "anthropic"},
-    {"gemini-2.0-flash", "google"},
-    {"gpt-4o-mini", "openai"},
-  };
-
-  // Elements bound to a real agent node in the BPMN templates (see AGENT_ELEMENT_IDS). Tool pools
-  // are scoped per agent element so every AgentInstanceToolValue#getElementId() resolves to a real
-  // BPMN element *within the same process* — required for the Optimize tool-calls heatmap to
-  // correlate agent-instance tool usage back to flow-node activity.
-  //
-  // AHSP agent (customer-onboarding.bpmn, "ai-document-review-agent"): each tool is one of the
-  // ad-hoc sub-process's own inner activities.
-  private static final List<AgentTool> CUSTOMER_ONBOARDING_TOOLS =
-      List.of(
-          new AgentTool(
-              "extract_data", "Extract structured data from a document", "extract-data-task"),
-          new AgentTool(
-              "validate_fields", "Validate fields against business rules", "validate-fields-task"),
-          new AgentTool("lookup_record", "Look up a record by key", "lookup-record-task"),
-          new AgentTool(
-              "submit_decision", "Submit decision to downstream system", "submit-decision-task"));
-
-  // Inline "AI Agent Task"/"External Agent" agents (loan-approval.bpmn,
-  // fraud-dispute-handling.bpmn)
-  // are single BPMN service tasks with no inner activities to bind individual tools to — so every
-  // tool the agent uses is anchored to the agent task's own elementId, the only real BPMN element
-  // available in that process for correlating tool-call heat.
-  private static final List<AgentTool> LOAN_APPROVAL_TOOLS =
-      List.of(
-          new AgentTool(
-              "credit_bureau_lookup",
-              "Query external credit bureau for score history",
-              "risk-assessment-agent-task"),
-          new AgentTool(
-              "fraud_score_check",
-              "Run fraud heuristics against the applicant profile",
-              "risk-assessment-agent-task"));
-
-  private static final List<AgentTool> FRAUD_DISPUTE_TOOLS =
-      List.of(
-          new AgentTool(
-              "transaction_history_lookup",
-              "Retrieve full transaction history for the disputed charge",
-              "external-fraud-review-agent-task"),
-          new AgentTool(
-              "merchant_risk_check",
-              "Check merchant risk score against partner database",
-              "external-fraud-review-agent-task"));
-
-  // MCP/A2A tools have no BPMN element; they are discovered during the TOOL_DISCOVERY phase and
-  // therefore only appear in events after a TOOL_DISCOVERY UPDATED event.
-  private static final List<AgentTool> MCP_TOOLS =
-      List.of(
-          new AgentTool("MCP_ocr___scan_document", "Scan document with OCR"),
-          new AgentTool("MCP_crm___get_customer", "Retrieve customer data from CRM"),
-          new AgentTool("MCP_slack___post_message", "Post update to a Slack channel"),
-          new AgentTool("MCP_s3___read_file", "Read file content from S3"));
-
-  // Synthetic element IDs for the 3 real agent BPMN patterns (each embedded in exactly one
-  // generator template): AHSP ad-hoc sub-process, inline "AI Agent Task" service task, and
-  // "External Agent" service task with a zeebe:agentDefinition extension element. A plain
-  // service task/standalone LLM call without one of these real BPMN shapes is not an agent and
-  // never produces an agent-instance record.
+  /** Agent elements of the demo templates; an instance only gets an agent run if it passes one. */
   static final Set<String> AGENT_ELEMENT_IDS =
-      Set.of(
-          "ai-document-review-agent", // customer-onboarding.bpmn — AHSP
-          "risk-assessment-agent-task", // loan-approval.bpmn — AI Agent Task
-          "external-fraud-review-agent-task" // fraud-dispute-handling.bpmn — External Agent
-          );
+      AgentElement.ALL.stream().map(AgentElement::elementId).collect(Collectors.toSet());
 
-  // Maps each real agent elementId to its process-scoped AD_HOC tool pool (see field comments
-  // above for why each pool is anchored the way it is).
-  private static final Map<String, List<AgentTool>> ADHOC_TOOL_POOLS =
-      Map.of(
-          "ai-document-review-agent", CUSTOMER_ONBOARDING_TOOLS,
-          "risk-assessment-agent-task", LOAN_APPROVAL_TOOLS,
-          "external-fraud-review-agent-task", FRAUD_DISPUTE_TOOLS);
+  // Keys of extra tool instances inside an ad-hoc sub-process start here, above the template's
+  // own element indices, so they never collide with a regular element instance key.
+  private static final long TOOL_INSTANCE_KEY_OFFSET = 500L;
+  private static final long AGENT_INCIDENT_KEY_OFFSET = 1L;
 
   private final ZeebeRecordFactory factory;
   private final NodeTimingSimulator timingSimulator;
@@ -152,12 +80,26 @@ class FlowNodeEmitter {
    */
   FlowNodeOps flowNodeOps(
       final InstanceContext ctx, final List<FlowNode> layout, final InstanceWindow window) {
+    return flowNodeOps(ctx, layout, window, Map.of());
+  }
+
+  /**
+   * Like {@link #flowNodeOps(InstanceContext, List, InstanceWindow)}, but an ad-hoc sub-process
+   * runs its tool elements as often as {@code toolCallsByElement} says, matching the agent run's
+   * tool calls, instead of each child once.
+   */
+  FlowNodeOps flowNodeOps(
+      final InstanceContext ctx,
+      final List<FlowNode> layout,
+      final InstanceWindow window,
+      final Map<String, Integer> toolCallsByElement) {
 
     final long startMs = window.startMs();
     final long endMs = window.endMs();
     final long[] timings =
         window.isActive() ? null : timingSimulator.compute(layout, startMs, endMs);
-    final FlowWalkContext flowWalkCtx = new FlowWalkContext(ctx, layout, timings, window);
+    final FlowWalkContext flowWalkCtx =
+        new FlowWalkContext(ctx, layout, timings, window, toolCallsByElement);
     final WalkState walkState = WalkState.create();
 
     for (int ni = 0; ni < layout.size(); ni++) {
@@ -210,415 +152,40 @@ class FlowNodeEmitter {
         .orElse(List.of());
   }
 
-  // ── Agent instance ────────────────────────────────────────────────────────
+  // ── Agent run ─────────────────────────────────────────────────────────────
 
-  /**
-   * Returns the full agent instance lifecycle records (CREATED → UPDATED… → COMPLETED) for one
-   * process instance, simulating a realistic agentic execution.
-   *
-   * <p>{@code agentNode} must be one of the real BPMN agent elements (see {@link
-   * #AGENT_ELEMENT_IDS}) present in this instance's execution path — the emitted records are
-   * anchored to its actual {@code elementId} and element-instance key so they correlate with the
-   * matching flow-node record.
-   *
-   * <p>Lifecycle variants, each covering both the "had tool calls" and "no tool calls" cases so
-   * downstream tool-call reports/heatmaps see the full value range (including zero and
-   * limit-saturated):
-   *
-   * <ul>
-   *   <li><b>Active instance</b>: CREATED + 1 UPDATED, caught either THINKING (no tool calls yet)
-   *       or mid TOOL_CALLING (~35 %)
-   *   <li><b>Terminated instance</b>: CREATED + 1 UPDATED (THINKING), optionally +1 UPDATED
-   *       (TOOL_CALLING, ~40 %) + COMPLETED (cut short)
-   *   <li><b>Completed instance</b>: CREATED + 1 UPDATED (THINKING) + 0–3 TOOL_CALLING rounds (each
-   *       optionally followed by another THINKING) + COMPLETED (full run); tool-call totals are
-   *       capped at {@code maxToolCalls}
-   * </ul>
-   *
-   * <p>Metrics in UPDATED/COMPLETED records carry engine-aggregated running totals, matching the
-   * spec's dual-semantics contract.
-   */
-  List<BulkOperation> agentInstanceOps(
-      final InstanceContext ctx,
-      final InstanceWindow window,
-      final long agentInstanceKey,
-      final FlowNode agentNode) {
-
-    final String elementId = agentNode.id();
-    final long elemInstKey = ctx.instanceKey() * NODE_KEY_MULTIPLIER + agentNode.index();
-    final long duration = window.endMs() - window.startMs();
-    final long startMs = window.startMs();
-
-    // Randomly select LLM model and provider
-    final String[] llm = LLM_CHOICES[rng.nextInt(LLM_CHOICES.length)];
-    final String model = llm[0];
-    final String provider = llm[1];
-    final String systemPrompt = "Process this task efficiently using available tools.";
-
-    // Limits (randomised)
-    final long maxTokens = 4_000L + rng.nextInt(12_000);
-    final int maxModelCalls = 5 + rng.nextInt(15);
-    final int maxToolCalls = 10 + rng.nextInt(20);
-
-    // AD_HOC tools (from BPMN schema) are always available from the first THINKING update.
-    // MCP/A2A tools require a TOOL_DISCOVERY phase (~40 % of instances).
-    final List<AgentTool> pool = ADHOC_TOOL_POOLS.getOrDefault(elementId, List.of());
-    final List<AgentTool> adhocTools = selectFromPool(pool, 1 + rng.nextInt(3));
-    final boolean doToolDiscovery = rng.nextDouble() < 0.4;
-    final List<AgentTool> mcpTools =
-        doToolDiscovery ? selectFromPool(MCP_TOOLS, 1 + rng.nextInt(3)) : List.of();
-    final List<AgentTool> fullTools;
-    if (doToolDiscovery) {
-      final List<AgentTool> combined = new ArrayList<>(adhocTools);
-      combined.addAll(mcpTools);
-      fullTools = List.copyOf(combined);
-    } else {
-      fullTools = adhocTools;
-    }
-
-    final List<BulkOperation> ops = new ArrayList<>();
-
-    // Event 1: CREATED (INITIALIZING, zero metrics, no tools yet)
-    ops.add(
-        factory.agentInstanceOp(
-            ctx,
-            new AgentInstanceEvent(
-                agentInstanceKey,
-                elemInstKey,
-                elementId,
-                "CREATED",
-                AgentInstanceStatus.INITIALIZING,
-                model,
-                provider,
-                systemPrompt,
-                maxTokens,
-                maxModelCalls,
-                maxToolCalls,
-                0L,
-                0L,
-                0,
-                0,
-                List.of(),
-                startMs)));
-
-    if (window.isActive()) {
-      // TOOL_DISCOVERY phase before the first THINKING (40 % of instances)
-      if (doToolDiscovery) {
-        ops.add(
-            factory.agentInstanceOp(
-                ctx,
-                new AgentInstanceEvent(
-                    agentInstanceKey,
-                    elemInstKey,
-                    elementId,
-                    "UPDATED",
-                    AgentInstanceStatus.TOOL_DISCOVERY,
-                    model,
-                    provider,
-                    systemPrompt,
-                    maxTokens,
-                    maxModelCalls,
-                    maxToolCalls,
-                    0L,
-                    0L,
-                    0,
-                    0,
-                    fullTools,
-                    startMs + duration / 4)));
-      }
-      // Agent is still running — emit a partial update. ~35 % of active instances are caught
-      // mid TOOL_CALLING (tool already dispatched, e.g. a long-running AHSP task) rather than
-      // THINKING, so live dashboards/heatmaps also see in-flight tool-call activity.
-      final long inFlightMs = startMs + duration / 2;
-      final long inputTokens = 200L + rng.nextInt(600);
-      final long outputTokens = 50L + rng.nextInt(250);
-      final boolean isMidToolCalling = rng.nextDouble() < 0.35;
-      final int inFlightToolCalls = isMidToolCalling ? 1 + rng.nextInt(3) : 0;
-      ops.add(
-          factory.agentInstanceOp(
-              ctx,
-              new AgentInstanceEvent(
-                  agentInstanceKey,
-                  elemInstKey,
-                  elementId,
-                  "UPDATED",
-                  isMidToolCalling
-                      ? AgentInstanceStatus.TOOL_CALLING
-                      : AgentInstanceStatus.THINKING,
-                  model,
-                  provider,
-                  systemPrompt,
-                  maxTokens,
-                  maxModelCalls,
-                  maxToolCalls,
-                  inputTokens,
-                  outputTokens,
-                  1,
-                  inFlightToolCalls,
-                  fullTools,
-                  inFlightMs)));
-      return List.copyOf(ops);
-    }
-
-    // Accumulated metric totals (updated after each phase)
-    long totalInputTokens = 0L;
-    long totalOutputTokens = 0L;
-    int totalModelCalls = 0;
-    int totalToolCalls = 0;
-
-    if (window.isTerminated()) {
-      // Short lifecycle: optional TOOL_DISCOVERY, one THINKING update, then COMPLETED
-      if (doToolDiscovery) {
-        ops.add(
-            factory.agentInstanceOp(
-                ctx,
-                new AgentInstanceEvent(
-                    agentInstanceKey,
-                    elemInstKey,
-                    elementId,
-                    "UPDATED",
-                    AgentInstanceStatus.TOOL_DISCOVERY,
-                    model,
-                    provider,
-                    systemPrompt,
-                    maxTokens,
-                    maxModelCalls,
-                    maxToolCalls,
-                    0L,
-                    0L,
-                    0,
-                    0,
-                    fullTools,
-                    startMs + duration / 6)));
-      }
-      final long thinkingMs = startMs + duration / 3;
-      totalInputTokens += 200L + rng.nextInt(600);
-      totalOutputTokens += 50L + rng.nextInt(200);
-      totalModelCalls++;
-      ops.add(
-          factory.agentInstanceOp(
-              ctx,
-              new AgentInstanceEvent(
-                  agentInstanceKey,
-                  elemInstKey,
-                  elementId,
-                  "UPDATED",
-                  AgentInstanceStatus.THINKING,
-                  model,
-                  provider,
-                  systemPrompt,
-                  maxTokens,
-                  maxModelCalls,
-                  maxToolCalls,
-                  totalInputTokens,
-                  totalOutputTokens,
-                  totalModelCalls,
-                  totalToolCalls,
-                  fullTools,
-                  thinkingMs)));
-
-      // ~40 % of terminated instances are cut off mid TOOL_CALLING rather than during THINKING,
-      // so terminated agent instances also cover the "had tool calls in flight" case.
-      if (rng.nextDouble() < 0.4) {
-        final long toolCallingMs = startMs + duration * 2 / 3;
-        final int toolCallDelta = 1 + rng.nextInt(3);
-        totalToolCalls = Math.min(totalToolCalls + toolCallDelta, maxToolCalls);
-        ops.add(
-            factory.agentInstanceOp(
-                ctx,
-                new AgentInstanceEvent(
-                    agentInstanceKey,
-                    elemInstKey,
-                    elementId,
-                    "UPDATED",
-                    AgentInstanceStatus.TOOL_CALLING,
-                    model,
-                    provider,
-                    systemPrompt,
-                    maxTokens,
-                    maxModelCalls,
-                    maxToolCalls,
-                    totalInputTokens,
-                    totalOutputTokens,
-                    totalModelCalls,
-                    totalToolCalls,
-                    fullTools,
-                    toolCallingMs)));
-      }
-    } else {
-      // Full lifecycle: optional TOOL_DISCOVERY → THINKING → TOOL_CALLING → (THINKING) → IDLE
-      final long phase = duration / 6;
-
-      // Optional TOOL_DISCOVERY before first THINKING
-      if (doToolDiscovery) {
-        ops.add(
-            factory.agentInstanceOp(
-                ctx,
-                new AgentInstanceEvent(
-                    agentInstanceKey,
-                    elemInstKey,
-                    elementId,
-                    "UPDATED",
-                    AgentInstanceStatus.TOOL_DISCOVERY,
-                    model,
-                    provider,
-                    systemPrompt,
-                    maxTokens,
-                    maxModelCalls,
-                    maxToolCalls,
-                    0L,
-                    0L,
-                    0,
-                    0,
-                    fullTools,
-                    startMs + phase / 2)));
-      }
-
-      // Phase 1: THINKING (first model call, tools now available)
-      final long thinking1Ms = startMs + phase;
-      totalInputTokens += 200L + rng.nextInt(800);
-      totalOutputTokens += 50L + rng.nextInt(300);
-      totalModelCalls++;
-      ops.add(
-          factory.agentInstanceOp(
-              ctx,
-              new AgentInstanceEvent(
-                  agentInstanceKey,
-                  elemInstKey,
-                  elementId,
-                  "UPDATED",
-                  AgentInstanceStatus.THINKING,
-                  model,
-                  provider,
-                  systemPrompt,
-                  maxTokens,
-                  maxModelCalls,
-                  maxToolCalls,
-                  totalInputTokens,
-                  totalOutputTokens,
-                  totalModelCalls,
-                  totalToolCalls,
-                  fullTools,
-                  thinking1Ms)));
-
-      // Phases 2+: 0–3 rounds of TOOL_CALLING, each optionally followed by another THINKING
-      // model call. ~25 % of completed instances resolve without ever calling a tool
-      // (toolCallingRounds == 0) — the LLM answered directly — exercising the "no tool calls"
-      // case; the rest perform 1–3 rounds, with totals capped at maxToolCalls so some instances
-      // saturate the configured limit (useful for "limit reached" reporting/visuals).
-      final int toolCallingRounds = rng.nextInt(4);
-      for (int round = 0; round < toolCallingRounds; round++) {
-        final long toolCallingMs = startMs + phase * (2 + round);
-        final int toolCallDelta = 1 + rng.nextInt(3);
-        totalToolCalls = Math.min(totalToolCalls + toolCallDelta, maxToolCalls);
-        ops.add(
-            factory.agentInstanceOp(
-                ctx,
-                new AgentInstanceEvent(
-                    agentInstanceKey,
-                    elemInstKey,
-                    elementId,
-                    "UPDATED",
-                    AgentInstanceStatus.TOOL_CALLING,
-                    model,
-                    provider,
-                    systemPrompt,
-                    maxTokens,
-                    maxModelCalls,
-                    maxToolCalls,
-                    totalInputTokens,
-                    totalOutputTokens,
-                    totalModelCalls,
-                    totalToolCalls,
-                    fullTools,
-                    toolCallingMs)));
-
-        // 60 % of rounds are followed by another model call to interpret the tool result
-        if (rng.nextDouble() < 0.6) {
-          final long thinkingMs = toolCallingMs + Math.max(1, phase / 2);
-          totalInputTokens += 100L + rng.nextInt(500);
-          totalOutputTokens += 30L + rng.nextInt(200);
-          totalModelCalls++;
-          ops.add(
-              factory.agentInstanceOp(
-                  ctx,
-                  new AgentInstanceEvent(
-                      agentInstanceKey,
-                      elemInstKey,
-                      elementId,
-                      "UPDATED",
-                      AgentInstanceStatus.THINKING,
-                      model,
-                      provider,
-                      systemPrompt,
-                      maxTokens,
-                      maxModelCalls,
-                      maxToolCalls,
-                      totalInputTokens,
-                      totalOutputTokens,
-                      totalModelCalls,
-                      totalToolCalls,
-                      fullTools,
-                      thinkingMs)));
-        }
-      }
-
-      // Phase 4: IDLE (agent finished its work, awaiting next activation)
-      final long idleMs = startMs + phase * 5;
-      ops.add(
-          factory.agentInstanceOp(
-              ctx,
-              new AgentInstanceEvent(
-                  agentInstanceKey,
-                  elemInstKey,
-                  elementId,
-                  "UPDATED",
-                  AgentInstanceStatus.IDLE,
-                  model,
-                  provider,
-                  systemPrompt,
-                  maxTokens,
-                  maxModelCalls,
-                  maxToolCalls,
-                  totalInputTokens,
-                  totalOutputTokens,
-                  totalModelCalls,
-                  totalToolCalls,
-                  fullTools,
-                  idleMs)));
-    }
-
-    // Final event: COMPLETED (terminal, carries final running totals, triggered by process end)
-    ops.add(
-        factory.agentInstanceOp(
-            ctx,
-            new AgentInstanceEvent(
-                agentInstanceKey,
-                elemInstKey,
-                elementId,
-                "COMPLETED",
-                AgentInstanceStatus.COMPLETED,
-                model,
-                provider,
-                systemPrompt,
-                maxTokens,
-                maxModelCalls,
-                maxToolCalls,
-                totalInputTokens,
-                totalOutputTokens,
-                totalModelCalls,
-                totalToolCalls,
-                fullTools,
-                window.endMs())));
-
-    return List.copyOf(ops);
+  /** Element instance key of a flow node in this instance, as used by the flow-node walk. */
+  static long elementInstanceKey(final InstanceContext ctx, final FlowNode node) {
+    return ctx.instanceKey() * NODE_KEY_MULTIPLIER + node.index();
   }
 
-  /** Selects {@code count} distinct tools at random from the given {@code pool}. */
-  private List<AgentTool> selectFromPool(final List<AgentTool> pool, final int count) {
-    final List<AgentTool> shuffled = new ArrayList<>(pool);
-    Collections.shuffle(shuffled, rng);
-    return List.copyOf(shuffled.subList(0, Math.min(count, shuffled.size())));
+  /** Returns the AGENT_INSTANCE records of a simulated run. */
+  List<BulkOperation> agentInstanceOps(
+      final InstanceContext ctx, final AgentRunSimulator.AgentRunPlan plan) {
+    return plan.events().stream().map(event -> factory.agentInstanceOp(ctx, event)).toList();
+  }
+
+  /**
+   * Returns an incident on the agent element when the plan has one. Incidents raised after the
+   * run's last activity arrive after the agent run was written, which exercises the catch-up path.
+   */
+  List<BulkOperation> agentIncidentOps(
+      final InstanceContext ctx, final AgentRunSimulator.AgentRunPlan plan) {
+    if (plan.incidentAtMs() == null) {
+      return List.of();
+    }
+    final long incKey = ctx.instanceKey() * INCIDENT_KEY_MULTIPLIER + AGENT_INCIDENT_KEY_OFFSET;
+    final IncidentEvent created =
+        new IncidentEvent(incKey, plan.elementInstanceKey(), plan.elementId(), plan.incidentAtMs());
+    final List<BulkOperation> ops = new ArrayList<>();
+    ops.add(factory.incidentOp(ctx, created, IncidentIntent.CREATED));
+    if (rng.nextBoolean()) {
+      final IncidentEvent resolved =
+          new IncidentEvent(
+              incKey, plan.elementInstanceKey(), plan.elementId(), plan.incidentAtMs() + 60_000L);
+      ops.add(factory.incidentOp(ctx, resolved, IncidentIntent.RESOLVED));
+    }
+    return List.copyOf(ops);
   }
 
   // ── Private incident builder ──────────────────────────────────────────────
@@ -693,20 +260,70 @@ class FlowNodeEmitter {
     final BulkOperation subStartOp = factory.processInstanceOp(ctx, subElement, subStartEvent);
     walkState.pi().add(subStartOp);
 
-    childNis.stream()
-        .map(
-            ci -> {
-              final FlowNode child = layout.get(ci);
-              final long childStart = timings != null ? timings[ci] : window.startMs();
-              final long childEnd = timings != null ? timings[ci + 1] : window.endMs();
-              return new NodeEntry(child, subElemInstKey, childStart, childEnd);
-            })
-        .forEach(childEntry -> collectNode(flowWalkCtx, childEntry, walkState));
+    if (subType == AD_HOC_SUB_PROCESS && !flowWalkCtx.toolCallsByElement().isEmpty()) {
+      collectToolInstances(flowWalkCtx, childNis, subElemInstKey, subStartMs, subEndMs, walkState);
+    } else {
+      childNis.stream()
+          .map(
+              ci -> {
+                final FlowNode child = layout.get(ci);
+                final long childStart = timings != null ? timings[ci] : window.startMs();
+                final long childEnd = timings != null ? timings[ci + 1] : window.endMs();
+                return new NodeEntry(child, subElemInstKey, childStart, childEnd);
+              })
+          .forEach(childEntry -> collectNode(flowWalkCtx, childEntry, walkState));
+    }
 
     if (!window.isActive()) {
       final LifecycleEvent subEndEvent = new LifecycleEvent(window.endIntent(), subEndMs);
       final BulkOperation subEndOp = factory.processInstanceOp(ctx, subElement, subEndEvent);
       walkState.pi().add(subEndOp);
+    }
+  }
+
+  /**
+   * Emits one instance per tool call of each ad-hoc tool element, spread evenly over the
+   * sub-process window. Each instance gets its own element instance key.
+   */
+  private void collectToolInstances(
+      final FlowWalkContext flowWalkCtx,
+      final List<Integer> childNis,
+      final long subElemInstKey,
+      final long subStartMs,
+      final long subEndMs,
+      final WalkState walkState) {
+    final InstanceContext ctx = flowWalkCtx.ctx();
+    final List<FlowNode> tools =
+        childNis.stream()
+            .map(flowWalkCtx.layout()::get)
+            .filter(child -> flowWalkCtx.toolCallsByElement().containsKey(child.id()))
+            .toList();
+    final int total =
+        tools.stream().mapToInt(t -> flowWalkCtx.toolCallsByElement().get(t.id())).sum();
+    final long slot = Math.max(1L, (subEndMs - subStartMs) / Math.max(1, total));
+    long seq = 0;
+    for (final FlowNode tool : tools) {
+      for (int call = 0; call < flowWalkCtx.toolCallsByElement().get(tool.id()); call++) {
+        final long key = ctx.instanceKey() * NODE_KEY_MULTIPLIER + TOOL_INSTANCE_KEY_OFFSET + seq;
+        final long toolStart = subStartMs + slot * seq;
+        final ElementRecord element =
+            new ElementRecord(key, tool.id(), tool.type(), subElemInstKey);
+        walkState
+            .pi()
+            .add(
+                factory.processInstanceOp(
+                    ctx, element, new LifecycleEvent(ELEMENT_ACTIVATING, toolStart)));
+        if (!flowWalkCtx.window().isActive()) {
+          walkState
+              .pi()
+              .add(
+                  factory.processInstanceOp(
+                      ctx,
+                      element,
+                      new LifecycleEvent(flowWalkCtx.window().endIntent(), toolStart + slot)));
+        }
+        seq++;
+      }
     }
   }
 
@@ -778,7 +395,11 @@ class FlowNodeEmitter {
 
   /** Immutable context shared across all collect calls for one {@link #flowNodeOps} invocation. */
   private record FlowWalkContext(
-      InstanceContext ctx, List<FlowNode> layout, long[] timings, InstanceWindow window) {}
+      InstanceContext ctx,
+      List<FlowNode> layout,
+      long[] timings,
+      InstanceWindow window,
+      Map<String, Integer> toolCallsByElement) {}
 
   /** Groups a leaf flow-node with its timing and flow-scope key for one execution step. */
   private record NodeEntry(FlowNode node, long flowScopeKey, long startMs, long endMs) {}

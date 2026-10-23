@@ -139,37 +139,25 @@ java -jar optimize-data-generator-*-shaded.jar --instances 100000 --update-rate 
 
 ## Agent Instances
 
-Each process instance has a configurable probability (default 30 %) of spawning a synthetic AI
-agent instance. The generated lifecycle mirrors the `AGENT_INSTANCE` record spec:
+Instances whose path passes one of the three agent elements (document review ad-hoc sub-process in
+`customer-onboarding`, risk assessment AI Agent Task in `loan-approval`, external fraud review agent
+in `fraud-dispute-handling`) get an agent run with probability `--agent-rate`. Deploying the
+processes also writes one `AGENT_DEFINITION` CREATED record per agent and process version to
+`zeebe-record-agent-definition`.
 
-### Lifecycle variants
+Runs are written the way the engine records them (see `AgentRunSimulator`):
 
-| Owning instance | Agent instance lifecycle                                     |
-|-----------------|--------------------------------------------------------------|
-| Active          | `CREATED` (INITIALIZING) + 1 `UPDATED` (THINKING)           |
-| Terminated      | `CREATED` + 1 `UPDATED` (THINKING) + `COMPLETED`            |
-| Completed       | `CREATED` + 2–4 `UPDATED` (THINKING/TOOL_CALLING/IDLE) + `COMPLETED` |
+| Aspect | Generated data |
+|---|---|
+| Records | CREATED, one UPDATED per model call and per tool round (`changedAttributes` = `metrics`, `status`), a status-only IDLE, COMPLETED at process end |
+| Duration | The run is active for 15-55 % of the process instance, so run duration differs from process duration |
+| Model | About 8 % of runs switch from Bedrock to OpenAI through a config-commit UPDATED (`changedAttributes` = `model`, `provider`) |
+| Limits | About 40 % of runs have no limits (`-1`); about 10 % of all runs reach their model call limit |
+| Tokens | Input/output always; cache creation/read for 70 % of runs (20 % cache-heavy); reasoning only for `o3-mini`, included in output |
+| Tools | Ad-hoc sub-process tools run as flow node instances inside the sub-process, as often as the run called them, with uneven weights; the other agents' tools have no BPMN element |
+| Incidents | About 12 % of finished runs get an incident on the agent element, a third of them after the run's last activity |
 
-### Record structure
-
-All `AGENT_INSTANCE` records carry a complete snapshot of:
-- **Identity** fields (`agentInstanceKey`, `elementInstanceKey`, `processInstanceKey`, etc.)
-- **Definition** (`model`, `provider`, `systemPrompt`) — constant across events
-- **Limits** (`maxTokens`, `maxModelCalls`, `maxToolCalls`) — constant across events
-- **Metrics** — engine-aggregated running totals on `UPDATED`/`COMPLETED` events
-- **Status** — current `AgentInstanceStatus` value
-- **Tools** — current tool list (replace semantics)
-
-The `COMPLETED` event timestamp always equals the owning process instance's end timestamp,
-matching the spec's contract that the engine emits `COMPLETE` when the process completes or is
-cancelled.
-
-### Note on `valueType`
-
-The `AGENT_INSTANCE` `ValueType` enum constant does not yet exist in the Zeebe SBE protocol.
-Records are written with a plain string `"AGENT_INSTANCE"` as the `valueType` field via the
-fixture class `ZeebeAgentInstanceRecordDto`. Replace with a proper `ZeebeRecordDto` subclass once
-the protocol is updated.
+Records use Optimize's own `ZeebeAgentInstanceRecordDto` / `ZeebeAgentDefinitionRecordDto`.
 
 ```bash
 # Generate with 50 % of instances having agent instances

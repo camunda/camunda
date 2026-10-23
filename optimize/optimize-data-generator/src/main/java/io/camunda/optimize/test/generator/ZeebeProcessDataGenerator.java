@@ -8,6 +8,7 @@
 package io.camunda.optimize.test.generator;
 
 import static io.camunda.optimize.service.db.DatabaseConstants.PROCESS_DEFINITION_INDEX_NAME;
+import static io.camunda.optimize.service.db.DatabaseConstants.ZEEBE_AGENT_DEFINITION_INDEX_NAME;
 import static io.camunda.optimize.service.db.DatabaseConstants.ZEEBE_AGENT_INSTANCE_INDEX_NAME;
 import static io.camunda.optimize.service.db.DatabaseConstants.ZEEBE_INCIDENT_INDEX_NAME;
 import static io.camunda.optimize.service.db.DatabaseConstants.ZEEBE_PROCESS_DEFINITION_INDEX_NAME;
@@ -24,6 +25,7 @@ import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Random;
 import java.util.stream.IntStream;
@@ -71,6 +73,7 @@ public class ZeebeProcessDataGenerator {
   private final Random random;
   private final ZeebeRecordFactory factory;
   private final FlowNodeEmitter emitter;
+  private final AgentRunSimulator agentRunSimulator;
 
   public ZeebeProcessDataGenerator(final GeneratorConfig config) {
     this.config = config;
@@ -81,6 +84,7 @@ public class ZeebeProcessDataGenerator {
         new ZeebeRecordFactory(
             config.partitionId, config.positionOffset, catalogue, ProcessBpmnBuilder::bpmn);
     emitter = new FlowNodeEmitter(factory, timingSimulator, random);
+    agentRunSimulator = new AgentRunSimulator(random);
   }
 
   // ── Public API ────────────────────────────────────────────────────────────
@@ -108,7 +112,8 @@ public class ZeebeProcessDataGenerator {
         zeebeIndexName(ZEEBE_VARIABLE_INDEX_NAME),
         zeebeIndexName(ZEEBE_USER_TASK_INDEX_NAME),
         zeebeIndexName(ZEEBE_INCIDENT_INDEX_NAME),
-        zeebeIndexName(ZEEBE_AGENT_INSTANCE_INDEX_NAME));
+        zeebeIndexName(ZEEBE_AGENT_INSTANCE_INDEX_NAME),
+        zeebeIndexName(ZEEBE_AGENT_DEFINITION_INDEX_NAME));
   }
 
   // ── Process definitions ───────────────────────────────────────────────────
@@ -131,6 +136,27 @@ public class ZeebeProcessDataGenerator {
                 })
             .toList();
     writer.write(zeebeIndexName(ZEEBE_PROCESS_DEFINITION_INDEX_NAME), processDefinitionOps);
+
+    // Deploying a process with an agent element also creates an agent definition per version.
+    final List<BulkOperation> agentDefinitionOps =
+        IntStream.range(0, processIds.length)
+            .boxed()
+            .flatMap(
+                i ->
+                    AgentElement.forProcess(processIds[i]).stream()
+                        .flatMap(
+                            agent ->
+                                IntStream.rangeClosed(1, config.processVersionCount)
+                                    .mapToObj(
+                                        version ->
+                                            factory.agentDefinitionOp(
+                                                processIds[i],
+                                                config.definitionKeyFor(i, version),
+                                                version,
+                                                agent,
+                                                creationTimestampMs))))
+            .toList();
+    writer.write(zeebeIndexName(ZEEBE_AGENT_DEFINITION_INDEX_NAME), agentDefinitionOps);
   }
 
   // ── Optimize process definitions (direct seeding) ─────────────────────────
@@ -272,8 +298,34 @@ public class ZeebeProcessDataGenerator {
     final BulkOperation processStartOp =
         factory.processInstanceOp(instanceContext, processElement, processStart);
 
+    // The agent run is planned first so the ad-hoc sub-process runs its tools as often as the
+    // run called them.
+    final Optional<FlowNode> agentNode =
+        executionPath.stream()
+            .filter(n -> FlowNodeEmitter.AGENT_ELEMENT_IDS.contains(n.id()))
+            .findFirst();
+    final Optional<AgentRunSimulator.AgentRunPlan> agentRun =
+        agentNode
+            .filter(node -> random.nextDouble() < config.agentInstanceRate)
+            .map(
+                node ->
+                    agentRunSimulator.simulate(
+                        instanceWindow,
+                        instanceContext.instanceKey()
+                            * FlowNodeEmitter.AGENT_INSTANCE_KEY_MULTIPLIER,
+                        ZeebeRecordFactory.agentDefinitionKey(instanceContext.defKey()),
+                        FlowNodeEmitter.elementInstanceKey(instanceContext, node),
+                        node.id(),
+                        AgentElement.forElement(node.id())
+                            .map(AgentElement::tools)
+                            .orElse(List.of())));
+
     final FlowNodeEmitter.FlowNodeOps flowNodeOps =
-        emitter.flowNodeOps(instanceContext, executionPath, instanceWindow);
+        emitter.flowNodeOps(
+            instanceContext,
+            executionPath,
+            instanceWindow,
+            agentRun.map(AgentRunSimulator.AgentRunPlan::toolCallsByElement).orElse(Map.of()));
 
     final Optional<BulkOperation> processEndOp =
         buildProcessEndOp(instanceContext, processElement, instanceWindow);
@@ -286,24 +338,16 @@ public class ZeebeProcessDataGenerator {
     final List<BulkOperation> variableOps =
         emitter.variableOps(instanceContext, instanceWindow.endMs());
     final List<BulkOperation> incidentOps =
-        instanceWindow.hasIncident()
-            ? emitter.incidentOps(instanceContext, executionPath, instanceWindow)
-            : List.of();
+        Stream.concat(
+                instanceWindow.hasIncident()
+                    ? emitter.incidentOps(instanceContext, executionPath, instanceWindow).stream()
+                    : Stream.empty(),
+                agentRun.stream()
+                    .flatMap(run -> emitter.agentIncidentOps(instanceContext, run).stream()))
+            .toList();
 
-    final Optional<FlowNode> agentNode =
-        executionPath.stream()
-            .filter(n -> FlowNodeEmitter.AGENT_ELEMENT_IDS.contains(n.id()))
-            .findFirst();
-    final boolean hasAgentInstance =
-        agentNode.isPresent() && random.nextDouble() < config.agentInstanceRate;
     final List<BulkOperation> agentInstanceOps =
-        hasAgentInstance
-            ? emitter.agentInstanceOps(
-                instanceContext,
-                instanceWindow,
-                instanceContext.instanceKey() * FlowNodeEmitter.AGENT_INSTANCE_KEY_MULTIPLIER,
-                agentNode.get())
-            : List.of();
+        agentRun.map(run -> emitter.agentInstanceOps(instanceContext, run)).orElse(List.of());
 
     final var userTasksOps = flowNodeOps.ut();
     return new InstanceOps(

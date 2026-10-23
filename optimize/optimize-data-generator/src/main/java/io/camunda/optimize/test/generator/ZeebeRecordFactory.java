@@ -15,6 +15,10 @@ import io.camunda.optimize.dto.optimize.FlowNodeDataDto;
 import io.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import io.camunda.optimize.dto.optimize.datasource.ZeebeDataSourceDto;
 import io.camunda.optimize.dto.zeebe.ZeebeRecordDto;
+import io.camunda.optimize.dto.zeebe.agentdefinition.ZeebeAgentDefinitionDataDto;
+import io.camunda.optimize.dto.zeebe.agentdefinition.ZeebeAgentDefinitionRecordDto;
+import io.camunda.optimize.dto.zeebe.agentinstance.ZeebeAgentInstanceDataDto;
+import io.camunda.optimize.dto.zeebe.agentinstance.ZeebeAgentInstanceRecordDto;
 import io.camunda.optimize.dto.zeebe.definition.ZeebeProcessDefinitionDataDto;
 import io.camunda.optimize.dto.zeebe.definition.ZeebeProcessDefinitionRecordDto;
 import io.camunda.optimize.dto.zeebe.incident.ZeebeIncidentDataDto;
@@ -28,6 +32,8 @@ import io.camunda.optimize.dto.zeebe.variable.ZeebeVariableRecordDto;
 import io.camunda.optimize.service.util.BpmnModelUtil;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.AgentDefinitionIntent;
+import io.camunda.zeebe.protocol.record.intent.AgentInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
@@ -64,6 +70,7 @@ class ZeebeRecordFactory {
   private long utPosition;
   private long incPosition;
   private long agentPosition;
+  private long agentDefinitionPosition;
 
   ZeebeRecordFactory(
       final int partitionId,
@@ -78,6 +85,7 @@ class ZeebeRecordFactory {
     varPosition = positionOffset;
     utPosition = positionOffset;
     incPosition = positionOffset;
+    agentDefinitionPosition = positionOffset;
     agentPosition = positionOffset;
   }
 
@@ -250,55 +258,106 @@ class ZeebeRecordFactory {
     return wrap(record, ++incPosition);
   }
 
-  // ── Agent instance ────────────────────────────────────────────────────────
+  // ── Agent definition and agent instance ──────────────────────────────────
 
-  /**
-   * Builds an {@code AGENT_INSTANCE} record for one lifecycle event (CREATED, UPDATED, or
-   * COMPLETED).
-   *
-   * <p>Uses {@link ZeebeAgentInstanceRecordDto} — a fixture envelope class with a string {@code
-   * valueType} — because {@code ValueType.AGENT_INSTANCE} does not yet exist in the Zeebe protocol.
-   */
-  BulkOperation agentInstanceOp(final InstanceContext ctx, final AgentInstanceEvent event) {
-    final ZeebeAgentInstanceDataDto data = new ZeebeAgentInstanceDataDto();
-
-    // Identity
-    data.setAgentInstanceKey(event.agentInstanceKey());
-    data.setElementInstanceKey(event.elementInstanceKey());
-    data.setElementId(event.elementId());
-    data.setProcessInstanceKey(ctx.instanceKey());
-    data.setProcessDefinitionKey(ctx.defKey());
-    data.setBpmnProcessId(ctx.processId());
-    data.setProcessDefinitionVersion(1);
+  /** Builds the AGENT_DEFINITION CREATED record the engine writes when a process is deployed. */
+  BulkOperation agentDefinitionOp(
+      final String processId,
+      final long processDefinitionKey,
+      final int version,
+      final AgentElement agent,
+      final long timestamp) {
+    final ZeebeAgentDefinitionDataDto data = new ZeebeAgentDefinitionDataDto();
+    data.setAgentDefinitionKey(agentDefinitionKey(processDefinitionKey));
+    data.setAgentType(agent.type());
+    data.setName(agent.name());
+    data.setElementId(agent.elementId());
+    data.setBpmnProcessId(processId);
+    data.setProcessDefinitionKey(processDefinitionKey);
+    data.setProcessDefinitionVersion(version);
     data.setTenantId(ZEEBE_DEFAULT_TENANT_ID);
 
-    // Definition
-    data.setDefinition(
-        new ZeebeAgentInstanceDataDto.Definition(
-            event.model(), event.provider(), event.systemPrompt()));
+    final ZeebeAgentDefinitionRecordDto record = new ZeebeAgentDefinitionRecordDto();
+    record.setKey(data.getAgentDefinitionKey());
+    record.setTimestamp(timestamp);
+    record.setValueType(ValueType.AGENT_DEFINITION);
+    record.setIntent(AgentDefinitionIntent.CREATED);
+    record.setValue(data);
+    return wrap(record, ++agentDefinitionPosition);
+  }
 
-    // Limits
-    data.setLimits(
-        new ZeebeAgentInstanceDataDto.Limits(
-            event.maxTokens(), event.maxModelCalls(), event.maxToolCalls()));
+  /** Each demo process version has exactly one agent element, so one key per definition. */
+  static long agentDefinitionKey(final long processDefinitionKey) {
+    return processDefinitionKey * 10 + 1;
+  }
 
-    // Status
+  /** Builds an AGENT_INSTANCE event record. */
+  BulkOperation agentInstanceOp(final InstanceContext ctx, final AgentInstanceEvent event) {
+    final ZeebeAgentInstanceDataDto data = new ZeebeAgentInstanceDataDto();
+    data.setAgentInstanceKey(event.agentInstanceKey());
+    data.setAgentDefinitionKey(event.agentDefinitionKey());
+    data.setElementInstanceKey(event.elementInstanceKey());
+    data.setElementInstanceKeys(List.of(event.elementInstanceKey()));
+    data.setElementId(event.elementId());
+    data.setProcessInstanceKey(ctx.instanceKey());
+    // The demo processes have no call activities, so every instance is its own root.
+    data.setRootProcessInstanceKey(ctx.instanceKey());
+    data.setProcessDefinitionKey(ctx.defKey());
+    data.setBpmnProcessId(ctx.processId());
+    data.setProcessDefinitionVersion(ctx.version());
+    data.setTenantId(ZEEBE_DEFAULT_TENANT_ID);
     data.setStatus(event.status());
+    data.setChangedAttributes(event.changedAttributes());
 
-    // Metrics (running totals per spec)
-    data.setMetrics(
-        new ZeebeAgentInstanceDataDto.Metrics(
-            event.inputTokens(), event.outputTokens(), event.modelCalls(), event.toolCalls()));
+    final ZeebeAgentInstanceDataDto.AgentDefinitionValueDto definition =
+        new ZeebeAgentInstanceDataDto.AgentDefinitionValueDto();
+    definition.setModel(event.model());
+    definition.setProvider(event.provider());
+    data.setDefinition(definition);
 
-    // Tools
-    data.setTools(event.tools());
+    final ZeebeAgentInstanceDataDto.AgentLimitsValueDto limits =
+        new ZeebeAgentInstanceDataDto.AgentLimitsValueDto();
+    limits.setMaxTokens(event.limits().maxTokens());
+    limits.setMaxModelCalls(event.limits().maxModelCalls());
+    limits.setMaxToolCalls(event.limits().maxToolCalls());
+    data.setLimits(limits);
+
+    final ZeebeAgentInstanceDataDto.AgentMetricsValueDto metrics =
+        new ZeebeAgentInstanceDataDto.AgentMetricsValueDto();
+    metrics.setInputTokens(event.metrics().inputTokens());
+    metrics.setOutputTokens(event.metrics().outputTokens());
+    metrics.setReasoningTokenCount(event.metrics().reasoningTokens());
+    metrics.setCacheCreationTokenCount(event.metrics().cacheCreationTokens());
+    metrics.setCacheReadTokenCount(event.metrics().cacheReadTokens());
+    metrics.setModelCalls(event.metrics().modelCalls());
+    metrics.setToolCalls(event.metrics().toolCalls());
+    data.setMetrics(metrics);
+
+    // Like the engine, UPDATED events only carry the tools when the tools changed.
+    final boolean carriesTools =
+        event.intent() != AgentInstanceIntent.UPDATED
+            || event.changedAttributes().contains("tools");
+    data.setTools(
+        carriesTools
+            ? event.tools().stream().map(ZeebeRecordFactory::toToolValue).toList()
+            : List.of());
 
     final ZeebeAgentInstanceRecordDto record = new ZeebeAgentInstanceRecordDto();
     record.setKey(event.agentInstanceKey());
     record.setTimestamp(event.timestamp());
+    record.setValueType(ValueType.AGENT_INSTANCE);
     record.setIntent(event.intent());
     record.setValue(data);
-    return wrapAgentInstance(record, ++agentPosition);
+    return wrap(record, ++agentPosition);
+  }
+
+  private static ZeebeAgentInstanceDataDto.AgentToolValueDto toToolValue(final AgentTool tool) {
+    final ZeebeAgentInstanceDataDto.AgentToolValueDto value =
+        new ZeebeAgentInstanceDataDto.AgentToolValueDto();
+    value.setName(tool.name());
+    value.setDescription(tool.description());
+    value.setElementId(tool.elementId());
+    return value;
   }
 
   // ── Private helpers ───────────────────────────────────────────────────────
@@ -351,7 +410,7 @@ class ZeebeRecordFactory {
     data.setElementInstanceKey(event.elemInstKey());
     data.setBpmnProcessId(ctx.processId());
     data.setProcessDefinitionKey(ctx.defKey());
-    data.setProcessDefinitionVersion(1);
+    data.setProcessDefinitionVersion(ctx.version());
     data.setProcessInstanceKey(ctx.instanceKey());
     data.setTenantId(ZEEBE_DEFAULT_TENANT_ID);
     data.setCreationTimestamp(event.timestamp());
@@ -367,21 +426,6 @@ class ZeebeRecordFactory {
     record.setIntent(intent);
     record.setValue(data);
     return wrap(record, ++utPosition);
-  }
-
-  /**
-   * Populates the envelope fields on a fixture {@link ZeebeAgentInstanceRecordDto} and wraps it as
-   * an ES bulk index operation. Mirrors {@link #wrap} but accepts the fixture type because it does
-   * not extend {@link io.camunda.optimize.dto.zeebe.ZeebeRecordDto}.
-   */
-  private BulkOperation wrapAgentInstance(
-      final ZeebeAgentInstanceRecordDto record, final long position) {
-    record.setPosition(position);
-    record.setSequence(position);
-    record.setPartitionId(partitionId);
-    record.setBrokerVersion(BROKER_VERSION);
-    final String docId = partitionId + "-ai-" + position;
-    return BulkOperation.of(b -> b.index(IndexOperation.of(i -> i.id(docId).document(record))));
   }
 
   /**
