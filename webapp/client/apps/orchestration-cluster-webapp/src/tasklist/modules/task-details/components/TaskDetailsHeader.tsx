@@ -7,7 +7,8 @@
  */
 
 import {Button, Text, useIsMobile} from '@camunda/design-system';
-import type {CurrentUser, UserTask} from '@camunda/camunda-api-zod-schemas/8.11';
+import type {UserTask} from '@camunda/camunda-api-zod-schemas/8.11';
+import type {AuthenticatedCurrentUser} from '#/shared/http/currentUser';
 import {useNavigate} from '@tanstack/react-router';
 import {ArrowLeft, CircleCheck, LoaderCircle} from '@camunda/design-system/icons';
 import {useTranslation} from 'react-i18next';
@@ -17,7 +18,7 @@ import {SuspendedBadge} from '#/tasklist/modules/available-tasks/components/Susp
 type RightPanelProps = {
 	taskState: UserTask['state'];
 	assignee: string | null;
-	user: CurrentUser;
+	user: AuthenticatedCurrentUser;
 	assignButton: React.ReactNode;
 };
 
@@ -88,7 +89,7 @@ type Props = {
 	assignee: string | null;
 	taskState: UserTask['state'];
 	isSuspended: boolean;
-	user: CurrentUser;
+	user: AuthenticatedCurrentUser;
 	assignButton: React.ReactNode;
 	detailsButton?: React.ReactNode;
 };

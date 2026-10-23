@@ -7,12 +7,12 @@
  */
 
 import {Badge} from '@camunda/design-system';
-import type {CurrentUser} from '@camunda/camunda-api-zod-schemas/8.11';
+import type {AuthenticatedCurrentUser} from '#/shared/http/currentUser';
 import {CircleDashed, CircleUserRound, UserRound} from '@camunda/design-system/icons';
 import {useTranslation} from 'react-i18next';
 
 type Props = {
-	currentUser: CurrentUser;
+	currentUser: AuthenticatedCurrentUser;
 	assignee: string | null | undefined;
 	isShortFormat?: boolean;
 };
