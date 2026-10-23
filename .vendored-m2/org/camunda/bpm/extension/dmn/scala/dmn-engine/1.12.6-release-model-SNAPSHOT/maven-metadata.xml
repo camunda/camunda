@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<metadata modelVersion="1.1.0">
+  <groupId>org.camunda.bpm.extension.dmn.scala</groupId>
+  <artifactId>dmn-engine</artifactId>
+  <versioning>
+    <lastUpdated>20261023141949</lastUpdated>
+    <snapshot>
+      <timestamp>20261023.141949</timestamp>
+      <buildNumber>1</buildNumber>
+    </snapshot>
+    <snapshotVersions>
+      <snapshotVersion>
+        <extension>jar</extension>
+        <value>1.12.6-release-model-20261023.141949-1</value>
+        <updated>20261023141949</updated>
+      </snapshotVersion>
+      <snapshotVersion>
+        <extension>pom</extension>
+        <value>1.12.6-release-model-20261023.141949-1</value>
+        <updated>20261023141949</updated>
+      </snapshotVersion>
+    </snapshotVersions>
+  </versioning>
+  <version>1.12.6-release-model-SNAPSHOT</version>
+</metadata>

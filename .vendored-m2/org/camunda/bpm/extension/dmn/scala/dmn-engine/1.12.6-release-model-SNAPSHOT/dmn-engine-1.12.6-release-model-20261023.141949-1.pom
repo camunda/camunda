@@ -1,0 +1,401 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <groupId>org.camunda.bpm.extension.dmn.scala</groupId>
+  <artifactId>dmn-engine</artifactId>
+  <name>DMN Scala Engine</name>
+  <version>1.12.6-release-model-SNAPSHOT</version>
+
+  <parent>
+    <groupId>org.camunda</groupId>
+    <artifactId>camunda-release-parent</artifactId>
+    <version>4.1.1</version>
+    <relativePath />
+  </parent>
+
+  <properties>
+    <feel.version>1.22.1</feel.version>
+    <camunda-model-api.version>7.24.0</camunda-model-api.version>
+    <version.java>11</version.java>
+    <scala.version>2.13.18</scala.version>
+    <scala.binary.version>2.13.6</scala.binary.version>
+    <log4j.version>2.25.4</log4j.version>
+    <encoding>UTF-8</encoding>
+    <project.build.sourceEncoding>${encoding}</project.build.sourceEncoding>
+    <project.build.resourceEncoding>${encoding}</project.build.resourceEncoding>
+
+    <license.header>com/mycila/maven/plugin/license/templates/APACHE-2.txt</license.header>
+
+    <!-- set to false to generate a third party dependency bom -->
+    <skip-third-party-bom>false</skip-third-party-bom>
+    <!-- set the Maven scopes that should be included in the dependency bom.
+      Must be a pipe-separated (|) list of Maven scopes -->
+    <third-party-bom-scopes>compile</third-party-bom-scopes>
+
+    <!-- Override the property to use a new plugin version -->
+    <plugin.version.central-publishing>0.12.0</plugin.version.central-publishing>
+
+  </properties>
+
+  <dependencyManagement>
+    <dependencies>
+
+      <dependency>
+        <groupId>org.camunda.feel</groupId>
+        <artifactId>feel-engine</artifactId>
+        <version>${feel.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.camunda.bpm.model</groupId>
+        <artifactId>camunda-dmn-model</artifactId>
+        <version>${camunda-model-api.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.scala-lang</groupId>
+        <artifactId>scala-library</artifactId>
+        <version>${scala.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.slf4j</groupId>
+        <artifactId>slf4j-api</artifactId>
+        <version>2.0.20</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.apache.logging.log4j</groupId>
+        <artifactId>log4j-api</artifactId>
+        <version>${log4j.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.apache.logging.log4j</groupId>
+        <artifactId>log4j-core</artifactId>
+        <version>${log4j.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.apache.logging.log4j</groupId>
+        <artifactId>log4j-slf4j2-impl</artifactId>
+        <version>${log4j.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.scalatest</groupId>
+        <artifactId>scalatest_2.13</artifactId>
+        <version>3.2.20</version>
+      </dependency>
+
+    </dependencies>
+  </dependencyManagement>
+
+  <dependencies>
+
+    <dependency>
+      <groupId>org.camunda.feel</groupId>
+      <artifactId>feel-engine</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.camunda.bpm.model</groupId>
+      <artifactId>camunda-dmn-model</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-api</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.scalatest</groupId>
+      <artifactId>scalatest_2.13</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.apache.logging.log4j</groupId>
+      <artifactId>log4j-api</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.apache.logging.log4j</groupId>
+      <artifactId>log4j-core</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.apache.logging.log4j</groupId>
+      <artifactId>log4j-slf4j2-impl</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+  </dependencies>
+
+  <build>
+    <defaultGoal>clean install</defaultGoal>
+
+    <plugins>
+
+      <plugin>
+        <groupId>net.alchim31.maven</groupId>
+        <artifactId>scala-maven-plugin</artifactId>
+        <version>4.10.0</version>
+        <configuration>
+          <scalaCompatVersion>${scala.binary.version}</scalaCompatVersion>
+          <scalaVersion>${scala.version}</scalaVersion>
+        </configuration>
+        <executions>
+          <execution>
+            <id>scala-compile-first</id>
+            <phase>process-resources</phase>
+            <goals>
+              <goal>add-source</goal>
+              <goal>compile</goal>
+            </goals>
+          </execution>
+          <execution>
+            <id>scala-test-compile</id>
+            <phase>process-test-resources</phase>
+            <goals>
+              <goal>testCompile</goal>
+            </goals>
+          </execution>
+          <execution>
+            <id>scala-doc</id>
+            <phase>package</phase>
+            <goals>
+              <goal>doc-jar</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <version>3.6.0</version>
+        <configuration>
+          <skipTests>true</skipTests>
+        </configuration>
+      </plugin>
+
+      <plugin>
+        <groupId>org.scalatest</groupId>
+        <artifactId>scalatest-maven-plugin</artifactId>
+        <version>2.2.0</version>
+        <configuration>
+          <reportsDirectory>${project.build.directory}/surefire-reports</reportsDirectory>
+          <junitxml>.</junitxml>
+          <filereports>TestSuite.txt</filereports>
+        </configuration>
+        <executions>
+          <execution>
+            <id>test</id>
+            <goals>
+              <goal>test</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+
+      <plugin>
+        <groupId>org.antipathy</groupId>
+        <artifactId>mvn-scalafmt_2.12</artifactId>
+        <version>0.7_1.5.1</version>
+        <configuration>
+          <parameters>--diff</parameters>
+        </configuration>
+        <executions>
+          <execution>
+            <phase>validate</phase>
+            <goals>
+              <goal>format</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+
+      <!-- LICENSE PLUGIN -->
+      <plugin>
+        <groupId>com.mycila</groupId>
+        <artifactId>license-maven-plugin</artifactId>
+        <version>5.1.2</version>
+        <configuration>
+          <header>${license.header}</header>
+          <properties>
+            <owner>Camunda Services GmbH</owner>
+            <email>info@camunda.com</email>
+            <year>2022</year>
+          </properties>
+          <skipExistingHeaders>false</skipExistingHeaders>
+          <includes>
+            <include>**/*.scala</include>
+            <include>**/*.java</include>
+          </includes>
+          <mapping>
+            <java>SLASHSTAR_STYLE</java>
+            <scala>SLASHSTAR_STYLE</scala>
+          </mapping>
+        </configuration>
+        <executions>
+          <execution>
+            <id>add-license-header</id>
+            <phase>compile</phase>
+            <goals>
+              <goal>format</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>clirr-maven-plugin</artifactId>
+        <version>2.9</version>
+        <executions>
+          <execution>
+            <goals>
+              <goal>check</goal>
+            </goals>
+          </execution>
+        </executions>
+        <configuration>
+          <excludes>
+            <!-- public API only -->
+            <exclude>org/camunda/dmn/impl/**</exclude>
+            <!-- Clirr has problems with the inner classes that are generated by Scala (ending with "$") -->
+            <exclude>org/camunda/dmn/**/*$</exclude>
+            <exclude>org/camunda/dmn/**/*$anonfun*</exclude>
+          </excludes>
+          <!-- Specifically ignore functions that may have changed -->
+          <ignoredDifferencesFile>api-check-ignore.xml</ignoredDifferencesFile>
+        </configuration>
+      </plugin>
+
+      <!-- Generate 3rd party dependency list -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-dependency-plugin</artifactId>
+        <version>3.11.0</version>
+        <executions>
+          <execution>
+            <id>list-deps</id>
+            <goals>
+              <goal>list</goal>
+            </goals>
+            <phase>package</phase>
+            <configuration>
+              <skip>${skip-third-party-bom}</skip>
+              <includeScope>test</includeScope><!-- Gives all dependencies; scopes filtering is applied in the ant step -->
+              <sort>true</sort>
+              <excludeGroupIds>org.camunda</excludeGroupIds>
+              <outputFile>${project.build.directory}/dependencies/dependencies-generated.txt</outputFile>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-antrun-plugin</artifactId>
+        <version>3.2.0</version>
+        <executions>
+          <!-- Reformats the dependency list:
+            - into a plain list (no header line, no indentation)
+            - Filters all dependencies in unwanted scopes -->
+          <execution>
+            <id>reformat-dependencies</id>
+            <goals>
+              <goal>run</goal>
+            </goals>
+            <phase>package</phase>
+            <configuration>
+              <skip>${skip-third-party-bom}</skip>
+              <target>
+                <copy file="${project.build.directory}/dependencies/dependencies-generated.txt" tofile="${project.build.directory}/dependencies.txt">
+                  <filterchain>
+                    <linecontains negate="true"><!-- Remove header line -->
+                      <contains value="The following files have been resolved" />
+                    </linecontains>
+                    <linecontainsregexp><!-- only keep the desired scopes -->
+                      <regexp pattern=":(?:${third-party-bom-scopes})$" />
+                    </linecontainsregexp>
+                    <tokenfilter>
+                      <replaceregex pattern=":(?:${third-party-bom-scopes})$" replace="" /> <!-- Remove scope -->
+                      <trim /><!-- Remove whitespace -->
+                      <ignoreblank />
+                    </tokenfilter>
+                  </filterchain>
+                </copy>
+              </target>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>build-helper-maven-plugin</artifactId>
+        <version>3.6.2</version>
+        <executions>
+          <!-- Attaches the dependency BOM to the Maven build so
+            that it can be consumed as a Maven artifact in the license book
+            module -->
+          <execution>
+            <id>attach-deps</id>
+            <phase>package</phase>
+            <goals>
+              <goal>attach-artifact</goal>
+            </goals>
+            <configuration>
+              <skipAttach>${skip-third-party-bom}</skipAttach>
+              <artifacts>
+                <artifact>
+                  <file>${project.build.directory}/dependencies.txt</file>
+                  <type>txt</type>
+                  <classifier>third-party-bom</classifier>
+                </artifact>
+              </artifacts>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
+    </plugins>
+
+  </build>
+
+  <licenses>
+    <license>
+      <name>The Apache Software License, Version 2.0</name>
+      <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+    </license>
+  </licenses>
+
+  <scm>
+    <connection>scm:git:git@github.com:camunda-community-hub/dmn-scala.git</connection>
+    <url>scm:git:git@github.com:camunda-community-hub/dmn-scala.git</url>
+    <developerConnection>scm:git:git@github.com:camunda-community-hub/dmn-scala.git</developerConnection>
+    <tag>HEAD</tag>
+  </scm>
+
+  <distributionManagement>
+    <repository>
+      <id>camunda-nexus</id>
+      <name>camunda platform community extensions</name>
+      <url>https://artifacts.camunda.com/artifactory/camunda-bpm-community-extensions/</url>
+    </repository>
+    <snapshotRepository>
+      <id>camunda-nexus</id>
+      <name>camunda platform community extensions snapshots</name>
+      <url>
+        https://artifacts.camunda.com/artifactory/camunda-bpm-community-extensions-snapshots/
+      </url>
+      <!-- for maven 2 compatibility -->
+      <uniqueVersion>true</uniqueVersion>
+    </snapshotRepository>
+  </distributionManagement>
+
+</project>
