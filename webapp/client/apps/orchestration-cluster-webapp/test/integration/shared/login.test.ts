@@ -186,6 +186,7 @@ test('should show the Admin heading when redirected from the Admin app', async (
 	await loginPage.goto('/admin');
 
 	await expect(loginPage.heading).toHaveText('Admin');
+});
 
 test('should redirect to login when the API answers with an anonymous user', async ({network, page, loginPage}) => {
 	// An unprotected API answers a caller without a session with an anonymous user, not a 401.
