@@ -477,18 +477,6 @@ public final class RecordingExporter implements Exporter {
     return processInstanceBatchRecords().withIntent(intent);
   }
 
-<<<<<<< HEAD
-=======
-  public static ElementInstanceWalkRecordStream elementInstanceWalkRecords() {
-    return new ElementInstanceWalkRecordStream(
-        records(ValueType.ELEMENT_INSTANCE_WALK, ElementInstanceWalkRecordValue.class));
-  }
-
-  public static ElementInstanceWalkRecordStream elementInstanceWalkRecords(
-      final ElementInstanceWalkIntent intent) {
-    return elementInstanceWalkRecords().withIntent(intent);
-  }
-
   public static ProcessDefinitionRestoreRecordStream processDefinitionRestoreRecords() {
     return new ProcessDefinitionRestoreRecordStream(
         records(ValueType.PROCESS_DEFINITION_RESTORE, ProcessDefinitionRestoreRecordValue.class));
@@ -499,7 +487,6 @@ public final class RecordingExporter implements Exporter {
     return processDefinitionRestoreRecords().withIntent(intent);
   }
 
->>>>>>> c9747186 (feat: add protocol records for restoring stray pending-deletion definitions)
   public static TimerRecordStream timerRecords() {
     return new TimerRecordStream(records(ValueType.TIMER, TimerRecordValue.class));
   }

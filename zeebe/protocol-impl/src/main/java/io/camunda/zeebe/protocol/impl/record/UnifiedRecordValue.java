@@ -190,11 +190,7 @@ public class UnifiedRecordValue extends UnpackedObject implements RecordValue {
       case ValueType.SIGNAL -> new SignalRecord();
       case ValueType.COMMAND_DISTRIBUTION -> new CommandDistributionRecord();
       case ValueType.PROCESS_INSTANCE_BATCH -> new ProcessInstanceBatchRecord();
-<<<<<<< HEAD
-=======
-      case ValueType.ELEMENT_INSTANCE_WALK -> new ElementInstanceWalkRecord();
       case ValueType.PROCESS_DEFINITION_RESTORE -> new ProcessDefinitionRestoreRecord();
->>>>>>> c9747186 (feat: add protocol records for restoring stray pending-deletion definitions)
       case ValueType.BUFFERED_COMMAND -> new BufferedCommandRecord();
       case ValueType.PROCESS_INSTANCE_BUSINESS_ID -> new ProcessInstanceBusinessIdRecord();
       case ValueType.RESOURCE_DELETION -> new ResourceDeletionRecord();
