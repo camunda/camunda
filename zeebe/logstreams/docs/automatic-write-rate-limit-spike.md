@@ -314,6 +314,9 @@ Test: `shouldLowerCeilingOfTakeoverBrokerDuringRollingRestartWhenFailoverIsUnbal
 
 The spike tested four sets of signals. The first three failed. This section gives the sequence.
 
+> [!NOTE]
+> The values in this section come from an earlier version of the model. In that version, a tenant that floods sent 1 000 000 records each second to each partition, and a rejection used no CPU. The code of the signals that the spike removed is not in the branch. Thus the spike did not run these scenarios again with the current model, and the values can be different with the current flood of $`2 \cdot R_{\text{true}}`$.
+
 ### Step 1: the size of the backlog
 
 The first version used the size of the backlog, without a request limiter in the model.
