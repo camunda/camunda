@@ -11,6 +11,7 @@ import static io.camunda.security.api.model.config.initialization.Initialization
 import static io.camunda.security.api.model.config.initialization.InitializationConfiguration.DEFAULT_USER_USERNAME;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.qa.util.cluster.TestCamundaApplication;
 import io.camunda.qa.util.cluster.TestWebappClient;
 import io.camunda.qa.util.cluster.TestWebappClient.TestLoggedInWebappClient;
@@ -47,6 +48,7 @@ public class PhysicalTenantWebSessionUnprotectedApiIT {
 
   private static final String ME_ENDPOINT = "/v2/authentication/me";
   private static final String LOGOUT_ENDPOINT = "/logout";
+  private static final ObjectMapper JSON = new ObjectMapper();
 
   @MultiDbTestApplication
   private static final TestCamundaApplication CAMUNDA =
@@ -78,9 +80,8 @@ public class PhysicalTenantWebSessionUnprotectedApiIT {
       logOut(loggedIn);
 
       // then — logout must invalidate the session on the unprotected chain too
-      assertCurrentUserStatus(
+      assertCurrentUserIsAnonymous(
           loggedIn,
-          HttpStatus.UNAUTHORIZED,
           "logged-out session must not be recognised on the unprotected API chain either");
     }
   }
@@ -104,9 +105,8 @@ public class PhysicalTenantWebSessionUnprotectedApiIT {
       logOutScoped(loggedIn);
 
       // then — logout must invalidate the scoped session on the unprotected chain too
-      assertScopedCurrentUserStatus(
+      assertScopedCurrentUserIsAnonymous(
           loggedIn,
-          HttpStatus.UNAUTHORIZED,
           "logged-out scoped session must not be recognised on the PT's unprotected API chain"
               + " either");
     }
@@ -116,6 +116,18 @@ public class PhysicalTenantWebSessionUnprotectedApiIT {
       final TestLoggedInWebappClient client, final HttpStatus expected, final String reason) {
     final var response = client.send(ME_ENDPOINT).get();
     assertThat(response.statusCode()).as(reason).isEqualTo(expected.value());
+  }
+
+  /** The unprotected API answers a caller without an identity with an anonymous current user. */
+  private static void assertCurrentUserIsAnonymous(
+      final TestLoggedInWebappClient client, final String reason) throws IOException {
+    assertIsAnonymousCurrentUser(client.send(ME_ENDPOINT).get(), reason);
+  }
+
+  private static void assertIsAnonymousCurrentUser(
+      final HttpResponse<String> response, final String reason) throws IOException {
+    assertThat(response.statusCode()).as(reason).isEqualTo(HttpStatus.OK.value());
+    assertThat(JSON.readTree(response.body()).path("anonymous").asBoolean()).as(reason).isTrue();
   }
 
   private static void logOut(final TestLoggedInWebappClient client)
@@ -139,6 +151,12 @@ public class PhysicalTenantWebSessionUnprotectedApiIT {
     // relative path so it resolves under the tenant-scoped root, not the default API surface
     final var response = client.send("v2/authentication/me").get();
     assertThat(response.statusCode()).as(reason).isEqualTo(expected.value());
+  }
+
+  private static void assertScopedCurrentUserIsAnonymous(
+      final TestLoggedInWebappClient client, final String reason) throws IOException {
+    // relative path so it resolves under the tenant-scoped root, not the default API surface
+    assertIsAnonymousCurrentUser(client.send("v2/authentication/me").get(), reason);
   }
 
   private static void logOutScoped(final TestLoggedInWebappClient client) {
