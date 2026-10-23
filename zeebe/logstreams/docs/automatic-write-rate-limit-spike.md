@@ -155,13 +155,14 @@ CPU throttling is the only signal that decreases the ceiling. Finding 2 gives th
   | S7 | $`\text{admitted} = \min\left(\text{offered}, \max(0, \text{limit}_{\text{req}} - \text{backlog}) \cdot \dfrac{\Delta t}{5\,\text{ms}}\right)`$ | Records that the request limiter admits in one tick |
 
   The start value of $`\text{limit}_{\text{req}}`$ is 100. The limit changes approximately once each second.
+- A tenant that floods sends $`2 \cdot R_{\text{true}}`$ records each second to each partition. This is two times the rate of one core on a leader. One replica uses a maximum of one core, so a partition cannot process this rate.
 - The leader accepts $`\min(\text{admitted}, \text{limit}_t \times \Delta t)`$ records (F9). When the exporter backlog is more than 10 000 records, the exporter throttle sets the limit to the export rate. The partition is then excluded.
 - A broker that stops loses its queues. After a restart, the broker starts at the start value.
 
 ### Limits of the model
 
 1. One record is one command. Real commands write follow-up records. So a real backlog is larger than the request limit, and a real latency is higher.
-2. A tenant that "floods" sends 1 000 000 records each second for each partition. A real client has a limited number of requests in flight. So the simulated flood hits the request limiter harder than a real client.
+2. The rate of a flood is constant. A real client with retries sends more after a rejection. A real client with a limit of requests in flight sends less.
 3. A throttled broker gives CPU in proportion to demand. Real CFS gives a more equal share to each thread that can run. Real CFS can protect a small tenant better than the simulation shows.
 
 ## Results
@@ -241,10 +242,10 @@ The column "Fair share" gives the result of a work-conserving mechanism with the
 | Scenario | Fair share | Expected in v1 | Both mechanisms | Request limiter only |
 | --- | --- | --- | --- | --- |
 | All tenants flood, $`R_{\text{true}} = R`$ | 9 091 each | 8 333 each, no throttling | 8 333 each, CPU throttled 0% | 8 550 each, CPU throttled 86% |
-| Tenant a floods, b and c send 7 500 | a 12 273, b and c 7 500 | a 8 333, b and c 7 500 | a 8 333, b and c 7 500, CPU throttled 0% | a 12 664, b and c 7 284, CPU throttled 98% |
-| Weights 2:1:1, all tenants flood, $`R_{\text{true}} = 8\,000`$ | 10 909, 5 454, 5 454 | Same as fair share | 10 451, 5 413, 5 413, CPU throttled 44% | 7 027 each, the weights have no effect |
-| Tenant a floods, b and c send 7 500, $`R_{\text{true}} = 8\,000`$ | 7 273 each | Same as fair share | 7 110, 7 098, 7 098, CPU throttled 52% | a 8 529, b and c 6 650 |
-| All tenants flood, $`R_{\text{true}} = 8\,000`$ | 7 273 each | Same as fair share | 7 015, 7 017, 7 017, CPU throttled 36% | 7 027 each |
+| Tenant a floods, b and c send 7 500 | a 12 273, b and c 7 500 | a 8 333, b and c 7 500 | a 8 333, b and c 7 500, CPU throttled 0% | a 12 471, b and c 7 408, CPU throttled 100% |
+| Weights 2:1:1, all tenants flood, $`R_{\text{true}} = 8\,000`$ | 10 909, 5 454, 5 454 | Same as fair share | 10 451, 5 413, 5 413, CPU throttled 44% | 6 840 each, the weights have no effect |
+| Tenant a floods, b and c send 7 500, $`R_{\text{true}} = 8\,000`$ | 7 273 each | Same as fair share | 7 110, 7 098, 7 098, CPU throttled 52% | a 9 288, b and c 6 270 |
+| All tenants flood, $`R_{\text{true}} = 8\,000`$ | 7 273 each | Same as fair share | 7 015, 7 017, 7 017, CPU throttled 36% | 6 840 each |
 
 When $`R_{\text{true}}`$ is 8 000, the capacity is less than the start value. The controller then decreases the ceiling to the capacity, and the start value has no effect. In the second row, tenant a can use the capacity that b and c do not use: $`27\,273 - 2 \times 7\,500 = 12\,273`$. In v1, tenant a stays at 8 333.
 

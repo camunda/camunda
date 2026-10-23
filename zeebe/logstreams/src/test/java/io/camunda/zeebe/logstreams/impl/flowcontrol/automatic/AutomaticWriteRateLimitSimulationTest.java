@@ -25,7 +25,8 @@ import org.junit.jupiter.api.TestInfo;
  *
  * <p>Unless stated otherwise: 3 brokers with 2 CPUs each, tenants with 3 partitions and RF 3,
  * default parameters (R = 10 000, LEADER = 1, FOLLOWER = 0.6). With 3 tenants each broker hosts 9
- * replicas, so the start value is 2 777.8 and the floor 2 222.2 records/s per partition.
+ * replicas, so the start value is 2 777.8 and the floor 2 222.2 records/s per partition. A tenant
+ * without an offered rate floods: each partition gets twice what its leader can process.
  */
 class AutomaticWriteRateLimitSimulationTest {
 
@@ -158,7 +159,7 @@ class AutomaticWriteRateLimitSimulationTest {
 
     // then - backpressure alone lets a take part of the share of b and c
     assertThat(meanRate(withoutWriteRateLimit, "a")).isGreaterThan(12_000);
-    assertThat(meanRate(withoutWriteRateLimit, "b")).isLessThan(7_400);
+    assertThat(meanRate(withoutWriteRateLimit, "b")).isLessThan(7_450);
     // with the write rate limit, a is capped at its limit and b and c get all they want
     assertThat(meanRate(sim, "a")).isCloseTo(3 * START_3_TENANTS, within(1.0));
     assertThat(meanRate(sim, "b")).isCloseTo(7_500, within(1.0));

@@ -57,7 +57,12 @@ import org.jspecify.annotations.Nullable;
 final class WriteRateLimitSimulation {
 
   static final Duration TICK = Duration.ofMillis(100);
-  static final double SATURATING = 1_000_000;
+
+  /**
+   * Offered rate of a flooding partition, as a multiple of the real records/CPU-s of its leader.
+   */
+  static final double FLOOD_FACTOR = 2;
+
   static final long ACCEPTABLE_EXPORT_BACKLOG = 10_000;
   static final Duration BASE_LATENCY = Duration.ofMillis(5);
   private static final Duration EXPECTED_RTT = Duration.ofMillis(200);
@@ -196,7 +201,7 @@ final class WriteRateLimitSimulation {
     if (excluded) {
       limit = Math.min(limit, tenant.exportRatePerPartition);
     }
-    final var offered = tenant.offeredRatePerPartition * dt;
+    final var offered = tenant.offeredRatePerPartition(leader) * dt;
     var admitted = offered;
     if (requestLimiterEnabled) {
       if (partition.requestLimitOwner != leader) {
@@ -450,7 +455,8 @@ final class WriteRateLimitSimulation {
   static final class SimTenant {
     final Tenant spec;
     final List<SimPartition> partitions = new ArrayList<>();
-    double offeredRatePerPartition = SATURATING;
+    @Nullable Double offeredRatePerPartition;
+    double floodFactor = FLOOD_FACTOR;
     double cost = 1;
     double exportRatePerPartition = Double.MAX_VALUE;
     double acceptedInWindow;
@@ -462,6 +468,19 @@ final class WriteRateLimitSimulation {
     SimTenant offering(final double ratePerPartition) {
       offeredRatePerPartition = ratePerPartition;
       return this;
+    }
+
+    /** Sends {@code factor} × the real records/CPU-s of the leader, more than a partition does. */
+    SimTenant flooding(final double factor) {
+      offeredRatePerPartition = null;
+      floodFactor = factor;
+      return this;
+    }
+
+    double offeredRatePerPartition(final Broker leader) {
+      return offeredRatePerPartition != null
+          ? offeredRatePerPartition
+          : floodFactor * leader.trueRecordsPerCpuSecond;
     }
 
     SimTenant withCost(final double cost) {
