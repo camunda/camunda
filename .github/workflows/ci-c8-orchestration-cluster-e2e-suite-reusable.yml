@@ -55,6 +55,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
+      packages: read  # infra-tools PoC: the package is internal
       contents: read
     strategy:
       fail-fast: false
@@ -219,6 +220,13 @@ jobs:
             DATABASE=elasticsearch docker compose logs camunda
           fi
 
+      - name: Pre-fill tool cache with node (infra-tools PoC)
+        continue-on-error: true
+        uses: camunda/infra-tools/cache@e711227cffecd643b5a6ca2669a9ee58862279b3 # 0.3.0
+        env:
+          INFRA_TOOLS_MIRROR: ${{ runner.environment == 'self-hosted' && 'europe-west1-docker.pkg.dev/ci-30-162810/ci-tools' || '' }}
+        with:
+          tools: node@26
       - name: Setup Node.js
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
@@ -289,6 +297,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 45
     permissions:
+      packages: read  # infra-tools PoC: the package is internal
       contents: read
     strategy:
       fail-fast: false
@@ -312,6 +321,7 @@ jobs:
 
       - uses: ./.github/actions/setup-build
         with:
+          infra-tools: 'true'
           maven-cache-key-modifier: e2e-h2-api-tests
           vault-address: ${{ secrets.VAULT_ADDR }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
@@ -412,6 +422,13 @@ jobs:
           tail -100 dev-dist/camunda.log
           exit 1
 
+      - name: Pre-fill tool cache with node (infra-tools PoC)
+        continue-on-error: true
+        uses: camunda/infra-tools/cache@e711227cffecd643b5a6ca2669a9ee58862279b3 # 0.3.0
+        env:
+          INFRA_TOOLS_MIRROR: ${{ runner.environment == 'self-hosted' && 'europe-west1-docker.pkg.dev/ci-30-162810/ci-tools' || '' }}
+        with:
+          tools: node@26
       - name: Setup Node.js
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
@@ -492,6 +509,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 45
     permissions:
+      packages: read  # infra-tools PoC: the package is internal
       contents: read
     steps:
       - name: Print inputs
@@ -664,6 +682,13 @@ jobs:
             DATABASE=elasticsearch docker compose logs camunda
           fi
 
+      - name: Pre-fill tool cache with node (infra-tools PoC)
+        continue-on-error: true
+        uses: camunda/infra-tools/cache@e711227cffecd643b5a6ca2669a9ee58862279b3 # 0.3.0
+        env:
+          INFRA_TOOLS_MIRROR: ${{ runner.environment == 'self-hosted' && 'europe-west1-docker.pkg.dev/ci-30-162810/ci-tools' || '' }}
+        with:
+          tools: node@26
       - name: Setup Node.js
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:

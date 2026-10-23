@@ -134,6 +134,7 @@ jobs:
     # (e.g. "elasticsearch - identity")
     name: "${{ inputs.database-type }}${{ inputs.test-suite-name != '' && format(' - {0}', inputs.test-suite-name) || '' }}"
     permissions:
+      packages: read  # infra-tools PoC: the package is internal
       contents: read
       id-token: write  # google-github-actions/auth (WIF) mints a GitHub OIDC token
     timeout-minutes: ${{ inputs.timeout-minutes }}
@@ -157,6 +158,7 @@ jobs:
           persist-credentials: false
       - uses: ./.github/actions/setup-build
         with:
+          infra-tools: 'true'
           dockerhub-readonly: true
           maven-cache-key-modifier: "it-database-${{ inputs.database-type }}"
           vault-address: ${{ secrets.VAULT_ADDR }}
@@ -170,6 +172,7 @@ jobs:
         timeout-minutes: 3
         uses: ./.github/actions/gcs-build-cache-auth
         with:
+          infra-tools: 'true'
           vault-addr: ${{ secrets.VAULT_ADDR }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}

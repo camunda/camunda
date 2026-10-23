@@ -57,6 +57,7 @@ jobs:
     # When ci.yml sets use-shared-distball, the reusable workflow restores the shared distball
     # m2 from GCS via WIF instead of running build-zeebe (see #52693); that needs id-token.
     permissions:
+      packages: read  # infra-tools PoC: the package is internal
       contents: read
       id-token: write
     secrets: inherit
@@ -84,7 +85,8 @@ jobs:
     name: "Build Back End"
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    permissions: {} # GITHUB_TOKEN unused in this job
+    permissions:
+      packages: read  # infra-tools PoC: the package is internal
     env:
       BRANCH_NAME: ${{ github.head_ref || github.ref_name }}
       TEST_TYPE: Build
@@ -99,6 +101,7 @@ jobs:
       - uses: ./.github/actions/setup-build
         name: Build setup
         with:
+          infra-tools: 'true'
           java-distribution: temurin
           maven-cache-key-modifier: operate
           vault-address: ${{ secrets.VAULT_ADDR }}
@@ -123,7 +126,8 @@ jobs:
     name: "Unit - Front End [${{ matrix.shardIndex }}/${{ matrix.shardTotal }}]"
     runs-on: gcp-perf-core-8-default
     timeout-minutes: 18
-    permissions: {} # GITHUB_TOKEN unused in this job
+    permissions:
+      packages: read  # infra-tools PoC: the package is internal
     strategy:
       fail-fast: false
       matrix:
@@ -150,6 +154,13 @@ jobs:
           persist-credentials: false
       - name: Print metadata
         uses: ./.github/actions/print-metadata
+      - name: Pre-fill tool cache with node (infra-tools PoC)
+        continue-on-error: true
+        uses: camunda/infra-tools/cache@e711227cffecd643b5a6ca2669a9ee58862279b3 # 0.3.0
+        env:
+          INFRA_TOOLS_MIRROR: ${{ runner.environment == 'self-hosted' && 'europe-west1-docker.pkg.dev/ci-30-162810/ci-tools' || '' }}
+        with:
+          tools: node@26
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 26
@@ -189,7 +200,8 @@ jobs:
     name: "Unit - Front End - Merge Reports"
     runs-on: gcp-perf-core-8-default
     timeout-minutes: 14
-    permissions: {} # GITHUB_TOKEN unused in this job
+    permissions:
+      packages: read  # infra-tools PoC: the package is internal
     env:
       TEST_TYPE: Unit
       TEST_OWNER: '@camunda/operate-admin-pod'
@@ -202,6 +214,13 @@ jobs:
           persist-credentials: false
       - name: Print metadata
         uses: ./.github/actions/print-metadata
+      - name: Pre-fill tool cache with node (infra-tools PoC)
+        continue-on-error: true
+        uses: camunda/infra-tools/cache@e711227cffecd643b5a6ca2669a9ee58862279b3 # 0.3.0
+        env:
+          INFRA_TOOLS_MIRROR: ${{ runner.environment == 'self-hosted' && 'europe-west1-docker.pkg.dev/ci-30-162810/ci-tools' || '' }}
+        with:
+          tools: node@26
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 26
@@ -252,7 +271,8 @@ jobs:
     name: "Tool / Front End - TypeScript Type Check"
     runs-on: ubuntu-latest
     timeout-minutes: 14
-    permissions: {} # GITHUB_TOKEN unused in this job
+    permissions:
+      packages: read  # infra-tools PoC: the package is internal
     env:
       TEST_TYPE: Tool
       TEST_OWNER: '@camunda/operate-admin-pod'
@@ -267,6 +287,13 @@ jobs:
           persist-credentials: false
       - name: Print metadata
         uses: ./.github/actions/print-metadata
+      - name: Pre-fill tool cache with node (infra-tools PoC)
+        continue-on-error: true
+        uses: camunda/infra-tools/cache@e711227cffecd643b5a6ca2669a9ee58862279b3 # 0.3.0
+        env:
+          INFRA_TOOLS_MIRROR: ${{ runner.environment == 'self-hosted' && 'europe-west1-docker.pkg.dev/ci-30-162810/ci-tools' || '' }}
+        with:
+          tools: node@26
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 26
@@ -294,7 +321,8 @@ jobs:
     name: "Tool / Front End - ESLint"
     runs-on: ubuntu-latest
     timeout-minutes: 14
-    permissions: {} # GITHUB_TOKEN unused in this job
+    permissions:
+      packages: read  # infra-tools PoC: the package is internal
     env:
       TEST_TYPE: Tool
       TEST_OWNER: '@camunda/operate-admin-pod'
@@ -309,6 +337,13 @@ jobs:
           persist-credentials: false
       - name: Print metadata
         uses: ./.github/actions/print-metadata
+      - name: Pre-fill tool cache with node (infra-tools PoC)
+        continue-on-error: true
+        uses: camunda/infra-tools/cache@e711227cffecd643b5a6ca2669a9ee58862279b3 # 0.3.0
+        env:
+          INFRA_TOOLS_MIRROR: ${{ runner.environment == 'self-hosted' && 'europe-west1-docker.pkg.dev/ci-30-162810/ci-tools' || '' }}
+        with:
+          tools: node@26
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 26
@@ -335,7 +370,8 @@ jobs:
     name: "Tool / Front End - Prettier"
     runs-on: ubuntu-latest
     timeout-minutes: 14
-    permissions: {} # GITHUB_TOKEN unused in this job
+    permissions:
+      packages: read  # infra-tools PoC: the package is internal
     env:
       TEST_TYPE: Tool
       TEST_OWNER: '@camunda/operate-admin-pod'
@@ -350,6 +386,13 @@ jobs:
           persist-credentials: false
       - name: Print metadata
         uses: ./.github/actions/print-metadata
+      - name: Pre-fill tool cache with node (infra-tools PoC)
+        continue-on-error: true
+        uses: camunda/infra-tools/cache@e711227cffecd643b5a6ca2669a9ee58862279b3 # 0.3.0
+        env:
+          INFRA_TOOLS_MIRROR: ${{ runner.environment == 'self-hosted' && 'europe-west1-docker.pkg.dev/ci-30-162810/ci-tools' || '' }}
+        with:
+          tools: node@26
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 26
@@ -377,7 +420,8 @@ jobs:
     name: "Tool / Front End - a11y"
     runs-on: ubuntu-latest
     timeout-minutes: 18
-    permissions: {} # GITHUB_TOKEN unused in this job
+    permissions:
+      packages: read  # infra-tools PoC: the package is internal
     env:
       TEST_TYPE: Tool
       TEST_OWNER: '@camunda/operate-admin-pod'
@@ -395,6 +439,13 @@ jobs:
           persist-credentials: false
       - name: Print metadata
         uses: ./.github/actions/print-metadata
+      - name: Pre-fill tool cache with node (infra-tools PoC)
+        continue-on-error: true
+        uses: camunda/infra-tools/cache@e711227cffecd643b5a6ca2669a9ee58862279b3 # 0.3.0
+        env:
+          INFRA_TOOLS_MIRROR: ${{ runner.environment == 'self-hosted' && 'europe-west1-docker.pkg.dev/ci-30-162810/ci-tools' || '' }}
+        with:
+          tools: node@26
       - name: Setup NodeJS
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
@@ -431,7 +482,8 @@ jobs:
     name: "Unit / Front End - Visual Regression [${{ matrix.shardIndex }}/${{ matrix.shardTotal }}]"
     runs-on: ubuntu-latest
     timeout-minutes: 18
-    permissions: {} # GITHUB_TOKEN unused in this job
+    permissions:
+      packages: read  # infra-tools PoC: the package is internal
     strategy:
       fail-fast: false
       matrix:
@@ -462,6 +514,13 @@ jobs:
           persist-credentials: false
       - name: Print metadata
         uses: ./.github/actions/print-metadata
+      - name: Pre-fill tool cache with node (infra-tools PoC)
+        continue-on-error: true
+        uses: camunda/infra-tools/cache@e711227cffecd643b5a6ca2669a9ee58862279b3 # 0.3.0
+        env:
+          INFRA_TOOLS_MIRROR: ${{ runner.environment == 'self-hosted' && 'europe-west1-docker.pkg.dev/ci-30-162810/ci-tools' || '' }}
+        with:
+          tools: node@26
       - name: Setup NodeJS
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
@@ -500,7 +559,8 @@ jobs:
     name: "Unit / Front End - Visual Regression - Merge Reports"
     runs-on: ubuntu-latest
     timeout-minutes: 14
-    permissions: {} # GITHUB_TOKEN unused in this job
+    permissions:
+      packages: read  # infra-tools PoC: the package is internal
     env:
       TEST_TYPE: visual-regression
       TEST_OWNER: '@camunda/operate-admin-pod'
@@ -515,6 +575,13 @@ jobs:
           persist-credentials: false
       - name: Print metadata
         uses: ./.github/actions/print-metadata
+      - name: Pre-fill tool cache with node (infra-tools PoC)
+        continue-on-error: true
+        uses: camunda/infra-tools/cache@e711227cffecd643b5a6ca2669a9ee58862279b3 # 0.3.0
+        env:
+          INFRA_TOOLS_MIRROR: ${{ runner.environment == 'self-hosted' && 'europe-west1-docker.pkg.dev/ci-30-162810/ci-tools' || '' }}
+        with:
+          tools: node@26
       - name: Setup NodeJS
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
@@ -576,7 +643,8 @@ jobs:
     name: "Tool / Front End - Update Screenshots"
     runs-on: ubuntu-latest
     timeout-minutes: 18
-    permissions: {} # GITHUB_TOKEN unused in this job
+    permissions:
+      packages: read  # infra-tools PoC: the package is internal
     env:
       TEST_TYPE: screenshot-update
       TEST_OWNER: '@camunda/operate-admin-pod'
@@ -593,6 +661,13 @@ jobs:
           persist-credentials: false
       - name: Print metadata
         uses: ./.github/actions/print-metadata
+      - name: Pre-fill tool cache with node (infra-tools PoC)
+        continue-on-error: true
+        uses: camunda/infra-tools/cache@e711227cffecd643b5a6ca2669a9ee58862279b3 # 0.3.0
+        env:
+          INFRA_TOOLS_MIRROR: ${{ runner.environment == 'self-hosted' && 'europe-west1-docker.pkg.dev/ci-30-162810/ci-tools' || '' }}
+        with:
+          tools: node@26
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 26

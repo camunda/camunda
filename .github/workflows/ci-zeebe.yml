@@ -37,7 +37,8 @@ jobs:
     name: "Smoke - ${{ matrix.os }} with ${{ matrix.arch }}"
     # Unified CI ceiling for a required job (docs/monorepo-docs/ci.md); do not raise.
     timeout-minutes: 30
-    permissions: {}  # GITHUB_TOKEN unused in this job
+    permissions:
+      packages: read  # infra-tools PoC: the package is internal
     runs-on: ${{ matrix.runner }}
     env:
       TEST_TYPE: Smoke
@@ -66,6 +67,7 @@ jobs:
         uses: ./.github/actions/print-metadata
       - uses: ./.github/actions/setup-build
         with:
+          infra-tools: 'true'
           dockerhub-readonly:  ${{ matrix.os != 'macos' && matrix.os != 'windows' }}
           vault-address: ${{ secrets.VAULT_ADDR }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
@@ -137,7 +139,8 @@ jobs:
     name: "Unit - Property Tests"
     runs-on: gcp-perf-core-8-default
     timeout-minutes: 20
-    permissions: {}  # GITHUB_TOKEN unused in this job
+    permissions:
+      packages: read  # infra-tools PoC: the package is internal
     env:
       TEST_TYPE: Unit
     steps:
@@ -149,6 +152,7 @@ jobs:
         uses: ./.github/actions/print-metadata
       - uses: ./.github/actions/setup-build
         with:
+          infra-tools: 'true'
           vault-address: ${{ secrets.VAULT_ADDR }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
@@ -201,7 +205,8 @@ jobs:
     if: contains(fromJSON('["pull_request", "merge_group"]'), github.event_name)
     runs-on: gcp-perf-core-8-default
     timeout-minutes: 20
-    permissions: {}  # GITHUB_TOKEN unused in this job
+    permissions:
+      packages: read  # infra-tools PoC: the package is internal
     env:
       ZEEBE_PERFORMANCE_TEST_RESULTS_DIR: "/tmp/jmh"
       TEST_OWNER: '@camunda/core-features'
@@ -215,6 +220,7 @@ jobs:
         uses: ./.github/actions/print-metadata
       - uses: ./.github/actions/setup-build
         with:
+          infra-tools: 'true'
           vault-address: ${{ secrets.VAULT_ADDR }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
@@ -276,7 +282,8 @@ jobs:
     name: "Unit - Strace Tests"
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    permissions: {}  # GITHUB_TOKEN unused in this job
+    permissions:
+      packages: read  # infra-tools PoC: the package is internal
     env:
       TEST_TYPE: Unit
     steps:
@@ -295,6 +302,7 @@ jobs:
         run: sudo sysctl -w kernel.yama.ptrace_scope=0
       - uses: ./.github/actions/setup-build
         with:
+          infra-tools: 'true'
           vault-address: ${{ secrets.VAULT_ADDR }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
@@ -343,6 +351,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions:
+      packages: read  # infra-tools PoC: the package is internal
       security-events: write
     services:
       # local registry is used as this job needs to push as it builds multi-platform images
@@ -376,6 +385,7 @@ jobs:
           sarif_file: ./hadolint.sarif
       - uses: ./.github/actions/setup-build
         with:
+          infra-tools: 'true'
           dockerhub-readonly: true
           vault-address: ${{ secrets.VAULT_ADDR }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
@@ -464,6 +474,7 @@ jobs:
       cancel-in-progress: false
       queue: max
     permissions:
+      packages: read  # infra-tools PoC: the package is internal
       contents: 'read'
       id-token: 'write'
     env:
@@ -477,6 +488,7 @@ jobs:
           persist-credentials: false
       - uses: ./.github/actions/setup-build
         with:
+          infra-tools: 'true'
           dockerhub-readonly: true
           harbor: true
           vault-address: ${{ secrets.VAULT_ADDR }}

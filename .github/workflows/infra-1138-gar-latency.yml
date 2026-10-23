@@ -1,0 +1,64 @@
+---
+# DO NOT MERGE: times each registry call of camunda/infra-tools on a dev runner (camunda/team-infrastructure#1138).
+name: infra-1138 GAR latency
+
+on:
+  pull_request:
+    paths:
+      - .github/workflows/infra-1138-gar-latency.yml
+
+permissions:
+  contents: read
+  packages: read
+
+jobs:
+  latency:
+    name: latency (${{ matrix.attempt }})
+    strategy:
+      fail-fast: false
+      matrix:
+        attempt: [1, 2, 3, 4, 5, 6]
+    # Built with fromJSON so actionlint does not reject the dev runner label (not in the shared actionlint config).
+    runs-on: ${{ fromJSON('"dev-gcp-core-2-default"') }}
+    timeout-minutes: 10
+    steps:
+      - name: Time registry calls
+        env:
+          GHCR_TOKEN: ${{ github.token }}
+        run: |
+          set -u
+          fmt='dns=%{time_namelookup} connect=%{time_connect} tls=%{time_appconnect} first_byte=%{time_starttransfer} total=%{time_total} http=%{http_code} size=%{size_download}'
+          t() { local label="$1"; shift; printf '%-28s ' "${label}"; curl -sS -o /tmp/out -w "${fmt}\n" "$@" || echo "curl failed ($?)"; }
+          echo "container uptime: $(ps -o etimes= -p 1)s, host: $(hostname)"
+          getent hosts metadata.google.internal || true
+
+          echo '== metadata server (3 consecutive calls)'
+          for i in 1 2 3; do
+            t "metadata token #${i}" -m 30 -H 'Metadata-Flavor: Google' \
+              http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/token
+          done
+          at="$(jq -r .access_token /tmp/out)"
+          t "metadata email" -m 10 -H 'Metadata-Flavor: Google' \
+            http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/email; echo "  $(cat /tmp/out)"
+
+          gar=https://europe-west1-docker.pkg.dev/v2/ci-30-162810/main/infra-tools
+          echo '== Artifact Registry'
+          t "challenge (401)" -H 'Accept: application/vnd.oci.image.index.v1+json' "${gar}/manifests/0.1.0-tools"
+          t "token exchange" -u "oauth2accesstoken:${at}" \
+            "https://europe-west1-docker.pkg.dev/v2/token?service=europe-west1-docker.pkg.dev&scope=repository:ci-30-162810/main/infra-tools:pull"
+          bt="$(jq -r .token /tmp/out)"
+          t "index (exchanged token)" -H "Authorization: Bearer ${bt}" -H 'Accept: application/vnd.oci.image.index.v1+json' "${gar}/manifests/test-1138-tools"
+          t "index (access token)" -H "Authorization: Bearer ${at}" -H 'Accept: application/vnd.oci.image.index.v1+json' "${gar}/manifests/test-1138-tools"
+          d="$(jq -r '.manifests[] | select(.platform.architecture == "amd64") | .digest' /tmp/out)"
+          t "platform manifest" -H "Authorization: Bearer ${at}" -H 'Accept: application/vnd.oci.image.manifest.v1+json' "${gar}/manifests/${d}"
+          l="$(jq -r '.layers[] | select(.annotations["io.camunda.infra-tools.tool"] == "node") | .digest' /tmp/out)"
+          t "node layer (62 MB)" -L -H "Authorization: Bearer ${at}" "${gar}/blobs/${l}"
+
+          ghcr=https://ghcr.io/v2/camunda/infra-tools
+          echo '== ghcr.io'
+          t "challenge (401)" -H 'Accept: application/vnd.oci.image.index.v1+json' "${ghcr}/manifests/test-1138-tools"
+          t "token exchange" -u "token:${GHCR_TOKEN}" "https://ghcr.io/token?service=ghcr.io&scope=repository:camunda/infra-tools:pull"
+          gt="$(jq -r .token /tmp/out)"
+          t "index" -H "Authorization: Bearer ${gt}" -H 'Accept: application/vnd.oci.image.index.v1+json' "${ghcr}/manifests/test-1138-tools"
+          t "platform manifest" -H "Authorization: Bearer ${gt}" -H 'Accept: application/vnd.oci.image.manifest.v1+json' "${ghcr}/manifests/${d}"
+          t "node layer (62 MB)" -L -H "Authorization: Bearer ${gt}" "${ghcr}/blobs/${l}"
