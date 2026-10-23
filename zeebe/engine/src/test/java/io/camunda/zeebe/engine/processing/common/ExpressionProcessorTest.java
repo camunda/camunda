@@ -372,16 +372,14 @@ class ExpressionProcessorTest {
   class EvaluateStringExpressionWithLabelTest {
 
     @Test
-    void shouldUseGenericWordingWhenLabelIsNone() {
+    void shouldUseGenericWordingWhenNoLabelIsGiven() {
       // given
       final var processor =
           new ExpressionProcessor(EXPRESSION_LANGUAGE, DEFAULT_CONTEXT_LOOKUP, DEFAULT_TIMEOUT);
       final var parsedExpression = EXPRESSION_LANGUAGE.parseExpression("=x");
 
       // when
-      final var result =
-          processor.evaluateStringExpression(
-              parsedExpression, -1L, "tenant_1", ExpressionLabel.NONE);
+      final var result = processor.evaluateStringExpression(parsedExpression, -1L, "tenant_1");
 
       // then
       assertThat(result)
