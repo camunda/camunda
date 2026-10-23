@@ -15,6 +15,7 @@ import {assertAdminSectionAvailable} from '#/admin/adminSections';
 import {AdminGroupsPage} from '#/admin/pages/AdminGroupsPage';
 import {getGroupsRequestBody, groupsSearchSchema, type GroupsSearch} from '#/admin/modules/groups/searchSchema';
 import {ForbiddenError} from '#/shared/errors';
+import {adminListQuery} from '#/admin/modules/shared/adminListQuery';
 import {queries} from '#/shared/http/queries';
 import {ForbiddenPage} from '#/shared/pages/shadcn.components/ForbiddenPage';
 import {GenericErrorPage} from '#/shared/pages/shadcn.components/GenericErrorPage';
@@ -26,10 +27,7 @@ export const Route = createFileRoute('/_shadcn/_auth/admin/groups/')({
 	},
 	loaderDeps: ({search}) => ({search}),
 	loader: async ({context: {queryClient}, deps: {search}}) => {
-		await queryClient.query({
-			...queries.queryGroups(getGroupsRequestBody(search)),
-			staleTime: 'static',
-		});
+		await queryClient.query(adminListQuery(queries.queryGroups(getGroupsRequestBody(search))));
 	},
 	errorComponent: function AdminGroupsErrorPage({error, reset}: ErrorComponentProps) {
 		if (error instanceof ForbiddenError) {
@@ -49,7 +47,7 @@ export const Route = createFileRoute('/_shadcn/_auth/admin/groups/')({
 	component: function AdminGroupsRoute() {
 		const search = Route.useSearch();
 		const navigate = useNavigate();
-		const {data} = useSuspenseQuery(queries.queryGroups(getGroupsRequestBody(search)));
+		const {data} = useSuspenseQuery(adminListQuery(queries.queryGroups(getGroupsRequestBody(search))));
 
 		const handleSearchChange = useCallback(
 			(next: Partial<GroupsSearch>) => {

@@ -20,6 +20,7 @@ import {
 	type RolesSearch,
 } from '#/admin/modules/roles/searchSchema';
 import {ForbiddenError} from '#/shared/errors';
+import {adminListQuery} from '#/admin/modules/shared/adminListQuery';
 import {queries} from '#/shared/http/queries';
 import {ForbiddenPage} from '#/shared/pages/shadcn.components/ForbiddenPage';
 import {GenericErrorPage} from '#/shared/pages/shadcn.components/GenericErrorPage';
@@ -32,7 +33,7 @@ export const Route = createFileRoute('/_shadcn/_auth/admin/roles/')({
 	loaderDeps: ({search}) => ({search}),
 	loader: async ({context: {queryClient}, deps: {search}}) => {
 		await Promise.all([
-			queryClient.query({...queries.queryRoles(getRolesRequestBody(search)), staleTime: 'static'}),
+			queryClient.query(adminListQuery(queries.queryRoles(getRolesRequestBody(search)))),
 			queryClient.query(queries.adminClientConfig()),
 		]);
 	},
@@ -54,7 +55,7 @@ export const Route = createFileRoute('/_shadcn/_auth/admin/roles/')({
 	component: function AdminRolesRoute() {
 		const search = Route.useSearch();
 		const navigate = useNavigate();
-		const {data} = useSuspenseQuery(queries.queryRoles(getRolesRequestBody(search)));
+		const {data} = useSuspenseQuery(adminListQuery(queries.queryRoles(getRolesRequestBody(search))));
 		const {data: clientConfig} = useSuspenseQuery(queries.adminClientConfig());
 
 		const pageSize = search.pageSize ?? DEFAULT_PAGE_SIZE;
