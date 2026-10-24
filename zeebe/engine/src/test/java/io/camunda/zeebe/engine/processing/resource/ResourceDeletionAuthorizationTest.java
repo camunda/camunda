@@ -14,6 +14,7 @@ import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.protocol.record.intent.ResourceDeletionIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceMatcher;
@@ -119,6 +120,47 @@ public class ResourceDeletionAuthorizationTest {
             "Insufficient permissions to perform operation 'DELETE_PROCESS' on resource 'RESOURCE', required resource identifiers are one of '[*, %s]'"
                 .formatted(processId));
     assertNoResourceIsDeleted(processDefinitionKey);
+  }
+
+  @Test
+  public void shouldRejectUnauthorizedRepeatDeleteOfDrainingProcess() {
+    // given - a definition kept DRAINING by a running instance, deleted by an authorized user
+    final var processId = Strings.newRandomValidBpmnId();
+    final var processDefinitionKey = deployUserTaskProcessDefinition(processId);
+    engine.processInstance().ofBpmnProcessId(processId).create(DEFAULT_USER.getUsername());
+    engine
+        .resourceDeletion()
+        .withResourceKey(processDefinitionKey)
+        .delete(DEFAULT_USER.getUsername());
+    RecordingExporter.processRecords()
+        .withIntent(ProcessIntent.DRAINING)
+        .withProcessDefinitionKey(processDefinitionKey)
+        .await();
+    final var user = createUser();
+
+    // when - a user without DELETE_PROCESS repeats the delete
+    final var rejection =
+        engine
+            .resourceDeletion()
+            .withResourceKey(processDefinitionKey)
+            .expectRejection()
+            .delete(user.getUsername());
+
+    // then - refused before the repeat is accepted, so a caller learns nothing about the drain
+    Assertions.assertThat(rejection)
+        .hasRejectionType(RejectionType.FORBIDDEN)
+        .hasRejectionReason(
+            "Insufficient permissions to perform operation 'DELETE_PROCESS' on resource 'RESOURCE', required resource identifiers are one of '[*, %s]'"
+                .formatted(processId));
+    assertThat(
+            RecordingExporter.<Boolean>expectNoMatchingRecords(
+                records ->
+                    RecordingExporter.processRecords()
+                        .withIntent(ProcessIntent.DELETED)
+                        .withProcessDefinitionKey(processDefinitionKey)
+                        .exists()))
+        .describedAs("the definition must stay draining after the refused repeat")
+        .isFalse();
   }
 
   @Test
@@ -345,6 +387,19 @@ public class ResourceDeletionAuthorizationTest {
         .deployment()
         .withXmlResource(
             "process.bpmn", Bpmn.createExecutableProcess(processId).startEvent().endEvent().done())
+        .deploy(DEFAULT_USER.getUsername())
+        .getValue()
+        .getProcessesMetadata()
+        .getFirst()
+        .getProcessDefinitionKey();
+  }
+
+  private long deployUserTaskProcessDefinition(final String processId) {
+    return engine
+        .deployment()
+        .withXmlResource(
+            "process.bpmn",
+            Bpmn.createExecutableProcess(processId).startEvent().userTask().endEvent().done())
         .deploy(DEFAULT_USER.getUsername())
         .getValue()
         .getProcessesMetadata()
