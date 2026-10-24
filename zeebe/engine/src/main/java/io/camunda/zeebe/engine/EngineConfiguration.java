@@ -128,9 +128,10 @@ public final class EngineConfiguration {
 
   /**
    * Maximum number of times a single BPMN element may be activated within one process instance
-   * before a loop-detected incident is raised. Defaults to 1000.
+    * before a loop-detected incident is raised. Defaults to {@link Integer#MAX_VALUE} to preserve
+    * existing process behavior unless loop detection is explicitly configured.
    */
-  public static final int DEFAULT_MAX_ELEMENT_ACTIVATION_COUNT = 1000;
+    public static final int DEFAULT_MAX_ELEMENT_ACTIVATION_COUNT = Integer.MAX_VALUE;
 
   public static final int DEFAULT_ELEMENT_ACTIVATION_RETRY_COOLDOWN = 100;
 

@@ -19,7 +19,7 @@ public class LoopDetection {
   private static final String PREFIX = "camunda.processing.engine.loop-detection";
 
   // Must stay in sync with EngineConfiguration.DEFAULT_MAX_ELEMENT_ACTIVATION_COUNT.
-  private static final int DEFAULT_MAX_ELEMENT_ACTIVATION_COUNT = 1000;
+  private static final int DEFAULT_MAX_ELEMENT_ACTIVATION_COUNT = Integer.MAX_VALUE;
   // Must stay in sync with EngineConfiguration.DEFAULT_ELEMENT_ACTIVATION_RETRY_COOLDOWN.
   private static final int DEFAULT_ELEMENT_ACTIVATION_RETRY_COOLDOWN = 100;
 

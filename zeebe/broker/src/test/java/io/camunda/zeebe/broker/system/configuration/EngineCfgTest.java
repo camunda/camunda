@@ -99,7 +99,7 @@ final class EngineCfgTest {
     assertThat(configuration.getOutputMappingMode())
         .isEqualTo(EngineConfiguration.OutputMappingMode.COMBINED);
     assertThat(configuration.getMaxElementActivationCount())
-        .isEqualTo(EngineConfiguration.DEFAULT_MAX_ELEMENT_ACTIVATION_COUNT);
+        .isEqualTo(Integer.MAX_VALUE);
     assertThat(configuration.getElementActivationRetryCooldown())
         .isEqualTo(EngineConfiguration.DEFAULT_ELEMENT_ACTIVATION_RETRY_COOLDOWN);
     assertThat(configuration.getMaxElementActivationCountByType()).isEmpty();
