@@ -385,11 +385,12 @@ make install physical_tenant_count=3 secondary_storage=postgresql scenario=typic
 
 When `physical_tenant_count > 0`, the Makefile:
 
-- Generates `camunda-platform-physical-tenants.yaml` (see `generate-physical-tenant-values.sh`) —
-  the storage prefixes above, plus per-tenant orchestration-client authorizations (the same grants
-  the default tenant has: `CREATE` on `RESOURCE`, `CREATE_PROCESS_INSTANCE`/`UPDATE_PROCESS_INSTANCE`/
-  `READ_PROCESS_INSTANCE`/`READ_PROCESS_DEFINITION` on `PROCESS_DEFINITION`, `CREATE` on `MESSAGE`) and
-  OIDC provider assignment — and layers it on top of the plain storage values.
+- Configures the tenants through the `load-test-setup` Helm chart (`physical-tenants` ConfigMap, mounted
+  by the orchestration pods) — the storage prefixes above, plus per-tenant orchestration-client
+  authorizations (the same grants the default tenant has: `CREATE` on `RESOURCE`,
+  `CREATE_PROCESS_INSTANCE`/`UPDATE_PROCESS_INSTANCE`/`READ_PROCESS_INSTANCE`/`READ_PROCESS_DEFINITION`
+  on `PROCESS_DEFINITION`, `CREATE` on `MESSAGE`) and OIDC provider assignment — and sets
+  `global.identity.auth.issuer` on the platform release.
 - Renders the `starter`/`worker` from the same chart, values, scenario and **image** as the default
   tester, renames them to `starter-pt<i>`/`worker-pt<i>`, and applies them — looped over `pt1..ptN`.
   Each tester gets a `CAMUNDA_CLIENT_PHYSICAL_TENANT_ID=pt<i>` env var, which routes both gRPC and
