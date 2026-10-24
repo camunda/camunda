@@ -284,6 +284,13 @@ See [Metrics Collection](#metrics-collection) for the concrete `env:` snippet, i
 
 This keeps the job owner as a safe default — an ambiguous or unattributable failure is never confidently misrouted to the wrong team — while single-team failures are attributed to their real code owner. An explicitly provided `user_description` input still takes precedence over both. Resolution runs only on failed jobs, so the green path is unaffected.
 
+### AlwaysGreen caller tests
+
+Run `pytest .github/scripts/test_alwaysgreen_caller.py` to test the Docker/Helm triage caller's actual shell scripts with a strict fake GitHub CLI and no credentials.
+The existing `scripts-tests` job discovers these tests and feeds into `check-results`; workflow-only changes also enable that job through the CI relevance filter.
+These tests verify payloads and failure handling, not Vault access or authenticated delivery.
+Keep them outside the legacy AlwaysGreen scripts directory so they survive its removal.
+
 ### Legacy CI
 
 "Legacy CI" is a name for CI tests that has not been migrated to the Unified CI. Legacy tests do not meet the [inclusion criteria for Unified CI](#workflow-inclusion-criteria), such as running under 10 minutes.
