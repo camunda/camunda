@@ -51,7 +51,7 @@ test.describe('mapping rules tab of role and group details on SaaS', () => {
       page,
       loginPage,
     }) => {
-      await navigateToApp(page, 'admin');
+      await navigateToApp(page, 'identity');
       await mockOIDCModeUI(page, overrides);
       await loginPage.login(
         LOGIN_CREDENTIALS.username,
