@@ -517,6 +517,144 @@ public class ZeebeVariableCreationImportIT extends AbstractCCSMIT {
   }
 
   @Test
+  public void zeebeVariableImport_flattensDeeplyNestedObjectVariableAtEachLevel() {
+    // Regression for epic camunda/product-hub#3785 (case 6): with flattening enabled (see the
+    // @BeforeEach setup), a multi-level nested object must flatten correctly at each level with the
+    // correct types preserved, not just one level deep.
+    // given
+    final Map<String, Object> geo = new HashMap<>();
+    geo.put("lat", 52.52);
+    geo.put("lon", 13.405);
+    final Map<String, Object> address = new HashMap<>();
+    address.put("city", "Berlin");
+    address.put("geo", geo);
+    final Map<String, Object> user = new HashMap<>();
+    user.put("firstName", "Ada");
+    user.put("lastName", "Lovelace");
+    user.put("address", address);
+    final Map<String, Object> variables = Map.of("user", user);
+
+    final Process deployedProcess = zeebeExtension.deployProcess(createStartEndProcess(PROCESS_ID));
+    final long processInstanceKey =
+        zeebeExtension.startProcessInstanceWithVariables(
+            deployedProcess.getBpmnProcessId(), variables);
+    waitUntilMinimumProcessInstanceEventsForInstanceExportedCount(4, processInstanceKey);
+    waitUntilMinimumVariableDocumentsForInstanceExportedCount(1, processInstanceKey);
+
+    // when
+    importAllZeebeEntitiesFromScratch();
+    final ProcessInstanceDto instance = getProcessInstanceForId(String.valueOf(processInstanceKey));
+
+    // then the object is flattened at every level (String at each string level, Double for the
+    // numeric coordinates) and the raw value is stored
+    assertThat(instance.getVariables())
+        .extracting(
+            SimpleProcessVariableDto::getName,
+            SimpleProcessVariableDto::getType,
+            SimpleProcessVariableDto::getValue)
+        .containsExactlyInAnyOrder(
+            Tuple.tuple(
+                "user",
+                OBJECT.getId(),
+                Collections.singletonList(
+                    variablesClient.createMapJsonObjectVariableDto(user).getValue())),
+            Tuple.tuple("user.firstName", STRING.getId(), Collections.singletonList("Ada")),
+            Tuple.tuple("user.lastName", STRING.getId(), Collections.singletonList("Lovelace")),
+            Tuple.tuple("user.address.city", STRING.getId(), Collections.singletonList("Berlin")),
+            Tuple.tuple("user.address.geo.lat", DOUBLE.getId(), Collections.singletonList("52.52")),
+            Tuple.tuple(
+                "user.address.geo.lon", DOUBLE.getId(), Collections.singletonList("13.405")));
+  }
+
+  @Test
+  public void zeebeVariableImport_handlesTopLevelAndNestedArrayVariablesConsistently() {
+    // Regression for epic camunda/product-hub#3785 (case 7): both a plain top-level array variable
+    // and an array nested inside an object variable must be handled consistently (each as a
+    // multi-value variable with a _listSize indicator), with no crash either way. A top-level
+    // primitive array stores no raw object value, whereas the enclosing object variable does store
+    // its raw value. Flattening is enabled via the @BeforeEach setup.
+    // given
+    final Map<String, Object> objectWithArray = new HashMap<>();
+    objectWithArray.put("tags", List.of("a", "b", "c"));
+    final Map<String, Object> variables = new HashMap<>();
+    variables.put("topLevelArray", List.of("x", "y"));
+    variables.put("objectWithArray", objectWithArray);
+
+    final Process deployedProcess = zeebeExtension.deployProcess(createStartEndProcess(PROCESS_ID));
+    final long processInstanceKey =
+        zeebeExtension.startProcessInstanceWithVariables(
+            deployedProcess.getBpmnProcessId(), variables);
+    waitUntilMinimumProcessInstanceEventsForInstanceExportedCount(4, processInstanceKey);
+    waitUntilMinimumVariableDocumentsForInstanceExportedCount(2, processInstanceKey);
+
+    // when
+    importAllZeebeEntitiesFromScratch();
+    final ProcessInstanceDto instance = getProcessInstanceForId(String.valueOf(processInstanceKey));
+
+    // then
+    assertThat(instance.getVariables())
+        .extracting(
+            SimpleProcessVariableDto::getName,
+            SimpleProcessVariableDto::getType,
+            SimpleProcessVariableDto::getValue)
+        .containsExactlyInAnyOrder(
+            Tuple.tuple("topLevelArray", STRING.getId(), List.of("x", "y")),
+            Tuple.tuple("topLevelArray._listSize", LONG.getId(), Collections.singletonList("2")),
+            Tuple.tuple(
+                "objectWithArray",
+                OBJECT.getId(),
+                Collections.singletonList(
+                    variablesClient.createMapJsonObjectVariableDto(objectWithArray).getValue())),
+            Tuple.tuple("objectWithArray.tags", STRING.getId(), List.of("a", "b", "c")),
+            Tuple.tuple(
+                "objectWithArray.tags._listSize", LONG.getId(), Collections.singletonList("3")));
+  }
+
+  @Test
+  public void zeebeVariableImport_importsEmptyObjectAndOmitsNullValuedVariable() {
+    // Characterization for epic camunda/product-hub#3785 (case 8), flagged during manual QA as
+    // worth a second look. Flattening is enabled via the @BeforeEach setup.
+    //  - An empty object ({}) imports without error and is stored as an OBJECT variable with no
+    //    flattened sub-fields.
+    //  - A null-valued variable does NOT cause an error and is OMITTED entirely (it is neither
+    //    flattened nor stored as null). This matches the behavior already verified by
+    //    zeebeVariableImport_unsupportedTypesGetIgnored. Asserted here as the current behavior so a
+    //    reviewer can decide whether null-valued variables should instead be stored explicitly.
+    // given
+    final Map<String, Object> emptyObject = Map.of();
+    final Map<String, Object> variables = new HashMap<>();
+    variables.put("emptyObjectVar", emptyObject);
+    variables.put("nullVar", null);
+    variables.put("controlVar", "keep");
+
+    final Process deployedProcess = zeebeExtension.deployProcess(createStartEndProcess(PROCESS_ID));
+    final long processInstanceKey =
+        zeebeExtension.startProcessInstanceWithVariables(
+            deployedProcess.getBpmnProcessId(), variables);
+    waitUntilMinimumProcessInstanceEventsForInstanceExportedCount(4, processInstanceKey);
+    waitUntilMinimumVariableDocumentsForInstanceExportedCount(3, processInstanceKey);
+
+    // when
+    importAllZeebeEntitiesFromScratch();
+    final ProcessInstanceDto instance = getProcessInstanceForId(String.valueOf(processInstanceKey));
+
+    // then the empty object is stored as a raw OBJECT value with no flattened sub-fields, and the
+    // null-valued variable is omitted
+    assertThat(instance.getVariables())
+        .extracting(
+            SimpleProcessVariableDto::getName,
+            SimpleProcessVariableDto::getType,
+            SimpleProcessVariableDto::getValue)
+        .containsExactlyInAnyOrder(
+            Tuple.tuple(
+                "emptyObjectVar",
+                OBJECT.getId(),
+                Collections.singletonList(
+                    variablesClient.createMapJsonObjectVariableDto(emptyObject).getValue())),
+            Tuple.tuple("controlVar", STRING_TYPE, Collections.singletonList("keep")));
+  }
+
+  @Test
   public void zeebeVariableImport_importVariablesInBatches() {
     // given
     embeddedOptimizeExtension
