@@ -10,6 +10,7 @@ package io.camunda.zeebe.metrics;
 import io.camunda.zeebe.metrics.StarterMetricsDoc.StarterMetricKeyNames;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.util.micrometer.MicrometerUtil;
+import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
 import java.time.Duration;
@@ -27,27 +28,37 @@ public class ProcessInstanceStartMeter implements AutoCloseable {
   private static final long MAX_DURATION = Duration.ofSeconds(90).toNanos();
   private static final Logger LOG = LoggerFactory.getLogger(ProcessInstanceStartMeter.class);
   private final ConcurrentHashMap<Integer, Timer> partitionToTimerMap;
+  private final ConcurrentHashMap<Integer, Counter> partitionToTimedOutCounterMap;
   private final Map<Long, PiCreationResult> startedInstances;
   private final ScheduledExecutorService piCheckExecutorService;
   private final AvailabilityChecker availabilityChecker;
   private final MeterRegistry registry;
   private final Duration availabilityCheckInterval;
   private final Clock clock;
+  private final int pageSize;
   private final Timer dataAvailabilityQueryDurationTimer;
+  private final Counter fullPageCounter;
 
   public ProcessInstanceStartMeter(
       final Clock clock,
       final MeterRegistry meterRegistry,
       final ScheduledExecutorService scheduledExecutorService,
       final Duration availabilityCheckInterval,
+      final int pageSize,
       final AvailabilityChecker availabilityChecker) {
     this.clock = clock;
     registry = meterRegistry;
     partitionToTimerMap = new ConcurrentHashMap<>();
+    partitionToTimedOutCounterMap = new ConcurrentHashMap<>();
     startedInstances = new ConcurrentHashMap<>();
     piCheckExecutorService = scheduledExecutorService;
+    this.pageSize = pageSize;
     dataAvailabilityQueryDurationTimer =
         MicrometerUtil.buildTimer(StarterLatencyMetricsDoc.DATA_AVAILABILITY_QUERY_DURATION)
+            .register(registry);
+    fullPageCounter =
+        Counter.builder(StarterLatencyMetricsDoc.DATA_AVAILABILITY_FULL_PAGE.getName())
+            .description(StarterLatencyMetricsDoc.DATA_AVAILABILITY_FULL_PAGE.getDescription())
             .register(registry);
     this.availabilityCheckInterval = availabilityCheckInterval;
     this.availabilityChecker = availabilityChecker;
@@ -122,17 +133,27 @@ public class ProcessInstanceStartMeter implements AutoCloseable {
             (availableInstances, error) -> {
               final var endQueryTime = clock.getNanos();
               final long duration = endQueryTime - startQueryTime;
-              dataAvailabilityQueryDurationTimer.record(duration, TimeUnit.NANOSECONDS);
+              try {
+                dataAvailabilityQueryDurationTimer.record(duration, TimeUnit.NANOSECONDS);
 
-              if (error == null) {
-                LOG.debug("Available process instances items: {}", availableInstances.size());
-                processAvailableInstances(availableInstances);
-              } else {
-                LOG.error("Error while checking for available process instances", error);
+                if (error == null) {
+                  LOG.debug("Available process instances items: {}", availableInstances.size());
+                  if (availableInstances.size() >= pageSize) {
+                    fullPageCounter.increment();
+                  }
+                  processAvailableInstances(availableInstances);
+                } else {
+                  LOG.error("Error while checking for available process instances", error);
+                }
+
+                cleanUpStaleInstances();
+              } catch (final Exception e) {
+                // Guard the callback: without this, an exception here would prevent the next check
+                // from ever being scheduled and the meter would silently stop.
+                LOG.error("Failed to process availability check response. Will retry...", e);
+              } finally {
+                rescheduleCheck(duration);
               }
-
-              cleanUpStaleInstances();
-              rescheduleCheck(duration);
             },
             piCheckExecutorService);
   }
@@ -151,6 +172,10 @@ public class ProcessInstanceStartMeter implements AutoCloseable {
               "Process instance {} was not retrieved after {} ms, removing it from the awaiting list.",
               piResults.processInstanceKey,
               TimeUnit.NANOSECONDS.toMillis(durationNanos));
+          // Still record the latency so a plateau at the limit stays visible, and in addition count
+          // the timeout separately so true timeouts are not confused with instances found at the
+          // limit.
+          recordTimedOut(piResults);
           recordInstanceAvailable(piResults, durationNanos);
         });
   }
@@ -168,6 +193,20 @@ public class ProcessInstanceStartMeter implements AutoCloseable {
                   TimeUnit.NANOSECONDS.toMillis(durationNanos));
               recordInstanceAvailable(piResults, durationNanos);
             });
+  }
+
+  private void recordTimedOut(final PiCreationResult awaitingPI) {
+    final int partitionId = Protocol.decodePartitionId(awaitingPI.processInstanceKey);
+    partitionToTimedOutCounterMap
+        .computeIfAbsent(
+            partitionId,
+            key ->
+                Counter.builder(StarterLatencyMetricsDoc.DATA_AVAILABILITY_TIMED_OUT.getName())
+                    .description(
+                        StarterLatencyMetricsDoc.DATA_AVAILABILITY_TIMED_OUT.getDescription())
+                    .tag(StarterMetricKeyNames.PARTITION.asString(), Integer.toString(key))
+                    .register(registry))
+        .increment();
   }
 
   private void recordInstanceAvailable(
