@@ -1,0 +1,9 @@
+camunda:
+  security:
+    cluster-admin:
+      oidc:
+        #clients: ["cluster-admin"]
+        #groups: ["admin-cluster"]
+        claims:
+          - name: groups
+            value: admin-cluster
