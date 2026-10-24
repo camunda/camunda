@@ -1323,10 +1323,15 @@ jobs:
   # Final job: hand a failed run to the triage agent. github.run_id here is this run,
   # so the classifier reads this run's own artifacts.
   #
-  # `continue-on-error` is not available on a job that calls a reusable workflow, so
-  # alwaysgreen-triage.yml keeps its own fallible steps continue-on-error instead. That
-  # is what stops a triage bug turning a one-job failure into two and skewing the
-  # streak detector's counts.
+  # Hands the failure to the central AlwaysGreen triage in
+  # camunda/c8-cross-component-e2e-tests, which classifies it and dispatches this
+  # repository's fix agent back. The triage scripts used to live here; they now live
+  # once, there, for every consumer. See camunda/team-test-automation#163.
+  #
+  # A dispatch rather than `uses:` because that is the only mechanism that works for
+  # every consumer: GitHub refuses `uses: <internal repo>/...` from a public
+  # repository, and this one is public. It is also already how this workflow asks
+  # that repository to run the SaaS E2E suite.
   alwaysgreen-triage:
     name: AlwaysGreen triage and fix dispatch
     needs:
@@ -1342,16 +1347,19 @@ jobs:
     # Same draft gate as the Slack alert above, for the same reason: unfinished work
     # is expected to fail, and dispatching a fix agent at it wastes an agent run and
     # can open a PR against a moving target. No-op until a pull_request trigger is
-    # added — merge_group is never a draft and push carries no PR.
+    # added -- merge_group is never a draft and push carries no PR.
     if: ${{ always() && contains(needs.*.result, 'failure')
             && !github.event.pull_request.draft }}
-    uses: camunda/camunda/.github/workflows/alwaysgreen-triage.yml@main
+    # Local path, not `@main`: on main the two resolve to the same file, and a local
+    # ref is what lets a change to the shim be tested by the PR that makes it. The
+    # stable branches pin `@main` instead, because they have no copy of their own.
+    uses: ./.github/workflows/alwaysgreen-triage.yml
     secrets: inherit
     with:
-      # On a merge_group run this is gh-readonly-queue/<base>/pr-<n>-<sha> rather than the
-      # target branch. Triage normalises it (classify.normalise_base_ref) before anything
-      # derives from it, because the ref is part of every fingerprint and a per-PR value
-      # would defeat dedupe.
+      # On a merge_group run this is gh-readonly-queue/<base>/pr-<n>-<sha> rather than
+      # the target branch. The central triage normalises it before anything derives
+      # from it, because the ref is part of every fingerprint and a per-PR value would
+      # defeat dedupe.
       base_ref: ${{ github.ref_name }}
       chart_version: ${{ inputs.helmRepositoryDirName || 'camunda-platform-8.11' }}
       # Whichever stage posted feedback owns the thread. Helm wins when both failed:
