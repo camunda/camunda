@@ -36,7 +36,7 @@ elasticsearch:
 opensearch:
   os2:
     # renovate: datasource=docker depName=opensearchproject/opensearch
-    - '2.19.6'
+    - '2.19.7'
   os3:
     # renovate: datasource=docker depName=opensearchproject/opensearch
     - '3.6.0'  # LTS - don't remove before EOL: https://opensearch.org/blog/bridging-the-gap-recapping-the-launch-of-opensearch-long-term-support-lts/
