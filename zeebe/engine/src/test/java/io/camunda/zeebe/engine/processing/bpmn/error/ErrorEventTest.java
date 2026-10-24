@@ -768,4 +768,47 @@ public class ErrorEventTest {
             tuple(BpmnElementType.BOUNDARY_EVENT, ProcessInstanceIntent.ELEMENT_COMPLETED),
             tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_COMPLETED));
   }
+
+  @Test
+  public void shouldCatchRethrownErrorOnEnclosingBoundaryEvent() {
+    // given
+    final var process =
+        Bpmn.createExecutableProcess(PROCESS_ID)
+            .startEvent("proc")
+            .subProcess(
+                "subProcess",
+                subProcess -> {
+                  subProcess
+                      .embeddedSubProcess()
+                      .startEvent("sub-proc")
+                      .endEvent("throw-1", end -> end.error(ERROR_CODE));
+                  subProcess
+                      .embeddedSubProcess()
+                      .eventSubProcess(
+                          "event-sub",
+                          eventSubProcess ->
+                              eventSubProcess
+                                  .startEvent("catch-1", start -> start.error(ERROR_CODE))
+                                  .endEvent("throw-2", end -> end.error(ERROR_CODE)));
+                })
+            .boundaryEvent("catch-2", boundary -> boundary.error(ERROR_CODE))
+            .endEvent()
+            .done();
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    // when
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // then
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted()
+                .onlyEvents())
+        .extracting(record -> record.getValue().getElementId(), Record::getIntent)
+        .containsSubsequence(
+            tuple("catch-1", ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple("catch-2", ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(PROCESS_ID, ProcessInstanceIntent.ELEMENT_COMPLETED));
+  }
 }

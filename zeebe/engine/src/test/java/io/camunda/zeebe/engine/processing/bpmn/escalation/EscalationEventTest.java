@@ -967,6 +967,52 @@ public class EscalationEventTest {
     assertIsEscalated(processInstanceKey, "code-specific", THROW_ELEMENT_ID, ESCALATION_CODE);
   }
 
+  @Test
+  public void shouldCatchRethrownEscalationOnEnclosingBoundaryEvent() {
+    // given
+    final var process =
+        Bpmn.createExecutableProcess(PROCESS_ID)
+            .startEvent("proc")
+            .subProcess(
+                "subProcess",
+                subProcess -> {
+                  subProcess
+                      .embeddedSubProcess()
+                      .startEvent("sub-proc")
+                      .endEvent("throw-1", end -> end.escalation(ESCALATION_CODE));
+                  subProcess
+                      .embeddedSubProcess()
+                      .eventSubProcess(
+                          "event-sub",
+                          eventSubProcess ->
+                              eventSubProcess
+                                  .startEvent("catch-1", start -> start.escalation(ESCALATION_CODE))
+                                  .endEvent("throw-2", end -> end.escalation(ESCALATION_CODE)));
+                })
+            .boundaryEvent("catch-2", boundary -> boundary.escalation(ESCALATION_CODE))
+            .endEvent()
+            .done();
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    // when
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // then
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted()
+                .onlyEvents())
+        .extracting(record -> record.getValue().getElementId(), Record::getIntent)
+        .containsSubsequence(
+            tuple("catch-1", ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple("catch-2", ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(PROCESS_ID, ProcessInstanceIntent.ELEMENT_COMPLETED));
+
+    assertIsEscalated(processInstanceKey, "catch-1", "throw-1", ESCALATION_CODE);
+    assertIsEscalated(processInstanceKey, "catch-2", "throw-2", ESCALATION_CODE);
+  }
+
   private void assertIsNotEscalated(final String throwElementId, final String escalationCode) {
     assertThat(
             RecordingExporter.escalationRecords(EscalationIntent.NOT_ESCALATED)
