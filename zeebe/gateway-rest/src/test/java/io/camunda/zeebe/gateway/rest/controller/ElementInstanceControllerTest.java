@@ -25,7 +25,10 @@ import io.camunda.service.exception.ErrorMapper;
 import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableDocumentRecord;
+import io.camunda.zeebe.protocol.record.value.ProtectionMode;
+import io.camunda.zeebe.protocol.record.value.VariableMetadataValue;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeoutException;
 import org.junit.jupiter.api.BeforeEach;
@@ -193,6 +196,76 @@ public class ElementInstanceControllerTest extends RestControllerTest {
     assertThat(capturedRequest.variables()).isEqualTo(Map.of("key", "value"));
     assertThat(capturedRequest.local()).isTrue();
     assertThat(capturedRequest.operationReference()).isEqualTo(123L);
+  }
+
+  @Test
+  void shouldSetVariablesWithVariablesMetadata() {
+    // given
+    when(elementInstanceServices.setVariables(any(SetVariablesRequest.class), any()))
+        .thenReturn(CompletableFuture.completedFuture(new VariableDocumentRecord()));
+
+    final var request =
+        """
+            {
+              "variables": {
+                "secret": "value",
+                "plain": "value"
+              },
+              "variablesMetadata": {
+                "secret": {
+                  "protectionModes": ["REDACT"]
+                }
+              }
+            }""";
+
+    // when
+    webClient
+        .put()
+        .uri(ELEMENTS_BASE_URL + "/123/variables")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isNoContent();
+
+    // then
+    Mockito.verify(elementInstanceServices).setVariables(requestCaptor.capture(), any());
+    assertThat(requestCaptor.getValue().variablesMetadata())
+        .containsOnlyKeys("secret")
+        .extractingByKey("secret")
+        .extracting(VariableMetadataValue::getProtectionModes)
+        .isEqualTo(Set.of(ProtectionMode.REDACT));
+  }
+
+  @Test
+  void shouldRejectSetVariablesWithUnknownProtectionMode() {
+    // given
+    final var request =
+        """
+            {
+              "variables": {
+                "secret": "value"
+              },
+              "variablesMetadata": {
+                "secret": {
+                  "protectionModes": ["UNKNOWN"]
+                }
+              }
+            }""";
+
+    // when / then
+    webClient
+        .put()
+        .uri(ELEMENTS_BASE_URL + "/123/variables")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest();
+
+    Mockito.verifyNoInteractions(elementInstanceServices);
   }
 
   @Test

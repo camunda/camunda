@@ -13,6 +13,8 @@ import io.camunda.zeebe.protocol.impl.record.value.variable.VariableDocumentReco
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.VariableDocumentIntent;
 import io.camunda.zeebe.protocol.record.value.VariableDocumentUpdateSemantic;
+import io.camunda.zeebe.protocol.record.value.VariableMetadataValue;
+import java.util.Map;
 import org.agrona.DirectBuffer;
 
 public final class BrokerSetVariablesRequest extends BrokerExecuteCommand<VariableDocumentRecord> {
@@ -31,6 +33,12 @@ public final class BrokerSetVariablesRequest extends BrokerExecuteCommand<Variab
 
   public BrokerSetVariablesRequest setVariables(final DirectBuffer variables) {
     requestDto.setVariables(variables);
+    return this;
+  }
+
+  public BrokerSetVariablesRequest setVariablesMetadata(
+      final Map<String, ? extends VariableMetadataValue> variablesMetadata) {
+    requestDto.setVariablesMetadata(variablesMetadata);
     return this;
   }
 

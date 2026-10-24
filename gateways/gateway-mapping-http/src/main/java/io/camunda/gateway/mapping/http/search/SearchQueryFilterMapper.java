@@ -374,6 +374,11 @@ public class SearchQueryFilterMapper {
     ofNullable(filter.getProtectionMode())
         .map(SearchQueryFilterMapper::toProtectionModes)
         .ifPresent(builder::protectionModes);
+    ofNullable(filter.getProtectionMode())
+        .filter(AdvancedProtectionModeFilter.class::isInstance)
+        .map(AdvancedProtectionModeFilter.class::cast)
+        .map(AdvancedProtectionModeFilter::get$Exists)
+        .ifPresent(builder::hasProtectionModes);
 
     return validationErrors.isEmpty()
         ? Either.right(builder.build())
