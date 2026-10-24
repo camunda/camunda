@@ -28,6 +28,7 @@ import org.springframework.beans.factory.BeanCreationException;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.context.annotation.Bean;
+import org.springframework.core.env.Environment;
 import org.springframework.core.env.MapPropertySource;
 
 /**
@@ -121,8 +122,8 @@ public class NoSecondaryStorageAuthenticationTest {
 
     @Bean
     public NoDBMembershipService noDBMembershipService(
-        final CamundaSecurityLibraryProperties cslProperties) {
-      return new NoDBMembershipService(cslProperties);
+        final CamundaSecurityLibraryProperties cslProperties, final Environment environment) {
+      return new NoDBMembershipService(cslProperties, environment);
     }
 
     @Bean
