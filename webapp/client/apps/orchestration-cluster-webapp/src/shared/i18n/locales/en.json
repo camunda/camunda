@@ -1361,13 +1361,13 @@
 				},
 				"diagramPanel": {
 					"multipleVersionsSelected": "There is more than one Version selected for Decision \"{{name}}\"",
+					"ariaLabel": "Decision Panel",
 					"selectSingleVersion": "To see a Decision Table or a Literal Expression, select a single Version",
 					"multipleTenantsSelected": "Decision \"{{name}}\" exists in more than one Tenant",
 					"selectSingleTenant": "To see a Decision Table or a Literal Expression, select a single Tenant",
 					"noDecisionSelected": "There is no Decision selected",
 					"selectDecisionInFilters": "To see a Decision Table or a Literal Expression, select a Decision in the Filters panel",
-					"decisionNotFoundTitle": "Couldn't find the decision",
-					"ariaLabel": "Decision Panel"
+					"decisionNotFoundTitle": "Couldn't find the decision"
 				},
 				"filters": {
 					"tenant": "Tenant",
@@ -1413,6 +1413,7 @@
 				"toolbar": {
 					"delete": "Delete",
 					"discard": "Discard",
+					"bulkActionsLabel": "Bulk actions",
 					"itemsSelected": "{{count}} items selected",
 					"itemSelected": "{{count}} item selected",
 					"itemsSelectedTruncated": "{{count}}+ items selected",
@@ -1429,6 +1430,7 @@
 				},
 				"definitionDeletion": {
 					"buttonTitle": "Delete Decision Definition \"{{name}} - Version {{version}}\"",
+					"loadingMessage": "Deleting decision definition",
 					"title": "Delete DRD",
 					"description": "You are about to delete the following DRD:",
 					"confirmation": "Yes, I confirm I want to delete this DRD and all related instances.",
@@ -1439,6 +1441,40 @@
 					"details": "DRD Details",
 					"drdName": "DRD name",
 					"successTitle": "Operation created"
+				},
+				"ds": {
+					"diagramPanel": {
+						"multipleVersionsSelected": "There is more than one version selected for decision \"{{name}}\"",
+						"selectSingleVersion": "To see a decision table or a literal expression, select a single version",
+						"multipleTenantsSelected": "Decision \"{{name}}\" exists in more than one tenant",
+						"selectSingleTenant": "To see a decision table or a literal expression, select a single tenant",
+						"noDecisionSelected": "There is no decision selected",
+						"selectDecisionInFilters": "To see a decision table or a literal expression, select a decision in the filters panel"
+					},
+					"filters": {
+						"searchByName": "Search by decision name",
+						"selectVersion": "Select a decision version",
+						"instancesStates": "Instances states",
+						"decisionInstanceKey": "Decision instance key(s)",
+						"processInstanceKey": "Process instance key",
+						"evaluationDateRange": "Evaluation date range",
+						"removeFilter": "Remove {{label}} filter"
+					},
+					"instancesTable": {
+						"title": "Decision instances",
+						"decisionInstanceKey": "Decision instance key",
+						"evaluationDate": "Evaluation date",
+						"processInstanceKey": "Process instance key",
+						"emptyMessage": "There are no instances matching this filter set",
+						"emptyAdditionalInfo": "To see some results, select at least one instance state"
+					},
+					"toolbar": {
+						"deleteSuccessSubtitle": "You can track its progress in the batch operation page"
+					},
+					"definitionDeletion": {
+						"buttonTitle": "Delete decision definition \"{{name}} - version {{version}}\"",
+						"details": "DRD details"
+					}
 				}
 			},
 			"decisionInstance": {
@@ -2186,7 +2222,41 @@
 					"allTenants": "All tenants"
 				},
 				"optionalFiltersMenu": {
-					"moreFilters": "More Filters"
+					"moreFilters": "More Filters",
+					"allFiltersAdded": "All filters are already added",
+					"removeFilter": "Remove",
+					"moreFiltersDs": "More filters"
+				},
+				"dateRangeField": {
+					"custom": "Custom",
+					"enterDateRange": "Enter date range",
+					"openModal": "Open date range modal",
+					"datePlaceholder": "YYYY-MM-DD",
+					"timePlaceholder": "hh:mm:ss",
+					"fromDate": "From date",
+					"toDate": "To date",
+					"fromTime": "From time",
+					"toTime": "To time",
+					"timeZone": "Time zone: {{timeZone}}",
+					"cancel": "Cancel",
+					"apply": "Apply"
+				},
+				"dateTimeRangeField": {
+					"requiredDateTime": "Enter a date and time",
+					"endBeforeStart": "The end must not be before the start",
+					"timeZone": "Time zone: {{timeZone}}",
+					"invalidDateTime": "Enter a date and time as YYYY-MM-DD HH:mm:ss",
+					"from": "From",
+					"to": "To",
+					"time": "Time",
+					"quickRanges": "Quick ranges",
+					"selectQuickRange": "Select a quick range",
+					"lastMinutes_one": "Last {{count}} minute",
+					"lastMinutes_other": "Last {{count}} minutes",
+					"lastHours_one": "Last {{count}} hour",
+					"lastHours_other": "Last {{count}} hours",
+					"lastDays_one": "Last {{count}} day",
+					"lastDays_other": "Last {{count}} days"
 				},
 				"advancedStringFilter": {
 					"operatorEquals": "equals",

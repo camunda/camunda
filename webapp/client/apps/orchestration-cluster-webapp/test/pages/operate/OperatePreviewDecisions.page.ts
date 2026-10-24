@@ -25,11 +25,15 @@ class OperatePreviewDecisionsPage extends BasePage {
 	}
 
 	get moreFiltersButton() {
-		return this.page.getByRole('button', {name: 'More Filters'});
+		return this.page.getByRole('button', {name: 'More filters'});
 	}
 
 	get decisionPanel() {
 		return this.page.getByRole('region', {name: 'Decision Panel'});
+	}
+
+	get decisionViewer() {
+		return this.page.getByTestId('decision-viewer');
 	}
 
 	get instancesTable() {

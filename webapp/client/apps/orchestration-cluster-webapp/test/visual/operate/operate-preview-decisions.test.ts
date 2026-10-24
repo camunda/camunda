@@ -41,7 +41,10 @@ test.beforeEach(({network}) => {
 			successResponse: HttpResponse.json(createLicense()),
 		}),
 		mockQueryDecisionDefinitionsEndpoint({
-			successResponse: HttpResponse.json(createQueryDecisionDefinitionsResponse()),
+			successResponse: HttpResponse.json(createQueryDecisionDefinitionsResponse({items: []})),
+		}),
+		mockQueryDecisionInstancesEndpoint({
+			successResponse: HttpResponse.json(createQueryDecisionInstancesResponse()),
 		}),
 	);
 });
@@ -62,7 +65,7 @@ test('should match the resized decisions panels snapshot after dragging the resi
 		.poll(() =>
 			page.evaluate(() => {
 				const panelStates = JSON.parse(localStorage.getItem('operate.panelStates') ?? '{}');
-				return panelStates['decisions-instances-vertical-panel']?.[0];
+				return panelStates['decision-instances-vertical-panel']?.[0];
 			}),
 		)
 		.toBeLessThan(50);
@@ -84,16 +87,14 @@ test('should match the filters panel snapshot with populated optional filters', 
 	await expect(filtersPanel).toHaveScreenshot();
 });
 
-test('should match the date range dialog snapshot', async ({operatePreviewDecisionsPage, page}) => {
-	// The calendar opens on the current month and highlights today
-	await page.clock.setFixedTime(new Date('2026-10-20T12:00:00Z'));
+test('should match the evaluation date range field snapshot', async ({operatePreviewDecisionsPage, page}) => {
 	await operatePreviewDecisionsPage.goto();
 	await operatePreviewDecisionsPage.moreFiltersButton.click();
-	await page.getByRole('menuitem', {name: 'Evaluation Date Range'}).click();
-	const dialog = page.getByTestId('date-range-modal');
-	await expect(dialog).toBeVisible();
+	await page.getByRole('menuitem', {name: 'Evaluation date range'}).click();
+	const dateRange = page.getByRole('group', {name: 'Evaluation date range'});
+	await expect(dateRange).toBeVisible();
 
-	await expect(dialog).toHaveScreenshot();
+	await expect(dateRange).toHaveScreenshot();
 });
 
 test('should match the instances table snapshot with evaluated and failed instances', async ({
@@ -142,7 +143,7 @@ test('should match the instances table snapshot when no instances match', async 
 	);
 	await page.goto(`${operatePreviewDecisionsPage.decisionsUrl}?evaluated=true&failed=true`);
 
-	await expect(operatePreviewDecisionsPage.instancesTable.getByText(/no Instances matching/)).toBeVisible();
+	await expect(operatePreviewDecisionsPage.instancesTable.getByText(/no instances matching/)).toBeVisible();
 	await expect(operatePreviewDecisionsPage.instancesTable).toHaveScreenshot();
 });
 
@@ -204,5 +205,16 @@ test('should match the decisions page snapshot with a selected decision definiti
 	await expect(page.getByRole('heading', {name: 'Invoice Classification'})).toBeVisible();
 	await expect(operatePreviewDecisionsPage.decisionPanel.getByTestId('decision-viewer')).toBeVisible();
 	await expect(page.getByText('Invoice Amount')).toBeVisible();
+	await expect(page).toHaveScreenshot();
+});
+
+test('should match the decisions page with the filter sidebar collapsed', async ({
+	operatePreviewDecisionsPage,
+	page,
+}) => {
+	await operatePreviewDecisionsPage.goto('?evaluated=true&failed=true');
+	await page.getByRole('button', {name: 'Collapse Filter'}).click();
+	await expect(page.getByTestId('collapsed-panel')).toBeVisible();
+
 	await expect(page).toHaveScreenshot();
 });

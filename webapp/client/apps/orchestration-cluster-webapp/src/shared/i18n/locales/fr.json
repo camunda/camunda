@@ -1352,13 +1352,13 @@
 				},
 				"diagramPanel": {
 					"multipleVersionsSelected": "Plusieurs versions sont sélectionnées pour la décision \"{{name}}\"",
+					"ariaLabel": "Panneau de décision",
 					"selectSingleVersion": "Pour voir une table de décision ou une expression littérale, sélectionnez une seule version",
 					"multipleTenantsSelected": "La décision \"{{name}}\" existe dans plusieurs locataires",
 					"selectSingleTenant": "Pour voir une table de décision ou une expression littérale, sélectionnez un seul locataire",
 					"noDecisionSelected": "Aucune décision n'est sélectionnée",
 					"selectDecisionInFilters": "Pour voir une table de décision ou une expression littérale, sélectionnez une décision dans le panneau de filtres",
-					"decisionNotFoundTitle": "La décision n'a pas pu être trouvée",
-					"ariaLabel": "Panneau de décision"
+					"decisionNotFoundTitle": "La décision n'a pas pu être trouvée"
 				},
 				"filters": {
 					"tenant": "Locataire",
@@ -1404,6 +1404,7 @@
 				"toolbar": {
 					"delete": "Supprimer",
 					"discard": "Annuler",
+					"bulkActionsLabel": "Actions groupées",
 					"itemsSelected": "{{count}} éléments sélectionnés",
 					"itemSelected": "{{count}} élément sélectionné",
 					"itemsSelectedTruncated": "{{count}}+ éléments sélectionnés",
@@ -1420,6 +1421,7 @@
 				},
 				"definitionDeletion": {
 					"buttonTitle": "Supprimer la définition de décision \"{{name}} - Version {{version}}\"",
+					"loadingMessage": "Suppression de la définition de décision en cours",
 					"title": "Supprimer le DRD",
 					"description": "Vous êtes sur le point de supprimer le DRD suivant :",
 					"confirmation": "Oui, je confirme vouloir supprimer ce DRD et toutes les instances associées.",
@@ -1430,6 +1432,40 @@
 					"details": "Détails du DRD",
 					"drdName": "Nom du DRD",
 					"successTitle": "Opération créée"
+				},
+				"ds": {
+					"definitionDeletion": {
+						"buttonTitle": "Supprimer la définition de décision \"{{name}} - version {{version}}\"",
+						"details": "Détails du DRD"
+					},
+					"diagramPanel": {
+						"multipleTenantsSelected": "La décision \"{{name}}\" existe dans plusieurs locataires",
+						"multipleVersionsSelected": "Plusieurs versions sont sélectionnées pour la décision \"{{name}}\"",
+						"noDecisionSelected": "Aucune décision n'est sélectionnée",
+						"selectDecisionInFilters": "Pour voir une table de décision ou une expression littérale, sélectionnez une décision dans le panneau de filtres",
+						"selectSingleTenant": "Pour voir une table de décision ou une expression littérale, sélectionnez un seul locataire",
+						"selectSingleVersion": "Pour voir une table de décision ou une expression littérale, sélectionnez une seule version"
+					},
+					"filters": {
+						"decisionInstanceKey": "Clé(s) d'instance de décision",
+						"evaluationDateRange": "Plage de dates d'évaluation",
+						"instancesStates": "États des instances",
+						"processInstanceKey": "Clé d'instance de processus",
+						"removeFilter": "Supprimer le filtre {{label}}",
+						"searchByName": "Rechercher par nom de décision",
+						"selectVersion": "Sélectionner une version de décision"
+					},
+					"instancesTable": {
+						"decisionInstanceKey": "Clé d'instance de décision",
+						"emptyAdditionalInfo": "Pour voir des résultats, sélectionnez au moins un état d'instance",
+						"emptyMessage": "Aucune instance ne correspond à cet ensemble de filtres",
+						"evaluationDate": "Date d'évaluation",
+						"processInstanceKey": "Clé d'instance de processus",
+						"title": "Instances de décision"
+					},
+					"toolbar": {
+						"deleteSuccessSubtitle": "Vous pouvez suivre son avancement dans la page Opérations par lot"
+					}
 				}
 			},
 			"decisionInstance": {
@@ -2177,7 +2213,41 @@
 					"allTenants": "Tous les clients"
 				},
 				"optionalFiltersMenu": {
-					"moreFilters": "Plus de filtres"
+					"moreFilters": "Plus de filtres",
+					"allFiltersAdded": "Tous les filtres sont déjà ajoutés",
+					"removeFilter": "Retirer",
+					"moreFiltersDs": "Plus de filtres"
+				},
+				"dateRangeField": {
+					"custom": "Personnalisé",
+					"enterDateRange": "Saisir une plage de dates",
+					"openModal": "Ouvrir la boîte de dialogue de plage de dates",
+					"datePlaceholder": "AAAA-MM-JJ",
+					"timePlaceholder": "hh:mm:ss",
+					"fromDate": "Date de début",
+					"toDate": "Date de fin",
+					"fromTime": "Heure de début",
+					"toTime": "Heure de fin",
+					"timeZone": "Fuseau horaire : {{timeZone}}",
+					"cancel": "Annuler",
+					"apply": "Appliquer"
+				},
+				"dateTimeRangeField": {
+					"requiredDateTime": "Saisissez une date et une heure",
+					"endBeforeStart": "La fin ne peut pas précéder le début",
+					"timeZone": "Fuseau horaire : {{timeZone}}",
+					"invalidDateTime": "Saisissez une date et une heure au format YYYY-MM-DD HH:mm:ss",
+					"from": "De",
+					"to": "À",
+					"time": "Heure",
+					"quickRanges": "Plages rapides",
+					"selectQuickRange": "Sélectionner une plage rapide",
+					"lastMinutes_one": "Dernière {{count}} minute",
+					"lastMinutes_other": "Dernières {{count}} minutes",
+					"lastHours_one": "Dernière {{count}} heure",
+					"lastHours_other": "Dernières {{count}} heures",
+					"lastDays_one": "Dernier {{count}} jour",
+					"lastDays_other": "Derniers {{count}} jours"
 				},
 				"advancedStringFilter": {
 					"operatorEquals": "est égal à",

@@ -1349,13 +1349,13 @@
 				},
 				"diagramPanel": {
 					"multipleVersionsSelected": "Hay más de una versión seleccionada para la decisión \"{{name}}\"",
+					"ariaLabel": "Panel de decisión",
 					"selectSingleVersion": "Para ver una tabla de decisión o una expresión literal, seleccione una sola versión",
 					"multipleTenantsSelected": "La decisión \"{{name}}\" existe en más de un inquilino",
 					"selectSingleTenant": "Para ver una tabla de decisión o una expresión literal, seleccione un solo inquilino",
 					"noDecisionSelected": "No hay ninguna decisión seleccionada",
 					"selectDecisionInFilters": "Para ver una tabla de decisión o una expresión literal, seleccione una decisión en el panel de filtros",
-					"decisionNotFoundTitle": "No se pudo encontrar la decisión",
-					"ariaLabel": "Panel de decisión"
+					"decisionNotFoundTitle": "No se pudo encontrar la decisión"
 				},
 				"filters": {
 					"tenant": "Inquilino",
@@ -1401,6 +1401,7 @@
 				"toolbar": {
 					"delete": "Eliminar",
 					"discard": "Descartar",
+					"bulkActionsLabel": "Acciones en bloque",
 					"itemsSelected": "{{count}} elementos seleccionados",
 					"itemSelected": "{{count}} elemento seleccionado",
 					"itemsSelectedTruncated": "{{count}}+ elementos seleccionados",
@@ -1417,6 +1418,7 @@
 				},
 				"definitionDeletion": {
 					"buttonTitle": "Eliminar la definición de decisión \"{{name}} - Versión {{version}}\"",
+					"loadingMessage": "Eliminando la definición de decisión",
 					"title": "Eliminar DRD",
 					"description": "Está a punto de eliminar el siguiente DRD:",
 					"confirmation": "Sí, confirmo que quiero eliminar este DRD y todas las instancias relacionadas.",
@@ -1427,6 +1429,40 @@
 					"details": "Detalles del DRD",
 					"drdName": "Nombre del DRD",
 					"successTitle": "Operación creada"
+				},
+				"ds": {
+					"definitionDeletion": {
+						"buttonTitle": "Eliminar la definición de decisión \"{{name}} - versión {{version}}\"",
+						"details": "Detalles del DRD"
+					},
+					"diagramPanel": {
+						"multipleTenantsSelected": "La decisión \"{{name}}\" existe en más de un inquilino",
+						"multipleVersionsSelected": "Hay más de una versión seleccionada para la decisión \"{{name}}\"",
+						"noDecisionSelected": "No hay ninguna decisión seleccionada",
+						"selectDecisionInFilters": "Para ver una tabla de decisión o una expresión literal, seleccione una decisión en el panel de filtros",
+						"selectSingleTenant": "Para ver una tabla de decisión o una expresión literal, seleccione un solo inquilino",
+						"selectSingleVersion": "Para ver una tabla de decisión o una expresión literal, seleccione una sola versión"
+					},
+					"filters": {
+						"decisionInstanceKey": "Clave(s) de instancia de decisión",
+						"evaluationDateRange": "Rango de fechas de evaluación",
+						"instancesStates": "Estados de instancias",
+						"processInstanceKey": "Clave de instancia de proceso",
+						"removeFilter": "Eliminar filtro {{label}}",
+						"searchByName": "Buscar por nombre de decisión",
+						"selectVersion": "Seleccionar una versión de decisión"
+					},
+					"instancesTable": {
+						"decisionInstanceKey": "Clave de instancia de decisión",
+						"emptyAdditionalInfo": "Para ver resultados, seleccione al menos un estado de instancia",
+						"emptyMessage": "No hay instancias que coincidan con este conjunto de filtros",
+						"evaluationDate": "Fecha de evaluación",
+						"processInstanceKey": "Clave de instancia de proceso",
+						"title": "Instancias de decisión"
+					},
+					"toolbar": {
+						"deleteSuccessSubtitle": "Puede seguir su progreso en la página Operaciones por lotes"
+					}
 				}
 			},
 			"decisionInstance": {
@@ -2174,7 +2210,41 @@
 					"allTenants": "Todos los arrendatarios"
 				},
 				"optionalFiltersMenu": {
-					"moreFilters": "Más filtros"
+					"moreFilters": "Más filtros",
+					"allFiltersAdded": "Ya se han añadido todos los filtros",
+					"removeFilter": "Quitar",
+					"moreFiltersDs": "Más filtros"
+				},
+				"dateRangeField": {
+					"custom": "Personalizado",
+					"enterDateRange": "Introduzca un intervalo de fechas",
+					"openModal": "Abrir el diálogo de intervalo de fechas",
+					"datePlaceholder": "AAAA-MM-DD",
+					"timePlaceholder": "hh:mm:ss",
+					"fromDate": "Fecha de inicio",
+					"toDate": "Fecha de fin",
+					"fromTime": "Hora de inicio",
+					"toTime": "Hora de fin",
+					"timeZone": "Zona horaria: {{timeZone}}",
+					"cancel": "Cancelar",
+					"apply": "Aplicar"
+				},
+				"dateTimeRangeField": {
+					"requiredDateTime": "Introduzca una fecha y hora",
+					"endBeforeStart": "El fin no puede ser anterior al inicio",
+					"timeZone": "Zona horaria: {{timeZone}}",
+					"invalidDateTime": "Introduzca una fecha y hora con el formato YYYY-MM-DD HH:mm:ss",
+					"from": "Desde",
+					"to": "Hasta",
+					"time": "Hora",
+					"quickRanges": "Rangos rápidos",
+					"selectQuickRange": "Seleccionar un rango rápido",
+					"lastMinutes_one": "Último {{count}} minuto",
+					"lastMinutes_other": "Últimos {{count}} minutos",
+					"lastHours_one": "Última {{count}} hora",
+					"lastHours_other": "Últimas {{count}} horas",
+					"lastDays_one": "Último {{count}} día",
+					"lastDays_other": "Últimos {{count}} días"
 				},
 				"advancedStringFilter": {
 					"operatorEquals": "es igual a",

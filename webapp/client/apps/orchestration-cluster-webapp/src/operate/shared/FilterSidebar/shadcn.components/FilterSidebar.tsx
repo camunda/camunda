@@ -9,7 +9,7 @@
 import {useEffect, useState} from 'react';
 import {useTranslation} from 'react-i18next';
 import {Button} from '@camunda/design-system';
-import {Filter} from '@camunda/design-system/icons';
+import {Filter, FunnelX} from '@camunda/design-system/icons';
 import {getStateLocally, storeStateLocally} from '#/shared/browser-storage/local-storage';
 import {CollapsablePanel} from '#/operate/shared/CollapsablePanel/shadcn.components/CollapsablePanel';
 
@@ -24,7 +24,7 @@ type Props = {
 	isResetButtonDisabled: boolean;
 };
 
-const FiltersPanel: React.FC<Props> = ({children, localStorageKey, onResetClick, isResetButtonDisabled}) => {
+const FilterSidebar: React.FC<Props> = ({children, localStorageKey, onResetClick, isResetButtonDisabled}) => {
 	const {t} = useTranslation();
 	const storedState = getStateLocally('operate.panelStates')?.[localStorageKey];
 	const isCollapsed = typeof storedState === 'boolean' ? storedState : false;
@@ -54,16 +54,19 @@ const FiltersPanel: React.FC<Props> = ({children, localStorageKey, onResetClick,
 				});
 			}}
 			footer={
-				<Button
-					variant="secondary"
-					size="sm"
-					className="w-full"
-					disabled={isResetButtonDisabled}
-					type="reset"
-					onClick={onResetClick}
-				>
-					{t('operate.shared.filtersPanel.resetFilters')}
-				</Button>
+				panelState === 'collapsed' ? undefined : (
+					<Button
+						variant="ghost"
+						size="sm"
+						className="w-full"
+						disabled={isResetButtonDisabled}
+						type="reset"
+						onClick={onResetClick}
+					>
+						<FunnelX aria-hidden data-icon="inline-start" />
+						{t('operate.shared.filtersPanel.resetFilters')}
+					</Button>
+				)
 			}
 		>
 			<div className="absolute w-full p-4">{children}</div>
@@ -71,4 +74,4 @@ const FiltersPanel: React.FC<Props> = ({children, localStorageKey, onResetClick,
 	);
 };
 
-export {FiltersPanel};
+export {FilterSidebar};

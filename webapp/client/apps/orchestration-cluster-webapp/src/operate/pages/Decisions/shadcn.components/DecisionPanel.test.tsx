@@ -42,7 +42,7 @@ describe('<DecisionPanel />', () => {
 	it('should show an empty message when no decision is selected', async () => {
 		const screen = await renderDecisionPanel({decisionDefinitionSelection: {kind: 'no-match'}});
 
-		await expect.element(screen.getByText('There is no Decision selected')).toBeVisible();
+		await expect.element(screen.getByText('There is no decision selected')).toBeVisible();
 	});
 
 	it('should show an empty message when multiple versions are selected', async () => {
@@ -54,7 +54,7 @@ describe('<DecisionPanel />', () => {
 		});
 
 		await expect
-			.element(screen.getByText('There is more than one Version selected for Decision "Invoice Classification"'))
+			.element(screen.getByText('There is more than one version selected for decision "Invoice Classification"'))
 			.toBeVisible();
 	});
 
@@ -67,7 +67,7 @@ describe('<DecisionPanel />', () => {
 		});
 
 		await expect
-			.element(screen.getByText('Decision "Invoice Classification" exists in more than one Tenant'))
+			.element(screen.getByText('Decision "Invoice Classification" exists in more than one tenant'))
 			.toBeVisible();
 	});
 

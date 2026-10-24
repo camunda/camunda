@@ -109,6 +109,36 @@ describe('<DateRangeField />', () => {
 			.toHaveTextContent(`${year}-${month}-${fromDay} ${fromTime} - ${year}-${month}-${toDay} ${toTime}`);
 	});
 
+	it('should step the hour, minute and second segments with the arrow keys', async () => {
+		const screen = await render(<MockDateRangeField />, {wrapper: getWrapper()});
+		await screen.getByLabelText('Start Date Range').click();
+		const fromTime = screen.getByTestId('fromTime');
+		await userEvent.fill(fromTime, '11:59:00');
+
+		(fromTime.element() as HTMLInputElement).setSelectionRange(0, 0);
+		await userEvent.keyboard('{ArrowUp}');
+		await expect.element(fromTime).toHaveValue('12:59:00');
+
+		(fromTime.element() as HTMLInputElement).setSelectionRange(3, 3);
+		await userEvent.keyboard('{ArrowUp}');
+		await expect.element(fromTime).toHaveValue('12:00:00');
+
+		(fromTime.element() as HTMLInputElement).setSelectionRange(6, 6);
+		await userEvent.keyboard('{ArrowDown}');
+		await expect.element(fromTime).toHaveValue('12:00:59');
+	});
+
+	it('should keep partially typed time when stepping with the arrow keys', async () => {
+		const screen = await render(<MockDateRangeField />, {wrapper: getWrapper()});
+		await screen.getByLabelText('Start Date Range').click();
+		const fromTime = screen.getByTestId('fromTime');
+		await userEvent.fill(fromTime, '11:5');
+
+		await userEvent.keyboard('{ArrowUp}');
+
+		await expect.element(fromTime).toHaveValue('11:5');
+	});
+
 	it('should restore previous date on cancel', async () => {
 		const screen = await render(<MockDateRangeField />, {wrapper: getWrapper()});
 
