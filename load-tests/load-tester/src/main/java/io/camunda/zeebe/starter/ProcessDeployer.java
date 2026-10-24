@@ -20,6 +20,12 @@ import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
+/**
+ * Waits for the cluster topology and deploys the benchmark process, both in the constructor. The
+ * context therefore finishes starting only after the deployment succeeded, and components that
+ * start on {@code ApplicationReadyEvent} can rely on the process existing. The web server and its
+ * health endpoints are not available until the deployment succeeded.
+ */
 @Component
 @Profile("starter")
 public class ProcessDeployer {
@@ -30,8 +36,7 @@ public class ProcessDeployer {
 
   private final CamundaClient loaderClient;
   private final StarterProperties starterCfg;
-  private final ConnectionMonitor connectionMonitor;
-  private final StarterLivenessIndicator livenessIndicator;
+  private final long processDefinitionKey;
 
   public ProcessDeployer(
       final CamundaClient loaderClient,
@@ -40,18 +45,16 @@ public class ProcessDeployer {
       final StarterLivenessIndicator livenessIndicator) {
     this.loaderClient = loaderClient;
     starterCfg = properties.getStarter();
-    this.connectionMonitor = connectionMonitor;
-    this.livenessIndicator = livenessIndicator;
-  }
-
-  /**
-   * Waits for the cluster topology, then deploys the benchmark resources and blocks, retrying until
-   * the deployment succeeds.
-   */
-  public long deploy() {
     connectionMonitor.awaitAndPrintTopology();
     livenessIndicator.recordStarted();
+    processDefinitionKey = deploy();
+  }
 
+  public long processDefinitionKey() {
+    return processDefinitionKey;
+  }
+
+  private long deploy() {
     final var deployCmd = constructDeploymentCommand();
 
     while (true) {
