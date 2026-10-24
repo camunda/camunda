@@ -2543,7 +2543,9 @@ jobs:
       use-shared-distball: ${{ github.event.pull_request.head.repo.fork != true }}
 
   zeebe-ci:
-    if: needs.detect-changes.outputs.zeebe-changes == 'true'
+    # Same gate as every other Java build/test job. A `zeebe/**` scope no longer makes sense: the
+    # Docker images and integration tests are built from modules outside zeebe/ (dist/, webapps ...).
+    if: needs.detect-changes.outputs.java-code-changes == 'true'
     name: "Zeebe"
     needs: [ detect-changes ]
     uses: ./.github/workflows/ci-zeebe.yml
