@@ -1132,6 +1132,9 @@ public class WebSecurityConfig {
                                     authorizationRequestResolver(
                                         clientRegistrationRepository, oidcProviderRepository)))
                         .tokenEndpoint(tokenEndpointCustomizer)
+                        .userInfoEndpoint(
+                            userInfo ->
+                                userInfo.oidcUserService(new UnreadableUserInfoOidcUserService()))
                         .failureHandler(new OAuth2AuthenticationExceptionHandler());
                   })
               .oidcLogout(httpSecurityOidcLogoutConfigurer -> {})
