@@ -97,4 +97,14 @@ public record ExpressionLabel(@Nullable String kind, @Nullable String target) {
   String describeTarget() {
     return target == null ? "" : " of %s".formatted(target);
   }
+
+  /**
+   * Labels an expression as the correlation key expression of a message catch element. The element
+   * is not always an event (e.g. a receive task), so it is named "element".
+   */
+  public static ExpressionLabel correlationKeyExpression(final DirectBuffer elementId) {
+    return new ExpressionLabel(
+        "correlation key expression",
+        "element '%s'".formatted(BufferUtil.bufferAsString(elementId)));
+  }
 }

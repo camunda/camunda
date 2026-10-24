@@ -316,7 +316,8 @@ public final class CatchEventBehavior {
     final String tenantId = context.getTenantId();
     return evaluation
         .expressionProcessor()
-        .evaluateMessageCorrelationKeyExpression(expression, scopeKey, tenantId)
+        .evaluateMessageCorrelationKeyExpression(
+            expression, scopeKey, tenantId, ExpressionLabel.correlationKeyExpression(event.getId()))
         .flatMap(
             correlationKey ->
                 validateLength("correlation key", correlationKey, scopeKey)
