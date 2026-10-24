@@ -16,8 +16,9 @@ import org.slf4j.Logger;
 
 public final class ActorTimerQueue extends DeadlineTimerWheel {
   private static final Logger LOG = Loggers.ACTOR_LOGGER;
-  private static final int DEFAULT_TICKS_PER_WHEEL = 32;
+  private static final int DEFAULT_TICKS_PER_WHEEL = 128;
   private static final int MAX_EXPIRED_TIMERS_PER_CALL = 256;
+
   private final Long2ObjectHashMap<TimerSubscription> timerJobMap = new Long2ObjectHashMap<>();
   // one poll scans one spoke, so a full revolution is needed to visit every timer that is due.
   // Bounds the work done per call, so a large clock jump cannot starve the actor tasks of the
