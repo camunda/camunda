@@ -745,29 +745,14 @@ public class WebSecurityConfig {
     public OidcClaimsProvider oidcClaimsProvider(
         final SecurityConfiguration securityConfiguration,
         final ClientRegistrationRepository clientRegistrationRepository,
-        final OidcAuthenticationConfigurationRepository oidcProviderRepository,
         @Qualifier("oidcUserInfoHttpClient") final HttpClient oidcUserInfoHttpClient,
         final MeterRegistry meterRegistry) {
       final var oidc = securityConfiguration.getAuthentication().getOidc();
       if (oidc == null || !oidc.getUserInfoAugmentation().isEnabled()) {
         return new NoopOidcClaimsProvider();
       }
-      // Build a map of issuer -> userinfo URI from the Spring-managed ClientRegistrations.
-      // Each ClientRegistration's ProviderDetails.getIssuerUri() is the canonical 'iss' claim
-      // the IdP emits on its tokens, and UserInfoEndpoint.getUri() is the userinfo URL from
-      // the same discovery document. CachingOidcClaimsProvider uses this to route each
-      // token to its own issuer's userinfo endpoint — never cross-wired.
       final Map<String, URI> userInfoUriByIssuer =
-          oidcProviderRepository.getOidcAuthenticationConfigurations().keySet().stream()
-              .map(clientRegistrationRepository::findByRegistrationId)
-              .filter(Objects::nonNull)
-              .filter(cr -> cr.getProviderDetails().getIssuerUri() != null)
-              .filter(cr -> cr.getProviderDetails().getUserInfoEndpoint().getUri() != null)
-              .collect(
-                  toMap(
-                      cr -> cr.getProviderDetails().getIssuerUri(),
-                      cr -> URI.create(cr.getProviderDetails().getUserInfoEndpoint().getUri()),
-                      (existing, replacement) -> existing));
+          userInfoUriByIssuer(clientRegistrationRepository);
       if (userInfoUriByIssuer.isEmpty()) {
         throw new IllegalStateException(
             "UserInfo augmentation is enabled but no ClientRegistration exposes a userinfo "
@@ -779,6 +764,44 @@ public class WebSecurityConfig {
           userInfoUriByIssuer,
           new OidcUserInfoClient(oidcUserInfoHttpClient, Duration.ofSeconds(2)),
           meterRegistry);
+    }
+
+    /**
+     * Maps each issuer to the UserInfo endpoint of the registration that owns it. Each
+     * registration's {@code ProviderDetails.getIssuerUri()} is the {@code iss} its tokens carry, so
+     * CachingOidcClaimsProvider routes a token to its own issuer's endpoint.
+     *
+     * <p>The owner is decided first, and only then whether it has an endpoint: the first
+     * registration per issuer in the repository's order, which is the order the access-token
+     * decoder routes by. Dropping registrations without an endpoint first would let a token routed
+     * to a registration with UserInfo disabled be augmented from another registration that resolved
+     * to the same issuer, which two issuer-uris differing only by a trailing slash now can.
+     */
+    static Map<String, URI> userInfoUriByIssuer(
+        final ClientRegistrationRepository clientRegistrationRepository) {
+      if (!(clientRegistrationRepository instanceof final Iterable<?> registrations)) {
+        throw new IllegalStateException(
+            "UserInfo augmentation needs an iterable ClientRegistrationRepository, but %s is not"
+                .formatted(clientRegistrationRepository.getClass()));
+      }
+      final Map<String, ClientRegistration> ownerByIssuer =
+          StreamSupport.stream(registrations.spliterator(), false)
+              .filter(ClientRegistration.class::isInstance)
+              .map(ClientRegistration.class::cast)
+              .filter(cr -> cr.getProviderDetails().getIssuerUri() != null)
+              .collect(
+                  Collectors.toMap(
+                      cr -> cr.getProviderDetails().getIssuerUri(),
+                      cr -> cr,
+                      (owner, later) -> owner));
+      return ownerByIssuer.entrySet().stream()
+          .filter(e -> e.getValue().getProviderDetails().getUserInfoEndpoint().getUri() != null)
+          .collect(
+              Collectors.toMap(
+                  Map.Entry::getKey,
+                  e ->
+                      URI.create(
+                          e.getValue().getProviderDetails().getUserInfoEndpoint().getUri())));
     }
 
     @Bean
@@ -911,8 +934,13 @@ public class WebSecurityConfig {
                 oidcAccessTokenDecoderFactory.createAccessTokenDecoder(
                     clientRegistration, additionalUris));
       } else {
-        final var additionalJwkSetUrisByIssuer =
-            buildAdditionalJwkSetUrisByIssuer(oidcProviderRepository);
+        // Keyed by registration id, not issuer: the key selector takes the additional keys of the
+        // registration it routed the token to, so a token can never reach another provider's keys.
+        final var additionalJwkSetUrisByRegistrationId =
+            buildAdditionalJwkSetUrisByRegistrationId(oidcProviderRepository);
+        // Checked here, at startup, not first inside the lazily created decoder.
+        IssuerAwareJWSKeySelector.requireConsistentAdditionalKeys(
+            clientRegistrations, additionalJwkSetUrisByRegistrationId);
         LOG.info(
             "Create Issuer Aware JWT Decoder for multiple OIDC Providers: [{}]",
             clientRegistrations.stream()
@@ -921,39 +949,17 @@ public class WebSecurityConfig {
         return new SupplierJwtDecoder(
             () ->
                 oidcAccessTokenDecoderFactory.createIssuerAwareAccessTokenDecoder(
-                    clientRegistrations, additionalJwkSetUrisByIssuer));
+                    clientRegistrations, additionalJwkSetUrisByRegistrationId));
       }
     }
 
-    private Map<String, List<String>> buildAdditionalJwkSetUrisByIssuer(
-        final OidcAuthenticationConfigurationRepository oidcProviderRepository) {
-      return oidcProviderRepository.getOidcAuthenticationConfigurations().values().stream()
-          .filter(
-              config ->
-                  config.getIssuerUri() != null
-                      && config.getAdditionalJwkSetUris() != null
-                      && !config.getAdditionalJwkSetUris().isEmpty())
-          .collect(
-              toMap(
-                  OidcAuthenticationConfiguration::getIssuerUri,
-                  config -> List.copyOf(config.getAdditionalJwkSetUris()),
-                  (a, b) -> {
-                    if (!a.equals(b)) {
-                      throw new IllegalStateException(
-                          "Multiple OIDC providers share the same issuer URI with different"
-                              + " additional JWKS URIs. Ensure each issuer has a consistent"
-                              + " configuration.");
-                    }
-                    return a;
-                  }));
-    }
-
     /**
-     * Builds the additional-JWKS lookup for the interactive login flow, keyed by registration id.
-     * Unlike {@link #buildAdditionalJwkSetUrisByIssuer}, this does not require an {@code
-     * issuer-uri}: {@link OidcUserAuthenticationConverter#getJwtDecoder} already resolves its
-     * decoder per registration id, so keying this map the same way lets it find the additional URIs
-     * of a provider configured with explicit endpoints and no {@code issuer-uri}.
+     * Builds the additional-JWKS lookup, keyed by registration id, for the interactive login flow
+     * and the multi-provider access token decoder. It does not require an {@code issuer-uri}:
+     * {@link OidcUserAuthenticationConverter#getJwtDecoder} resolves its decoder per registration
+     * id, and {@link IssuerAwareJWSKeySelector} looks the URIs up by the registration it routed a
+     * token to. Keying by issuer instead would let a token reach the keys of another provider whose
+     * issuer differs only by a trailing slash.
      */
     private Map<String, List<String>> buildAdditionalJwkSetUrisByRegistrationId(
         final OidcAuthenticationConfigurationRepository oidcProviderRepository) {
