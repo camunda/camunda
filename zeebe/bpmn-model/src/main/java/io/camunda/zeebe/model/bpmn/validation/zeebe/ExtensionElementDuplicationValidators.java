@@ -134,6 +134,9 @@ public class ExtensionElementDuplicationValidators {
                   ZeebeTaskHeaders.class, ZeebeConstants.ELEMENT_TASK_HEADERS),
           ExtensionElementsDuplicationValidator.verifyThat(ScriptTask.class)
               .hasSingleExtensionElement(
+                  ZeebeLinkedResources.class, ZeebeConstants.ELEMENT_LINKED_RESOURCES),
+          ExtensionElementsDuplicationValidator.verifyThat(ScriptTask.class)
+              .hasSingleExtensionElement(
                   ZeebeJobPriorityDefinition.class, ZeebeConstants.ELEMENT_JOB_PRIORITY_DEFINITION),
 
           // ad-hoc subprocess

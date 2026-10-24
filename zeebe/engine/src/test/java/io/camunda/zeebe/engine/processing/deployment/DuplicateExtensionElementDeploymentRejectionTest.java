@@ -298,6 +298,17 @@ public class DuplicateExtensionElementDeploymentRejectionTest {
               "scriptHeaders",
               ZeebeConstants.ELEMENT_TASK_HEADERS
             },
+            {
+              (ElementWithDuplicateExtensions)
+                  (b ->
+                      b.scriptTask(
+                          "scriptLinked",
+                          st ->
+                              st.addExtensionElement(ZeebeLinkedResources.class, t -> {})
+                                  .addExtensionElement(ZeebeLinkedResources.class, t -> {}))),
+              "scriptLinked",
+              ZeebeConstants.ELEMENT_LINKED_RESOURCES
+            },
 
             // -- AD-HOC SUB PROCESS ------------------------------------
             {
