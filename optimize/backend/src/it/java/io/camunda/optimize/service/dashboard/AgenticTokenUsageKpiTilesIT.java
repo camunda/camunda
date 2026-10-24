@@ -410,6 +410,41 @@ class AgenticTokenUsageKpiTilesIT extends AbstractBrokerlessZeebeCCSMIT {
   }
 
   @Test
+  void shouldLabelTopTokenConsumersWithLatestNameWhenAnEarlierNameIsReused() {
+    // given a process renamed and later renamed back (v1 is auto-seeded with the key as its name)
+    final String processKey = "rename-back-agent-process";
+    persistProcessInstances(List.of(agenticInstanceWithTokens(processKey, 200L, 100L).build()));
+    persistProcessDefinitions(
+        List.of(
+            definitionVersion(processKey, "2", "Original"),
+            definitionVersion(processKey, "3", "Renamed"),
+            definitionVersion(processKey, "4", "Original")));
+
+    // when
+    final List<MapResultEntryDto> buckets =
+        reports.evaluateMapMeasure(TOKEN_CONSUMERS_REPORT_ID, 0);
+
+    // then the label is the name of the latest version, not of the newest name introduced
+    assertThat(buckets)
+        .filteredOn(e -> e.getValue() != null)
+        .singleElement()
+        .satisfies(e -> assertThat(e.getLabel()).isEqualTo("Original"));
+  }
+
+  private static ProcessDefinitionOptimizeDto definitionVersion(
+      final String processKey, final String version, final String name) {
+    return ProcessDefinitionOptimizeDto.builder()
+        .id(processKey + ":" + version + ":" + version)
+        .key(processKey)
+        .version(version)
+        .name(name)
+        .dataSource(new ZeebeDataSourceDto("test-source", 1))
+        .tenantId(ZEEBE_DEFAULT_TENANT_ID)
+        .bpmn20Xml("<definitions/>")
+        .build();
+  }
+
+  @Test
   void shouldApplyDateFilterToTopTokenConsumers() {
     final String recentProc = "recent-agent-process";
     final String oldProc = "old-agent-process";
