@@ -49,10 +49,10 @@ lookupTeamMedic["@camunda/optimize-frontend"]=$optimizeFrontendMedic
 clientsSdksAiFirstToolingMedic="<!subteam^S0BFV0L5R2S|clients-sdks-ai-first-tooling-medic>"
 lookupTeamMedic["@camunda/clients-sdks-ai-first-tooling"]=$clientsSdksAiFirstToolingMedic
 
-# @distro-medic
-distroMedic="<!subteam^S053K7C7QKU|distro-medic>"
-lookupTeamMedic["@camunda/distribution"]=$distroMedic
-lookupTeamMedic["@camunda/smx"]=$distroMedic
+# @smx-medic
+smxMedic="<!subteam^S0CBB7Y72SV|smx-medic>"
+lookupTeamMedic["@camunda/distribution"]=$smxMedic
+lookupTeamMedic["@camunda/smx"]=$smxMedic
 
 # @reliability-testing-team
 reliabilityTestingTeam="<!subteam^S0A1Q2TJ6MB|reliability-testing-team>"
