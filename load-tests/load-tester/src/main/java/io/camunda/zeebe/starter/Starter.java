@@ -10,13 +10,10 @@ package io.camunda.zeebe.starter;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.CamundaFuture;
-import io.camunda.client.api.command.DeployResourceCommandStep1.DeployResourceCommandStep2;
-import io.camunda.client.api.response.Process;
 import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.client.api.search.response.SearchResponse;
 import io.camunda.zeebe.config.LoadTesterProperties;
 import io.camunda.zeebe.config.StarterProperties;
-import io.camunda.zeebe.metrics.ConnectionMonitor;
 import io.camunda.zeebe.metrics.ProcessInstanceStartMeter;
 import io.camunda.zeebe.metrics.StarterMetricsDoc;
 import io.camunda.zeebe.metrics.StarterMetricsDoc.StarterMetricKeyNames;
@@ -24,11 +21,9 @@ import io.camunda.zeebe.optimize.OptimizeReportEvaluator;
 import io.camunda.zeebe.optimize.OptimizeReportEvaluatorFactory;
 import io.camunda.zeebe.read.DataReadMeter;
 import io.camunda.zeebe.read.DataReadMeterQueryProvider;
-import io.camunda.zeebe.util.logging.ThrottledLogger;
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
 import jakarta.annotation.PreDestroy;
-import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.concurrent.CountDownLatch;
@@ -54,20 +49,17 @@ import org.springframework.web.reactive.function.client.WebClient;
 @Profile("starter")
 public class Starter implements CommandLineRunner {
 
-  private static final Logger THROTTLED_LOGGER =
-      new ThrottledLogger(LoggerFactory.getLogger(Starter.class), Duration.ofSeconds(5));
   private static final Logger LOG = LoggerFactory.getLogger(Starter.class);
 
-  private final CamundaClient loaderClient;
   private final CamundaClient queryClient;
   private final ApplicationContext applicationContext;
   private final LoadTesterProperties properties;
   private final StarterProperties starterCfg;
   private final MeterRegistry registry;
-  private final ConnectionMonitor connectionMonitor;
   private final StarterLivenessIndicator livenessIndicator;
   private final WebClient.Builder webClientBuilder;
   private final ObjectMapper objectMapper;
+  private final ProcessDeployer processDeployer;
   private final ProcessInstanceCreator processInstanceCreator;
   private final AtomicLong lastProcessInstanceKey = new AtomicLong(0);
   private final AtomicInteger runFinished = new AtomicInteger(0);
@@ -80,26 +72,24 @@ public class Starter implements CommandLineRunner {
   private OptimizeReportEvaluator optimizeReportEvaluator;
 
   public Starter(
-      final CamundaClient loaderClient,
       @Qualifier("queryCamundaClient") final CamundaClient queryClient,
       final LoadTesterProperties properties,
       final MeterRegistry registry,
-      final ConnectionMonitor connectionMonitor,
       final StarterLivenessIndicator livenessIndicator,
       final WebClient.Builder webClientBuilder,
       final ObjectMapper objectMapper,
+      final ProcessDeployer processDeployer,
       final ProcessInstanceCreator processInstanceCreator,
       final ApplicationContext applicationContext) {
-    this.loaderClient = loaderClient;
     this.queryClient = queryClient;
     this.applicationContext = applicationContext;
     this.properties = properties;
     starterCfg = properties.getStarter();
     this.registry = registry;
-    this.connectionMonitor = connectionMonitor;
     this.livenessIndicator = livenessIndicator;
     this.webClientBuilder = webClientBuilder;
     this.objectMapper = objectMapper;
+    this.processDeployer = processDeployer;
     this.processInstanceCreator = processInstanceCreator;
 
     // Expose the client information early: these are only static values which are not supposed to
@@ -116,9 +106,6 @@ public class Starter implements CommandLineRunner {
 
   @Override
   public void run(final String... args) {
-    connectionMonitor.awaitAndPrintTopology();
-    livenessIndicator.recordStarted();
-
     Gauge.builder(StarterMetricsDoc.RUN_FINISHED.getName(), runFinished, AtomicInteger::doubleValue)
         .description(StarterMetricsDoc.RUN_FINISHED.getDescription())
         .register(registry);
@@ -135,9 +122,10 @@ public class Starter implements CommandLineRunner {
       setupOptimizeReportEvaluator();
     }
 
-    deployProcess();
+    final long processDefinitionKey = processDeployer.deploy();
 
     if (properties.isPerformReadBenchmarks()) {
+      dataReadMeter.setContextProcessDefinitionKey(processDefinitionKey);
       dataReadMeter.start();
     }
 
@@ -252,51 +240,5 @@ public class Starter implements CommandLineRunner {
       final var oldValue = lastProcessInstanceKey.getAndSet(processInstanceKey);
       dataReadMeter.setContextProcessInstanceKey(oldValue == 0 ? processInstanceKey : oldValue);
     }
-  }
-
-  private void deployProcess() {
-    final var deployCmd = constructDeploymentCommand();
-
-    while (true) {
-      try {
-        final var result = deployCmd.send().join();
-        final var benchmarkProcessDefinitionKey =
-            result.getProcesses().stream()
-                .filter(p -> p.getBpmnProcessId().equals(starterCfg.getProcessId()))
-                .findFirst()
-                .map(Process::getProcessDefinitionKey)
-                .orElse(0L);
-        if (properties.isPerformReadBenchmarks()) {
-          dataReadMeter.setContextProcessDefinitionKey(benchmarkProcessDefinitionKey);
-        }
-        break;
-      } catch (final Exception e) {
-        THROTTLED_LOGGER.warn("Failed to deploy process, retrying", e);
-        try {
-          Thread.sleep(200);
-        } catch (final InterruptedException ex) {
-          // ignore
-        }
-      }
-    }
-  }
-
-  private DeployResourceCommandStep2 constructDeploymentCommand() {
-    LOG.info(
-        "Deploying main resource: {}, extra resources: {}",
-        starterCfg.getBpmnXmlPath(),
-        starterCfg.getExtraBpmnModels());
-    final var deployCmd =
-        loaderClient
-            .newDeployResourceCommand()
-            .addResourceFromClasspath(starterCfg.getBpmnXmlPath());
-
-    final var extraBpmnModels = starterCfg.getExtraBpmnModels();
-    if (extraBpmnModels != null) {
-      for (final var model : extraBpmnModels) {
-        deployCmd.addResourceFromClasspath(model);
-      }
-    }
-    return deployCmd;
   }
 }
