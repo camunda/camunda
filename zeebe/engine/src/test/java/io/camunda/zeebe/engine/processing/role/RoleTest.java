@@ -332,6 +332,31 @@ public class RoleTest {
   }
 
   @Test
+  public void shouldRejectAddingGroupToRoleIfGroupDoesNotExist() {
+    // given - Camunda groups only, so an assigned group must exist
+    final var groupId = Strings.newRandomValidIdentityId();
+    final var roleId = Strings.newRandomValidIdentityId();
+    engine.role().newRole(roleId).create();
+
+    // when
+    final var rejection =
+        engine
+            .role()
+            .addEntity(roleId)
+            .withEntityId(groupId)
+            .withEntityType(EntityType.GROUP)
+            .expectRejection()
+            .add();
+
+    // then
+    assertThat(rejection)
+        .hasRejectionType(RejectionType.NOT_FOUND)
+        .hasRejectionReason(
+            "Expected to add an entity with ID '%s' and type 'GROUP' to role with ID '%s', but the entity doesn't exist."
+                .formatted(groupId, roleId));
+  }
+
+  @Test
   public void shouldRejectIfEntityIsAlreadyAssigned() {
     // given
     final var roleId = Strings.newRandomValidIdentityId();

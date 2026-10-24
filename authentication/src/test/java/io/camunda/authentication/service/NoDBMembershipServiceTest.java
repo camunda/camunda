@@ -9,6 +9,8 @@ package io.camunda.authentication.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.security.api.model.config.AuthenticationMethod;
+import io.camunda.security.api.model.config.oidc.OidcConfiguration;
 import io.camunda.security.core.port.out.MembershipPort.PrincipalType;
 import io.camunda.security.core.port.out.MembershipQuery;
 import io.camunda.security.spring.CamundaSecurityLibraryProperties;
@@ -17,6 +19,9 @@ import java.util.Map;
 import org.junit.jupiter.api.Test;
 
 class NoDBMembershipServiceTest {
+
+  private static final String KEYCLOAK = "https://keycloak.example.com";
+  private static final String PARTNER = "https://partner.example.com";
 
   private static MembershipQuery query(final Map<String, Object> claims) {
     return new MembershipQuery(claims, "alice", PrincipalType.USER);
@@ -65,9 +70,40 @@ class NoDBMembershipServiceTest {
     assertThat(service.tenantIds(q)).isEmpty();
   }
 
+  @Test
+  void groupIdsReadsOnlyTheGroupsClaimOfAProviderThatHasOne() {
+    // given - one named provider with a groups claim and one without
+    final var config = new CamundaSecurityLibraryProperties();
+    config.getAuthentication().setMethod(AuthenticationMethod.OIDC);
+    config
+        .getAuthentication()
+        .getProviders()
+        .getOidc()
+        .put("keycloak", provider(KEYCLOAK, "groups"));
+    config.getAuthentication().getProviders().getOidc().put("partner", provider(PARTNER, null));
+    final var service = new NoDBMembershipService(config);
+    final var groups = List.of("engineering");
+
+    // when/then
+    assertThat(service.groupIds(query(Map.of("iss", KEYCLOAK, "groups", groups))))
+        .containsExactly("engineering");
+    assertThat(service.groupIds(query(Map.of("iss", PARTNER, "groups", groups)))).isEmpty();
+  }
+
   private static NoDBMembershipService serviceWithGroupsClaim(final String claim) {
     final var config = new CamundaSecurityLibraryProperties();
+    config.getAuthentication().setMethod(AuthenticationMethod.OIDC);
     config.getAuthentication().getOidc().setGroupsClaim(claim);
     return new NoDBMembershipService(config);
+  }
+
+  private static OidcConfiguration provider(final String issuerUri, final String groupsClaim) {
+    final var provider = new OidcConfiguration();
+    provider.setClientId("client");
+    provider.setIssuerUri(issuerUri);
+    if (groupsClaim != null) {
+      provider.setGroupsClaim(groupsClaim);
+    }
+    return provider;
   }
 }

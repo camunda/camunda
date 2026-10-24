@@ -24,6 +24,8 @@ import io.camunda.search.entities.RoleEntity;
 import io.camunda.search.entities.TenantEntity;
 import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.search.exception.CamundaSearchException.Reason;
+import io.camunda.security.api.model.config.AuthenticationMethod;
+import io.camunda.security.api.model.config.oidc.OidcConfiguration;
 import io.camunda.security.core.port.out.MembershipPort.PrincipalType;
 import io.camunda.security.core.port.out.MembershipQuery;
 import io.camunda.security.spring.CamundaSecurityLibraryProperties;
@@ -60,6 +62,9 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 
 @ExtendWith(MockitoExtension.class)
 class DefaultMembershipServiceTest {
+
+  private static final String KEYCLOAK = "https://keycloak.example.com";
+  private static final String PARTNER = "https://partner.example.com";
 
   private static final String TENANT_A = "tenanta";
 
@@ -136,6 +141,31 @@ class DefaultMembershipServiceTest {
     final var query = baseQuery().withMappingRuleIds(List.of("mr1"));
 
     assertThat(service.groupIds(query)).containsExactly("g1");
+  }
+
+  @Test
+  void groupIdsReadsTheGroupsClaimOfTheProviderThatIssuedTheToken() {
+    // given - a token of the provider with a groups claim
+    final var query =
+        new MembershipQuery(
+            Map.of("iss", KEYCLOAK, "groups", List.of("engineering")), "alice", PrincipalType.USER);
+
+    // when/then - the groups come from the claim, with no DB lookup
+    assertThat(serviceWithMixedProviders().groupIds(query)).containsExactly("engineering");
+    verifyNoInteractions(groupServices);
+  }
+
+  @Test
+  void groupIdsLooksUpGroupsFromDbForAProviderWithoutAGroupsClaim() {
+    // given - a token of the provider without a groups claim; its groups claim is not read
+    when(groupServices.getGroupsByMemberTypeAndMemberIds(any(), any()))
+        .thenReturn(List.of(new GroupEntity(1L, "g1", "group", null)));
+    final var query =
+        new MembershipQuery(
+            Map.of("iss", PARTNER, "groups", List.of("engineering")), "alice", PrincipalType.USER);
+
+    // when/then
+    assertThat(serviceWithMixedProviders().groupIds(query)).containsExactly("g1");
   }
 
   @Test
@@ -506,7 +536,35 @@ class DefaultMembershipServiceTest {
 
   private DefaultMembershipService serviceWithGroupsClaim(final String claim) {
     final var config = new CamundaSecurityLibraryProperties();
+    config.getAuthentication().setMethod(AuthenticationMethod.OIDC);
     config.getAuthentication().getOidc().setGroupsClaim(claim);
+    return serviceWith(config);
+  }
+
+  /** One named provider with a groups claim and one without. */
+  private DefaultMembershipService serviceWithMixedProviders() {
+    final var config = new CamundaSecurityLibraryProperties();
+    config.getAuthentication().setMethod(AuthenticationMethod.OIDC);
+    config
+        .getAuthentication()
+        .getProviders()
+        .getOidc()
+        .put("keycloak", provider(KEYCLOAK, "groups"));
+    config.getAuthentication().getProviders().getOidc().put("partner", provider(PARTNER, null));
+    return serviceWith(config);
+  }
+
+  private static OidcConfiguration provider(final String issuerUri, final String groupsClaim) {
+    final var provider = new OidcConfiguration();
+    provider.setClientId("client");
+    provider.setIssuerUri(issuerUri);
+    if (groupsClaim != null) {
+      provider.setGroupsClaim(groupsClaim);
+    }
+    return provider;
+  }
+
+  private DefaultMembershipService serviceWith(final CamundaSecurityLibraryProperties config) {
     final var serviceRegistry =
         DefaultServiceRegistry.of(
             b ->

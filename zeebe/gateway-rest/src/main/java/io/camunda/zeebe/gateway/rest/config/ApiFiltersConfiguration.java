@@ -14,6 +14,8 @@ import static io.camunda.spring.utils.PhysicalTenantContext.PHYSICAL_TENANTS_PAT
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.security.api.model.config.AuthenticationMethod;
 import io.camunda.security.spring.annotation.ConditionalOnAuthenticationMethod;
+import io.camunda.security.spring.annotation.ConditionalOnCamundaGroupsEnabled;
+import io.camunda.security.spring.annotation.ConditionalOnCamundaGroupsEnabled.CamundaGroupsEnabledCondition;
 import io.camunda.zeebe.gateway.rest.ConditionalOnRestGatewayEnabled;
 import io.camunda.zeebe.gateway.rest.controller.EndpointAccessErrorFilter;
 import io.camunda.zeebe.gateway.rest.controller.PhysicalTenantFilter;
@@ -39,7 +41,7 @@ public class ApiFiltersConfiguration {
 
   @VisibleForTesting
   public static final String GROUPS_API_DISABLED_ERROR_MESSAGE =
-      "Groups API is disabled because the application is configured in group claim mode. To use the Groups API, reconfigure the application to manage group mode removing the '%s' property."
+      "Groups API is disabled because every OIDC provider is configured in group claim mode. To use the Groups API, reconfigure a provider to manage group mode removing its groups claim: the '%s' property, or 'camunda.security.authentication.providers.oidc.<provider>.groupsClaim' of a named provider."
           .formatted(GROUPS_CLAIM_PROPERTY);
 
   @VisibleForTesting
@@ -114,7 +116,7 @@ public class ApiFiltersConfiguration {
     return registration;
   }
 
-  @Conditional(GroupsClaimConfiguredCondition.class)
+  @Conditional(CamundaGroupsDisabledCondition.class)
   @Bean
   public FilterRegistrationBean<EndpointAccessErrorFilter> disableGroupApiFilter(
       final ObjectMapper objectMapper) {
@@ -184,23 +186,17 @@ public class ApiFiltersConfiguration {
   }
 
   /**
-   * Matches when the OIDC groups-claim property is configured, meaning groups are managed
-   * externally via the identity provider. {@code GROUPS_CLAIM_PROPERTY} is camelCase ({@code
-   * groupsClaim}); querying the {@link ConditionContext#getEnvironment()} with that exact string
-   * only matches a camelCase-configured property. Canonicalizing it first makes the lookup match a
-   * kebab-case ({@code groups-claim}) YAML key too, relying on Spring Boot's relaxed property
-   * binding.
+   * Matches when no user gets their groups from Camunda, so the Group API has nothing to manage:
+   * every OIDC provider has a groups claim. It is the negation of {@link
+   * ConditionalOnCamundaGroupsEnabled}, so the API and the Group controller agree.
    */
-  static final class GroupsClaimConfiguredCondition implements Condition {
+  static final class CamundaGroupsDisabledCondition implements Condition {
 
-    private static final String CANONICAL_GROUPS_CLAIM_PROPERTY =
-        ConfigurationPropertyName.adapt(GROUPS_CLAIM_PROPERTY, '.').toString();
+    private final Condition camundaGroupsEnabled = new CamundaGroupsEnabledCondition();
 
     @Override
     public boolean matches(final ConditionContext context, final AnnotatedTypeMetadata metadata) {
-      final String groupsClaim =
-          context.getEnvironment().getProperty(CANONICAL_GROUPS_CLAIM_PROPERTY);
-      return groupsClaim != null && !groupsClaim.isEmpty();
+      return !camundaGroupsEnabled.matches(context, metadata);
     }
   }
 }
