@@ -38,12 +38,22 @@ extensions.configure<NodeExtension> {
   nodeProjectDir.set(layout.projectDirectory)
 }
 
+// Integration tests only exercise the backend, so a run that asks for nothing but them skips the
+// frontend build that the container image would otherwise pull in.
+// The first argument of a task request is the task; the rest are its options, e.g. --tests.
+val onlyIntegrationTests =
+  gradle.startParameter.taskRequests
+    .mapNotNull { it.args.firstOrNull() }
+    .let { tasks ->
+      tasks.isNotEmpty() && tasks.all { it.substringAfterLast(':') in setOf("it", "dockerIt") }
+    }
+
 val skipFrontendBuild =
   providers
     .gradleProperty("skip.fe.build")
     .orElse(providers.gradleProperty("quickly"))
     .asEnabledFlag()
-    .orElse(false)
+    .orElse(onlyIntegrationTests)
 
 val npmVersionPackage =
   tasks.register<NpmTask>("npmVersionPackage") {
