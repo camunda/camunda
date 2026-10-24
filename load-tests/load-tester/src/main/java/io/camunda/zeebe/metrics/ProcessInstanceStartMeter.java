@@ -7,8 +7,12 @@
  */
 package io.camunda.zeebe.metrics;
 
+import io.camunda.client.CamundaClient;
+import io.camunda.client.api.search.response.ProcessInstance;
+import io.camunda.zeebe.config.LoadTesterProperties;
 import io.camunda.zeebe.metrics.StarterMetricsDoc.StarterMetricKeyNames;
 import io.camunda.zeebe.protocol.Protocol;
+import io.camunda.zeebe.starter.ProcessInstanceCreator;
 import io.camunda.zeebe.util.micrometer.MicrometerUtil;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
@@ -18,11 +22,23 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.context.annotation.Profile;
+import org.springframework.stereotype.Component;
 
+@Component
+@Profile("starter")
+@ConditionalOnProperty(
+    name = "load-tester.monitor-data-availability",
+    havingValue = "true",
+    matchIfMissing = true)
 public class ProcessInstanceStartMeter implements AutoCloseable {
   private static final long MAX_DURATION = Duration.ofSeconds(90).toNanos();
   private static final Logger LOG = LoggerFactory.getLogger(ProcessInstanceStartMeter.class);
@@ -35,6 +51,23 @@ public class ProcessInstanceStartMeter implements AutoCloseable {
   private final Clock clock;
   private final Timer dataAvailabilityQueryDurationTimer;
 
+  @Autowired
+  public ProcessInstanceStartMeter(
+      final MeterRegistry meterRegistry,
+      final LoadTesterProperties properties,
+      @Qualifier("queryCamundaClient") final CamundaClient queryClient,
+      final ProcessInstanceCreator processInstanceCreator) {
+    this(
+        System::nanoTime,
+        meterRegistry,
+        Executors.newScheduledThreadPool(1),
+        properties.getMonitorDataAvailabilityInterval(),
+        startedInstances -> searchStartedInstances(queryClient, startedInstances));
+    processInstanceCreator.addStartListener(this::recordProcessInstanceStart);
+  }
+
+  // Could be merged with the constructor above if the clock, the executor and the
+  // availability checker were beans.
   public ProcessInstanceStartMeter(
       final Clock clock,
       final MeterRegistry meterRegistry,
@@ -59,6 +92,19 @@ public class ProcessInstanceStartMeter implements AutoCloseable {
   /** Starts the periodic checking for process instance availability. */
   public void start() {
     scheduleCheck(availabilityCheckInterval.toMillis());
+  }
+
+  private static CompletionStage<List<Long>> searchStartedInstances(
+      final CamundaClient queryClient, final List<Long> startedInstances) {
+    return queryClient
+        .newProcessInstanceSearchRequest()
+        .filter((f) -> f.processInstanceKey(key -> key.in(startedInstances)))
+        .sort(s -> s.startDate().asc())
+        .page(p -> p.limit(2500))
+        .send()
+        .thenApply(
+            response ->
+                response.items().stream().map(ProcessInstance::getProcessInstanceKey).toList());
   }
 
   private void scheduleCheck(final long delay) {

@@ -7,43 +7,30 @@
  */
 package io.camunda.zeebe.starter;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.client.CamundaClient;
-import io.camunda.client.api.CamundaFuture;
-import io.camunda.client.api.search.response.ProcessInstance;
-import io.camunda.client.api.search.response.SearchResponse;
 import io.camunda.zeebe.config.LoadTesterProperties;
 import io.camunda.zeebe.config.StarterProperties;
 import io.camunda.zeebe.metrics.ProcessInstanceStartMeter;
 import io.camunda.zeebe.metrics.StarterMetricsDoc;
 import io.camunda.zeebe.metrics.StarterMetricsDoc.StarterMetricKeyNames;
 import io.camunda.zeebe.optimize.OptimizeReportEvaluator;
-import io.camunda.zeebe.optimize.OptimizeReportEvaluatorFactory;
 import io.camunda.zeebe.read.DataReadMeter;
-import io.camunda.zeebe.read.DataReadMeterQueryProvider;
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
 import jakarta.annotation.PreDestroy;
-import java.time.Instant;
-import java.time.temporal.ChronoUnit;
+import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicReference;
-import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
-import org.springframework.web.reactive.function.client.WebClient;
 
 @Component
 @Profile("starter")
@@ -51,46 +38,40 @@ public class Starter implements CommandLineRunner {
 
   private static final Logger LOG = LoggerFactory.getLogger(Starter.class);
 
-  private final CamundaClient queryClient;
   private final ApplicationContext applicationContext;
-  private final LoadTesterProperties properties;
   private final StarterProperties starterCfg;
   private final MeterRegistry registry;
   private final StarterLivenessIndicator livenessIndicator;
-  private final WebClient.Builder webClientBuilder;
-  private final ObjectMapper objectMapper;
   private final ProcessDeployer processDeployer;
   private final ProcessInstanceCreator processInstanceCreator;
-  private final AtomicLong lastProcessInstanceKey = new AtomicLong(0);
   private final AtomicInteger runFinished = new AtomicInteger(0);
-  private final AtomicReference<Instant> lastProcessInstanceKeyTimestamp =
-      new AtomicReference<>(Instant.now());
+
+  // Temporary: Starter starts and stops these meters until they react to application events.
+  private final Optional<ProcessInstanceStartMeter> processInstanceStartMeter;
+  private final Optional<DataReadMeter> dataReadMeter;
+  private final Optional<OptimizeReportEvaluator> optimizeReportEvaluator;
 
   private ScheduledExecutorService executorService;
-  private ProcessInstanceStartMeter processInstanceStartMeter;
-  private DataReadMeter dataReadMeter;
-  private OptimizeReportEvaluator optimizeReportEvaluator;
 
   public Starter(
-      @Qualifier("queryCamundaClient") final CamundaClient queryClient,
       final LoadTesterProperties properties,
       final MeterRegistry registry,
       final StarterLivenessIndicator livenessIndicator,
-      final WebClient.Builder webClientBuilder,
-      final ObjectMapper objectMapper,
       final ProcessDeployer processDeployer,
       final ProcessInstanceCreator processInstanceCreator,
+      final Optional<ProcessInstanceStartMeter> processInstanceStartMeter,
+      final Optional<DataReadMeter> dataReadMeter,
+      final Optional<OptimizeReportEvaluator> optimizeReportEvaluator,
       final ApplicationContext applicationContext) {
-    this.queryClient = queryClient;
     this.applicationContext = applicationContext;
-    this.properties = properties;
     starterCfg = properties.getStarter();
     this.registry = registry;
     this.livenessIndicator = livenessIndicator;
-    this.webClientBuilder = webClientBuilder;
-    this.objectMapper = objectMapper;
     this.processDeployer = processDeployer;
     this.processInstanceCreator = processInstanceCreator;
+    this.processInstanceStartMeter = processInstanceStartMeter;
+    this.dataReadMeter = dataReadMeter;
+    this.optimizeReportEvaluator = optimizeReportEvaluator;
 
     // Expose the client information early: these are only static values which are not supposed to
     // be affected by the current state of the client (whether it successfully connects to the
@@ -110,28 +91,17 @@ public class Starter implements CommandLineRunner {
         .description(StarterMetricsDoc.RUN_FINISHED.getDescription())
         .register(registry);
 
-    if (properties.isMonitorDataAvailability()) {
-      setupDataAvailabilityMeter();
-    }
-
-    if (properties.isPerformReadBenchmarks()) {
-      setupDataReadMeter();
-    }
-
-    if (properties.getOptimize().isReportEvaluationEnabled()) {
-      setupOptimizeReportEvaluator();
-    }
+    processInstanceStartMeter.ifPresent(ProcessInstanceStartMeter::start);
 
     final long processDefinitionKey = processDeployer.deploy();
 
-    if (properties.isPerformReadBenchmarks()) {
-      dataReadMeter.setContextProcessDefinitionKey(processDefinitionKey);
-      dataReadMeter.start();
-    }
-
-    if (optimizeReportEvaluator != null) {
-      optimizeReportEvaluator.start();
-    }
+    dataReadMeter.ifPresent(
+        meter -> {
+          // Temporary: the meter receives the key from Starter until the deployer blocks startup.
+          meter.setContextProcessDefinitionKey(processDefinitionKey);
+          meter.start();
+        });
+    optimizeReportEvaluator.ifPresent(OptimizeReportEvaluator::start);
 
     final CountDownLatch countDownLatch = new CountDownLatch(1);
     executorService = Executors.newScheduledThreadPool(starterCfg.getThreads());
@@ -168,77 +138,8 @@ public class Starter implements CommandLineRunner {
         LOG.error("Shutdown executor service was interrupted", e);
       }
     }
-    if (processInstanceStartMeter != null) {
-      processInstanceStartMeter.close();
-    }
-    if (dataReadMeter != null) {
-      dataReadMeter.close();
-    }
-    if (optimizeReportEvaluator != null) {
-      optimizeReportEvaluator.close();
-    }
-  }
-
-  private void setupDataAvailabilityMeter() {
-    LOG.info("Monitor data availability of started process instances");
-    processInstanceStartMeter =
-        new ProcessInstanceStartMeter(
-            System::nanoTime,
-            registry,
-            Executors.newScheduledThreadPool(1),
-            properties.getMonitorDataAvailabilityInterval(),
-            (listOfStartedInstances) -> {
-              final CamundaFuture<SearchResponse<ProcessInstance>> send =
-                  queryClient
-                      .newProcessInstanceSearchRequest()
-                      .filter((f) -> f.processInstanceKey(key -> key.in(listOfStartedInstances)))
-                      .sort(s -> s.startDate().asc())
-                      .page(p -> p.limit(2500))
-                      .send();
-
-              return send.thenApply(
-                  processInstanceSearchResponse ->
-                      processInstanceSearchResponse.items().stream()
-                          .map(ProcessInstance::getProcessInstanceKey)
-                          .toList());
-            });
-    processInstanceCreator.addStartListener(
-        (processInstanceKey, startTime) ->
-            processInstanceStartMeter.recordProcessInstanceStart(processInstanceKey, startTime));
-    processInstanceStartMeter.start();
-  }
-
-  private void setupOptimizeReportEvaluator() {
-    LOG.info("Starting Optimize report evaluation meter");
-    optimizeReportEvaluator =
-        OptimizeReportEvaluatorFactory.create(
-            properties.getOptimize(), webClientBuilder, objectMapper, registry);
-  }
-
-  private void setupDataReadMeter() {
-    LOG.info("Starting read benchmark queries");
-    dataReadMeter =
-        new DataReadMeter(
-            registry,
-            Executors.newScheduledThreadPool(2),
-            queryClient,
-            DataReadMeterQueryProvider.getDefaultQueries(properties.getDisabledQueriesList()));
-    dataReadMeter.setContextProcessDefinitionId(starterCfg.getProcessId());
-    dataReadMeter.setContextBusinessKeySupplier(
-        () ->
-            Pair.of(
-                starterCfg.getBusinessKey(),
-                processInstanceCreator.currentBusinessKey()
-                    - (long) (starterCfg.getRatePerSecond() * 60.0)));
-    processInstanceCreator.addStartListener(
-        (processInstanceKey, startTime) -> recordReadContextProcessInstance(processInstanceKey));
-  }
-
-  private void recordReadContextProcessInstance(final long processInstanceKey) {
-    if (lastProcessInstanceKeyTimestamp.get().plus(1, ChronoUnit.MINUTES).isBefore(Instant.now())) {
-      lastProcessInstanceKeyTimestamp.set(Instant.now());
-      final var oldValue = lastProcessInstanceKey.getAndSet(processInstanceKey);
-      dataReadMeter.setContextProcessInstanceKey(oldValue == 0 ? processInstanceKey : oldValue);
-    }
+    processInstanceStartMeter.ifPresent(ProcessInstanceStartMeter::close);
+    dataReadMeter.ifPresent(DataReadMeter::close);
+    optimizeReportEvaluator.ifPresent(OptimizeReportEvaluator::close);
   }
 }
