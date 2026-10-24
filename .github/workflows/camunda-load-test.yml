@@ -38,6 +38,8 @@ on:
           - typical
           - max
           - archiver
+          - dmn
+          - dmn-large
         default: max
       secondary-storage-type:
         description: 'Secondary database backend for Camunda Platform'
@@ -157,7 +159,7 @@ on:
         default: ""
         required: false
       scenario:
-        description: 'Workload scenario to run. Options: latency, realistic, typical, max, archiver.'
+        description: 'Workload scenario to run. Options: latency, realistic, typical, max, archiver, dmn, dmn-large.'
         type: string
         required: false
         default: ""

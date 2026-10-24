@@ -1,0 +1,17 @@
+# Application overrides for the `dmn` scenario.
+# This file is injected as application-override.yml (loaded after and overrides application.yml)
+# when scenario=dmn, see common.mk.
+#
+# Disable the consistency checks, like the `max` scenario: they add overhead on every command.
+zeebe.broker.experimental.consistencyChecks.enablePreconditions: "false"
+zeebe.broker.experimental.consistencyChecks.enableForeignKeyChecks: "false"
+# The defaults cap the writes at 10000 records/s per partition to visualize flow control. Each
+# evaluation writes a command and its event, so the cap limits a partition to ~5000 evaluations/s:
+# below the target with a single partition, and an artificial ceiling when searching for the
+# maximum throughput. The request flow control stays enabled: its rejections are part of what we
+# measure.
+camunda.processing.flow-control.write.enabled: "false"
+# The `dmn` overlay keeps the data directory in memory (tmpfs), and the log is only compacted after
+# a snapshot. At ~6667 evaluations/s, the default 5m period lets the log grow to a few GB per broker,
+# close to the memory limit; 1m keeps it well below.
+camunda.data.snapshot-period: "1m"

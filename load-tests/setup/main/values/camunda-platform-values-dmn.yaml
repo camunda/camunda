@@ -1,0 +1,29 @@
+# Platform overlay of the `dmn` scenario (see common.mk), which measures the DMN decision
+# evaluation latency and throughput through `/v2/decision-definitions/evaluation`.
+#
+# This is a benchmark topology, NOT a production one: it gives up durability to remove the
+# avoidable costs from the evaluation path.
+#   * replicationFactor 1    -> a commit is local, no Raft quorum round-trip.
+#   * persistenceType memory -> the data directory is a tmpfs, so the commit fsync never touches
+#                               the disk.
+# It keeps 3 brokers and 3 partitions so the evaluations, which the gateway spreads across the
+# partitions, are not capped by a single stream processor. For the pure latency floor, pass
+#   additional_platform_configuration="--set orchestration.clusterSize=1 --set orchestration.partitionCount=1"
+#
+# Only scalars are overridden: Helm replaces lists instead of merging them, so redefining
+# `orchestration.extraConfiguration` or `orchestration.env` here would drop the base configuration
+# (OIDC, logging). Application properties go to camunda-platform-dmn-override-values.yaml instead.
+
+orchestration:
+  replicationFactor: "1"
+
+  # The tmpfs counts against the memory limit, so the limit leaves room for the in-memory log next
+  # to the JVM (heap is 25% of the limit, see `javaOpts` in camunda-platform-values-defaults.yaml).
+  # The log is only compacted after a snapshot: camunda-platform-dmn-override-values.yaml shortens
+  # the snapshot period to keep it small.
+  persistenceType: memory
+  resources:
+    requests:
+      memory: 8Gi
+    limits:
+      memory: 8Gi

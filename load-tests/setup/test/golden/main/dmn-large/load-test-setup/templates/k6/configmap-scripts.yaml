@@ -1,0 +1,845 @@
+---
+# Source: load-test-setup/templates/k6/configmap-scripts.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: k6-scripts
+  labels:
+    app.kubernetes.io/component: k6
+data:
+  lib.camunda.js: |
+    /* Client for the Camunda API, including its authentication.
+     *
+     * Expose the Camunda API endpoints via convenient functions to be used during tests.
+     * Create the client in the test script at module level: that code runs once per VU, so each VU
+     * has its own instance.
+     */
+    import http from "k6/http";
+    import { sleep } from "k6";
+  
+    export class Client {
+      constructor() {
+        this.#ensureEnvVars();
+        this.baseURL = __ENV.CAMUNDA_BASE_URL;
+        // Empty token. The first request fetches the actual token.
+        this.token = { accessToken: null, renewalDate: 0 };
+      }
+  
+      get(endpoint, params) {
+        return this.request("GET", endpoint, undefined, params);
+      }
+  
+      post(endpoint, payload, params) {
+        return this.request("POST", endpoint, payload, params);
+      }
+  
+      /**
+       * Send an authenticated JSON request to a Camunda endpoint, renewing the token if needed.
+       *
+       * @param {string} method - HTTP method.
+       * @param {string} endpoint - Path appended to the base URL. Also used as the `name` tag, so that
+       *   metrics are grouped per endpoint.
+       * @param {*} [payload] - Request body. Serialized as JSON, unless `params.multipart` is true: the
+       *   payload is then passed to k6 as is, and k6 encodes the `http.file()` values as
+       *   multipart/form-data.
+       * @param {object} [params] - k6 request params, merged into the default ones. Its `headers` and
+       *   `tags` take precedence over the default headers and tags.
+       * @param {boolean} [params.multipart=false] - Send the payload as multipart/form-data.
+       * @returns {import("k6/http").RefinedResponse} The k6 response.
+       */
+      request(method, endpoint, payload, { multipart = false, ...params } = {}) {
+        this.#renewToken();
+  
+        const contentTypeHeader = multipart
+          ? {}
+          : { "Content-Type": "application/json" };
+  
+        // Create a new k6 params object based on the passed parameters and default values.
+        const mergedParams = {
+          ...params,
+          headers: {
+            ...contentTypeHeader,
+            Authorization: `Bearer ${this.token.accessToken}`,
+            ...params.headers,
+          },
+          tags: { name: endpoint, ...params.tags },
+        };
+  
+        let body = null;
+        if (payload !== undefined) {
+          // Do not build a `FormData` here: it can use **way** more memory than
+          // the plain object that k6 encodes.
+          body = multipart ? payload : JSON.stringify(payload);
+        }
+  
+        return http.request(method, this.baseURL + endpoint, body, mergedParams);
+      }
+  
+      // https://docs.camunda.io/docs/apis-tools/orchestration-cluster-api-rest/specifications/create-deployment/
+      deploy(name, resourceContent) {
+        return this.post(
+          "/v2/deployments",
+          { resources: http.file(resourceContent, name) },
+          { multipart: true },
+        );
+      }
+  
+      // https://docs.camunda.io/docs/apis-tools/orchestration-cluster-api-rest/specifications/evaluate-decision/
+      decisionDefinitionEvaluation(decisionDefinitionId, variables = {}, params) {
+        return this.post(
+          "/v2/decision-definitions/evaluation",
+          {
+            decisionDefinitionId: decisionDefinitionId,
+            variables: variables,
+          },
+          params,
+        );
+      }
+  
+      // https://docs.camunda.io/docs/apis-tools/orchestration-cluster-api-rest/specifications/search-process-definitions/
+      searchProcessDefinitions() {
+        return this.post("/v2/process-definitions/search", {
+          sort: [
+            {
+              field: "processDefinitionKey",
+              order: "ASC",
+            },
+          ],
+          page: {
+            limit: 10,
+          },
+        });
+      }
+  
+      // https://docs.camunda.io/docs/next/apis-tools/orchestration-cluster-api-rest/specifications/search-process-instances/
+      searchProcessInstances(processDefinitionId) {
+        return this.post("/v2/process-instances/search", {
+          sort: [{ field: "startDate", order: "DESC" }],
+          filter: {
+            processDefinitionId: processDefinitionId,
+            $or: [{ state: "ACTIVE" }, { hasIncident: true }],
+          },
+          page: {
+            limit: 100,
+          },
+        });
+      }
+  
+      // https://docs.camunda.io/docs/next/apis-tools/orchestration-cluster-api-rest/specifications/get-topology/
+      topology() {
+        return this.get("/v2/topology");
+      }
+  
+      /* Wait for Camunda to be ready. Intended to be called from `setup()`. */
+      waitUntilReady() {
+        const waitTime = 10; // seconds
+        while (true) {
+          try {
+            const response = this.topology();
+            if (response.status !== 200) {
+              throw new Error(
+                `Camunda topology endpoint returned status: ${response.status}`,
+              );
+            }
+            break;
+          } catch (e) {
+            console.error(
+              `Error waiting for Camunda to be ready (will retry in ${waitTime}s).`,
+              e,
+            );
+            sleep(waitTime);
+          }
+        }
+        console.log("Camunda seems to be ready ✅");
+      }
+  
+      #ensureEnvVars() {
+        const vars = [
+          "CAMUNDA_BASE_URL",
+          "CAMUNDA_CLIENT_ID",
+          "CAMUNDA_CLIENT_SECRET",
+          "CAMUNDA_OAUTH_URL",
+          "CAMUNDA_TOKEN_AUDIENCE",
+        ];
+  
+        const missing = vars.filter((name) => {
+          const value = __ENV[name];
+          if (value === undefined || value === "") {
+            console.error(`Environment variable ${name} is not defined or empty.`);
+            return true;
+          }
+          return false;
+        });
+  
+        if (missing.length > 0) {
+          throw Error(`Missing environment variables: ${missing.join(", ")}`);
+        }
+      }
+  
+      #fetchToken() {
+        const tokenURL = __ENV.CAMUNDA_OAUTH_URL;
+        console.debug(`Fetching authentication token from: ${tokenURL}`);
+  
+        const payload = {
+          grant_type: "client_credentials",
+          audience: __ENV.CAMUNDA_TOKEN_AUDIENCE,
+          client_id: __ENV.CAMUNDA_CLIENT_ID,
+          client_secret: __ENV.CAMUNDA_CLIENT_SECRET,
+        };
+  
+        const params = {
+          tags: { name: "token-request" },
+        };
+  
+        console.debug(
+          `Requesting token from ${tokenURL} using client ID=${payload.client_id}`,
+        );
+        const response = http.post(tokenURL, payload, params);
+        if (response.status != 200) {
+          throw new Error(
+            `unable to fetch token, got HTTP status=${response.status}, body=${response.body}`,
+          );
+        }
+  
+        const accessToken = response.json("access_token");
+  
+        // Stagger token renewal.
+        const expiresIn = response.json("expires_in");
+        const renewalJitterSeconds = 1 + Math.floor(Math.random() * 60);
+        const renewIn = expiresIn - renewalJitterSeconds;
+  
+        this.token.accessToken = accessToken;
+        this.token.renewalDate = Date.now() + renewIn * 1000;
+  
+        console.log(
+          `Authentication token fetched successfully; expire in ${expiresIn}s, will renew in ${renewIn}s`,
+        );
+      }
+  
+      #renewToken() {
+        if (this.token.renewalDate > Date.now()) {
+          return;
+        }
+  
+        console.debug("Token will expire soon, will renew now.");
+        try {
+          this.#fetchToken();
+        } catch (e) {
+          console.error(`Error while renewing the token.`, e);
+          // Known limitation: during an OAuth outage, each VU retries and sleeps 1s per call
+          // until the old token expires, which can cause dropped iterations.
+          sleep(1);
+          // Without a previous token, requests would send "Bearer null".
+          if (this.token.accessToken === null) {
+            throw e;
+          }
+        }
+      }
+    }
+  lib.data.js: |
+    /* Load static resources from a data directory.
+     *
+     * The `open()` function is relative to the location of the script, unless the path it tries to open is absolute.
+     *
+     * By default, it tries to open a file in the `../data` directory (which is convenient when testing locally with `k6 run`).
+     *
+     * When run from within Kubernetes, the DATA_DIR environment variable is explicitly configured to where the data files are mounted in.
+     *
+     * To override the DATA_DIR environment variable:
+     *
+     * * Either set it before calling `k6`: `DATA_DIR=/path/to/data k6 run ...`
+     * * Or use the `-e` option to set it for the test: `k6 run -e DATA_DIR=/path/to/data ...`
+     *
+     */
+    const DATA_DIR = __ENV.DATA_DIR || "../data";
+  
+    /* Read the file `name` from the data directory and return its content as a string.
+     *
+     * k6 only allows reading files in the `init` context, once per-VU: call this at module level. */
+    export function loadData(name) {
+      const path = `${DATA_DIR}/${name}`;
+      console.log(`Loading data file ${path}...`);
+      return open(path);
+    }
+  test.data-read.js: |
+    import { check, sleep } from "k6";
+  
+    import { Client } from "./lib.camunda.js";
+  
+    // Module-level code runs once per VU, so each VU has its own client.
+    const client = new Client();
+  
+    // Ignore process definitions that are created by k6 itself: they are not
+    // relevant for these tests as they are not expected to create any process
+    // instances.
+    const IGNORED_PREFIX = "k6-";
+  
+    /* Tests reading data from Camunda, which requires a secondary storage.
+     * This test is disabled when running with `secondary_storage=none`. */
+    export const options = {
+      // Give enough time for Camunda to be ready and for a process definition to
+      // exist before continuing with the test.
+      setupTimeout: "20m",
+      scenarios: {
+        /* Search for process instances.
+         * Run a basic search for process instances at a low rate. */
+        searchProcessInstances: {
+          exec: "searchProcessInstances",
+          executor: "constant-arrival-rate",
+          duration: "60d", // As long as the longest benchmark we run
+          rate: 1,
+          timeUnit: "1s",
+          preAllocatedVUs: 10,
+          maxVUs: 100,
+        },
+      },
+    };
+  
+    export function setup() {
+      client.waitUntilReady();
+  
+      // Process definition to search process instances for. Retries until one exists.
+      const waitTime = 10; // seconds
+      let processDefinitionId;
+      while (processDefinitionId === undefined) {
+        const response = client.searchProcessDefinitions();
+        if (response.status == 200) {
+          const items = response
+            .json()
+            .items.filter((i) => !i.processDefinitionId.startsWith(IGNORED_PREFIX));
+          if (items.length > 0) {
+            processDefinitionId = items[0].processDefinitionId;
+            break;
+          }
+          console.info(
+            `No process definition found yet (will retry in ${waitTime}s).`,
+          );
+        } else {
+          console.error(
+            `Unable to list process definitions (will retry in ${waitTime}s), got HTTP status=${response.status}`,
+          );
+        }
+        sleep(waitTime);
+      }
+      console.log(
+        `Will search process instances from process definition ${processDefinitionId}.`,
+      );
+  
+      return { processDefinitionId };
+    }
+  
+    export function searchProcessInstances(data) {
+      const response = client.searchProcessInstances(data.processDefinitionId);
+      check(response, { "status is 200": (r) => r.status === 200 });
+    }
+  test.default.js: |
+    import { check } from "k6";
+  
+    import { Client } from "./lib.camunda.js";
+    import { loadData } from "./lib.data.js";
+  
+    // Module-level code runs once per VU, so each VU has its own client.
+    const client = new Client();
+  
+    const FILENAME = "micro.bpmn";
+    const bpmn = loadData(FILENAME);
+  
+    export const options = {
+      // Give enough time for Camunda to be ready before continuing with the test.
+      setupTimeout: "15m",
+      scenarios: {
+        /* Poll the topology endpoint to check whether the cluster is alive.
+         * This is very basic, but should also work almost all the time. */
+        topology: {
+          exec: "checkTopology",
+          executor: "constant-arrival-rate",
+          duration: "60d",
+          rate: 10,
+          timeUnit: "1s",
+          preAllocatedVUs: 10,
+          maxVUs: 100,
+        },
+        deploy: {
+          exec: "deploy",
+          executor: "constant-arrival-rate",
+          duration: "60d",
+          rate: 1,
+          timeUnit: "1s",
+          preAllocatedVUs: 1,
+          maxVUs: 20,
+        },
+      },
+    };
+  
+    export function setup() {
+      client.waitUntilReady();
+    }
+  
+    export function checkTopology() {
+      const response = client.topology();
+      check(response, { "status is 200": (r) => r.status === 200 });
+    }
+  
+    export function deploy() {
+      /* Sanity check of the `/v2/deployments` API, not a load test: the same
+       * unchanged resource is deployed on purpose, so Zeebe deduplicates it. */
+      const response = client.deploy(FILENAME, bpmn);
+      check(response, { "status is 200": (r) => r.status === 200 });
+    }
+  test.dmn-large.js: |
+    import { check, sleep } from "k6";
+    import { SharedArray } from "k6/data";
+    import exec from "k6/execution";
+  
+    import { Client } from "./lib.camunda.js";
+  
+    // Module-level code runs once per VU, so each VU has its own client.
+    const client = new Client();
+  
+    // Generated by `k6/generators/generate_tariff_dmn.py` in an init container (see
+    // `k6.tests.dmn-large.generator` in the chart values): `portfolio.json` lists the DMN files (one,
+    // or a portfolio of models with the size mix of a production portfolio), each with its top
+    // decision, and points to the input vectors: the expected `rate`, the `depth` of the matched base
+    // rule, and the `model` they belong to.
+    const GENERATED_DIR = __ENV.GENERATED_DIR || "../generated";
+    const PORTFOLIO_FILENAME = "portfolio.json";
+  
+    const DMN_RATE = parseInt(__ENV.DMN_RATE || "1");
+    const DMN_RAMP_UP = __ENV.DMN_RAMP_UP || "1m";
+    const DMN_DURATION = __ENV.DMN_DURATION || "60d";
+    const DMN_PRE_ALLOCATED_VUS = parseInt(__ENV.DMN_PRE_ALLOCATED_VUS || "1");
+    const DMN_MAX_VUS = parseInt(__ENV.DMN_MAX_VUS || "20");
+    // Share of the requests per depth bucket, e.g. "q1=25,q2=25,q3=25,q4=25" or "payload=100".
+    // Empty: every vector in turn, which covers every rule of a single model.
+    const DMN_DEPTH_MIX = __ENV.DMN_DEPTH_MIX || "";
+    // Variables the decisions do not read, added to every request: real payloads often carry them,
+    // and the engine copies all the variables for every rule it checks.
+    const DMN_EXTRA_VARIABLES = parseInt(__ENV.DMN_EXTRA_VARIABLES || "0");
+    // Traffic skew over the models of a portfolio, "<% of the models>:<% of the requests>", e.g.
+    // "20:80". Empty: every model gets the same share.
+    const DMN_HOT_MODELS = __ENV.DMN_HOT_MODELS || "";
+  
+    // Position of the matched rule in the base table, the largest one, in quarters; "payload" for the
+    // vectors shaped like a measured production request, "fallthrough" for the vectors that match
+    // the catch-all rules of the three large tables.
+    export const DEPTH_BUCKETS = ["q1", "q2", "q3", "q4", "payload", "fallthrough"];
+    const GOLDEN_RATIO = 0.6180339887498949;
+  
+    // The k6-operator initializer runs the init context without the generated files: return null
+    // there, and let setup() fail if the runner has no data.
+    function openGenerated(name, mode) {
+      try {
+        return open(`${GENERATED_DIR}/${name}`, mode);
+      } catch (e) {
+        console.warn(`Generated file ${name} not found in ${GENERATED_DIR}.`);
+        return null;
+      }
+    }
+  
+    const portfolioContent = openGenerated(PORTFOLIO_FILENAME);
+    const portfolio =
+      portfolioContent === null
+        ? { vectors: null, models: [] }
+        : JSON.parse(portfolioContent);
+    const models = portfolio.models;
+  
+    // Only setup() deploys the DMN files: read them in the init context of VU 0 (setup), not in every
+    // VU. A full portfolio holds ~2 GB, so the runner needs memory for it.
+    const dmnFiles =
+      __VU === 0 ? models.map((m) => openGenerated(m.file, "b")) : [];
+  
+    // Deterministic PRNG (mulberry32), so that every runner shuffles the vectors the same way.
+    function random(seed) {
+      return () => {
+        seed = (seed + 0x6d2b79f5) | 0;
+        let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+        t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+      };
+    }
+  
+    function shuffle(array, seed) {
+      const next = random(seed);
+      for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(next() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+      }
+      return array;
+    }
+  
+    export function depthBucket(target, depth) {
+      return target === "fallthrough" || target === "payload"
+        ? target
+        : `q${Math.min(4, Math.floor(depth * 4) + 1)}`;
+    }
+  
+    /* Parse the vectors (JSON lines) into { model, target, variables, rate, depth }, in a random but
+     * fixed order. `target` is what the vector was built for: a decision table, "random", "payload"
+     * or "fallthrough"; `depth` is its depth bucket. */
+    export function parseVectors(content, seed = 20261014) {
+      const vectors = content
+        .split("\n")
+        .filter((line) => line.trim() !== "")
+        .map((line) => {
+          const { model, id, variables, rate, depth } = JSON.parse(line);
+          const target = id.split("#")[0];
+          return {
+            model: model || 0,
+            target,
+            variables,
+            rate,
+            depth: depthBucket(target, depth),
+          };
+        });
+      return shuffle(vectors, seed);
+    }
+  
+    // Shared by all the VUs of a runner: parsed once instead of once per VU.
+    const vectors = new SharedArray("tariff vectors", () => {
+      const content = portfolio.vectors && openGenerated(portfolio.vectors);
+      return content ? parseVectors(content) : [];
+    });
+  
+    function parseWeights(mix) {
+      return mix.split(",").map((entry) => {
+        const [bucket, weight] = entry.split("=").map((s) => s.trim());
+        if (!DEPTH_BUCKETS.includes(bucket) || !(parseInt(weight) >= 0)) {
+          throw new Error(
+            `Invalid DMN_DEPTH_MIX entry "${entry}": expected <bucket>=<weight> with a bucket in ${DEPTH_BUCKETS}`,
+          );
+        }
+        return [bucket, parseInt(weight)];
+      });
+    }
+  
+    /* The bucket of each slot of a cycle, spread evenly (smooth weighted round-robin). */
+    function slotsOf(weights) {
+      const total = weights.reduce((sum, [, w]) => sum + w, 0);
+      const credit = Object.fromEntries(weights.map(([b]) => [b, 0]));
+      const slots = [];
+      for (let k = 0; k < total; k++) {
+        weights.forEach(([b, w]) => (credit[b] += w));
+        const [next] = weights.reduce((best, cur) =>
+          credit[cur[0]] > credit[best[0]] ? cur : best,
+        );
+        credit[next] -= total;
+        slots.push(next);
+      }
+      return slots;
+    }
+  
+    function parseHotModels(hot, modelCount) {
+      if (hot.trim() === "") {
+        return null;
+      }
+      const [models, requests] = hot.split(":").map((s) => parseFloat(s) / 100);
+      if (!(models > 0 && models <= 1 && requests > 0 && requests <= 1)) {
+        throw new Error(
+          `Invalid DMN_HOT_MODELS "${hot}": expected "<% of the models>:<% of the requests>", e.g. "20:80"`,
+        );
+      }
+      return {
+        count: Math.max(1, Math.round(modelCount * models)),
+        share: requests,
+      };
+    }
+  
+    /* Plan the traffic: which model and which depth bucket each iteration evaluates. Returns the
+     * bucket of each slot of a cycle (null without a depth mix), the indexes of the vectors of each
+     * model (all, and per bucket), the models in a seeded random order, and the hot set. */
+    export function planTraffic(mix, hot, vectorList, modelCount) {
+      const slots = mix.trim() === "" ? null : slotsOf(parseWeights(mix));
+      const byModel = Array.from({ length: modelCount }, () => ({
+        all: [],
+        byBucket: {},
+      }));
+      vectorList.forEach((v, i) => {
+        byModel[v.model].all.push(i);
+        (byModel[v.model].byBucket[v.depth] ||= []).push(i);
+      });
+      for (const bucket of new Set(slots || [])) {
+        if (!byModel.some((m) => m.byBucket[bucket])) {
+          throw new Error(
+            `DMN_DEPTH_MIX uses bucket ${bucket}, which has no vectors`,
+          );
+        }
+      }
+      const order = shuffle(
+        Array.from({ length: modelCount }, (_, i) => i),
+        20261015,
+      );
+      return { slots, byModel, order, hot: parseHotModels(hot, modelCount) };
+    }
+  
+    /* The model of an iteration: a low-discrepancy sequence spreads the iterations over the models,
+     * with the share of the hot set going to its models. */
+    export function modelForIteration(iteration, plan) {
+      const n = plan.order.length;
+      if (n === 1) {
+        return 0;
+      }
+      const u = (iteration * GOLDEN_RATIO) % 1;
+      const { hot } = plan;
+      if (hot === null || hot.count >= n) {
+        return plan.order[Math.floor(u * n)];
+      }
+      return u < hot.share
+        ? plan.order[Math.floor((u / hot.share) * hot.count)]
+        : plan.order[
+            hot.count +
+              Math.floor(((u - hot.share) / (1 - hot.share)) * (n - hot.count))
+          ];
+    }
+  
+    /* The vector of an iteration: the vectors of its model in turn without a mix; otherwise the
+     * bucket of the iteration's slot, and the model's vectors of that bucket in turn (all its vectors
+     * if it has none in that bucket). */
+    export function vectorForIteration(iteration, vectorList, plan) {
+      const model = plan.byModel[modelForIteration(iteration, plan)];
+      if (plan.slots === null) {
+        return vectorList[model.all[iteration % model.all.length]];
+      }
+      const bucket = plan.slots[iteration % plan.slots.length];
+      const indexes = model.byBucket[bucket] || model.all;
+      return vectorList[
+        indexes[Math.floor(iteration / plan.slots.length) % indexes.length]
+      ];
+    }
+  
+    export function extraVariables(count) {
+      const variables = {};
+      for (let i = 1; i <= count; i++) {
+        const key = String(i).padStart(3, "0");
+        variables[`Extra_Variable_${key}`] = `EXTRA_VALUE_${key}`;
+      }
+      return variables;
+    }
+  
+    // Without the generated files (k6-operator initializer), setup() fails instead.
+    const plan =
+      vectors.length > 0
+        ? planTraffic(DMN_DEPTH_MIX, DMN_HOT_MODELS, vectors, models.length)
+        : null;
+    const extra = extraVariables(DMN_EXTRA_VARIABLES);
+  
+    export const options = {
+      // Give enough time for Camunda to be ready and to deploy a portfolio before continuing.
+      setupTimeout: "60m",
+      scenarios: {
+        evaluateDMN: {
+          exec: "evaluateDMN",
+          executor: "ramping-arrival-rate",
+          startRate: 0,
+          timeUnit: "1s",
+          stages: [
+            { target: DMN_RATE, duration: DMN_RAMP_UP },
+            { target: DMN_RATE, duration: DMN_DURATION },
+          ],
+          preAllocatedVUs: DMN_PRE_ALLOCATED_VUS,
+          maxVUs: DMN_MAX_VUS,
+        },
+      },
+    };
+  
+    export function setup() {
+      if (
+        models.length === 0 ||
+        dmnFiles.some((f) => f === null) ||
+        vectors.length === 0
+      ) {
+        throw new Error(
+          `Missing generated data in ${GENERATED_DIR}: did the generate-data init container run?`,
+        );
+      }
+  
+      client.waitUntilReady();
+  
+      const retryInterval = 5; // seconds
+      models.forEach((model, i) => {
+        while (true) {
+          try {
+            const response = client.deploy(model.file, dmnFiles[i]);
+            if (response.status !== 200) {
+              throw new Error(
+                `Deploy DMN file ${model.file} failed. Status: ${response.status}, Body: ${response.body}`,
+              );
+            }
+            break;
+          } catch (e) {
+            console.error(
+              `Failed to deploy ${model.file}. Retrying in ${retryInterval}s...`,
+              e,
+            );
+            sleep(retryInterval);
+          }
+        }
+      });
+      console.log(`Deployed ${models.length} DMN file(s).`);
+  
+      // The first evaluation on a partition parses the decision graph, which takes seconds.
+      const first = vectors.find((v) => v.model === 0);
+      while (true) {
+        const response = client.decisionDefinitionEvaluation(
+          models[0].decision,
+          first.variables,
+        );
+        if (response.status === 200) {
+          break;
+        }
+        console.error(
+          `Decision definition evaluation ${models[0].decision} failed. Status: ${response.status}, Body: ${response.body}. Retrying in ${retryInterval}s...`,
+        );
+        sleep(retryInterval);
+      }
+  
+      const counts = {};
+      for (const v of vectors) {
+        counts[v.depth] = (counts[v.depth] || 0) + 1;
+      }
+      console.log(
+        `Setup completed successfully, will evaluate ${vectors.length} input vectors of ` +
+          `${models.length} model(s) (per depth bucket: ${JSON.stringify(counts)}) with depth mix ` +
+          `"${DMN_DEPTH_MIX || "every vector in turn"}", hot models "${DMN_HOT_MODELS || "none"}" ` +
+          `and ${DMN_EXTRA_VARIABLES} extra variables.`,
+      );
+    }
+  
+    /* The `rate` output of the top decision, or undefined if the response has none. */
+    export function evaluatedRate(response) {
+      try {
+        let output = JSON.parse(response.body).output;
+        if (typeof output === "string") {
+          output = JSON.parse(output);
+        }
+        return output.rate;
+      } catch (e) {
+        return undefined;
+      }
+    }
+  
+    export function evaluateDMN() {
+      // Iterations are numbered across all the runners, so the runners follow one plan together.
+      const vector = vectorForIteration(
+        exec.scenario.iterationInTest,
+        vectors,
+        plan,
+      );
+      const model = models[vector.model];
+      const tags = { target: vector.target, depth: vector.depth, size: model.size };
+      const response = client.decisionDefinitionEvaluation(
+        model.decision,
+        DMN_EXTRA_VARIABLES > 0
+          ? { ...vector.variables, ...extra }
+          : vector.variables,
+        { tags },
+      );
+      check(
+        response,
+        {
+          "status is 200": (r) => r.status === 200,
+          "rate is expected": (r) =>
+            r.status === 200 && Math.abs(evaluatedRate(r) - vector.rate) < 1e-6,
+        },
+        tags,
+      );
+    }
+  test.dmn.js: |
+    import { check, sleep } from "k6";
+  
+    import { Client } from "./lib.camunda.js";
+    import { loadData } from "./lib.data.js";
+  
+    // Module-level code runs once per VU, so each VU has its own client.
+    const client = new Client();
+  
+    const DMN_RESOURCE_NAME = "small_decision";
+    const DMN_FILENAME = `${DMN_RESOURCE_NAME}.dmn`;
+    const dmn = loadData(DMN_FILENAME);
+  
+    // Matches the first rule of the decision table, so every evaluation produces an output.
+    const DMN_VARIABLES = { category: "a" };
+  
+    // The load profile is configurable through environment variables (see `k6.tests.dmn.env` in
+    // the chart values), so a scenario can push the throughput without changing the script.
+    // When the test runs with `parallelism > 1`, k6 splits the rate and the VUs between the runners:
+    // these values are the totals for the whole test.
+    const DMN_RATE = parseInt(__ENV.DMN_RATE || "1");
+    const DMN_RAMP_UP = __ENV.DMN_RAMP_UP || "1m";
+    const DMN_DURATION = __ENV.DMN_DURATION || "60d";
+    const DMN_PRE_ALLOCATED_VUS = parseInt(__ENV.DMN_PRE_ALLOCATED_VUS || "1");
+    const DMN_MAX_VUS = parseInt(__ENV.DMN_MAX_VUS || "20");
+  
+    export const options = {
+      // Give enough time for Camunda to be ready before continuing with the test.
+      setupTimeout: "15m",
+      scenarios: {
+        evaluateDMN: {
+          exec: "evaluateDMN",
+          // Ramp up to the target rate, so the cluster flow control adapts gradually instead of
+          // rejecting a sudden burst, then hold it.
+          executor: "ramping-arrival-rate",
+          startRate: 0,
+          timeUnit: "1s",
+          stages: [
+            { target: DMN_RATE, duration: DMN_RAMP_UP },
+            { target: DMN_RATE, duration: DMN_DURATION },
+          ],
+          preAllocatedVUs: DMN_PRE_ALLOCATED_VUS,
+          maxVUs: DMN_MAX_VUS,
+        },
+      },
+    };
+  
+    export function setup() {
+      client.waitUntilReady();
+  
+      const retryInterval = 5; // seconds
+      let setupDone = false;
+  
+      // Deploy the DMN file and wait for the decision definition evaluation to be ready.
+      while (!setupDone) {
+        try {
+          console.log(`Deploying DMN file: ${DMN_FILENAME}...`);
+  
+          let response = client.deploy(DMN_FILENAME, dmn);
+          if (response.status !== 200) {
+            throw new Error(
+              `Deploy DMN file ${DMN_FILENAME} failed. Status: ${response.status}, Body: ${response.body}`,
+            );
+          }
+  
+          console.log(`DMN file ${DMN_FILENAME} deployed successfully.`);
+  
+          console.log(`Evaluating decision definition: ${DMN_RESOURCE_NAME}...`);
+          response = client.decisionDefinitionEvaluation(
+            DMN_RESOURCE_NAME,
+            DMN_VARIABLES,
+          );
+          if (response.status !== 200) {
+            throw new Error(
+              `Decision definition evaluation ${DMN_RESOURCE_NAME} failed. Status: ${response.status}, Body: ${response.body}`,
+            );
+          }
+  
+          console.log("Decision definition evaluation is ready.");
+          setupDone = true;
+        } catch (e) {
+          console.error(
+            `Failed to setup test. Retrying in ${retryInterval}s...`,
+            e,
+          );
+          sleep(retryInterval);
+          continue;
+        }
+      }
+  
+      console.log("Setup completed successfully, will start the tests now.");
+    }
+  
+    export function evaluateDMN() {
+      const response = client.decisionDefinitionEvaluation(
+        DMN_RESOURCE_NAME,
+        DMN_VARIABLES,
+      );
+      check(response, { "status is 200": (r) => r.status === 200 });
+    }
