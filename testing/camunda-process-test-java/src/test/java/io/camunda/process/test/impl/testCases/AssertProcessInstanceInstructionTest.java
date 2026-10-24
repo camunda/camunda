@@ -30,6 +30,7 @@ import io.camunda.process.test.api.testCases.instructions.AssertProcessInstanceI
 import io.camunda.process.test.api.testCases.instructions.ImmutableAssertProcessInstanceInstruction;
 import io.camunda.process.test.api.testCases.instructions.assertProcessInstance.ProcessInstanceState;
 import io.camunda.process.test.impl.testCases.instructions.AssertProcessInstanceInstructionHandler;
+import java.util.Collections;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
@@ -58,7 +59,7 @@ public class AssertProcessInstanceInstructionTest {
   @Captor private ArgumentCaptor<ProcessInstanceSelector> processInstanceSelectorCaptor;
 
   private final AssertProcessInstanceInstructionHandler instructionHandler =
-      new AssertProcessInstanceInstructionHandler();
+      new AssertProcessInstanceInstructionHandler(TestRunContext.disabled());
 
   @Test
   void shouldSelectProcessInstanceByProcessDefinitionId() {
@@ -81,6 +82,34 @@ public class AssertProcessInstanceInstructionTest {
     verify(processInstanceFilter).processDefinitionId(PROCESS_DEFINITION_ID);
 
     verifyNoMoreInteractions(camundaClient, processTestContext, assertionFacade);
+  }
+
+  @Test
+  void shouldScopeSelectorToRunIdWhenIsolationEnabled() {
+    // given
+    final String runId = "run-1";
+    final AssertProcessInstanceInstructionHandler isolatingHandler =
+        new AssertProcessInstanceInstructionHandler(TestRunContext.enabled(runId));
+
+    final AssertProcessInstanceInstruction instruction =
+        ImmutableAssertProcessInstanceInstruction.builder()
+            .processInstanceSelector(
+                ImmutableProcessInstanceSelector.builder()
+                    .processDefinitionId(PROCESS_DEFINITION_ID)
+                    .build())
+            .build();
+
+    // when
+    isolatingHandler.execute(instruction, processTestContext, camundaClient, assertionFacade);
+
+    // then
+    verify(assertionFacade).assertThatProcessInstance(processInstanceSelectorCaptor.capture());
+
+    processInstanceSelectorCaptor.getValue().applyFilter(processInstanceFilter);
+    verify(processInstanceFilter).processDefinitionId(PROCESS_DEFINITION_ID);
+    verify(processInstanceFilter)
+        .variables(
+            Collections.singletonMap(TestRunContext.RUN_ID_VARIABLE_NAME, "\"" + runId + "\""));
   }
 
   @ParameterizedTest(name = "{0}")

@@ -42,7 +42,7 @@ public class EvaluateConditionalStartEventInstructionTest {
   @Mock private AssertionFacade assertionFacade;
 
   private final EvaluateConditionalStartEventInstructionHandler instructionHandler =
-      new EvaluateConditionalStartEventInstructionHandler();
+      new EvaluateConditionalStartEventInstructionHandler(TestRunContext.disabled());
 
   @Test
   void shouldSetVariables() {

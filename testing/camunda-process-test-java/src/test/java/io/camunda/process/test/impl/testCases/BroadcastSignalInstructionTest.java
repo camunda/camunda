@@ -46,7 +46,7 @@ public class BroadcastSignalInstructionTest {
   @Mock private AssertionFacade assertionFacade;
 
   private final BroadcastSignalInstructionHandler instructionHandler =
-      new BroadcastSignalInstructionHandler();
+      new BroadcastSignalInstructionHandler(TestRunContext.disabled());
 
   @Test
   void shouldBroadcastSignalWithSignalName() {

@@ -66,7 +66,7 @@ public class AssertElementInstancesInstructionTest {
   @Captor private ArgumentCaptor<ElementSelector> elementSelectorCaptor;
 
   private final AssertElementInstancesInstructionHandler instructionHandler =
-      new AssertElementInstancesInstructionHandler();
+      new AssertElementInstancesInstructionHandler(TestRunContext.disabled());
 
   @Test
   void shouldSelectProcessInstanceByProcessDefinitionId() {

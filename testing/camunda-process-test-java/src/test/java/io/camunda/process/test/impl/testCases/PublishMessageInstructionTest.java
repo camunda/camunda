@@ -47,7 +47,7 @@ public class PublishMessageInstructionTest {
   @Mock private AssertionFacade assertionFacade;
 
   private final PublishMessageInstructionHandler instructionHandler =
-      new PublishMessageInstructionHandler();
+      new PublishMessageInstructionHandler(TestRunContext.disabled());
 
   @Test
   void shouldPublishMessageWithoutCorrelationKey() {

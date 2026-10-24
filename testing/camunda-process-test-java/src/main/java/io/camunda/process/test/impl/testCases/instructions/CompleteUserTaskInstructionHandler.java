@@ -21,9 +21,16 @@ import io.camunda.process.test.api.assertions.UserTaskSelector;
 import io.camunda.process.test.api.testCases.instructions.CompleteUserTaskInstruction;
 import io.camunda.process.test.impl.testCases.AssertionFacade;
 import io.camunda.process.test.impl.testCases.TestCaseInstructionHandler;
+import io.camunda.process.test.impl.testCases.TestRunContext;
 
 public class CompleteUserTaskInstructionHandler
     implements TestCaseInstructionHandler<CompleteUserTaskInstruction> {
+
+  private final TestRunContext runContext;
+
+  public CompleteUserTaskInstructionHandler(final TestRunContext runContext) {
+    this.runContext = runContext;
+  }
 
   @Override
   public void execute(
@@ -33,7 +40,8 @@ public class CompleteUserTaskInstructionHandler
       final AssertionFacade assertionFacade) {
 
     final UserTaskSelector userTaskSelector =
-        InstructionSelectorFactory.buildUserTaskSelector(instruction.getUserTaskSelector());
+        InstructionSelectorFactory.buildUserTaskSelector(
+            instruction.getUserTaskSelector(), runContext, camundaClient);
 
     if (instruction.getUseExampleData()) {
       context.completeUserTaskWithExampleData(userTaskSelector);

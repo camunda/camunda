@@ -21,9 +21,16 @@ import io.camunda.process.test.api.assertions.IncidentSelector;
 import io.camunda.process.test.api.testCases.instructions.ResolveIncidentInstruction;
 import io.camunda.process.test.impl.testCases.AssertionFacade;
 import io.camunda.process.test.impl.testCases.TestCaseInstructionHandler;
+import io.camunda.process.test.impl.testCases.TestRunContext;
 
 public class ResolveIncidentInstructionHandler
     implements TestCaseInstructionHandler<ResolveIncidentInstruction> {
+
+  private final TestRunContext runContext;
+
+  public ResolveIncidentInstructionHandler(final TestRunContext runContext) {
+    this.runContext = runContext;
+  }
 
   @Override
   public void execute(
@@ -33,7 +40,8 @@ public class ResolveIncidentInstructionHandler
       final AssertionFacade assertionFacade) {
 
     final IncidentSelector incidentSelector =
-        InstructionSelectorFactory.buildIncidentSelector(instruction.getIncidentSelector());
+        InstructionSelectorFactory.buildIncidentSelector(
+            instruction.getIncidentSelector(), runContext, camundaClient);
 
     context.resolveIncident(incidentSelector);
   }
