@@ -98,8 +98,7 @@ final class EngineCfgTest {
         .isEqualTo(EngineConfiguration.InputMappingMode.COMBINED);
     assertThat(configuration.getOutputMappingMode())
         .isEqualTo(EngineConfiguration.OutputMappingMode.COMBINED);
-    assertThat(configuration.getMaxElementActivationCount())
-        .isEqualTo(EngineConfiguration.DEFAULT_MAX_ELEMENT_ACTIVATION_COUNT);
+    assertThat(configuration.getMaxElementActivationCount()).isEqualTo(Integer.MAX_VALUE);
     assertThat(configuration.getElementActivationRetryCooldown())
         .isEqualTo(EngineConfiguration.DEFAULT_ELEMENT_ACTIVATION_RETRY_COOLDOWN);
     assertThat(configuration.getMaxElementActivationCountByType()).isEmpty();
