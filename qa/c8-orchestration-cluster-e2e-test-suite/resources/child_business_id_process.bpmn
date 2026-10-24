@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+                  xmlns:zeebe="http://camunda.org/schema/zeebe/1.0"
+                  id="Definitions_child_business_id_process"
+                  targetNamespace="http://bpmn.io/schema/bpmn">
+  <!--
+    Parametrized child called by call_activity_business_id_parent.bpmn. The process id is a
+    placeholder substituted per test case. It waits on a native user task so the child stays
+    ACTIVE, keeping it reliably searchable and cancellable via its parent during cleanup.
+  -->
+  <bpmn:process id="__CHILD_PROCESS_ID__" isExecutable="true">
+    <bpmn:startEvent id="start">
+      <bpmn:outgoing>flow_to_wait</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:sequenceFlow id="flow_to_wait" sourceRef="start" targetRef="wait" />
+    <bpmn:userTask id="wait" name="Wait">
+      <bpmn:extensionElements>
+        <zeebe:userTask />
+      </bpmn:extensionElements>
+      <bpmn:incoming>flow_to_wait</bpmn:incoming>
+      <bpmn:outgoing>flow_to_end</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:sequenceFlow id="flow_to_end" sourceRef="wait" targetRef="end" />
+    <bpmn:endEvent id="end">
+      <bpmn:incoming>flow_to_end</bpmn:incoming>
+    </bpmn:endEvent>
+  </bpmn:process>
+</bpmn:definitions>
