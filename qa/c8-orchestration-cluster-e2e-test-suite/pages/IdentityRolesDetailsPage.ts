@@ -152,6 +152,11 @@ export class IdentityRolesDetailsPage {
     const options = this.assignUserModalSearchResult.getByRole('option');
     await expect(options).toHaveCount(1, {timeout: 30000});
     await options.first().click({timeout: 20000});
+    // Selecting an option leaves the MultiSelect's cmdk popover open; it
+    // overlaps the modal's "Assign user" submit button and intercepts the
+    // click. Dismiss the popover before confirming.
+    await this.page.keyboard.press('Escape');
+    await expect(this.assignUserModalSearchResult).toBeHidden();
     await this.assignUserModalAssignButton.click();
     await expect(this.assignUserModal).toBeHidden();
   }
