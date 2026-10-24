@@ -23,7 +23,7 @@ on:
   workflow_dispatch:
 
 env:
-  GO_VERSION: ">= 1.23.1"
+  GO_VERSION: "1.26.10"
   TEST_OWNER: '@camunda/distribution'
 
 permissions:
