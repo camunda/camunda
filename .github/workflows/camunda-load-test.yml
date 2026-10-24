@@ -136,6 +136,10 @@ on:
         default: ""
         required: false
   workflow_call:
+    outputs:
+      namespace:
+        description: 'Normalized Kubernetes namespace used by this load test'
+        value: ${{ jobs.calculate-image-tag.outputs.namespace }}
     inputs:
       ref:
         description: 'Specifies the ref (e.g. branch name, commit sha or tag) from which the docker image is built and used to run the load test against'
@@ -250,8 +254,6 @@ on:
 env:
   TEST_OWNER: '@camunda/reliability-testing'
 
-  # Namespaces MUST start with c8 due to access policy
-  NAMESPACE: ${{ startsWith(inputs.name, 'c8-') && inputs.name || format('c8-{0}', inputs.name) }}
 
   CLUSTER: camunda-benchmark-prod  # change this to "camunda-benchmark-dev" when experimenting
   TELEPORT_JOIN_TOKEN: infra-benchmark-prod-github-action-zeebe  # change this to "infra-benchmark-dev-github-action-zeebe" when experimenting
@@ -289,8 +291,11 @@ defaults:
 jobs:
   show-summary:
     name: Summarize workflow inputs
+    needs: calculate-image-tag
     runs-on: ubuntu-latest
     permissions: {}
+    env:
+      NAMESPACE: ${{ needs.calculate-image-tag.outputs.namespace }}
     steps:
       - name: Show summary
         run: |-
@@ -331,6 +336,7 @@ jobs:
     permissions: {}
     outputs:
       image-tag: ${{ inputs.orchestration-tag != '' && inputs.orchestration-tag || (inputs.reuse-tag != '' && inputs.reuse-tag || steps.image-tag.outputs.image-tag) }}
+      namespace: ${{ steps.namespace.outputs.namespace }}
     steps:
       - name: Validate mutually exclusive inputs
         if: ${{ inputs.orchestration-tag != '' && inputs.reuse-tag != '' }}
@@ -341,6 +347,16 @@ jobs:
         with:
           ref: ${{ inputs.ref }}
           persist-credentials: false
+
+      - name: Normalize and validate namespace
+        id: namespace
+        env:
+          INPUT_NAME: ${{ inputs.name }}
+        run: |
+          . load-tests/setup/utils.sh
+          normalized_name="$(printf '%s' "$INPUT_NAME" | tr '[:upper:]' '[:lower:]')"
+          namespace="$(parse_namespace "$normalized_name")"
+          echo "namespace=${namespace}" >> "$GITHUB_OUTPUT"
 
       - name: Get image tag
         id: image-tag
@@ -558,6 +574,8 @@ jobs:
     timeout-minutes: 30
     permissions:
       id-token: write # Teleport cluster auth
+    env:
+      NAMESPACE: ${{ needs.calculate-image-tag.outputs.namespace }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
