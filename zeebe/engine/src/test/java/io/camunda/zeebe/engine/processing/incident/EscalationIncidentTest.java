@@ -70,7 +70,8 @@ public class EscalationIncidentTest {
         .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
         .hasErrorMessage(
             """
-            Expected result of the expression 'escalationCodeLookup' to be 'STRING', but was 'NULL'. \
+            Expected result of the escalation code expression 'escalationCodeLookup' of event \
+            'throw' to be 'STRING', but was 'NULL'. \
             The evaluation reported the following warnings:
             [NO_VARIABLE_FOUND] No variable found with name 'escalationCodeLookup'""")
         .hasBpmnProcessId(endEvent.getValue().getBpmnProcessId())
@@ -115,7 +116,8 @@ public class EscalationIncidentTest {
     Assertions.assertThat(incidentRecord.getValue())
         .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
         .hasErrorMessage(
-            "Expected result of the expression 'escalationCodeLookup' to be 'STRING', but was 'NUMBER'.")
+            "Expected result of the escalation code expression 'escalationCodeLookup' of event"
+                + " 'throw' to be 'STRING', but was 'NUMBER'.")
         .hasBpmnProcessId(PROCESS_ID)
         .hasProcessInstanceKey(processInstanceKey)
         .hasElementId(THROW_ELEMENT_ID)
@@ -158,7 +160,8 @@ public class EscalationIncidentTest {
         .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
         .hasErrorMessage(
             """
-            Expected result of the expression 'escalationCodeLookup' to be 'STRING', but was 'NULL'. \
+            Expected result of the escalation code expression 'escalationCodeLookup' of event \
+            'throw' to be 'STRING', but was 'NULL'. \
             The evaluation reported the following warnings:
             [NO_VARIABLE_FOUND] No variable found with name 'escalationCodeLookup'""")
         .hasBpmnProcessId(intermediateThrowEvent.getValue().getBpmnProcessId())
@@ -206,7 +209,8 @@ public class EscalationIncidentTest {
     Assertions.assertThat(incidentRecord.getValue())
         .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
         .hasErrorMessage(
-            "Expected result of the expression 'escalationCodeLookup' to be 'STRING', but was 'NUMBER'.")
+            "Expected result of the escalation code expression 'escalationCodeLookup' of event"
+                + " 'throw' to be 'STRING', but was 'NUMBER'.")
         .hasBpmnProcessId(PROCESS_ID)
         .hasProcessInstanceKey(processInstanceKey)
         .hasElementId(THROW_ELEMENT_ID)

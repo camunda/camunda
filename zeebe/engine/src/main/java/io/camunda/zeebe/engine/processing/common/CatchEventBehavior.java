@@ -367,7 +367,11 @@ public final class CatchEventBehavior {
     final Expression signalNameExpression = signal.getSignalNameExpression();
     return evaluation
         .expressionProcessor()
-        .evaluateStringExpression(signalNameExpression, scopeKey, tenantId)
+        .evaluateStringExpression(
+            signalNameExpression,
+            scopeKey,
+            tenantId,
+            ExpressionLabel.signalNameExpression(event.getId()))
         .map(BufferUtil::wrapString)
         .map(evaluation::recordSignalName);
   }

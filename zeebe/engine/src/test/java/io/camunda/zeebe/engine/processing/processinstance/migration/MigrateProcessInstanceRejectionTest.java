@@ -1370,8 +1370,8 @@ public class MigrateProcessInstanceRejectionTest {
             """
             Expected to migrate process instance '%s' but active element with id 'A' \
             is mapped to element with id 'B' that must be subscribed to a catch event. \
-            Expected result of the expression 'invalid_signal_expression' to be \
-            'STRING', but was 'NULL'. \
+            Expected result of the signal name expression 'invalid_signal_expression' of \
+            event 'boundary' to be 'STRING', but was 'NULL'. \
             The evaluation reported the following warnings:
             [NO_VARIABLE_FOUND] No variable found with name 'invalid_signal_expression'"""
                 .formatted(processInstanceKey));
