@@ -31,13 +31,17 @@ public class SuspendProcessInstanceBatchOperationExecutor implements BatchOperat
   }
 
   @Override
-  public void execute(final long itemKey, final PersistedBatchOperation batchOperation) {
+  public void execute(
+      final long itemKey,
+      final int itemStorageOrdinal,
+      final PersistedBatchOperation batchOperation) {
     LOGGER.trace("Suspending process instance with key '{}'", itemKey);
 
     final var authentication = batchOperation.getAuthentication();
     final var claims = brokerRequestAuthorizationConverter.convert(authentication);
     final var command = new ProcessInstanceRecord();
     command.setProcessInstanceKey(itemKey);
+    command.setStorageOrdinal(itemStorageOrdinal);
     commandWriter.appendFollowUpCommand(
         itemKey,
         ProcessInstanceIntent.SUSPEND,

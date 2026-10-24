@@ -80,6 +80,13 @@ public final class BatchOperationLifecycleManagementCancelProcessor
   @Override
   public void processNewCommand(
       final TypedRecord<BatchOperationLifecycleManagementRecord> command) {
+    final var recordValue = command.getValue();
+    final var batchOperationKey = recordValue.getBatchOperationKey();
+    // Look the batch operation up before the authorization check so a FORBIDDEN rejection
+    // carries its storage ordinal like every other record of the batch operation.
+    final var batchOperation = batchOperationState.get(batchOperationKey);
+    batchOperation.ifPresent(bo -> recordValue.setStorageOrdinal(bo.getStorageOrdinal()));
+
     final var authorizationResult =
         cslCheck.check(
             command,
@@ -98,12 +105,9 @@ public final class BatchOperationLifecycleManagementCancelProcessor
       return;
     }
 
-    final var recordValue = command.getValue();
-    final var batchOperationKey = recordValue.getBatchOperationKey();
     final var cancelKey = keyGenerator.nextKey();
     LOGGER.debug("Cancelling batch operation with key {}", batchOperationKey);
 
-    final var batchOperation = batchOperationState.get(batchOperationKey);
     if (batchOperation.isPresent() && batchOperation.get().canCancel()) {
       cancelBatchOperationEvent(cancelKey, recordValue);
       responseWriter.writeAcceptedResponseOnCommand(
@@ -139,6 +143,8 @@ public final class BatchOperationLifecycleManagementCancelProcessor
       commandDistributionBehavior.acknowledgeCommand(command);
       return;
     }
+
+    recordValue.setStorageOrdinal(batchOperation.get().getStorageOrdinal());
 
     LOGGER.debug(
         "Processing distributed command to cancel a batch operation with key '{}': {}",
