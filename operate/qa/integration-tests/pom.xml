@@ -159,7 +159,6 @@
           <reuseForks>true</reuseForks>
           <redirectTestOutputToFile>true</redirectTestOutputToFile>
           <systemPropertyVariables>
-            <testForkNumber>$${surefire.forkNumber}</testForkNumber>
             <spring.profiles.active>test</spring.profiles.active>
           </systemPropertyVariables>
           <environmentVariables>

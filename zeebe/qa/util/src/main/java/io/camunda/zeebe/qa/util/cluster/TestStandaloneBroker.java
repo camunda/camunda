@@ -32,7 +32,6 @@ import io.camunda.zeebe.qa.util.actuator.BrokerHealthActuator;
 import io.camunda.zeebe.qa.util.actuator.GatewayHealthActuator;
 import io.camunda.zeebe.qa.util.actuator.HealthActuator;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
-import io.camunda.zeebe.test.util.socket.SocketUtil;
 import io.camunda.zeebe.util.FileUtil;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -621,17 +620,9 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
         .setRedistributionInterval(Duration.ofSeconds(1));
 
     // Set dynamic ports via properties (these aren't in unified config yet)
-    unifiedConfig
-        .getCluster()
-        .getNetwork()
-        .getCommandApi()
-        .setPort(SocketUtil.getNextAddress().getPort());
-    unifiedConfig
-        .getCluster()
-        .getNetwork()
-        .getInternalApi()
-        .setPort(SocketUtil.getNextAddress().getPort());
-    unifiedConfig.getApi().getGrpc().setPort(SocketUtil.getNextAddress().getPort());
+    unifiedConfig.getCluster().getNetwork().getCommandApi().setPort(reservePort());
+    unifiedConfig.getCluster().getNetwork().getInternalApi().setPort(reservePort());
+    unifiedConfig.getApi().getGrpc().setPort(reservePort());
 
     withSecondaryStorageType(SecondaryStorageType.none);
   }
