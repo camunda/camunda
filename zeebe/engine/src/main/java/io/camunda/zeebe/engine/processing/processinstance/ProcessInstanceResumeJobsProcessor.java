@@ -19,6 +19,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.SuspensionState;
+import io.camunda.zeebe.engine.state.immutable.UserTaskState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
@@ -28,6 +29,7 @@ import io.camunda.zeebe.stream.api.records.TypedRecord;
 import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import org.jspecify.annotations.NullMarked;
 
@@ -36,8 +38,9 @@ import org.jspecify.annotations.NullMarked;
  * {@link JobIntent#SUSPENDED}, writes {@link JobIntent#RESUMED} for it, publishes it via {@link
  * BpmnJobActivationBehavior#publishWork} — a job stream is push-only, so a stream worker learns
  * about the job only from that call — then appends the next {@code RESUME_JOBS}. Once none are
- * left, it appends {@code COMPLETE_RESUMING} to hand the resume finalization off to {@link
- * ProcessInstanceCompleteResumingProcessor}.
+ * left, it appends {@code RESUME_USER_TASKS} to hand off to {@link
+ * ProcessInstanceResumeUserTasksProcessor}, which resumes the suspended user tasks, or {@code
+ * COMPLETE_RESUMING} directly if the instance has none.
  *
  * <p>One job per cycle instead of all of them in this command's own batch: resuming a job that a
  * stream is waiting for also appends a {@code JobBatch.ACTIVATED} with its fetched variables.
@@ -85,6 +88,7 @@ public final class ProcessInstanceResumeJobsProcessor
   private final TypedRejectionWriter rejectionWriter;
   private final ElementInstanceState elementInstanceState;
   private final SuspensionState suspensionState;
+  private final UserTaskState userTaskState;
   private final ProcessInstanceSuspensionJobBehavior suspensionJobBehavior;
   private final BpmnJobActivationBehavior jobActivationBehavior;
   private final SuspensionMetrics suspensionMetrics;
@@ -99,6 +103,7 @@ public final class ProcessInstanceResumeJobsProcessor
     rejectionWriter = writers.rejection();
     elementInstanceState = processingState.getElementInstanceState();
     suspensionState = processingState.getSuspensionState();
+    userTaskState = processingState.getUserTaskState();
     suspensionJobBehavior =
         new ProcessInstanceSuspensionJobBehavior(
             elementInstanceState, processingState.getJobState(), stateWriter);
@@ -131,7 +136,11 @@ public final class ProcessInstanceResumeJobsProcessor
     if (resumedJobKey >= 0) {
       followUpValue.setResumeFromJobKey(resumedJobKey);
       nextIntent = ProcessInstanceIntent.RESUME_JOBS;
+    } else if (hasSuspendedUserTasks(processInstanceKey)) {
+      nextIntent = ProcessInstanceIntent.RESUME_USER_TASKS;
     } else {
+      // skip the user task step, so a drained command can't end the instance before RESUMED;
+      // always hand off once https://github.com/camunda/camunda/issues/66736 is fixed
       nextIntent = ProcessInstanceIntent.COMPLETE_RESUMING;
     }
     commandWriter.appendFollowUpCommand(processInstanceKey, nextIntent, followUpValue);
@@ -172,6 +181,18 @@ public final class ProcessInstanceResumeJobsProcessor
           return false;
         });
     return resumedJobKey.get();
+  }
+
+  private boolean hasSuspendedUserTasks(final long processInstanceKey) {
+    final var found = new AtomicBoolean();
+    userTaskState.forEachSuspendedUserTask(
+        processInstanceKey,
+        -1L,
+        userTaskKey -> {
+          found.set(true);
+          return false;
+        });
+    return found.get();
   }
 
   @Override

@@ -36,10 +36,10 @@ import org.jspecify.annotations.NullMarked;
  * Drains buffered commands one per {@code DRAIN} cycle: if one is found, it's drained and another
  * {@code DRAIN} is scheduled unconditionally; the cycle that finds the buffer empty hands off to
  * {@code RESUME_JOBS} instead, to {@link ProcessInstanceResumeJobsProcessor}, which un-parks jobs
- * and appends {@code COMPLETE_RESUMING} itself. {@code DRAIN} is always processed while {@code
- * RESUMING}: gating it would strand the instance there forever. While {@code SUSPENDING} or {@code
- * SUSPENDED} it is rejected, as draining would write buffered commands back to the log before the
- * instance resumes.
+ * and then hands off to {@code RESUME_USER_TASKS}, or to {@code COMPLETE_RESUMING} if no user task
+ * is suspended. {@code DRAIN} is always processed while {@code RESUMING}: gating it would strand
+ * the instance there forever. While {@code SUSPENDING} or {@code SUSPENDED} it is rejected, as
+ * draining would write buffered commands back to the log before the instance resumes.
  *
  * <p>A cycle that fails to write (e.g. batch size exceeded) halts rather than drops the command:
  * the default error handling rejects {@code DRAIN} without banning the instance, and it stays

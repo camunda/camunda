@@ -25,7 +25,6 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.ElementInstanceWalkIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
-import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import java.util.List;
 import org.agrona.collections.MutableLong;
 import org.slf4j.Logger;
@@ -85,7 +84,6 @@ public final class ElementInstanceWalkSuspendProcessor
 
   public ElementInstanceWalkSuspendProcessor(
       final Writers writers,
-      final KeyGenerator keyGenerator,
       final ElementInstanceState elementInstanceState,
       final SuspensionState suspensionState,
       final UserTaskState userTaskState,
@@ -96,12 +94,8 @@ public final class ElementInstanceWalkSuspendProcessor
     this.elementInstanceState = elementInstanceState;
     this.suspensionState = suspensionState;
     this.suspensionMetrics = suspensionMetrics;
-    final var bufferingBehavior =
-        new CommandBufferingBehavior(keyGenerator, writers, suspensionMetrics);
     visitors =
-        List.of(
-            new UserTaskSuspensionVisitor(
-                stateWriter, bufferingBehavior, userTaskState, suspensionMetrics));
+        List.of(new UserTaskSuspensionVisitor(stateWriter, userTaskState, suspensionMetrics));
   }
 
   @Override

@@ -171,7 +171,8 @@ alongside the existing `State` enum — the same shape as `JOB_ACTIVATABLE_BY_PR
   command, passes it to `ProcessInstanceSuspensionJobBehavior.forEachSuspendedJob`, and — after
   resuming a job — writes the next `RESUME_JOBS` follow-up with the cursor advanced to that job's
   key, so the next cycle's search continues from there. When no job is found the cursor is not
-  included in the `COMPLETE_RESUMING` follow-up, since that command has no resume semantics.
+  carried on, since the next step does not resume jobs: `RESUME_USER_TASKS` (D7) follows if the
+  instance has suspended user tasks, otherwise `COMPLETE_RESUMING`.
   A stalled-then-restarted resume re-appends `DRAIN` without a new `RESUMING` event, so the last
   `RESUME_JOBS` command's cursor value is effectively re-used — the restart correctly continues
   from where it left off rather than re-scanning from zero.
@@ -181,7 +182,7 @@ alongside the existing `State` enum — the same shape as `JOB_ACTIVATABLE_BY_PR
   suspension, was rejected as an action in the hottest path of the engine.
 
 **D6. Suspend walks the element instance tree depth-first (post-order), one element instance per
-command, and emits a user task event for every user task it visits.**
+command, and emits a user task event for every user task it suspends.**
 `ElementInstanceWalkSuspendProcessor` handles a single command intent,
 `ElementInstanceWalk.SUSPEND`. Its cursor — `elementInstanceKey`, `parentKey`, and
 `index` — is carried on the command, not persisted in state. For the element instance at
@@ -203,16 +204,13 @@ terminated, or is no longer `SUSPENDING`. If the cursor's target element instanc
 continues at the next sibling under `parentKey` (or ascends from there if none is left); if
 `parentKey` itself is gone too, it restarts from the root.
 
-- **User task contract.** For each visited element instance with a user task, the walk appends
-  `UserTask.SUSPENDED` with the current task record, whatever the task's lifecycle state
-  (`CREATING`, `ASSIGNING`, and so on). It also buffers an internal `UserTask.RESUME` command for
-  the task. All `UserTask.SUSPENDED` events come before `ProcessInstance.SUSPENDED`.
-- **Resume.** The drain replays buffered commands in order. The `RESUME` commands were buffered
-  during the walk, so they drain before any command buffered later. `UserTaskProcessor` handles
-  `RESUME` by appending `UserTask.RESUMED` with the current task record, skipping listeners and
-  lifecycle checks; it rejects with `NOT_FOUND` if the task is gone. All `UserTask.RESUMED` events
-  come before `ProcessInstance.RESUMED`, in the same order as the `SUSPENDED` events. `RESUME` is
-  internal and not exposed to client APIs.
+- **User task contract.** For each visited element instance with a user task that is not
+  already suspended (D7), the walk appends `UserTask.SUSPENDED` with the current task record,
+  whatever the task's lifecycle state (`CREATING`, `ASSIGNING`, and so on). Each task gets exactly
+  one `UserTask.SUSPENDED` per suspension, even when walks overlap. All `UserTask.SUSPENDED` events
+  come before `ProcessInstance.SUSPENDED`.
+- **Resume.** See D7: `UserTask.RESUMED` is written by `RESUME_USER_TASKS` from tracked state, not
+  by a buffered command.
 - **No state change.** Neither user task event changes user task state. A user task command sent
   while the instance is suspending or suspended is rejected by the gate.
 - **Child instances.** A called process instance's root has no parent element instance, so the
@@ -221,6 +219,33 @@ continues at the next sibling under `parentKey` (or ascends from there if none i
   already gated but not every user task has its `SUSPENDED` event yet. Consumers must treat the
   `SUSPENDING` marker as suspended and not infer task suspension from the events alone until
   `ProcessInstance.SUSPENDED` is written.
+
+**D7. Suspended user tasks are tracked in `USER_TASKS_SUSPENDED_BY_PROCESS_INSTANCE` and resumed
+like jobs, one per `RESUME_USER_TASKS` cycle.** A key-only column family (`ZbColumnFamilies`, value
+166, `PARTITION_LOCAL`), keyed `[processInstanceKey | userTaskKey] -> DbNil`, records which user
+tasks a suspension has suspended.
+
+- **Maintenance.** The `UserTask.SUSPENDED` applier adds the entry and the `UserTask.RESUMED`
+  applier removes it. `DbUserTaskState.delete()` also removes it (`deleteIfExists`), so a task
+  canceled while suspended, including through cancellation of a suspended instance that never
+  resumes, leaves nothing behind. `delete()` only receives the task key, so it reads the stored
+  record for the process instance key; keying by user task key alone would avoid that read but
+  lose the per-instance scan below.
+- **Deduplication.** The walk (D6) skips user tasks that already have an entry. Overlapping walks
+  — a `SUSPEND` sent while a walk is running, or the walk's root-restart fallback — therefore emit
+  one `UserTask.SUSPENDED` per task, and resume emits one `UserTask.RESUMED` per task.
+- **Resume.** After the drain, the last `RESUME_JOBS` cycle hands off to `RESUME_USER_TASKS` if the
+  instance has an entry, otherwise straight to `COMPLETE_RESUMING`. Each `RESUME_USER_TASKS` cycle
+  seeks the column family from its cursor (`ProcessInstanceRecord.resumeFromUserTaskKey`,
+  inclusive, `-1` for the start), appends `UserTask.RESUMED` with the current task record for the
+  first entry whose task still exists, and appends the next `RESUME_USER_TASKS` with that key as
+  cursor; the `RESUMED` applier removes the entry, so the next seek starts at the following task.
+  Entries whose task is gone are skipped. Once none is left, it appends `COMPLETE_RESUMING`. The
+  same rejections as `RESUME_JOBS` apply.
+- **Order.** All `UserTask.RESUMED` events come after the buffered commands drain and the jobs are
+  resumed, and before `ProcessInstance.RESUMED`, in ascending user task key order. Resuming user
+  tasks last keeps the gap between their `RESUMED` events being exported and the instance being
+  resumed short.
 
 ## Alternatives considered
 
@@ -242,6 +267,14 @@ continues at the next sibling under `parentKey` (or ascends from there if none i
 - **Lazy eviction.** Leave the job in the index and reject or discard it at hand-out time if its
   instance is suspended. Still pays a per-job cost on every poll, the same problem as gating at
   hand-out time.
+- **Buffer a `UserTask.RESUME` command per suspended user task (D7).** The original user task
+  design: the drain replayed the commands into `UserTask.RESUMED`. Replaced because nothing recorded
+  that a task was already suspended, so overlapping walks duplicated the user task events; it also
+  stored a full command per task and tied user task resumption to the drain order. Tracking the
+  tasks in a column family matches job resumption, controls resume order, and is likely reusable for
+  the planned HTO work.
+- **Walk the element instance tree again on resume (D7).** Rejected: it visits every element
+  instance even though a targeted lookup is possible, and slows down resume for no benefit.
 
 ## Consequences
 
@@ -263,16 +296,19 @@ continues at the next sibling under `parentKey` (or ascends from there if none i
 - No downgrade after suspension: older brokers fail on the new `ProcessInstance.SUSPENDING` intent
   or the unknown `SUSPENDED` job state enum name.
 - Every new exhaustive `JobState.State` switch must handle `SUSPENDED`.
-- A walk that restarts from the root (D6) can emit duplicate `UserTask.SUSPENDED` events and
-  buffer duplicate `RESUME` commands, which then emit duplicate `UserTask.RESUMED` events.
-  Consumers must tolerate duplicates. This only happens on the rare fallback where both a cursor's
-  target element instance and its parent have terminated mid-walk — the common case of a missing
-  target with a present parent just continues the walk there instead.
-- A `SUSPEND` sent while a walk is still running (allowed, since the `SUSPENDING` restart lets it
-  through) starts a second walk from the root. User tasks visited by both walks get duplicate
-  `UserTask.SUSPENDED` events and duplicate buffered `RESUME` commands, which drain into duplicate
-  `UserTask.RESUMED` events. Only one `ProcessInstance.SUSPENDED` is written. Consumers must
-  tolerate these duplicates until a follow-up deduplicates user task suspension.
+- A user task canceled by a drained command, for example an interrupting timer that became due
+  while suspended, gets no `UserTask.RESUMED` if its cancellation finishes before
+  `RESUME_USER_TASKS` reaches it. Both exporters clear the task's suspended flag on
+  `UserTask.CANCELED`. A task still canceling at that point, e.g. waiting on a canceling listener,
+  gets `UserTask.RESUMED` before `UserTask.CANCELED`, which matches its state: it is still active
+  and its listener runs after the resume.
+- If a drained command ends the instance while later resume cycles are still pending, those cycles
+  and `COMPLETE_RESUMING` are rejected and no `ProcessInstance.RESUMED` is written. This applies to
+  `RESUME_JOBS` and `RESUME_USER_TASKS` alike. `RESUME_JOBS` goes straight to
+  `COMPLETE_RESUMING` when no user task is tracked, so the user task step adds no cycles for
+  instances without one. Exporters still close the instance on its end event, but a batch resume
+  operation item, which completes only on `ProcessInstance.RESUMED`, stays open.
+- Every user task deletion reads the stored task record to remove its D7 entry.
 - Out of scope: child-instance suspension, export to secondary storage/Operate, batch chunking for
   job suspension.
 
@@ -298,4 +334,8 @@ continues at the next sibling under `parentKey` (or ascends from there if none i
   depth-first suspension traversal (D6).
 - [#60323](https://github.com/camunda/camunda/issues/60323) — resume cost still quadratic in
   suspended jobs after this ADR's one-job-per-cycle revision; resolved by D5's cursor-based index.
+- [#65763](https://github.com/camunda/camunda/issues/65763) — deduplicate user task suspension
+  across overlapping walks (D7).
+- [Slack discussion](https://camunda.slack.com/archives/C0AJXAUUY65/p1792070328920839) — choosing
+  the column family over buffering or a resume-time walk for user tasks (D7).
 
