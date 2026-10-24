@@ -20,7 +20,7 @@
 	},
 	"dependencies": {
 		"@bpmn-io/c4-theme": "0.2.0",
-		"@bpmn-io/element-template-icon-renderer": "1.0.0",
+		"@bpmn-io/element-template-icon-renderer": "1.0.1",
 		"@bpmn-io/form-js-viewer": "2.0.2",
 		"@bpmn-io/shadcn-theme": "0.0.1",
 		"@camunda/camunda-api-zod-schemas": "0.0.93",
