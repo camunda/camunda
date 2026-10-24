@@ -243,10 +243,28 @@ outputs:
         steps.ci-github-actions.outputs.ci-relevant == 'true' ||
         steps.filter-dep-manifests.outputs.dep-manifest-change == 'true'
       }}
+  c8-e2e-test-suite-changes:
+    description: Output whether the C8 Orchestration Cluster E2E test suite lint check should be run based on GitHub event and files changed
+    value: >-
+      ${{
+        github.event_name == 'push' ||
+        github.event_name == 'schedule' ||
+        steps.ci-github-actions.outputs.ci-relevant == 'true' ||
+        steps.filter-c8-e2e-test-suite.outputs.c8-e2e-test-suite-change == 'true'
+      }}
 
 runs:
   using: composite
   steps:
+
+  - uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
+    id: filter-c8-e2e-test-suite
+    with:
+      base: ${{ github.event.merge_group.base_ref || '' }}
+      ref: ${{ github.event.merge_group.head_ref || github.ref }}
+      filters: |
+        c8-e2e-test-suite-change:
+          - 'qa/c8-orchestration-cluster-e2e-test-suite/**'
 
   - uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
     id: filter-common
