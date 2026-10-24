@@ -79,6 +79,140 @@ class InputMappingResolverComparisonTest {
   private static final OrderedInputMappingResolver ORDERED = new OrderedInputMappingResolver();
   private static final CombinedInputMappingResolver LEGACY = new CombinedInputMappingResolver();
 
+  private static final class Helpers {
+
+    /**
+     * Builds a raw {@link ZeebeMapping} test double the same way a {@code zeebe:input} element
+     * would be modeled: {@code source} and {@code target} strings passed through unchanged; the
+     * real {@link VariableMappingTransformer} handles any parsing/escaping (including the {@code
+     * StaticExpression} double-quote escaping from issue #16043).
+     */
+    private static ZeebeMapping mapping(final String source, final String target) {
+      return new TestZeebeMapping(source, target);
+    }
+
+    /**
+     * Builds a raw {@link ZeebeMapping} test double for a {@code zeebe:input} element with no
+     * source.
+     */
+    private static ZeebeMapping mappingWithoutSource(final String target) {
+      return new TestZeebeMapping(null, target);
+    }
+
+    /**
+     * Resolves {@code mappings} against an in-memory ancestor scope seeded with {@code
+     * ancestorVariables}.
+     */
+    private static ResolverResults resolve(
+        final List<ZeebeMapping> mappings, final Map<String, Object> ancestorVariables) {
+      return resolveAt(mappings, buildProcessor(ancestorVariables));
+    }
+
+    /**
+     * Resolves {@code mappings} against a two-level in-memory scope chain: {@code nearestScope} is
+     * the innermost ancestor (e.g. a sub-process), {@code outerScope} is above it.
+     */
+    private static ResolverResults resolveWithScopeChain(
+        final List<ZeebeMapping> mappings,
+        final Map<String, Object> nearestScope,
+        final Map<String, Object> outerScope) {
+      return resolveAt(mappings, buildProcessor(nearestScope, outerScope));
+    }
+
+    private static ResolverResults resolveAt(
+        final List<ZeebeMapping> mappings, final MappingExpressionProcessor processor) {
+      final var inputMappings =
+          new VariableMappingTransformer().transformInputMappings(mappings, EXPRESSION_LANGUAGE);
+      return new ResolverResults(
+          ORDERED.resolve(inputMappings, processor), LEGACY.resolve(inputMappings, processor));
+    }
+
+    /**
+     * Builds a {@link ScopedExpressionProcessor} backed by an in-memory scope chain. {@code scopes}
+     * is ordered from innermost (nearest ancestor) to outermost: {@link
+     * ScopedEvaluationContext#getVariable} walks them in that order and returns the first match, or
+     * {@code null} (absent) if the name appears in none.
+     */
+    @SafeVarargs
+    private static MappingExpressionProcessor buildProcessor(final Map<String, Object>... scopes) {
+      final List<Map<String, DirectBuffer>> encoded =
+          Arrays.stream(scopes)
+              .map(
+                  scope ->
+                      scope.entrySet().stream()
+                          .collect(
+                              Collectors.<Map.Entry<String, Object>, String, DirectBuffer>toMap(
+                                  Map.Entry::getKey,
+                                  e ->
+                                      new UnsafeBuffer(
+                                          MsgPackConverter.convertToMsgPack(e.getValue())))))
+              .toList();
+      final ScopedEvaluationContext context =
+          name -> {
+            for (final var scope : encoded) {
+              final var value = scope.get(name);
+              if (value != null) {
+                return Either.left(value);
+              }
+            }
+            return Either.left(null);
+          };
+      // scopeKey=-1 → ExpressionProcessor uses the context directly (no processScoped call),
+      // which is correct: the in-memory context owns its own lookup and ignores the key
+      return new MappingExpressionProcessor(
+          new ExpressionProcessor(EXPRESSION_LANGUAGE, context, DEFAULT_TIMEOUT)
+              .withSecretReferenceContext(),
+          new MappingContext(BufferUtil.wrapString("test-element"), -1L, -1L, -1L, "", -1L));
+    }
+
+    /** Asserts both resolvers gave the exact same result document. */
+    private static void assertSame(final ResolverResults results, final String expected) {
+      assertBothResolversGave(results, expected, expected);
+    }
+
+    /**
+     * Asserts the two resolvers gave different result documents -- the whole point of this test
+     * class. Fails fast if the two expected values are accidentally identical, since that scenario
+     * belongs under {@link #assertSame} instead.
+     */
+    private static void assertDiffers(
+        final ResolverResults results, final String expectedOrdered, final String expectedLegacy) {
+      if (expectedOrdered.equals(expectedLegacy)) {
+        throw new IllegalArgumentException(
+            "expectedOrdered equals expectedLegacy -- use assertSame instead of assertDiffers");
+      }
+      assertBothResolversGave(results, expectedOrdered, expectedLegacy);
+    }
+
+    private static void assertBothResolversGave(
+        final ResolverResults results, final String expectedOrdered, final String expectedLegacy) {
+      assertThat(results.ordered()).isRight();
+      MsgPackUtil.assertEquality(results.ordered().get(), expectedOrdered);
+      assertThat(results.legacy()).isRight();
+      MsgPackUtil.assertEquality(results.legacy().get(), expectedLegacy);
+    }
+  }
+
+  private record ResolverResults(
+      Either<Failure, DirectBuffer> ordered, Either<Failure, DirectBuffer> legacy) {}
+
+  /**
+   * Minimal {@link ZeebeMapping} test double: just the two getters, no BPMN-model/DOM machinery.
+   * {@code source} may be {@code null}, matching the {@code zeebe:input} element case where no
+   * source is set.
+   */
+  private record TestZeebeMapping(@Nullable String source, String target) implements ZeebeMapping {
+    @Override
+    public String getSource() {
+      return source;
+    }
+
+    @Override
+    public String getTarget() {
+      return target;
+    }
+  }
+
   @Nested
   // @DisplayName can't be used on @Nested classes with this Surefire version, see AGENTS.md
   // @DisplayName("Rule 1: an input mapping creates a local variable")
@@ -633,140 +767,6 @@ class InputMappingResolverComparisonTest {
 
       // then
       Helpers.assertSame(results, "{'token':'camunda.secrets.token'}");
-    }
-  }
-
-  private static final class Helpers {
-
-    /**
-     * Builds a raw {@link ZeebeMapping} test double the same way a {@code zeebe:input} element
-     * would be modeled: {@code source} and {@code target} strings passed through unchanged; the
-     * real {@link VariableMappingTransformer} handles any parsing/escaping (including the {@code
-     * StaticExpression} double-quote escaping from issue #16043).
-     */
-    private static ZeebeMapping mapping(final String source, final String target) {
-      return new TestZeebeMapping(source, target);
-    }
-
-    /**
-     * Builds a raw {@link ZeebeMapping} test double for a {@code zeebe:input} element with no
-     * source.
-     */
-    private static ZeebeMapping mappingWithoutSource(final String target) {
-      return new TestZeebeMapping(null, target);
-    }
-
-    /**
-     * Resolves {@code mappings} against an in-memory ancestor scope seeded with {@code
-     * ancestorVariables}.
-     */
-    private static ResolverResults resolve(
-        final List<ZeebeMapping> mappings, final Map<String, Object> ancestorVariables) {
-      return resolveAt(mappings, buildProcessor(ancestorVariables));
-    }
-
-    /**
-     * Resolves {@code mappings} against a two-level in-memory scope chain: {@code nearestScope} is
-     * the innermost ancestor (e.g. a sub-process), {@code outerScope} is above it.
-     */
-    private static ResolverResults resolveWithScopeChain(
-        final List<ZeebeMapping> mappings,
-        final Map<String, Object> nearestScope,
-        final Map<String, Object> outerScope) {
-      return resolveAt(mappings, buildProcessor(nearestScope, outerScope));
-    }
-
-    private static ResolverResults resolveAt(
-        final List<ZeebeMapping> mappings, final MappingExpressionProcessor processor) {
-      final var inputMappings =
-          new VariableMappingTransformer().transformInputMappings(mappings, EXPRESSION_LANGUAGE);
-      return new ResolverResults(
-          ORDERED.resolve(inputMappings, processor), LEGACY.resolve(inputMappings, processor));
-    }
-
-    /**
-     * Builds a {@link ScopedExpressionProcessor} backed by an in-memory scope chain. {@code scopes}
-     * is ordered from innermost (nearest ancestor) to outermost: {@link
-     * ScopedEvaluationContext#getVariable} walks them in that order and returns the first match, or
-     * {@code null} (absent) if the name appears in none.
-     */
-    @SafeVarargs
-    private static MappingExpressionProcessor buildProcessor(final Map<String, Object>... scopes) {
-      final List<Map<String, DirectBuffer>> encoded =
-          Arrays.stream(scopes)
-              .map(
-                  scope ->
-                      scope.entrySet().stream()
-                          .collect(
-                              Collectors.<Map.Entry<String, Object>, String, DirectBuffer>toMap(
-                                  Map.Entry::getKey,
-                                  e ->
-                                      new UnsafeBuffer(
-                                          MsgPackConverter.convertToMsgPack(e.getValue())))))
-              .toList();
-      final ScopedEvaluationContext context =
-          name -> {
-            for (final var scope : encoded) {
-              final var value = scope.get(name);
-              if (value != null) {
-                return Either.left(value);
-              }
-            }
-            return Either.left(null);
-          };
-      // scopeKey=-1 → ExpressionProcessor uses the context directly (no processScoped call),
-      // which is correct: the in-memory context owns its own lookup and ignores the key
-      return new MappingExpressionProcessor(
-          new ExpressionProcessor(EXPRESSION_LANGUAGE, context, DEFAULT_TIMEOUT)
-              .withSecretReferenceContext(),
-          new MappingContext(BufferUtil.wrapString("test-element"), -1L, -1L, -1L, ""));
-    }
-
-    /** Asserts both resolvers gave the exact same result document. */
-    private static void assertSame(final ResolverResults results, final String expected) {
-      assertBothResolversGave(results, expected, expected);
-    }
-
-    /**
-     * Asserts the two resolvers gave different result documents -- the whole point of this test
-     * class. Fails fast if the two expected values are accidentally identical, since that scenario
-     * belongs under {@link #assertSame} instead.
-     */
-    private static void assertDiffers(
-        final ResolverResults results, final String expectedOrdered, final String expectedLegacy) {
-      if (expectedOrdered.equals(expectedLegacy)) {
-        throw new IllegalArgumentException(
-            "expectedOrdered equals expectedLegacy -- use assertSame instead of assertDiffers");
-      }
-      assertBothResolversGave(results, expectedOrdered, expectedLegacy);
-    }
-
-    private static void assertBothResolversGave(
-        final ResolverResults results, final String expectedOrdered, final String expectedLegacy) {
-      assertThat(results.ordered()).isRight();
-      MsgPackUtil.assertEquality(results.ordered().get(), expectedOrdered);
-      assertThat(results.legacy()).isRight();
-      MsgPackUtil.assertEquality(results.legacy().get(), expectedLegacy);
-    }
-  }
-
-  private record ResolverResults(
-      Either<Failure, DirectBuffer> ordered, Either<Failure, DirectBuffer> legacy) {}
-
-  /**
-   * Minimal {@link ZeebeMapping} test double: just the two getters, no BPMN-model/DOM machinery.
-   * {@code source} may be {@code null}, matching the {@code zeebe:input} element case where no
-   * source is set.
-   */
-  private record TestZeebeMapping(@Nullable String source, String target) implements ZeebeMapping {
-    @Override
-    public String getSource() {
-      return source;
-    }
-
-    @Override
-    public String getTarget() {
-      return target;
     }
   }
 }

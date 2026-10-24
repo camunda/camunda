@@ -121,17 +121,6 @@ public final class VariableMappingTransformer {
     };
   }
 
-  private String mergeContextExpression(
-      final String nestedContext, final List<String> contextPath) {
-    // for a nested target mapping 'x -> a.b', append the nested property 'b' to
-    // the existing context variable 'a' (instead of overriding 'a')
-    // example: x = 1 and a = {'c':2} results in a = {'b':1, 'c':2}
-    final var existingContext = String.join(".", contextPath);
-    return String.format(
-        "if (%s != null) then context merge(%s,%s) else %s",
-        existingContext, existingContext, nestedContext, nestedContext);
-  }
-
   private Expression parseExpression(
       final String contextExpression, final ExpressionLanguage expressionLanguage) {
     final var expression =
@@ -173,7 +162,11 @@ public final class VariableMappingTransformer {
 
     final var mappings = toMappings(outputMappings, expressionLanguage);
     final var context = asContext(mappings);
-    final var contextExpression = asFeelContextExpression(context, this::mergeContextExpression);
+    // Don't merge the nested context in the combined expression, because it reads the variables
+    // from the local scope. We merge the expression result with the parent scope in the mapping
+    // behavior before propagating them.
+    final var contextExpression =
+        asFeelContextExpression(context, (contextValue, contextPath) -> contextValue);
     final var combinedExpression = parseExpression(contextExpression, expressionLanguage);
 
     final var transformedMappings =

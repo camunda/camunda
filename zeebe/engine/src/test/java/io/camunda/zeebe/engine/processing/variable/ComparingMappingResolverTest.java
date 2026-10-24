@@ -39,7 +39,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 final class ComparingMappingResolverTest {
 
   private static final MappingContext CONTEXT =
-      new MappingContext(BufferUtil.wrapString("element-1"), 100L, 200L, 300L, "default");
+      new MappingContext(BufferUtil.wrapString("element-1"), 100L, 200L, 300L, "default", 200L);
 
   private static final InputMappings INPUT_MAPPINGS = mock(InputMappings.class);
   private static final MappingExpressionProcessor PROCESSOR =
