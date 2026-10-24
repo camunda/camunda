@@ -96,7 +96,7 @@ runs:
 
     - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
       with:
-        go-version: ">=1.23.1"
+        go-version-file: c8run/go.mod
         cache: false # disabling since not working anyways without a cache-dependency-path specified
 
     - name: Setup Java 21
