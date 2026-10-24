@@ -81,6 +81,16 @@ public interface DecisionInstance {
   String getBusinessId();
 
   /**
+   * Returns the storage ordinal this decision instance's data belongs to.
+   *
+   * <p><strong>Note:</strong> This field is {@code null} unless the data was exported with
+   * archiverless mode enabled (version 8.11 or later).
+   *
+   * @return the storage ordinal, or {@code null}
+   */
+  Integer getStorageOrdinal();
+
+  /**
    * @return the element instance key of the decision instance
    */
   Long getElementInstanceKey();

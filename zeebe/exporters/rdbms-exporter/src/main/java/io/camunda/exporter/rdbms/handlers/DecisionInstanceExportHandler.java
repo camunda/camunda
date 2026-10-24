@@ -14,6 +14,7 @@ import io.camunda.db.rdbms.write.service.DecisionInstanceWriter;
 import io.camunda.exporter.rdbms.RdbmsExportHandler;
 import io.camunda.search.entities.DecisionInstanceEntity.DecisionDefinitionType;
 import io.camunda.search.entities.DecisionInstanceEntity.DecisionInstanceState;
+import io.camunda.zeebe.exporter.common.utils.StorageOrdinalUtil;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.DecisionEvaluationIntent;
@@ -105,6 +106,7 @@ public class DecisionInstanceExportHandler
         .evaluationFailure(
             state == DecisionInstanceState.FAILED ? value.getEvaluationFailureMessage() : null)
         .partitionId(record.getPartitionId())
+        .storageOrdinal(StorageOrdinalUtil.ordinalIfOrdinalControlled(value).orElse(null))
         .tenantId(value.getTenantId())
         .build();
   }
