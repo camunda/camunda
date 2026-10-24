@@ -19,6 +19,7 @@ import io.atomix.raft.impl.RaftContext;
 import io.atomix.raft.partition.RaftPartitionConfig;
 import io.atomix.raft.protocol.ConfigureRequest;
 import io.atomix.raft.protocol.JoinRequest;
+import io.atomix.raft.protocol.PollRequest;
 import io.atomix.raft.protocol.RaftResponse.Status;
 import io.atomix.raft.protocol.ReconfigureRequest;
 import io.atomix.raft.protocol.TestRaftProtocolFactory;
@@ -147,6 +148,16 @@ final class ReconfigurationTest {
               CompletableFuture.delayedExecutor(20, TimeUnit.MILLISECONDS));
           return result;
         });
+  }
+
+  private static void dropPollsFrom(final RaftServer sender, final AtomicBoolean enabled) {
+    final var protocol = (TestRaftServerProtocol) sender.getContext().getProtocol();
+    protocol.interceptDelivery(
+        PollRequest.class,
+        (target, request) ->
+            enabled.get()
+                ? CompletableFuture.failedFuture(new ConnectException("poll dropped"))
+                : CompletableFuture.completedFuture(null));
   }
 
   private RaftServer createServer(
@@ -2057,6 +2068,51 @@ final class ReconfigurationTest {
                     .containsExactlyInAnyOrder(id1, id2);
               });
       assertThat(appendEntry(leader).commit()).succeedsWithin(Duration.ofSeconds(10));
+    }
+
+    @Test
+    void shouldKeepForcedConfigurationOnInitiatorRestartBeforeForceLeavingEntryCommits() {
+      // given - the last committed entry is the newest configuration, so the forced configuration
+      // (index + 1) is not covered by the commit index and only gets persisted by the force itself
+      // A leaving leader would make its successor append a no-op entry after the configuration.
+      final var leaving = m4.isLeader() ? m3 : m4;
+      assertThat(leaving.leave()).succeedsWithin(Duration.ofSeconds(10));
+      Awaitility.await("the initiator committed the configuration without leaving it")
+          .untilAsserted(
+              () ->
+                  assertThat(m2.getContext().getCommitIndex())
+                      .isEqualTo(m2.getContext().getCurrentConfigurationIndex()));
+      // The members to remove are gone. The initiator can neither win an election nor receive
+      // entries, so the force-leaving configuration entry can neither be appended to its log nor
+      // commit; only the persisted configuration can tell it about the force.
+      m3.shutdown().join();
+      m4.shutdown().join();
+      final var dropEntryAppends = new AtomicBoolean(true);
+      dropEntryAppendsTo(m1, id2, dropEntryAppends);
+      final var dropPolls = new AtomicBoolean(true);
+      dropPollsFrom(m2, dropPolls);
+      assertThat(m2.forceConfigure(newMembers())).succeedsWithin(Duration.ofSeconds(10));
+
+      // when - the initiator restarts before the force-leaving entry commits
+      m2.shutdown().join();
+      final var m2Restarted =
+          createServer(tmp, StaticClusterMembershipService.of(id2, id1, id3, id4));
+      dropPollsFrom(m2Restarted, dropPolls);
+      final var bootstrapped = m2Restarted.bootstrap(id1, id2, id3, id4);
+
+      // then - it still operates under the forced members ...
+      Awaitility.await("the restarted initiator recovers the forced configuration")
+          .untilAsserted(
+              () ->
+                  assertThat(m2Restarted.cluster().getMembers())
+                      .extracting(RaftMember::memberId)
+                      .containsExactlyInAnyOrder(id1, id2));
+
+      // ... and can elect a leader with the other remaining member
+      dropEntryAppends.set(false);
+      dropPolls.set(false);
+      awaitLeader(m1, m2Restarted);
+      assertThat(bootstrapped).succeedsWithin(Duration.ofSeconds(10));
     }
 
     private Map<MemberId, Type> newMembers() {
