@@ -523,6 +523,10 @@ k6:
       enabled: true
       script: test.data-read.js
 
+    dmn:
+      enabled: true
+      script: test.dmn.js
+
   prometheus:
     endpoint: http://kube-prometheus-stack-prometheus.monitoring.svc.cluster.local:9090/api/v1/write
 
