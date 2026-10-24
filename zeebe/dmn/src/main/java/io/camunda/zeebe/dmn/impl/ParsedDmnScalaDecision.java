@@ -9,15 +9,18 @@ package io.camunda.zeebe.dmn.impl;
 
 import io.camunda.zeebe.dmn.ParsedDecision;
 import io.camunda.zeebe.dmn.ParsedDecisionTable;
+import org.jspecify.annotations.Nullable;
 
 public final class ParsedDmnScalaDecision implements ParsedDecision {
 
   private final String decisionId;
   private final String decisionName;
-  private final ParsedDecisionTable decisionTable;
+  private final @Nullable ParsedDecisionTable decisionTable;
 
   public ParsedDmnScalaDecision(
-      final String decisionId, final String decisionName, final ParsedDecisionTable decisionTable) {
+      final String decisionId,
+      final String decisionName,
+      final @Nullable ParsedDecisionTable decisionTable) {
     this.decisionId = decisionId;
     this.decisionName = decisionName;
     this.decisionTable = decisionTable;
@@ -34,7 +37,7 @@ public final class ParsedDmnScalaDecision implements ParsedDecision {
   }
 
   @Override
-  public ParsedDecisionTable getDecisionTable() {
+  public @Nullable ParsedDecisionTable getDecisionTable() {
     return decisionTable;
   }
 }

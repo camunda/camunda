@@ -14,9 +14,10 @@ import org.camunda.dmn.Audit;
 import org.camunda.dmn.parser.FeelExpression;
 import org.camunda.dmn.parser.ParsedInput;
 import org.camunda.feel.syntaxtree.Val;
+import org.jspecify.annotations.Nullable;
 
-public record EvaluatedDmnScalaInput(String inputId, String inputName, DirectBuffer inputValue)
-    implements EvaluatedInput {
+public record EvaluatedDmnScalaInput(
+    String inputId, @Nullable String inputName, DirectBuffer inputValue) implements EvaluatedInput {
 
   private static final String MAX_EXPRESSION_LENGTH = "30";
   private static final String TRUNCATE_EXPRESSION_TEMPLATE = "%." + MAX_EXPRESSION_LENGTH + "s";
@@ -29,8 +30,8 @@ public record EvaluatedDmnScalaInput(String inputId, String inputName, DirectBuf
     return new EvaluatedDmnScalaInput(input.id(), inputName, converter.apply(inputValue));
   }
 
-  private static String determineInputName(final ParsedInput input) {
-    final String inputName;
+  private static @Nullable String determineInputName(final ParsedInput input) {
+    final @Nullable String inputName;
     if (input.name() != null) {
       inputName = input.name();
     } else if (input.expression() instanceof FeelExpression feelExpression) {
@@ -42,7 +43,7 @@ public record EvaluatedDmnScalaInput(String inputId, String inputName, DirectBuf
     return inputName;
   }
 
-  private static String truncateExpression(final String text) {
+  private static @Nullable String truncateExpression(final @Nullable String text) {
     if (text == null) {
       return null;
     }

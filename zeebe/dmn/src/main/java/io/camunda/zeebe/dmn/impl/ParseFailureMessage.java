@@ -11,17 +11,18 @@ import io.camunda.zeebe.dmn.ParsedDecision;
 import io.camunda.zeebe.dmn.ParsedDecisionRequirementsGraph;
 import java.util.Collections;
 import java.util.List;
+import org.jspecify.annotations.Nullable;
 
 public final class ParseFailureMessage implements ParsedDecisionRequirementsGraph {
 
-  private final String failureMessage;
+  private final @Nullable String failureMessage;
 
-  public ParseFailureMessage(final String failureMessage) {
+  public ParseFailureMessage(final @Nullable String failureMessage) {
     this.failureMessage = failureMessage;
   }
 
   @Override
-  public String getFailureMessage() {
+  public @Nullable String getFailureMessage() {
     return failureMessage;
   }
 
@@ -31,17 +32,17 @@ public final class ParseFailureMessage implements ParsedDecisionRequirementsGrap
   }
 
   @Override
-  public String getId() {
+  public @Nullable String getId() {
     return null;
   }
 
   @Override
-  public String getName() {
+  public @Nullable String getName() {
     return null;
   }
 
   @Override
-  public String getNamespace() {
+  public @Nullable String getNamespace() {
     return null;
   }
 
