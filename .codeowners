@@ -496,3 +496,9 @@ optimize.Dockerfile         @camunda/core-features
 /webapp/client/apps/orchestration-cluster-webapp/test/visual/operate/          @camunda/operate-admin-pod
 /webapp/client/apps/orchestration-cluster-webapp/test/visual/tasklist/         @camunda/employee-engagement-tasklist
 /webapp/client/apps/orchestration-cluster-webapp/test/visual/shared/           @camunda/orchestration-cluster-webapps
+
+# AI PR review trial (camunda/pr-review-agent): each pod owns its caller and config
+/.github/workflows/ai-pr-review-operate-admin.yml   @camunda/operate-admin-pod
+/.github/pr-review-agent/operate-admin.yml          @camunda/operate-admin-pod
+/.github/workflows/ai-pr-review-tasklist.yml        @camunda/employee-engagement-tasklist
+/.github/pr-review-agent/tasklist.yml               @camunda/employee-engagement-tasklist
