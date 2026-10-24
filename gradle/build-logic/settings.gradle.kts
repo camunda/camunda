@@ -31,6 +31,7 @@ dependencyResolutionManagement {
     repositoriesMode = RepositoriesMode.FAIL_ON_PROJECT_REPOS
 
     repositories {
+        mavenLocal()
         maven("https://maven-central.storage-download.googleapis.com/maven2")
         // plugin portal is required here as well as plugins are pulled as regular dependencies
         // in the `:conventions:` project. Some of those plugins are not in maven central.
