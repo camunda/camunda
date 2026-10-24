@@ -71,7 +71,7 @@
     "@testing-library/jest-dom": "6.6.4",
     "@testing-library/react": "16.3.3",
     "@testing-library/user-event": "14.6.8",
-    "@types/lodash": "4.17.26",
+    "@types/lodash": "4.17.27",
     "@types/mixpanel-browser": "2.66.0",
     "@types/node": "24.1.0",
     "@types/react": "19.1.17",
