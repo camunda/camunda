@@ -85,10 +85,6 @@ test.describe('HTO User Flow Tests', () => {
       });
       await operateHomePage.clickSaveVariableButton();
 
-      await expect(operateHomePage.editVariableSpinner).not.toBeVisible({
-        timeout: 120000,
-      });
-
       await expect(page.getByText('"testValue"')).not.toBeVisible({
         timeout: 90000,
       });

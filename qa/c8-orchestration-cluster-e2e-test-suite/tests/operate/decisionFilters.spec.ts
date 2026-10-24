@@ -209,6 +209,7 @@ test.describe('Decision Filter Reset', () => {
   });
 
   test('Clicking Decisions header link resets filters to default', async ({
+    page,
     operateDecisionsPage,
     operateHomePage,
   }) => {
@@ -216,6 +217,9 @@ test.describe('Decision Filter Reset', () => {
       await operateDecisionsPage.selectDecisionName('Invoice Classification');
       await expect(operateDecisionsPage.decisionNameFilter).toHaveValue(
         'Invoice Classification',
+      );
+      await expect(page).toHaveURL(
+        /[?&]decisionDefinitionId=invoiceClassification(?:&|$)/,
       );
     });
 
@@ -243,10 +247,8 @@ test.describe('Decision Filter Reset', () => {
       await expect(operateDecisionsPage.failedCheckbox).toBeChecked();
     });
 
-    await test.step('Verify no optional filters are visible', async () => {
-      await expect(
-        operateDecisionsPage.decisionInstanceKeysFilter,
-      ).toBeHidden();
+    await test.step('Verify optional filters are cleared', async () => {
+      await expect(page).not.toHaveURL(/[?&]decisionInstanceKey=/);
     });
   });
 });

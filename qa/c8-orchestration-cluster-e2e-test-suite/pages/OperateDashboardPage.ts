@@ -8,18 +8,18 @@
 
 import {Page, Locator} from '@playwright/test';
 
+const ACTIVE_INSTANCES_BADGE = /^\d+ active instances?$/;
+const INCIDENT_INSTANCES_BADGE = /^\d+ instances? with incidents$/;
+
 export class OperateDashboardPage {
   private page: Page;
-  readonly metricPanel: Locator;
   readonly runningInstancesText: Locator;
   readonly totalInstancesLink: Locator;
   readonly activeInstancesLink: Locator;
   readonly incidentInstancesLink: Locator;
   readonly instancesByProcess: Locator;
   readonly incidentsByError: Locator;
-  readonly instancesByProcessItem: (index: number) => Locator;
   readonly instancesByProcessItemByName: (name: string) => Locator;
-  readonly incidentsByErrorItem: (index: number) => Locator;
   readonly incidentsByErrorItemByMessage: (message: string | RegExp) => Locator;
   readonly activeInstancesBadge: Locator;
   readonly incidentInstancesBadge: Locator;
@@ -38,40 +38,45 @@ export class OperateDashboardPage {
 
   constructor(page: Page) {
     this.page = page;
-    this.metricPanel = page.getByTestId('metric-panel');
     this.runningInstancesText = page.getByText(
       /running process instances in total/i,
     );
-    this.totalInstancesLink = page.getByTestId('total-instances-link');
-    this.activeInstancesLink = page.getByTestId('active-instances-link');
-    this.incidentInstancesLink = page.getByTestId('incident-instances-link');
-    this.instancesByProcess = page.getByTestId(
-      'instances-by-process-definition',
-    );
-    this.incidentsByError = page.getByTestId('incident-byError');
-
-    this.instancesByProcessItem = (index: number) =>
-      page.getByTestId(`instances-by-process-definition-${index}`);
+    this.totalInstancesLink = page.getByRole('link', {
+      name: /running process instances in total$/i,
+    });
+    this.activeInstancesLink = page.getByRole('link', {
+      name: /^active process instances$/i,
+    });
+    this.incidentInstancesLink = page.getByRole('link', {
+      name: /^process instances with incident$/i,
+    });
+    this.instancesByProcess = page.getByRole('table').filter({
+      has: page.getByRole('columnheader', {
+        name: 'instance',
+        exact: true,
+        includeHidden: true,
+      }),
+    });
+    this.incidentsByError = page.getByRole('table').filter({
+      has: page.getByRole('columnheader', {
+        name: 'incident',
+        exact: true,
+        includeHidden: true,
+      }),
+    });
 
     this.instancesByProcessItemByName = (name: string) =>
-      this.instancesByProcess
-        .locator('[data-testid^="instances-by-process-definition-"]')
-        .filter({hasText: name});
-
-    this.incidentsByErrorItem = (index: number) =>
-      page.getByTestId(`incident-byError-${index}`);
+      this.instancesByProcess.getByRole('row').filter({hasText: name});
 
     this.incidentsByErrorItemByMessage = (message: string | RegExp) =>
-      this.incidentsByError
-        .locator('[data-testid^="incident-byError-"]')
-        .filter({hasText: message});
+      this.incidentsByError.getByRole('row').filter({hasText: message});
 
     this.activeInstancesBadge = page
-      .getByTestId('active-instances-badge')
+      .getByRole('img', {name: ACTIVE_INSTANCES_BADGE})
       .nth(0);
 
     this.incidentInstancesBadge = page
-      .getByTestId('incident-instances-badge')
+      .getByRole('img', {name: INCIDENT_INSTANCES_BADGE})
       .nth(0);
 
     this.processInstancesHeading = (count, isPlural = true) =>
@@ -95,13 +100,13 @@ export class OperateDashboardPage {
       });
 
     this.incidentBadgeFromItem = (item) =>
-      item.getByTestId('incident-instances-badge');
+      item.getByRole('img', {name: INCIDENT_INSTANCES_BADGE});
 
     this.activeBadgeFromItem = (item) =>
-      item.getByTestId('active-instances-badge');
+      item.getByRole('img', {name: ACTIVE_INSTANCES_BADGE});
 
     this.drainingIndicatorFromItem = (item) =>
-      item.getByTestId('draining-indicator');
+      item.getByLabel(/scheduled for deletion/);
 
     this.expandRowButtonFromItem = (item) =>
       item.getByRole('button', {

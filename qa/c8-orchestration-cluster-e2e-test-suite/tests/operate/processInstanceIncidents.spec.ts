@@ -97,8 +97,10 @@ test.describe('Process Instance', () => {
       await expect(operateProcessInstancePage.saveVariableButton).toBeEnabled();
       await operateProcessInstancePage.saveVariableButton.click();
 
-      await expect(operateProcessInstancePage.variableSpinner).toBeVisible();
-      await expect(operateProcessInstancePage.variableSpinner).toBeHidden();
+      await expect(
+        operateProcessInstancePage.existingVariableByName('goUp')
+          .editVariableModal.button,
+      ).toBeVisible({timeout: 60000});
     });
 
     await test.step('Retry one incident to resolve it', async () => {
@@ -113,7 +115,7 @@ test.describe('Process Instance', () => {
           await operateProcessInstancePage.getIncidentRowByErrorType(
             firstErrorType,
           )
-        ).getByTestId('operation-spinner'),
+        ).getByRole('img', {name: 'loading', exact: true}),
       ).toBeVisible();
       await waitForAssertion({
         assertion: async () => {
@@ -162,8 +164,9 @@ test.describe('Process Instance', () => {
       await expect(operateProcessInstancePage.saveVariableButton).toBeEnabled();
 
       await operateProcessInstancePage.saveVariableButton.click();
-      await expect(operateProcessInstancePage.variableSpinner).toBeVisible();
-      await expect(operateProcessInstancePage.variableSpinner).toBeHidden();
+      await expect(operateProcessInstancePage.variableAddedBanner).toBeVisible({
+        timeout: 60000,
+      });
     });
 
     await test.step('Retry second incident to resolve it', async () => {
@@ -178,7 +181,7 @@ test.describe('Process Instance', () => {
           await operateProcessInstancePage.getIncidentRowByErrorType(
             secondErrorType,
           )
-        ).getByTestId('operation-spinner'),
+        ).getByRole('img', {name: 'loading', exact: true}),
       ).toBeVisible();
     });
 
@@ -246,10 +249,9 @@ test.describe('Process Instance', () => {
       await page.goto(
         `operate/processes?canceled=true&processInstanceKey=${instanceId}`,
       );
-      await expect(operateProcessesPage.endDateCell).toBeVisible();
-      expect(await operateProcessesPage.endDateCell.innerText()).toMatch(
-        DATE_REGEX,
-      );
+      const endDateCell = await operateProcessesPage.getEndDateCell();
+      await expect(endDateCell).toBeVisible();
+      expect(await endDateCell.innerText()).toMatch(DATE_REGEX);
     });
   });
 
@@ -399,9 +401,6 @@ test.describe('Process Instance Incident', () => {
 
     await test.step('Verify error indicators on all affected elements', async () => {
       await expect(operateProcessInstancePage.diagram).toBeVisible();
-      await expect(operateProcessInstancePage.diagramSpinner).toBeHidden({
-        timeout: 30000,
-      });
 
       await expect(operateProcessInstancePage.incidentsTab).toBeVisible();
       await operateProcessInstancePage.clickIncidentsTab();
@@ -462,9 +461,6 @@ test.describe('Process Instance Incident', () => {
 
     await test.step('Verify process diagram is visible and incidents tab is present', async () => {
       await expect(operateProcessInstancePage.diagram).toBeVisible();
-      await expect(operateProcessInstancePage.diagramSpinner).toBeHidden({
-        timeout: 30000,
-      });
       await expect(operateProcessInstancePage.incidentsTab).toBeVisible();
     });
 

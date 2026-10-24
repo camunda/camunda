@@ -173,7 +173,9 @@ test.describe('Process Instance History', () => {
       await operateProcessInstancePage.clickAddVariableButton();
       await operateProcessInstancePage.fillNewVariable('goUp', '6');
       await operateProcessInstancePage.clickSaveVariableButton();
-      await expect(operateProcessInstancePage.variableSpinner).toBeHidden();
+      await expect(operateProcessInstancePage.variableAddedBanner).toBeVisible({
+        timeout: 60000,
+      });
     });
 
     await test.step('Retry incident', async () => {
@@ -410,6 +412,7 @@ test.describe('Process Instance History', () => {
         );
       }
       await operateProcessInstanceViewModificationModePage.applyChanges();
+      await page.reload();
       await operateDiagramPage.verifyStateOverlay(
         activityCollectMoney,
         'active',

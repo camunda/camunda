@@ -138,6 +138,11 @@ export const RESPONSE_INDEX = {
       '200': 1,
     },
   },
+  '/clock/add': {
+    POST: {
+      '200': 1,
+    },
+  },
   '/cluster-variables/global': {
     POST: {
       '200': 1,

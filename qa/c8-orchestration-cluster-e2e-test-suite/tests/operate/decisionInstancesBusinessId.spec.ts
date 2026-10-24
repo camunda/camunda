@@ -73,11 +73,10 @@ async function expectRowsForBusinessId(
 ) {
   const rows = businessIdRows(operateDecisionsPage, businessId);
   await expect(rows.first()).toBeVisible();
-  const cells = rows.getByTestId('cell-businessId');
-  const cellCount = await cells.count();
-  expect(cellCount).toBeGreaterThan(0);
-  for (let i = 0; i < cellCount; i++) {
-    await expect(cells.nth(i)).toHaveText(businessId);
+  for (const row of await rows.all()) {
+    await expect(
+      await operateDecisionsPage.getCellInColumn(row, 'Business ID'),
+    ).toHaveText(businessId);
   }
 }
 

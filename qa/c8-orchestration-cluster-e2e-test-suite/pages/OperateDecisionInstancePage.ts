@@ -11,7 +11,6 @@ import {Page, Locator} from '@playwright/test';
 class OperateDecisionInstancePage {
   private page: Page;
   readonly decisionPanel: Locator;
-  readonly popover: Locator;
   readonly closeDrdPanelButton: Locator;
   readonly openDrdButton: Locator;
   readonly drd: Locator;
@@ -20,16 +19,21 @@ class OperateDecisionInstancePage {
 
   constructor(page: Page) {
     this.page = page;
-    this.decisionPanel = page.getByTestId('decision-panel');
-    this.popover = page.getByTestId('popover');
+    this.decisionPanel = page.getByRole('region', {
+      name: 'decision panel',
+      exact: true,
+    });
     this.closeDrdPanelButton = page.getByRole('button', {
       name: /close drd panel/i,
     });
     this.openDrdButton = page.getByRole('button', {
       name: 'Open Decision Requirements Diagram',
     });
-    this.drd = page.getByTestId('drd');
-    this.instanceHeader = page.getByTestId('instance-header');
+    this.drd = page.getByRole('region', {name: /^drd panel$/i});
+    this.instanceHeader = page.getByRole('group', {
+      name: 'Instance header',
+      exact: true,
+    });
     this.viewProcessInstanceLink = (processInstanceKey: string) =>
       page.getByRole('link', {
         name: `View process instance ${processInstanceKey}`,

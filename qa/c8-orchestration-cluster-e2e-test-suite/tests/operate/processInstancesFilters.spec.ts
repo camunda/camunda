@@ -216,14 +216,10 @@ test.describe('Process Instances Filters', () => {
     await test.step('Escalating to modal pre-fills the inline values', async () => {
       await operateFiltersPanelPage.openVariableFilterModal();
       await expect(
-        operateFiltersPanelPage.variableFilterDialog.getByTestId(
-          'variable-filter-name-0',
-        ),
+        operateFiltersPanelPage.getConditionRowNameInput(0),
       ).toHaveValue('filtersTest');
       await expect(
-        operateFiltersPanelPage.variableFilterDialog.getByTestId(
-          'variable-filter-value-0',
-        ),
+        operateFiltersPanelPage.getConditionRowValueInput(0),
       ).toHaveValue(orderProcessFiltersValue);
       await operateFiltersPanelPage.variableFilterDialog
         .getByRole('button', {name: 'Cancel'})
@@ -231,7 +227,7 @@ test.describe('Process Instances Filters', () => {
     });
   });
 
-  test('Variable filtering with single and multiple values', async ({
+  test('Variable filtering with value-less conditions and single or multiple values', async ({
     page,
     operateProcessesPage,
     operateFiltersPanelPage,
@@ -253,11 +249,19 @@ test.describe('Process Instances Filters', () => {
       await sleep(200);
     });
 
-    await test.step('Add Variable Filter via modal', async () => {
+    await test.step('Add a value-less condition followed by an equality condition', async () => {
       await operateFiltersPanelPage.displayOptionalFilter('Variables');
       await operateFiltersPanelPage.openVariableFilterModal();
+      await operateFiltersPanelPage
+        .getConditionRowNameInput(0)
+        .fill('filtersTest');
+      await operateFiltersPanelPage.selectOperator(0, 'exists');
+      await expect(
+        operateFiltersPanelPage.getConditionRowValueInput(0),
+      ).toBeHidden();
+      await operateFiltersPanelPage.addCondition();
       await operateFiltersPanelPage.fillConditionRow(
-        0,
+        1,
         'filtersTest',
         orderProcessFiltersValue,
       );
@@ -291,7 +295,7 @@ test.describe('Process Instances Filters', () => {
 
     await test.step('Re-open modal and verify JSON editor', async () => {
       await operateFiltersPanelPage.openVariableFilterModal();
-      await operateFiltersPanelPage.openJsonEditorForRow(0);
+      await operateFiltersPanelPage.openJsonEditorForRow(1);
       await expect(
         operateFiltersPanelPage.variableFilterDialog.getByText(
           'Edit value: filtersTest',
@@ -313,9 +317,9 @@ test.describe('Process Instances Filters', () => {
 
     await test.step('Edit condition to use oneOf operator for multiple values', async () => {
       await operateFiltersPanelPage.openVariableFilterModal();
-      await operateFiltersPanelPage.selectOperator(0, 'is one of');
+      await operateFiltersPanelPage.selectOperator(1, 'is one of');
       await operateFiltersPanelPage.fillConditionRow(
-        0,
+        1,
         'filtersTest',
         `[${orderProcessFiltersValue}, 456]`,
       );
@@ -390,7 +394,9 @@ test.describe('Process Instances Filters', () => {
       await operateFiltersPanelPage.clickCompletedInstancesCheckbox();
 
       let totalBefore = await readTotalResultsCount(page);
-      const endDate = await operateProcessesPage.endDateCell.innerText();
+      const endDate = await (
+        await operateProcessesPage.getEndDateCell()
+      ).innerText();
       const day =
         endDate === '--' ? new Date().getDate() : new Date(endDate).getDate();
 
@@ -520,15 +526,12 @@ test.describe('Process Instances Filters', () => {
 
       await waitForAssertion({
         assertion: async () => {
-          const variableProcessInstanceKeys = new Set<string>();
-          for (const element of await operateProcessesPage.processInstancesTable
-            .getByTestId('cell-processInstanceKey')
-            .elementHandles()) {
-            variableProcessInstanceKeys.add(await element.innerText());
-          }
-          expect(
-            variableProcessInstanceKeys.has(variableProcessInstanceKey),
-          ).toBeTruthy();
+          await expect(
+            operateProcessesPage.processInstancesTable.getByRole('link', {
+              name: `View instance ${variableProcessInstanceKey}`,
+              exact: true,
+            }),
+          ).toBeVisible();
         },
         onFailure: async () => {
           await page.reload();
@@ -817,6 +820,7 @@ test.describe('Process Instances Filters', () => {
           await page.reload();
         },
       });
+      await operateFiltersPanelPage.selectVersion('1');
       await expect(operateDiagramPage.diagram).toBeVisible();
     });
 
@@ -916,9 +920,7 @@ test.describe('Process Instances Filters', () => {
 
     await test.step('Click on the "Process" link button in the header and assert the results', async () => {
       await operateHomePage.clickProcessesTab();
-      await expect(
-        operateFiltersPanelPage.processInstanceKeysFilter,
-      ).toBeHidden();
+      await expect(page).not.toHaveURL(/[?&](?:processInstanceKey|variable)=/);
       await operateFiltersPanelPage.validateCheckedState(
         [
           operateFiltersPanelPage.activeInstancesCheckbox,

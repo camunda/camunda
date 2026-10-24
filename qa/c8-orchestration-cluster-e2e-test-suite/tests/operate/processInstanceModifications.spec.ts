@@ -13,6 +13,7 @@ import {captureScreenshot, captureFailureVideo} from '@setup';
 import {navigateToAppHome, hideHelperModals} from '@pages/UtilitiesPage';
 import {waitForAssertion} from 'utils/waitForAssertion';
 import {assertJsonEqual} from '../../utils/assertJsonEqual';
+import {searchVariableByNameAndProcessInstanceKey} from 'utils/requestHelpers/variable-requestHelpers';
 
 type ProcessInstance = {
   processInstanceKey: string;
@@ -77,6 +78,7 @@ test.describe('Process Instance Modifications', () => {
     test.beforeEach(
       async ({
         page,
+        request,
         operateHomePage,
         operateProcessInstancePage,
         operateProcessInstanceViewModificationModePage,
@@ -84,6 +86,10 @@ test.describe('Process Instance Modifications', () => {
         instance = await createSingleInstance('withoutIncidentsProcess', 1, {
           test: 123,
           foo: 'bar',
+        });
+        await searchVariableByNameAndProcessInstanceKey(request, {
+          processInstanceKey: instance.processInstanceKey,
+          name: 'foo',
         });
         await navigateToAppHome(page, 'operate');
         await expect(operateHomePage.operateBanner).toBeVisible();
@@ -140,10 +146,14 @@ test.describe('Process Instance Modifications', () => {
         'foo',
         '3',
       );
+      await operateProcessInstancePage.clickReviewModifications();
 
       await expect(
-        operateProcessInstancePage.getEditVariableFieldSelector('foo'),
-      ).toHaveText('3');
+        operateProcessInstancePage.getDialogVariableModificationSummaryText(
+          'foo',
+          '3',
+        ),
+      ).toBeVisible();
     });
 
     test('Undoing a variable edit reverts to the previous value', async ({
@@ -158,10 +168,14 @@ test.describe('Process Instance Modifications', () => {
         '3',
       );
       await operateProcessInstancePage.undoModification();
+      await operateProcessInstancePage.clickReviewModifications();
 
       await expect(
-        operateProcessInstancePage.getEditVariableFieldSelector('foo'),
-      ).toHaveText('1');
+        operateProcessInstancePage.getDialogVariableModificationSummaryText(
+          'foo',
+          '1',
+        ),
+      ).toBeVisible();
     });
 
     test('A variable edit can be removed from the Apply Modifications dialog', async ({
@@ -179,14 +193,13 @@ test.describe('Process Instance Modifications', () => {
         ),
       ).toBeVisible();
       await operateProcessInstancePage.clickDeleteVariableModification();
-      await operateProcessInstancePage.clickCancel();
 
       await expect(
-        operateProcessInstancePage.getEditVariableFieldSelector('foo'),
-      ).toHaveText('"bar"');
-      await expect(
-        operateProcessInstancePage.getEditVariableFieldSelector('test'),
-      ).toHaveText('123');
+        operateProcessInstancePage.getDialogVariableModificationSummaryText(
+          'foo',
+          '2',
+        ),
+      ).toBeHidden();
     });
   });
 
@@ -196,6 +209,7 @@ test.describe('Process Instance Modifications', () => {
     test.beforeEach(
       async ({
         page,
+        request,
         operateHomePage,
         operateProcessInstancePage,
         operateProcessInstanceViewModificationModePage,
@@ -203,6 +217,10 @@ test.describe('Process Instance Modifications', () => {
         instance = await createSingleInstance('withoutIncidentsProcess', 1, {
           test: 123,
           foo: 'bar',
+        });
+        await searchVariableByNameAndProcessInstanceKey(request, {
+          processInstanceKey: instance.processInstanceKey,
+          name: 'foo',
         });
         await navigateToAppHome(page, 'operate');
         await expect(operateHomePage.operateBanner).toBeVisible();
@@ -382,11 +400,15 @@ test.describe('Process Instance Modifications', () => {
     let instance: ProcessInstance;
 
     test.beforeEach(
-      async ({page, operateHomePage, operateProcessInstancePage}) => {
+      async ({page, request, operateHomePage, operateProcessInstancePage}) => {
         instance = await createSingleInstance('Process_EmbeddedSubprocess', 1, {
           meow: 0,
           testVariableNumber: 123,
           testVariableString: 'bar',
+        });
+        await searchVariableByNameAndProcessInstanceKey(request, {
+          processInstanceKey: instance.processInstanceKey,
+          name: 'testVariableString',
         });
         await navigateToAppHome(page, 'operate');
         await expect(operateHomePage.operateBanner).toBeVisible();
@@ -490,12 +512,14 @@ test.describe('Process Instance Modifications', () => {
         ).toBeVisible();
 
         await operateProcessInstanceViewModificationModePage.undoModification();
+        await operateProcessInstanceViewModificationModePage.clickReviewModificationsButton();
 
         await expect(
-          operateProcessInstanceViewModificationModePage.getEditVariableFieldSelector(
+          operateProcessInstanceViewModificationModePage.getDialogVariableModificationSummaryText(
             'testVariableNumber',
+            '1',
           ),
-        ).toHaveText('123');
+        ).toBeHidden();
       });
 
       test('Adding a duplicate variable name shows a validation error', async ({
@@ -548,7 +572,6 @@ test.describe('Process Instance Modifications', () => {
       });
 
       test('JSON editor updates variable value correctly', async ({
-        page,
         operateProcessInstancePage,
         operateProcessInstanceViewModificationModePage,
       }) => {
@@ -570,10 +593,11 @@ test.describe('Process Instance Modifications', () => {
           'value',
         );
 
-        await operateProcessInstanceViewModificationModePage
-          .newVariableByIndex(0)
-          .readModeValue.click();
-        await page.keyboard.insertText('meow');
+        await operateProcessInstanceViewModificationModePage.fillMonacoEditor(
+          operateProcessInstanceViewModificationModePage.newVariableByIndex(0)
+            .writeModeValue,
+          'meow',
+        );
         await operateProcessInstanceViewModificationModePage.checkNewVariableErrorMessageText(
           0,
           'Value has to be JSON',
@@ -585,18 +609,6 @@ test.describe('Process Instance Modifications', () => {
           JSON.stringify(validJSONValue1),
         );
 
-        // The value applied in the modal lands in the inline CodeMirror a beat
-        // after Apply; until it does, the editor still shows its "Value"
-        // placeholder. Poll with backoff so the read waits for the value to
-        // reflect instead of parsing the placeholder as JSON.
-        await expect(async () => {
-          await assertJsonEqual(
-            operateProcessInstanceViewModificationModePage.newVariableByIndex(0)
-              .writeModeValue,
-            validJSONValue1,
-          );
-        }).toPass({timeout: 15_000, intervals: [250, 500, 1000, 2000]});
-
         await expect(
           operateProcessInstanceViewModificationModePage.lastAddedModificationText,
         ).toBeVisible();
@@ -605,6 +617,18 @@ test.describe('Process Instance Modifications', () => {
             'testEmptyVariable',
           ),
         ).toBeVisible();
+
+        await operateProcessInstanceViewModificationModePage.clickReviewModificationsButton();
+        const summary =
+          operateProcessInstanceViewModificationModePage.modalDialog.getByText(
+            /^testEmptyVariable: /,
+          );
+        await expect(summary).toBeVisible();
+        expect(
+          JSON.parse(
+            (await summary.innerText()).replace(/^testEmptyVariable: /, ''),
+          ),
+        ).toEqual(validJSONValue1);
       });
 
       test('New variable can be deleted via trash icon before applying', async ({

@@ -18,21 +18,19 @@ class OperateHomePage {
   readonly batchOperationsNavItem: Locator;
   readonly operationsLogNavItem: Locator;
   readonly informationDialog: Locator;
-  readonly editVariableButton: Locator;
-  readonly variableValueInput: Locator;
   readonly variableValueEditor: Locator;
   readonly saveVariableButton: Locator;
-  readonly editVariableSpinner: Locator;
   readonly userMenuButton: Locator;
   readonly logoutButton: Locator;
-  readonly openButton: Locator;
   readonly closeButton: Locator;
   readonly messageBanner: Locator;
   readonly applyButton: Locator;
 
   constructor(page: Page) {
     this.page = page;
-    this.operateBanner = page.getByRole('link', {name: 'Camunda Operate'});
+    this.operateBanner = page.getByRole('link', {
+      name: /^Camunda(?: logo)? Operate$/,
+    });
     this.dashboardLink = page.getByRole('link', {name: 'Dashboard'});
     this.processesTab = page.getByRole('link', {name: 'Processes'}).first();
     this.decisionsTab = page.getByRole('link', {name: 'Decisions'});
@@ -48,24 +46,12 @@ class OperateHomePage {
     this.informationDialog = page.getByRole('button', {
       name: 'Close this dialog',
     });
-    this.editVariableButton = page.getByTestId('edit-variable-button');
-    this.variableValueInput = page.getByTestId('edit-variable-value');
-    // The inline variable-value editor migrated from Monaco (which exposed
-    // its container with `role="code"`) to CodeMirror as part of #62782.
-    // CodeMirror's content editable renders `role="textbox"`, not "code", so
-    // this has to target the editor by the explicit data-testid the
-    // InlineJsonEditor component sets on the CodeMirror instance instead.
-    this.variableValueEditor = page.getByTestId('code-mirror-editor');
+    this.variableValueEditor = page
+      .getByRole('group')
+      .filter({has: page.getByRole('textbox')});
     this.saveVariableButton = page.getByLabel('Save');
-    this.editVariableSpinner = page
-      .getByTestId('variable-operation-spinner')
-      .locator('circle')
-      .nth(1);
     this.userMenuButton = page.getByRole('button', {name: /^User menu/});
     this.logoutButton = page.getByRole('menuitem', {name: /log out/i});
-    this.openButton = page
-      .getByTestId('variable-testVariable')
-      .getByLabel('Open');
     this.closeButton = page.getByRole('button', {name: 'Got it - Dismiss'});
     this.messageBanner = page.getByRole('button', {name: 'Close'});
     this.applyButton = page.getByRole('button', {name: 'Apply'});
@@ -89,7 +75,9 @@ class OperateHomePage {
 
   async clickEditVariableButton(variableName: string): Promise<void> {
     const editVariableButton = this.page
-      .getByTestId(`variable-${variableName}`)
+      .getByRole('table', {name: 'Variable List', exact: true})
+      .getByRole('row')
+      .filter({has: this.page.getByTitle(variableName, {exact: true})})
       .getByLabel('Edit');
     await expect(editVariableButton).toBeVisible({
       timeout: 30000,
@@ -97,13 +85,10 @@ class OperateHomePage {
     await editVariableButton.click();
   }
 
-  async clickVariableValueInput(): Promise<void> {
-    await this.variableValueInput.click();
-  }
-
   async clearVariableValueInput(): Promise<void> {
     await expect(this.variableValueEditor).toBeVisible();
-    await this.page.keyboard.press('ControlOrMeta+A');
+    await this.page.keyboard.press('Control+A');
+    await this.page.keyboard.press('Meta+A');
     await this.page.keyboard.press('Backspace');
   }
 

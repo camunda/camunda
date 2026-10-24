@@ -281,11 +281,6 @@ jobs:
           npm install
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite
 
-      - name: Install Playwright Browsers
-        shell: bash
-        run: npx playwright install --with-deps chromium
-        working-directory: qa/c8-orchestration-cluster-e2e-test-suite
-
       - name: Run API tests
         shell: bash
         env:
@@ -472,11 +467,6 @@ jobs:
         run: |
           rm -rf node_modules package-lock.json
           npm install
-        working-directory: qa/c8-orchestration-cluster-e2e-test-suite
-
-      - name: Install Playwright Browsers
-        shell: bash
-        run: npx playwright install --with-deps chromium
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite
 
       - name: Run API tests
