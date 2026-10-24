@@ -13,6 +13,7 @@ import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.ER
 import io.camunda.exporter.index.TargetIndex;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.entities.listview.ProcessInstanceForListViewEntity;
+import io.camunda.zeebe.exporter.common.utils.StorageOrdinalUtil;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
@@ -95,7 +96,8 @@ public class ListViewProcessInstanceFromIncidentHandler
         .setKey(processInstanceKey)
         .setProcessInstanceKey(processInstanceKey)
         .setPartitionId(record.getPartitionId())
-        .setTenantId(tenantOrDefault(recordValue.getTenantId()));
+        .setTenantId(tenantOrDefault(recordValue.getTenantId()))
+        .setStorageOrdinal(StorageOrdinalUtil.ordinalIfOrdinalControlled(recordValue).orElse(null));
 
     if (record.getIntent() == IncidentIntent.CREATED) {
       entity.setErrorMessage(trimWhitespace(recordValue.getErrorMessage()));
