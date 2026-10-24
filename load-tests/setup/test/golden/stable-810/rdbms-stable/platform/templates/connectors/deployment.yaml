@@ -44,13 +44,13 @@ spec:
 
       annotations:
 
-        checksum/config-identity-env: 4d46263983b31f985e7abb9ed52e5ad4b63305a68a9f615b584176b7720391d4
+        checksum/config-identity-env: ba67698c0aeef6be9c9d56569252a6e61d947a68685ae25910f4f2d1b2ba6ee2
     spec:
       imagePullSecrets:
         - name: harbor-registry
       containers:
         - name: connectors
-          image: camunda/connectors-bundle:8.10.0
+          image: camunda/connectors-bundle:8.10.1
           imagePullPolicy: Always
           securityContext:
             allowPrivilegeEscalation: false
