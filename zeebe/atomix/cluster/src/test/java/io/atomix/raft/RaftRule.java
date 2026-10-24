@@ -64,6 +64,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Random;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
@@ -744,7 +745,7 @@ public final class RaftRule extends ExternalResource {
     }
   }
 
-  private record CopiedRaftLogEntry(long index, long term, RaftEntry entry)
+  private record CopiedRaftLogEntry(long index, long term, UUID epoch, RaftEntry entry)
       implements IndexedRaftLogEntry {
     private static CopiedRaftLogEntry of(final IndexedRaftLogEntry entry) {
       final RaftEntry copiedEntry;
@@ -757,7 +758,7 @@ public final class RaftRule extends ExternalResource {
         copiedEntry = entry.entry();
       }
 
-      return new CopiedRaftLogEntry(entry.index(), entry.term(), copiedEntry);
+      return new CopiedRaftLogEntry(entry.index(), entry.term(), entry.epoch(), copiedEntry);
     }
 
     @Override

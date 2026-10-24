@@ -20,6 +20,7 @@ import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.File;
 import java.nio.ByteBuffer;
+import java.util.UUID;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -30,6 +31,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 final class AtomixLogStorageReaderTest {
+
+  private static final UUID EPOCH = UUID.randomUUID();
 
   private RaftLog log;
   private AtomixLogStorage logStorage;
@@ -178,7 +181,7 @@ final class AtomixLogStorageReaderTest {
 
     @Override
     public void appendEntry(final ApplicationEntry entry, final AppendListener appendListener) {
-      final var indexed = log.append(new RaftLogEntry(1, entry));
+      final var indexed = log.append(new RaftLogEntry(1, EPOCH, entry));
       appendListener.onWrite(indexed);
       log.setCommitIndex(indexed.index());
       appendListener.onCommit(indexed.index(), entry.highestPosition());
