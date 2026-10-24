@@ -284,7 +284,12 @@ public interface JobWorkerBuilderStep1 {
 
     /**
      * Sets the job worker metrics implementation to use. See {@link JobWorkerMetrics} for more.
-     * Defaults to {@link JobWorkerMetrics#noop()}, an implementation which simply does nothing.
+     *
+     * <p>When not set, the worker records Micrometer metrics to the meter registry of the client
+     * (see {@link io.camunda.client.CamundaClientBuilder#metrics}), tagged with the job type as
+     * {@code type}, the physical tenant as {@code physicalTenantId} and with {@code
+     * client=camunda}; closing the client removes them. Without a client meter registry, it
+     * defaults to {@link JobWorkerMetrics#noop()}, an implementation which simply does nothing.
      *
      * @param metrics the implementation to use
      * @return the builder for this worker

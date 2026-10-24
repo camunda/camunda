@@ -66,8 +66,10 @@ import io.camunda.client.CredentialsProvider;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.command.CommandWithTenantStep;
 import io.camunda.client.api.command.enums.TenantFilter;
+import io.camunda.client.api.metrics.CamundaClientMetrics;
 import io.camunda.client.api.worker.JobExceptionHandler;
 import io.camunda.client.impl.basicauth.BasicAuthCredentialsProviderBuilder;
+import io.camunda.client.impl.metrics.ClientMetricsFactory;
 import io.camunda.client.impl.oauth.OAuthCredentialsProviderBuilder;
 import io.camunda.client.impl.util.DataSizeUtil;
 import io.camunda.client.impl.util.Environment;
@@ -116,6 +118,7 @@ public final class CamundaClientBuilderImpl
 
   private final List<ClientInterceptor> interceptors = new ArrayList<>();
   private final List<AsyncExecChainHandler> chainHandlers = new ArrayList<>();
+  private ClientMetricsFactory metrics = ClientMetricsFactory.noop();
   private URI restAddress = DEFAULT_REST_ADDRESS;
   private URI grpcAddress = DEFAULT_GRPC_ADDRESS;
   private boolean preferRestOverGrpc = DEFAULT_PREFER_REST_OVER_GRPC;
@@ -699,11 +702,25 @@ public final class CamundaClientBuilderImpl
   }
 
   @Override
+  public CamundaClientBuilder metrics(final CamundaClientMetrics metrics) {
+    if (metrics == null) {
+      this.metrics = ClientMetricsFactory.noop();
+    } else if (metrics instanceof ClientMetricsFactory) {
+      this.metrics = (ClientMetricsFactory) metrics;
+    } else {
+      throw new IllegalArgumentException(
+          "Expected metrics created by CamundaClientMetrics.micrometer() or CamundaClientMetrics.noop(), but got "
+              + metrics.getClass().getName());
+    }
+    return this;
+  }
+
+  @Override
   public CamundaClient build() {
     if (applyEnvironmentVariableOverrides) {
       applyOverrides();
     }
-    return new CamundaClientImpl(this);
+    return new CamundaClientImpl(this, metrics.create(physicalTenantId));
   }
 
   private void keepAlive(final String keepAlive) {

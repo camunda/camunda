@@ -18,6 +18,7 @@ package io.camunda.client;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.command.CommandWithTenantStep;
 import io.camunda.client.api.command.enums.TenantFilter;
+import io.camunda.client.api.metrics.CamundaClientMetrics;
 import io.camunda.client.api.worker.JobExceptionHandler;
 import io.camunda.client.api.worker.JobHandler;
 import io.camunda.client.api.worker.JobWorkerBuilderStep1.JobWorkerBuilderStep3;
@@ -350,6 +351,17 @@ public interface CamundaClientBuilder {
    * @return this builder for chaining
    */
   CamundaClientBuilder defaultJobWorkerExceptionHandler(JobExceptionHandler jobExceptionHandler);
+
+  /**
+   * Sets the metrics the client records, e.g. {@code
+   * metrics(CamundaClientMetrics.micrometer().withMeterRegistry(registry).build())}. By default,
+   * the client records no metrics and does not need Micrometer on the class path. See {@link
+   * CamundaClientMetrics} for what is recorded and how to share a registry between clients.
+   *
+   * @param metrics the metrics to record, or {@code null} to record none
+   * @return this builder for chaining
+   */
+  CamundaClientBuilder metrics(CamundaClientMetrics metrics);
 
   /**
    * @return a new {@link CamundaClient} with the provided configuration options.
