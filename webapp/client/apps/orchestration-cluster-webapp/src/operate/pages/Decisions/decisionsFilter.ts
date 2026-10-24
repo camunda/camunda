@@ -36,6 +36,14 @@ type DecisionsSearch = {
 	sort?: string;
 };
 
+function toISO(value: string | undefined): string | undefined {
+	if (!value) {
+		return undefined;
+	}
+	const date = new Date(value);
+	return Number.isNaN(date.getTime()) ? undefined : date.toISOString();
+}
+
 /**
  * Maps route search params into the decision-instances search request filter. Returns
  * `undefined` when no instance-state checkbox is selected, mirroring legacy's
@@ -64,7 +72,7 @@ function mapDecisionInstancesFilter(search: DecisionsSearch): DecisionInstancesF
 		tenantId: isSpecificTenant(search.tenantId) ? search.tenantId : undefined,
 		evaluationDate:
 			search.evaluationDateFrom || search.evaluationDateTo
-				? {$gt: search.evaluationDateFrom, $lt: search.evaluationDateTo}
+				? {$gt: toISO(search.evaluationDateFrom), $lt: toISO(search.evaluationDateTo)}
 				: undefined,
 		businessId: search.businessId ? decodeAdvancedStringFilter(search.businessId) : undefined,
 	};

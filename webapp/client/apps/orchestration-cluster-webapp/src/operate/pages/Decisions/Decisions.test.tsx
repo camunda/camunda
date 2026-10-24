@@ -354,6 +354,35 @@ describe('<Decisions />', () => {
 		await expect.element(screen.getByText('Decision "Invoice Approval" exists in more than one Tenant')).toBeVisible();
 	});
 
+	it('should send the evaluation date range as ISO-8601 in the instances request', async ({worker}) => {
+		worker.use(
+			mockQueryDecisionDefinitionsEndpoint({successResponse: DECISION_DEFINITIONS}),
+			mockQueryDecisionInstancesEndpoint({
+				schema: z.looseObject({
+					filter: z.looseObject({
+						evaluationDate: z.strictObject({
+							$gt: z.literal('2024-01-01T08:00:00.000Z'),
+							$lt: z.literal('2024-01-02T08:00:00.000Z'),
+						}),
+					}),
+				}),
+				successResponse: HttpResponse.json(
+					createQueryDecisionInstancesResponse({
+						items: [createDecisionInstance({decisionEvaluationInstanceKey: '123567'})],
+					}),
+				),
+				failureResponse: new HttpResponse(null, {status: 400}),
+			}),
+		);
+
+		const screen = await renderDecisionsPage({
+			evaluationDateFrom: '2024-01-01T10:00:00.000+0200',
+			evaluationDateTo: '2024-01-02T10:00:00.000+0200',
+		});
+
+		await expect.element(screen.getByTitle('View decision instance 123567')).toBeVisible();
+	});
+
 	describe('legacy bookmarks', () => {
 		it('should not query instances when a bookmarked filter has no selected states', async ({worker}) => {
 			worker.use(mockQueryDecisionDefinitionsEndpoint({successResponse: DECISION_DEFINITIONS}));

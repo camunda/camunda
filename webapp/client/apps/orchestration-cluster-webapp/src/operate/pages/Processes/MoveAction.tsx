@@ -52,7 +52,7 @@ const MoveAction: React.FC<Props> = observer(
 					? t('operate.processes.batchModification.selectElement')
 					: restriction === 'unsupportedType'
 						? t('operate.processes.batchModification.unsupportedType')
-						: !selection.eligibility.cancel
+						: !selection.eligibility.running
 							? t('operate.processes.batchModification.runningOnly')
 							: restriction === 'insideMultiInstance'
 								? t('operate.processes.batchModification.insideMultiInstance')

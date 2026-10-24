@@ -12,7 +12,6 @@ import {useTranslation} from 'react-i18next';
 import {Button, Modal, Table, TableBody, TableCell, TableHead, TableRow} from '@carbon/react';
 import type {ProcessDefinitionSelection} from './DiagramPanel';
 import type {ProcessesNavigationBlocker} from './ProcessesLayout';
-import {getActiveInstancesFilter} from './getActiveInstancesFilter';
 import {getProcessDefinitionName} from './getProcessDefinitionName';
 import {BatchModificationActions, SummaryTableHeader, SummaryTitle} from './styled';
 import {useBatchModificationStatistics, type BatchModificationScope} from './useBatchModificationStatistics';
@@ -20,6 +19,7 @@ import {useBatchModificationStatistics, type BatchModificationScope} from './use
 type Props = {
 	blocker: ProcessesNavigationBlocker;
 	scope: BatchModificationScope;
+	hasActiveScope: boolean;
 	processDefinitionSelection: ProcessDefinitionSelection;
 	isDefinitionChanged: boolean;
 	sourceElementId?: string;
@@ -33,6 +33,7 @@ type Props = {
 function BatchModificationFooter({
 	blocker,
 	scope,
+	hasActiveScope,
 	processDefinitionSelection,
 	isDefinitionChanged,
 	sourceElementId,
@@ -55,8 +56,7 @@ function BatchModificationFooter({
 			: getProcessDefinitionName(processDefinitionSelection.definition);
 	const count = useBatchModificationStatistics({definitionKey, sourceElementId, scope});
 	const isTargetElementSelected = targetElementId !== undefined;
-	const isScopeReviewable =
-		scope.selectedCount >= 1 && getActiveInstancesFilter(scope.filter) !== null && !isDefinitionChanged;
+	const isScopeReviewable = scope.selectedCount >= 1 && hasActiveScope && !isDefinitionChanged;
 	const isExitConfirmationOpen = isExitOpen || blocker.status === 'blocked';
 
 	return (

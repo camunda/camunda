@@ -44,7 +44,7 @@ function MigrateAction({mode, isSubmitting, hasActiveScope, selection, processDe
 				? t('operate.processes.migration.selectSource')
 				: isError || data?.xml === ''
 					? t('operate.processes.migration.diagramError')
-					: !selection.eligibility.cancel || !hasActiveScope
+					: !selection.eligibility.running || !hasActiveScope
 						? t('operate.processes.migration.runningOnly')
 						: undefined;
 
