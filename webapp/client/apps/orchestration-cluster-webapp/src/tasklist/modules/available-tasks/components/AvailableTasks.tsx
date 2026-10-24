@@ -106,6 +106,7 @@ const AvailableTasks: React.FC<Props> = ({
 										dueDate={task.dueDate}
 										completionDate={task.completionDate}
 										priority={task.priority}
+										isSuspended={task.isSuspended}
 										currentUser={currentUser}
 									/>
 								</div>

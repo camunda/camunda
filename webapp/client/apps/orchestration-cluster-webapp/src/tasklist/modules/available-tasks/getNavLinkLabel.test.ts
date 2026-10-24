@@ -16,6 +16,7 @@ describe('getNavLinkLabel', () => {
 			displayName: 'Review invoice',
 			assigneeId: 'demo',
 			currentUsername: 'demo',
+			isSuspended: false,
 		});
 
 		expect(result).toBe('Task assigned to me: Review invoice');
@@ -26,6 +27,7 @@ describe('getNavLinkLabel', () => {
 			displayName: 'Review invoice',
 			assigneeId: 'other-user',
 			currentUsername: 'demo',
+			isSuspended: false,
 		});
 
 		expect(result).toBe('Assigned task: Review invoice');
@@ -36,6 +38,7 @@ describe('getNavLinkLabel', () => {
 			displayName: 'Review invoice',
 			assigneeId: null,
 			currentUsername: 'demo',
+			isSuspended: false,
 		});
 
 		expect(result).toBe('Unassigned task: Review invoice');
@@ -46,17 +49,37 @@ describe('getNavLinkLabel', () => {
 			displayName: 'Review invoice',
 			assigneeId: undefined,
 			currentUsername: 'demo',
+			isSuspended: false,
 		});
 
 		expect(result).toBe('Unassigned task: Review invoice');
 	});
 
+	it('should mark the label of a suspended task', () => {
+		const result = getNavLinkLabel({
+			displayName: 'Review invoice',
+			assigneeId: 'demo',
+			currentUsername: 'demo',
+			isSuspended: true,
+		});
+
+		expect(result).toBe('Task assigned to me: Review invoice (suspended)');
+	});
+
 	it('should include the task display name in every label variant', () => {
 		const name = 'Approve purchase order';
 
-		expect(getNavLinkLabel({displayName: name, assigneeId: 'demo', currentUsername: 'demo'})).toContain(name);
-		expect(getNavLinkLabel({displayName: name, assigneeId: 'other', currentUsername: 'demo'})).toContain(name);
-		expect(getNavLinkLabel({displayName: name, assigneeId: null, currentUsername: 'demo'})).toContain(name);
-		expect(getNavLinkLabel({displayName: name, assigneeId: undefined, currentUsername: 'demo'})).toContain(name);
+		expect(
+			getNavLinkLabel({displayName: name, assigneeId: 'demo', currentUsername: 'demo', isSuspended: false}),
+		).toContain(name);
+		expect(
+			getNavLinkLabel({displayName: name, assigneeId: 'other', currentUsername: 'demo', isSuspended: false}),
+		).toContain(name);
+		expect(
+			getNavLinkLabel({displayName: name, assigneeId: null, currentUsername: 'demo', isSuspended: false}),
+		).toContain(name);
+		expect(
+			getNavLinkLabel({displayName: name, assigneeId: undefined, currentUsername: 'demo', isSuspended: false}),
+		).toContain(name);
 	});
 });

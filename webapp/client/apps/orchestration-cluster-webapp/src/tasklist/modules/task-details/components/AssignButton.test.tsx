@@ -7,7 +7,7 @@
  */
 
 import {assignTaskRequestBodySchema} from '@camunda/camunda-api-zod-schemas/8.11';
-import {Toaster, toast} from '@camunda/design-system';
+import {Toaster, TooltipProvider, toast} from '@camunda/design-system';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {HttpResponse} from 'msw';
 import {z} from 'zod';
@@ -42,7 +42,7 @@ function getWrapper() {
 
 	const Wrapper: React.FC<{children: React.ReactNode}> = ({children}) => (
 		<QueryClientProvider client={queryClient}>
-			{children}
+			<TooltipProvider>{children}</TooltipProvider>
 			<Toaster />
 		</QueryClientProvider>
 	);
@@ -59,7 +59,13 @@ describe('<AssignButton />', () => {
 
 	it('should render assign action for an unassigned task', async () => {
 		const screen = await render(
-			<AssignButton userTaskKey={USER_TASK_KEY} assignee={null} taskState="CREATED" currentUser={CURRENT_USER} />,
+			<AssignButton
+				userTaskKey={USER_TASK_KEY}
+				isSuspended={false}
+				assignee={null}
+				taskState="CREATED"
+				currentUser={CURRENT_USER}
+			/>,
 			{wrapper: getWrapper()},
 		);
 
@@ -71,6 +77,7 @@ describe('<AssignButton />', () => {
 		const screen = await render(
 			<AssignButton
 				userTaskKey={USER_TASK_KEY}
+				isSuspended={false}
 				assignee={CURRENT_USER}
 				taskState="CREATED"
 				currentUser={CURRENT_USER}
@@ -98,7 +105,13 @@ describe('<AssignButton />', () => {
 		);
 
 		const screen = await render(
-			<AssignButton userTaskKey={USER_TASK_KEY} assignee={null} taskState="CREATED" currentUser={CURRENT_USER} />,
+			<AssignButton
+				userTaskKey={USER_TASK_KEY}
+				isSuspended={false}
+				assignee={null}
+				taskState="CREATED"
+				currentUser={CURRENT_USER}
+			/>,
 			{wrapper: getWrapper()},
 		);
 
@@ -124,6 +137,7 @@ describe('<AssignButton />', () => {
 		const screen = await render(
 			<AssignButton
 				userTaskKey={USER_TASK_KEY}
+				isSuspended={false}
 				assignee={CURRENT_USER}
 				taskState="CREATED"
 				currentUser={CURRENT_USER}
@@ -159,6 +173,7 @@ describe('<AssignButton />', () => {
 		const screen = await render(
 			<AssignButton
 				userTaskKey={USER_TASK_KEY}
+				isSuspended={false}
 				assignee={CURRENT_USER}
 				taskState="CREATED"
 				currentUser={CURRENT_USER}
@@ -173,7 +188,13 @@ describe('<AssignButton />', () => {
 		await expect.element(screen.getByRole('button', {name: 'Unassign'})).toBeEnabled();
 
 		screen.rerender(
-			<AssignButton userTaskKey={USER_TASK_KEY} assignee={null} taskState="CREATED" currentUser={CURRENT_USER} />,
+			<AssignButton
+				userTaskKey={USER_TASK_KEY}
+				isSuspended={false}
+				assignee={null}
+				taskState="CREATED"
+				currentUser={CURRENT_USER}
+			/>,
 		);
 		await userEvent.click(screen.getByRole('button', {name: 'Assign to me'}));
 
@@ -200,7 +221,13 @@ describe('<AssignButton />', () => {
 		);
 
 		const screen = await render(
-			<AssignButton userTaskKey={USER_TASK_KEY} assignee={null} taskState="CREATED" currentUser={CURRENT_USER} />,
+			<AssignButton
+				userTaskKey={USER_TASK_KEY}
+				isSuspended={false}
+				assignee={null}
+				taskState="CREATED"
+				currentUser={CURRENT_USER}
+			/>,
 			{wrapper: getWrapper()},
 		);
 
@@ -213,6 +240,7 @@ describe('<AssignButton />', () => {
 		screen.rerender(
 			<AssignButton
 				userTaskKey={USER_TASK_KEY}
+				isSuspended={false}
 				assignee={CURRENT_USER}
 				taskState="CREATED"
 				currentUser={CURRENT_USER}
@@ -238,7 +266,13 @@ describe('<AssignButton />', () => {
 		);
 
 		const screen = await render(
-			<AssignButton userTaskKey={USER_TASK_KEY} assignee={null} taskState="CREATED" currentUser={CURRENT_USER} />,
+			<AssignButton
+				userTaskKey={USER_TASK_KEY}
+				isSuspended={false}
+				assignee={null}
+				taskState="CREATED"
+				currentUser={CURRENT_USER}
+			/>,
 			{wrapper: getWrapper()},
 		);
 
@@ -251,7 +285,13 @@ describe('<AssignButton />', () => {
 
 	it('should show an error and not call the backend when the current user has an empty username', async () => {
 		const screen = await render(
-			<AssignButton userTaskKey={USER_TASK_KEY} assignee={null} taskState="CREATED" currentUser="" />,
+			<AssignButton
+				userTaskKey={USER_TASK_KEY}
+				isSuspended={false}
+				assignee={null}
+				taskState="CREATED"
+				currentUser=""
+			/>,
 			{wrapper: getWrapper()},
 		);
 
@@ -266,7 +306,13 @@ describe('<AssignButton />', () => {
 
 	it('should show an error and not call the backend when the current user has a null username', async () => {
 		const screen = await render(
-			<AssignButton userTaskKey={USER_TASK_KEY} assignee={null} taskState="CREATED" currentUser={null} />,
+			<AssignButton
+				userTaskKey={USER_TASK_KEY}
+				isSuspended={false}
+				assignee={null}
+				taskState="CREATED"
+				currentUser={null}
+			/>,
 			{wrapper: getWrapper()},
 		);
 
@@ -297,6 +343,7 @@ describe('<AssignButton />', () => {
 		const screen = await render(
 			<AssignButton
 				userTaskKey={USER_TASK_KEY}
+				isSuspended={false}
 				assignee={CURRENT_USER}
 				taskState="CREATED"
 				currentUser={CURRENT_USER}
@@ -326,7 +373,13 @@ describe('<AssignButton />', () => {
 		);
 
 		const screen = await render(
-			<AssignButton userTaskKey={USER_TASK_KEY} assignee={null} taskState="CREATED" currentUser={CURRENT_USER} />,
+			<AssignButton
+				userTaskKey={USER_TASK_KEY}
+				isSuspended={false}
+				assignee={null}
+				taskState="CREATED"
+				currentUser={CURRENT_USER}
+			/>,
 			{wrapper: getWrapper()},
 		);
 
@@ -350,7 +403,13 @@ describe('<AssignButton />', () => {
 		);
 
 		const screen = await render(
-			<AssignButton userTaskKey={USER_TASK_KEY} assignee={null} taskState="CREATED" currentUser={CURRENT_USER} />,
+			<AssignButton
+				userTaskKey={USER_TASK_KEY}
+				isSuspended={false}
+				assignee={null}
+				taskState="CREATED"
+				currentUser={CURRENT_USER}
+			/>,
 			{wrapper: getWrapper()},
 		);
 
@@ -372,6 +431,7 @@ describe('<AssignButton />', () => {
 		screen.rerender(
 			<AssignButton
 				userTaskKey={USER_TASK_KEY}
+				isSuspended={false}
 				assignee={CURRENT_USER}
 				taskState="CREATED"
 				currentUser={CURRENT_USER}
@@ -402,6 +462,7 @@ describe('<AssignButton />', () => {
 		const screen = await render(
 			<AssignButton
 				userTaskKey={USER_TASK_KEY}
+				isSuspended={false}
 				assignee={CURRENT_USER}
 				taskState="CREATED"
 				currentUser={CURRENT_USER}
@@ -427,6 +488,7 @@ describe('<AssignButton />', () => {
 		screen.rerender(
 			<AssignButton
 				userTaskKey={USER_TASK_KEY}
+				isSuspended={false}
 				assignee={CURRENT_USER}
 				taskState="CREATED"
 				currentUser={CURRENT_USER}
@@ -444,7 +506,13 @@ describe('<AssignButton />', () => {
 		);
 
 		const screen = await render(
-			<AssignButton userTaskKey={USER_TASK_KEY} assignee={null} taskState="ASSIGNING" currentUser={CURRENT_USER} />,
+			<AssignButton
+				userTaskKey={USER_TASK_KEY}
+				isSuspended={false}
+				assignee={null}
+				taskState="ASSIGNING"
+				currentUser={CURRENT_USER}
+			/>,
 			{wrapper: getWrapper()},
 		);
 
@@ -460,6 +528,7 @@ describe('<AssignButton />', () => {
 		screen.rerender(
 			<AssignButton
 				userTaskKey={USER_TASK_KEY}
+				isSuspended={false}
 				assignee={CURRENT_USER}
 				taskState="CREATED"
 				currentUser={CURRENT_USER}
@@ -479,6 +548,7 @@ describe('<AssignButton />', () => {
 		const screen = await render(
 			<AssignButton
 				userTaskKey={USER_TASK_KEY}
+				isSuspended={false}
 				assignee={CURRENT_USER}
 				taskState="ASSIGNING"
 				currentUser={CURRENT_USER}
@@ -496,9 +566,42 @@ describe('<AssignButton />', () => {
 		);
 
 		screen.rerender(
-			<AssignButton userTaskKey={USER_TASK_KEY} assignee={null} taskState="CREATED" currentUser={CURRENT_USER} />,
+			<AssignButton
+				userTaskKey={USER_TASK_KEY}
+				isSuspended={false}
+				assignee={null}
+				taskState="CREATED"
+				currentUser={CURRENT_USER}
+			/>,
 		);
 
 		await expect.element(screen.getByRole('button', {name: 'Assign to me'})).toBeVisible();
+	});
+
+	it.for([
+		{assignee: null, name: 'Assign to me'},
+		{assignee: CURRENT_USER, name: 'Unassign'},
+	])('should disable the "$name" action of a suspended task and explain why', async ({assignee, name}) => {
+		const screen = await render(
+			<AssignButton
+				userTaskKey={USER_TASK_KEY}
+				isSuspended
+				assignee={assignee}
+				taskState="CREATED"
+				currentUser={CURRENT_USER}
+			/>,
+			{wrapper: getWrapper()},
+		);
+		const button = screen.getByRole('button', {name});
+
+		await expect.element(button).toBeDisabled();
+
+		await userEvent.hover(button, {force: true});
+
+		await expect
+			.element(
+				screen.getByRole('tooltip', {name: 'This action is disabled because the process instance is suspended.'}),
+			)
+			.toBeVisible();
 	});
 });
