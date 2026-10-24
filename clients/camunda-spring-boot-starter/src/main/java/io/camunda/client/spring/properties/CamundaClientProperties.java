@@ -43,8 +43,12 @@ public class CamundaClientProperties {
   @NestedConfigurationProperty
   private CamundaClientAuthProperties auth = new CamundaClientAuthProperties();
 
-  /** The number of threads for invocation of job workers. */
-  private Integer executionThreads = DEFAULT_NUM_JOB_WORKER_EXECUTION_THREADS;
+  /**
+   * The number of platform threads for invocation of job handlers, shared by all job workers. If
+   * not set, each job handler runs on its own virtual thread (Java 21+), bounded per worker by
+   * <code>max-jobs-active</code>; on older Java versions, job handlers run on a single thread.
+   */
+  private Integer executionThreads;
 
   /** The default time-to-live for a message when no value is provided. */
   private Duration messageTimeToLive = DEFAULT_MESSAGE_TTL;

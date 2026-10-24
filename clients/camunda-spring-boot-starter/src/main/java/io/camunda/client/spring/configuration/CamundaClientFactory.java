@@ -97,8 +97,8 @@ public class CamundaClientFactory {
     final CamundaClientExecutorService executor =
         useSharedExecutor
             ? executorService.getIfAvailable(
-                () -> CamundaClientExecutorService.createDefault(properties.getExecutionThreads()))
-            : CamundaClientExecutorService.createDefault(properties.getExecutionThreads());
+                () -> CamundaClientExecutorService.create(properties.getExecutionThreads()))
+            : CamundaClientExecutorService.create(properties.getExecutionThreads());
     final CamundaClientConfiguration configuration =
         new SpringCamundaClientConfiguration(
             properties,

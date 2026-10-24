@@ -116,15 +116,26 @@ public interface CamundaClientBuilder {
   CamundaClientBuilder defaultJobWorkerTenantFilter(TenantFilter tenantFilter);
 
   /**
-   * @param maxJobsActive Default value for {@link JobWorkerBuilderStep3#maxJobsActive(int)}.
-   *     Default value is 32.
+   * @param maxJobsActive Default value for {@link JobWorkerBuilderStep3#maxJobsActive(int)}, which
+   *     also bounds how many of a worker's job handlers run at the same time. Default value is 32.
    */
   CamundaClientBuilder defaultJobWorkerMaxJobsActive(int maxJobsActive);
 
   /**
-   * @param numThreads The number of threads for invocation of job workers. Default value is 1.
-   *     Setting this value to 0 causes the client to reuse the scheduled executor for job handling
-   *     (backward compatibility behavior).
+   * Runs job handlers on a fixed pool of platform threads, shared by all job workers of this
+   * client.
+   *
+   * <p>Optional. When neither this nor {@link #jobHandlingExecutor(ExecutorService, boolean)} is
+   * set, each job handler runs on its own virtual thread, and the number of handlers running at the
+   * same time is bounded per worker by {@link JobWorkerBuilderStep3#maxJobsActive(int)}. On JVMs
+   * without virtual threads (before Java 21), handlers run on a single platform thread instead.
+   *
+   * <p>Set this to limit how many handlers of all workers run in parallel, e.g. for CPU-bound
+   * handlers. Setting it to 1 runs handlers one at a time, as the client did by default before it
+   * used virtual threads. Setting it to 0 runs handlers on the scheduling executor (backward
+   * compatibility behavior).
+   *
+   * @param numThreads the number of platform threads for invocation of job handlers
    */
   CamundaClientBuilder numJobWorkerExecutionThreads(int numThreads);
 
@@ -171,8 +182,9 @@ public interface CamundaClientBuilder {
    * <p>Note that job handling (i.e. executing the {@link JobHandler}) is done on a separate
    * executor configured via {@link #jobHandlingExecutor(ExecutorService, boolean)}.
    *
-   * <p>If no job handling executor is provided, this scheduling executor will also be used for job
-   * handling. If no executor is provided here, a default scheduled executor will be created.
+   * <p>This scheduling executor is also used for job handling if {@link
+   * #numJobWorkerExecutionThreads(int)} is set to 0 and no job handling executor is provided. If no
+   * executor is provided here, a default scheduled executor will be created.
    *
    * @param executor an executor service to use for scheduling job worker tasks
    * @param takeOwnership if true, the executor will be closed when the client is closed otherwise,
@@ -199,9 +211,10 @@ public interface CamundaClientBuilder {
    * the {@link JobHandler}). This executor is separate from the scheduling executor configured via
    * {@link #jobWorkerSchedulingExecutor(ScheduledExecutorService, boolean)}.
    *
-   * <p>If no executor is provided here, the scheduling executor will also be used for job handling.
+   * <p>If no executor is provided here, the client creates one as described in {@link
+   * #numJobWorkerExecutionThreads(int)}.
    *
-   * <p>When non-null, this setting override {@link #numJobWorkerExecutionThreads(int)}.
+   * <p>When non-null, this setting overrides {@link #numJobWorkerExecutionThreads(int)}.
    *
    * @param executor an executor service to use for handling jobs
    * @param takeOwnership if true, the executor will be closed when the client is closed otherwise,
