@@ -154,6 +154,13 @@ const uniq = (arr) => [...new Set(arr)].sort();
 const blocking = uniq([...failedChanged, ...errorFileBlocking]);
 const nonBlocking = uniq(failedUntouched);
 
+// If no spec executed at all yet Playwright reported errors, collection was
+// aborted before any changed spec could run — even when every error is located
+// in an untouched spec and is individually exempt. We cannot certify the
+// changed specs passed when none of them ran, so block.
+const collectionAborted =
+  specs.length === 0 && (report?.errors?.length ?? 0) > 0;
+
 const summary = [
   `Changed specs in this PR: ${changed.size}`,
   `Specs executed in this job: ${specs.length}`,
@@ -163,6 +170,9 @@ const summary = [
   runLevelError
     ? 'BLOCKING — a run-level load error (no spec location, or a helper/fixture) was reported'
     : 'Run-level errors: none',
+  collectionAborted
+    ? 'BLOCKING — no spec executed but errors were reported (collection aborted)'
+    : 'Collection: executed at least one spec, or no errors',
   nonBlocking.length
     ? `Non-blocking — untouched specs that failed (reported, not gating):\n  - ${nonBlocking.join('\n  - ')}`
     : 'Non-blocking — untouched specs that failed: none',
@@ -177,10 +187,11 @@ if (process.env.GITHUB_STEP_SUMMARY) {
   );
 }
 
-if (blocking.length || runLevelError) {
-  const reason = runLevelError
-    ? 'a run-level load error prevented the changed tests from being validated'
-    : `${blocking.length} test(s) this PR added or modified failed`;
+if (blocking.length || runLevelError || collectionAborted) {
+  const reason =
+    runLevelError || collectionAborted
+      ? 'a run-level load error prevented the changed tests from being validated'
+      : `${blocking.length} test(s) this PR added or modified failed`;
   console.error(`::error::${reason}; see the uploaded report.`);
   process.exit(1);
 }
