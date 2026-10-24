@@ -78,6 +78,19 @@
 		border-width: 1px;
 	}
 
+	.tjs-table-container tbody tr[data-highlighted],
+	.tjs-table-container tbody tr[data-highlighted] td {
+		background-color: var(--info-background-subtle);
+		color: var(--neutral-foreground-subtle);
+	}
+
+	@media (forced-colors: active) {
+		.tjs-table-container tbody tr[data-highlighted] td {
+			border-top: 2px solid Highlight;
+			border-bottom: 2px solid Highlight;
+		}
+	}
+
 	.tjs-table-container {
 		background-color: var(--viewer-layer);
 		border-width: 1px;
@@ -86,9 +99,12 @@
 	.dmn-literal-expression-container {
 		--literal-expression-font-family: inherit;
 		--literal-expression-font-family-monospace: var(--font-mono);
+		--decision-properties-background-color: var(--viewer-layer);
 		--decision-properties-border-color: var(--neutral-border-strong);
 		--decision-properties-color: var(--neutral-foreground-subtle);
+		--textarea-border-color: var(--neutral-border-strong);
 		--textarea-color: var(--neutral-foreground-subtle);
+		--literal-expression-properties-border-color: var(--neutral-border-strong);
 		--literal-expression-properties-color: var(--neutral-foreground-subtle);
 
 		table {
@@ -114,5 +130,70 @@
 		background-color: var(--viewer-layer);
 		border-color: var(--neutral-border-strong);
 		border-width: 1px 2px 2px 2px;
+	}
+}
+
+/*
+ * dmn-js falls back to hard-coded light `--bio-*` tokens on `.bio-theme-parent` for
+ * every variable the themes below do not set, which renders light surfaces in dark mode.
+ */
+.dmn-viewer-theme .bio-theme-parent,
+.drd-viewer-theme .bio-theme-parent {
+	--bio-surface: var(--neutral-background-subtle);
+	--bio-surface-subtle: var(--neutral-background-subtle);
+	--bio-surface-medium: var(--neutral-background-medium);
+	--bio-text: var(--neutral-foreground-strong);
+	--bio-text-subtle: var(--neutral-foreground-subtle);
+	--bio-text-subtlest: var(--neutral-foreground-subtle);
+	--bio-border: var(--neutral-border-strong);
+	--bio-primary: var(--primary-action-default);
+	--bio-primary-hover: var(--primary-action-hover);
+	--bio-focus: var(--ring);
+
+	.dark & {
+		--bio-surface: var(--neutral-background-medium);
+		--bio-surface-subtle: var(--neutral-background-medium);
+	}
+}
+
+/*
+ * Same approach as .dmn-viewer-theme for the DRD viewer: plain unlayered rules
+ * beat the unlayered dmn-js-drd stylesheet by specificity, with no `!important`.
+ */
+.drd-viewer-theme {
+	--viewer-layer: var(--neutral-background-subtle);
+
+	.dark & {
+		--viewer-layer: var(--neutral-background-medium);
+	}
+
+	.dmn-drd-container {
+		--drd-font-family: inherit;
+	}
+
+	.dmn-drd-container svg:not(.lucide) {
+		background-color: var(--viewer-layer);
+	}
+
+	.ope-selectable {
+		cursor: pointer;
+	}
+
+	.ope-selectable.hover .djs-outline,
+	.ope-selectable:focus-visible .djs-outline,
+	.ope-selected .djs-outline {
+		stroke: var(--primary-action-default);
+		stroke-width: 2px;
+	}
+
+	/* The renderer sets the rectangle fill inline, which only `!important` can override. */
+	.ope-selected .djs-visual rect {
+		fill: var(--info-background-subtle) !important;
+	}
+}
+
+@media (forced-colors: active) {
+	[role='tab'][data-state='active'] {
+		border-bottom: 2px solid Highlight;
 	}
 }

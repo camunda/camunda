@@ -1513,6 +1513,39 @@
 				"panel": {
 					"label": "Entscheidungspanel",
 					"unknownEvaluationFailure": "Auswertung ist mit einem unbekannten Fehler fehlgeschlagen"
+				},
+				"ds": {
+					"drd": {
+						"title": "Entscheidungsanforderungsdiagramm",
+						"resize": "Größe des DRD-Bereichs ändern",
+						"maximize": "DRD-Bereich maximieren",
+						"minimize": "DRD-Bereich minimieren",
+						"close": "DRD-Bereich schließen",
+						"zoomIn": "Vergrößern",
+						"zoomOut": "Verkleinern",
+						"resetZoom": "Zoom zurücksetzen",
+						"unavailableTitle": "Kein Diagramm verfügbar",
+						"unavailableInfo": "Diese Entscheidung ist nicht Teil eines Entscheidungsanforderungsdiagramms.",
+						"content": "Inhalt des Entscheidungsanforderungsdiagramms"
+					},
+					"header": {
+						"decisionInstanceKeyColumn": "Entscheidungsinstanzschlüssel",
+						"evaluationDateColumn": "Auswertungsdatum",
+						"processInstanceColumn": "Prozessinstanzschlüssel",
+						"openDrdButton": "Entscheidungsanforderungsdiagramm öffnen"
+					},
+					"variablesPanel": {
+						"tabsLabel": "Registerkarten des Variablenbereichs",
+						"inputsAndOutputs": "Eingaben und Ausgaben"
+					},
+					"forbidden": {
+						"heading": "Sie haben keine Berechtigung, diese Informationen anzuzeigen"
+					},
+					"panel": {
+						"unknownEvaluationFailure": "Die Auswertung ist aus einem unbekannten Grund fehlgeschlagen. Prüfen Sie die Eingabewerte und die Entscheidungsdefinition.",
+						"expandFailure": "Vollständige Meldung anzeigen",
+						"collapseFailure": "Meldung einklappen"
+					}
 				}
 			},
 			"processInstance": {

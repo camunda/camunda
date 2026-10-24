@@ -13,6 +13,10 @@ class OperateDecisionInstancePage extends BasePage {
 		return this.page.goto(`/operate/decisions/${decisionInstanceId}`);
 	}
 
+	async gotoPreview(decisionInstanceId: string) {
+		return this.page.goto(`/operate-preview/decisions/${decisionInstanceId}`);
+	}
+
 	get decisionPanel() {
 		return this.page.getByRole('region', {name: 'decision panel'});
 	}
@@ -22,19 +26,19 @@ class OperateDecisionInstancePage extends BasePage {
 	}
 
 	get drdResizeHandle() {
-		return this.page.getByRole('separator', {name: 'Resize DRD Panel'});
+		return this.page.getByRole('separator', {name: 'Resize DRD panel'});
 	}
 
 	get maximizeDrd() {
-		return this.page.getByRole('button', {name: 'Maximize DRD Panel'});
+		return this.page.getByRole('button', {name: 'Maximize DRD panel'});
 	}
 
 	get minimizeDrd() {
-		return this.page.getByRole('button', {name: 'Minimize DRD Panel'});
+		return this.page.getByRole('button', {name: 'Minimize DRD panel'});
 	}
 
 	get closeDrd() {
-		return this.page.getByRole('button', {name: 'Close DRD Panel'});
+		return this.page.getByRole('button', {name: 'Close DRD panel'});
 	}
 
 	async resizeDrdBy(delta: number) {

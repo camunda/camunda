@@ -1516,6 +1516,39 @@
 				"panel": {
 					"label": "panneau de décision",
 					"unknownEvaluationFailure": "L'évaluation a échoué avec une erreur inconnue"
+				},
+				"ds": {
+					"drd": {
+						"title": "Diagramme des exigences de décision",
+						"resize": "Redimensionner le panneau DRD",
+						"maximize": "Agrandir le panneau DRD",
+						"minimize": "Réduire le panneau DRD",
+						"close": "Fermer le panneau DRD",
+						"zoomIn": "Zoom avant",
+						"zoomOut": "Zoom arrière",
+						"resetZoom": "Réinitialiser le zoom",
+						"unavailableTitle": "Aucun diagramme disponible",
+						"unavailableInfo": "Cette décision ne fait pas partie d'un diagramme des exigences de décision.",
+						"content": "Contenu du diagramme des exigences de décision"
+					},
+					"header": {
+						"decisionInstanceKeyColumn": "Clé d'instance de décision",
+						"evaluationDateColumn": "Date d'évaluation",
+						"processInstanceColumn": "Clé d'instance de processus",
+						"openDrdButton": "Ouvrir le diagramme des exigences de décision"
+					},
+					"variablesPanel": {
+						"tabsLabel": "Onglets du panneau des variables",
+						"inputsAndOutputs": "Entrées et sorties"
+					},
+					"forbidden": {
+						"heading": "Vous n'avez pas la permission de consulter ces informations"
+					},
+					"panel": {
+						"unknownEvaluationFailure": "L'évaluation a échoué pour une raison inconnue. Vérifiez les valeurs d'entrée et la définition de décision.",
+						"expandFailure": "Afficher le message complet",
+						"collapseFailure": "Réduire le message"
+					}
 				}
 			},
 			"processInstance": {
