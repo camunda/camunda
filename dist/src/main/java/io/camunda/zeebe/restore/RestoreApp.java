@@ -28,6 +28,7 @@ import io.micrometer.core.instrument.MeterRegistry;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.Arrays;
+import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ExecutionException;
 import org.jspecify.annotations.NullMarked;
@@ -143,27 +144,31 @@ public class RestoreApp implements ApplicationRunner {
     validateParameters();
 
     final var restoreId = getRestoreId();
-    final var preRestoreActionResult =
-        preRestoreAction.beforeRestore(restoreId, configuration.getCluster().getNodeId());
 
     try (final var restoreManager =
         new RestoreManager(configuration, backupStore, exporterPositionMapper, meterRegistry)) {
+      // Resolved before any data is touched. Their partitions are the ones to restore, which can be
+      // fewer than are configured when the cluster was scaled up since the backups were taken.
+      final var backupIdsByPartition = resolveBackups(restoreManager);
+      final var restoredPartitionCount =
+          backupIdsByPartition != null
+              ? backupIdsByPartition.size()
+              : configuration.getCluster().getPartitionsCount();
+
+      final var preRestoreActionResult =
+          preRestoreAction.beforeRestore(restoreId, configuration.getCluster().getNodeId());
 
       final PostRestoreActionContext postRestoreActionContext;
       if (!preRestoreActionResult.skipRestore()) {
-        if (backupId != null) {
-          restoreFromBackupList(restoreManager, backupId);
-        } else if (hasTimeRange()) {
-          restoreFromTimeRange(restoreManager);
-        } else if (exporterPositionMapper != null) {
-          restoreRDBMSWithoutTimeRange(restoreManager);
-        }
+        restore(restoreManager, backupIdsByPartition);
         postRestoreActionContext =
-            new PostRestoreActionContext(restoreId, configuration.getCluster().getNodeId(), false);
+            new PostRestoreActionContext(
+                restoreId, configuration.getCluster().getNodeId(), false, restoredPartitionCount);
       } else {
         LOG.info("Skipping restore: {}", preRestoreActionResult.message());
         postRestoreActionContext =
-            new PostRestoreActionContext(restoreId, configuration.getCluster().getNodeId(), true);
+            new PostRestoreActionContext(
+                restoreId, configuration.getCluster().getNodeId(), true, restoredPartitionCount);
       }
       // We have to run post restore anyway even if post restore action decided to skip restore,
       // because in some cases, like when using dynamic node ids, we need to wait for other nodes to
@@ -172,45 +177,38 @@ public class RestoreApp implements ApplicationRunner {
     }
   }
 
-  private void restoreFromTimeRange(final RestoreManager restoreManager)
+  /**
+   * The backups to restore each partition from, or none when there is nothing to restore from: no
+   * backup ID, no time range and no RDBMS to take the restore point from.
+   */
+  private @Nullable Map<Integer, long[]> resolveBackups(final RestoreManager restoreManager) {
+    if (backupId != null) {
+      return restoreManager.resolveBackups(backupId);
+    } else if (hasTimeRange() || exporterPositionMapper != null) {
+      return restoreManager.resolveBackups(from, to);
+    }
+    return null;
+  }
+
+  private void restore(
+      final RestoreManager restoreManager,
+      final @Nullable Map<Integer, long[]> backupIdsByPartition)
       throws IOException, ExecutionException, InterruptedException {
+    if (backupIdsByPartition == null) {
+      return;
+    }
     LOG.info(
-        "Starting to restore from backups in time range [{}, {}] with the following configuration: {}",
+        "Starting to restore partitions {} from backups (backupId={}, from={}, to={}) with the following configuration: {}",
+        backupIdsByPartition.keySet(),
+        backupId,
         from,
         to,
         restoreConfiguration);
     restoreManager.restore(
-        from,
-        to,
+        backupIdsByPartition,
         restoreConfiguration.validateConfig(),
         restoreConfiguration.ignoreFilesInTarget());
-    LOG.info("Successfully restored broker from backups in time range [{}, {}]", from, to);
-  }
-
-  private void restoreRDBMSWithoutTimeRange(final RestoreManager restoreManager)
-      throws IOException, ExecutionException, InterruptedException {
-    LOG.info(
-        "Starting to restore from backups without a time range with the following configuration: {}",
-        restoreConfiguration);
-    restoreManager.restore(
-        null,
-        null,
-        restoreConfiguration.validateConfig(),
-        restoreConfiguration.ignoreFilesInTarget());
-    LOG.info("Successfully restored broker from backups in time range");
-  }
-
-  private void restoreFromBackupList(final RestoreManager restoreManager, final long[] backupIds)
-      throws Exception {
-    LOG.info(
-        "Starting to restore from backup {} with the following configuration: {}",
-        backupIds,
-        restoreConfiguration);
-    restoreManager.restore(
-        backupIds,
-        restoreConfiguration.validateConfig(),
-        restoreConfiguration.ignoreFilesInTarget());
-    LOG.info("Successfully restored broker from backup {}", backupIds);
+    LOG.info("Successfully restored partitions {}", backupIdsByPartition.keySet());
   }
 
   private void validateParameters() {
@@ -248,7 +246,13 @@ public class RestoreApp implements ApplicationRunner {
 
   public record PreRestoreActionResult(boolean skipRestore, String message) {}
 
-  public record PostRestoreActionContext(String restoreId, int nodeId, boolean skippedRestore) {}
+  /**
+   * @param restoredPartitionCount the number of partitions restored, the partition count of the
+   *     backups. Post-restore validation expects restored data for that many partitions, even when
+   *     the configuration holds more.
+   */
+  public record PostRestoreActionContext(
+      String restoreId, int nodeId, boolean skippedRestore, int restoredPartitionCount) {}
 
   public interface PreRestoreAction {
     PreRestoreActionResult beforeRestore(final String restoreId, int nodeId)
