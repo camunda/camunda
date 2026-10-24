@@ -13,6 +13,7 @@ import io.camunda.search.clients.query.SearchBoolQuery;
 import io.camunda.search.clients.query.SearchTermQuery;
 import io.camunda.search.clients.query.SearchWildcardQuery;
 import io.camunda.search.filter.FilterBuilders;
+import io.camunda.search.filter.MappingRuleFilter;
 import io.camunda.search.filter.Operation;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -63,6 +64,24 @@ class MappingRuleFilterTransformerTest extends AbstractTransformerTest {
               assertThat(termValue(or.should().get(0))).isEqualTo("rule-1");
               assertThat(termValue(or.should().get(1))).isEqualTo("rule-2");
             });
+  }
+
+  @Test
+  void shouldIgnoreOrClauseWhenItContainsAnEmptyFilter() {
+    final var filter =
+        FilterBuilders.mappingRule(
+            f ->
+                f.mappingRuleId("rule-top")
+                    .orFilters(
+                        List.of(
+                            new MappingRuleFilter.Builder().build(),
+                            FilterBuilders.mappingRule(f1 -> f1.mappingRuleId("rule-1")))));
+
+    final var searchQuery = transformQuery(filter);
+
+    // an empty $or group matches everything, collapsing the whole $or clause into a no-op: only
+    // the top-level mappingRuleId term remains, unwrapped since it's the sole remaining condition
+    assertThat(termValue(searchQuery)).isEqualTo("rule-top");
   }
 
   /**

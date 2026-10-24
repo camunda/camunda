@@ -29,7 +29,20 @@ public record RoleFilter(
     String tenantId,
     Map<EntityType, Set<String>> memberIdsByType,
     List<RoleFilter> orFilters)
-    implements FilterBase {
+    implements OrFilter<RoleFilter> {
+
+  @Override
+  public boolean isEmpty() {
+    return !FilterUtil.hasAnyNonEmpty(
+        roleIdOperations,
+        nameOperations,
+        description,
+        memberIds,
+        roleIds,
+        childMemberType,
+        tenantId,
+        memberIdsByType);
+  }
 
   public static RoleFilter of(
       final Function<RoleFilter.Builder, RoleFilter.Builder> builderFunction) {
