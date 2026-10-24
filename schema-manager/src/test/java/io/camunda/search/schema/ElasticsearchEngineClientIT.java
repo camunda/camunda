@@ -7,6 +7,7 @@
  */
 package io.camunda.search.schema;
 
+import static io.camunda.search.schema.utils.SchemaManagerITInvocationProvider.CONFIG_PREFIX;
 import static io.camunda.search.schema.utils.SchemaTestUtil.createTestIndexDescriptor;
 import static io.camunda.search.schema.utils.SchemaTestUtil.createTestTemplateDescriptor;
 import static io.camunda.search.schema.utils.SchemaTestUtil.validateMappings;
@@ -67,7 +68,17 @@ public class ElasticsearchEngineClientIT {
   @BeforeEach
   public void refresh() throws IOException {
     elsClient.indices().delete(req -> req.index("*"));
-    elsClient.indices().deleteIndexTemplate(req -> req.name("*"));
+    // Scoped to test-created templates only: a bare "*" also matches Elasticsearch's built-in
+    // reserved templates (e.g. .deprecation-indexing-template, logs, metrics), which ES9 refuses
+    // to delete via wildcard. ES9 also errors, rather than no-ops, when the pattern matches no
+    // templates at all (e.g. on the very first test), so that case is caught and ignored here.
+    try {
+      elsClient.indices().deleteIndexTemplate(req -> req.name(CONFIG_PREFIX + "*"));
+    } catch (final co.elastic.clients.elasticsearch._types.ElasticsearchException e) {
+      if (!e.getMessage().contains("index_template_missing_exception")) {
+        throw e;
+      }
+    }
   }
 
   @Test
@@ -255,10 +266,10 @@ public class ElasticsearchEngineClientIT {
 
     final var indices = elsClient.indices().get(req -> req.index(index.getFullQualifiedName()));
 
-    assertThat(indices.result().size()).isEqualTo(1);
+    assertThat(indices.indices().size()).isEqualTo(1);
     assertThat(
             indices
-                .result()
+                .indices()
                 .get(index.getFullQualifiedName())
                 .settings()
                 .index()
@@ -291,17 +302,17 @@ public class ElasticsearchEngineClientIT {
 
     final var indices = elsClient.indices().get(req -> req.index(index.getFullQualifiedName()));
 
-    assertThat(indices.result().size()).isEqualTo(1);
+    assertThat(indices.indices().size()).isEqualTo(1);
     assertThat(
             indices
-                .result()
+                .indices()
                 .get(index.getFullQualifiedName())
                 .settings()
                 .index()
                 .numberOfReplicas())
         .isEqualTo("5");
     assertThat(
-            indices.result().get(index.getFullQualifiedName()).settings().index().numberOfShards())
+            indices.indices().get(index.getFullQualifiedName()).settings().index().numberOfShards())
         .isEqualTo("10");
   }
 
@@ -315,10 +326,10 @@ public class ElasticsearchEngineClientIT {
 
     final var indices = elsClient.indices().get(req -> req.index(index.getFullQualifiedName()));
 
-    assertThat(indices.result().size()).isEqualTo(1);
+    assertThat(indices.indices().size()).isEqualTo(1);
     assertThat(
             indices
-                .result()
+                .indices()
                 .get(index.getFullQualifiedName())
                 .settings()
                 .index()
@@ -333,10 +344,11 @@ public class ElasticsearchEngineClientIT {
 
     final var policy = elsClient.ilm().getLifecycle(req -> req.name("policy_name"));
 
-    assertThat(policy.result().size()).isEqualTo(1);
-    assertThat(policy.result().get("policy_name").policy().phases().delete().minAge().time())
+    assertThat(policy.lifecycles().size()).isEqualTo(1);
+    assertThat(policy.lifecycles().get("policy_name").policy().phases().delete().minAge().time())
         .isEqualTo("20d");
-    assertThat(policy.result().get("policy_name").policy().phases().delete().actions()).isNotNull();
+    assertThat(policy.lifecycles().get("policy_name").policy().phases().delete().actions())
+        .isNotNull();
   }
 
   /**
@@ -381,7 +393,7 @@ public class ElasticsearchEngineClientIT {
     // then
     verify(ilmSpy, times(1)).putLifecycle(any(PutLifecycleRequest.class));
     final var policy = elsClient.ilm().getLifecycle(req -> req.name("policy_change"));
-    assertThat(policy.result().get("policy_change").policy().phases().delete().minAge().time())
+    assertThat(policy.lifecycles().get("policy_change").policy().phases().delete().minAge().time())
         .isEqualTo("30d");
   }
 

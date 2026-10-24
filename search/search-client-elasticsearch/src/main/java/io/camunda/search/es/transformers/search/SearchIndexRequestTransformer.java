@@ -25,6 +25,12 @@ public class SearchIndexRequestTransformer<T>
     final var index = value.index();
     final var routing = value.routing();
     final var document = value.document();
-    return IndexRequest.of(b -> b.id(id).index(index).routing(routing).document(document));
+    return IndexRequest.of(
+        b -> {
+          b.id(id).index(index).document(document);
+          // a null or empty routing is sent by the ES 9 client as an empty routing= parameter
+          // instead of being omitted
+          return routing == null || routing.isEmpty() ? b : b.routing(routing);
+        });
   }
 }

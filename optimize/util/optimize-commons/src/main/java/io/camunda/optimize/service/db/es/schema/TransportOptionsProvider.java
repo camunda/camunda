@@ -9,10 +9,10 @@ package io.camunda.optimize.service.db.es.schema;
 
 import co.elastic.clients.transport.DefaultTransportOptions;
 import co.elastic.clients.transport.TransportOptions;
+import co.elastic.clients.transport.rest5_client.low_level.HttpAsyncResponseConsumerFactory;
+import co.elastic.clients.transport.rest5_client.low_level.RequestOptions;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import java.util.Optional;
-import org.elasticsearch.client.HttpAsyncResponseConsumerFactory;
-import org.elasticsearch.client.RequestOptions;
 
 public class TransportOptionsProvider {
 
@@ -32,7 +32,7 @@ public class TransportOptionsProvider {
         .ifPresent(
             config ->
                 optionsBuilder.setHttpAsyncResponseConsumerFactory(
-                    new HttpAsyncResponseConsumerFactory.HeapBufferedResponseConsumerFactory(
+                    new HttpAsyncResponseConsumerFactory.BasicAsyncResponseConsumerFactory(
                         getElasticsearchResponseConsumerBufferLimitInBytes())));
     return optionsBuilder.build();
   }

@@ -20,7 +20,7 @@ public class ElasticsearchScriptBuilder {
   public Script getScriptWithParameters(final String script, final Map<String, Object> parameters) {
     Objects.requireNonNull(parameters, "Script Parameters must not be null");
     return new Script.Builder()
-        .source(script)
+        .source(src -> src.scriptString(script))
         .params(jsonParams(parameters))
         .lang(DEFAULT_SCRIPT_LANG)
         .build();
