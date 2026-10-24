@@ -15,6 +15,7 @@ import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnCompensationSubscrip
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnEventSubscriptionBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnIncidentBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobBehavior;
+import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnLoopDetectionBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateTransitionBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.MultiInstanceInputCollectionBehavior;
@@ -65,6 +66,7 @@ public final class MultiInstanceBodyProcessor
   private final BpmnEventSubscriptionBehavior eventSubscriptionBehavior;
   private final BpmnStateBehavior stateBehavior;
   private final BpmnIncidentBehavior incidentBehavior;
+  private final BpmnLoopDetectionBehavior loopDetectionBehavior;
   private final MultiInstanceInputCollectionBehavior multiInstanceInputCollectionBehavior;
   private final MultiInstanceOutputCollectionBehavior multiInstanceOutputCollectionBehavior;
   private final BpmnCompensationSubscriptionBehaviour compensationSubscriptionBehaviour;
@@ -78,6 +80,7 @@ public final class MultiInstanceBodyProcessor
     stateBehavior = bpmnBehaviors.stateBehavior();
     expressionBehavior = bpmnBehaviors.expressionProcessor();
     incidentBehavior = bpmnBehaviors.incidentBehavior();
+    loopDetectionBehavior = bpmnBehaviors.loopDetectionBehavior();
     multiInstanceInputCollectionBehavior = bpmnBehaviors.inputCollectionBehavior();
     multiInstanceOutputCollectionBehavior = bpmnBehaviors.outputCollectionBehavior();
     compensationSubscriptionBehaviour = bpmnBehaviors.compensationSubscriptionBehaviour();
@@ -246,22 +249,34 @@ public final class MultiInstanceBodyProcessor
 
     final ElementInstance multiInstanceElementInstance =
         stateBehavior.getElementInstance(flowScopeContext);
+    final int inputCollectionSize = inputCollectionOrFailure.get().size();
 
     if (loopCharacteristics.isSequential()) {
-      final var inputCollection = inputCollectionOrFailure.get();
       final var loopCounter = multiInstanceElementInstance.getMultiInstanceLoopCounter();
 
-      if (loopCounter < inputCollection.size()) {
+      if (loopCounter < inputCollectionSize) {
         createInnerInstance(element, flowScopeContext);
 
         // canBeCompleted() doesn't take the created child instance into account because
         // it wrote just a ACTIVATE command that create no new instance immediately
         childInstanceCreated = true;
       }
+    } else if (stateBehavior.canBeCompleted(childContext)
+        && multiInstanceElementInstance.getMultiInstanceLoopCounter() < inputCollectionSize
+        && loopDetectionBehavior.isChildActivationThresholdExceeded(
+            flowScopeContext.getProcessInstanceKey(),
+            flowScopeContext.getElementId(),
+            element.getInnerActivity().getElementType())) {
+      // The parallel multi-instance activation batch was stopped early by loop detection. Once all
+      // activated children have finished, drain the next collection item one at a time so the
+      // activation threshold keeps throttling child creation (the operator resolves each incident
+      // to advance) instead of flooding the instance or leaving it stuck with the collection only
+      // half-processed.
+      createInnerInstance(element, flowScopeContext);
+      childInstanceCreated = true;
     }
 
     if (!childInstanceCreated && stateBehavior.canBeCompleted(childContext)) {
-      final int inputCollectionSize = inputCollectionOrFailure.get().size();
       if (isAllChildrenHasCompletedOrTerminated(
           multiInstanceElementInstance, inputCollectionSize)) {
         stateTransitionBehavior.completeElement(flowScopeContext);

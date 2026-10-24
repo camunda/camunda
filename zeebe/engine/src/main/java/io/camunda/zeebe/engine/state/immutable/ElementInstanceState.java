@@ -181,6 +181,16 @@ public interface ElementInstanceState {
    */
   long getActiveProcessInstanceCount();
 
+  /**
+   * Returns the current activation count for the given element, or {@code 0} when it has never been
+   * activated.
+   *
+   * @param processInstanceKey the key of the process instance
+   * @param elementId the BPMN element id of the element
+   * @return current activation count, or {@code 0} if not yet activated
+   */
+  long getElementActivationCounter(long processInstanceKey, DirectBuffer elementId);
+
   @FunctionalInterface
   interface TakenSequenceFlowVisitor {
     void visit(
