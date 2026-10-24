@@ -71,6 +71,7 @@ import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.LockSupport;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 import org.agrona.IoUtil;
@@ -119,6 +120,42 @@ public final class StreamProcessorTest {
     inOrder.verify(mockProcessorLifecycleAware, TIMEOUT).onResumed();
     inOrder.verify(mockProcessorLifecycleAware, TIMEOUT).onClose();
     inOrder.verifyNoMoreInteractions();
+  }
+
+  @Test
+  public void shouldRecordDurationOfSlowOnRecoveredListener() throws Exception {
+    // given
+    // A listener slower than the WARN threshold must not prevent recovery from completing, and its
+    // duration must be observable through the timer. The WARN log is not asserted because the
+    // module has no log-capture test dependency.
+    final var mockProcessorLifecycleAware = streamPlatform.getMockProcessorLifecycleAware();
+    final var slowBy = StreamProcessor.SLOW_ON_RECOVERED_LISTENER_THRESHOLD.plusMillis(100);
+    doAnswer(
+            invocation -> {
+              LockSupport.parkNanos(slowBy.toNanos());
+              return null;
+            })
+        .when(mockProcessorLifecycleAware)
+        .onRecovered(any());
+
+    // when
+    streamPlatform.startStreamProcessor();
+
+    // then
+    verify(mockProcessorLifecycleAware, TIMEOUT).onRecovered(any());
+    final var meterRegistry = streamPlatform.getProcessorMeterRegistry();
+    await()
+        .atMost(Duration.ofSeconds(30))
+        .untilAsserted(
+            () ->
+                assertThat(
+                        meterRegistry
+                            .find("zeebe.stream.processor.on.recovered.listener.duration")
+                            .timers()
+                            .stream()
+                            .mapToDouble(timer -> timer.totalTime(TimeUnit.MILLISECONDS))
+                            .sum())
+                    .isGreaterThanOrEqualTo(slowBy.toMillis()));
   }
 
   @Test
