@@ -117,6 +117,18 @@ public final class ConfigValidator {
               + rolloverBatchSize);
     }
 
+    final int reindexBatchSize = configuration.getHistory().getReindexBatchSize();
+    if (reindexBatchSize < 1) {
+      throw new ExporterException(
+          "CamundaExporter archiver.reindexBatchSize must be >= 1. Current value: "
+              + reindexBatchSize);
+    }
+    if (reindexBatchSize > 10_000) {
+      throw new ExporterException(
+          "CamundaExporter archiver.reindexBatchSize must be <= 10000. Current value: "
+              + reindexBatchSize);
+    }
+
     final int delayBetweenRuns = configuration.getHistory().getDelayBetweenRuns();
     if (delayBetweenRuns < 1) {
       throw new ExporterException(
