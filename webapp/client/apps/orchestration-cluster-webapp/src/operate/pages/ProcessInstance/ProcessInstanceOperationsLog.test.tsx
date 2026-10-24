@@ -149,7 +149,7 @@ describe('<ProcessInstanceOperationsLog />', () => {
 				failureResponse: auditLogsResponse(createAuditLog()),
 			}),
 		);
-		await userEvent.click(screen.getByRole('columnheader', {name: 'Entity type'}));
+		await userEvent.click(screen.getByRole('columnheader', {name: 'Sort by Entity Type'}));
 
 		await expect.element(screen.getByRole('cell', {name: 'Resolve'})).toBeVisible();
 	});

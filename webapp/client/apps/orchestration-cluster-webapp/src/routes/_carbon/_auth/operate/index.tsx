@@ -7,6 +7,7 @@
  */
 
 import {createFileRoute} from '@tanstack/react-router';
+import {t} from 'i18next';
 import {runningInstancesCountQuery} from '#/operate/pages/Dashboard/useRunningInstancesCount';
 import {instancesByProcessInfiniteQuery} from '#/operate/pages/Dashboard/InstancesByProcess/instancesByProcess.queries';
 import {incidentsByErrorInfiniteQuery} from '#/operate/pages/Dashboard/IncidentsByError/incidentsByError.queries';
@@ -19,5 +20,6 @@ export const Route = createFileRoute('/_carbon/_auth/operate/')({
 		queryClient.prefetchInfiniteQuery(instancesByProcessInfiniteQuery());
 		queryClient.prefetchInfiniteQuery(incidentsByErrorInfiniteQuery());
 	},
+	head: () => ({meta: [{title: t('operate.dashboard.pageTitle')}]}),
 	component: Dashboard,
 });

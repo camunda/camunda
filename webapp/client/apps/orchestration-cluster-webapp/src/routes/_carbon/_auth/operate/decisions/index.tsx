@@ -48,6 +48,7 @@ export const Route = createFileRoute('/_carbon/_auth/operate/decisions/')({
 			replace: true,
 		});
 	},
+	head: () => ({meta: [{title: t('operate.decisions.pageTitle')}]}),
 	component: function DecisionsRoute() {
 		return <Decisions {...Route.useSearch()} />;
 	},

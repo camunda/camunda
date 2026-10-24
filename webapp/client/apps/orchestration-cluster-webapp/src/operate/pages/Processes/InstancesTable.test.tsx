@@ -116,9 +116,10 @@ describe('<InstancesTable />', () => {
 		);
 
 		const screen = await renderInstancesTable();
+		const panel = screen.getByRole('region', {name: 'Process Instances Panel'});
 
-		await expect.element(screen.getByText('Order Process')).toBeVisible();
-		await expect.element(screen.getByText('Payment Process')).toBeVisible();
+		await expect.element(panel.getByText('Order Process')).toBeVisible();
+		await expect.element(panel.getByText('Payment Process')).toBeVisible();
 	});
 
 	it('should keep the header and the operations column visible while scrolling a narrow table', async ({worker}) => {
@@ -199,9 +200,9 @@ describe('<InstancesTable />', () => {
 
 		const screen = await renderInstancesTable();
 
-		await expect.element(screen.getByRole('columnheader', {name: 'Name'})).toBeVisible();
+		await expect.element(screen.getByRole('columnheader', {name: 'Sort by Name'})).toBeVisible();
 		await expect.element(screen.getByRole('columnheader', {name: 'Version Tag'})).not.toBeInTheDocument();
-		await expect.element(screen.getByRole('columnheader', {name: 'Business ID'})).not.toBeInTheDocument();
+		await expect.element(screen.getByRole('columnheader', {name: 'Sort by Business ID'})).not.toBeInTheDocument();
 	});
 
 	it('should show the version tag and business ID columns when a row has them', async ({worker}) => {

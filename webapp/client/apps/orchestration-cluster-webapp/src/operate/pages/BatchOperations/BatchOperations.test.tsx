@@ -168,12 +168,12 @@ describe('<BatchOperations />', () => {
 		worker.use(mockQueryBatchOperationsEndpoint({successResponse: RESPONSE_EXCEEDING_PAGE_SIZE}));
 		const screen = await renderRoute();
 		await expect.element(screen.getByText('1–20 of 25 items')).toBeVisible();
-		await expect.element(screen.getByRole('columnheader', {name: 'Batch state'})).toBeVisible();
+		await expect.element(screen.getByRole('columnheader', {name: 'Sort by Batch state'})).toBeVisible();
 
 		await i18n.changeLanguage('de');
 
 		await expect.element(screen.getByText('1–20 von 25 Elementen')).toBeVisible();
-		await expect.element(screen.getByRole('columnheader', {name: 'Stapelstatus'})).toBeVisible();
+		await expect.element(screen.getByRole('columnheader', {name: 'Sortieren nach Stapelstatus'})).toBeVisible();
 		await expect.element(screen.getByText('von 2 Seiten')).toBeVisible();
 		await expect.element(screen.getByRole('combobox', {name: 'Elemente pro Seite:'})).toBeVisible();
 		await expect.element(screen.getByRole('combobox', {name: 'Seite von 2 Seiten'})).toBeVisible();
@@ -267,7 +267,7 @@ describe('<BatchOperations />', () => {
 		await expect.element(screen.getByText('1–20 of 25 items')).toBeVisible();
 
 		worker.use(requestFor(0, 20, 'actorId', 'DESC'));
-		await userEvent.click(screen.getByRole('columnheader', {name: 'Actor'}));
+		await userEvent.click(screen.getByRole('columnheader', {name: 'Sort by Actor'}));
 		await expect
 			.poll(() => batchOperationsSearchSchema.parse(screen.router.state.location.search).sort)
 			.toBe('actorId+DESC');

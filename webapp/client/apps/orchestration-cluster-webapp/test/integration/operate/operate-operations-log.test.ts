@@ -76,6 +76,7 @@ test('should show a direct-entry audit log when decision names fail and restore 
 	await expect(operateOperationsLogPage.table).toBeVisible();
 	await expect(operateOperationsLogPage.decisionNamesError).toBeVisible();
 	await expect(page.getByRole('heading', {name: 'Operations Log - 1 result'})).toBeVisible();
+	await expect(page).toHaveTitle('Operate: Operations Log');
 	await expect(page.getByRole('link', {name: 'View decision instance 888'})).toHaveAttribute(
 		'href',
 		'/operate/decisions/888',

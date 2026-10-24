@@ -382,13 +382,13 @@ describe('<Decisions />', () => {
 				to: '/operate/decisions',
 				search: {evaluated: true, failed: true},
 			});
-			await expect.element(screen.getByTitle('View decision instance 123567')).toBeVisible();
+			await expect.element(screen.getByRole('link', {name: 'View decision instance 123567'})).toBeVisible();
 			await userEvent.click(screen.getByRole('checkbox', {name: 'Select row 123567'}), {force: true});
 			await expect.element(screen.getByRole('button', {name: 'Delete'})).toBeVisible();
 
 			screen.router.history.back();
 			await expect.element(screen.getByText('To see some results, select at least one Instance state')).toBeVisible();
-			await expect.element(screen.getByTitle('View decision instance 123567')).not.toBeInTheDocument();
+			await expect.element(screen.getByRole('link', {name: 'View decision instance 123567'})).not.toBeInTheDocument();
 			await expect.element(screen.getByRole('button', {name: 'Delete'})).not.toBeInTheDocument();
 		});
 

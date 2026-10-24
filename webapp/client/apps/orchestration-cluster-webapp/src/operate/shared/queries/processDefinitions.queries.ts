@@ -11,7 +11,7 @@ import type {ProcessDefinition, QueryProcessDefinitionsRequestBody} from '@camun
 import {queries} from '#/shared/http/queries';
 
 const PAGE_LIMIT = 1000;
-type DefinitionQueryOptions = {retry?: false; requireComplete?: true};
+type DefinitionQueryOptions = {retry?: false; requireComplete?: true; selectionVersion?: number | 'all'};
 
 const operationsLogDefinitionsQuery = (
 	filter: NonNullable<QueryProcessDefinitionsRequestBody['filter']>,
@@ -23,6 +23,7 @@ const operationsLogDefinitionsQuery = (
 			filter,
 			...(options?.retry === false ? ['no-retry'] : []),
 			...(options?.requireComplete === true ? ['require-complete'] : []),
+			...(options?.selectionVersion === undefined ? [] : [`version:${options.selectionVersion}`]),
 		] as const,
 		queryFn: async ({client, signal}): Promise<ProcessDefinition[]> => {
 			const items: ProcessDefinition[] = [];
