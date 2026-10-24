@@ -76,7 +76,7 @@
     "@camunda/c8-mocks": "file:../../webapp/client/packages/c8-mocks",
     "@camunda/lint-config": "file:../../webapp/client/packages/lint-config",
     "@eslint/js": "10.0.1",
-    "@playwright/test": "1.62.1",
+    "@playwright/test": "1.64.1",
     "@tanstack/eslint-plugin-query": "5.104.0",
     "@tanstack/react-query-devtools": "5.104.0",
     "@testing-library/dom": "10.4.1",
