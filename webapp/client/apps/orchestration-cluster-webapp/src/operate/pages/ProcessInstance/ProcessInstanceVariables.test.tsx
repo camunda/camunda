@@ -165,6 +165,57 @@ describe('<ProcessInstanceVariables />', () => {
 		await expect.element(screen.getByRole('button', {name: 'Copy customer'})).toHaveTextContent('{ "name": "Jane" }');
 	});
 
+	it('should show [REDACTED] instead of the value of a redacted variable', async ({worker}) => {
+		worker.use(
+			mockQueryVariablesEndpoint({
+				successResponse: variablesResponse([
+					createVariable({name: 'amount', value: '100', variableKey: '1'}),
+					createVariable({
+						name: 'password',
+						value: 'irrelevant',
+						variableKey: '2',
+						metadata: {protectionModes: ['REDACT']},
+					}),
+				]),
+			}),
+		);
+		const screen = await renderVariables();
+
+		await expect.element(screen.getByRole('button', {name: 'Copy amount'})).toHaveTextContent('100');
+		await expect.element(screen.getByText('[REDACTED]')).toBeVisible();
+		await expect.element(screen.getByTestId('variable-password')).not.toHaveTextContent('irrelevant');
+		await expect.element(screen.getByRole('button', {name: 'Copy password'})).not.toBeInTheDocument();
+		await expect.element(screen.getByRole('button', {name: 'Edit variable password'})).not.toBeInTheDocument();
+	});
+
+	it('should copy the [REDACTED] label as a string alongside parsed unprotected values', async ({worker}) => {
+		const writeText = vi.spyOn(navigator.clipboard, 'writeText').mockResolvedValue();
+		onTestFinished(() => writeText.mockRestore());
+		worker.use(
+			mockQueryVariablesEndpoint({
+				successResponse: variablesResponse([
+					createVariable({name: 'amount', value: '100', variableKey: '1'}),
+					createVariable({name: 'customer', value: '{"name":"Jane"}', variableKey: '2'}),
+					createVariable({
+						name: 'password',
+						value: 'irrelevant',
+						variableKey: '3',
+						metadata: {protectionModes: ['REDACT']},
+					}),
+				]),
+			}),
+		);
+		const screen = await renderVariables();
+		const copy = screen.getByRole('button', {name: 'Copy variables'});
+
+		await expect.element(copy).toBeEnabled();
+		await userEvent.click(copy);
+
+		await expect
+			.poll(() => writeText.mock.calls)
+			.toEqual([[JSON.stringify({amount: 100, customer: {name: 'Jane'}, password: '[REDACTED]'})]]);
+	});
+
 	it('should show an empty message when the scope has no variables', async ({worker}) => {
 		worker.use(mockQueryVariablesEndpoint({successResponse: variablesResponse([])}));
 		const screen = await renderVariables();
