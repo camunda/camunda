@@ -48,9 +48,18 @@ async function requestCsrfToken(input: Request) {
 	}
 }
 
+type RequestOptions = {
+	skipSessionCheck?: boolean;
+	/**
+	 * Tells if a successful response still means that the caller has no session, so it is handled
+	 * like a 401. An unprotected API answers the current user endpoint this way.
+	 */
+	isUnauthenticated?: (response: Response) => Promise<boolean>;
+};
+
 async function request(
 	input: RequestInfo,
-	{skipSessionCheck} = {skipSessionCheck: false},
+	{skipSessionCheck = false, isUnauthenticated}: RequestOptions = {},
 ): Promise<
 	| {
 			response: Response;
@@ -72,19 +81,21 @@ async function request(
 		}
 
 		const response = await fetch(input);
+		const isUnauthorized =
+			response.status === 401 || (response.ok && (await isUnauthenticated?.(response.clone())) === true);
 
-		if (response.ok) {
+		if (response.ok && !isUnauthorized) {
 			authenticationStore.activateSession();
 		}
 
 		storeCsrfTokenFromResponse(response);
 
-		if (!skipSessionCheck && response.status === 401) {
+		if (!skipSessionCheck && isUnauthorized) {
 			authenticationStore.disableSession();
 			reactQueryClient.clear();
 		}
 
-		if (response.ok) {
+		if (response.ok && !isUnauthorized) {
 			return {
 				response,
 				error: null,

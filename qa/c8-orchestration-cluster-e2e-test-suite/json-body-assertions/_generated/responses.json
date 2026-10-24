@@ -1368,10 +1368,16 @@
           },
           {
             "name": "username",
-            "type": "string"
+            "type": "string",
+            "nullable": true
           }
         ],
-        "optional": []
+        "optional": [
+          {
+            "name": "anonymous",
+            "type": "boolean"
+          }
+        ]
       }
     },
     {

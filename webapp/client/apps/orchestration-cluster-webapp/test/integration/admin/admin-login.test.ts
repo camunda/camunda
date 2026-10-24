@@ -15,7 +15,7 @@ import {
 	mockQueryUsersEndpoint,
 	mockSystemConfigurationEndpoint,
 } from '#/shared-test-modules/mock-handlers';
-import {createCurrentUser} from '#/shared-test-modules/api-mocks/current-user';
+import {createAnonymousCurrentUser, createCurrentUser} from '#/shared-test-modules/api-mocks/current-user';
 import {createLicense} from '#/shared-test-modules/api-mocks/license';
 import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
 import {createQueryUsersResponse} from '#/shared-test-modules/api-mocks/users';
@@ -122,4 +122,18 @@ test.describe('redirect validation', () => {
 			await expect(adminLoginPage.genericErrorHeading).toBeVisible();
 		});
 	}
+});
+
+test('should redirect to Admin login when the API answers with an anonymous user', async ({
+	network,
+	page,
+	adminLoginPage,
+}) => {
+	// An unprotected API answers a caller without a session with an anonymous user, not a 401.
+	network.use(mockCurrentUserEndpoint({successResponse: HttpResponse.json(createAnonymousCurrentUser())}));
+
+	await adminLoginPage.gotoAdmin();
+
+	await expect(page).toHaveURL('/admin/login');
+	await expect(adminLoginPage.usernameInput).toBeVisible();
 });

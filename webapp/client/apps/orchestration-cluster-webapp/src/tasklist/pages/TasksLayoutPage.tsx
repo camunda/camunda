@@ -8,7 +8,8 @@
 
 import {Outlet, useMatchRoute} from '@tanstack/react-router';
 import {useTranslation} from 'react-i18next';
-import type {CurrentUser, QueryUserTasksResponseBody} from '@camunda/camunda-api-zod-schemas/8.11';
+import type {QueryUserTasksResponseBody} from '@camunda/camunda-api-zod-schemas/8.11';
+import type {AuthenticatedCurrentUser} from '#/shared/http/currentUser';
 import {Heading, useMediaQuery} from '@camunda/design-system';
 import {cn} from '#/shared/cn';
 import {AvailableTasks} from '#/tasklist/modules/available-tasks/components/AvailableTasks';
@@ -17,7 +18,7 @@ import {AutoSelectNextTaskToggle} from '#/tasklist/modules/available-tasks/compo
 
 type Props = {
 	pages: QueryUserTasksResponseBody[];
-	currentUser: CurrentUser;
+	currentUser: AuthenticatedCurrentUser;
 	isPending?: boolean;
 	hasNextPage: boolean;
 	hasPreviousPage: boolean;

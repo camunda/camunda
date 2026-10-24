@@ -7,7 +7,7 @@
  */
 
 import {Badge, Text} from '@camunda/design-system';
-import type {CurrentUser} from '@camunda/camunda-api-zod-schemas/8.11';
+import type {AuthenticatedCurrentUser} from '#/shared/http/currentUser';
 import {useTranslation} from 'react-i18next';
 import {getPriorityLabel} from '#/tasklist/modules/available-tasks/getPriorityLabel';
 import {formatISODateTime} from '#/tasklist/modules/dates/formatDateRelative';
@@ -22,7 +22,7 @@ type Props = {
 	candidateGroups: string[];
 	tenantId: string;
 	businessId: string | null;
-	user: CurrentUser;
+	user: AuthenticatedCurrentUser;
 	showTitle?: boolean;
 };
 

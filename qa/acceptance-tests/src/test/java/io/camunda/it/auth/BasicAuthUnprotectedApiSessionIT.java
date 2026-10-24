@@ -11,6 +11,7 @@ import static io.camunda.security.api.model.config.initialization.Initialization
 import static io.camunda.security.api.model.config.initialization.InitializationConfiguration.DEFAULT_USER_USERNAME;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.qa.util.cluster.TestCamundaApplication;
 import io.camunda.qa.util.cluster.TestWebappClient.TestLoggedInWebappClient;
 import io.camunda.qa.util.multidb.MultiDbTest;
@@ -42,6 +43,7 @@ public class BasicAuthUnprotectedApiSessionIT {
 
   private static final String ME_ENDPOINT = "/v2/authentication/me";
   private static final String LOGOUT_ENDPOINT = "/logout";
+  private static final ObjectMapper JSON = new ObjectMapper();
 
   @MultiDbTestApplication
   private static final TestCamundaApplication CAMUNDA =
@@ -62,26 +64,44 @@ public class BasicAuthUnprotectedApiSessionIT {
       // given — logging in via POST /login creates a session on the BASIC webapp chain
 
       // then — it must be recognised on the unprotected API chain, not treated as anonymous
-      assertCurrentUserStatus(
+      assertCurrentUserIsLoggedIn(
           loggedIn,
-          HttpStatus.OK,
           "session created on the BASIC webapp chain must be recognised on the unprotected API"
               + " chain");
 
       logOut(loggedIn);
 
       // then — logout must invalidate the session on the unprotected chain too
-      assertCurrentUserStatus(
+      assertCurrentUserIsAnonymous(
           loggedIn,
-          HttpStatus.UNAUTHORIZED,
           "logged-out session must not be recognised on the unprotected API chain either");
     }
   }
 
-  private static void assertCurrentUserStatus(
-      final TestLoggedInWebappClient client, final HttpStatus expected, final String reason) {
-    final var response = client.send(ME_ENDPOINT).get();
-    assertThat(response.statusCode()).as(reason).isEqualTo(expected.value());
+  /** The unprotected API identifies a caller with a session as the user who logged in. */
+  private static void assertCurrentUserIsLoggedIn(
+      final TestLoggedInWebappClient client, final String reason) throws IOException {
+    assertIsLoggedInCurrentUser(client.send(ME_ENDPOINT).get(), reason);
+  }
+
+  /** The unprotected API answers a caller without an identity with an anonymous current user. */
+  private static void assertCurrentUserIsAnonymous(
+      final TestLoggedInWebappClient client, final String reason) throws IOException {
+    assertIsAnonymousCurrentUser(client.send(ME_ENDPOINT).get(), reason);
+  }
+
+  private static void assertIsLoggedInCurrentUser(
+      final HttpResponse<String> response, final String reason) throws IOException {
+    assertThat(response.statusCode()).as(reason).isEqualTo(HttpStatus.OK.value());
+    final var currentUser = JSON.readTree(response.body());
+    assertThat(currentUser.path("anonymous").asBoolean(true)).as(reason).isFalse();
+    assertThat(currentUser.path("username").asText()).as(reason).isEqualTo(DEFAULT_USER_USERNAME);
+  }
+
+  private static void assertIsAnonymousCurrentUser(
+      final HttpResponse<String> response, final String reason) throws IOException {
+    assertThat(response.statusCode()).as(reason).isEqualTo(HttpStatus.OK.value());
+    assertThat(JSON.readTree(response.body()).path("anonymous").asBoolean()).as(reason).isTrue();
   }
 
   private static void logOut(final TestLoggedInWebappClient client)

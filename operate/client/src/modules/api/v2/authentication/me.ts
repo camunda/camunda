@@ -12,11 +12,33 @@ import {
   endpoints,
 } from '@camunda/camunda-api-zod-schemas/8.10';
 
+/**
+ * Tells if a current user response is for a caller without a session. An unprotected API answers
+ * such a caller with an anonymous user instead of a 401, because no credentials can authenticate it
+ * there.
+ */
+async function isAnonymousCurrentUser(response: Response): Promise<boolean> {
+  try {
+    const body: unknown = await response.json();
+    return (
+      typeof body === 'object' &&
+      body !== null &&
+      'anonymous' in body &&
+      body.anonymous === true
+    );
+  } catch {
+    return false;
+  }
+}
+
 const getMe = async () => {
-  return requestWithThrow<CurrentUser>({
-    url: endpoints.getCurrentUser.getUrl(),
-    method: endpoints.getCurrentUser.method,
-  });
+  return requestWithThrow<CurrentUser>(
+    {
+      url: endpoints.getCurrentUser.getUrl(),
+      method: endpoints.getCurrentUser.method,
+    },
+    {isUnauthenticated: isAnonymousCurrentUser},
+  );
 };
 
-export {getMe};
+export {getMe, isAnonymousCurrentUser};

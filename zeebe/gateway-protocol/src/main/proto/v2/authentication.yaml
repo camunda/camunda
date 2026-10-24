@@ -8,7 +8,11 @@ paths:
       operationId: getAuthentication
       x-required-permissions: []
       summary: Get current user
-      description: Retrieves the current authenticated user.
+      description: >-
+        Retrieves the current authenticated user. On an unprotected API
+        (`camunda.security.authentication.unprotected-api=true`) a caller without an identity gets
+        a result with `anonymous` set to `true` instead of a `401`, because no credentials can
+        authenticate it there.
       security:
         - bearerAuth: []
       responses:
@@ -90,11 +94,19 @@ components:
         - displayName
         - email
         - username
+        - anonymous
       properties:
+        anonymous:
+          description: >-
+            Whether the caller has no identity. Only an unprotected API answers an anonymous
+            caller; a protected API returns `401` instead. When `true`, `username`,
+            `displayName` and `email` are `null` and the lists are empty.
+          type: boolean
         username:
-          description: The username of the user.
+          description: The username of the user. `null` when `anonymous` is `true`.
           allOf:
             - $ref: "identifiers.yaml#/components/schemas/Username"
+          nullable: true
         displayName:
           description: The display name of the user.
           type: string
@@ -148,3 +160,6 @@ components:
         canLogout:
           description: Flag for understanding if the user is able to perform logout.
           type: boolean
+      x-properties-added-in-version:
+        - propertyName: "anonymous"
+          addedInVersion: "8.11"
