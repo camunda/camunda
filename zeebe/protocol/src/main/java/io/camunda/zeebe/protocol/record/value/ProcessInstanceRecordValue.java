@@ -210,6 +210,15 @@ public interface ProcessInstanceRecordValue
   String getBusinessId();
 
   /**
+   * Returns who started the process instance: the username or client id that the gateway
+   * authenticated on the creating command. A called instance inherits it from its parent. The
+   * engine sets it once, at creation; no variable and no later command can change it.
+   *
+   * @return the requester, or an empty string when nobody started the instance (a timer start)
+   */
+  String getRequester();
+
+  /**
    * Returns the resume cursor carried by a {@code RESUME_JOBS} command: the job key of the last job
    * a previous resume cycle re-activated, so the next cycle can seek past already-resumed jobs
    * instead of re-scanning from the beginning. A negative value means "start from the beginning."

@@ -397,7 +397,20 @@ public enum ZbColumnFamilies implements EnumValue, ScopedColumnFamily {
   // re-accumulate its metrics. Written when an item is first created (see
   // AgentHistoryCreatedApplier), survives commit/discard, and is deleted in one pass when the
   // instance completes (see AgentInstanceCompletedApplier).
-  AGENT_HISTORY_METRICS_ACCUMULATED_IDS(165, PARTITION_LOCAL);
+  AGENT_HISTORY_METRICS_ACCUMULATED_IDS(165, PARTITION_LOCAL),
+
+  // (subject, connection, operation) -> the live consent grant. Grants are distributed to every
+  // partition, because the jobs that wait on one can sit on any partition.
+  CONSENT_GRANTS(166, GLOBAL),
+  // consentKey -> (subject, connection, operation), to revoke a grant by its key
+  CONSENT_GRANT_IDS_BY_KEY(167, GLOBAL),
+  // (processInstanceKey, subject, connection, operation) -> the one-time approval of an instance
+  CONSENT_APPROVALS(168, PARTITION_LOCAL),
+  // ((subject, connection, operation), jobKey) -> ∅; the jobs parked for consent, by what they wait
+  // on
+  CONSENT_PARKED_JOBS(169, PARTITION_LOCAL),
+  // jobKey -> (subject, connection, operation); finds the entry above when a parked job leaves
+  CONSENT_PARKED_JOB_GRANT_IDS(170, PARTITION_LOCAL);
 
   private final int value;
   private final ColumnFamilyScope columnFamilyScope;
