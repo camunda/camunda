@@ -42,6 +42,7 @@ export type ApiPath =
   | '/batch-operations/{batchOperationKey}/resumption'
   | '/batch-operations/{batchOperationKey}/suspension'
   | '/clock'
+  | '/clock/add'
   | '/clock/reset'
   | '/cluster-variables/global'
   | '/cluster-variables/global/{name}'
