@@ -222,6 +222,7 @@ import io.camunda.zeebe.model.bpmn.impl.instance.zeebe.ZeebeAssignmentDefinition
 import io.camunda.zeebe.model.bpmn.impl.instance.zeebe.ZeebeCalledDecisionImpl;
 import io.camunda.zeebe.model.bpmn.impl.instance.zeebe.ZeebeCalledElementImpl;
 import io.camunda.zeebe.model.bpmn.impl.instance.zeebe.ZeebeConditionalFilterImpl;
+import io.camunda.zeebe.model.bpmn.impl.instance.zeebe.ZeebeConsentImpl;
 import io.camunda.zeebe.model.bpmn.impl.instance.zeebe.ZeebeExecutionListenerImpl;
 import io.camunda.zeebe.model.bpmn.impl.instance.zeebe.ZeebeExecutionListenersImpl;
 import io.camunda.zeebe.model.bpmn.impl.instance.zeebe.ZeebeFormDefinitionImpl;
@@ -237,6 +238,7 @@ import io.camunda.zeebe.model.bpmn.impl.instance.zeebe.ZeebePriorityDefinitionIm
 import io.camunda.zeebe.model.bpmn.impl.instance.zeebe.ZeebePropertiesImpl;
 import io.camunda.zeebe.model.bpmn.impl.instance.zeebe.ZeebePropertyImpl;
 import io.camunda.zeebe.model.bpmn.impl.instance.zeebe.ZeebePublishMessageImpl;
+import io.camunda.zeebe.model.bpmn.impl.instance.zeebe.ZeebeRelationshipImpl;
 import io.camunda.zeebe.model.bpmn.impl.instance.zeebe.ZeebeScriptImpl;
 import io.camunda.zeebe.model.bpmn.impl.instance.zeebe.ZeebeSubscriptionImpl;
 import io.camunda.zeebe.model.bpmn.impl.instance.zeebe.ZeebeTaskDefinitionImpl;
@@ -677,6 +679,8 @@ public class Bpmn {
     ZeebeTaskListenersImpl.registerType(bpmnModelBuilder);
     ZeebeTaskListenerImpl.registerType(bpmnModelBuilder);
     ZeebePriorityDefinitionImpl.registerType(bpmnModelBuilder);
+    ZeebeConsentImpl.registerType(bpmnModelBuilder);
+    ZeebeRelationshipImpl.registerType(bpmnModelBuilder);
     ZeebeJobPriorityDefinitionImpl.registerType(bpmnModelBuilder);
     ZeebeVersionTagImpl.registerType(bpmnModelBuilder);
     ZeebeAdHocImpl.registerType(bpmnModelBuilder);

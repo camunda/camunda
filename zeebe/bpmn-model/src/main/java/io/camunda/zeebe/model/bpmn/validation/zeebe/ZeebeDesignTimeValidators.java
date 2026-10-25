@@ -177,6 +177,8 @@ public final class ZeebeDesignTimeValidators {
             .hasNonEmptyAttribute(
                 ZeebeJobPriorityDefinition::getPriority, ZeebeConstants.ATTRIBUTE_PRIORITY));
     validators.add(new ZeebeJobPriorityDefinitionValidator());
+    validators.add(new ZeebeConsentValidator());
+    validators.add(new ZeebeRelationshipValidator());
     validators.add(
         ZeebeElementValidator.verifyThat(Condition.class)
             .hasNonEmptyAttribute(Condition::getTextContent, ZeebeConstants.ATTRIBUTE_CONDITION));
