@@ -22,6 +22,7 @@ import io.camunda.zeebe.protocol.record.intent.ConsentIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
+import io.camunda.zeebe.stream.api.state.KeyGenerator;
 
 /**
  * Revokes a grant, by its key. The subject may revoke their own grant. An admin may revoke anyone's
@@ -41,13 +42,16 @@ public final class ConsentRevokeProcessor
   private final TypedRejectionWriter rejectionWriter;
   private final TypedResponseWriter responseWriter;
   private final CommandDistributionBehavior distributionBehavior;
+  private final KeyGenerator keyGenerator;
 
   public ConsentRevokeProcessor(
       final ConsentState consentState,
       final PermissionsBehavior permissionsBehavior,
+      final KeyGenerator keyGenerator,
       final Writers writers,
       final CommandDistributionBehavior distributionBehavior) {
     this.consentState = consentState;
+    this.keyGenerator = keyGenerator;
     this.permissionsBehavior = permissionsBehavior;
     stateWriter = writers.state();
     rejectionWriter = writers.rejection();
@@ -98,8 +102,9 @@ public final class ConsentRevokeProcessor
           consentKey, ConsentIntent.REVOKED, revocation, command);
     }
     command.getValue().setConsentKey(consentKey);
+    // a distribution needs a key of its own: the grant's distribution may still be in flight
     distributionBehavior
-        .withKey(consentKey)
+        .withKey(keyGenerator.nextKey())
         .inQueue(DistributionQueue.CONSENT.getQueueId())
         .distribute(command);
   }

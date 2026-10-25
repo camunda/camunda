@@ -43,7 +43,11 @@ public final class ConsentProcessors {
             ValueType.CONSENT,
             ConsentIntent.REVOKE,
             new ConsentRevokeProcessor(
-                state.getConsentState(), permissionsBehavior, writers, distributionBehavior))
+                state.getConsentState(),
+                permissionsBehavior,
+                keyGenerator,
+                writers,
+                distributionBehavior))
         .onCommand(
             ValueType.CONSENT,
             ConsentIntent.RESOLVE,
