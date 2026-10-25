@@ -339,7 +339,7 @@ public class SchemaUpgradeClientES
       return getElasticsearchClient()
           .indices()
           .getAlias(getAliasesRequest)
-          .result()
+          .aliases()
           .getOrDefault(indexName, IndexAliases.of(i -> i.aliases(Map.of())));
     } catch (final Exception e) {
       final String message =

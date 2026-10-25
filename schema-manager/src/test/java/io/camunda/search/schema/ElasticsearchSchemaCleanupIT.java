@@ -98,7 +98,7 @@ public class ElasticsearchSchemaCleanupIT {
   private Set<String> fetchAllIndexes() throws IOException {
     final GetIndexRequest request = new GetIndexRequest.Builder().index("*").build();
     final GetIndexResponse response = esClient.indices().get(request);
-    return response.result().keySet();
+    return response.indices().keySet();
   }
 
   private void clearDatabase() throws IOException {

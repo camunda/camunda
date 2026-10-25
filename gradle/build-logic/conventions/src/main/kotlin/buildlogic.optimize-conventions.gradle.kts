@@ -35,7 +35,7 @@ configurations.configureEach {
     "org.apache.lucene:lucene-core:${optVersion("version.lucene")}",
     "org.eclipse.angus:jakarta.mail:${optVersion("version.jakarta-mail-angus")}",
     "org.elasticsearch:elasticsearch:${optVersion("version.elasticsearch")}",
-    "org.elasticsearch.client:elasticsearch-rest-client:$optimizeElasticsearchRestClientVersion",
+    "co.elastic.clients:elasticsearch-rest5-client:$optimizeElasticsearchRestClientVersion",
     "org.glassfish.jersey.core:jersey-client:${optVersion("version.jersey")}",
     "joda-time:joda-time:$jodaTimeVersion",
     "org.mybatis:mybatis:$mybatisVersion",

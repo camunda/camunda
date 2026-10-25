@@ -30,7 +30,7 @@ public final class TestSearchContainers {
   private static final Duration STARTUP_TIMEOUT = Duration.ofMinutes(5);
   // Keep in sync with version.elasticsearch.container in parent/pom.xml
   private static final DockerImageName ELASTIC_IMAGE =
-      DockerImageName.parse("docker.elastic.co/elasticsearch/elasticsearch").withTag("8.19.16");
+      DockerImageName.parse("docker.elastic.co/elasticsearch/elasticsearch").withTag("9.5.5");
   // Keep in sync with version.opensearch.container in parent/pom.xml
   private static final DockerImageName OPENSEARCH_IMAGE =
       DockerImageName.parse("opensearchproject/opensearch").withTag("2.19.6");
@@ -61,8 +61,8 @@ public final class TestSearchContainers {
   }
 
   /**
-   * Returns an Elasticsearch container pointing at the same version as the {@link
-   * org.elasticsearch.client.RestClient}.
+   * Returns an Elasticsearch container pointing at the same version as the Elasticsearch Java
+   * client.
    *
    * <p>The container is configured to use 512m of heap and 512m of direct memory. This is required
    * because Elasticsearch 7.x, by default, will grab all the RAM available otherwise.
@@ -79,8 +79,8 @@ public final class TestSearchContainers {
   }
 
   /**
-   * Returns an Elasticsearch container pointing at the same version as the {@link
-   * org.elasticsearch.client.RestClient}.
+   * Returns an Elasticsearch container pointing at the same version as the Elasticsearch Java
+   * client.
    *
    * <p>The container is configured to use 512m of heap and 512m of direct memory. This is required
    * because Elasticsearch 7.x, by default, will grab all the RAM available otherwise.
