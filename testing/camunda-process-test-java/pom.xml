@@ -22,7 +22,7 @@
     <!-- Connectors Docker image properties. CI overrides the properties to use the current image. -->
     <io.camunda.process.test.connectorsDockerImageName>camunda/connectors-bundle</io.camunda.process.test.connectorsDockerImageName>
     <!-- Use a fixed Connectors Docker image version as it follows a different release cycle. Renovate keeps it current. -->
-    <io.camunda.process.test.connectorsDockerImageVersion>8.10.1</io.camunda.process.test.connectorsDockerImageVersion>
+    <io.camunda.process.test.connectorsDockerImageVersion>8.10.2</io.camunda.process.test.connectorsDockerImageVersion>
   </properties>
 
   <dependencies>
