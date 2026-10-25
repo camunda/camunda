@@ -13,6 +13,7 @@ import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.loggers.JobAuthorizationLogger;
 import io.camunda.zeebe.engine.metrics.EngineMetricsDoc.JobAction;
 import io.camunda.zeebe.engine.metrics.JobProcessingMetrics;
+import io.camunda.zeebe.engine.processing.consent.ConsentGate;
 import io.camunda.zeebe.engine.processing.deployment.model.element.SecretReference;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationRejectionMapper;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
@@ -35,6 +36,7 @@ import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.impl.record.value.secretreference.SecretReferenceRecord;
 import io.camunda.zeebe.protocol.impl.stream.job.ActivatedJobImpl;
 import io.camunda.zeebe.protocol.impl.stream.job.JobActivationProperties;
+import io.camunda.zeebe.protocol.record.intent.ConsentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.SecretReferenceIntent;
 import io.camunda.zeebe.protocol.record.mapper.AuthzModelMapper;
@@ -82,6 +84,7 @@ public class BpmnJobActivationBehavior {
   private final JobAuthorizationLogger jobAuthorizationLogger;
   private final JobSecretLookup secretLookup;
   private final BpmnIncidentBehavior incidentBehavior;
+  private final ConsentGate consentGate;
 
   public BpmnJobActivationBehavior(
       final JobStreamer jobStreamer,
@@ -108,6 +111,7 @@ public class BpmnJobActivationBehavior {
     jobAuthorizationLogger = JobAuthorizationLogger.createDefault();
     secretLookup = new JobSecretLookup(secretStoreRegistry);
     this.incidentBehavior = incidentBehavior;
+    consentGate = new ConsentGate(state.getConsentState(), state.getClusterVariableState());
   }
 
   /**
@@ -122,6 +126,19 @@ public class BpmnJobActivationBehavior {
    */
   public void publishWork(final long jobKey, final JobRecord jobRecord) {
     publishWork(jobKey, jobRecord, new HashSet<>());
+  }
+
+  /**
+   * Parks a gated job until its subject consents, and writes the consent request the consent page
+   * lists. A job that is parked already keeps its request.
+   */
+  public void parkForConsent(final long jobKey, final JobRecord jobRecord) {
+    stateWriter.appendFollowUpEvent(
+        keyGenerator.nextKey(), ConsentIntent.REQUESTED, consentGate.requestOf(jobKey, jobRecord));
+  }
+
+  public ConsentGate consentGate() {
+    return consentGate;
   }
 
   /**
@@ -157,6 +174,14 @@ public class BpmnJobActivationBehavior {
       final long jobKey, final JobRecord jobRecord, final Set<String> notifiedJobTypes) {
     final JobRecord wrappedJobRecord = new JobRecord();
     wrappedJobRecord.wrapWithoutVariables(jobRecord);
+
+    // the gate runs at every hand-out: a job whose subject has not consented, or revoked since, is
+    // parked until they answer, and no worker receives it on either delivery path
+    final ConsentGate.Basis consentBasis = consentGate.basisFor(wrappedJobRecord);
+    if (consentBasis == ConsentGate.Basis.NONE) {
+      parkForConsent(jobKey, wrappedJobRecord);
+      return true;
+    }
 
     final String jobType = wrappedJobRecord.getType();
     final JobKind jobKind = wrappedJobRecord.getJobKind();
@@ -197,6 +222,7 @@ public class BpmnJobActivationBehavior {
 
     setJobProperties(wrappedJobRecord, properties);
     jobVariablesCollector.setJobVariables(properties.fetchVariables(), wrappedJobRecord);
+    consentGate.addProof(wrappedJobRecord, consentBasis);
     final var pushableJobRecord = new JobRecord();
     cloneJob(wrappedJobRecord, pushableJobRecord);
     if (!injectSecretValues(jobKey, pushableJobRecord, secrets)) {

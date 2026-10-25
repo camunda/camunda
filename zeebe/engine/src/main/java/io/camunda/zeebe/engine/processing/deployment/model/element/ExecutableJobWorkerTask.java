@@ -14,6 +14,7 @@ public class ExecutableJobWorkerTask extends ExecutableActivity
 
   private JobWorkerProperties jobWorkerProperties;
   private AgentDefinitionType agentDefinitionType;
+  private ConsentDefinition consentDefinition;
 
   public ExecutableJobWorkerTask(final String id) {
     super(id);
@@ -33,6 +34,16 @@ public class ExecutableJobWorkerTask extends ExecutableActivity
   @Override
   public AgentDefinitionType getAgentDefinitionType() {
     return agentDefinitionType;
+  }
+
+  @Override
+  public ConsentDefinition getConsentDefinition() {
+    return consentDefinition;
+  }
+
+  @Override
+  public void setConsentDefinition(final ConsentDefinition consentDefinition) {
+    this.consentDefinition = consentDefinition;
   }
 
   @Override

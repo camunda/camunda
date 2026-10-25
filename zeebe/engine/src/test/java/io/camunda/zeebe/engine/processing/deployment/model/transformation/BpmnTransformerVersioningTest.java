@@ -145,7 +145,7 @@ class BpmnTransformerVersioningTest {
     assertThat(new BpmnTransformer(expressionLanguage(), Integer.MAX_VALUE).currentVersionsById())
         .containsExactlyInAnyOrderEntriesOf(
             Map.of(
-                TransformerSlot.SERVICE_TASK_JOB_WORKER.id(), 2,
+                TransformerSlot.SERVICE_TASK_JOB_WORKER.id(), 3,
                 TransformerSlot.AD_HOC_SUB_PROCESS.id(), 2));
   }
 
@@ -164,7 +164,7 @@ class BpmnTransformerVersioningTest {
         .containsExactlyInAnyOrderEntriesOf(
             Map.of(
                 TransformerSlot.SIGNAL.id(), 2,
-                TransformerSlot.SERVICE_TASK_JOB_WORKER.id(), 2,
+                TransformerSlot.SERVICE_TASK_JOB_WORKER.id(), 3,
                 TransformerSlot.AD_HOC_SUB_PROCESS.id(), 2));
   }
 
@@ -183,7 +183,7 @@ class BpmnTransformerVersioningTest {
         .containsExactlyInAnyOrderEntriesOf(
             Map.of(
                 TransformerSlot.SIGNAL.id(), 2,
-                TransformerSlot.SERVICE_TASK_JOB_WORKER.id(), 2,
+                TransformerSlot.SERVICE_TASK_JOB_WORKER.id(), 3,
                 TransformerSlot.AD_HOC_SUB_PROCESS.id(), 2));
   }
 

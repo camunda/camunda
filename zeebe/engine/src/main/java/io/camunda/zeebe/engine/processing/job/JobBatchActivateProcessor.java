@@ -27,11 +27,13 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.state.immutable.JobState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.impl.record.value.secretreference.SecretReferenceRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.intent.ConsentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.SecretReferenceIntent;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
@@ -64,6 +66,7 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
   private final JobSecretInjector jobSecretInjector;
   private final SecretResolutionScheduler secretResolutionScheduler;
   private final BpmnIncidentBehavior incidentBehavior;
+  private final JobState jobState;
 
   public JobBatchActivateProcessor(
       final Writers writers,
@@ -78,6 +81,7 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
       final SecretResolutionScheduler secretResolutionScheduler) {
 
     stateWriter = writers.state();
+    jobState = state.getJobState();
     rejectionWriter = writers.rejection();
     responseWriter = writers.response();
     this.cslCheck = cslCheck;
@@ -204,9 +208,29 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
     // resets the injector and clears the jobs registered for resolution
     final var jobsWithNonCachedSecrets = jobSecretInjector.jobsWithNonCachedSecrets();
 
+    final var jobsWaitingForConsent = jobBatchCollector.jobsWaitingForConsent();
+
     activateJobBatch(record, value, jobBatchKey);
 
     requestSecretResolution(jobsWithNonCachedSecrets);
+    parkJobsWaitingForConsent(jobsWaitingForConsent);
+  }
+
+  /**
+   * Parks the gated jobs the collector skipped because their subject has not consented: each gets a
+   * consent request, whose applier takes it out of the activatable index until a grant or an
+   * approval releases it.
+   */
+  private void parkJobsWaitingForConsent(final List<Long> jobKeys) {
+    for (final long jobKey : jobKeys) {
+      final var job = jobState.getJob(jobKey);
+      if (job != null) {
+        stateWriter.appendFollowUpEvent(
+            keyGenerator.nextKey(),
+            ConsentIntent.REQUESTED,
+            jobBatchCollector.consentGate().requestOf(jobKey, job));
+      }
+    }
   }
 
   /**

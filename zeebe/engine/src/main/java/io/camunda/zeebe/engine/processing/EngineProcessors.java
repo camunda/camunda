@@ -46,6 +46,7 @@ import io.camunda.zeebe.engine.processing.clock.ClockProcessors;
 import io.camunda.zeebe.engine.processing.clustervariable.ClusterVariableProcessors;
 import io.camunda.zeebe.engine.processing.common.DecisionBehavior;
 import io.camunda.zeebe.engine.processing.conditional.ConditionalEvaluationEvaluateProcessor;
+import io.camunda.zeebe.engine.processing.consent.ConsentProcessors;
 import io.camunda.zeebe.engine.processing.deployment.DeploymentCreateProcessor;
 import io.camunda.zeebe.engine.processing.deployment.distribute.DeploymentDistributeProcessor;
 import io.camunda.zeebe.engine.processing.deployment.distribute.DeploymentDistributionCommandSender;
@@ -586,6 +587,16 @@ public final class EngineProcessors {
         secretResolutionScheduler,
         bpmnBehaviors.jobActivationBehavior(),
         secretStoreRegistry.isConfigured(SecretStoreRegistry.DEFAULT_STORE_ID));
+
+    ConsentProcessors.addConsentProcessors(
+        typedRecordProcessors,
+        processingState,
+        bpmnBehaviors,
+        keyGenerator,
+        writers,
+        commandDistributionBehavior,
+        permissionsBehavior,
+        incidentMetrics);
 
     return typedRecordProcessors;
   }

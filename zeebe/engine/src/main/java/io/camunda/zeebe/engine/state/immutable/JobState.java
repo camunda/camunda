@@ -84,7 +84,13 @@ public interface JobState {
      * handed out to no worker, and it leaves this state only by being resumed with its process
      * instance or by being deleted.
      */
-    SUSPENDED((byte) 6);
+    SUSPENDED((byte) 6),
+    /**
+     * The job is parked until its subject consents. It is not in the activatable index, so it is
+     * handed out to no worker, and it leaves this state only by being released by a grant or an
+     * approval, by a decline, or by being deleted.
+     */
+    WAITING_FOR_CONSENT((byte) 7);
 
     byte value;
 

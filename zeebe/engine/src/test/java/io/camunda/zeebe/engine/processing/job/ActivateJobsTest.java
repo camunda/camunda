@@ -399,7 +399,9 @@ public final class ActivateJobsTest {
     final long maxRecordSize =
         maxMessageSize - headerSize - EngineConfiguration.BATCH_SIZE_CALCULATION_BUFFER;
 
-    final int variablesSize = (int) maxRecordSize / expectedJobsInBatch;
+    // leave room for the fields of each job record besides its variables, which include the
+    // consent declaration every job carries
+    final int variablesSize = (int) maxRecordSize / expectedJobsInBatch - 1024;
     final String variables = "{'key': '" + "x".repeat(variablesSize) + "'}";
 
     // when

@@ -30,6 +30,7 @@ import io.camunda.zeebe.engine.processing.deployment.model.transformer.Intermedi
 import io.camunda.zeebe.engine.processing.deployment.model.transformer.IntermediateThrowEventTransformer;
 import io.camunda.zeebe.engine.processing.deployment.model.transformer.JobWorkerElementTransformer;
 import io.camunda.zeebe.engine.processing.deployment.model.transformer.JobWorkerElementTransformerV2;
+import io.camunda.zeebe.engine.processing.deployment.model.transformer.JobWorkerElementTransformerV3;
 import io.camunda.zeebe.engine.processing.deployment.model.transformer.MessageTransformer;
 import io.camunda.zeebe.engine.processing.deployment.model.transformer.MultiInstanceActivityTransformer;
 import io.camunda.zeebe.engine.processing.deployment.model.transformer.ProcessTransformer;
@@ -153,6 +154,10 @@ public final class BpmnTransformer {
         () -> new JobWorkerElementTransformerV2<>(ServiceTask.class));
     registerHandlerVersion(
         TransformerSlot.AD_HOC_SUB_PROCESS, 2, AdHocSubProcessTransformerV2::new);
+    registerHandlerVersion(
+        TransformerSlot.SERVICE_TASK_JOB_WORKER,
+        3,
+        () -> new JobWorkerElementTransformerV3<>(ServiceTask.class));
   }
 
   /**

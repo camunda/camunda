@@ -50,6 +50,16 @@ public interface ExecutableJobWorkerElement extends ExecutableFlowElement {
   default void setAgentDefinitionType(final AgentDefinitionType agentDefinitionType) {}
 
   /**
+   * Returns what the task declares with {@code zeebe:consent} or {@code zeebe:relationship}, or
+   * {@code null} when its jobs are not gated.
+   */
+  default ConsentDefinition getConsentDefinition() {
+    return null;
+  }
+
+  default void setConsentDefinition(final ConsentDefinition consentDefinition) {}
+
+  /**
    * @return {@code true} if this element was detected as an agent element at deploy time, i.e. its
    *     {@link #getAgentDefinitionType()} is not {@link AgentDefinitionType#UNSPECIFIED}.
    */

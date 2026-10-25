@@ -78,6 +78,9 @@ public class JobRecurAfterBackoffProcessor
         case SUSPENDED:
           textState = "its process instance is suspended";
           break;
+        case WAITING_FOR_CONSENT:
+          textState = "it is waiting for consent";
+          break;
         default:
           textState = "no such job was found";
           break;

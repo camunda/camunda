@@ -18,6 +18,7 @@ import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.clustervariable.ClusterVariableRecord;
 import io.camunda.zeebe.protocol.record.value.ClusterVariableScope;
 import java.util.Optional;
+import java.util.function.BiPredicate;
 import org.agrona.DirectBuffer;
 
 public class DbClusterVariableState implements MutableClusterVariableState {
@@ -120,6 +121,15 @@ public class DbClusterVariableState implements MutableClusterVariableState {
     clusterVariableScope.setValue(ClusterVariableScope.GLOBAL);
     return Optional.ofNullable(
         clusterVariablesColumnFamily.get(clusterVariableKey, ClusterVariableInstance::new));
+  }
+
+  @Override
+  public void visitGloballyScopedClusterVariables(
+      final BiPredicate<String, ClusterVariableInstance> visitor) {
+    clusterVariablesColumnFamily.whileTrue(
+        (key, value) ->
+            clusterVariableScope.getValue() != ClusterVariableScope.GLOBAL
+                || visitor.test(clusterVariableName.toString(), value));
   }
 
   @Override

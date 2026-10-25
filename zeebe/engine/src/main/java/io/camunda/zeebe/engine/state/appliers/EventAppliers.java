@@ -32,6 +32,7 @@ import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.CompensationSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.ConditionalEvaluationIntent;
 import io.camunda.zeebe.protocol.record.intent.ConditionalSubscriptionIntent;
+import io.camunda.zeebe.protocol.record.intent.ConsentIntent;
 import io.camunda.zeebe.protocol.record.intent.DecisionEvaluationIntent;
 import io.camunda.zeebe.protocol.record.intent.DecisionIntent;
 import io.camunda.zeebe.protocol.record.intent.DecisionRequirementsIntent;
@@ -181,7 +182,17 @@ public final class EventAppliers implements EventApplier {
     registerAgentDefinitionEventAppliers(state);
     registerSecretReferenceEventAppliers(state);
     registerProcessDefinitionRestoreAppliers(state);
+    registerConsentAppliers(state);
     return this;
+  }
+
+  private void registerConsentAppliers(final MutableProcessingState state) {
+    register(ConsentIntent.REQUESTED, new ConsentRequestedApplier(state));
+    register(ConsentIntent.GRANTED, new ConsentGrantedApplier(state));
+    register(ConsentIntent.REVOKED, new ConsentRevokedApplier(state));
+    register(ConsentIntent.APPROVED, new ConsentApprovedApplier(state));
+    register(ConsentIntent.DECLINED, new ConsentDeclinedApplier(state));
+    register(ConsentIntent.RELEASED, new ConsentReleasedApplier(state));
   }
 
   private void registerSecretReferenceEventAppliers(final MutableProcessingState state) {
@@ -554,6 +565,7 @@ public final class EventAppliers implements EventApplier {
     register(JobIntent.CANCELED, 2, new JobCanceledV2Applier(state));
     register(JobIntent.CANCELED, 3, new JobCanceledV3Applier(state));
     register(JobIntent.CANCELED, 4, new JobCanceledV4Applier(state));
+    register(JobIntent.CANCELED, 5, new JobCanceledV5Applier(state));
     register(JobIntent.COMPLETED, 1, new JobCompletedV1Applier(state));
     register(JobIntent.COMPLETED, 2, new JobCompletedV2Applier(state));
     register(JobIntent.COMPLETED, 3, new JobCompletedV3Applier(state));
@@ -564,6 +576,7 @@ public final class EventAppliers implements EventApplier {
     register(JobIntent.ERROR_THROWN, 1, new JobErrorThrownV1Applier(state));
     register(JobIntent.ERROR_THROWN, 2, new JobErrorThrownV2Applier(state));
     register(JobIntent.ERROR_THROWN, 3, new JobErrorThrownV3Applier(state));
+    register(JobIntent.ERROR_THROWN, 4, new JobErrorThrownV4Applier(state));
     register(JobIntent.FAILED, 1, new JobFailedV1Applier(state));
     register(JobIntent.FAILED, 2, new JobFailedV2Applier(state));
     register(JobIntent.FAILED, 3, new JobFailedV3Applier(state));
