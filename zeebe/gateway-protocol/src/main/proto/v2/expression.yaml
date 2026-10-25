@@ -56,9 +56,9 @@ components:
           description: The expression to evaluate (e.g., "=x + y")
           example: "=x + y"
         tenantId:
-          type: string
           description: Required when the expression references tenant-scoped cluster variables
-          example: "tenant_123"
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/TenantId'
         scopeKey:
           allOf:
             - $ref: 'keys.yaml#/components/schemas/ScopeKey'
