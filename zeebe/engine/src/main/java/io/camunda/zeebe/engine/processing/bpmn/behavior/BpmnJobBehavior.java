@@ -272,7 +272,10 @@ public final class BpmnJobBehavior {
                   Either.left(
                       new Failure(
                           "Expected the task '%s' to declare zeebe:consent or zeebe:relationship for the connection '%s', because it references the connection's credential '%s'. A credential of a connection reaches only a job that passed the consent gate."
-                              .formatted(context.getElementId(), owner.id(), owner.credential()),
+                              .formatted(
+                                  BufferUtil.bufferAsString(context.getElementId()),
+                                  owner.id(),
+                                  owner.credential()),
                           ErrorType.UNKNOWN,
                           scopeKey)))
           .orElse(Either.right(EvaluatedConsent.NONE));
@@ -296,7 +299,8 @@ public final class BpmnJobBehavior {
                   return Either.left(
                       new Failure(
                           "Expected a signed-in person to have started the process instance, because the task '%s' rests on a relationship, but it was started by '%s'. A relationship compares a person with a person."
-                              .formatted(context.getElementId(), requester),
+                              .formatted(
+                                  BufferUtil.bufferAsString(context.getElementId()), requester),
                           ErrorType.UNKNOWN,
                           scopeKey));
                 }
@@ -335,7 +339,8 @@ public final class BpmnJobBehavior {
                           : Either.left(
                               new Failure(
                                   "Expected the task '%s' to name a person to ask for consent, but the subject was '%s'"
-                                      .formatted(context.getElementId(), name),
+                                      .formatted(
+                                          BufferUtil.bufferAsString(context.getElementId()), name),
                                   ErrorType.UNKNOWN,
                                   scopeKey)));
             });

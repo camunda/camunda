@@ -238,7 +238,7 @@ public final class ConsentGateTest {
             .withProcessInstanceKey(processInstanceKey)
             .getFirst();
     assertThat(incident.getValue().getErrorMessage())
-        .contains("zeebe:consent", "connection 'hibob'");
+        .contains("task 'task'", "zeebe:consent", "connection 'hibob'");
     assertThat(
             RecordingExporter.records()
                 .limit(r -> r.getIntent() == IncidentIntent.CREATED)
