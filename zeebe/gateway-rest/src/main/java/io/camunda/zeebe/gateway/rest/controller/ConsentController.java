@@ -16,6 +16,7 @@ import io.camunda.zeebe.gateway.rest.mapper.RequestExecutor;
 import io.camunda.zeebe.protocol.impl.record.value.consent.ConsentRecord;
 import io.camunda.zeebe.protocol.record.intent.ConsentIntent;
 import io.camunda.zeebe.protocol.record.value.ConsentDecision;
+import io.swagger.v3.oas.annotations.Hidden;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -29,6 +30,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
  * The consent commands of the design: answer a consent request, grant consent in advance, and
  * revoke a grant. All three are strongly consistent commands against engine state; the engine
  * decides who may give them, from the authenticated caller.
+ *
+ * <p>The handlers are {@link Hidden}: a proof of concept, not part of the public API, so the
+ * OpenAPI spec does not list them.
  */
 @CamundaRestController
 @RequestMapping("/v2")
@@ -48,6 +52,7 @@ public class ConsentController {
    * Answers the consent request of a parked job: {@code APPROVE_ONCE}, {@code GRANT} or {@code
    * DECLINE}.
    */
+  @Hidden
   @CamundaPostMapping(path = "/consent-requests/{jobKey}/resolution")
   public CompletableFuture<ResponseEntity<Object>> resolve(
       @PhysicalTenantId final String physicalTenantId,
@@ -61,6 +66,7 @@ public class ConsentController {
   }
 
   /** Grants consent in advance, for the caller, for one operation of one connection. */
+  @Hidden
   @CamundaPostMapping(path = "/consents")
   public CompletableFuture<ResponseEntity<Object>> grant(
       @PhysicalTenantId final String physicalTenantId,
@@ -73,6 +79,7 @@ public class ConsentController {
   }
 
   /** Revokes a grant. The subject revokes their own; an admin gives a reason. */
+  @Hidden
   @CamundaPostMapping(path = "/consents/{consentKey}/revocation")
   public CompletableFuture<ResponseEntity<Object>> revoke(
       @PhysicalTenantId final String physicalTenantId,
