@@ -43,7 +43,6 @@ When a skill exists for a recurring operation, use it rather than improvising st
 | `ci-runner-utilization`        | Detect CI runner underutilization and give downsizing recommendations for cost savings                         |
 | `ci-scheduled-workflow-health` | Generate an HTML health report for all scheduled GitHub Actions workflows                                      |
 | `create-issue`                 | Create a GitHub issue with the correct template, component label, and parent link                              |
-| `design-system-migrator`       | Migrate OC webapp routes and components from Carbon to the Camunda design system                               |
 | `engine-expert`                | Implement or fix capabilities in the Zeebe workflow engine (`zeebe/engine/`)                                   |
 | `frontend-feature`             | Build non-Operate features in the orchestration cluster webapp                                                 |
 | `frontend-docs-screenshots`    | Add, change, or run the Playwright tests that make the docs.camunda.io images for the OC webapp                |
@@ -55,6 +54,7 @@ When a skill exists for a recurring operation, use it rather than improvising st
 | `gradle-run-build`             | Compile, test, and package with `./gradlew`: single-test filters, `-Pquickly`, IT vs unit, gotchas            |
 | `operate-engineering-loop`     | Drive a tracked Operate change (OC webapp `src/operate/`) through implementation, gated validation, independent review, a draft PR, and Copilot review |
 | `operate-frontend`             | Operate frontend conventions for both codebases — the OC webapp `src/operate/` pod and legacy `operate/client/` |
+| `orchestration-cluster-migration-conventions` | Migrate OC webapp routes and components from Carbon to the Camunda design system |
 | `session-state`                | Persist and resume Claude Code session progress across restarts, `--resume`/`--continue`, and compaction        |
 | `tasklist-frontend`            | Build or change Tasklist pod features in the OC webapp at `src/tasklist/`                                      |
 

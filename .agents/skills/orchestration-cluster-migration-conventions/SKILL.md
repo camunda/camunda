@@ -1,9 +1,9 @@
 ---
-name: design-system-migrator
+name: orchestration-cluster-migration-conventions
 description: Use when migrating orchestration cluster webapp pages or components from Carbon to the Camunda design system (shadcn), including parallel routes, side-by-side components, and migration tests.
 ---
 
-# Design System Migrator
+# Orchestration Cluster Migration Conventions
 
 Use this skill for the Carbon-to-shadcn migration in
 `webapp/client/apps/orchestration-cluster-webapp/`.
