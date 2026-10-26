@@ -18,15 +18,18 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 import java.util.stream.IntStream;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 
 public class CompletableActorFutureTest {
 
@@ -354,6 +357,101 @@ public class CompletableActorFutureTest {
 
         // then
         assertThat(waiter.get(10, TimeUnit.SECONDS)).isEqualTo("second");
+      } finally {
+        executor.shutdownNow();
+      }
+    }
+  }
+
+  @Nested
+  public class ConcurrentRegistration {
+
+    private static final int ROUNDS = 5_000;
+    private static final int REGISTRARS = 4;
+
+    @Test
+    @Timeout(120)
+    void shouldRunEveryCallbackExactlyOnceWhenRegisteringWhileCompleting() throws Exception {
+      final var executor = Executors.newFixedThreadPool(REGISTRARS + 1);
+      try {
+        for (int round = 0; round < ROUNDS; round++) {
+          // given
+          final var future = new CompletableActorFuture<String>();
+          final var barrier = new CyclicBarrier(REGISTRARS + 1);
+          final var runs = new AtomicInteger[REGISTRARS * 3];
+          for (int i = 0; i < runs.length; i++) {
+            runs[i] = new AtomicInteger();
+          }
+
+          // when registrars and the completing thread start at the same time
+          final var tasks = new ArrayList<Future<?>>();
+          for (int r = 0; r < REGISTRARS; r++) {
+            final int registrar = r;
+            tasks.add(
+                executor.submit(
+                    () -> {
+                      barrier.await();
+                      for (int i = 0; i < 3; i++) {
+                        final var counter = runs[registrar * 3 + i];
+                        future.onComplete(
+                            (value, error) -> counter.incrementAndGet(), Runnable::run);
+                      }
+                      return null;
+                    }));
+          }
+          tasks.add(
+              executor.submit(
+                  () -> {
+                    barrier.await();
+                    future.complete("done");
+                    return null;
+                  }));
+          for (final var task : tasks) {
+            task.get(30, TimeUnit.SECONDS);
+          }
+
+          // then
+          assertThat(runs).extracting(AtomicInteger::get).containsOnly(1);
+        }
+      } finally {
+        executor.shutdownNow();
+      }
+    }
+
+    @Test
+    @Timeout(120)
+    void shouldReleaseEveryBlockingWaiterWhenWaitingWhileCompleting() throws Exception {
+      final var executor = Executors.newFixedThreadPool(REGISTRARS + 1);
+      try {
+        for (int round = 0; round < ROUNDS; round++) {
+          // given
+          final var future = new CompletableActorFuture<String>();
+          final var barrier = new CyclicBarrier(REGISTRARS + 1);
+
+          // when waiters and the completing thread start at the same time
+          final var waiters = new ArrayList<Future<String>>();
+          for (int r = 0; r < REGISTRARS; r++) {
+            waiters.add(
+                executor.submit(
+                    () -> {
+                      barrier.await();
+                      return future.get(30, TimeUnit.SECONDS);
+                    }));
+          }
+          final var completer =
+              executor.submit(
+                  () -> {
+                    barrier.await();
+                    future.complete("done");
+                    return null;
+                  });
+          completer.get(30, TimeUnit.SECONDS);
+
+          // then no waiter is stuck until its timeout
+          for (final var waiter : waiters) {
+            assertThat(waiter.get(5, TimeUnit.SECONDS)).isEqualTo("done");
+          }
+        }
       } finally {
         executor.shutdownNow();
       }
