@@ -275,26 +275,13 @@ read it. If you can't name both, don't write it.
 - Keep descriptions brief and concise
 - For bug fixes: ask the engineer whether the fix needs backporting to stable branches before
   opening the PR. If yes, add the appropriate `backport stable/X.Y` label(s) when creating it
-  (see "Backporting" below).
+  (see "Backporting" below and the `backport` skill).
 
 ### Backporting
 
-Automated by a GitHub Action (`korthout/backport-action`, see `.github/workflows/backport.yml`;
-human docs in `CONTRIBUTING.md`). **Never create backport PRs, branches, or cherry-picks yourself,
-and never offer to.** Trigger a backport only through the automation — a label, or a `/backport`
-comment — never by hand.
-
-- **Start:** add one `backport stable/X.Y` label per target branch (e.g. `backport stable/8.7`).
-  Not-yet-merged PR → runs on merge. Already-merged PR → comment `/backport`. Multiple labels →
-  multiple backport PRs.
-- **Success:** action opens the backport PR. A bot approves it and enables auto-merge once CI passes,
-  but only when the backport touches `zeebe/`, `clients/`, a `pom.xml`, shared build/webapps config,
-  or CI-relevant `.github/` files — the approval job lives in the Zeebe CI workflow and is gated on
-  those paths. A backport touching none of them needs a human review and merge.
-- **Conflicts:** action opens a **draft** PR with conflict markers committed as-is plus a comment
-  with resolution steps. You may resolve them (check out the branch, fix conflicts and markers) —
-  but only on a draft PR the action already opened. When asked to backport, first check whether
-  such a draft PR exists.
+Backports run only through the backport automation (a `backport stable/X.Y` label or a `/backport`
+comment). **Never create backport PRs, branches, or cherry-picks yourself, and never offer to.** For
+how to trigger one and handle conflicts, use the `backport` skill.
 
 ### Git workflow
 
