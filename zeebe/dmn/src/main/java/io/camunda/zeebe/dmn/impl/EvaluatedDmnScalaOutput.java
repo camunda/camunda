@@ -15,7 +15,7 @@ import org.camunda.feel.syntaxtree.Val;
 import org.jspecify.annotations.Nullable;
 
 public record EvaluatedDmnScalaOutput(
-    String outputId, @Nullable String outputName, DirectBuffer outputValue)
+    @Nullable String outputId, @Nullable String outputName, DirectBuffer outputValue)
     implements EvaluatedOutput {
 
   public static EvaluatedDmnScalaOutput of(

@@ -13,12 +13,12 @@ import org.jspecify.annotations.Nullable;
 
 public final class ParsedDmnScalaDecision implements ParsedDecision {
 
-  private final String decisionId;
+  private final @Nullable String decisionId;
   private final String decisionName;
   private final @Nullable ParsedDecisionTable decisionTable;
 
   public ParsedDmnScalaDecision(
-      final String decisionId,
+      final @Nullable String decisionId,
       final String decisionName,
       final @Nullable ParsedDecisionTable decisionTable) {
     this.decisionId = decisionId;
@@ -27,7 +27,7 @@ public final class ParsedDmnScalaDecision implements ParsedDecision {
   }
 
   @Override
-  public String getId() {
+  public @Nullable String getId() {
     return decisionId;
   }
 
