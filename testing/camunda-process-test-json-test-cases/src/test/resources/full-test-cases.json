@@ -99,8 +99,13 @@
           "variables": {
             "order_id": "order-1"
           },
-          "reserveJobs": true,
-          "stubCallActivities": true
+          "runtimeInstructions": [
+            {
+              "type": "CONFIGURE_EXECUTION",
+              "reserveJobs": true,
+              "stubCallActivities": true
+            }
+          ]
         },
         {
           "type": "COMPLETE_JOB",
@@ -164,7 +169,12 @@
           "variables": {
             "order_id": "order-2"
           },
-          "holdTimers": true
+          "runtimeInstructions": [
+            {
+              "type": "CONFIGURE_EXECUTION",
+              "holdTimers": true
+            }
+          ]
         },
         {
           "type": "TRIGGER_TIMER",

@@ -25,6 +25,7 @@ import io.camunda.process.test.api.CamundaProcessTestContext;
 import io.camunda.process.test.api.testCases.ImmutableProcessDefinitionSelector;
 import io.camunda.process.test.api.testCases.instructions.CreateProcessInstanceInstruction;
 import io.camunda.process.test.api.testCases.instructions.ImmutableCreateProcessInstanceInstruction;
+import io.camunda.process.test.api.testCases.instructions.createProcessInstance.ImmutableCreateProcessInstanceConfigureExecutionRuntimeInstruction;
 import io.camunda.process.test.api.testCases.instructions.createProcessInstance.ImmutableCreateProcessInstanceStartInstruction;
 import io.camunda.process.test.api.testCases.instructions.createProcessInstance.ImmutableCreateProcessInstanceTerminateRuntimeInstruction;
 import io.camunda.process.test.impl.testCases.instructions.CreateProcessInstanceInstructionHandler;
@@ -94,8 +95,11 @@ public class CreateProcessInstanceInstructionTest {
                 ImmutableProcessDefinitionSelector.builder()
                     .processDefinitionId(PROCESS_DEFINITION_ID)
                     .build())
-            .reserveJobs(true)
-            .stubCallActivities(true)
+            .addRuntimeInstructions(
+                ImmutableCreateProcessInstanceConfigureExecutionRuntimeInstruction.builder()
+                    .reserveJobs(true)
+                    .stubCallActivities(true)
+                    .build())
             .build();
 
     // when
@@ -153,7 +157,10 @@ public class CreateProcessInstanceInstructionTest {
                 ImmutableProcessDefinitionSelector.builder()
                     .processDefinitionId(PROCESS_DEFINITION_ID)
                     .build())
-            .holdTimers(true)
+            .addRuntimeInstructions(
+                ImmutableCreateProcessInstanceConfigureExecutionRuntimeInstruction.builder()
+                    .holdTimers(true)
+                    .build())
             .build();
 
     // when

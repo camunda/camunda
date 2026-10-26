@@ -13,8 +13,13 @@
           "variables": {
             "orderId": "A-1001"
           },
-          "reserveJobs": true,
-          "stubCallActivities": true
+          "runtimeInstructions": [
+            {
+              "type": "CONFIGURE_EXECUTION",
+              "reserveJobs": true,
+              "stubCallActivities": true
+            }
+          ]
         },
         {
           "type": "COMPLETE_JOB",
@@ -70,8 +75,13 @@
           "variables": {
             "orderId": "A-1002"
           },
-          "reserveJobs": true,
-          "stubCallActivities": true
+          "runtimeInstructions": [
+            {
+              "type": "CONFIGURE_EXECUTION",
+              "reserveJobs": true,
+              "stubCallActivities": true
+            }
+          ]
         },
         {
           "type": "COMPLETE_JOB",
@@ -136,8 +146,13 @@
           "variables": {
             "orderId": "A-1003"
           },
-          "reserveJobs": true,
-          "stubCallActivities": true
+          "runtimeInstructions": [
+            {
+              "type": "CONFIGURE_EXECUTION",
+              "reserveJobs": true,
+              "stubCallActivities": true
+            }
+          ]
         },
         {
           "type": "COMPLETE_JOB",
@@ -184,8 +199,13 @@
           "variables": {
             "orderId": "A-1004"
           },
-          "reserveJobs": true,
-          "stubCallActivities": true
+          "runtimeInstructions": [
+            {
+              "type": "CONFIGURE_EXECUTION",
+              "reserveJobs": true,
+              "stubCallActivities": true
+            }
+          ]
         },
         {
           "type": "COMPLETE_JOB",
@@ -242,7 +262,12 @@
           "variables": {
             "orderId": "A-1006"
           },
-          "stubCallActivities": true
+          "runtimeInstructions": [
+            {
+              "type": "CONFIGURE_EXECUTION",
+              "stubCallActivities": true
+            }
+          ]
         },
         {
           "type": "STUB_CALL_ACTIVITY_COMPLETE",

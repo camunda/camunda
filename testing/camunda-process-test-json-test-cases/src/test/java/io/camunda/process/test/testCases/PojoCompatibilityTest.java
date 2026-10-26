@@ -81,6 +81,7 @@ import io.camunda.process.test.api.testCases.instructions.assertElementInstances
 import io.camunda.process.test.api.testCases.instructions.assertProcessInstance.ProcessInstanceState;
 import io.camunda.process.test.api.testCases.instructions.assertProcessInstanceMessageSubscription.MessageSubscriptionState;
 import io.camunda.process.test.api.testCases.instructions.assertUserTask.UserTaskState;
+import io.camunda.process.test.api.testCases.instructions.createProcessInstance.ImmutableCreateProcessInstanceConfigureExecutionRuntimeInstruction;
 import io.camunda.process.test.api.testCases.instructions.createProcessInstance.ImmutableCreateProcessInstanceStartInstruction;
 import io.camunda.process.test.api.testCases.instructions.createProcessInstance.ImmutableCreateProcessInstanceTerminateRuntimeInstruction;
 import java.io.IOException;
@@ -188,9 +189,12 @@ public class PojoCompatibilityTest {
                         ImmutableCreateProcessInstanceTerminateRuntimeInstruction.builder()
                             .afterElementId("task2")
                             .build())
-                    .reserveJobs(true)
-                    .stubCallActivities(true)
-                    .holdTimers(true)
+                    .addRuntimeInstructions(
+                        ImmutableCreateProcessInstanceConfigureExecutionRuntimeInstruction.builder()
+                            .reserveJobs(true)
+                            .stubCallActivities(true)
+                            .holdTimers(true)
+                            .build())
                     .build())),
         // ===== ASSERT_PROCESS_INSTANCE =====
         Arguments.of(

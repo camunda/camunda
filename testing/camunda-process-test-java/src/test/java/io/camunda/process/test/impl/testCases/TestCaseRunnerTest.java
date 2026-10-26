@@ -41,6 +41,7 @@ import io.camunda.process.test.api.testCases.instructions.ImmutableCreateProcess
 import io.camunda.process.test.api.testCases.instructions.ImmutableIncreaseTimeInstruction;
 import io.camunda.process.test.api.testCases.instructions.ImmutableMockJobWorkerCompleteJobInstruction;
 import io.camunda.process.test.api.testCases.instructions.assertProcessInstance.ProcessInstanceState;
+import io.camunda.process.test.api.testCases.instructions.createProcessInstance.ImmutableCreateProcessInstanceConfigureExecutionRuntimeInstruction;
 import java.time.Duration;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -105,7 +106,10 @@ public class TestCaseRunnerTest {
                     ImmutableProcessDefinitionSelector.builder()
                         .processDefinitionId("process")
                         .build())
-                .reserveJobs(true)
+                .addRuntimeInstructions(
+                    ImmutableCreateProcessInstanceConfigureExecutionRuntimeInstruction.builder()
+                        .reserveJobs(true)
+                        .build())
                 .build());
 
     // when
@@ -142,7 +146,10 @@ public class TestCaseRunnerTest {
                         ImmutableProcessDefinitionSelector.builder()
                             .processDefinitionId("process")
                             .build())
-                    .reserveJobs(true)
+                    .addRuntimeInstructions(
+                        ImmutableCreateProcessInstanceConfigureExecutionRuntimeInstruction.builder()
+                            .reserveJobs(true)
+                            .build())
                     .build())
             .addInstructions(mock(TestCaseInstruction.class))
             .build();
@@ -361,7 +368,10 @@ public class TestCaseRunnerTest {
     return ImmutableCreateProcessInstanceInstruction.builder()
         .processDefinitionSelector(
             ImmutableProcessDefinitionSelector.builder().processDefinitionId("process").build())
-        .reserveJobs(reserveJobs)
+        .addRuntimeInstructions(
+            ImmutableCreateProcessInstanceConfigureExecutionRuntimeInstruction.builder()
+                .reserveJobs(reserveJobs)
+                .build())
         .build();
   }
 
@@ -369,7 +379,10 @@ public class TestCaseRunnerTest {
     return ImmutableCreateProcessInstanceInstruction.builder()
         .processDefinitionSelector(
             ImmutableProcessDefinitionSelector.builder().processDefinitionId("process").build())
-        .holdTimers(holdTimers)
+        .addRuntimeInstructions(
+            ImmutableCreateProcessInstanceConfigureExecutionRuntimeInstruction.builder()
+                .holdTimers(holdTimers)
+                .build())
         .build();
   }
 

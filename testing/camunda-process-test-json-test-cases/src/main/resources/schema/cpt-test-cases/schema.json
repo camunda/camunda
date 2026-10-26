@@ -207,21 +207,36 @@
                   "afterElementId"
                 ],
                 "additionalProperties": false
+              },
+              {
+                "description": "An instruction to configure instance-wide execution switches on the process instance.",
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "description": "The type of the runtime instruction.",
+                    "type": "string",
+                    "const": "CONFIGURE_EXECUTION"
+                  },
+                  "reserveJobs": {
+                    "description": "Whether to reserve every job the process instance creates for the test, so that no job worker is served them. Optional, defaults to false.",
+                    "type": "boolean"
+                  },
+                  "stubCallActivities": {
+                    "description": "Whether the process instance's call activities start no called process, waiting on a job that stands in for it instead. Optional, defaults to false.",
+                    "type": "boolean"
+                  },
+                  "holdTimers": {
+                    "description": "Whether the process instance's timers are kept out of the engine's due-date scheduler, so that none of them fires on its own. A held timer fires only when a TRIGGER_TIMER instruction names its catch event. Optional, defaults to false.",
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "type"
+                ],
+                "additionalProperties": false
               }
             ]
           }
-        },
-        "reserveJobs": {
-          "description": "Whether to reserve every job the process instance creates for the test, so that no job worker is served them. Optional, defaults to false.",
-          "type": "boolean"
-        },
-        "stubCallActivities": {
-          "description": "Whether the process instance's call activities start no called process, waiting on a job that stands in for it instead. Optional, defaults to false.",
-          "type": "boolean"
-        },
-        "holdTimers": {
-          "description": "Whether the process instance's timers are kept out of the engine's due-date scheduler, so that none of them fires on its own. A held timer fires only when a TRIGGER_TIMER instruction names its catch event. Optional, defaults to false.",
-          "type": "boolean"
         }
       },
       "required": [

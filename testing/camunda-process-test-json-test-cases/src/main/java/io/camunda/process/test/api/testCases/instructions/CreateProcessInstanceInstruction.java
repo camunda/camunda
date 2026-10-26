@@ -63,42 +63,4 @@ public interface CreateProcessInstanceInstruction extends TestCaseInstruction {
    * @return the runtime instructions or an empty list if no instructions are set
    */
   List<CreateProcessInstanceRuntimeInstruction> getRuntimeInstructions();
-
-  /**
-   * Whether to reserve every job the process instance creates for the test, so that no job worker
-   * is served them. Defaults to false.
-   *
-   * <p>The reservation token itself is not part of the test case: it is a runtime value, minted
-   * when the test case runs.
-   *
-   * @return true if the instance's jobs are reserved, false otherwise
-   */
-  @Value.Default
-  default boolean getReserveJobs() {
-    return false;
-  }
-
-  /**
-   * Whether the process instance's call activities start no called process, waiting on a job that
-   * stands in for it instead. Defaults to false.
-   *
-   * @return true if the instance's call activities are stubbed, false otherwise
-   */
-  @Value.Default
-  default boolean getStubCallActivities() {
-    return false;
-  }
-
-  /**
-   * Whether the process instance's timers are kept out of the engine's due-date scheduler, so that
-   * none of them fires on its own. Defaults to false.
-   *
-   * <p>A held timer fires only when a {@link TriggerTimerInstruction} names its catch event.
-   *
-   * @return true if the instance's timers are held, false otherwise
-   */
-  @Value.Default
-  default boolean getHoldTimers() {
-    return false;
-  }
 }

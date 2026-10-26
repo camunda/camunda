@@ -12,8 +12,9 @@ Read more about the library and how to use it in our documentation: https://docs
 ## Isolated recording example (alpha)
 
 `isolated-order.bpmn` and the test cases in
-[src/test/resources/test-cases-isolated](src/test/resources/test-cases-isolated) exercise the two
-recording switches on `CREATE_PROCESS_INSTANCE`:
+[src/test/resources/test-cases-isolated](src/test/resources/test-cases-isolated) exercise the
+recording switches, which ride on a `CONFIGURE_EXECUTION` runtime instruction of
+`CREATE_PROCESS_INSTANCE`:
 
 - `reserveJobs` — every job the instance creates is served to no job worker, so the test drives it
   by key. A reserved job is hidden from CPT's own `mockJobWorker` too, so mock those jobs with

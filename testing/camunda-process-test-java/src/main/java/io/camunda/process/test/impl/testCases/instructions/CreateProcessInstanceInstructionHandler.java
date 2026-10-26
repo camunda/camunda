@@ -20,12 +20,14 @@ import io.camunda.client.api.command.CreateProcessInstanceCommandStep1.CreatePro
 import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.process.test.api.CamundaProcessTestContext;
 import io.camunda.process.test.api.testCases.instructions.CreateProcessInstanceInstruction;
+import io.camunda.process.test.api.testCases.instructions.createProcessInstance.CreateProcessInstanceConfigureExecutionRuntimeInstruction;
 import io.camunda.process.test.api.testCases.instructions.createProcessInstance.CreateProcessInstanceRuntimeInstruction;
 import io.camunda.process.test.api.testCases.instructions.createProcessInstance.CreateProcessInstanceTerminateRuntimeInstruction;
 import io.camunda.process.test.impl.testCases.AssertionFacade;
 import io.camunda.process.test.impl.testCases.CreatedProcessInstanceRegistry;
 import io.camunda.process.test.impl.testCases.TestCaseInstructionHandler;
 import io.camunda.process.test.impl.testCases.TestRunContext;
+import java.util.Optional;
 
 public class CreateProcessInstanceInstructionHandler
     implements TestCaseInstructionHandler<CreateProcessInstanceInstruction> {
@@ -70,18 +72,31 @@ public class CreateProcessInstanceInstructionHandler
         .getRuntimeInstructions()
         .forEach(runtimeInstruction -> applyRuntimeInstruction(runtimeInstruction, command));
 
-    final boolean isolated =
-        instruction.getReserveJobs()
-            || instruction.getStubCallActivities()
-            || instruction.getHoldTimers();
+    final Optional<CreateProcessInstanceConfigureExecutionRuntimeInstruction> config =
+        configureExecutionOf(instruction);
 
-    if (instruction.getReserveJobs()) {
+    final boolean reserveJobs =
+        config
+            .map(CreateProcessInstanceConfigureExecutionRuntimeInstruction::getReserveJobs)
+            .orElse(false);
+    final boolean stubCallActivities =
+        config
+            .map(CreateProcessInstanceConfigureExecutionRuntimeInstruction::getStubCallActivities)
+            .orElse(false);
+    final boolean holdTimers =
+        config
+            .map(CreateProcessInstanceConfigureExecutionRuntimeInstruction::getHoldTimers)
+            .orElse(false);
+
+    final boolean isolated = reserveJobs || stubCallActivities || holdTimers;
+
+    if (reserveJobs) {
       command.reserveJobs(context.getJobReservationToken());
     }
-    if (instruction.getStubCallActivities()) {
+    if (stubCallActivities) {
       command.stubCallActivities(true);
     }
-    if (instruction.getHoldTimers()) {
+    if (holdTimers) {
       command.holdTimers(true);
     }
 
@@ -90,10 +105,15 @@ public class CreateProcessInstanceInstructionHandler
     // an isolated instance waits on jobs no worker takes, or on timers that never fire, so it
     // parks until the test ends it
     createdProcessInstances.register(
-        processDefinitionId,
-        processInstance.getProcessInstanceKey(),
-        instruction.getHoldTimers(),
-        isolated);
+        processDefinitionId, processInstance.getProcessInstanceKey(), holdTimers, isolated);
+  }
+
+  private static Optional<CreateProcessInstanceConfigureExecutionRuntimeInstruction>
+      configureExecutionOf(final CreateProcessInstanceInstruction instruction) {
+    return instruction.getRuntimeInstructions().stream()
+        .filter(CreateProcessInstanceConfigureExecutionRuntimeInstruction.class::isInstance)
+        .map(CreateProcessInstanceConfigureExecutionRuntimeInstruction.class::cast)
+        .findFirst();
   }
 
   @Override
@@ -109,6 +129,10 @@ public class CreateProcessInstanceInstructionHandler
       final CreateProcessInstanceTerminateRuntimeInstruction terminateInstruction =
           (CreateProcessInstanceTerminateRuntimeInstruction) runtimeInstruction;
       command.terminateAfterElement(terminateInstruction.getAfterElementId());
+
+    } else if (runtimeInstruction
+        instanceof CreateProcessInstanceConfigureExecutionRuntimeInstruction) {
+      // instance-wide switches are applied from configureExecutionOf, not as a command instruction
 
     } else {
       throw new IllegalArgumentException(

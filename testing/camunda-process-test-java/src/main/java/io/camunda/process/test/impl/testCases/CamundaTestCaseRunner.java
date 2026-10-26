@@ -29,10 +29,12 @@ import io.camunda.process.test.api.testCases.TestCaseInstruction;
 import io.camunda.process.test.api.testCases.TestCaseInstructionType;
 import io.camunda.process.test.api.testCases.TestCaseRunner;
 import io.camunda.process.test.api.testCases.instructions.CreateProcessInstanceInstruction;
+import io.camunda.process.test.api.testCases.instructions.createProcessInstance.CreateProcessInstanceConfigureExecutionRuntimeInstruction;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -131,7 +133,7 @@ public class CamundaTestCaseRunner implements TestCaseRunner {
         testCase.getInstructions().stream()
             .filter(CreateProcessInstanceInstruction.class::isInstance)
             .map(CreateProcessInstanceInstruction.class::cast)
-            .anyMatch(CreateProcessInstanceInstruction::getReserveJobs);
+            .anyMatch(CamundaTestCaseRunner::instructionReservesJobs);
 
     final boolean mocksJobWorkers =
         testCase.getInstructions().stream()
@@ -162,7 +164,7 @@ public class CamundaTestCaseRunner implements TestCaseRunner {
         testCase.getInstructions().stream()
             .filter(CreateProcessInstanceInstruction.class::isInstance)
             .map(CreateProcessInstanceInstruction.class::cast)
-            .anyMatch(CreateProcessInstanceInstruction::getHoldTimers);
+            .anyMatch(CamundaTestCaseRunner::instructionHoldsTimers);
 
     final boolean movesTheClock =
         testCase.getInstructions().stream()
@@ -170,6 +172,28 @@ public class CamundaTestCaseRunner implements TestCaseRunner {
             .anyMatch(CLOCK_INSTRUCTIONS::contains);
 
     return holdsTimers && movesTheClock;
+  }
+
+  private static boolean instructionReservesJobs(
+      final CreateProcessInstanceInstruction instruction) {
+    return configureExecutionOf(instruction)
+        .map(CreateProcessInstanceConfigureExecutionRuntimeInstruction::getReserveJobs)
+        .orElse(false);
+  }
+
+  private static boolean instructionHoldsTimers(
+      final CreateProcessInstanceInstruction instruction) {
+    return configureExecutionOf(instruction)
+        .map(CreateProcessInstanceConfigureExecutionRuntimeInstruction::getHoldTimers)
+        .orElse(false);
+  }
+
+  private static Optional<CreateProcessInstanceConfigureExecutionRuntimeInstruction>
+      configureExecutionOf(final CreateProcessInstanceInstruction instruction) {
+    return instruction.getRuntimeInstructions().stream()
+        .filter(CreateProcessInstanceConfigureExecutionRuntimeInstruction.class::isInstance)
+        .map(CreateProcessInstanceConfigureExecutionRuntimeInstruction.class::cast)
+        .findFirst();
   }
 
   /**
