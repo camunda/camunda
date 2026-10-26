@@ -98,7 +98,8 @@ abstract class AbstractBatchOperationTest {
               cfg ->
                   cfg.setBatchOperationQueryPageSize(DEFAULT_QUERY_PAGE_SIZE)
                       .setBatchOperationQueryRetryMax(2)
-                      .setBatchOperationQueryRetryInitialDelay(Duration.ofMillis(100)))
+                      .setBatchOperationSchedulerInterval(Duration.ofMillis(10))
+                      .setBatchOperationQueryRetryInitialDelay(Duration.ofMillis(10)))
           .withSearchClientsProxy(searchClientsProxy)
           .withBrokerRequestAuthorizationConverter(brokerRequestAuthorizationConverter);
 
