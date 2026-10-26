@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.net.http.HttpResponse.BodyHandlers;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -545,13 +546,49 @@ final class VersionCompatibilityMatrix {
 
   static class GithubAPI {
 
-    final Retry retry =
-        Retry.of(
-            "github-api",
-            RetryConfig.custom()
-                .maxAttempts(10)
-                .intervalFunction(IntervalFunction.ofExponentialBackoff())
-                .build());
+    private final String baseUrl;
+    private final Retry retry;
+
+    GithubAPI() {
+      this(
+          "https://api.github.com",
+          Retry.of(
+              "github-api",
+              RetryConfig.custom()
+                  .maxAttempts(10)
+                  .intervalFunction(IntervalFunction.ofExponentialBackoff())
+                  .build()));
+    }
+
+    @VisibleForTesting
+    GithubAPI(final String baseUrl, final Retry retry) {
+      this.baseUrl = baseUrl;
+      this.retry = retry;
+    }
+
+    /**
+     * Sends the request, retrying on I/O errors and on transient responses (5xx and 429). {@link
+     * HttpClient#send} does not throw on an error status, so the retry would otherwise never fire
+     * for them.
+     */
+    private HttpResponse<byte[]> send(final HttpClient httpClient, final URI endpoint)
+        throws Exception {
+      return retry.executeCallable(
+          () -> {
+            final var response =
+                httpClient.send(
+                    createAuthenticatedRequest(endpoint).build(), BodyHandlers.ofByteArray());
+            final var statusCode = response.statusCode();
+            if (statusCode >= 500 || statusCode == 429) {
+              final var body = new String(Objects.requireNonNullElse(response.body(), new byte[0]));
+              throw new IOException(
+                  String.format(
+                      "Transient GitHub API failure. Status: %d, Endpoint: %s, Response: %s",
+                      statusCode, endpoint, body.isEmpty() ? "<empty>" : body));
+            }
+            return response;
+          });
+    }
 
     private HttpRequest.Builder createAuthenticatedRequest(final URI endpoint) {
       final var builder = HttpRequest.newBuilder().GET().uri(endpoint);
@@ -564,14 +601,9 @@ final class VersionCompatibilityMatrix {
 
     public Optional<Release> fetchRelease(final SemanticVersion tagName) {
       final var endpoint =
-          URI.create(
-              "https://api.github.com/repos/camunda/camunda/releases/tags/" + tagName.toString());
+          URI.create(baseUrl + "/repos/camunda/camunda/releases/tags/" + tagName.toString());
       try (final var httpClient = HttpClient.newHttpClient()) {
-        final var response =
-            retry.executeCallable(
-                () ->
-                    httpClient.send(
-                        createAuthenticatedRequest(endpoint).build(), BodyHandlers.ofByteArray()));
+        final var response = send(httpClient, endpoint);
 
         final var statusCode = response.statusCode();
         if (statusCode == 404) {
@@ -593,14 +625,9 @@ final class VersionCompatibilityMatrix {
     }
 
     public Stream<Ref> fetchTags() {
-      final var endpoint =
-          URI.create("https://api.github.com/repos/camunda/camunda/git/matching-refs/tags/8.");
+      final var endpoint = URI.create(baseUrl + "/repos/camunda/camunda/git/matching-refs/tags/8.");
       try (final var httpClient = HttpClient.newHttpClient()) {
-        final var response =
-            retry.executeCallable(
-                () ->
-                    httpClient.send(
-                        createAuthenticatedRequest(endpoint).build(), BodyHandlers.ofByteArray()));
+        final var response = send(httpClient, endpoint);
 
         final var statusCode = response.statusCode();
         if (statusCode < 200 || statusCode >= 300) {
