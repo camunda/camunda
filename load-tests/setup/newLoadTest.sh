@@ -194,6 +194,8 @@ mkdir -p "$TARGET_DIRECTORY"
 cp -v  "$VERSION_DIR/Makefile"                                                  "$TARGET_DIRECTORY/"
 cp -rv "$SCRIPT_DIR/charts"                                                     "$TARGET_DIRECTORY/"
 cp -v  "$VERSION_DIR/values/camunda-platform-override-values.yaml"              "$TARGET_DIRECTORY/"
+# PoC for camunda/pdp-3517-variable-trace#53: per-run overrides, picked with --set-file
+cp -v  "$VERSION_DIR"/values/variable-history-*.yaml                              "$TARGET_DIRECTORY/"
 cp -v  "$SCRIPT_DIR/scenarios/load-tester-values-defaults.yaml"                 "$TARGET_DIRECTORY/"
 cp -v  "$VERSION_DIR/values/values-stable.yaml"                                 "$TARGET_DIRECTORY/"
 cp -v  "$SCRIPT_DIR/scenarios/load-tester-values-realistic-benchmark.yaml"      "$TARGET_DIRECTORY/"

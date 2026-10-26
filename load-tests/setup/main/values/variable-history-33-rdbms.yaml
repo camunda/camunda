@@ -1,0 +1,6 @@
+# PoC for camunda/pdp-3517-variable-trace#53: record 33% of the variable changes in the variable history.
+# History cleanup runs within the measured window, the same for every run.
+camunda.data.audit-log.variable-history-percent: 33
+camunda.data.secondary-storage.rdbms.history.default-history-ttl: PT10M
+camunda.data.secondary-storage.rdbms.history.min-history-cleanup-interval: PT1M
+camunda.data.secondary-storage.rdbms.history.max-history-cleanup-interval: PT5M
