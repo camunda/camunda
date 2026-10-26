@@ -76,7 +76,10 @@ public sealed interface AuthenticationHandler {
      *     apply to every provider that does not set its own
      * @param claimConfigsByIssuer claim settings of each provider keyed by its {@code issuer-uri};
      *     a token whose {@code iss} matches no entry is resolved with {@code
-     *     oidcAuthenticationConfiguration}
+     *     oidcAuthenticationConfiguration}. A trailing slash is ignored on both sides, because the
+     *     provider's tokens carry its discovered issuer, which may differ from the configured
+     *     {@code issuer-uri} by one (#61896). As in camunda-security-library, the first provider
+     *     configured for an issuer owns it.
      */
     public Oidc(
         final JwtDecoder jwtDecoder,
@@ -93,9 +96,15 @@ public sealed interface AuthenticationHandler {
       claimSettingsByIssuer = new LinkedHashMap<>();
       claimConfigsByIssuer.forEach(
           (issuer, config) ->
-              claimSettingsByIssuer.put(
-                  issuer,
+              claimSettingsByIssuer.putIfAbsent(
+                  withoutTrailingSlash(issuer),
                   new ClaimSettings(config, oidcAuthenticationConfiguration, tenantGroupsClaim)));
+    }
+
+    private static String withoutTrailingSlash(final String issuer) {
+      return issuer != null && issuer.endsWith("/")
+          ? issuer.substring(0, issuer.length() - 1)
+          : issuer;
     }
 
     @Override
@@ -119,7 +128,8 @@ public sealed interface AuthenticationHandler {
 
       final ClaimSettings claimSettings =
           claimSettingsByIssuer.getOrDefault(
-              token.getClaimAsString(JwtClaimNames.ISS), defaultClaimSettings);
+              withoutTrailingSlash(token.getClaimAsString(JwtClaimNames.ISS)),
+              defaultClaimSettings);
 
       final Map<String, Object> claims;
       try {
