@@ -6,10 +6,23 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {createFileRoute} from '@tanstack/react-router';
+import {createFileRoute, redirect} from '@tanstack/react-router';
 import {ProcessInstanceDefaultTabRedirect} from '#/operate/pages/ProcessInstance/ProcessInstanceDefaultTabRedirect';
+import {migrateLegacyProcessSearch} from '#/operate/shared/utils/migrateLegacyProcessSearch';
 
 const Route = createFileRoute('/_carbon/_auth/operate/processes/$processInstanceId/')({
+	beforeLoad: ({location, params}) => {
+		const search = migrateLegacyProcessSearch(location);
+		if (search !== null) {
+			throw redirect({
+				to: '/operate/processes/$processInstanceId',
+				params,
+				search,
+				hash: location.hash,
+				replace: true,
+			});
+		}
+	},
 	component: ProcessInstanceDefaultTabRedirect,
 });
 

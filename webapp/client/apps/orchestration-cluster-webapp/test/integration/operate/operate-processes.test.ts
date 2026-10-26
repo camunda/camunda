@@ -1015,14 +1015,123 @@ test.describe('Operate processes page', () => {
 	}) => {
 		network.use(...getProcessInstanceShellHandlers());
 
-		await page.goto('/operate/processes/1001?elementId=call-activity&isPlaceholder=true&customHint=focus');
+		await page.goto('/operate/processes/1001?elementId=call-activity&isPlaceholder=true&customHint=focus#diagram');
 
 		await expect(page).toHaveURL(/\/operate\/processes\/1001\/details\?/);
-		const {searchParams} = new URL(page.url());
+		const {searchParams, hash} = new URL(page.url());
 		expect(searchParams.get('elementId')).toBe('call-activity');
 		expect(searchParams.get('isPlaceholder')).toBe('true');
 		expect(searchParams.get('customHint')).toBe('focus');
+		expect(hash).toBe('#diagram');
 		await expect(page.getByRole('heading', {name: 'Operate Process Instance'})).toBeAttached();
+	});
+
+	test('should open legacy process instance bookmarks', async ({network, page}) => {
+		network.use(...getProcessInstanceShellHandlers());
+
+		for (const path of ['/operate/instances/1001', '/operate/processes/1001']) {
+			await page.goto(`${path}?flowNodeId=1e3&tenantId=1.00#diagram`);
+
+			await expect(page).toHaveURL(/\/operate\/processes\/1001\/details\?/);
+			const {searchParams, hash} = new URL(page.url());
+			expect(searchParams.get('elementId')).toBe(JSON.stringify('1e3'));
+			expect(searchParams.get('tenantId')).toBe(JSON.stringify('1.00'));
+			expect(searchParams.get('flowNodeId')).toBeNull();
+			expect(hash).toBe('#diagram');
+		}
+	});
+
+	test('should open legacy process list bookmarks', async ({network, page, operateProcessesPage}) => {
+		network.use(
+			mockGetProcessDefinitionXmlEndpoint({successResponse: HttpResponse.text(BPMN_XML)}),
+			mockGetProcessDefinitionStatisticsEndpoint({
+				successResponse: HttpResponse.json(createGetProcessDefinitionStatisticsResponse([])),
+			}),
+		);
+
+		for (const path of ['/operate/processes', '/operate/instances']) {
+			const request = page.waitForRequest(
+				(candidate) =>
+					candidate.method() === 'POST' &&
+					candidate.url().endsWith('/v2/process-instances/search') &&
+					candidate.postDataJSON().filter?.processInstanceKey?.$in?.includes('1001'),
+			);
+			await page.goto(
+				`${path}?processDefinitionId=order-process&processDefinitionVersion=1&ids=1001&retriesLeft=true&operationId=batch-1`,
+			);
+
+			await expect(page).toHaveURL(
+				(url) => url.pathname.endsWith('/operate/processes') && !url.searchParams.has('ids'),
+			);
+			const {searchParams} = new URL(page.url());
+			expect(searchParams.get('process')).toBe('order-process');
+			expect(searchParams.get('version')).toBe('1');
+			expect(searchParams.get('retriesLeft')).toBeNull();
+			expect(searchParams.get('operationId')).toBeNull();
+			await expect(operateProcessesPage.processCombobox).toHaveValue('Order Process');
+			expect((await request).postDataJSON().filter).toMatchObject({
+				processInstanceKey: {$in: ['1001']},
+				batchOperationKey: {$eq: 'batch-1'},
+				hasRetriesLeft: true,
+			});
+		}
+	});
+
+	test('should preserve raw filter values and current-name precedence in bookmarks', async ({
+		network,
+		page,
+		operateProcessesPage,
+	}) => {
+		network.use(
+			mockQueryProcessDefinitionsEndpoint({
+				successResponse: HttpResponse.json(
+					createQueryProcessDefinitionsResponse({
+						items: [createProcessDefinition({name: 'Order Process', processDefinitionId: '1e3', tenantId: '1.00'})],
+					}),
+				),
+			}),
+			mockGetProcessDefinitionXmlEndpoint({successResponse: HttpResponse.text(BPMN_XML)}),
+			mockGetProcessDefinitionStatisticsEndpoint({
+				successResponse: HttpResponse.json(createGetProcessDefinitionStatisticsResponse([])),
+			}),
+		);
+
+		for (const path of ['/operate/processes', '/operate/instances']) {
+			const request = page.waitForRequest(
+				(candidate) =>
+					candidate.method() === 'POST' &&
+					candidate.url().endsWith('/v2/process-instances/search') &&
+					candidate.postDataJSON().filter?.processDefinitionId?.$eq === '1e3',
+			);
+			await page.goto(
+				`${path}?process=1e3&processDefinitionId=old&version=all&processDefinitionVersion=2&tenant=old&tenantId=1.00&retriesLeft=true&hasRetriesLeft=false#diagram`,
+			);
+
+			await expect(operateProcessesPage.processCombobox).toHaveValue('Order Process');
+			await expect(page).toHaveURL(
+				(url) =>
+					url.pathname.endsWith('/operate/processes') &&
+					!['tenant', 'processDefinitionId', 'processDefinitionVersion', 'version', 'retriesLeft'].some((key) =>
+						url.searchParams.has(key),
+					),
+			);
+			const {searchParams, hash} = new URL(page.url());
+			expect(searchParams.get('process')).toBe(JSON.stringify('1e3'));
+			expect(searchParams.get('tenantId')).toBe(JSON.stringify('1.00'));
+			expect(searchParams.has('processDefinitionId')).toBe(false);
+			expect(searchParams.has('processDefinitionVersion')).toBe(false);
+			expect(searchParams.has('version')).toBe(false);
+			expect(searchParams.get('hasRetriesLeft')).not.toBe('true');
+			expect(searchParams.has('retriesLeft')).toBe(false);
+			expect(hash).toBe('#diagram');
+			const filter = (await request).postDataJSON().filter;
+			expect(filter).toMatchObject({
+				processDefinitionId: {$eq: '1e3'},
+				tenantId: {$eq: '1.00'},
+			});
+			expect(filter).not.toHaveProperty('hasRetriesLeft');
+			expect(filter).not.toHaveProperty('processDefinitionVersion');
+		}
 	});
 
 	test('should recover waiting statistics before choosing the default tab', async ({
