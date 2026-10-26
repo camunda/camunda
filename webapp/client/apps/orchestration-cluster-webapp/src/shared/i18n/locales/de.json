@@ -1354,13 +1354,13 @@
 				},
 				"diagramPanel": {
 					"multipleVersionsSelected": "Für die Entscheidung \"{{name}}\" ist mehr als eine Version ausgewählt",
+					"ariaLabel": "Entscheidungsbereich",
 					"selectSingleVersion": "Um eine Entscheidungstabelle oder einen literalen Ausdruck zu sehen, wählen Sie eine einzelne Version aus",
 					"multipleTenantsSelected": "Die Entscheidung \"{{name}}\" ist in mehr als einem Mandanten vorhanden",
 					"selectSingleTenant": "Um eine Entscheidungstabelle oder einen literalen Ausdruck zu sehen, wählen Sie einen einzelnen Mandanten aus",
 					"noDecisionSelected": "Es ist keine Entscheidung ausgewählt",
 					"selectDecisionInFilters": "Um eine Entscheidungstabelle oder einen literalen Ausdruck zu sehen, wählen Sie eine Entscheidung im Filterbereich aus",
-					"decisionNotFoundTitle": "Entscheidung konnte nicht gefunden werden",
-					"ariaLabel": "Entscheidungsbereich"
+					"decisionNotFoundTitle": "Entscheidung konnte nicht gefunden werden"
 				},
 				"filters": {
 					"tenant": "Mandant",
@@ -1406,6 +1406,7 @@
 				"toolbar": {
 					"delete": "Löschen",
 					"discard": "Verwerfen",
+					"bulkActionsLabel": "Massenaktionen",
 					"itemsSelected": "{{count}} Elemente ausgewählt",
 					"itemSelected": "{{count}} Element ausgewählt",
 					"itemsSelectedTruncated": "{{count}}+ Elemente ausgewählt",
@@ -1422,6 +1423,7 @@
 				},
 				"definitionDeletion": {
 					"buttonTitle": "Entscheidungsdefinition \"{{name}} - Version {{version}}\" löschen",
+					"loadingMessage": "Entscheidungsdefinition wird gelöscht",
 					"title": "DRD löschen",
 					"description": "Sie sind dabei, das folgende DRD zu löschen:",
 					"confirmation": "Ja, ich bestätige, dass ich dieses DRD und alle zugehörigen Instanzen löschen möchte.",
@@ -1432,6 +1434,40 @@
 					"details": "DRD-Details",
 					"drdName": "DRD-Name",
 					"successTitle": "Operation erstellt"
+				},
+				"ds": {
+					"definitionDeletion": {
+						"buttonTitle": "Entscheidungsdefinition \"{{name}} - Version {{version}}\" löschen",
+						"details": "DRD-Details"
+					},
+					"diagramPanel": {
+						"multipleTenantsSelected": "Die Entscheidung \"{{name}}\" ist in mehr als einem Mandanten vorhanden",
+						"multipleVersionsSelected": "Für die Entscheidung \"{{name}}\" ist mehr als eine Version ausgewählt",
+						"noDecisionSelected": "Es ist keine Entscheidung ausgewählt",
+						"selectDecisionInFilters": "Um eine Entscheidungstabelle oder einen literalen Ausdruck zu sehen, wählen Sie eine Entscheidung im Filterbereich aus",
+						"selectSingleTenant": "Um eine Entscheidungstabelle oder einen literalen Ausdruck zu sehen, wählen Sie einen einzelnen Mandanten aus",
+						"selectSingleVersion": "Um eine Entscheidungstabelle oder einen literalen Ausdruck zu sehen, wählen Sie eine einzelne Version aus"
+					},
+					"filters": {
+						"decisionInstanceKey": "Entscheidungsinstanzschlüssel",
+						"evaluationDateRange": "Auswertungsdatumsbereich",
+						"instancesStates": "Instanzstatus",
+						"processInstanceKey": "Prozessinstanzschlüssel",
+						"removeFilter": "Filter „{{label}}“ entfernen",
+						"searchByName": "Nach Entscheidungsname suchen",
+						"selectVersion": "Entscheidungsversion auswählen"
+					},
+					"instancesTable": {
+						"decisionInstanceKey": "Entscheidungsinstanzschlüssel",
+						"emptyAdditionalInfo": "Um Ergebnisse zu sehen, wählen Sie mindestens einen Instanzstatus aus",
+						"emptyMessage": "Es gibt keine Instanzen, die diesem Filter entsprechen",
+						"evaluationDate": "Auswertungsdatum",
+						"processInstanceKey": "Prozessinstanzschlüssel",
+						"title": "Entscheidungsinstanzen"
+					},
+					"toolbar": {
+						"deleteSuccessSubtitle": "Sie können den Fortschritt auf der Seite Batch-Operationen verfolgen"
+					}
 				}
 			},
 			"decisionInstance": {
@@ -2185,7 +2221,41 @@
 					"allTenants": "Alle Mandanten"
 				},
 				"optionalFiltersMenu": {
-					"moreFilters": "Weitere Filter"
+					"moreFilters": "Weitere Filter",
+					"allFiltersAdded": "Alle Filter wurden bereits hinzugefügt",
+					"removeFilter": "Entfernen",
+					"moreFiltersDs": "Weitere Filter"
+				},
+				"dateRangeField": {
+					"custom": "Benutzerdefiniert",
+					"enterDateRange": "Datumsbereich eingeben",
+					"openModal": "Datumsbereich-Dialog öffnen",
+					"datePlaceholder": "JJJJ-MM-TT",
+					"timePlaceholder": "hh:mm:ss",
+					"fromDate": "Von-Datum",
+					"toDate": "Bis-Datum",
+					"fromTime": "Von-Uhrzeit",
+					"toTime": "Bis-Uhrzeit",
+					"timeZone": "Zeitzone: {{timeZone}}",
+					"cancel": "Abbrechen",
+					"apply": "Anwenden"
+				},
+				"dateTimeRangeField": {
+					"requiredDateTime": "Datum und Uhrzeit eingeben",
+					"endBeforeStart": "Das Ende darf nicht vor dem Beginn liegen",
+					"timeZone": "Zeitzone: {{timeZone}}",
+					"invalidDateTime": "Datum und Uhrzeit im Format YYYY-MM-DD HH:mm:ss eingeben",
+					"from": "Von",
+					"to": "Bis",
+					"time": "Uhrzeit",
+					"quickRanges": "Schnellauswahl",
+					"selectQuickRange": "Schnellauswahl wählen",
+					"lastMinutes_one": "Letzte {{count}} Minute",
+					"lastMinutes_other": "Letzte {{count}} Minuten",
+					"lastHours_one": "Letzte {{count}} Stunde",
+					"lastHours_other": "Letzte {{count}} Stunden",
+					"lastDays_one": "Letzter {{count}} Tag",
+					"lastDays_other": "Letzte {{count}} Tage"
 				},
 				"advancedStringFilter": {
 					"operatorEquals": "ist gleich",

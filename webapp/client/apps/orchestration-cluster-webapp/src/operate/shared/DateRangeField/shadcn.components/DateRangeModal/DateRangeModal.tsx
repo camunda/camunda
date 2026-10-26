@@ -6,6 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import {useTranslation} from 'react-i18next';
 import {Form} from 'react-final-form';
 import {
 	Button,
@@ -23,6 +24,7 @@ import {formatDate} from '#/operate/shared/DateRangeField/formatDate';
 import {DateInput} from './DateInput';
 import {TimeInput} from './TimeInput';
 import {parseCompleteDate} from './dateValidation';
+import {getTimeZoneLabel} from '../../getTimeZoneLabel';
 
 const defaultTime = {
 	from: '00:00:00',
@@ -43,6 +45,7 @@ type Props = {
 };
 
 const DateRangeModal: React.FC<Props> = ({defaultValues, onApply, onCancel, title, isModalOpen}) => {
+	const {t} = useTranslation();
 	const handleApply = ({
 		fromDate,
 		fromTime,
@@ -90,6 +93,7 @@ const DateRangeModal: React.FC<Props> = ({defaultValues, onApply, onCancel, titl
 							<DialogBody>
 								<div className="flex flex-col gap-6 sm:flex-row sm:items-start">
 									<Calendar
+										className="p-0"
 										mode="range"
 										numberOfMonths={1}
 										fixedWeeks
@@ -123,21 +127,26 @@ const DateRangeModal: React.FC<Props> = ({defaultValues, onApply, onCancel, titl
 											}
 										}}
 									/>
-									<div className="flex flex-col gap-6 sm:w-64">
-										<div className="flex flex-col gap-3">
-											<DateInput type="from" labelText="From date" />
-											<DateInput type="to" labelText="To date" />
+									<div className="flex min-w-0 flex-1 flex-col gap-6">
+										<div className="grid grid-cols-2 gap-3">
+											<DateInput type="from" labelText={t('operate.shared.dateRangeField.fromDate')} />
+											<DateInput type="to" labelText={t('operate.shared.dateRangeField.toDate')} />
 										</div>
-										<div className="flex gap-3">
-											<TimeInput type="from" labelText="From time" />
-											<TimeInput type="to" labelText="To time" />
+										<div className="flex flex-col gap-2">
+											<div className="grid grid-cols-2 gap-3">
+												<TimeInput type="from" labelText={t('operate.shared.dateRangeField.fromTime')} />
+												<TimeInput type="to" labelText={t('operate.shared.dateRangeField.toTime')} />
+											</div>
+											<p className="text-xs text-muted-foreground">
+												{t('operate.shared.dateRangeField.timeZone', {timeZone: getTimeZoneLabel()})}
+											</p>
 										</div>
 									</div>
 								</div>
 							</DialogBody>
 							<DialogFooter>
 								<Button type="button" variant="secondary" onClick={onCancel}>
-									Cancel
+									{t('operate.shared.dateRangeField.cancel')}
 								</Button>
 								<Button
 									type="button"
@@ -150,7 +159,7 @@ const DateRangeModal: React.FC<Props> = ({defaultValues, onApply, onCancel, titl
 										form.getState().invalid
 									}
 								>
-									Apply
+									{t('operate.shared.dateRangeField.apply')}
 								</Button>
 							</DialogFooter>
 						</DialogContent>

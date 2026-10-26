@@ -6,6 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import {useState} from 'react';
 import {renderWithRouter} from '#/vitest-modules/render-with-router';
 import {userEvent} from 'vitest/browser';
 import {afterEach, beforeEach, describe, expect, vi} from 'vitest';
@@ -14,20 +15,39 @@ import {endpoints} from '#/shared/http/endpoints';
 import {it} from '#/vitest-modules/test-extend';
 import {mockCreateDecisionInstancesDeletionBatchOperationEndpoint} from '#/shared-test-modules/mock-handlers';
 import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
-import {Toaster, toast} from '@camunda/design-system';
+import {Button, Toaster, toast} from '@camunda/design-system';
 import {Notifications} from '#/shared/notifications/shadcn.components/Notifications';
 import {notificationsStore} from '#/shared/notifications/notifications.store';
-import {Toolbar} from './Toolbar';
+import {BulkDeleteDialog} from './BulkDeleteDialog';
+import {useBulkDelete} from './useBulkDelete';
 
 const FILTER = {state: {$in: ['EVALUATED', 'FAILED']}} as never;
 
-async function renderToolbar(props: Partial<React.ComponentProps<typeof Toolbar>> = {}, basepath = '') {
+type HarnessProps = Parameters<typeof useBulkDelete>[0];
+
+const Harness: React.FC<HarnessProps> = (props) => {
+	const {batchActions, selectionCountLabel, dialogProps} = useBulkDelete(props);
+
+	return (
+		<>
+			<span>{selectionCountLabel}</span>
+			{batchActions.map(({id, label, onClick}) => (
+				<Button key={id} onClick={onClick}>
+					{label}
+				</Button>
+			))}
+			<BulkDeleteDialog {...dialogProps} />
+		</>
+	);
+};
+
+async function renderHarness(props: Partial<HarnessProps> = {}, basepath = '') {
 	const onDeleted = vi.fn();
 	const onDiscard = vi.fn();
 	const screen = await renderWithRouter(
 		() => (
 			<>
-				<Toolbar
+				<Harness
 					selectedCount={2}
 					includedIds={['1', '2']}
 					excludedIds={[]}
@@ -45,7 +65,7 @@ async function renderToolbar(props: Partial<React.ComponentProps<typeof Toolbar>
 	return {screen, onDeleted, onDiscard};
 }
 
-describe('<Toolbar /> (shadcn)', () => {
+describe('useBulkDelete (shadcn)', () => {
 	beforeEach(() => {
 		sessionStorage.setItem('clientConfig', JSON.stringify(createSystemConfiguration()));
 	});
@@ -56,32 +76,16 @@ describe('<Toolbar /> (shadcn)', () => {
 		toast.dismiss();
 	});
 
-	it('should render nothing when no instance is selected', async () => {
-		const {screen} = await renderToolbar({selectedCount: 0});
-
-		await expect.element(screen.getByRole('button', {name: 'Delete'})).not.toBeInTheDocument();
-	});
-
-	it('should show the selected count and actions', async () => {
-		const {screen} = await renderToolbar();
+	it('should label the selection count', async () => {
+		const {screen} = await renderHarness();
 
 		await expect.element(screen.getByText('2 items selected')).toBeVisible();
-		await expect.element(screen.getByRole('button', {name: 'Delete'})).toBeVisible();
-		await expect.element(screen.getByRole('button', {name: 'Discard'})).toBeVisible();
 	});
 
 	it('should use the singular label for a single selection', async () => {
-		const {screen} = await renderToolbar({selectedCount: 1, includedIds: ['1']});
+		const {screen} = await renderHarness({selectedCount: 1, includedIds: ['1']});
 
 		await expect.element(screen.getByText('1 item selected')).toBeVisible();
-	});
-
-	it('should call onDiscard when discard is clicked', async () => {
-		const {screen, onDiscard} = await renderToolbar();
-
-		await userEvent.click(screen.getByRole('button', {name: 'Discard'}));
-
-		expect(onDiscard).toHaveBeenCalledOnce();
 	});
 
 	it('should start the batch delete after confirming and notify', async ({worker}) => {
@@ -93,7 +97,7 @@ describe('<Toolbar /> (shadcn)', () => {
 				}),
 			}),
 		);
-		const {screen, onDeleted} = await renderToolbar();
+		const {screen, onDeleted} = await renderHarness();
 
 		await userEvent.click(screen.getByRole('button', {name: 'Delete'}));
 		await expect.element(screen.getByRole('alertdialog')).toBeVisible();
@@ -105,6 +109,34 @@ describe('<Toolbar /> (shadcn)', () => {
 			.toBeVisible();
 		await expect.element(screen.getByRole('button', {name: 'Go to operation details'})).toBeVisible();
 		expect(onDeleted).toHaveBeenCalledOnce();
+	});
+
+	it('should close the confirmation when the selection is cleared', async () => {
+		const ClearableHarness: React.FC = () => {
+			const [selectedCount, setSelectedCount] = useState(2);
+			return (
+				<>
+					<Harness
+						selectedCount={selectedCount}
+						includedIds={[]}
+						excludedIds={[]}
+						filter={FILTER}
+						onDeleted={vi.fn()}
+						onDiscard={vi.fn()}
+					/>
+					<button type="button" onClick={() => setSelectedCount(0)}>
+						Clear selection
+					</button>
+				</>
+			);
+		};
+		const screen = await renderWithRouter(() => <ClearableHarness />, {path: '/operate-preview/decisions'});
+
+		await userEvent.click(screen.getByRole('button', {name: 'Delete'}));
+		await expect.element(screen.getByRole('alertdialog')).toBeVisible();
+		(screen.getByText('Clear selection').element() as HTMLElement).click();
+
+		await expect.element(screen.getByRole('alertdialog')).not.toBeInTheDocument();
 	});
 
 	it.for([
@@ -121,7 +153,7 @@ describe('<Toolbar /> (shadcn)', () => {
 					}),
 				}),
 			);
-			const {screen} = await renderToolbar({}, basepath);
+			const {screen} = await renderHarness({}, basepath);
 
 			await userEvent.click(screen.getByRole('button', {name: 'Delete'}));
 			await userEvent.click(screen.getByRole('alertdialog').getByRole('button', {name: 'Delete'}));
@@ -167,7 +199,7 @@ describe('<Toolbar /> (shadcn)', () => {
 				});
 			}),
 		);
-		const {screen, onDeleted} = await renderToolbar({...props, filter});
+		const {screen, onDeleted} = await renderHarness({...props, filter});
 
 		await userEvent.click(screen.getByRole('button', {name: 'Delete'}));
 		await userEvent.click(screen.getByRole('alertdialog').getByRole('button', {name: 'Delete'}));
@@ -176,14 +208,15 @@ describe('<Toolbar /> (shadcn)', () => {
 		expect(body?.filter.decisionEvaluationInstanceKey).toEqual(key);
 	});
 
-	it('should close the dialog and discard the selection when cancelling', async () => {
-		const {screen, onDiscard} = await renderToolbar();
+	it('should close the dialog, discard the selection and not delete when cancelling', async () => {
+		const {screen, onDeleted, onDiscard} = await renderHarness();
 
 		await userEvent.click(screen.getByRole('button', {name: 'Delete'}));
 		await userEvent.click(screen.getByRole('button', {name: 'Cancel'}));
 
 		await expect.element(screen.getByRole('alertdialog')).not.toBeInTheDocument();
-		expect(onDiscard).toHaveBeenCalledTimes(1);
+		expect(onDeleted).not.toHaveBeenCalled();
+		expect(onDiscard).toHaveBeenCalledOnce();
 	});
 
 	it('should show a permission warning when the delete request is forbidden', async ({worker}) => {
@@ -192,7 +225,7 @@ describe('<Toolbar /> (shadcn)', () => {
 				successResponse: new HttpResponse(null, {status: 403}),
 			}),
 		);
-		const {screen, onDeleted} = await renderToolbar();
+		const {screen, onDeleted} = await renderHarness();
 
 		await userEvent.click(screen.getByRole('button', {name: 'Delete'}));
 		await userEvent.click(screen.getByRole('alertdialog').getByRole('button', {name: 'Delete'}));
