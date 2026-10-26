@@ -52,6 +52,8 @@ public final class ProbeCreateProcessor implements TypedRecordProcessor<ProbeRec
   /** Used when the request carries no timeout; the gateway normally sends the effective one. */
   static final long DEFAULT_REQUEST_TIMEOUT = Duration.ofSeconds(15).toMillis();
 
+  static final long MAX_REQUEST_TIMEOUT = Duration.ofSeconds(30).toMillis();
+
   private static final String TENANT_NOT_ASSIGNED_MESSAGE =
       "Expected to create a probe for tenant '%s', but the user is not assigned to this tenant.";
 
@@ -140,12 +142,12 @@ public final class ProbeCreateProcessor implements TypedRecordProcessor<ProbeRec
           new Rejection(
               RejectionType.INVALID_ARGUMENT, "Expected a template, but none was given."));
     }
-    if (probe.getRequestTimeout() < 0) {
+    if (probe.getRequestTimeout() < 0 || probe.getRequestTimeout() > MAX_REQUEST_TIMEOUT) {
       return Either.left(
           new Rejection(
               RejectionType.INVALID_ARGUMENT,
-              "Expected a request timeout of zero or more, but was %d."
-                  .formatted(probe.getRequestTimeout())));
+              "Expected a request timeout between 0 and %d ms, but was %d."
+                  .formatted(MAX_REQUEST_TIMEOUT, probe.getRequestTimeout())));
     }
     return Either.right(probe);
   }

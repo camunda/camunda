@@ -87,12 +87,12 @@ public final class ProbeTest {
         ENGINE
             .probe()
             .withRequest(22, 222L)
-            .answer(probeKey, ProbeOutcome.OK, Map.of("valid", true));
+            .answer(probeKey, ProbeOutcome.OK, Map.of("status", "SUCCESS"));
 
     // then
     assertThat(answered.getIntent()).isEqualTo(ProbeIntent.ANSWERED);
     assertThat(answered.getValue().getOutcome()).isEqualTo(ProbeOutcome.OK);
-    assertThat(answered.getValue().getData()).isEqualTo(Map.of("valid", true));
+    assertThat(answered.getValue().getData()).isEqualTo(Map.of("status", "SUCCESS"));
     assertThat(answered.getValue().getWorker()).isEqualTo("worker-a");
     assertThat(
             RecordingExporter.probeRecords(ProbeIntent.RESPOND)
@@ -275,14 +275,50 @@ public final class ProbeTest {
     // given
     addStream("worker-a");
     final long probeKey = ENGINE.probe().withTemplate(template).withInput("={}").create().getKey();
-    ENGINE.probe().answer(probeKey, ProbeOutcome.OK, Map.of());
+    ENGINE.probe().answer(probeKey, ProbeOutcome.UNSUPPORTED, Map.of());
 
     // when
     final var rejection =
-        ENGINE.probe().expectRejection().answer(probeKey, ProbeOutcome.OK, Map.of());
+        ENGINE.probe().expectRejection().answer(probeKey, ProbeOutcome.UNSUPPORTED, Map.of());
 
     // then
     Assertions.assertThat(rejection).hasRejectionType(RejectionType.NOT_FOUND);
+  }
+
+  @Test
+  public void shouldRejectAnswerWhoseDataIsNotAValidationResult() {
+    // given
+    addStream("worker-a");
+    final long probeKey = ENGINE.probe().withTemplate(template).withInput("={}").create().getKey();
+
+    // when
+    final var rejection =
+        ENGINE
+            .probe()
+            .expectRejection()
+            .answer(probeKey, ProbeOutcome.OK, Map.of("status", "SUCCESS", "extra", 1));
+
+    // then
+    Assertions.assertThat(rejection).hasRejectionType(RejectionType.INVALID_ARGUMENT);
+  }
+
+  @Test
+  public void shouldRejectRequestTimeoutAboveTheMaximum() {
+    // given
+    addStream("worker-a");
+
+    // when
+    final var rejection =
+        ENGINE
+            .probe()
+            .withTemplate(template)
+            .withInput("={}")
+            .withRequestTimeout(30_001)
+            .expectRejection()
+            .create();
+
+    // then
+    Assertions.assertThat(rejection).hasRejectionType(RejectionType.INVALID_ARGUMENT);
   }
 
   private RecordingProbeStream addStream(final String worker) {

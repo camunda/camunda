@@ -26,6 +26,7 @@ import io.camunda.zeebe.protocol.record.intent.ProbeIntent;
 import io.camunda.zeebe.protocol.record.mapper.AuthzModelMapper;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
+import io.camunda.zeebe.protocol.record.value.ProbeOutcome;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 
 /**
@@ -74,17 +75,25 @@ public final class ProbeAnswerProcessor implements TypedRecordProcessor<ProbeRec
       return;
     }
 
+    final var invalid = ProbeAnswerValidator.validate(probe.getOperation(), command.getValue());
+    if (invalid.isPresent()) {
+      reject(command, RejectionType.INVALID_ARGUMENT, invalid.get());
+      return;
+    }
+
     if (probeState.getState(probeKey) != State.ACTIVATED) {
       reject(command, RejectionType.INVALID_STATE, NOT_ACTIVATED_MESSAGE.formatted(probeKey));
       return;
     }
 
     final var answer = command.getValue();
-    final var answered =
-        ProbeBehavior.withoutInput(probe)
-            .setOutcome(answer.getOutcome())
-            .setMessage(answer.getMessage())
-            .setData(answer.getDataBuffer());
+    final var answered = ProbeBehavior.withoutInput(probe).setOutcome(answer.getOutcome());
+    // the envelope carries data only with OK, and a message only with ERROR
+    if (answer.getOutcome() == ProbeOutcome.OK) {
+      answered.setData(answer.getDataBuffer());
+    } else if (answer.getOutcome() == ProbeOutcome.ERROR) {
+      answered.setMessage(answer.getMessage());
+    }
     stateWriter.appendFollowUpEvent(probeKey, ProbeIntent.ANSWERED, answered);
     responseWriter.writeAcceptedResponseOnCommand(
         probeKey, ProbeIntent.ANSWERED, answered, command);
