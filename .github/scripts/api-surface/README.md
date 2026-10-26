@@ -24,13 +24,13 @@ stable branch and after a patch release. Examples from 8.10:
 | Spec change | Wire-breaking? | SDK-breaking? | Snapshot diff |
 |---|---|---|---|
 | Legacy `processDefinitionKey`/`Id` made nullable (a fix) | yes | yes (C# public API) | 7 `PROP … required` → `required nullable` lines |
-| Process-creation fields moved into an `allOf` base (refactor) | no | yes (Python lost `…ByKeyVariables`, Java/PHP lost semantic types) | new base schema, 3 `SCHEMA … allOf=[…]` lines, `closed` dropped, `variables` inline owner moved |
+| Process-creation fields moved into an `allOf` base (refactor) | no | yes (Python lost `…ByKeyVariables`/`…ByIdVariables`) | new base schema, 3 `SCHEMA … allOf=[…]` lines, `closed` dropped, `variables` inline owner moved |
 | Create by version tag (feature) | no (additive) | yes (Rust exhaustive `match`) | third `oneOf` variant and its properties |
 
 The wire-level breaking-change check (oasdiff, #66629) answers a different
 question: does this break existing API callers? Of these three, only the first
 is a wire break. The other two are wire-compatible, so that check correctly
-lets them through, yet they broke four SDKs. Every wire break also shows up in
+lets them through, yet they broke the Python and Rust SDKs. Every wire break also shows up in
 the snapshot, but not the other way round. The two checks complement each
 other.
 
