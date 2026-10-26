@@ -232,6 +232,9 @@ public class HttpClientFactory {
             .setCharCodingConfig(
                 CharCodingConfig.custom().setCharset(StandardCharsets.UTF_8).build())
             .evictIdleConnections(TimeValue.ofSeconds(30))
+            // a 429 or 503 can arrive after the command already ran, so a resend could run it
+            // twice; retrying is left to the caller
+            .disableAutomaticRetries()
             .useSystemProperties(); // allow users to customize via system properties
 
     // Register a request-level interceptor that injects the Authorization header at the
