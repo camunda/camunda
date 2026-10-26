@@ -255,4 +255,28 @@ public final class CreateProcessInstanceTest extends GatewayTest {
         .extracting(t -> ((StatusRuntimeException) t).getStatus().getCode())
         .isEqualTo(Status.Code.INVALID_ARGUMENT);
   }
+
+  @Test
+  public void shouldRejectVariablesMetadataOfUnknownVariable() {
+    // given
+    final CreateProcessInstanceStub stub = new CreateProcessInstanceStub();
+    stub.registerWith(brokerClient);
+
+    final CreateProcessInstanceRequest request =
+        CreateProcessInstanceRequest.newBuilder()
+            .setProcessDefinitionKey(stub.getProcessDefinitionKey())
+            .setVariables("{\"name\":\"x\"}")
+            .putVariablesMetadata(
+                "ssn",
+                VariableMetadata.newBuilder()
+                    .addProtectionModes(VariableMetadata.ProtectionMode.REDACT)
+                    .build())
+            .build();
+
+    // when / then
+    assertThatThrownBy(() -> client.createProcessInstance(request))
+        .isInstanceOf(StatusRuntimeException.class)
+        .extracting(t -> ((StatusRuntimeException) t).getStatus().getCode())
+        .isEqualTo(Status.Code.INVALID_ARGUMENT);
+  }
 }
