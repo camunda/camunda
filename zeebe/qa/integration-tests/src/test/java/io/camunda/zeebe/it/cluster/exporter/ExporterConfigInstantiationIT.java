@@ -9,7 +9,7 @@ package io.camunda.zeebe.it.cluster.exporter;
 
 import static io.camunda.application.commons.security.CamundaSecurityConfiguration.UNPROTECTED_API_ENV_VAR;
 
-import io.camunda.configuration.data.SecondaryStorage.SecondaryStorageType;
+import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.container.CamundaContainer.BrokerContainer;
 import io.camunda.zeebe.it.cluster.exporter.util.TestExporter;
 import io.camunda.zeebe.it.cluster.exporter.util.TestExporterConfig;
