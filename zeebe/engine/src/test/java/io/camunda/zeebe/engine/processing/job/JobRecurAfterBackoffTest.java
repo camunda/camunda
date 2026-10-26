@@ -37,7 +37,16 @@ public final class JobRecurAfterBackoffTest {
     // of its command both observe the job's recurring time
     engine.getClock().pinCurrentTime();
     final Duration backOff = Duration.ofSeconds(30);
-    final long jobKey = failActivatedJobWithBackOff(backOff).getKey();
+    final Record<JobRecordValue> job = engine.createJob(jobType, Strings.newRandomValidBpmnId());
+    final long jobKey = job.getKey();
+    engine.jobs().withType(jobType).activate();
+    engine
+        .job()
+        .withKey(jobKey)
+        .ofInstance(job.getValue().getProcessInstanceKey())
+        .withRetries(3)
+        .withBackOff(backOff)
+        .fail();
 
     // when
     engine.increaseTime(backOff);
@@ -53,8 +62,17 @@ public final class JobRecurAfterBackoffTest {
   @Test
   public void shouldExplainRejectionWhenBackoffHasNotEnded() {
     // given
-    final Record<JobRecordValue> failed = failActivatedJobWithBackOff(Duration.ofDays(1));
-    final long jobKey = failed.getKey();
+    final Record<JobRecordValue> job = engine.createJob(jobType, Strings.newRandomValidBpmnId());
+    final long jobKey = job.getKey();
+    engine.jobs().withType(jobType).activate();
+    final Record<JobRecordValue> failed =
+        engine
+            .job()
+            .withKey(jobKey)
+            .ofInstance(job.getValue().getProcessInstanceKey())
+            .withRetries(3)
+            .withBackOff(Duration.ofDays(1))
+            .fail();
 
     // when
     engine.writeRecords(
@@ -70,17 +88,5 @@ public final class JobRecurAfterBackoffTest {
         .isEqualTo(
             "Expected to back off failed job with key '%d', but its backoff has not ended yet"
                 .formatted(jobKey));
-  }
-
-  private Record<JobRecordValue> failActivatedJobWithBackOff(final Duration backOff) {
-    final Record<JobRecordValue> job = engine.createJob(jobType, Strings.newRandomValidBpmnId());
-    engine.jobs().withType(jobType).activate();
-    return engine
-        .job()
-        .withKey(job.getKey())
-        .ofInstance(job.getValue().getProcessInstanceKey())
-        .withRetries(3)
-        .withBackOff(backOff)
-        .fail();
   }
 }
