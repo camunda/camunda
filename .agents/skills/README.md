@@ -36,6 +36,7 @@ When a skill exists for a recurring operation, use it rather than improvising st
 | ------------------------------ | -------------------------------------------------------------------------------------------------------------- |
 | `analytics-exporter`           | Add a new event handler or metric to the analytics exporter (`zeebe/exporters/analytics-exporter/`)            |
 | `babysit-pr`                   | Self-driving loop to shepherd one or more PRs (incl. backports) to merged: rerun flaky CI, enqueue, re-enqueue |
+| `backport`                     | Trigger a backport via label or `/backport` comment and resolve conflicts on the bot's draft backport PR       |
 | `bug-investigation`            | Investigate a triaged bug issue end to end: reproduce, root-cause, validate a fix, report on the issue         |
 | `camunda-api-zod-schemas`      | Change or release `@camunda/camunda-api-zod-schemas`: fields, endpoints, modules, version trees, version bump  |
 | `ci-flood-triage`              | Orient fast when a flood of CI incidents opens at once — find the shared pattern, flag outliers                |
