@@ -95,7 +95,7 @@ public class SecretStoreConfiguration {
                   registries.put(
                       tenantId,
                       buildRegistry(tenantId, secrets, resources, timeSource, meterRegistry)));
-    } catch (final RuntimeException e) {
+    } catch (final Throwable e) {
       resources.close();
       throw e;
     }
