@@ -93,6 +93,7 @@
     <version.msgpack>0.9.12</version.msgpack>
     <version.netty>4.2.19.Final</version.netty>
     <version.objenesis>3.6</version.objenesis>
+    <version.ognl>3.4.13</version.ognl>
     <version.opentelemetry>1.67.0</version.opentelemetry>
     <version.opensearch.client>2.17.0</version.opensearch.client>
     <version.opensearch-java>3.7.0</version.opensearch-java>
@@ -1570,6 +1571,12 @@
         <groupId>org.objenesis</groupId>
         <artifactId>objenesis</artifactId>
         <version>${version.objenesis}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>ognl</groupId>
+        <artifactId>ognl</artifactId>
+        <version>${version.ognl}</version>
       </dependency>
 
       <dependency>
