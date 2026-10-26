@@ -1,0 +1,464 @@
+{
+  "disputeDetails": {
+    "disputePositions": [
+      {
+        "_id": "66c745ecca7d2cfbe029d2ea",
+        "index": 0,
+        "name": "BESTO",
+        "amount": 266.49,
+        "currency": "EUR",
+        "transactionDate": "2024-06-28T05:31:02-02:00",
+        "description": "policy55 duplicate646 card904 amount473 refund940 approved914 balance376 account338 balance561 customer775 online0 missing970 partial970 approved492 reference17 missing585 foreign814 evidence92 delivery637 claim35 review995 balance393 verified771 evidence75 notice968 receipt12 fraud650 customer766 account391 recurring391 payment61 reference840 foreign146 transfer82 document381 delivery535 balance981 fraud827 foreign288 payment48 amount620 missing996 missing787 partial67 evidence665 payment78 bank80 missing171 branch116 pending585 receipt118 merchant17 partial684 claim842 charge999 rejected60 approved380 vendor251 claim126 account99 branch984 verified845 online213 invoice118 rejected809 duplicate353 rejected664 customer873 transfer737 evidence31 verified601 recurring169 evidence807 pending651 evidence790 payment384 transfer822 card142 pending107 pol"
+      },
+      {
+        "_id": "66c745ecb79793a37fa1d6a1",
+        "index": 1,
+        "name": "CENTREE",
+        "amount": 269.19,
+        "currency": "EUR",
+        "transactionDate": "2024-05-11T07:15:36-02:00",
+        "description": "charge504 approved149 statement932 merchant354 delivery822 order549 claim761 statement474 transfer969 refund303 payment526 fraud117 bank802 invoice412 service811 claim179 rejected506 service706 online861 policy78 statement152 vendor844 transfer926 foreign432 notice997 claim838 foreign820 rejected45 verified899 receipt452 pending1 merchant171 duplicate21 notice83 recurring390 customer894 rejected539 reference517 rejected410 rejected895 vendor81 online35 fraud394 customer639 reference223 online874 document866 policy365 customer206 customer814 bank431 order122 missing990 branch257 approved991 fraud979 notice942 branch144 invoice724 dispute18 contact862 delivery600 duplicate210 foreign23 rejected610 approved530 bank693 approved496 review458 foreign442 refund102 period51 service49 rejected630 duplicate393 transfer755 invoice308 claim368 policy524 policy"
+      },
+      {
+        "_id": "66c745ec57a851a321dfa38c",
+        "index": 2,
+        "name": "DEEPENDS",
+        "amount": 275.71,
+        "currency": "EUR",
+        "transactionDate": "2024-05-03T04:45:27-02:00",
+        "description": "payment599 online782 contact40 online978 statement192 verified23 pending941 bank332 order436 partial363 order480 statement660 partial245 amount493 document157 review693 fraud360 pending609 bank981 receipt743 reference109 pending977 balance242 invoice303 statement616 reference18 transfer825 rejected91 invoice453 document101 online43 pending321 customer469 card695 missing22 dispute705 verified885 approved818 online965 claim160 payment383 recurring408 policy743 invoice407 duplicate321 dispute876 transfer61 partial778 amount690 rejected189 card33 account618 notice492 duplicate942 vendor405 delivery623 recurring829 payment464 invoice930 statement305 rejected267 document18 duplicate490 missing493 evidence640 dispute67 customer643 verified993 bank900 period623 recurring727 missing778 payment943 notice106 order300 notice906 customer972 vendor486 invoice60 "
+      },
+      {
+        "_id": "66c745ec02a490338e09a9dd",
+        "index": 3,
+        "name": "COMDOM",
+        "amount": 201.65,
+        "currency": "EUR",
+        "transactionDate": "2024-02-18T01:51:44-01:00",
+        "description": "missing77 pending487 vendor603 invoice995 transfer406 reference763 amount294 receipt806 vendor309 review491 invoice365 branch264 pending753 delivery908 amount113 document198 foreign498 refund839 service366 partial462 approved95 amount937 amount523 amount173 partial797 pending64 dispute900 receipt239 period187 fraud898 approved462 reference603 online705 branch667 partial526 invoice906 statement760 recurring575 service800 partial542 balance297 amount521 invoice381 rejected232 pending661 branch352 payment957 customer98 customer356 duplicate2 branch422 refund61 merchant745 foreign96 refund673 evidence789 rejected376 approved681 transfer537 balance233 evidence592 balance451 balance399 review818 policy861 reference104 receipt108 review151 foreign603 payment569 delivery797 statement935 branch703 order629 transfer533 statement104 document24 review287 pendi"
+      },
+      {
+        "_id": "66c745ec1674b8d963b47567",
+        "index": 4,
+        "name": "EXOPLODE",
+        "amount": 208.45,
+        "currency": "EUR",
+        "transactionDate": "2024-02-24T05:14:40-01:00",
+        "description": "customer617 rejected526 foreign906 merchant73 refund759 account726 online283 fraud453 balance507 recurring686 notice72 order682 notice34 pending53 duplicate676 dispute545 foreign553 document599 contact97 order809 dispute645 fraud21 review106 bank823 contact804 foreign285 vendor461 service19 contact670 merchant791 missing290 customer202 review439 invoice61 document330 partial882 merchant476 invoice609 review457 approved560 vendor40 balance936 pending505 order48 approved837 evidence596 vendor521 policy409 reference933 foreign312 partial879 evidence860 foreign96 branch40 review241 reference616 branch158 charge835 service78 dispute485 online660 duplicate830 transfer55 recurring581 delivery558 policy172 order327 charge684 service648 recurring687 pending633 merchant116 dispute311 claim82 dispute293 branch630 notice885 delivery511 service445 payment70 evi"
+      },
+      {
+        "_id": "66c745ec0f2af1cc09bc0f97",
+        "index": 5,
+        "name": "TECHTRIX",
+        "amount": 118.01,
+        "currency": "EUR",
+        "transactionDate": "2024-03-14T02:42:50-01:00",
+        "description": "delivery37 amount798 vendor595 claim363 transfer427 claim325 service439 document204 contact435 amount390 reference756 approved129 duplicate792 statement409 missing581 delivery786 branch782 online383 dispute57 amount968 amount829 policy448 charge826 recurring628 period673 document836 notice566 contact639 transfer155 charge703 online411 order719 foreign943 online101 recurring88 card861 policy885 review957 foreign387 balance271 customer606 online413 merchant668 verified299 foreign615 dispute943 bank333 payment613 charge705 claim439 fraud41 service778 online977 document175 claim679 duplicate781 missing703 refund957 branch701 notice855 refund387 receipt820 foreign319 online11 verified400 dispute372 verified479 transfer497 vendor649 pending630 notice26 order45 service197 policy886 balance848 duplicate864 invoice46 rejected188 order620 missing389 transfer"
+      },
+      {
+        "_id": "66c745ecfd72cf653a9b641e",
+        "index": 6,
+        "name": "MACRONAUT",
+        "amount": 21.14,
+        "currency": "EUR",
+        "transactionDate": "2024-03-20T12:57:36-01:00",
+        "description": "duplicate356 transfer746 invoice211 partial267 contact852 amount866 delivery304 charge582 receipt322 delivery673 contact923 evidence882 online698 reference657 contact401 statement382 document850 verified704 rejected785 transfer839 service819 policy689 dispute137 pending734 evidence634 vendor151 duplicate406 reference15 recurring737 vendor54 service294 duplicate220 dispute30 online250 balance920 transfer231 online348 fraud470 recurring733 charge427 contact867 approved465 statement644 invoice689 reference110 invoice81 delivery280 receipt715 vendor906 pending879 online63 vendor593 dispute764 notice994 account40 transfer211 policy497 claim103 statement631 order967 customer818 contact979 receipt220 document957 period266 evidence240 evidence660 bank948 policy159 pending243 customer982 vendor377 period63 rejected147 branch11 fraud716 balance36 pending143 "
+      },
+      {
+        "_id": "66c745ec6bc5a6aedcec5c32",
+        "index": 7,
+        "name": "VIRXO",
+        "amount": 122.9,
+        "currency": "EUR",
+        "transactionDate": "2024-02-26T09:26:40-01:00",
+        "description": "duplicate450 customer863 reference38 balance38 order758 evidence597 merchant771 document147 rejected857 rejected490 recurring351 claim6 evidence478 account599 partial437 review460 partial38 refund130 partial937 refund485 approved162 receipt748 bank808 pending471 transfer201 customer740 recurring599 invoice762 period355 notice972 period738 charge990 order677 policy802 receipt80 invoice221 recurring949 payment468 account142 fraud915 payment254 verified701 approved822 document865 online104 vendor343 merchant840 card61 approved904 service223 order248 policy159 period503 amount436 notice858 payment276 receipt331 receipt385 service802 merchant376 foreign257 recurring168 pending359 verified749 missing248 order753 service756 card574 verified470 invoice36 review366 delivery130 order913 policy940 period473 branch412 balance906 amount901 vendor397 branch536 v"
+      },
+      {
+        "_id": "66c745ec13e604442d90ef9c",
+        "index": 8,
+        "name": "EARTHMARK",
+        "amount": 250.87,
+        "currency": "EUR",
+        "transactionDate": "2024-03-19T09:14:50-01:00",
+        "description": "merchant84 transfer295 payment837 reference50 recurring26 foreign544 branch616 payment225 rejected925 amount296 invoice669 notice655 invoice708 charge412 delivery85 rejected807 charge336 rejected399 approved249 partial96 duplicate855 approved957 bank757 transfer726 invoice903 approved893 pending611 balance835 evidence413 balance862 receipt961 reference568 document136 approved951 document272 foreign933 claim160 service102 service881 dispute332 review550 claim186 rejected738 recurring230 payment651 dispute444 policy518 recurring717 payment835 recurring893 receipt993 reference364 service612 policy837 document55 pending179 account315 duplicate693 pending83 evidence728 duplicate760 foreign767 review601 fraud20 period811 approved104 partial645 reference460 merchant785 delivery583 transfer595 missing589 notice420 pending41 order923 amount398 dispute220 pa"
+      },
+      {
+        "_id": "66c745ec47daf58b261fb2e1",
+        "index": 9,
+        "name": "ISOSTREAM",
+        "amount": 235.8,
+        "currency": "EUR",
+        "transactionDate": "2024-06-16T02:52:11-02:00",
+        "description": "account977 payment764 balance993 receipt867 transfer892 partial976 statement464 review284 missing802 order470 online125 pending26 rejected466 verified773 duplicate355 customer536 pending62 refund78 online290 online765 approved502 refund862 evidence501 evidence954 reference18 foreign137 card680 claim200 claim671 approved267 partial597 policy822 order702 foreign581 vendor407 dispute24 partial479 approved712 bank364 branch804 notice605 payment978 receipt425 rejected871 evidence287 policy698 contact615 balance899 rejected835 rejected728 account186 merchant287 delivery911 dispute155 online858 payment982 receipt7 review943 verified319 document658 missing262 notice365 contact557 branch938 service106 order511 missing161 evidence368 merchant102 vendor243 account67 rejected514 fraud401 notice115 merchant79 reference559 period819 delivery405 verified925 notic"
+      },
+      {
+        "_id": "66c745ec77ff322e1c227f1e",
+        "index": 10,
+        "name": "ORBEAN",
+        "amount": 282.42,
+        "currency": "EUR",
+        "transactionDate": "2024-03-25T05:30:25-01:00",
+        "description": "balance492 delivery54 balance639 dispute450 statement134 branch293 vendor825 fraud0 foreign957 account530 recurring586 reference387 order110 delivery23 policy188 verified176 charge759 bank490 balance954 document961 service239 statement376 delivery436 balance855 transfer486 vendor33 order178 balance435 account598 reference719 foreign706 card343 duplicate371 review352 claim999 evidence920 service331 recurring137 pending118 contact122 rejected27 notice677 partial926 charge600 fraud645 period726 payment602 pending374 balance416 review345 vendor361 invoice46 notice846 evidence693 pending707 duplicate561 foreign834 pending18 charge130 statement314 document792 rejected220 online58 merchant261 foreign911 transfer44 missing754 order619 vendor603 balance167 rejected596 dispute489 review888 charge496 partial841 dispute979 recurring671 contact610 reference249 "
+      },
+      {
+        "_id": "66c745eca0df8a5de2251caf",
+        "index": 11,
+        "name": "TOYLETRY",
+        "amount": 225.66,
+        "currency": "EUR",
+        "transactionDate": "2024-03-08T10:33:58-01:00",
+        "description": "approved297 notice868 partial342 merchant687 account599 policy364 branch855 pending986 pending685 approved45 policy464 invoice493 branch703 partial903 amount686 delivery48 fraud14 transfer9 contact378 refund825 branch563 card157 payment170 delivery582 review676 card661 branch712 rejected425 charge949 review738 contact992 refund750 invoice468 reference377 refund318 invoice941 amount972 review193 fraud637 approved428 balance539 amount309 online671 dispute742 receipt164 charge537 document929 document729 merchant187 refund338 service920 delivery621 reference280 fraud764 missing117 delivery28 duplicate767 period228 evidence511 vendor512 delivery545 customer770 review940 pending113 online396 contact142 foreign515 dispute505 review176 reference791 online42 delivery118 vendor920 refund515 account353 customer493 statement22 notice939 fraud248 recurring740 m"
+      },
+      {
+        "_id": "66c745ec8a1dd221929fc776",
+        "index": 12,
+        "name": "INTERFIND",
+        "amount": 331.09,
+        "currency": "EUR",
+        "transactionDate": "2024-05-05T02:05:06-02:00",
+        "description": "invoice816 delivery461 fraud980 receipt30 payment393 invoice259 charge928 balance448 duplicate307 review628 payment95 contact338 card806 order83 claim183 balance843 reference770 delivery477 claim118 recurring249 merchant682 contact124 balance726 account910 document528 period393 account165 delivery510 evidence141 delivery728 foreign727 partial705 missing8 order372 missing360 branch170 online554 amount575 statement478 payment421 account583 notice773 charge146 order907 customer512 rejected993 balance19 customer136 foreign518 balance519 contact744 duplicate915 branch104 payment303 foreign373 transfer462 transfer896 receipt632 foreign654 branch755 online356 merchant615 fraud761 branch11 card692 branch196 online864 charge118 verified233 verified446 bank235 policy239 foreign607 review198 receipt912 missing774 transfer345 foreign811 statement70 review57 re"
+      },
+      {
+        "_id": "66c745ecddc7fc31cd0143a1",
+        "index": 13,
+        "name": "ACLIMA",
+        "amount": 261.04,
+        "currency": "EUR",
+        "transactionDate": "2024-06-07T03:28:29-02:00",
+        "description": "payment309 branch985 document513 invoice374 refund70 dispute796 missing921 dispute900 policy263 claim381 balance449 refund842 fraud386 transfer399 policy114 amount272 document453 recurring154 partial356 statement534 recurring996 vendor237 amount451 claim578 claim626 verified294 reference628 claim99 card272 rejected230 delivery683 delivery900 receipt1 service570 payment985 contact214 refund850 dispute108 bank755 online300 bank469 document332 recurring718 charge387 duplicate532 reference903 review764 payment371 dispute658 recurring414 card850 contact932 branch377 verified166 missing678 rejected676 bank287 policy598 vendor556 card588 missing350 branch965 dispute456 contact74 charge296 review75 account302 evidence464 claim570 claim58 charge802 transfer961 statement242 payment961 policy89 card347 fraud444 approved457 account500 charge113 service233 dupl"
+      },
+      {
+        "_id": "66c745ecbb685a6dd367c714",
+        "index": 14,
+        "name": "ZENTIME",
+        "amount": 286.98,
+        "currency": "EUR",
+        "transactionDate": "2024-05-28T11:40:03-02:00",
+        "description": "amount525 order326 branch281 period377 bank256 recurring16 online428 verified374 duplicate667 receipt203 balance299 approved778 receipt482 contact486 contact700 amount772 card883 missing410 policy310 balance905 amount112 missing459 account862 partial736 fraud304 transfer428 evidence684 partial887 card198 foreign134 partial140 notice315 account551 foreign172 duplicate890 reference829 recurring207 account831 card205 service787 service402 branch179 verified891 online362 refund940 partial303 dispute623 merchant680 dispute395 refund648 balance447 delivery148 customer759 merchant806 order890 notice385 period385 rejected288 balance411 foreign200 balance482 vendor362 amount409 transfer18 rejected336 delivery279 evidence168 period907 recurring844 evidence215 pending491 rejected904 receipt412 customer951 statement716 evidence251 charge226 vendor742 rejected3"
+      },
+      {
+        "_id": "66c745ec2f7a70d9d11bb956",
+        "index": 15,
+        "name": "VERTIDE",
+        "amount": 96.12,
+        "currency": "EUR",
+        "transactionDate": "2024-06-18T10:53:09-02:00",
+        "description": "approved252 service596 evidence6 branch353 vendor471 amount411 claim769 rejected689 contact695 approved896 refund859 payment958 fraud569 statement439 pending769 order411 balance46 refund328 missing359 pending234 bank249 foreign242 missing2 invoice716 account220 customer749 delivery10 reference683 delivery736 delivery464 recurring668 order911 merchant714 foreign189 transfer966 order56 online473 contact264 bank739 invoice222 account835 missing894 account823 evidence464 review583 bank942 evidence63 account505 contact451 evidence519 vendor847 rejected868 partial886 balance486 recurring87 claim433 payment492 customer570 review320 verified713 notice305 missing415 bank89 branch50 payment65 review486 card766 duplicate292 amount645 vendor189 vendor827 order231 delivery63 period740 partial841 rejected224 pending730 reference485 account991 statement791 bank91"
+      },
+      {
+        "_id": "66c745ecf7cf9209e3f8c6f9",
+        "index": 16,
+        "name": "COMVENE",
+        "amount": 289.09,
+        "currency": "EUR",
+        "transactionDate": "2024-02-22T05:39:40-01:00",
+        "description": "invoice867 amount702 missing922 transfer265 merchant15 branch886 notice926 payment668 review126 order788 customer392 transfer699 notice343 refund434 duplicate88 period663 evidence157 missing533 statement894 bank362 balance485 vendor679 receipt272 bank67 amount610 pending436 period412 amount382 period912 payment597 duplicate680 contact90 branch446 branch589 card233 online550 amount347 verified40 missing557 reference943 reference841 document429 recurring579 missing20 partial703 delivery647 foreign550 policy270 order12 contact148 foreign297 charge184 pending985 policy735 invoice262 branch887 duplicate693 charge486 period914 rejected852 statement460 vendor244 reference373 verified432 review842 partial69 statement566 bank854 contact855 order336 partial790 evidence991 branch683 fraud853 fraud920 partial524 period382 amount3 balance692 amount757 fraud992 "
+      },
+      {
+        "_id": "66c745ecd339b520507415cb",
+        "index": 17,
+        "name": "ZOXY",
+        "amount": 140.87,
+        "currency": "EUR",
+        "transactionDate": "2024-04-04T07:27:28-02:00",
+        "description": "missing461 approved219 period96 refund861 duplicate80 charge47 partial964 payment254 transfer731 missing772 partial738 verified137 pending703 recurring612 rejected602 card614 statement842 account741 customer585 notice497 contact794 fraud171 transfer80 recurring647 duplicate250 receipt700 duplicate440 period77 vendor197 customer458 duplicate935 pending899 refund212 policy296 partial916 vendor424 delivery74 contact803 fraud191 duplicate64 period789 service298 invoice244 fraud359 online931 partial997 duplicate559 contact362 recurring42 refund514 verified230 balance305 claim497 refund447 bank63 document612 policy392 claim642 refund595 card361 rejected284 balance102 partial279 fraud347 balance858 delivery468 review845 partial67 vendor130 merchant945 vendor579 transfer198 contact902 balance686 notice997 period512 evidence248 verified835 document706 parti"
+      },
+      {
+        "_id": "66c745ec80357c7f956d823e",
+        "index": 18,
+        "name": "ZENTURY",
+        "amount": 80.07,
+        "currency": "EUR",
+        "transactionDate": "2024-08-22T02:21:05-02:00",
+        "description": "period803 balance894 payment186 account134 partial677 card294 notice500 notice461 notice243 policy772 pending349 online772 recurring172 missing416 transfer659 service324 invoice940 merchant835 approved596 partial793 branch301 card862 review39 refund161 notice927 contact763 transfer766 payment800 document546 policy87 merchant421 refund445 amount260 online600 balance417 branch624 delivery631 card905 dispute83 receipt560 foreign891 reference356 branch716 partial413 claim606 delivery46 pending305 online677 online8 amount990 balance698 charge107 balance59 reference929 contact963 claim147 branch631 balance678 policy960 foreign690 receipt638 partial615 notice103 evidence239 receipt29 merchant770 account391 reference563 balance735 approved19 refund805 online108 policy533 reference543 notice123 verified171 charge154 online549 recurring981 rejected203 receip"
+      },
+      {
+        "_id": "66c745ec2ac30564ae0bbc4f",
+        "index": 19,
+        "name": "SAVVY",
+        "amount": 243.35,
+        "currency": "EUR",
+        "transactionDate": "2024-05-23T06:00:07-02:00",
+        "description": "delivery464 rejected218 merchant548 foreign328 receipt688 charge981 account108 amount969 verified764 foreign13 online8 policy16 evidence248 merchant842 card756 policy281 account514 missing733 evidence108 card229 payment291 claim32 invoice22 contact786 receipt737 reference722 card755 delivery413 notice251 delivery880 fraud563 fraud802 customer204 account385 invoice422 branch232 amount525 duplicate235 online637 policy416 evidence917 service205 statement117 amount320 document547 account120 charge485 period141 delivery962 approved117 dispute908 missing742 fraud482 order615 delivery186 service416 receipt117 online389 contact368 invoice604 receipt907 verified282 policy204 document880 payment341 refund550 pending149 refund344 rejected348 policy408 pending635 contact941 account444 online746 statement17 service258 statement521 customer322 rejected515 balanc"
+      },
+      {
+        "_id": "66c745ec81030fc80ae39e1b",
+        "index": 20,
+        "name": "COLAIRE",
+        "amount": 202.26,
+        "currency": "EUR",
+        "transactionDate": "2024-07-10T07:53:52-02:00",
+        "description": "amount820 payment550 charge590 bank763 verified325 refund383 delivery670 claim353 transfer857 refund897 claim175 reference589 duplicate204 amount630 service450 online730 customer811 statement144 vendor698 partial960 notice908 reference633 online482 branch411 service102 period44 document560 payment325 approved522 branch757 balance78 foreign403 duplicate447 delivery651 policy665 pending663 order603 approved947 online97 approved622 review844 approved620 customer701 customer498 vendor632 pending264 recurring803 customer604 payment790 receipt386 statement644 payment419 verified468 claim235 rejected793 account651 order450 evidence971 recurring159 branch705 verified544 recurring728 duplicate366 service604 branch96 duplicate480 rejected19 service457 claim208 document149 approved963 vendor388 merchant434 online384 merchant507 card792 account275 refund923 fr"
+      },
+      {
+        "_id": "66c745ec24a7faa219bb047c",
+        "index": 21,
+        "name": "XANIDE",
+        "amount": 97.95,
+        "currency": "EUR",
+        "transactionDate": "2024-03-22T03:27:53-01:00",
+        "description": "pending877 document516 evidence937 online450 refund185 duplicate271 card27 foreign72 verified260 charge223 approved174 bank401 payment305 pending428 duplicate323 receipt788 balance517 foreign673 invoice268 review488 review846 merchant302 refund653 review962 foreign483 branch360 evidence461 fraud59 dispute280 service154 payment221 receipt712 branch758 recurring636 document277 fraud755 missing87 evidence110 amount396 notice932 approved363 payment467 payment252 refund417 claim185 balance816 charge638 bank737 amount411 fraud496 pending423 refund182 notice542 missing802 missing878 bank98 amount413 service685 period998 partial16 contact253 card398 contact227 invoice296 charge64 claim834 fraud471 verified707 reference27 account478 transfer497 dispute936 transfer408 transfer966 dispute444 document135 foreign753 notice57 policy409 amount281 policy401 invoic"
+      },
+      {
+        "_id": "66c745ecc437fce849e1cd66",
+        "index": 22,
+        "name": "ARTIQ",
+        "amount": 73.09,
+        "currency": "EUR",
+        "transactionDate": "2024-04-30T03:00:37-02:00",
+        "description": "transfer611 fraud116 order130 foreign206 recurring541 customer767 policy680 vendor791 evidence495 review149 online610 policy333 order341 bank474 rejected891 duplicate955 invoice472 verified445 vendor778 account604 amount616 recurring110 policy45 contact136 missing696 approved79 recurring556 order303 order388 dispute672 partial814 transfer575 evidence50 contact278 fraud992 refund112 foreign464 vendor64 verified12 recurring334 reference632 order906 contact465 evidence927 customer630 online707 order67 evidence213 statement42 card857 foreign956 online772 missing256 online161 vendor782 recurring39 recurring422 charge239 duplicate197 amount276 evidence927 statement190 vendor644 approved527 partial630 contact203 refund465 duplicate459 dispute781 payment939 refund65 invoice155 notice439 approved13 review155 charge541 merchant280 partial671 account207 payme"
+      },
+      {
+        "_id": "66c745ecee0a5f0b86b54608",
+        "index": 23,
+        "name": "GEEKFARM",
+        "amount": 80.3,
+        "currency": "EUR",
+        "transactionDate": "2024-03-11T10:12:48-01:00",
+        "description": "online357 receipt95 customer166 payment910 verified647 verified897 refund332 verified285 statement804 delivery712 service45 balance730 card23 merchant293 approved262 statement693 customer608 claim582 charge576 bank988 payment387 foreign625 refund90 pending486 refund168 reference388 payment146 fraud946 duplicate693 review166 branch434 account684 contact441 fraud805 service540 online13 customer231 pending729 refund598 order436 dispute529 partial700 notice236 dispute370 reference539 delivery794 period249 verified148 dispute666 pending792 charge280 card101 transfer273 account581 evidence108 statement421 partial931 online975 customer911 branch3 evidence172 payment647 fraud163 missing235 missing619 reference908 rejected724 merchant440 order812 vendor276 duplicate655 reference216 claim515 reference294 verified145 foreign762 branch431 card790 statement800 "
+      },
+      {
+        "_id": "66c745ec5f6e4d9111d1bde5",
+        "index": 24,
+        "name": "FUTURITY",
+        "amount": 218.42,
+        "currency": "EUR",
+        "transactionDate": "2024-07-01T08:08:48-02:00",
+        "description": "document252 receipt696 rejected707 policy133 vendor869 vendor890 balance412 partial582 online451 approved881 rejected143 merchant282 policy149 review928 vendor736 service768 receipt868 rejected85 balance340 customer338 foreign766 foreign40 balance954 order332 refund768 order9 fraud144 document35 partial59 review649 evidence113 fraud103 receipt714 charge777 period196 partial393 claim327 pending20 receipt457 charge426 order480 period515 order13 pending544 policy36 evidence437 duplicate709 missing494 period107 delivery202 online99 invoice42 policy533 reference591 transfer485 bank158 branch514 transfer462 branch500 branch90 foreign618 review930 fraud694 review511 vendor936 recurring560 fraud297 balance736 statement426 balance196 order634 notice282 card69 branch451 missing983 receipt88 online159 refund709 merchant192 partial312 approved865 verified593 p"
+      },
+      {
+        "_id": "66c745ec897cfd974966bd12",
+        "index": 25,
+        "name": "KIGGLE",
+        "amount": 249.56,
+        "currency": "EUR",
+        "transactionDate": "2024-05-01T12:36:03-02:00",
+        "description": "document271 verified367 account796 contact872 missing683 partial31 statement783 pending78 verified32 merchant810 evidence900 period992 rejected890 vendor818 branch106 invoice698 bank121 amount958 recurring251 recurring957 reference171 fraud196 reference548 reference392 charge458 duplicate931 online729 review331 partial197 branch940 approved317 bank319 statement757 recurring376 vendor149 reference427 invoice519 evidence895 policy501 charge784 rejected514 notice106 document743 contact710 card51 rejected277 refund256 customer765 charge754 refund964 claim422 policy659 claim524 approved298 policy159 fraud681 vendor467 bank712 service624 policy902 customer181 receipt464 foreign248 rejected335 branch271 receipt204 refund997 contact561 customer958 merchant538 partial564 online282 pending216 branch240 pending748 foreign284 contact671 charge427 review622 cus"
+      },
+      {
+        "_id": "66c745ecbee5f1ebab944f99",
+        "index": 26,
+        "name": "TUBALUM",
+        "amount": 63.14,
+        "currency": "EUR",
+        "transactionDate": "2024-07-10T02:45:16-02:00",
+        "description": "partial15 duplicate252 fraud577 recurring822 period394 verified772 refund322 account333 order609 missing717 customer374 review829 vendor834 statement639 duplicate394 recurring891 foreign742 claim99 amount523 contact234 account879 period120 review951 claim659 review164 approved101 bank710 bank115 duplicate148 review500 order630 pending973 period390 payment823 statement613 branch468 receipt89 notice224 fraud851 contact302 fraud781 evidence195 missing275 policy747 order873 policy154 account653 partial265 order171 vendor918 customer815 notice14 dispute815 foreign102 partial799 approved158 approved566 amount526 fraud856 transfer27 evidence591 payment14 bank368 reference219 receipt187 account781 bank500 charge330 pending845 charge597 missing200 delivery493 period349 card362 rejected156 duplicate810 branch174 balance433 foreign731 account427 evidence526 s"
+      },
+      {
+        "_id": "66c745ec1dcae3a8ce04b635",
+        "index": 27,
+        "name": "RONBERT",
+        "amount": 174.29,
+        "currency": "EUR",
+        "transactionDate": "2024-06-13T08:08:53-02:00",
+        "description": "customer455 amount543 missing435 invoice638 notice854 dispute521 dispute793 order949 claim683 transfer172 amount768 branch828 card560 receipt945 transfer751 amount112 period789 document241 refund297 statement801 contact602 approved974 review551 customer895 payment77 account440 card431 verified976 payment489 card341 online316 notice966 pending587 policy671 amount134 missing483 amount797 document943 amount303 contact681 approved768 pending424 refund325 evidence537 receipt402 online196 statement492 period116 account967 online736 foreign276 claim321 charge822 customer88 foreign615 customer914 receipt709 missing857 charge939 evidence918 amount233 review595 customer927 delivery51 approved474 contact983 refund21 evidence42 document118 account467 claim646 contact972 customer527 duplicate538 statement489 policy271 recurring697 service661 notice195 missing23"
+      },
+      {
+        "_id": "66c745ecd230c0665b74cbfd",
+        "index": 28,
+        "name": "CONFRENZY",
+        "amount": 167.7,
+        "currency": "EUR",
+        "transactionDate": "2024-08-22T03:34:28-02:00",
+        "description": "bank198 missing917 dispute570 card835 approved797 claim472 recurring277 invoice244 dispute262 missing356 partial615 delivery681 foreign118 transfer276 branch0 charge345 review934 recurring662 document631 evidence453 review119 refund233 card100 customer799 refund807 reference631 partial259 evidence827 fraud543 period243 rejected164 claim244 balance806 period418 delivery453 duplicate607 dispute35 claim715 card766 online376 transfer912 account456 document446 recurring873 card641 recurring360 online908 refund605 branch464 card774 invoice936 reference194 missing752 merchant699 receipt385 amount380 statement943 invoice890 verified487 claim794 review261 order156 account210 balance865 merchant319 fraud798 delivery311 review407 verified83 review819 online45 card174 evidence982 account476 transfer162 contact868 statement606 charge259 vendor290 fraud272 invoi"
+      },
+      {
+        "_id": "66c745ec51f977bb3a0b1dff",
+        "index": 29,
+        "name": "ISOTRONIC",
+        "amount": 245.34,
+        "currency": "EUR",
+        "transactionDate": "2024-03-10T01:16:31-01:00",
+        "description": "service784 partial749 duplicate91 reference646 review644 card690 receipt948 verified396 missing841 notice579 notice207 vendor544 payment37 contact440 order820 review888 approved260 statement404 missing797 amount770 foreign105 delivery117 customer657 duplicate180 service738 period12 partial196 invoice296 refund650 receipt133 transfer495 amount712 recurring310 contact875 transfer445 receipt549 service653 missing131 policy63 service345 charge985 rejected85 document683 rejected482 charge755 recurring492 transfer821 receipt274 fraud308 evidence210 duplicate534 transfer307 missing867 review604 approved942 statement314 invoice128 account227 receipt17 statement66 refund376 online330 policy769 payment267 evidence9 branch812 amount972 review308 foreign957 recurring749 invoice962 online157 duplicate370 verified142 card848 transfer953 vendor235 evidence689 dup"
+      },
+      {
+        "_id": "66c745ec77bd8b37ed2f0148",
+        "index": 30,
+        "name": "GROK",
+        "amount": 55.24,
+        "currency": "EUR",
+        "transactionDate": "2024-03-26T05:27:38-01:00",
+        "description": "merchant227 recurring731 duplicate940 period184 approved7 merchant560 fraud569 payment21 duplicate369 document254 recurring405 card123 payment755 amount371 payment202 bank628 customer771 review892 verified213 statement45 charge857 reference585 merchant431 transfer419 statement403 branch474 document835 transfer745 dispute353 review100 vendor591 notice567 claim792 bank907 payment332 partial375 pending933 invoice581 account354 fraud927 missing987 charge124 document352 charge868 customer40 contact420 statement558 customer210 fraud492 receipt344 order102 notice138 online521 payment403 pending596 statement191 customer724 invoice270 payment709 contact236 order238 refund127 period708 account462 statement431 partial245 document145 reference1 pending891 charge840 amount347 account685 online630 balance634 document320 rejected763 missing194 payment17 balance11"
+      },
+      {
+        "_id": "66c745ec1232227c24c18ed7",
+        "index": 31,
+        "name": "KOZGENE",
+        "amount": 284.32,
+        "currency": "EUR",
+        "transactionDate": "2024-06-24T03:31:12-02:00",
+        "description": "receipt482 verified7 balance110 branch870 review693 order895 refund775 approved471 duplicate901 missing181 missing110 transfer690 foreign344 refund154 foreign605 dispute76 dispute925 duplicate249 partial412 foreign909 verified127 order819 statement893 delivery905 reference142 online781 service89 amount141 refund993 statement902 online73 dispute566 notice967 dispute442 review152 delivery231 evidence955 payment174 balance599 notice659 partial953 customer944 verified949 customer24 order676 claim352 receipt824 vendor670 merchant373 verified360 approved448 online772 claim363 period165 online74 invoice630 evidence734 period203 missing186 verified582 evidence769 refund577 customer438 partial116 balance605 account623 dispute389 order644 transfer974 document24 verified336 reference894 period201 missing215 merchant754 payment742 missing680 transfer99 invoice"
+      },
+      {
+        "_id": "66c745eca63c8298b8cecd01",
+        "index": 32,
+        "name": "CINCYR",
+        "amount": 48.8,
+        "currency": "EUR",
+        "transactionDate": "2024-03-22T09:09:44-01:00",
+        "description": "customer484 order816 duplicate690 reference743 amount860 order575 approved30 customer676 charge884 receipt568 amount454 partial569 rejected672 contact210 reference229 dispute104 online95 statement318 verified889 receipt431 delivery737 receipt853 review649 dispute162 online761 recurring652 dispute924 service134 statement731 fraud235 branch145 order2 recurring641 card61 bank186 period289 dispute625 verified382 transfer444 approved362 balance466 invoice96 pending378 bank454 delivery961 fraud114 transfer796 payment745 receipt54 refund452 policy500 pending603 online208 period494 partial366 transfer108 amount192 partial602 document429 transfer434 payment848 vendor911 evidence906 document42 order866 partial508 bank367 missing395 amount184 statement562 recurring874 customer809 branch18 review410 policy667 duplicate526 verified459 period399 missing659 forei"
+      },
+      {
+        "_id": "66c745ec97ee9aa44199757f",
+        "index": 33,
+        "name": "KONGENE",
+        "amount": 201.8,
+        "currency": "EUR",
+        "transactionDate": "2024-06-18T08:04:32-02:00",
+        "description": "bank745 document995 policy588 order219 approved124 missing691 contact809 service542 evidence558 period430 duplicate114 balance435 merchant336 account152 account7 reference608 missing333 branch165 charge370 amount831 recurring886 review746 transfer175 online54 pending619 balance79 charge249 balance80 bank186 reference794 period630 invoice443 card423 approved538 transfer310 reference151 pending194 online764 transfer661 dispute257 online215 refund166 transfer389 recurring632 vendor629 policy804 rejected266 account2 online399 order919 notice658 verified996 card369 transfer96 receipt583 delivery417 receipt179 payment904 transfer390 reference844 balance486 transfer877 evidence247 document612 verified574 merchant817 transfer984 amount511 notice562 pending790 approved121 missing57 payment226 invoice758 bank840 claim72 statement598 online729 refund321 card1"
+      },
+      {
+        "_id": "66c745ecc959f8dcaf1bb1e6",
+        "index": 34,
+        "name": "UNISURE",
+        "amount": 167.74,
+        "currency": "EUR",
+        "transactionDate": "2024-04-22T03:24:51-02:00",
+        "description": "claim871 recurring416 foreign767 dispute415 dispute869 claim750 refund410 evidence568 charge73 transfer614 dispute279 service457 charge524 card116 policy282 approved686 missing967 merchant375 duplicate766 branch18 fraud36 invoice328 foreign489 rejected140 card733 fraud678 payment765 account802 invoice313 branch56 contact795 charge14 transfer200 card749 branch493 service646 branch215 pending32 customer500 pending837 contact125 branch931 rejected571 reference786 customer959 dispute645 branch152 rejected909 period560 evidence899 receipt908 statement707 review844 dispute660 order902 missing448 order377 bank479 service996 document623 branch303 missing284 foreign317 contact677 fraud240 receipt224 reference940 fraud484 review546 missing459 vendor400 delivery207 merchant97 balance839 account635 reference302 card551 contact197 branch617 fraud783 branch722 c"
+      },
+      {
+        "_id": "66c745ec8d113359018225de",
+        "index": 35,
+        "name": "BOLAX",
+        "amount": 132.48,
+        "currency": "EUR",
+        "transactionDate": "2024-02-20T12:17:40-01:00",
+        "description": "refund880 partial892 bank799 missing564 service451 balance456 account165 claim534 partial201 dispute139 notice50 service596 duplicate690 bank367 receipt976 delivery494 branch355 evidence145 reference643 receipt726 dispute431 delivery725 reference141 missing9 branch88 partial67 policy570 missing284 duplicate237 receipt566 period136 verified889 charge861 notice37 service289 account788 pending305 transfer108 invoice315 partial326 reference786 transfer123 claim579 contact268 pending940 rejected617 pending677 verified150 customer25 order635 transfer73 order151 branch787 period227 merchant39 notice527 charge261 amount882 card43 rejected381 dispute393 merchant784 amount61 amount853 charge929 notice103 payment189 dispute720 amount642 online249 payment115 foreign338 delivery218 merchant206 invoice534 branch674 online463 branch602 account246 recurring611 dup"
+      },
+      {
+        "_id": "66c745ec4847944ef2e8f97b",
+        "index": 36,
+        "name": "AUTOGRATE",
+        "amount": 287.98,
+        "currency": "EUR",
+        "transactionDate": "2024-08-13T07:55:28-02:00",
+        "description": "pending181 statement974 missing378 vendor912 document600 refund139 customer365 recurring37 evidence497 charge275 rejected133 review128 notice817 approved357 document61 refund10 balance996 foreign160 online984 delivery471 foreign862 vendor70 online504 account613 rejected875 dispute748 missing171 document135 approved268 partial149 account841 recurring844 notice472 policy55 duplicate451 foreign446 partial461 fraud524 branch59 approved841 receipt239 transfer512 bank559 period214 duplicate414 claim514 dispute774 verified951 online54 receipt680 policy78 customer419 payment858 approved665 refund965 fraud255 rejected103 verified104 receipt680 contact338 foreign186 document789 rejected556 claim0 transfer211 order681 refund430 claim462 rejected797 foreign247 order939 notice19 dispute139 branch481 payment594 period77 delivery607 document279 merchant719 vendor"
+      },
+      {
+        "_id": "66c745ecc6f92e84dd30bb30",
+        "index": 37,
+        "name": "NIMON",
+        "amount": 302.76,
+        "currency": "EUR",
+        "transactionDate": "2024-04-07T07:27:31-02:00",
+        "description": "service730 online445 online756 bank660 account35 customer195 customer71 recurring75 customer341 duplicate895 period547 merchant10 charge564 card141 account113 card921 foreign864 approved818 recurring136 merchant792 verified296 policy467 transfer856 account751 review398 reference518 refund353 card114 partial168 merchant391 review901 partial41 verified937 service538 invoice339 customer382 customer370 missing692 bank98 review544 branch24 contact557 charge257 online533 refund199 fraud540 amount760 invoice238 vendor196 merchant904 verified153 vendor169 partial334 payment307 order428 period280 contact935 online749 claim121 recurring949 transfer159 pending94 missing325 approved939 receipt172 card891 payment1 service738 transfer897 bank347 approved516 invoice314 contact311 charge40 reference845 refund164 statement48 order364 missing481 branch764 policy707 "
+      },
+      {
+        "_id": "66c745ec338bf12dbfa3e786",
+        "index": 38,
+        "name": "BLEENDOT",
+        "amount": 245.44,
+        "currency": "EUR",
+        "transactionDate": "2024-05-28T09:27:20-02:00",
+        "description": "reference613 service472 statement801 pending82 refund310 duplicate961 reference357 period590 online396 account605 charge131 bank23 notice931 missing583 review732 customer400 receipt857 delivery826 customer400 branch842 recurring470 delivery398 merchant722 approved766 account225 delivery337 approved569 contact506 branch623 dispute210 duplicate868 claim996 foreign969 missing511 charge157 invoice732 reference635 policy141 branch763 verified433 rejected984 missing638 dispute840 dispute339 invoice26 merchant771 card758 online858 recurring381 pending472 dispute185 order23 bank373 evidence614 order951 approved377 merchant828 balance463 claim399 verified952 contact443 statement623 rejected16 transfer760 balance386 dispute468 payment510 online445 vendor138 transfer437 policy308 notice220 invoice135 approved234 dispute517 balance102 merchant905 evidence569 p"
+      },
+      {
+        "_id": "66c745ecbc7724902ec45e22",
+        "index": 39,
+        "name": "ZENTHALL",
+        "amount": 345.96,
+        "currency": "EUR",
+        "transactionDate": "2024-05-10T02:43:49-02:00",
+        "description": "rejected71 duplicate493 claim450 verified130 evidence213 notice637 invoice733 partial567 recurring766 branch182 rejected136 online300 claim335 refund648 review255 online955 receipt784 card321 invoice832 fraud420 rejected30 statement61 invoice620 refund695 customer687 rejected467 contact34 branch528 missing942 account624 document484 policy469 amount912 verified209 balance335 account292 online775 balance437 recurring323 invoice220 foreign67 rejected976 amount509 verified609 payment378 receipt292 account85 dispute881 bank915 delivery488 payment574 invoice499 partial984 refund804 foreign500 amount324 payment165 invoice527 customer716 refund383 amount81 bank374 refund408 document928 delivery487 foreign507 invoice511 customer761 duplicate876 evidence457 period617 recurring317 account200 statement560 branch427 dispute954 receipt567 policy683 evidence47 ba"
+      },
+      {
+        "_id": "66c745ec02b98d960e733e5a",
+        "index": 40,
+        "name": "PHOTOBIN",
+        "amount": 184.21,
+        "currency": "EUR",
+        "transactionDate": "2024-03-06T10:14:33-01:00",
+        "description": "receipt402 fraud57 recurring194 contact653 recurring495 pending126 contact652 online235 order623 card956 missing468 delivery789 contact731 customer355 delivery760 fraud397 receipt905 period353 invoice549 charge510 contact18 period839 transfer652 partial2 rejected823 missing832 fraud50 service770 customer814 customer985 balance820 foreign974 amount436 contact832 card90 policy973 verified121 statement85 card333 refund592 duplicate302 online736 reference286 account14 reference936 transfer415 statement888 review154 claim128 balance585 partial317 pending924 customer211 balance442 refund830 contact136 document993 vendor29 period799 missing90 notice537 online742 partial274 document229 amount203 payment772 fraud340 payment31 recurring764 notice775 amount473 vendor668 partial903 order845 evidence303 balance862 delivery998 balance340 transfer187 refund101 st"
+      },
+      {
+        "_id": "66c745ec4a070ed17d959b0c",
+        "index": 41,
+        "name": "FURNIGEER",
+        "amount": 298.11,
+        "currency": "EUR",
+        "transactionDate": "2024-06-08T04:11:51-02:00",
+        "description": "order671 payment688 statement514 claim805 statement787 reference555 delivery649 reference467 contact960 bank103 transfer116 card870 vendor674 service411 evidence159 customer479 missing400 amount488 vendor509 document917 vendor533 balance586 vendor568 evidence709 customer597 partial609 pending623 card526 duplicate685 transfer968 fraud698 rejected295 account687 bank777 amount607 merchant248 notice234 invoice359 refund62 refund689 verified144 order151 transfer499 merchant910 branch646 merchant555 period964 amount205 refund959 customer345 statement342 account410 missing339 evidence725 vendor505 dispute255 statement944 evidence470 balance284 reference291 contact132 online283 vendor862 claim789 foreign934 evidence475 service274 review881 recurring608 foreign829 refund960 merchant255 account345 balance6 order973 card320 period481 bank316 claim440 rejected"
+      },
+      {
+        "_id": "66c745ecc6c4945a0819d224",
+        "index": 42,
+        "name": "RETROTEX",
+        "amount": 102.23,
+        "currency": "EUR",
+        "transactionDate": "2024-06-15T05:30:21-02:00",
+        "description": "online806 refund617 amount641 claim186 duplicate87 receipt602 claim222 document589 pending286 reference66 missing102 policy597 vendor543 invoice741 amount198 balance257 missing6 account292 account589 branch506 evidence562 partial522 policy150 order328 pending938 missing617 bank965 duplicate48 online398 claim442 claim942 payment612 pending313 amount590 fraud784 dispute741 customer858 policy717 foreign47 order366 customer243 foreign160 rejected112 transfer924 payment352 payment418 approved897 account241 account615 dispute820 branch238 invoice514 account672 missing643 delivery770 payment532 transfer553 transfer209 period952 transfer231 bank93 foreign619 bank921 customer981 amount997 period106 online587 statement40 notice423 card93 account191 notice119 recurring659 fraud198 verified742 notice894 refund589 bank396 document534 missing411 payment20 duplic"
+      },
+      {
+        "_id": "66c745ec91209b60ccda0e4b",
+        "index": 43,
+        "name": "POSHOME",
+        "amount": 199.04,
+        "currency": "EUR",
+        "transactionDate": "2024-02-15T08:24:37-01:00",
+        "description": "duplicate50 online880 reference68 rejected16 claim17 payment198 statement466 bank568 dispute821 refund343 missing294 charge66 contact99 pending649 transfer698 amount948 contact904 approved69 claim738 duplicate560 fraud375 amount802 card171 recurring874 dispute201 recurring495 charge824 duplicate326 verified296 vendor311 contact868 service129 period897 contact53 order96 period60 partial704 transfer693 dispute939 pending47 charge621 account472 payment447 payment224 review566 balance72 fraud751 missing517 customer659 dispute560 statement38 order601 dispute715 missing793 missing334 payment906 claim107 statement567 service327 amount65 rejected930 partial947 claim233 verified835 vendor664 transfer281 merchant570 online349 recurring916 partial89 reference460 invoice423 pending13 card545 document590 verified386 transfer380 duplicate269 pending225 verified5"
+      },
+      {
+        "_id": "66c745ec9ed2256b89917dac",
+        "index": 44,
+        "name": "IMANT",
+        "amount": 241.05,
+        "currency": "EUR",
+        "transactionDate": "2024-02-26T12:47:03-01:00",
+        "description": "approved369 payment174 approved587 transfer116 fraud363 fraud806 document700 receipt137 service754 amount475 recurring799 review718 notice435 dispute770 foreign291 branch385 customer138 policy975 order804 pending952 period322 balance446 service894 transfer137 bank421 statement15 service412 charge278 recurring90 dispute851 merchant192 balance189 pending187 notice398 rejected163 rejected959 review780 merchant634 balance799 receipt597 contact593 verified474 statement826 bank966 delivery283 invoice967 dispute363 fraud825 document925 charge953 verified737 duplicate789 vendor250 delivery514 branch391 claim958 receipt44 delivery173 card266 balance100 missing935 notice750 receipt790 delivery185 card84 delivery519 duplicate603 account129 order111 transfer67 online208 charge400 receipt293 charge58 pending912 statement997 policy248 contact316 amount425 paymen"
+      },
+      {
+        "_id": "66c745ec7289745a52dc6cb0",
+        "index": 45,
+        "name": "LUNCHPOD",
+        "amount": 123.68,
+        "currency": "EUR",
+        "transactionDate": "2024-07-25T11:12:01-02:00",
+        "description": "receipt871 approved462 bank819 bank423 recurring286 notice576 partial113 contact646 merchant507 notice674 statement704 policy605 customer927 missing139 balance186 bank441 approved868 charge907 online530 card706 verified569 online204 delivery587 foreign108 reference98 fraud411 online794 reference221 order273 review113 payment0 review713 merchant931 transfer189 card769 invoice710 online881 payment120 payment834 rejected904 dispute652 order194 dispute950 claim386 account206 verified722 payment964 reference257 evidence715 receipt371 invoice686 dispute252 policy351 branch173 duplicate808 delivery662 notice672 statement223 customer810 account77 recurring456 service696 foreign974 receipt995 rejected996 policy130 approved646 invoice311 statement138 contact490 verified193 verified225 merchant248 branch559 partial620 merchant868 receipt38 delivery105 refund7"
+      },
+      {
+        "_id": "66c745ec36f6f860f0532c5f",
+        "index": 46,
+        "name": "CORIANDER",
+        "amount": 125.71,
+        "currency": "EUR",
+        "transactionDate": "2024-07-30T09:36:30-02:00",
+        "description": "missing24 approved312 review598 bank947 notice419 fraud28 merchant389 balance374 order589 balance793 fraud12 duplicate907 policy52 merchant419 partial944 duplicate810 contact377 vendor123 duplicate18 notice630 dispute591 service722 transfer192 customer533 delivery605 review44 claim583 vendor856 dispute746 transfer307 notice896 evidence676 vendor882 document20 card647 policy298 evidence425 approved241 document151 policy122 refund525 vendor107 refund427 balance873 evidence322 missing991 customer351 rejected311 card598 online333 verified810 receipt683 online929 foreign630 notice204 order679 invoice285 contact734 invoice240 charge351 partial373 online980 transfer980 card702 bank411 pending863 pending508 statement658 payment498 transfer425 fraud793 rejected898 reference685 foreign262 contact143 pending198 period632 card600 reference686 rejected274 onlin"
+      },
+      {
+        "_id": "66c745ecb73f5568372529af",
+        "index": 47,
+        "name": "ISONUS",
+        "amount": 181.24,
+        "currency": "EUR",
+        "transactionDate": "2024-05-19T03:13:43-02:00",
+        "description": "branch816 missing502 vendor857 online993 evidence45 receipt299 online995 amount338 amount355 transfer520 claim591 dispute556 statement730 statement362 foreign715 notice604 merchant204 policy847 pending311 payment129 reference317 period206 statement4 policy22 policy74 notice580 merchant70 bank795 claim520 missing905 approved863 branch393 vendor673 recurring558 dispute245 evidence488 card368 refund460 service345 order581 fraud15 reference374 refund347 approved349 service750 transfer0 reference805 evidence445 approved349 branch11 partial217 period126 payment86 review46 claim428 review366 card594 partial931 reference356 service890 balance168 customer722 reference591 period904 recurring70 branch178 charge395 online446 foreign251 merchant536 contact354 branch72 claim873 payment825 branch50 dispute608 document718 statement30 online146 notice178 document44"
+      },
+      {
+        "_id": "66c745ec16982631bf63dd36",
+        "index": 48,
+        "name": "BITTOR",
+        "amount": 260.47,
+        "currency": "EUR",
+        "transactionDate": "2024-05-26T08:00:37-02:00",
+        "description": "branch554 pending574 branch182 payment320 foreign521 service514 notice630 reference400 merchant743 document259 duplicate88 amount824 merchant744 amount736 notice659 evidence442 amount523 card808 contact825 card730 delivery937 recurring717 balance814 evidence184 partial582 merchant442 reference776 pending783 period67 online674 payment105 review303 duplicate165 payment813 evidence904 recurring902 policy279 document530 approved606 refund977 period211 service765 review153 dispute685 balance186 pending884 statement226 online360 approved964 reference101 online807 payment652 card642 partial21 delivery584 refund427 account385 payment536 review904 review265 delivery813 foreign685 refund941 rejected315 bank880 service845 document595 review772 period103 balance59 verified0 duplicate110 delivery440 statement224 evidence444 policy736 missing910 bank799 notice45"
+      },
+      {
+        "_id": "66c745ecc6016e60df597a73",
+        "index": 49,
+        "name": "BICOL",
+        "amount": 166.99,
+        "currency": "EUR",
+        "transactionDate": "2024-08-16T06:01:56-02:00",
+        "description": "payment643 fraud512 reference621 dispute604 vendor16 evidence32 vendor396 dispute881 contact444 approved211 branch659 approved851 balance579 dispute834 service909 invoice839 order676 vendor752 customer291 missing671 vendor777 fraud790 statement408 recurring554 approved461 approved27 branch938 reference818 invoice551 foreign171 branch791 charge262 account284 recurring170 dispute554 missing40 service784 bank582 vendor894 notice90 charge343 policy247 duplicate269 payment236 online388 balance684 refund264 notice330 balance337 dispute667 balance971 bank430 payment387 verified177 approved393 vendor843 missing342 vendor577 notice570 vendor267 policy731 notice348 online423 period764 claim662 customer440 merchant914 transfer887 pending827 claim70 statement393 vendor566 evidence401 card330 service758 contact611 transfer484 order151 balance80 review579 refere"
+      }
+    ],
+    "disputeId": 456,
+    "disputeAmount": {
+      "amount": 9734.199999999999,
+      "currency": "EUR"
+    },
+    "disputeStartDate": "2024-08-307T10:00:00Z",
+    "status": "documentsExtracted",
+    "extractionNotes": "missing906 statement653 charge326 period752 review278 dispute5 refund216 customer133 rejected872 notice445 amount857 missing229 claim295 approved778 charge307 receipt941 balance922 card944 service117 missing520 document59 invoice418 pending744 review323 duplicate181 refund313 review298 reference846 review862 verified547 contact589 merchant656 vendor775 document514 notice271 delivery109 pending834 online357 refund32 claim211 balance268 missing822 charge772 account534 partial810 invoice205 rejecte"
+  }
+}
