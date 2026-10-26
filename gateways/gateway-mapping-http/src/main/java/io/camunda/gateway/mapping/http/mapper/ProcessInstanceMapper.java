@@ -234,9 +234,10 @@ public class ProcessInstanceMapper {
     };
   }
 
-  private static @Nullable ProcessInstanceCreationConfigureExecutionInstruction configureExecutionOf(
-      final List<io.camunda.gateway.protocol.model.ProcessInstanceCreationRuntimeInstruction>
-          instructions) {
+  private static @Nullable ProcessInstanceCreationConfigureExecutionInstruction
+      configureExecutionOf(
+          final List<io.camunda.gateway.protocol.model.ProcessInstanceCreationRuntimeInstruction>
+              instructions) {
     if (instructions == null) {
       return null;
     }

@@ -435,6 +435,54 @@ public final class HeldTimersTest {
         .await();
   }
 
+  @Test
+  public void shouldHoldTimerWhenCombinedWithStartInstruction() {
+    // given
+    final String processId = deployTimerCatchProcess();
+
+    // when the instance is held AND created with a start instruction
+    final long processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(processId)
+            .withHeldTimers()
+            .withStartInstruction("timer")
+            .create();
+
+    // then the timer is still created as held
+    final Record<TimerRecordValue> created =
+        RecordingExporter.timerRecords(TimerIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+    assertThat(created.getValue().isHeld())
+        .describedAs("a held instance created with a start instruction still holds its timer")
+        .isTrue();
+  }
+
+  @Test
+  public void shouldHoldTimerWhenCombinedWithTerminateInstruction() {
+    // given
+    final String processId = deployTimerCatchProcess();
+
+    // when the instance is held AND created with a terminate runtime instruction
+    final long processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(processId)
+            .withHeldTimers()
+            .withRuntimeTerminateInstruction("timer")
+            .create();
+
+    // then the timer is still created as held
+    final Record<TimerRecordValue> created =
+        RecordingExporter.timerRecords(TimerIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+    assertThat(created.getValue().isHeld())
+        .describedAs("a held instance created with a terminate instruction still holds its timer")
+        .isTrue();
+  }
+
   private static String deployTimerCatchProcess() {
     final String processId = Strings.newRandomValidBpmnId();
     ENGINE
