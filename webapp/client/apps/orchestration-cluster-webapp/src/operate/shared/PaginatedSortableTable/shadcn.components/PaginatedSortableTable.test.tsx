@@ -45,8 +45,6 @@ async function renderTable(overrides: RenderOverrides = {}) {
 		ariaLabel: 'Process instances',
 		pagination: defaultPagination(),
 		'data-testid': 'table',
-		loadingPreviousPageLabel: 'Loading previous rows',
-		loadingNextPageLabel: 'Loading more rows',
 		...overrides,
 	} as React.ComponentProps<typeof PaginatedSortableTable<Row>>;
 	const rootRoute = createRootRoute();
@@ -83,15 +81,11 @@ describe('<PaginatedSortableTable />', () => {
 			// given
 			const fetchPreviousPage = vi.fn().mockResolvedValue(undefined);
 			const pagination = {...defaultPagination(), hasPreviousPage: true, fetchPreviousPage};
-			const screen = await renderTable({pagination, size: 'md'});
-			const container = screen.getByTestId('table').element() as HTMLElement;
+			await renderTable({pagination, size: 'md'});
 
 			// when
 			const observer = getObserver();
-			const topSentinel = screen.getByTestId('sortable-table-top-sentinel').element();
-			Object.defineProperty(container, 'scrollTop', {value: 100, configurable: true});
-			observer.intersect(topSentinel);
-			Object.defineProperty(container, 'scrollTop', {value: 20, configurable: true});
+			const topSentinel = document.querySelector('[data-slot="data-table-top-sentinel"]')!;
 			observer.intersect(topSentinel);
 
 			// then
@@ -102,15 +96,11 @@ describe('<PaginatedSortableTable />', () => {
 			// given
 			const fetchPreviousPage = vi.fn().mockResolvedValue(undefined);
 			const pagination = {...defaultPagination(), hasPreviousPage: false, fetchPreviousPage};
-			const screen = await renderTable({pagination});
-			const container = screen.getByTestId('table').element() as HTMLElement;
+			await renderTable({pagination});
 
 			// when
 			const observer = getObserver();
-			const topSentinel = screen.getByTestId('sortable-table-top-sentinel').element();
-			Object.defineProperty(container, 'scrollTop', {value: 100, configurable: true});
-			observer.intersect(topSentinel);
-			Object.defineProperty(container, 'scrollTop', {value: 20, configurable: true});
+			const topSentinel = document.querySelector('[data-slot="data-table-top-sentinel"]')!;
 			observer.intersect(topSentinel);
 
 			// then
@@ -121,15 +111,11 @@ describe('<PaginatedSortableTable />', () => {
 			// given
 			const fetchNextPage = vi.fn().mockResolvedValue(undefined);
 			const pagination = {...defaultPagination(), hasNextPage: true, fetchNextPage};
-			const screen = await renderTable({pagination});
-			const container = screen.getByTestId('table').element() as HTMLElement;
+			await renderTable({pagination});
 
 			// when
 			const observer = getObserver();
-			const bottomSentinel = screen.getByTestId('sortable-table-bottom-sentinel').element();
-			Object.defineProperty(container, 'scrollTop', {value: 20, configurable: true});
-			observer.intersect(bottomSentinel);
-			Object.defineProperty(container, 'scrollTop', {value: 100, configurable: true});
+			const bottomSentinel = document.querySelector('[data-slot="data-table-bottom-sentinel"]')!;
 			observer.intersect(bottomSentinel);
 
 			// then
@@ -140,15 +126,11 @@ describe('<PaginatedSortableTable />', () => {
 			// given
 			const fetchNextPage = vi.fn().mockResolvedValue(undefined);
 			const pagination = {...defaultPagination(), hasNextPage: true, isFetchingNextPage: true, fetchNextPage};
-			const screen = await renderTable({pagination});
-			const container = screen.getByTestId('table').element() as HTMLElement;
+			await renderTable({pagination});
 
 			// when
 			const observer = getObserver();
-			const bottomSentinel = screen.getByTestId('sortable-table-bottom-sentinel').element();
-			Object.defineProperty(container, 'scrollTop', {value: 20, configurable: true});
-			observer.intersect(bottomSentinel);
-			Object.defineProperty(container, 'scrollTop', {value: 100, configurable: true});
+			const bottomSentinel = document.querySelector('[data-slot="data-table-bottom-sentinel"]')!;
 			observer.intersect(bottomSentinel);
 
 			// then
@@ -165,15 +147,11 @@ describe('<PaginatedSortableTable />', () => {
 				isFetchingNextPage: true,
 				fetchPreviousPage,
 			};
-			const screen = await renderTable({pagination});
-			const container = screen.getByTestId('table').element() as HTMLElement;
+			await renderTable({pagination});
 
 			// when
 			const observer = getObserver();
-			const topSentinel = screen.getByTestId('sortable-table-top-sentinel').element();
-			Object.defineProperty(container, 'scrollTop', {value: 100, configurable: true});
-			observer.intersect(topSentinel);
-			Object.defineProperty(container, 'scrollTop', {value: 20, configurable: true});
+			const topSentinel = document.querySelector('[data-slot="data-table-top-sentinel"]')!;
 			observer.intersect(topSentinel);
 
 			// then
@@ -189,15 +167,11 @@ describe('<PaginatedSortableTable />', () => {
 				isFetchingPreviousPage: true,
 				fetchNextPage,
 			};
-			const screen = await renderTable({pagination});
-			const container = screen.getByTestId('table').element() as HTMLElement;
+			await renderTable({pagination});
 
 			// when
 			const observer = getObserver();
-			const bottomSentinel = screen.getByTestId('sortable-table-bottom-sentinel').element();
-			Object.defineProperty(container, 'scrollTop', {value: 20, configurable: true});
-			observer.intersect(bottomSentinel);
-			Object.defineProperty(container, 'scrollTop', {value: 100, configurable: true});
+			const bottomSentinel = document.querySelector('[data-slot="data-table-bottom-sentinel"]')!;
 			observer.intersect(bottomSentinel);
 
 			// then

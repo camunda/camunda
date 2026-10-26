@@ -1399,9 +1399,7 @@
 					"selectRow": "Seleccionar fila {{key}}",
 					"stateEvaluated": "Evaluada",
 					"stateFailed": "Fallida",
-					"tableLabel": "Instancias de decisión",
-					"loadingPreviousPage": "Cargando instancias de decisión anteriores",
-					"loadingNextPage": "Cargando instancias de decisión siguientes"
+					"tableLabel": "Instancias de decisión"
 				},
 				"toolbar": {
 					"delete": "Eliminar",

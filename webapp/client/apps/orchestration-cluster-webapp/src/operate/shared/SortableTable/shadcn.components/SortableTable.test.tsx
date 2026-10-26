@@ -37,8 +37,6 @@ async function renderTable(overrides: RenderOverrides = {}, {initialEntry = '/'}
 		rowKey: (row: Row) => row.id,
 		ariaLabel: 'Process instances',
 		'data-testid': 'table',
-		loadingPreviousPageLabel: 'Loading previous rows',
-		loadingNextPageLabel: 'Loading more rows',
 		...overrides,
 	} as React.ComponentProps<typeof SortableTable<Row>>;
 	let setRowsState: ((rows: Row[]) => void) | undefined;
@@ -155,128 +153,6 @@ describe('<SortableTable />', () => {
 		// then
 		expect(screen.getByTestId('table-loading-overlay').elements()).toHaveLength(0);
 		expect(document.querySelectorAll('[data-slot="data-table-skeleton-row"]').length).toBeGreaterThan(0);
-	});
-
-	describe('pagination loading skeleton', () => {
-		it('should render a single skeleton row below the existing rows while fetching the next page', async () => {
-			// given / when
-			const screen = await renderTable({isFetchingNextPage: true});
-
-			// then
-			await expect.element(screen.getByTestId('table-loading-next')).toBeVisible();
-			expect(screen.getByTestId('table-loading-overlay').elements()).toHaveLength(0);
-			const rows = document.querySelectorAll('[data-slot="table-body"] [data-slot="table-row"]');
-			expect(rows[rows.length - 1]?.querySelector('[data-testid="table-loading-next"]')).not.toBeNull();
-		});
-
-		it('should render a single skeleton row above the existing rows while fetching the previous page', async () => {
-			// given / when
-			const screen = await renderTable({isFetchingPreviousPage: true});
-
-			// then
-			await expect.element(screen.getByTestId('table-loading-previous')).toBeVisible();
-			const rows = document.querySelectorAll('[data-slot="table-body"] [data-slot="table-row"]');
-			expect(rows[0]?.querySelector('[data-testid="table-loading-previous"]')).not.toBeNull();
-		});
-
-		it('should not render the whole-table overlay for pagination loading, only for the top-level isFetching flag', async () => {
-			// given / when
-			const screen = await renderTable({isFetchingPreviousPage: true, isFetchingNextPage: true});
-
-			// then
-			expect(screen.getByTestId('table-loading-overlay').elements()).toHaveLength(0);
-		});
-
-		it('should scroll down by the skeleton row height on mount, so inserting it above the rows does not shift them', async () => {
-			// given
-			const scrollTopSetterSpy = vi.spyOn(Element.prototype, 'scrollTop', 'set');
-
-			// when
-			const screen = await renderTable({
-				isFetchingPreviousPage: true,
-				onVerticalScrollStartReach: vi.fn(),
-				onVerticalScrollEndReach: vi.fn(),
-			});
-			const skeletonRow = screen.getByTestId('table-loading-previous').element().closest('[data-slot="table-row"]')!;
-			const skeletonHeight = skeletonRow.getBoundingClientRect().height;
-
-			// then
-			expect(skeletonHeight).toBeGreaterThan(0);
-			expect(scrollTopSetterSpy).toHaveBeenCalledWith(skeletonHeight);
-			scrollTopSetterSpy.mockRestore();
-		});
-
-		it('should still compensate for the previous-page skeleton row when the caller passes no data-testid', async () => {
-			// given
-			const scrollTopSetterSpy = vi.spyOn(Element.prototype, 'scrollTop', 'set');
-
-			// when
-			await renderTable({
-				isFetchingPreviousPage: true,
-				onVerticalScrollStartReach: vi.fn(),
-				onVerticalScrollEndReach: vi.fn(),
-				'data-testid': undefined,
-			});
-			const skeletonRow = document
-				.querySelector('[data-skeleton-edge="previous"]')!
-				.closest('[data-slot="table-row"]')!;
-			const skeletonHeight = skeletonRow.getBoundingClientRect().height;
-
-			// then
-			expect(skeletonHeight).toBeGreaterThan(0);
-			expect(scrollTopSetterSpy).toHaveBeenCalledWith(skeletonHeight);
-			scrollTopSetterSpy.mockRestore();
-		});
-
-		it('should undo the pending scroll compensation if the previous-page fetch ends without new rows arriving (e.g. a failed or aborted fetch)', async () => {
-			// given
-			const scrollTopSetterSpy = vi.spyOn(Element.prototype, 'scrollTop', 'set');
-			const screen = await renderTable({
-				isFetchingPreviousPage: true,
-				onVerticalScrollStartReach: vi.fn(),
-				onVerticalScrollEndReach: vi.fn(),
-			});
-			const skeletonRow = screen.getByTestId('table-loading-previous').element().closest('[data-slot="table-row"]')!;
-			const skeletonHeight = skeletonRow.getBoundingClientRect().height;
-			expect(scrollTopSetterSpy).toHaveBeenCalledWith(skeletonHeight);
-			scrollTopSetterSpy.mockClear();
-
-			// when: the fetch ends without the row set ever changing, as happens on failure/abort
-			screen.setIsFetchingPreviousPage(false);
-
-			// then: the earlier downward adjustment is reversed
-			await expect.poll(() => scrollTopSetterSpy.mock.calls.length).toBeGreaterThan(0);
-			expect(scrollTopSetterSpy).toHaveBeenCalledWith(-skeletonHeight);
-			scrollTopSetterSpy.mockClear();
-
-			// and: a subsequent fetch can still compensate (the ref wasn't left permanently non-zero)
-			screen.setIsFetchingPreviousPage(true);
-			await expect.poll(() => scrollTopSetterSpy.mock.calls.length).toBeGreaterThan(0);
-			expect(scrollTopSetterSpy).toHaveBeenCalledWith(skeletonHeight);
-			scrollTopSetterSpy.mockRestore();
-		});
-
-		it('should not misread a later, unrelated rows change (e.g. sorting) as the completion of an abandoned previous-page fetch', async () => {
-			// given: a previous-page fetch starts, then ends without new rows arriving (failure/abort)
-			const scrollTopSetterSpy = vi.spyOn(Element.prototype, 'scrollTop', 'set');
-			const screen = await renderTable({
-				isFetchingPreviousPage: true,
-				onVerticalScrollStartReach: vi.fn(),
-				onVerticalScrollEndReach: vi.fn(),
-			});
-			await expect.poll(() => scrollTopSetterSpy.mock.calls.length).toBeGreaterThan(0);
-			screen.setIsFetchingPreviousPage(false);
-			await expect.poll(() => scrollTopSetterSpy.mock.calls.length).toBeGreaterThan(1);
-			scrollTopSetterSpy.mockClear();
-
-			// when: an unrelated rows change happens afterwards (e.g. a sort/filter result)
-			screen.setRows([{id: 'row-3', name: 'Reordered process'}]);
-			await expect.element(screen.getByText('Reordered process')).toBeVisible();
-
-			// then: no stale scrollDown compensation is applied for the abandoned fetch
-			expect(scrollTopSetterSpy).not.toHaveBeenCalled();
-			scrollTopSetterSpy.mockRestore();
-		});
 	});
 
 	it('should mark the default column as sorted ascending with no sort param in the URL', async () => {
@@ -654,613 +530,84 @@ describe('<SortableTable />', () => {
 	describe('infinite scroll', () => {
 		const {getObserver} = setUpFakeIntersectionObserver();
 
+		const MANY_ROWS: Row[] = Array.from({length: 60}, (_, index) => ({id: `row-${index}`, name: `Process ${index}`}));
+
+		function getScrollContainer() {
+			return document.querySelector<HTMLElement>('[data-slot="data-table-scroll-container"]')!;
+		}
+
+		it('should keep the header fixed at the top of the scroll container while the rows scroll', async () => {
+			// given
+			await renderTable(
+				{rows: MANY_ROWS, onVerticalScrollStartReach: vi.fn(), onVerticalScrollEndReach: vi.fn(), className: 'h-80'},
+				{},
+			);
+			const container = getScrollContainer();
+			const header = document.querySelector<HTMLElement>('[data-slot="table-header"]')!;
+			const headerTopBefore = header.getBoundingClientRect().top;
+
+			// when
+			container.scrollTop = 400;
+
+			// then
+			await expect.poll(() => container.scrollTop).toBeGreaterThan(0);
+			expect(header.getBoundingClientRect().top).toBe(headerTopBefore);
+		});
+
 		it('should not render scroll sentinels when no scroll handlers are given', async () => {
 			// given / when
-			const screen = await renderTable();
+			await renderTable();
 
 			// then
-			expect(screen.getByTestId('sortable-table-top-sentinel').elements()).toHaveLength(0);
-			expect(screen.getByTestId('sortable-table-bottom-sentinel').elements()).toHaveLength(0);
+			expect(document.querySelectorAll('[data-slot^="data-table-"][data-slot$="-sentinel"]')).toHaveLength(0);
 		});
 
-		it('should root the intersection observer on the scrollable container, not the viewport', async () => {
-			// given / when: the scroll container is attached in the same commit as the observer is
-			// created, so using the wrong root (e.g. falling back to the viewport) would make
-			// sentinel intersections fire at the wrong scroll offsets
-			const screen = await renderTable({onVerticalScrollStartReach: vi.fn(), onVerticalScrollEndReach: vi.fn()});
-			const container = screen.getByTestId('table').element();
-
-			// then
-			expect(getObserver().root).toBe(container);
-		});
-
-		it('should call onVerticalScrollStartReach when the top sentinel intersects while scrolling up', async () => {
+		it('should call onVerticalScrollStartReach when the top sentinel intersects', async () => {
 			// given
 			const onVerticalScrollStartReach = vi.fn();
-			const screen = await renderTable({onVerticalScrollStartReach, onVerticalScrollEndReach: vi.fn()});
-			const container = screen.getByTestId('table').element() as HTMLElement;
-			const observer = getObserver();
-			const topSentinel = screen.getByTestId('sortable-table-top-sentinel').element();
+			await renderTable({onVerticalScrollStartReach, onVerticalScrollEndReach: vi.fn()});
 
 			// when
-			Object.defineProperty(container, 'scrollTop', {value: 100, writable: true, configurable: true});
-			observer.intersect(topSentinel);
-			Object.defineProperty(container, 'scrollTop', {value: 20, writable: true, configurable: true});
-			observer.intersect(topSentinel);
+			getObserver().intersect(document.querySelector('[data-slot="data-table-top-sentinel"]')!);
 
 			// then
-			expect(onVerticalScrollStartReach).toHaveBeenCalledWith();
-			expect(onVerticalScrollStartReach).toHaveBeenCalledTimes(1);
+			expect(onVerticalScrollStartReach).toHaveBeenCalledOnce();
 		});
 
-		it('should call onVerticalScrollEndReach when the bottom sentinel intersects while scrolling down', async () => {
+		it('should call onVerticalScrollEndReach when the bottom sentinel intersects', async () => {
 			// given
 			const onVerticalScrollEndReach = vi.fn();
-			const screen = await renderTable({onVerticalScrollStartReach: vi.fn(), onVerticalScrollEndReach});
-			const container = screen.getByTestId('table').element() as HTMLElement;
-			const observer = getObserver();
-			const bottomSentinel = screen.getByTestId('sortable-table-bottom-sentinel').element();
+			await renderTable({onVerticalScrollStartReach: vi.fn(), onVerticalScrollEndReach});
 
 			// when
-			Object.defineProperty(container, 'scrollTop', {value: 20, writable: true, configurable: true});
-			observer.intersect(bottomSentinel);
-			Object.defineProperty(container, 'scrollTop', {value: 100, writable: true, configurable: true});
-			observer.intersect(bottomSentinel);
+			getObserver().intersect(document.querySelector('[data-slot="data-table-bottom-sentinel"]')!);
 
 			// then
-			expect(onVerticalScrollEndReach).toHaveBeenCalledWith();
+			expect(onVerticalScrollEndReach).toHaveBeenCalledOnce();
 		});
 
-		it('should not arm prepend compensation when onVerticalScrollStartReach is not configured, even though the top sentinel still renders', async () => {
-			// given: only the next-page callback is configured, but the top sentinel still renders
-			// as part of the pair whenever any scroll handler is given
-			const screen = await renderTable({
-				rows: [
-					{id: 'row-1', name: 'Order process'},
-					{id: 'row-2', name: 'Shipping process'},
-				],
-				onVerticalScrollEndReach: vi.fn(),
-			});
-			const container = screen.getByTestId('table').element() as HTMLElement;
-			const scrollToSpy = vi.spyOn(container, 'scrollTo').mockImplementation(() => {});
-			const observer = getObserver();
-			const topSentinel = screen.getByTestId('sortable-table-top-sentinel').element();
-
-			// when: the top sentinel intersects while scrolling up - there is no previous-page
-			// fetch to start since the caller never configured one for this direction
-			Object.defineProperty(container, 'scrollTop', {value: 100, writable: true, configurable: true});
-			observer.intersect(topSentinel);
-			Object.defineProperty(container, 'scrollTop', {value: 20, writable: true, configurable: true});
-			observer.intersect(topSentinel);
-
-			// and: rows change afterwards as if a new row were genuinely prepended, which would
-			// have been (wrongly) compensated for had a baseline been armed despite no callback
-			// being configured for this direction
-			screen.setRows([
-				{id: 'row-9', name: 'New process'},
-				{id: 'row-1', name: 'Order process'},
-				{id: 'row-2', name: 'Shipping process'},
-			]);
-			await expect.element(screen.getByText('New process')).toBeVisible();
-
-			// then: no baseline was armed by the unreachable top sentinel to misfire against this
-			expect(scrollToSpy).not.toHaveBeenCalled();
-		});
-
-		it('should not arm append compensation when onVerticalScrollEndReach is not configured, even though the bottom sentinel still renders', async () => {
-			// given: only the previous-page callback is configured, but the bottom sentinel still
-			// renders as part of the pair whenever any scroll handler is given
-			const scrollToSpy = vi.fn();
-			const screen = await renderTable({
-				rows: [
-					{id: 'row-1', name: 'Order process'},
-					{id: 'row-2', name: 'Shipping process'},
-				],
-				onVerticalScrollStartReach: vi.fn(),
-			});
-			const container = screen.getByTestId('table').element() as HTMLElement;
-			vi.spyOn(container, 'scrollTo').mockImplementation(scrollToSpy);
-			const observer = getObserver();
-			const bottomSentinel = screen.getByTestId('sortable-table-bottom-sentinel').element();
-
-			// when: the bottom sentinel intersects, as if the user scrolled down - there is no
-			// next-page fetch to start since the caller never configured one
-			Object.defineProperty(container, 'scrollTop', {value: 20, writable: true, configurable: true});
-			observer.intersect(bottomSentinel);
-
-			// and: rows change afterwards as if the top row were genuinely evicted and a new one
-			// appended, which would have been (wrongly) compensated for had a baseline been armed
-			// despite no callback being configured for this direction
-			screen.setRows([
-				{id: 'row-2', name: 'Shipping process'},
-				{id: 'row-9', name: 'New process'},
-			]);
-			await expect.element(screen.getByText('New process')).toBeVisible();
-
-			// then: no baseline was armed by the unreachable bottom sentinel to misfire against this
-			expect(scrollToSpy).not.toHaveBeenCalled();
-		});
-
-		it('should restore the scroll offset using the actual measured height of the prepended rows', async () => {
+		it('should not call onVerticalScrollEndReach when there is no next page', async () => {
 			// given
-			const screen = await renderTable({
-				onVerticalScrollStartReach: vi.fn(),
-				onVerticalScrollEndReach: vi.fn(),
-			});
-			const container = screen.getByTestId('table').element() as HTMLElement;
-			const scrollToSpy = vi.spyOn(container, 'scrollTo').mockImplementation(() => {});
-			const observer = getObserver();
-			const topSentinel = screen.getByTestId('sortable-table-top-sentinel').element();
+			const onVerticalScrollEndReach = vi.fn();
+			await renderTable({onVerticalScrollStartReach: vi.fn(), onVerticalScrollEndReach, hasNextPage: false});
 
 			// when
-			Object.defineProperty(container, 'scrollTop', {value: 100, writable: true, configurable: true});
-			observer.intersect(topSentinel);
-			Object.defineProperty(container, 'scrollTop', {value: 20, writable: true, configurable: true});
-			observer.intersect(topSentinel);
-			screen.setIsFetchingPreviousPage(true);
-			await expect.element(screen.getByText('Loading previous rows')).toBeVisible();
-			screen.setIsFetchingPreviousPage(false);
-			screen.setRows([
-				{id: 'row-0', name: 'Prepended process'},
-				{id: 'row-1', name: 'Order process'},
-				{id: 'row-2', name: 'Shipping process'},
-			]);
+			getObserver().intersect(document.querySelector('[data-slot="data-table-bottom-sentinel"]')!);
 
 			// then
-			await expect.poll(() => scrollToSpy.mock.calls.length).toBeGreaterThan(0);
-			const prependedRowHeight = screen
-				.getByText('Prepended process')
-				.element()
-				.closest('[data-slot="table-row"]')!
-				.getBoundingClientRect().height;
-			expect(scrollToSpy).toHaveBeenCalledWith(0, 20 + prependedRowHeight);
+			expect(onVerticalScrollEndReach).not.toHaveBeenCalled();
 		});
 
-		it('should still restore the scroll offset correctly when a page is evicted from the opposite end at the same time (e.g. an infinite query capped by maxPages)', async () => {
+		it('should render a single skeleton row instead of the whole-table overlay while fetching the next page', async () => {
 			// given
-			const screen = await renderTable({
-				rows: [
-					{id: 'row-1', name: 'Order process'},
-					{id: 'row-2', name: 'Shipping process'},
-					{id: 'row-3', name: 'Billing process'},
-				],
-				onVerticalScrollStartReach: vi.fn(),
-				onVerticalScrollEndReach: vi.fn(),
-			});
-			const container = screen.getByTestId('table').element() as HTMLElement;
-			const scrollToSpy = vi.spyOn(container, 'scrollTo').mockImplementation(() => {});
-			const observer = getObserver();
-			const topSentinel = screen.getByTestId('sortable-table-top-sentinel').element();
+			const screen = await renderTable({onVerticalScrollEndReach: vi.fn()});
 
 			// when
-			Object.defineProperty(container, 'scrollTop', {value: 100, writable: true, configurable: true});
-			observer.intersect(topSentinel);
-			Object.defineProperty(container, 'scrollTop', {value: 20, writable: true, configurable: true});
-			observer.intersect(topSentinel);
-			screen.setIsFetchingPreviousPage(true);
-			await expect.element(screen.getByText('Loading previous rows')).toBeVisible();
-			screen.setIsFetchingPreviousPage(false);
-			screen.setRows([
-				{id: 'row-0', name: 'Prepended process'},
-				{id: 'row-1', name: 'Order process'},
-				{id: 'row-2', name: 'Shipping process'},
-			]);
+			screen.setIsFetchingNextPage(true);
 
 			// then
-			await expect.poll(() => scrollToSpy.mock.calls.length).toBeGreaterThan(0);
-			const prependedRowHeight = screen
-				.getByText('Prepended process')
-				.element()
-				.closest('[data-slot="table-row"]')!
-				.getBoundingClientRect().height;
-			expect(scrollToSpy).toHaveBeenCalledWith(0, 20 + prependedRowHeight);
-		});
-
-		it('should compensate when rows are evicted from the top while the user has scrolled away from the bottom', async () => {
-			// given
-			const screen = await renderTable({
-				rows: [
-					{id: 'row-1', name: 'Order process'},
-					{id: 'row-2', name: 'Shipping process'},
-				],
-				onVerticalScrollStartReach: vi.fn(),
-				onVerticalScrollEndReach: vi.fn(),
-			});
-			const container = screen.getByTestId('table').element() as HTMLElement;
-			const scrollToSpy = vi.spyOn(container, 'scrollTo').mockImplementation(() => {});
-			const observer = getObserver();
-			const bottomSentinel = screen.getByTestId('sortable-table-bottom-sentinel').element();
-			const evictedRowHeight = screen
-				.getByText('Order process')
-				.element()
-				.closest('[data-slot="table-row"]')!
-				.getBoundingClientRect().height;
-
-			// when
-			Object.defineProperty(container, 'scrollTop', {value: 100, writable: true, configurable: true});
-			observer.intersect(bottomSentinel);
-			screen.setIsFetchingNextPage(true);
-			await expect.element(screen.getByText('Loading more rows')).toBeVisible();
-			screen.setIsFetchingNextPage(false);
-			// the new page lands once the user has scrolled back up, away from the bottom edge
-			Object.defineProperty(container, 'scrollTop', {value: 20, writable: true, configurable: true});
-			screen.setRows([
-				{id: 'row-2', name: 'Shipping process'},
-				{id: 'row-3', name: 'Billing process'},
-			]);
-
-			// then
-			await expect.poll(() => scrollToSpy.mock.calls.length).toBeGreaterThan(0);
-			expect(scrollToSpy).toHaveBeenCalledWith(0, 20 - evictedRowHeight);
-		});
-
-		it('should also compensate when rows are evicted from the top while the user is still pinned to the bottom', async () => {
-			// given
-			const screen = await renderTable({
-				rows: [
-					{id: 'row-1', name: 'Order process'},
-					{id: 'row-2', name: 'Shipping process'},
-				],
-				onVerticalScrollStartReach: vi.fn(),
-				onVerticalScrollEndReach: vi.fn(),
-			});
-			const container = screen.getByTestId('table').element() as HTMLElement;
-			const scrollToSpy = vi.spyOn(container, 'scrollTo').mockImplementation(() => {});
-			const observer = getObserver();
-			const bottomSentinel = screen.getByTestId('sortable-table-bottom-sentinel').element();
-			const evictedRowHeight = screen
-				.getByText('Order process')
-				.element()
-				.closest('[data-slot="table-row"]')!
-				.getBoundingClientRect().height;
-
-			// when
-			Object.defineProperty(container, 'scrollTop', {value: 20, writable: true, configurable: true});
-			observer.intersect(bottomSentinel);
-			screen.setIsFetchingNextPage(true);
-			await expect.element(screen.getByText('Loading more rows')).toBeVisible();
-			screen.setIsFetchingNextPage(false);
-			// the new page lands while the user is still pinned to the live bottom edge. Without
-			// compensation, removing rows from the top (without the browser adjusting `scrollTop`)
-			// would shift the surviving content upward, making the same numeric `scrollTop` land on
-			// rows further down the list than the ones the user was actually looking at - a forward
-			// skip equal to the evicted height. Restoring the pre-fetch view is required here too.
-			screen.setRows([
-				{id: 'row-2', name: 'Shipping process'},
-				{id: 'row-3', name: 'Billing process'},
-			]);
-
-			// then
-			await expect.poll(() => scrollToSpy.mock.calls.length).toBeGreaterThan(0);
-			expect(scrollToSpy).toHaveBeenCalledWith(0, 20 - evictedRowHeight);
-		});
-
-		it('should not misread a concurrent, unrelated rows change (e.g. sorting) as top eviction while the next-page fetch is still in flight', async () => {
-			// given: a next-page fetch is armed and then starts
-			const scrollToSpy = vi.fn();
-			const screen = await renderTable({
-				rows: [
-					{id: 'row-1', name: 'Order process'},
-					{id: 'row-2', name: 'Shipping process'},
-				],
-				onVerticalScrollStartReach: vi.fn(),
-				onVerticalScrollEndReach: vi.fn(),
-			});
-			const container = screen.getByTestId('table').element() as HTMLElement;
-			vi.spyOn(container, 'scrollTo').mockImplementation(scrollToSpy);
-			const observer = getObserver();
-			const bottomSentinel = screen.getByTestId('sortable-table-bottom-sentinel').element();
-			Object.defineProperty(container, 'scrollTop', {value: 20, writable: true, configurable: true});
-			observer.intersect(bottomSentinel);
-			screen.setIsFetchingNextPage(true);
-
-			// when: an unrelated refetch (e.g. a sort/filter change) replaces the rows entirely
-			// while the next-page fetch is still in flight
-			screen.setRows([{id: 'row-9', name: 'Reordered process'}]);
-			await expect.element(screen.getByText('Reordered process')).toBeVisible();
-
-			// then: no compensation is applied for this unrelated change
-			expect(scrollToSpy).not.toHaveBeenCalled();
-
-			// when: the real next page then lands, ending the fetch
-			screen.setIsFetchingNextPage(false);
-			screen.setRows([
-				{id: 'row-9', name: 'Reordered process'},
-				{id: 'row-10', name: 'Appended process'},
-			]);
-
-			// then: the real completion is still correctly left uncompensated (nothing was evicted
-			// from the top of this unrelated row set)
-			await expect.element(screen.getByText('Appended process')).toBeVisible();
-			expect(scrollToSpy).not.toHaveBeenCalled();
-		});
-
-		it('should not misread an unrelated rows change as top eviction when a next-page fetch is cancelled (isFetchingNextPage and rows change together)', async () => {
-			// given: a next-page fetch is armed and then starts
-			const scrollToSpy = vi.fn();
-			const screen = await renderTable({
-				rows: [
-					{id: 'row-1', name: 'Order process'},
-					{id: 'row-2', name: 'Shipping process'},
-					{id: 'row-3', name: 'Invoice process'},
-				],
-				onVerticalScrollStartReach: vi.fn(),
-				onVerticalScrollEndReach: vi.fn(),
-			});
-			const container = screen.getByTestId('table').element() as HTMLElement;
-			vi.spyOn(container, 'scrollTo').mockImplementation(scrollToSpy);
-			const observer = getObserver();
-			const bottomSentinel = screen.getByTestId('sortable-table-bottom-sentinel').element();
-			Object.defineProperty(container, 'scrollTop', {value: 20, writable: true, configurable: true});
-			observer.intersect(bottomSentinel);
-			screen.setIsFetchingNextPage(true);
-
-			// when: the fetch is cancelled by an unrelated query-key change (e.g. a filter), which
-			// lands `isFetchingNextPage: false` and the new, differently-ordered rows in the same
-			// commit - row-2 is gone and the surviving rows (row-1, row-3) no longer lead in their
-			// original relative order
-			screen.setIsFetchingNextPage(false);
-			screen.setRows([
-				{id: 'row-3', name: 'Invoice process'},
-				{id: 'row-1', name: 'Order process'},
-				{id: 'row-9', name: 'New filtered process'},
-			]);
-			await expect.element(screen.getByText('New filtered process')).toBeVisible();
-
-			// then: this is not misread as the next page evicting the top of the previous one
-			expect(scrollToSpy).not.toHaveBeenCalled();
-		});
-
-		it('should not misread an unrelated rows change as a prepend when a previous-page fetch is cancelled (isFetchingPreviousPage and rows change together)', async () => {
-			// given: a previous-page fetch is armed and then starts
-			const scrollTopSetterSpy = vi.spyOn(Element.prototype, 'scrollTop', 'set');
-			const screen = await renderTable({
-				rows: [
-					{id: 'row-1', name: 'Order process'},
-					{id: 'row-2', name: 'Shipping process'},
-					{id: 'row-3', name: 'Invoice process'},
-				],
-				onVerticalScrollStartReach: vi.fn(),
-				onVerticalScrollEndReach: vi.fn(),
-			});
-			const observer = getObserver();
-			const topSentinel = screen.getByTestId('sortable-table-top-sentinel').element();
-			observer.intersect(topSentinel);
-			screen.setIsFetchingPreviousPage(true);
-			await expect.poll(() => scrollTopSetterSpy.mock.calls.length).toBeGreaterThan(0);
-			scrollTopSetterSpy.mockClear();
-
-			// when: the fetch is cancelled by an unrelated query-key change (e.g. a filter), which
-			// lands `isFetchingPreviousPage: false` and the new, differently-ordered rows in the
-			// same commit - row-2 is gone and the surviving rows (row-1, row-3) no longer trail in
-			// their original relative order
-			screen.setIsFetchingPreviousPage(false);
-			screen.setRows([
-				{id: 'row-9', name: 'New filtered process'},
-				{id: 'row-3', name: 'Invoice process'},
-				{id: 'row-1', name: 'Order process'},
-			]);
-			await expect.element(screen.getByText('New filtered process')).toBeVisible();
-
-			// then: this is not misread as the previous page having been prepended - only the
-			// earlier skeleton-insertion compensation is reverted by the give-up effect, no
-			// additional scrollDown is applied for a prepend that never happened
-			expect(scrollTopSetterSpy).toHaveBeenCalledTimes(1);
-			scrollTopSetterSpy.mockRestore();
-		});
-
-		it('should not misread cached data for a new query as a completed prepend when a previous-page fetch is cancelled by a sort/filter change whose cached result coincidentally shares a trailing run of row ids', async () => {
-			// given: a previous-page fetch is armed and genuinely starts
-			const screen = await renderTable({
-				rows: [
-					{id: 'row-1', name: 'Order process'},
-					{id: 'row-2', name: 'Shipping process'},
-					{id: 'row-3', name: 'Invoice process'},
-				],
-				onVerticalScrollStartReach: vi.fn(),
-				onVerticalScrollEndReach: vi.fn(),
-			});
-			const container = screen.getByTestId('table').element() as HTMLElement;
-			const scrollToSpy = vi.spyOn(container, 'scrollTo').mockImplementation(() => {});
-			const observer = getObserver();
-			const topSentinel = screen.getByTestId('sortable-table-top-sentinel').element();
-			Object.defineProperty(container, 'scrollTop', {value: 100, writable: true, configurable: true});
-			observer.intersect(topSentinel);
-			Object.defineProperty(container, 'scrollTop', {value: 20, writable: true, configurable: true});
-			observer.intersect(topSentinel);
-			screen.setIsFetchingPreviousPage(true);
-			await expect.element(screen.getByText('Loading previous rows')).toBeVisible();
-
-			// when: a sort/filter change cancels the pagination fetch (`isFetchingPreviousPage`
-			// flips back to `false`) and starts a full refetch (`isFetching`) for an entirely
-			// different query, all landing in the same commit together with that new query's
-			// cached rows - which happen to continue the stale baseline's surviving rows in order
-			// purely by coincidence (e.g. the same rows, just re-sorted). Row-order continuity
-			// alone can't tell this apart from the original fetch's genuine prepend.
-			screen.setIsFetchingPreviousPage(false);
-			screen.setIsFetching(true);
-			screen.setRows([
-				{id: 'row-9', name: 'Coincidentally ordered process'},
-				{id: 'row-1', name: 'Order process'},
-				{id: 'row-2', name: 'Shipping process'},
-			]);
-			await expect.element(screen.getByText('Coincidentally ordered process')).toBeVisible();
-
-			// then: this is not misread as the original fetch's prepend, since the full refetch
-			// disarmed the baseline - tied to query identity via `isFetching` - before this rows
-			// change could be compared against it. No scrollDown is applied for a prepend that
-			// never happened against this query.
-			expect(scrollToSpy).not.toHaveBeenCalled();
-		});
-
-		it('should not misread cached data for a swapped query as a completed append when the armed fetch never actually started', async () => {
-			// given: a next-page fetch is armed, but `isFetchingNextPage` never flips `true` -
-			// nothing was ever actually fetched for this baseline
-			const scrollToSpy = vi.fn();
-			const screen = await renderTable({
-				rows: [
-					{id: 'row-1', name: 'Order process'},
-					{id: 'row-2', name: 'Shipping process'},
-					{id: 'row-3', name: 'Invoice process'},
-				],
-				onVerticalScrollStartReach: vi.fn(),
-				onVerticalScrollEndReach: vi.fn(),
-			});
-			const container = screen.getByTestId('table').element() as HTMLElement;
-			vi.spyOn(container, 'scrollTo').mockImplementation(scrollToSpy);
-			const observer = getObserver();
-			const bottomSentinel = screen.getByTestId('sortable-table-bottom-sentinel').element();
-			Object.defineProperty(container, 'scrollTop', {value: 20, writable: true, configurable: true});
-			observer.intersect(bottomSentinel);
-
-			// when: a query-key change (e.g. a filter) instead lands cached data for a different
-			// query in the same slot, and that data happens to continue the stale baseline's
-			// surviving rows in order purely by coincidence (e.g. the same unfiltered rows, just
-			// re-paged) - a row-order check alone can't tell this apart from a genuine append
-			screen.setRows([
-				{id: 'row-2', name: 'Shipping process'},
-				{id: 'row-3', name: 'Invoice process'},
-				{id: 'row-9', name: 'Coincidentally ordered process'},
-			]);
-			await expect.element(screen.getByText('Coincidentally ordered process')).toBeVisible();
-
-			// then: this is not misread as the next page having evicted the top row, since no fetch
-			// was ever observed to have started for this baseline
-			expect(scrollToSpy).not.toHaveBeenCalled();
-		});
-
-		it('should not misread cached data for a swapped query as a completed prepend when the armed fetch never actually started', async () => {
-			// given: a previous-page fetch is armed, but `isFetchingPreviousPage` never flips
-			// `true` - nothing was ever actually fetched for this baseline
-			const scrollToSpy = vi.fn();
-			const screen = await renderTable({
-				rows: [
-					{id: 'row-1', name: 'Order process'},
-					{id: 'row-2', name: 'Shipping process'},
-					{id: 'row-3', name: 'Invoice process'},
-				],
-				onVerticalScrollStartReach: vi.fn(),
-				onVerticalScrollEndReach: vi.fn(),
-			});
-			const container = screen.getByTestId('table').element() as HTMLElement;
-			vi.spyOn(container, 'scrollTo').mockImplementation(scrollToSpy);
-			const observer = getObserver();
-			const topSentinel = screen.getByTestId('sortable-table-top-sentinel').element();
-			Object.defineProperty(container, 'scrollTop', {value: 100, writable: true, configurable: true});
-			observer.intersect(topSentinel);
-			Object.defineProperty(container, 'scrollTop', {value: 20, writable: true, configurable: true});
-			observer.intersect(topSentinel);
-
-			// when: a query-key change (e.g. a filter) instead lands cached data for a different
-			// query in the same slot, and that data happens to continue the stale baseline's
-			// surviving rows in order purely by coincidence
-			screen.setRows([
-				{id: 'row-9', name: 'Coincidentally ordered process'},
-				{id: 'row-1', name: 'Order process'},
-				{id: 'row-2', name: 'Shipping process'},
-				{id: 'row-3', name: 'Invoice process'},
-			]);
-			await expect.element(screen.getByText('Coincidentally ordered process')).toBeVisible();
-
-			// then: this is not misread as a prepend, since no fetch was ever observed to have
-			// started for this baseline
-			expect(scrollToSpy).not.toHaveBeenCalled();
-		});
-
-		it('should not scroll up by the full previous height when a next-page fetch is cancelled by a completely disjoint rows swap', async () => {
-			// given: a next-page fetch is armed and genuinely starts
-			const scrollToSpy = vi.fn();
-			const screen = await renderTable({
-				rows: [
-					{id: 'row-1', name: 'Order process'},
-					{id: 'row-2', name: 'Shipping process'},
-					{id: 'row-3', name: 'Invoice process'},
-				],
-				onVerticalScrollStartReach: vi.fn(),
-				onVerticalScrollEndReach: vi.fn(),
-			});
-			const container = screen.getByTestId('table').element() as HTMLElement;
-			vi.spyOn(container, 'scrollTo').mockImplementation(scrollToSpy);
-			const observer = getObserver();
-			const bottomSentinel = screen.getByTestId('sortable-table-bottom-sentinel').element();
-			Object.defineProperty(container, 'scrollTop', {value: 20, writable: true, configurable: true});
-			observer.intersect(bottomSentinel);
-			screen.setIsFetchingNextPage(true);
-			// force this to commit as its own render (instead of batching with the cancellation
-			// below), so the fetch is genuinely observed to have started
-			await expect.element(screen.getByTestId('table-loading-next')).toBeVisible();
-
-			// when: the fetch is cancelled by an unrelated query-key change (e.g. a filter) whose
-			// result shares zero rows with the baseline - none of row-1/row-2/row-3 survive
-			screen.setIsFetchingNextPage(false);
-			screen.setRows([
-				{id: 'row-20', name: 'Entirely different process'},
-				{id: 'row-21', name: 'Another different process'},
-			]);
-			await expect.element(screen.getByText('Entirely different process')).toBeVisible();
-
-			// then: with zero surviving rows, this can't be distinguished from a genuine append at
-			// all - it must not be misread as every previous row having been evicted from the top,
-			// which would otherwise scroll up by their full height for no reason
-			expect(scrollToSpy).not.toHaveBeenCalled();
-		});
-
-		it('should correctly compensate end-to-end when a top-sentinel-triggered prepend goes through the full skeleton lifecycle (fetch start, skeleton mount+compensate, rows arrive)', async () => {
-			// given: a realistic scrollTop that reads and writes like a real scrollable container,
-			// instead of the static per-assertion overrides the other tests use - this test exercises
-			// the full production sequence (sentinel -> isFetchingPreviousPage -> rows) in one go, so
-			// the compensation the skeleton effect applies must be visible to the later restore effect.
-			let currentScrollTop = 100;
-			const screen = await renderTable({
-				onVerticalScrollStartReach: vi.fn(),
-				onVerticalScrollEndReach: vi.fn(),
-			});
-			const container = screen.getByTestId('table').element() as HTMLElement;
-			Object.defineProperty(container, 'scrollTop', {
-				configurable: true,
-				get: () => currentScrollTop,
-				set: (value: number) => {
-					currentScrollTop = value;
-				},
-			});
-			const scrollToSpy = vi.spyOn(container, 'scrollTo').mockImplementation(() => {});
-			const observer = getObserver();
-			const topSentinel = screen.getByTestId('sortable-table-top-sentinel').element();
-
-			// when: the user scrolls up and reaches the top sentinel, which would normally prompt
-			// the consumer to start fetching the previous page
-			currentScrollTop = 100;
-			observer.intersect(topSentinel);
-			currentScrollTop = 20;
-			observer.intersect(topSentinel);
-
-			// and: the consumer (in response to the above) flips isFetchingPreviousPage, which mounts
-			// the skeleton row and should immediately compensate for its height
-			screen.setIsFetchingPreviousPage(true);
-			await expect.element(screen.getByTestId('table-loading-previous')).toBeVisible();
-			const skeletonRow = screen.getByTestId('table-loading-previous').element().closest('[data-slot="table-row"]')!;
-			const skeletonHeight = skeletonRow.getBoundingClientRect().height;
-			expect(skeletonHeight).toBeGreaterThan(0);
-			expect(currentScrollTop).toBe(20 + skeletonHeight);
-
-			// and: the fetch resolves with the real previous page, replacing the skeleton
-			screen.setRows([
-				{id: 'row-0', name: 'Prepended process'},
-				{id: 'row-1', name: 'Order process'},
-				{id: 'row-2', name: 'Shipping process'},
-			]);
-			screen.setIsFetchingPreviousPage(false);
-
-			// then: the net scroll adjustment is the real prepended height only - the skeleton's own
-			// compensation and the final restore cancel out, landing exactly where the no-skeleton
-			// case above does, with no double-compensation or leftover offset
-			await expect.poll(() => scrollToSpy.mock.calls.length).toBeGreaterThan(0);
-			const prependedRowHeight = screen
-				.getByText('Prepended process')
-				.element()
-				.closest('[data-slot="table-row"]')!
-				.getBoundingClientRect().height;
-			expect(scrollToSpy).toHaveBeenCalledWith(0, 20 + prependedRowHeight);
+			await expect.poll(() => document.querySelectorAll('[data-slot="data-table-skeleton-row"]').length).toBe(1);
+			expect(screen.getByTestId('table-loading-overlay').elements()).toHaveLength(0);
 		});
 	});
 });
