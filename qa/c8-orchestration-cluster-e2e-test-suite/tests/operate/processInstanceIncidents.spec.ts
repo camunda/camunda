@@ -77,7 +77,7 @@ test.describe('Process Instance', () => {
     await captureFailureVideo(page, testInfo);
   });
 
-  test('Resolve an incident', async ({operateProcessInstancePage}) => {
+  test('Resolve an incident', async ({operateProcessInstancePage, page}) => {
     await test.step('Navigate to process instance with incident', async () => {
       await operateProcessInstancePage.gotoProcessInstancePage({
         id: instanceWithIncidentToResolve.processInstanceKey,
@@ -135,6 +135,13 @@ test.describe('Process Instance', () => {
     });
 
     await test.step('Add variable isCool', async () => {
+      // The variables footer is rendered continuously beside the inline incidents
+      // view, so after the in-place goUp edit and the incident retry it stays
+      // stuck in its disabled variant. Reload to remount the variables panel with
+      // a clean form (the same refresh the sibling processInstanceVariables edit
+      // flow relies on) before adding a variable.
+      await page.reload();
+      await expect(operateProcessInstancePage.addVariableButton).toBeEnabled();
       await operateProcessInstancePage.addVariableButton.click();
 
       await operateProcessInstancePage.newVariableNameField.type('isCool');
@@ -148,6 +155,13 @@ test.describe('Process Instance', () => {
     });
 
     await test.step('Retry second incident to resolve it', async () => {
+      // The reload above collapsed the inline incidents view (it loads collapsed,
+      // as the earlier expand step shows); re-open it before retrying.
+      await expect(operateProcessInstancePage.incidentsBanner).toContainText(
+        /view/i,
+      );
+      await operateProcessInstancePage.incidentsBanner.click();
+      await expect(operateProcessInstancePage.incidentTypeFilter).toBeVisible();
       await operateProcessInstancePage.retryIncident(/Extract value error/i);
 
       await expect(
