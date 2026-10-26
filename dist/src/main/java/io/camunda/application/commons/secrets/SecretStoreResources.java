@@ -59,7 +59,7 @@ public final class SecretStoreResources implements AutoCloseable {
    */
   @Override
   public void close() {
-    drain(pools);
+    drain();
     pools.clear();
     for (final var store : stores) {
       try {
@@ -73,7 +73,7 @@ public final class SecretStoreResources implements AutoCloseable {
     meterRegistries.clear();
   }
 
-  private static void drain(final List<ExecutorService> pools) {
+  private void drain() {
     pools.forEach(ExecutorService::shutdown);
     final var deadline = System.nanoTime() + DRAIN_TIMEOUT.toNanos();
     var interrupted = false;
