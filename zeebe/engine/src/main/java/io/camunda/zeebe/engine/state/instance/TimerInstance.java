@@ -11,6 +11,7 @@ import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
 import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.msgpack.UnpackedObject;
+import io.camunda.zeebe.msgpack.property.BooleanProperty;
 import io.camunda.zeebe.msgpack.property.EnumProperty;
 import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
@@ -43,6 +44,8 @@ public final class TimerInstance extends UnpackedObject implements DbValue, Tena
       new EnumProperty<>(
           new StringValue("elementType"), BpmnElementType.class, BpmnElementType.UNSPECIFIED);
 
+  private final BooleanProperty heldProp = new BooleanProperty("held", false);
+
   public TimerInstance() {
     super(12);
     declareProperty(handlerNodeIdProp)
@@ -56,7 +59,8 @@ public final class TimerInstance extends UnpackedObject implements DbValue, Tena
         .declareProperty(rootProcessInstanceKeyProp)
         .declareProperty(storageOrdinalProp)
         .declareProperty(bpmnProcessIdProp)
-        .declareProperty(elementTypeProp);
+        .declareProperty(elementTypeProp)
+        .declareProperty(heldProp);
   }
 
   public long getElementInstanceKey() {
@@ -166,6 +170,15 @@ public final class TimerInstance extends UnpackedObject implements DbValue, Tena
 
   public TimerInstance setElementType(final BpmnElementType elementType) {
     elementTypeProp.setValue(elementType);
+    return this;
+  }
+
+  public boolean isHeld() {
+    return heldProp.getValue();
+  }
+
+  public TimerInstance setHeld(final boolean held) {
+    heldProp.setValue(held);
     return this;
   }
 }

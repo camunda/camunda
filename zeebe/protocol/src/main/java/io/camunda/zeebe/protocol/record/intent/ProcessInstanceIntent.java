@@ -99,7 +99,15 @@ public enum ProcessInstanceIntent implements ProcessInstanceRelatedIntent {
    * Marks the instance as suspending while its subscriptions are closed and jobs are suspended,
    * before {@link #SUSPENDED} is written in the same processing batch.
    */
-  SUSPENDING((short) 24);
+  SUSPENDING((short) 24),
+
+  /**
+   * Represents the internal command that starts the process a stubbed call activity calls after
+   * all, instead of standing in for it. The stub job's completion writes it when the completer asks
+   * for the real called process; a stubbed call activity is waiting in {@link #ELEMENT_ACTIVATED},
+   * so the child instance is created from this command rather than during activation.
+   */
+  START_CALLED_PROCESS((short) 25, false);
 
   private static final Set<ProcessInstanceIntent> PROCESS_INSTANCE_COMMANDS =
       EnumSet.of(CANCEL, SUSPEND, RESUME, COMPLETE_RESUMING, RESUME_JOBS);
@@ -109,7 +117,8 @@ public enum ProcessInstanceIntent implements ProcessInstanceRelatedIntent {
           COMPLETE_ELEMENT,
           TERMINATE_ELEMENT,
           COMPLETE_EXECUTION_LISTENER,
-          CONTINUE_TERMINATING_ELEMENT);
+          CONTINUE_TERMINATING_ELEMENT,
+          START_CALLED_PROCESS);
 
   private final short value;
   private final boolean shouldBanInstance;
@@ -179,6 +188,8 @@ public enum ProcessInstanceIntent implements ProcessInstanceRelatedIntent {
         return RESUME_JOBS;
       case 24:
         return SUSPENDING;
+      case 25:
+        return START_CALLED_PROCESS;
       default:
         return Intent.UNKNOWN;
     }

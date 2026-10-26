@@ -27,10 +27,17 @@ import io.camunda.process.test.api.testCases.instructions.AssertVariableInstruct
 import io.camunda.process.test.api.testCases.instructions.AssertVariableInstruction.SemanticSimilarityAssertion;
 import io.camunda.process.test.impl.testCases.AssertionFacade;
 import io.camunda.process.test.impl.testCases.TestCaseInstructionHandler;
+import io.camunda.process.test.impl.testCases.TestRunContext;
 import java.util.Optional;
 
 public class AssertVariableInstructionHandler
     implements TestCaseInstructionHandler<AssertVariableInstruction> {
+
+  private final TestRunContext runContext;
+
+  public AssertVariableInstructionHandler(final TestRunContext runContext) {
+    this.runContext = runContext;
+  }
 
   @Override
   public void execute(
@@ -41,7 +48,7 @@ public class AssertVariableInstructionHandler
 
     final ProcessInstanceSelector processInstanceSelector =
         InstructionSelectorFactory.buildProcessInstanceSelector(
-            instruction.getProcessInstanceSelector());
+            instruction.getProcessInstanceSelector(), runContext);
     final Optional<ElementSelector> elementSelector =
         instruction.getElementSelector().map(InstructionSelectorFactory::buildElementSelector);
     final ProcessInstanceAssert baseAssert =

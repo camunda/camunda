@@ -99,6 +99,45 @@ public interface ProcessInstanceCreationRecordValue
    */
   Map<String, VariableMetadataValue> getVariablesMetadata();
 
+  /**
+   * Returns whether the call activities of this process instance are stubbed. A stubbed call
+   * activity starts no child process instance: it activates and waits on a job that a caller
+   * completes, either supplying the result variables the called process would have produced, or
+   * asking the engine to start the real child process after all.
+   *
+   * @return {@code true} if the call activities of this process instance are stubbed
+   * @since 8.11
+   */
+  default boolean isStubCallActivities() {
+    return false;
+  }
+
+  /**
+   * Returns whether the timers of this process instance are held back from the scheduler. A held
+   * timer does not fire on its due date; it fires only when triggered explicitly via the trigger
+   * command. Holding a timer keeps it out of the due-date scheduler while leaving the instance
+   * otherwise drivable.
+   *
+   * @return {@code true} if the timers of this process instance are held
+   * @since 8.11
+   */
+  default boolean isHoldTimers() {
+    return false;
+  }
+
+  /**
+   * Returns the token that reserves this process instance's jobs for the caller, set from the
+   * configure-execution instruction when {@code reserveJobs} is requested. Reserved jobs are not
+   * handed to job workers that activate normally, and their complete, fail and throw-error commands
+   * are rejected unless the same token is supplied.
+   *
+   * @return the job reservation token, or an empty string if the instance was not reserved
+   * @since 8.11
+   */
+  default String getJobReservationToken() {
+    return "";
+  }
+
   @Value.Immutable
   @ImmutableProtocol(builder = ImmutableProcessInstanceCreationStartInstructionValue.Builder.class)
   interface ProcessInstanceCreationStartInstructionValue {

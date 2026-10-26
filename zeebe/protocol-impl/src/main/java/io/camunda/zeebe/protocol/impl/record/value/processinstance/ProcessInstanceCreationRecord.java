@@ -12,6 +12,7 @@ import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.zeebe.msgpack.property.ArrayProperty;
+import io.camunda.zeebe.msgpack.property.BooleanProperty;
 import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
@@ -49,6 +50,10 @@ public final class ProcessInstanceCreationRecord extends UnifiedRecordValue
   private static final StringValue STORAGE_ORDINAL_KEY = new StringValue("storageOrdinal");
   private static final StringValue BUSINESS_ID_KEY = new StringValue("businessId");
   private static final StringValue VERSION_TAG_KEY = new StringValue("versionTag");
+  private static final StringValue STUB_CALL_ACTIVITIES_KEY = new StringValue("stubCallActivities");
+  private static final StringValue HOLD_TIMERS_KEY = new StringValue("holdTimers");
+  private static final StringValue JOB_RESERVATION_TOKEN_KEY =
+      new StringValue("jobReservationToken");
 
   private final StringProperty bpmnProcessIdProperty = new StringProperty(BPMN_PROCESS_ID_KEY, "");
   private final LongProperty processDefinitionKeyProperty =
@@ -76,9 +81,14 @@ public final class ProcessInstanceCreationRecord extends UnifiedRecordValue
       new IntegerProperty(STORAGE_ORDINAL_KEY, 0);
   private final StringProperty businessIdProperty = new StringProperty(BUSINESS_ID_KEY, "");
   private final StringProperty versionTagProperty = new StringProperty(VERSION_TAG_KEY, "");
+  private final BooleanProperty stubCallActivitiesProperty =
+      new BooleanProperty(STUB_CALL_ACTIVITIES_KEY, false);
+  private final BooleanProperty holdTimersProperty = new BooleanProperty(HOLD_TIMERS_KEY, false);
+  private final StringProperty jobReservationTokenProperty =
+      new StringProperty(JOB_RESERVATION_TOKEN_KEY, "");
 
   public ProcessInstanceCreationRecord() {
-    super(13);
+    super(17);
     declareProperty(bpmnProcessIdProperty)
         .declareProperty(processDefinitionKeyProperty)
         .declareProperty(processInstanceKeyProperty)
@@ -91,7 +101,10 @@ public final class ProcessInstanceCreationRecord extends UnifiedRecordValue
         .declareProperty(rootProcessInstanceKeyProperty)
         .declareProperty(storageOrdinalProperty)
         .declareProperty(businessIdProperty)
-        .declareProperty(versionTagProperty);
+        .declareProperty(versionTagProperty)
+        .declareProperty(stubCallActivitiesProperty)
+        .declareProperty(holdTimersProperty)
+        .declareProperty(jobReservationTokenProperty);
     declareProperties(variablesPropertyGroup);
   }
 
@@ -319,6 +332,47 @@ public final class ProcessInstanceCreationRecord extends UnifiedRecordValue
   @JsonIgnore
   public DirectBuffer getBusinessIdBuffer() {
     return businessIdProperty.getValue();
+  }
+
+  @Override
+  public boolean isStubCallActivities() {
+    return stubCallActivitiesProperty.getValue();
+  }
+
+  public ProcessInstanceCreationRecord setStubCallActivities(final boolean stubCallActivities) {
+    stubCallActivitiesProperty.setValue(stubCallActivities);
+    return this;
+  }
+
+  @Override
+  public boolean isHoldTimers() {
+    return holdTimersProperty.getValue();
+  }
+
+  public ProcessInstanceCreationRecord setHoldTimers(final boolean holdTimers) {
+    holdTimersProperty.setValue(holdTimers);
+    return this;
+  }
+
+  @Override
+  public String getJobReservationToken() {
+    return BufferUtil.bufferAsString(jobReservationTokenProperty.getValue());
+  }
+
+  public ProcessInstanceCreationRecord setJobReservationToken(final String jobReservationToken) {
+    jobReservationTokenProperty.setValue(jobReservationToken);
+    return this;
+  }
+
+  public ProcessInstanceCreationRecord setJobReservationToken(
+      final DirectBuffer jobReservationToken) {
+    jobReservationTokenProperty.setValue(jobReservationToken);
+    return this;
+  }
+
+  @JsonIgnore
+  public DirectBuffer getJobReservationTokenBuffer() {
+    return jobReservationTokenProperty.getValue();
   }
 
   @Override

@@ -70,6 +70,7 @@ import io.camunda.service.SecretServices;
 import io.camunda.service.SignalServices;
 import io.camunda.service.TenantRestoreEnvironment;
 import io.camunda.service.TenantServices;
+import io.camunda.service.TimerServices;
 import io.camunda.service.TopologyServices;
 import io.camunda.service.UsageMetricsServices;
 import io.camunda.service.UserServices;
@@ -537,6 +538,10 @@ public class CamundaServicesConfiguration {
                           search,
                           executor,
                           converter))
+                  .timerServices(
+                      tenantId,
+                      new TimerServices(
+                          tenantId, brokerClient, securityContextProvider, executor, converter))
                   .topologyServices(tenantId, topology)
                   .usageMetricsServices(
                       tenantId,

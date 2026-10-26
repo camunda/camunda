@@ -1,0 +1,79 @@
+## Endpoint definitions
+
+paths:
+  /process-instances/{processInstanceKey}/timers/trigger:
+    post:
+      x-eventually-consistent: false
+      tags:
+        - Timer
+      operationId: triggerTimer
+      x-required-permissions:
+        - {
+            resourceType: PROCESS_DEFINITION,
+            permissionType: UPDATE_PROCESS_INSTANCE,
+          }
+      security:
+        - bearerAuth: []
+        - basicAuth: []
+      summary: Trigger timer
+      description: |
+        Triggers a held timer of a process instance immediately, firing its catch event without
+        waiting for the due date. The timer is addressed by the process instance and the BPMN
+        element id of its timer catch event. Only timers of process instances started with held
+        timers can be triggered, and exactly one held timer must match the element.
+      parameters:
+        - name: processInstanceKey
+          in: path
+          required: true
+          description: The key of the process instance that owns the held timer.
+          schema:
+            $ref: "keys.yaml#/components/schemas/ProcessInstanceKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TimerTriggerRequest"
+      responses:
+        "204":
+          description: The timer was triggered.
+        "400":
+          $ref: "common-responses.yaml#/components/responses/InvalidData"
+        "401":
+          $ref: "common-responses.yaml#/components/responses/Unauthorized"
+        "403":
+          $ref: "common-responses.yaml#/components/responses/Forbidden"
+        "404":
+          description: No held timer was found for the process instance at the given element.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "problem-detail.yaml#/components/schemas/ProblemDetail"
+        "409":
+          description: |
+            The timer cannot be triggered due to an invalid state, for example when more than one
+            held timer matches the element.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "problem-detail.yaml#/components/schemas/ProblemDetail"
+        "500":
+          $ref: "common-responses.yaml#/components/responses/InternalServerError"
+        "503":
+          $ref: "common-responses.yaml#/components/responses/ServiceUnavailable"
+      x-added-in-version: "8.10"
+      x-scope: physical-tenant
+
+components:
+  schemas:
+    TimerTriggerRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - elementId
+      properties:
+        elementId:
+          description: |
+            The BPMN element id of the timer catch event whose held timer should be triggered.
+          type: string
+          minLength: 1

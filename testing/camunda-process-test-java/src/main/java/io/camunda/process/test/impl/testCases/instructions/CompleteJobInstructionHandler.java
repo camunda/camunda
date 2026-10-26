@@ -21,9 +21,16 @@ import io.camunda.process.test.api.assertions.JobSelector;
 import io.camunda.process.test.api.testCases.instructions.CompleteJobInstruction;
 import io.camunda.process.test.impl.testCases.AssertionFacade;
 import io.camunda.process.test.impl.testCases.TestCaseInstructionHandler;
+import io.camunda.process.test.impl.testCases.TestRunContext;
 
 public class CompleteJobInstructionHandler
     implements TestCaseInstructionHandler<CompleteJobInstruction> {
+
+  private final TestRunContext runContext;
+
+  public CompleteJobInstructionHandler(final TestRunContext runContext) {
+    this.runContext = runContext;
+  }
 
   @Override
   public void execute(
@@ -33,7 +40,8 @@ public class CompleteJobInstructionHandler
       final AssertionFacade assertionFacade) {
 
     final JobSelector jobSelector =
-        InstructionSelectorFactory.buildJobSelector(instruction.getJobSelector());
+        InstructionSelectorFactory.buildJobSelector(
+            instruction.getJobSelector(), runContext, camundaClient);
 
     if (instruction.getUseExampleData()) {
       context.completeJobWithExampleData(jobSelector);

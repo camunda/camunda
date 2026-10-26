@@ -41,6 +41,11 @@ public final class BrokerCompleteJobRequest extends BrokerExecuteCommand<JobReco
     return this;
   }
 
+  public BrokerCompleteJobRequest setJobReservationToken(final String jobReservationToken) {
+    requestDto.setJobReservationToken(jobReservationToken);
+    return this;
+  }
+
   public BrokerCompleteJobRequest setBusinessId(final String businessId) {
     requestDto.setBusinessId(businessId);
     return this;

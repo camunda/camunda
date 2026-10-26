@@ -84,6 +84,7 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ElementInstan
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceBusinessIdRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRuntimeInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationStartInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceMigrationMappingInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceMigrationRecord;
@@ -135,6 +136,7 @@ import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.protocol.record.value.ProtectionMode;
 import io.camunda.zeebe.protocol.record.value.ResolutionState;
 import io.camunda.zeebe.protocol.record.value.ResourceType;
+import io.camunda.zeebe.protocol.record.value.RuntimeInstructionType;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.protocol.record.value.UsageMetricRecordValue.EventType;
 import io.camunda.zeebe.protocol.record.value.UsageMetricRecordValue.IntervalType;
@@ -918,6 +920,7 @@ final class JsonSerializableToJsonTest {
                       "priority": 0,
                       "businessId": "",
                       "jobLeaseToken": "",
+                      "jobReservationToken": "",
                       "jobKind": "BPMN_ELEMENT",
                       "jobListenerEventType": "UNSPECIFIED",
                       "retryBackoff": 1002,
@@ -968,7 +971,8 @@ final class JsonSerializableToJsonTest {
                           }
                         ],
                         "completionConditionFulfilled": true,
-                        "cancelRemainingInstances": true
+                        "cancelRemainingInstances": true,
+                        "runCalledProcess": false
                       },
                       "secretReferences": []
                     }
@@ -1117,6 +1121,7 @@ final class JsonSerializableToJsonTest {
                   "priority": 42,
                   "businessId": "biz-42",
                   "jobLeaseToken": "lease-abc-123",
+                  "jobReservationToken": "",
                   "jobKind": "BPMN_ELEMENT",
                   "jobListenerEventType": "UNSPECIFIED",
                   "retryBackoff": 1003,
@@ -1169,7 +1174,8 @@ final class JsonSerializableToJsonTest {
                       }
                     ],
                     "completionConditionFulfilled": true,
-                    "cancelRemainingInstances": true
+                    "cancelRemainingInstances": true,
+                    "runCalledProcess": false
                   },
                   "secretReferences": [
                     {
@@ -1206,6 +1212,7 @@ final class JsonSerializableToJsonTest {
                   "priority": 0,
                   "businessId": "",
                   "jobLeaseToken": "",
+                  "jobReservationToken": "",
                   "jobKind": "BPMN_ELEMENT",
                   "jobListenerEventType": "UNSPECIFIED",
                   "retryBackoff": 0,
@@ -1236,7 +1243,8 @@ final class JsonSerializableToJsonTest {
                     },
                     "activateElements": [],
                     "completionConditionFulfilled": false,
-                    "cancelRemainingInstances": false
+                    "cancelRemainingInstances": false,
+                    "runCalledProcess": false
                   },
                   "secretReferences": []
                 }
@@ -1274,6 +1282,7 @@ final class JsonSerializableToJsonTest {
                   "priority": 0,
                   "businessId": "",
                   "jobLeaseToken": "",
+                  "jobReservationToken": "",
                   "jobKind": "BPMN_ELEMENT",
                   "jobListenerEventType": "UNSPECIFIED",
                   "retryBackoff": 0,
@@ -1302,7 +1311,8 @@ final class JsonSerializableToJsonTest {
                     },
                     "activateElements": [],
                     "completionConditionFulfilled": false,
-                    "cancelRemainingInstances": false
+                    "cancelRemainingInstances": false,
+                    "runCalledProcess": false
                   },
                   "secretReferences": []
                 }
@@ -1705,7 +1715,8 @@ final class JsonSerializableToJsonTest {
                   "bpmnProcessId": "",
                   "elementId": "node1",
                   "storageOrdinal": 4,
-                  "elementType": "UNSPECIFIED"
+                  "elementType": "UNSPECIFIED",
+                  "held": false
                 }
                 """
       },
@@ -1904,6 +1915,11 @@ final class JsonSerializableToJsonTest {
                           MsgPackConverter.convertToMsgPack("{'foo':'bar','baz':'boz'}")))
                   .addStartInstruction(
                       new ProcessInstanceCreationStartInstruction().setElementId("element"))
+                  .addRuntimeInstruction(
+                      new ProcessInstanceCreationRuntimeInstruction()
+                          .setType(RuntimeInstructionType.TERMINATE_PROCESS_INSTANCE)
+                          .setAfterElementId("element"))
+                  .setJobReservationToken("recorder-session-1")
                   .setProcessInstanceKey(instanceKey)
                   .setTags(Set.of("tag1", "tag2"))
                   .setRootProcessInstanceKey(rootProcessInstanceKey)
@@ -1932,12 +1948,20 @@ final class JsonSerializableToJsonTest {
                     }
                   ],
                   "tenantId": "test-tenant",
-                  "runtimeInstructions": [],
+                  "runtimeInstructions": [
+                    {
+                      "type": "TERMINATE_PROCESS_INSTANCE",
+                      "afterElementId": "element"
+                    }
+                  ],
                   "tags": ["tag1", "tag2"],
                   "rootProcessInstanceKey": 3,
                   "storageOrdinal": 6,
                   "businessId": "business-id-456",
                   "versionTag": "v1.0",
+                  "stubCallActivities": false,
+                  "holdTimers": false,
+                  "jobReservationToken": "recorder-session-1",
                   "variablesMetadata": {
                     "foo": {
                       "protectionModes": ["REDACT"]
@@ -1971,6 +1995,9 @@ final class JsonSerializableToJsonTest {
                   "storageOrdinal": 0,
                   "businessId": "",
                   "versionTag": "",
+                  "stubCallActivities": false,
+                  "holdTimers": false,
+                  "jobReservationToken": "",
                   "variablesMetadata": {},
                   "elementInstanceKey": -1
                 }
@@ -2159,6 +2186,9 @@ final class JsonSerializableToJsonTest {
                   "storageOrdinal": 6,
                   "businessId": "business-id-123",
                   "resumeFromJobKey": -1,
+                  "jobReservationToken": "",
+                  "stubCallActivities": false,
+                  "holdTimers": false,
                   "elementInstanceKey": -1
                 }
                 """
@@ -2193,6 +2223,9 @@ final class JsonSerializableToJsonTest {
                   "storageOrdinal": 0,
                   "businessId": "",
                   "resumeFromJobKey": -1,
+                  "jobReservationToken": "",
+                  "stubCallActivities": false,
+                  "holdTimers": false,
                   "elementInstanceKey": -1
                 }
                 """
@@ -3035,6 +3068,9 @@ final class JsonSerializableToJsonTest {
                     "storageOrdinal": 0,
                     "businessId": "",
                     "resumeFromJobKey": -1,
+                  "jobReservationToken": "",
+                  "stubCallActivities": false,
+                  "holdTimers": false,
                     "elementInstanceKey": -1
                   }
                 }

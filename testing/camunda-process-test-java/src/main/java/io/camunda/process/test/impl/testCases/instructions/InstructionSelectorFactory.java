@@ -15,6 +15,16 @@
  */
 package io.camunda.process.test.impl.testCases.instructions;
 
+import io.camunda.client.CamundaClient;
+import io.camunda.client.api.search.filter.IncidentFilter;
+import io.camunda.client.api.search.filter.JobFilter;
+import io.camunda.client.api.search.filter.ProcessInstanceFilter;
+import io.camunda.client.api.search.filter.UserTaskFilter;
+import io.camunda.client.api.search.filter.builder.BasicLongProperty;
+import io.camunda.client.api.search.response.Incident;
+import io.camunda.client.api.search.response.Job;
+import io.camunda.client.api.search.response.ProcessInstance;
+import io.camunda.client.api.search.response.UserTask;
 import io.camunda.process.test.api.assertions.DecisionSelector;
 import io.camunda.process.test.api.assertions.DecisionSelectors;
 import io.camunda.process.test.api.assertions.ElementSelector;
@@ -27,12 +37,67 @@ import io.camunda.process.test.api.assertions.ProcessInstanceSelector;
 import io.camunda.process.test.api.assertions.ProcessInstanceSelectors;
 import io.camunda.process.test.api.assertions.UserTaskSelector;
 import io.camunda.process.test.api.assertions.UserTaskSelectors;
+import io.camunda.process.test.impl.testCases.TestRunContext;
+import java.util.Collections;
+import java.util.List;
+import java.util.function.Consumer;
+import java.util.function.LongConsumer;
+import java.util.stream.Collectors;
 
 /** Factory for creating selector instances from DSL selectors. */
 final class InstructionSelectorFactory {
 
+  /** Mirrors {@code Protocol.CALL_ACTIVITY_STUB_JOB_TYPE}, which is not on this module's path. */
+  private static final String CALL_ACTIVITY_STUB_JOB_TYPE = "io.camunda.zeebe:callActivityStub";
+
+  // Impossible process instance key, applied when the run's instance is not visible yet so the
+  // job/user-task/incident search matches nothing and its surrounding await retries.
+  private static final long NO_MATCH_KEY = -1L;
+
   private InstructionSelectorFactory() {
     // Utility class
+  }
+
+  /**
+   * Builds a process instance selector, scoping it to the current test run when isolation is
+   * enabled. The run scope is added as a variable filter on the instance search, so it narrows the
+   * search in the backend rather than post-filtering a page of results.
+   *
+   * @param dslSelector the DSL process instance selector
+   * @param runContext the current test run context
+   * @return the process instance selector
+   */
+  static ProcessInstanceSelector buildProcessInstanceSelector(
+      final io.camunda.process.test.api.testCases.ProcessInstanceSelector dslSelector,
+      final TestRunContext runContext) {
+    final ProcessInstanceSelector selector = buildProcessInstanceSelector(dslSelector);
+    if (runContext != null && runContext.isEnabled()) {
+      return selector.and(byRunId(runContext.getRunId()));
+    }
+    return selector;
+  }
+
+  private static ProcessInstanceSelector byRunId(final String runId) {
+    // The variable search matches the JSON-encoded stored value, so a string must be passed quoted
+    // (e.g. "\"<uuid>\""). An unquoted value matches no instance.
+    final String runIdFilterValue = "\"" + runId + "\"";
+    return new ProcessInstanceSelector() {
+      @Override
+      public boolean test(final ProcessInstance processInstance) {
+        return true;
+      }
+
+      @Override
+      public void applyFilter(final ProcessInstanceFilter filter) {
+        filter.variables(
+            Collections.singletonMap(TestRunContext.RUN_ID_VARIABLE_NAME, runIdFilterValue));
+      }
+
+      @Override
+      public String describe() {
+        return String.format("%s: '%s'", TestRunContext.RUN_ID_VARIABLE_NAME, runId);
+      }
+    };
   }
 
   /**
@@ -122,6 +187,43 @@ final class InstructionSelectorFactory {
   }
 
   /**
+   * Builds a job selector that identifies the job a stubbed call activity waits on, from a DSL
+   * element selector.
+   *
+   * @param dslSelector the DSL element selector identifying the call activity
+   * @return the job selector
+   * @throws IllegalArgumentException if the call activity is not selected by elementId
+   */
+  static JobSelector buildCallActivityStubJobSelector(
+      final io.camunda.process.test.api.testCases.ElementSelector dslSelector) {
+    if (dslSelector.getElementId().isPresent()) {
+      return JobSelectors.byJobType(CALL_ACTIVITY_STUB_JOB_TYPE)
+          .and(JobSelectors.byElementId(dslSelector.getElementId().get()));
+    }
+    throw new IllegalArgumentException(
+        "The call activity must be selected by elementId; a stub job is keyed by its element id.");
+  }
+
+  /**
+   * Reads the BPMN element id of a timer catch event from a DSL element selector.
+   *
+   * @param dslSelector the DSL element selector identifying the timer catch event
+   * @return the element id
+   * @throws IllegalArgumentException if the element is not selected by elementId
+   */
+  static String buildTimerElementId(
+      final io.camunda.process.test.api.testCases.ElementSelector dslSelector) {
+    return dslSelector
+        .getElementId()
+        .orElseThrow(
+            () ->
+                new IllegalArgumentException(
+                    "The timer catch event must be selected by elementId; a held timer is addressed"
+                        + " by its element id, which for a boundary timer is the boundary event's"
+                        + " own id."));
+  }
+
+  /**
    * Builds an element selector from a DSL element selector.
    *
    * @param dslSelector the DSL element selector
@@ -197,5 +299,147 @@ final class InstructionSelectorFactory {
     }
 
     return selector;
+  }
+
+  // --- Run isolation (phase 2) ---------------------------------------------------------------
+  // Jobs, user tasks and incidents cannot be filtered by the run-ID variable (their search has no
+  // variable filter). So when isolation is on, resolve the instances the run started (by the run-ID
+  // variable alone — the selector need not name a process definition) and scope the search to their
+  // process instance keys. The selector's own job type / element id still narrows to the right job
+  // within those instances. Instances the run did not tag (timer or external starts,
+  // non-propagating
+  // child processes) cannot be resolved this way and will not match.
+
+  static JobSelector buildJobSelector(
+      final io.camunda.process.test.api.testCases.JobSelector dslSelector,
+      final TestRunContext runContext,
+      final CamundaClient client) {
+    final JobSelector selector = buildJobSelector(dslSelector);
+    if (!isScoped(runContext)) {
+      return selector;
+    }
+    return selector.and(
+        new JobSelector() {
+          @Override
+          public boolean test(final Job job) {
+            return true;
+          }
+
+          @Override
+          public void applyFilter(final JobFilter filter) {
+            applyRunInstanceKeys(
+                client,
+                runContext.getRunId(),
+                filter::processInstanceKey,
+                filter::processInstanceKey);
+          }
+
+          @Override
+          public String describe() {
+            return runScopeDescription(runContext.getRunId());
+          }
+        });
+  }
+
+  static UserTaskSelector buildUserTaskSelector(
+      final io.camunda.process.test.api.testCases.UserTaskSelector dslSelector,
+      final TestRunContext runContext,
+      final CamundaClient client) {
+    final UserTaskSelector selector = buildUserTaskSelector(dslSelector);
+    if (!isScoped(runContext)) {
+      return selector;
+    }
+    return selector.and(
+        new UserTaskSelector() {
+          @Override
+          public boolean test(final UserTask userTask) {
+            return true;
+          }
+
+          @Override
+          public void applyFilter(final UserTaskFilter filter) {
+            applyRunInstanceKeys(
+                client,
+                runContext.getRunId(),
+                filter::processInstanceKey,
+                filter::processInstanceKey);
+          }
+
+          @Override
+          public String describe() {
+            return runScopeDescription(runContext.getRunId());
+          }
+        });
+  }
+
+  static IncidentSelector buildIncidentSelector(
+      final io.camunda.process.test.api.testCases.IncidentSelector dslSelector,
+      final TestRunContext runContext,
+      final CamundaClient client) {
+    final IncidentSelector selector = buildIncidentSelector(dslSelector);
+    if (!isScoped(runContext)) {
+      return selector;
+    }
+    return selector.and(
+        new IncidentSelector() {
+          @Override
+          public boolean test(final Incident incident) {
+            return true;
+          }
+
+          @Override
+          public void applyFilter(final IncidentFilter filter) {
+            applyRunInstanceKeys(
+                client,
+                runContext.getRunId(),
+                filter::processInstanceKey,
+                filter::processInstanceKey);
+          }
+
+          @Override
+          public String describe() {
+            return runScopeDescription(runContext.getRunId());
+          }
+        });
+  }
+
+  private static boolean isScoped(final TestRunContext runContext) {
+    return runContext != null && runContext.isEnabled();
+  }
+
+  private static void applyRunInstanceKeys(
+      final CamundaClient client,
+      final String runId,
+      final LongConsumer single,
+      final Consumer<Consumer<BasicLongProperty>> multi) {
+    final List<Long> keys = resolveRunInstanceKeys(client, runId);
+    if (keys.isEmpty()) {
+      // The run's instance is not visible yet; match nothing so the surrounding await retries.
+      single.accept(NO_MATCH_KEY);
+    } else if (keys.size() == 1) {
+      single.accept(keys.get(0));
+    } else {
+      multi.accept(property -> property.in(keys));
+    }
+  }
+
+  private static List<Long> resolveRunInstanceKeys(final CamundaClient client, final String runId) {
+    final String runIdValue = "\"" + runId + "\"";
+    return client
+        .newProcessInstanceSearchRequest()
+        .filter(
+            f ->
+                f.variables(
+                    Collections.singletonMap(TestRunContext.RUN_ID_VARIABLE_NAME, runIdValue)))
+        .send()
+        .join()
+        .items()
+        .stream()
+        .map(ProcessInstance::getProcessInstanceKey)
+        .collect(Collectors.toList());
+  }
+
+  private static String runScopeDescription(final String runId) {
+    return String.format("%s: '%s'", TestRunContext.RUN_ID_VARIABLE_NAME, runId);
   }
 }

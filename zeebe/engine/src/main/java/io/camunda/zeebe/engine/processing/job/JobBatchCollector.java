@@ -115,6 +115,12 @@ final class JobBatchCollector {
             return true;
           }
 
+          final var withheldReason = JobWorkerDispatch.withheldFromWorkersReason(jobRecord);
+          if (withheldReason != null) {
+            jobMetrics.countJobEvent(withheldReason, jobRecord.getJobKind(), value.getType());
+            return true;
+          }
+
           if (!value.isWithLease() && !jobRecord.getJobLeaseToken().isEmpty()) {
             // Skip leased jobs so an unleased activation cannot break the lease's exclusivity
             jobMetrics.countJobEvent(

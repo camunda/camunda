@@ -15,6 +15,7 @@
  */
 package io.camunda.client.impl.command;
 
+import static io.camunda.client.api.command.enums.ProcessInstanceCreationInstruction.CONFIGURE_EXECUTION;
 import static io.camunda.client.api.command.enums.ProcessInstanceCreationInstruction.TERMINATE_PROCESS_INSTANCE;
 
 import io.camunda.client.CamundaClientConfiguration;
@@ -33,6 +34,7 @@ import io.camunda.client.impl.response.CreateProcessInstanceResponseImpl;
 import io.camunda.client.impl.util.ParseUtil;
 import io.camunda.client.impl.util.TagUtil;
 import io.camunda.client.protocol.rest.CreateProcessInstanceResult;
+import io.camunda.client.protocol.rest.ProcessInstanceCreationConfigureExecutionInstruction;
 import io.camunda.client.protocol.rest.ProcessInstanceCreationInstruction;
 import io.camunda.client.protocol.rest.ProcessInstanceCreationTerminateInstruction;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
@@ -68,6 +70,8 @@ public final class CreateProcessInstanceCommandImpl
   private final ProcessInstanceCreationInstruction httpRequestObject =
       new ProcessInstanceCreationInstruction();
   private final CamundaClientConfiguration config;
+  private String restOnlyProperty;
+  private ProcessInstanceCreationConfigureExecutionInstruction configureExecutionInstruction;
 
   public CreateProcessInstanceCommandImpl(
       final GatewayStub asyncStub,
@@ -120,6 +124,43 @@ public final class CreateProcessInstanceCommandImpl
             .afterElementId(elementId)
             .type(TERMINATE_PROCESS_INSTANCE.name()));
     return this;
+  }
+
+  @Override
+  public CreateProcessInstanceCommandStep3 reserveJobs(final String jobReservationToken) {
+    ArgumentUtil.ensureNotNullNorEmpty("jobReservationToken", jobReservationToken);
+    restOnlyProperty = "reserveJobs";
+    configureExecution().reserveJobs(true).jobReservationToken(jobReservationToken);
+    return this;
+  }
+
+  @Override
+  public CreateProcessInstanceCommandStep3 stubCallActivities(final boolean stubCallActivities) {
+    restOnlyProperty = "stubCallActivities";
+    configureExecution().stubCallActivities(stubCallActivities);
+    return this;
+  }
+
+  @Override
+  public CreateProcessInstanceCommandStep3 holdTimers(final boolean holdTimers) {
+    restOnlyProperty = "holdTimers";
+    configureExecution().holdTimers(holdTimers);
+    return this;
+  }
+
+  /**
+   * Returns the single configure-execution runtime instruction for this command, creating it and
+   * adding it to the request on first use, so the reserve-jobs, stub-call-activities and
+   * hold-timers switches accumulate onto one instruction.
+   */
+  private ProcessInstanceCreationConfigureExecutionInstruction configureExecution() {
+    if (configureExecutionInstruction == null) {
+      configureExecutionInstruction =
+          new ProcessInstanceCreationConfigureExecutionInstruction()
+              .type(CONFIGURE_EXECUTION.name());
+      httpRequestObject.addRuntimeInstructionsItem(configureExecutionInstruction);
+    }
+    return configureExecutionInstruction;
   }
 
   @Override
@@ -213,6 +254,9 @@ public final class CreateProcessInstanceCommandImpl
 
   @Override
   public CamundaFuture<ProcessInstanceEvent> send() {
+    if (restOnlyProperty != null) {
+      ArgumentUtil.ensureRestTransport(restOnlyProperty, useRest);
+    }
     if (useRest) {
       return sendRestRequest();
     } else {

@@ -38,6 +38,7 @@ import io.camunda.zeebe.protocol.record.mapper.AuthzModelMapper;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
+import io.camunda.zeebe.protocol.record.value.RuntimeInstructionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.TagUtil;
@@ -186,7 +187,10 @@ public class ProcessInstanceCreationHelper {
       final DeployedProcess process,
       final long processInstanceKey,
       final Set<String> tags,
-      final DirectBuffer businessId) {
+      final DirectBuffer businessId,
+      final DirectBuffer jobReservationToken,
+      final boolean stubCallActivities,
+      final boolean holdTimers) {
     return new ProcessInstanceRecord()
         .setBpmnProcessId(process.getBpmnProcessId())
         .setVersion(process.getVersion())
@@ -199,7 +203,18 @@ public class ProcessInstanceCreationHelper {
         .setFlowScopeKey(-1)
         .setTenantId(process.getTenantId())
         .setTags(tags)
-        .setBusinessId(businessId);
+        .setBusinessId(businessId)
+        .setJobReservationToken(jobReservationToken)
+        .setStubCallActivities(stubCallActivities)
+        .setHoldTimers(holdTimers);
+  }
+
+  /**
+   * Returns the reservation token the instance was created with (from its configure-execution
+   * instruction), or an empty buffer when it was not reserved.
+   */
+  public static DirectBuffer jobReservationTokenOf(final ProcessInstanceCreationRecord record) {
+    return record.getJobReservationTokenBuffer();
   }
 
   private Either<Rejection, DeployedProcess> getProcess(
@@ -477,6 +492,9 @@ public class ProcessInstanceCreationHelper {
 
     final var unknownIds =
         runtimeInstructions.stream()
+            .filter(
+                instruction ->
+                    instruction.getType() == RuntimeInstructionType.TERMINATE_PROCESS_INSTANCE)
             .map(ProcessInstanceCreationRuntimeInstruction::getAfterElementId)
             .filter(elementId -> !isElementOfProcess(process, elementId))
             .distinct()

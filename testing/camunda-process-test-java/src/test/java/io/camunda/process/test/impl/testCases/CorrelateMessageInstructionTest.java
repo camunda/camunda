@@ -46,7 +46,7 @@ public class CorrelateMessageInstructionTest {
   @Mock private AssertionFacade assertionFacade;
 
   private final CorrelateMessageInstructionHandler instructionHandler =
-      new CorrelateMessageInstructionHandler();
+      new CorrelateMessageInstructionHandler(TestRunContext.disabled());
 
   @Test
   void shouldCorrelateMessageWithoutCorrelationKey() {

@@ -45,6 +45,7 @@ public final class FailJobCommandImpl extends CommandWithVariables<FailJobComman
   private final Predicate<StatusCode> retryPredicate;
   private Duration requestTimeout;
   private boolean useRest;
+  private String restOnlyProperty;
   private final JobFailRequest httpRequestObject;
   private final HttpClient httpClient;
   private final RequestConfig.Builder httpRequestConfig;
@@ -93,6 +94,16 @@ public final class FailJobCommandImpl extends CommandWithVariables<FailJobComman
   }
 
   @Override
+  public FailJobCommandStep2 withJobReservationToken(final String jobReservationToken) {
+    if (jobReservationToken == null) {
+      return this;
+    }
+    restOnlyProperty = "withJobReservationToken";
+    httpRequestObject.setJobReservationToken(jobReservationToken);
+    return this;
+  }
+
+  @Override
   public FailJobCommandStep2 withJobLeaseToken(final String jobLeaseToken) {
     if (jobLeaseToken == null) {
       return this;
@@ -120,6 +131,9 @@ public final class FailJobCommandImpl extends CommandWithVariables<FailJobComman
 
   @Override
   public CamundaFuture<FailJobResponse> send() {
+    if (restOnlyProperty != null) {
+      ArgumentUtil.ensureRestTransport(restOnlyProperty, useRest);
+    }
     if (useRest) {
       return sendRestRequest();
     } else {

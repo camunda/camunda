@@ -20,6 +20,7 @@ import static org.mockito.Mockito.when;
 import io.camunda.zeebe.engine.processing.timer.DueDateTimerCheckScheduler.TriggerTimersSideEffect;
 import io.camunda.zeebe.engine.processing.timer.DueDateTimerCheckScheduler.YieldingDecorator;
 import io.camunda.zeebe.engine.state.immutable.TimerInstanceState;
+import io.camunda.zeebe.engine.state.immutable.TimerInstanceState.HeldTimerResolution;
 import io.camunda.zeebe.engine.state.immutable.TimerInstanceState.TimerVisitor;
 import io.camunda.zeebe.engine.state.instance.TimerInstance;
 import io.camunda.zeebe.protocol.record.intent.TimerIntent;
@@ -237,6 +238,12 @@ class DueDateTimerCheckSchedulerTest {
     @Override
     public TimerInstance get(final long elementInstanceKey, final long timerKey) {
       return null;
+    }
+
+    @Override
+    public HeldTimerResolution resolveHeldByProcessElement(
+        final long processInstanceKey, final org.agrona.DirectBuffer elementId) {
+      return HeldTimerResolution.notFound();
     }
   }
 }

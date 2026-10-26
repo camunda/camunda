@@ -66,16 +66,22 @@ import io.camunda.process.test.api.testCases.instructions.ImmutableMockDmnDecisi
 import io.camunda.process.test.api.testCases.instructions.ImmutableMockJobWorkerCompleteJobInstruction;
 import io.camunda.process.test.api.testCases.instructions.ImmutableMockJobWorkerThrowBpmnErrorInstruction;
 import io.camunda.process.test.api.testCases.instructions.ImmutablePublishMessageInstruction;
+import io.camunda.process.test.api.testCases.instructions.ImmutableReleaseJobInstruction;
 import io.camunda.process.test.api.testCases.instructions.ImmutableResolveIncidentInstruction;
+import io.camunda.process.test.api.testCases.instructions.ImmutableRunCalledProcessInstruction;
 import io.camunda.process.test.api.testCases.instructions.ImmutableSemanticSimilarityAssertion;
 import io.camunda.process.test.api.testCases.instructions.ImmutableSetTimeInstruction;
+import io.camunda.process.test.api.testCases.instructions.ImmutableStubCallActivityCompleteInstruction;
+import io.camunda.process.test.api.testCases.instructions.ImmutableStubCallActivityThrowErrorInstruction;
 import io.camunda.process.test.api.testCases.instructions.ImmutableThrowBpmnErrorFromJobInstruction;
+import io.camunda.process.test.api.testCases.instructions.ImmutableTriggerTimerInstruction;
 import io.camunda.process.test.api.testCases.instructions.ImmutableUpdateVariablesInstruction;
 import io.camunda.process.test.api.testCases.instructions.assertElementInstance.ElementInstanceState;
 import io.camunda.process.test.api.testCases.instructions.assertElementInstances.ElementInstancesState;
 import io.camunda.process.test.api.testCases.instructions.assertProcessInstance.ProcessInstanceState;
 import io.camunda.process.test.api.testCases.instructions.assertProcessInstanceMessageSubscription.MessageSubscriptionState;
 import io.camunda.process.test.api.testCases.instructions.assertUserTask.UserTaskState;
+import io.camunda.process.test.api.testCases.instructions.createProcessInstance.ImmutableCreateProcessInstanceConfigureExecutionRuntimeInstruction;
 import io.camunda.process.test.api.testCases.instructions.createProcessInstance.ImmutableCreateProcessInstanceStartInstruction;
 import io.camunda.process.test.api.testCases.instructions.createProcessInstance.ImmutableCreateProcessInstanceTerminateRuntimeInstruction;
 import java.io.IOException;
@@ -182,6 +188,12 @@ public class PojoCompatibilityTest {
                     .addRuntimeInstructions(
                         ImmutableCreateProcessInstanceTerminateRuntimeInstruction.builder()
                             .afterElementId("task2")
+                            .build())
+                    .addRuntimeInstructions(
+                        ImmutableCreateProcessInstanceConfigureExecutionRuntimeInstruction.builder()
+                            .reserveJobs(true)
+                            .stubCallActivities(true)
+                            .holdTimers(true)
                             .build())
                     .build())),
         // ===== ASSERT_PROCESS_INSTANCE =====
@@ -450,6 +462,68 @@ public class PojoCompatibilityTest {
                     .errorCode("invalid")
                     .errorMessage("Nope.")
                     .putVariables("x", 1)
+                    .build())),
+        // ===== RELEASE_JOB =====
+        Arguments.of(
+            "release job",
+            singleTestCase(
+                ImmutableReleaseJobInstruction.builder()
+                    .jobSelector(ImmutableJobSelector.builder().elementId("send-invoice").build())
+                    .build())),
+        // ===== RUN_CALLED_PROCESS =====
+        Arguments.of(
+            "run called process",
+            singleTestCase(
+                ImmutableRunCalledProcessInstruction.builder()
+                    .elementSelector(
+                        ImmutableElementSelector.builder().elementId("ship-order").build())
+                    .build())),
+        // ===== STUB_CALL_ACTIVITY_COMPLETE =====
+        Arguments.of(
+            "stub call activity complete: minimal",
+            singleTestCase(
+                ImmutableStubCallActivityCompleteInstruction.builder()
+                    .elementSelector(
+                        ImmutableElementSelector.builder().elementId("ship-order").build())
+                    .build())),
+        Arguments.of(
+            "stub call activity complete: with variables",
+            singleTestCase(
+                ImmutableStubCallActivityCompleteInstruction.builder()
+                    .elementSelector(
+                        ImmutableElementSelector.builder().elementId("ship-order").build())
+                    .putVariables("approved", true)
+                    .build())),
+        // ===== STUB_CALL_ACTIVITY_THROW_ERROR =====
+        Arguments.of(
+            "stub call activity throw error: minimal",
+            singleTestCase(
+                ImmutableStubCallActivityThrowErrorInstruction.builder()
+                    .elementSelector(
+                        ImmutableElementSelector.builder().elementId("collect-payment").build())
+                    .errorCode("PAYMENT_DECLINED")
+                    .build())),
+        Arguments.of(
+            "stub call activity throw error: full",
+            singleTestCase(
+                ImmutableStubCallActivityThrowErrorInstruction.builder()
+                    .elementSelector(
+                        ImmutableElementSelector.builder().elementId("collect-payment").build())
+                    .errorCode("PAYMENT_DECLINED")
+                    .errorMessage("The card was declined.")
+                    .putVariables("declineCode", 51)
+                    .build())),
+        // ===== TRIGGER_TIMER =====
+        Arguments.of(
+            "trigger timer",
+            singleTestCase(
+                ImmutableTriggerTimerInstruction.builder()
+                    .processInstanceSelector(
+                        ImmutableProcessInstanceSelector.builder()
+                            .processDefinitionId("order-process")
+                            .build())
+                    .elementSelector(
+                        ImmutableElementSelector.builder().elementId("escalation").build())
                     .build())),
         // ===== MOCK_CHILD_PROCESS =====
         Arguments.of(

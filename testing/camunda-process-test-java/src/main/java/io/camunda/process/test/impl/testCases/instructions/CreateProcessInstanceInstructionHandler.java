@@ -17,15 +17,30 @@ package io.camunda.process.test.impl.testCases.instructions;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.CreateProcessInstanceCommandStep1.CreateProcessInstanceCommandStep3;
+import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.process.test.api.CamundaProcessTestContext;
 import io.camunda.process.test.api.testCases.instructions.CreateProcessInstanceInstruction;
+import io.camunda.process.test.api.testCases.instructions.createProcessInstance.CreateProcessInstanceConfigureExecutionRuntimeInstruction;
 import io.camunda.process.test.api.testCases.instructions.createProcessInstance.CreateProcessInstanceRuntimeInstruction;
 import io.camunda.process.test.api.testCases.instructions.createProcessInstance.CreateProcessInstanceTerminateRuntimeInstruction;
 import io.camunda.process.test.impl.testCases.AssertionFacade;
+import io.camunda.process.test.impl.testCases.CreatedProcessInstanceRegistry;
 import io.camunda.process.test.impl.testCases.TestCaseInstructionHandler;
+import io.camunda.process.test.impl.testCases.TestRunContext;
+import java.util.Optional;
 
 public class CreateProcessInstanceInstructionHandler
     implements TestCaseInstructionHandler<CreateProcessInstanceInstruction> {
+
+  private final CreatedProcessInstanceRegistry createdProcessInstances;
+  private final TestRunContext runContext;
+
+  public CreateProcessInstanceInstructionHandler(
+      final CreatedProcessInstanceRegistry createdProcessInstances,
+      final TestRunContext runContext) {
+    this.createdProcessInstances = createdProcessInstances;
+    this.runContext = runContext;
+  }
 
   @Override
   public void execute(
@@ -47,7 +62,7 @@ public class CreateProcessInstanceInstructionHandler
             .newCreateInstanceCommand()
             .bpmnProcessId(processDefinitionId)
             .latestVersion()
-            .variables(instruction.getVariables());
+            .variables(runContext.applyRunId(instruction.getVariables()));
 
     instruction
         .getStartInstructions()
@@ -57,7 +72,48 @@ public class CreateProcessInstanceInstructionHandler
         .getRuntimeInstructions()
         .forEach(runtimeInstruction -> applyRuntimeInstruction(runtimeInstruction, command));
 
-    command.send().join();
+    final Optional<CreateProcessInstanceConfigureExecutionRuntimeInstruction> config =
+        configureExecutionOf(instruction);
+
+    final boolean reserveJobs =
+        config
+            .map(CreateProcessInstanceConfigureExecutionRuntimeInstruction::getReserveJobs)
+            .orElse(false);
+    final boolean stubCallActivities =
+        config
+            .map(CreateProcessInstanceConfigureExecutionRuntimeInstruction::getStubCallActivities)
+            .orElse(false);
+    final boolean holdTimers =
+        config
+            .map(CreateProcessInstanceConfigureExecutionRuntimeInstruction::getHoldTimers)
+            .orElse(false);
+
+    final boolean isolated = reserveJobs || stubCallActivities || holdTimers;
+
+    if (reserveJobs) {
+      command.reserveJobs(context.getJobReservationToken());
+    }
+    if (stubCallActivities) {
+      command.stubCallActivities(true);
+    }
+    if (holdTimers) {
+      command.holdTimers(true);
+    }
+
+    final ProcessInstanceEvent processInstance = command.send().join();
+
+    // an isolated instance waits on jobs no worker takes, or on timers that never fire, so it
+    // parks until the test ends it
+    createdProcessInstances.register(
+        processDefinitionId, processInstance.getProcessInstanceKey(), holdTimers, isolated);
+  }
+
+  private static Optional<CreateProcessInstanceConfigureExecutionRuntimeInstruction>
+      configureExecutionOf(final CreateProcessInstanceInstruction instruction) {
+    return instruction.getRuntimeInstructions().stream()
+        .filter(CreateProcessInstanceConfigureExecutionRuntimeInstruction.class::isInstance)
+        .map(CreateProcessInstanceConfigureExecutionRuntimeInstruction.class::cast)
+        .findFirst();
   }
 
   @Override
@@ -73,6 +129,10 @@ public class CreateProcessInstanceInstructionHandler
       final CreateProcessInstanceTerminateRuntimeInstruction terminateInstruction =
           (CreateProcessInstanceTerminateRuntimeInstruction) runtimeInstruction;
       command.terminateAfterElement(terminateInstruction.getAfterElementId());
+
+    } else if (runtimeInstruction
+        instanceof CreateProcessInstanceConfigureExecutionRuntimeInstruction) {
+      // instance-wide switches are applied from configureExecutionOf, not as a command instruction
 
     } else {
       throw new IllegalArgumentException(

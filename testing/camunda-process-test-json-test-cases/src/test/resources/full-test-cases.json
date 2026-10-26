@@ -86,6 +86,113 @@
           "state": "IS_COMPLETED"
         }
       ]
+    },
+    {
+      "name": "Isolated recording of an order that calls a shipping process",
+      "description": "The instance holds its jobs from the cluster's workers and stands in for the processes it calls.",
+      "instructions": [
+        {
+          "type": "CREATE_PROCESS_INSTANCE",
+          "processDefinitionSelector": {
+            "processDefinitionId": "order-process"
+          },
+          "variables": {
+            "order_id": "order-1"
+          },
+          "runtimeInstructions": [
+            {
+              "type": "CONFIGURE_EXECUTION",
+              "reserveJobs": true,
+              "stubCallActivities": true
+            }
+          ]
+        },
+        {
+          "type": "COMPLETE_JOB",
+          "jobSelector": {
+            "elementId": "charge-card"
+          },
+          "variables": {
+            "paymentStatus": "APPROVED"
+          }
+        },
+        {
+          "type": "RELEASE_JOB",
+          "jobSelector": {
+            "elementId": "send-invoice"
+          }
+        },
+        {
+          "type": "STUB_CALL_ACTIVITY_COMPLETE",
+          "elementSelector": {
+            "elementId": "review-order"
+          },
+          "variables": {
+            "approved": true
+          }
+        },
+        {
+          "type": "RUN_CALLED_PROCESS",
+          "elementSelector": {
+            "elementId": "ship-order"
+          }
+        },
+        {
+          "type": "STUB_CALL_ACTIVITY_THROW_ERROR",
+          "elementSelector": {
+            "elementId": "collect-payment"
+          },
+          "errorCode": "PAYMENT_DECLINED",
+          "errorMessage": "The card was declined.",
+          "variables": {
+            "declineCode": 51
+          }
+        },
+        {
+          "type": "ASSERT_PROCESS_INSTANCE",
+          "processInstanceSelector": {
+            "processDefinitionId": "order-process"
+          },
+          "state": "IS_COMPLETED"
+        }
+      ]
+    },
+    {
+      "name": "Recording of an order whose escalation timer is driven by hand",
+      "description": "The instance holds its timers, so the escalation deadline fires only when the test says so.",
+      "instructions": [
+        {
+          "type": "CREATE_PROCESS_INSTANCE",
+          "processDefinitionSelector": {
+            "processDefinitionId": "order-process"
+          },
+          "variables": {
+            "order_id": "order-2"
+          },
+          "runtimeInstructions": [
+            {
+              "type": "CONFIGURE_EXECUTION",
+              "holdTimers": true
+            }
+          ]
+        },
+        {
+          "type": "TRIGGER_TIMER",
+          "processInstanceSelector": {
+            "processDefinitionId": "order-process"
+          },
+          "elementSelector": {
+            "elementId": "escalation"
+          }
+        },
+        {
+          "type": "ASSERT_PROCESS_INSTANCE",
+          "processInstanceSelector": {
+            "processDefinitionId": "order-process"
+          },
+          "state": "IS_COMPLETED"
+        }
+      ]
     }
   ]
 }

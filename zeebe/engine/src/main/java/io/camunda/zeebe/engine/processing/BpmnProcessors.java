@@ -136,7 +136,13 @@ public final class BpmnProcessors {
         transientProcessMessageSubscriptionState,
         suspensionMetrics);
     addTimerStreamProcessors(
-        typedRecordProcessors, timerChecker, processingState, bpmnBehaviors, writers, clock);
+        typedRecordProcessors,
+        timerChecker,
+        processingState,
+        bpmnBehaviors,
+        writers,
+        clock,
+        cslCheck);
     addConditionalStreamProcessors(typedRecordProcessors, processingState, bpmnBehaviors, writers);
     addVariableDocumentStreamProcessors(
         typedRecordProcessors,
@@ -332,12 +338,13 @@ public final class BpmnProcessors {
       final MutableProcessingState processingState,
       final BpmnBehaviors bpmnBehaviors,
       final Writers writers,
-      final InstantSource clock) {
+      final InstantSource clock,
+      final CslAuthorizationCheck cslCheck) {
     typedRecordProcessors
         .onCommand(
             ValueType.TIMER,
             TimerIntent.TRIGGER,
-            new TimerTriggerProcessor(processingState, bpmnBehaviors, writers, clock))
+            new TimerTriggerProcessor(processingState, bpmnBehaviors, writers, clock, cslCheck))
         .onCommand(
             ValueType.TIMER,
             TimerIntent.CANCEL,

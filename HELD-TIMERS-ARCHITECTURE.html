@@ -1,0 +1,1582 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Held Timers Architecture</title>
+    <style>
+      :root {
+        --bg: #0f1117;
+        --surface: #1a1d27;
+        --surface2: #22263a;
+        --border: #2e3350;
+        --text: #e8eaf6;
+        --text-muted: #8b90b8;
+        --blue: #4c8bf5;
+        --blue-light: #7ab3ff;
+        --green: #4caf82;
+        --orange: #f5a623;
+        --red: #f56c6c;
+        --purple: #9c6cf5;
+        --yellow: #f5d04c;
+        --teal: #4ccfcf;
+      }
+
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        background: var(--bg);
+        color: var(--text);
+        font-family: "Segoe UI", system-ui, sans-serif;
+        font-size: 13px;
+        line-height: 1.5;
+        padding: 24px;
+      }
+
+      h1 {
+        font-size: 20px;
+        font-weight: 700;
+        color: var(--text);
+        margin-bottom: 4px;
+      }
+
+      .subtitle {
+        color: var(--text-muted);
+        font-size: 13px;
+        margin-bottom: 28px;
+      }
+
+      .tabs {
+        display: flex;
+        gap: 4px;
+        margin-bottom: 24px;
+        border-bottom: 1px solid var(--border);
+        padding-bottom: 0;
+        flex-wrap: wrap;
+      }
+
+      .tab {
+        padding: 8px 18px;
+        border-radius: 6px 6px 0 0;
+        cursor: pointer;
+        font-size: 13px;
+        font-weight: 500;
+        color: var(--text-muted);
+        border: 1px solid transparent;
+        border-bottom: none;
+        transition: all 0.15s;
+        background: transparent;
+        position: relative;
+        bottom: -1px;
+      }
+
+      .tab:hover {
+        color: var(--text);
+        background: var(--surface);
+      }
+
+      .tab.active {
+        color: var(--blue-light);
+        background: var(--surface);
+        border-color: var(--border);
+        border-bottom-color: var(--surface);
+      }
+
+      .panel {
+        display: none;
+      }
+      .panel.active {
+        display: block;
+      }
+
+      /* TL;DR */
+      .tldr {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-left: 3px solid var(--blue);
+        border-radius: 8px;
+        padding: 18px 20px;
+        margin-bottom: 24px;
+      }
+
+      .tldr h2 {
+        font-size: 14px;
+        margin: 0 0 12px;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--blue-light);
+      }
+
+      .tldr ul {
+        margin: 0;
+        padding-left: 18px;
+        font-size: 13px;
+        line-height: 1.75;
+      }
+
+      .tldr li {
+        margin-bottom: 6px;
+      }
+      .tldr li:last-child {
+        margin-bottom: 0;
+      }
+      .tldr strong {
+        color: var(--text);
+      }
+
+      .jump {
+        color: var(--blue-light);
+        text-decoration: none;
+        border-bottom: 1px dotted var(--blue);
+        cursor: pointer;
+        font-size: 12px;
+        white-space: nowrap;
+      }
+
+      .jump:hover {
+        color: var(--text);
+        border-bottom-color: var(--text);
+      }
+
+      .grid-2 {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+        margin-bottom: 20px;
+      }
+
+      .card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 18px;
+      }
+
+      .card-title {
+        font-size: 12px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        margin-bottom: 16px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .badge {
+        font-size: 10px;
+        padding: 2px 7px;
+        border-radius: 20px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
+
+      .badge-red {
+        background: rgba(245, 108, 108, 0.15);
+        color: var(--red);
+      }
+      .badge-green {
+        background: rgba(76, 175, 130, 0.15);
+        color: var(--green);
+      }
+      .badge-blue {
+        background: rgba(76, 139, 245, 0.15);
+        color: var(--blue-light);
+      }
+      .badge-orange {
+        background: rgba(245, 166, 35, 0.15);
+        color: var(--orange);
+      }
+
+      .flow-box.zeebe {
+        background: rgba(76, 139, 245, 0.12);
+        border: 1px solid rgba(76, 139, 245, 0.3);
+        color: var(--blue-light);
+      }
+      .flow-box.worker {
+        background: rgba(76, 175, 130, 0.12);
+        border: 1px solid rgba(76, 175, 130, 0.3);
+        color: var(--green);
+      }
+      .flow-box.connector {
+        background: rgba(156, 108, 245, 0.12);
+        border: 1px solid rgba(156, 108, 245, 0.3);
+        color: var(--purple);
+      }
+      .flow-box.teststudio {
+        background: rgba(245, 166, 35, 0.12);
+        border: 1px solid rgba(245, 166, 35, 0.3);
+        color: var(--orange);
+      }
+      .flow-box.engine {
+        background: rgba(76, 207, 207, 0.12);
+        border: 1px solid rgba(76, 207, 207, 0.3);
+        color: var(--teal);
+      }
+      .flow-box.problem {
+        background: rgba(245, 108, 108, 0.12);
+        border: 1px solid rgba(245, 108, 108, 0.3);
+        color: var(--red);
+      }
+      .flow-box.neutral {
+        background: var(--surface2);
+        border: 1px solid var(--border);
+        color: var(--text-muted);
+      }
+
+      /* Comparison table */
+      .compare-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 12px;
+      }
+
+      .compare-table th {
+        background: var(--surface2);
+        padding: 10px 14px;
+        text-align: left;
+        font-weight: 600;
+        color: var(--text-muted);
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        border-bottom: 1px solid var(--border);
+      }
+
+      .compare-table td {
+        padding: 10px 14px;
+        border-bottom: 1px solid var(--border);
+        vertical-align: top;
+      }
+
+      .compare-table tr:last-child td {
+        border-bottom: none;
+      }
+      .compare-table tr:hover td {
+        background: rgba(255, 255, 255, 0.02);
+      }
+
+      .check {
+        color: var(--green);
+        font-weight: 700;
+      }
+      .cross {
+        color: var(--red);
+        font-weight: 700;
+      }
+      .warn {
+        color: var(--orange);
+        font-weight: 700;
+      }
+
+      /* Architecture diagram */
+      .arch {
+        background: var(--surface2);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 16px;
+        margin-bottom: 16px;
+      }
+
+      .arch-title {
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--text-muted);
+        margin-bottom: 14px;
+      }
+
+      .layer {
+        border: 1px solid var(--border);
+        border-radius: 7px;
+        padding: 10px 14px;
+        margin-bottom: 8px;
+        position: relative;
+      }
+
+      .layer-label {
+        font-size: 10px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.07em;
+        color: var(--text-muted);
+        margin-bottom: 6px;
+      }
+
+      .layer-content {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        align-items: center;
+      }
+
+      .chip {
+        font-size: 11px;
+        padding: 3px 9px;
+        border-radius: 5px;
+        font-weight: 500;
+      }
+
+      .chip-blue {
+        background: rgba(76, 139, 245, 0.15);
+        color: var(--blue-light);
+        border: 1px solid rgba(76, 139, 245, 0.25);
+      }
+      .chip-green {
+        background: rgba(76, 175, 130, 0.15);
+        color: var(--green);
+        border: 1px solid rgba(76, 175, 130, 0.25);
+      }
+      .chip-orange {
+        background: rgba(245, 166, 35, 0.15);
+        color: var(--orange);
+        border: 1px solid rgba(245, 166, 35, 0.25);
+      }
+      .chip-teal {
+        background: rgba(76, 207, 207, 0.15);
+        color: var(--teal);
+        border: 1px solid rgba(76, 207, 207, 0.25);
+      }
+      .chip-red {
+        background: rgba(245, 108, 108, 0.15);
+        color: var(--red);
+        border: 1px solid rgba(245, 108, 108, 0.25);
+      }
+
+      .connector-arrow {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--text-muted);
+        font-size: 18px;
+        margin: 2px 0;
+      }
+
+      .highlight-box {
+        background: rgba(76, 139, 245, 0.07);
+        border: 1px solid rgba(76, 139, 245, 0.2);
+        border-radius: 8px;
+        padding: 12px 16px;
+        margin-top: 12px;
+        font-size: 12px;
+        color: var(--text-muted);
+      }
+
+      .highlight-box strong {
+        color: var(--blue-light);
+      }
+
+      .problem-box {
+        background: rgba(245, 108, 108, 0.07);
+        border: 1px solid rgba(245, 108, 108, 0.2);
+        border-radius: 8px;
+        padding: 12px 16px;
+        margin-top: 12px;
+        font-size: 12px;
+        color: var(--text-muted);
+      }
+
+      .problem-box strong {
+        color: var(--red);
+      }
+
+      .solution-box {
+        background: rgba(76, 175, 130, 0.07);
+        border: 1px solid rgba(76, 175, 130, 0.2);
+        border-radius: 8px;
+        padding: 12px 16px;
+        margin-top: 12px;
+        font-size: 12px;
+        color: var(--text-muted);
+      }
+
+      .solution-box strong {
+        color: var(--green);
+      }
+
+      .section-title {
+        font-size: 14px;
+        font-weight: 700;
+        color: var(--text);
+        margin-bottom: 14px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        flex-shrink: 0;
+      }
+      .dot-purple {
+        background: var(--purple);
+      }
+      .dot-teal {
+        background: var(--teal);
+      }
+
+      /* JSON payload blocks */
+      .payload {
+        background: #0c0e15;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 12px 14px;
+        margin: 10px 0 0;
+        font-family:
+          "SF Mono", "JetBrains Mono", ui-monospace, Menlo, monospace;
+        font-size: 11.5px;
+        line-height: 1.7;
+        color: #b7bcdd;
+        overflow-x: auto;
+        white-space: pre;
+        tab-size: 2;
+      }
+
+      .payload .k {
+        color: #7ab3ff;
+      }
+      .payload .s {
+        color: #7fd6a0;
+      }
+      .payload .n {
+        color: #f5a623;
+      }
+      .payload .c {
+        color: var(--text-muted);
+        font-style: italic;
+      }
+
+      /* a NEW field highlighted inside a payload */
+      .payload .add {
+        background: rgba(76, 175, 130, 0.16);
+        border-radius: 4px;
+        padding: 1px 4px;
+        font-weight: 700;
+        color: #b9f2d1;
+        box-shadow: inset 0 0 0 1px rgba(76, 175, 130, 0.4);
+      }
+      .payload .add .k {
+        color: #9cf0c2;
+      }
+
+      /* a REMOVED field highlighted inside a payload */
+      .payload-cap {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: var(--text-muted);
+        margin-top: 4px;
+      }
+
+      .method {
+        font-size: 10px;
+        font-weight: 700;
+        padding: 2px 7px;
+        border-radius: 5px;
+        letter-spacing: 0.04em;
+      }
+      .method-post {
+        background: rgba(76, 175, 130, 0.16);
+        color: var(--green);
+      }
+
+      /* horizontal pipeline */
+      .pipe {
+        display: flex;
+        align-items: stretch;
+        gap: 0;
+        flex-wrap: wrap;
+        margin-top: 6px;
+      }
+      .pipe-step {
+        flex: 1 1 0;
+        min-width: 150px;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 10px 12px;
+        background: var(--surface2);
+        position: relative;
+      }
+      .pipe-step + .pipe-step {
+        margin-left: 20px;
+      }
+      .pipe-step + .pipe-step::before {
+        content: "›";
+        position: absolute;
+        left: -15px;
+        top: 50%;
+        transform: translateY(-50%);
+        font-size: 20px;
+        color: var(--text-muted);
+      }
+      .pipe-where {
+        font-size: 10px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: var(--teal);
+        margin-bottom: 5px;
+      }
+      .pipe-what {
+        font-size: 11.5px;
+        color: var(--text);
+        line-height: 1.5;
+      }
+      .pipe-sub {
+        font-size: 10px;
+        color: var(--text-muted);
+        margin-top: 4px;
+      }</style>
+  </head>
+  <body>
+    <h1>Held Timers Architecture</h1>
+    <p class="subtitle">
+      On-demand timer triggering for Test Studio — hold every timer at instance
+      creation, fire it by BPMN element on request.
+      <br />
+      Branch <code>feat/exclusive-job-dispatch-lease</code>, 2026-09-23. Alpha,
+      REST v2 only, <code>x-added-in-version: 8.10</code>,
+      <code>x-scope: physical-tenant</code>. Not merged.
+    </p>
+
+    <div class="tldr">
+      <h2>TL;DR</h2>
+      <ul>
+        <li>
+          <strong>Problem:</strong> a BPMN timer fires on its own due date, so a
+          recorder replaying against a real cluster can neither pause at a timer
+          nor advance it on command.
+        </li>
+        <li>
+          <strong>Fix:</strong> <code>holdTimers: true</code> at instance
+          creation keeps every timer out of the due-date index, so the scheduler
+          never sees it.
+          <code>POST /v2/process-instances/{key}/timers/trigger</code> with
+          <code>{ "elementId": … }</code> fires one on demand.
+        </li>
+        <li>
+          <strong>Addressed by (instance, element),</strong> not by timer key —
+          no API exposes one. Exactly one match required.
+        </li>
+      </ul>
+    </div>
+
+    <div class="tabs">
+      <div class="tab active" data-tab="how" onclick="showTab('how')">
+        How It Works
+      </div>
+      <div class="tab" data-tab="impl" onclick="showTab('impl')">
+        Implementation
+      </div>
+      <div class="tab" data-tab="bugs" onclick="showTab('bugs')">
+        Runtime Bugs
+      </div>
+      <div class="tab" data-tab="api" onclick="showTab('api')">API</div>
+      <div class="tab" data-tab="cpt" onclick="showTab('cpt')">CPT</div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════ TAB 1: HOW -->
+    <div class="panel active" id="tab-how">
+      <div class="card" style="margin-bottom: 20px">
+        <div class="card-title">
+          <span>The whole trick</span>
+          <span class="badge badge-blue">One picture</span>
+        </div>
+        <p style="color: var(--text-muted); margin-bottom: 16px">
+          A timer lives in two tables, and the scheduler only ever scans
+          <code>TIMER_DUE_DATES</code>. A held timer is simply never written
+          there.
+        </p>
+        <div class="grid-2">
+          <div class="arch">
+            <div class="arch-title" style="color: var(--red)">
+              Normal timer
+            </div>
+            <div class="layer" style="border-color: rgba(76, 207, 207, 0.3)">
+              <div class="layer-label">Timer catch event reached</div>
+              <div class="layer-content">
+                <span class="chip chip-teal">create timer PT5S</span>
+              </div>
+            </div>
+            <div class="connector-arrow">↓ written to BOTH tables</div>
+            <div class="layer" style="border-color: rgba(76, 139, 245, 0.3)">
+              <div class="layer-content">
+                <span class="chip chip-green">TIMERS ✓</span>
+                <span class="chip chip-green">TIMER_DUE_DATES ✓</span>
+              </div>
+            </div>
+            <div class="connector-arrow">↓ DueDateTimerChecker scans</div>
+            <div class="layer" style="border-color: rgba(245, 108, 108, 0.3)">
+              <div class="layer-content">
+                <span class="chip chip-red">🔥 fires on its own, 5s later</span>
+              </div>
+            </div>
+          </div>
+          <div class="arch">
+            <div class="arch-title" style="color: var(--green)">
+              Held timer — holdTimers: true
+            </div>
+            <div class="layer" style="border-color: rgba(76, 207, 207, 0.3)">
+              <div class="layer-label">Timer catch event reached</div>
+              <div class="layer-content">
+                <span class="chip chip-teal">create timer PT5S</span>
+                <span class="chip chip-teal">held = true</span>
+              </div>
+            </div>
+            <div class="connector-arrow">↓ written to ONE table</div>
+            <div class="layer" style="border-color: rgba(76, 139, 245, 0.3)">
+              <div class="layer-content">
+                <span class="chip chip-green"
+                  >HELD_TIMER_BY_PROCESS_INSTANCE ✓</span
+                >
+                <span class="chip chip-red">TIMER_DUE_DATES ✗</span>
+              </div>
+            </div>
+            <div class="connector-arrow">↓ scheduler sees nothing</div>
+            <div class="layer" style="border-color: rgba(76, 175, 130, 0.3)">
+              <div class="layer-content">
+                <span class="chip chip-orange"
+                  >POST …/timers/trigger → fires one</span
+                >
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="highlight-box">
+          <strong>Why not just shorten the timer?</strong> Editing the model to
+          fire "soon" changes the artifact under test and still cannot pause the
+          process for inspection. Holding leaves the model untouched and puts
+          the firing moment under the recorder's control.
+        </div>
+      </div>
+
+      <div class="card" style="margin-bottom: 20px">
+        <div class="card-title">
+          <span>What "held" means, field by field</span>
+          <span class="badge badge-blue">Engine</span>
+        </div>
+        <table class="compare-table">
+          <thead>
+            <tr>
+              <th style="width: 26%">Concern</th>
+              <th>Behavior</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Scope</td>
+              <td>
+                <code>holdTimers</code> is set once on the <em>root</em> process
+                instance at creation. Every timer in that instance tree —
+                including called children — inherits it, because children read
+                the root's flag.
+              </td>
+            </tr>
+            <tr>
+              <td>The flag</td>
+              <td>
+                <code>held</code> is a boolean on <code>TimerRecord</code>
+                (default <code>false</code>), persisted on the stored
+                <code>TimerInstance</code> by
+                <code>TimerCreatedV2Applier</code> alongside
+                <code>processInstanceKey</code> and <code>handlerNodeId</code>
+                (the BPMN element id).
+              </td>
+            </tr>
+            <tr>
+              <td>Timers covered</td>
+              <td>
+                Anything created while the instance is active that goes through
+                <code>subscribeToTimerEvent</code>: intermediate catch events,
+                boundary timers, event sub-process start timers. Process-level
+                <em>start</em> timers are not owned by an instance — out of
+                scope.
+              </td>
+            </tr>
+            <tr>
+              <td>Revoking a hold</td>
+              <td>
+                Not possible. No engine command hands a held timer back to the
+                scheduler; the instance must be cancelled instead.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="card">
+        <div class="card-title">
+          <span>Firing one: the trigger contract</span>
+          <span class="badge badge-green">new endpoint</span>
+        </div>
+        <div class="grid-2" style="margin-bottom: 0">
+          <div>
+            <div class="payload-cap">
+              <span class="method method-post">POST</span>
+              /v2/process-instances/{processInstanceKey}/timers/trigger
+            </div>
+            <pre
+              class="payload"
+            >{
+  <span class="k">"elementId"</span>: <span class="s">"Event_159hbtn"</span>
+}</pre>
+            <div class="pipe-sub" style="margin-top: 6px">
+              <code>elementId</code> is the BPMN element id on the canvas.
+              Exactly one held timer must match:
+              <code>1 → 204</code>, <code>0 → 404</code>,
+              <code>&gt;1 → 409 INVALID_STATE</code>.
+            </div>
+            <div class="solution-box">
+              <strong>✓ Addressable from the model.</strong> Test Studio has the
+              instance key and the element id; it never has the engine's
+              internal timer key. The endpoint speaks the recorder's vocabulary
+              and the engine translates.
+            </div>
+          </div>
+          <div>
+            <div class="highlight-box" style="margin-top: 0">
+              <strong>Why exactly one?</strong> A multi-instance body or a loop
+              can produce several live timers for the same element id. Firing an
+              arbitrary one would be non-deterministic, so the contract makes
+              the caller's ambiguity explicit rather than silently picking.
+            </div>
+            <div class="highlight-box">
+              <strong>Tenant, not just permission.</strong> The check is
+              <code>cslCheck.checkAuthorizationAndTenant(...)</code> —
+              <code>PROCESS_DEFINITION</code> /
+              <code>UPDATE_PROCESS_INSTANCE</code> plus the resolved timer's
+              <code>tenantId</code>. A caller
+              outside the owning tenant gets <code>NOT_FOUND</code>, not
+              <code>FORBIDDEN</code>, so the rejection cannot be used to probe
+              for timers in another tenant.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════ TAB 2: IMPL -->
+    <div class="panel" id="tab-impl">
+      <div class="card" style="margin-bottom: 20px">
+        <div class="card-title">
+          <span>The held-timer index</span>
+          <span class="badge badge-blue">RocksDB column family</span>
+        </div>
+        <pre
+          class="payload"
+        ><span class="c">// ZbColumnFamilies ordinal 166, PARTITION_LOCAL</span>
+<span class="c">// (renamed in place from the retired TIMER_KEY_TO_ELEMENT_INSTANCE_KEY)</span>
+
+key   = DbCompositeKey&lt;
+          <span class="k">processInstanceKey</span>: DbLong,  <span class="c">// scan prefix</span>
+          DbCompositeKey&lt;<span class="k">elementInstanceKey</span>: DbLong, <span class="k">timerKey</span>: DbLong&gt;
+        &gt;
+value = DbNil</pre>
+        <div class="pipe-sub" style="margin-top: 8px">
+          Every part of the key is immutable for the life of a timer. The
+          element id is deliberately <em>not</em> in it — it is mutable, and
+          baking it in desyncs the index on migration (see
+          <a class="jump" onclick="showTab('bugs')">Bug 6 →</a>). The resolver
+          reads the element id back off each stored timer instead, where it is
+          always current.
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title">
+            <span>DbTimerInstanceState</span>
+            <span class="badge badge-blue">state</span>
+          </div>
+          <table class="compare-table">
+            <tbody>
+              <tr>
+                <td><code>store</code></td>
+                <td>
+                  insert into <code>TIMERS</code>; if <code>isHeld()</code>
+                  insert the held-index key and return — never the due-date
+                  index. Otherwise insert the due-date entry as before.
+                </td>
+              </tr>
+              <tr>
+                <td><code>remove</code></td>
+                <td>
+                  delete the timer, the due-date entry, and
+                  <code>deleteIfExists</code> the held-index key.
+                </td>
+              </tr>
+              <tr>
+                <td><code>resume</code></td>
+                <td>
+                  skips held timers, so suspend/resume cannot hand them to the
+                  scheduler (<a class="jump" onclick="showTab('bugs')"
+                    >Bug 5 →</a
+                  >).
+                </td>
+              </tr>
+              <tr>
+                <td><code>resolveHeldByProcessElement</code></td>
+                <td>
+                  <code>whileEqualPrefix</code> over
+                  <code>processInstanceKey</code>, then load each timer and keep
+                  the ones whose <code>handlerNodeId</code> equals the requested
+                  element id. Cost is O(held timers in the instance) — a
+                  handful, for a human-paced command.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+          <pre
+            class="payload"
+          ><span class="k">record</span> HeldTimerResolution(
+    <span class="k">Status</span> status, <span class="k">TimerInstance</span> timer) {
+  <span class="k">enum</span> Status { FOUND, NOT_FOUND, AMBIGUOUS }
+}</pre>
+        </div>
+
+        <div class="card">
+          <div class="card-title">
+            <span>TimerTriggerProcessor</span>
+            <span class="badge badge-blue">two entry paths, one fire</span>
+          </div>
+          <div class="pipe">
+            <div class="pipe-step">
+              <div class="pipe-where">Path A · scheduler</div>
+              <div class="pipe-what">
+                No request metadata → <code>timerKey = record.getKey()</code>
+              </div>
+              <div class="pipe-sub">unchanged behavior</div>
+            </div>
+            <div class="pipe-step">
+              <div class="pipe-where">Path B · external</div>
+              <div class="pipe-what">
+                Request metadata present → resolve, hydrate, authorize, use the
+                resolved timer key
+              </div>
+              <div class="pipe-sub">
+                <code>resolveAndAuthorizeExternalTrigger</code> returns the key,
+                or <code>null</code> after writing a rejection
+              </div>
+            </div>
+            <div class="pipe-step">
+              <div class="pipe-where">Merge</div>
+              <div class="pipe-what">
+                From the timer key on, both paths run the same activation
+              </div>
+              <div class="pipe-sub">
+                fire the catch event, reschedule repeating timers
+              </div>
+            </div>
+          </div>
+          <div class="highlight-box">
+            <strong>Hydrate before authorize.</strong> The resolved timer writes
+            <code>bpmnProcessId</code>, <code>tenantId</code>,
+            <code>processDefinitionKey</code> and
+            <code>elementInstanceKey</code> onto the command value first, so the
+            authorization check reads the command's own fields and the rest of
+            processing is identical to a scheduler-issued fire.
+          </div>
+          <div class="highlight-box">
+            <strong>Every external command is authorized.</strong> The command
+            API always stamps request metadata, so a client-issued
+            <code>TIMER TRIGGER</code> can never take Path A. Timer intents
+            other than <code>TRIGGER</code> have no processor and are rejected.
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top: 20px">
+        <div class="card-title">
+          <span>Request path</span>
+          <span class="badge badge-blue">REST → service → broker → engine</span>
+        </div>
+        <div class="arch">
+          <div class="layer" style="border-color: rgba(245, 166, 35, 0.3)">
+            <div class="layer-label">ProcessInstanceController</div>
+            <div class="layer-content">
+              <span class="chip chip-orange"
+                >@CamundaPostMapping("/{processInstanceKey}/timers/trigger")</span
+              >
+              <span class="chip chip-orange">elementId non-blank → 400</span>
+            </div>
+          </div>
+          <div class="connector-arrow">↓</div>
+          <div class="layer" style="border-color: rgba(76, 175, 130, 0.3)">
+            <div class="layer-label">TimerServices</div>
+            <div class="layer-content">
+              <span class="chip chip-green"
+                >triggerTimer(processInstanceKey, elementId,
+                authentication)</span
+              >
+            </div>
+          </div>
+          <div class="connector-arrow">↓</div>
+          <div class="layer" style="border-color: rgba(76, 139, 245, 0.3)">
+            <div class="layer-label">BrokerTriggerTimerRequest</div>
+            <div class="layer-content">
+              <span class="chip chip-blue"
+                >setProcessInstanceKey + setTargetElementId</span
+              >
+              <span class="chip chip-green"
+                >setKey(processInstanceKey) → owning partition</span
+              >
+            </div>
+          </div>
+          <div class="connector-arrow">↓ TIMER · TRIGGER command</div>
+          <div class="layer" style="border-color: rgba(76, 207, 207, 0.3)">
+            <div class="layer-label">Broker command API → Engine</div>
+            <div class="layer-content">
+              <span class="chip chip-green"
+                >ValueTypes.USER_COMMANDS accepts TIMER</span
+              >
+              <span class="chip chip-teal">TimerTriggerProcessor · Path B</span>
+            </div>
+          </div>
+        </div>
+        <div class="pipe-sub" style="margin-top: 8px">
+          Triggering is scoped under the instance the timer belongs to. An
+          earlier draft on this branch addressed the timer by key instead; it
+          was dropped before release, because nothing outside the engine ever
+          has a timer key.
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">
+          <span>Exported fields and strict mappings</span>
+          <span class="badge badge-orange">Elasticsearch / OpenSearch</span>
+        </div>
+        <table class="compare-table">
+          <thead>
+            <tr>
+              <th style="width: 22%">New field</th>
+              <th>Templates (ES <em>and</em> OS)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>held</code></td>
+              <td><code>zeebe-record-timer-template.json</code></td>
+            </tr>
+            <tr>
+              <td><code>holdTimers</code></td>
+              <td>
+                <code>zeebe-record-process-instance-template.json</code>,
+                <code>zeebe-record-process-instance-creation-template.json</code>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="problem-box">
+          <strong>⚠ Existing indices keep their old mapping.</strong> The
+          templates are <code>"dynamic": "strict"</code>, so a cluster that
+          already created <code>zeebe-record-*</code> indices rejects the new
+          fields until those indices are recreated. Use a fresh store, or
+          recreate the affected indices.
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════ TAB 3: BUGS -->
+    <div class="panel" id="tab-bugs">
+      <div class="card" style="margin-bottom: 20px">
+        <div class="problem-box" style="margin-top: 0">
+          <strong
+            >Seven bugs: three between "unit-green" and "works on a live
+            cluster", four from review.</strong
+          >
+          The engine logic was correct throughout — the breaks were at the
+          boundaries, and each surfaced as an error pointing away from its
+          cause.
+        </div>
+      </div>
+
+      <div class="card" style="margin-bottom: 20px">
+        <div class="card-title">
+          <span>Bug 1 · Strict exporter template rejection</span>
+          <span class="badge badge-orange">Storage</span>
+        </div>
+        <div class="pipe-sub">
+          <strong>Symptom:</strong> the exporter's bulk request fails with
+          <code>strict_dynamic_mapping_exception</code> on
+          <code>held</code> / <code>holdTimers</code>. Records stop flowing to
+          the secondary store — rejected, not silently dropped.
+        </div>
+        <div class="solution-box">
+          <strong>Fix:</strong> add each field to both the ES and OS templates
+          and recreate pre-existing indices (<a
+            class="jump"
+            onclick="showTab('impl')"
+            >Implementation →</a
+          >).
+        </div>
+      </div>
+
+      <div class="card" style="margin-bottom: 20px">
+        <div class="card-title">
+          <span>Bug 2 · Command routed to the wrong partition</span>
+          <span class="badge badge-blue">Gateway / broker-client</span>
+        </div>
+        <div class="pipe-sub">
+          <strong>Symptom:</strong> intermittent <code>404 NOT_FOUND</code> on a
+          timer that is genuinely held — it "worked" whenever the request
+          happened to land on the right partition.
+        </div>
+        <div class="pipe-sub" style="margin-top: 8px">
+          <strong>Root cause:</strong>
+          <code>BrokerTriggerTimerRequest</code> never called
+          <code>setKey(...)</code>, which is what decodes the target partition
+          from a key. Without it <code>addressesSpecificPartition()</code> is
+          false and <code>BrokerRequestManager</code> round-robins the command;
+          on a partition that does not own the instance the held index is empty,
+          so the engine correctly says <code>NOT_FOUND</code>.
+        </div>
+        <div class="solution-box">
+          <strong>Fix:</strong> <code>request.setKey(processInstanceKey)</code>,
+          the same pattern <code>BrokerCancelProcessInstanceRequest</code> uses.
+          Routing only — Path B ignores <code>record.getKey()</code>.
+        </div>
+      </div>
+
+      <div class="card" style="margin-bottom: 20px">
+        <div class="card-title">
+          <span>Bug 3 · Command API refused the value type</span>
+          <span class="badge badge-blue">Broker command API</span>
+        </div>
+        <pre
+          class="payload"
+        ><span class="c">// UNSUPPORTED_MESSAGE from the broker</span>
+Expected to handle only messages of type
+[JOB, DEPLOYMENT, PROCESS_INSTANCE, …],
+but received one of type <span class="s">'TIMER'</span></pre>
+        <div class="pipe-sub" style="margin-top: 8px">
+          <strong>Root cause:</strong>
+          <code>CommandApiRequestReader</code> only decodes a value when
+          <code>ValueTypes.isUserCommand(valueType)</code> is true. Timers were
+          only ever triggered internally, so <code>TIMER</code> was never in
+          <code>USER_COMMANDS</code>.
+        </div>
+        <div class="solution-box">
+          <strong>Fix:</strong> add <code>ValueType.TIMER</code> to
+          <code>USER_COMMANDS</code>;
+          <code>UnifiedRecordValue.fromValueType(TIMER)</code> already maps to
+          <code>TimerRecord</code>. Safe, because every external command carries
+          request metadata and is forced through resolve-and-authorize.
+        </div>
+      </div>
+
+      <div class="card" style="margin-bottom: 20px">
+        <div class="card-title">
+          <span>Bug 4 · The trigger command skipped the tenant check</span>
+          <span class="badge badge-red">Security</span>
+        </div>
+        <div class="pipe-sub">
+          <strong>Symptom:</strong> a principal holding
+          <code>UPDATE_PROCESS_INSTANCE</code> on a definition with the same
+          <code>bpmnProcessId</code> in tenant A could fire a held timer in
+          tenant B — a cross-tenant write on a brand-new public endpoint.
+        </div>
+        <div class="pipe-sub" style="margin-top: 8px">
+          <strong>Root cause:</strong> the processor called the
+          permission-only <code>cslCheck.check(...)</code>. Every other
+          process-instance command calls
+          <code>checkAuthorizationAndTenant(...)</code>; this endpoint had no
+          tenant dimension at all.
+        </div>
+        <div class="solution-box">
+          <strong>Fix:</strong> switch to
+          <code>checkAuthorizationAndTenant(...)</code> with the resolved
+          timer's <code>tenantId</code> and a <code>NOT_FOUND</code> rejection
+          (<a class="jump" onclick="showTab('how')">trigger contract →</a>).
+        </div>
+      </div>
+
+      <div class="card" style="margin-bottom: 20px">
+        <div class="card-title">
+          <span>Bug 5 · Resuming a suspended instance re-armed its held timers</span>
+          <span class="badge badge-blue">Engine state</span>
+        </div>
+        <div class="pipe-sub">
+          <strong>Symptom:</strong> suspend a <code>holdTimers</code> instance,
+          resume it, and every held timer gets a due-date entry and fires on its
+          own. The feature silently stops working.
+        </div>
+        <div class="pipe-sub" style="margin-top: 8px">
+          <strong>Root cause:</strong> <code>store()</code> branched on
+          <code>held</code>, but <code>resume()</code> did not — it upserted
+          into <code>TIMER_DUE_DATES</code> guarded only by
+          <code>get(...) != null</code>, writing the entry a held timer never
+          had.
+        </div>
+        <div class="solution-box">
+          <strong>Fix:</strong> <code>resume()</code> skips held timers. Covered
+          by <code>shouldNotScheduleHeldTimerOnResume</code> and
+          <code>shouldKeepTimerHeldAcrossSuspendAndResume</code>.
+        </div>
+      </div>
+
+      <div class="card" style="margin-bottom: 20px">
+        <div class="card-title">
+          <span>Bug 6 · Migration desynced the held index</span>
+          <span class="badge badge-blue">Engine state</span>
+        </div>
+        <div class="pipe-sub">
+          <strong>Symptom:</strong> after a migration moved a held timer to a
+          new element id, the trigger could not find it. The old entry leaked
+          permanently, and a later held timer on the old element id would read
+          as <code>AMBIGUOUS</code> forever.
+        </div>
+        <div class="pipe-sub" style="margin-top: 8px">
+          <strong>Root cause:</strong> the index key contained
+          <code>elementId</code>, a <em>mutable</em> field.
+          <code>TimerInstanceMigratedApplier</code> rewrites
+          <code>handlerNodeId</code> via <code>update()</code>, which only
+          touches <code>TIMERS</code>, so <code>remove()</code> later wrapped
+          the <em>new</em> element id and the old row was never deleted.
+        </div>
+        <div class="solution-box">
+          <strong>Fix (structural, not another maintenance site):</strong> take
+          the element id out of the key — <code>(processInstanceKey,
+          elementInstanceKey, timerKey)</code> are all immutable — and match the
+          element id against each stored timer instead. Nothing is left to
+          desync.
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">
+          <span>Bug 7 · A client trigger hung while the instance was suspended</span>
+          <span class="badge badge-blue">Engine</span>
+        </div>
+        <div class="pipe-sub">
+          <strong>Symptom:</strong> a trigger sent during suspension got no
+          response at all — the caller waited for a resume that might never
+          come.
+        </div>
+        <div class="pipe-sub" style="margin-top: 8px">
+          <strong>Root cause:</strong> <code>onSuspended</code> returned
+          <code>BUFFER</code> for every command. That is right for the
+          scheduler's internal trigger, which carries a timer key and a due-date
+          entry to suspend; a client command carries neither, and no response
+          writer runs on a buffered command.
+        </div>
+        <div class="solution-box">
+          <strong>Fix:</strong> <code>onSuspended</code> and
+          <code>onResuming</code> return <code>REJECT</code> for a non-internal
+          command, keeping the existing behavior for the scheduler's. The caller
+          gets <code>INVALID_STATE</code> immediately.
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════ TAB 4: API -->
+    <div class="panel" id="tab-api">
+      <div class="card">
+        <div class="card-title">
+          <span>REST v2 surface</span
+          ><span class="badge badge-blue">alpha, 8.10</span>
+        </div>
+
+        <div class="grid-2">
+          <div>
+            <div class="payload-cap">
+              <span class="method method-post">POST</span>
+              /v2/process-instances
+            </div>
+            <pre
+              class="payload"
+            >{
+  <span class="k">"processDefinitionId"</span>: <span class="s">"order-fulfillment"</span>,
+  <span class="k">"variables"</span>: { <span class="k">"orderId"</span>: <span class="s">"A-1001"</span> },
+  <span class="add"><span class="k">"holdTimers"</span>: true</span>
+}</pre>
+            <div class="pipe-sub" style="margin-top: 6px">
+              Top-level boolean — a switch, not an instruction. Default
+              <code>false</code>, carried to the root
+              <code>ProcessInstance</code> record and exported.
+            </div>
+          </div>
+
+          <div>
+            <div class="payload-cap">
+              <span class="method method-post">POST</span>
+              /v2/process-instances/{processInstanceKey}/timers/trigger
+              <span class="badge badge-green">new</span>
+            </div>
+            <pre
+              class="payload"
+            >{
+  <span class="add"><span class="k">"elementId"</span>: <span class="s">"Event_159hbtn"</span></span>
+}</pre>
+          </div>
+        </div>
+
+        <div class="grid-2" style="margin: 16px 0 0">
+          <div>
+            <div class="section-title" style="font-size: 12px; margin-top: 4px">
+              <div class="dot dot-teal"></div>
+              Contract
+            </div>
+            <table class="compare-table">
+              <tbody>
+                <tr>
+                  <td><code>TimerTriggerRequest</code></td>
+                  <td>
+                    <code>{ elementId: string, minLength 1 }</code>, required,
+                    <code>additionalProperties: false</code>
+                  </td>
+                </tr>
+                <tr>
+                  <td>path param</td>
+                  <td>
+                    <code>processInstanceKey</code> →
+                    <code>ProcessInstanceKey</code>
+                  </td>
+                </tr>
+                <tr>
+                  <td>permission</td>
+                  <td>
+                    <code>UPDATE_PROCESS_INSTANCE</code> on
+                    <code>PROCESS_DEFINITION</code>, plus the owning tenant
+                  </td>
+                </tr>
+                <tr>
+                  <td>OpenAPI</td>
+                  <td>
+                    <code>timers.yaml</code>, tag <code>Timer</code>,
+                    operationId <code>triggerTimer</code>,
+                    <code>x-eventually-consistent: false</code>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div>
+            <div class="section-title" style="font-size: 12px; margin-top: 4px">
+              <div class="dot dot-purple"></div>
+              Responses
+            </div>
+            <table class="compare-table">
+              <tbody>
+                <tr>
+                  <td><span class="check">204</span></td>
+                  <td>the timer was triggered</td>
+                </tr>
+                <tr>
+                  <td><span class="warn">400</span></td>
+                  <td>missing / blank <code>elementId</code></td>
+                </tr>
+                <tr>
+                  <td>401 / 403</td>
+                  <td>unauthenticated / not permitted</td>
+                </tr>
+                <tr>
+                  <td><span class="cross">404</span></td>
+                  <td>
+                    no held timer at that element — or it belongs to another
+                    tenant
+                  </td>
+                </tr>
+                <tr>
+                  <td><span class="warn">409</span></td>
+                  <td>more than one held timer matches</td>
+                </tr>
+                <tr>
+                  <td>500 / 503</td>
+                  <td>internal error / unavailable</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════ TAB 5: CPT -->
+    <div class="panel" id="tab-cpt">
+      <div class="card" style="margin-bottom: 20px">
+        <div class="card-title">
+          <span>Why CPT needs the switch</span>
+          <span class="badge badge-blue">Motivation</span>
+        </div>
+        <div class="pipe-sub" style="margin-bottom: 12px">
+          In <code>MANAGED</code> and <code>SHARED</code> mode CPT owns the
+          clock (<code>increaseTime</code> / <code>setTime</code>), so nothing
+          fires until the test says so and there is nothing to hold. In
+          <code>REMOTE</code> mode the cluster clock runs: a <code>PT5S</code>
+          timer fires before the replayed step reaches it, and pinning the
+          shared cluster's clock would stall every other instance on it.
+        </div>
+        <div class="problem-box" style="margin-bottom: 0">
+          <strong>And there was no fallback.</strong>
+          <code>INCREASE_TIME</code> does <em>not</em> fire a held timer, so
+          until this work a recording that used the switch had no replayable
+          form in <strong>any</strong> mode.
+        </div>
+      </div>
+
+      <div class="card" style="margin-bottom: 20px">
+        <div class="card-title">
+          <span>What shipped</span>
+          <span class="badge badge-blue">Java client · format · runtime</span>
+        </div>
+        <div class="grid-2" style="margin-bottom: 16px">
+          <div>
+            <div class="payload-cap">1 · open the instance with held timers</div>
+            <pre
+              class="payload"
+            >client.<span class="k">newCreateInstanceCommand</span>()
+  .bpmnProcessId(<span class="s">"order-fulfillment"</span>)
+  .latestVersion()
+  <span class="add">.holdTimers(<span class="k">true</span>)</span>
+  .send().join();</pre>
+          </div>
+          <div>
+            <div class="payload-cap">2 · fire one held timer</div>
+            <pre
+              class="payload"
+            ><span class="add">client.newTriggerTimerCommand(processInstanceKey)</span>
+  <span class="add">.elementId(<span class="s">"escalation"</span>)</span>
+  .send().join();</pre>
+            <div class="pipe-sub" style="margin-top: 6px">
+              Modelled on <code>newReleaseJobCommand</code>: no gRPC stub,
+              <code>send()</code> goes straight to the HTTP client. The element
+              id is the whole body, so <code>elementId()</code> returns the
+              final step — a trigger without one is never valid.
+            </div>
+          </div>
+        </div>
+        <div class="problem-box" style="margin-bottom: 16px">
+          <strong>REST-only, by design.</strong> <code>gateway.proto</code> has
+          no counterpart for either.
+          <code>newTriggerTimerCommand</code> has no gRPC form at all, and
+          <code>holdTimers</code> throws
+          <code>UnsupportedOperationException</code> over gRPC rather than
+          dropping the switch — a silent drop would let the cluster clock fire
+          the timer the recording meant to drive. Leaving gRPC out is
+          acceptable because REST is the client default and the switch only
+          matters in <code>REMOTE</code> mode.
+        </div>
+        <div class="grid-2" style="margin-bottom: 0">
+          <div>
+            <div class="payload-cap">3 · the stored recording</div>
+            <pre
+              class="payload"
+            >{
+  <span class="k">"type"</span>: <span class="k">"CREATE_PROCESS_INSTANCE"</span>,
+  <span class="k">"processDefinitionSelector"</span>: { <span class="k">"processDefinitionId"</span>: <span class="s">"order-fulfillment"</span> },
+  <span class="add"><span class="k">"holdTimers"</span>: <span class="k">true</span></span>
+}
+
+<span class="add">{
+  <span class="k">"type"</span>: <span class="k">"TRIGGER_TIMER"</span>,
+  <span class="k">"processInstanceSelector"</span>: { <span class="k">"processDefinitionId"</span>: <span class="s">"order-fulfillment"</span> },
+  <span class="k">"elementSelector"</span>: { <span class="k">"elementId"</span>: <span class="s">"escalation"</span> }
+}</span></pre>
+          </div>
+          <div>
+            <div class="payload-cap">4 · the replay surface</div>
+            <pre
+              class="payload"
+            ><span class="c">// CamundaProcessTestContext</span>
+<span class="add"><span class="k">void</span> triggerTimer(
+    ProcessInstanceSelector processInstanceSelector,
+    <span class="k">String</span> elementId);</span>
+
+<span class="c">// handler, registered in the instruction registry</span>
+<span class="add">TriggerTimerInstructionHandler</span>
+  → buildProcessInstanceSelector(...)
+  → buildTimerElementId(...)
+  → context.triggerTimer(...)</pre>
+            <div class="pipe-sub" style="margin-top: 6px">
+              No token anywhere. The trigger is authorized like any other
+              process-instance command, so unlike reserved jobs there is no
+              per-run credential to mint, carry or clear.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-bottom: 20px">
+        <div class="card-title">
+          <span>Three decisions worth the ink</span>
+          <span class="badge badge-blue">Design</span>
+        </div>
+        <table class="compare-table">
+          <thead>
+            <tr>
+              <th style="width: 30%">Decision</th>
+              <th>Why</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>
+                <code>TRIGGER_TIMER</code> carries a process instance selector
+                <strong>as well as</strong> an element selector
+              </td>
+              <td>
+                The call-activity instructions take an element selector alone
+                because they resolve to a job, and <code>JobSelector</code>
+                already carries a process definition id. A timer is addressed by
+                an instance <em>key</em>, which only a process instance selector
+                can produce. <code>UPDATE_VARIABLES</code> pairs the two for the
+                same reason and is the precedent followed here.
+              </td>
+            </tr>
+            <tr>
+              <td>
+                Select the element by <code>elementId</code>, never
+                <code>elementName</code>
+              </td>
+              <td>
+                For a <strong>boundary</strong> timer the id belongs to the
+                boundary event while the element instance belongs to the
+                activity it is attached to — so resolving a name through the
+                element-instance API would find nothing for the commonest
+                held-timer shape. <code>buildTimerElementId</code> throws
+                otherwise, mirroring
+                <code>buildCallActivityStubJobSelector</code>.
+              </td>
+            </tr>
+            <tr>
+              <td>The trigger runs inside the await block</td>
+              <td>
+                A held timer may not exist yet when the step is reached, and the
+                engine answers <code>404</code> until it does.
+                <code>triggerTimer</code> issues the command inside
+                <code>awaitProcessInstance</code>, as
+                <code>completeJob</code> does:
+                <code>AwaitilityBehavior.untilAsserted</code> is configured with
+                <code>ignoreExceptionsInstanceOf(ClientException.class)</code>
+                and the rejection arrives as
+                <code>ProblemException → ClientHttpException →
+                ClientException</code>, so it retries instead of failing.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="grid-2" style="margin-bottom: 20px">
+        <div class="card">
+          <div class="card-title">
+            <span>Teardown</span>
+            <span class="badge badge-orange">Leak prevention</span>
+          </div>
+          <div class="pipe-sub" style="margin-bottom: 10px">
+            A held-timer instance parks like a reserved one: its timer never
+            fires on its own and the hold cannot be revoked, so a test that
+            fails before triggering leaves the instance on a shared or remote
+            cluster forever.
+          </div>
+          <pre
+            class="payload"
+          ><span class="c">// CreateProcessInstanceInstructionHandler</span>
+<span class="k">final boolean</span> isolated =
+    reserveJobs
+    || stubCallActivities
+    <span class="add">|| holdTimers</span>;</pre>
+          <div class="pipe-sub" style="margin-top: 8px">
+            The runner cancels every isolated instance in a
+            <code>finally</code>, so the failure path is covered too.
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">
+            <span>Conflict detection</span>
+            <span class="badge badge-orange">Warn, never reject</span>
+          </div>
+          <div class="pipe-sub" style="margin-bottom: 10px">
+            <code>holdTimers</code> plus <code>INCREASE_TIME</code> or
+            <code>SET_TIME</code> fails mildly: nothing starves, the held timer
+            simply does not fire and the next assertion times out with nothing
+            pointing at the cause.
+          </div>
+          <div class="solution-box" style="margin-bottom: 0">
+            <code>holdsTimersAndMovesTheClock</code> logs before the first
+            instruction runs and points at <code>TRIGGER_TIMER</code>. It does
+            not fail the run: <code>holdTimers</code> is per create instruction,
+            so a test case may legitimately hold one instance's timers while
+            advancing the clock for another.
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">
+          <span>Still open</span>
+          <span class="badge badge-red">Out of scope</span>
+        </div>
+        <table class="compare-table">
+          <thead>
+            <tr>
+              <th style="width: 34%">Gap</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Revoking a hold</td>
+              <td>
+                No engine command exists, so there is nothing for the client or
+                the format to expose. This is where the timer story is genuinely
+                narrower than reserved jobs, which have
+                <code>RELEASE_JOB</code>.
+              </td>
+            </tr>
+            <tr>
+              <td>Multi-instance and parallel branches</td>
+              <td>
+                Two live held timers on one element id reject with
+                <code>409</code> at the engine and the instruction replays as a
+                failure. The CPT-level shadow of the missing occurrence index
+                <code>JobSelector</code> also lacks, deferred the same way.
+              </td>
+            </tr>
+            <tr>
+              <td>End-to-end coverage on a running engine</td>
+              <td>
+                Coverage is unit-level. CPT <code>MANAGED</code> mode pulls
+                <code>camunda/camunda:SNAPSHOT</code>, which does not contain
+                these engine changes, so a <code>TestCasesIT</code> case would
+                fail for the wrong reason. An acceptance test building a cluster
+                from source is still to do — the same blocker the two sibling
+                switches recorded.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <script>
+      function showTab(name) {
+        document
+          .querySelectorAll(".tab")
+          .forEach((t) => t.classList.remove("active"));
+        document
+          .querySelectorAll(".panel")
+          .forEach((p) => p.classList.remove("active"));
+        document.getElementById("tab-" + name).classList.add("active");
+        const tab = document.querySelector('.tab[data-tab="' + name + '"]');
+        tab.classList.add("active");
+        tab.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+    </script>
+  </body>
+</html>

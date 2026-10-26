@@ -96,23 +96,38 @@ public class SimpleRequestMapper {
         .toList();
   }
 
-  private static List<io.camunda.gateway.protocol.model.ProcessInstanceCreationTerminateInstruction>
+  private static List<io.camunda.gateway.protocol.model.ProcessInstanceCreationRuntimeInstruction>
       mapCreateProcessInstanceRuntimeInstructions(
           final List<
                   io.camunda.gateway.protocol.model.simple
-                      .ProcessInstanceCreationTerminateInstruction>
+                      .ProcessInstanceCreationRuntimeInstruction>
               instructions) {
     if (instructions == null) {
       return List.of();
     }
     return instructions.stream()
-        .map(
-            instruction ->
-                io.camunda.gateway.protocol.model.ProcessInstanceCreationTerminateInstruction
-                    .Builder.create()
-                    .afterElementId(instruction.getAfterElementId())
-                    .type(instruction.getType())
-                    .build())
+        .map(SimpleRequestMapper::mapCreateProcessInstanceRuntimeInstruction)
         .toList();
+  }
+
+  private static io.camunda.gateway.protocol.model.ProcessInstanceCreationRuntimeInstruction
+      mapCreateProcessInstanceRuntimeInstruction(
+          final io.camunda.gateway.protocol.model.simple.ProcessInstanceCreationRuntimeInstruction
+              instruction) {
+    if ("CONFIGURE_EXECUTION".equals(instruction.getType())) {
+      return io.camunda.gateway.protocol.model.ProcessInstanceCreationConfigureExecutionInstruction
+          .Builder.create()
+          .type(instruction.getType())
+          .reserveJobs(instruction.getReserveJobs())
+          .jobReservationToken(instruction.getJobReservationToken())
+          .stubCallActivities(instruction.getStubCallActivities())
+          .holdTimers(instruction.getHoldTimers())
+          .build();
+    }
+    return io.camunda.gateway.protocol.model.ProcessInstanceCreationTerminateInstruction.Builder
+        .create()
+        .afterElementId(instruction.getAfterElementId())
+        .type(instruction.getType())
+        .build();
   }
 }

@@ -42,9 +42,14 @@ import io.camunda.process.test.api.testCases.instructions.MockDmnDecisionInstruc
 import io.camunda.process.test.api.testCases.instructions.MockJobWorkerCompleteJobInstruction;
 import io.camunda.process.test.api.testCases.instructions.MockJobWorkerThrowBpmnErrorInstruction;
 import io.camunda.process.test.api.testCases.instructions.PublishMessageInstruction;
+import io.camunda.process.test.api.testCases.instructions.ReleaseJobInstruction;
 import io.camunda.process.test.api.testCases.instructions.ResolveIncidentInstruction;
+import io.camunda.process.test.api.testCases.instructions.RunCalledProcessInstruction;
 import io.camunda.process.test.api.testCases.instructions.SetTimeInstruction;
+import io.camunda.process.test.api.testCases.instructions.StubCallActivityCompleteInstruction;
+import io.camunda.process.test.api.testCases.instructions.StubCallActivityThrowErrorInstruction;
 import io.camunda.process.test.api.testCases.instructions.ThrowBpmnErrorFromJobInstruction;
+import io.camunda.process.test.api.testCases.instructions.TriggerTimerInstruction;
 import io.camunda.process.test.api.testCases.instructions.UpdateVariablesInstruction;
 
 /** An instruction to define an action or an assertion to be performed in a test case. */
@@ -127,12 +132,27 @@ import io.camunda.process.test.api.testCases.instructions.UpdateVariablesInstruc
       value = CorrelateMessageInstruction.class,
       name = TestCaseInstructionType.CORRELATE_MESSAGE),
   @JsonSubTypes.Type(
+      value = ReleaseJobInstruction.class,
+      name = TestCaseInstructionType.RELEASE_JOB),
+  @JsonSubTypes.Type(
       value = ResolveIncidentInstruction.class,
       name = TestCaseInstructionType.RESOLVE_INCIDENT),
+  @JsonSubTypes.Type(
+      value = RunCalledProcessInstruction.class,
+      name = TestCaseInstructionType.RUN_CALLED_PROCESS),
   @JsonSubTypes.Type(value = SetTimeInstruction.class, name = TestCaseInstructionType.SET_TIME),
+  @JsonSubTypes.Type(
+      value = StubCallActivityCompleteInstruction.class,
+      name = TestCaseInstructionType.STUB_CALL_ACTIVITY_COMPLETE),
+  @JsonSubTypes.Type(
+      value = StubCallActivityThrowErrorInstruction.class,
+      name = TestCaseInstructionType.STUB_CALL_ACTIVITY_THROW_ERROR),
   @JsonSubTypes.Type(
       value = ThrowBpmnErrorFromJobInstruction.class,
       name = TestCaseInstructionType.THROW_BPMN_ERROR_FROM_JOB),
+  @JsonSubTypes.Type(
+      value = TriggerTimerInstruction.class,
+      name = TestCaseInstructionType.TRIGGER_TIMER),
   @JsonSubTypes.Type(
       value = UpdateVariablesInstruction.class,
       name = TestCaseInstructionType.UPDATE_VARIABLES)

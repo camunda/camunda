@@ -24,7 +24,9 @@ import io.camunda.client.api.command.CommandWithTenantStep;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.client.protocol.rest.ProblemDetail;
+import io.camunda.client.protocol.rest.ProcessInstanceCreationConfigureExecutionInstruction;
 import io.camunda.client.protocol.rest.ProcessInstanceCreationInstruction;
+import io.camunda.client.protocol.rest.ProcessInstanceCreationRuntimeInstruction;
 import io.camunda.client.protocol.rest.ProcessInstanceCreationStartInstruction;
 import io.camunda.client.protocol.rest.ProcessInstanceCreationTerminateInstruction;
 import io.camunda.client.protocol.rest.ProcessInstanceResult;
@@ -300,13 +302,117 @@ public class CreateProcessInstanceRestTest extends ClientRestTest {
     final ProcessInstanceCreationInstruction request =
         gatewayService.getLastRequest(ProcessInstanceCreationInstruction.class);
 
-    final List<ProcessInstanceCreationTerminateInstruction> runtimeInstructionList =
+    final List<ProcessInstanceCreationRuntimeInstruction> runtimeInstructionList =
         request.getRuntimeInstructions();
     assertThat(runtimeInstructionList).hasSize(1);
     final ProcessInstanceCreationTerminateInstruction runtimeInstruction =
-        runtimeInstructionList.get(0);
+        (ProcessInstanceCreationTerminateInstruction) runtimeInstructionList.get(0);
     assertThat(runtimeInstruction.getAfterElementId()).isEqualTo(ELEMENT_ID_A);
     assertThat(runtimeInstruction.getType()).isEqualTo("TERMINATE_PROCESS_INSTANCE");
+  }
+
+  @Test
+  public void shouldReserveJobs() {
+    // given
+    gatewayService.onCreateProcessInstanceRequest(DUMMY_RESPONSE);
+
+    // when
+    client
+        .newCreateInstanceCommand()
+        .processDefinitionKey(123)
+        .reserveJobs("ts-8f2c")
+        .send()
+        .join();
+
+    // then
+    final ProcessInstanceCreationInstruction request =
+        gatewayService.getLastRequest(ProcessInstanceCreationInstruction.class);
+
+    final List<ProcessInstanceCreationRuntimeInstruction> runtimeInstructions =
+        request.getRuntimeInstructions();
+    assertThat(runtimeInstructions).hasSize(1);
+    final ProcessInstanceCreationConfigureExecutionInstruction runtimeInstruction =
+        (ProcessInstanceCreationConfigureExecutionInstruction) runtimeInstructions.get(0);
+    assertThat(runtimeInstruction.getReserveJobs()).isTrue();
+    assertThat(runtimeInstruction.getJobReservationToken()).isEqualTo("ts-8f2c");
+    assertThat(runtimeInstruction.getType()).isEqualTo("CONFIGURE_EXECUTION");
+  }
+
+  @Test
+  public void shouldRejectBlankJobReservationToken() {
+    // when / then
+    assertThatThrownBy(
+            () -> client.newCreateInstanceCommand().processDefinitionKey(123).reserveJobs(""))
+        .isInstanceOf(IllegalArgumentException.class);
+  }
+
+  @Test
+  public void shouldStubCallActivities() {
+    // given
+    gatewayService.onCreateProcessInstanceRequest(DUMMY_RESPONSE);
+
+    // when
+    client
+        .newCreateInstanceCommand()
+        .processDefinitionKey(123)
+        .stubCallActivities(true)
+        .send()
+        .join();
+
+    // then
+    final ProcessInstanceCreationInstruction request =
+        gatewayService.getLastRequest(ProcessInstanceCreationInstruction.class);
+    final ProcessInstanceCreationConfigureExecutionInstruction runtimeInstruction =
+        (ProcessInstanceCreationConfigureExecutionInstruction)
+            request.getRuntimeInstructions().get(0);
+    assertThat(runtimeInstruction.getStubCallActivities()).isTrue();
+  }
+
+  @Test
+  public void shouldHoldTimers() {
+    // given
+    gatewayService.onCreateProcessInstanceRequest(DUMMY_RESPONSE);
+
+    // when
+    client.newCreateInstanceCommand().processDefinitionKey(123).holdTimers(true).send().join();
+
+    // then
+    final ProcessInstanceCreationInstruction request =
+        gatewayService.getLastRequest(ProcessInstanceCreationInstruction.class);
+    final ProcessInstanceCreationConfigureExecutionInstruction runtimeInstruction =
+        (ProcessInstanceCreationConfigureExecutionInstruction)
+            request.getRuntimeInstructions().get(0);
+    assertThat(runtimeInstruction.getHoldTimers()).isTrue();
+  }
+
+  @Test
+  public void shouldRejectHoldTimersOverGrpc() {
+    // when / then
+    assertThatThrownBy(
+            () ->
+                client
+                    .newCreateInstanceCommand()
+                    .useGrpc()
+                    .processDefinitionKey(123)
+                    .holdTimers(true)
+                    .send())
+        .isInstanceOf(UnsupportedOperationException.class)
+        .hasMessageContaining("holdTimers");
+  }
+
+  @Test
+  public void shouldRejectReserveJobsOverGrpc() {
+    // when / then
+    assertThatThrownBy(
+            () ->
+                client
+                    .newCreateInstanceCommand()
+                    .useGrpc()
+                    .processDefinitionKey(123)
+                    .reserveJobs("ts-8f2c")
+                    .send())
+        .isInstanceOf(UnsupportedOperationException.class)
+        .hasMessageContaining("reserveJobs");
   }
 
   @Test
@@ -327,15 +433,15 @@ public class CreateProcessInstanceRestTest extends ClientRestTest {
     final ProcessInstanceCreationInstruction request =
         gatewayService.getLastRequest(ProcessInstanceCreationInstruction.class);
 
-    final List<ProcessInstanceCreationTerminateInstruction> runtimeInstructionList =
+    final List<ProcessInstanceCreationRuntimeInstruction> runtimeInstructionList =
         request.getRuntimeInstructions();
     assertThat(runtimeInstructionList).hasSize(2);
     final ProcessInstanceCreationTerminateInstruction runtimeInstructionA =
-        runtimeInstructionList.get(0);
+        (ProcessInstanceCreationTerminateInstruction) runtimeInstructionList.get(0);
     assertThat(runtimeInstructionA.getAfterElementId()).isEqualTo(ELEMENT_ID_A);
     assertThat(runtimeInstructionA.getType()).isEqualTo("TERMINATE_PROCESS_INSTANCE");
     final ProcessInstanceCreationTerminateInstruction runtimeInstructionB =
-        runtimeInstructionList.get(1);
+        (ProcessInstanceCreationTerminateInstruction) runtimeInstructionList.get(1);
     assertThat(runtimeInstructionB.getAfterElementId()).isEqualTo(ELEMENT_ID_B);
     assertThat(runtimeInstructionB.getType()).isEqualTo("TERMINATE_PROCESS_INSTANCE");
   }
@@ -363,11 +469,11 @@ public class CreateProcessInstanceRestTest extends ClientRestTest {
     assertThat(startInstructionList).hasSize(1);
     assertThat(startInstructionList.get(0).getElementId()).isEqualTo(ELEMENT_ID_A);
 
-    final List<ProcessInstanceCreationTerminateInstruction> runtimeInstructionList =
+    final List<ProcessInstanceCreationRuntimeInstruction> runtimeInstructionList =
         request.getRuntimeInstructions();
     assertThat(runtimeInstructionList).hasSize(1);
     final ProcessInstanceCreationTerminateInstruction runtimeInstruction =
-        runtimeInstructionList.get(0);
+        (ProcessInstanceCreationTerminateInstruction) runtimeInstructionList.get(0);
     assertThat(runtimeInstruction.getAfterElementId()).isEqualTo(ELEMENT_ID_A);
     assertThat(runtimeInstruction.getType()).isEqualTo("TERMINATE_PROCESS_INSTANCE");
   }

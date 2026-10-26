@@ -106,8 +106,7 @@ final class ProcessInstanceElementCompletedV2Applier
             elementId,
             ExecutableCallActivity.class);
 
-    if (callActivity.getOutputMappings().isPresent()
-        || callActivity.isPropagateAllChildVariablesEnabled()) {
+    if (callActivity.propagatesCalledProcessVariables()) {
       final var variables = variableState.getVariablesAsDocument(key);
       eventScopeInstanceState.triggerEvent(
           parentElementInstanceKey,

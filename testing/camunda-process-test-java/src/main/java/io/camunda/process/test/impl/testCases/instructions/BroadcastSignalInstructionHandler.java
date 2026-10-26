@@ -20,9 +20,16 @@ import io.camunda.process.test.api.CamundaProcessTestContext;
 import io.camunda.process.test.api.testCases.instructions.BroadcastSignalInstruction;
 import io.camunda.process.test.impl.testCases.AssertionFacade;
 import io.camunda.process.test.impl.testCases.TestCaseInstructionHandler;
+import io.camunda.process.test.impl.testCases.TestRunContext;
 
 public class BroadcastSignalInstructionHandler
     implements TestCaseInstructionHandler<BroadcastSignalInstruction> {
+
+  private final TestRunContext runContext;
+
+  public BroadcastSignalInstructionHandler(final TestRunContext runContext) {
+    this.runContext = runContext;
+  }
 
   @Override
   public void execute(
@@ -34,7 +41,7 @@ public class BroadcastSignalInstructionHandler
     camundaClient
         .newBroadcastSignalCommand()
         .signalName(instruction.getSignalName())
-        .variables(instruction.getVariables())
+        .variables(runContext.applyRunId(instruction.getVariables()))
         .send()
         .join();
   }

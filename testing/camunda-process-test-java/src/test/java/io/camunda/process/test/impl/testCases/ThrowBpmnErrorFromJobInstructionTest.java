@@ -60,7 +60,7 @@ public class ThrowBpmnErrorFromJobInstructionTest {
   @Captor private ArgumentCaptor<String> errorMessageCaptor;
 
   private final ThrowBpmnErrorFromJobInstructionHandler instructionHandler =
-      new ThrowBpmnErrorFromJobInstructionHandler();
+      new ThrowBpmnErrorFromJobInstructionHandler(TestRunContext.disabled());
 
   @Test
   void shouldThrowBpmnErrorByJobType() {

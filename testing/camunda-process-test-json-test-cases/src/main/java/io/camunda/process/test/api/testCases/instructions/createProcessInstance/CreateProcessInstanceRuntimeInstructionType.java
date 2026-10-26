@@ -19,4 +19,5 @@ package io.camunda.process.test.api.testCases.instructions.createProcessInstance
 public class CreateProcessInstanceRuntimeInstructionType {
 
   public static final String TERMINATE_PROCESS_INSTANCE = "TERMINATE_PROCESS_INSTANCE";
+  public static final String CONFIGURE_EXECUTION = "CONFIGURE_EXECUTION";
 }

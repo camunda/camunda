@@ -23,9 +23,16 @@ import io.camunda.process.test.api.testCases.instructions.AssertUserTaskInstruct
 import io.camunda.process.test.api.testCases.instructions.assertUserTask.UserTaskState;
 import io.camunda.process.test.impl.testCases.AssertionFacade;
 import io.camunda.process.test.impl.testCases.TestCaseInstructionHandler;
+import io.camunda.process.test.impl.testCases.TestRunContext;
 
 public class AssertUserTaskInstructionHandler
     implements TestCaseInstructionHandler<AssertUserTaskInstruction> {
+
+  private final TestRunContext runContext;
+
+  public AssertUserTaskInstructionHandler(final TestRunContext runContext) {
+    this.runContext = runContext;
+  }
 
   @Override
   public void execute(
@@ -35,7 +42,8 @@ public class AssertUserTaskInstructionHandler
       final AssertionFacade assertionFacade) {
 
     final UserTaskSelector userTaskSelector =
-        InstructionSelectorFactory.buildUserTaskSelector(instruction.getUserTaskSelector());
+        InstructionSelectorFactory.buildUserTaskSelector(
+            instruction.getUserTaskSelector(), runContext, camundaClient);
 
     final UserTaskAssert userTaskAssert = assertionFacade.assertThatUserTask(userTaskSelector);
 

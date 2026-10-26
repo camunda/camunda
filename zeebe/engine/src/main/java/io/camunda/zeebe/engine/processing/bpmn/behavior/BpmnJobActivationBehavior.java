@@ -22,6 +22,7 @@ import io.camunda.zeebe.engine.processing.job.JobSecretLookup;
 import io.camunda.zeebe.engine.processing.job.JobSecretLookup.Secret;
 import io.camunda.zeebe.engine.processing.job.JobSecretLookup.SecretCheckResult;
 import io.camunda.zeebe.engine.processing.job.JobVariablesCollector;
+import io.camunda.zeebe.engine.processing.job.JobWorkerDispatch;
 import io.camunda.zeebe.engine.processing.job.LeaseTokens;
 import io.camunda.zeebe.engine.processing.secretreference.SecretResolutionScheduler;
 import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer;
@@ -160,6 +161,15 @@ public class BpmnJobActivationBehavior {
 
     final String jobType = wrappedJobRecord.getType();
     final JobKind jobKind = wrappedJobRecord.getJobKind();
+
+    final var withheldReason = JobWorkerDispatch.withheldFromWorkersReason(wrappedJobRecord);
+    if (withheldReason != null) {
+      // neither push the job nor wake the pollers for its type
+      sideEffectWriter.appendSideEffect(
+          () -> jobMetrics.countJobEvent(withheldReason, jobKind, jobType));
+      return true;
+    }
+
     final var leaseAwarePredicate = new LeaseAwarePredicate(wrappedJobRecord);
     final Optional<JobStream> optionalJobStream =
         jobStreamer.streamFor(

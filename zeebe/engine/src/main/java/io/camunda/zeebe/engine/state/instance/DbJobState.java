@@ -488,6 +488,15 @@ public final class DbJobState implements JobState, MutableJobState {
     EnsureUtil.ensureNotNullOrEmpty("type", type);
     EnsureUtil.ensureNotNullOrEmpty("tenantId", tenantId);
 
+    final var record = getJob(key);
+    if (record != null && (record.isCallActivityStub() || record.hasJobReservationToken())) {
+      // Reserved and call-activity-stub jobs are served to no worker (the twin check lives in
+      // JobWorkerDispatch#withheldFromWorkersReason), so they are kept out of the poll index
+      // instead of inserted and then skipped on every walk. JobReleasedApplier re-adds a released
+      // job here once its reservation token is cleared.
+      return;
+    }
+
     jobTypeKey.wrapBuffer(type);
     jobKey.wrapLong(key);
     tenantIdKey.wrapString(tenantId);

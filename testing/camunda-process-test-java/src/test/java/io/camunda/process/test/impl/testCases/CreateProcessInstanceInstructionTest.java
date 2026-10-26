@@ -25,6 +25,7 @@ import io.camunda.process.test.api.CamundaProcessTestContext;
 import io.camunda.process.test.api.testCases.ImmutableProcessDefinitionSelector;
 import io.camunda.process.test.api.testCases.instructions.CreateProcessInstanceInstruction;
 import io.camunda.process.test.api.testCases.instructions.ImmutableCreateProcessInstanceInstruction;
+import io.camunda.process.test.api.testCases.instructions.createProcessInstance.ImmutableCreateProcessInstanceConfigureExecutionRuntimeInstruction;
 import io.camunda.process.test.api.testCases.instructions.createProcessInstance.ImmutableCreateProcessInstanceStartInstruction;
 import io.camunda.process.test.api.testCases.instructions.createProcessInstance.ImmutableCreateProcessInstanceTerminateRuntimeInstruction;
 import io.camunda.process.test.impl.testCases.instructions.CreateProcessInstanceInstructionHandler;
@@ -50,7 +51,8 @@ public class CreateProcessInstanceInstructionTest {
   @Mock private AssertionFacade assertionFacade;
 
   private final CreateProcessInstanceInstructionHandler instructionHandler =
-      new CreateProcessInstanceInstructionHandler();
+      new CreateProcessInstanceInstructionHandler(
+          new CreatedProcessInstanceRegistry(), TestRunContext.disabled());
 
   @Test
   void shouldCreateProcessInstanceByProcessDefinitionId() {
@@ -79,6 +81,101 @@ public class CreateProcessInstanceInstructionTest {
     verify(mockCommand).send();
 
     verifyNoMoreInteractions(camundaClient, processTestContext, mockCommand, assertionFacade);
+  }
+
+  @Test
+  void shouldReserveJobsAndStubCallActivities() {
+    // given
+    final String token = "cpt-1234";
+    org.mockito.Mockito.when(processTestContext.getJobReservationToken()).thenReturn(token);
+
+    final CreateProcessInstanceInstruction instruction =
+        ImmutableCreateProcessInstanceInstruction.builder()
+            .processDefinitionSelector(
+                ImmutableProcessDefinitionSelector.builder()
+                    .processDefinitionId(PROCESS_DEFINITION_ID)
+                    .build())
+            .addRuntimeInstructions(
+                ImmutableCreateProcessInstanceConfigureExecutionRuntimeInstruction.builder()
+                    .reserveJobs(true)
+                    .stubCallActivities(true)
+                    .build())
+            .build();
+
+    // when
+    instructionHandler.execute(instruction, processTestContext, camundaClient, assertionFacade);
+
+    // then
+    final CreateProcessInstanceCommandStep3 mockCommand =
+        camundaClient
+            .newCreateInstanceCommand()
+            .bpmnProcessId(PROCESS_DEFINITION_ID)
+            .latestVersion()
+            .variables(Collections.emptyMap());
+
+    verify(mockCommand).reserveJobs(token);
+    verify(mockCommand).stubCallActivities(true);
+    verify(mockCommand).send();
+  }
+
+  @Test
+  void shouldNotReserveJobsByDefault() {
+    // given
+    final CreateProcessInstanceInstruction instruction =
+        ImmutableCreateProcessInstanceInstruction.builder()
+            .processDefinitionSelector(
+                ImmutableProcessDefinitionSelector.builder()
+                    .processDefinitionId(PROCESS_DEFINITION_ID)
+                    .build())
+            .build();
+
+    // when
+    instructionHandler.execute(instruction, processTestContext, camundaClient, assertionFacade);
+
+    // then
+    final CreateProcessInstanceCommandStep3 mockCommand =
+        camundaClient
+            .newCreateInstanceCommand()
+            .bpmnProcessId(PROCESS_DEFINITION_ID)
+            .latestVersion()
+            .variables(Collections.emptyMap());
+
+    verify(mockCommand, org.mockito.Mockito.never())
+        .reserveJobs(org.mockito.ArgumentMatchers.any());
+    verify(mockCommand, org.mockito.Mockito.never())
+        .stubCallActivities(org.mockito.ArgumentMatchers.anyBoolean());
+    verify(mockCommand, org.mockito.Mockito.never())
+        .holdTimers(org.mockito.ArgumentMatchers.anyBoolean());
+  }
+
+  @Test
+  void shouldHoldTimers() {
+    // given
+    final CreateProcessInstanceInstruction instruction =
+        ImmutableCreateProcessInstanceInstruction.builder()
+            .processDefinitionSelector(
+                ImmutableProcessDefinitionSelector.builder()
+                    .processDefinitionId(PROCESS_DEFINITION_ID)
+                    .build())
+            .addRuntimeInstructions(
+                ImmutableCreateProcessInstanceConfigureExecutionRuntimeInstruction.builder()
+                    .holdTimers(true)
+                    .build())
+            .build();
+
+    // when
+    instructionHandler.execute(instruction, processTestContext, camundaClient, assertionFacade);
+
+    // then
+    final CreateProcessInstanceCommandStep3 mockCommand =
+        camundaClient
+            .newCreateInstanceCommand()
+            .bpmnProcessId(PROCESS_DEFINITION_ID)
+            .latestVersion()
+            .variables(Collections.emptyMap());
+
+    verify(mockCommand).holdTimers(true);
+    verify(mockCommand).send();
   }
 
   @Test
@@ -113,6 +210,41 @@ public class CreateProcessInstanceInstructionTest {
     verify(mockCommand).send();
 
     verifyNoMoreInteractions(camundaClient, processTestContext, mockCommand, assertionFacade);
+  }
+
+  @Test
+  void shouldTagStartedInstanceWithRunIdWhenIsolationEnabled() {
+    // given
+    final String runId = "run-1";
+    final CreateProcessInstanceInstructionHandler isolatingHandler =
+        new CreateProcessInstanceInstructionHandler(
+            new CreatedProcessInstanceRegistry(), TestRunContext.enabled(runId));
+
+    final CreateProcessInstanceInstruction instruction =
+        ImmutableCreateProcessInstanceInstruction.builder()
+            .processDefinitionSelector(
+                ImmutableProcessDefinitionSelector.builder()
+                    .processDefinitionId(PROCESS_DEFINITION_ID)
+                    .build())
+            .putAllVariables(Collections.singletonMap("a", 1))
+            .build();
+
+    // when
+    isolatingHandler.execute(instruction, processTestContext, camundaClient, assertionFacade);
+
+    // then
+    final Map<String, Object> expectedVariables = new HashMap<>();
+    expectedVariables.put("a", 1);
+    expectedVariables.put(TestRunContext.RUN_ID_VARIABLE_NAME, runId);
+
+    final CreateProcessInstanceCommandStep3 mockCommand =
+        camundaClient
+            .newCreateInstanceCommand()
+            .bpmnProcessId(PROCESS_DEFINITION_ID)
+            .latestVersion()
+            .variables(expectedVariables);
+
+    verify(mockCommand).send();
   }
 
   @Test

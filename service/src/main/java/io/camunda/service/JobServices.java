@@ -34,6 +34,7 @@ import io.camunda.zeebe.gateway.impl.broker.request.BrokerActivateJobsRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerCompleteJobRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerCreateBatchOperationRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerFailJobRequest;
+import io.camunda.zeebe.gateway.impl.broker.request.BrokerReleaseJobRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerThrowErrorRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerUpdateJobRequest;
 import io.camunda.zeebe.gateway.impl.job.ActivateJobsHandler;
@@ -124,6 +125,7 @@ public final class JobServices<T> extends SearchQueryService<JobServices<T>, Job
       final Long retryBackOff,
       final Map<String, Object> variables,
       final String jobLeaseToken,
+      final String jobReservationToken,
       final CamundaAuthentication authentication) {
     final var request =
         new BrokerFailJobRequest(jobKey, retries, retryBackOff)
@@ -131,6 +133,9 @@ public final class JobServices<T> extends SearchQueryService<JobServices<T>, Job
             .setErrorMessage(errorMessage);
     if (jobLeaseToken != null) {
       request.setJobLeaseToken(jobLeaseToken);
+    }
+    if (jobReservationToken != null) {
+      request.setJobReservationToken(jobReservationToken);
     }
     return sendBrokerRequest(request, authentication);
   }
@@ -141,6 +146,7 @@ public final class JobServices<T> extends SearchQueryService<JobServices<T>, Job
       final String errorMessage,
       final Map<String, Object> variables,
       final String jobLeaseToken,
+      final String jobReservationToken,
       final CamundaAuthentication authentication) {
     final var request =
         new BrokerThrowErrorRequest(jobKey, errorCode)
@@ -148,6 +154,9 @@ public final class JobServices<T> extends SearchQueryService<JobServices<T>, Job
             .setVariables(getDocumentOrEmpty(variables));
     if (jobLeaseToken != null) {
       request.setJobLeaseToken(jobLeaseToken);
+    }
+    if (jobReservationToken != null) {
+      request.setJobReservationToken(jobReservationToken);
     }
     return sendBrokerRequest(request, authentication);
   }
@@ -157,6 +166,7 @@ public final class JobServices<T> extends SearchQueryService<JobServices<T>, Job
       final Map<String, Object> variables,
       final JobResult result,
       final String jobLeaseToken,
+      final String jobReservationToken,
       final String businessId,
       final CamundaAuthentication authentication) {
     final var request =
@@ -165,10 +175,21 @@ public final class JobServices<T> extends SearchQueryService<JobServices<T>, Job
     if (jobLeaseToken != null) {
       request.setJobLeaseToken(jobLeaseToken);
     }
+    if (jobReservationToken != null) {
+      request.setJobReservationToken(jobReservationToken);
+    }
     if (businessId != null) {
       request.setBusinessId(businessId);
     }
     return sendBrokerRequest(request, authentication);
+  }
+
+  public CompletableFuture<JobRecord> releaseJob(
+      final long jobKey,
+      final String jobReservationToken,
+      final CamundaAuthentication authentication) {
+    return sendBrokerRequest(
+        new BrokerReleaseJobRequest(jobKey, jobReservationToken), authentication);
   }
 
   public CompletableFuture<JobRecord> updateJob(
@@ -176,6 +197,7 @@ public final class JobServices<T> extends SearchQueryService<JobServices<T>, Job
       final Long operationReference,
       final UpdateJobChangeset changeset,
       final String jobLeaseToken,
+      final String jobReservationToken,
       final CamundaAuthentication authentication) {
     final var brokerRequest =
         new BrokerUpdateJobRequest(
@@ -185,6 +207,9 @@ public final class JobServices<T> extends SearchQueryService<JobServices<T>, Job
     }
     if (jobLeaseToken != null) {
       brokerRequest.setJobLeaseToken(jobLeaseToken);
+    }
+    if (jobReservationToken != null) {
+      brokerRequest.setJobReservationToken(jobReservationToken);
     }
     return sendBrokerRequest(brokerRequest, authentication);
   }

@@ -26,9 +26,15 @@ import io.camunda.process.test.api.assertions.UserTaskAssert;
 import io.camunda.process.test.api.assertions.UserTaskSelector;
 import io.camunda.process.test.api.testCases.TestCase;
 import io.camunda.process.test.api.testCases.TestCaseInstruction;
+import io.camunda.process.test.api.testCases.TestCaseInstructionType;
 import io.camunda.process.test.api.testCases.TestCaseRunner;
+import io.camunda.process.test.api.testCases.instructions.CreateProcessInstanceInstruction;
+import io.camunda.process.test.api.testCases.instructions.createProcessInstance.CreateProcessInstanceConfigureExecutionRuntimeInstruction;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,17 +42,40 @@ public class CamundaTestCaseRunner implements TestCaseRunner {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(CamundaTestCaseRunner.class);
 
+  private static final List<String> MOCK_JOB_WORKER_INSTRUCTIONS =
+      Arrays.asList(
+          TestCaseInstructionType.MOCK_JOB_WORKER_COMPLETE_JOB,
+          TestCaseInstructionType.MOCK_JOB_WORKER_THROW_BPMN_ERROR);
+
+  private static final List<String> CLOCK_INSTRUCTIONS =
+      Arrays.asList(TestCaseInstructionType.INCREASE_TIME, TestCaseInstructionType.SET_TIME);
+
   private final CamundaProcessTestContext context;
   private final AssertionFacade assertionFacade;
   private final TestCaseInstructionHandlerRegistry registry;
+  private final CreatedProcessInstanceRegistry createdProcessInstances =
+      new CreatedProcessInstanceRegistry();
 
   public CamundaTestCaseRunner(final CamundaProcessTestContext context) {
     this(context, new TestCaseAssertionFacade());
   }
 
+  /**
+   * Creates a runner whose test isolation is set explicitly by the caller, instead of reading the
+   * system property. Lets a host decide isolation from its own configuration per run.
+   */
+  public CamundaTestCaseRunner(
+      final CamundaProcessTestContext context, final TestRunContext runContext) {
+    this.context = context;
+    assertionFacade = new TestCaseAssertionFacade();
+    registry = new TestCaseInstructionHandlerRegistry(createdProcessInstances, runContext);
+  }
+
   public CamundaTestCaseRunner(
       final CamundaProcessTestContext context, final AssertionFacade assertionFacade) {
-    this(context, assertionFacade, new TestCaseInstructionHandlerRegistry());
+    this.context = context;
+    this.assertionFacade = assertionFacade;
+    registry = new TestCaseInstructionHandlerRegistry(createdProcessInstances);
   }
 
   public CamundaTestCaseRunner(
@@ -62,17 +91,129 @@ public class CamundaTestCaseRunner implements TestCaseRunner {
   public void run(final TestCase testCase) {
     LOGGER.debug("Running test case: '{}'", testCase.getName());
     final Instant start = Instant.now();
+    warnIfReservedJobsAreMocked(testCase);
+    warnIfHeldTimersAreDrivenByTheClock(testCase);
+    createdProcessInstances.clear();
 
     try (final CamundaClient camundaClient = context.createClient()) {
 
-      testCase
-          .getInstructions()
-          .forEach(instruction -> executeInstruction(instruction, camundaClient));
+      try {
+        testCase
+            .getInstructions()
+            .forEach(instruction -> executeInstruction(instruction, camundaClient));
+
+      } finally {
+        cancelIsolatedProcessInstances(camundaClient);
+      }
 
     } finally {
       final Duration duration = Duration.between(start, Instant.now());
       LOGGER.debug("Finished test case: '{}' (duration: {})", testCase.getName(), duration);
     }
+  }
+
+  /**
+   * A reserved job is hidden from every job worker, including the mock workers this test case
+   * opens, so such a test case waits for a job that is never mocked and fails on the await timeout
+   * instead of saying why.
+   */
+  private void warnIfReservedJobsAreMocked(final TestCase testCase) {
+    if (reservesJobsAndMocksJobWorkers(testCase)) {
+      LOGGER.warn(
+          "Test case '{}' reserves a process instance's jobs and mocks a job worker. A reserved job"
+              + " is hidden from every job worker, including the mock. If the mock is meant to"
+              + " serve the reserved instance, use COMPLETE_JOB or THROW_BPMN_ERROR_FROM_JOB"
+              + " instead; otherwise the test case waits for a job nobody takes.",
+          testCase.getName());
+    }
+  }
+
+  static boolean reservesJobsAndMocksJobWorkers(final TestCase testCase) {
+    final boolean reservesJobs =
+        testCase.getInstructions().stream()
+            .filter(CreateProcessInstanceInstruction.class::isInstance)
+            .map(CreateProcessInstanceInstruction.class::cast)
+            .anyMatch(CamundaTestCaseRunner::instructionReservesJobs);
+
+    final boolean mocksJobWorkers =
+        testCase.getInstructions().stream()
+            .map(TestCaseInstruction::getType)
+            .anyMatch(MOCK_JOB_WORKER_INSTRUCTIONS::contains);
+
+    return reservesJobs && mocksJobWorkers;
+  }
+
+  /**
+   * A held timer is out of the engine's due-date scheduler, so advancing the clock does not fire
+   * it. A test case that expects it to waits for an element that never activates and fails on the
+   * await timeout instead of saying why.
+   */
+  private void warnIfHeldTimersAreDrivenByTheClock(final TestCase testCase) {
+    if (holdsTimersAndMovesTheClock(testCase)) {
+      LOGGER.warn(
+          "Test case '{}' holds a process instance's timers and moves the clock. A held timer is"
+              + " out of the due-date scheduler, so INCREASE_TIME and SET_TIME do not fire it. If"
+              + " the clock is meant to fire the held instance's timer, use TRIGGER_TIMER instead;"
+              + " otherwise the test case waits for a timer that never fires.",
+          testCase.getName());
+    }
+  }
+
+  static boolean holdsTimersAndMovesTheClock(final TestCase testCase) {
+    final boolean holdsTimers =
+        testCase.getInstructions().stream()
+            .filter(CreateProcessInstanceInstruction.class::isInstance)
+            .map(CreateProcessInstanceInstruction.class::cast)
+            .anyMatch(CamundaTestCaseRunner::instructionHoldsTimers);
+
+    final boolean movesTheClock =
+        testCase.getInstructions().stream()
+            .map(TestCaseInstruction::getType)
+            .anyMatch(CLOCK_INSTRUCTIONS::contains);
+
+    return holdsTimers && movesTheClock;
+  }
+
+  private static boolean instructionReservesJobs(
+      final CreateProcessInstanceInstruction instruction) {
+    return configureExecutionOf(instruction)
+        .map(CreateProcessInstanceConfigureExecutionRuntimeInstruction::getReserveJobs)
+        .orElse(false);
+  }
+
+  private static boolean instructionHoldsTimers(
+      final CreateProcessInstanceInstruction instruction) {
+    return configureExecutionOf(instruction)
+        .map(CreateProcessInstanceConfigureExecutionRuntimeInstruction::getHoldTimers)
+        .orElse(false);
+  }
+
+  private static Optional<CreateProcessInstanceConfigureExecutionRuntimeInstruction>
+      configureExecutionOf(final CreateProcessInstanceInstruction instruction) {
+    return instruction.getRuntimeInstructions().stream()
+        .filter(CreateProcessInstanceConfigureExecutionRuntimeInstruction.class::isInstance)
+        .map(CreateProcessInstanceConfigureExecutionRuntimeInstruction.class::cast)
+        .findFirst();
+  }
+
+  /**
+   * An isolated instance waits on jobs no worker takes, so it parks forever unless the test case
+   * ended it. Cancelling is a no-op for an instance that already completed.
+   */
+  private void cancelIsolatedProcessInstances(final CamundaClient camundaClient) {
+    createdProcessInstances
+        .isolatedProcessInstanceKeys()
+        .forEach(
+            processInstanceKey -> {
+              try {
+                camundaClient.newCancelInstanceCommand(processInstanceKey).send().join();
+              } catch (final Exception e) {
+                LOGGER.debug(
+                    "Could not cancel the isolated process instance '{}'. It may have ended already.",
+                    processInstanceKey,
+                    e);
+              }
+            });
   }
 
   private void executeInstruction(
