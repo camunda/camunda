@@ -14,8 +14,8 @@ import io.camunda.zeebe.transport.stream.api.RemoteStream;
 import io.camunda.zeebe.transport.stream.api.RemoteStreamErrorHandler;
 import io.camunda.zeebe.transport.stream.api.RemoteStreamMetrics;
 import io.camunda.zeebe.transport.stream.api.RemoteStreamer;
+import io.camunda.zeebe.transport.stream.api.StreamTopicNamespace;
 import io.camunda.zeebe.transport.stream.impl.messages.PushStreamRequest;
-import io.camunda.zeebe.transport.stream.impl.messages.StreamTopics;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import java.time.Duration;
@@ -46,12 +46,23 @@ public final class RemoteStreamerImpl<M, P extends BufferWriter> extends Actor
   private final ImmutableStreamRegistry<M> registry;
   private final RemoteStreamPusher<P> remoteStreamPusher;
   private final RemoteStreamErrorHandler<P> errorHandler;
+  private final StreamTopicNamespace namespace;
 
   public RemoteStreamerImpl(
       final ClusterCommunicationService transport,
       final ImmutableStreamRegistry<M> registry,
       final RemoteStreamErrorHandler<P> errorHandler,
       final RemoteStreamMetrics metrics) {
+    this(transport, registry, errorHandler, metrics, StreamTopicNamespace.DEFAULT);
+  }
+
+  public RemoteStreamerImpl(
+      final ClusterCommunicationService transport,
+      final ImmutableStreamRegistry<M> registry,
+      final RemoteStreamErrorHandler<P> errorHandler,
+      final RemoteStreamMetrics metrics,
+      final StreamTopicNamespace namespace) {
+    this.namespace = namespace;
     this.transport = Objects.requireNonNull(transport, "must specify a network transport");
     this.registry = Objects.requireNonNull(registry, "must specify a job stream registry");
     this.errorHandler = Objects.requireNonNull(errorHandler, "must specify an error handler");
@@ -91,7 +102,7 @@ public final class RemoteStreamerImpl<M, P extends BufferWriter> extends Actor
 
   private CompletableFuture<byte[]> send(final PushStreamRequest request, final MemberId receiver) {
     return transport.send(
-        StreamTopics.PUSH.legacyTopic(),
+        namespace.pushTopic(),
         request,
         BufferUtil::bufferAsArray,
         Function.identity(),

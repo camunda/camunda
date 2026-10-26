@@ -20,6 +20,7 @@ import io.camunda.zeebe.transport.stream.api.ClientStreamId;
 import io.camunda.zeebe.transport.stream.api.ClientStreamMetrics;
 import io.camunda.zeebe.transport.stream.api.ClientStreamService;
 import io.camunda.zeebe.transport.stream.api.ClientStreamer;
+import io.camunda.zeebe.transport.stream.api.StreamTopicNamespace;
 import io.camunda.zeebe.transport.stream.impl.messages.MessageUtil;
 import io.camunda.zeebe.transport.stream.impl.messages.StreamTopics;
 import io.camunda.zeebe.util.buffer.BufferUtil;
@@ -55,9 +56,19 @@ public final class ClientStreamServiceImpl<M extends BufferWriter> extends Actor
    */
   private final Map<String, ClientStreamMetrics> metricsByPhysicalTenantId = new HashMap<>();
 
+  private final StreamTopicNamespace namespace;
+
   public ClientStreamServiceImpl(
       final ClusterCommunicationService communicationService,
       final Function<String, ClientStreamMetrics> metricsFactory) {
+    this(communicationService, metricsFactory, StreamTopicNamespace.DEFAULT);
+  }
+
+  public ClientStreamServiceImpl(
+      final ClusterCommunicationService communicationService,
+      final Function<String, ClientStreamMetrics> metricsFactory,
+      final StreamTopicNamespace namespace) {
+    this.namespace = namespace;
     this.communicationService = communicationService;
     final Function<String, ClientStreamMetrics> cachedMetricsFactory =
         physicalTenantId ->
@@ -69,7 +80,7 @@ public final class ClientStreamServiceImpl<M extends BufferWriter> extends Actor
     clientStreamManager =
         new ClientStreamManager<>(
             registry,
-            new ClientStreamRequestManager<>(communicationService, actor),
+            new ClientStreamRequestManager<>(communicationService, actor, namespace),
             cachedMetricsFactory);
     apiHandler = new ClientStreamApiHandler(clientStreamManager, actor);
   }
@@ -77,7 +88,7 @@ public final class ClientStreamServiceImpl<M extends BufferWriter> extends Actor
   @Override
   protected void onActorStarted() {
     communicationService.replyToAsync(
-        StreamTopics.PUSH.legacyTopic(),
+        namespace.pushTopic(),
         MessageUtil::parsePushRequest,
         apiHandler::handlePushRequest,
         BufferUtil::bufferAsArray,
@@ -152,14 +163,14 @@ public final class ClientStreamServiceImpl<M extends BufferWriter> extends Actor
   private void registerRestartHandler(final String physicalTenantId) {
     if (registeredRestartPhysicalTenants.add(physicalTenantId)) {
       registerRestartTopicHandler(
-          StreamTopics.RESTART_STREAMS.topic(physicalTenantId), physicalTenantId);
+          namespace.topic(StreamTopics.RESTART_STREAMS, physicalTenantId), physicalTenantId);
       registerLegacyRestartHandler(physicalTenantId);
     }
   }
 
   /** Rolling-upgrade compat; remove alongside the legacy topic in 8.11. */
   private void registerLegacyRestartHandler(final String physicalTenantId) {
-    if (DEFAULT_PHYSICAL_TENANT_ID.equals(physicalTenantId)) {
+    if (namespace.hasLegacyTopics() && DEFAULT_PHYSICAL_TENANT_ID.equals(physicalTenantId)) {
       registerRestartTopicHandler(StreamTopics.RESTART_STREAMS.legacyTopic(), physicalTenantId);
     }
   }

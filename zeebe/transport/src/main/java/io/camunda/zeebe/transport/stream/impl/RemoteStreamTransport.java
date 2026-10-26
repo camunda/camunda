@@ -15,6 +15,7 @@ import io.atomix.cluster.messaging.MessagingException.NoRemoteHandler;
 import io.atomix.cluster.messaging.MessagingException.NoSuchMemberException;
 import io.atomix.cluster.messaging.MessagingException.RemoteHandlerFailure;
 import io.camunda.zeebe.scheduler.Actor;
+import io.camunda.zeebe.transport.stream.api.StreamTopicNamespace;
 import io.camunda.zeebe.transport.stream.impl.messages.MessageUtil;
 import io.camunda.zeebe.transport.stream.impl.messages.StreamTopics;
 import io.camunda.zeebe.util.ExponentialBackoff;
@@ -47,12 +48,21 @@ public final class RemoteStreamTransport<M> extends Actor {
   private final RemoteStreamApiHandler<M> requestHandler;
   private final LongUnaryOperator retryDelaySupplier;
   private final String physicalTenantId;
+  private final StreamTopicNamespace namespace;
 
   public RemoteStreamTransport(
       final ClusterCommunicationService transport,
       final RemoteStreamApiHandler<M> requestHandler,
       final String physicalTenantId) {
-    this(transport, requestHandler, new ExponentialBackoff(), physicalTenantId);
+    this(transport, requestHandler, physicalTenantId, StreamTopicNamespace.DEFAULT);
+  }
+
+  public RemoteStreamTransport(
+      final ClusterCommunicationService transport,
+      final RemoteStreamApiHandler<M> requestHandler,
+      final String physicalTenantId,
+      final StreamTopicNamespace namespace) {
+    this(transport, requestHandler, new ExponentialBackoff(), physicalTenantId, namespace);
   }
 
   @VisibleForTesting
@@ -61,6 +71,21 @@ public final class RemoteStreamTransport<M> extends Actor {
       final RemoteStreamApiHandler<M> requestHandler,
       final LongUnaryOperator retryDelaySupplier,
       final String physicalTenantId) {
+    this(
+        transport,
+        requestHandler,
+        retryDelaySupplier,
+        physicalTenantId,
+        StreamTopicNamespace.DEFAULT);
+  }
+
+  private RemoteStreamTransport(
+      final ClusterCommunicationService transport,
+      final RemoteStreamApiHandler<M> requestHandler,
+      final LongUnaryOperator retryDelaySupplier,
+      final String physicalTenantId,
+      final StreamTopicNamespace namespace) {
+    this.namespace = namespace;
     this.transport = transport;
     this.requestHandler = requestHandler;
     this.retryDelaySupplier = retryDelaySupplier;
@@ -70,25 +95,25 @@ public final class RemoteStreamTransport<M> extends Actor {
   @Override
   protected void onActorStarting() {
     registerTopicHandlers(
-        StreamTopics.ADD.topic(physicalTenantId),
-        StreamTopics.REMOVE.topic(physicalTenantId),
-        StreamTopics.REMOVE_ALL.topic(physicalTenantId));
+        namespace.topic(StreamTopics.ADD, physicalTenantId),
+        namespace.topic(StreamTopics.REMOVE, physicalTenantId),
+        namespace.topic(StreamTopics.REMOVE_ALL, physicalTenantId));
     registerLegacyTopicHandlers();
   }
 
   @Override
   protected void onActorClosing() {
     unsubscribeTopics(
-        StreamTopics.ADD.topic(physicalTenantId),
-        StreamTopics.REMOVE.topic(physicalTenantId),
-        StreamTopics.REMOVE_ALL.topic(physicalTenantId));
+        namespace.topic(StreamTopics.ADD, physicalTenantId),
+        namespace.topic(StreamTopics.REMOVE, physicalTenantId),
+        namespace.topic(StreamTopics.REMOVE_ALL, physicalTenantId));
     unsubscribeLegacyTopics();
     requestHandler.close();
   }
 
   /** Rolling-upgrade compat; remove alongside the legacy topic in 8.11. */
   private void registerLegacyTopicHandlers() {
-    if (DEFAULT_PHYSICAL_TENANT_ID.equals(physicalTenantId)) {
+    if (namespace.hasLegacyTopics() && DEFAULT_PHYSICAL_TENANT_ID.equals(physicalTenantId)) {
       registerTopicHandlers(
           StreamTopics.ADD.legacyTopic(),
           StreamTopics.REMOVE.legacyTopic(),
@@ -98,7 +123,7 @@ public final class RemoteStreamTransport<M> extends Actor {
 
   /** Rolling-upgrade compat; remove alongside the legacy topic in 8.11. */
   private void unsubscribeLegacyTopics() {
-    if (DEFAULT_PHYSICAL_TENANT_ID.equals(physicalTenantId)) {
+    if (namespace.hasLegacyTopics() && DEFAULT_PHYSICAL_TENANT_ID.equals(physicalTenantId)) {
       unsubscribeTopics(
           StreamTopics.ADD.legacyTopic(),
           StreamTopics.REMOVE.legacyTopic(),
@@ -131,7 +156,7 @@ public final class RemoteStreamTransport<M> extends Actor {
       final String physicalTenantId,
       final CompletableFuture<Void> primary,
       final Consumer<CompletableFuture<Void>> sendLegacy) {
-    if (!DEFAULT_PHYSICAL_TENANT_ID.equals(physicalTenantId)) {
+    if (!namespace.hasLegacyTopics() || !DEFAULT_PHYSICAL_TENANT_ID.equals(physicalTenantId)) {
       return primary;
     }
 
@@ -186,7 +211,7 @@ public final class RemoteStreamTransport<M> extends Actor {
   private CompletableFuture<Void> sendRestartStreamsRequest(final MemberId receiver) {
     return transport
         .send(
-            StreamTopics.RESTART_STREAMS.topic(physicalTenantId),
+            namespace.topic(StreamTopics.RESTART_STREAMS, physicalTenantId),
             ArrayUtil.EMPTY_BYTE_ARRAY,
             Function.identity(),
             Function.identity(),
