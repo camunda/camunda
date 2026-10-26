@@ -149,7 +149,7 @@ The DRI for an open Renovate PR is responsible for addressing the dependency upg
   - Core Features: **@core-features-medic** on Slack (e.g. issues with backend/Java code of Operate, Optimize, Tasklist)
   - Data Layer: **@data-layer-medic** on Slack (e.g. issues with OpenSearch/Elasticsearch tests)
   - Distributed Systems: **@distributed-systems-medic** on Slack
-  - Distribution: **@distro-medic** on Slack (e.g. Helm chart integration tests, C8run)
+  - Distribution: **@smx-medic** on Slack (e.g. Helm chart integration tests, C8run)
   - Identity: **@identity-medic** on Slack (e.g. issues with Identity and Identity Management)
   - Infra: **@infra-medic** on Slack (e.g. self-hosted runner problems, Vault issues, Harbor issues)
   - Operate frontend: **@pod-operate-medic** on Slack
