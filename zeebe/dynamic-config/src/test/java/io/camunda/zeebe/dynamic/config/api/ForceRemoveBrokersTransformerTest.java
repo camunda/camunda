@@ -59,6 +59,56 @@ final class ForceRemoveBrokersTransformerTest {
         2, Set.of(id0, id2), patchRequest, currentTopology, expectedDistribution);
   }
 
+  @Test
+  void shouldPlanNothingWhenForceRemovalIsRepeated() {
+    // given - a force removal that has already been applied
+    final var currentTopology = fourBrokerTopology();
+    final var request = new ForceRemoveBrokersRequestTransformer(Set.of(id1, id3), id0);
+    final var afterFirstRemoval =
+        TestTopologyChangeSimulator.apply(
+            currentTopology, request.operations(currentTopology).get());
+
+    // when - the same request is planned again
+    final var secondPlan = request.operations(afterFirstRemoval);
+
+    // then
+    assertThat(secondPlan).isRight();
+    Assertions.assertThat(secondPlan.get()).isEmpty();
+  }
+
+  @Test
+  void shouldOnlyRemoveWhatIsLeftWhenRemovalOverlapsAnEarlierOne() {
+    // given - broker 1 has already been force removed
+    final var currentTopology = fourBrokerTopology();
+    final var firstRemoval = new ForceRemoveBrokersRequestTransformer(Set.of(id1), id0);
+    final var afterFirstRemoval =
+        TestTopologyChangeSimulator.apply(
+            currentTopology, firstRemoval.operations(currentTopology).get());
+
+    // when - brokers 1 and 3 are force removed
+    final var result =
+        new ForceRemoveBrokersRequestTransformer(Set.of(id1, id3), id0)
+            .operations(afterFirstRemoval);
+
+    // then - broker 3 is removed and the remaining brokers keep their partitions
+    assertThat(result).isRight();
+    final var newTopology = TestTopologyChangeSimulator.apply(afterFirstRemoval, result.get());
+    Assertions.assertThat(newTopology.members().keySet()).containsExactlyInAnyOrder(id0, id2);
+    Assertions.assertThat(newTopology.partitionCount()).isEqualTo(2);
+  }
+
+  private ClusterConfiguration fourBrokerTopology() {
+    return ClusterConfiguration.init()
+        .addMember(id0, MemberState.initializeAsActive(Map.of()))
+        .addMember(id1, MemberState.initializeAsActive(Map.of()))
+        .addMember(id2, MemberState.initializeAsActive(Map.of()))
+        .addMember(id3, MemberState.initializeAsActive(Map.of()))
+        .updateMember(id0, m -> m.addPartition(1, PartitionState.active(1, partitionConfig)))
+        .updateMember(id1, m -> m.addPartition(1, PartitionState.active(2, partitionConfig)))
+        .updateMember(id2, m -> m.addPartition(2, PartitionState.active(1, partitionConfig)))
+        .updateMember(id3, m -> m.addPartition(2, PartitionState.active(2, partitionConfig)));
+  }
+
   private void applyRequestAndVerifyResultingTopology(
       final int partitionCount,
       final Set<MemberId> expectedMembers,

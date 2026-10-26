@@ -75,6 +75,13 @@ public class ForceScaleDownRequestTransformer implements ConfigurationChangeRequ
                   membersToRetain, partitionsWithNoReplicas)));
     }
 
+    // No broker would leave, so the removal was already applied, e.g. by an earlier attempt of
+    // this request whose confirmation was lost. Planning again would force reconfigure partitions
+    // that are already where the request wants them.
+    if (membersToRetain.equals(clusterConfiguration.members().keySet())) {
+      return Either.right(List.of());
+    }
+
     // members that are not in membersToRetain
     final var memberToRemove =
         clusterConfiguration.members().keySet().stream()
