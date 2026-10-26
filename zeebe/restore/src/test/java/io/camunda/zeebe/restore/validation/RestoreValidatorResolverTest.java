@@ -237,6 +237,26 @@ final class RestoreValidatorResolverTest {
         new TreeSet<>(List.of(backupId)), OptionalLong.of(CHECKPOINT_POSITION));
   }
 
+  @Test
+  void shouldRejectExplicitBackupsWhenCheckpointPositionsDecreaseInRestoreOrder() {
+    // given
+    stubBackupPartitionCount(20L, 1);
+    stubBackupWithPositions(1, 10L, 1, 1L, 200L);
+    stubBackupWithPositions(1, 20L, 1, 1L, 100L);
+    final var validator = new RestoreValidator(1, backupStore, partitionId -> 150L);
+
+    // when
+    final var result =
+        validator.validate(PartitionCountFromBackup.rdbmsRequestWithBackupIds(List.of(10L, 20L)));
+
+    // then
+    assertThat(assertInvalid(result))
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("backup 20")
+        .hasMessageContaining("checkpoint position 100")
+        .hasMessageContaining("exported position 150");
+  }
+
   @Nested
   final class RdbmsBackupResolution {
 

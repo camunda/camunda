@@ -215,9 +215,7 @@ public final class RestoreValidator
                                 descriptor.checkpointType(),
                                 descriptor.firstLogPosition());
                           })
-                      .sorted(
-                          Comparator.comparingLong(CheckpointEntry::checkpointPosition)
-                              .thenComparingLong(CheckpointEntry::checkpointId))
+                      .sorted(Comparator.comparingLong(CheckpointEntry::checkpointId))
                       .toList();
 
               RestorePointResolver.validateBackupChain(
