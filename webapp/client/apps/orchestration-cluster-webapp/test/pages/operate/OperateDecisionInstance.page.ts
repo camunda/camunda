@@ -13,10 +13,6 @@ class OperateDecisionInstancePage extends BasePage {
 		return this.page.goto(`/operate/decisions/${decisionInstanceId}`);
 	}
 
-	async gotoPreview(decisionInstanceId: string) {
-		return this.page.goto(`/operate-preview/decisions/${decisionInstanceId}`);
-	}
-
 	get decisionPanel() {
 		return this.page.getByRole('region', {name: 'decision panel'});
 	}
