@@ -102,7 +102,7 @@ const InstancesTable: React.FC<Props> = ({search}) => {
 			label: t('operate.decisions.ds.instancesTable.decisionInstanceKey'),
 			render: (row: DecisionInstance) => (
 				<DecisionInstanceLink
-					to="/operate/decisions/$decisionInstanceId"
+					to="/operate-preview/decisions/$decisionInstanceId"
 					params={{decisionInstanceId: row.decisionEvaluationInstanceKey}}
 					title={t('operate.decisions.instancesTable.viewDecisionInstance', {
 						key: row.decisionEvaluationInstanceKey,
@@ -148,7 +148,7 @@ const InstancesTable: React.FC<Props> = ({search}) => {
 			key: 'processInstanceKey',
 			label: t('operate.decisions.ds.instancesTable.processInstanceKey'),
 			render: (row: DecisionInstance) =>
-				row.processInstanceKey ? (
+				row.processInstanceKey && row.processInstanceKey !== '-1' ? (
 					<ProcessInstanceLink
 						to="/operate/processes/$processInstanceId"
 						params={{processInstanceId: row.processInstanceKey}}

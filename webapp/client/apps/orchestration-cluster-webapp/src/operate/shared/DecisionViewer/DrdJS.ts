@@ -14,7 +14,13 @@ import {is} from 'dmn-js-shared/lib/util/ModelUtil';
 // @ts-expect-error no type declarations for this package
 import NavigatedViewer from 'dmn-js-drd/lib/NavigatedViewer';
 import isEqual from 'lodash/isEqual';
-import type {DrdData} from './drdData.queries';
+import type {DrdData} from '#/operate/pages/DecisionInstance/drdData.queries';
+
+type DrdRendererColors = {
+	defaultFillColor: string;
+	defaultStrokeColor: string;
+	defaultLabelColor: string;
+};
 
 type DecisionStateOverlay = {
 	decisionDefinitionId: string;
@@ -53,6 +59,13 @@ class DrdManager extends Manager {
 	}
 }
 
+class DrdUnavailableError extends Error {
+	constructor() {
+		super('DRD view is unavailable for the decision definition');
+		this.name = 'DrdUnavailableError';
+	}
+}
+
 class DrdJS {
 	#xml: string | null = null;
 	#manager: DrdManager | null = null;
@@ -63,6 +76,11 @@ class DrdJS {
 	#renderVersion = 0;
 	#importPromise: Promise<void> | null = null;
 	#keyboardDecisions: SVGElement[] = [];
+	#drdRenderer: DrdRendererColors;
+
+	constructor(drdRenderer: DrdRendererColors) {
+		this.#drdRenderer = drdRenderer;
+	}
 
 	onDecisionSelection?: (decisionEvaluationInstanceKey: string) => void;
 	onDefinitionsChange?: (definitions: {id: string; name: string} | undefined) => void;
@@ -116,11 +134,7 @@ class DrdJS {
 						{__init__: ['outline'], outline: ['type', Outline]},
 						{definitionPropertiesView: ['value', null]},
 					],
-					drdRenderer: {
-						defaultFillColor: 'var(--cds-layer)',
-						defaultStrokeColor: 'var(--cds-icon-secondary)',
-						defaultLabelColor: 'var(--cds-text-primary)',
-					},
+					drdRenderer: this.#drdRenderer,
 				},
 			});
 			this.#xml = xml;
@@ -135,7 +149,7 @@ class DrdJS {
 				this.onDefinitionsChange?.(manager.getDefinitions());
 				const activeViewer = manager.getActiveViewer();
 				if (activeViewer === undefined) {
-					throw new Error('DRD view is unavailable for the decision definition');
+					throw new DrdUnavailableError();
 				}
 				activeViewer.on('element.click', this.#handleDecisionSelection);
 				this.#activeViewer = activeViewer;
@@ -158,6 +172,9 @@ class DrdJS {
 			this.#manager = null;
 			this.#xml = null;
 			this.#importPromise = null;
+			if (error instanceof Error && error.message === 'no displayable contents') {
+				throw new DrdUnavailableError();
+			}
 			throw error;
 		}
 		if (renderVersion !== this.#renderVersion) {
@@ -166,7 +183,7 @@ class DrdJS {
 
 		const activeViewer = this.#manager.getActiveViewer();
 		if (activeViewer === undefined) {
-			throw new Error('DRD view is unavailable for the decision definition');
+			throw new DrdUnavailableError();
 		}
 		const canvas = activeViewer.get('canvas');
 		const registry = activeViewer.get('elementRegistry');
@@ -232,6 +249,17 @@ class DrdJS {
 		this.#data = data;
 	};
 
+	#zoomBy = (factor: number) => {
+		const canvas = this.#activeViewer?.get('canvas');
+		canvas?.zoom(canvas.zoom() * factor);
+	};
+
+	zoomIn = () => this.#zoomBy(1.2);
+
+	zoomOut = () => this.#zoomBy(1 / 1.2);
+
+	fit = () => this.#activeViewer?.get('canvas').zoom('fit-viewport', 'auto');
+
 	resize = () => {
 		this.#activeViewer?.get('canvas').resized();
 	};
@@ -251,5 +279,5 @@ class DrdJS {
 	};
 }
 
-export {DrdJS};
+export {DrdJS, DrdUnavailableError};
 export type {DecisionStateOverlay};
