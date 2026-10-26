@@ -64,8 +64,7 @@ import org.slf4j.LoggerFactory;
  * HTTP/2 has no socket timeout here; this is unlikely for small job-activation bodies.
  *
  * <p>The handler must be registered directly in front of the transport: only there the connection
- * has already been leased and connected, so waiting for a pooled connection does not count, and the
- * retry executor, which sits in front of it, runs it again for every attempt.
+ * has already been leased and connected, so waiting for a pooled connection does not count.
  *
  * <p>Discarding closes the whole connection, which is only safe as long as HTTP/2 multiplexing is
  * off, i.e. one exchange per connection at a time. {@code HttpClientFactory} pins this explicitly

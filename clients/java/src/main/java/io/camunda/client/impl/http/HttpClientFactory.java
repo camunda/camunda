@@ -257,8 +257,7 @@ public class HttpClientFactory {
     // every exchange client-side to avoid requests (and e.g. job workers) hanging forever.
     // The handler goes directly in front of the transport, behind the configured handlers. That
     // way the deadline only starts once the connection has been leased and connected, like the
-    // response timeout it backs up, and the retry executor in front of it runs it for every
-    // attempt and sees its failure.
+    // response timeout it backs up.
     builder.addExecInterceptorBefore(
         ChainElement.MAIN_TRANSPORT.name(),
         ResponseDeadlineChainHandler.NAME,
