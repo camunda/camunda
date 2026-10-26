@@ -120,7 +120,7 @@ function ProcessesToolbar({selection, isSubmitting, isActionMode, additionalActi
 					{action === 'cancel' && ` ${t('operate.processes.toolbar.calledInstances')}`}
 					{action === 'cancel' &&
 						selection.mode === 'INCLUDE' &&
-						selectedCount > selection.runningCount &&
+						selectedCount > selection.runningCount + selection.suspendedCount &&
 						` ${t('operate.processes.toolbar.ignoreFinished')}`}
 					{action === 'retry' &&
 						selection.mode === 'INCLUDE' &&
