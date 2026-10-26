@@ -314,7 +314,7 @@ public final class ScriptTaskExpressionTest {
         .hasErrorMessage(
             """
             Assertion failure on evaluate the expression 'assert(x, x != null)': \
-            The condition is not fulfilled \
+            The condition is not fulfilled (script expression of script task 'task') \
             The evaluation reported the following warnings:
             [NO_VARIABLE_FOUND] No variable found with name 'x'
             [NO_VARIABLE_FOUND] No variable found with name 'x'
@@ -413,6 +413,7 @@ public final class ScriptTaskExpressionTest {
         .isEqualTo(
             """
             Expected to evaluate expression but timed out after 300 ms: \
-            'for x in 0..1000000 return for y in 0..x return x + y'""");
+            'for x in 0..1000000 return for y in 0..x return x + y' \
+            (script expression of script task 'task')""");
   }
 }

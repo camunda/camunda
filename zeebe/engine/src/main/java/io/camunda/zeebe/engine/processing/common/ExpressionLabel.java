@@ -54,6 +54,12 @@ public record ExpressionLabel(@Nullable String kind, @Nullable String target) {
     }
   }
 
+  /** Labels an expression as the script expression of a script task. */
+  public static ExpressionLabel scriptExpression(final DirectBuffer scriptTaskId) {
+    return new ExpressionLabel(
+        "script expression", "script task '%s'".formatted(BufferUtil.bufferAsString(scriptTaskId)));
+  }
+
   /**
    * Labels an expression as the condition expression of a sequence flow, e.g. for the gateway
    * failure message "Expected result of the condition expression '...' of sequence flow 's2' to be
