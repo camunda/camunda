@@ -38,3 +38,26 @@ export async function loadAgenticFilterOptions(
   );
   return response.json();
 }
+
+export interface AgentInventoryEntry {
+  agentId: string;
+  name: string;
+  agentType: string | null;
+  processDefinitionKey: string | null;
+  processDefinitionName: string | null;
+  models: string[];
+  maxModelCalls: number | null;
+  runs: number;
+  incidentRate: number | null;
+  limitHitRate: number | null;
+  durationP50Ms: number | null;
+  avgTokens: number | null;
+  lastRunDate: string | null;
+}
+
+export async function loadAgentInventory(endedFrom: Date): Promise<AgentInventoryEntry[]> {
+  const response = await get('api/dashboard/agentic/agent-inventory', {
+    endedFrom: endedFrom.toISOString(),
+  });
+  return (await response.json()).agents;
+}

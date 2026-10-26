@@ -37,6 +37,19 @@
     "agentHealth": "Agent health",
     "volume": "Volume",
     "costAndUsage": "Cost and usage",
+    "inventory": {
+      "title": "Agenteninventar",
+      "agent": "Agent",
+      "process": "Prozess",
+      "runs": "Läufe",
+      "incidentRate": "Incident-Rate",
+      "durationP50": "Laufdauer (P50)",
+      "limitHitRate": "Limit erreicht",
+      "avgTokens": "Ø Tokens",
+      "lastRun": "Letzter Lauf",
+      "maxModelCalls": "max. {count} Modellaufrufe",
+      "empty": "Noch keine Agenten gefunden."
+    },
     "breadcrumb": {
       "allProcesses": "Alle Prozesse"
     },

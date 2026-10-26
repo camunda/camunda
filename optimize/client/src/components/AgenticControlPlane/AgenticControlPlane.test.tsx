@@ -431,3 +431,32 @@ it('should show process KPIs in the processes section on the overview only', asy
 
   expect(node.find('.processes-section')).not.toExist();
 });
+
+it('should show the agent inventory on the overview and drill into a selected agent', async () => {
+  const node = shallow(<AgenticControlPlane />);
+  await runAllEffects();
+
+  expect(node.find('AgentInventory')).toExist();
+
+  (node.find('AgentInventory').prop('onSelectAgent') as (p: string, a: string) => void)(
+    'loan',
+    'loan:review'
+  );
+
+  expect(node.find('AgentInventory')).not.toExist();
+  expect(node.find('FilterBar').prop('processScope')).toBe('loan');
+  expect(node.find('FilterBar').prop('agentIds')).toEqual(['loan:review']);
+});
+
+it('should keep the selected agent when the process selector reports the same process again', async () => {
+  const node = shallow(<AgenticControlPlane />);
+  await runAllEffects();
+
+  (node.find('AgentInventory').prop('onSelectAgent') as (p: string, a: string) => void)(
+    'loan',
+    'loan:review'
+  );
+  (node.find('FilterBar').prop('onProcessScopeChange') as (v: string) => void)('loan');
+
+  expect(node.find('FilterBar').prop('agentIds')).toEqual(['loan:review']);
+});

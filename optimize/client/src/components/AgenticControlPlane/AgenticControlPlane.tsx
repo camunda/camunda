@@ -7,6 +7,7 @@
  */
 
 import {useState, useEffect, useCallback, useMemo} from 'react';
+import {sub} from 'date-fns';
 
 import {useErrorHandling} from 'hooks';
 import {showError} from 'notifications';
@@ -18,6 +19,7 @@ import {t} from 'translation';
 
 import type {DashboardTile} from 'types';
 
+import {AgentInventory} from './AgentInventory';
 import {DrillBreadcrumb} from './DrillBreadcrumb';
 import {ALL_VERSIONS, DATE_PRESETS, FilterBar} from './FilterBar';
 import {loadAgenticDashboard} from './service';
@@ -91,16 +93,38 @@ export function AgenticControlPlane() {
     mightFail(loadAgenticDashboard(), setDashboard, showError);
   }, [mightFail]);
 
-  const handleProcessScopeChange = useCallback((key: string | null) => {
-    setProcessScope(key);
-    setVersions([ALL_VERSIONS]);
-    // Agents and models are listed per process, so a selection from another process no longer
-    // applies.
-    setAgentIds([]);
-    setModels([]);
-  }, []);
+  const handleProcessScopeChange = useCallback(
+    (key: string | null) => {
+      // The process combobox reports a selection set from outside (e.g. the agent inventory) as
+      // a change; it must not wipe the agent selected along with it.
+      if (key === processScope) {
+        return;
+      }
+      setProcessScope(key);
+      setVersions([ALL_VERSIONS]);
+      // Agents and models are listed per process, so a selection from another process no longer
+      // applies.
+      setAgentIds([]);
+      setModels([]);
+    },
+    [processScope]
+  );
 
   const selectedPreset = DATE_PRESETS.find((p) => p.id === preset)!;
+  // Same rolling window as the tiles' instance end date filter, fixed per preset so the inventory
+  // is not reloaded on every render.
+  const endedFrom = useMemo(
+    () => sub(new Date(), {[selectedPreset.unit]: selectedPreset.value}),
+    [selectedPreset]
+  );
+
+  const handleSelectAgent = useCallback(
+    (processDefinitionKey: string, agentId: string) => {
+      handleProcessScopeChange(processDefinitionKey);
+      setAgentIds([agentId]);
+    },
+    [handleProcessScopeChange]
+  );
   const definitions = processScope ? [{key: processScope, versions}] : [];
   const filter: (RollingFilter | AgentRunFilter)[] = [presetToFilter(selectedPreset)];
   if (agentIds.length > 0 || models.length > 0) {
@@ -272,6 +296,13 @@ export function AgenticControlPlane() {
                 addons={[<TileFooter key="tile-footer" />]}
               />
             </div>
+            {key === 'agentHealth' && level === 'overview' && (
+              <>
+                <h3 className="section-title">{t('agenticControlPlane.inventory.title')}</h3>
+                <hr className="section-divider" />
+                <AgentInventory endedFrom={endedFrom} onSelectAgent={handleSelectAgent} />
+              </>
+            )}
           </div>
         );
       })}

@@ -169,10 +169,10 @@ export function FilterBar({
           key={`agents-${processScope ?? '__all__'}`}
           id="agent-filter"
           size="sm"
-          items={agentItems}
+          items={withSelected(agentItems, agentIds)}
           itemToString={(item) => item?.label ?? ''}
-          selectedItems={agentItems.filter(({id}) => agentIds.includes(id))}
-          onChange={({selectedItems}) => onAgentIdsChange(selectedItems.map(({id}) => id))}
+          selectedItems={selectedOf(agentItems, agentIds)}
+          onChange={({selectedItems}) => changeSelection(selectedItems, agentIds, onAgentIdsChange)}
           placeholder={t('agenticControlPlane.agentFilter.placeholder') as string}
           titleText=""
         />
@@ -184,10 +184,10 @@ export function FilterBar({
             key={`models-${processScope ?? '__all__'}`}
             id="model-filter"
             size="sm"
-            items={modelItems}
+            items={withSelected(modelItems, models)}
             itemToString={(item) => item?.label ?? ''}
-            selectedItems={modelItems.filter(({id}) => models.includes(id))}
-            onChange={({selectedItems}) => onModelsChange(selectedItems.map(({id}) => id))}
+            selectedItems={selectedOf(modelItems, models)}
+            onChange={({selectedItems}) => changeSelection(selectedItems, models, onModelsChange)}
             placeholder={t('agenticControlPlane.modelFilter.placeholder') as string}
             titleText=""
           />
@@ -208,4 +208,23 @@ export function FilterBar({
       </div>
     </div>
   );
+}
+
+// A selection can arrive before its options load (e.g. drilling in from the agent inventory), so
+// selected IDs stay items of their own until the options name them.
+function selectedOf(items: Item[], ids: string[]): Item[] {
+  return ids.map((id) => items.find((item) => item.id === id) ?? {id, label: id});
+}
+
+function withSelected(items: Item[], ids: string[]): Item[] {
+  return [...items, ...selectedOf(items, ids).filter((item) => !items.includes(item))];
+}
+
+// The multiselect also reports its controlled selection back when it remounts; only forward
+// actual changes.
+function changeSelection(selected: Item[], current: string[], onChange: (ids: string[]) => void) {
+  const ids = selected.map(({id}) => id);
+  if (ids.length !== current.length || ids.some((id) => !current.includes(id))) {
+    onChange(ids);
+  }
 }
