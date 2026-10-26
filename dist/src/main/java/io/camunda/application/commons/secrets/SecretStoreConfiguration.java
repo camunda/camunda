@@ -41,7 +41,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Semaphore;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import org.jspecify.annotations.NullMarked;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Bean;
@@ -49,7 +48,6 @@ import org.springframework.context.annotation.Configuration;
 
 /** Registers one {@link SecretStoreRegistry} per physical tenant, keyed by physical tenant ID. */
 @Configuration(proxyBeanMethods = false)
-@NullMarked
 public class SecretStoreConfiguration {
 
   private static final Logger LOG = LoggerFactory.getLogger(SecretStoreConfiguration.class);
@@ -339,12 +337,6 @@ public class SecretStoreConfiguration {
     }
   }
 
-  /** Builds one {@link SecretStore} from a single configured entry of a given store type. */
-  @FunctionalInterface
-  private interface StoreFactory<C> {
-    SecretStore create(String storeId, String tenantId, C config);
-  }
-
   /**
    * Binds a secret store type to the config entries it reads and the factory that turns one such
    * entry into a {@link SecretStore}. The type parameter {@code C} keeps the selected config type
@@ -390,5 +382,11 @@ public class SecretStoreConfiguration {
                       // own validation errors
                       factory.create(storeId, tenantId, entry)));
     }
+  }
+
+  /** Builds one {@link SecretStore} from a single configured entry of a given store type. */
+  @FunctionalInterface
+  private interface StoreFactory<C> {
+    SecretStore create(String storeId, String tenantId, C config);
   }
 }

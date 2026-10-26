@@ -9,13 +9,11 @@ package io.camunda.application.commons.secrets;
 
 import io.camunda.secretstore.SecretStoreRegistry;
 import java.util.Map;
-import org.jspecify.annotations.NullMarked;
 
 /**
  * The configured {@link SecretStoreRegistry} per physical tenant, keyed by physical tenant ID. A
  * first-class holder instead of a plain {@code Map} bean, so it can be injected by type.
  */
-@NullMarked
 public final class SecretStoreRegistries implements AutoCloseable {
 
   // holds no stores, so no cache is ever built and camunda.secrets.cache.* does not reach it

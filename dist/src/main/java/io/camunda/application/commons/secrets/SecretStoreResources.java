@@ -17,7 +17,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import org.agrona.CloseHelper;
 import org.agrona.ErrorHandler;
-import org.jspecify.annotations.NullMarked;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,7 +29,6 @@ import org.slf4j.LoggerFactory;
  *
  * <p>Closed both to roll back a failed startup and when the application context shuts down.
  */
-@NullMarked
 public final class SecretStoreResources implements AutoCloseable {
 
   /** How long in-flight resolutions may finish after the pools stop accepting new ones. */
