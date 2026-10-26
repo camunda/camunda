@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.processing.job;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.engine.util.EngineRule;
+import io.camunda.zeebe.engine.util.RecordToWrite;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
@@ -47,6 +48,28 @@ public final class JobRecurAfterBackoffTest {
                 .withRecordKey(jobKey)
                 .exists())
         .isTrue();
+  }
+
+  @Test
+  public void shouldExplainRejectionWhenBackoffHasNotEnded() {
+    // given
+    final Record<JobRecordValue> failed = failActivatedJobWithBackOff(Duration.ofDays(1));
+    final long jobKey = failed.getKey();
+
+    // when
+    engine.writeRecords(
+        RecordToWrite.command().job(JobIntent.RECUR_AFTER_BACKOFF, failed.getValue()).key(jobKey));
+
+    // then
+    assertThat(
+            RecordingExporter.jobRecords(JobIntent.RECUR_AFTER_BACKOFF)
+                .onlyCommandRejections()
+                .withRecordKey(jobKey)
+                .getFirst()
+                .getRejectionReason())
+        .isEqualTo(
+            "Expected to back off failed job with key '%d', but its backoff has not ended yet"
+                .formatted(jobKey));
   }
 
   private Record<JobRecordValue> failActivatedJobWithBackOff(final Duration backOff) {
