@@ -266,8 +266,6 @@ const InstancesTable: React.FC<Props> = ({search, selectedTenantId, selectedDefi
 				rows={status === 'error' ? [] : auditLogs}
 				rowKey={(row) => row.auditLogKey}
 				ariaLabel={t('operate.operationsLog.table.tableLabel')}
-				loadingPreviousPageLabel={t('operate.operationsLog.table.loadingPreviousPage')}
-				loadingNextPageLabel={t('operate.operationsLog.table.loadingNextPage')}
 				isFetching={isLoading}
 				loadingRowCount={5}
 				emptyState={isLoading ? undefined : emptyState}

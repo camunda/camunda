@@ -176,8 +176,6 @@ const BatchOperations: React.FC<Props> = ({page, pageSize, sort}) => {
 						rows={rows}
 						rowKey={(row) => row.batchOperationKey}
 						ariaLabel={t('operate.batchOperations.title')}
-						loadingPreviousPageLabel={t('operate.batchOperations.previousPage')}
-						loadingNextPageLabel={t('operate.batchOperations.nextPage')}
 						isFetching={isLoading}
 						emptyState={emptyState}
 						hideHeaderWhenEmpty={!isLoading && !query.isError}

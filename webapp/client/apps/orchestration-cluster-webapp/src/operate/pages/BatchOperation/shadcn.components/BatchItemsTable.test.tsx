@@ -105,7 +105,7 @@ describe('<BatchItemsTable />', () => {
 								processInstanceKey: '2251799813685250',
 							}),
 						],
-						page: {totalItems: 60, hasMoreTotalItems: true},
+						page: SINGLE_PAGE,
 					}),
 				),
 			}),
@@ -300,7 +300,11 @@ describe('<BatchItemsTable />', () => {
 				initialEntry: `/operate-preview/batch-operations/${BATCH_OPERATION_KEY}`,
 			},
 		);
-		const scrollContainer = () => screen.getByTestId('batch-items-table').element();
+		const scrollContainer = () =>
+			screen
+				.getByTestId('batch-items-table')
+				.element()
+				.querySelector<HTMLElement>('[data-slot=data-table-scroll-container]')!;
 		await expect.element(screen.getByRole('link', {name: 'View process instance 0'})).toBeVisible();
 		for (const offset of [50, 100]) {
 			scrollContainer().scrollTop = 0;

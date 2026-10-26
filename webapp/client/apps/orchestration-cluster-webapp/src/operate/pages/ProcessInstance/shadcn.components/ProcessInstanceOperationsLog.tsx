@@ -182,8 +182,6 @@ const ProcessInstanceOperationsLog: React.FC<{search: ProcessInstanceOperationsL
 					}
 					hideHeaderWhenEmpty
 					isFetching={isLoadingScope || (isFetching && isPlaceholderData)}
-					loadingPreviousPageLabel={t('operate.shared.sortableTable.loadingPreviousPage')}
-					loadingNextPageLabel={t('operate.shared.sortableTable.loadingNextPage')}
 					pagination={{
 						hasPreviousPage: !isPlaceholderData && hasPreviousPage,
 						hasNextPage: !isPlaceholderData && hasNextPage,
