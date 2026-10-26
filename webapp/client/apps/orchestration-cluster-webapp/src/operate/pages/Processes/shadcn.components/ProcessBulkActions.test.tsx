@@ -25,7 +25,8 @@ import {
 } from '#/shared-test-modules/api-mocks/process-instances';
 import {createBatchOperation} from '#/shared-test-modules/api-mocks/batch-operations';
 import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
-import {Notifications} from '#/shared/notifications/components/Notifications';
+import {Toaster, toast} from '@camunda/design-system';
+import {Notifications} from '#/shared/notifications/shadcn.components/Notifications';
 import {notificationsStore} from '#/shared/notifications/notifications.store';
 import type {ProcessesSearch} from '../processesFilter';
 import {InstancesTable} from './InstancesTable';
@@ -66,6 +67,7 @@ function renderTable() {
 			<div style={{height: '100vh'}}>
 				<InstancesTable search={SEARCH} />
 				<Notifications />
+				<Toaster />
 			</div>
 		),
 		{path: '/operate-preview/processes', initialEntry: '/operate-preview/processes'},
@@ -94,6 +96,7 @@ describe('Processes DS bulk actions', () => {
 	afterEach(() => {
 		sessionStorage.clear();
 		notificationsStore.reset();
+		toast.dismiss();
 	});
 
 	it('should enable only the actions that apply to the selected instances', async () => {
@@ -101,12 +104,26 @@ describe('Processes DS bulk actions', () => {
 
 		await select(screen, '1');
 
-		await expect.element(screen.getByText('1 item selected')).toBeVisible();
+		await expect.element(screen.getByText('1 item selected', {exact: false})).toBeVisible();
 		await expect.element(screen.getByRole('button', {name: 'Cancel', exact: true})).toBeEnabled();
 		await expect.element(screen.getByRole('button', {name: 'Suspend', exact: true})).toBeEnabled();
 		await expect.element(screen.getByRole('button', {name: 'Delete', exact: true})).toBeDisabled();
 		await expect.element(screen.getByRole('button', {name: 'Resume', exact: true})).toBeDisabled();
 		await expect.element(screen.getByRole('button', {name: 'Retry', exact: true})).toBeDisabled();
+	});
+
+	it('should explain why an action is unavailable for the selected instances', async () => {
+		const screen = await renderTable();
+
+		await select(screen, '1');
+
+		const count = screen.getByText('1 item selected', {exact: false});
+		await expect
+			.element(count)
+			.toHaveAttribute('title', expect.stringContaining('No finished process instances selected'));
+		await expect
+			.element(count)
+			.toHaveAttribute('title', expect.stringContaining('No suspended process instances selected'));
 	});
 
 	it('should confirm and submit Resume for the selected suspended instance', async ({worker}) => {

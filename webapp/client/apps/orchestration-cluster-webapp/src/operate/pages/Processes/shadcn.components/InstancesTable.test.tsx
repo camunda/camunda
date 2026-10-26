@@ -188,9 +188,7 @@ describe('<InstancesTable /> (design system)', () => {
 
 		const screen = await renderInstancesTable();
 
-		await expect
-			.element(screen.getByRole('row', {name: /Shipping process/}).getByTestId('operation-spinner'))
-			.toBeVisible();
+		await expect.element(screen.getByRole('row', {name: /Shipping process/}).getByRole('status')).toBeVisible();
 	});
 
 	it('should announce the operation state loading once', async ({worker}) => {

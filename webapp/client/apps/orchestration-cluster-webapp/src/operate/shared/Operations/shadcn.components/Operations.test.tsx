@@ -226,7 +226,7 @@ describe('<Operations />', () => {
 			{wrapper: getWrapper()},
 		);
 
-		await expect.element(screen.getByTestId('operation-spinner')).toBeVisible();
+		await expect.element(screen.getByRole('status')).toBeVisible();
 	});
 
 	it('should hide loading state', async () => {
@@ -239,7 +239,7 @@ describe('<Operations />', () => {
 			{wrapper: getWrapper()},
 		);
 
-		expect(screen.getByTestId('operation-spinner').elements()).toHaveLength(0);
+		expect(screen.getByRole('status').elements()).toHaveLength(0);
 	});
 
 	it('should show cancel confirmation modal', async ({worker}) => {

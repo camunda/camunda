@@ -60,3 +60,41 @@ test('should have no accessibility violations on the processes page with instanc
 	const results = await makeAxeBuilder().analyze();
 	expect(results.violations).toEqual([]);
 });
+
+test('should have no accessibility violations on the processes page with the bulk actions bar', async ({
+	network,
+	operatePreviewProcessesPage,
+	makeAxeBuilder,
+}) => {
+	network.use(
+		mockCurrentUserEndpoint({
+			successResponse: HttpResponse.json(createCurrentUser({authorizedComponents: ['operate']})),
+		}),
+		mockSystemConfigurationEndpoint({
+			successResponse: HttpResponse.json(createSystemConfiguration({components: {active: ['operate']}})),
+		}),
+		mockLicenseEndpoint({
+			successResponse: HttpResponse.json(createLicense()),
+		}),
+		mockQueryProcessDefinitionsEndpoint({
+			successResponse: HttpResponse.json(createQueryProcessDefinitionsResponse()),
+		}),
+		mockQueryProcessInstancesEndpoint({
+			successResponse: HttpResponse.json(
+				createQueryProcessInstancesResponse({items: [createProcessInstance({processInstanceKey: '2251799813700001'})]}),
+			),
+		}),
+		mockQueryBatchOperationItemsEndpoint({
+			successResponse: HttpResponse.json(createPaginatedResponse({items: []})),
+		}),
+	);
+
+	await operatePreviewProcessesPage.goto('?active=true');
+	await operatePreviewProcessesPage.instancesTable
+		.getByRole('checkbox', {name: 'Select instance 2251799813700001'})
+		.click({force: true});
+	await expect(operatePreviewProcessesPage.instancesTable.getByText('1 item selected')).toBeVisible();
+
+	const results = await makeAxeBuilder().analyze();
+	expect(results.violations).toEqual([]);
+});
