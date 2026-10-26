@@ -85,7 +85,7 @@ public class ProbeController {
     if (response.getStatusCode() == HttpStatus.NOT_FOUND
         && response.getBody() instanceof final ProblemDetail problem
         && problem.getDetail() != null
-        && problem.getDetail().startsWith("No worker can answer")) {
+        && problem.getDetail().contains("No worker can answer")) {
       problem.setTitle(ProbeEndReason.NO_WORKER.name());
     }
     return response;
