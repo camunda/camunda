@@ -49,7 +49,7 @@ it('should refetch failed waiting statistics on retry without polling', async ({
 			),
 			{
 				path: '/operate/processes/$processInstanceId',
-				initialEntry: `/operate/processes/${processInstanceId}`,
+				initialEntry: `/operate/processes/${processInstanceId}?customHint=focus#diagram`,
 			},
 		);
 
@@ -72,6 +72,8 @@ it('should refetch failed waiting statistics on retry without polling', async ({
 		await expect
 			.poll(() => screen.router.state.location.pathname)
 			.toBe(`/operate/processes/${processInstanceId}/details`);
+		expect(screen.router.state.location.search).toMatchObject({customHint: 'focus'});
+		expect(screen.router.state.location.hash).toBe('diagram');
 		await expect.element(screen.getByRole('heading', {name: 'Something went wrong'})).not.toBeInTheDocument();
 	} finally {
 		worker.events.removeListener('request:start', onRequest);

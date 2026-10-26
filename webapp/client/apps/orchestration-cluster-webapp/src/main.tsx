@@ -15,6 +15,7 @@ import {initI18next} from '#/shared/i18n/i18next';
 import {getBootConfig} from '#/shared/config/getBootConfig';
 import {parseSearchValueSafe} from '#/shared/parseSearchValueSafe';
 import {loadOsano} from '#/shared/osano';
+import {preserveProcessSearchStrings} from '#/operate/shared/utils/migrateLegacyProcessSearch';
 
 initI18next();
 
@@ -26,6 +27,7 @@ const router = createRouter({
 	scrollRestoration: true,
 	parseSearch: parseSearchWith(parseSearchValueSafe),
 	stringifySearch: stringifySearchWith(JSON.stringify, parseSearchValueSafe),
+	rewrite: {input: preserveProcessSearchStrings},
 	context: {
 		queryClient: reactQueryClient,
 	},
