@@ -91,6 +91,31 @@ public class SignalIncidentTest {
     assertSignalNameIncident(processInstanceKey, eventId);
   }
 
+  @Test
+  public void shouldNameSignalNameExpressionOfBoundaryEventInIncidentOfAttachedTask() {
+    // given
+    final var processId = Strings.newRandomValidBpmnId();
+    final var taskId = Strings.newRandomValidBpmnId();
+    final var boundaryEventId = Strings.newRandomValidBpmnId();
+
+    // when
+    final long processInstanceKey =
+        deployAndCreateInstance(
+            processId,
+            Bpmn.createExecutableProcess(processId)
+                .startEvent()
+                .serviceTask(taskId, t -> t.zeebeJobType(processId))
+                .boundaryEvent(boundaryEventId)
+                .signal(s -> s.name(SIGNAL_NAME_EXPRESSION))
+                .endEvent()
+                .moveToActivity(taskId)
+                .endEvent()
+                .done());
+
+    // then
+    assertSignalNameIncident(processInstanceKey, taskId, boundaryEventId);
+  }
+
   private static long deployAndCreateInstance(
       final String processId, final BpmnModelInstance process) {
     ENGINE.deployment().withXmlResource(process).deploy();
@@ -99,10 +124,15 @@ public class SignalIncidentTest {
 
   private static void assertSignalNameIncident(
       final long processInstanceKey, final String eventId) {
-    final var event =
+    assertSignalNameIncident(processInstanceKey, eventId, eventId);
+  }
+
+  private static void assertSignalNameIncident(
+      final long processInstanceKey, final String elementId, final String eventId) {
+    final var element =
         RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
             .withProcessInstanceKey(processInstanceKey)
-            .withElementId(eventId)
+            .withElementId(elementId)
             .getFirst();
 
     final var incident =
@@ -119,8 +149,8 @@ public class SignalIncidentTest {
             The evaluation reported the following warnings:
             [NO_VARIABLE_FOUND] No variable found with name 'signalNameLookup'"""
                 .formatted(eventId))
-        .hasElementId(eventId)
-        .hasElementInstanceKey(event.getKey())
-        .hasVariableScopeKey(event.getKey());
+        .hasElementId(elementId)
+        .hasElementInstanceKey(element.getKey())
+        .hasVariableScopeKey(element.getKey());
   }
 }
