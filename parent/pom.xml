@@ -91,7 +91,7 @@
     <version.s3mock-testcontainers>4.11.0</version.s3mock-testcontainers>
     <version.protobuf>4.33.6</version.protobuf>
     <version.protobuf-common>2.65.1</version.protobuf-common>
-    <version.micrometer>1.16.7</version.micrometer>
+    <version.micrometer>1.16.8</version.micrometer>
     <version.rocksdbjni>10.2.1</version.rocksdbjni>
     <version.sbe>1.37.1</version.sbe>
     <version.scala>3.8.4</version.scala>
