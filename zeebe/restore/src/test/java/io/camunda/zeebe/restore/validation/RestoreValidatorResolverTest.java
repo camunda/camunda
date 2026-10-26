@@ -145,8 +145,9 @@ final class RestoreValidatorResolverTest {
         .thenReturn(CompletableFuture.completedFuture(List.of()));
   }
 
-  private void stubBackupExists(final int partitionId, final long backupId) {
-    stubBackupWithPositions(partitionId, backupId, 1, 1L, 100L);
+  private void stubBackupExists(
+      final int partitionId, final long backupId, final int partitionCount) {
+    stubBackupWithPositions(partitionId, backupId, partitionCount, 1L, 100L);
   }
 
   private void stubBackupWithPositions(
@@ -599,8 +600,8 @@ final class RestoreValidatorResolverTest {
     void shouldBroadcastExplicitBackupIdToAllPartitions(final String databaseType) {
       // given
       stubBackupPartitionCount(1L, 2);
-      stubBackupExists(1, 1L);
-      stubBackupExists(2, 1L);
+      stubBackupExists(1, 1L, 2);
+      stubBackupExists(2, 1L, 2);
       final var validator = new RestoreValidator(2, backupStore, null);
       final var request =
           new RestoreRequest(
@@ -644,7 +645,7 @@ final class RestoreValidatorResolverTest {
     void shouldRejectWhenBackupIsMissingForAPartition() {
       // given - partition 2 has no completed backup for the requested id
       stubBackupPartitionCount(1L, 2);
-      stubBackupExists(1, 1L);
+      stubBackupExists(1, 1L, 2);
       stubBackupMissing(2, 1L);
       final var validator = new RestoreValidator(2, backupStore, null);
       final var request =
@@ -670,8 +671,8 @@ final class RestoreValidatorResolverTest {
     void shouldRestoreOnlyThePartitionsOfTheBackupWhenTheBackupIdIsExplicit() {
       // given - the group holds 3 partitions, but the backup was taken with 2
       stubBackupPartitionCount(7L, 2);
-      stubBackupExists(1, 7L);
-      stubBackupExists(2, 7L);
+      stubBackupExists(1, 7L, 2);
+      stubBackupExists(2, 7L, 2);
       final var validator = new RestoreValidator(3, backupStore, null);
 
       // when
@@ -763,8 +764,8 @@ final class RestoreValidatorResolverTest {
     void shouldRestoreTheBackupIdsPartitionsWhenTheExportedPositionsAgree() {
       // given - a rollback of a scale up from 3 to 2 partitions, with the RDBMS rolled back too
       stubBackupPartitionCount(1L, 2);
-      stubBackupExists(1, 1L);
-      stubBackupExists(2, 1L);
+      stubBackupExists(1, 1L, 2);
+      stubBackupExists(2, 1L, 2);
       final IntFunction<Long> exportedPositionSupplier =
           partitionId -> partitionId <= 2 ? 50L : null;
       final var validator = new RestoreValidator(3, backupStore, exportedPositionSupplier);
@@ -852,8 +853,8 @@ final class RestoreValidatorResolverTest {
     void shouldRestoreTheBackupIdsPartitionsIntoADatabaseWithoutExportedPositions() {
       // given - an empty RDBMS: nothing to agree with, so the backup alone decides
       stubBackupPartitionCount(1L, 2);
-      stubBackupExists(1, 1L);
-      stubBackupExists(2, 1L);
+      stubBackupExists(1, 1L, 2);
+      stubBackupExists(2, 1L, 2);
       final IntFunction<Long> exportedPositionSupplier = partitionId -> null;
       final var validator = new RestoreValidator(3, backupStore, exportedPositionSupplier);
 
@@ -871,8 +872,8 @@ final class RestoreValidatorResolverTest {
     void shouldRestoreTheBackupIdsPartitionsWhenTheExportedPositionsCannotBeRead() {
       // given - an RDBMS without its schema yet, which only the restore creates
       stubBackupPartitionCount(1L, 2);
-      stubBackupExists(1, 1L);
-      stubBackupExists(2, 1L);
+      stubBackupExists(1, 1L, 2);
+      stubBackupExists(2, 1L, 2);
       final IntFunction<Long> exportedPositionSupplier =
           partitionId -> {
             throw new IllegalArgumentException("Table EXPORTER_POSITION not found");
@@ -1091,12 +1092,49 @@ final class RestoreValidatorResolverTest {
               "The RDBMS holds an exported position for partition 3 but none for partition 2");
     }
 
+    @Test
+    void shouldRejectExplicitBackupWhenDescriptorIsMissing() {
+      // given
+      stubBackupPartitionCount(42L, 1);
+      stubBackupWithoutDescriptor(1, 42L);
+
+      final var validator = new RestoreValidator(1, backupStore, partitionId -> 150L);
+
+      // when
+      final var result = validator.validate(rdbmsRequestWithBackupIds(42L));
+
+      // then
+      assertThat(assertInvalid(result))
+          .isInstanceOf(IllegalStateException.class)
+          .hasMessageContaining("42")
+          .hasMessageContaining("partition 1")
+          .hasMessageContaining("descriptor");
+    }
+
     private static RestoreRequest elasticsearchRequest(final long backupId) {
       return new RestoreRequest(
           "default",
           new TenantRestoreArguments(
               new RestoreParameters(List.of(backupId), null, null), "elasticsearch", false),
           false);
+    }
+
+    private void stubBackupWithoutDescriptor(final int partitionId, final long backupId) {
+      final var pattern =
+          new BackupIdentifierWildcardImpl(
+              Optional.empty(), Optional.of(partitionId), CheckpointPattern.of(backupId));
+
+      final var status =
+          new BackupStatusImpl(
+              new BackupIdentifierImpl(0, partitionId, backupId),
+              Optional.empty(),
+              BackupStatusCode.COMPLETED,
+              Optional.empty(),
+              Optional.empty(),
+              Optional.empty());
+
+      when(backupStore.list(pattern))
+          .thenReturn(CompletableFuture.completedFuture(List.of(status)));
     }
   }
 }
