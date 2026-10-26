@@ -19,7 +19,7 @@ orchestration:
   data:
     secondaryStorage:
       rdbms:
-        url: jdbc:mariadb://mariadb:3306/camunda
+        url: jdbc:mariadb://mariadb:3306/camunda?sslMode=disable
 
 ###########################################################################
 #

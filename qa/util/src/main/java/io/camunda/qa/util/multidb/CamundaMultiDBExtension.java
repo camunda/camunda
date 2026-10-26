@@ -919,7 +919,10 @@ public class CamundaMultiDBExtension
               isHistoryRelatedTest, "jdbc:postgresql:camunda", "camunda", "camunda");
       case RDBMS_MARIADB ->
           multiDbConfigurator.configureRDBMSSupport(
-              isHistoryRelatedTest, "jdbc:mariadb://localhost:3306/camunda", "camunda", "camunda");
+              isHistoryRelatedTest,
+              "jdbc:mariadb://localhost:3306/camunda?sslMode=disable",
+              "camunda",
+              "camunda");
       case RDBMS_MYSQL ->
           multiDbConfigurator.configureRDBMSSupport(
               isHistoryRelatedTest, "jdbc:mysql://localhost:3306/camunda", "camunda", "camunda");

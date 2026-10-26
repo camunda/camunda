@@ -163,11 +163,13 @@ public final class TestSearchContainers {
         .withStartupTimeout(STARTUP_TIMEOUT);
   }
 
+  // The MariaDB driver 4.x requires TLS by default; the test servers do not use TLS.
   public static MariaDBContainer<?> createDefaultMariaDBContainer() {
     return new MariaDBContainer<>(MARIADB_IMAGE)
         .withDatabaseName(CAMUNDA_DATABASE)
         .withUsername(CAMUNDA_USER)
         .withPassword(CAMUNDA_PASSWORD)
+        .withUrlParam("sslMode", "disable")
         .withStartupTimeout(STARTUP_TIMEOUT);
   }
 
@@ -176,6 +178,7 @@ public final class TestSearchContainers {
         .withDatabaseName(CAMUNDA_DATABASE)
         .withUsername("admin")
         .withPassword("admin")
+        .withUrlParam("sslMode", "disable")
         // the created user admin:admin has only restricted privileges and cannot create additional
         // users. So we need to mount the script as root init script into the container
         // use classpath resource mapping to place the init script in the proper docker entrypoint
