@@ -25,6 +25,7 @@ import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.VariableState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.engine.state.instance.RuntimeInstructionValue;
+import io.camunda.zeebe.protocol.impl.record.value.variable.VariableSourceRecord;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.util.Either;
@@ -45,7 +46,9 @@ public final class BpmnStateBehavior {
 
   public BpmnStateBehavior(
       final ProcessingState processingState, final VariableBehavior variableBehavior) {
-    this.variableBehavior = variableBehavior;
+    // every variable write of this behavior is decided by the model: multi-instance, ad-hoc
+    // sub-process and call activity copies
+    this.variableBehavior = variableBehavior.withVariableSource(VariableSourceRecord.engine());
 
     processState = processingState.getProcessState();
     elementInstanceState = processingState.getElementInstanceState();

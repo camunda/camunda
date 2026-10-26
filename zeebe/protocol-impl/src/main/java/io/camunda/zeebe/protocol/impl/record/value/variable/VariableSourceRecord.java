@@ -53,6 +53,10 @@ public class VariableSourceRecord extends UnifiedRecordValue implements Variable
     return new VariableSourceRecord().setType(VariableOperationType.USER_TASK_COMPLETION);
   }
 
+  public static VariableSourceRecord engine() {
+    return new VariableSourceRecord().setType(VariableOperationType.ENGINE);
+  }
+
   public static VariableSourceRecord none() {
     return new VariableSourceRecord().setType(VariableOperationType.UNKNOWN);
   }
