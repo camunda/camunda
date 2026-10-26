@@ -13,6 +13,7 @@ import {
 	mockGetIncidentProcessInstanceStatisticsByErrorEndpoint,
 	mockGetProcessDefinitionInstanceStatisticsEndpoint,
 	mockLicenseEndpoint,
+	mockQueryBatchOperationItemsEndpoint,
 	mockQueryProcessDefinitionsEndpoint,
 	mockQueryProcessInstancesEndpoint,
 	mockSystemConfigurationEndpoint,
@@ -21,7 +22,10 @@ import {createCurrentUser} from '#/shared-test-modules/api-mocks/current-user';
 import {createLicense} from '#/shared-test-modules/api-mocks/license';
 import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
 import {createQueryProcessDefinitionsResponse} from '#/shared-test-modules/api-mocks/process-definitions';
-import {createQueryProcessInstancesResponse} from '#/shared-test-modules/api-mocks/process-instances';
+import {
+	createProcessInstance,
+	createQueryProcessInstancesResponse,
+} from '#/shared-test-modules/api-mocks/process-instances';
 import {createPaginatedResponse} from '#/shared-test-modules/api-mocks/shared';
 
 test.beforeEach(({network}) => {
@@ -38,17 +42,30 @@ test.beforeEach(({network}) => {
 		mockQueryProcessDefinitionsEndpoint({
 			successResponse: HttpResponse.json(createQueryProcessDefinitionsResponse()),
 		}),
+		mockQueryProcessInstancesEndpoint({
+			successResponse: HttpResponse.json(
+				createQueryProcessInstancesResponse({
+					items: [
+						createProcessInstance({processInstanceKey: '2251799813685249', processDefinitionName: 'Order process'}),
+					],
+				}),
+			),
+		}),
+		mockQueryBatchOperationItemsEndpoint({
+			successResponse: HttpResponse.json(createPaginatedResponse({items: []})),
+		}),
 	);
 });
 
 test.describe('Operate Processes DS preview (/operate-preview/processes)', () => {
-	test('should render the placeholder shell', async ({operatePreviewProcessesPage}) => {
-		await operatePreviewProcessesPage.goto();
+	test('should render the filters and the process instances table', async ({operatePreviewProcessesPage}) => {
+		await operatePreviewProcessesPage.goto('?active=true');
 
 		await expect(operatePreviewProcessesPage.heading).toBeAttached();
 		await expect(operatePreviewProcessesPage.nameFilter).toBeVisible();
 		await expect(operatePreviewProcessesPage.diagramPanelPlaceholder).toBeVisible();
-		await expect(operatePreviewProcessesPage.instancesTablePlaceholder).toBeVisible();
+		await expect(operatePreviewProcessesPage.instancesTable).toBeVisible();
+		await expect(operatePreviewProcessesPage.instancesTable.getByText('Order process')).toBeVisible();
 	});
 
 	test('should keep the Carbon Processes route working', async ({network, operateProcessesPage, page}) => {
