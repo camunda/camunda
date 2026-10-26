@@ -70,6 +70,9 @@ public class JobRecurProcessor implements TypedRecordProcessor<JobRecord> {
         case ERROR_THROWN:
           textState = "it is in error state";
           break;
+        case FAILED:
+          textState = "its backoff has not ended yet";
+          break;
         default:
           textState = "no such job was found";
           break;
