@@ -47,6 +47,7 @@ import io.camunda.db.rdbms.sql.UsageMetricMapper;
 import io.camunda.db.rdbms.sql.UsageMetricTUMapper;
 import io.camunda.db.rdbms.sql.UserMapper;
 import io.camunda.db.rdbms.sql.UserTaskMapper;
+import io.camunda.db.rdbms.sql.VariableHistoryMapper;
 import io.camunda.db.rdbms.sql.VariableMapper;
 import io.camunda.db.rdbms.sql.WaitStateMapper;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
@@ -126,6 +127,7 @@ class RdbmsWriterFactoryTest {
         mock(UserMapper.class),
         mock(UserTaskMapper.class),
         mock(VariableMapper.class),
+        mock(VariableHistoryMapper.class),
         mock(WaitStateMapper.class));
   }
 }
