@@ -1,0 +1,81 @@
+{
+  "mappings": {
+    "dynamic": "strict",
+    "properties": {
+      "id": {
+        "type": "keyword"
+      },
+      "key": {
+        "type": "long",
+        "index": false
+      },
+      "partitionId": {
+        "type": "integer",
+        "index": false
+      },
+      "position": {
+        "type": "long",
+        "index": false
+      },
+      "timestamp": {
+        "type": "date",
+        "format": "date_time || epoch_millis",
+        "index": false
+      },
+      "name": {
+        "type": "keyword"
+      },
+      "scopeKey": {
+        "type": "long"
+      },
+      "processInstanceKey": {
+        "type": "long"
+      },
+      "rootProcessInstanceKey": {
+        "type": "long"
+      },
+      "processDefinitionKey": {
+        "type": "long",
+        "index": false
+      },
+      "bpmnProcessId": {
+        "type": "keyword",
+        "index": false
+      },
+      "tenantId": {
+        "type": "keyword",
+        "index": false
+      },
+      "operation": {
+        "type": "keyword",
+        "index": false
+      },
+      "actorType": {
+        "type": "keyword",
+        "index": false
+      },
+      "actorId": {
+        "type": "keyword",
+        "index": false
+      },
+      "valueSize": {
+        "type": "integer",
+        "index": false
+      },
+      "isPreview": {
+        "type": "boolean",
+        "index": false
+      },
+      "value": {
+        "type": "keyword",
+        "index": false,
+        "doc_values": false
+      },
+      "fullValue": {
+        "type": "keyword",
+        "index": false,
+        "doc_values": false
+      }
+    }
+  }
+}
