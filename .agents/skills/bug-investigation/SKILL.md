@@ -446,8 +446,8 @@ what was intended before moving on — don't just trust a 200 response.
 Progress markers in the comment body: `⏳` in progress · `✅` complete · `⬜` not started yet ·
 `⏭️` skipped, with a one-line reason · `❌` failed (e.g. environment wouldn't start).
 
-When the comment references specific code, use a stable GitHub permalink (see "Referencing code in
-issues, PRs, and comments" in the repo's `AGENTS.md`) — not a bare `path:line`, since the comment
+When the comment references specific code, use a stable GitHub permalink (use the
+`github-permalink` skill) — not a bare `path:line`, since the comment
 outlives the current file state.
 
 ## Guardrails

@@ -51,6 +51,7 @@ When a skill exists for a recurring operation, use it rather than improvising st
 | `frontend-operate-migrator`    | Independently port legacy Operate behavior through fidelity review and a draft PR                             |
 | `frontend-unit-test`           | Write or debug Vitest browser-mode unit tests in the orchestration cluster webapp                              |
 | `new-k6-load-test`             | Add or extend a k6 load test in the `load-test-setup` chart (`load-tests/setup/charts/load-test-setup/k6/`)     |
+| `github-permalink`             | Build a stable GitHub permalink to repo code lines for issues, PR descriptions, and review comments            |
 | `gradle-build-parity`          | Edit, fix, or debug the Gradle build to match Maven behavior (deps, test-jars, optional deps)                  |
 | `gradle-run-build`             | Compile, test, and package with `./gradlew`: single-test filters, `-Pquickly`, IT vs unit, gotchas            |
 | `operate-engineering-loop`     | Drive a tracked Operate change (OC webapp `src/operate/`) through implementation, gated validation, independent review, a draft PR, and Copilot review |
