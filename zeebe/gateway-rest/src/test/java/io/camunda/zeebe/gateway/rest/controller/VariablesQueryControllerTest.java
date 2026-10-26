@@ -18,6 +18,7 @@ import static org.springframework.http.MediaType.APPLICATION_JSON;
 import io.camunda.search.entities.VariableEntity;
 import io.camunda.search.entities.VariableEntity.ProtectionMode;
 import io.camunda.search.exception.CamundaSearchException;
+import io.camunda.search.filter.Operation;
 import io.camunda.search.filter.VariableFilter;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.SearchQueryResult.Builder;
@@ -569,12 +570,30 @@ public class VariablesQueryControllerTest extends RestControllerTest {
         Arguments.of("{\"protectionMode\": {\"$in\": []}}", new VariableFilter.Builder().build()));
     streamBuilder.add(
         Arguments.of(
+            "{\"protectionMode\": {\"$eq\": \"REDACT\"}}",
+            new VariableFilter.Builder().protectionModeOperations(Operation.eq("REDACT")).build()));
+    streamBuilder.add(
+        Arguments.of(
+            "{\"protectionMode\": {\"$neq\": \"REDACT\"}}",
+            new VariableFilter.Builder()
+                .protectionModeOperations(Operation.neq("REDACT"))
+                .build()));
+    streamBuilder.add(
+        Arguments.of(
+            "{\"protectionMode\": {\"$notIn\": [\"REDACT\"]}}",
+            new VariableFilter.Builder()
+                .protectionModeOperations(Operation.notIn("REDACT"))
+                .build()));
+    streamBuilder.add(
+        Arguments.of(
             "{\"protectionMode\": {\"$exists\": false}}",
-            new VariableFilter.Builder().hasProtectionModes(false).build()));
+            new VariableFilter.Builder()
+                .protectionModeOperations(Operation.exists(false))
+                .build()));
     streamBuilder.add(
         Arguments.of(
             "{\"protectionMode\": {\"$exists\": true}}",
-            new VariableFilter.Builder().hasProtectionModes(true).build()));
+            new VariableFilter.Builder().protectionModeOperations(Operation.exists(true)).build()));
     streamBuilder.add(
         Arguments.of(
             "{\"name\": \"ssn\", \"protectionMode\": \"REDACT\"}",
