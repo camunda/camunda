@@ -81,6 +81,8 @@ public class JobRecurAfterBackoffProcessor implements TypedRecordProcessor<JobRe
   }
 
   private boolean hasRecurred(final JobRecord job) {
-    return job.getRecurringTime() < clock.millis();
+    // must match the backoff checker (JobState#findBackedOffJobs), which considers a backoff due
+    // when it ends at the current time; it does not check again for a job it already handed us
+    return job.getRecurringTime() <= clock.millis();
   }
 }
