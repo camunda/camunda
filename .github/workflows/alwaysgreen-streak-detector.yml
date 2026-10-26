@@ -41,7 +41,7 @@ env:
   ALERT_CHANNEL_ID: 'C0AK0AVKRL0'
   PARENT_WORKFLOW_FILE: 'docker-build-helm-integration.yml'
   MEDIC_TEST_AUTOMATION: '<!subteam^S09UF0EV0HG|test-automation-medic>'
-  MEDIC_DISTRIBUTION: '<!subteam^S053K7C7QKU|distribution-medic>'
+  MEDIC_DISTRIBUTION: '<!subteam^S0CBB7Y72SV|smx-medic>'
   MEDIC_ENGINEERING_OPERATIONS: '<!subteam^S07D6C6B18T|monorepo-ci-medic>'
   MEDIC_CORE_FEATURES: '<!subteam^S08P2CU9V8W|core-features-medic>'
   STREAK_MARKER_ACTIVE: 'AlwaysGreen streak (active)'
