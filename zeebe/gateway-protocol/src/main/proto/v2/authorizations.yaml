@@ -451,6 +451,7 @@ components:
         - CREATE_DECISION_INSTANCE
         - CREATE_PROCESS_INSTANCE
         - CREATE_TASK_LISTENER
+        - ANSWER
         - DELETE
         - DELETE_DECISION_INSTANCE
         - DELETE_DRD
@@ -498,6 +499,7 @@ components:
         - GROUP
         - MAPPING_RULE
         - MESSAGE
+        - PROBE
         - PROCESS_DEFINITION
         - RESOURCE
         - ROLE

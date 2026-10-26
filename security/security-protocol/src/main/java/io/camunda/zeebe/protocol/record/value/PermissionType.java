@@ -39,6 +39,8 @@ public enum PermissionType {
   DELETE_RESOURCE,
   DELETE_TASK_LISTENER,
 
+  ANSWER,
+
   EVALUATE,
 
   MODIFY_PROCESS_INSTANCE,
