@@ -133,46 +133,84 @@ it('should pass the loaded tiles to DashboardRenderer', async () => {
   expect(node.find('.agentHealth-section').find('DashboardRenderer').prop('tiles')).toEqual(tiles);
 });
 
-it('should hide visibleInL0Only tiles when a process is selected', async () => {
-  const tiles = [
-    {id: 'l0-tile', configuration: {visibleInL0Only: true}, position: {x: 0, y: 0}},
-    {id: 'l1-tile', configuration: {visibleInL1Only: true}, position: {x: 1, y: 0}},
-    {id: 'common-tile', configuration: {}, position: {x: 2, y: 0}},
-  ];
-  (loadAgenticDashboard as jest.Mock).mockReturnValueOnce({tiles, availableFilters: []});
+const levelTiles = [
+  {id: 'overview-tile', configuration: {levels: ['overview']}, position: {x: 0, y: 0}},
+  {id: 'process-tile', configuration: {levels: ['process']}, position: {x: 1, y: 0}},
+  {id: 'agent-tile', configuration: {levels: ['overview', 'agent']}, position: {x: 2, y: 0}},
+];
+
+function tileIds(node: ReturnType<typeof shallow>, section: string) {
+  return (
+    node.find(`.${section}-section`).find('DashboardRenderer').prop('tiles') as {id: string}[]
+  ).map(({id}) => id);
+}
+
+it('should show overview tiles in the Phase 2 sections when no process is selected', async () => {
+  (loadAgenticDashboard as jest.Mock).mockReturnValueOnce({
+    tiles: levelTiles,
+    availableFilters: [],
+  });
+
+  const node = shallow(<AgenticControlPlane />);
+  await runAllEffects();
+
+  expect(tileIds(node, 'agentHealth')).toEqual(['overview-tile', 'agent-tile']);
+  expect(node.find('.kpi-section')).not.toExist();
+  expect(node.find('DrillBreadcrumb').prop('processScope')).toBe(null);
+});
+
+it('should switch to the Phase 1 process sections once a process is selected', async () => {
+  (loadAgenticDashboard as jest.Mock).mockReturnValueOnce({
+    tiles: levelTiles,
+    availableFilters: [],
+  });
 
   const node = shallow(<AgenticControlPlane />);
   await runAllEffects();
 
   (node.find('FilterBar').prop('onProcessScopeChange') as (v: string) => void)('my-process');
 
-  const visibleTiles = node
-    .find('.agentHealth-section')
-    .find('DashboardRenderer')
-    .prop('tiles') as {
-    id: string;
-  }[];
-  expect(visibleTiles.map((t) => t.id)).toEqual(['l1-tile', 'common-tile']);
+  expect(tileIds(node, 'kpi')).toEqual(['process-tile']);
+  expect(node.find('.token-section')).toExist();
+  expect(node.find('.agentHealth-section')).not.toExist();
+  expect(node.find('FilterBar').prop('showModelFilter')).toBe(false);
 });
 
-it('should hide visibleInL1Only tiles when no process is selected (L0)', async () => {
-  const tiles = [
-    {id: 'l0-tile', configuration: {visibleInL0Only: true}, position: {x: 0, y: 0}},
-    {id: 'l1-tile', configuration: {visibleInL1Only: true}, position: {x: 1, y: 0}},
-    {id: 'common-tile', configuration: {}, position: {x: 2, y: 0}},
-  ];
-  (loadAgenticDashboard as jest.Mock).mockReturnValueOnce({tiles, availableFilters: []});
+it('should show agent tiles once an agent of the selected process is selected', async () => {
+  (loadAgenticDashboard as jest.Mock).mockReturnValueOnce({
+    tiles: levelTiles,
+    availableFilters: [],
+  });
 
   const node = shallow(<AgenticControlPlane />);
   await runAllEffects();
 
-  const visibleTiles = node
-    .find('.agentHealth-section')
-    .find('DashboardRenderer')
-    .prop('tiles') as {
-    id: string;
-  }[];
-  expect(visibleTiles.map((t) => t.id)).toEqual(['l0-tile', 'common-tile']);
+  (node.find('FilterBar').prop('onProcessScopeChange') as (v: string) => void)('my-process');
+  (node.find('FilterBar').prop('onAgentIdsChange') as (v: string[]) => void)(['loan:review']);
+
+  expect(tileIds(node, 'agentHealth')).toEqual(['agent-tile']);
+  expect(node.find('.kpi-section')).not.toExist();
+  expect(node.find('FilterBar').prop('showModelFilter')).toBe(true);
+});
+
+it('should go back up a level from the breadcrumb', async () => {
+  (loadAgenticDashboard as jest.Mock).mockReturnValueOnce({
+    tiles: levelTiles,
+    availableFilters: [],
+  });
+
+  const node = shallow(<AgenticControlPlane />);
+  await runAllEffects();
+
+  (node.find('FilterBar').prop('onProcessScopeChange') as (v: string) => void)('my-process');
+  (node.find('FilterBar').prop('onAgentIdsChange') as (v: string[]) => void)(['loan:review']);
+  (node.find('DrillBreadcrumb').prop('onProcess') as () => void)();
+
+  expect(tileIds(node, 'kpi')).toEqual(['process-tile']);
+
+  (node.find('DrillBreadcrumb').prop('onOverview') as () => void)();
+
+  expect(tileIds(node, 'agentHealth')).toEqual(['overview-tile', 'agent-tile']);
 });
 
 it('should include definitions in evaluate calls when a process is selected', async () => {
@@ -181,7 +219,7 @@ it('should include definitions in evaluate calls when a process is selected', as
 
   (node.find('FilterBar').prop('onProcessScopeChange') as (v: string) => void)('my-process');
 
-  const loadTile = node.find('.agentHealth-section').find('DashboardRenderer').prop('loadTile') as (
+  const loadTile = node.find('.kpi-section').find('DashboardRenderer').prop('loadTile') as (
     id: string,
     filter: unknown[],
     params: unknown
@@ -214,7 +252,7 @@ it('should include the selected version in evaluate definitions', async () => {
   (node.find('FilterBar').prop('onProcessScopeChange') as (v: string) => void)('my-process');
   (node.find('FilterBar').prop('onVersionsChange') as (v: string[]) => void)(['3']);
 
-  const loadTile = node.find('.agentHealth-section').find('DashboardRenderer').prop('loadTile') as (
+  const loadTile = node.find('.kpi-section').find('DashboardRenderer').prop('loadTile') as (
     id: string,
     filter: unknown[],
     params: unknown
@@ -249,7 +287,7 @@ it('should reset the version to all when the process scope changes', async () =>
 
   expect(node.find('FilterBar').prop('versions')).toEqual(['all']);
 
-  const loadTile = node.find('.agentHealth-section').find('DashboardRenderer').prop('loadTile') as (
+  const loadTile = node.find('.kpi-section').find('DashboardRenderer').prop('loadTile') as (
     id: string,
     filter: unknown[],
     params: unknown
@@ -261,8 +299,7 @@ it('should reset the version to all when the process scope changes', async () =>
   ]);
 });
 
-it('should render a volume tile in its section in both L0 and L1', async () => {
-  // the Total tool calls tile carries no L0/L1-only flag, so it must show in both scopes
+it('should render a volume tile without levels at the overview only', async () => {
   const tiles = [
     {
       id: 'tool-calls',
@@ -276,25 +313,11 @@ it('should render a volume tile in its section in both L0 and L1', async () => {
   const node = shallow(<AgenticControlPlane />);
   await runAllEffects();
 
-  // L0 (fleet view — no process selected)
-  expect(
-    (
-      node.find('.volume-section').find('DashboardRenderer').prop('tiles') as {
-        id: string;
-      }[]
-    ).map((t) => t.id)
-  ).toEqual(['tool-calls']);
+  expect(tileIds(node, 'volume')).toEqual(['tool-calls']);
 
-  // L1 (process drill-down)
   (node.find('FilterBar').prop('onProcessScopeChange') as (v: string) => void)('my-process');
 
-  expect(
-    (
-      node.find('.volume-section').find('DashboardRenderer').prop('tiles') as {
-        id: string;
-      }[]
-    ).map((t) => t.id)
-  ).toEqual(['tool-calls']);
+  expect(node.find('.volume-section')).not.toExist();
 });
 
 it('should inject the configured top-N limit when evaluating a tile with a topN config', async () => {
@@ -363,10 +386,7 @@ it('should clear the agent and model selection when the process scope changes', 
   (node.find('FilterBar').prop('onProcessScopeChange') as (v: string) => void)('other-process');
 
   expect(node.find('FilterBar').prop('agentIds')).toEqual([]);
-  const filter = node
-    .find('.agentHealth-section')
-    .find('DashboardRenderer')
-    .prop('filter') as unknown as {
+  const filter = node.find('.kpi-section').find('DashboardRenderer').prop('filter') as unknown as {
     type: string;
   }[];
   expect(filter.map(({type}) => type)).toEqual(['instanceEndDate']);

@@ -31,8 +31,11 @@ import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessVisua
 import io.camunda.optimize.dto.optimize.query.report.single.process.distributed.NoneDistributedByDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
 import io.camunda.optimize.dto.optimize.query.report.single.process.group.AgentGroupByDto;
+import io.camunda.optimize.dto.optimize.query.report.single.process.group.EndDateGroupByDto;
+import io.camunda.optimize.dto.optimize.query.report.single.process.group.FlowNodesGroupByDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.group.ModelGroupByDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.group.NoneGroupByDto;
+import io.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessDefinitionVersionGroupByDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.group.StartDateGroupByDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.group.ToolGroupByDto;
@@ -48,9 +51,13 @@ import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
@@ -248,6 +255,15 @@ public class AgenticControlDashboardService {
   private static final String TILE_CONFIG_VISIBLE_IN_L0_ONLY = "visibleInL0Only";
   // When set, the frontend only renders the tile once a single process is selected (L1).
   private static final String TILE_CONFIG_VISIBLE_IN_L1_ONLY = "visibleInL1Only";
+  // Drill-down levels the frontend renders the tile at: the all-processes overview (no process
+  // selected), a single process, or one or more agents within that process.
+  private static final String TILE_CONFIG_LEVELS = "levels";
+  private static final String LEVEL_OVERVIEW = "overview";
+  private static final String LEVEL_PROCESS = "process";
+  private static final String LEVEL_AGENT = "agent";
+  // Cross-process or cross-agent comparisons that say nothing once a single agent is selected.
+  private static final Set<String> OVERVIEW_ONLY_REPORT_IDS =
+      Set.of(AGENT_ADOPTION_RATE_REPORT_ID, AGENT_RUNS_BY_AGENT_REPORT_ID);
   // Section values that group tiles within the dashboard layout.
   private static final String TILE_SECTION_TOKEN = "token";
   private static final String TILE_SECTION_DURATION = "duration";
@@ -288,9 +304,15 @@ public class AgenticControlDashboardService {
     // Always upsert all KPI reports so config changes are applied on every restart.
     // Report IDs are deterministic so upserts are safe and tile references never orphan.
     final List<DashboardReportTileDto> tiles = new ArrayList<>();
-    tiles.addAll(buildAgentHealthTiles());
-    tiles.addAll(buildVolumeTiles());
-    tiles.addAll(buildCostAndUsageTiles());
+    buildProcessLevelTiles().forEach(tile -> tiles.add(atLevels(tile, LEVEL_PROCESS)));
+    Stream.of(buildAgentHealthTiles(), buildVolumeTiles(), buildCostAndUsageTiles())
+        .flatMap(List::stream)
+        .map(
+            tile ->
+                OVERVIEW_ONLY_REPORT_IDS.contains(tile.getId())
+                    ? atLevels(tile, LEVEL_OVERVIEW)
+                    : atLevels(tile, LEVEL_OVERVIEW, LEVEL_AGENT))
+        .forEach(tiles::add);
 
     // Always upsert the dashboard too — tile list can grow across versions and the cold-start
     // guard would leave an existing deployment stuck on the old layout.
@@ -300,6 +322,573 @@ public class AgenticControlDashboardService {
     } else {
       dashboardWriter.updateDashboard(toUpdateDto(dashboard), AGENTIC_DASHBOARD_ID);
     }
+  }
+
+  private List<DashboardReportTileDto> buildProcessLevelTiles() {
+    return List.of(
+        buildCompletedInstancesReport(),
+        buildAvgDurationReport(),
+        buildIncidentRateReport(),
+        buildAvgTokensReport(),
+        buildMedianTokensReport(),
+        buildDurationStabilityReport(),
+        buildTokenTrendReport(),
+        buildTokenOutlierBandsReport(),
+        buildP50DurationReport(),
+        buildP95DurationReport(),
+        buildFailureRateByVersionReport(),
+        buildTotalToolCallsReport(),
+        buildToolCallsHeatmapReport(),
+        buildDurationHeatmapReport());
+  }
+
+  private static DashboardReportTileDto atLevels(
+      final DashboardReportTileDto tile, final String... levels) {
+    final Map<String, Object> configuration = new HashMap<>();
+    if (tile.getConfiguration() instanceof final Map<?, ?> existing) {
+      existing.forEach((key, value) -> configuration.put(String.valueOf(key), value));
+    }
+    configuration.put(TILE_CONFIG_LEVELS, List.of(levels));
+    tile.setConfiguration(configuration);
+    return tile;
+  }
+
+  // ---------------------------------------------------------------------------------------------
+  // Phase 1 tiles: process-level view (L1), read from the agent data nested in each process
+  // instance. Shown once a single process is selected and no agent is.
+  // ---------------------------------------------------------------------------------------------
+
+  private DashboardReportTileDto buildCompletedInstancesReport() {
+    final ProcessReportDataDto reportData =
+        ProcessReportDataDto.builder()
+            .definitions(Collections.emptyList())
+            .view(new ProcessViewDto(ProcessViewEntity.PROCESS_INSTANCE, ViewProperty.FREQUENCY))
+            .groupBy(new NoneGroupByDto())
+            .distributedBy(new NoneDistributedByDto())
+            .visualization(ProcessVisualization.NUMBER)
+            // Surface the description as the tile subtitle instead of the auto-derived label.
+            .configuration(
+                SingleReportConfigurationDto.builder()
+                    .subtitle(KPI_EXECUTION_COMPLETED_DESCRIPTION)
+                    .build())
+            .filter(
+                ProcessFilterBuilder.filter()
+                    .completedInstancesOnly()
+                    .add()
+                    .hasAgentInstances()
+                    .add()
+                    .buildList())
+            .agenticControlReport(true)
+            .build();
+    reportWriter.createOrUpdateSingleProcessReport(
+        KPI_COMPLETED_REPORT_ID,
+        null,
+        reportData,
+        KPI_EXECUTION_COMPLETED_NAME,
+        KPI_EXECUTION_COMPLETED_DESCRIPTION,
+        null);
+    return buildTile(
+        KPI_COMPLETED_REPORT_ID,
+        new PositionDto(0, 0),
+        new DimensionDto(6, 2),
+        Map.of("comparisonPeriod", true, "deltaGoodDirection", "up"));
+  }
+
+  private DashboardReportTileDto buildAvgDurationReport() {
+    final ProcessReportDataDto reportData =
+        ProcessReportDataDto.builder()
+            .definitions(Collections.emptyList())
+            .view(new ProcessViewDto(ProcessViewEntity.PROCESS_INSTANCE, ViewProperty.DURATION))
+            .groupBy(new NoneGroupByDto())
+            .distributedBy(new NoneDistributedByDto())
+            .visualization(ProcessVisualization.NUMBER)
+            // Surface the description as the tile subtitle instead of the auto-derived label.
+            .configuration(
+                SingleReportConfigurationDto.builder()
+                    .subtitle(KPI_EXECUTION_AVG_DURATION_DESCRIPTION)
+                    .build())
+            .filter(
+                ProcessFilterBuilder.filter()
+                    .completedInstancesOnly()
+                    .add()
+                    .hasAgentInstances()
+                    .add()
+                    .buildList())
+            .agenticControlReport(true)
+            .build();
+    reportWriter.createOrUpdateSingleProcessReport(
+        KPI_AVG_DURATION_REPORT_ID,
+        null,
+        reportData,
+        KPI_EXECUTION_AVG_DURATION_NAME,
+        KPI_EXECUTION_AVG_DURATION_DESCRIPTION,
+        null);
+    return buildTile(
+        KPI_AVG_DURATION_REPORT_ID,
+        new PositionDto(6, 0),
+        new DimensionDto(6, 2),
+        Map.of("comparisonPeriod", true, "deltaGoodDirection", "down"));
+  }
+
+  private DashboardReportTileDto buildIncidentRateReport() {
+    final ProcessReportDataDto reportData =
+        ProcessReportDataDto.builder()
+            .definitions(Collections.emptyList())
+            .view(new ProcessViewDto(ProcessViewEntity.PROCESS_INSTANCE, ViewProperty.PERCENTAGE))
+            .groupBy(new NoneGroupByDto())
+            .distributedBy(new NoneDistributedByDto())
+            .visualization(ProcessVisualization.NUMBER)
+            // Surface the description as the tile subtitle instead of the auto-derived label.
+            .configuration(
+                SingleReportConfigurationDto.builder()
+                    .subtitle(KPI_EXECUTION_INCIDENT_RATE_DESCRIPTION)
+                    .build())
+            .filter(
+                ProcessFilterBuilder.filter()
+                    .completedInstancesOnly()
+                    .add()
+                    .hasAgentInstances()
+                    .add()
+                    .withResolvedIncident()
+                    .add()
+                    .buildList())
+            .agenticControlReport(true)
+            .build();
+    reportWriter.createOrUpdateSingleProcessReport(
+        KPI_INCIDENT_RATE_REPORT_ID,
+        null,
+        reportData,
+        KPI_EXECUTION_INCIDENT_RATE_NAME,
+        KPI_EXECUTION_INCIDENT_RATE_DESCRIPTION,
+        null);
+    return buildTile(
+        KPI_INCIDENT_RATE_REPORT_ID,
+        new PositionDto(12, 0),
+        new DimensionDto(6, 2),
+        Map.of("comparisonPeriod", true, "deltaGoodDirection", "down"));
+  }
+
+  private DashboardReportTileDto buildAvgTokensReport() {
+    return buildTokensReport(
+        KPI_AVG_TOKENS_REPORT_ID,
+        new AggregationDto(AggregationType.AVERAGE),
+        new PositionDto(0, 2),
+        KPI_EXECUTION_AVG_TOKENS_NAME,
+        KPI_EXECUTION_AVG_TOKENS_DESCRIPTION);
+  }
+
+  private DashboardReportTileDto buildMedianTokensReport() {
+    return buildTokensReport(
+        KPI_MEDIAN_TOKENS_REPORT_ID,
+        new AggregationDto(AggregationType.PERCENTILE, 50.0),
+        new PositionDto(9, 2),
+        KPI_EXECUTION_MEDIAN_TOKENS_NAME,
+        KPI_EXECUTION_MEDIAN_TOKENS_DESCRIPTION);
+  }
+
+  private DashboardReportTileDto buildTokensReport(
+      final String id,
+      final AggregationDto aggregation,
+      final PositionDto position,
+      final String nameKey,
+      final String descriptionKey) {
+    // Surface the human-readable description as the tile subtitle instead of the auto-derived
+    // "Agent instance Total tokens". Reuses the description localization key (single source of
+    // text).
+    final SingleReportConfigurationDto configuration =
+        SingleReportConfigurationDto.builder()
+            .aggregationTypes(new LinkedHashSet<>(Collections.singletonList(aggregation)))
+            .precision(2)
+            .valueFormat("compact")
+            .subtitle(descriptionKey)
+            .build();
+    final ProcessReportDataDto reportData =
+        ProcessReportDataDto.builder()
+            .definitions(Collections.emptyList())
+            .view(new ProcessViewDto(ProcessViewEntity.AGENT_INSTANCE, ViewProperty.TOTAL_TOKENS))
+            .groupBy(new NoneGroupByDto())
+            .distributedBy(new NoneDistributedByDto())
+            .visualization(ProcessVisualization.NUMBER)
+            .configuration(configuration)
+            .filter(
+                ProcessFilterBuilder.filter()
+                    .completedInstancesOnly()
+                    .add()
+                    .hasAgentInstances()
+                    .add()
+                    .buildList())
+            .agenticControlReport(true)
+            .build();
+    reportWriter.createOrUpdateSingleProcessReport(
+        id, null, reportData, nameKey, descriptionKey, null);
+    return buildTile(
+        id, position, new DimensionDto(9, 2), Map.of(TILE_CONFIG_SECTION, TILE_SECTION_TOKEN));
+  }
+
+  private DashboardReportTileDto buildTokenTrendReport() {
+    reportWriter.createOrUpdateSingleProcessReport(
+        TOKEN_TREND_REPORT_ID, null, buildTokenTrendReportData(), KPI_TOKEN_TREND_NAME, null, null);
+
+    return buildTile(
+        TOKEN_TREND_REPORT_ID,
+        new PositionDto(0, 4),
+        new DimensionDto(9, 4),
+        Map.of(
+            TILE_CONFIG_SECTION,
+            TILE_SECTION_TOKEN,
+            TILE_CONFIG_FOOTNOTE,
+            KPI_TOKEN_TREND_FOOTNOTE_KEY));
+  }
+
+  // A single multi-measure report (input + output tokens) renders both series as separate lines,
+  // which is the supported way to combine measures — combined reports were removed from Optimize.
+  private ProcessReportDataDto buildTokenTrendReportData() {
+    final EndDateGroupByDto groupBy = new EndDateGroupByDto();
+    groupBy.setValue(new DateGroupByValueDto(AggregateByDateUnit.WEEK));
+    return ProcessReportDataDto.builder()
+        .definitions(Collections.emptyList())
+        .view(
+            new ProcessViewDto(
+                ProcessViewEntity.AGENT_INSTANCE,
+                List.of(ViewProperty.INPUT_TOKENS, ViewProperty.OUTPUT_TOKENS)))
+        .groupBy(groupBy)
+        .distributedBy(new NoneDistributedByDto())
+        .visualization(ProcessVisualization.LINE)
+        .configuration(
+            SingleReportConfigurationDto.builder()
+                .aggregationTypes(
+                    new LinkedHashSet<>(
+                        Collections.singletonList(new AggregationDto(AggregationType.SUM))))
+                .build())
+        .filter(
+            ProcessFilterBuilder.filter()
+                .completedInstancesOnly()
+                .add()
+                .hasAgentInstances()
+                .add()
+                .buildList())
+        .agenticControlReport(true)
+        .build();
+  }
+
+  // Token consumption stability: p5/p50/p95 total tokens per execution over time, rendered as
+  // shaded outlier bands. Reuses the multi-percentile-in-one-report support (see the duration
+  // stability report) and mirrors the token-trend tile's weekly date grouping.
+  private DashboardReportTileDto buildTokenOutlierBandsReport() {
+    final EndDateGroupByDto groupBy = new EndDateGroupByDto();
+    groupBy.setValue(new DateGroupByValueDto(AggregateByDateUnit.WEEK));
+
+    final ProcessReportDataDto reportData =
+        ProcessReportDataDto.builder()
+            .definitions(Collections.emptyList())
+            .view(new ProcessViewDto(ProcessViewEntity.AGENT_INSTANCE, ViewProperty.TOTAL_TOKENS))
+            .groupBy(groupBy)
+            .distributedBy(new NoneDistributedByDto())
+            .visualization(ProcessVisualization.OUTLIER_BAND)
+            .configuration(
+                SingleReportConfigurationDto.builder()
+                    .aggregationTypes(
+                        new LinkedHashSet<>(
+                            List.of(
+                                new AggregationDto(AggregationType.PERCENTILE, 5.0),
+                                new AggregationDto(AggregationType.PERCENTILE, 50.0),
+                                new AggregationDto(AggregationType.PERCENTILE, 95.0))))
+                    .build())
+            .filter(
+                ProcessFilterBuilder.filter()
+                    .completedInstancesOnly()
+                    .add()
+                    .hasAgentInstances()
+                    .add()
+                    .buildList())
+            .agenticControlReport(true)
+            .build();
+    reportWriter.createOrUpdateSingleProcessReport(
+        TOKEN_OUTLIER_BANDS_REPORT_ID,
+        null,
+        reportData,
+        KPI_TOKEN_OUTLIER_BANDS_NAME,
+        KPI_TOKEN_OUTLIER_BANDS_DESCRIPTION,
+        null);
+    return buildTile(
+        TOKEN_OUTLIER_BANDS_REPORT_ID,
+        // sits in the right half of the token-trend row, mirroring its size
+        new PositionDto(9, 6),
+        new DimensionDto(9, 4),
+        Map.of("section", "token", "footnote", KPI_TOKEN_OUTLIER_BANDS_FOOTNOTE_KEY));
+  }
+
+  private DashboardReportTileDto buildP50DurationReport() {
+    return buildDurationPercentileReport(
+        50.0,
+        KPI_DURATION_P50_REPORT_ID,
+        KPI_DURATION_P50_NAME,
+        KPI_DURATION_P50_DESCRIPTION,
+        new PositionDto(0, 10));
+  }
+
+  private DashboardReportTileDto buildP95DurationReport() {
+    return buildDurationPercentileReport(
+        95.0,
+        KPI_DURATION_P95_REPORT_ID,
+        KPI_DURATION_P95_NAME,
+        KPI_DURATION_P95_DESCRIPTION,
+        new PositionDto(9, 10));
+  }
+
+  private DashboardReportTileDto buildDurationPercentileReport(
+      final double percentile,
+      final String reportId,
+      final String nameKey,
+      final String descriptionKey,
+      final PositionDto position) {
+    final SingleReportConfigurationDto config = new SingleReportConfigurationDto();
+    config.setAggregationTypes(new AggregationDto(AggregationType.PERCENTILE, percentile));
+    // Surface the description as the tile subtitle instead of the auto-derived label.
+    config.setSubtitle(descriptionKey);
+    final ProcessReportDataDto reportData =
+        ProcessReportDataDto.builder()
+            .definitions(Collections.emptyList())
+            .configuration(config)
+            .view(new ProcessViewDto(ProcessViewEntity.PROCESS_INSTANCE, ViewProperty.DURATION))
+            .groupBy(new NoneGroupByDto())
+            .distributedBy(new NoneDistributedByDto())
+            .visualization(ProcessVisualization.NUMBER)
+            .filter(
+                ProcessFilterBuilder.filter()
+                    .completedInstancesOnly()
+                    .add()
+                    .hasAgentInstances()
+                    .add()
+                    .buildList())
+            .agenticControlReport(true)
+            .build();
+    reportWriter.createOrUpdateSingleProcessReport(
+        reportId, null, reportData, nameKey, descriptionKey, null);
+    return buildTile(
+        reportId,
+        position,
+        new DimensionDto(9, 2),
+        Map.of(TILE_CONFIG_SECTION, TILE_SECTION_DURATION));
+  }
+
+  private DashboardReportTileDto buildDurationStabilityReport() {
+    final EndDateGroupByDto groupBy = new EndDateGroupByDto();
+    final DateGroupByValueDto groupByValue = new DateGroupByValueDto();
+    groupByValue.setUnit(AggregateByDateUnit.AUTOMATIC);
+    groupBy.setValue(groupByValue);
+
+    final ProcessReportDataDto reportData =
+        ProcessReportDataDto.builder()
+            .definitions(Collections.emptyList())
+            .view(new ProcessViewDto(ProcessViewEntity.PROCESS_INSTANCE, ViewProperty.DURATION))
+            .groupBy(groupBy)
+            .distributedBy(new NoneDistributedByDto())
+            .visualization(ProcessVisualization.LINE)
+            .configuration(
+                SingleReportConfigurationDto.builder()
+                    .aggregationTypes(
+                        new LinkedHashSet<>(
+                            List.of(
+                                new AggregationDto(AggregationType.PERCENTILE, 50.0),
+                                new AggregationDto(AggregationType.PERCENTILE, 95.0))))
+                    .build())
+            .filter(
+                ProcessFilterBuilder.filter()
+                    .completedInstancesOnly()
+                    .add()
+                    .hasAgentInstances()
+                    .add()
+                    .buildList())
+            .agenticControlReport(true)
+            .build();
+    reportWriter.createOrUpdateSingleProcessReport(
+        DURATION_STABILITY_REPORT_ID,
+        null,
+        reportData,
+        DURATION_STABILITY_NAME,
+        DURATION_STABILITY_DESCRIPTION,
+        null);
+    return buildTile(
+        DURATION_STABILITY_REPORT_ID,
+        new PositionDto(0, 12),
+        new DimensionDto(18, 2),
+        Map.of("section", "duration"));
+  }
+
+  private DashboardReportTileDto buildFailureRateByVersionReport() {
+    final ProcessReportDataDto reportData =
+        ProcessReportDataDto.builder()
+            .definitions(Collections.emptyList())
+            .view(new ProcessViewDto(ProcessViewEntity.PROCESS_INSTANCE, ViewProperty.PERCENTAGE))
+            .groupBy(new ProcessDefinitionVersionGroupByDto())
+            .distributedBy(new NoneDistributedByDto())
+            .visualization(ProcessVisualization.BAR)
+            .filter(
+                ProcessFilterBuilder.filter()
+                    .completedInstancesOnly()
+                    .add()
+                    .hasAgentInstances()
+                    .add()
+                    .withResolvedIncident()
+                    .add()
+                    .buildList())
+            .agenticControlReport(true)
+            .build();
+    reportWriter.createOrUpdateSingleProcessReport(
+        FAILURE_RATE_BY_VERSION_REPORT_ID,
+        null,
+        reportData,
+        FAILURE_RATE_BY_VERSION_NAME,
+        FAILURE_RATE_BY_VERSION_DESCRIPTION,
+        null);
+    return buildTile(
+        FAILURE_RATE_BY_VERSION_REPORT_ID,
+        new PositionDto(0, 8),
+        new DimensionDto(18, 2),
+        Map.of(
+            TILE_CONFIG_VISIBLE_IN_L1_ONLY,
+            true,
+            TILE_CONFIG_SECTION,
+            TILE_SECTION_RELIABILITY_AND_TOOL_CALLS));
+  }
+
+  // Total tool calls made by agents, rendered as a single full-width number. Reuses the
+  // AGENT_INSTANCE / TOOL_CALLS view property, which sums the per-process-instance rollup
+  // agentTotalToolCalls, so the SUM across instances is the correct total (no double counting). The
+  // tile is visible in both scopes: at L0 it totals across all agent-bearing instances; at L1 the
+  // frontend's process scope narrows it to the selected definition.
+  private DashboardReportTileDto buildTotalToolCallsReport() {
+    final ProcessReportDataDto reportData =
+        ProcessReportDataDto.builder()
+            .definitions(Collections.emptyList())
+            .view(new ProcessViewDto(ProcessViewEntity.AGENT_INSTANCE, ViewProperty.TOOL_CALLS))
+            .groupBy(new NoneGroupByDto())
+            .distributedBy(new NoneDistributedByDto())
+            .visualization(ProcessVisualization.NUMBER)
+            // Surface the description as the tile subtitle instead of the auto-derived label.
+            .configuration(
+                SingleReportConfigurationDto.builder()
+                    .aggregationTypes(
+                        new LinkedHashSet<>(
+                            Collections.singletonList(new AggregationDto(AggregationType.SUM))))
+                    .subtitle(KPI_TOOL_CALLS_DESCRIPTION)
+                    .build())
+            .filter(
+                ProcessFilterBuilder.filter()
+                    .completedInstancesOnly()
+                    .add()
+                    .hasAgentInstances()
+                    .add()
+                    .buildList())
+            .agenticControlReport(true)
+            .build();
+    reportWriter.createOrUpdateSingleProcessReport(
+        KPI_TOOL_CALLS_REPORT_ID,
+        null,
+        reportData,
+        KPI_TOOL_CALLS_NAME,
+        KPI_TOOL_CALLS_DESCRIPTION,
+        null);
+    return buildTile(
+        KPI_TOOL_CALLS_REPORT_ID,
+        new PositionDto(0, 6),
+        new DimensionDto(18, 2),
+        Map.of(
+            TILE_CONFIG_SECTION,
+            TILE_SECTION_RELIABILITY_AND_TOOL_CALLS,
+            TILE_CONFIG_FOOTNOTE,
+            KPI_TOOL_CALLS_FOOTNOTE_KEY));
+  }
+
+  // Per-flow-node tool-call counts rendered as a process diagram heat map. Only visible when a
+  // single process definition is selected (L1) because heatmaps require BPMN XML from a concrete
+  // definition; the dashboard's process-scope filter supplies that definition + XML at render time.
+  private DashboardReportTileDto buildToolCallsHeatmapReport() {
+    final ProcessReportDataDto reportData =
+        ProcessReportDataDto.builder()
+            .definitions(Collections.emptyList())
+            .view(new ProcessViewDto(ProcessViewEntity.FLOW_NODE, ViewProperty.TOOL_CALLS))
+            .groupBy(new FlowNodesGroupByDto())
+            .distributedBy(new NoneDistributedByDto())
+            .visualization(ProcessVisualization.HEAT)
+            .configuration(
+                SingleReportConfigurationDto.builder()
+                    .aggregationTypes(
+                        new LinkedHashSet<>(
+                            Collections.singletonList(new AggregationDto(AggregationType.SUM))))
+                    .build())
+            .filter(
+                ProcessFilterBuilder.filter()
+                    .completedInstancesOnly()
+                    .add()
+                    .hasAgentInstances()
+                    .add()
+                    .buildList())
+            .agenticControlReport(true)
+            .build();
+    reportWriter.createOrUpdateSingleProcessReport(
+        TOOL_CALLS_HEATMAP_REPORT_ID,
+        null,
+        reportData,
+        TOOL_CALLS_HEATMAP_NAME,
+        TOOL_CALLS_HEATMAP_DESCRIPTION,
+        null);
+    return buildTile(
+        TOOL_CALLS_HEATMAP_REPORT_ID,
+        // Top of the reliability-and-tool-calls section: the smallest y in the section, so the
+        // grid's vertical compaction floats it above the number tiles.
+        new PositionDto(0, 0),
+        new DimensionDto(18, 4),
+        Map.of(
+            TILE_CONFIG_VISIBLE_IN_L1_ONLY,
+            true,
+            TILE_CONFIG_SECTION,
+            TILE_SECTION_RELIABILITY_AND_TOOL_CALLS));
+  }
+
+  // Average duration per flow node rendered as a process diagram heat map, so operators can see
+  // which step of an agentic process is slowest. Like the tool-calls heat map it is only visible
+  // once a single process definition is selected (L1): heatmaps need BPMN XML from a concrete
+  // definition, which the dashboard's process-scope filter supplies at render time. Duration is
+  // aggregated across all flow nodes of completed, agent-bearing instances.
+  private DashboardReportTileDto buildDurationHeatmapReport() {
+    final ProcessReportDataDto reportData =
+        ProcessReportDataDto.builder()
+            .definitions(Collections.emptyList())
+            .view(new ProcessViewDto(ProcessViewEntity.FLOW_NODE, ViewProperty.DURATION))
+            .groupBy(new FlowNodesGroupByDto())
+            .distributedBy(new NoneDistributedByDto())
+            .visualization(ProcessVisualization.HEAT)
+            .configuration(
+                SingleReportConfigurationDto.builder()
+                    .aggregationTypes(
+                        new LinkedHashSet<>(
+                            Collections.singletonList(new AggregationDto(AggregationType.AVERAGE))))
+                    .build())
+            .filter(
+                ProcessFilterBuilder.filter()
+                    .completedInstancesOnly()
+                    .add()
+                    .hasAgentInstances()
+                    .add()
+                    .buildList())
+            .agenticControlReport(true)
+            .build();
+    reportWriter.createOrUpdateSingleProcessReport(
+        DURATION_HEATMAP_REPORT_ID,
+        null,
+        reportData,
+        DURATION_HEATMAP_NAME,
+        DURATION_HEATMAP_DESCRIPTION,
+        null);
+    return buildTile(
+        DURATION_HEATMAP_REPORT_ID,
+        // Top of the duration section: the smallest y in the section, so the grid's vertical
+        // compaction floats it above the percentile and stability tiles.
+        new PositionDto(0, 0),
+        new DimensionDto(18, 4),
+        Map.of(TILE_CONFIG_VISIBLE_IN_L1_ONLY, true, TILE_CONFIG_SECTION, TILE_SECTION_DURATION));
   }
 
   // ---------------------------------------------------------------------------------------------

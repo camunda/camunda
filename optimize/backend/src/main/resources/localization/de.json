@@ -36,6 +36,9 @@
     "agentHealth": "Agent health",
     "volume": "Volume",
     "costAndUsage": "Cost and usage",
+    "breadcrumb": {
+      "allProcesses": "Alle Prozesse"
+    },
     "agentFilter": {
       "label": "Agent",
       "placeholder": "All agents"

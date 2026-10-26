@@ -18,6 +18,7 @@ import {t} from 'translation';
 
 import type {DashboardTile} from 'types';
 
+import {DrillBreadcrumb} from './DrillBreadcrumb';
 import {ALL_VERSIONS, DATE_PRESETS, FilterBar} from './FilterBar';
 import {loadAgenticDashboard} from './service';
 import {TileFooter} from './TileFooter';
@@ -25,9 +26,10 @@ import {getTileTopNLimit} from './tilePagination';
 
 import './AgenticControlPlane.scss';
 
+type DrillLevel = 'overview' | 'process' | 'agent';
+
 interface AgenticTileConfiguration {
-  visibleInL0Only?: boolean;
-  visibleInL1Only?: boolean;
+  levels?: DrillLevel[];
   section?: string;
   footnote?: string;
   topN?: string;
@@ -155,19 +157,32 @@ export function AgenticControlPlane() {
     return <Loading />;
   }
 
-  const visibleTiles = dashboard.tiles?.filter((tile) => {
-    const config = tile.configuration as AgenticTileConfiguration | undefined;
-    if (processScope && config?.visibleInL0Only) {
-      return false;
-    }
-    if (!processScope && config?.visibleInL1Only) {
-      return false;
-    }
-    return true;
-  });
+  // Overview across all processes, then one process, then the selected agents of that process.
+  const level: DrillLevel = !processScope ? 'overview' : agentIds.length > 0 ? 'agent' : 'process';
+
+  const visibleTiles = dashboard.tiles?.filter((tile) =>
+    ((tile.configuration as AgenticTileConfiguration | undefined)?.levels ?? ['overview']).includes(
+      level
+    )
+  );
+
+  const processSections = [
+    {key: 'kpi', titleKey: undefined, loadTile: scopedEvaluateReport},
+    {
+      key: 'token',
+      titleKey: 'agenticControlPlane.tokenUsage',
+      loadTile: scopedEvaluateDateAwareReport,
+    },
+    {
+      key: 'reliabilityAndToolCalls',
+      titleKey: 'agenticControlPlane.reliabilityAndToolCalls',
+      loadTile: scopedEvaluateReport,
+    },
+    {key: 'duration', titleKey: 'agenticControlPlane.duration', loadTile: scopedEvaluateReport},
+  ];
 
   // Volume and cost tiles include weekly lines whose bucket size follows the date range.
-  const sections = [
+  const agentSections = [
     {
       key: 'agentHealth',
       titleKey: 'agenticControlPlane.agentHealth',
@@ -185,11 +200,23 @@ export function AgenticControlPlane() {
     },
   ];
 
+  const sections = level === 'process' ? processSections : agentSections;
+  const defaultSection = sections[0]!.key;
+
   return (
     <div className="AgenticControlPlane">
       <div className="header">
         <h1 className="title">{t('agenticControlPlane.title')}</h1>
         <p className="description">{t('agenticControlPlane.description')}</p>
+        <DrillBreadcrumb
+          processScope={processScope}
+          agentIds={agentIds}
+          onOverview={() => handleProcessScopeChange(null)}
+          onProcess={() => {
+            setAgentIds([]);
+            setModels([]);
+          }}
+        />
       </div>
       <FilterBar
         preset={preset}
@@ -202,12 +229,15 @@ export function AgenticControlPlane() {
         onAgentIdsChange={setAgentIds}
         models={models}
         onModelsChange={setModels}
+        // Process-level tiles read the agent data nested in process instances, which has no
+        // per-run model to filter on.
+        showModelFilter={level !== 'process'}
       />
       {sections.map(({key, titleKey, loadTile}) => {
         const tiles = visibleTiles?.filter(
           (tile) =>
             ((tile.configuration as AgenticTileConfiguration | undefined)?.section ??
-              'agentHealth') === key
+              defaultSection) === key
         );
         return (
           <div key={key}>

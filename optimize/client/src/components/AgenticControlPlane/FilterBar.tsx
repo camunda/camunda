@@ -45,6 +45,7 @@ interface FilterBarProps {
   onAgentIdsChange: (agentIds: string[]) => void;
   models: string[];
   onModelsChange: (models: string[]) => void;
+  showModelFilter?: boolean;
 }
 
 interface Item {
@@ -82,6 +83,7 @@ export function FilterBar({
   onAgentIdsChange,
   models,
   onModelsChange,
+  showModelFilter = true,
 }: FilterBarProps) {
   const selected = DATE_PRESETS.find((p) => p.id === preset)!;
   const [processDefinitions, setProcessDefinitions] = useState<Definition[]>([]);
@@ -169,26 +171,28 @@ export function FilterBar({
           size="sm"
           items={agentItems}
           itemToString={(item) => item?.label ?? ''}
-          initialSelectedItems={agentItems.filter(({id}) => agentIds.includes(id))}
+          selectedItems={agentItems.filter(({id}) => agentIds.includes(id))}
           onChange={({selectedItems}) => onAgentIdsChange(selectedItems.map(({id}) => id))}
           placeholder={t('agenticControlPlane.agentFilter.placeholder') as string}
           titleText=""
         />
       </div>
-      <div className="modelScope">
-        <span className="label">{t('agenticControlPlane.modelFilter.label')}</span>
-        <FilterableMultiSelect<Item>
-          key={`models-${processScope ?? '__all__'}`}
-          id="model-filter"
-          size="sm"
-          items={modelItems}
-          itemToString={(item) => item?.label ?? ''}
-          initialSelectedItems={modelItems.filter(({id}) => models.includes(id))}
-          onChange={({selectedItems}) => onModelsChange(selectedItems.map(({id}) => id))}
-          placeholder={t('agenticControlPlane.modelFilter.placeholder') as string}
-          titleText=""
-        />
-      </div>
+      {showModelFilter && (
+        <div className="modelScope">
+          <span className="label">{t('agenticControlPlane.modelFilter.label')}</span>
+          <FilterableMultiSelect<Item>
+            key={`models-${processScope ?? '__all__'}`}
+            id="model-filter"
+            size="sm"
+            items={modelItems}
+            itemToString={(item) => item?.label ?? ''}
+            selectedItems={modelItems.filter(({id}) => models.includes(id))}
+            onChange={({selectedItems}) => onModelsChange(selectedItems.map(({id}) => id))}
+            placeholder={t('agenticControlPlane.modelFilter.placeholder') as string}
+            titleText=""
+          />
+        </div>
+      )}
       <div className="dateRange">
         <span className="label">{t('agenticControlPlane.dateRange')}</span>
         <MenuDropdown label={t(selected.translationKey) as string} size="sm">
