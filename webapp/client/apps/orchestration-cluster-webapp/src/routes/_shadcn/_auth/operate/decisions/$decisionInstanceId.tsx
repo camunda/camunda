@@ -10,13 +10,16 @@ import {createFileRoute, useRouter, type ErrorComponentProps} from '@tanstack/re
 import {useQueryClient} from '@tanstack/react-query';
 import {t} from 'i18next';
 import {getClientConfig} from '#/shared/config/getClientConfig';
-import {DecisionInstance, DecisionInstanceShell} from '#/operate/pages/DecisionInstance/DecisionInstance';
-import {DecisionInstanceError} from '#/operate/pages/DecisionInstance/DecisionInstanceError';
-import {getHeaderColumns} from '#/operate/pages/DecisionInstance/headerColumns';
+import {
+	DecisionInstance,
+	DecisionInstanceShell,
+} from '#/operate/pages/DecisionInstance/shadcn.components/DecisionInstance';
+import {DecisionInstanceError} from '#/operate/pages/DecisionInstance/shadcn.components/DecisionInstanceError';
+import {getHeaderColumns} from '#/operate/pages/DecisionInstance/shadcn.components/headerColumns';
 import {decisionInstanceQuery} from '#/operate/pages/DecisionInstance/decisionInstance.queries';
-import {InstanceHeaderSkeleton} from '#/operate/shared/InstanceHeader/InstanceHeaderSkeleton';
+import {InstanceHeaderSkeleton} from '#/operate/shared/InstanceHeader/shadcn.components/InstanceHeaderSkeleton';
 
-export const Route = createFileRoute('/_carbon/_auth/operate/decisions/$decisionInstanceId')({
+export const Route = createFileRoute('/_shadcn/_auth/operate/decisions/$decisionInstanceId')({
 	loader: ({context: {queryClient}, params: {decisionInstanceId}}) =>
 		queryClient.ensureQueryData(decisionInstanceQuery(decisionInstanceId)),
 	head: ({loaderData, params: {decisionInstanceId}}) => ({
@@ -31,8 +34,6 @@ export const Route = createFileRoute('/_carbon/_auth/operate/decisions/$decision
 				]
 			: [],
 	}),
-	// Mirrors Header's own pending state (same `getHeaderColumns` + `InstanceHeaderSkeleton`) so
-	// navigation shows the same loading row legacy did, instead of a blank page while the loader awaits.
 	pendingComponent: () => (
 		<DecisionInstanceShell
 			isPending

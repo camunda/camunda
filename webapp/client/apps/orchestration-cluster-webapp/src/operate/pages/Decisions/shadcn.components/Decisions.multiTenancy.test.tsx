@@ -60,8 +60,8 @@ function DecisionsHarness() {
 function renderDecisionsPage(searchParams?: Record<string, string>) {
 	const query = `?${new URLSearchParams({evaluated: 'true', failed: 'true', ...searchParams}).toString()}`;
 	return renderWithRouter(DecisionsHarness, {
-		path: '/operate-preview/decisions',
-		initialEntry: `/operate-preview/decisions${query}`,
+		path: '/operate/decisions',
+		initialEntry: `/operate/decisions${query}`,
 	});
 }
 

@@ -77,7 +77,7 @@ const Header: React.FC<Props> = ({decisionEvaluationInstanceKey, onOpenDrd, isDr
 				hideOverflowingContent: false,
 				content: (
 					<DecisionInstanceLink
-						to="/operate-preview/decisions"
+						to="/operate/decisions"
 						search={{
 							decisionDefinitionId: decisionInstance.decisionDefinitionId,
 							decisionDefinitionVersion: decisionInstance.decisionDefinitionVersion,

@@ -100,7 +100,7 @@ describe('<InstancesTable /> (shadcn)', () => {
 		await expect.element(screen.getByTestId('FAILED-icon-2')).toBeInTheDocument();
 		await expect.element(screen.getByText('Evaluated', {exact: true})).toBeInTheDocument();
 		await expect.element(screen.getByText('Failed', {exact: true})).toBeInTheDocument();
-		await expect.element(screen.getByRole('link', {name: '1'})).toHaveAttribute('href', '/operate-preview/decisions/1');
+		await expect.element(screen.getByRole('link', {name: '1'})).toHaveAttribute('href', '/operate/decisions/1');
 	});
 
 	it('should show the business ID column only when at least one row has one', async ({worker}) => {
@@ -296,7 +296,7 @@ describe('<InstancesTable /> (shadcn)', () => {
 
 			await expect
 				.element(screen.getByRole('link', {name: '1'}))
-				.toHaveAttribute('href', `${expectedPathPrefix}/operate-preview/decisions/1`);
+				.toHaveAttribute('href', `${expectedPathPrefix}/operate/decisions/1`);
 		},
 	);
 

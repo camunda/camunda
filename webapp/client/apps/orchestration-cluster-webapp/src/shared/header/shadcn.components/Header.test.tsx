@@ -211,7 +211,7 @@ describe('<Header /> (V2)', () => {
 		await expect.element(screen.getByRole('link', {name: 'Processes'})).not.toHaveAttribute('aria-current');
 	});
 
-	it('should mark Decisions as active on the Decisions preview route', async ({worker}) => {
+	it('should mark Decisions as active on the Decisions route', async ({worker}) => {
 		worker.use(
 			mockCurrentUserEndpoint({successResponse: HttpResponse.json(createCurrentUser())}),
 			mockLicenseEndpoint({successResponse: HttpResponse.json(createLicense())}),
@@ -223,7 +223,7 @@ describe('<Header /> (V2)', () => {
 					Page content
 				</Header>
 			),
-			{path: '/operate-preview/decisions'},
+			{path: '/operate/decisions'},
 		);
 
 		await expect.element(screen.getByRole('link', {name: 'Decisions'})).toHaveAttribute('aria-current', 'page');

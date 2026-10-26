@@ -22,8 +22,8 @@ function renderHeader(isDrdOpen = false) {
 	return renderWithRouter(
 		() => <Header decisionEvaluationInstanceKey={DECISION_INSTANCE_ID} onOpenDrd={() => {}} isDrdOpen={isDrdOpen} />,
 		{
-			path: '/operate-preview/decisions/$decisionInstanceId',
-			initialEntry: `/operate-preview/decisions/${DECISION_INSTANCE_ID}`,
+			path: '/operate/decisions/$decisionInstanceId',
+			initialEntry: `/operate/decisions/${DECISION_INSTANCE_ID}`,
 		},
 	);
 }
@@ -74,7 +74,7 @@ describe('<Header /> (design system) - version link', () => {
 			)
 			.toHaveAttribute(
 				'href',
-				'/operate-preview/decisions?decisionDefinitionId=invoiceClassification&decisionDefinitionVersion=1&evaluated=true&failed=true&tenantId=%3Cdefault%3E',
+				'/operate/decisions?decisionDefinitionId=invoiceClassification&decisionDefinitionVersion=1&evaluated=true&failed=true&tenantId=%3Cdefault%3E',
 			);
 	});
 
@@ -100,7 +100,7 @@ describe('<Header /> (design system) - version link', () => {
 			)
 			.toHaveAttribute(
 				'href',
-				'/operate-preview/decisions?decisionDefinitionId=invoiceClassification&decisionDefinitionVersion=1&evaluated=true&failed=true&tenantId=tenant-a',
+				'/operate/decisions?decisionDefinitionId=invoiceClassification&decisionDefinitionVersion=1&evaluated=true&failed=true&tenantId=tenant-a',
 			);
 	});
 
@@ -120,7 +120,7 @@ describe('<Header /> (design system) - version link', () => {
 			.element(screen.getByRole('link', {name: 'View decision "Invoice Classification version 1" instances'}))
 			.toHaveAttribute(
 				'href',
-				'/operate-preview/decisions?decisionDefinitionId=invoiceClassification&decisionDefinitionVersion=1&evaluated=true&failed=true',
+				'/operate/decisions?decisionDefinitionId=invoiceClassification&decisionDefinitionVersion=1&evaluated=true&failed=true',
 			);
 	});
 });
