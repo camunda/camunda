@@ -109,18 +109,6 @@ const CollapsablePanel = forwardRef<HTMLDivElement, Props>(
 							/>
 						)}
 					</header>
-					{isCollapsed && (
-						<div className="mt-6 flex justify-center" style={{width: COLLAPSED_WIDTH}}>
-							<Heading
-								as="h2"
-								variant="heading-xs"
-								aria-hidden
-								className="m-0 text-foreground [writing-mode:vertical-lr] rotate-180"
-							>
-								{label}
-							</Heading>
-						</div>
-					)}
 					<div
 						className={cn(
 							'flex min-h-0 grow flex-col transition-[opacity,visibility] duration-150 ease-out motion-reduce:transition-none',
