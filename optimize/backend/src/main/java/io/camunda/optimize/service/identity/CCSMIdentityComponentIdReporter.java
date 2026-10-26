@@ -28,6 +28,10 @@ import org.springframework.stereotype.Component;
  * SDK will actually send. The two can disagree: the SDK binds with relaxed rules and so honours
  * {@code CAMUNDA_IDENTITY_COMPONENT_ID}, while a plain placeholder lookup does not, which would
  * leave this reporting a component the SDK is not sending.
+ *
+ * <p>Nothing is sent at all on the Keycloak type. There the SDK reads permissions out of the
+ * token's own {@code permissions} claim, keyed by audience, and never calls Identity, so component
+ * scoping does not reach that setup however this is configured.
  */
 @Component
 @Conditional(CCSMCondition.class)
@@ -43,6 +47,14 @@ public class CCSMIdentityComponentIdReporter {
 
   @PostConstruct
   public void report() {
+    if (identityConfiguration.getType() == IdentityConfiguration.Type.KEYCLOAK) {
+      LOG.info(
+          "Permissions come from the token's own claim on the Keycloak identity type, so Optimize"
+              + " does not name a component to Management Identity and component scoping does not"
+              + " apply.");
+      return;
+    }
+
     final String componentId = identityConfiguration.getComponentId();
 
     if (componentId == null || componentId.isBlank()) {

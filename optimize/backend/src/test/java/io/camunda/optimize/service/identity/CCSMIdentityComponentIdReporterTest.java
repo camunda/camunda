@@ -8,34 +8,43 @@
 package io.camunda.optimize.service.identity;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.lenient;
 
 import io.camunda.identity.sdk.IdentityConfiguration;
+import io.camunda.identity.sdk.IdentityConfiguration.Type;
 import io.github.netmikey.logunit.api.LogCapturer;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.NullAndEmptySource;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.slf4j.event.Level;
 
+@ExtendWith(MockitoExtension.class)
 class CCSMIdentityComponentIdReporterTest {
 
   @RegisterExtension
   private final LogCapturer logs =
       LogCapturer.create().captureForType(CCSMIdentityComponentIdReporter.class, Level.INFO);
 
-  private static void reportWith(final String componentId) {
-    final IdentityConfiguration configuration = mock(IdentityConfiguration.class);
-    when(configuration.getComponentId()).thenReturn(componentId);
+  @Mock private IdentityConfiguration identityConfiguration;
 
-    new CCSMIdentityComponentIdReporter(configuration).report();
+  @InjectMocks private CCSMIdentityComponentIdReporter reporter;
+
+  private void given(final Type type, final String componentId) {
+    lenient().when(identityConfiguration.getType()).thenReturn(type);
+    lenient().when(identityConfiguration.getComponentId()).thenReturn(componentId);
   }
 
   @Test
   void saysWhichComponentItNamesItselfAs() {
-    reportWith("optimize");
+    given(Type.GENERIC, "optimize");
+
+    reporter.report();
 
     logs.assertContains("Naming this component 'optimize'");
     assertThat(logs.getEvents()).singleElement().returns(Level.INFO, event -> event.getLevel());
@@ -46,10 +55,24 @@ class CCSMIdentityComponentIdReporterTest {
   @ValueSource(strings = {"   "})
   void warnsWhenItHasNoneToName(final String componentId) {
     // The failure this exists for: Identity falls back to returning everything, and nothing errors.
-    reportWith(componentId);
+    given(Type.GENERIC, componentId);
+
+    reporter.report();
 
     logs.assertContains("every permission on Optimize's audience");
     // At WARN specifically, since the point is that this is visible rather than merely recorded.
     assertThat(logs.getEvents()).singleElement().returns(Level.WARN, event -> event.getLevel());
+  }
+
+  @Test
+  void saysComponentScopingDoesNotApplyOnKeycloak() {
+    // Keycloak reads permissions from the token's own claim and never calls Identity, so no
+    // component is named however this is configured.
+    given(Type.KEYCLOAK, "optimize");
+
+    reporter.report();
+
+    logs.assertContains("component scoping does not apply");
+    assertThat(logs.getEvents()).singleElement().returns(Level.INFO, event -> event.getLevel());
   }
 }
