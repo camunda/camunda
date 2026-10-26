@@ -149,4 +149,4 @@ Live status line per PR:
 ```
 
 Final summary: what merged, what needs the engineer, any check that flaked repeatedly (hardening
-candidate, rule 1). Link runs by URL; code refs use the repo's stable-permalink convention.
+candidate, rule 1). Link runs by URL; code refs use the `github-permalink` skill.

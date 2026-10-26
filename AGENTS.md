@@ -125,32 +125,9 @@ Types: `build`, `ci`, `deps`, `docs`, `feat`, `fix`, `merge`, `perf`, `refactor`
 
 ### Referencing code in issues, PRs, and comments
 
-When pointing at specific lines of repository code in any GitHub-rendered or shared artifact — issue,
-PR description, PR/review comment, or a linked note — use a **stable GitHub permalink** instead of a
-bare `path:line` reference. GitHub renders the linked lines inline, and pinning a commit SHA keeps the
-reference correct even after the file changes later. A bare `path:line` is only acceptable in local,
-throwaway context (never in something a teammate will read on GitHub).
-
-Derive the link locally — no API calls, no `gh`:
-
-```bash
-slug=$(git remote get-url origin | sed -E 's#^(git@github\.com:|https?://github\.com/)##; s#\.git$##')
-sha=$(git log -1 --format=%H -- "<path>")   # commit that last touched the file
-echo "https://github.com/$slug/blob/$sha/<path>#L<start>-L<end>"   # single line: #L<start>
-```
-
-- **SHA choice:** default to the file's last-touching commit (`git log -1 --format=%H -- <path>`). The
-  file content at that commit equals the current committed content, so the line numbers are valid, and
-  for existing code that commit is already on the remote. Use `git rev-parse HEAD` when linking code
-  from the current PR branch. Always use the full 40-char SHA — a branch name or short SHA is less
-  stable and can 404.
-- **Format:** `https://github.com/<slug>/blob/<sha>/<path>#L<start>` for one line, `#L<start>-L<end>`
-  for a range. `<path>` is repo-root-relative.
-- **The SHA must already be pushed to the remote**, otherwise the link 404s — verify with
-  `git branch -r --contains <sha>` (non-empty). The file's last-touching commit satisfies this once the
-  code is merged. If the file has local edits that are not pushed yet, do not link an unpushed SHA: pick
-  a SHA that is already on `main` (e.g. `git rev-parse origin/main`) and select the line range against
-  that version of the file.
+In anything a teammate reads on GitHub (issues, PR descriptions, PR or review comments), link
+repository code with a stable GitHub permalink pinned to a pushed commit SHA. Never use a bare
+`path:line`. Load the `github-permalink` skill before writing the text — it builds the link.
 
 ### Build pipeline
 

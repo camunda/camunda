@@ -192,7 +192,7 @@ GitHub form UI produces. For each item in the template's `body:` list:
 Append a **Links** section at the end with the parent issue URL if one was provided.
 
 When the body points at specific lines of repository code, use a **stable GitHub permalink** rather
-than a bare `path:line` (see "Referencing code in issues, PRs, and comments" in `AGENTS.md`).
+than a bare `path:line`. Use the `github-permalink` skill to build it.
 
 Do not invent sections or use any structure other than what the template defines.
 
