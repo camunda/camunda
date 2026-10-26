@@ -8,6 +8,7 @@
 package io.camunda.zeebe.gateway.impl.broker.request;
 
 import io.camunda.zeebe.broker.client.api.dto.BrokerExecuteCommand;
+import io.camunda.zeebe.gateway.validation.VariablesMetadataValidator;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableDocumentRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -34,6 +35,17 @@ public final class BrokerSetVariablesRequest extends BrokerExecuteCommand<Variab
     return this;
   }
 
+<<<<<<< HEAD
+=======
+  public BrokerSetVariablesRequest setVariablesMetadata(
+      final Map<String, ? extends VariableMetadataValue> variablesMetadata) {
+    VariablesMetadataValidator.validateVariablesMetadata(
+        requestDto.getVariablesBuffer(), variablesMetadata);
+    requestDto.setVariablesMetadata(variablesMetadata);
+    return this;
+  }
+
+>>>>>>> ab7774ca (feat: reject variablesMetadata that describes variables the request does not set)
   public BrokerSetVariablesRequest setLocal(final boolean local) {
     final VariableDocumentUpdateSemantic updateSemantics =
         local ? VariableDocumentUpdateSemantic.LOCAL : VariableDocumentUpdateSemantic.PROPAGATE;

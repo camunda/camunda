@@ -12,6 +12,7 @@ import io.camunda.zeebe.broker.client.api.dto.BrokerExecuteCommand;
 import io.camunda.zeebe.gateway.impl.broker.HashBasedDispatchStrategy;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
 import io.camunda.zeebe.gateway.validation.VariableNameLengthValidator;
+import io.camunda.zeebe.gateway.validation.VariablesMetadataValidator;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRuntimeInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationStartInstruction;
@@ -65,6 +66,17 @@ public class BrokerCreateProcessInstanceRequest
     return this;
   }
 
+<<<<<<< HEAD
+=======
+  public BrokerCreateProcessInstanceRequest setVariablesMetadata(
+      final Map<String, ? extends VariableMetadataValue> variablesMetadata) {
+    VariablesMetadataValidator.validateVariablesMetadata(
+        requestDto.getVariablesBuffer(), variablesMetadata);
+    requestDto.setVariablesMetadata(variablesMetadata);
+    return this;
+  }
+
+>>>>>>> ab7774ca (feat: reject variablesMetadata that describes variables the request does not set)
   public BrokerCreateProcessInstanceRequest setTags(final Set<String> tags) {
     requestDto.setTags(tags);
     return this;
