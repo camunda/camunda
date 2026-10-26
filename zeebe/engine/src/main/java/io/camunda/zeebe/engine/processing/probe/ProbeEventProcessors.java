@@ -10,8 +10,6 @@ package io.camunda.zeebe.engine.processing.probe;
 import io.camunda.zeebe.engine.processing.AsyncRequestBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviorsImpl;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
-import io.camunda.zeebe.engine.processing.identity.authorization.CslTenantCheck;
-import io.camunda.zeebe.engine.processing.streamprocessor.ProbeStreamer;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.ScheduledTaskState;
@@ -31,13 +29,10 @@ public final class ProbeEventProcessors {
       final Supplier<ScheduledTaskState> scheduledTaskStateFactory,
       final BpmnBehaviorsImpl bpmnBehaviors,
       final Writers writers,
-      final ProbeStreamer probeStreamer,
+      final ProbeBehavior probeBehavior,
       final AsyncRequestBehavior asyncRequestBehavior,
       final CslAuthorizationCheck cslCheck,
-      final CslTenantCheck tenantCheck,
       final InstantSource clock) {
-    final var probeBehavior =
-        new ProbeBehavior(probeStreamer, processingState, writers, cslCheck, tenantCheck);
     final var timeoutChecker =
         new ProbeTimeoutCheckScheduler(clock, scheduledTaskStateFactory.get().getProbeState());
 

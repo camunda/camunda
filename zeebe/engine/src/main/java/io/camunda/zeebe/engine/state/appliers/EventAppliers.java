@@ -192,6 +192,11 @@ public final class EventAppliers implements EventApplier {
         new SecretReferenceResolutionRequestedApplier(
             state.getSecretReferenceState(), state.getJobState()));
     register(
+        SecretReferenceIntent.RESOLUTION_REQUESTED,
+        2,
+        new SecretReferenceResolutionRequestedV2Applier(
+            state.getSecretReferenceState(), state.getJobState(), state.getProbeState()));
+    register(
         SecretReferenceIntent.RESOLUTION_COMPLETED,
         new SecretReferenceResolutionCompletedApplier(state.getSecretReferenceState()));
     register(

@@ -15,6 +15,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.camunda.zeebe.engine.processing.probe.ProbeBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -67,7 +68,12 @@ public final class SecretReferenceResolutionCompleteProcessorTest {
     when(writers.rejection()).thenReturn(rejectionWriter);
 
     processor =
-        new SecretReferenceResolutionCompleteProcessor(writers, keyGenerator, secretReferenceState);
+        new SecretReferenceResolutionCompleteProcessor(
+            writers,
+            keyGenerator,
+            secretReferenceState,
+            processingState.getProbeState(),
+            mock(ProbeBehavior.class));
   }
 
   private MockTypedRecord<SecretReferenceRecord> command(final SecretReferenceRecord value) {

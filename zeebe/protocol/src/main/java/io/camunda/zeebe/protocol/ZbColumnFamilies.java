@@ -403,7 +403,9 @@ public enum ZbColumnFamilies implements EnumValue, ScopedColumnFamily {
   PROBES(166, PARTITION_LOCAL),
 
   // (deadline, probeKey) -> ∅; lets the timeout checker find the probes whose deadline passed
-  PROBE_DEADLINES(167, PARTITION_LOCAL);
+  PROBE_DEADLINES(167, PARTITION_LOCAL),
+  SECRET_REFERENCES_BY_PROBE(168, PARTITION_LOCAL),
+  PROBES_BY_SECRET_REFERENCE(169, PARTITION_LOCAL);
 
   private final int value;
   private final ColumnFamilyScope columnFamilyScope;

@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.state.immutable;
 
 import io.camunda.zeebe.protocol.impl.record.value.probe.ProbeRecord;
 import java.util.function.BiPredicate;
+import java.util.function.LongPredicate;
 
 public interface ProbeState {
 
@@ -28,6 +29,15 @@ public interface ProbeState {
    * @return the deadline of the first probe not visited, or {@code -1} if all were visited
    */
   long findTimedOutProbes(long timestamp, BiPredicate<Long, ProbeRecord> visitor);
+
+  /** Visits the probes parked on the secret reference until the visitor returns {@code false}. */
+  void visitProbesBySecretReference(String storeId, String secretReference, LongPredicate visitor);
+
+  /**
+   * Visits the secret references (store ID, reference) the probe is parked on until the visitor
+   * returns {@code false}.
+   */
+  void visitSecretReferencesByProbe(long probeKey, BiPredicate<String, String> visitor);
 
   enum State {
     /** Created, or yielded and about to be dispatched again. */

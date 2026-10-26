@@ -7,12 +7,15 @@
  */
 package io.camunda.zeebe.engine.processing.secretreference;
 
+import io.camunda.secretstore.SecretStoreRegistry;
 import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
+import io.camunda.zeebe.engine.processing.probe.ProbeBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.state.immutable.ProbeState;
 import io.camunda.zeebe.engine.state.immutable.SecretReferenceState;
 import io.camunda.zeebe.protocol.impl.record.value.secretreference.SecretReferenceRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
@@ -33,11 +36,20 @@ public final class SecretReferenceResolutionFailProcessor
   private final TypedRejectionWriter rejectionWriter;
   private final KeyGenerator keyGenerator;
   private final SecretReferenceState secretReferenceState;
+  private final ProbeState probeState;
+  private final ProbeBehavior probeBehavior;
+  private final boolean defaultSecretStoreConfigured;
 
   public SecretReferenceResolutionFailProcessor(
       final Writers writers,
       final KeyGenerator keyGenerator,
-      final SecretReferenceState secretReferenceState) {
+      final SecretReferenceState secretReferenceState,
+      final ProbeState probeState,
+      final ProbeBehavior probeBehavior,
+      final boolean defaultSecretStoreConfigured) {
+    this.probeState = probeState;
+    this.probeBehavior = probeBehavior;
+    this.defaultSecretStoreConfigured = defaultSecretStoreConfigured;
     stateWriter = writers.state();
     commandWriter = writers.command();
     rejectionWriter = writers.rejection();
@@ -79,6 +91,27 @@ public final class SecretReferenceResolutionFailProcessor
       commandWriter.appendFollowUpCommand(
           keyGenerator.nextKey(), SecretReferenceIntent.BATCH_CREATE_INCIDENTS, nextRecord);
     }
+
+    // a probe has no incident to wait on: it fails right away, with the message a job's incident
+    // would carry, so the client learns which secret to fix
+    final List<Long> waitingProbes = new ArrayList<>();
+    probeState.visitProbesBySecretReference(
+        storeId, secretReference, probeKey -> waitingProbes.add(probeKey));
+    final var message = probeFailureMessage(storeId, secretReference);
+    waitingProbes.forEach(
+        probeKey -> probeBehavior.cancelAfterResolutionFailure(probeKey, message));
+  }
+
+  private String probeFailureMessage(final String storeId, final String secretReference) {
+    final boolean isDefaultStore = SecretStoreRegistry.DEFAULT_STORE_ID.equals(storeId);
+    if (isDefaultStore && !defaultSecretStoreConfigured) {
+      return "Failed to resolve secret '%s'. No secret store is configured. Configure a secret store, then retry."
+          .formatted(secretReference);
+    }
+    final var store =
+        isDefaultStore ? "the configured secret store" : "secret store '%s'".formatted(storeId);
+    return "Failed to resolve secret '%s' from %s. Ensure the secret exists and the store is available, then retry."
+        .formatted(secretReference, store);
   }
 
   private List<Long> buildBatch(final String storeId, final String secretReference) {

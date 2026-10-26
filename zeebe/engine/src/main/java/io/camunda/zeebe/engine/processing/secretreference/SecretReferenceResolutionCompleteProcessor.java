@@ -8,11 +8,13 @@
 package io.camunda.zeebe.engine.processing.secretreference;
 
 import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
+import io.camunda.zeebe.engine.processing.probe.ProbeBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.state.immutable.ProbeState;
 import io.camunda.zeebe.engine.state.immutable.SecretReferenceState;
 import io.camunda.zeebe.protocol.impl.record.value.secretreference.SecretReferenceRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
@@ -33,11 +35,17 @@ public final class SecretReferenceResolutionCompleteProcessor
   private final TypedRejectionWriter rejectionWriter;
   private final KeyGenerator keyGenerator;
   private final SecretReferenceState secretReferenceState;
+  private final ProbeState probeState;
+  private final ProbeBehavior probeBehavior;
 
   public SecretReferenceResolutionCompleteProcessor(
       final Writers writers,
       final KeyGenerator keyGenerator,
-      final SecretReferenceState secretReferenceState) {
+      final SecretReferenceState secretReferenceState,
+      final ProbeState probeState,
+      final ProbeBehavior probeBehavior) {
+    this.probeState = probeState;
+    this.probeBehavior = probeBehavior;
     stateWriter = writers.state();
     commandWriter = writers.command();
     rejectionWriter = writers.rejection();
@@ -78,6 +86,14 @@ public final class SecretReferenceResolutionCompleteProcessor
       commandWriter.appendFollowUpCommand(
           keyGenerator.nextKey(), SecretReferenceIntent.BATCH_REACTIVATE_JOBS, nextRecord);
     }
+
+    // probes are dispatched right here rather than through a batch chain like jobs: a probe lives
+    // for seconds and is created on demand, so only a handful can wait on one reference. The keys
+    // are collected first, since dispatching may park a probe on this reference again
+    final List<Long> waitingProbes = new ArrayList<>();
+    probeState.visitProbesBySecretReference(
+        storeId, secretReference, probeKey -> waitingProbes.add(probeKey));
+    waitingProbes.forEach(probeBehavior::dispatchAfterResolution);
   }
 
   private List<Long> buildBatch(final String storeId, final String secretReference) {

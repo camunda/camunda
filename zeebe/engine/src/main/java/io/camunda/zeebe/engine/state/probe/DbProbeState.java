@@ -8,17 +8,22 @@
 package io.camunda.zeebe.engine.state.probe;
 
 import io.camunda.zeebe.db.ColumnFamily;
+import io.camunda.zeebe.db.KeyValuePairVisitor;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.impl.DbCompositeKey;
 import io.camunda.zeebe.db.impl.DbForeignKey;
 import io.camunda.zeebe.db.impl.DbLong;
 import io.camunda.zeebe.db.impl.DbNil;
+import io.camunda.zeebe.db.impl.DbString;
 import io.camunda.zeebe.engine.state.mutable.MutableProbeState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.probe.ProbeRecord;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.function.BiPredicate;
 import java.util.function.Consumer;
+import java.util.function.LongPredicate;
 
 public final class DbProbeState implements MutableProbeState {
 
@@ -31,6 +36,18 @@ public final class DbProbeState implements MutableProbeState {
   private final DbCompositeKey<DbLong, DbForeignKey<DbLong>> deadlineProbeKey;
   private final ColumnFamily<DbCompositeKey<DbLong, DbForeignKey<DbLong>>, DbNil>
       deadlinesColumnFamily;
+
+  private final DbString storeId;
+  private final DbString secretReference;
+  private final DbCompositeKey<DbString, DbString> storeIdAndSecretReference;
+  // (probeKey, storeId, secretReference): what a probe is parked on, released at its activation
+  private final DbCompositeKey<DbLong, DbCompositeKey<DbString, DbString>> probeAndSecretReference;
+  private final ColumnFamily<DbCompositeKey<DbLong, DbCompositeKey<DbString, DbString>>, DbNil>
+      secretReferencesByProbeColumnFamily;
+  // (storeId, secretReference, probeKey): the probes to dispatch when a reference resolves
+  private final DbCompositeKey<DbCompositeKey<DbString, DbString>, DbLong> secretReferenceAndProbe;
+  private final ColumnFamily<DbCompositeKey<DbCompositeKey<DbString, DbString>, DbLong>, DbNil>
+      probesBySecretReferenceColumnFamily;
 
   public DbProbeState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
@@ -45,6 +62,24 @@ public final class DbProbeState implements MutableProbeState {
     deadlinesColumnFamily =
         zeebeDb.createColumnFamily(
             ZbColumnFamilies.PROBE_DEADLINES, transactionContext, deadlineProbeKey, DbNil.INSTANCE);
+
+    storeId = new DbString();
+    secretReference = new DbString();
+    storeIdAndSecretReference = new DbCompositeKey<>(storeId, secretReference);
+    probeAndSecretReference = new DbCompositeKey<>(probeKey, storeIdAndSecretReference);
+    secretReferencesByProbeColumnFamily =
+        zeebeDb.createColumnFamily(
+            ZbColumnFamilies.SECRET_REFERENCES_BY_PROBE,
+            transactionContext,
+            probeAndSecretReference,
+            DbNil.INSTANCE);
+    secretReferenceAndProbe = new DbCompositeKey<>(storeIdAndSecretReference, probeKey);
+    probesBySecretReferenceColumnFamily =
+        zeebeDb.createColumnFamily(
+            ZbColumnFamilies.PROBES_BY_SECRET_REFERENCE,
+            transactionContext,
+            secretReferenceAndProbe,
+            DbNil.INSTANCE);
   }
 
   @Override
@@ -60,6 +95,7 @@ public final class DbProbeState implements MutableProbeState {
   @Override
   public void activate(final long key, final String worker) {
     update(key, State.ACTIVATED, probe -> probe.getRecord().setWorker(worker));
+    releaseSecretReferences(key);
   }
 
   @Override
@@ -71,8 +107,13 @@ public final class DbProbeState implements MutableProbeState {
   }
 
   @Override
-  public void park(final long key) {
+  public void park(final long key, final String storeId, final String secretReference) {
     update(key, State.PARKED, probe -> {});
+    probeKey.wrapLong(key);
+    this.storeId.wrapString(storeId);
+    this.secretReference.wrapString(secretReference);
+    secretReferencesByProbeColumnFamily.upsert(probeAndSecretReference, DbNil.INSTANCE);
+    probesBySecretReferenceColumnFamily.upsert(secretReferenceAndProbe, DbNil.INSTANCE);
   }
 
   @Override
@@ -85,6 +126,7 @@ public final class DbProbeState implements MutableProbeState {
     deadline.wrapLong(probe.getRecord().getDeadline());
     deadlinesColumnFamily.deleteIfExists(deadlineProbeKey);
     probesColumnFamily.deleteExisting(probeKey);
+    releaseSecretReferences(key);
   }
 
   @Override
@@ -121,6 +163,40 @@ public final class DbProbeState implements MutableProbeState {
           return true;
         });
     return nextDeadline[0];
+  }
+
+  @Override
+  public void visitProbesBySecretReference(
+      final String storeId, final String secretReference, final LongPredicate visitor) {
+    this.storeId.wrapString(storeId);
+    this.secretReference.wrapString(secretReference);
+    final KeyValuePairVisitor<DbCompositeKey<DbCompositeKey<DbString, DbString>, DbLong>, DbNil>
+        probes = (key, nil) -> visitor.test(key.second().getValue());
+    probesBySecretReferenceColumnFamily.whileEqualPrefix(storeIdAndSecretReference, probes);
+  }
+
+  @Override
+  public void visitSecretReferencesByProbe(
+      final long key, final BiPredicate<String, String> visitor) {
+    probeKey.wrapLong(key);
+    final KeyValuePairVisitor<DbCompositeKey<DbLong, DbCompositeKey<DbString, DbString>>, DbNil>
+        references =
+            (entry, nil) ->
+                visitor.test(entry.second().first().toString(), entry.second().second().toString());
+    secretReferencesByProbeColumnFamily.whileEqualPrefix(probeKey, references);
+  }
+
+  private void releaseSecretReferences(final long key) {
+    final List<String[]> references = new ArrayList<>();
+    visitSecretReferencesByProbe(
+        key, (store, reference) -> references.add(new String[] {store, reference}));
+    for (final String[] reference : references) {
+      probeKey.wrapLong(key);
+      storeId.wrapString(reference[0]);
+      secretReference.wrapString(reference[1]);
+      secretReferencesByProbeColumnFamily.deleteIfExists(probeAndSecretReference);
+      probesBySecretReferenceColumnFamily.deleteIfExists(secretReferenceAndProbe);
+    }
   }
 
   private void update(final long key, final State state, final Consumer<PersistedProbe> change) {

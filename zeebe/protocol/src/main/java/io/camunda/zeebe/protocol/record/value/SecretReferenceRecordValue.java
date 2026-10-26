@@ -42,4 +42,7 @@ public interface SecretReferenceRecordValue extends RecordValue {
 
   /** The keys of the jobs that were non-activatable while awaiting this secret to be resolved. */
   List<Long> getJobKeys();
+
+  /** The keys of the probes that were parked while awaiting this secret to be resolved. */
+  List<Long> getProbeKeys();
 }

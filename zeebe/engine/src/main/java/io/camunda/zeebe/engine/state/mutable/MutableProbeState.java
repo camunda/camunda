@@ -20,7 +20,11 @@ public interface MutableProbeState extends ProbeState {
   /** Counts the yield and marks the probe as created again, to be dispatched once more. */
   void yield(long probeKey);
 
-  void park(long probeKey);
+  /**
+   * Parks the probe on the secret reference until it is resolved. A probe can be parked on several
+   * references; activating or removing it releases all of them.
+   */
+  void park(long probeKey, String storeId, String secretReference);
 
   /** Removes the probe and its deadline; the probe ended. */
   void remove(long probeKey);
