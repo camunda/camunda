@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.it.cluster.exporter;
 
-import static io.camunda.application.commons.search.SearchEngineDatabaseConfiguration.SearchEngineSchemaManagerProperties.CREATE_SCHEMA_ENV_VAR;
 import static io.camunda.application.commons.security.CamundaSecurityConfiguration.UNPROTECTED_API_ENV_VAR;
 
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
