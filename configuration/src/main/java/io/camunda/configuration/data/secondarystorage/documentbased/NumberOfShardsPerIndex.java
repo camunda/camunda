@@ -104,6 +104,9 @@ public class NumberOfShardsPerIndex {
   /** Primary shards for the agent instance index (agent-instance). */
   private @Nullable Integer agentInstance;
 
+  /** PoC: primary shards for the variable history index (variable-history). */
+  private @Nullable Integer variableHistory;
+
   /** Primary shards for the audit log index (audit-log). */
   private @Nullable Integer auditLog;
 
@@ -215,6 +218,7 @@ public class NumberOfShardsPerIndex {
     putIfSet(shardsByIndexName, "usage-metric", usageMetric);
     putIfSet(shardsByIndexName, "usage-metric-tu", usageMetricTu);
     putIfSet(shardsByIndexName, "variable", variable);
+    putIfSet(shardsByIndexName, "variable-history", variableHistory);
     putIfSet(shardsByIndexName, "wait-state", waitState);
     return shardsByIndexName;
   }
@@ -376,6 +380,14 @@ public class NumberOfShardsPerIndex {
 
   public void setAgentHistory(final @Nullable Integer agentHistory) {
     this.agentHistory = agentHistory;
+  }
+
+  public @Nullable Integer getVariableHistory() {
+    return variableHistory;
+  }
+
+  public void setVariableHistory(final @Nullable Integer variableHistory) {
+    this.variableHistory = variableHistory;
   }
 
   public @Nullable Integer getAgentInstance() {
