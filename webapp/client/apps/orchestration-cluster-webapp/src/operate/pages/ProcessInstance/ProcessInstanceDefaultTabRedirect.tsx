@@ -34,6 +34,7 @@ const ProcessInstanceDefaultTabRedirect: React.FC = () => {
 			to: getProcessInstanceTabPath(tab),
 			params: {processInstanceId},
 			search: true,
+			hash: true,
 			replace: true,
 		});
 	}, [navigate, processInstance, processInstanceId, selection, data, isPending, isFetching, isError, isEnabled]);

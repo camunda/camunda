@@ -18,12 +18,14 @@ import {
 	stringifySearchWith,
 } from '@tanstack/react-router';
 import {parseSearchValueSafe} from '#/shared/parseSearchValueSafe';
+import {preserveProcessSearchStrings} from '#/operate/shared/utils/migrateLegacyProcessSearch';
 import {
 	mapProcessInstancesFilter,
 	mapProcessInstancesSort,
 	processesSearchDefaults,
 	processesSearchSchema,
 	stripLegacyProcessFilters,
+	withCanonicalProcessesSearch,
 	type ProcessesSearch,
 } from './processesFilter';
 
@@ -176,6 +178,7 @@ describe('mapProcessInstancesSort', () => {
 				history: createMemoryHistory({initialEntries: [initialEntry]}),
 				parseSearch: parseSearchWith(parseSearchValueSafe),
 				stringifySearch: stringifySearchWith(JSON.stringify, parseSearchValueSafe),
+				rewrite: {input: preserveProcessSearchStrings},
 			});
 
 			await router.load();
@@ -205,7 +208,7 @@ describe('mapProcessInstancesSort', () => {
 		});
 
 		it.for([
-			{processDefinitionId: 'orders', processDefinitionVersion: '2', expectedVersion: 2},
+			{processDefinitionId: 'orders', processDefinitionVersion: '2', expectedVersion: undefined},
 			{processDefinitionId: 'orders', processDefinitionVersion: 2, expectedVersion: 2},
 			{processDefinitionId: 'orders', processDefinitionVersion: 'all', expectedVersion: undefined},
 		] as const)(
@@ -221,8 +224,11 @@ describe('mapProcessInstancesSort', () => {
 			},
 		);
 
-		it('should restore a numeric-looking legacy process ID after URL parsing', () => {
-			expect(processesSearchSchema.parse({processDefinitionId: 123, processDefinitionVersion: 2})).toMatchObject({
+		it('should preserve a numeric-looking legacy process ID before URL parsing', async () => {
+			const router = await createProcessesSearchRouter(
+				'/operate/processes?processDefinitionId=123&processDefinitionVersion=2',
+			);
+			expect(router.state.matches.at(-1)?.search).toMatchObject({
 				process: '123',
 				version: 2,
 			});
@@ -231,10 +237,10 @@ describe('mapProcessInstancesSort', () => {
 		it('should map validated legacy incident links into tenant-scoped API filters', () => {
 			const search = processesSearchSchema.parse({
 				processDefinitionId: 'orders',
-				processDefinitionVersion: '2',
+				processDefinitionVersion: 2,
 				tenantId: '<tenant-A>',
 				errorMessage: 'Connection timeout',
-				incidentErrorHashCode: '-481',
+				incidentErrorHashCode: -481,
 				active: false,
 				suspended: false,
 			});
@@ -350,8 +356,8 @@ describe('mapProcessInstancesSort', () => {
 		});
 
 		it.for([
-			{hash: '-481', expected: -481},
-			{hash: '0', expected: 0},
+			{hash: -481, expected: -481},
+			{hash: '0', expected: undefined},
 			{hash: 0, expected: 0},
 			{hash: '', expected: undefined},
 			{hash: null, expected: undefined},
@@ -365,5 +371,60 @@ describe('mapProcessInstancesSort', () => {
 
 	it.for([undefined, 'unknown+ASC', 'startDate+unknown'])('should fall back to the default sort for %s', (sort) => {
 		expect(mapProcessInstancesSort(sort)).toEqual([{field: 'startDate', order: 'DESC'}]);
+	});
+});
+
+describe('processesSearchSchema', () => {
+	it.for([
+		{process: 'orders', version: 'all'},
+		{processDefinitionId: 'orders', processDefinitionVersion: 'all'},
+	])('should treat version all as no version filter for %o', (search) => {
+		expect(processesSearchSchema.parse(search)).toMatchObject({process: 'orders', version: undefined});
+	});
+});
+
+describe('processesSearchSchema string params', () => {
+	it('should validate preserved strings without coercing values', () => {
+		expect(processesSearchSchema.parse({process: 'true', elementId: 'null', sort: 'false'})).toMatchObject({
+			process: 'true',
+			elementId: 'null',
+			sort: 'false',
+		});
+		expect(processesSearchSchema.safeParse({process: true}).success).toBe(false);
+	});
+});
+
+describe('withCanonicalProcessesSearch', () => {
+	it('should add canonical process and version while keeping the other params', () => {
+		expect(
+			withCanonicalProcessesSearch({processDefinitionId: 'orders', processDefinitionVersion: 2, custom: 'x'}),
+		).toEqual({
+			process: 'orders',
+			version: 2,
+			custom: 'x',
+			processDefinitionId: undefined,
+			processDefinitionVersion: undefined,
+		});
+	});
+
+	it('should surface invalid filters instead of returning an unvalidated search', () => {
+		expect(() => withCanonicalProcessesSearch({process: 'orders', version: -1})).toThrow();
+	});
+
+	it('should prefer an explicit all-versions selection over a legacy version', () => {
+		const canonical = withCanonicalProcessesSearch({
+			process: 'orders',
+			processDefinitionId: 'old',
+			version: 'all',
+			processDefinitionVersion: 2,
+		});
+
+		expect(canonical).toMatchObject({
+			process: 'orders',
+			version: undefined,
+			processDefinitionId: undefined,
+			processDefinitionVersion: undefined,
+		});
+		expect(processesSearchSchema.parse(canonical)).toMatchObject({process: 'orders', version: undefined});
 	});
 });
