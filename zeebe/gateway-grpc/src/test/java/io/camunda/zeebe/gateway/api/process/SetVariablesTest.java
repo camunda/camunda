@@ -14,10 +14,12 @@ import io.camunda.zeebe.gateway.api.util.GatewayTest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerSetVariablesRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.SetVariablesRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.SetVariablesResponse;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.VariableMetadata;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableDocumentRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.VariableDocumentIntent;
+import io.camunda.zeebe.protocol.record.value.ProtectionMode;
 import io.camunda.zeebe.test.util.JsonUtil;
 import io.camunda.zeebe.test.util.MsgPackUtil;
 import io.grpc.Status;
@@ -86,5 +88,34 @@ public final class SetVariablesTest extends GatewayTest {
             t -> ((StatusRuntimeException) t).getStatus().getDescription())
         .containsExactly(
             Status.Code.DEADLINE_EXCEEDED, "Time out between gateway and broker: request timeout");
+  }
+
+  @Test
+  public void shouldMapVariablesMetadata() {
+    // given
+    final SetVariablesStub stub = new SetVariablesStub();
+    stub.registerWith(brokerClient);
+
+    final SetVariablesRequest request =
+        SetVariablesRequest.newBuilder()
+            .setElementInstanceKey(Protocol.encodePartitionId(1, 1))
+            .setVariables(JsonUtil.toJson(Collections.singletonMap("ssn", "123")))
+            .putVariablesMetadata(
+                "ssn",
+                VariableMetadata.newBuilder()
+                    .addProtectionModes(VariableMetadata.ProtectionMode.REDACT)
+                    .build())
+            .build();
+
+    // when
+    final SetVariablesResponse response = client.setVariables(request);
+
+    // then
+    assertThat(response.getKey()).isEqualTo(stub.getKey());
+    final BrokerSetVariablesRequest brokerRequest = brokerClient.getSingleBrokerRequest();
+    final VariableDocumentRecord brokerRequestValue = brokerRequest.getRequestWriter();
+    assertThat(brokerRequestValue.getVariablesMetadata()).containsOnlyKeys("ssn");
+    assertThat(brokerRequestValue.getVariablesMetadata().get("ssn").getProtectionModes())
+        .containsExactly(ProtectionMode.REDACT);
   }
 }
