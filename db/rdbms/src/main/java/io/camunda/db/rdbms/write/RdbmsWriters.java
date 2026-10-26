@@ -31,6 +31,7 @@ import io.camunda.db.rdbms.sql.SequenceFlowMapper;
 import io.camunda.db.rdbms.sql.UsageMetricMapper;
 import io.camunda.db.rdbms.sql.UsageMetricTUMapper;
 import io.camunda.db.rdbms.sql.UserTaskMapper;
+import io.camunda.db.rdbms.sql.VariableHistoryMapper;
 import io.camunda.db.rdbms.sql.VariableMapper;
 import io.camunda.db.rdbms.sql.WaitStateMapper;
 import io.camunda.db.rdbms.write.queue.ExecutionQueue;
@@ -69,6 +70,7 @@ import io.camunda.db.rdbms.write.service.UsageMetricTUWriter;
 import io.camunda.db.rdbms.write.service.UsageMetricWriter;
 import io.camunda.db.rdbms.write.service.UserTaskWriter;
 import io.camunda.db.rdbms.write.service.UserWriter;
+import io.camunda.db.rdbms.write.service.VariableHistoryWriter;
 import io.camunda.db.rdbms.write.service.VariableWriter;
 import io.camunda.db.rdbms.write.service.WaitStateWriter;
 import java.util.HashMap;
@@ -105,6 +107,7 @@ public class RdbmsWriters implements AutoCloseable {
       final PurgeMapper purgeMapper,
       final UserTaskMapper userTaskMapper,
       final VariableMapper variableMapper,
+      final VariableHistoryMapper variableHistoryMapper,
       final VendorDatabaseProperties vendorDatabaseProperties,
       final JobMapper jobMapper,
       final JobMetricsBatchMapper jobMetricsBatchMapper,
@@ -157,6 +160,10 @@ public class RdbmsWriters implements AutoCloseable {
     writers.put(
         VariableWriter.class,
         new VariableWriter(executionQueue, variableMapper, vendorDatabaseProperties, config));
+    writers.put(
+        VariableHistoryWriter.class,
+        new VariableHistoryWriter(
+            executionQueue, variableHistoryMapper, vendorDatabaseProperties, config));
     writers.put(RoleWriter.class, new RoleWriter(executionQueue));
     writers.put(UserWriter.class, new UserWriter(executionQueue));
     writers.put(UserTaskWriter.class, new UserTaskWriter(executionQueue, userTaskMapper));
@@ -255,6 +262,10 @@ public class RdbmsWriters implements AutoCloseable {
 
   public VariableWriter getVariableWriter() {
     return getWriter(VariableWriter.class);
+  }
+
+  public VariableHistoryWriter getVariableHistoryWriter() {
+    return getWriter(VariableHistoryWriter.class);
   }
 
   public ClusterVariableWriter getClusterVariableWriter() {

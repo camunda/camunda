@@ -52,4 +52,69 @@
     </addColumn>
   </changeSet>
 
+  <!-- PoC for camunda/pdp-3517-variable-trace#53: one row per variable change, with its value -->
+  <changeSet id="create_variable_history_table" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <tableExists tableName="${prefix}VARIABLE_HISTORY"/>
+      </not>
+    </preConditions>
+    <createTable tableName="${prefix}VARIABLE_HISTORY">
+      <column name="VARIABLE_HISTORY_KEY" type="VARCHAR(64)">
+        <constraints primaryKey="true"/>
+      </column>
+      <column name="VAR_KEY" type="BIGINT"/>
+      <column name="VAR_NAME" type="NVARCHAR(${userCharColumnSize})"/>
+      <column name="SCOPE_KEY" type="BIGINT"/>
+      <column name="PROCESS_INSTANCE_KEY" type="BIGINT"/>
+      <column name="ROOT_PROCESS_INSTANCE_KEY" type="BIGINT"/>
+      <column name="PROCESS_DEFINITION_KEY" type="BIGINT"/>
+      <column name="PROCESS_DEFINITION_ID" type="NVARCHAR(${userCharColumnSize})"/>
+      <column name="TENANT_ID" type="NVARCHAR(${userCharColumnSize})"/>
+      <column name="PARTITION_ID" type="INTEGER"/>
+      <column name="RECORD_POSITION" type="BIGINT"/>
+      <column name="EVENT_TIME" type="TIMESTAMP WITH TIME ZONE(3)"/>
+      <column name="OPERATION" type="VARCHAR(20)"/>
+      <column name="ACTOR_TYPE" type="VARCHAR(20)"/>
+      <column name="ACTOR_ID" type="NVARCHAR(${userCharColumnSize})"/>
+      <column name="VALUE_SIZE" type="INTEGER"/>
+      <column name="IS_PREVIEW" type="BOOLEAN"/>
+      <column name="VAR_VALUE" type="VARCHAR(8192)"/>
+      <column name="VAR_FULL_VALUE" type="CLOB"/>
+    </createTable>
+
+    <modifySql dbms="oracle">
+      <!-- Oracle only supports a size 4000 characters in varchar2 -->
+      <replace replace="VARCHAR2(8192)" with="VARCHAR2(4000)"/>
+    </modifySql>
+  </changeSet>
+
+  <changeSet id="create_variable_history_pi_scope_name_index" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <indexExists indexName="${prefix}IDX_VARIABLE_HISTORY_PI_SCOPE_NAME"
+          tableName="${prefix}VARIABLE_HISTORY"/>
+      </not>
+    </preConditions>
+    <createIndex tableName="${prefix}VARIABLE_HISTORY"
+      indexName="${prefix}IDX_VARIABLE_HISTORY_PI_SCOPE_NAME">
+      <column name="PROCESS_INSTANCE_KEY"/>
+      <column name="SCOPE_KEY"/>
+      <column name="VAR_NAME"/>
+    </createIndex>
+  </changeSet>
+
+  <changeSet id="create_variable_history_rpi_key_index" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <indexExists indexName="${prefix}IDX_VARIABLE_HISTORY_RPI_KEY"
+          tableName="${prefix}VARIABLE_HISTORY"/>
+      </not>
+    </preConditions>
+    <createIndex tableName="${prefix}VARIABLE_HISTORY"
+      indexName="${prefix}IDX_VARIABLE_HISTORY_RPI_KEY">
+      <column name="ROOT_PROCESS_INSTANCE_KEY"/>
+    </createIndex>
+  </changeSet>
+
 </databaseChangeLog>
