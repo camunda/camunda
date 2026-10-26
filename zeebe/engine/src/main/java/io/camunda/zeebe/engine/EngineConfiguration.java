@@ -7,7 +7,9 @@
  */
 package io.camunda.zeebe.engine;
 
+import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import java.time.Duration;
+import java.util.Map;
 import org.jspecify.annotations.Nullable;
 
 public final class EngineConfiguration {
@@ -124,6 +126,15 @@ public final class EngineConfiguration {
     COMBINED
   }
 
+  /**
+   * Maximum number of times a single BPMN element may be activated within one process instance
+   * before a loop-detected incident is raised. Defaults to {@link Integer#MAX_VALUE} to preserve
+   * existing process behavior unless loop detection is explicitly configured.
+   */
+  public static final int DEFAULT_MAX_ELEMENT_ACTIVATION_COUNT = Integer.MAX_VALUE;
+
+  public static final int DEFAULT_ELEMENT_ACTIVATION_RETRY_COOLDOWN = 100;
+
   private int maxIdFieldLength = DEFAULT_MAX_ID_FIELD_LENGTH;
   private int maxNameFieldLength = DEFAULT_MAX_NAME_FIELD_LENGTH;
   private int maxWorkerTypeLength = DEFAULT_MAX_WORKER_TYPE_LENGTH;
@@ -206,6 +217,16 @@ public final class EngineConfiguration {
       DEFAULT_MESSAGE_START_LOCK_RELEASE_POLL_INTERVAL;
   private int messageStartLockReleasePollBatchLimit =
       DEFAULT_MESSAGE_START_LOCK_RELEASE_POLL_BATCH_LIMIT;
+  private int maxElementActivationCount = DEFAULT_MAX_ELEMENT_ACTIVATION_COUNT;
+  private int elementActivationRetryCooldown = DEFAULT_ELEMENT_ACTIVATION_RETRY_COOLDOWN;
+
+  /**
+   * Per-{@link BpmnElementType} overrides for the maximum element activation count used by loop
+   * detection. An element type present in this map uses the mapped value instead of {@link
+   * #maxElementActivationCount}. A value of {@code 0} disables loop detection for that element
+   * type.
+   */
+  private Map<BpmnElementType, Integer> maxElementActivationCountByType = Map.of();
 
   /** Controls whether the archiverless mode is enabled. */
   private boolean archiverlessEnabled = DEFAULT_ENGINE_STORAGE_ORDINALS_ENABLE_ARCHIVERLESS;
@@ -840,6 +861,43 @@ public final class EngineConfiguration {
   public EngineConfiguration setOutputComparisonMode(
       final @Nullable OutputMappingMode outputComparisonMode) {
     this.outputComparisonMode = outputComparisonMode;
+    return this;
+  }
+
+  public int getMaxElementActivationCount() {
+    return maxElementActivationCount;
+  }
+
+  public EngineConfiguration setMaxElementActivationCount(final int maxElementActivationCount) {
+    this.maxElementActivationCount = maxElementActivationCount;
+    return this;
+  }
+
+  public int getElementActivationRetryCooldown() {
+    return elementActivationRetryCooldown;
+  }
+
+  /**
+   * Once the activation threshold is first exceeded, the loop-detection incident is re-raised every
+   * {@code elementActivationRetryCooldown} further activations. A value of {@code 1} (or less)
+   * disables throttling, so the incident is re-raised on every activation beyond the threshold.
+   */
+  public EngineConfiguration setElementActivationRetryCooldown(
+      final int elementActivationRetryCooldown) {
+    this.elementActivationRetryCooldown = elementActivationRetryCooldown;
+    return this;
+  }
+
+  public Map<BpmnElementType, Integer> getMaxElementActivationCountByType() {
+    return maxElementActivationCountByType;
+  }
+
+  public EngineConfiguration setMaxElementActivationCountByType(
+      final Map<BpmnElementType, Integer> maxElementActivationCountByType) {
+    this.maxElementActivationCountByType =
+        maxElementActivationCountByType == null
+            ? Map.of()
+            : Map.copyOf(maxElementActivationCountByType);
     return this;
   }
 }
