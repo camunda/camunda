@@ -283,6 +283,34 @@ gh api "/repos/camunda/camunda/activity?ref=refs/heads/<branch>&per_page=20" \
 **What to do:** check that the later same-commit runs succeeded, then close the incident as L2.
 No workflow change is needed.
 
+##### Re-run of an old workflow run fails in the deploy jobs
+
+**Symptom:** `deploy-snapshots`, `deploy-camunda-docker-snapshot` and/or
+`deploy-optimize-docker-snapshot` fail together on one `stable/*` or `main` run. The run was
+created days ago and the failed attempt is a manual re-run (attempt 2 or later). Typically
+`actions/download-artifact` reports that `fe-*-<run_id>` is not found, or the job fails at the
+`Check for stale re-run` step.
+
+**Cause:** the deploy jobs download frontend bundles that are kept for only 2 days
+(`retention-days: 2`). A re-run of an older run cannot get them, and it would publish an outdated
+snapshot even if it could. The
+[`check-stale-rerun`](https://github.com/camunda/camunda/tree/main/.github/actions/check-stale-rerun)
+action fails these jobs early with a clear
+message and skips `observe-build-status`, so newer branches should no longer raise this alert.
+Branches without that action still do (e.g. INC-8805, INC-8806, INC-8807).
+
+**How to confirm:** the run's `created_at` is days before its `run_started_at`, and
+`run_attempt` is greater than 1:
+
+```bash
+gh api repos/camunda/camunda/actions/runs/<run_id> \
+  --jq '{created_at, run_started_at, run_attempt, triggering_actor: .triggering_actor.login}'
+```
+
+**What to do:** check that the latest run on the branch deployed successfully, then close the
+incident as L2. If a fresh snapshot is needed, start a new run (push or `workflow_dispatch` on the
+branch) instead of re-running the old one.
+
 ---
 
 ### Selfhosted Runner High Disconnect Rate
