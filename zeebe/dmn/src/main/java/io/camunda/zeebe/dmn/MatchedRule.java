@@ -14,7 +14,7 @@ import org.jspecify.annotations.Nullable;
 public interface MatchedRule {
 
   /**
-   * @return the id of the matched rule
+   * @return the id of the matched rule, or {@code null} if the rule has no id
    */
   @Nullable String ruleId();
 
