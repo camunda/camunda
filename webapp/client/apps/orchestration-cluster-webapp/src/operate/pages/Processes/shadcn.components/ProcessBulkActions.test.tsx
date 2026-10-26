@@ -101,12 +101,21 @@ describe('Processes DS bulk actions', () => {
 
 		await select(screen, '1');
 
-		await expect.element(screen.getByText('1 item selected')).toBeVisible();
+		await expect.element(screen.getByText('1 item selected', {exact: false})).toBeVisible();
 		await expect.element(screen.getByRole('button', {name: 'Cancel', exact: true})).toBeEnabled();
 		await expect.element(screen.getByRole('button', {name: 'Suspend', exact: true})).toBeEnabled();
 		await expect.element(screen.getByRole('button', {name: 'Delete', exact: true})).toBeDisabled();
 		await expect.element(screen.getByRole('button', {name: 'Resume', exact: true})).toBeDisabled();
 		await expect.element(screen.getByRole('button', {name: 'Retry', exact: true})).toBeDisabled();
+	});
+
+	it('should explain why an action is unavailable for the selected instances', async () => {
+		const screen = await renderTable();
+
+		await select(screen, '1');
+
+		await expect.element(screen.getByText('No finished process instances selected', {exact: false})).toBeVisible();
+		await expect.element(screen.getByText('No suspended process instances selected', {exact: false})).toBeVisible();
 	});
 
 	it('should confirm and submit Resume for the selected suspended instance', async ({worker}) => {
