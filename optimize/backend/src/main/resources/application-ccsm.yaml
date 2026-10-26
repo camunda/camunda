@@ -7,7 +7,3 @@ camunda:
     clientSecret: ${CAMUNDA_OPTIMIZE_IDENTITY_CLIENTSECRET:}
     audience: ${CAMUNDA_OPTIMIZE_IDENTITY_AUDIENCE:}
     baseUrl: ${CAMUNDA_OPTIMIZE_IDENTITY_BASE_URL:}
-    # Names Optimize to Management Identity so it is given only the permissions its own
-    # resource server defines. This is the component-presets key, not the client id, and it
-    # does nothing until scope-permissions-by-component is enabled on Identity.
-    componentId: ${CAMUNDA_OPTIMIZE_IDENTITY_COMPONENT_ID:optimize}
