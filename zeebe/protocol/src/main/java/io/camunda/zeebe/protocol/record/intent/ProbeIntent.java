@@ -29,7 +29,12 @@ public enum ProbeIntent implements Intent {
   ANSWERED(6, true),
   TIME_OUT(7, false),
   TIMED_OUT(8, true),
-  CANCELED(9, true);
+  CANCELED(9, true),
+  /**
+   * Internal command appended by ANSWER, which can only answer one requester (the worker). Its
+   * processor answers the waiting client; it writes no probe event.
+   */
+  RESPOND(10, false);
 
   private final short value;
   private final boolean isEvent;

@@ -206,12 +206,14 @@ public final class EventAppliers implements EventApplier {
   }
 
   private void registerProbeAppliers(final MutableProcessingState state) {
-    register(ProbeIntent.CREATED, NOOP_EVENT_APPLIER);
-    register(ProbeIntent.ACTIVATED, NOOP_EVENT_APPLIER);
-    register(ProbeIntent.YIELDED, NOOP_EVENT_APPLIER);
-    register(ProbeIntent.ANSWERED, NOOP_EVENT_APPLIER);
-    register(ProbeIntent.TIMED_OUT, NOOP_EVENT_APPLIER);
-    register(ProbeIntent.CANCELED, NOOP_EVENT_APPLIER);
+    final var probeState = state.getProbeState();
+    register(ProbeIntent.CREATED, new ProbeCreatedApplier(probeState));
+    register(ProbeIntent.ACTIVATED, new ProbeActivatedApplier(probeState));
+    register(ProbeIntent.YIELDED, new ProbeYieldedApplier(probeState));
+    final var endedApplier = new ProbeEndedApplier(probeState);
+    register(ProbeIntent.ANSWERED, endedApplier);
+    register(ProbeIntent.TIMED_OUT, endedApplier);
+    register(ProbeIntent.CANCELED, endedApplier);
   }
 
   private void registerProcessDefinitionRestoreAppliers(final MutableProcessingState state) {

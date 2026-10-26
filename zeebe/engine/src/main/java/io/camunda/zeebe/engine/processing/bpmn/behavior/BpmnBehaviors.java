@@ -20,6 +20,13 @@ public interface BpmnBehaviors {
 
   ExpressionProcessor expressionProcessor();
 
+  /**
+   * Evaluates an input outside of any process instance, as an input mapping would: secret
+   * references become their placeholders and cluster variables resolve, but no process variable is
+   * visible. Used for the input of a probe.
+   */
+  ExpressionProcessor clusterInputExpressionProcessor();
+
   BpmnDecisionBehavior bpmnDecisionBehavior();
 
   BpmnVariableMappingBehavior variableMappingBehavior();

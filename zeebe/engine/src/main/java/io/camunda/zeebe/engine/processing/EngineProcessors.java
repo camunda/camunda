@@ -77,6 +77,7 @@ import io.camunda.zeebe.engine.processing.message.MessageEventProcessors;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.metrics.job.JobMetricsProcessors;
 import io.camunda.zeebe.engine.processing.metrics.usage.UsageMetricsProcessors;
+import io.camunda.zeebe.engine.processing.probe.ProbeEventProcessors;
 import io.camunda.zeebe.engine.processing.resource.ProcessDefinitionRestoreContinueProcessor;
 import io.camunda.zeebe.engine.processing.resource.ProcessDefinitionRestoreStartProcessor;
 import io.camunda.zeebe.engine.processing.resource.ProcessDefinitionRestoreTrigger;
@@ -92,6 +93,7 @@ import io.camunda.zeebe.engine.processing.secretreference.SecretResolutionSchedu
 import io.camunda.zeebe.engine.processing.signal.SignalBroadcastProcessor;
 import io.camunda.zeebe.engine.processing.storageordinals.StorageOrdinalProvider;
 import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer;
+import io.camunda.zeebe.engine.processing.streamprocessor.ProbeStreamer;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorContext;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
@@ -138,6 +140,7 @@ public final class EngineProcessors {
       final InterPartitionCommandSender interPartitionCommandSender,
       final FeatureFlags featureFlags,
       final JobStreamer jobStreamer,
+      final ProbeStreamer probeStreamer,
       final SearchClientsProxy searchClientsProxy,
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter,
       final SecretStoreRegistry secretStoreRegistry) {
@@ -400,6 +403,18 @@ public final class EngineProcessors {
         secretStoreRegistry,
         secretResolutionScheduler,
         suspensionMetrics);
+
+    ProbeEventProcessors.addProbeProcessors(
+        typedRecordProcessors,
+        processingState,
+        scheduledTaskStateFactory,
+        bpmnBehaviors,
+        writers,
+        probeStreamer,
+        asyncRequestBehavior,
+        cslCheck,
+        tenantCheck,
+        clock);
 
     final var userTaskProcessor =
         createUserTaskProcessor(

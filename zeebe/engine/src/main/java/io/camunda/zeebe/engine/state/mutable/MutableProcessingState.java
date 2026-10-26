@@ -151,5 +151,8 @@ public interface MutableProcessingState extends ProcessingState {
   @Override
   MutableSecretReferenceState getSecretReferenceState();
 
+  @Override
+  MutableProbeState getProbeState();
+
   KeyGenerator getKeyGenerator();
 }

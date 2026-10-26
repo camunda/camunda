@@ -397,7 +397,13 @@ public enum ZbColumnFamilies implements EnumValue, ScopedColumnFamily {
   // re-accumulate its metrics. Written when an item is first created (see
   // AgentHistoryCreatedApplier), survives commit/discard, and is deleted in one pass when the
   // instance completes (see AgentInstanceCompletedApplier).
-  AGENT_HISTORY_METRICS_ACCUMULATED_IDS(165, PARTITION_LOCAL);
+  AGENT_HISTORY_METRICS_ACCUMULATED_IDS(165, PARTITION_LOCAL),
+
+  // probeKey -> probe and its lifecycle state; a probe lives on the partition that created it
+  PROBES(166, PARTITION_LOCAL),
+
+  // (deadline, probeKey) -> ∅; lets the timeout checker find the probes whose deadline passed
+  PROBE_DEADLINES(167, PARTITION_LOCAL);
 
   private final int value;
   private final ColumnFamilyScope columnFamilyScope;

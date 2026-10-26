@@ -52,6 +52,7 @@ import org.jspecify.annotations.Nullable;
 public final class BpmnBehaviorsImpl implements BpmnBehaviors {
 
   private final ExpressionProcessor expressionProcessor;
+  private final ExpressionProcessor clusterInputExpressionProcessor;
   private final BpmnDecisionBehavior bpmnDecisionBehavior;
   private final BpmnVariableMappingBehavior variableMappingBehavior;
   private final BpmnEventPublicationBehavior eventPublicationBehavior;
@@ -127,6 +128,11 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
             expressionLanguage,
             CombinedEvaluationContext.withContexts(processVariableContext, bpmnClusterContext),
             config.getExpressionEvaluationTimeout());
+
+    clusterInputExpressionProcessor =
+        new ExpressionProcessor(
+                expressionLanguage, bpmnClusterContext, config.getExpressionEvaluationTimeout())
+            .withSecretReferenceContext();
 
     expressionBehavior =
         new ExpressionBehavior(
@@ -372,6 +378,11 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
   @Override
   public ExpressionProcessor expressionProcessor() {
     return expressionProcessor;
+  }
+
+  @Override
+  public ExpressionProcessor clusterInputExpressionProcessor() {
+    return clusterInputExpressionProcessor;
   }
 
   @Override

@@ -73,11 +73,16 @@ public final class ProbeRecord extends UnifiedRecordValue implements ProbeRecord
   /** Copies the whole record, so a caller can change the copy without touching the original. */
   public ProbeRecord copy() {
     final var copy = new ProbeRecord();
-    final var bytes = new byte[getLength()];
-    final var buffer = new UnsafeBuffer(bytes);
-    write(buffer, 0);
-    copy.wrap(buffer, 0, bytes.length);
+    copy.copyFrom(this);
     return copy;
+  }
+
+  /** Replaces this record's content with a copy of the other record's content. */
+  public void copyFrom(final ProbeRecord other) {
+    final var bytes = new byte[other.getLength()];
+    final var buffer = new UnsafeBuffer(bytes);
+    other.write(buffer, 0);
+    wrap(buffer, 0, bytes.length);
   }
 
   @Override
