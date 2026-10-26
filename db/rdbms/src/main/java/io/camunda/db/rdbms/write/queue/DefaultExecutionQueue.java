@@ -17,6 +17,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -319,6 +320,50 @@ public class DefaultExecutionQueue implements ExecutionQueue {
   }
 
   /**
+   * Groups items with the same statement ID so that MyBatis can batch them, but keeps the order of
+   * the items of each ID (entity key). Items of different IDs touch different rows, so their
+   * relative order does not matter.
+   *
+   * <p>In each round, the statement ID that is next for the most IDs is emitted for all IDs where
+   * it is next. Without this, an update of a user task (update, delete candidate users, delete
+   * candidate groups) changes the SQL with every statement, and each statement becomes its own JDBC
+   * batch with its own database round trip.
+   *
+   * <p>If an item has no ID, the original order is kept.
+   */
+  static List<QueueItem> groupPreservingOrderPerId(final List<QueueItem> items) {
+    final Map<Object, LinkedList<QueueItem>> itemsById = new LinkedHashMap<>();
+    for (final var item : items) {
+      if (item.id() == null) {
+        return items;
+      }
+      itemsById.computeIfAbsent(item.id(), id -> new LinkedList<>()).add(item);
+    }
+
+    final List<QueueItem> resultList = new ArrayList<>(items.size());
+    while (!itemsById.isEmpty()) {
+      final Map<String, Integer> headCounts = new LinkedHashMap<>();
+      for (final var queue : itemsById.values()) {
+        headCounts.merge(queue.getFirst().statementId(), 1, Integer::sum);
+      }
+      final String next =
+          headCounts.entrySet().stream().max(Map.Entry.comparingByValue()).orElseThrow().getKey();
+
+      final var queues = itemsById.values().iterator();
+      while (queues.hasNext()) {
+        final var queue = queues.next();
+        if (queue.getFirst().statementId().equals(next)) {
+          resultList.add(queue.removeFirst());
+          if (queue.isEmpty()) {
+            queues.remove();
+          }
+        }
+      }
+    }
+    return resultList;
+  }
+
+  /**
    * Optimizes the order of the queue items to minimize the number of executed statements. Primary
    * goal of this optimization is to batch as many statements as possible For this statements with
    * the same MyBatis-ID have to be executed sequentially directly after each other. A second goal
@@ -345,7 +390,9 @@ public class DefaultExecutionQueue implements ExecutionQueue {
     final List<QueueItem> resultList = new ArrayList<>();
     for (final var entry : itemsByContextType.entrySet()) {
       final var contextType = entry.getKey();
-      if (contextType.preserveOrder()) {
+      if (contextType == ContextType.USER_TASK) {
+        resultList.addAll(groupPreservingOrderPerId(entry.getValue()));
+      } else if (contextType.preserveOrder()) {
         resultList.addAll(entry.getValue());
       } else {
         final var contextItems = new ArrayList<>(entry.getValue());
