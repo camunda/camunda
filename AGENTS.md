@@ -208,12 +208,9 @@ If a test fails during the baseline check, re-run it once to determine whether i
 passes on retry, treat the baseline as green and proceed. If it fails consistently, it should not
 be on the target branch — stop and inform the engineer.
 
-If it is flaky (non-deterministic):
-
-1. Search for an existing open issue in camunda/camunda. If none exists, raise one using
-   the `create-issue` skill (use the bug template; also add the `kind/flake` label).
-2. Assign the issue to the engineer.
-3. Treat the baseline as passed and proceed — do not disable the test.
+If it is flaky (non-deterministic), it does not block the session: treat the baseline as passed and
+proceed. Never disable the test. Track the flake as described in
+`.agents/skills/ci-fix-failure/references/flaky-tests.md`.
 
 #### Module-scoped builds (preferred)
 
