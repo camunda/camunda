@@ -9,6 +9,7 @@ package io.camunda.microbenchmarks.scheduler;
 
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.VarHandle;
+import java.util.Arrays;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
@@ -38,6 +39,8 @@ import org.openjdk.jmh.infra.Blackhole;
  *       queue
  *   <li>{@code inlineFirstThenLazyJdkQueue}: first callback inline, others in a lazily created
  *       {@link ConcurrentLinkedQueue}
+ *   <li>{@code inlineFirstThenCowArray}: first callback inline, others in an immutable array that
+ *       is replaced by a copy one slot longer on every add
  * </ul>
  */
 @BenchmarkMode(Mode.AverageTime)
@@ -50,7 +53,7 @@ public class CallbackStorageSpikeBenchmark {
 
   @State(Scope.Thread)
   public static class Callbacks {
-    @Param({"0", "1", "2", "3"})
+    @Param({"0", "1", "2", "3", "10"})
     int count;
 
     long sink;
@@ -87,6 +90,16 @@ public class CallbackStorageSpikeBenchmark {
   @Benchmark
   public void inlineFirstThenLazyJdkQueue(final Callbacks callbacks, final Blackhole blackhole) {
     final var storage = new InlineFirstThenLazyJdkQueue();
+    for (int i = 0; i < callbacks.count; i++) {
+      storage.add(callbacks.callback);
+    }
+    storage.drain(VALUE);
+    blackhole.consume(storage);
+  }
+
+  @Benchmark
+  public void inlineFirstThenCowArray(final Callbacks callbacks, final Blackhole blackhole) {
+    final var storage = new InlineFirstThenCowArray();
     for (int i = 0; i < callbacks.count; i++) {
       storage.add(callbacks.callback);
     }
@@ -267,6 +280,64 @@ public class CallbackStorageSpikeBenchmark {
         if (queue != null) {
           BiConsumer<Long, Throwable> callback;
           while ((callback = queue.poll()) != null) {
+            callback.accept(value, null);
+          }
+        }
+      }
+    }
+  }
+
+  private static final class InlineFirstThenCowArray {
+    private static final VarHandle FIRST;
+    private static final VarHandle MORE;
+
+    static {
+      try {
+        final var lookup = MethodHandles.lookup();
+        FIRST = lookup.findVarHandle(InlineFirstThenCowArray.class, "first", BiConsumer.class);
+        MORE = lookup.findVarHandle(InlineFirstThenCowArray.class, "more", BiConsumer[].class);
+      } catch (final ReflectiveOperationException e) {
+        throw new ExceptionInInitializerError(e);
+      }
+    }
+
+    private volatile BiConsumer<Long, Throwable> first;
+    private volatile BiConsumer<Long, Throwable>[] more;
+
+    @SuppressWarnings("unchecked")
+    void add(final BiConsumer<Long, Throwable> callback) {
+      if (FIRST.compareAndSet(this, (BiConsumer<Long, Throwable>) null, callback)) {
+        return;
+      }
+      BiConsumer<Long, Throwable>[] current;
+      BiConsumer<Long, Throwable>[] next;
+      do {
+        current = more;
+        if (current == null) {
+          next = new BiConsumer[] {callback};
+        } else {
+          next = Arrays.copyOf(current, current.length + 1);
+          next[current.length] = callback;
+        }
+      } while (!MORE.compareAndSet(this, current, next));
+    }
+
+    @SuppressWarnings("unchecked")
+    void drain(final Long value) {
+      // loop until both are empty, callbacks may be added while draining
+      while (first != null || more != null) {
+        final var firstCallback =
+            first != null
+                ? (BiConsumer<Long, Throwable>)
+                    FIRST.getAndSet(this, (BiConsumer<Long, Throwable>) null)
+                : null;
+        final var pending =
+            more != null ? (BiConsumer<Long, Throwable>[]) MORE.getAndSet(this, null) : null;
+        if (firstCallback != null) {
+          firstCallback.accept(value, null);
+        }
+        if (pending != null) {
+          for (final var callback : pending) {
             callback.accept(value, null);
           }
         }
