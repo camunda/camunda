@@ -55,6 +55,7 @@ import io.camunda.zeebe.broker.client.api.BrokerErrorException;
 import io.camunda.zeebe.broker.client.api.dto.BrokerError;
 import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
 import io.camunda.zeebe.gateway.api.util.StubbedTopologyManager;
+import io.camunda.zeebe.gateway.cmd.InvalidVariableRequestException;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerAssignProcessInstanceBusinessIdRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerCreateBatchOperationRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerCreateProcessInstanceRequest;
@@ -68,12 +69,15 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceMigrationMappingInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationMoveInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceResultRecord;
+import io.camunda.zeebe.protocol.impl.record.value.variable.VariableMetadataRecord;
 import io.camunda.zeebe.protocol.record.ErrorCode;
 import io.camunda.zeebe.protocol.record.value.BatchOperationType;
 import io.camunda.zeebe.protocol.record.value.HistoryDeletionType;
+import io.camunda.zeebe.protocol.record.value.ProtectionMode;
 import java.net.ConnectException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ForkJoinPool;
@@ -944,6 +948,36 @@ public final class ProcessInstanceServiceTest {
                     .BrokerCreateProcessInstanceWithResultRequest.class));
     verify(brokerClient, org.mockito.Mockito.never())
         .sendRequest(any(), any(java.time.Duration.class));
+  }
+
+  @Test
+  void shouldRejectVariablesMetadataOfUnknownVariable() {
+    // given
+    final var request =
+        new ProcessInstanceServices.ProcessInstanceCreateRequest(
+            123L, // processDefinitionKey
+            "", // bpmnProcessId
+            -1, // version
+            null, // versionTag
+            Map.of("name", "x"), // variables
+            "<default>", // tenantId
+            false, // awaitCompletion
+            null, // requestTimeout
+            null, // operationReference
+            List.of(), // startInstructions
+            List.of(), // runtimeInstructions
+            List.of(), // fetchVariables
+            null, // tags
+            null, // businessId
+            Map.of(
+                "ssn",
+                new VariableMetadataRecord().setProtectionModes(List.of(ProtectionMode.REDACT))));
+
+    // when / then
+    assertThatThrownBy(() -> services.createProcessInstance(request, authentication))
+        .isInstanceOf(InvalidVariableRequestException.class)
+        .hasMessageContaining("'ssn'");
+    verify(brokerClient, never()).sendRequest(any());
   }
 
   @Nested

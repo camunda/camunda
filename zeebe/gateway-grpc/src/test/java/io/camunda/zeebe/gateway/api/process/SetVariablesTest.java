@@ -118,4 +118,28 @@ public final class SetVariablesTest extends GatewayTest {
     assertThat(brokerRequestValue.getVariablesMetadata().get("ssn").getProtectionModes())
         .containsExactly(ProtectionMode.REDACT);
   }
+
+  @Test
+  public void shouldRejectVariablesMetadataOfUnknownVariable() {
+    // given
+    final SetVariablesStub stub = new SetVariablesStub();
+    stub.registerWith(brokerClient);
+
+    final SetVariablesRequest request =
+        SetVariablesRequest.newBuilder()
+            .setElementInstanceKey(Protocol.encodePartitionId(1, 1))
+            .setVariables(JsonUtil.toJson(Collections.singletonMap("name", "x")))
+            .putVariablesMetadata(
+                "ssn",
+                VariableMetadata.newBuilder()
+                    .addProtectionModes(VariableMetadata.ProtectionMode.REDACT)
+                    .build())
+            .build();
+
+    // when / then
+    assertThatThrownBy(() -> client.setVariables(request))
+        .isInstanceOf(StatusRuntimeException.class)
+        .extracting(t -> ((StatusRuntimeException) t).getStatus().getCode())
+        .isEqualTo(Status.Code.INVALID_ARGUMENT);
+  }
 }

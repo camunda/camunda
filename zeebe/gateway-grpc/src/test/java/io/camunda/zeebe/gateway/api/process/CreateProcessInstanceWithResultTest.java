@@ -222,4 +222,30 @@ public final class CreateProcessInstanceWithResultTest extends GatewayTest {
     assertThat(brokerRequestValue.getVariablesMetadata().get("ssn").getProtectionModes())
         .containsExactly(ProtectionMode.REDACT);
   }
+
+  @Test
+  public void shouldRejectVariablesMetadataOfUnknownVariable() {
+    // given
+    final CreateProcessInstanceWithResultStub stub = new CreateProcessInstanceWithResultStub();
+    stub.registerWith(brokerClient);
+
+    final CreateProcessInstanceWithResultRequest request =
+        CreateProcessInstanceWithResultRequest.newBuilder()
+            .setRequest(
+                CreateProcessInstanceRequest.newBuilder()
+                    .setProcessDefinitionKey(stub.getProcessDefinitionKey())
+                    .setVariables("{\"name\":\"x\"}")
+                    .putVariablesMetadata(
+                        "ssn",
+                        VariableMetadata.newBuilder()
+                            .addProtectionModes(VariableMetadata.ProtectionMode.REDACT)
+                            .build()))
+            .build();
+
+    // when / then
+    assertThatThrownBy(() -> client.createProcessInstanceWithResult(request))
+        .isInstanceOf(StatusRuntimeException.class)
+        .extracting(t -> ((StatusRuntimeException) t).getStatus().getCode())
+        .isEqualTo(Status.Code.INVALID_ARGUMENT);
+  }
 }
