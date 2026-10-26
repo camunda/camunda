@@ -83,9 +83,12 @@ public class JobRecurProcessor implements TypedRecordProcessor<JobRecord> {
     }
   }
 
+  /**
+   * Uses the same boundary as {@link JobState#findBackedOffJobs}, which hands over a job whose
+   * backoff ends at the current time and does not check that job again. Rejecting it here would
+   * leave the job failed.
+   */
   private boolean hasRecurred(final JobRecord job) {
-    // must match the backoff checker (JobState#findBackedOffJobs), which considers a backoff due
-    // when it ends at the current time; it does not check again for a job it already handed us
     return job.getRecurringTime() <= clock.millis();
   }
 }
