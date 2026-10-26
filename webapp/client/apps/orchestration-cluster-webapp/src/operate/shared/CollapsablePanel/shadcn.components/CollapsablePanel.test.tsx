@@ -42,6 +42,26 @@ describe('<CollapsablePanel />', () => {
 		expect(label.right).toBeLessThanOrEqual(rail.right);
 	});
 
+	it('should render the visible vertical label only when it is not hidden', async () => {
+		const withLabel = await render(
+			<CollapsablePanel label="Filters" panelPosition="LEFT" isCollapsed onToggle={vi.fn()} maxWidth={320} />,
+		);
+		expect(withLabel.getByText('Filters', {exact: true}).elements()).toHaveLength(2);
+		await withLabel.unmount();
+
+		const withoutLabel = await render(
+			<CollapsablePanel
+				label="Filters"
+				panelPosition="LEFT"
+				isCollapsed
+				onToggle={vi.fn()}
+				maxWidth={320}
+				hideCollapsedLabel
+			/>,
+		);
+		expect(withoutLabel.getByText('Filters', {exact: true}).elements()).toHaveLength(1);
+	});
+
 	it('should expand when clicking anywhere on the collapsed rail', async () => {
 		const onToggle = vi.fn();
 		const screen = await render(

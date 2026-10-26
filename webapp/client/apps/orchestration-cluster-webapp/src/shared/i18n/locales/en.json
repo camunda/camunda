@@ -1075,6 +1075,11 @@
 				"drainingDescriptionVersion": "This process definition version is scheduled for deletion and will be removed automatically once all of its running instances finish."
 			},
 			"processes": {
+				"scaffold": {
+					"filtersPanelPlaceholder": "Filters panel placeholder",
+					"diagramPanelPlaceholder": "Diagram panel placeholder",
+					"instancesTablePlaceholder": "Instances table placeholder"
+				},
 				"migration": {
 					"migrate": "Migrate",
 					"selectSource": "To start the migration process, choose a process and version first.",

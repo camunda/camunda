@@ -43,6 +43,7 @@ const tabRoutes = {
 	// still points at its live Carbon route — those pages haven't moved yet.
 	operateDashboard: '/operate-preview',
 	operateProcesses: '/operate/processes',
+	operateProcessesPreview: '/operate-preview/processes',
 	operateDecisions: '/operate/decisions',
 	operateDecisionsPreview: '/operate-preview/decisions',
 	operateOperationsLog: '/operate/operations-log',
@@ -193,7 +194,9 @@ function useSidebarNavigation(currentUser: CurrentUser): SidebarNavigation {
 
 	if (isOperateRoute) {
 		const hasOperateAccess = hasComponentAccess('operate', authorizedComponents);
-		const isOperateProcessesRoute = matchRoute({to: tabRoutes['operateProcesses'], fuzzy: true}) !== false;
+		const isOperateProcessesRoute =
+			matchRoute({to: tabRoutes['operateProcesses'], fuzzy: true}) !== false ||
+			matchRoute({to: tabRoutes['operateProcessesPreview'], fuzzy: true}) !== false;
 		const isOperateDecisionsRoute =
 			matchRoute({to: tabRoutes['operateDecisions'], fuzzy: true}) !== false ||
 			matchRoute({to: tabRoutes['operateDecisionsPreview'], fuzzy: true}) !== false;

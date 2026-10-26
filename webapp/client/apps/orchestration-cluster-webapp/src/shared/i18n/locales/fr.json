@@ -1066,6 +1066,11 @@
 				"drainingDescriptionVersion": "Cette version de la définition de processus est programmée pour suppression et sera automatiquement supprimée une fois que toutes ses instances en cours seront terminées."
 			},
 			"processes": {
+				"scaffold": {
+					"filtersPanelPlaceholder": "Espace réservé pour le panneau de filtres",
+					"diagramPanelPlaceholder": "Espace réservé pour le panneau du diagramme",
+					"instancesTablePlaceholder": "Espace réservé pour le tableau des instances"
+				},
 				"migration": {
 					"migrate": "Migrer",
 					"selectSource": "Pour démarrer la migration, choisissez d’abord un processus et une version.",

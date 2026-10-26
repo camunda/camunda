@@ -1063,6 +1063,11 @@
 				"drainingDescriptionVersion": "Diese Version der Prozessdefinition ist zur Löschung vorgesehen und wird automatisch entfernt, sobald alle ihre laufenden Instanzen abgeschlossen sind."
 			},
 			"processes": {
+				"scaffold": {
+					"filtersPanelPlaceholder": "Platzhalter für den Filterbereich",
+					"diagramPanelPlaceholder": "Platzhalter für den Diagrammbereich",
+					"instancesTablePlaceholder": "Platzhalter für die Instanztabelle"
+				},
 				"migration": {
 					"migrate": "Migrieren",
 					"selectSource": "Um die Migration zu starten, wählen Sie zuerst einen Prozess und eine Version aus.",

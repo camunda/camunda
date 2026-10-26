@@ -1063,6 +1063,11 @@
 				"drainingDescriptionVersion": "Esta versión de la definición de proceso está programada para su eliminación y se eliminará automáticamente una vez que todas sus instancias en ejecución hayan finalizado."
 			},
 			"processes": {
+				"scaffold": {
+					"filtersPanelPlaceholder": "Marcador de posición del panel de filtros",
+					"diagramPanelPlaceholder": "Marcador de posición del panel del diagrama",
+					"instancesTablePlaceholder": "Marcador de posición de la tabla de instancias"
+				},
 				"migration": {
 					"migrate": "Migrar",
 					"selectSource": "Para iniciar la migración, elija primero un proceso y una versión.",

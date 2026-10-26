@@ -26,6 +26,7 @@ type Props = {
 	maxWidth: number;
 	scrollable?: boolean;
 	collapsablePanelRef?: React.RefObject<HTMLElement | null>;
+	hideCollapsedLabel?: boolean;
 };
 
 const CollapsablePanel = forwardRef<HTMLDivElement, Props>(
@@ -42,6 +43,7 @@ const CollapsablePanel = forwardRef<HTMLDivElement, Props>(
 			isCollapsed,
 			onToggle,
 			collapsablePanelRef,
+			hideCollapsedLabel = false,
 			...props
 		},
 		ref,
@@ -109,7 +111,7 @@ const CollapsablePanel = forwardRef<HTMLDivElement, Props>(
 							/>
 						)}
 					</header>
-					{isCollapsed && (
+					{isCollapsed && !hideCollapsedLabel && (
 						<div className="mt-6 flex justify-center" style={{width: COLLAPSED_WIDTH}}>
 							<Heading
 								as="h2"
