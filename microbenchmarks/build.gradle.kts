@@ -6,6 +6,7 @@ plugins {
 dependencies {
   implementation(libs.org.agrona.agrona)
   implementation(project(":zeebe-util"))
+  implementation(project(":zeebe-scheduler"))
   implementation(project(":zeebe-msgpack-value"))
   implementation(project(":zeebe-bpmn-model"))
   implementation(project(":zeebe-expression-language"))
