@@ -20,6 +20,7 @@ import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnSignalBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateTransitionBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnVariableMappingBehavior;
+import io.camunda.zeebe.engine.processing.common.ExpressionLabel;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableEndEvent;
@@ -223,7 +224,10 @@ public final class EndEventProcessor implements BpmnElementProcessor<ExecutableE
       }
 
       return expressionProcessor.evaluateStringExpressionAsDirectBuffer(
-          error.getErrorCodeExpression(), context.getElementInstanceKey(), context.getTenantId());
+          error.getErrorCodeExpression(),
+          context.getElementInstanceKey(),
+          context.getTenantId(),
+          ExpressionLabel.errorCodeExpression(context.getElementId()));
     }
   }
 
@@ -368,7 +372,8 @@ public final class EndEventProcessor implements BpmnElementProcessor<ExecutableE
       return expressionProcessor.evaluateStringExpressionAsDirectBuffer(
           escalation.getEscalationCodeExpression(),
           context.getElementInstanceKey(),
-          context.getTenantId());
+          context.getTenantId(),
+          ExpressionLabel.escalationCodeExpression(context.getElementId()));
     }
   }
 

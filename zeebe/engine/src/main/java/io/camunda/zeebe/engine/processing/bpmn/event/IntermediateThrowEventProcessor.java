@@ -19,6 +19,7 @@ import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnSignalBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateTransitionBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnVariableMappingBehavior;
+import io.camunda.zeebe.engine.processing.common.ExpressionLabel;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableIntermediateThrowEvent;
@@ -347,7 +348,8 @@ public class IntermediateThrowEventProcessor
       return expressionProcessor.evaluateStringExpressionAsDirectBuffer(
           escalation.getEscalationCodeExpression(),
           context.getElementInstanceKey(),
-          context.getTenantId());
+          context.getTenantId(),
+          ExpressionLabel.escalationCodeExpression(context.getElementId()));
     }
   }
 

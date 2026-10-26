@@ -190,7 +190,20 @@ public final class ExpressionProcessor {
    */
   public Either<Failure, DirectBuffer> evaluateStringExpressionAsDirectBuffer(
       final Expression expression, final long scopeKey, final String tenantId) {
-    return evaluateStringExpression(expression, scopeKey, tenantId).map(this::wrapResult);
+    return evaluateStringExpressionAsDirectBuffer(
+        expression, scopeKey, tenantId, ExpressionLabel.NONE);
+  }
+
+  /**
+   * Like {@link #evaluateStringExpressionAsDirectBuffer(Expression, long, String)}, but labels the
+   * failure message, if any, with the given {@link ExpressionLabel}.
+   */
+  public Either<Failure, DirectBuffer> evaluateStringExpressionAsDirectBuffer(
+      final Expression expression,
+      final long scopeKey,
+      final String tenantId,
+      final ExpressionLabel label) {
+    return evaluateStringExpression(expression, scopeKey, tenantId, label).map(this::wrapResult);
   }
 
   /**

@@ -11,6 +11,7 @@ import static io.camunda.zeebe.util.EnsureUtil.ensureNotNull;
 import static io.camunda.zeebe.util.EnsureUtil.ensureNotNullOrEmpty;
 
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
+import io.camunda.zeebe.engine.processing.common.ExpressionLabel;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableSignal;
@@ -65,7 +66,10 @@ public final class BpmnSignalBehavior {
 
     if (signal.getSignalName().isEmpty()) {
       return expressionBehavior.evaluateStringExpression(
-          signal.getSignalNameExpression(), context.getElementInstanceKey(), context.getTenantId());
+          signal.getSignalNameExpression(),
+          context.getElementInstanceKey(),
+          context.getTenantId(),
+          ExpressionLabel.signalNameExpression(context.getElementId()));
     }
 
     return Either.right(signal.getSignalName().get());
