@@ -232,6 +232,34 @@ public class VariableHandlerTest {
   }
 
   @Test
+  void shouldStoreNullValueWhenRecordValueIsRedacted() {
+    // given
+    final Record<VariableRecordValue> variableRecord =
+        factory.generateRecord(
+            ValueType.VARIABLE,
+            r ->
+                r.withIntent(VariableIntent.CREATED)
+                    .withValue(
+                        ImmutableVariableRecordValue.builder()
+                            .from(factory.generateObject(VariableRecordValue.class))
+                            .withValue(null)
+                            .withMetadata(
+                                ImmutableVariableMetadataValue.builder()
+                                    .addProtectionModes(ProtectionMode.REDACT)
+                                    .build())
+                            .build()));
+
+    // when
+    final VariableEntity variableEntity = new VariableEntity();
+    underTest.updateEntity(variableRecord, variableEntity);
+
+    // then
+    assertThat(variableEntity.getValue()).isNull();
+    assertThat(variableEntity.getFullValue()).isNull();
+    assertThat(variableEntity.getIsPreview()).isFalse();
+  }
+
+  @Test
   void shouldNotSetProtectionModesWhenVariableIsNotProtected() {
     // given
     final Record<VariableRecordValue> variableRecord =
