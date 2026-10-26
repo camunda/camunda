@@ -28,6 +28,39 @@ public class CompletableActorFutureTest {
   @AutoClose private static final ExecutorService EXECUTOR = Executors.newWorkStealingPool();
 
   @Nested
+  public class CompletionTimestamp {
+    @Test
+    public void shouldBeSetWhenCreatedCompleted() {
+      // when
+      final var future = CompletableActorFuture.completed();
+
+      // then
+      assertThat(future.getCompletedAt()).isNotZero();
+    }
+
+    @Test
+    public void shouldBeSetWhenCreatedCompletedExceptionally() {
+      // when
+      final var future = CompletableActorFuture.completedExceptionally(new RuntimeException());
+
+      // then
+      assertThat(future.getCompletedAt()).isNotZero();
+    }
+
+    @Test
+    public void shouldBeSetWhenCompletedExceptionally() {
+      // given
+      final var future = new CompletableActorFuture<Void>();
+
+      // when
+      future.completeExceptionally(new RuntimeException());
+
+      // then
+      assertThat(future.getCompletedAt()).isNotZero();
+    }
+  }
+
+  @Nested
   public class Catching {
     @Test
     public void shouldReturnExceptionalFutureWhenSupplierThrows() {
