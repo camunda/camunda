@@ -8,6 +8,7 @@
 package io.camunda.zeebe.dmn;
 
 import java.util.List;
+import org.jspecify.annotations.Nullable;
 
 /** A matched rule of a decision table. It contains details of the rule and its outputs. */
 public interface MatchedRule {
@@ -15,7 +16,7 @@ public interface MatchedRule {
   /**
    * @return the id of the matched rule
    */
-  String ruleId();
+  @Nullable String ruleId();
 
   /**
    * Returns the index of the matched rule in the decision table, starting with 1.

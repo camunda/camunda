@@ -30,6 +30,7 @@ import org.camunda.dmn.DmnEngine;
 import org.camunda.dmn.DmnEngine.EvalFailure;
 import org.camunda.dmn.DmnEngine.EvalResult;
 import org.camunda.feel.syntaxtree.Val;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import scala.util.Either;
@@ -102,7 +103,7 @@ public final class DmnScalaDecisionEngine implements DecisionEngine {
   public DecisionEvaluationResult evaluateDecisionById(
       final ParsedDecisionRequirementsGraph decisionRequirementsGraph,
       final String decisionId,
-      final DecisionContext context) {
+      final @Nullable DecisionContext context) {
 
     requireNonNull(decisionRequirementsGraph);
     requireNonNull(decisionId);
