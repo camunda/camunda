@@ -152,6 +152,12 @@ export class IdentityRolesDetailsPage {
     const options = this.assignUserModalSearchResult.getByRole('option');
     await expect(options).toHaveCount(1, {timeout: 30000});
     await options.first().click({timeout: 20000});
+    // Selecting in the design-system MultiSelect leaves its results popover
+    // open, and that popover overlays the modal footer and intercepts the click
+    // on the Assign button (DS #496). Dismiss it with Escape first -- Radix
+    // closes only the topmost layer, so the modal stays open.
+    await this.page.keyboard.press('Escape');
+    await expect(this.assignUserModalSearchResult).toBeHidden();
     await this.assignUserModalAssignButton.click();
     await expect(this.assignUserModal).toBeHidden();
   }
