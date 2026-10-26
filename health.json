@@ -1,1 +1,51 @@
-{}
+{
+  "c8-orchestration-cluster-nightly-8.8-e2e.yml": {
+    "streak": {
+      "start_run": "40048398541",
+      "start_day": "2026-10-24",
+      "alerted_at": 1793001636
+    }
+  },
+  "c8-orchestration-cluster-nightly-8.10-api-es.yml": {
+    "streak": {
+      "start_run": "40053550882",
+      "start_day": "2026-10-24",
+      "alerted_at": 1793001636
+    }
+  },
+  "c8-orchestration-cluster-nightly-8.10-api-rdbms.yml": {
+    "streak": {
+      "start_run": "40053836517",
+      "start_day": "2026-10-24",
+      "alerted_at": 1793001636
+    }
+  },
+  "c8-orchestration-cluster-nightly-8.10-e2e.yml": {
+    "streak": {
+      "start_run": "39890460878",
+      "start_day": "2026-10-23",
+      "alerted_at": 1793001636
+    }
+  },
+  "c8-orchestration-cluster-nightly-main-e2e.yml": {
+    "streak": {
+      "start_run": "39708617256",
+      "start_day": "2026-10-22",
+      "alerted_at": 1793001636
+    }
+  },
+  "c8-orchestration-cluster-nightly-main-api-es.yml": {
+    "streak": {
+      "start_run": "39885602426",
+      "start_day": "2026-10-23",
+      "alerted_at": 1793001636
+    }
+  },
+  "c8-orchestration-cluster-nightly-main-api-rdbms.yml": {
+    "streak": {
+      "start_run": "39886059756",
+      "start_day": "2026-10-23",
+      "alerted_at": 1793001636
+    }
+  }
+}
