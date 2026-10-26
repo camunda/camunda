@@ -86,7 +86,7 @@ public class RestorePointResolver {
       final var backups = new ArrayList<CheckpointEntry>();
       for (final var checkpoint : restorableCheckpoints.checkpoints()) {
         if (checkpoint.checkpointType().shouldCreateBackup()) {
-          verifyBackupContiguity(checkpoint, backups);
+          verifyBackupContiguity(partitionId, checkpoint, backups);
           backups.add(checkpoint);
           if (checkpoint.checkpointId() >= commonCheckpoint) {
             // Found the last required backup that contains the common checkpoint
@@ -234,25 +234,100 @@ public class RestorePointResolver {
   }
 
   /**
+   * Validates that an ordered list of backups forms a contiguous chain and covers the optional
+   * exported position for the partition.
+   *
+   * @param partitionId the partition id
+   * @param backups ordered list of checkpoints
+   * @param exportedPosition optional exported position to cover
+   */
+  public static void validateBackupChain(
+      final int partitionId,
+      final List<CheckpointEntry> backups,
+      final @Nullable Long exportedPosition) {
+    validateBackupChain(backups, partitionId, exportedPosition);
+  }
+
+  /**
+   * Validates that an ordered list of backups forms a contiguous chain and covers the optional
+   * exported position for the partition.
+   *
+   * @param backups ordered list of checkpoints
+   * @param partitionId the partition id
+   * @param exportedPosition optional exported position to cover
+   */
+  public static void validateBackupChain(
+      final List<CheckpointEntry> backups,
+      final int partitionId,
+      final @Nullable Long exportedPosition) {
+    final var actualBackups =
+        backups.stream().filter(cp -> cp.checkpointType().shouldCreateBackup()).toList();
+    if (actualBackups.isEmpty()) {
+      return;
+    }
+
+    for (int i = 1; i < actualBackups.size(); i++) {
+      verifyBackupContiguity(partitionId, actualBackups.get(i), actualBackups.get(i - 1));
+    }
+
+    if (exportedPosition != null) {
+      final var effectiveExportedPosition =
+          exportedPosition < 0 ? 1L : exportedPosition.longValue();
+
+      final var firstBackup = actualBackups.getFirst();
+      if (firstBackup.firstLogPosition().isPresent()
+          && firstBackup.firstLogPosition().getAsLong() > effectiveExportedPosition) {
+        throw new IllegalStateException(
+            ("Cannot restore: backup %d for partition %d starts at log position %d, "
+                    + "after the RDBMS exported position %d.")
+                .formatted(
+                    firstBackup.checkpointId(),
+                    partitionId,
+                    firstBackup.firstLogPosition().getAsLong(),
+                    effectiveExportedPosition));
+      }
+
+      final var lastBackup = actualBackups.getLast();
+      if (lastBackup.checkpointPosition() < effectiveExportedPosition) {
+        throw new IllegalStateException(
+            ("Cannot restore: backup %d for partition %d has checkpoint position %d, "
+                    + "below the RDBMS exported position %d.")
+                .formatted(
+                    lastBackup.checkpointId(),
+                    partitionId,
+                    lastBackup.checkpointPosition(),
+                    effectiveExportedPosition));
+      }
+    }
+  }
+
+  /**
    * Sanity check that the backups are actually contiguous. This should already be the case because
    * they are all from the same range, but it doesn't hurt to double-check.
    */
   private static void verifyBackupContiguity(
+      final int partitionId,
       @NonNull final CheckpointEntry checkpoint,
       @NonNull final List<CheckpointEntry> previousBackups) {
     if (previousBackups.isEmpty()) {
       return;
     }
+    verifyBackupContiguity(partitionId, checkpoint, previousBackups.getLast());
+  }
 
+  private static void verifyBackupContiguity(
+      final int partitionId,
+      @NonNull final CheckpointEntry checkpoint,
+      @NonNull final CheckpointEntry previousBackup) {
     final var firstLogPosition = checkpoint.getFirstLogPositionOrDefault();
-    final var previousBackup = previousBackups.getLast();
     final var previousBackupPosition = previousBackup.checkpointPosition();
     if (firstLogPosition > previousBackupPosition + 1) {
       throw new IllegalStateException(
           String.format(
-              "Unexpected data gaps between backup %s with first log position %d and backup %s with checkpoint position %d",
+              "Unexpected data gaps on partition %d between backup %s with first log position %d and backup %s with checkpoint position %d",
+              partitionId,
               checkpoint.checkpointId(),
-              checkpoint.checkpointPosition(),
+              firstLogPosition,
               previousBackup.checkpointId(),
               previousBackupPosition));
     }
@@ -507,17 +582,17 @@ public class RestorePointResolver {
   }
 
   /**
-   * @param checkpointId the checkpoint every partition is restored to, a backup or a marker
-   * @param entriesByPartition the checkpoint as each partition recorded it, by partition id
-   */
-  private record CommonCheckpoint(
-      long checkpointId, Map<Integer, CheckpointEntry> entriesByPartition) {}
-
-  /**
    * @param globalCheckpointId the checkpoint every partition is restored to, a backup or a marker
    * @param partitions what each partition is restored from, by partition id. Its restored log ends
    *     at the global checkpoint as the partition recorded it.
    */
   public record RestorableBackups(
       long globalCheckpointId, Map<Integer, PartitionRestore> partitions) {}
+
+  /**
+   * @param checkpointId the checkpoint every partition is restored to, a backup or a marker
+   * @param entriesByPartition the checkpoint as each partition recorded it, by partition id
+   */
+  private record CommonCheckpoint(
+      long checkpointId, Map<Integer, CheckpointEntry> entriesByPartition) {}
 }

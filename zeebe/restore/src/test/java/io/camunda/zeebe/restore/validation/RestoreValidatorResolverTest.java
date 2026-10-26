@@ -826,7 +826,7 @@ final class RestoreValidatorResolverTest {
       final var result = validator.validate(rdbmsRequestWithBackupIds(42L));
 
       // then
-      assertValid(result, Map.of(1, new long[] {42L}), false);
+      assertValid(result, Map.of(1, PartitionRestore.ofBackups(42L)), false);
     }
 
     @Test
@@ -912,11 +912,165 @@ final class RestoreValidatorResolverTest {
     }
 
     private static RestoreRequest rdbmsRequestWithBackupIds(final long backupId) {
+      return rdbmsRequestWithBackupIds(List.of(backupId));
+    }
+
+    private static RestoreRequest rdbmsRequestWithBackupIds(final List<Long> backupIds) {
       return new RestoreRequest(
           "default",
-          new TenantRestoreArguments(
-              new RestoreParameters(List.of(backupId), null, null), "rdbms", false),
+          new TenantRestoreArguments(new RestoreParameters(backupIds, null, null), "rdbms", false),
           false);
+    }
+
+    @Test
+    void shouldRestoreExplicitBackupsWhenContiguousChainCoversExportedPosition() {
+      // given
+      stubBackupPartitionCount(2L, 1);
+      stubBackupWithPositions(1, 1L, 1, 1L, 100L);
+      stubBackupWithPositions(1, 2L, 1, 101L, 200L);
+      final var validator = new RestoreValidator(1, backupStore, partitionId -> 150L);
+
+      // when
+      final var result = validator.validate(rdbmsRequestWithBackupIds(List.of(1L, 2L)));
+
+      // then
+      assertValid(result, Map.of(1, PartitionRestore.ofBackups(List.of(1L, 2L))), false);
+    }
+
+    @Test
+    void shouldRejectExplicitBackupsWhenGapExistsBetweenBackupsEvenIfExportedPositionIsInSpan() {
+      // given - maintainer example: backup 1 has first log position 1 and checkpoint 100;
+      // backup 2 has first log position 120 and checkpoint 200; exported position is 110.
+      stubBackupPartitionCount(2L, 1);
+      stubBackupWithPositions(1, 1L, 1, 1L, 100L);
+      stubBackupWithPositions(1, 2L, 1, 120L, 200L);
+      final var validator = new RestoreValidator(1, backupStore, partitionId -> 110L);
+
+      // when
+      final var result = validator.validate(rdbmsRequestWithBackupIds(List.of(1L, 2L)));
+
+      // then - rejects due to the gap, identifying the broken chain rather than backup 2 > 110
+      assertThat(assertInvalid(result))
+          .isInstanceOf(IllegalStateException.class)
+          .hasMessage(
+              "Unexpected data gaps on partition 1 between backup 2 with first log position 120 and backup 1 with checkpoint position 100");
+    }
+
+    @Test
+    void shouldRejectExplicitBackupsWhenFirstBackupStartsAfterExportedPosition() {
+      // given
+      stubBackupPartitionCount(2L, 1);
+      stubBackupWithPositions(1, 1L, 1, 50L, 100L);
+      stubBackupWithPositions(1, 2L, 1, 101L, 200L);
+      final var validator = new RestoreValidator(1, backupStore, partitionId -> 30L);
+
+      // when
+      final var result = validator.validate(rdbmsRequestWithBackupIds(List.of(1L, 2L)));
+
+      // then
+      assertThat(assertInvalid(result))
+          .isInstanceOf(IllegalStateException.class)
+          .hasMessage(
+              "Cannot restore: backup 1 for partition 1 starts at log position 50, "
+                  + "after the RDBMS exported position 30.");
+    }
+
+    @Test
+    void shouldRejectExplicitBackupsWhenLastBackupCheckpointIsBelowExportedPosition() {
+      // given
+      stubBackupPartitionCount(2L, 1);
+      stubBackupWithPositions(1, 1L, 1, 1L, 100L);
+      stubBackupWithPositions(1, 2L, 1, 101L, 200L);
+      final var validator = new RestoreValidator(1, backupStore, partitionId -> 250L);
+
+      // when
+      final var result = validator.validate(rdbmsRequestWithBackupIds(List.of(1L, 2L)));
+
+      // then
+      assertThat(assertInvalid(result))
+          .isInstanceOf(IllegalStateException.class)
+          .hasMessage(
+              "Cannot restore: backup 2 for partition 1 has checkpoint position 200, "
+                  + "below the RDBMS exported position 250.");
+    }
+
+    @Test
+    void shouldNormalizeExportedPositionNegativeOneForExplicitBackups() {
+      // given - exported position -1 should be normalized to 1; backup starting at 1 is accepted,
+      // starting at 2 is rejected
+      stubBackupPartitionCount(1L, 1);
+      stubBackupWithPositions(1, 1L, 1, 1L, 100L);
+      final var validator = new RestoreValidator(1, backupStore, partitionId -> -1L);
+
+      // when
+      final var result = validator.validate(rdbmsRequestWithBackupIds(1L));
+
+      // then
+      assertValid(result, Map.of(1, PartitionRestore.ofBackups(1L)), false);
+
+      // and rejected when starting at 2
+      stubBackupPartitionCount(2L, 1);
+      stubBackupWithPositions(1, 2L, 1, 2L, 100L);
+      final var resultReject = validator.validate(rdbmsRequestWithBackupIds(2L));
+      assertThat(assertInvalid(resultReject))
+          .isInstanceOf(IllegalStateException.class)
+          .hasMessage(
+              "Cannot restore: backup 2 for partition 1 starts at log position 2, "
+                  + "after the RDBMS exported position 1.");
+    }
+
+    @Test
+    void shouldValidateEveryPartitionIndependentlyAndRejectIfAnyPartitionHasInvalidChain() {
+      // given - partition 1 is contiguous, partition 2 has a gap
+      stubBackupPartitionCount(2L, 2);
+      stubBackupWithPositions(1, 1L, 2, 1L, 100L);
+      stubBackupWithPositions(1, 2L, 2, 101L, 200L);
+      stubBackupWithPositions(2, 1L, 2, 1L, 100L);
+      stubBackupWithPositions(2, 2L, 2, 120L, 200L);
+      final var validator = new RestoreValidator(2, backupStore, partitionId -> 110L);
+
+      // when
+      final var result = validator.validate(rdbmsRequestWithBackupIds(List.of(1L, 2L)));
+
+      // then
+      assertThat(assertInvalid(result))
+          .isInstanceOf(IllegalStateException.class)
+          .hasMessage(
+              "Unexpected data gaps on partition 2 between backup 2 with first log position 120 and backup 1 with checkpoint position 100");
+    }
+
+    @Test
+    void
+        shouldPreserveSuccessfulExplicitRestoresWhenExportedPositionsAreUnavailableProvidedChainIsContiguous() {
+      // given - multiple backups, contiguous, exported positions unavailable (null)
+      stubBackupPartitionCount(2L, 1);
+      stubBackupWithPositions(1, 1L, 1, 1L, 100L);
+      stubBackupWithPositions(1, 2L, 1, 101L, 200L);
+      final var validator = new RestoreValidator(1, backupStore, null);
+
+      // when
+      final var result = validator.validate(rdbmsRequestWithBackupIds(List.of(1L, 2L)));
+
+      // then
+      assertValid(result, Map.of(1, PartitionRestore.ofBackups(List.of(1L, 2L))), false);
+    }
+
+    @Test
+    void shouldRejectMultiBackupExplicitRestoreWhenExportedPositionsAreUnavailableAndGapExists() {
+      // given - multiple backups with gap, exported positions unavailable (null)
+      stubBackupPartitionCount(2L, 1);
+      stubBackupWithPositions(1, 1L, 1, 1L, 100L);
+      stubBackupWithPositions(1, 2L, 1, 120L, 200L);
+      final var validator = new RestoreValidator(1, backupStore, null);
+
+      // when
+      final var result = validator.validate(rdbmsRequestWithBackupIds(List.of(1L, 2L)));
+
+      // then
+      assertThat(assertInvalid(result))
+          .isInstanceOf(IllegalStateException.class)
+          .hasMessage(
+              "Unexpected data gaps on partition 1 between backup 2 with first log position 120 and backup 1 with checkpoint position 100");
     }
 
     @Test

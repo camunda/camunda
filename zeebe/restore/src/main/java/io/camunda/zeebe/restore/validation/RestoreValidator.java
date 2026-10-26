@@ -16,6 +16,7 @@ import io.camunda.zeebe.backup.api.BackupStatusCode;
 import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.backup.common.BackupIdentifierWildcardImpl;
 import io.camunda.zeebe.backup.common.BackupMetadata;
+import io.camunda.zeebe.backup.common.BackupMetadata.CheckpointEntry;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RestoreRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RestoreResolvedRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestValidator;
@@ -31,7 +32,6 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeParseException;
-import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
@@ -165,8 +165,7 @@ public final class RestoreValidator
             : availableExportedPositions(exportedPositionSupplier);
 
     if (!exportedPositions.isEmpty()) {
-      verifyPartitionCountsAgree(
-          lastBackupId, restoredPartitionCount, exportedPositions.size());
+      verifyPartitionCountsAgree(lastBackupId, restoredPartitionCount, exportedPositions.size());
     }
 
     final var partitions = IntStream.rangeClosed(1, restoredPartitionCount).boxed().toList();
@@ -175,32 +174,56 @@ public final class RestoreValidator
         FuturesUtil.parTraverse(
             partitions,
             partition ->
-                verifyBackupsExist(
-                    store, partition, restore, exportedPositions.get(partition))));
+                verifyBackupsExist(store, partition, restore, exportedPositions.get(partition))));
 
     return partitions.stream()
         .collect(Collectors.toMap(partition -> partition, partition -> restore));
-    }
+  }
 
-    private CompletableFuture<@Nullable Void> verifyBackupsExist(
-        final BackupStore store,
-        final int partitionId,
-        final PartitionRestore restore,
-        final @Nullable Long exportedPosition) {
+  private CompletableFuture<@Nullable Void> verifyBackupsExist(
+      final BackupStore store,
+      final int partitionId,
+      final PartitionRestore restore,
+      final @Nullable Long exportedPosition) {
 
-      return FuturesUtil.parTraverse(
-              restore.backupIds(),
-              backupId ->
-                  verifyBackupExists(store, partitionId, backupId)
-                      .thenApply(status -> Map.entry(backupId, status)))
-          .thenApply(
-              backups -> {
-                if (exportedPosition != null) {
-                  verifyExportedPositionCovered(partitionId, exportedPosition, backups);
-                }
-                return null;
-              });
-    }
+    return FuturesUtil.parTraverse(
+            restore.backupIds(),
+            backupId ->
+                verifyBackupExists(store, partitionId, backupId)
+                    .thenApply(status -> Map.entry(backupId, status)))
+        .thenApply(
+            backups -> {
+              final var orderedEntries =
+                  backups.stream()
+                      .map(
+                          entry -> {
+                            final var backupId = entry.getKey();
+                            final var descriptor =
+                                entry
+                                    .getValue()
+                                    .descriptor()
+                                    .orElseThrow(
+                                        () ->
+                                            new IllegalStateException(
+                                                ("Cannot restore: backup %d for partition %d has no "
+                                                        + "descriptor, so its coverage cannot be verified.")
+                                                    .formatted(backupId, partitionId)));
+                            return new CheckpointEntry(
+                                backupId,
+                                descriptor.checkpointPosition(),
+                                descriptor.checkpointTimestamp(),
+                                descriptor.checkpointType(),
+                                descriptor.firstLogPosition());
+                          })
+                      .sorted(
+                          Comparator.comparingLong(CheckpointEntry::checkpointPosition)
+                              .thenComparingLong(CheckpointEntry::checkpointId))
+                      .toList();
+
+              RestorePointResolver.validateBackupChain(
+                  partitionId, orderedEntries, exportedPosition);
+              return null;
+            });
   }
 
   private CompletableFuture<BackupStatus> verifyBackupExists(
@@ -220,76 +243,6 @@ public final class RestoreValidator
                             new NoSuchElementException(
                                 "No completed backup found for partition %d with backup id %d"
                                     .formatted(partitionId, backupId))));
-  }
-
-  private void verifyExportedPositionCovered(
-      final int partitionId,
-      final long exportedPosition,
-      final List<Entry<Long, BackupStatus>> backups) {
-
-    final var effectiveExportedPosition = exportedPosition < 0 ? 1L : exportedPosition;
-
-    final var descriptors =
-        backups.stream()
-            .map(
-                backup ->
-                    Map.entry(
-                        backup.getKey(),
-                        backup
-                            .getValue()
-                            .descriptor()
-                            .orElseThrow(
-                                () ->
-                                    new IllegalStateException(
-                                        ("Cannot restore: backup %d for partition %d has no "
-                                                + "descriptor, so its coverage of RDBMS exported "
-                                                + "position %d cannot be verified.")
-                                            .formatted(
-                                                backup.getKey(),
-                                                partitionId,
-                                                effectiveExportedPosition)))))
-            .toList();
-
-    final var coveringBackup =
-        descriptors.stream()
-            .filter(
-                backup ->
-                    backup.getValue().checkpointPosition() >= effectiveExportedPosition)
-            .min(
-                Comparator.comparingLong(
-                    backup -> backup.getValue().checkpointPosition()))
-            .orElseThrow(
-                () -> {
-                  final var latest =
-                      descriptors.stream()
-                          .max(
-                              Comparator.comparingLong(
-                                  backup -> backup.getValue().checkpointPosition()))
-                          .orElseThrow();
-
-                  return new IllegalStateException(
-                      ("Cannot restore: backup %d for partition %d has checkpoint position %d, "
-                              + "below the RDBMS exported position %d.")
-                          .formatted(
-                              latest.getKey(),
-                              partitionId,
-                              latest.getValue().checkpointPosition(),
-                              effectiveExportedPosition));
-                });
-
-    final var firstLogPosition = coveringBackup.getValue().firstLogPosition();
-
-    if (firstLogPosition.isPresent()
-        && firstLogPosition.getAsLong() > effectiveExportedPosition) {
-      throw new IllegalStateException(
-          ("Cannot restore: backup %d for partition %d starts at log position %d, "
-                  + "after the RDBMS exported position %d.")
-              .formatted(
-                  coveringBackup.getKey(),
-                  partitionId,
-                  firstLogPosition.getAsLong(),
-                  effectiveExportedPosition));
-    }
   }
 
   /**
