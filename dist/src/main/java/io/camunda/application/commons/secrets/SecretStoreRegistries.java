@@ -16,10 +16,22 @@ import org.jspecify.annotations.NullMarked;
  * first-class holder instead of a plain {@code Map} bean, so it can be injected by type.
  */
 @NullMarked
-public record SecretStoreRegistries(Map<String, SecretStoreRegistry> byPhysicalTenant) {
+public record SecretStoreRegistries(
+    Map<String, SecretStoreRegistry> byPhysicalTenant, SecretStoreResources resources)
+    implements AutoCloseable {
 
   // holds no stores, so no cache is ever built and camunda.secrets.cache.* does not reach it
   private static final SecretStoreRegistry NO_STORES = new SecretStoreRegistry(Map.of());
+
+  public SecretStoreRegistries(final Map<String, SecretStoreRegistry> byPhysicalTenant) {
+    this(byPhysicalTenant, new SecretStoreResources());
+  }
+
+  /** Releases the stores, pools and meter registries behind the registries; called on shutdown. */
+  @Override
+  public void close() {
+    resources.close();
+  }
 
   /**
    * Returns the registry of the given physical tenant, or an empty registry (no stores, no caches)
