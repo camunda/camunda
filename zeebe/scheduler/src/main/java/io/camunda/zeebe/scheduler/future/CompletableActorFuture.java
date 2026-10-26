@@ -39,10 +39,7 @@ import org.jspecify.annotations.Nullable;
 public final class CompletableActorFuture<V extends @Nullable Object> implements ActorFuture<V> {
   private static final long STATE_OFFSET;
 
-  private static final VarHandle FIRST_CALLBACK;
-  private static final VarHandle SECOND_CALLBACK;
-  private static final VarHandle THIRD_CALLBACK;
-  private static final VarHandle MORE_CALLBACKS;
+  private static final VarHandle CALLBACKS;
   private static final VarHandle COMPLETION_LATCH;
 
   private static final int AWAITING_RESULT = 1;
@@ -61,14 +58,7 @@ public final class CompletableActorFuture<V extends @Nullable Object> implements
 
     try {
       final var lookup = MethodHandles.lookup();
-      FIRST_CALLBACK =
-          lookup.findVarHandle(CompletableActorFuture.class, "firstCallback", BiConsumer.class);
-      SECOND_CALLBACK =
-          lookup.findVarHandle(CompletableActorFuture.class, "secondCallback", BiConsumer.class);
-      THIRD_CALLBACK =
-          lookup.findVarHandle(CompletableActorFuture.class, "thirdCallback", BiConsumer.class);
-      MORE_CALLBACKS =
-          lookup.findVarHandle(CompletableActorFuture.class, "moreCallbacks", CallbackNode.class);
+      CALLBACKS = lookup.findVarHandle(CompletableActorFuture.class, "callbacks", Object.class);
       COMPLETION_LATCH =
           lookup.findVarHandle(
               CompletableActorFuture.class, "completionLatch", CountDownLatch.class);
@@ -82,24 +72,14 @@ public final class CompletableActorFuture<V extends @Nullable Object> implements
   private @Nullable String failure;
   private @Nullable Throwable failureCause;
 
-  // Futures are almost always awaited by a handful of callbacks at most (andThen, thenApply,
-  // runOnCompletion), and many by none. The first three are therefore stored inline, without any
-  // wrapper node: with the fields above, two more references still fit into the same object size.
-  // Only further callbacks go into a lock-free stack. Nothing is allocated until a callback is
-  // added. See #addBlockedCallback and #notifyAllBlocked for the concurrency contract.
-  @SuppressFBWarnings(value = "UWF_UNWRITTEN_FIELD", justification = "Written using FIRST_CALLBACK")
-  private volatile @Nullable BiConsumer<V, @Nullable Throwable> firstCallback;
-
+  // Futures are almost always awaited by at most one callback (andThen, thenApply,
+  // runOnCompletion), so this is null for none, the callback itself for one, and only for two or
+  // more a Callbacks value. Nothing is allocated until a second callback is added. See
+  // #addBlockedCallback and #notifyAllBlocked for the concurrency contract.
   @SuppressFBWarnings(
-      value = "UWF_UNWRITTEN_FIELD",
-      justification = "Written using SECOND_CALLBACK")
-  private volatile @Nullable BiConsumer<V, @Nullable Throwable> secondCallback;
-
-  @SuppressFBWarnings(value = "UWF_UNWRITTEN_FIELD", justification = "Written using THIRD_CALLBACK")
-  private volatile @Nullable BiConsumer<V, @Nullable Throwable> thirdCallback;
-
-  @SuppressFBWarnings(value = "UWF_UNWRITTEN_FIELD", justification = "Written using MORE_CALLBACKS")
-  private volatile @Nullable CallbackNode<V> moreCallbacks;
+      value = {"UWF_UNWRITTEN_FIELD", "NP_UNWRITTEN_FIELD"},
+      justification = "Written using CALLBACKS")
+  private volatile @Nullable Object callbacks;
 
   @SuppressFBWarnings(
       value = "UWF_UNWRITTEN_FIELD",
@@ -496,92 +476,54 @@ public final class CompletableActorFuture<V extends @Nullable Object> implements
 
   /** Visible for testing: the number of callbacks waiting for this future to complete. */
   int pendingCallbackCount() {
-    int count =
-        (firstCallback != null ? 1 : 0)
-            + (secondCallback != null ? 1 : 0)
-            + (thirdCallback != null ? 1 : 0);
-    for (var node = moreCallbacks; node != null; node = node.next) {
-      count++;
-    }
-    return count;
+    return switch (callbacks) {
+      case null -> 0;
+      case Callbacks<?> several -> several.size();
+      default -> 1;
+    };
   }
 
   /**
    * Registers a callback to be run by the next {@link #notifyAllBlocked()}.
    *
-   * <p>Each CAS below is the point where the callback becomes visible to a notifier, and it always
-   * targets a field of this future, never a structure that a notifier has already detached. A
-   * concurrent notifier therefore either detaches the callback with the ones already registered, or
-   * it stays registered for the notifier's next pass. A push onto the stack never modifies a node
-   * that was already detached, because it only writes the {@code next} pointer of its own, not yet
-   * linked, node and a stale CAS fails. Callbacks fill the inline slots first, so the notifier runs
-   * them in registration order.
+   * <p>The CAS is the point where the callback becomes visible to a notifier, and it always targets
+   * the field of this future, never a value that a notifier has already detached. A concurrent
+   * notifier therefore either detaches the callback together with the ones already registered, or
+   * it stays registered for the notifier's next pass. A lost CAS discards the new value and starts
+   * over from the current one, as the published values are never modified.
    *
    * <p>A callback registered after the last pass of a notifier is never run by it. Callers that
    * register on a future which may complete concurrently must check {@link #isDone()} after
    * registering, as {@link #onComplete(BiConsumer, Executor)} and {@link #completionLatch()} do.
    */
+  @SuppressWarnings("unchecked")
   private void addBlockedCallback(final BiConsumer<V, @Nullable Throwable> callback) {
-    final var none = (BiConsumer<V, @Nullable Throwable>) null;
-    if (FIRST_CALLBACK.compareAndSet(this, none, callback)
-        || SECOND_CALLBACK.compareAndSet(this, none, callback)
-        || THIRD_CALLBACK.compareAndSet(this, none, callback)) {
-      return;
-    }
-
-    final var node = new CallbackNode<>(callback);
-    CallbackNode<V> head;
+    Object current;
+    Object next;
     do {
-      head = moreCallbacks;
-      node.next = head;
-    } while (!MORE_CALLBACKS.compareAndSet(this, head, node));
+      current = callbacks;
+      next =
+          switch (current) {
+            case null -> callback;
+            case Callbacks<?> several -> ((Callbacks<V>) several).add(callback);
+            default -> Callbacks.of((BiConsumer<V, @Nullable Throwable>) current, callback);
+          };
+    } while (!CALLBACKS.compareAndSet(this, current, next));
   }
 
   @SuppressWarnings("unchecked")
   private void notifyAllBlocked() {
-    // Each slot is detached atomically, so the detached callbacks are only reachable from this
-    // thread and can be reversed and run without further synchronization. Callbacks added by other
-    // callbacks, or concurrently by other threads, end up in the emptied slots and are picked up by
-    // the next iteration. Plain reads decide whether a slot needs the atomic swap at all.
-    while (firstCallback != null
-        || secondCallback != null
-        || thirdCallback != null
-        || moreCallbacks != null) {
-      if (firstCallback != null) {
-        accept((BiConsumer<V, @Nullable Throwable>) FIRST_CALLBACK.getAndSet(this, null));
-      }
-      if (secondCallback != null) {
-        accept((BiConsumer<V, @Nullable Throwable>) SECOND_CALLBACK.getAndSet(this, null));
-      }
-      if (thirdCallback != null) {
-        accept((BiConsumer<V, @Nullable Throwable>) THIRD_CALLBACK.getAndSet(this, null));
-      }
-      if (moreCallbacks != null) {
-        final var pending = (CallbackNode<V>) MORE_CALLBACKS.getAndSet(this, null);
-        for (var node = reverse(pending); node != null; node = node.next) {
-          node.callback.accept(value, failureCause);
-        }
+    // The callbacks are detached atomically, so they are only reachable from this thread. Callbacks
+    // added by other callbacks, or concurrently by other threads, start a new value that is picked
+    // up by the next iteration. A plain read decides whether the atomic swap is needed at all.
+    while (callbacks != null) {
+      switch (CALLBACKS.getAndSet(this, null)) {
+        case null -> {}
+        case Callbacks<?> several -> ((Callbacks<V>) several).run(value, failureCause);
+        case Object single ->
+            ((BiConsumer<V, @Nullable Throwable>) single).accept(value, failureCause);
       }
     }
-  }
-
-  private void accept(final @Nullable BiConsumer<V, @Nullable Throwable> callback) {
-    if (callback != null) {
-      callback.accept(value, failureCause);
-    }
-  }
-
-  /** The callbacks are pushed onto a stack, reversing it restores the order of registration. */
-  private static <V extends @Nullable Object> @Nullable CallbackNode<V> reverse(
-      @Nullable CallbackNode<V> stack) {
-    CallbackNode<V> reversed = null;
-    while (stack != null) {
-      final var next = stack.next;
-      stack.next = reversed;
-      reversed = stack;
-      stack = next;
-    }
-    return reversed;
   }
 
   /** future is reusable after close */
@@ -627,14 +569,5 @@ public final class CompletableActorFuture<V extends @Nullable Object> implements
 
   public long getCompletedAt() {
     return completedAt;
-  }
-
-  private static final class CallbackNode<V extends @Nullable Object> {
-    private final BiConsumer<V, @Nullable Throwable> callback;
-    private @Nullable CallbackNode<V> next;
-
-    private CallbackNode(final BiConsumer<V, @Nullable Throwable> callback) {
-      this.callback = callback;
-    }
   }
 }

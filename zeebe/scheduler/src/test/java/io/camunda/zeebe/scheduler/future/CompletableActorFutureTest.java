@@ -30,6 +30,8 @@ import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 public class CompletableActorFutureTest {
 
@@ -209,6 +211,26 @@ public class CompletableActorFutureTest {
 
       // then
       assertThat(order).containsExactly(0, 1, 2, 3, 4);
+      assertThat(future.pendingCallbackCount()).isZero();
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {1, 2, 6, 7, 50})
+    void shouldNotifyCallbacksInRegistrationOrderAcrossRepresentations(final int count) {
+      // given
+      final var future = new CompletableActorFuture<String>();
+      final var order = new ArrayList<Integer>();
+      for (int i = 0; i < count; i++) {
+        final int index = i;
+        future.onComplete((value, error) -> order.add(index), Runnable::run);
+      }
+      assertThat(future.pendingCallbackCount()).isEqualTo(count);
+
+      // when
+      future.complete("done");
+
+      // then
+      assertThat(order).containsExactlyElementsOf(IntStream.range(0, count).boxed().toList());
       assertThat(future.pendingCallbackCount()).isZero();
     }
 
