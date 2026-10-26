@@ -386,7 +386,9 @@ public final class ProcessingStateMachine implements CloseableSilently {
               writeRecords();
             });
       }
-    } catch (final Exception e) {
+    } catch (final Exception | StackOverflowError e) {
+      // the command caused the overflow, so left uncaught it would halt every broker that leads
+      // the partition
       onError(
           e,
           () -> {
