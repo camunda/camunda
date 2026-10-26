@@ -509,7 +509,7 @@ public final class CompletableActorFuture<V extends @Nullable Object> implements
       final var first =
           (BiConsumer<V, @Nullable Throwable>)
               FIRST_CALLBACK.getAndSet(this, (BiConsumer<V, @Nullable Throwable>) null);
-      var pending = (CallbackNode<V>) MORE_CALLBACKS.getAndSet(this, (CallbackNode<V>) null);
+      final var pending = (CallbackNode<V>) MORE_CALLBACKS.getAndSet(this, (CallbackNode<V>) null);
       if (first == null && pending == null) {
         return;
       }
@@ -518,19 +518,23 @@ public final class CompletableActorFuture<V extends @Nullable Object> implements
         first.accept(value, failureCause);
       }
 
-      // the stack is in reverse order of registration
-      CallbackNode<V> inOrder = null;
-      while (pending != null) {
-        final var next = pending.next;
-        pending.next = inOrder;
-        inOrder = pending;
-        pending = next;
-      }
-
-      for (var node = inOrder; node != null; node = node.next) {
+      for (var node = reverse(pending); node != null; node = node.next) {
         node.callback.accept(value, failureCause);
       }
     }
+  }
+
+  /** The callbacks are pushed onto a stack, reversing it restores the order of registration. */
+  private static <V extends @Nullable Object> @Nullable CallbackNode<V> reverse(
+      @Nullable CallbackNode<V> stack) {
+    CallbackNode<V> reversed = null;
+    while (stack != null) {
+      final var next = stack.next;
+      stack.next = reversed;
+      reversed = stack;
+      stack = next;
+    }
+    return reversed;
   }
 
   /** future is reusable after close */
