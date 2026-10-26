@@ -29,6 +29,7 @@ import static io.camunda.optimize.service.dashboard.AgenticControlDashboardServi
 import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.AGENT_HUMAN_STEPS_DESCRIPTION;
 import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.AGENT_HUMAN_STEPS_NAME;
 import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.AGENT_HUMAN_STEPS_REPORT_ID;
+import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.AGENT_INCIDENT_RATE_BY_PROCESS_REPORT_ID;
 import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.AGENT_INCIDENT_RATE_DESCRIPTION;
 import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.AGENT_INCIDENT_RATE_NAME;
 import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.AGENT_INCIDENT_RATE_REPORT_ID;
@@ -89,6 +90,7 @@ import io.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDat
 import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessVisualization;
 import io.camunda.optimize.dto.optimize.query.report.single.process.filter.CompletedInstancesOnlyFilterDto;
+import io.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessDefinitionKeyGroupByDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByType;
 import io.camunda.optimize.dto.optimize.query.report.single.process.group.value.DateGroupByValueDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
@@ -144,7 +146,7 @@ public class AgenticControlDashboardServiceTest {
     assertThat(saved.isAgenticControlDashboard()).isTrue();
     assertThat(saved.isManagementDashboard()).isFalse();
     assertThat(saved.getCollectionId()).isNull();
-    assertThat(saved.getTiles()).hasSize(28);
+    assertThat(saved.getTiles()).hasSize(30);
   }
 
   @Test
@@ -228,7 +230,7 @@ public class AgenticControlDashboardServiceTest {
     underTest.reconcile();
 
     // then reports are upserted and dashboard tiles are updated, but dashboard is not recreated
-    verify(reportWriter, times(28))
+    verify(reportWriter, times(30))
         .createOrUpdateSingleProcessReport(any(), any(), any(), any(), any(), any());
     verify(dashboardWriter, never()).saveDashboard(any());
     verify(dashboardWriter).updateDashboard(any(), any());
@@ -304,7 +306,7 @@ public class AgenticControlDashboardServiceTest {
   }
 
   @Test
-  void shouldSeedPhase2TilesInThreeSections() {
+  void shouldSeedOverviewTilesInFourSections() {
     // given
     when(dashboardReader.getDashboard(AGENTIC_DASHBOARD_ID)).thenReturn(Optional.empty());
 
@@ -318,11 +320,14 @@ public class AgenticControlDashboardServiceTest {
             .filter(tile -> levelsOf(tile).contains("overview"))
             .collect(
                 Collectors.groupingBy(
-                    tile -> ((Map<?, ?>) tile.getConfiguration()).get("section"),
+                    tile ->
+                        Optional.ofNullable((Map<?, ?>) configOf(tile).get("sectionByLevel"))
+                            .<Object>map(sectionByLevel -> sectionByLevel.get("overview"))
+                            .orElseGet(() -> configOf(tile).get("section")),
                     Collectors.counting()));
     assertThat(tilesPerSection)
         .containsExactlyInAnyOrderEntriesOf(
-            Map.of("agentHealth", 6L, "volume", 5L, "costAndUsage", 3L));
+            Map.of("agentHealth", 6L, "processes", 5L, "volume", 5L, "costAndUsage", 3L));
   }
 
   @Test
@@ -338,15 +343,52 @@ public class AgenticControlDashboardServiceTest {
         captureSavedDashboard().getTiles().stream()
             .collect(Collectors.toMap(DashboardReportTileDto::getId, tile -> levelsOf(tile)));
     assertThat(levelsById.values().stream().filter(levels -> levels.equals(List.of("process"))))
-        .hasSize(14);
+        .hasSize(11);
     assertThat(levelsById)
-        .containsEntry(KPI_COMPLETED_REPORT_ID, List.of("process"))
+        .containsEntry(KPI_COMPLETED_REPORT_ID, List.of("overview", "process"))
         .containsEntry(TOOL_CALLS_HEATMAP_REPORT_ID, List.of("process"))
         .containsEntry(AGENT_INCIDENT_RATE_REPORT_ID, List.of("overview", "agent"))
         .containsEntry(AGENT_TOKENS_BY_MODEL_REPORT_ID, List.of("overview", "agent"))
         .containsEntry(AGENT_ADOPTION_RATE_REPORT_ID, List.of("overview"))
         .containsEntry(AGENT_RUNS_BY_AGENT_REPORT_ID, List.of("overview"))
-        .doesNotContainKey(TOKEN_CONSUMERS_REPORT_ID);
+        .containsEntry(TOKEN_CONSUMERS_REPORT_ID, List.of("overview"))
+        .containsEntry(AGENT_INCIDENT_RATE_BY_PROCESS_REPORT_ID, List.of("overview"));
+  }
+
+  @Test
+  void shouldGroupProcessOutcomesInTheOverviewProcessesSection() {
+    // given
+    when(dashboardReader.getDashboard(AGENTIC_DASHBOARD_ID)).thenReturn(Optional.empty());
+
+    // when
+    underTest.reconcile();
+
+    // then the process KPIs keep their process-level layout but move to processes on the overview
+    final Map<String, Map<Object, Object>> configById =
+        captureSavedDashboard().getTiles().stream()
+            .collect(
+                Collectors.toMap(
+                    DashboardReportTileDto::getId, AgenticControlDashboardServiceTest::configOf));
+    assertThat(configById.get(KPI_COMPLETED_REPORT_ID))
+        .containsEntry("sectionByLevel", Map.of("overview", "processes"))
+        .doesNotContainKey("section");
+    assertThat(configById.get(TOKEN_CONSUMERS_REPORT_ID)).containsEntry("section", "processes");
+    assertThat(configById.get(AGENT_INCIDENT_RATE_BY_PROCESS_REPORT_ID))
+        .containsEntry("section", "processes");
+  }
+
+  @Test
+  void shouldRankAgentIncidentRateByProcess() {
+    // when
+    final ProcessReportDataDto report =
+        seedAndCaptureReportsById().get(AGENT_INCIDENT_RATE_BY_PROCESS_REPORT_ID);
+
+    // then
+    assertThat(report.getView().getEntity()).isEqualTo(ProcessViewEntity.AGENT_RUN);
+    assertThat(report.getView().getProperties()).containsExactly(ViewProperty.INCIDENT_RATE);
+    assertThat(report.getGroupBy()).isInstanceOf(ProcessDefinitionKeyGroupByDto.class);
+    assertThat(report.getConfiguration().getSorting())
+        .contains(new ReportSortingDto(ReportSortingDto.SORT_BY_VALUE, SortOrder.DESC));
   }
 
   @Test
@@ -358,7 +400,7 @@ public class AgenticControlDashboardServiceTest {
             .toList();
 
     // then
-    assertThat(reports).hasSize(14);
+    assertThat(reports).hasSize(15);
     assertThat(reports)
         .allSatisfy(
             report -> {
@@ -488,6 +530,11 @@ public class AgenticControlDashboardServiceTest {
   }
 
   @SuppressWarnings("unchecked")
+  private static Map<Object, Object> configOf(final DashboardReportTileDto tile) {
+    return (Map<Object, Object>) tile.getConfiguration();
+  }
+
+  @SuppressWarnings("unchecked")
   private static List<String> levelsOf(final DashboardReportTileDto tile) {
     return (List<String>) ((Map<?, ?>) tile.getConfiguration()).get("levels");
   }
@@ -514,7 +561,7 @@ public class AgenticControlDashboardServiceTest {
     final ArgumentCaptor<ProcessReportDataDto> data =
         ArgumentCaptor.forClass(ProcessReportDataDto.class);
     underTest.reconcile();
-    verify(reportWriter, times(28))
+    verify(reportWriter, times(30))
         .createOrUpdateSingleProcessReport(
             ids.capture(), isNull(), data.capture(), any(), any(), isNull());
     final Map<String, ProcessReportDataDto> byId = new LinkedHashMap<>();

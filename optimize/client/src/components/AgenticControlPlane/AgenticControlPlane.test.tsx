@@ -401,3 +401,33 @@ it('should render the three Phase 2 sections', async () => {
   expect(node.find('.volume-section')).toExist();
   expect(node.find('.costAndUsage-section')).toExist();
 });
+
+it('should show process KPIs in the processes section on the overview only', async () => {
+  const tiles = [
+    {
+      id: 'completed',
+      configuration: {levels: ['overview', 'process'], sectionByLevel: {overview: 'processes'}},
+      position: {x: 0, y: 0},
+    },
+    {
+      id: 'consumers',
+      configuration: {levels: ['overview'], section: 'processes', topN: '10'},
+      position: {x: 0, y: 2},
+    },
+  ];
+  (loadAgenticDashboard as jest.Mock).mockReturnValueOnce({tiles, availableFilters: []});
+
+  const node = shallow(<AgenticControlPlane />);
+  await runAllEffects();
+
+  expect(tileIds(node, 'processes')).toEqual(['completed', 'consumers']);
+
+  (node.find('FilterBar').prop('onProcessScopeChange') as (v: string) => void)('my-process');
+
+  expect(node.find('.processes-section')).not.toExist();
+  expect(tileIds(node, 'kpi')).toEqual(['completed']);
+
+  (node.find('FilterBar').prop('onAgentIdsChange') as (v: string[]) => void)(['loan:review']);
+
+  expect(node.find('.processes-section')).not.toExist();
+});

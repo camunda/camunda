@@ -33,6 +33,7 @@
       "latest": "Neueste Version",
       "version": "Version {version}"
     },
+    "processes": "Prozesse",
     "agentHealth": "Agent health",
     "volume": "Volume",
     "costAndUsage": "Cost and usage",
@@ -1640,6 +1641,8 @@
       "agenticToolCallsHeatmapDescription": "Gesamtzahl der Tool-Aufrufe je Prozessknoten über abgeschlossene agentische Prozessinstanzen, als Heatmap auf dem Prozessdiagramm dargestellt.",
       "agenticDurationHeatmapName": "Dauer je Prozessknoten",
       "agenticDurationHeatmapDescription": "Durchschnittliche Dauer je Prozessknoten über abgeschlossene agentische Prozessinstanzen, als Heatmap auf dem Prozessdiagramm dargestellt.",
+      "agenticRunIncidentRateByProcessName": "Agenten-Incident-Rate nach Prozess",
+      "agenticRunIncidentRateByProcessDescription": "Anteil der Agentenläufe, deren Agentenelement einen Incident ausgelöst hat, je Prozess.",
       "agenticRunIncidentRateName": "Agent incident rate",
       "agenticRunIncidentRateDescription": "Share of agent runs whose agent element raised an incident.",
       "agenticRunLimitHitRateName": "Runs hitting a limit",

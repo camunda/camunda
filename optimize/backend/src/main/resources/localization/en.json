@@ -33,6 +33,7 @@
       "latest": "Latest version",
       "version": "Version {version}"
     },
+    "processes": "Processes",
     "agentHealth": "Agent health",
     "volume": "Volume",
     "costAndUsage": "Cost and usage",
@@ -1640,6 +1641,8 @@
       "agenticToolCallsHeatmapDescription": "Total tool calls made per flow node across completed agentic process instances, shown as a heat map overlay on the process diagram.",
       "agenticDurationHeatmapName": "Duration per flow node",
       "agenticDurationHeatmapDescription": "Average duration per flow node across completed agentic process instances, shown as a heat map overlay on the process diagram.",
+      "agenticRunIncidentRateByProcessName": "Agent incident rate by process",
+      "agenticRunIncidentRateByProcessDescription": "Share of agent runs whose agent element raised an incident, per process.",
       "agenticRunIncidentRateName": "Agent incident rate",
       "agenticRunIncidentRateDescription": "Share of agent runs whose agent element raised an incident.",
       "agenticRunLimitHitRateName": "Runs hitting a limit",

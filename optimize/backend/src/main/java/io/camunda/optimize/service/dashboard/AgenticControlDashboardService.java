@@ -35,6 +35,7 @@ import io.camunda.optimize.dto.optimize.query.report.single.process.group.EndDat
 import io.camunda.optimize.dto.optimize.query.report.single.process.group.FlowNodesGroupByDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.group.ModelGroupByDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.group.NoneGroupByDto;
+import io.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessDefinitionKeyGroupByDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessDefinitionVersionGroupByDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.group.StartDateGroupByDto;
@@ -177,6 +178,14 @@ public class AgenticControlDashboardService {
       UUID.nameUUIDFromBytes("agentic-run-incident-rate".getBytes(StandardCharsets.UTF_8))
           .toString();
   public static final String AGENT_INCIDENT_RATE_NAME = "agenticRunIncidentRateName";
+  public static final String AGENT_INCIDENT_RATE_BY_PROCESS_REPORT_ID =
+      UUID.nameUUIDFromBytes(
+              "agentic-run-incident-rate-by-process".getBytes(StandardCharsets.UTF_8))
+          .toString();
+  public static final String AGENT_INCIDENT_RATE_BY_PROCESS_NAME =
+      "agenticRunIncidentRateByProcessName";
+  public static final String AGENT_INCIDENT_RATE_BY_PROCESS_DESCRIPTION =
+      "agenticRunIncidentRateByProcessDescription";
   public static final String AGENT_INCIDENT_RATE_DESCRIPTION = "agenticRunIncidentRateDescription";
   public static final String AGENT_LIMIT_HIT_RATE_REPORT_ID =
       UUID.nameUUIDFromBytes("agentic-run-limit-hit-rate".getBytes(StandardCharsets.UTF_8))
@@ -258,17 +267,27 @@ public class AgenticControlDashboardService {
   // Drill-down levels the frontend renders the tile at: the all-processes overview (no process
   // selected), a single process, or one or more agents within that process.
   private static final String TILE_CONFIG_LEVELS = "levels";
+  // Overrides the tile's section at the given levels, for tiles shared between levels.
+  private static final String TILE_CONFIG_SECTION_BY_LEVEL = "sectionByLevel";
   private static final String LEVEL_OVERVIEW = "overview";
   private static final String LEVEL_PROCESS = "process";
   private static final String LEVEL_AGENT = "agent";
   // Cross-process or cross-agent comparisons that say nothing once a single agent is selected.
   private static final Set<String> OVERVIEW_ONLY_REPORT_IDS =
-      Set.of(AGENT_ADOPTION_RATE_REPORT_ID, AGENT_RUNS_BY_AGENT_REPORT_ID);
+      Set.of(
+          AGENT_ADOPTION_RATE_REPORT_ID,
+          AGENT_RUNS_BY_AGENT_REPORT_ID,
+          TOKEN_CONSUMERS_REPORT_ID,
+          AGENT_INCIDENT_RATE_BY_PROCESS_REPORT_ID);
+  // Phase 1 process KPIs that also head the overview's processes section, across all processes.
+  private static final Set<String> OVERVIEW_AND_PROCESS_REPORT_IDS =
+      Set.of(KPI_COMPLETED_REPORT_ID, KPI_AVG_DURATION_REPORT_ID, KPI_INCIDENT_RATE_REPORT_ID);
   // Section values that group tiles within the dashboard layout.
   private static final String TILE_SECTION_TOKEN = "token";
   private static final String TILE_SECTION_DURATION = "duration";
   private static final String TILE_SECTION_RELIABILITY_AND_TOOL_CALLS = "reliabilityAndToolCalls";
   private static final String TILE_SECTION_AGENT_HEALTH = "agentHealth";
+  private static final String TILE_SECTION_PROCESSES = "processes";
   private static final String TILE_SECTION_VOLUME = "volume";
   private static final String TILE_SECTION_COST_AND_USAGE = "costAndUsage";
 
@@ -304,8 +323,21 @@ public class AgenticControlDashboardService {
     // Always upsert all KPI reports so config changes are applied on every restart.
     // Report IDs are deterministic so upserts are safe and tile references never orphan.
     final List<DashboardReportTileDto> tiles = new ArrayList<>();
-    buildProcessLevelTiles().forEach(tile -> tiles.add(atLevels(tile, LEVEL_PROCESS)));
-    Stream.of(buildAgentHealthTiles(), buildVolumeTiles(), buildCostAndUsageTiles())
+    buildProcessLevelTiles()
+        .forEach(
+            tile ->
+                tiles.add(
+                    OVERVIEW_AND_PROCESS_REPORT_IDS.contains(tile.getId())
+                        ? inSectionAt(
+                            atLevels(tile, LEVEL_OVERVIEW, LEVEL_PROCESS),
+                            LEVEL_OVERVIEW,
+                            TILE_SECTION_PROCESSES)
+                        : atLevels(tile, LEVEL_PROCESS)));
+    Stream.of(
+            buildAgentHealthTiles(),
+            buildProcessesTiles(),
+            buildVolumeTiles(),
+            buildCostAndUsageTiles())
         .flatMap(List::stream)
         .map(
             tile ->
@@ -350,6 +382,14 @@ public class AgenticControlDashboardService {
     }
     configuration.put(TILE_CONFIG_LEVELS, List.of(levels));
     tile.setConfiguration(configuration);
+    return tile;
+  }
+
+  @SuppressWarnings("unchecked")
+  private static DashboardReportTileDto inSectionAt(
+      final DashboardReportTileDto tile, final String level, final String section) {
+    ((Map<String, Object>) tile.getConfiguration())
+        .put(TILE_CONFIG_SECTION_BY_LEVEL, Map.of(level, section));
     return tile;
   }
 
@@ -964,6 +1004,73 @@ public class AgenticControlDashboardService {
             TILE_SECTION_AGENT_HEALTH,
             new PositionDto(12, 2),
             new DimensionDto(6, 2)));
+  }
+
+  // The overview's processes section: the Phase 1 process KPIs (seeded with the process-level
+  // tiles), the top token consumers and where agents fail, ranked by process.
+  private List<DashboardReportTileDto> buildProcessesTiles() {
+    return List.of(
+        buildTopTokenConsumersReport(),
+        agentRunTile(
+            AGENT_INCIDENT_RATE_BY_PROCESS_REPORT_ID,
+            AGENT_INCIDENT_RATE_BY_PROCESS_NAME,
+            AGENT_INCIDENT_RATE_BY_PROCESS_DESCRIPTION,
+            ViewProperty.INCIDENT_RATE,
+            new ProcessDefinitionKeyGroupByDto(),
+            ProcessVisualization.BAR,
+            List.of(),
+            TILE_SECTION_PROCESSES,
+            new PositionDto(9, 2),
+            new DimensionDto(9, 4)));
+  }
+
+  private DashboardReportTileDto buildTopTokenConsumersReport() {
+    reportWriter.createOrUpdateSingleProcessReport(
+        TOKEN_CONSUMERS_REPORT_ID,
+        null,
+        buildTopTokenConsumersReportData(),
+        KPI_TOKEN_CONSUMERS_NAME,
+        null,
+        null);
+    return buildTile(
+        TOKEN_CONSUMERS_REPORT_ID,
+        new PositionDto(0, 2),
+        new DimensionDto(9, 4),
+        Map.of(
+            TILE_CONFIG_SECTION,
+            TILE_SECTION_PROCESSES,
+            TILE_CONFIG_FOOTNOTE,
+            KPI_TOKEN_CONSUMERS_FOOTNOTE_KEY,
+            TILE_CONFIG_TOP_N,
+            String.valueOf(TOKEN_CONSUMERS_LIMIT)));
+  }
+
+  // Total tokens grouped by process definition key, rendered as a horizontal bar chart sorted
+  // descending so the heaviest token consumers surface at the top.
+  private ProcessReportDataDto buildTopTokenConsumersReportData() {
+    return ProcessReportDataDto.builder()
+        .definitions(Collections.emptyList())
+        .view(new ProcessViewDto(ProcessViewEntity.AGENT_INSTANCE, ViewProperty.TOTAL_TOKENS))
+        .groupBy(new ProcessDefinitionKeyGroupByDto())
+        .distributedBy(new NoneDistributedByDto())
+        .visualization(ProcessVisualization.BAR)
+        .configuration(
+            SingleReportConfigurationDto.builder()
+                .aggregationTypes(
+                    new LinkedHashSet<>(
+                        Collections.singletonList(new AggregationDto(AggregationType.SUM))))
+                .horizontalBar(true)
+                .sorting(new ReportSortingDto(ReportSortingDto.SORT_BY_VALUE, SortOrder.DESC))
+                .build())
+        .filter(
+            ProcessFilterBuilder.filter()
+                .completedInstancesOnly()
+                .add()
+                .hasAgentInstances()
+                .add()
+                .buildList())
+        .agenticControlReport(true)
+        .build();
   }
 
   private List<DashboardReportTileDto> buildVolumeTiles() {

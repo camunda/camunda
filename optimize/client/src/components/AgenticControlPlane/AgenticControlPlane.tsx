@@ -31,6 +31,7 @@ type DrillLevel = 'overview' | 'process' | 'agent';
 interface AgenticTileConfiguration {
   levels?: DrillLevel[];
   section?: string;
+  sectionByLevel?: Partial<Record<DrillLevel, string>>;
   footnote?: string;
   topN?: string;
 }
@@ -188,6 +189,16 @@ export function AgenticControlPlane() {
       titleKey: 'agenticControlPlane.agentHealth',
       loadTile: scopedEvaluateReport,
     },
+    // Process outcomes across all processes, only on the overview.
+    ...(level === 'overview'
+      ? [
+          {
+            key: 'processes',
+            titleKey: 'agenticControlPlane.processes',
+            loadTile: scopedEvaluateDateAwareReport,
+          },
+        ]
+      : []),
     {
       key: 'volume',
       titleKey: 'agenticControlPlane.volume',
@@ -234,11 +245,10 @@ export function AgenticControlPlane() {
         showModelFilter={level !== 'process'}
       />
       {sections.map(({key, titleKey, loadTile}) => {
-        const tiles = visibleTiles?.filter(
-          (tile) =>
-            ((tile.configuration as AgenticTileConfiguration | undefined)?.section ??
-              defaultSection) === key
-        );
+        const tiles = visibleTiles?.filter((tile) => {
+          const config = tile.configuration as AgenticTileConfiguration | undefined;
+          return (config?.sectionByLevel?.[level] ?? config?.section ?? defaultSection) === key;
+        });
         return (
           <div key={key}>
             {titleKey && (

@@ -10,6 +10,7 @@ package io.camunda.optimize.service.db.es.report.interpreter.groupby.process.age
 import static io.camunda.optimize.service.db.DatabaseConstants.AGENT_DEFINITION_INDEX_NAME;
 import static io.camunda.optimize.service.db.report.plan.process.ProcessGroupBy.PROCESS_GROUP_BY_AGENT_RUN_AGENT;
 import static io.camunda.optimize.service.db.report.plan.process.ProcessGroupBy.PROCESS_GROUP_BY_AGENT_RUN_MODEL;
+import static io.camunda.optimize.service.db.report.plan.process.ProcessGroupBy.PROCESS_GROUP_BY_AGENT_RUN_PROCESS;
 import static io.camunda.optimize.service.db.report.plan.process.ProcessGroupBy.PROCESS_GROUP_BY_AGENT_RUN_TOOL;
 
 import co.elastic.clients.elasticsearch._types.FieldValue;
@@ -22,12 +23,14 @@ import co.elastic.clients.elasticsearch.core.search.ResponseBody;
 import io.camunda.optimize.dto.optimize.query.agent.AgentDefinitionDto;
 import io.camunda.optimize.dto.optimize.query.agent.AgentRunDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
+import io.camunda.optimize.service.DefinitionService;
 import io.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
 import io.camunda.optimize.service.db.es.builders.OptimizeSearchRequestBuilderES;
 import io.camunda.optimize.service.db.es.report.interpreter.distributedby.process.ProcessDistributedByInterpreterFacadeES;
 import io.camunda.optimize.service.db.es.report.interpreter.groupby.process.AbstractProcessGroupByInterpreterES;
 import io.camunda.optimize.service.db.es.report.interpreter.view.process.ProcessViewInterpreterFacadeES;
 import io.camunda.optimize.service.db.report.ExecutionContext;
+import io.camunda.optimize.service.db.report.interpreter.util.ProcessDefinitionNameResolver;
 import io.camunda.optimize.service.db.report.plan.process.ProcessExecutionPlan;
 import io.camunda.optimize.service.db.report.plan.process.ProcessGroupBy;
 import io.camunda.optimize.service.db.report.result.CompositeCommandResult;
@@ -49,9 +52,9 @@ import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 /**
- * Groups agent runs by agent, by model or by tool. Model and tool group over the nested per-model
- * token and per-tool call entries, so a run that used two models or several tools contributes to
- * each of them; the view's aggregations then run inside those nested entries.
+ * Groups agent runs by process, by agent, by model or by tool. Model and tool group over the nested
+ * per-model token and per-tool call entries, so a run that used two models or several tools
+ * contributes to each of them; the view's aggregations then run inside those nested entries.
  */
 @Component
 @Conditional(ElasticSearchCondition.class)
@@ -67,21 +70,25 @@ public class ProcessGroupByAgentRunTermsInterpreterES extends AbstractProcessGro
   private final OptimizeElasticsearchClient esClient;
   private final ProcessDistributedByInterpreterFacadeES distributedByInterpreter;
   private final ProcessViewInterpreterFacadeES viewInterpreter;
+  private final DefinitionService definitionService;
 
   public ProcessGroupByAgentRunTermsInterpreterES(
       final ConfigurationService configurationService,
       final OptimizeElasticsearchClient esClient,
       final ProcessDistributedByInterpreterFacadeES distributedByInterpreter,
-      final ProcessViewInterpreterFacadeES viewInterpreter) {
+      final ProcessViewInterpreterFacadeES viewInterpreter,
+      final DefinitionService definitionService) {
     this.configurationService = configurationService;
     this.esClient = esClient;
     this.distributedByInterpreter = distributedByInterpreter;
     this.viewInterpreter = viewInterpreter;
+    this.definitionService = definitionService;
   }
 
   @Override
   public Set<ProcessGroupBy> getSupportedGroupBys() {
     return Set.of(
+        PROCESS_GROUP_BY_AGENT_RUN_PROCESS,
         PROCESS_GROUP_BY_AGENT_RUN_AGENT,
         PROCESS_GROUP_BY_AGENT_RUN_MODEL,
         PROCESS_GROUP_BY_AGENT_RUN_TOOL);
@@ -135,6 +142,10 @@ public class ProcessGroupByAgentRunTermsInterpreterES extends AbstractProcessGro
               distributedByInterpreter.retrieveResult(response, bucket.aggregations(), context)));
     }
     compositeCommandResult.setGroups(groups);
+    if (grouping == Grouping.PROCESS) {
+      ProcessDefinitionNameResolver.applyLatestVersionNameLabels(
+          compositeCommandResult, definitionService);
+    }
   }
 
   private static List<StringTermsBucket> extractBuckets(
@@ -156,6 +167,7 @@ public class ProcessGroupByAgentRunTermsInterpreterES extends AbstractProcessGro
       final StringTermsBucket bucket,
       final Map<String, String> agentNames) {
     return switch (grouping) {
+      case PROCESS -> key;
       case AGENT -> agentNames.getOrDefault(key, key);
       case MODEL -> firstLabel(bucket).map(provider -> key + " (" + provider + ")").orElse(key);
       case TOOL -> firstLabel(bucket).orElse(key);
@@ -215,6 +227,7 @@ public class ProcessGroupByAgentRunTermsInterpreterES extends AbstractProcessGro
   }
 
   private enum Grouping {
+    PROCESS(null, AgentRunIndex.PROCESS_DEFINITION_KEY, null),
     AGENT(null, AgentRunIndex.AGENT_ID, null),
     MODEL(
         AgentRunIndex.TOKENS_BY_MODEL,
@@ -237,6 +250,7 @@ public class ProcessGroupByAgentRunTermsInterpreterES extends AbstractProcessGro
 
     static Grouping of(final ProcessGroupBy groupBy) {
       return switch (groupBy) {
+        case PROCESS_GROUP_BY_AGENT_RUN_PROCESS -> PROCESS;
         case PROCESS_GROUP_BY_AGENT_RUN_AGENT -> AGENT;
         case PROCESS_GROUP_BY_AGENT_RUN_MODEL -> MODEL;
         case PROCESS_GROUP_BY_AGENT_RUN_TOOL -> TOOL;
