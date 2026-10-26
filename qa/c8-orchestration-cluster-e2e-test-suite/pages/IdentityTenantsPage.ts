@@ -189,6 +189,12 @@ export class IdentityTenantsPage {
     const option = this.assignUserOption(user.id);
     await expect(option).toBeVisible({timeout: 30000});
     await option.click({timeout: 20000});
+    // Selecting in the design-system MultiSelect leaves its results popover
+    // open, and that popover overlays the modal footer and intercepts the click
+    // on the Assign button (DS #496). Dismiss it with Escape first -- Radix
+    // closes only the topmost layer, so the modal stays open.
+    await this.page.keyboard.press('Escape');
+    await expect(this.assignUserSearchboxResult).toBeHidden();
     await this.confirmAssignmentButton.click();
     await expect(this.assignUserModal).toBeHidden();
     await waitForItemInList(

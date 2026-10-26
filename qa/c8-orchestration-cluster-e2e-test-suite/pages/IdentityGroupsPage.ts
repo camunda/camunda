@@ -231,6 +231,12 @@ export class IdentityGroupsPage {
       .first();
     await expect(option).toBeVisible({timeout: 30000});
     await option.click({timeout: 20000});
+    // Selecting in the design-system MultiSelect leaves its results popover
+    // open, and that popover overlays the modal footer and intercepts the click
+    // on the Assign button (DS #496). Dismiss it with Escape first -- Radix
+    // closes only the topmost layer, so the modal stays open.
+    await this.page.keyboard.press('Escape');
+    await expect(this.searchBoxResult).toBeHidden();
     await this.assignUserButtonModal.click();
     await expect(this.assignUserModal).toBeHidden();
     // Wait for the member row rather than sleeping for a fixed 8s: both

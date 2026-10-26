@@ -510,7 +510,7 @@ test.describe('Process Definition Draining Deletion API', () => {
     expect(await instanceCountFor(request, processDefinitionId)).toBe(before);
   });
 
-  test('A repeated delete is rejected while the deployment partition still holds an instance', async ({
+  test('A repeated delete is accepted while the deployment partition still holds an instance', async ({
     request,
   }) => {
     const processDefinitionId = uniquePrefixedId('draining-repeat');
@@ -518,8 +518,11 @@ test.describe('Process Definition Draining Deletion API', () => {
       await deployUserTaskProcess(processDefinitionId);
 
     // Every delete of this definition is served by the partition that minted its
-    // key, and that partition rejects a repeat only while it still holds an
-    // instance of its own.
+    // key. The repeat has nothing left to do there — the drain already runs on
+    // the instance partitions — so it is accepted with 200 and changes nothing,
+    // whether or not that partition still holds an instance of its own
+    // (camunda#66023, resolved by #66549). The 409 stays only for a history
+    // deletion or a distributed command, neither of which this repeat is.
     const deploymentPartition = partitionOf(processDefinitionKey);
     const instances = await createInstancesUntilOn(
       processDefinitionId,
@@ -542,7 +545,7 @@ test.describe('Process Definition Draining Deletion API', () => {
     await drainProcessDefinition(request, processDefinitionKey);
 
     const second = await deleteProcessDefinition(request, processDefinitionKey);
-    expect(second.status()).toBe(409);
+    expect(second.status()).toBe(200);
 
     await expectProcessDefinitionState(
       request,
