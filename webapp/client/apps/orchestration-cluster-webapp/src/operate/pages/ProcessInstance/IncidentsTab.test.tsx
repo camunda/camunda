@@ -431,7 +431,7 @@ describe('<IncidentsTab />', () => {
 		const screen = await renderIncidents();
 		await expect.element(incidentRow(screen, 'No more retries left.')).toBeVisible();
 
-		await userEvent.click(screen.getByRole('columnheader', {name: 'Type'}).getByRole('button'));
+		await userEvent.click(screen.getByRole('columnheader', {name: 'Sort by Type'}).getByRole('button'));
 
 		await expect.element(incidentRow(screen, 'Sorted by type')).toBeVisible();
 		expect(screen.router.state.location.search).toEqual({sort: 'errorType+DESC'});

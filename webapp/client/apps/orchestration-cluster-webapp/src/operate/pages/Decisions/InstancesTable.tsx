@@ -83,6 +83,9 @@ const InstancesTable: React.FC<Props> = ({search}) => {
 					title={t('operate.decisions.instancesTable.viewDecisionInstance', {
 						key: row.decisionEvaluationInstanceKey,
 					})}
+					aria-label={t('operate.decisions.instancesTable.viewDecisionInstance', {
+						key: row.decisionEvaluationInstanceKey,
+					})}
 				>
 					{row.decisionEvaluationInstanceKey}
 				</InstanceLink>

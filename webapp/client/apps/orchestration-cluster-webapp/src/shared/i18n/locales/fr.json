@@ -1025,6 +1025,7 @@
 		"operate": {
 			"dashboard": {
 				"title": "Tableau de bord",
+				"pageTitle": "Operate : Tableau de bord",
 				"runningInstancesTotal": "{{count}} instances de processus en cours au total",
 				"runningInstancesTotalPending": "Instances de processus en cours au total",
 				"metricFetchError": "Impossible de récupérer les statistiques de processus",
@@ -1192,6 +1193,7 @@
 					"progressUnavailable": "La progression de l’opération par lots est temporairement indisponible"
 				},
 				"title": "Processus",
+				"pageTitle": "Operate : Instances de processus",
 				"variableFilter": {
 					"title": "Variables",
 					"name": "Nom",
@@ -1273,6 +1275,7 @@
 				},
 				"instancesTable": {
 					"title": "Instances de processus",
+					"panelLabel": "Panneau des instances de processus",
 					"name": "Nom",
 					"processInstanceKey": "Clé d'instance de processus",
 					"version": "Version",
@@ -1338,11 +1341,13 @@
 					"multipleTenantsSelected": "Le processus « {{name}} » existe dans plusieurs locataires",
 					"selectSingleTenant": "Pour voir un diagramme, sélectionnez un seul locataire",
 					"noProcessSelected": "Aucun processus n'est sélectionné",
-					"selectProcessInFilters": "Pour voir un diagramme, sélectionnez un processus dans le panneau des filtres"
+					"selectProcessInFilters": "Pour voir un diagramme, sélectionnez un processus dans le panneau des filtres",
+					"processNotFoundTitle": "Le processus n'a pas pu être trouvé"
 				}
 			},
 			"decisions": {
 				"title": "Décisions",
+				"pageTitle": "Operate : Instances de décision",
 				"scaffold": {
 					"filtersPanelPlaceholder": "Espace réservé pour le panneau de filtres"
 				},
@@ -1594,7 +1599,12 @@
 				},
 				"operationsLog": {
 					"multiInstance": "Pour afficher le journal des opérations, sélectionnez une seule instance d’élément dans l’historique de l’instance.",
-					"empty": "Aucune opération trouvée pour cette instance"
+					"empty": "Aucune opération trouvée pour cette instance",
+					"table": {
+						"operationType": "Type d'opération",
+						"entityType": "Type d'entité",
+						"entityKey": "Clé d'entité"
+					}
 				},
 				"variables": {
 					"search": "Rechercher des variables par nom",
@@ -1934,6 +1944,7 @@
 			},
 			"operationsLog": {
 				"title": "Journal des opérations",
+				"pageTitle": "Operate : Journal des opérations",
 				"decisionDefinitionsLookupFailed": "Impossible de charger les noms des décisions. Le journal des opérations reste disponible.",
 				"decisionDefinitionsRetry": "Réessayer de charger les noms des décisions",
 				"table": {
@@ -2303,6 +2314,9 @@
 					"incidents_other": "{{count}} instances avec incidents",
 					"active_one": "{{count}} instance active",
 					"active_other": "{{count}} instances actives"
+				},
+				"sortableTable": {
+					"sortBy": "Trier par {{label}}"
 				}
 			}
 		}

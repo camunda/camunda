@@ -1034,6 +1034,7 @@
 		"operate": {
 			"dashboard": {
 				"title": "Dashboard",
+				"pageTitle": "Operate: Dashboard",
 				"runningInstancesTotal": "{{count}} running process instances in total",
 				"runningInstancesTotalPending": "Running process instances in total",
 				"metricFetchError": "Process statistics could not be fetched",
@@ -1201,6 +1202,7 @@
 					"progressUnavailable": "Batch operation progress is temporarily unavailable"
 				},
 				"title": "Processes",
+				"pageTitle": "Operate: Process Instances",
 				"variableFilter": {
 					"title": "Variables",
 					"name": "Name",
@@ -1282,6 +1284,7 @@
 				},
 				"instancesTable": {
 					"title": "Process Instances",
+					"panelLabel": "Process Instances Panel",
 					"name": "Name",
 					"processInstanceKey": "Process Instance Key",
 					"version": "Version",
@@ -1347,11 +1350,13 @@
 					"multipleTenantsSelected": "Process \"{{name}}\" exists in more than one Tenant",
 					"selectSingleTenant": "To see a Diagram, select a single Tenant",
 					"noProcessSelected": "There is no Process selected",
-					"selectProcessInFilters": "To see a Diagram, select a Process in the Filters panel"
+					"selectProcessInFilters": "To see a Diagram, select a Process in the Filters panel",
+					"processNotFoundTitle": "Process could not be found"
 				}
 			},
 			"decisions": {
 				"title": "Decisions",
+				"pageTitle": "Operate: Decision Instances",
 				"scaffold": {
 					"filtersPanelPlaceholder": "Filters panel placeholder"
 				},
@@ -1603,7 +1608,12 @@
 				},
 				"operationsLog": {
 					"multiInstance": "To view the Operations Log, select a single Element Instance in the Instance History.",
-					"empty": "No operations found for this instance"
+					"empty": "No operations found for this instance",
+					"table": {
+						"operationType": "Operation Type",
+						"entityType": "Entity Type",
+						"entityKey": "Entity Key"
+					}
 				},
 				"variables": {
 					"search": "Search variables by name",
@@ -1943,6 +1953,7 @@
 			},
 			"operationsLog": {
 				"title": "Operations Log",
+				"pageTitle": "Operate: Operations Log",
 				"decisionDefinitionsLookupFailed": "Couldn't load decision names. Audit logs are still available.",
 				"decisionDefinitionsRetry": "Retry decision names",
 				"table": {
@@ -2312,6 +2323,9 @@
 					"incidents_other": "{{count}} instances with incidents",
 					"active_one": "{{count}} active instance",
 					"active_other": "{{count}} active instances"
+				},
+				"sortableTable": {
+					"sortBy": "Sort by {{label}}"
 				}
 			}
 		}

@@ -8,13 +8,14 @@
 
 import {useEffect, useMemo, useState} from 'react';
 import {useTranslation} from 'react-i18next';
-import {useQuery, useSuspenseQuery} from '@tanstack/react-query';
+import {keepPreviousData, useQuery, useSuspenseQuery} from '@tanstack/react-query';
 import {useBlocker, useLocation, useNavigate} from '@tanstack/react-router';
 import {Form} from 'react-final-form';
 import {Button, Checkbox, ComboBox, Dropdown, Stack} from '@carbon/react';
 import type {ProcessDefinition} from '@camunda/camunda-api-zod-schemas/8.11';
 import {queries} from '#/shared/http/queries';
 import {ForbiddenError} from '#/shared/errors';
+import {notificationsStore} from '#/shared/notifications/notifications.store';
 import {getClientConfig} from '#/shared/config/getClientConfig';
 import {isSpecificTenant} from '#/operate/shared/utils/isSpecificTenant';
 import {ProcessesLayout, type ProcessesMode} from './ProcessesLayout';
@@ -116,10 +117,16 @@ const Processes: React.FC<Props> = ({
 		isPending: isDefinitionsPending,
 		isFetching: isDefinitionsFetching,
 		isError: isDefinitionsError,
+		isPlaceholderData: isDefinitionsPlaceholder,
 		refetch: refetchSelectedDefinitions,
 	} = useQuery({
-		...selectedDefinitionsQuery(process ?? '', specificTenantId, {retry: false, requireComplete: true}),
+		...selectedDefinitionsQuery(process ?? '', specificTenantId, {
+			retry: false,
+			requireComplete: true,
+			selectionVersion: version ?? 'all',
+		}),
 		enabled: Boolean(process),
+		placeholderData: keepPreviousData,
 		retry: false,
 	});
 	const isDefinitionsLoading =
@@ -282,6 +289,30 @@ const Processes: React.FC<Props> = ({
 
 		return {kind: 'single-version', definition};
 	}, [isDefinitionsReady, matchingDefinitions, specificTenantId, version]);
+	useEffect(() => {
+		if (
+			!isDefinitionsReady ||
+			isDefinitionsFetching ||
+			isDefinitionsPlaceholder ||
+			processDefinitionSelection.kind !== 'no-match'
+		) {
+			return;
+		}
+		void navigate({
+			to: '.',
+			search: (prev) => ({
+				...prev,
+				process: undefined,
+				version: undefined,
+			}),
+			hash: true,
+		});
+		notificationsStore.displayNotification({
+			kind: 'error',
+			title: t('operate.processes.diagramPanel.processNotFoundTitle'),
+			isDismissable: true,
+		});
+	}, [isDefinitionsReady, isDefinitionsFetching, isDefinitionsPlaceholder, processDefinitionSelection, navigate, t]);
 	const selectedDefinitionKey =
 		processDefinitionSelection.kind === 'single-version'
 			? processDefinitionSelection.definition.processDefinitionKey

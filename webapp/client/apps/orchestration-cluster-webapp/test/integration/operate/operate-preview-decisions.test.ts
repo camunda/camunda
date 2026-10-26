@@ -95,5 +95,6 @@ test.describe('Operate Decisions DS preview (/operate-preview/decisions)', () =>
 		await operateDecisionsPage.goto('?evaluated=true&failed=true');
 
 		await expect(page.getByRole('combobox', {name: 'Name', exact: true})).toBeVisible();
+		await expect(page).toHaveTitle('Operate: Decision Instances');
 	});
 });
