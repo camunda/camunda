@@ -174,11 +174,17 @@ public final class DmnResourceTransformer implements DeploymentResourceTransform
     final var decisionRequirementsId = parsedDrg.getId();
     final var decisionRequirementsName = parsedDrg.getName();
 
-    return checkFieldLength(
-            Stream.of(decisionRequirementsId),
-            config.maxIdFieldLength(),
-            "The ID of a DRG must not be longer than the configured max-id-length of %s characters, but was '%s' in resource '%s'",
+    return checkIdPresent(
+            decisionRequirementsId,
+            "The ID of a DRG must be set, but was missing in resource '%s'",
             resource)
+        .flatMap(
+            present ->
+                checkFieldLength(
+                    Stream.of(decisionRequirementsId),
+                    config.maxIdFieldLength(),
+                    "The ID of a DRG must not be longer than the configured max-id-length of %s characters, but was '%s' in resource '%s'",
+                    resource))
         .flatMap(
             valid ->
                 checkFieldLength(
@@ -190,11 +196,17 @@ public final class DmnResourceTransformer implements DeploymentResourceTransform
 
   private Either<Failure, ?> checkDecision(
       final DeploymentResource resource, final ParsedDecision decision) {
-    return checkFieldLength(
+    return checkIdPresent(
             decision.getId(),
-            config.maxIdFieldLength(),
-            "The ID of a decision must not be longer than the configured max-id-length of %s characters, but was '%s' in resource '%s'",
+            "The ID of a decision must be set, but was missing in resource '%s'",
             resource)
+        .flatMap(
+            present ->
+                checkFieldLength(
+                    decision.getId(),
+                    config.maxIdFieldLength(),
+                    "The ID of a decision must not be longer than the configured max-id-length of %s characters, but was '%s' in resource '%s'",
+                    resource))
         .flatMap(
             valid ->
                 checkFieldLength(
@@ -281,6 +293,13 @@ public final class DmnResourceTransformer implements DeploymentResourceTransform
     }
 
     return NO_VALIDATION_ERROR;
+  }
+
+  private static Either<Failure, ?> checkIdPresent(
+      final String id, final String message, final DeploymentResource resource) {
+    return Strings.isNullOrEmpty(id)
+        ? Either.left(new Failure(String.format(message, resource.getResourceName())))
+        : NO_VALIDATION_ERROR;
   }
 
   private static Either<Failure, ?> checkFieldLength(
