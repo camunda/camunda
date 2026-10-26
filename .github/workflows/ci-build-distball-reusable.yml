@@ -101,13 +101,10 @@ jobs:
       # integration-tests' gcp-perf shards consume these from GCS (ingress is free).
       # Authenticate here (not via setup-build) so the WIF/OIDC token is fresh: the
       # build-zeebe step above can run ~15 min, close to the OIDC token lifetime.
-      # A Vault/WIF hang must fail fast instead of silently eating the whole job
-      # timeout-minutes budget -- see INC-6820. A healthy auth takes ~10s, so the 3-minute
-      # budget is split into three 1-minute attempts: a single hang (INC-8811) no longer
-      # fails the job, and the overall bound stays at 3 minutes. GitHub Actions has no retry
-      # primitive for a `uses:` step, so each attempt is a literal copy gated on the previous
-      # attempt's outcome (same pattern as vault-action-with-retry). Keep the three in sync;
-      # the last attempt omits `continue-on-error` so exhausted retries still fail the job.
+      # Vault can hang (INC-6820, INC-8811), so the 3m budget is split into three 1m attempts;
+      # healthy auth takes 7-11s. If it nears 1m, rebalance the split; don't raise the total.
+      # Attempts are literal copies (no retry for `uses:`, cf. vault-action-with-retry): keep
+      # them in sync. The last omits `continue-on-error` so exhausted retries fail the job.
       - name: Authenticate to GCS build-cache (attempt 1 of 3)
         id: gcs-auth-1
         continue-on-error: true
