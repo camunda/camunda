@@ -243,7 +243,7 @@ final class RestoreValidatorResolverTest {
     stubBackupPartitionCount(20L, 1);
     stubBackupWithPositions(1, 10L, 1, 1L, 200L);
     stubBackupWithPositions(1, 20L, 1, 1L, 100L);
-    final var validator = new RestoreValidator(1, backupStore, partitionId -> 150L);
+    final var validator = new RestoreValidator(1, backupStore, partitionId -> 50L);
 
     // when
     final var result =
@@ -252,9 +252,9 @@ final class RestoreValidatorResolverTest {
     // then
     assertThat(assertInvalid(result))
         .isInstanceOf(IllegalStateException.class)
-        .hasMessageContaining("backup 20")
-        .hasMessageContaining("checkpoint position 100")
-        .hasMessageContaining("exported position 150");
+        .hasMessage(
+            "Unexpected checkpoint position decrease on partition 1: backup 20 has checkpoint "
+                + "position 100, below backup 10 with checkpoint position 200");
   }
 
   @Nested

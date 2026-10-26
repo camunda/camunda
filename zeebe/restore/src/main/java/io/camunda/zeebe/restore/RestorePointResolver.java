@@ -319,8 +319,22 @@ public class RestorePointResolver {
       final int partitionId,
       @NonNull final CheckpointEntry checkpoint,
       @NonNull final CheckpointEntry previousBackup) {
-    final var firstLogPosition = checkpoint.getFirstLogPositionOrDefault();
     final var previousBackupPosition = previousBackup.checkpointPosition();
+    final var checkpointPosition = checkpoint.checkpointPosition();
+
+    if (checkpointPosition < previousBackupPosition) {
+      throw new IllegalStateException(
+          "Unexpected checkpoint position decrease on partition %d: backup %d has checkpoint "
+              .concat("position %d, below backup %d with checkpoint position %d")
+              .formatted(
+                  partitionId,
+                  checkpoint.checkpointId(),
+                  checkpointPosition,
+                  previousBackup.checkpointId(),
+                  previousBackupPosition));
+    }
+
+    final var firstLogPosition = checkpoint.getFirstLogPositionOrDefault();
     if (firstLogPosition > previousBackupPosition + 1) {
       throw new IllegalStateException(
           String.format(
