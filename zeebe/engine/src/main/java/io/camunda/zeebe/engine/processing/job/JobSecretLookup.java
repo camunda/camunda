@@ -76,9 +76,17 @@ public final class JobSecretLookup {
     if (!job.hasSecretReferences()) {
       return SecretCheckResult.NO_SECRETS;
     }
+    return check(job.secretReferences());
+  }
+
+  /**
+   * Like {@link #check(JobRecord)}, for the secret references of any record that stores them the
+   * way a job does, e.g. a probe.
+   */
+  public SecretCheckResult check(final Iterable<JobSecretReference> references) {
     final List<CachedSecret> cachedSecrets = new ArrayList<>();
     final List<Secret> nonCachedSecrets = new ArrayList<>();
-    for (final Secret secret : secretsOf(job)) {
+    for (final Secret secret : secretsOf(references)) {
       lookupLocal(secret.reference())
           .ifPresentOrElse(
               value -> cachedSecrets.add(new CachedSecret(secret, value)),
@@ -99,7 +107,15 @@ public final class JobSecretLookup {
    */
   public byte[] injectedVariablesOf(final JobRecord job, final List<CachedSecret> cachedSecrets)
       throws IOException {
-    final DirectBuffer variables = job.getVariablesBuffer();
+    return injectedDocumentOf(job.getVariablesBuffer(), cachedSecrets);
+  }
+
+  /**
+   * Like {@link #injectedVariablesOf(JobRecord, List)}, for any msgpack document the secrets of a
+   * {@link #check(Iterable)} address, e.g. the input of a probe.
+   */
+  public byte[] injectedDocumentOf(
+      final DirectBuffer variables, final List<CachedSecret> cachedSecrets) throws IOException {
     final JsonNode document = variablesMapper.readTree(new DirectBufferInputStream(variables));
     boolean changed = false;
     // keyed by path and filled with putIfAbsent so a FEEL conditional's branches, which all
@@ -263,9 +279,9 @@ public final class JobSecretLookup {
    * prefix of another (e.g. {@code token} vs {@code token2}) cannot corrupt the longer placeholder
    * when both are injected into the same leaf.
    */
-  private static List<Secret> secretsOf(final JobRecord job) {
+  private static List<Secret> secretsOf(final Iterable<JobSecretReference> references) {
     final List<Secret> secrets = new ArrayList<>();
-    for (final JobSecretReference reference : job.secretReferences()) {
+    for (final JobSecretReference reference : references) {
       final var secretReference =
           new SecretReference(reference.getStoreId(), reference.getSecretReference());
       secrets.add(new Secret(secretReference, reference.getPath(), secretReference.reference()));
