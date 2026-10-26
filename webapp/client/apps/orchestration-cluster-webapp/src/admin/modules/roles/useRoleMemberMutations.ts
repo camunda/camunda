@@ -24,7 +24,7 @@ import {mapQueryError} from '#/shared/http/mapQueryError';
 import {removeFromListCaches} from '#/shared/http/patchListCaches';
 import {waitUntilReady} from '#/shared/http/waitUntilReady';
 
-type MemberChange = {kind: MemberKind; id: string};
+type MembersChange = {kind: MemberKind; ids: string[]};
 type Direction = 'assign' | 'unassign';
 
 const SCAN_PAGE_SIZE = 100;
@@ -47,23 +47,36 @@ function useRoleMemberMutations(roleId: string) {
 
 	const mutate =
 		(direction: Direction) =>
-		async ({kind, id}: MemberChange) => {
+		async ({kind, ids}: MembersChange) => {
 			const buildRequest = direction === 'assign' ? getAssignRequest : getUnassignRequest;
-			const {error} = await request(buildRequest(kind, roleId, id));
-			if (error !== null) {
-				throw mapQueryError(error);
+			const outcomes = await Promise.all(
+				ids.map(async (id) => {
+					const {error} = await request(buildRequest(kind, roleId, id));
+					return {id, error: error === null ? null : mapQueryError(error)};
+				}),
+			);
+
+			const succeeded = outcomes.filter(({error}) => error === null).map(({id}) => id);
+			const failed = outcomes.flatMap(({id, error}) => (error === null ? [] : [{id, error}]));
+			const [firstFailure] = failed;
+			if (succeeded.length === 0 && firstFailure !== undefined) {
+				throw firstFailure.error;
 			}
-			return {kind, id};
+			return {kind, ids: succeeded, failed};
 		};
 
-	const reconcile = async (direction: Direction, {kind, id}: MemberChange) => {
-		const isAssigned = await waitUntilReady(
-			queryClient,
-			{queryKey: ['roleMemberCheck', roleId, kind, id], queryFn: () => hasMember(kind, roleId, id)},
-			{isReady: (assigned) => assigned === (direction === 'assign')},
+	const reconcile = async (direction: Direction, {kind, ids}: {kind: MemberKind; ids: string[]}) => {
+		const confirmations = await Promise.all(
+			ids.map((id) =>
+				waitUntilReady(
+					queryClient,
+					{queryKey: ['roleMemberCheck', roleId, kind, id], queryFn: () => hasMember(kind, roleId, id)},
+					{isReady: (assigned) => assigned === (direction === 'assign')},
+				),
+			),
 		);
 
-		if (isAssigned === undefined) {
+		if (confirmations.some((confirmed) => confirmed === undefined)) {
 			toast.warning(t('admin.roles.changeNotConfirmed'), {
 				description: t('admin.roles.changeNotConfirmedDescription'),
 			});
@@ -75,7 +88,14 @@ function useRoleMemberMutations(roleId: string) {
 	const assign = useMutation({
 		mutationFn: mutate('assign'),
 		onSuccess: (result) => {
-			toast.success(t(`admin.roles.members.${result.kind}.assigned`, {id: result.id}));
+			for (const id of result.ids) {
+				toast.success(t(`admin.roles.members.${result.kind}.assigned`, {id}));
+			}
+			for (const {error} of result.failed) {
+				void getErrorMessage(error).then((description) =>
+					toast.error(t('admin.roles.members.assignFailed'), {description}),
+				);
+			}
 			void reconcile('assign', result);
 		},
 		onError: async (error) => {
@@ -84,14 +104,16 @@ function useRoleMemberMutations(roleId: string) {
 	});
 
 	const unassign = useMutation({
-		mutationFn: mutate('unassign'),
+		mutationFn: ({kind, id}: {kind: MemberKind; id: string}) => mutate('unassign')({kind, ids: [id]}),
 		onSuccess: (result) => {
-			removeFromListCaches(queryClient, {
-				queryKeyPrefix: getMembersQueryKeyPrefix(roleId, result.kind),
-				id: result.id,
-				getId: (item: MembersResponse['items'][number]) => toMemberRow(result.kind, item).id,
-			});
-			toast.success(t(`admin.roles.members.${result.kind}.removed`, {id: result.id}));
+			for (const id of result.ids) {
+				removeFromListCaches(queryClient, {
+					queryKeyPrefix: getMembersQueryKeyPrefix(roleId, result.kind),
+					id,
+					getId: (item: MembersResponse['items'][number]) => toMemberRow(result.kind, item).id,
+				});
+				toast.success(t(`admin.roles.members.${result.kind}.removed`, {id}));
+			}
 			void reconcile('unassign', result);
 		},
 		onError: async (error) => {
