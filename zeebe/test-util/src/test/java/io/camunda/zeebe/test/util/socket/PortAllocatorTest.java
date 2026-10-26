@@ -31,10 +31,12 @@ import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.io.TempDir;
 
 final class PortAllocatorTest {
+  // range sits above SocketUtil's shared range and below the ephemeral range, so other forks never
+  // listen on it
   // ports in the allocator under test are only reserved against other allocators sharing the same
   // lock directory, so each test gets its own directory and cannot interfere with the others
-  private static final int MIN = 20_000;
-  private static final int MAX = 21_000;
+  private static final int MIN = 31_100;
+  private static final int MAX = 32_100;
 
   @TempDir private Path lockDir;
   private final List<Process> children = new ArrayList<>();
