@@ -450,14 +450,18 @@ public final class CompletableActorFuture<V extends @Nullable Object> implements
    * is shared by all blocking waiters, so abandoned waits (timeouts, interrupts) do not retain
    * anything on a future that stays pending.
    *
-   * <p>Invariant: a latch with a non-zero count has a callback registered that will count it down.
+   * <p>Invariant: the thread that installed a latch registers the callback that counts it down, or
+   * counts it down itself if the future is already done.
    */
   private CountDownLatch completionLatch() {
     var current = completionLatch;
     while (current == null || current.getCount() == 0) {
       final var fresh = new CountDownLatch(1);
-      addBlockedCallback((ignoredValue, ignoredError) -> fresh.countDown());
+      // Only the thread that installs the latch registers its callback, so a lost race leaves
+      // nothing behind on the future. Waiters that pick up the latch before the callback is
+      // registered are released by the isDone() check below or by the callback itself.
       if (COMPLETION_LATCH.compareAndSet(this, current, fresh)) {
+        addBlockedCallback((ignoredValue, ignoredError) -> fresh.countDown());
         // the future may have been completed before the callback was added, in which case the
         // callback will not be notified anymore
         if (isDone()) {

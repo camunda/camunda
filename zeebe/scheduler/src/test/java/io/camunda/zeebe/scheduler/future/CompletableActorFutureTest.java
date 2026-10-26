@@ -15,6 +15,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -274,6 +275,41 @@ public class CompletableActorFutureTest {
 
       // then
       assertThat(future.pendingCallbackCount()).isLessThanOrEqualTo(1);
+    }
+
+    @Test
+    void shouldNotRetainCallbacksWhenWaitersRaceToInstallLatch() throws Exception {
+      // given
+      final var threads = 8;
+      final var barrier = new CyclicBarrier(threads);
+      final var executor = Executors.newFixedThreadPool(threads);
+      try {
+        for (int round = 0; round < 200; round++) {
+          final var future = new CompletableActorFuture<String>();
+
+          // when all waiters hit the not yet existing latch at the same time
+          final var waiters =
+              IntStream.range(0, threads)
+                  .mapToObj(
+                      i ->
+                          executor.submit(
+                              () -> {
+                                barrier.await();
+                                assertThatThrownBy(() -> future.get(1, TimeUnit.MILLISECONDS))
+                                    .isInstanceOf(TimeoutException.class);
+                                return null;
+                              }))
+                  .toList();
+          for (final var waiter : waiters) {
+            waiter.get(30, TimeUnit.SECONDS);
+          }
+
+          // then
+          assertThat(future.pendingCallbackCount()).isLessThanOrEqualTo(1);
+        }
+      } finally {
+        executor.shutdownNow();
+      }
     }
 
     @Test
