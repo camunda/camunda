@@ -367,6 +367,74 @@ public final class HeldTimersTest {
     assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.INVALID_STATE);
   }
 
+  @Test
+  public void shouldFireHeldTimerBehindGatewayWithEventSubprocess() {
+    // given a held instance with a non-interrupting timer event subprocess AND a timer behind an
+    // event-based gateway, mirroring the "Enforcing SLA" model
+    final String processId = Strings.newRandomValidBpmnId();
+    final var process =
+        Bpmn.createExecutableProcess(processId)
+            .eventSubProcess(
+                "sla",
+                sub ->
+                    sub.startEvent("EveryTwoDaysStartEvent")
+                        .interrupting(false)
+                        .timerWithCycle("R/P2D")
+                        .serviceTask("escalate", t -> t.zeebeJobType("escalate"))
+                        .endEvent())
+            .startEvent()
+            .serviceTask("send", t -> t.zeebeJobType("send"))
+            .eventBasedGateway("gateway")
+            .intermediateCatchEvent("OneDayTimer", c -> c.timerWithDuration("P1D"))
+            .endEvent("timerEnd")
+            .moveToLastGateway()
+            .intermediateCatchEvent(
+                "ReplyReceivedMessage",
+                c -> c.message(m -> m.name("Reply").zeebeCorrelationKeyExpression("key")))
+            .endEvent("messageEnd")
+            .done();
+    ENGINE.deployment().withXmlResource(process).deploy();
+    final long processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(processId)
+            .withVariable("key", "exampleKey")
+            .withHeldTimers()
+            .create();
+
+    // drive the instance to the event-based gateway
+    ENGINE.job().ofInstance(processInstanceKey).withType("send").complete();
+
+    // the OneDayTimer behind the gateway must be created and held
+    final Record<TimerRecordValue> oneDayTimer =
+        RecordingExporter.timerRecords(TimerIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .filter(r -> "OneDayTimer".equals(r.getValue().getTargetElementId()))
+            .getFirst();
+    assertThat(oneDayTimer.getValue().isHeld())
+        .describedAs("the OneDayTimer behind the event-based gateway is held")
+        .isTrue();
+
+    // when a client-issued command addresses the held timer by (processInstanceKey, elementId)
+    final var trigger =
+        new TimerRecord()
+            .setElementInstanceKey(-1L)
+            .setProcessInstanceKey(processInstanceKey)
+            .setProcessDefinitionKey(-1L)
+            .setDueDate(-1L)
+            .setRepetitions(0)
+            .setTargetElementId(BufferUtil.wrapString("OneDayTimer"));
+    final var command = RecordToWrite.command().timer(TimerIntent.TRIGGER, trigger);
+    command.recordMetadata().requestId(1L).requestStreamId(1);
+    ENGINE.writeRecords(command);
+
+    // then the held timer is resolved by (processInstanceKey, elementId) and fires
+    RecordingExporter.timerRecords(TimerIntent.TRIGGERED)
+        .withProcessInstanceKey(processInstanceKey)
+        .filter(r -> "OneDayTimer".equals(r.getValue().getTargetElementId()))
+        .await();
+  }
+
   private static String deployTimerCatchProcess() {
     final String processId = Strings.newRandomValidBpmnId();
     ENGINE
