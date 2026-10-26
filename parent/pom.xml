@@ -114,7 +114,7 @@
          Thus this version must stay less than or equal to the baseline above. -->
     <version.protoc>4.34.2</version.protoc>
     <version.protobuf-common>2.78.0</version.protobuf-common>
-    <version.micrometer>1.17.1</version.micrometer>
+    <version.micrometer>1.17.2</version.micrometer>
     <version.rocksdbjni>11.8.1</version.rocksdbjni>
     <version.sbe>1.41.0</version.sbe>
     <version.scala>3.10.0</version.scala>
