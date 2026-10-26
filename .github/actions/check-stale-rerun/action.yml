@@ -1,0 +1,68 @@
+---
+name: Check Stale Re-run
+
+# owner: @camunda/engineering-operations
+
+description: |
+  Fails fast when the current job is a manual re-run (run_attempt > 1) of a workflow run older than
+  max-age-hours. Such re-runs cannot download the run's short-lived artifacts and would publish
+  outdated snapshots. Callers skip observe-build-status when output `stale` is 'true', so the
+  expected failure does not raise a base-branch-unsuccessful-job alert.
+  Requires `actions: read` on the job's GITHUB_TOKEN. Uses curl and jq only, so it works on
+  self-hosted runners without the gh CLI.
+
+inputs:
+  github-token:
+    description: 'Token with actions: read, used to look up the run creation time'
+    required: true
+  max-age-hours:
+    description: 'Maximum run age in hours for a re-run; keep in sync with the retention-days of the artifacts the job downloads'
+    required: false
+    default: '48'
+
+outputs:
+  stale:
+    description: "'true' when this is a re-run of a run older than max-age-hours, otherwise 'false'"
+    value: ${{ steps.check.outputs.stale }}
+
+runs:
+  using: composite
+  steps:
+    - name: Check run age on re-run
+      id: check
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.github-token }}
+        MAX_AGE_HOURS: ${{ inputs.max-age-hours }}
+      run: |
+        set -euo pipefail
+        echo "stale=false" >> "$GITHUB_OUTPUT"
+
+        if [[ -z "${GH_TOKEN}" ]]; then
+          echo "::error::Input github-token is required."
+          exit 1
+        fi
+        if [[ "${GITHUB_RUN_ATTEMPT}" == "1" ]]; then
+          exit 0
+        fi
+
+        # Fail open: an API hiccup must never block a legitimate deploy.
+        created_at=$(curl -sf --retry 3 --retry-all-errors \
+          -H "Authorization: Bearer ${GH_TOKEN}" -H "Accept: application/vnd.github+json" \
+          "${GITHUB_API_URL}/repos/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}" \
+          | jq -r '.created_at // empty') || true
+        if [[ -z "${created_at}" ]]; then
+          echo "::warning::Could not determine creation time of run ${GITHUB_RUN_ID}; skipping stale re-run check."
+          exit 0
+        fi
+
+        age_hours=$(( ($(date -u +%s) - $(date -u -d "${created_at}" +%s)) / 3600 ))
+        if (( age_hours <= MAX_AGE_HOURS )); then
+          exit 0
+        fi
+
+        echo "stale=true" >> "$GITHUB_OUTPUT"
+        msg="Stale re-run: run ${GITHUB_RUN_ID} was created at ${created_at} (${age_hours}h ago, limit ${MAX_AGE_HOURS}h). Its artifacts have expired and re-running it would publish an outdated snapshot. Start a new run on ${GITHUB_REF_NAME} instead (push or workflow_dispatch)."
+        echo "::error::${msg}"
+        echo "### :warning: ${msg}" >> "$GITHUB_STEP_SUMMARY"
+        exit 1
