@@ -52,6 +52,7 @@ import io.camunda.exporter.rdbms.handlers.UsageMetricExportHandler;
 import io.camunda.exporter.rdbms.handlers.UserExportHandler;
 import io.camunda.exporter.rdbms.handlers.UserTaskExportHandler;
 import io.camunda.exporter.rdbms.handlers.VariableExportHandler;
+import io.camunda.exporter.rdbms.handlers.VariableHistoryExportHandler;
 import io.camunda.exporter.rdbms.handlers.batchoperation.BatchOperationChunkExportHandler;
 import io.camunda.exporter.rdbms.handlers.batchoperation.BatchOperationCreatedExportHandler;
 import io.camunda.exporter.rdbms.handlers.batchoperation.BatchOperationInitializedExportHandler;
@@ -365,6 +366,14 @@ public class RdbmsExporterWrapper implements Exporter {
 
     if (config.getAuditLog().isEnabled()) {
       registerAuditLogHandlers(rdbmsWriters, builder, config, partitionId);
+    }
+
+    final var variableHistoryPercent = config.getAuditLog().getVariableHistoryPercent();
+    if (variableHistoryPercent > 0) {
+      builder.withHandler(
+          ValueType.VARIABLE,
+          new VariableHistoryExportHandler(
+              rdbmsWriters.getVariableHistoryWriter(), variableHistoryPercent));
     }
 
     if (config.getWaitState().isEnabled()) {
