@@ -77,10 +77,9 @@ public final class CompletableActorFuture<V extends @Nullable Object> implements
   private @Nullable Throwable failureCause;
 
   // Futures are almost always awaited by exactly one callback (andThen, thenApply,
-  // runOnCompletion),
-  // and many by none. The first callback is therefore stored inline, without any wrapper node.
-  // Only further callbacks go into a lock-free stack. Nothing is allocated until a callback is
-  // added.
+  // runOnCompletion) and many by none. The first callback is therefore stored inline, without a
+  // wrapper node. Only further callbacks go into a lock-free stack. Nothing is allocated until a
+  // callback is added. See #addBlockedCallback and #notifyAllBlocked for the concurrency contract.
   @SuppressFBWarnings(value = "UWF_UNWRITTEN_FIELD", justification = "Written using FIRST_CALLBACK")
   private volatile @Nullable BiConsumer<V, @Nullable Throwable> firstCallback;
 
@@ -489,6 +488,18 @@ public final class CompletableActorFuture<V extends @Nullable Object> implements
     return count;
   }
 
+  /**
+   * Registers a callback to be run by the next {@link #notifyAllBlocked()}.
+   *
+   * <p>Each CAS below is the point where the callback becomes visible to a notifier. A concurrent
+   * notifier either detaches it with the callbacks already registered, or it stays registered for
+   * the notifier's next pass. A push never modifies a node that was already detached, because it
+   * only writes the {@code next} pointer of its own, not yet linked, node and a stale CAS fails.
+   *
+   * <p>A callback registered after the last pass of a notifier is never run by it. Callers that
+   * register on a future which may complete concurrently must check {@link #isDone()} after
+   * registering, as {@link #onComplete(BiConsumer, Executor)} and {@link #completionLatch()} do.
+   */
   private void addBlockedCallback(final BiConsumer<V, @Nullable Throwable> callback) {
     if (FIRST_CALLBACK.compareAndSet(this, (BiConsumer<V, @Nullable Throwable>) null, callback)) {
       return;
@@ -504,7 +515,10 @@ public final class CompletableActorFuture<V extends @Nullable Object> implements
 
   @SuppressWarnings("unchecked")
   private void notifyAllBlocked() {
-    // callbacks may be added by other callbacks, or concurrently by other threads
+    // Each slot is detached atomically, so the detached callbacks are only reachable from this
+    // thread and can be reversed and run without further synchronization. Callbacks added by other
+    // callbacks, or concurrently by other threads, end up in the emptied slots and are picked up by
+    // the next iteration.
     while (true) {
       final var first =
           (BiConsumer<V, @Nullable Throwable>)
