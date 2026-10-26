@@ -19,6 +19,10 @@ public final class AuditLogConfiguration implements AuditLogCheck {
   private ActorAuditLogConfiguration client = ActorAuditLogConfiguration.logNone();
   private ActorAuditLogConfiguration unknown = ActorAuditLogConfiguration.logNone();
 
+  // PoC for the variable history write load: share of variable changes, 0 to 100, that are
+  // written with their value to the variable history
+  private int variableHistoryPercent = 0;
+
   public ActorAuditLogConfiguration getUser() {
     return user;
   }
@@ -46,11 +50,22 @@ public final class AuditLogConfiguration implements AuditLogCheck {
     return this;
   }
 
+  public int getVariableHistoryPercent() {
+    return variableHistoryPercent;
+  }
+
+  public AuditLogConfiguration setVariableHistoryPercent(final int variableHistoryPercent) {
+    this.variableHistoryPercent = variableHistoryPercent;
+    return this;
+  }
+
   @Override
   public String toString() {
     return "AuditLogConfiguration{"
         + "enabled="
         + enabled
+        + ", variableHistoryPercent="
+        + variableHistoryPercent
         + ", user="
         + user
         + ", client="

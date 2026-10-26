@@ -19,6 +19,12 @@ public class AuditLog {
   @NestedConfigurationProperty private AuditLogEntry client = AuditLogEntry.logNone();
   @NestedConfigurationProperty private AuditLogEntry unknown = AuditLogEntry.logNone();
 
+  /**
+   * PoC for the variable history write load: share of variable changes, 0 to 100, that are written
+   * with their value to the variable history. 0 switches the variable history off.
+   */
+  private int variableHistoryPercent = 0;
+
   public boolean isEnabled() {
     return enabled;
   }
@@ -51,10 +57,19 @@ public class AuditLog {
     this.unknown = unknown;
   }
 
+  public int getVariableHistoryPercent() {
+    return variableHistoryPercent;
+  }
+
+  public void setVariableHistoryPercent(final int variableHistoryPercent) {
+    this.variableHistoryPercent = variableHistoryPercent;
+  }
+
   /** Converts this configuration to an {@link AuditLogConfiguration} for the exporter. */
   public AuditLogConfiguration toConfiguration() {
     final AuditLogConfiguration auditLogConfiguration = new AuditLogConfiguration();
     auditLogConfiguration.setEnabled(isEnabled());
+    auditLogConfiguration.setVariableHistoryPercent(getVariableHistoryPercent());
     auditLogConfiguration
         .getClient()
         .setCategories(getClient().getCategories())
