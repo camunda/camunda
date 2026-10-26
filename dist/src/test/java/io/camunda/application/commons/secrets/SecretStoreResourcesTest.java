@@ -8,12 +8,16 @@
 package io.camunda.application.commons.secrets;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 import io.camunda.secretstore.SecretStore;
+import io.micrometer.core.instrument.composite.CompositeMeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -42,6 +46,14 @@ class SecretStoreResourcesTest {
   @Test
   void shouldLetInFlightResolutionsFinishBeforeClosingTheStore() throws Exception {
     // given a resolution still running on the pool when close is requested
+    final var poolTerminatedWhenStoreClosed = new AtomicBoolean();
+    doAnswer(
+            invocation -> {
+              poolTerminatedWhenStoreClosed.set(pool.isTerminated());
+              return null;
+            })
+        .when(store)
+        .close();
     resources.addPool(pool);
     resources.addStore(store);
     final var started = new CountDownLatch(1);
@@ -61,13 +73,51 @@ class SecretStoreResourcesTest {
     final var closer = Thread.ofVirtual().start(resources::close);
 
     // when the resolution completes while close is draining
+    await().until(pool::isShutdown);
     release.countDown();
     closer.join();
 
     // then it was not interrupted, and the store is closed only after the pool terminated
     assertThat(finished).isTrue();
-    assertThat(pool.awaitTermination(1, TimeUnit.SECONDS)).isTrue();
+    assertThat(poolTerminatedWhenStoreClosed).isTrue();
     verify(store).close();
+  }
+
+  @Test
+  void shouldInterruptResolutionsAndStillCloseStoresWhenCloseIsInterrupted() throws Exception {
+    // given a resolution that never finishes on its own
+    resources.addPool(pool);
+    resources.addStore(store);
+    final var started = new CountDownLatch(1);
+    final var resolutionInterrupted = new CountDownLatch(1);
+    pool.execute(
+        () -> {
+          started.countDown();
+          try {
+            new CountDownLatch(1).await();
+          } catch (final InterruptedException e) {
+            resolutionInterrupted.countDown();
+          }
+        });
+    started.await();
+    final var interruptRestored = new AtomicBoolean();
+    final var closer =
+        Thread.ofPlatform()
+            .start(
+                () -> {
+                  resources.close();
+                  interruptRestored.set(Thread.currentThread().isInterrupted());
+                });
+
+    // when close is interrupted while draining
+    await().until(pool::isShutdown);
+    closer.interrupt();
+    closer.join();
+
+    // then the resolution is interrupted, the store still closed, and the interrupt preserved
+    assertThat(resolutionInterrupted.await(1, TimeUnit.SECONDS)).isTrue();
+    verify(store).close();
+    assertThat(interruptRestored).isTrue();
   }
 
   @Test
@@ -85,7 +135,27 @@ class SecretStoreResourcesTest {
 
     // then
     assertThat(pool.isShutdown()).isTrue();
-    inOrder(failing, healthy).verify(failing).close();
-    verify(healthy).close();
+    final var order = inOrder(failing, healthy);
+    order.verify(failing).close();
+    order.verify(healthy).close();
+  }
+
+  @Test
+  void shouldCloseTheRemainingMeterRegistriesWhenOneFailsToClose() {
+    // given two wrapped registries, the first of which fails to close
+    final var parent = new SimpleMeterRegistry();
+    final var failing = mock(CompositeMeterRegistry.class);
+    doThrow(new IllegalStateException("boom")).when(failing).clear();
+    final var healthy = new CompositeMeterRegistry();
+    healthy.add(parent);
+    healthy.counter("test.counter");
+    resources.addMeterRegistry(failing);
+    resources.addMeterRegistry(healthy);
+
+    // when
+    resources.close();
+
+    // then the second is cleared even though the first failed
+    assertThat(healthy.getMeters()).isEmpty();
   }
 }

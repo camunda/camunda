@@ -15,6 +15,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
+import org.agrona.CloseHelper;
+import org.agrona.ErrorHandler;
 import org.jspecify.annotations.NullMarked;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,7 +36,13 @@ public final class SecretStoreResources implements AutoCloseable {
   /** How long in-flight resolutions may finish after the pools stop accepting new ones. */
   static final Duration DRAIN_TIMEOUT = Duration.ofSeconds(5);
 
+  /** How long interrupted resolutions may take to unwind before their stores are closed anyway. */
+  static final Duration INTERRUPT_TIMEOUT = Duration.ofSeconds(1);
+
   private static final Logger LOG = LoggerFactory.getLogger(SecretStoreResources.class);
+
+  private static final ErrorHandler LOG_FAILURE =
+      error -> LOG.warn("Failed to release secret store resource", error);
 
   private final List<SecretStore> stores = new ArrayList<>();
   private final List<MeterRegistry> meterRegistries = new ArrayList<>();
@@ -55,42 +63,49 @@ public final class SecretStoreResources implements AutoCloseable {
   /**
    * Stops the pools first so no new backend call starts, then closes the stores they called into,
    * then the registries their caches published to. Each step is attempted even if an earlier one
-   * fails. Safe to call more than once.
+   * fails with an {@link Exception}. Safe to call more than once.
    */
   @Override
   public void close() {
-    drain();
+    final var interrupted = drain();
     pools.clear();
-    for (final var store : stores) {
-      try {
-        store.close();
-      } catch (final RuntimeException e) {
-        LOG.warn("Failed to close secret store", e);
-      }
-    }
+    CloseHelper.closeAll(LOG_FAILURE, stores);
     stores.clear();
-    meterRegistries.forEach(MicrometerUtil::close);
+    CloseHelper.closeAll(
+        LOG_FAILURE,
+        meterRegistries.stream()
+            .<AutoCloseable>map(registry -> () -> MicrometerUtil.close(registry))
+            .toList());
     meterRegistries.clear();
+    if (interrupted) {
+      // restored only now, so the closes above are not themselves aborted by the flag
+      Thread.currentThread().interrupt();
+    }
   }
 
-  private void drain() {
+  /** Returns whether the calling thread was interrupted while waiting. */
+  private boolean drain() {
     pools.forEach(ExecutorService::shutdown);
     final var deadline = System.nanoTime() + DRAIN_TIMEOUT.toNanos();
     var interrupted = false;
     for (final var pool : pools) {
-      try {
-        if (!interrupted
-            && !pool.awaitTermination(deadline - System.nanoTime(), TimeUnit.NANOSECONDS)) {
-          LOG.warn("Secret resolutions still in flight after {}, interrupting", DRAIN_TIMEOUT);
-          pool.shutdownNow();
+      if (!interrupted) {
+        try {
+          if (!pool.awaitTermination(deadline - System.nanoTime(), TimeUnit.NANOSECONDS)) {
+            LOG.warn("Secret resolutions still in flight after {}, interrupting", DRAIN_TIMEOUT);
+            pool.shutdownNow();
+            if (!pool.awaitTermination(INTERRUPT_TIMEOUT.toNanos(), TimeUnit.NANOSECONDS)) {
+              LOG.warn("Secret resolutions did not stop after interruption, closing stores anyway");
+            }
+          }
+        } catch (final InterruptedException e) {
+          interrupted = true;
         }
-      } catch (final InterruptedException e) {
-        interrupted = true;
-        Thread.currentThread().interrupt();
       }
       if (interrupted) {
         pool.shutdownNow();
       }
     }
+    return interrupted;
   }
 }
