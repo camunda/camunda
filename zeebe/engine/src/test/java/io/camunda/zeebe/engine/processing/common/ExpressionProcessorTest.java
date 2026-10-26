@@ -225,7 +225,8 @@ class ExpressionProcessorTest {
           new ExpressionProcessor(EXPRESSION_LANGUAGE, DEFAULT_CONTEXT_LOOKUP, DEFAULT_TIMEOUT);
       final var parsedExpression = EXPRESSION_LANGUAGE.parseExpression("=x");
       assertThat(
-              processor.evaluateMessageCorrelationKeyExpression(parsedExpression, -1L, "tenant_1"))
+              processor.evaluateMessageCorrelationKeyExpression(
+                  parsedExpression, -1L, "tenant_1", ExpressionLabel.NONE))
           .isLeft()
           .extracting(r -> r.getLeft().getMessage())
           .isEqualTo(
@@ -609,7 +610,8 @@ class ExpressionProcessorTest {
           Arguments.of(
               (ProcessorMethod)
                   (processor, expression) ->
-                      processor.evaluateMessageCorrelationKeyExpression(expression, -1L, "tenant"),
+                      processor.evaluateMessageCorrelationKeyExpression(
+                          expression, -1L, "tenant", ExpressionLabel.NONE),
               "evaluateMessageCorrelationKeyExpression"),
           Arguments.of(
               (ProcessorMethod)
@@ -777,7 +779,6 @@ class ExpressionProcessorTest {
   }
 
   @Nested
-  @TestInstance(Lifecycle.PER_CLASS)
   class EvaluateMessageCorrelationKeyExpressionWithLabelTest {
 
     @Test

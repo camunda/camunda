@@ -440,19 +440,11 @@ public final class ExpressionProcessor {
    * @param expression the expression to evaluate
    * @param scopeKey the scope to load the variables from (a negative key is intended to imply an
    *     empty variable context)
+   * @param label describes the business role of this expression so that the message of a failing or
+   *     timed out evaluation identifies what failed; the type mismatch message already names the
+   *     correlation key, so it stays unchanged
    * @return either the evaluation result as String, or a failure if the evaluation fails
    * @throws EvaluationException if the evaluation is interrupted or fails unexpectedly
-   */
-  public Either<Failure, String> evaluateMessageCorrelationKeyExpression(
-      final Expression expression, final long scopeKey, final String tenantId) {
-    return evaluateMessageCorrelationKeyExpression(
-        expression, scopeKey, tenantId, ExpressionLabel.NONE);
-  }
-
-  /**
-   * Like {@link #evaluateMessageCorrelationKeyExpression(Expression, long, String)}, but labels the
-   * failure message of a failing or timed out evaluation with the given {@link ExpressionLabel}.
-   * The type mismatch message already names the correlation key, so it stays unchanged.
    */
   public Either<Failure, String> evaluateMessageCorrelationKeyExpression(
       final Expression expression,
