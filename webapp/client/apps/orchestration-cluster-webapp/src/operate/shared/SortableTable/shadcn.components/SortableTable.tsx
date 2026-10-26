@@ -142,7 +142,7 @@ type SelectionProps = {
 	onSelect: (rowId: string) => void;
 	onReset: () => void;
 	batchActions?: BatchAction[];
-	selectionCountLabel?: string;
+	selectionCountLabel?: React.ReactNode;
 	batchActionsLabel?: string;
 	batchActionsCancelLabel?: string;
 };
@@ -151,6 +151,7 @@ type BatchAction = {
 	id: string;
 	label: string;
 	variant?: 'default' | 'destructive';
+	icon?: React.ReactNode;
 	disabled?: boolean;
 	onClick: () => void;
 };
