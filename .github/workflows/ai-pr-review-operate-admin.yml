@@ -18,8 +18,14 @@ on:
       - "webapp/client/apps/orchestration-cluster-webapp/src/admin/**"
 
 # github.workflow differs per pod, so the pods' runs never cancel each other.
+# A `labeled` event for any label other than `ai-review` (the config's
+# opt_in_label) gets its own group and skips the review job, so it never
+# cancels a review that is still running.
 concurrency:
-  group: ai-pr-review-${{ github.workflow }}-${{ github.event.pull_request.number }}
+  group: >-
+    ${{ github.event.action == 'labeled' && github.event.label.name != 'ai-review'
+        && format('ai-pr-review-ignored-{0}', github.run_id)
+        || format('ai-pr-review-{0}-{1}', github.workflow, github.event.pull_request.number) }}
   cancel-in-progress: true
 
 defaults:
@@ -33,6 +39,7 @@ env:
 
 jobs:
   review:
+    if: github.event.action != 'labeled' || github.event.label.name == 'ai-review'
     # The called workflow's jobs can only narrow these, never widen them.
     permissions:
       contents: read
@@ -53,7 +60,7 @@ jobs:
   observe-review-status:
     name: Observe build status
     needs: review
-    if: always()
+    if: always() && needs.review.result != 'skipped'
     runs-on: ubuntu-slim
     timeout-minutes: 5
     permissions:
