@@ -99,7 +99,7 @@ public class SecretStoreConfiguration {
       resources.close();
       throw e;
     }
-    return new SecretStoreRegistries(Map.copyOf(registries), resources);
+    return new SecretStoreRegistries(registries, resources);
   }
 
   private static SecretStoreRegistry buildRegistry(

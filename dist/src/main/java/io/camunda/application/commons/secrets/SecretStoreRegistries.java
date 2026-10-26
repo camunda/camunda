@@ -31,7 +31,7 @@ public final class SecretStoreRegistries implements AutoCloseable {
   SecretStoreRegistries(
       final Map<String, SecretStoreRegistry> byPhysicalTenant,
       final SecretStoreResources resources) {
-    this.byPhysicalTenant = byPhysicalTenant;
+    this.byPhysicalTenant = Map.copyOf(byPhysicalTenant);
     this.resources = resources;
   }
 
