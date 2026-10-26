@@ -78,6 +78,8 @@
     <version.msgpack>0.9.12</version.msgpack>
     <version.netty>4.2.19.Final</version.netty>
     <version.objenesis>3.4</version.objenesis>
+    <!-- Override Thymeleaf's transitive ognl (3.3.4) to address CVE-2026-113730 -->
+    <version.ognl>3.4.13</version.ognl>
     <!-- Override Spring Boot's opentelemetry version to address CVE-2026-45292 -->
     <version.opentelemetry>1.62.0</version.opentelemetry>
     <version.opensearch>2.17.1</version.opensearch>
@@ -2233,6 +2235,14 @@
         <groupId>org.thymeleaf</groupId>
         <artifactId>thymeleaf-spring6</artifactId>
         <version>${version.thymeleaf}</version>
+      </dependency>
+
+      <!-- override transitive dependency of thymeleaf; ognl < 3.4.13 is affected by
+           CVE-2026-113730 (GHSA-crwc-vw2r-qr6m) -->
+      <dependency>
+        <groupId>ognl</groupId>
+        <artifactId>ognl</artifactId>
+        <version>${version.ognl}</version>
       </dependency>
 
       <!-- testcontainers and docker: see
