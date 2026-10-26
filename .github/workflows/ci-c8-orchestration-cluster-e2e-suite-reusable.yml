@@ -1,0 +1,772 @@
+# description: Runs the C8 Orchestration Cluster E2E + API test suite against a local stack. Reusable; called by ci.yml (PR check when the suite changes) and by the on-demand workflow.
+# test location: /qa/c8-orchestration-cluster-e2e-test-suite
+# called by: ci.yml
+# type: CI
+# owner: @camunda/qa-engineering
+---
+name: C8 Orchestration Cluster E2E Suite Tests
+
+# The suite's own test code used to be validated only by the manual on-demand
+# run, which contributors ignored — so suites whose just-changed tests were red
+# kept getting merged (camunda/team-test-automation#188). This reusable workflow
+# holds the test matrix once; ci.yml calls it as an automatic PR check scoped to
+# the author's changed tests, and the on-demand workflow calls it for a full run.
+on:
+  workflow_call:
+    inputs:
+      base:
+        description: "Base branch the run is sized for (main or stable/X.Y)."
+        required: true
+        type: string
+      test-ref:
+        description: "Git ref/SHA to check out for the test code."
+        required: true
+        type: string
+      changed-specs:
+        description: >-
+          Newline-separated spec paths (relative to the suite root) to gate on
+          when gating is "changed". Each job then fails ONLY if one of these
+          specs failed; untouched failures are reported but do not block.
+        required: false
+        type: string
+        default: ""
+      gating:
+        description: >-
+          "full" gates on the whole suite (Playwright's exit code decides, the
+          on-demand behaviour). "changed" blocks only on the PR's own
+          added/modified specs listed in changed-specs; an empty list blocks on
+          nothing.
+        required: false
+        type: string
+        default: "full"
+
+permissions: {}
+
+defaults:
+  run:
+    shell: bash
+
+env:
+  SUITE_DIR: qa/c8-orchestration-cluster-e2e-test-suite
+
+jobs:
+  c8-orchestration-cluster-api-tests:
+    name: C8 Orchestration Cluster API Tests (Mode ${{ matrix.camunda_mode }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        camunda_mode: ${{ fromJSON( (inputs.base == 'stable/8.9' || inputs.base == 'main') && '["profiles","all-in-one"]' || '["profiles"]' ) }}
+    steps:
+      - name: Print inputs
+        env:
+          BASE_BRANCH: ${{ inputs.base }}
+          TEST_REF: ${{ inputs.test-ref }}
+          CAMUNDA_MODE: ${{ matrix.camunda_mode }}
+        run: |
+          echo "Test ref: $TEST_REF"
+          echo "Base branch: $BASE_BRANCH"
+          echo "Camunda mode: $CAMUNDA_MODE"
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.test-ref }}
+          persist-credentials: false
+
+      - name: Set NON_STANDALONE variable
+        env:
+          BASE_BRANCH: ${{ inputs.base }}
+        run: |
+          if [[ "$BASE_BRANCH" == "stable/8.6" || "$BASE_BRANCH" == "stable/8.7" ]]; then
+            echo "NON_STANDALONE=true" >> "$GITHUB_ENV"
+          else
+            echo "NON_STANDALONE=false" >> "$GITHUB_ENV"
+          fi
+
+      - name: Start Camunda
+        env:
+          MATRIX_CAMUNDA_MODE: ${{ matrix.camunda_mode }}
+        working-directory: ${{ env.SUITE_DIR }}/config
+        run: |
+          # Retry to absorb transient Docker Hub registry timeouts during the
+          # image pull (e.g. "Get https://registry-1.docker.io/v2/: context
+          # deadline exceeded"). docker compose up -d is idempotent, so a retry
+          # simply resumes the pull and starts the container.
+          start_camunda() {
+            if [[ "$NON_STANDALONE" == "true" ]]; then
+              echo "Using single services for older branches (8.6/8.7)"
+              DATABASE=elasticsearch docker compose up -d operate tasklist
+            else
+              echo "Using standalone camunda container"
+              if [[ "$MATRIX_CAMUNDA_MODE" == "all-in-one" ]]; then
+                export CAMUNDA_MODE="all-in-one"
+                echo "Starting with CAMUNDA_MODE=all-in-one"
+              else
+                unset CAMUNDA_MODE
+                echo "Starting with profiles SPRING_PROFILES_ACTIVE mode"
+              fi
+              DATABASE=elasticsearch docker compose up -d camunda
+            fi
+          }
+
+          attempts=3
+          for attempt in $(seq 1 "$attempts"); do
+            if start_camunda; then
+              echo "Camunda started on attempt ${attempt}."
+              exit 0
+            fi
+            echo "Attempt ${attempt}/${attempts} to start Camunda failed."
+            if [[ "$attempt" -lt "$attempts" ]]; then
+              echo "Retrying in 15s..."
+              sleep 15
+            fi
+          done
+
+          echo "Failed to start Camunda after ${attempts} attempts."
+          exit 1
+
+      - name: List running Docker containers
+        working-directory: ${{ env.SUITE_DIR }}/config
+        run: docker ps -a
+
+      - name: Wait for services to be ready
+        working-directory: ${{ env.SUITE_DIR }}/config
+        run: |
+          echo "Checking if services are up..."
+          if [[ "$NON_STANDALONE" == "true" ]]; then
+            app_containers=(operate tasklist)
+          else
+            app_containers=(camunda)
+          fi
+          ready=false
+          declare -A non_running
+          for i in {1..90}; do
+            # Fail fast if an app container crashed, instead of waiting out the
+            # full ~15 min timeout. Resolve the container through compose rather
+            # than by bare name, and use --all so an already-exited container is
+            # still found. Two consecutive observations keep a single legitimate
+            # restart from failing the job.
+            for c in "${app_containers[@]}"; do
+              cid="$(DATABASE=elasticsearch docker compose ps --all --quiet "$c" 2>/dev/null || true)"
+              running=""
+              if [[ -n "$cid" ]]; then
+                running="$(docker inspect -f '{{.State.Running}}' "$cid" 2>/dev/null || true)"
+              fi
+              if [[ "$running" == "true" ]]; then
+                non_running["$c"]=0
+                continue
+              fi
+              non_running["$c"]=$(( ${non_running["$c"]:-0} + 1 ))
+              if (( ${non_running["$c"]} >= 2 )); then
+                if [[ -z "$cid" ]]; then
+                  echo "No container for service '$c' on two consecutive checks; it was never created or has been removed."
+                else
+                  echo "Container for service '$c' is not running on two consecutive checks; it will never become ready."
+                  docker inspect "$cid" --format 'Container {{.Name}}: status={{.State.Status}} exitCode={{.State.ExitCode}} oomKilled={{.State.OOMKilled}} restartCount={{.RestartCount}}' || true
+                fi
+                DATABASE=elasticsearch docker compose logs --tail 200 "$c" || true
+                echo "Services failed to start: service '$c' is not running."
+                exit 1
+              fi
+            done
+
+            if [[ "$NON_STANDALONE" == "true" ]]; then
+              tasklist_status=$(curl -s -m 5 http://localhost:8080 || echo "Failed")
+              operate_status=$(curl -s -m 5 http://localhost:8081 || echo "Failed")
+            else
+              tasklist_status=$(curl -s -m 5 http://localhost:8080/tasklist || echo "Failed")
+              operate_status=$(curl -s -m 5 http://localhost:8080/operate || echo "Failed")
+              identity_status=$(curl -s -m 5 http://localhost:8080/identity || echo "Failed")
+            fi
+            if [[ "$NON_STANDALONE" == "true" ]]; then
+              if [[ "$tasklist_status" != "Failed" && "$operate_status" != "Failed" ]]; then
+                echo "Services are ready!"
+                ready=true
+                break
+              fi
+            else
+              if [[ "$tasklist_status" != "Failed" && "$operate_status" != "Failed" && "$identity_status" != "Failed" ]]; then
+                echo "Services are ready!"
+                ready=true
+                break
+              fi
+            fi
+            echo "Waiting for services... ($i/90)"
+            sleep 10
+          done
+          if [ "$ready" = true ]; then
+            echo "Services are ready."
+          else
+            echo "Services failed to start in time."
+            exit 1
+          fi
+
+      - name: Print Docker logs before failing
+        if: failure()
+        working-directory: ${{ env.SUITE_DIR }}/config
+        # DATABASE must be set: docker-compose.yml interpolates it into the
+        # camunda service's depends_on / env_file, so an unset value makes the
+        # compose project invalid and this diagnostic step errors out instead of
+        # printing the container logs.
+        run: |
+          if [[ "$NON_STANDALONE" == "true" ]]; then
+            DATABASE=elasticsearch docker compose logs tasklist
+            DATABASE=elasticsearch docker compose logs operate
+          else
+            DATABASE=elasticsearch docker compose logs camunda
+          fi
+
+      - name: Setup Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 26
+          cache: npm
+          cache-dependency-path: ${{ env.SUITE_DIR }}/package-lock.json
+
+      - name: Clean install dependencies
+        working-directory: ${{ env.SUITE_DIR }}
+        run: |
+          rm -rf node_modules package-lock.json
+          npm install
+
+      - name: Install Playwright Browsers
+        working-directory: ${{ env.SUITE_DIR }}
+        run: npx playwright install --with-deps chromium
+
+      - name: Run API tests
+        working-directory: ${{ env.SUITE_DIR }}
+        env:
+          LOCAL_TEST: "false"
+          CAMUNDA_AUTH_STRATEGY: "BASIC"
+          CAMUNDA_BASIC_AUTH_USERNAME: "demo"
+          CAMUNDA_BASIC_AUTH_PASSWORD: "demo"
+          CAMUNDA_PROCESSINSTANCECREATION_BUSINESSIDUNIQUENESSENABLED: "true"
+          CHANGED_SPECS: ${{ inputs.changed-specs }}
+          GATING: ${{ inputs.gating }}
+        run: |
+          if [[ "$NON_STANDALONE" == "true" ]]; then
+            export CORE_APPLICATION_TASKLIST_URL="http://localhost:8080"
+            export CORE_APPLICATION_OPERATE_URL="http://localhost:8081"
+            export ZEEBE_REST_ADDRESS="http://localhost:8089"
+          else
+            export CORE_APPLICATION_URL="http://localhost:8080"
+            export ZEEBE_REST_ADDRESS="http://localhost:8080"
+          fi
+
+          echo "Running API tests"
+          set +e
+          npm run test -- --project=api-tests
+          pw_exit=$?
+          set -e
+          bash "$GITHUB_WORKSPACE/.github/scripts/apply-changed-spec-verdict.sh" "$pw_exit"
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        # Not failure(): with changed-spec gating a job can pass while untouched
+        # specs failed, and that report must stay downloadable to be useful.
+        if: ${{ !cancelled() }}
+        with:
+          name: C8 Orchestration Cluster API Test Result (Mode ${{ matrix.camunda_mode }})
+          path: ${{ env.SUITE_DIR }}/html-report
+          retention-days: 10
+
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          job_name: ${{ format('c8-orchestration-cluster-api-tests (Mode {0})', matrix.camunda_mode) }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
+  c8-orchestration-cluster-api-tests-rdbms:
+    if: ${{ contains(fromJSON('["stable/8.9","stable/8.10","main"]'), inputs.base) }}
+    name: C8 Orchestration Cluster API Tests (H2/RDBMS, Mode ${{ matrix.camunda_mode }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        camunda_mode: ${{ fromJSON( (inputs.base == 'stable/8.9' || inputs.base == 'main' || inputs.base == 'stable/8.10') && '["profiles","all-in-one"]' || '["profiles"]' ) }}
+    steps:
+      - name: Print inputs
+        env:
+          BASE_BRANCH: ${{ inputs.base }}
+          TEST_REF: ${{ inputs.test-ref }}
+          CAMUNDA_MODE: ${{ matrix.camunda_mode }}
+        run: |
+          echo "Test ref: $TEST_REF"
+          echo "Base branch: $BASE_BRANCH"
+          echo "Camunda mode: $CAMUNDA_MODE"
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.test-ref }}
+          persist-credentials: false
+
+      - uses: ./.github/actions/setup-build
+        with:
+          maven-cache-key-modifier: e2e-h2-api-tests
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+
+      - name: Build Camunda distribution
+        run: ./mvnw install -Dquickly -T1C
+
+      - name: Extract distribution
+        run: |
+          mkdir -p dev-dist
+          exploded="dist/target/camunda-zeebe"
+          if [ -d "$exploded/bin" ]; then
+            cp -a "$exploded"/. dev-dist/
+          else
+            tarball=$(find dist/target -maxdepth 1 -name 'camunda-zeebe-*.tar.gz' | head -1)
+            if [ -z "$tarball" ]; then
+              echo "ERROR: No dist build output found."
+              exit 1
+            fi
+            tar xzf "$tarball" --strip-components=1 -C dev-dist
+          fi
+
+      - name: Start Camunda with H2/RDBMS
+        env:
+          MATRIX_CAMUNDA_MODE: ${{ matrix.camunda_mode }}
+        run: |
+          chmod +x dev-dist/bin/camunda
+
+          if [[ "$MATRIX_CAMUNDA_MODE" == "all-in-one" ]]; then
+            export CAMUNDA_MODE="all-in-one"
+            echo "Starting with CAMUNDA_MODE=all-in-one"
+          else
+            unset CAMUNDA_MODE
+            export SPRING_PROFILES_ACTIVE="broker,consolidated-auth,admin,tasklist,operate"
+            echo "Starting with profiles SPRING_PROFILES_ACTIVE mode"
+          fi
+
+          export ZEEBE_CLOCK_CONTROLLED="true"
+
+          # Auth configuration
+          export CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTEDAPI="false"
+          export CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED="true"
+          export CAMUNDA_SECURITY_AUTHENTICATION_METHOD="BASIC"
+          export CAMUNDA_SECURITY_MULTITENANCY_CHECKSENABLED="false"
+          export CAMUNDA_SECURITY_INITIALIZATION_USERS_0_USERNAME="demo"
+          export CAMUNDA_SECURITY_INITIALIZATION_USERS_0_PASSWORD="demo"
+          export CAMUNDA_SECURITY_INITIALIZATION_USERS_0_NAME="Demo"
+          export CAMUNDA_SECURITY_INITIALIZATION_USERS_0_EMAIL="demo@example.com"
+          export CAMUNDA_SECURITY_INITIALIZATION_DEFAULTROLES_ADMIN_USERS_0="demo"
+          export CAMUNDA_SECURITY_INITIALIZATION_USERS_1_USERNAME="lisa"
+          export CAMUNDA_SECURITY_INITIALIZATION_USERS_1_PASSWORD="lisa"
+          export CAMUNDA_SECURITY_INITIALIZATION_USERS_1_NAME="lisa"
+          export CAMUNDA_SECURITY_INITIALIZATION_USERS_1_EMAIL="lisa@example.com"
+          export CAMUNDA_SECURITY_INITIALIZATION_DEFAULTROLES_ADMIN_USERS_1="lisa"
+
+          # H2 in-memory database with RDBMS secondary storage
+          export CAMUNDA_DATA_SECONDARY_STORAGE_TYPE="rdbms"
+          export CAMUNDA_DATA_SECONDARY_STORAGE_RDBMS_URL="jdbc:h2:mem:cpt;DB_CLOSE_DELAY=-1;MODE=PostgreSQL"
+          export CAMUNDA_DATA_SECONDARY_STORAGE_RDBMS_USERNAME="sa"
+          export CAMUNDA_DATA_SECONDARY_STORAGE_RDBMS_PASSWORD=""
+          export CAMUNDA_DATA_SECONDARY_STORAGE_RDBMS_AUTO_DDL="true"
+          export CAMUNDA_DATA_SECONDARY_STORAGE_RDBMS_FLUSH_INTERVAL="PT0S"
+          export CAMUNDA_DATA_SECONDARY_STORAGE_RDBMS_HISTORY_DEFAULT_HISTORY_TTL="PT60S"
+          export CAMUNDA_DATA_SECONDARY_STORAGE_RDBMS_HISTORY_MIN_HISTORY_CLEANUP_INTERVAL="PT10S"
+          export CAMUNDA_DATA_SECONDARY_STORAGE_RDBMS_HISTORY_MAX_HISTORY_CLEANUP_INTERVAL="PT60S"
+
+          # Audit log
+          export CAMUNDA_DATA_AUDITLOG_ENABLED="true"
+          export CAMUNDA_DATA_AUDITLOG_USER_CATEGORIES_0="ADMIN"
+          export CAMUNDA_DATA_AUDITLOG_USER_CATEGORIES_1="DEPLOYED_RESOURCES"
+          export CAMUNDA_DATA_AUDITLOG_USER_CATEGORIES_2="USER_TASKS"
+          export CAMUNDA_DATA_AUDITLOG_USER_EXCLUDES_0="VARIABLE"
+          export CAMUNDA_DATA_AUDITLOG_USER_EXCLUDES_1="BATCH"
+          export CAMUNDA_DATA_AUDITLOG_CLIENT_CATEGORIES_0="ADMIN"
+          export CAMUNDA_DATA_AUDITLOG_CLIENT_EXCLUDES_0="PROCESS_INSTANCE"
+
+          # Business ID uniqueness enforcement toggle
+          export CAMUNDA_PROCESSINSTANCECREATION_BUSINESSIDUNIQUENESSENABLED="true"
+
+          dev-dist/bin/camunda > dev-dist/camunda.log 2>&1 &
+          echo $! > dev-dist/camunda.pid
+          echo "Camunda starting (PID $(cat dev-dist/camunda.pid))..."
+
+      - name: Wait for Camunda to be ready
+        run: |
+          echo "Waiting for Camunda to be ready..."
+          for i in $(seq 1 90); do
+            if curl -sf -u demo:demo http://localhost:8080/v2/topology >/dev/null 2>&1; then
+              echo "Camunda is ready!"
+              exit 0
+            fi
+            echo "Waiting... ($i/90)"
+            sleep 5
+          done
+          echo "Camunda failed to start in time."
+          echo "=== Last 100 lines of log ==="
+          tail -100 dev-dist/camunda.log
+          exit 1
+
+      - name: Setup Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 26
+          cache: npm
+          cache-dependency-path: ${{ env.SUITE_DIR }}/package-lock.json
+
+      - name: Clean install dependencies
+        working-directory: ${{ env.SUITE_DIR }}
+        run: |
+          rm -rf node_modules package-lock.json
+          npm install
+
+      - name: Install Playwright Browsers
+        working-directory: ${{ env.SUITE_DIR }}
+        run: npx playwright install --with-deps chromium
+
+      - name: Run API tests
+        working-directory: ${{ env.SUITE_DIR }}
+        env:
+          LOCAL_TEST: "false"
+          CORE_APPLICATION_URL: "http://localhost:8080"
+          ZEEBE_REST_ADDRESS: "http://localhost:8080"
+          CAMUNDA_AUTH_STRATEGY: "BASIC"
+          CAMUNDA_BASIC_AUTH_USERNAME: "demo"
+          CAMUNDA_BASIC_AUTH_PASSWORD: "demo"
+          CAMUNDA_PROCESSINSTANCECREATION_BUSINESSIDUNIQUENESSENABLED: "true"
+          DATABASE: "RDBMS"
+          CHANGED_SPECS: ${{ inputs.changed-specs }}
+          GATING: ${{ inputs.gating }}
+        run: |
+          echo "Running API tests against H2/RDBMS backend"
+          set +e
+          npm run test -- --project=api-tests
+          pw_exit=$?
+          set -e
+          bash "$GITHUB_WORKSPACE/.github/scripts/apply-changed-spec-verdict.sh" "$pw_exit"
+
+      - name: Print Camunda logs on failure
+        if: failure()
+        run: |
+          echo "=== Camunda logs ==="
+          cat dev-dist/camunda.log
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        # Not failure(): with changed-spec gating a job can pass while untouched
+        # specs failed, and that report must stay downloadable to be useful.
+        if: ${{ !cancelled() }}
+        with:
+          name: C8 Orchestration Cluster API Test Result (H2-RDBMS, Mode ${{ matrix.camunda_mode }})
+          path: ${{ env.SUITE_DIR }}/html-report
+          retention-days: 10
+
+      - name: Stop Camunda
+        if: always()
+        run: |
+          if [ -f dev-dist/camunda.pid ]; then
+            kill "$(cat dev-dist/camunda.pid)" 2>/dev/null || true
+          fi
+
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          job_name: ${{ format('c8-orchestration-cluster-api-tests-rdbms (Mode {0})', matrix.camunda_mode) }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
+  c8-orchestration-cluster-e2e-tests:
+    name: C8 Orchestration Cluster E2E Tests (Mode ${{ matrix.camunda_mode }}${{ matrix.tasklist_mode && format(', Tasklist {0}', matrix.tasklist_mode) || '' }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJSON( inputs.base == 'main' && '[{"camunda_mode":"profiles"},{"camunda_mode":"all-in-one"}]' || (inputs.base == 'stable/8.6' || inputs.base == 'stable/8.7') && '[{"camunda_mode":"profiles","tasklist_mode":"v1"}]' || inputs.base == 'stable/8.9' && '[{"camunda_mode":"profiles","tasklist_mode":"v1"},{"camunda_mode":"all-in-one","tasklist_mode":"v1"},{"camunda_mode":"profiles","tasklist_mode":"v2"},{"camunda_mode":"all-in-one","tasklist_mode":"v2"}]' || inputs.base == 'stable/8.8' && '[{"camunda_mode":"profiles","tasklist_mode":"v1"},{"camunda_mode":"profiles","tasklist_mode":"v2"}]' || '[{"camunda_mode":"profiles","tasklist_mode":"v2"}]' ) }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: read
+    steps:
+      - name: Print inputs
+        env:
+          BASE_BRANCH: ${{ inputs.base }}
+          TEST_REF: ${{ inputs.test-ref }}
+          CAMUNDA_MODE: ${{ matrix.camunda_mode }}
+          TASKLIST_MODE: ${{ matrix.tasklist_mode }}
+        run: |
+          echo "Test ref: $TEST_REF"
+          echo "Base branch: $BASE_BRANCH"
+          echo "Camunda mode: $CAMUNDA_MODE"
+          if [[ -n "$TASKLIST_MODE" ]]; then
+            echo "Tasklist mode: $TASKLIST_MODE"
+          fi
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.test-ref }}
+          persist-credentials: false
+
+      - name: Set NON_STANDALONE variable
+        env:
+          BASE_BRANCH: ${{ inputs.base }}
+        run: |
+          if [[ "$BASE_BRANCH" == "stable/8.6" || "$BASE_BRANCH" == "stable/8.7" ]]; then
+            echo "NON_STANDALONE=true" >> "$GITHUB_ENV"
+          else
+            echo "NON_STANDALONE=false" >> "$GITHUB_ENV"
+          fi
+
+      - name: Start Camunda
+        env:
+          BASE_BRANCH: ${{ inputs.base }}
+          MATRIX_CAMUNDA_MODE: ${{ matrix.camunda_mode }}
+          MATRIX_TASKLIST_MODE: ${{ matrix.tasklist_mode }}
+        working-directory: ${{ env.SUITE_DIR }}/config
+        run: |
+          # Retry to absorb transient Docker Hub registry timeouts during the
+          # image pull. docker compose up -d is idempotent, so a retry simply
+          # resumes the pull and starts the container.
+          start_camunda() {
+            if [[ "$NON_STANDALONE" == "true" ]]; then
+              echo "Using single services for older branches (8.6/8.7)"
+              DATABASE=elasticsearch docker compose up -d operate tasklist
+            else
+              echo "Using standalone camunda container"
+              if [[ "$MATRIX_CAMUNDA_MODE" == "all-in-one" ]]; then
+                export CAMUNDA_MODE="all-in-one"
+                echo "Starting with CAMUNDA_MODE=all-in-one"
+              else
+                unset CAMUNDA_MODE
+                echo "Starting with profiles SPRING_PROFILES_ACTIVE mode"
+              fi
+
+              if [[ ("$BASE_BRANCH" == "stable/8.8" || "$BASE_BRANCH" == "stable/8.9") && "$MATRIX_TASKLIST_MODE" == "v1" ]]; then
+                echo "Starting with Tasklist V1 mode enabled"
+                CAMUNDA_TASKLIST_V2_MODE_ENABLED=false DATABASE=elasticsearch docker compose up -d camunda
+              else
+                DATABASE=elasticsearch docker compose up -d camunda
+              fi
+
+              # Optimize is a separate application (reads exported data from
+              # Elasticsearch). Start it too, but only on branches whose compose
+              # defines the service, so this is a no-op elsewhere.
+              if DATABASE=elasticsearch docker compose config --services | grep -qx optimize; then
+                echo "Starting Optimize"
+                DATABASE=elasticsearch docker compose up -d optimize
+              else
+                echo "optimize service not defined in this branch's compose; skipping"
+              fi
+            fi
+          }
+
+          attempts=3
+          for attempt in $(seq 1 "$attempts"); do
+            if start_camunda; then
+              echo "Camunda started on attempt ${attempt}."
+              exit 0
+            fi
+            echo "Attempt ${attempt}/${attempts} to start Camunda failed."
+            if [[ "$attempt" -lt "$attempts" ]]; then
+              echo "Retrying in 15s..."
+              sleep 15
+            fi
+          done
+
+          echo "Failed to start Camunda after ${attempts} attempts."
+          exit 1
+
+      - name: List running Docker containers
+        working-directory: ${{ env.SUITE_DIR }}/config
+        run: docker ps -a
+
+      - name: Wait for services to be ready
+        working-directory: ${{ env.SUITE_DIR }}/config
+        run: |
+          echo "Checking if services are up..."
+          if [[ "$NON_STANDALONE" == "true" ]]; then
+            app_containers=(operate tasklist)
+          else
+            app_containers=(camunda)
+          fi
+          ready=false
+          declare -A non_running
+          for i in {1..90}; do
+            for c in "${app_containers[@]}"; do
+              cid="$(DATABASE=elasticsearch docker compose ps --all --quiet "$c" 2>/dev/null || true)"
+              running=""
+              if [[ -n "$cid" ]]; then
+                running="$(docker inspect -f '{{.State.Running}}' "$cid" 2>/dev/null || true)"
+              fi
+              if [[ "$running" == "true" ]]; then
+                non_running["$c"]=0
+                continue
+              fi
+              non_running["$c"]=$(( ${non_running["$c"]:-0} + 1 ))
+              if (( ${non_running["$c"]} >= 2 )); then
+                if [[ -z "$cid" ]]; then
+                  echo "No container for service '$c' on two consecutive checks; it was never created or has been removed."
+                else
+                  echo "Container for service '$c' is not running on two consecutive checks; it will never become ready."
+                  docker inspect "$cid" --format 'Container {{.Name}}: status={{.State.Status}} exitCode={{.State.ExitCode}} oomKilled={{.State.OOMKilled}} restartCount={{.RestartCount}}' || true
+                fi
+                DATABASE=elasticsearch docker compose logs --tail 200 "$c" || true
+                echo "Services failed to start: service '$c' is not running."
+                exit 1
+              fi
+            done
+
+            if [[ "$NON_STANDALONE" == "true" ]]; then
+              tasklist_status=$(curl -s -m 5 http://localhost:8080 || echo "Failed")
+              operate_status=$(curl -s -m 5 http://localhost:8081 || echo "Failed")
+            else
+              tasklist_status=$(curl -s -m 5 http://localhost:8080/tasklist || echo "Failed")
+              operate_status=$(curl -s -m 5 http://localhost:8080/operate || echo "Failed")
+              identity_status=$(curl -s -m 5 http://localhost:8080/identity || echo "Failed")
+            fi
+            if [[ "$NON_STANDALONE" == "true" ]]; then
+              if [[ "$tasklist_status" != "Failed" && "$operate_status" != "Failed" ]]; then
+                echo "Services are ready!"
+                ready=true
+                break
+              fi
+            else
+              if [[ "$tasklist_status" != "Failed" && "$operate_status" != "Failed" && "$identity_status" != "Failed" ]]; then
+                echo "Services are ready!"
+                ready=true
+                break
+              fi
+            fi
+            echo "Waiting for services... ($i/90)"
+            sleep 10
+          done
+          if [ "$ready" = true ]; then
+            echo "Services are ready."
+          else
+            echo "Services failed to start in time."
+            exit 1
+          fi
+
+      - name: Print Docker logs before failing
+        if: failure()
+        working-directory: ${{ env.SUITE_DIR }}/config
+        run: |
+          if [[ "$NON_STANDALONE" == "true" ]]; then
+            DATABASE=elasticsearch docker compose logs tasklist
+            DATABASE=elasticsearch docker compose logs operate
+          else
+            DATABASE=elasticsearch docker compose logs camunda
+          fi
+
+      - name: Setup Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 26
+          cache: npm
+          cache-dependency-path: ${{ env.SUITE_DIR }}/package-lock.json
+
+      - name: Clean install dependencies
+        working-directory: ${{ env.SUITE_DIR }}
+        run: |
+          rm -rf node_modules package-lock.json
+          npm install
+
+      - name: Install Playwright Browsers
+        working-directory: ${{ env.SUITE_DIR }}
+        run: npx playwright install --with-deps chromium
+
+      - name: Run tests
+        working-directory: ${{ env.SUITE_DIR }}
+        env:
+          LOCAL_TEST: "false"
+          CAMUNDA_AUTH_STRATEGY: "BASIC"
+          CAMUNDA_BASIC_AUTH_USERNAME: "demo"
+          CAMUNDA_BASIC_AUTH_PASSWORD: "demo"
+          MATRIX_TASKLIST_MODE: ${{ matrix.tasklist_mode }}
+          BASE_BRANCH: ${{ inputs.base }}
+          OPTIMIZE_BASE_URL: "http://localhost:8083"
+          CHANGED_SPECS: ${{ inputs.changed-specs }}
+          GATING: ${{ inputs.gating }}
+        run: |
+          if [[ "$NON_STANDALONE" == "true" ]]; then
+            export CORE_APPLICATION_TASKLIST_URL="http://localhost:8080"
+            export CORE_APPLICATION_OPERATE_URL="http://localhost:8081"
+            export ZEEBE_REST_ADDRESS="http://localhost:8089"
+            TEST_ARGS=(--project=chromium)
+          else
+            export CORE_APPLICATION_URL="http://localhost:8080"
+            export ZEEBE_REST_ADDRESS="http://localhost:8080"
+            TEST_ARGS=(--project=chromium)
+
+            if [[ "$BASE_BRANCH" == "main" ]]; then
+              echo "Running current-generation tests"
+              TEST_ARGS+=(tests/)
+            elif [[ "$MATRIX_TASKLIST_MODE" == "v2" ]]; then
+              export CAMUNDA_TASKLIST_V2_MODE_ENABLED=true
+              echo "Running V2 mode tests"
+              if [[ "$BASE_BRANCH" == "stable/8.8" ]]; then
+                TEST_ARGS+=(tests/ --grep-invert '@v1-only')
+              else
+                TEST_ARGS+=(tests/ --grep-invert 'v1/')
+              fi
+            else
+              if [[ "$BASE_BRANCH" == "stable/8.8" || "$BASE_BRANCH" == "stable/8.9" ]]; then
+                export CAMUNDA_TASKLIST_V2_MODE_ENABLED=false
+              fi
+              echo "Running V1 mode tests"
+              if [[ "$BASE_BRANCH" == "stable/8.9" ]]; then
+                TEST_ARGS+=(tests/tasklist/v1/ tests/common-flows/v1/)
+              elif [[ "$BASE_BRANCH" == "stable/8.8" ]]; then
+                TEST_ARGS+=(tests/tasklist/ tests/common-flows/)
+              fi
+            fi
+          fi
+          # Include the Optimize startup check in the same Playwright run when
+          # the Optimize container is up (branches whose compose defines it).
+          if docker ps --format '{{.Names}}' | grep -qx optimize; then
+            echo "Optimize container detected; waiting for readiness before adding the optimize-startup project"
+            for i in {1..60}; do
+              optimize_status="$(curl -s -o /dev/null -w '%{http_code}' -m 5 http://localhost:8083/ || true)"
+              optimize_status="${optimize_status:-000}"
+              if [[ "$optimize_status" == "302" ]]; then
+                echo "Optimize is ready (HTTP $optimize_status)."
+                break
+              fi
+              echo "Waiting for Optimize... ($i/60) HTTP $optimize_status"
+              sleep 10
+            done
+            TEST_ARGS+=(--project=optimize-startup)
+          fi
+
+          echo "Running tests with args: ${TEST_ARGS[*]}"
+          set +e
+          npm run test -- "${TEST_ARGS[@]}"
+          pw_exit=$?
+          set -e
+          bash "$GITHUB_WORKSPACE/.github/scripts/apply-changed-spec-verdict.sh" "$pw_exit"
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        # Not failure(): with changed-spec gating a job can pass while untouched
+        # specs failed, and that report must stay downloadable to be useful.
+        if: ${{ !cancelled() }}
+        with:
+          name: C8 Orchestration Cluster E2E Test Result (Mode ${{ matrix.camunda_mode }}${{ matrix.tasklist_mode && format(', Tasklist {0}', matrix.tasklist_mode) || '' }})
+          path: ${{ env.SUITE_DIR }}/html-report
+          retention-days: 10
+
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          job_name: "c8-orchestration-cluster-e2e-tests${{ matrix.tasklist_mode && format('/{0}', matrix.tasklist_mode) || '' }}"
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
