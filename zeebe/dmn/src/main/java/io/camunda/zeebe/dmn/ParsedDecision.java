@@ -19,9 +19,9 @@ import org.jspecify.annotations.Nullable;
 public interface ParsedDecision {
 
   /**
-   * @return the id of the decision
+   * @return the id of the decision, or {@code null} if the DMN does not define one
    */
-  String getId();
+  @Nullable String getId();
 
   /**
    * @return the name of the decision

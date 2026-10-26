@@ -17,7 +17,8 @@ import org.camunda.feel.syntaxtree.Val;
 import org.jspecify.annotations.Nullable;
 
 public record EvaluatedDmnScalaInput(
-    String inputId, @Nullable String inputName, DirectBuffer inputValue) implements EvaluatedInput {
+    @Nullable String inputId, @Nullable String inputName, DirectBuffer inputValue)
+    implements EvaluatedInput {
 
   private static final String MAX_EXPRESSION_LENGTH = "30";
   private static final String TRUNCATE_EXPRESSION_TEMPLATE = "%." + MAX_EXPRESSION_LENGTH + "s";

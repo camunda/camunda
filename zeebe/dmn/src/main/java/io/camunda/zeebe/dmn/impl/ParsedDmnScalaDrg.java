@@ -24,14 +24,14 @@ import org.jspecify.annotations.Nullable;
 public final class ParsedDmnScalaDrg implements ParsedDecisionRequirementsGraph {
 
   private final ParsedDmn parsedDmn;
-  private final String decisionRequirementsId;
+  private final @Nullable String decisionRequirementsId;
   private final String decisionRequirementsName;
   private final String decisionRequirementsNamespace;
   private final List<ParsedDecision> decisions;
 
   private ParsedDmnScalaDrg(
       final ParsedDmn parsedDmn,
-      final String decisionRequirementsId,
+      final @Nullable String decisionRequirementsId,
       final String decisionRequirementsName,
       final String decisionRequirementsNamespace,
       final List<ParsedDecision> decisions) {
@@ -43,7 +43,7 @@ public final class ParsedDmnScalaDrg implements ParsedDecisionRequirementsGraph 
   }
 
   @Override
-  public String getId() {
+  public @Nullable String getId() {
     return decisionRequirementsId;
   }
 
@@ -80,7 +80,7 @@ public final class ParsedDmnScalaDrg implements ParsedDecisionRequirementsGraph 
 
     final DmnModelInstance modelInstance = parsedDmn.model();
     final Definitions definitions = modelInstance.getDefinitions();
-    final String id = definitions.getId();
+    final @Nullable String id = definitions.getId();
     final String name = definitions.getName();
     final String namespace = definitions.getNamespace();
     final List<ParsedDecision> parsedDecisions = getParsedDecisions(parsedDmn);

@@ -17,9 +17,9 @@ import org.jspecify.annotations.Nullable;
 public interface EvaluatedInput {
 
   /**
-   * @return the id of the evaluated input
+   * @return the id of the evaluated input, or {@code null} if the DMN does not define one
    */
-  String inputId();
+  @Nullable String inputId();
 
   /**
    * Returns the name of the evaluated input. Note that it uses the label of the input in absence of

@@ -19,7 +19,7 @@ public interface EvaluatedOutput {
   /**
    * @return the id of the evaluated output
    */
-  String outputId();
+  @Nullable String outputId();
 
   /**
    * Returns the name of the evaluated output. Note that the name of the output can be different
