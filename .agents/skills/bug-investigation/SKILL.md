@@ -72,7 +72,7 @@ CWD is the repo root, on a clean or disposable branch (reproduction may start lo
    workaround) so the engineer can decide.
 8. **Never open a PR that fixes only some of the storage backends the repo supports.** Camunda ships
    RDBMS, Elasticsearch, and OpenSearch as interchangeable backends behind the `search/` abstraction
-   (see the path map in the repo's `AGENTS.md`). A root cause in shared query/aggregation/statistics
+   (see the Module map in `docs/architecture/overview.md`). A root cause in shared query/aggregation/statistics
    logic almost always has a twin implementation per backend — e.g.
    `search/search-client-query-transformer/` (ES/OS) and `db/rdbms/src/main/resources/mapper/` (RDBMS
    MyBatis mappers). If the bug reproduces on one backend, assume it reproduces on all of them unless
@@ -202,7 +202,7 @@ Update the comment: check off item 1.
 ### Phase 2 — Find relevant files
 
 Search the codebase for the failing behavior (component label on the issue narrows the module —
-see the path map in the repo's `AGENTS.md`). Cross-reference with recent history for the same area:
+see the Module map in `docs/architecture/overview.md`). Cross-reference with recent history for the same area:
 
 ```bash
 git log --oneline -20 -- <suspected path>
