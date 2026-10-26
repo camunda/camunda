@@ -9,6 +9,7 @@ package io.camunda.zeebe.test.util.socket;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.nio.channels.FileChannel;
@@ -116,9 +117,14 @@ final class PortAllocator {
   }
 
   private static boolean isBindable(final int port) {
+    return isBindable(new InetSocketAddress(port))
+        && isBindable(new InetSocketAddress(InetAddress.getLoopbackAddress(), port));
+  }
+
+  private static boolean isBindable(final InetSocketAddress address) {
     try (final var socket = new ServerSocket()) {
       socket.setReuseAddress(true);
-      socket.bind(new InetSocketAddress(port));
+      socket.bind(address);
       return true;
     } catch (final IOException e) {
       return false;
