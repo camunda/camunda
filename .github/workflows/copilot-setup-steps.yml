@@ -27,7 +27,7 @@ jobs:
       - name: Install gh-aw extension
         uses: github/gh-aw-actions/setup-cli@9271a1804551c0dc4fb0085a97979950aa2f8489 # v0.88.2
         with:
-          version: v0.93.0
+          version: v0.93.2
       # If we want to align Copilot and CI setups more in the future, consider using (parts of) .github/actions/setup-build here
       - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
         with:
