@@ -8,8 +8,11 @@
 package io.camunda.optimize.service.identity;
 
 import io.camunda.identity.sdk.IdentityConfiguration;
+import io.camunda.identity.sdk.IdentityConfiguration.Type;
 import io.camunda.optimize.service.util.configuration.condition.CCSMCondition;
 import jakarta.annotation.PostConstruct;
+import java.util.EnumSet;
+import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Conditional;
@@ -29,15 +32,20 @@ import org.springframework.stereotype.Component;
  * {@code CAMUNDA_IDENTITY_COMPONENT_ID}, while a plain placeholder lookup does not, which would
  * leave this reporting a component the SDK is not sending.
  *
- * <p>Nothing is sent at all on the Keycloak type. There the SDK reads permissions out of the
- * token's own {@code permissions} claim, keyed by audience, and never calls Identity, so component
- * scoping does not reach that setup however this is configured.
+ * <p>Nothing is sent at all on some identity types. Keycloak and Auth0 read permissions out of the
+ * token's own {@code permissions} claim and never call Identity, so component scoping does not
+ * reach those setups however this is configured. Only the generic type and Microsoft, which extends
+ * it, send a component.
  */
 @Component
 @Conditional(CCSMCondition.class)
 public class CCSMIdentityComponentIdReporter {
 
   private static final Logger LOG = LoggerFactory.getLogger(CCSMIdentityComponentIdReporter.class);
+
+  /** The types whose SDK implementation never calls Identity for a token's permissions. */
+  private static final Set<Type> READS_PERMISSIONS_FROM_THE_TOKEN =
+      EnumSet.of(Type.KEYCLOAK, Type.AUTH0);
 
   private final IdentityConfiguration identityConfiguration;
 
@@ -47,11 +55,14 @@ public class CCSMIdentityComponentIdReporter {
 
   @PostConstruct
   public void report() {
-    if (identityConfiguration.getType() == IdentityConfiguration.Type.KEYCLOAK) {
+    final Type type = identityConfiguration.getType();
+
+    if (READS_PERMISSIONS_FROM_THE_TOKEN.contains(type)) {
       LOG.info(
-          "Permissions come from the token's own claim on the Keycloak identity type, so Optimize"
-              + " does not name a component to Management Identity and component scoping does not"
-              + " apply.");
+          "Permissions come from the token's own claim on the {} identity type, so Optimize does"
+              + " not name a component to Management Identity and component scoping does not"
+              + " apply.",
+          type);
       return;
     }
 
@@ -67,6 +78,10 @@ public class CCSMIdentityComponentIdReporter {
       return;
     }
 
-    LOG.info("Naming this component '{}' to Management Identity.", componentId);
+    LOG.info(
+        "Naming this component '{}' to Management Identity. It has to match a key under Identity's"
+            + " component-presets; one that does not is treated the same as naming none, and every"
+            + " permission on the audience is returned.",
+        componentId);
   }
 }
