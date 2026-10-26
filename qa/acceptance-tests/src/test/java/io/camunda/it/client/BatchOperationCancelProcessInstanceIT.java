@@ -7,13 +7,17 @@
  */
 package io.camunda.it.client;
 
+import static io.camunda.it.util.TestHelper.deployProcessAndWaitForIt;
 import static io.camunda.it.util.TestHelper.deployResource;
 import static io.camunda.it.util.TestHelper.getScopedVariables;
+import static io.camunda.it.util.TestHelper.startProcessInstance;
 import static io.camunda.it.util.TestHelper.startScopedProcessInstance;
 import static io.camunda.it.util.TestHelper.waitForBatchOperationCompleted;
+import static io.camunda.it.util.TestHelper.waitForBatchOperationStatus;
 import static io.camunda.it.util.TestHelper.waitForBatchOperationWithCorrectTotalCount;
 import static io.camunda.it.util.TestHelper.waitForProcessInstanceToBeTerminated;
 import static io.camunda.it.util.TestHelper.waitForProcessInstancesToBeSuspended;
+import static io.camunda.it.util.TestHelper.waitForProcessInstancesToStart;
 import static io.camunda.it.util.TestHelper.waitForProcessesToBeDeployed;
 import static io.camunda.it.util.TestHelper.waitForScopedProcessInstancesToStart;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -24,15 +28,23 @@ import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.response.Process;
 import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.client.api.search.enums.BatchOperationItemState;
+import io.camunda.client.api.search.enums.BatchOperationState;
 import io.camunda.client.api.search.enums.ProcessInstanceState;
 import io.camunda.client.api.search.response.BatchOperationItems.BatchOperationItem;
+import io.camunda.qa.util.multidb.CamundaMultiDBExtension;
 import io.camunda.qa.util.multidb.MultiDbTest;
+import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.test.util.Strings;
+import io.camunda.zeebe.test.util.junit.RegressionTest;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Stream;
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -259,6 +271,48 @@ public class BatchOperationCancelProcessInstanceIT {
         .hasMessageContaining("The value for state is 'COMPLETED' but must be one of");
   }
 
+  /**
+   * Regression test: a filter on only the parentProcessInstanceKey, as sent by Operate's "View all
+   * called instances" page, used to have the parent filter dropped, cancelling every root instance
+   * in the cluster. Since only root instances are cancelled, such a filter matches nothing.
+   */
+  @RegressionTest("https://github.com/camunda/camunda/issues/66999")
+  void shouldNotCancelAnythingWhenFilteringOnParentProcessInstanceKey() {
+    // given - a parent instance whose call activity started a child instance, and an unrelated
+    // root instance
+    final var scenario = startParentWithChildAndUnrelatedRoot();
+
+    // when - the parent key matches only the child instance
+    final var batchOperationKey =
+        camundaClient
+            .newCreateBatchOperationCommand()
+            .processInstanceCancel()
+            .filter(f -> f.parentProcessInstanceKey(scenario.parentKey()))
+            .send()
+            .join()
+            .getBatchOperationKey();
+
+    // then - only root instances are cancelled, so the batch is empty and every instance stays
+    // active
+    waitForBatchOperationStatus(camundaClient, batchOperationKey, BatchOperationState.COMPLETED);
+    assertThat(
+            camundaClient
+                .newBatchOperationGetRequest(batchOperationKey)
+                .send()
+                .join()
+                .getOperationsTotalCount())
+        .isZero();
+    assertThat(getBatchItemKeys(batchOperationKey)).isEmpty();
+
+    Stream.concat(
+            Stream.of(scenario.parentKey(), scenario.childKey(), scenario.unrelatedRootKey()),
+            activeProcessInstances.stream().map(ProcessInstanceEvent::getProcessInstanceKey))
+        .forEach(
+            key ->
+                assertThat(camundaClient.newProcessInstanceGetRequest(key).send().join().getState())
+                    .isEqualTo(ProcessInstanceState.ACTIVE));
+  }
+
   private List<Long> getBatchItemKeys(final String batchOperationKey) {
     return camundaClient
         .newBatchOperationItemsSearchRequest()
@@ -270,4 +324,50 @@ public class BatchOperationCancelProcessInstanceIT {
         .map(BatchOperationItem::getItemKey)
         .toList();
   }
+
+  private static ParentChildScenario startParentWithChildAndUnrelatedRoot() {
+    final var childProcessId = Strings.newRandomValidBpmnId();
+    final var parentProcessId = Strings.newRandomValidBpmnId();
+    final var child =
+        Bpmn.createExecutableProcess(childProcessId)
+            .startEvent()
+            .serviceTask("task", t -> t.zeebeJobType(Strings.newRandomValidBpmnId()))
+            .endEvent()
+            .done();
+    final var parent =
+        Bpmn.createExecutableProcess(parentProcessId)
+            .startEvent()
+            .callActivity("call", c -> c.zeebeProcessId(childProcessId))
+            .endEvent()
+            .done();
+    deployProcessAndWaitForIt(camundaClient, child, childProcessId + ".bpmn");
+    deployProcessAndWaitForIt(camundaClient, parent, parentProcessId + ".bpmn");
+
+    final long parentKey =
+        startProcessInstance(camundaClient, parentProcessId).getProcessInstanceKey();
+    final long unrelatedRootKey =
+        startProcessInstance(camundaClient, childProcessId).getProcessInstanceKey();
+    waitForProcessInstancesToStart(
+        camundaClient, f -> f.processInstanceKey(k -> k.in(parentKey, unrelatedRootKey)), 2);
+    final var childKey = new AtomicLong();
+    Awaitility.await("child process instance is exported to the search index")
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
+        .ignoreExceptions()
+        .untilAsserted(
+            () -> {
+              final var items =
+                  camundaClient
+                      .newProcessInstanceSearchRequest()
+                      .filter(f -> f.parentProcessInstanceKey(parentKey))
+                      .send()
+                      .join()
+                      .items();
+              assertThat(items).hasSize(1);
+              childKey.set(items.getFirst().getProcessInstanceKey());
+            });
+    return new ParentChildScenario(childProcessId, parentKey, childKey.get(), unrelatedRootKey);
+  }
+
+  private record ParentChildScenario(
+      String childProcessId, long parentKey, long childKey, long unrelatedRootKey) {}
 }
