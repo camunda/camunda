@@ -2,7 +2,6 @@ import buildlogic.projectArtifact
 import buildlogic.ArtifactKind
 plugins {
   id("buildlogic.sbe-conventions")
-  id("buildlogic.serial-test-conventions")
   id("buildlogic.test-jar-conventions")
 }
 

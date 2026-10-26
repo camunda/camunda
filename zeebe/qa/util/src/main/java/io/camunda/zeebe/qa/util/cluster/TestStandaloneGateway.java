@@ -11,7 +11,6 @@ import io.atomix.cluster.MemberId;
 import io.camunda.application.Profile;
 import io.camunda.application.commons.CommonsModuleConfiguration;
 import io.camunda.zeebe.gateway.GatewayModuleConfiguration;
-import io.camunda.zeebe.test.util.socket.SocketUtil;
 import java.util.function.Consumer;
 
 /** Encapsulates an instance of the {@link GatewayModuleConfiguration} Spring application. */
@@ -24,12 +23,8 @@ public final class TestStandaloneGateway extends TestSpringApplication<TestStand
     withAdditionalProfile(Profile.CONSOLIDATED_AUTH);
 
     unifiedConfig.getApi().getGrpc().setAddress("0.0.0.0");
-    unifiedConfig.getApi().getGrpc().setPort(SocketUtil.getNextAddress().getPort());
-    unifiedConfig
-        .getCluster()
-        .getNetwork()
-        .getInternalApi()
-        .setPort(SocketUtil.getNextAddress().getPort());
+    unifiedConfig.getApi().getGrpc().setPort(reservePort());
+    unifiedConfig.getCluster().getNetwork().getInternalApi().setPort(reservePort());
     withAdditionalProfile(Profile.GATEWAY);
 
     unifiedConfig.getSecurity().getAuthentication().setUnprotectedApi(true);
