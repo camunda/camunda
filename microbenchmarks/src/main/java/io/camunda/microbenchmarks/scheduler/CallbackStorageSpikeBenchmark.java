@@ -9,6 +9,7 @@ package io.camunda.microbenchmarks.scheduler;
 
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.VarHandle;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
 import org.agrona.concurrent.ManyToOneConcurrentLinkedQueue;
@@ -35,6 +36,8 @@ import org.openjdk.jmh.infra.Blackhole;
  *   <li>{@code inlineFirstThenStack}: first callback inline, others on an intrusive lock-free stack
  *   <li>{@code inlineFirstThenLazyQueue}: first callback inline, others in a lazily created Agrona
  *       queue
+ *   <li>{@code inlineFirstThenLazyJdkQueue}: first callback inline, others in a lazily created
+ *       {@link ConcurrentLinkedQueue}
  * </ul>
  */
 @BenchmarkMode(Mode.AverageTime)
@@ -74,6 +77,16 @@ public class CallbackStorageSpikeBenchmark {
   @Benchmark
   public void inlineFirstThenLazyQueue(final Callbacks callbacks, final Blackhole blackhole) {
     final var storage = new InlineFirstThenLazyQueue();
+    for (int i = 0; i < callbacks.count; i++) {
+      storage.add(callbacks.callback);
+    }
+    storage.drain(VALUE);
+    blackhole.consume(storage);
+  }
+
+  @Benchmark
+  public void inlineFirstThenLazyJdkQueue(final Callbacks callbacks, final Blackhole blackhole) {
+    final var storage = new InlineFirstThenLazyJdkQueue();
     for (int i = 0; i < callbacks.count; i++) {
       storage.add(callbacks.callback);
     }
@@ -198,6 +211,63 @@ public class CallbackStorageSpikeBenchmark {
             if (callback != null) {
               callback.accept(value, null);
             }
+          }
+        }
+      }
+    }
+  }
+
+  private static final class InlineFirstThenLazyJdkQueue {
+    private static final VarHandle FIRST;
+    private static final VarHandle MORE;
+
+    static {
+      try {
+        final var lookup = MethodHandles.lookup();
+        FIRST = lookup.findVarHandle(InlineFirstThenLazyJdkQueue.class, "first", BiConsumer.class);
+        MORE =
+            lookup.findVarHandle(
+                InlineFirstThenLazyJdkQueue.class, "more", ConcurrentLinkedQueue.class);
+      } catch (final ReflectiveOperationException e) {
+        throw new ExceptionInInitializerError(e);
+      }
+    }
+
+    private volatile BiConsumer<Long, Throwable> first;
+    private volatile ConcurrentLinkedQueue<BiConsumer<Long, Throwable>> more;
+
+    void add(final BiConsumer<Long, Throwable> callback) {
+      if (FIRST.compareAndSet(this, (BiConsumer<Long, Throwable>) null, callback)) {
+        return;
+      }
+      var queue = more;
+      if (queue == null) {
+        final var fresh = new ConcurrentLinkedQueue<BiConsumer<Long, Throwable>>();
+        queue = MORE.compareAndSet(this, null, fresh) ? fresh : more;
+      }
+      queue.offer(callback);
+    }
+
+    @SuppressWarnings("unchecked")
+    void drain(final Long value) {
+      // loop until both are empty, callbacks may be added while draining
+      while (true) {
+        final var queue = more;
+        if (first == null && (queue == null || queue.isEmpty())) {
+          return;
+        }
+        final var firstCallback =
+            first != null
+                ? (BiConsumer<Long, Throwable>)
+                    FIRST.getAndSet(this, (BiConsumer<Long, Throwable>) null)
+                : null;
+        if (firstCallback != null) {
+          firstCallback.accept(value, null);
+        }
+        if (queue != null) {
+          BiConsumer<Long, Throwable> callback;
+          while ((callback = queue.poll()) != null) {
+            callback.accept(value, null);
           }
         }
       }
