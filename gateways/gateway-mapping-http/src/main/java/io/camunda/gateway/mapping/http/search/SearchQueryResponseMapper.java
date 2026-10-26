@@ -1676,7 +1676,7 @@ public final class SearchQueryResponseMapper {
         .build();
   }
 
-  private static String getFullValueIfPresent(final VariableEntity variableEntity) {
+  private static @Nullable String getFullValueIfPresent(final VariableEntity variableEntity) {
     return variableEntity.isPreview()
         ? requireNonNull(variableEntity.fullValue(), "fullValue")
         : variableEntity.value();

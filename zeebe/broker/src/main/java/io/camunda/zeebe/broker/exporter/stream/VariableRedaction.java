@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.broker.exporter.stream;
 
-import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -30,11 +29,11 @@ import org.agrona.concurrent.UnsafeBuffer;
 final class VariableRedaction {
 
   /**
-   * The value a redacted value is replaced with: JSON {@code null}. The record keeps its protection
-   * modes, so consumers tell a redacted value from a genuine {@code null} by reading them.
+   * The value a redacted value is replaced with: an empty buffer, which {@link
+   * VariableRecord#getValue()} exposes as {@code null}. This keeps a redacted value distinct from a
+   * variable whose value is the JSON {@code null}.
    */
-  private static final DirectBuffer REDACTED_VALUE =
-      new UnsafeBuffer(MsgPackConverter.convertToMsgPack("null"));
+  private static final DirectBuffer REDACTED_VALUE = new UnsafeBuffer(new byte[0]);
 
   private VariableRedaction() {}
 

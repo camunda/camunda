@@ -215,8 +215,10 @@ components:
         - $ref: '#/components/schemas/VariableResultBase'
       properties:
         value:
-          description: Value of this variable. Can be truncated.
+          description: |
+            Value of this variable. Can be truncated. `null` if the variable is redacted.
           type: string
+          nullable: true
         isTruncated:
           description: Whether the value is truncated or not.
           type: boolean
@@ -230,8 +232,10 @@ components:
         - $ref: '#/components/schemas/VariableResultBase'
       properties:
         value:
-          description: Full value of this variable.
+          description: |
+            Full value of this variable. `null` if the variable is redacted.
           type: string
+          nullable: true
 
     VariableResultBase:
       description: Variable response item.

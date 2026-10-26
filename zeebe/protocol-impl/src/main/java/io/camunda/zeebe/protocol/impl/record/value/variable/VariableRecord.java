@@ -22,6 +22,7 @@ import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
+import org.jspecify.annotations.Nullable;
 
 public final class VariableRecord extends UnifiedRecordValue implements VariableRecordValue {
 
@@ -90,7 +91,10 @@ public final class VariableRecord extends UnifiedRecordValue implements Variable
   }
 
   @Override
-  public String getValue() {
+  public @Nullable String getValue() {
+    if (valueProp.getValue().capacity() == 0) {
+      return null;
+    }
     if (cachedJsonValue == null) {
       cachedJsonValue = MsgPackConverter.convertToJson(valueProp.getValue());
     }

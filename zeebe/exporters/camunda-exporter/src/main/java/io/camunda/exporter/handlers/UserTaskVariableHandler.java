@@ -164,12 +164,13 @@ public class UserTaskVariableHandler
 
   private void setVariableValues(
       final Record<VariableRecordValue> record, final TaskVariableEntity taskVariable) {
-    if (record.getValue().getValue().length() > variableSizeThreshold) {
-      taskVariable.setValue(record.getValue().getValue().substring(0, variableSizeThreshold));
+    final var value = record.getValue().getValue();
+    if (value != null && value.length() > variableSizeThreshold) {
+      taskVariable.setValue(value.substring(0, variableSizeThreshold));
       taskVariable.setFullValue(null);
       taskVariable.setIsTruncated(true);
     } else {
-      taskVariable.setValue(record.getValue().getValue());
+      taskVariable.setValue(value);
       taskVariable.setFullValue(null);
       taskVariable.setIsTruncated(false);
     }
