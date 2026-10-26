@@ -29,6 +29,7 @@ const Delete: React.FC<Props> = ({processInstanceKey, onExecute, disabled = fals
 				onClick={() => setIsDeleteModalVisible(true)}
 				title={t('operate.shared.operations.deleteTitle', {processInstanceKey})}
 				disabled={disabled}
+				isIconOnly
 				size="sm"
 			/>
 			{isDeleteModalVisible && (
