@@ -215,7 +215,11 @@ components:
         - $ref: '#/components/schemas/VariableResultBase'
       properties:
         value:
-          description: Value of this variable. Can be truncated.
+          description: |
+            The value of this variable. Can be truncated.
+
+            Check `metadata.protectionModes` before you use the value. If it contains `REDACT`, the
+            variable is redacted and the value is an empty string instead of the real value.
           type: string
         isTruncated:
           description: Whether the value is truncated or not.
@@ -230,7 +234,11 @@ components:
         - $ref: '#/components/schemas/VariableResultBase'
       properties:
         value:
-          description: Full value of this variable.
+          description: |
+            The full value of this variable.
+
+            Check `metadata.protectionModes` before you use the value. If it contains `REDACT`, the
+            variable is redacted and the value is an empty string instead of the real value.
           type: string
 
     VariableResultBase:
