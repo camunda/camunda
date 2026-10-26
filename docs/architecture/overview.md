@@ -12,6 +12,39 @@ frontends, with Tasklist living in
 deployable Spring Boot application variants (e.g.
 `StandaloneBroker`, `StandaloneCamunda`); components can also be deployed independently.
 
+## Module map
+
+Top-level modules and what each owns. Each module's `README.md` (where present) has the details.
+
+|                             Module                              |                                       Description                                        |
+|-----------------------------------------------------------------|------------------------------------------------------------------------------------------|
+| `zeebe/`                                                        | Core process engine (broker, engine, protocol, exporters)                                |
+| `zeebe/gateway`                                                 | gRPC gateway for client access                                                           |
+| `operate/`                                                      | Process monitoring webapp                                                                |
+| `webapp/client/apps/orchestration-cluster-webapp/src/tasklist/` | User task management webapp (Tasklist)                                                   |
+| `identity/`                                                     | Authentication and authorization                                                         |
+| `optimize/`                                                     | Process analytics (skipped with `-Dquickly`)                                             |
+| `db/`                                                           | Database layer (rdbms, rdbms-schema)                                                     |
+| `search/`                                                       | Search client abstraction (Elasticsearch, OpenSearch, RDBMS)                             |
+| `service/`                                                      | Domain service layer between REST controllers and engine                                 |
+| `clients/`                                                      | Client libraries (Java, Spring Boot starters)                                            |
+| `gateways/`                                                     | Gateway implementations (HTTP mapping, MCP)                                              |
+| `security/`                                                     | Security core, protocol, validation                                                      |
+| `qa/`                                                           | Cross-component acceptance tests                                                         |
+| `testing/`                                                      | Process testing libraries                                                                |
+| `authentication/`                                               | OIDC token processing and Spring Security integration                                    |
+| `document/`                                                     | Document API and storage                                                                 |
+| `monitor/`                                                      | Metrics and monitoring definitions for Camunda components                                |
+| `schema-manager/`                                               | Elasticsearch/OpenSearch index schema management                                         |
+| `microbenchmarks/`                                              | JMH benchmarks for performance validation                                                |
+| `load-tests/`                                                   | Cluster-level load and reliability tests                                                 |
+| `c8run/`                                                        | Packaged Camunda 8 distribution for local spin-up                                        |
+| `debug-cli/`                                                    | CLI tool for inspecting and troubleshooting Camunda clusters                             |
+| `webapp/`                                                       | Unified webapp: React/TypeScript frontend (`client/`) and Spring Boot server (`server/`) |
+| `webapps-common/`                                               | Shared Java utilities used across Operate, Tasklist, and other web modules               |
+| `webapps-backup/`                                               | Shared backup/restore service for Elasticsearch/OpenSearch snapshots                     |
+| `webapps-schema/`                                               | Shared Elasticsearch/OpenSearch index mappings and templates for web application data    |
+
 ## Runtime topology
 
 Camunda follows a **CQRS** (Command Query Responsibility Segregation) pattern: writes flow from a
