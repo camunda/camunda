@@ -437,6 +437,14 @@
       <version>${version.identity}</version>
     </dependency>
 
+    <!-- Pulled in by the starter, declared because CcsmIdentityComponentIdTest binds the
+         IdentityProperties it carries. -->
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>identity-spring-boot-autoconfigure</artifactId>
+      <version>${version.identity}</version>
+    </dependency>
+
     <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
       <artifactId>jackson-annotations</artifactId>
