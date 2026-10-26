@@ -81,7 +81,7 @@ public class ItemProviderFactory {
         filter.toBuilder()
             .partitionId(partitionId)
             .states(ProcessInstanceState.ACTIVE.name(), ProcessInstanceState.SUSPENDED.name())
-            .replaceParentProcessInstanceKeyOperations(Operation.exists(false))
+            .parentProcessInstanceKeyOperations(Operation.exists(false))
             .build(),
         authentication);
   }
