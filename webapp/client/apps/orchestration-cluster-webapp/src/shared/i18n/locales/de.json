@@ -1374,9 +1374,7 @@
 					"none": "Keine",
 					"emptyMessage": "Es gibt keine Instanzen, die diesem Filtersatz entsprechen",
 					"emptyAdditionalInfo": "Wählen Sie mindestens einen Instanzstatus aus, um Ergebnisse zu sehen",
-					"tableLabel": "Prozessinstanzen",
-					"loadingPreviousPage": "Vorherige Prozessinstanzen werden geladen",
-					"loadingNextPage": "Nächste Prozessinstanzen werden geladen"
+					"tableLabel": "Prozessinstanzen"
 				},
 				"diagramHeader": {
 					"title": "Prozess",
@@ -1477,9 +1475,7 @@
 					"selectRow": "Zeile {{key}} auswählen",
 					"stateEvaluated": "Ausgewertet",
 					"stateFailed": "Fehlgeschlagen",
-					"tableLabel": "Entscheidungsinstanzen",
-					"loadingPreviousPage": "Vorherige Entscheidungsinstanzen werden geladen",
-					"loadingNextPage": "Nächste Entscheidungsinstanzen werden geladen"
+					"tableLabel": "Entscheidungsinstanzen"
 				},
 				"toolbar": {
 					"delete": "Löschen",
