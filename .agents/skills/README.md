@@ -54,7 +54,7 @@ When a skill exists for a recurring operation, use it rather than improvising st
 | `gradle-run-build`             | Compile, test, and package with `./gradlew`: single-test filters, `-Pquickly`, IT vs unit, gotchas            |
 | `operate-engineering-loop`     | Drive a tracked Operate change (OC webapp `src/operate/`) through implementation, gated validation, independent review, a draft PR, and Copilot review |
 | `operate-frontend`             | Operate frontend conventions for both codebases — the OC webapp `src/operate/` pod and legacy `operate/client/` |
-| `orchestration-cluster-migration-conventions` | Migrate OC webapp routes and components from Carbon to the Camunda design system |
+| `orchestration-cluster-migration-conventions` | Where OC webapp design-system code goes (`_shadcn` routes, `shadcn.components/`, Tailwind) during the Carbon migration |
 | `session-state`                | Persist and resume Claude Code session progress across restarts, `--resume`/`--continue`, and compaction        |
 | `tasklist-frontend`            | Build or change Tasklist pod features in the OC webapp at `src/tasklist/`                                      |
 
