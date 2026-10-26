@@ -11,64 +11,66 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.identity.autoconfigure.IdentityProperties;
 import java.io.IOException;
-import java.net.URL;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.context.properties.bind.Binder;
 import org.springframework.boot.context.properties.source.ConfigurationPropertySources;
-import org.springframework.boot.env.YamlPropertySourceLoader;
+import org.springframework.boot.env.PropertiesPropertySourceLoader;
 import org.springframework.core.env.MapPropertySource;
 import org.springframework.core.env.PropertySource;
 import org.springframework.core.env.StandardEnvironment;
-import org.springframework.core.io.UrlResource;
+import org.springframework.core.env.SystemEnvironmentPropertySource;
+import org.springframework.core.io.ClassPathResource;
 
 /**
  * Optimize tells Management Identity which component it is, so that Identity returns only the
  * permissions Optimize's own resource server defines rather than every permission on the audience
- * it asked with. Identity falls back to the old, unscoped behaviour when the component is missing
- * or unrecognised, so a key that fails to reach the SDK is silent: no error, no scoping, and the
- * permission leak this exists to close stays open.
+ * it asked with. Identity treats a missing component as a caller that named none and silently
+ * returns everything, so a default that fails to reach the SDK leaves the permission leak open with
+ * nothing to show for it.
  *
- * <p>Binding into {@link IdentityProperties} rather than reading the property back out of the YAML
- * is what makes this worth having. The value has to land on a component the SDK actually declares,
- * so the test also fails if the {@code identity-sdk} version is rolled back below the release that
- * introduced it.
+ * <p>The default therefore cannot live in {@code application-ccsm.yaml}. {@code
+ * optimize-startup.sh} puts {@code ${BASEDIR}/config} ahead of the jar on the classpath, and the
+ * Helm chart mounts its own {@code application-ccsm.yaml} there, which would hide the packaged one
+ * outright. These tests layer that chart file over the packaged defaults to show the value survives
+ * it.
  */
 class CcsmIdentityComponentIdTest {
 
   /** The key of Optimize's entry under Identity's {@code component-presets}. */
   private static final String PRESET_KEY = "optimize";
 
-  private static final String FILE_NAME = "application-ccsm.yaml";
-
   /**
-   * Picked out of the classpath deliberately: {@code src/it/resources} carries an {@code
-   * application-ccsm.yaml} of its own which otherwise shadows this one, and the file that gets
-   * packaged is the one worth asserting about.
+   * What the chart writes to {@code /optimize/config/application-ccsm.yaml} with auth enabled: the
+   * same prefix, and deliberately no {@code componentId}.
    */
-  private static UrlResource packagedFile() throws IOException {
-    final List<URL> found =
-        Collections.list(
-            CcsmIdentityComponentIdTest.class.getClassLoader().getResources(FILE_NAME));
-
-    return found.stream()
-        .filter(url -> url.getPath().contains("/target/classes/"))
-        .findFirst()
-        .map(UrlResource::new)
-        .orElseThrow(() -> new IllegalStateException("not on the classpath: " + found));
-  }
+  private static final Map<String, Object> CHART_CCSM_FILE =
+      Map.of(
+          "camunda.identity.clientId", "optimize",
+          "camunda.identity.audience", "optimize-api",
+          "camunda.identity.issuer", "http://keycloak/realms/camunda",
+          "camunda.identity.issuerBackendUrl", "http://keycloak/realms/camunda");
 
   private static IdentityProperties identityPropertiesWith(final Map<String, Object> overrides)
       throws IOException {
     final List<PropertySource<?>> packaged =
-        new YamlPropertySourceLoader().load("application-ccsm", packagedFile());
+        new PropertiesPropertySourceLoader()
+            .load("application", new ClassPathResource("application.properties"));
 
     final StandardEnvironment environment = new StandardEnvironment();
     packaged.forEach(source -> environment.getPropertySources().addLast(source));
+
+    // Ahead of the packaged defaults, the way the mounted file is ahead of the jar.
+    environment.getPropertySources().addFirst(new MapPropertySource("chart", CHART_CCSM_FILE));
     if (!overrides.isEmpty()) {
-      environment.getPropertySources().addFirst(new MapPropertySource("overrides", overrides));
+      // A system-environment source, not a plain map: the SCREAMING_SNAKE_CASE spelling an
+      // operator uses is only relaxed onto a property name by this source type.
+      environment
+          .getPropertySources()
+          .addFirst(
+              new SystemEnvironmentPropertySource(
+                  StandardEnvironment.SYSTEM_ENVIRONMENT_PROPERTY_SOURCE_NAME, overrides));
     }
     ConfigurationPropertySources.attach(environment);
 
@@ -76,14 +78,15 @@ class CcsmIdentityComponentIdTest {
   }
 
   @Test
-  void bindsTheComponentIdIdentityKnowsOptimizeBy() throws IOException {
+  void survivesTheConfigFileTheChartMountsOverTheProfile() throws IOException {
     assertThat(identityPropertiesWith(Map.of()).componentId()).isEqualTo(PRESET_KEY);
   }
 
   @Test
   void letsADeploymentOverrideIt() throws IOException {
+    // The relaxed-binding spelling, which is what an operator setting this reaches for.
     final IdentityProperties identity =
-        identityPropertiesWith(Map.of("CAMUNDA_OPTIMIZE_IDENTITY_COMPONENT_ID", "elsewhere"));
+        identityPropertiesWith(Map.of("CAMUNDA_IDENTITY_COMPONENTID", "elsewhere"));
 
     assertThat(identity.componentId()).isEqualTo("elsewhere");
   }
