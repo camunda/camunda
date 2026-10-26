@@ -46,7 +46,7 @@ async function decisionsRouteLoader({
 		});
 	}
 	throw redirect({
-		to: '/operate-preview/decisions',
+		to: '/operate/decisions',
 		search: (prev) => ({
 			...prev,
 			evaluated: prev.evaluated ?? false,

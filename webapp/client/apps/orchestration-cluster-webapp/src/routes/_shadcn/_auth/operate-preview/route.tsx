@@ -15,11 +15,9 @@ import {ForbiddenPage} from '#/shared/pages/shadcn.components/ForbiddenPage';
 import {NotFoundPage} from '#/shared/pages/shadcn.components/NotFoundPage';
 import {PageLayout} from '@camunda/design-system';
 
-// Migration-time only: this leaf, and its /operate-preview path, exist so the Operate
-// Dashboard's DS port can run alongside the live Carbon /operate route without colliding
-// with it. At cutover this directory is renamed to `operate`, `_carbon/_auth/operate/**`
-// is deleted, and the `operate-preview` APP_ROUTES entry in `../route.tsx` is repointed
-// back to `/operate` — see docs/migration/operate-dashboard-tiering.md.
+// Migration-time only: the Dashboard's DS port lives at /operate-preview so it can run
+// alongside the live Carbon /operate routes without colliding with them. Decisions is
+// already at /operate/decisions; the Dashboard moves once the remaining Operate pages do.
 export const Route = createFileRoute('/_shadcn/_auth/operate-preview')({
 	beforeLoad: async ({context: {queryClient}}) => {
 		const {authorizedComponents} = await queryClient.ensureQueryData(queries.getCurrentUser());

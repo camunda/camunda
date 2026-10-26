@@ -62,12 +62,12 @@ test.beforeEach(({network}) => {
 
 test('should have no accessibility violations in the decisions shell with the instances table', async ({
 	page,
-	operatePreviewDecisionsPage,
+	operateDecisionsPage,
 	makeAxeBuilder,
 }) => {
-	await operatePreviewDecisionsPage.goto('?evaluated=true&failed=true');
-	await expect(operatePreviewDecisionsPage.moreFiltersButton).toBeVisible();
-	await expect(operatePreviewDecisionsPage.instancesTable).toBeVisible();
+	await operateDecisionsPage.goto('?evaluated=true&failed=true');
+	await expect(operateDecisionsPage.moreFiltersButton).toBeVisible();
+	await expect(operateDecisionsPage.instancesTable).toBeVisible();
 	await expect(page.getByText('Invoice Approval')).toBeVisible();
 
 	const results = await makeAxeBuilder().analyze();
@@ -76,10 +76,10 @@ test('should have no accessibility violations in the decisions shell with the in
 
 test('should have no accessibility violations with a selected row and the bulk delete dialog open', async ({
 	page,
-	operatePreviewDecisionsPage,
+	operateDecisionsPage,
 	makeAxeBuilder,
 }) => {
-	await operatePreviewDecisionsPage.goto('?evaluated=true&failed=true');
+	await operateDecisionsPage.goto('?evaluated=true&failed=true');
 	await page.getByRole('checkbox', {name: 'Select row 1'}).click();
 	await expect(page.getByRole('toolbar', {name: 'Bulk actions'})).toContainText('1 item selected');
 	await page.getByRole('button', {name: 'Delete', exact: true}).click();
@@ -91,11 +91,11 @@ test('should have no accessibility violations with a selected row and the bulk d
 
 test('should have no accessibility violations with populated optional filters', async ({
 	page,
-	operatePreviewDecisionsPage,
+	operateDecisionsPage,
 	makeAxeBuilder,
 }) => {
 	await page.goto(
-		`${operatePreviewDecisionsPage.decisionsUrl}?evaluated=true&failed=true&businessId=eq_order-1&processInstanceKey=2251799813685249&evaluationDateFrom=2024-01-01T00:00:00.000Z&evaluationDateTo=2024-01-02T00:00:00.000Z`,
+		`${operateDecisionsPage.decisionsUrl}?evaluated=true&failed=true&businessId=eq_order-1&processInstanceKey=2251799813685249&evaluationDateFrom=2024-01-01T00:00:00.000Z&evaluationDateTo=2024-01-02T00:00:00.000Z`,
 	);
 	await expect(page.getByLabel('Business ID', {exact: true})).toHaveValue('order-1');
 
@@ -105,11 +105,11 @@ test('should have no accessibility violations with populated optional filters', 
 
 test('should have no accessibility violations with the evaluation date range field shown', async ({
 	page,
-	operatePreviewDecisionsPage,
+	operateDecisionsPage,
 	makeAxeBuilder,
 }) => {
-	await operatePreviewDecisionsPage.goto();
-	await operatePreviewDecisionsPage.moreFiltersButton.click();
+	await operateDecisionsPage.goto();
+	await operateDecisionsPage.moreFiltersButton.click();
 	await page.getByRole('menuitem', {name: 'Evaluation date range'}).click();
 	await expect(page.getByRole('group', {name: 'Evaluation date range'})).toBeVisible();
 
@@ -120,7 +120,7 @@ test('should have no accessibility violations with the evaluation date range fie
 test('should have no accessibility violations with a selected decision definition', async ({
 	page,
 	network,
-	operatePreviewDecisionsPage,
+	operateDecisionsPage,
 	makeAxeBuilder,
 }) => {
 	network.use(
@@ -139,11 +139,11 @@ test('should have no accessibility violations with a selected decision definitio
 		}),
 		mockGetDecisionDefinitionXmlEndpoint({successResponse: HttpResponse.text(DMN_XML)}),
 	);
-	await operatePreviewDecisionsPage.goto(
+	await operateDecisionsPage.goto(
 		'?evaluated=true&failed=true&decisionDefinitionId=invoiceClassification&decisionDefinitionVersion=1',
 	);
 	await expect(page.getByRole('heading', {name: 'Invoice Classification'})).toBeVisible();
-	await expect(operatePreviewDecisionsPage.decisionPanel.getByTestId('decision-viewer')).toBeVisible();
+	await expect(operateDecisionsPage.decisionPanel.getByTestId('decision-viewer')).toBeVisible();
 	await expect(page.getByText('Invoice Amount')).toBeVisible();
 
 	const results = await makeAxeBuilder().analyze();
@@ -153,7 +153,7 @@ test('should have no accessibility violations with a selected decision definitio
 test('should have no accessibility violations with a selected decision and the delete dialog open', async ({
 	page,
 	network,
-	operatePreviewDecisionsPage,
+	operateDecisionsPage,
 	makeAxeBuilder,
 }) => {
 	network.use(
@@ -172,7 +172,7 @@ test('should have no accessibility violations with a selected decision and the d
 			),
 		}),
 	);
-	await operatePreviewDecisionsPage.goto('?decisionDefinitionId=invoiceClassification&decisionDefinitionVersion=1');
+	await operateDecisionsPage.goto('?decisionDefinitionId=invoiceClassification&decisionDefinitionVersion=1');
 	await page.getByRole('button', {name: /Delete decision definition/}).click();
 	await expect(page.getByRole('dialog')).toBeVisible();
 
@@ -182,10 +182,10 @@ test('should have no accessibility violations with a selected decision and the d
 
 test('should have no accessibility violations in the bulk action bar with a selected row', async ({
 	page,
-	operatePreviewDecisionsPage,
+	operateDecisionsPage,
 	makeAxeBuilder,
 }) => {
-	await operatePreviewDecisionsPage.goto('?evaluated=true&failed=true');
+	await operateDecisionsPage.goto('?evaluated=true&failed=true');
 	await page.getByRole('checkbox', {name: 'Select row 1'}).click();
 	await expect(page.getByRole('toolbar', {name: 'Bulk actions'})).toContainText('1 item selected');
 
@@ -195,11 +195,11 @@ test('should have no accessibility violations in the bulk action bar with a sele
 
 test('should have no accessibility violations with the evaluation date picker open', async ({
 	page,
-	operatePreviewDecisionsPage,
+	operateDecisionsPage,
 	makeAxeBuilder,
 }) => {
 	await page.goto(
-		`${operatePreviewDecisionsPage.decisionsUrl}?evaluated=true&failed=true&evaluationDateFrom=2024-01-01T00:00:00.000Z&evaluationDateTo=2024-01-02T00:00:00.000Z`,
+		`${operateDecisionsPage.decisionsUrl}?evaluated=true&failed=true&evaluationDateFrom=2024-01-01T00:00:00.000Z&evaluationDateTo=2024-01-02T00:00:00.000Z`,
 	);
 	await page.getByLabel('From', {exact: true}).click();
 	await expect(page.getByRole('grid')).toBeVisible();

@@ -22,7 +22,7 @@ import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-
 import {validateDecisionsSearch} from '../decisionsSearch';
 import {DecisionFilters} from './DecisionFilters';
 
-const PATH = '/operate-preview/decisions';
+const PATH = '/operate/decisions';
 
 const Harness = () => {
 	const search = validateDecisionsSearch(useSearch({strict: false}));

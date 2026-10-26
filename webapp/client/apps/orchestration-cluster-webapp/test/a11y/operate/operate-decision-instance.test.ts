@@ -6,87 +6,62 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {HttpResponse} from 'msw';
 import {test, expect} from '#/pw-modules/test-extend';
+import {HttpResponse} from 'msw';
 import {
 	mockCurrentUserEndpoint,
 	mockGetDecisionDefinitionXmlEndpoint,
 	mockGetDecisionInstanceEndpoint,
-	mockGetIncidentProcessInstanceStatisticsByErrorEndpoint,
-	mockGetProcessDefinitionInstanceStatisticsEndpoint,
 	mockLicenseEndpoint,
 	mockQueryDecisionInstancesEndpoint,
 	mockSystemConfigurationEndpoint,
 } from '#/shared-test-modules/mock-handlers';
-import {createCurrentUser} from '#/shared-test-modules/api-mocks/current-user';
-import {DMN_XML_WITH_LITERAL_EXPRESSION_AND_HIGHLIGHTABLE_TABLE} from '#/shared-test-modules/api-mocks/decision-definition-xmls';
+import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
+import {createLicense} from '#/shared-test-modules/api-mocks/license';
 import {
 	createDecisionInstance,
 	createQueryDecisionInstancesResponse,
 } from '#/shared-test-modules/api-mocks/decision-instances';
-import {createLicense} from '#/shared-test-modules/api-mocks/license';
-import {createPaginatedResponse} from '#/shared-test-modules/api-mocks/shared';
-import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
+import {DMN_XML} from '#/shared-test-modules/api-mocks/decision-definition-xmls';
+import {createCurrentUser} from '#/shared-test-modules/api-mocks/current-user';
 
-const DECISION_INSTANCE_ID = '4294980768';
+const DECISION_INSTANCE_KEY = '4294980768';
+const decisionInstance = createDecisionInstance({
+	decisionEvaluationInstanceKey: DECISION_INSTANCE_KEY,
+	decisionDefinitionId: 'invoiceClassification',
+	decisionDefinitionName: 'Invoice Classification',
+});
 
 test.beforeEach(({network}) => {
 	network.use(
-		mockCurrentUserEndpoint({successResponse: HttpResponse.json(createCurrentUser())}),
+		mockCurrentUserEndpoint({
+			successResponse: HttpResponse.json(createCurrentUser({authorizedComponents: ['operate']})),
+		}),
 		mockSystemConfigurationEndpoint({
 			successResponse: HttpResponse.json(createSystemConfiguration({components: {active: ['operate']}})),
 		}),
-		mockLicenseEndpoint({successResponse: HttpResponse.json(createLicense())}),
-		mockGetProcessDefinitionInstanceStatisticsEndpoint({
-			successResponse: HttpResponse.json(createPaginatedResponse()),
-		}),
-		mockGetIncidentProcessInstanceStatisticsByErrorEndpoint({
-			successResponse: HttpResponse.json(createPaginatedResponse()),
+		mockLicenseEndpoint({
+			successResponse: HttpResponse.json(createLicense()),
 		}),
 		mockGetDecisionInstanceEndpoint({
-			successResponse: HttpResponse.json(
-				createDecisionInstance({
-					decisionEvaluationInstanceKey: DECISION_INSTANCE_ID,
-					decisionDefinitionId: 'invoiceClassification',
-				}),
-			),
-		}),
-		mockGetDecisionDefinitionXmlEndpoint({
-			successResponse: HttpResponse.text(DMN_XML_WITH_LITERAL_EXPRESSION_AND_HIGHLIGHTABLE_TABLE),
+			successResponse: HttpResponse.json(decisionInstance),
 		}),
 		mockQueryDecisionInstancesEndpoint({
-			successResponse: HttpResponse.json(
-				createQueryDecisionInstancesResponse({
-					items: [
-						createDecisionInstance({
-							decisionEvaluationInstanceKey: DECISION_INSTANCE_ID,
-							decisionDefinitionId: 'invoiceClassification',
-						}),
-					],
-				}),
-			),
+			successResponse: HttpResponse.json(createQueryDecisionInstancesResponse({items: [decisionInstance]})),
+		}),
+		mockGetDecisionDefinitionXmlEndpoint({
+			successResponse: HttpResponse.text(DMN_XML),
 		}),
 	);
 });
 
-test('should have no accessibility violations in the interactive DRD panel', async ({
-	makeAxeBuilder,
-	operateDecisionInstancePage,
-}) => {
-	await operateDecisionInstancePage.goto(DECISION_INSTANCE_ID);
-	await expect(operateDecisionInstancePage.drdPanel.getByTestId('state-overlay-EVALUATED')).toBeVisible();
+test('should have no accessibility violations on the decision instance page', async ({page, makeAxeBuilder}) => {
+	await page.goto(`/operate/decisions/${DECISION_INSTANCE_KEY}`);
+	await expect(page.getByTestId('instance-header')).toBeVisible();
+	await expect(page.getByRole('region', {name: 'decision panel'})).toBeVisible();
+	await expect(page.getByRole('table').first()).toBeVisible();
+	await expect(page.getByRole('region', {name: 'DRD panel'})).toBeVisible();
 
-	const accessibilityScanResults = await makeAxeBuilder().include('[aria-label="DRD panel"]').analyze();
-	expect(accessibilityScanResults.violations).toEqual([]);
-});
-
-test('should have no accessibility violations for a loaded decision instance panel', async ({
-	makeAxeBuilder,
-	operateDecisionInstancePage,
-}) => {
-	await operateDecisionInstancePage.goto(DECISION_INSTANCE_ID);
-	await expect(operateDecisionInstancePage.decisionTableLabel).toBeVisible();
-
-	const accessibilityScanResults = await makeAxeBuilder().include('[aria-label="decision panel"]').analyze();
-	expect(accessibilityScanResults.violations).toEqual([]);
+	const results = await makeAxeBuilder().analyze();
+	expect(results.violations).toEqual([]);
 });

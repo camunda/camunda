@@ -56,25 +56,25 @@ test.beforeEach(({network}) => {
 	);
 });
 
-test.describe('Operate Decisions DS preview (/operate-preview/decisions)', () => {
-	test('should render the placeholder shell', async ({network, operatePreviewDecisionsPage}) => {
+test.describe('Operate Decisions DS (/operate/decisions)', () => {
+	test('should render the placeholder shell', async ({network, operateDecisionsPage}) => {
 		network.use(
 			mockQueryDecisionInstancesEndpoint({
 				successResponse: HttpResponse.json(createQueryDecisionInstancesResponse()),
 			}),
 		);
-		await operatePreviewDecisionsPage.goto();
+		await operateDecisionsPage.goto();
 
-		await expect(operatePreviewDecisionsPage.heading).toBeAttached();
-		await expect(operatePreviewDecisionsPage.moreFiltersButton).toBeVisible();
-		await expect(operatePreviewDecisionsPage.decisionPanel).toBeVisible();
-		await expect(operatePreviewDecisionsPage.decisionPanel.getByText('There is no decision selected')).toBeVisible();
-		await expect(operatePreviewDecisionsPage.instancesTable).toBeVisible();
+		await expect(operateDecisionsPage.heading).toBeAttached();
+		await expect(operateDecisionsPage.moreFiltersButton).toBeVisible();
+		await expect(operateDecisionsPage.decisionPanel).toBeVisible();
+		await expect(operateDecisionsPage.decisionPanel.getByText('There is no decision selected')).toBeVisible();
+		await expect(operateDecisionsPage.instancesTable).toBeVisible();
 	});
 
 	test('should clear a stale decision selection from the URL and notify', async ({
 		network,
-		operatePreviewDecisionsPage,
+		operateDecisionsPage,
 		page,
 	}) => {
 		network.use(
@@ -85,17 +85,14 @@ test.describe('Operate Decisions DS preview (/operate-preview/decisions)', () =>
 				successResponse: HttpResponse.json(createQueryDecisionInstancesResponse()),
 			}),
 		);
-		await operatePreviewDecisionsPage.goto('?evaluated=true&failed=true&decisionDefinitionId=missing');
+		await operateDecisionsPage.goto('?evaluated=true&failed=true&decisionDefinitionId=missing');
 
 		await expect(page).not.toHaveURL(/decisionDefinitionId/);
 		await expect(page.getByText("Couldn't find the decision", {exact: true})).toBeVisible();
-		await expect(operatePreviewDecisionsPage.decisionPanel.getByText('There is no decision selected')).toBeVisible();
+		await expect(operateDecisionsPage.decisionPanel.getByText('There is no decision selected')).toBeVisible();
 	});
 
-	test('should offer deleting the selected decision definition version', async ({
-		network,
-		operatePreviewDecisionsPage,
-	}) => {
+	test('should offer deleting the selected decision definition version', async ({network, operateDecisionsPage}) => {
 		network.use(
 			mockQueryDecisionInstancesEndpoint({
 				successResponse: HttpResponse.json(createQueryDecisionInstancesResponse()),
@@ -111,18 +108,14 @@ test.describe('Operate Decisions DS preview (/operate-preview/decisions)', () =>
 				),
 			}),
 		);
-		await operatePreviewDecisionsPage.goto('?decisionDefinitionId=invoice&decisionDefinitionVersion=1');
+		await operateDecisionsPage.goto('?decisionDefinitionId=invoice&decisionDefinitionVersion=1');
 
 		await expect(
-			operatePreviewDecisionsPage.decisionPanel.getByRole('button', {name: /Delete decision definition/}),
+			operateDecisionsPage.decisionPanel.getByRole('button', {name: /Delete decision definition/}),
 		).toBeVisible();
 	});
 
-	test('should delete the selected decision instances in bulk', async ({
-		network,
-		operatePreviewDecisionsPage,
-		page,
-	}) => {
+	test('should delete the selected decision instances in bulk', async ({network, operateDecisionsPage, page}) => {
 		network.use(
 			mockQueryDecisionInstancesEndpoint({
 				successResponse: HttpResponse.json(
@@ -141,9 +134,9 @@ test.describe('Operate Decisions DS preview (/operate-preview/decisions)', () =>
 				}),
 			}),
 		);
-		await operatePreviewDecisionsPage.goto('?evaluated=true&failed=true');
+		await operateDecisionsPage.goto('?evaluated=true&failed=true');
 
-		await operatePreviewDecisionsPage.instancesTable.getByRole('checkbox').nth(1).check();
+		await operateDecisionsPage.instancesTable.getByRole('checkbox').nth(1).check();
 		await page.getByRole('button', {name: 'Delete', exact: true}).click();
 		const deletionRequest = page.waitForRequest(
 			(request) => request.method() === 'POST' && request.url().includes('decision-instances/deletion'),
@@ -156,18 +149,14 @@ test.describe('Operate Decisions DS preview (/operate-preview/decisions)', () =>
 		});
 	});
 
-	test('should filter the instances by the evaluation date range', async ({
-		network,
-		operatePreviewDecisionsPage,
-		page,
-	}) => {
+	test('should filter the instances by the evaluation date range', async ({network, operateDecisionsPage, page}) => {
 		network.use(
 			mockQueryDecisionInstancesEndpoint({
 				successResponse: HttpResponse.json(createQueryDecisionInstancesResponse()),
 			}),
 		);
-		await operatePreviewDecisionsPage.goto('?evaluated=true&failed=true');
-		await operatePreviewDecisionsPage.moreFiltersButton.click();
+		await operateDecisionsPage.goto('?evaluated=true&failed=true');
+		await operateDecisionsPage.moreFiltersButton.click();
 		await page.getByRole('menuitem', {name: 'Evaluation date range'}).click();
 
 		const filteredRequest = page.waitForRequest(
@@ -186,13 +175,13 @@ test.describe('Operate Decisions DS preview (/operate-preview/decisions)', () =>
 		await expect(page).toHaveURL(/evaluationDateFrom=2024-01-01/);
 	});
 
-	test('should collapse and expand the filter sidebar', async ({network, operatePreviewDecisionsPage, page}) => {
+	test('should collapse and expand the filter sidebar', async ({network, operateDecisionsPage, page}) => {
 		network.use(
 			mockQueryDecisionInstancesEndpoint({
 				successResponse: HttpResponse.json(createQueryDecisionInstancesResponse()),
 			}),
 		);
-		await operatePreviewDecisionsPage.goto('?evaluated=true&failed=true');
+		await operateDecisionsPage.goto('?evaluated=true&failed=true');
 
 		await page.getByRole('button', {name: 'Collapse Filter'}).click();
 		await expect(page.getByTestId('collapsed-panel')).toBeVisible();
@@ -201,7 +190,7 @@ test.describe('Operate Decisions DS preview (/operate-preview/decisions)', () =>
 		await expect(page.getByTestId('expanded-panel')).toBeVisible();
 	});
 
-	test('should sort the instances by evaluation date', async ({network, operatePreviewDecisionsPage, page}) => {
+	test('should sort the instances by evaluation date', async ({network, operateDecisionsPage, page}) => {
 		network.use(
 			mockQueryDecisionInstancesEndpoint({
 				successResponse: HttpResponse.json(
@@ -211,8 +200,8 @@ test.describe('Operate Decisions DS preview (/operate-preview/decisions)', () =>
 				),
 			}),
 		);
-		await operatePreviewDecisionsPage.goto('?evaluated=true&failed=true');
-		await expect(operatePreviewDecisionsPage.instancesTable).toBeVisible();
+		await operateDecisionsPage.goto('?evaluated=true&failed=true');
+		await expect(operateDecisionsPage.instancesTable).toBeVisible();
 
 		const sortRequest = page.waitForRequest(
 			(request) =>
@@ -220,14 +209,14 @@ test.describe('Operate Decisions DS preview (/operate-preview/decisions)', () =>
 				request.url().includes('decision-instances/search') &&
 				JSON.stringify(request.postDataJSON()?.sort) === JSON.stringify([{field: 'evaluationDate', order: 'ASC'}]),
 		);
-		await operatePreviewDecisionsPage.instancesTable.getByRole('button', {name: 'Evaluation date'}).click();
+		await operateDecisionsPage.instancesTable.getByRole('button', {name: 'Evaluation date'}).click();
 
 		await sortRequest;
 	});
 
 	test('should load the next page when scrolling to the end of the instances table', async ({
 		network,
-		operatePreviewDecisionsPage,
+		operateDecisionsPage,
 		page,
 	}) => {
 		const firstPage = Array.from({length: 50}, (_, index) =>
@@ -240,8 +229,8 @@ test.describe('Operate Decisions DS preview (/operate-preview/decisions)', () =>
 				),
 			}),
 		);
-		await operatePreviewDecisionsPage.goto('?evaluated=true&failed=true');
-		await expect(operatePreviewDecisionsPage.instancesTable).toBeVisible();
+		await operateDecisionsPage.goto('?evaluated=true&failed=true');
+		await expect(operateDecisionsPage.instancesTable).toBeVisible();
 
 		const nextPageRequest = page.waitForRequest(
 			(request) =>
@@ -249,14 +238,14 @@ test.describe('Operate Decisions DS preview (/operate-preview/decisions)', () =>
 				request.url().includes('decision-instances/search') &&
 				request.postDataJSON()?.page?.from === 50,
 		);
-		await operatePreviewDecisionsPage.instancesTable.getByRole('row').last().scrollIntoViewIfNeeded();
-		await operatePreviewDecisionsPage.instancesTable.hover();
+		await operateDecisionsPage.instancesTable.getByRole('row').last().scrollIntoViewIfNeeded();
+		await operateDecisionsPage.instancesTable.hover();
 		await page.mouse.wheel(0, 100000);
 
 		await nextPageRequest;
 	});
 
-	test('should render the decision viewer in dark mode', async ({network, operatePreviewDecisionsPage, page}) => {
+	test('should render the decision viewer in dark mode', async ({network, operateDecisionsPage, page}) => {
 		await page.emulateMedia({colorScheme: 'dark'});
 		network.use(
 			mockQueryDecisionInstancesEndpoint({
@@ -273,24 +262,9 @@ test.describe('Operate Decisions DS preview (/operate-preview/decisions)', () =>
 				),
 			}),
 		);
-		await operatePreviewDecisionsPage.goto('?decisionDefinitionId=invoice&decisionDefinitionVersion=1');
+		await operateDecisionsPage.goto('?decisionDefinitionId=invoice&decisionDefinitionVersion=1');
 
-		await expect(operatePreviewDecisionsPage.decisionViewer).toBeVisible();
-		await expect(operatePreviewDecisionsPage.decisionViewer.getByText('Invoice Amount')).toBeVisible();
-	});
-
-	test('should keep the Carbon Decisions route working', async ({network, operateDecisionsPage, page}) => {
-		network.use(
-			mockQueryDecisionDefinitionsEndpoint({
-				successResponse: HttpResponse.json(createQueryDecisionDefinitionsResponse()),
-			}),
-			mockQueryDecisionInstancesEndpoint({
-				successResponse: HttpResponse.json(createQueryDecisionInstancesResponse()),
-			}),
-		);
-		await operateDecisionsPage.goto('?evaluated=true&failed=true');
-
-		await expect(page.getByRole('combobox', {name: 'Name', exact: true})).toBeVisible();
-		await expect(page).toHaveTitle('Operate: Decision Instances');
+		await expect(operateDecisionsPage.decisionViewer).toBeVisible();
+		await expect(operateDecisionsPage.decisionViewer.getByText('Invoice Amount')).toBeVisible();
 	});
 });
