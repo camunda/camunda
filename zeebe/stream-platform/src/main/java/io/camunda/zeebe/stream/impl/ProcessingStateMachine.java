@@ -334,7 +334,9 @@ public final class ProcessingStateMachine {
               writeRecords();
             });
       }
-    } catch (final Exception e) {
+    } catch (final Exception | StackOverflowError e) {
+      // the command caused the overflow, so left uncaught it would halt every broker that leads
+      // the partition
       onError(
           e,
           () -> {

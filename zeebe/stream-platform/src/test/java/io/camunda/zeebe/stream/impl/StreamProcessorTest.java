@@ -234,6 +234,22 @@ public final class StreamProcessorTest {
     inOrder.verifyNoMoreInteractions();
   }
 
+  @RegressionTest("https://github.com/camunda/camunda/issues/12240")
+  void shouldCallOnErrorWhenProcessingOverflowsStack() {
+    // given
+    final var defaultRecordProcessor = streamPlatform.getDefaultMockedRecordProcessor();
+    final var processingError = new StackOverflowError("processing error");
+    doThrow(processingError).when(defaultRecordProcessor).process(any(), any());
+    streamPlatform.startStreamProcessor();
+
+    // when
+    streamPlatform.writeBatch(
+        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, Records.processInstance(1)));
+
+    // then
+    verify(defaultRecordProcessor, TIMEOUT).onProcessingError(eq(processingError), any(), any());
+  }
+
   @Test
   void shouldFailOnCommandWithoutProcessor() {
     // given
