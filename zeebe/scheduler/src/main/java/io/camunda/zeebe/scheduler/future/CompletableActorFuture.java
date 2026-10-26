@@ -11,6 +11,7 @@ import static io.camunda.zeebe.util.Nulls.uncheckedCastToNonNull;
 import static io.camunda.zeebe.util.Unit.unit;
 import static java.util.Objects.requireNonNull;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import io.camunda.zeebe.scheduler.ActorControl;
 import io.camunda.zeebe.scheduler.ActorTask;
 import io.camunda.zeebe.scheduler.ActorThread;
@@ -80,10 +81,15 @@ public final class CompletableActorFuture<V extends @Nullable Object> implements
   // and many by none. The first callback is therefore stored inline, without any wrapper node.
   // Only further callbacks go into a lock-free stack. Nothing is allocated until a callback is
   // added.
+  @SuppressFBWarnings(value = "UWF_UNWRITTEN_FIELD", justification = "Written using FIRST_CALLBACK")
   private volatile @Nullable BiConsumer<V, @Nullable Throwable> firstCallback;
 
+  @SuppressFBWarnings(value = "UWF_UNWRITTEN_FIELD", justification = "Written using MORE_CALLBACKS")
   private volatile @Nullable CallbackNode<V> moreCallbacks;
 
+  @SuppressFBWarnings(
+      value = "UWF_UNWRITTEN_FIELD",
+      justification = "Written using COMPLETION_LATCH")
   private volatile @Nullable CountDownLatch completionLatch;
 
   private volatile int state = CLOSED;
@@ -210,8 +216,8 @@ public final class CompletableActorFuture<V extends @Nullable Object> implements
         }
 
         final var latch = completionLatch();
-        if (!isDone()) {
-          latch.await(remaining, TimeUnit.NANOSECONDS);
+        if (!isDone() && !latch.await(remaining, TimeUnit.NANOSECONDS) && !isDone()) {
+          throw new TimeoutException("Timeout after: " + timeout + " " + unit);
         }
       }
     }
