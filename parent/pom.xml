@@ -201,6 +201,7 @@
 
     <version.commons-io>2.22.0</version.commons-io>
     <version.thymeleaf>3.1.5.RELEASE</version.thymeleaf>
+    <version.ognl>3.4.13</version.ognl>
     <version.unboundid-ldapsdk>7.0.5</version.unboundid-ldapsdk>
     <version.parsson>1.1.9</version.parsson>
     <version.springdoc>3.1.1</version.springdoc>
@@ -2278,6 +2279,11 @@
         <groupId>org.thymeleaf</groupId>
         <artifactId>thymeleaf</artifactId>
         <version>${version.thymeleaf}</version>
+      </dependency>
+      <dependency>
+        <groupId>ognl</groupId>
+        <artifactId>ognl</artifactId>
+        <version>${version.ognl}</version>
       </dependency>
       <dependency>
         <groupId>com.unboundid</groupId>
