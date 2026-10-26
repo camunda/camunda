@@ -184,9 +184,7 @@ components:
           allOf:
           - $ref: 'keys.yaml#/components/schemas/ProcessInstanceKeyFilterProperty'
         protectionMode:
-          description: |
-            The protection applied to the variable. A variable matches when it has at least one of
-            the given protection modes.
+          description: The protection modes applied to the variable.
           allOf:
             - $ref: '#/components/schemas/ProtectionModeFilterProperty'
       x-properties-added-in-version:
@@ -311,7 +309,7 @@ components:
         value before it reaches secondary storage.
 
     ProtectionModeFilterProperty:
-      description: ProtectionModeEnum property with the advanced search capability to match any of several values.
+      description: ProtectionModeEnum property with full advanced search capabilities.
       oneOf:
         - type: string
           title: Exact match
@@ -325,16 +323,29 @@ components:
       description: Advanced ProtectionModeEnum filter.
       type: object
       properties:
-        $in:
-          description: Checks if the variable has at least one of the provided protection modes.
-          type: array
-          items:
-            $ref: "#/components/schemas/ProtectionModeEnum"
+        $eq:
+          description: Checks if the variable has the provided protection mode.
+          allOf:
+            - $ref: "#/components/schemas/ProtectionModeEnum"
+        $neq:
+          description: Checks if the variable does not have the provided protection mode.
+          allOf:
+            - $ref: "#/components/schemas/ProtectionModeEnum"
         $exists:
           description: |
             Checks if the variable has any protection mode. Use `false` to match the variables
             that are not protected.
           type: boolean
+        $in:
+          description: Checks if the variable has at least one of the provided protection modes.
+          type: array
+          items:
+            $ref: "#/components/schemas/ProtectionModeEnum"
+        $notIn:
+          description: Checks if the variable has none of the provided protection modes.
+          type: array
+          items:
+            $ref: "#/components/schemas/ProtectionModeEnum"
 
     VariableValueFilterProperty:
       type: object

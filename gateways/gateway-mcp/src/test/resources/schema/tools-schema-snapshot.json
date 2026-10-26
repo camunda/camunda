@@ -1126,7 +1126,7 @@
               "protectionMode": {
                 "type": "string",
                 "const": "REDACT",
-                "description": "The protection applied to the variable. A variable matches when it has at least one of the given protection modes. "
+                "description": "The protection modes applied to the variable."
               },
               "scopeKey": {
                 "type": "string",

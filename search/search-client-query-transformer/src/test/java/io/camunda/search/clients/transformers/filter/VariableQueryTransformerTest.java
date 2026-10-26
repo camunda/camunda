@@ -47,9 +47,35 @@ public class VariableQueryTransformerTest extends AbstractTransformerTest {
   }
 
   @Test
+  public void shouldQueryByProtectionModeNotEquals() {
+    // given
+    final var filter =
+        FilterBuilders.variable((f) -> f.protectionModeOperations(Operation.neq("REDACT")));
+
+    // when
+    final var searchRequest = transformQuery(filter);
+
+    // then
+    assertThat(searchRequest.queryOption())
+        .isInstanceOfSatisfying(
+            SearchBoolQuery.class,
+            (bool) ->
+                assertThat(bool.mustNot())
+                    .singleElement()
+                    .extracting(q -> q.queryOption())
+                    .isInstanceOfSatisfying(
+                        SearchTermQuery.class,
+                        term -> {
+                          assertThat(term.field()).isEqualTo(VariableTemplate.PROTECTION_MODES);
+                          assertThat(term.value().stringValue()).isEqualTo("REDACT");
+                        }));
+  }
+
+  @Test
   public void shouldQueryVariablesWithoutProtectionModes() {
     // given
-    final var filter = FilterBuilders.variable((f) -> f.hasProtectionModes(false));
+    final var filter =
+        FilterBuilders.variable((f) -> f.protectionModeOperations(Operation.exists(false)));
 
     // when
     final var searchRequest = transformQuery(filter);
@@ -72,7 +98,8 @@ public class VariableQueryTransformerTest extends AbstractTransformerTest {
   @Test
   public void shouldQueryVariablesWithProtectionModes() {
     // given
-    final var filter = FilterBuilders.variable((f) -> f.hasProtectionModes(true));
+    final var filter =
+        FilterBuilders.variable((f) -> f.protectionModeOperations(Operation.exists(true)));
 
     // when
     final var searchRequest = transformQuery(filter);
