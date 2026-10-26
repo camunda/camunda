@@ -390,7 +390,7 @@ developers using the `deploy-preview` label on their PRs.
   - It may be resolved by upgrading the Helm chart or by fixing `values.yml` and/or other
     configuration files.
   - For issues with the camunda-platform Helm chart, help can be sought from the Distribution team
-    (`@distro-medic`).
+    (`@smx-medic`).
 - **Playwright Smoke Tests issue:** Contact the QA team via the `#ask-qa` Slack channel and tag
   the `@test-automation-team`.
 
