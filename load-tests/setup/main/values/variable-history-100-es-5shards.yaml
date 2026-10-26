@@ -1,0 +1,4 @@
+# PoC for camunda/pdp-3517-variable-trace#53: record 100% of the variable changes, with the history index
+# spread over 5 primary shards, one per Elasticsearch node of the hardware step.
+camunda.data.audit-log.variable-history-percent: 100
+camunda.data.secondary-storage.elasticsearch.number-of-shards-per-index.variable-history: 5

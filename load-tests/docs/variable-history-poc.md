@@ -27,6 +27,13 @@ Picked with `platform-helm-values`, from the files in `load-tests/setup/main/val
 
 The PostgreSQL files also shorten the history time to live to 10 minutes, for the baseline too, so the history cleanup runs inside the measured window.
 
+## More hardware
+
+The hardware runs record 100% and add storage capacity through `load-test-setup-helm-values`:
+
+- Elasticsearch with more nodes, and the history index spread over one primary shard per node: `--set elasticsearch.count=5` with `variable-history-100-es-5shards.yaml`, or `--set elasticsearch.count=6` with `variable-history-100-es-6shards.yaml`.
+- PostgreSQL with more CPU and memory, moved to the 8 core node pool: `--set postgresql.nodeSelector.component=benchmark-n2-standard-8 --set postgresql.tolerations[0].value=n2-standard-8` plus `postgresql.resources` and `postgresql.parameters.shared_buffers` and `effective_cache_size`.
+
 ## Dispatch
 
 ```bash
