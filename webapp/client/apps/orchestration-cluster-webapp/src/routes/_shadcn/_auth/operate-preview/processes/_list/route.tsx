@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {createFileRoute, stripSearchParams} from '@tanstack/react-router';
+import {createFileRoute, Outlet, stripSearchParams} from '@tanstack/react-router';
 import {t} from 'i18next';
 import {Processes} from '#/operate/pages/Processes/shadcn.components/Processes';
 import {latestDefinitionsQuery} from '#/operate/shared/queries/processDefinitions.queries';
@@ -17,13 +17,18 @@ import {
 	stripLegacyProcessFilters,
 } from '#/operate/pages/Processes/processesFilter';
 
-export const Route = createFileRoute('/_shadcn/_auth/operate-preview/processes/')({
+export const Route = createFileRoute('/_shadcn/_auth/operate-preview/processes/_list')({
 	validateSearch: processesSearchSchema,
 	search: {middlewares: [stripLegacyProcessFilters, stripSearchParams(processesSearchDefaults)]},
 	loaderDeps: ({search: {tenantId}}) => ({tenantId: isSpecificTenant(tenantId) ? tenantId : undefined}),
 	loader: ({context: {queryClient}, deps: {tenantId}}) => queryClient.ensureQueryData(latestDefinitionsQuery(tenantId)),
 	head: () => ({meta: [{title: t('operate.processes.pageTitle')}]}),
 	component: function ProcessesRoute() {
-		return <Processes search={Route.useSearch()} />;
+		return (
+			<>
+				<Processes search={Route.useSearch()} />
+				<Outlet />
+			</>
+		);
 	},
 });

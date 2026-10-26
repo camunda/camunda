@@ -17,11 +17,20 @@ import {PanelHeader} from '#/operate/shared/PanelHeader/shadcn.components/PanelH
 import {ResizablePanel, SplitDirection} from '#/operate/shared/ResizablePanel/shadcn.components/ResizablePanel';
 import {AutoSubmit} from '#/operate/shared/AutoSubmit/AutoSubmit';
 import type {ProcessesSearch} from '../processesFilter';
-import type {OptionalFilter, OptionalFilterValues} from './optionalFilters';
+import {setVariableConditions, useVariableConditions} from '../VariablesFilter/variableFilterStore';
+import type {OptionalFilter, OptionalFilterValues, VariableFieldValues} from './optionalFilters';
 import {OptionalFiltersFormGroup} from './OptionalFiltersFormGroup';
 import {ProcessFilters} from './ProcessFilters';
 
-type FilterFormValues = OptionalFilterValues & {tenantId?: string};
+type FilterFormValues = OptionalFilterValues & VariableFieldValues & {tenantId?: string};
+
+const SESSION_FILTER_FIELDS = new Set(['variableName', 'variableValues']);
+
+// The variable fields follow session storage; re-initialising on their change would discard unsubmitted URL filter edits.
+function areUrlFilterValuesEqual(previous: Record<string, unknown> = {}, next: Record<string, unknown> = {}) {
+	const keys = new Set([...Object.keys(previous), ...Object.keys(next)]);
+	return [...keys].every((key) => SESSION_FILTER_FIELDS.has(key) || previous[key] === next[key]);
+}
 
 type Props = {
 	search: ProcessesSearch;
@@ -32,6 +41,8 @@ const Processes: React.FC<Props> = ({search}) => {
 	const navigate = useNavigate();
 	const [visibleFilters, setVisibleFilters] = useState<OptionalFilter[]>([]);
 	const preservingFormRef = useRef<FormApi<FilterFormValues> | null>(null);
+	const variable = useVariableConditions();
+	const inlineVariableCondition = variable.length === 1 && variable[0]?.operator === 'equals' ? variable[0] : undefined;
 	const {
 		processInstanceKey,
 		parentProcessInstanceKey,
@@ -71,8 +82,13 @@ const Processes: React.FC<Props> = ({search}) => {
 		],
 	);
 	const filterFormValues = useMemo<FilterFormValues>(
-		() => ({tenantId: search.tenantId, ...optionalFilterValues}),
-		[search.tenantId, optionalFilterValues],
+		() => ({
+			tenantId: search.tenantId,
+			...optionalFilterValues,
+			variableName: inlineVariableCondition?.name,
+			variableValues: inlineVariableCondition?.value,
+		}),
+		[search.tenantId, optionalFilterValues, inlineVariableCondition?.name, inlineVariableCondition?.value],
 	);
 	const hasOptionalFilters =
 		search.tenantId !== undefined ||
@@ -88,6 +104,7 @@ const Processes: React.FC<Props> = ({search}) => {
 		search.version === undefined &&
 		search.elementId === undefined &&
 		!hasOptionalFilters &&
+		variable.length === 0 &&
 		visibleFilters.length === 0;
 
 	const containerRef = useRef<HTMLDivElement>(null);
@@ -135,6 +152,7 @@ const Processes: React.FC<Props> = ({search}) => {
 						});
 					}}
 					initialValues={filterFormValues}
+					initialValuesEqual={areUrlFilterValuesEqual}
 				>
 					{({handleSubmit, form}) => (
 						<form onSubmit={handleSubmit} className="flex h-full min-h-0">
@@ -144,6 +162,7 @@ const Processes: React.FC<Props> = ({search}) => {
 								localStorageKey="isProcessesFiltersCollapsed"
 								isResetButtonDisabled={isResetDisabled}
 								onResetClick={() => {
+									setVariableConditions([]);
 									form.reset();
 									setVisibleFilters([]);
 									void navigate({to: '.', search: {active: true, suspended: true, incidents: true}});
