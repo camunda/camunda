@@ -18,10 +18,12 @@ import io.camunda.zeebe.gateway.impl.broker.request.BrokerCreateProcessInstanceW
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceWithResultRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceWithResultResponse;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.VariableMetadata;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
+import io.camunda.zeebe.protocol.record.value.ProtectionMode;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
@@ -186,5 +188,38 @@ public final class CreateProcessInstanceWithResultTest extends GatewayTest {
             Status.Code.ALREADY_EXISTS,
             "Command 'CREATE_WITH_AWAITING_RESULT' rejected with code 'ALREADY_EXISTS': "
                 + rejectionReason);
+  }
+
+  @Test
+  public void shouldMapVariablesMetadata() {
+    // given
+    final CreateProcessInstanceWithResultStub stub = new CreateProcessInstanceWithResultStub();
+    stub.registerWith(brokerClient);
+
+    final CreateProcessInstanceWithResultRequest request =
+        CreateProcessInstanceWithResultRequest.newBuilder()
+            .setRequest(
+                CreateProcessInstanceRequest.newBuilder()
+                    .setProcessDefinitionKey(stub.getProcessDefinitionKey())
+                    .setVariables("{\"ssn\":\"123\"}")
+                    .putVariablesMetadata(
+                        "ssn",
+                        VariableMetadata.newBuilder()
+                            .addProtectionModes(VariableMetadata.ProtectionMode.REDACT)
+                            .build()))
+            .build();
+
+    // when
+    final CreateProcessInstanceWithResultResponse response =
+        client.createProcessInstanceWithResult(request);
+
+    // then
+    assertThat(response.getProcessInstanceKey()).isEqualTo(stub.getProcessInstanceKey());
+    final BrokerCreateProcessInstanceWithResultRequest brokerRequest =
+        brokerClient.getSingleBrokerRequest();
+    final ProcessInstanceCreationRecord brokerRequestValue = brokerRequest.getRequestWriter();
+    assertThat(brokerRequestValue.getVariablesMetadata()).containsOnlyKeys("ssn");
+    assertThat(brokerRequestValue.getVariablesMetadata().get("ssn").getProtectionModes())
+        .containsExactly(ProtectionMode.REDACT);
   }
 }
