@@ -19,6 +19,8 @@ import {createProblemDetails} from '#/shared-test-modules/api-mocks/shared';
 import {getStateLocally, storeStateLocally} from '#/shared/browser-storage/local-storage';
 import {VariablesPanel} from './VariablesPanel';
 
+vi.mock('#/operate/shared/Editors/LazyMonacoEditor', () => import('#/shared-test-modules/lazy-monaco-editor'));
+
 const TABLE_ID = '4294980768';
 const LITERAL_ID = '4294980769';
 const NEXT_TABLE_ID = '4294980770';

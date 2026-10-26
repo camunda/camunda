@@ -7,7 +7,7 @@
  */
 
 import {useReducer} from 'react';
-import {afterEach, describe, expect} from 'vitest';
+import {afterEach, describe, expect, vi} from 'vitest';
 import {userEvent} from 'vitest/browser';
 import {cleanup} from 'vitest-browser-react';
 import {HttpResponse} from 'msw';
@@ -49,6 +49,8 @@ import {processInstanceSearchSchema} from './processInstanceSearch';
 import {modificationReducer, type Modification, type ModificationState} from './modifications/modificationReducer';
 import {isModificationModeEnabled} from './modifications/modificationSelectors';
 import {addToken, cancelToken, createModificationState, moveToken, variable} from './modifications/mocks';
+
+vi.mock('#/operate/shared/Editors/LazyMonacoEditor', () => import('#/shared-test-modules/lazy-monaco-editor'));
 
 const PROCESS_INSTANCE_ID = '2251799813685280';
 const PROCESS_XML = `<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn">
