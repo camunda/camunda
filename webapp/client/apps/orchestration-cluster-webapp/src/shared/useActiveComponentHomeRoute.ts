@@ -10,12 +10,16 @@ import {useMatchRoute, type RegisteredRouter} from '@tanstack/react-router';
 
 type FileRouteTypes = RegisteredRouter['routeTree']['types']['fileRouteTypes'];
 
-const COMPONENT_HOME_ROUTES = ['/admin', '/tasklist', '/operate-preview'] as const satisfies FileRouteTypes['to'][];
+const COMPONENT_HOME_ROUTES = [
+	{home: '/admin', matches: ['/admin']},
+	{home: '/tasklist', matches: ['/tasklist']},
+	{home: '/operate-preview', matches: ['/operate-preview', '/operate/decisions']},
+] as const satisfies ReadonlyArray<{home: FileRouteTypes['to']; matches: ReadonlyArray<FileRouteTypes['to']>}>;
 
 function useActiveComponentHomeRoute(): FileRouteTypes['to'] | undefined {
 	const matchRoute = useMatchRoute();
 
-	return COMPONENT_HOME_ROUTES.find((to) => matchRoute({to, fuzzy: true}) !== false);
+	return COMPONENT_HOME_ROUTES.find(({matches}) => matches.some((to) => matchRoute({to, fuzzy: true}) !== false))?.home;
 }
 
 export {useActiveComponentHomeRoute};

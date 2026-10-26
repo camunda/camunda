@@ -111,7 +111,7 @@ const Drd: React.FC<Props> = ({
 							selectedDecisionDefinitionId={decisionDefinitionId}
 							onDecisionSelection={(selectedKey) => {
 								void navigate({
-									to: '/operate-preview/decisions/$decisionInstanceId',
+									to: '/operate/decisions/$decisionInstanceId',
 									params: {decisionInstanceId: selectedKey},
 									state: (state) => ({
 										...state,

@@ -43,7 +43,7 @@ const DecisionInstanceError: React.FC<Props> = ({error, decisionInstanceId, onRe
 			isDismissable: true,
 		});
 		void navigate({
-			to: '/operate-preview/decisions',
+			to: '/operate/decisions',
 			search: {evaluated: true, failed: true},
 			replace: true,
 			state: (state) => ({

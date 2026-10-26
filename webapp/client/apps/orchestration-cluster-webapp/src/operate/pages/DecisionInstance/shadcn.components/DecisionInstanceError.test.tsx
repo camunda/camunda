@@ -13,8 +13,8 @@ import {ForbiddenError} from '#/shared/errors';
 import {DecisionInstanceError} from './DecisionInstanceError';
 
 const DECISION_INSTANCE_ID = '4294980768';
-const PATH = '/operate-preview/decisions/$decisionInstanceId';
-const INITIAL_ENTRY = `/operate-preview/decisions/${DECISION_INSTANCE_ID}`;
+const PATH = '/operate/decisions/$decisionInstanceId';
+const INITIAL_ENTRY = `/operate/decisions/${DECISION_INSTANCE_ID}`;
 
 describe('<DecisionInstanceError /> (design system)', () => {
 	it('should focus the error heading when arriving from the DRD', async () => {

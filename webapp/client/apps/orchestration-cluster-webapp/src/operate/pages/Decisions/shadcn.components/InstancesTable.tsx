@@ -102,7 +102,7 @@ const InstancesTable: React.FC<Props> = ({search}) => {
 			label: t('operate.decisions.ds.instancesTable.decisionInstanceKey'),
 			render: (row: DecisionInstance) => (
 				<DecisionInstanceLink
-					to="/operate-preview/decisions/$decisionInstanceId"
+					to="/operate/decisions/$decisionInstanceId"
 					params={{decisionInstanceId: row.decisionEvaluationInstanceKey}}
 					title={t('operate.decisions.instancesTable.viewDecisionInstance', {
 						key: row.decisionEvaluationInstanceKey,
