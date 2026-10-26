@@ -212,6 +212,7 @@ import io.camunda.client.api.statistics.request.ProcessInstanceWaitStateStatisti
 import io.camunda.client.api.statistics.request.UsageMetricsStatisticsRequest;
 import io.camunda.client.api.worker.JobClient;
 import io.camunda.client.api.worker.JobWorkerBuilderStep1;
+import io.camunda.client.api.worker.probe.ProbeWorkerBuilderStep1;
 import io.camunda.client.impl.CamundaClientBuilderImpl;
 import io.camunda.client.impl.CamundaClientCloudBuilderImpl;
 import io.camunda.client.impl.CamundaClientImpl;
@@ -779,6 +780,20 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * @return a builder for the worker registration
    */
   JobWorkerBuilderStep1 newWorker();
+
+  /**
+   * Registers a probe worker (alpha): it answers the probes of one capability, one operation for
+   * one template. Probes are pushed over a stream and answered over REST.
+   *
+   * <pre>
+   * client.newProbeWorker()
+   *   .operation(ProbeOperation.VALIDATE_CONFIGURATION)
+   *   .template("io.camunda:aws-credential:1")
+   *   .handler(probe -> ProbeAnswer.ok(Map.of("status", "SUCCESS")))
+   *   .open();
+   * </pre>
+   */
+  ProbeWorkerBuilderStep1 newProbeWorker();
 
   /**
    * Command to delete a resource.
