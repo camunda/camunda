@@ -101,7 +101,7 @@ test('should delete the selected DRD, refresh decisions and preserve tenant and 
 			url.searchParams.get('businessId') === 'order-1',
 	);
 	await page.reload();
-	await expect(page.getByRole('combobox', {name: 'Name', exact: true})).toHaveValue('');
+	await expect(page.getByRole('combobox', {name: 'Name', exact: true})).toHaveText('Search by decision name');
 	await expect(operateDecisionsPage.deleteDefinitionButton).not.toBeVisible();
 	await page.goBack();
 	await expect(page).toHaveURL(

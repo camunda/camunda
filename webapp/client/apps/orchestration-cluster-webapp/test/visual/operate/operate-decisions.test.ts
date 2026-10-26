@@ -50,13 +50,13 @@ test.beforeEach(({network}) => {
 });
 
 test('should match the resized decisions panels snapshot after dragging the resize handle', async ({
-	operatePreviewDecisionsPage,
+	operateDecisionsPage,
 	page,
 }) => {
-	await operatePreviewDecisionsPage.goto();
-	await expect(operatePreviewDecisionsPage.instancesTable).toBeVisible();
+	await operateDecisionsPage.goto();
+	await expect(operateDecisionsPage.instancesTable).toBeVisible();
 
-	await operatePreviewDecisionsPage.panelResizeHandle.dragTo(operatePreviewDecisionsPage.decisionPanel, {
+	await operateDecisionsPage.panelResizeHandle.dragTo(operateDecisionsPage.decisionPanel, {
 		force: true,
 	});
 
@@ -79,7 +79,7 @@ test('should match the filters panel snapshot with populated optional filters', 
 		}),
 	);
 	await page.goto(
-		'/operate-preview/decisions?evaluated=true&failed=true&businessId=eq_order-1&processInstanceKey=2251799813685249&evaluationDateFrom=2024-01-01T00:00:00.000Z&evaluationDateTo=2024-01-02T00:00:00.000Z',
+		'/operate/decisions?evaluated=true&failed=true&businessId=eq_order-1&processInstanceKey=2251799813685249&evaluationDateFrom=2024-01-01T00:00:00.000Z&evaluationDateTo=2024-01-02T00:00:00.000Z',
 	);
 	const filtersPanel = page.getByRole('region', {name: 'Filter', exact: true});
 	await expect(page.getByLabel('Business ID', {exact: true})).toHaveValue('order-1');
@@ -87,9 +87,9 @@ test('should match the filters panel snapshot with populated optional filters', 
 	await expect(filtersPanel).toHaveScreenshot();
 });
 
-test('should match the evaluation date range field snapshot', async ({operatePreviewDecisionsPage, page}) => {
-	await operatePreviewDecisionsPage.goto();
-	await operatePreviewDecisionsPage.moreFiltersButton.click();
+test('should match the evaluation date range field snapshot', async ({operateDecisionsPage, page}) => {
+	await operateDecisionsPage.goto();
+	await operateDecisionsPage.moreFiltersButton.click();
 	await page.getByRole('menuitem', {name: 'Evaluation date range'}).click();
 	const dateRange = page.getByRole('group', {name: 'Evaluation date range'});
 	await expect(dateRange).toBeVisible();
@@ -99,7 +99,7 @@ test('should match the evaluation date range field snapshot', async ({operatePre
 
 test('should match the instances table snapshot with evaluated and failed instances', async ({
 	network,
-	operatePreviewDecisionsPage,
+	operateDecisionsPage,
 	page,
 }) => {
 	network.use(
@@ -125,15 +125,15 @@ test('should match the instances table snapshot with evaluated and failed instan
 			),
 		}),
 	);
-	await page.goto(`${operatePreviewDecisionsPage.decisionsUrl}?evaluated=true&failed=true`);
+	await page.goto(`${operateDecisionsPage.decisionsUrl}?evaluated=true&failed=true`);
 
-	await expect(operatePreviewDecisionsPage.instancesTable.getByText('2251799813700001')).toBeVisible();
-	await expect(operatePreviewDecisionsPage.instancesTable).toHaveScreenshot();
+	await expect(operateDecisionsPage.instancesTable.getByText('2251799813700001')).toBeVisible();
+	await expect(operateDecisionsPage.instancesTable).toHaveScreenshot();
 });
 
 test('should match the instances table snapshot when no instances match', async ({
 	network,
-	operatePreviewDecisionsPage,
+	operateDecisionsPage,
 	page,
 }) => {
 	network.use(
@@ -141,32 +141,28 @@ test('should match the instances table snapshot when no instances match', async 
 			successResponse: HttpResponse.json(createQueryDecisionInstancesResponse()),
 		}),
 	);
-	await page.goto(`${operatePreviewDecisionsPage.decisionsUrl}?evaluated=true&failed=true`);
+	await page.goto(`${operateDecisionsPage.decisionsUrl}?evaluated=true&failed=true`);
 
-	await expect(operatePreviewDecisionsPage.instancesTable.getByText(/no instances matching/)).toBeVisible();
-	await expect(operatePreviewDecisionsPage.instancesTable).toHaveScreenshot();
+	await expect(operateDecisionsPage.instancesTable.getByText(/no instances matching/)).toBeVisible();
+	await expect(operateDecisionsPage.instancesTable).toHaveScreenshot();
 });
 
-test('should match the instances table snapshot when loading fails', async ({
-	network,
-	operatePreviewDecisionsPage,
-	page,
-}) => {
+test('should match the instances table snapshot when loading fails', async ({network, operateDecisionsPage, page}) => {
 	network.use(
 		mockQueryDecisionInstancesEndpoint({
 			successResponse: new HttpResponse(null, {status: 500}),
 		}),
 	);
-	await page.goto(`${operatePreviewDecisionsPage.decisionsUrl}?evaluated=true&failed=true`);
+	await page.goto(`${operateDecisionsPage.decisionsUrl}?evaluated=true&failed=true`);
 
-	await expect(operatePreviewDecisionsPage.instancesTable.getByText("Couldn't fetch data")).toBeVisible({
+	await expect(operateDecisionsPage.instancesTable.getByText("Couldn't fetch data")).toBeVisible({
 		timeout: 30_000,
 	});
-	await expect(operatePreviewDecisionsPage.instancesTable).toHaveScreenshot();
+	await expect(operateDecisionsPage.instancesTable).toHaveScreenshot();
 });
 
 test('should match the decisions page snapshot with a selected decision definition', async ({
-	operatePreviewDecisionsPage,
+	operateDecisionsPage,
 	network,
 	page,
 }) => {
@@ -199,20 +195,17 @@ test('should match the decisions page snapshot with a selected decision definiti
 		}),
 	);
 
-	await operatePreviewDecisionsPage.goto(
+	await operateDecisionsPage.goto(
 		'?evaluated=true&failed=true&decisionDefinitionId=invoiceClassification&decisionDefinitionVersion=1',
 	);
 	await expect(page.getByRole('heading', {name: 'Invoice Classification'})).toBeVisible();
-	await expect(operatePreviewDecisionsPage.decisionPanel.getByTestId('decision-viewer')).toBeVisible();
+	await expect(operateDecisionsPage.decisionPanel.getByTestId('decision-viewer')).toBeVisible();
 	await expect(page.getByText('Invoice Amount')).toBeVisible();
 	await expect(page).toHaveScreenshot();
 });
 
-test('should match the decisions page with the filter sidebar collapsed', async ({
-	operatePreviewDecisionsPage,
-	page,
-}) => {
-	await operatePreviewDecisionsPage.goto('?evaluated=true&failed=true');
+test('should match the decisions page with the filter sidebar collapsed', async ({operateDecisionsPage, page}) => {
+	await operateDecisionsPage.goto('?evaluated=true&failed=true');
 	await page.getByRole('button', {name: 'Collapse Filter'}).click();
 	await expect(page.getByTestId('collapsed-panel')).toBeVisible();
 
