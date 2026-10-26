@@ -81,6 +81,7 @@ import io.camunda.exporter.handlers.UserTaskJobBasedHandler;
 import io.camunda.exporter.handlers.UserTaskProcessInstanceHandler;
 import io.camunda.exporter.handlers.UserTaskVariableHandler;
 import io.camunda.exporter.handlers.VariableHandler;
+import io.camunda.exporter.handlers.VariableHistoryHandler;
 import io.camunda.exporter.handlers.auditlog.AuditLogHandlerBuilder;
 import io.camunda.exporter.handlers.batchoperation.BatchOperationChunkCreatedHandler;
 import io.camunda.exporter.handlers.batchoperation.BatchOperationChunkCreatedItemHandler;
@@ -143,6 +144,7 @@ import io.camunda.webapps.schema.descriptors.template.SnapshotTaskVariableTempla
 import io.camunda.webapps.schema.descriptors.template.TaskTemplate;
 import io.camunda.webapps.schema.descriptors.template.UsageMetricTUTemplate;
 import io.camunda.webapps.schema.descriptors.template.UsageMetricTemplate;
+import io.camunda.webapps.schema.descriptors.template.VariableHistoryTemplate;
 import io.camunda.webapps.schema.descriptors.template.VariableTemplate;
 import io.camunda.webapps.schema.descriptors.template.WaitStateTemplate;
 import io.camunda.zeebe.exporter.api.context.Context;
@@ -447,6 +449,15 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
 
     if (configuration.getAuditLog().isEnabled()) {
       addAuditLogHandlers(configuration.getAuditLog(), partitionId);
+    }
+
+    final var variableHistoryPercent = configuration.getAuditLog().getVariableHistoryPercent();
+    if (variableHistoryPercent > 0) {
+      exportHandlers.add(
+          new VariableHistoryHandler(
+              indexDescriptors.get(VariableHistoryTemplate.class).getFullQualifiedName(),
+              configuration.getIndex().getVariableSizeThreshold(),
+              variableHistoryPercent));
     }
 
     if (configuration.getWaitState().isEnabled()) {

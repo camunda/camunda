@@ -102,7 +102,9 @@ public class VariableHistoryHandler
 
   @Override
   public void flush(
-      final TargetIndex index, final VariableHistoryEntity entity, final BatchRequest batchRequest) {
+      final TargetIndex index,
+      final VariableHistoryEntity entity,
+      final BatchRequest batchRequest) {
     batchRequest.add(index, entity);
   }
 
