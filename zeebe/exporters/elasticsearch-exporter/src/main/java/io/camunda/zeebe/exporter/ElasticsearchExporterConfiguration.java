@@ -130,6 +130,7 @@ public class ElasticsearchExporterConfiguration implements FilterConfiguration {
       case AGENT_INSTANCE -> index.agentInstance;
       case AGENT_HISTORY -> index.agentHistory;
       case AGENT_DEFINITION -> index.agentDefinition;
+      case PROBE -> index.probe;
       default -> false;
     };
   }
@@ -270,6 +271,8 @@ public class ElasticsearchExporterConfiguration implements FilterConfiguration {
     public boolean agentInstance = true;
     public boolean agentHistory = true;
     public boolean agentDefinition = true;
+
+    public boolean probe = false;
 
     // index settings
     private Integer numberOfShards = null;

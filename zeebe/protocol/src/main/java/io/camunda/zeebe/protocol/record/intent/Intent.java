@@ -101,6 +101,7 @@ public interface Intent {
         MessageStartCorrelationKeyLockReleaseIntent.class);
     map.put(ValueType.MESSAGE_SUBSCRIPTION, MessageSubscriptionIntent.class);
     map.put(ValueType.MULTI_INSTANCE, MultiInstanceIntent.class);
+    map.put(ValueType.PROBE, ProbeIntent.class);
     map.put(ValueType.PROCESS, ProcessIntent.class);
     map.put(ValueType.PROCESS_DEFINITION_RESTORE, ProcessDefinitionRestoreIntent.class);
     map.put(ValueType.PROCESS_EVENT, ProcessEventIntent.class);

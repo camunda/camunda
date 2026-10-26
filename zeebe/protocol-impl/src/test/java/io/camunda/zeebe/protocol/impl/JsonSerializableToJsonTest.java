@@ -79,6 +79,7 @@ import io.camunda.zeebe.protocol.impl.record.value.message.MessageSubscriptionRe
 import io.camunda.zeebe.protocol.impl.record.value.message.ProcessMessageSubscriptionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.metrics.UsageMetricRecord;
 import io.camunda.zeebe.protocol.impl.record.value.multiinstance.MultiInstanceRecord;
+import io.camunda.zeebe.protocol.impl.record.value.probe.ProbeRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.BufferedCommandRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ElementInstanceWalkRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceBatchRecord;
@@ -132,6 +133,9 @@ import io.camunda.zeebe.protocol.record.value.GlobalListenerSource;
 import io.camunda.zeebe.protocol.record.value.HistoryDeletionType;
 import io.camunda.zeebe.protocol.record.value.JobResultType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
+import io.camunda.zeebe.protocol.record.value.ProbeEndReason;
+import io.camunda.zeebe.protocol.record.value.ProbeOperation;
+import io.camunda.zeebe.protocol.record.value.ProbeOutcome;
 import io.camunda.zeebe.protocol.record.value.ProtectionMode;
 import io.camunda.zeebe.protocol.record.value.ResolutionState;
 import io.camunda.zeebe.protocol.record.value.ResourceType;
@@ -5212,6 +5216,71 @@ final class JsonSerializableToJsonTest {
         {
           "resourceKey": -1,
           "tenantId": ""
+        }
+        """
+      },
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      //////////////////////////////////////// ProbeRecord /////////////////////////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      {
+        "ProbeRecord",
+        (Supplier<ProbeRecord>)
+            () ->
+                new ProbeRecord()
+                    .setOperation(ProbeOperation.VALIDATE_CONFIGURATION)
+                    .setTemplate("io.camunda:aws-credential:1")
+                    .setTenantId("tenant-1")
+                    .setInputExpression("={accessKey: camunda.secrets.awsKey}")
+                    .setInput(VARIABLES_MSGPACK)
+                    .addSecretReference("default", "awsKey", "/accessKey")
+                    .setRequestTimeout(5000L)
+                    .setDeadline(123L)
+                    .setWorker("connectors")
+                    .setYieldCount(1)
+                    .setOutcome(ProbeOutcome.OK)
+                    .setData(VARIABLES_MSGPACK)
+                    .setMessage("boom")
+                    .setEndReason(ProbeEndReason.NO_WORKER),
+        """
+        {
+          "operation": "VALIDATE_CONFIGURATION",
+          "template": "io.camunda:aws-credential:1",
+          "tenantId": "tenant-1",
+          "inputExpression": "={accessKey: camunda.secrets.awsKey}",
+          "input": {"foo": "bar"},
+          "secretReferences": [
+            {"storeId": "default", "secretReference": "awsKey", "path": "/accessKey"}
+          ],
+          "requestTimeout": 5000,
+          "deadline": 123,
+          "worker": "connectors",
+          "yieldCount": 1,
+          "outcome": "OK",
+          "data": {"foo": "bar"},
+          "message": "boom",
+          "endReason": "NO_WORKER"
+        }
+        """
+      },
+      {
+        "Empty ProbeRecord",
+        (Supplier<ProbeRecord>) ProbeRecord::new,
+        """
+        {
+          "operation": "VALIDATE_CONFIGURATION",
+          "template": "",
+          "tenantId": "<default>",
+          "inputExpression": "",
+          "input": {},
+          "secretReferences": [],
+          "requestTimeout": 0,
+          "deadline": -1,
+          "worker": "",
+          "yieldCount": 0,
+          "outcome": "UNSPECIFIED",
+          "data": {},
+          "message": "",
+          "endReason": "UNSPECIFIED"
         }
         """
       },

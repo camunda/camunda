@@ -223,6 +223,9 @@ public class ElasticsearchExporterSchemaManager {
       if (index.agentDefinition) {
         createValueIndexTemplate(ValueType.AGENT_DEFINITION, version);
       }
+      if (index.probe) {
+        createValueIndexTemplate(ValueType.PROBE, version);
+      }
     }
 
     indexTemplatesCreated.add(version);
