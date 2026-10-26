@@ -29,14 +29,19 @@ type Direction = 'assign' | 'unassign';
 
 const SCAN_PAGE_SIZE = 100;
 
-async function hasMember(kind: MemberKind, roleId: string, id: string): Promise<boolean> {
+// One pass over the role's members finds every wanted ID, so confirming several changes costs a single scan.
+async function findMembers(kind: MemberKind, roleId: string, ids: string[]): Promise<Set<string>> {
+	const found = new Set<string>();
 	for (let from = 0; ; from += SCAN_PAGE_SIZE) {
 		const data = await getMembersQuery(kind, roleId, {page: {from, limit: SCAN_PAGE_SIZE}}).queryFn();
-		if (data.items.some((item) => toMemberRow(kind, item).id === id)) {
-			return true;
+		for (const item of data.items) {
+			const id = toMemberRow(kind, item).id;
+			if (ids.includes(id)) {
+				found.add(id);
+			}
 		}
-		if (from + SCAN_PAGE_SIZE >= data.page.totalItems) {
-			return false;
+		if (found.size === ids.length || from + SCAN_PAGE_SIZE >= data.page.totalItems) {
+			return found;
 		}
 	}
 }
@@ -66,23 +71,26 @@ function useRoleMemberMutations(roleId: string) {
 		};
 
 	const reconcile = async (direction: Direction, {kind, ids}: {kind: MemberKind; ids: string[]}) => {
-		const confirmations = await Promise.all(
-			ids.map((id) =>
-				waitUntilReady(
-					queryClient,
-					{queryKey: ['roleMemberCheck', roleId, kind, id], queryFn: () => hasMember(kind, roleId, id)},
-					{isReady: (assigned) => assigned === (direction === 'assign')},
-				),
-			),
+		const shouldBeListed = direction === 'assign';
+		let latest: Set<string> | undefined;
+		await waitUntilReady(
+			queryClient,
+			{
+				queryKey: ['roleMemberCheck', roleId, kind, ...ids],
+				queryFn: async () => (latest = await findMembers(kind, roleId, ids)),
+			},
+			{isReady: (found) => ids.every((id) => found.has(id) === shouldBeListed)},
 		);
 
-		if (confirmations.some((confirmed) => confirmed === undefined)) {
+		const confirmed = latest === undefined ? [] : ids.filter((id) => latest?.has(id) === shouldBeListed);
+		if (confirmed.length < ids.length) {
 			toast.warning(t('admin.roles.changeNotConfirmed'), {
 				description: t('admin.roles.changeNotConfirmedDescription'),
 			});
-			return;
 		}
-		void queryClient.invalidateQueries({queryKey: getMembersQueryKeyPrefix(roleId, kind)});
+		if (confirmed.length > 0) {
+			void queryClient.invalidateQueries({queryKey: getMembersQueryKeyPrefix(roleId, kind)});
+		}
 	};
 
 	const assign = useMutation({
