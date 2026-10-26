@@ -9,6 +9,7 @@
 import {useMemo} from 'react';
 import {TableHeader} from '@carbon/react';
 import {useNavigate, useSearch} from '@tanstack/react-router';
+import {useTranslation} from 'react-i18next';
 import type {QuerySortOrder as SortOrder} from '@camunda/camunda-api-zod-schemas/8.11';
 import {z} from 'zod';
 import {createSortSearchParamSchema} from '#/shared/sortSearchParam';
@@ -24,6 +25,7 @@ type Props = {
 };
 
 const ColumnHeader: React.FC<Props> = ({sortKey, label, isDefault = false, defaultOrder = 'DESC', onSort}) => {
+	const {t} = useTranslation();
 	const navigate = useNavigate();
 	const search = useSearch({strict: false}) as {sort?: string};
 
@@ -48,6 +50,8 @@ const ColumnHeader: React.FC<Props> = ({sortKey, label, isDefault = false, defau
 			isSortHeader={isActive}
 			sortDirection={isActive ? activeOrder : 'NONE'}
 			onClick={handleSort}
+			title={t('operate.shared.sortableTable.sortBy', {label})}
+			aria-label={t('operate.shared.sortableTable.sortBy', {label})}
 		>
 			{label}
 		</TableHeader>

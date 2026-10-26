@@ -380,7 +380,7 @@ const InstancesTable: React.FC<Props> = ({
 		);
 
 	return (
-		<InstancesTableContainer>
+		<InstancesTableContainer aria-label={t('operate.processes.instancesTable.panelLabel')}>
 			<PanelHeader
 				title={t('operate.processes.instancesTable.title')}
 				count={totalCount}
