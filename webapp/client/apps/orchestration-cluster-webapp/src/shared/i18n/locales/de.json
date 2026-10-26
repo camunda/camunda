@@ -1375,8 +1375,6 @@
 					"emptyMessage": "Es gibt keine Instanzen, die diesem Filtersatz entsprechen",
 					"emptyAdditionalInfo": "Wählen Sie mindestens einen Instanzstatus aus, um Ergebnisse zu sehen",
 					"tableLabel": "Prozessinstanzen",
-					"loadingPreviousPage": "Vorherige Prozessinstanzen werden geladen",
-					"loadingNextPage": "Nächste Prozessinstanzen werden geladen",
 					"errorTitle": "Daten konnten nicht abgerufen werden",
 					"errorDescription": "Beim Laden der Instanzen ist ein Fehler aufgetreten. Versuchen Sie es erneut."
 				},
@@ -1479,9 +1477,7 @@
 					"selectRow": "Zeile {{key}} auswählen",
 					"stateEvaluated": "Ausgewertet",
 					"stateFailed": "Fehlgeschlagen",
-					"tableLabel": "Entscheidungsinstanzen",
-					"loadingPreviousPage": "Vorherige Entscheidungsinstanzen werden geladen",
-					"loadingNextPage": "Nächste Entscheidungsinstanzen werden geladen"
+					"tableLabel": "Entscheidungsinstanzen"
 				},
 				"toolbar": {
 					"delete": "Löschen",
@@ -2110,9 +2106,7 @@
 					"date": "Datum",
 					"result": "Ergebnis",
 					"actions": "Aktionen",
-					"tableLabel": "Operationsprotokoll",
-					"loadingPreviousPage": "Vorherige Protokolleinträge werden geladen",
-					"loadingNextPage": "Nächste Protokolleinträge werden geladen"
+					"tableLabel": "Operationsprotokoll"
 				},
 				"emptyState": {
 					"noItemsTitle": "Noch keine Einträge im Operationsprotokoll",
@@ -2256,8 +2250,6 @@
 				"ds": {
 					"itemsTable": {
 						"tableLabel": "Elemente der Batch-Operation",
-						"loadingPreviousPage": "Vorherige Elemente werden geladen",
-						"loadingNextPage": "Weitere Elemente werden geladen",
 						"expandFailure": "Fehlerdetails anzeigen",
 						"collapseFailure": "Fehlerdetails ausblenden"
 					}

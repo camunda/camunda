@@ -378,8 +378,6 @@ const InstancesTable: React.FC<Props> = ({search}) => {
 				rows={processInstances}
 				rowKey={(row) => row.processInstanceKey}
 				ariaLabel={t('operate.processes.instancesTable.tableLabel')}
-				loadingPreviousPageLabel={t('operate.processes.instancesTable.loadingPreviousPage')}
-				loadingNextPageLabel={t('operate.processes.instancesTable.loadingNextPage')}
 				isFetching={isRefreshing}
 				emptyState={emptyState}
 				selectionType="checkbox"

@@ -1375,8 +1375,6 @@
 					"emptyMessage": "No hay instancias que coincidan con este conjunto de filtros",
 					"emptyAdditionalInfo": "Para ver resultados, seleccione al menos un estado de instancia",
 					"tableLabel": "Instancias de proceso",
-					"loadingPreviousPage": "Cargando instancias de proceso anteriores",
-					"loadingNextPage": "Cargando instancias de proceso siguientes",
 					"errorTitle": "No se pudieron obtener los datos",
 					"errorDescription": "Algo salió mal al cargar las instancias. Inténtalo de nuevo."
 				},
@@ -1479,9 +1477,7 @@
 					"selectRow": "Seleccionar fila {{key}}",
 					"stateEvaluated": "Evaluada",
 					"stateFailed": "Fallida",
-					"tableLabel": "Instancias de decisión",
-					"loadingPreviousPage": "Cargando instancias de decisión anteriores",
-					"loadingNextPage": "Cargando instancias de decisión siguientes"
+					"tableLabel": "Instancias de decisión"
 				},
 				"toolbar": {
 					"delete": "Eliminar",
@@ -2110,9 +2106,7 @@
 					"date": "Fecha",
 					"result": "Resultado",
 					"actions": "Acciones",
-					"tableLabel": "Registro de operaciones",
-					"loadingPreviousPage": "Cargando entradas anteriores del registro",
-					"loadingNextPage": "Cargando entradas siguientes del registro"
+					"tableLabel": "Registro de operaciones"
 				},
 				"emptyState": {
 					"noItemsTitle": "Aún no hay elementos en el registro de operaciones",
@@ -2256,8 +2250,6 @@
 				"ds": {
 					"itemsTable": {
 						"tableLabel": "Elementos de la operación por lotes",
-						"loadingPreviousPage": "Cargando elementos anteriores",
-						"loadingNextPage": "Cargando más elementos",
 						"expandFailure": "Mostrar los detalles del fallo",
 						"collapseFailure": "Ocultar los detalles del fallo"
 					}

@@ -9,9 +9,10 @@
 import {format, parseISO} from 'date-fns';
 import {stringifySearchWith, useSearch} from '@tanstack/react-router';
 import {afterEach, beforeEach, describe, expect, vi} from 'vitest';
-import {HttpResponse} from 'msw';
+import {http, HttpResponse} from 'msw';
 import {userEvent} from 'vitest/browser';
 import {Toaster, toast} from '@camunda/design-system';
+import {endpoints} from '@camunda/camunda-api-zod-schemas/8.11';
 import {it} from '#/vitest-modules/test-extend';
 import {renderWithRouter} from '#/vitest-modules/render-with-router';
 import {notificationsStore} from '#/shared/notifications/notifications.store';
@@ -46,6 +47,19 @@ const NO_DECISION_DEFINITIONS = HttpResponse.json(createQueryDecisionDefinitions
 const OPERATIONS_LOG_PATH = '/operate-preview/operations-log';
 const AUDIT_LOG_ERROR = new HttpResponse(null, {status: 500});
 const DECISION_LOOKUP_ERROR = new HttpResponse(null, {status: 503});
+// The table loads the next page as soon as its last row is in view, so later pages must come back empty
+function mockAuditLogsFirstPageOnly(items: ReturnType<typeof createAuditLog>[], totalItems: number) {
+	return http.post(endpoints.queryAuditLogs.getUrl(), async ({request}) => {
+		const body = (await request.json()) as {page?: {from?: number}};
+		return HttpResponse.json(
+			createQueryAuditLogsResponse({
+				items: (body.page?.from ?? 0) === 0 ? items : [],
+				page: {totalItems, hasMoreTotalItems: true},
+			}),
+		);
+	});
+}
+
 const DECISION_LOG = createAuditLog({
 	auditLogKey: 'decision-log',
 	entityKey: '888',
@@ -96,14 +110,7 @@ describe('<OperationsLog />', () => {
 			worker.use(
 				mockQueryProcessDefinitionsEndpoint({successResponse: PROCESS_DEFINITIONS}),
 				mockQueryDecisionDefinitionsEndpoint({successResponse: DECISION_LOOKUP_ERROR}),
-				mockQueryAuditLogsEndpoint({
-					successResponse: HttpResponse.json(
-						createQueryAuditLogsResponse({
-							items: [DECISION_LOG],
-							page: {totalItems: 51, hasMoreTotalItems: true},
-						}),
-					),
-				}),
+				mockAuditLogsFirstPageOnly([DECISION_LOG], 51),
 			);
 
 			const screen = await renderPage();
@@ -355,14 +362,10 @@ describe('<OperationsLog />', () => {
 			worker.use(
 				mockQueryProcessDefinitionsEndpoint({successResponse: PROCESS_DEFINITIONS}),
 				mockQueryDecisionDefinitionsEndpoint({successResponse: NO_DECISION_DEFINITIONS}),
-				mockQueryAuditLogsEndpoint({
-					successResponse: HttpResponse.json(
-						createQueryAuditLogsResponse({
-							items: [createAuditLog({entityType: 'PROCESS_INSTANCE', entityKey: '42', processInstanceKey: '42'})],
-							page: {totalItems: 10000, hasMoreTotalItems: true},
-						}),
-					),
-				}),
+				mockAuditLogsFirstPageOnly(
+					[createAuditLog({entityType: 'PROCESS_INSTANCE', entityKey: '42', processInstanceKey: '42'})],
+					10000,
+				),
 			);
 
 			const screen = await renderPage();
