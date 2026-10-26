@@ -31,6 +31,7 @@ import static io.camunda.zeebe.protocol.record.ValueType.JOB_METRICS_BATCH;
 import static io.camunda.zeebe.protocol.record.ValueType.MAPPING_RULE;
 import static io.camunda.zeebe.protocol.record.ValueType.MESSAGE_START_EVENT_SUBSCRIPTION;
 import static io.camunda.zeebe.protocol.record.ValueType.MESSAGE_SUBSCRIPTION;
+import static io.camunda.zeebe.protocol.record.ValueType.PROBE;
 import static io.camunda.zeebe.protocol.record.ValueType.PROCESS;
 import static io.camunda.zeebe.protocol.record.ValueType.PROCESS_INSTANCE;
 import static io.camunda.zeebe.protocol.record.ValueType.PROCESS_INSTANCE_BUSINESS_ID;
@@ -438,6 +439,7 @@ public class CamundaExporter implements Exporter {
             AGENT_INSTANCE,
             AGENT_HISTORY,
             AGENT_DEFINITION,
+            PROBE,
             TIMER,
             SIGNAL_SUBSCRIPTION,
             CONDITIONAL_SUBSCRIPTION);

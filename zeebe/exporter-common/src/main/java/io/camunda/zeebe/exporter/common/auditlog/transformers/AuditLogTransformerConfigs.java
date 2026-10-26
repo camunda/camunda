@@ -42,6 +42,7 @@ import io.camunda.zeebe.protocol.record.intent.HistoryDeletionIntent;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.MappingRuleIntent;
+import io.camunda.zeebe.protocol.record.intent.ProbeIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceMigrationIntent;
@@ -116,6 +117,14 @@ public class AuditLogTransformerConfigs {
 
   public static final TransformerConfig JOB_CONFIG =
       TransformerConfig.with(ValueType.JOB).withIntents(JobIntent.COMPLETED);
+
+  public static final TransformerConfig PROBE_CONFIG =
+      TransformerConfig.with(ValueType.PROBE)
+          .withIntents(
+              ProbeIntent.CREATED,
+              ProbeIntent.ANSWERED,
+              ProbeIntent.TIMED_OUT,
+              ProbeIntent.CANCELED);
 
   public static final TransformerConfig MAPPING_RULE_CONFIG =
       TransformerConfig.with(MAPPING_RULE)

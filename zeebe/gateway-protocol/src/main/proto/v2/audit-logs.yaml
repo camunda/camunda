@@ -509,6 +509,7 @@ components:
         - USER_TASK
         - VARIABLE
         - CLIENT
+        - PROBE
 
     AuditLogOperationTypeEnum:
       type: string

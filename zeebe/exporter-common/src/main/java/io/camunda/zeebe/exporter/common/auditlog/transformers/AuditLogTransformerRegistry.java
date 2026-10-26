@@ -107,6 +107,7 @@ public final class AuditLogTransformerRegistry {
         HistoryDeletionAuditLogTransformer::new,
         IncidentResolutionAuditLogTransformer::new,
         JobAuditLogTransformer::new,
+        ProbeAuditLogTransformer::new,
         ProcessInstanceCancelAuditLogTransformer::new,
         ProcessInstanceCreationAuditLogTransformer::new,
         ProcessInstanceMigrationAuditLogTransformer::new,

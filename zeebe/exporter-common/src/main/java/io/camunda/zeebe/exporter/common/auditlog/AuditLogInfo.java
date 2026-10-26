@@ -27,6 +27,7 @@ import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.MappingRuleIntent;
+import io.camunda.zeebe.protocol.record.intent.ProbeIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceMigrationIntent;
@@ -104,6 +105,12 @@ public record AuditLogInfo(
           Map.entry(MappingRuleIntent.CREATED, AuditLogOperationType.CREATE),
           Map.entry(MappingRuleIntent.UPDATED, AuditLogOperationType.UPDATE),
           Map.entry(MappingRuleIntent.DELETED, AuditLogOperationType.DELETE),
+
+          // Probe: the end of a probe is a completion when answered, a cancellation otherwise
+          Map.entry(ProbeIntent.CREATED, AuditLogOperationType.CREATE),
+          Map.entry(ProbeIntent.ANSWERED, AuditLogOperationType.COMPLETE),
+          Map.entry(ProbeIntent.TIMED_OUT, AuditLogOperationType.CANCEL),
+          Map.entry(ProbeIntent.CANCELED, AuditLogOperationType.CANCEL),
 
           // Process
           Map.entry(ProcessIntent.CREATED, AuditLogOperationType.CREATE),
@@ -193,6 +200,7 @@ public record AuditLogInfo(
           Map.entry(ValueType.AUTHORIZATION, AuditLogOperationCategory.ADMIN),
           Map.entry(ValueType.GROUP, AuditLogOperationCategory.ADMIN),
           Map.entry(ValueType.MAPPING_RULE, AuditLogOperationCategory.ADMIN),
+          Map.entry(ValueType.PROBE, AuditLogOperationCategory.ADMIN),
           Map.entry(ValueType.ROLE, AuditLogOperationCategory.ADMIN),
           Map.entry(ValueType.TENANT, AuditLogOperationCategory.ADMIN),
           Map.entry(ValueType.USER, AuditLogOperationCategory.ADMIN),
@@ -211,6 +219,7 @@ public record AuditLogInfo(
           Map.entry(ValueType.DECISION_EVALUATION, AuditLogEntityType.DECISION),
           Map.entry(ValueType.DECISION_REQUIREMENTS, AuditLogEntityType.RESOURCE),
           Map.entry(ValueType.JOB, AuditLogEntityType.JOB),
+          Map.entry(ValueType.PROBE, AuditLogEntityType.PROBE),
           Map.entry(ValueType.BATCH_OPERATION_CREATION, AuditLogEntityType.BATCH),
           Map.entry(ValueType.BATCH_OPERATION_LIFECYCLE_MANAGEMENT, AuditLogEntityType.BATCH),
           Map.entry(ValueType.USER, AuditLogEntityType.USER),
