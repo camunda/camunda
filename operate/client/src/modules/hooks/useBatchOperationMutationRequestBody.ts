@@ -62,7 +62,7 @@ const useBatchOperationMutationRequestBody = () =>
     false,
   );
 
-// The cancellation endpoint rejects finished states, so they are left out of the filter.
+// Cancellation and suspension reject finished states at the top level, so they are left out of the filter.
 const useCancelProcessInstancesBatchOperationMutationRequestBody = () =>
   useProcessInstancesBatchOperationMutationRequestBody(
     [
@@ -77,6 +77,7 @@ const useSuspendProcessInstancesBatchOperationMutationRequestBody = () =>
   useProcessInstancesBatchOperationMutationRequestBody(
     processInstancesSelectionStore.checkedRunningIds,
     false,
+    true,
   );
 
 const useResumeProcessInstancesBatchOperationMutationRequestBody = () =>
@@ -126,6 +127,7 @@ const useDeleteDecisionInstancesBatchOperationRequestBody =
   };
 
 export {
+  FINISHED_STATE_SEARCH_PARAMS,
   useBatchOperationMutationRequestBody,
   useCancelProcessInstancesBatchOperationMutationRequestBody,
   useSuspendProcessInstancesBatchOperationMutationRequestBody,

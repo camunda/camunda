@@ -13,6 +13,8 @@ import {useLocation, useNavigate} from '@tanstack/react-router';
 import {Form} from 'react-final-form';
 import {Checkbox, ComboBox, Dropdown, Stack} from '@carbon/react';
 import {decisionDefinitionSelectionOptions, decisionDefinitionsOptions} from './decisions.queries';
+import type {DecisionDefinition} from '@camunda/camunda-api-zod-schemas/8.11';
+import {queries} from '#/shared/http/queries';
 import {isSpecificTenant} from '#/operate/shared/utils/isSpecificTenant';
 import {getClientConfig} from '#/shared/config/getClientConfig';
 import {InstancesList} from '#/operate/shared/InstancesList/InstancesList';
@@ -36,7 +38,14 @@ type FiltersFormValues = OptionalFilterValues & {
 
 type Props = DecisionsSearch;
 
-type DecisionItem = {id: string; label: string};
+type DecisionItem = {
+	id: string;
+	decisionDefinitionId: string;
+	tenantId?: string;
+	name: string;
+	label: string;
+	version?: number;
+};
 type DecisionVersionItem = {id: string; version?: number};
 
 const ALL_VERSIONS_ITEM: DecisionVersionItem = {id: 'all'};
@@ -66,7 +75,13 @@ const Decisions: React.FC<Props> = ({
 		}
 	}, [state.operateDecisionFocus]);
 	const specificTenantId = isSpecificTenant(tenantId) ? tenantId : undefined;
+	const isMultiTenancyEnabled = getClientConfig().deployment.isMultiTenancyEnabled;
 	const {data} = useSuspenseQuery(decisionDefinitionsOptions(specificTenantId));
+	const {data: tenantsById} = useQuery({
+		...queries.getCurrentUser(),
+		select: ({tenants}) => Object.fromEntries(tenants.map(({tenantId, name}) => [tenantId, name])),
+		enabled: isMultiTenancyEnabled,
+	});
 	const [visibleFilters, setVisibleFilters] = useState<OptionalFilter[]>([]);
 
 	const optionalFilterValues = useMemo<OptionalFilterValues>(
@@ -85,31 +100,50 @@ const Decisions: React.FC<Props> = ({
 	const decisionDefinitionVersionsQuery = useDecisionDefinitionVersions(decisionDefinitionId, specificTenantId);
 
 	const decisionItems = useMemo<DecisionItem[]>(() => {
-		const seen = new Set<string>();
-		const definitions = [
-			...data.items,
+		const toItem = (definition: DecisionDefinition): DecisionItem => {
+			const name = definition.name ?? definition.decisionDefinitionId;
+			return {
+				id: `${definition.decisionDefinitionId}##${definition.tenantId}`,
+				decisionDefinitionId: definition.decisionDefinitionId,
+				tenantId: definition.tenantId,
+				name,
+				label:
+					isMultiTenancyEnabled && specificTenantId === undefined
+						? `${name} - ${tenantsById?.[definition.tenantId] ?? definition.tenantId}`
+						: name,
+				version: definition.version,
+			};
+		};
+		const items = data.map(toItem);
+		const ids = new Set(items.map(({id}) => id));
+		const fallbackItems = [
 			...(decisionDefinitionSelectionQuery.data?.items ?? []),
 			...(decisionDefinitionVersionsQuery.data ?? []),
-		];
-		const items = definitions.reduce<DecisionItem[]>((acc, def) => {
-			if (!seen.has(def.decisionDefinitionId)) {
-				seen.add(def.decisionDefinitionId);
-				acc.push({id: def.decisionDefinitionId, label: def.name ?? def.decisionDefinitionId});
-			}
-			return acc;
-		}, []);
-		if (decisionDefinitionId !== undefined && !seen.has(decisionDefinitionId)) {
-			items.push({id: decisionDefinitionId, label: decisionDefinitionId});
-		}
-		return items;
-	}, [data, decisionDefinitionId, decisionDefinitionSelectionQuery.data, decisionDefinitionVersionsQuery.data]);
+		]
+			.map(toItem)
+			.filter(({id}) => !ids.has(id) && ids.add(id));
+		const allItems = [...items, ...fallbackItems];
+		const missingSelection =
+			decisionDefinitionId !== undefined && !allItems.some((item) => item.decisionDefinitionId === decisionDefinitionId)
+				? [{id: decisionDefinitionId, decisionDefinitionId, name: decisionDefinitionId, label: decisionDefinitionId}]
+				: [];
+		return [...allItems, ...missingSelection].sort((a, b) => a.label.localeCompare(b.label));
+	}, [
+		data,
+		decisionDefinitionId,
+		decisionDefinitionSelectionQuery.data,
+		decisionDefinitionVersionsQuery.data,
+		isMultiTenancyEnabled,
+		specificTenantId,
+		tenantsById,
+	]);
 
 	const versionItems = useMemo<DecisionVersionItem[]>(() => {
 		if (!decisionDefinitionId) {
 			return [];
 		}
 		const definitions = [
-			...data.items,
+			...data,
 			...(decisionDefinitionSelectionQuery.data?.items ?? []),
 			...(decisionDefinitionVersionsQuery.data ?? []),
 		];
@@ -120,7 +154,7 @@ const Decisions: React.FC<Props> = ({
 			versionSet.add(decisionDefinitionVersion);
 		}
 		const versions = [...versionSet].sort((a, b) => b - a).map((version) => ({id: String(version), version}));
-		return [ALL_VERSIONS_ITEM, ...versions];
+		return versions.length > 1 || decisionDefinitionVersion === undefined ? [ALL_VERSIONS_ITEM, ...versions] : versions;
 	}, [
 		data,
 		decisionDefinitionId,
@@ -129,7 +163,36 @@ const Decisions: React.FC<Props> = ({
 		decisionDefinitionVersionsQuery.data,
 	]);
 
-	const selectedDecision = decisionItems.find((item) => item.id === decisionDefinitionId) ?? null;
+	const selectedDecision = useMemo<DecisionItem | null>(() => {
+		const candidates = decisionItems.filter(
+			(item) =>
+				item.decisionDefinitionId === decisionDefinitionId &&
+				(specificTenantId === undefined || item.tenantId === undefined || item.tenantId === specificTenantId),
+		);
+		const [first] = candidates;
+		if (first === undefined || candidates.length === 1) {
+			return first ?? null;
+		}
+		const versionTenants = new Set(
+			[...(decisionDefinitionSelectionQuery.data?.items ?? []), ...(decisionDefinitionVersionsQuery.data ?? [])]
+				.filter(
+					(definition) =>
+						definition.decisionDefinitionId === decisionDefinitionId &&
+						(decisionDefinitionVersion === undefined || definition.version === decisionDefinitionVersion),
+				)
+				.map((definition) => definition.tenantId),
+		);
+		const tenantItem =
+			versionTenants.size === 1 ? candidates.find((item) => versionTenants.has(item.tenantId ?? '')) : undefined;
+		return tenantItem ?? {...first, id: first.decisionDefinitionId, tenantId: undefined, label: first.name};
+	}, [
+		decisionDefinitionId,
+		decisionDefinitionSelectionQuery.data,
+		decisionDefinitionVersion,
+		decisionDefinitionVersionsQuery.data,
+		decisionItems,
+		specificTenantId,
+	]);
 	const selectedVersion =
 		decisionDefinitionId === undefined
 			? null
@@ -225,7 +288,7 @@ const Decisions: React.FC<Props> = ({
 								>
 									<Stack gap={8}>
 										<Stack gap={5}>
-											{getClientConfig().deployment.isMultiTenancyEnabled && (
+											{isMultiTenancyEnabled && (
 												<div>
 													<Title>{t('operate.decisions.filters.tenant')}</Title>
 													<TenantField
@@ -253,14 +316,20 @@ const Decisions: React.FC<Props> = ({
 														itemToString={(item) => item?.label ?? ''}
 														selectedItem={selectedDecision}
 														size="sm"
+														disabled={isMultiTenancyEnabled && tenantId === undefined}
 														onChange={({selectedItem}) => {
+															if (selectedItem?.id === selectedDecision?.id) {
+																return;
+															}
 															void navigate({
 																to: '.',
 																search: (prev) => ({
 																	...prev,
-																	decisionDefinitionId: selectedItem?.id,
-																	decisionDefinitionVersion:
-																		selectedItem?.id === decisionDefinitionId ? decisionDefinitionVersion : undefined,
+																	...(isMultiTenancyEnabled && selectedItem?.tenantId !== undefined
+																		? {tenantId: selectedItem.tenantId}
+																		: {}),
+																	decisionDefinitionId: selectedItem?.decisionDefinitionId,
+																	decisionDefinitionVersion: selectedItem?.version,
 																}),
 															});
 														}}

@@ -17,7 +17,7 @@ import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.response.DeleteResourceResponse;
 import io.camunda.client.api.response.Process;
 import io.camunda.client.api.search.enums.ProcessInstanceState;
-import io.camunda.configuration.HistoryDeletion;
+import io.camunda.configuration.data.HistoryDeletion;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
 import io.camunda.zeebe.model.bpmn.Bpmn;

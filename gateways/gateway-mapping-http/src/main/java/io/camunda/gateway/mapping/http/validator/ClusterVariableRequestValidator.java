@@ -16,7 +16,6 @@ import static io.camunda.gateway.mapping.http.validator.RequestValidator.validat
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.gateway.protocol.model.CreateClusterVariableRequest;
 import io.camunda.gateway.protocol.model.UpdateClusterVariableRequest;
-import io.camunda.security.validation.ClusterVariableValidator;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;

@@ -15,6 +15,7 @@ import {AdminOperationsLogPage} from '#/admin/pages/AdminOperationsLogPage';
 import {getAuditLogsRequestBody} from '#/admin/modules/operations-log/auditLogs';
 import {operationsLogSearchSchema, type OperationsLogSearch} from '#/admin/modules/operations-log/searchSchema';
 import {ForbiddenError} from '#/shared/errors';
+import {adminListQuery} from '#/admin/modules/shared/adminListQuery';
 import {queries} from '#/shared/http/queries';
 import {ForbiddenPage} from '#/shared/pages/shadcn.components/ForbiddenPage';
 import {GenericErrorPage} from '#/shared/pages/shadcn.components/GenericErrorPage';
@@ -26,10 +27,7 @@ export const Route = createFileRoute('/_shadcn/_auth/admin/operations-log/')({
 	},
 	loaderDeps: ({search}) => ({search}),
 	loader: async ({context: {queryClient}, deps: {search}}) => {
-		await queryClient.query({
-			...queries.queryAuditLogs(getAuditLogsRequestBody(search)),
-			staleTime: 'static',
-		});
+		await queryClient.query(adminListQuery(queries.queryAuditLogs(getAuditLogsRequestBody(search))));
 	},
 	errorComponent: function AdminOperationsLogErrorPage({error, reset}: ErrorComponentProps) {
 		if (error instanceof ForbiddenError) {
@@ -49,7 +47,7 @@ export const Route = createFileRoute('/_shadcn/_auth/admin/operations-log/')({
 	component: function AdminOperationsLogRoute() {
 		const search = Route.useSearch();
 		const navigate = useNavigate();
-		const {data} = useSuspenseQuery(queries.queryAuditLogs(getAuditLogsRequestBody(search)));
+		const {data} = useSuspenseQuery(adminListQuery(queries.queryAuditLogs(getAuditLogsRequestBody(search))));
 
 		const handleSearchChange = useCallback(
 			(next: Partial<OperationsLogSearch>) => {

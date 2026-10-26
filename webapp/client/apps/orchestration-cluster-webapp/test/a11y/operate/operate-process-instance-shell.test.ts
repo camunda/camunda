@@ -15,6 +15,7 @@ import {createProcessInstance} from '#/shared-test-modules/api-mocks/process-ins
 import {createCallHierarchy} from '#/shared-test-modules/api-mocks/call-hierarchy';
 import {createQueryProcessDefinitionsResponse} from '#/shared-test-modules/api-mocks/process-definitions';
 import {createPaginatedResponse} from '#/shared-test-modules/api-mocks/shared';
+import {createVariable} from '#/shared-test-modules/api-mocks/variables';
 import {
 	mockCurrentUserEndpoint,
 	mockSystemConfigurationEndpoint,
@@ -28,6 +29,7 @@ import {
 	mockQueryProcessDefinitionsEndpoint,
 	mockQueryElementInstancesEndpoint,
 	mockQueryBatchOperationItemsEndpoint,
+	mockQueryVariablesEndpoint,
 } from '#/shared-test-modules/mock-handlers';
 
 const PROCESS_INSTANCE_ID = '2251799813685280';
@@ -74,11 +76,15 @@ test('should have no accessibility violations on the process instance shell page
 		mockGetProcessDefinitionXmlEndpoint({successResponse: HttpResponse.text(PROCESS_XML)}),
 		mockQueryElementInstancesEndpoint({successResponse: HttpResponse.json(createPaginatedResponse())}),
 		mockQueryBatchOperationItemsEndpoint({successResponse: HttpResponse.json(createPaginatedResponse())}),
+		mockQueryVariablesEndpoint({
+			successResponse: HttpResponse.json(createPaginatedResponse({items: [createVariable({name: 'orderId'})]})),
+		}),
 	);
 
 	await page.goto(`/operate/processes/${PROCESS_INSTANCE_ID}`);
 	await expect(page).toHaveURL(`/operate/processes/${PROCESS_INSTANCE_ID}/variables`);
 	await expect(page.getByRole('heading', {name: 'Operate Process Instance'})).toBeAttached();
+	await expect(page.getByRole('button', {name: 'Copy orderId'})).toBeVisible();
 	await page.getByRole('link', {name: 'Dashboard', exact: true}).hover();
 	expect((await makeAxeBuilder().analyze()).violations).toEqual([]);
 });

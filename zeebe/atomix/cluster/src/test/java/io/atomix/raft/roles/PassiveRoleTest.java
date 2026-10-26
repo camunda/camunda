@@ -17,6 +17,7 @@ package io.atomix.raft.roles;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -39,6 +40,7 @@ import io.atomix.raft.storage.log.IndexedRaftLogEntry;
 import io.atomix.raft.storage.log.RaftLog;
 import io.atomix.raft.storage.system.Configuration;
 import io.camunda.zeebe.journal.CheckedJournalException;
+import io.camunda.zeebe.journal.CheckedJournalException.FlushException;
 import io.camunda.zeebe.journal.JournalException;
 import io.camunda.zeebe.journal.JournalException.InvalidChecksum;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
@@ -88,6 +90,7 @@ public class PassiveRoleTest {
     when(ctx.getReplicationMetrics()).thenReturn(mock(RaftReplicationMetrics.class));
     when(ctx.getMeterRegistry()).thenReturn(meterRegistry);
     when(ctx.getName()).thenReturn("partition-1");
+    when(ctx.getCluster()).thenReturn(mock(RaftClusterContext.class));
 
     role = new PassiveRole(ctx);
   }
@@ -316,6 +319,84 @@ public class PassiveRoleTest {
     // then - the pending snapshot should be aborted
     verify(receivedSnapshot).abort();
     assertThat(getPendingSnapshot()).as("pending snapshot should be cleared").isNull();
+  }
+
+  @Test
+  public void shouldRollBackConfigurationWhenAppendRequestResetsTheLog()
+      throws CheckedJournalException {
+    // given - a request that starts the log anew, as its previous term is zero
+    final var request =
+        VersionedAppendRequest.builder()
+            .withTerm(1)
+            .withLeader(MemberId.anonymous())
+            .withPrevLogTerm(0)
+            .withPrevLogIndex(0)
+            .withEntries(List.of(new ReplicatableJournalRecord(1, 1, 1, new byte[1])))
+            .withCommitIndex(1)
+            .build();
+    when(log.append(any(ReplicatableJournalRecord.class)))
+        .thenReturn(mock(IndexedRaftLogEntry.class));
+
+    // when
+    role.handleAppend(ProtocolVersionHandler.transform(request)).join();
+
+    // then - a configuration that only the erased log knew must not survive
+    verify(log).reset(1);
+    verify(ctx.getCluster()).reloadStoredConfiguration();
+  }
+
+  @Test
+  public void shouldRollBackConfigurationWhenAnEntryOfAnotherTermReplacesTheLastEntry()
+      throws CheckedJournalException {
+    // given - the last local entry has another term than the entry the leader sends for its index
+    final var lastEntry = mock(IndexedRaftLogEntry.class);
+    when(lastEntry.index()).thenReturn(1L);
+    when(lastEntry.term()).thenReturn(2L);
+    when(log.getLastEntry()).thenReturn(lastEntry);
+    when(log.append(any(ReplicatableJournalRecord.class)))
+        .thenReturn(mock(IndexedRaftLogEntry.class));
+    final var request =
+        VersionedAppendRequest.builder()
+            .withTerm(3)
+            .withLeader(MemberId.anonymous())
+            .withPrevLogTerm(0)
+            .withPrevLogIndex(0)
+            .withEntries(List.of(new ReplicatableJournalRecord(3, 1, 1, new byte[1])))
+            .withCommitIndex(1)
+            .build();
+
+    // when
+    role.handleAppend(ProtocolVersionHandler.transform(request)).join();
+
+    // then - the divergent entry is deleted and so is a configuration that came from it
+    verify(log).deleteAfter(0);
+    verify(ctx.getCluster()).dropConfigurationsWithoutLogEntry(0);
+  }
+
+  @Test
+  public void shouldRollBackConfigurationWhenTruncatingTheLogFailsToFlush()
+      throws CheckedJournalException {
+    // given - the journal is truncated before the flush that fails, so the entry is gone
+    final var lastEntry = mock(IndexedRaftLogEntry.class);
+    when(lastEntry.index()).thenReturn(1L);
+    when(lastEntry.term()).thenReturn(2L);
+    when(log.getLastEntry()).thenReturn(lastEntry);
+    doThrow(new FlushException(new IOException("flush failed"))).when(log).deleteAfter(0);
+    final var request =
+        VersionedAppendRequest.builder()
+            .withTerm(3)
+            .withLeader(MemberId.anonymous())
+            .withPrevLogTerm(0)
+            .withPrevLogIndex(0)
+            .withEntries(List.of(new ReplicatableJournalRecord(3, 1, 1, new byte[1])))
+            .withCommitIndex(1)
+            .build();
+
+    // when
+    role.handleAppend(ProtocolVersionHandler.transform(request)).join();
+
+    // then - the retry would not truncate again, so the configuration must be dropped now
+    verify(ctx.getCluster()).dropConfigurationsWithoutLogEntry(0);
   }
 
   @Test

@@ -16,24 +16,28 @@ class OperatePreviewDecisionsPage extends BasePage {
 		super(page);
 	}
 
-	async goto() {
-		return this.page.goto(this.decisionsUrl);
+	async goto(search = '') {
+		return this.page.goto(`${this.decisionsUrl}${search}`);
 	}
 
 	get heading() {
 		return this.page.getByRole('heading', {name: 'Decisions'});
 	}
 
-	get filtersPanelPlaceholder() {
-		return this.page.getByText('Filters panel placeholder');
+	get moreFiltersButton() {
+		return this.page.getByRole('button', {name: 'More filters'});
 	}
 
-	get decisionPanelPlaceholder() {
-		return this.page.getByText('Decision panel placeholder');
+	get decisionPanel() {
+		return this.page.getByRole('region', {name: 'Decision Panel'});
 	}
 
-	get instancesTablePlaceholder() {
-		return this.page.getByText('Instances table placeholder');
+	get decisionViewer() {
+		return this.page.getByTestId('decision-viewer');
+	}
+
+	get instancesTable() {
+		return this.page.getByTestId('decision-instances-table');
 	}
 
 	get panelResizeHandle() {

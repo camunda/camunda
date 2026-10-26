@@ -45,7 +45,6 @@ import {MigrateAction} from './MigrateAction';
 import {getMigrationFilter, getMigrationStatisticsFilter, type MigrationScope} from './getMigrationFilter';
 import {BatchModificationFooter} from './BatchModificationFooter';
 import {useDiagramXml} from './useDiagramXml';
-import {getActiveInstancesFilter} from './getActiveInstancesFilter';
 import {getElementName} from './getElementName';
 import type {ProcessDefinitionSelection} from './DiagramPanel';
 import type {ProcessesMode, ProcessesNavigationBlocker} from './ProcessesLayout';
@@ -160,7 +159,8 @@ const InstancesTable: React.FC<Props> = ({
 	const isSubmitting = operation.matches('submitting') || modification.matches('submitting');
 	const {acceptedKey, acceptedIdentity} = operation.context;
 	const {reset, filterIdentity} = selection;
-	const selectionFilter = selection.getRequest('cancel').filter;
+	const modificationFilter = selection.getModificationFilter();
+	const selectionFilter = selection.getModificationStatisticsFilter();
 	const scopeIdentity = JSON.stringify({filter: selectionFilter, selectedCount: selection.selectedCount});
 	useEffect(() => {
 		onSelectionScopeChange?.((previous) =>
@@ -380,7 +380,7 @@ const InstancesTable: React.FC<Props> = ({
 		);
 
 	return (
-		<InstancesTableContainer>
+		<InstancesTableContainer aria-label={t('operate.processes.instancesTable.panelLabel')}>
 			<PanelHeader
 				title={t('operate.processes.instancesTable.title')}
 				count={totalCount}
@@ -456,6 +456,8 @@ const InstancesTable: React.FC<Props> = ({
 					columns={columns}
 					rows={processInstances}
 					rowKey={(row) => row.processInstanceKey}
+					stickyHeader
+					stickyRightColumn="operations"
 					expansionScope={batchOperationKey}
 					rowOperationError={
 						isOperationStateColumnVisible
@@ -514,6 +516,7 @@ const InstancesTable: React.FC<Props> = ({
 				<BatchModificationFooter
 					blocker={navigationBlocker}
 					scope={{filter: selectionFilter, selectedCount: selection.selectedCount}}
+					hasActiveScope={modificationFilter !== null}
 					processDefinitionSelection={processDefinitionSelection}
 					isDefinitionChanged={isDefinitionChanged}
 					sourceElementId={search.elementId}
@@ -525,10 +528,9 @@ const InstancesTable: React.FC<Props> = ({
 					})}
 					onExit={exitMode}
 					onSubmit={(moveInstruction) => {
-						const activeFilter = getActiveInstancesFilter(selection.getRequest('cancel').filter);
 						if (
-							activeFilter === null ||
 							selection.selectedCount < 1 ||
+							modificationFilter === null ||
 							modeDefinition === null ||
 							isDefinitionChanged
 						) {
@@ -540,7 +542,7 @@ const InstancesTable: React.FC<Props> = ({
 							action: 'modify',
 							body: {
 								filter: {
-									...activeFilter,
+									...modificationFilter,
 									tenantId: {$eq: modeDefinition.tenantId},
 								},
 								moveInstructions: [moveInstruction],

@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {AppHeader, AppSidebar, CamundaLogo, SidebarProvider, toast, useMediaQuery} from '@camunda/design-system';
+import {AppHeader, AppSidebar, CamundaLogo, SidebarProvider, toast} from '@camunda/design-system';
 import {SaasNotifications} from '@camunda/oc-saas-notifications';
 import {useC3Profile} from '@camunda/camunda-composite-components';
 import {useSuspenseQuery} from '@tanstack/react-query';
@@ -20,8 +20,8 @@ import {queries} from '#/shared/http/queries';
 import {useSidebarNavigation} from '#/shared/header/useSidebarNavigation.shadcn';
 import {AccountMenu} from './AccountMenu';
 import {Breadcrumbs} from './Breadcrumbs';
+import {HeaderBadges} from './HeaderBadges';
 import {HelpMenu} from './HelpMenu';
-import {LicenseBadges} from './LicenseBadges';
 import {useCallback, useMemo} from 'react';
 
 const SIDEBAR_COLLAPSED_WIDTH = '3.5rem';
@@ -42,12 +42,10 @@ const SaasAccountMenu: React.FC<React.ComponentProps<typeof AccountMenu>> = (pro
 const Header: React.FC<Props> = ({children, currentApp, initialSaasToken}) => {
 	const {t, i18n} = useTranslation();
 	const {data: currentUser} = useSuspenseQuery(queries.getCurrentUser());
-	const {data: license} = useSuspenseQuery(queries.getLicense());
 	const {ariaLabel, homeRoute, items} = useSidebarNavigation(currentUser);
 	const {canLogout} = getClientConfig().authentication;
 	const {organizationId, clusterId} = getBootConfig();
 	const isSaas = organizationId !== null && clusterId !== null;
-	const isBelowLg = useMediaQuery('(width < 64rem)');
 	const breadcrumb =
 		currentApp === undefined ? undefined : <Breadcrumbs currentApp={currentApp} webappLinks={currentUser.c8Links} />;
 	const globalActions = useMemo(
@@ -105,7 +103,7 @@ const Header: React.FC<Props> = ({children, currentApp, initialSaasToken}) => {
 							</Link>
 						}
 						breadcrumb={breadcrumb}
-						trailing={isBelowLg ? undefined : <LicenseBadges license={license} />}
+						trailing={<HeaderBadges />}
 						globalActions={globalActions}
 						actions={
 							<>

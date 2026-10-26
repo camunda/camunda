@@ -115,5 +115,5 @@ From `webapp/client/apps/orchestration-cluster-webapp/`:
 
 ```sh
 npm run typecheck
-npm run test:unit -- --project shadcn
+npm run test:unit -- --project '*:shadcn'
 ```

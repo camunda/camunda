@@ -8,6 +8,8 @@
 package io.camunda.spring.utils;
 
 import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.regex.Pattern;
@@ -76,15 +78,72 @@ public final class PhysicalTenantConfigUtil {
                     // only the physical-tenants prefix, no tenant id segment
                     return;
                   }
-                  final String tenantId = name.getElement(tenantIdIndex, Form.UNIFORM);
+                  final String tenantId = name.getElement(tenantIdIndex, Form.ORIGINAL);
                   if (tenantId == null || tenantId.isEmpty()) {
                     // never surface a blank tenant id
                     return;
                   }
-                  validateTenantId(tenantId);
+                  validateDeclaredTenantId(tenantId, name.getElement(tenantIdIndex, Form.UNIFORM));
                   consumer.accept(tenantId, name.subName(tenantIdIndex + 1));
                 });
       }
+    }
+  }
+
+  /**
+   * The names of entry {@code key} of the map at {@code mapName}, for binding that entry on its
+   * own: one per form in which {@code key} is declared as an entry of {@code mapName} or of {@code
+   * relatedMapNames}, either dotted ({@code map.azure_ad}) or in brackets ({@code map[AzureAd]}).
+   *
+   * <p>The form cannot be derived from the key, because Spring keys a bound map by the element as
+   * written. It matters because Spring matches a bracketed element only exactly and a dotted one
+   * leniently, so each form is looked up as declared. Pass the map that {@code mapName} overlays,
+   * such as the cluster-level map for a tenant's, as a related map, so that the entry is found in
+   * the form either side declares it in.
+   */
+  public static List<ConfigurationPropertyName> mapEntryNames(
+      final Environment environment,
+      final String mapName,
+      final String key,
+      final String... relatedMapNames) {
+    final ConfigurationPropertyName map = ConfigurationPropertyName.of(mapName);
+    final Set<ConfigurationPropertyName> elements = declaredEntryElements(environment, map, key);
+    for (final String relatedMapName : relatedMapNames) {
+      elements.addAll(
+          declaredEntryElements(environment, ConfigurationPropertyName.of(relatedMapName), key));
+    }
+    return elements.stream().map(map::append).toList();
+  }
+
+  private static Set<ConfigurationPropertyName> declaredEntryElements(
+      final Environment environment, final ConfigurationPropertyName map, final String key) {
+    final int entryIndex = map.getNumberOfElements();
+    final Set<ConfigurationPropertyName> elements = new LinkedHashSet<>();
+    for (final ConfigurationPropertySource source : ConfigurationPropertySources.get(environment)) {
+      if (source instanceof final IterableConfigurationPropertySource iter) {
+        iter.stream()
+            .filter(map::isAncestorOf)
+            .filter(name -> key.equals(name.getElement(entryIndex, Form.ORIGINAL)))
+            .forEach(name -> elements.add(name.subName(entryIndex).chop(1)));
+      }
+    }
+    return elements;
+  }
+
+  /**
+   * Validates a tenant id as written in the config. Earlier versions registered an id that is only
+   * valid once Spring normalizes it ({@code tenant-a}, {@code TenantA}) under the normalized id, so
+   * the error then names that id.
+   */
+  private static void validateDeclaredTenantId(final String declaredId, final String uniformId) {
+    final Optional<String> violation = tenantIdViolation(declaredId);
+    if (violation.isPresent()) {
+      throw new InvalidPhysicalTenantIdException(
+          tenantIdViolation(uniformId).isPresent()
+              ? violation.get()
+              : violation.get()
+                  + " Rename it to '%s', the id earlier versions registered it under."
+                      .formatted(uniformId));
     }
   }
 
@@ -95,26 +154,35 @@ public final class PhysicalTenantConfigUtil {
    * @throws InvalidPhysicalTenantIdException if the id is invalid
    */
   public static void validateTenantId(final String tenantId) {
+    tenantIdViolation(tenantId)
+        .ifPresent(
+            violation -> {
+              throw new InvalidPhysicalTenantIdException(violation);
+            });
+  }
+
+  private static Optional<String> tenantIdViolation(final String tenantId) {
     if (tenantId == null) {
-      throw new InvalidPhysicalTenantIdException(
+      return Optional.of(
           String.format(
               "Invalid physical tenant id under '%s.*'. Tenant ids must not be null.",
               PHYSICAL_TENANTS_PREFIX));
     }
     if (tenantId.length() > MAX_TENANT_ID_LENGTH) {
-      throw new InvalidPhysicalTenantIdException(
+      return Optional.of(
           String.format(
               "Invalid physical tenant id under '%s.*'. "
                   + "Tenant ids must not exceed %d characters (was %d).",
               PHYSICAL_TENANTS_PREFIX, MAX_TENANT_ID_LENGTH, tenantId.length()));
     }
     if (!VALID_TENANT_ID.matcher(tenantId).matches()) {
-      throw new InvalidPhysicalTenantIdException(
+      return Optional.of(
           String.format(
               "Invalid physical tenant id '%s' under '%s.*'. "
                   + "Tenant ids must be lowercase alphanumeric (matching %s) — no dashes, so "
                   + "yaml and environment-variable forms resolve to the same tenant.",
               tenantId, PHYSICAL_TENANTS_PREFIX, VALID_TENANT_ID.pattern()));
     }
+    return Optional.empty();
   }
 }

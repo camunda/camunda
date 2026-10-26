@@ -7,8 +7,8 @@
  */
 package io.camunda.zeebe.it.cluster.backup;
 
-import io.camunda.configuration.PrimaryStorageBackup.BackupStoreType;
-import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
+import io.camunda.configuration.data.SecondaryStorage.SecondaryStorageType;
+import io.camunda.configuration.data.primarystorage.PrimaryStorageBackup.BackupStoreType;
 import io.camunda.container.CamundaContainer.BrokerContainer;
 import io.camunda.management.backups.StateCode;
 import io.camunda.zeebe.backup.s3.S3BackupConfig.Builder;

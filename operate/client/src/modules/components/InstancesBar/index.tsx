@@ -20,6 +20,7 @@ import {
 } from './styled';
 import {Timer} from '@carbon/react/icons';
 import {Tooltip} from '@carbon/react';
+import {pluralSuffix} from 'modules/utils/pluralSuffix';
 
 type Props = {
   label?: {
@@ -58,6 +59,8 @@ const InstancesBar: React.FC<Props> = ({
       <Wrapper $size={size}>
         <IncidentsCount
           data-testid="incident-instances-badge"
+          role="img"
+          aria-label={`${pluralSuffix(incidentsCount, 'instance')} with incidents`}
           $hasIncidents={hasIncidents}
         >
           {incidentsCount}
@@ -87,6 +90,11 @@ const InstancesBar: React.FC<Props> = ({
             {showActiveInstancesCount && (
               <ActiveCount
                 data-testid="active-instances-badge"
+                role="img"
+                aria-label={pluralSuffix(
+                  activeInstancesCount,
+                  'active instance',
+                )}
                 $hasActiveInstances={hasActiveInstances}
               >
                 {activeInstancesCount}

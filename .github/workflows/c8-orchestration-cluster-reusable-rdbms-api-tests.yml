@@ -128,25 +128,25 @@ jobs:
           - database-name: "MariaDB 10.11"
             database-type: "mariadb"
             database-image-version: "10.11"
-            jdbc-url: "jdbc:mariadb://localhost:3306/camunda"
+            jdbc-url: "jdbc:mariadb://localhost:3306/camunda?sslMode=disable"
             jdbc-username: "camunda"
             jdbc-password: "camunda"
           - database-name: "MariaDB 11.4"
             database-type: "mariadb"
             database-image-version: "11.4"
-            jdbc-url: "jdbc:mariadb://localhost:3306/camunda"
+            jdbc-url: "jdbc:mariadb://localhost:3306/camunda?sslMode=disable"
             jdbc-username: "camunda"
             jdbc-password: "camunda"
           - database-name: "MariaDB 11.8"
             database-type: "mariadb"
             database-image-version: "11.8"
-            jdbc-url: "jdbc:mariadb://localhost:3306/camunda"
+            jdbc-url: "jdbc:mariadb://localhost:3306/camunda?sslMode=disable"
             jdbc-username: "camunda"
             jdbc-password: "camunda"
           - database-name: "MariaDB 12.3"
             database-type: "mariadb"
             database-image-version: "12.3"
-            jdbc-url: "jdbc:mariadb://localhost:3306/camunda"
+            jdbc-url: "jdbc:mariadb://localhost:3306/camunda?sslMode=disable"
             jdbc-username: "camunda"
             jdbc-password: "camunda"
           # Microsoft SQL Server
@@ -199,7 +199,7 @@ jobs:
             secret/data/products/camunda/ci/github-actions SLACK_CORE_DOMAIN_BOT_TOKEN;
 
       - name: Setup Java
-        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
         with:
           distribution: temurin
           java-version: '21'

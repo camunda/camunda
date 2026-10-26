@@ -8,15 +8,19 @@
 package io.camunda.zeebe.gateway.rest.controller;
 
 import io.camunda.gateway.mapping.http.RequestMapper;
+import io.camunda.gateway.mapping.http.ResponseMapper;
+import io.camunda.gateway.protocol.model.ClockAddRequest;
 import io.camunda.gateway.protocol.model.ClockPinRequest;
 import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.service.registry.ServiceRegistry;
+import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPutMapping;
 import io.camunda.zeebe.gateway.rest.annotation.PhysicalTenantId;
 import io.camunda.zeebe.gateway.rest.mapper.RequestExecutor;
 import io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper;
 import java.util.concurrent.CompletableFuture;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -36,6 +40,16 @@ public class ClockController {
     this.authenticationProvider = authenticationProvider;
   }
 
+  @CamundaGetMapping
+  public CompletableFuture<ResponseEntity<Object>> getClock(
+      @PhysicalTenantId final String physicalTenantId) {
+    final var authentication = authenticationProvider.getCamundaAuthentication();
+    return RequestExecutor.executeServiceMethod(
+        () -> serviceRegistry.clockServices(physicalTenantId).getClock(authentication),
+        ResponseMapper::toClockResult,
+        HttpStatus.OK);
+  }
+
   @CamundaPutMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
   public CompletableFuture<ResponseEntity<Object>> pinClock(
       @PhysicalTenantId final String physicalTenantId,
@@ -43,6 +57,17 @@ public class ClockController {
 
     return RequestMapper.getPinnedEpoch(pinRequest)
         .fold(RestErrorMapper::mapProblemToCompletedResponse, t -> pinClock(t, physicalTenantId));
+  }
+
+  @CamundaPostMapping(path = "/add")
+  public CompletableFuture<ResponseEntity<Object>> addClock(
+      @PhysicalTenantId final String physicalTenantId,
+      @RequestBody final ClockAddRequest addRequest) {
+
+    return RequestMapper.getClockOffset(addRequest)
+        .fold(
+            RestErrorMapper::mapProblemToCompletedResponse,
+            offset -> addClock(offset, physicalTenantId));
   }
 
   @CamundaPostMapping(
@@ -61,5 +86,15 @@ public class ClockController {
     return RequestExecutor.executeServiceMethodWithNoContentResult(
         () ->
             serviceRegistry.clockServices(physicalTenantId).pinClock(pinnedEpoch, authentication));
+  }
+
+  private CompletableFuture<ResponseEntity<Object>> addClock(
+      final long offsetMillis, final String physicalTenantId) {
+    final var authentication = authenticationProvider.getCamundaAuthentication();
+    return RequestExecutor.executeServiceMethod(
+        () ->
+            serviceRegistry.clockServices(physicalTenantId).addClock(offsetMillis, authentication),
+        ResponseMapper::toClockResult,
+        HttpStatus.OK);
   }
 }

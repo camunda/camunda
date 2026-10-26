@@ -16,6 +16,7 @@ describe('parseAdminClientConfig', () => {
 			idPattern: '^[a-z]+$',
 			resourcePermissions: {USER_TASK: ['READ', 'COMPLETE']},
 			defaultRoleIds: ['admin'],
+			isAdditionalIdpConfigured: 'true',
 		})};`;
 
 		// when
@@ -26,6 +27,7 @@ describe('parseAdminClientConfig', () => {
 			idPattern: '^[a-z]+$',
 			resourcePermissions: {USER_TASK: ['READ', 'COMPLETE']},
 			defaultRoleIds: ['admin'],
+			isAdditionalIdpConfigured: true,
 		});
 	});
 
@@ -37,7 +39,7 @@ describe('parseAdminClientConfig', () => {
 		const config = parseAdminClientConfig(script);
 
 		// then
-		expect(config).toEqual({resourcePermissions: {}, defaultRoleIds: []});
+		expect(config).toEqual({resourcePermissions: {}, defaultRoleIds: [], isAdditionalIdpConfigured: false});
 	});
 
 	it('should throw when the script is not valid JSON', () => {

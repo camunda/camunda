@@ -15,6 +15,7 @@ import {AdminMcpProcessesPage} from '#/admin/pages/AdminMcpProcessesPage';
 import {getMcpProcessToolsRequestBody, mapResponseToTools} from '#/admin/modules/mcp-processes/mcpProcessTools';
 import {mcpProcessesSearchSchema, type McpProcessesSearch} from '#/admin/modules/mcp-processes/searchSchema';
 import {ForbiddenError} from '#/shared/errors';
+import {adminListQuery} from '#/admin/modules/shared/adminListQuery';
 import {queries} from '#/shared/http/queries';
 import {ForbiddenPage} from '#/shared/pages/shadcn.components/ForbiddenPage';
 import {GenericErrorPage} from '#/shared/pages/shadcn.components/GenericErrorPage';
@@ -26,10 +27,7 @@ export const Route = createFileRoute('/_shadcn/_auth/admin/mcp-processes/')({
 	},
 	loaderDeps: ({search}) => ({search}),
 	loader: async ({context: {queryClient}, deps: {search}}) => {
-		await queryClient.query({
-			...queries.queryMessageSubscriptions(getMcpProcessToolsRequestBody(search)),
-			staleTime: 'static',
-		});
+		await queryClient.query(adminListQuery(queries.queryMessageSubscriptions(getMcpProcessToolsRequestBody(search))));
 	},
 	errorComponent: function AdminMcpProcessesErrorPage({error, reset}: ErrorComponentProps) {
 		if (error instanceof ForbiddenError) {
@@ -49,7 +47,9 @@ export const Route = createFileRoute('/_shadcn/_auth/admin/mcp-processes/')({
 	component: function AdminMcpProcessesRoute() {
 		const search = Route.useSearch();
 		const navigate = useNavigate();
-		const {data} = useSuspenseQuery(queries.queryMessageSubscriptions(getMcpProcessToolsRequestBody(search)));
+		const {data} = useSuspenseQuery(
+			adminListQuery(queries.queryMessageSubscriptions(getMcpProcessToolsRequestBody(search))),
+		);
 		const tools = useMemo(() => mapResponseToTools(data), [data]);
 
 		const handleSearchChange = useCallback(

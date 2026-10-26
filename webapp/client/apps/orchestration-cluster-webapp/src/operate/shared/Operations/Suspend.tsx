@@ -14,16 +14,17 @@ type Props = {
 	processInstanceKey: ProcessInstance['processInstanceKey'];
 	onExecute: () => void;
 	disabled?: boolean;
+	title?: string;
 };
 
-const Suspend: React.FC<Props> = ({processInstanceKey, onExecute, disabled = false}) => {
+const Suspend: React.FC<Props> = ({onExecute, disabled = false, title}) => {
 	const {t} = useTranslation();
 
 	return (
 		<OperationItem
 			type="SUSPEND_PROCESS_INSTANCE"
 			onClick={onExecute}
-			title={t('operate.shared.operations.suspendTitle', {processInstanceKey})}
+			title={title ?? t('operate.shared.operations.suspendInstance')}
 			disabled={disabled}
 			size="sm"
 		/>

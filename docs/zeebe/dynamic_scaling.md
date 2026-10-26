@@ -80,7 +80,7 @@ The redistribution phase uses [Zeebe's command distribution](./generalized_distr
 
 ### Scaling steps
 
-1. A client sends a [ClusterConfigurationManagementRequest](../../zeebe/dynamic-config/src/main/java/io/camunda/zeebe/dynamic/config/api/ClusterConfigurationManagementApi.java) as a HTTP PATCH request at `/actuator/cluster/` on the management port.
+1. A client sends a [ClusterConfigurationManagementRequest](../../zeebe/dynamic-config/impl/src/main/java/io/camunda/zeebe/dynamic/config/impl/api/ClusterConfigurationManagementApi.java) as a HTTP PATCH request at `/actuator/cluster/` on the management port.
 
    If new brokers need to be added, it can be done in the same command, by specifying the ids of the brokers to add:
    - with brokers:
@@ -118,7 +118,7 @@ The redistribution phase uses [Zeebe's command distribution](./generalized_distr
 
 The new partitions will be distributed using `RoundRobinPartitionDistributor`, so that they are evenly spread across all brokers.
 
-2. The [ClusterChangeCoordinator](../../zeebe/dynamic-config/src/main/java/io/camunda/zeebe/dynamic/config/changes/ConfigurationChangeCoordinator.java) generates the `ClusterChangeOperation` needed to reach the requested result.
+2. The [ClusterChangeCoordinator](../../zeebe/dynamic-config/impl/src/main/java/io/camunda/zeebe/dynamic/config/impl/changes/ConfigurationChangeCoordinator.java) generates the `ClusterChangeOperation` needed to reach the requested result.
    For a pure scaling operation, the generated `ClusterChangeOperation` will be:
 
    - `StartPartitionScaleUp` to the coordinator broker, which will send a command to partition 1
@@ -246,7 +246,7 @@ protoc --decode topology_protocol.CurrentClusterConfiguration \
 unpacked. Any other `Accept` value is refused with a 406.
 
 The JSON shape is the internal model and changes whenever the model does. That is why the endpoint
-is deliberately absent from `dist/src/main/resources/api/cluster/cluster-api.yaml` — it is a
+is deliberately absent from `zeebe/dynamic-config/openapi/src/main/resources/api/cluster-api.yaml` — it is a
 debugging aid, not a contract. Note also that the configuration is always fetched from the
 coordinator, so querying different nodes returns the same content.
 

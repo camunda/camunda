@@ -50,8 +50,24 @@ function getAdminSectionConfig(): AdminSectionConfig {
 	};
 }
 
+/**
+ * Whether mapping rules can be assigned to and unassigned from roles and groups. Mirrors the
+ * server's MappingRuleMembershipPolicy: with OIDC, outside SaaS, and on SaaS only once an
+ * additional IdP is configured.
+ */
+function canManageMappingRuleMembers(config: AdminSectionConfig, isAdditionalIdpConfigured: boolean): boolean {
+	return config.isOidc && (!config.isSaas || isAdditionalIdpConfigured);
+}
+
 function isAdminSectionAvailable(section: AdminSectionKey, config: AdminSectionConfig): boolean {
 	return SECTION_AVAILABILITY[section]?.(config) ?? true;
+}
+
+// Mirrors the sidebar order; `roles` is always available, so a landing section always exists.
+const LANDING_SECTIONS = ['users', 'mapping-rules', 'groups', 'roles'] as const satisfies AdminSectionKey[];
+
+function getAdminLandingSection(config: AdminSectionConfig): (typeof LANDING_SECTIONS)[number] {
+	return LANDING_SECTIONS.find((section) => isAdminSectionAvailable(section, config)) ?? 'roles';
 }
 
 function assertAdminSectionAvailable(section: AdminSectionKey): void {
@@ -64,6 +80,8 @@ export {
 	type AdminSectionConfig,
 	type AdminSectionKey,
 	assertAdminSectionAvailable,
+	canManageMappingRuleMembers,
+	getAdminLandingSection,
 	getAdminSectionConfig,
 	isAdminSectionAvailable,
 };

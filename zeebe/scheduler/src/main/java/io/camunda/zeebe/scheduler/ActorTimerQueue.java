@@ -16,8 +16,15 @@ import org.slf4j.Logger;
 
 public final class ActorTimerQueue extends DeadlineTimerWheel {
   private static final Logger LOG = Loggers.ACTOR_LOGGER;
-  private static final int DEFAULT_TICKS_PER_WHEEL = 32;
+  private static final int DEFAULT_TICKS_PER_WHEEL = 128;
+  private static final int MAX_EXPIRED_TIMERS_PER_CALL = 256;
+
   private final Long2ObjectHashMap<TimerSubscription> timerJobMap = new Long2ObjectHashMap<>();
+  // one poll scans one spoke, so a full revolution is needed to visit every timer that is due.
+  // Bounds the work done per call, so a large clock jump cannot starve the actor tasks of the
+  // thread
+  private final int maxPollsPerCall;
+  private long lastPolledMillis = Long.MIN_VALUE;
 
   private final TimerHandler timerHandler =
       (timeUnit, now, timerId) -> {
@@ -38,18 +45,49 @@ public final class ActorTimerQueue extends DeadlineTimerWheel {
 
   public ActorTimerQueue(final ActorClock clock, final int ticksPerWheel) {
     super(TimeUnit.MILLISECONDS, clock.getTimeMillis(), 1, ticksPerWheel);
+    maxPollsPerCall = ticksPerWheel;
   }
 
   public void processExpiredTimers(final ActorClock clock) {
-    int timersProcessed = 0;
+    final long now = clock.getTimeMillis();
+    if (now == lastPolledMillis) {
+      // the clock has millisecond resolution, so there is nothing new to expire; polling would only
+      // rescan the current spoke, which grows with the number of timers
+      return;
+    }
+    lastPolledMillis = now;
 
-    do {
-      timersProcessed = poll(clock.getTimeMillis(), timerHandler, Integer.MAX_VALUE);
-    } while (timersProcessed > 0);
+    // poll advances the wheel by at most one tick, so keep polling until it has caught up with now
+    int expiredTimers = 0;
+    for (int polls = 0; polls < maxPollsPerCall; polls++) {
+      final long tickTime = currentTickTime();
+      expiredTimers += poll(now, timerHandler, MAX_EXPIRED_TIMERS_PER_CALL - expiredTimers);
+
+      if (expiredTimers >= MAX_EXPIRED_TIMERS_PER_CALL) {
+        break;
+      } else if (currentTickTime() == tickTime) {
+        return;
+      }
+    }
+
+    if (expiredTimers < MAX_EXPIRED_TIMERS_PER_CALL) {
+      // a full revolution visited every spoke, so no timer with a deadline <= now is left and the
+      // wheel can skip straight to now instead of catching up over many calls
+      currentTickTime(now);
+      return;
+    }
+
+    // yielding before every due timer fired, so the next call must continue even if the clock is
+    // still at the same millisecond
+    lastPolledMillis = Long.MIN_VALUE;
   }
 
   public void schedule(final TimerSubscription timer, final ActorClock now) {
     final long deadline = timer.getDeadline(now);
+    if (deadline <= lastPolledMillis) {
+      // already due, it must not wait for the clock to change
+      lastPolledMillis = Long.MIN_VALUE;
+    }
 
     final long timerId = scheduleTimer(deadline);
     timer.setTimerId(timerId);

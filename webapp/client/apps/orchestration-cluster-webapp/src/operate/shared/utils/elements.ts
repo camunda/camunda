@@ -31,6 +31,25 @@ function isMultiInstance(businessObject?: BusinessObject) {
 	return businessObject?.loopCharacteristics?.$type === 'bpmn:MultiInstanceLoopCharacteristics';
 }
 
+function isCamundaUserTask(businessObject?: BusinessObject | null) {
+	return (
+		businessObject?.$type === 'bpmn:UserTask' &&
+		(businessObject.extensionElements?.values?.some((element) => element.$type === 'zeebe:userTask') ?? false)
+	);
+}
+
+function isMessageEventElement(businessObject?: BusinessObject | null) {
+	if (!businessObject) {
+		return false;
+	}
+
+	return (
+		hasType({businessObject, types: ['bpmn:ReceiveTask']}) ||
+		(hasType({businessObject, types: ['bpmn:IntermediateCatchEvent', 'bpmn:BoundaryEvent']}) &&
+			businessObject.eventDefinitions?.[0]?.$type === 'bpmn:MessageEventDefinition')
+	);
+}
+
 function getFlowElementIds(businessObject?: BusinessObject): string[] {
 	return (businessObject?.flowElements ?? []).flatMap((flowElement) =>
 		hasType({businessObject: flowElement, types: ['bpmn:SequenceFlow']})
@@ -92,6 +111,8 @@ export {
 	isFlowNode,
 	isProcessOrSubProcessEndEvent,
 	isMultiInstance,
+	isCamundaUserTask,
+	isMessageEventElement,
 	getFlowElementIds,
 	getFlowNodes,
 	getBusinessObjects,

@@ -113,7 +113,7 @@ jobs:
       # the known GitHub issue described in https://github.com/camunda/camunda/issues/28522
       - name: Generate GitHub token
         id: github-token
-        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@7fe5cca167f7826bedbc078ae36ff2e974cc8cb5 # generate-github-app-token-from-vault-secrets-1.1.2
+        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@379e8654a5f25f22566f80c2e99a611fca365263 # generate-github-app-token-from-vault-secrets-1.2.0
         with:
           github-app-id-vault-key: MONOREPO_RELEASE_APP_ID
           github-app-id-vault-path: secret/data/products/camunda/ci/camunda
@@ -238,6 +238,7 @@ jobs:
           GIT_TRACE: ${{ runner.temp }}/git-trace.log
           GIT_TRACE_CURL: ${{ runner.temp }}/git-trace-curl.log
           GIT_TRACE_CURL_NO_DATA: "1"
+          APP_TOKEN: ${{ steps.github-token.outputs.token }}
         run: |
           # Perform a maven release
           # https://maven.apache.org/maven-release/maven-release-plugin/perform-mojo.html
@@ -257,6 +258,19 @@ jobs:
             PROFILE_FLAGS="-P\!include-optimize"
             ARGUMENTS_PROFILE="-P!include-optimize"
           fi
+
+          # release:perform clones into target/ and runs `git ls-remote` from
+          # java.io.tmpdir. actions/checkout's credentials only apply inside the work
+          # tree, and the scm.url that prepare recorded in release.properties carries
+          # no usable credentials, so both calls go out anonymously -- and fail
+          # whenever GitHub's edge refuses anonymous git requests. Authenticate every
+          # git call of this step instead.
+          git_auth=$(printf 'x-access-token:%s' "${APP_TOKEN}" | base64 -w0)
+          echo "::add-mask::${git_auth}"
+          export GIT_CONFIG_COUNT=1
+          export GIT_CONFIG_KEY_0=http.https://github.com/.extraheader
+          export GIT_CONFIG_VALUE_0="AUTHORIZATION: basic ${git_auth}"
+          unset APP_TOKEN
 
           ./mvnw release:perform -B \
             -DreleaseVersion="${RELEASE_VERSION}" \
@@ -775,12 +789,46 @@ jobs:
           allow-unattributed: 'true'
           unattributed-reason: 'shadow run (#57713) — comparing against the legacy zcl changelog, not yet gating'
           output-dir: release-notes-shadow
+      # Read-only comparison of the generator's label/comment plan with the
+      # version:<tag> labels zcl applied in the github job (#57714). Writes
+      # nothing to GitHub; the report lands in this job's summary.
+      - name: Compare label and comment plan with zcl (apply dry run)
+        id: apply-dry-run-shadow
+        if: ${{ always() && !cancelled() }}
+        continue-on-error: true
+        uses: ./.github/actions/release-notes/apply
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          input-dir: release-notes-shadow
+          generate-outcome: ${{ steps.gen-changelog-shadow.outcome }}
+      - name: Upload apply divergence report
+        if: ${{ always() && !cancelled() }}
+        continue-on-error: true
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: apply-divergence-${{ inputs.releaseVersion }}-${{ github.run_attempt }}
+          path: release-notes-shadow/apply-divergence.json
+          if-no-files-found: ignore
+          retention-days: 30
       # continue-on-error above hides a timeout or crash from the job's own
       # status; surface it here so a swallowed failure still shows up.
       - name: Report shadow-run outcome
         if: always()
+        env:
+          GENERATE_OUTCOME: ${{ steps.gen-changelog-shadow.outcome }}
+          APPLY_OUTCOME: ${{ steps.apply-dry-run-shadow.outcome }}
+          APPLY_COMPARED: ${{ steps.apply-dry-run-shadow.outputs.compared }}
         run: |
-          echo "### Release Notes shadow run: ${{ steps.gen-changelog-shadow.outcome }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "### Release Notes shadow run: ${GENERATE_OUTCOME}" >> "$GITHUB_STEP_SUMMARY"
+          if [ "${APPLY_OUTCOME}" = "success" ] && [ "${APPLY_COMPARED}" = "true" ]; then
+            echo "### Release Notes apply dry run: compared" >> "$GITHUB_STEP_SUMMARY"
+          elif [ "${APPLY_OUTCOME}" = "success" ]; then
+            echo "### Release Notes apply dry run: no comparison (see its summary above)" >> "$GITHUB_STEP_SUMMARY"
+            echo "::warning::The release-notes apply dry run produced no comparison."
+          else
+            echo "### Release Notes apply dry run: ${APPLY_OUTCOME}" >> "$GITHUB_STEP_SUMMARY"
+            echo "::warning::The release-notes apply dry run ${APPLY_OUTCOME}, so no label/comment comparison was produced."
+          fi
 
   # GitHub release job creates a GitHub release with artifacts, changelog, and proper versioning.
   # Flags impact:
@@ -967,41 +1015,62 @@ jobs:
         with:
           ref: ${{ env.RELEASE_BRANCH }}
           persist-credentials: false
-      - name: Import Secrets
-        id: secrets
-        uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
-        with:
-          url: ${{ secrets.VAULT_ADDR }}
-          method: approle
-          roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secretId: ${{ secrets.VAULT_SECRET_ID }}
-          exportEnv: false
-          secrets: |
-            secret/data/products/camunda/ci/camunda FOSSA_API_KEY;
-      - name: Get FOSSA context
-        id: fossa-context
-        uses: camunda/infra-global-github-actions/fossa/info@47164bc3d1bce866f4f189f19fac7895ae51956d # fossa-1.0.22
-      - name: Wait for FOSSA scan completion
-        uses: camunda/infra-global-github-actions/fossa/wait-for-scan@47164bc3d1bce866f4f189f19fac7895ae51956d # fossa-1.0.22
-        with:
-          api-key: ${{ steps.secrets.outputs.FOSSA_API_KEY }}
-          branch: ${{ steps.fossa-context.outputs.head-ref }}
-          project-id: "custom+50756/camunda/camunda@single-app"
-          revision-id: ${{ needs.release.outputs.releaseTagCommitSha }}
-          dry-run: ${{ inputs.dryRun || inputs.releaseProcessDryRun }}
       - name: Create FOSSA releases and generate reports
-        uses: camunda/infra-global-github-actions/fossa/release@47164bc3d1bce866f4f189f19fac7895ae51956d # fossa-1.0.22
+        uses: ./.github/actions/fossa-release-project
         with:
-          api-key: ${{ steps.secrets.outputs.FOSSA_API_KEY }}
-          branch: ${{ steps.fossa-context.outputs.head-ref }}
           project-id: "custom+50756/camunda/camunda@single-app"
           attribution-release-group-id: "4904" # https://app.fossa.com/projects/group/4904
           sbom-release-group-id: "4905"        # https://app.fossa.com/projects/group/4905
+          fossa-api-key-vault-path: secret/data/products/camunda/ci/camunda
           release-number: ${{ env.RELEASE_VERSION }}
           revision-id: ${{ needs.release.outputs.releaseTagCommitSha }}
-          attribution-format: "TXT"
-          sbom-format: "CYCLONEDX_JSON"
           dry-run: ${{ inputs.dryRun || inputs.releaseProcessDryRun }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+
+  # Same as fossa-release, for the Optimize FOSSA project (separate scan from single-app).
+  # Flags impact:
+  # - includeOptimize=false: Skipped
+  # - With dryRun=true or releaseProcessDryRun=true: Runs in dry-run mode (no actual release creation)
+  fossa-release-optimize:
+    name: Create FOSSA releases and generate attribution/SBOM reports for Optimize
+    runs-on: ubuntu-latest
+    needs: [release, github, optimize-docker, camunda-docker]
+    if: ${{ always() && !cancelled() &&
+      inputs.includeOptimize &&
+      needs.release.result == 'success' &&
+      needs.github.result == 'success' &&
+      needs.optimize-docker.result == 'success' &&
+      needs.camunda-docker.result == 'success' }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ env.RELEASE_BRANCH }}
+          persist-credentials: false
+      - name: Create FOSSA releases and generate reports
+        uses: ./.github/actions/fossa-release-project
+        with:
+          project-id: "custom+50756/camunda/camunda@optimize"
+          attribution-release-group-id: "11294" # https://app.fossa.com/projects/group/11294
+          sbom-release-group-id: "11295"        # https://app.fossa.com/projects/group/11295
+          fossa-api-key-vault-path: secret/data/products/camunda/ci/camunda
+          fossa-api-key-vault-key: FOSSA_API_KEY_OPTIMIZE
+          release-number: ${{ env.RELEASE_VERSION }}
+          revision-id: ${{ needs.release.outputs.releaseTagCommitSha }}
+          dry-run: ${{ inputs.dryRun || inputs.releaseProcessDryRun }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
       - name: Observe build status
         if: always()
         continue-on-error: true
@@ -1022,7 +1091,7 @@ jobs:
   notify-on-success:
     name: Send Slack notification on success
     runs-on: ubuntu-latest
-    needs: [release, github, optimize-docker, camunda-docker, snyk, fossa-release]
+    needs: [release, github, optimize-docker, camunda-docker, snyk, fossa-release, fossa-release-optimize]
     # Report release result to C8 always (including dry-runs)
     # Slack notifications are skipped for dry-runs to reduce noise
     if: ${{ always() && (
@@ -1031,7 +1100,8 @@ jobs:
       (needs.optimize-docker.result == 'success' || needs.optimize-docker.result == 'skipped') &&
       needs.camunda-docker.result == 'success' &&
       (needs.snyk.result == 'success' || needs.snyk.result == 'skipped') &&
-      (needs.fossa-release.result == 'success' || needs.fossa-release.result == 'skipped')
+      (needs.fossa-release.result == 'success' || needs.fossa-release.result == 'skipped') &&
+      (needs.fossa-release-optimize.result == 'success' || needs.fossa-release-optimize.result == 'skipped')
       ) }}
     timeout-minutes: 5
     permissions:
@@ -1172,7 +1242,7 @@ jobs:
   notify-if-failed:
     name: Send Slack notification on failure
     runs-on: ubuntu-latest
-    needs: [release, github, optimize-docker, camunda-docker, snyk, fossa-release]
+    needs: [release, github, optimize-docker, camunda-docker, snyk, fossa-release, fossa-release-optimize]
     # Report release result to C8 always (including dry-runs)
     # Slack notifications are skipped for dry-runs to reduce noise
     if: ${{ always() && (
@@ -1181,7 +1251,8 @@ jobs:
         needs.optimize-docker.result == 'failure' ||
         needs.camunda-docker.result == 'failure' ||
         needs.snyk.result == 'failure' ||
-        needs.fossa-release.result == 'failure'
+        needs.fossa-release.result == 'failure' ||
+        needs.fossa-release-optimize.result == 'failure'
         ) }}
     timeout-minutes: 5
     permissions:

@@ -74,7 +74,20 @@ describe('<DeleteClusterVariableModal />', () => {
 
 	it('should keep the dialog open when the delete fails', async ({worker}) => {
 		const onClose = vi.fn();
-		worker.use(mockDeleteGlobalClusterVariableEndpoint({successResponse: new HttpResponse(null, {status: 500})}));
+		worker.use(
+			mockDeleteGlobalClusterVariableEndpoint({
+				successResponse: HttpResponse.json(
+					{
+						type: 'about:blank',
+						title: 'INVALID_ARGUMENT',
+						status: 400,
+						detail: 'Invalid request to delete cluster variables',
+						instance: '/v2/test',
+					},
+					{status: 400},
+				),
+			}),
+		);
 		const screen = await render(
 			<DeleteClusterVariableModal clusterVariable={createClusterVariable()} onClose={onClose} />,
 			{wrapper: getWrapper()},
@@ -83,6 +96,7 @@ describe('<DeleteClusterVariableModal />', () => {
 		await userEvent.click(screen.getByRole('button', {name: 'Delete'}));
 
 		await expect.element(screen.getByText('Failed to delete cluster variable')).toBeVisible();
+		await expect.element(screen.getByText('Invalid request to delete cluster variables')).toBeVisible();
 		expect(onClose).not.toHaveBeenCalled();
 	});
 

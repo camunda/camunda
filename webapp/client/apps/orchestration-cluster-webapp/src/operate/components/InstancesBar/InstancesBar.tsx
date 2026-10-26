@@ -7,6 +7,7 @@
  */
 
 import {Tooltip} from '@carbon/react';
+import {useTranslation} from 'react-i18next';
 import {Timer} from '@carbon/react/icons';
 import {
 	Wrapper,
@@ -43,6 +44,7 @@ const InstancesBar: React.FC<Props> = ({
 	size,
 	className,
 }) => {
+	const {t} = useTranslation();
 	const total = (activeInstancesCount ?? 0) + incidentsCount;
 	const incidentsBarRatio = total === 0 ? 0 : (100 * incidentsCount) / total;
 	const hasIncidents = incidentsCount > 0;
@@ -53,7 +55,12 @@ const InstancesBar: React.FC<Props> = ({
 	return (
 		<div className={className}>
 			<Wrapper $size={size}>
-				<IncidentsCount data-testid="incident-instances-badge" $hasIncidents={hasIncidents}>
+				<IncidentsCount
+					data-testid="incident-instances-badge"
+					role="img"
+					aria-label={t('operate.shared.instancesBar.incidents', {count: incidentsCount})}
+					$hasIncidents={hasIncidents}
+				>
 					{incidentsCount}
 				</IncidentsCount>
 				{label && (
@@ -71,7 +78,12 @@ const InstancesBar: React.FC<Props> = ({
 							</Tooltip>
 						)}
 						{showActiveInstancesCount && (
-							<ActiveCount data-testid="active-instances-badge" $hasActiveInstances={hasActiveInstances}>
+							<ActiveCount
+								data-testid="active-instances-badge"
+								role="img"
+								aria-label={t('operate.shared.instancesBar.active', {count: activeInstancesCount})}
+								$hasActiveInstances={hasActiveInstances}
+							>
 								{activeInstancesCount}
 							</ActiveCount>
 						)}

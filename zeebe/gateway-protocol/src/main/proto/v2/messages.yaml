@@ -690,7 +690,11 @@ components:
         processDefinitionKey:
           allOf:
             - $ref: 'keys.yaml#/components/schemas/ProcessDefinitionKey'
-          description: The process definition key associated with this correlated message subscription.
+          description: |
+            The process definition key associated with this correlated message subscription.
+            This field is not present for correlations to message subscriptions of a running
+            process instance (catch, boundary and receive task events) written by version 8.8.
+          nullable: true
         processInstanceKey:
           allOf:
             - $ref: 'keys.yaml#/components/schemas/ProcessInstanceKey'

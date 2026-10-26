@@ -17,12 +17,12 @@ import static org.assertj.core.api.Assumptions.assumeThat;
 import io.atomix.cluster.MemberId;
 import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
-import io.camunda.zeebe.dynamic.config.ClusterConfigurationManagerService;
 import io.camunda.zeebe.dynamic.config.PersistedCurrentClusterConfiguration;
-import io.camunda.zeebe.dynamic.config.serializer.ProtoBufSerializer;
+import io.camunda.zeebe.dynamic.config.impl.serializer.ProtoBufSerializer;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.UpdateRoutingState;
+import io.camunda.zeebe.dynamic.config.state.PartitionRestore;
 import io.camunda.zeebe.dynamic.config.state.RoutingState;
 import io.camunda.zeebe.dynamic.config.state.RoutingState.MessageCorrelation.HashMod;
 import io.camunda.zeebe.dynamic.config.state.RoutingState.RequestHandling.AllPartitions;
@@ -60,21 +60,22 @@ final class ClusterRestoreTest {
         .hasMessageContaining("at least one physical tenant");
   }
 
-  private static Map<String, Map<Integer, long[]>> selection(final String... physicalTenantIds) {
-    final Map<String, Map<Integer, long[]>> selection = new LinkedHashMap<>();
+  private static Map<String, Map<Integer, PartitionRestore>> selection(
+      final String... physicalTenantIds) {
+    final Map<String, Map<Integer, PartitionRestore>> selection = new LinkedHashMap<>();
     for (final var physicalTenantId : physicalTenantIds) {
-      selection.put(physicalTenantId, Map.of(1, new long[] {1L}));
+      selection.put(physicalTenantId, Map.of(1, PartitionRestore.ofBackups(1L)));
     }
     return selection;
   }
 
   private static byte[] fileContent(final Path dir) throws IOException {
-    return Files.readAllBytes(dir.resolve(ClusterConfigurationManagerService.TOPOLOGY_FILE_NAME));
+    return Files.readAllBytes(dir.resolve(PersistedCurrentClusterConfiguration.TOPOLOGY_FILE_NAME));
   }
 
   private static CurrentClusterConfiguration read(final Path dir) {
     return PersistedCurrentClusterConfiguration.ofFile(
-            dir.resolve(ClusterConfigurationManagerService.TOPOLOGY_FILE_NAME),
+            dir.resolve(PersistedCurrentClusterConfiguration.TOPOLOGY_FILE_NAME),
             new ProtoBufSerializer())
         .getConfiguration();
   }
@@ -95,8 +96,7 @@ final class ClusterRestoreTest {
                     PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID.equals(physicalTenantId)
                         ? root
                         : brokerCfg(dir, partitionCount),
-                    TestRestorableBackupStore::new,
-                    null)));
+                    TestRestorableBackupStore::new)));
     return new ClusterRestore(root, targets, new SimpleMeterRegistry());
   }
 
@@ -113,6 +113,28 @@ final class ClusterRestoreTest {
 
   @Nested
   class DataDirectory {
+
+    @Test
+    void shouldPruneOnlyTheDefaultTenantWhileOtherTenantsKeepTheirData(@TempDir final Path dir)
+        throws IOException {
+      // given — a node holding data of two tenants
+      final var clusterRestore = clusterRestore(dir, Map.of("default", 1, OTHER_TENANT, 1));
+      final var staleDefault = Files.createDirectories(dir.resolve("default/partitions/1"));
+      Files.createFile(staleDefault.resolve("stale"));
+      final var otherData = Files.createDirectories(dir.resolve(OTHER_TENANT + "/partitions/1"));
+      Files.createFile(otherData.resolve("keep"));
+
+      // when — only the default tenant is restored. It has no real backups, so the restore fails
+      // after preparing the target.
+      assertThatThrownBy(
+              () ->
+                  clusterRestore.restore(selection("default"), REPLACE_SELECTED, false, List.of()))
+          .isNotInstanceOf(DirectoryNotEmptyException.class);
+
+      // then — the default tenant was pruned rather than rejected, the other tenant untouched
+      assertThat(staleDefault.resolve("stale")).doesNotExist();
+      assertThat(otherData.resolve("keep")).exists();
+    }
 
     @Test
     void shouldFailWhenDirectoryIsNotEmpty(@TempDir final Path dir) throws IOException {
@@ -176,7 +198,7 @@ final class ClusterRestoreTest {
       // the check that the directory is empty passes.
       final var clusterRestore = clusterRestore(dir, Map.of("default", 1));
       clusterRestore.restoreTopologyFile();
-      final var topologyFile = dir.resolve(ClusterConfigurationManagerService.TOPOLOGY_FILE_NAME);
+      final var topologyFile = dir.resolve(PersistedCurrentClusterConfiguration.TOPOLOGY_FILE_NAME);
       assertThat(topologyFile.toFile().setReadOnly()).isTrue();
       // a user that can write to read-only files, such as root, cannot make this fail
       assumeThat(Files.isWritable(topologyFile)).isFalse();
@@ -186,10 +208,10 @@ final class ClusterRestoreTest {
       assertThatThrownBy(
               () ->
                   clusterRestore.restore(
-                      Map.of("default", Map.<Integer, long[]>of()),
+                      Map.of("default", Map.<Integer, PartitionRestore>of()),
                       REQUIRE_EMPTY,
                       false,
-                      List.of(ClusterConfigurationManagerService.TOPOLOGY_FILE_NAME)))
+                      List.of(PersistedCurrentClusterConfiguration.TOPOLOGY_FILE_NAME)))
           .isInstanceOf(IOException.class);
 
       // then - the data of the run is deleted, as it is for any other failure of the restore
@@ -410,7 +432,8 @@ final class ClusterRestoreTest {
 
       // then — a partial run does not write one either; the brokers generate what they need on
       // boot, exactly as they do for a tenant that was never provisioned
-      assertThat(dir.resolve(ClusterConfigurationManagerService.TOPOLOGY_FILE_NAME)).doesNotExist();
+      assertThat(dir.resolve(PersistedCurrentClusterConfiguration.TOPOLOGY_FILE_NAME))
+          .doesNotExist();
     }
   }
 
@@ -477,7 +500,7 @@ final class ClusterRestoreTest {
       final var scaledUpRouting =
           new RoutingState(7, new AllPartitions(SCALED_UP), new HashMod(RESTORED));
       PersistedCurrentClusterConfiguration.ofFile(
-              dir.resolve(ClusterConfigurationManagerService.TOPOLOGY_FILE_NAME),
+              dir.resolve(PersistedCurrentClusterConfiguration.TOPOLOGY_FILE_NAME),
               new ProtoBufSerializer())
           .update(
               read(dir)
@@ -595,10 +618,12 @@ final class ClusterRestoreTest {
           .doesNotThrowAnyException();
     }
 
-    private static Map<Integer, long[]> backupsOf(final int partitionCount) {
+    private static Map<Integer, PartitionRestore> backupsOf(final int partitionCount) {
       return IntStream.rangeClosed(1, partitionCount)
           .boxed()
-          .collect(Collectors.toMap(partition -> partition, partition -> new long[] {1L}));
+          .collect(
+              Collectors.toMap(
+                  partition -> partition, partition -> PartitionRestore.ofBackups(1L)));
     }
 
     @Test
@@ -610,7 +635,8 @@ final class ClusterRestoreTest {
       clusterRestore.updateTopologyFile(Map.of("default", RESTORED));
 
       // then
-      assertThat(dir.resolve(ClusterConfigurationManagerService.TOPOLOGY_FILE_NAME)).doesNotExist();
+      assertThat(dir.resolve(PersistedCurrentClusterConfiguration.TOPOLOGY_FILE_NAME))
+          .doesNotExist();
     }
   }
 
@@ -706,7 +732,7 @@ final class ClusterRestoreTest {
       // never be satisfied and their data must survive.
       assertThat(tenantFile).doesNotExist();
       assertThat(defaultFile).exists();
-      assertThat(dir.resolve(ClusterConfigurationManagerService.TOPOLOGY_FILE_NAME)).exists();
+      assertThat(dir.resolve(PersistedCurrentClusterConfiguration.TOPOLOGY_FILE_NAME)).exists();
     }
   }
 }

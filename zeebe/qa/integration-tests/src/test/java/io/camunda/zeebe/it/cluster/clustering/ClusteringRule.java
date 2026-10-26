@@ -52,8 +52,10 @@ import io.camunda.zeebe.broker.system.SystemContext;
 import io.camunda.zeebe.broker.system.SystemContextTestFactory;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.ConfigManagerCfg;
+import io.camunda.zeebe.broker.system.configuration.RocksdbCfg;
 import io.camunda.zeebe.broker.system.management.BrokerAdminService;
 import io.camunda.zeebe.broker.system.management.PartitionStatus;
+import io.camunda.zeebe.db.impl.rocksdb.RocksDbConfiguration.MemoryAllocationStrategy;
 import io.camunda.zeebe.dynamic.config.GatewayClusterConfigurationService;
 import io.camunda.zeebe.dynamic.config.gossip.ClusterConfigurationGossiperConfig;
 import io.camunda.zeebe.dynamic.nodeid.NodeIdProvider;
@@ -119,6 +121,7 @@ import org.junit.runners.model.Statement;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.context.LifecycleProperties;
+import org.springframework.util.unit.DataSize;
 
 /**
  * @deprecated Do not use this class in new tests. It is a JUnit 4 {@link
@@ -272,6 +275,7 @@ public class ClusteringRule extends ExternalResource {
 
     // create gateway
     gatewayResource = createGateway();
+    closeables.add(gatewayResource);
 
     // create client
     client = createClient();
@@ -475,6 +479,13 @@ public class ClusteringRule extends ExternalResource {
                     Duration.ofMillis(500),
                     Duration.ofSeconds(5))));
 
+    // By default, RocksDB takes 10% of the host memory per broker (FRACTION strategy), which adds
+    // up quickly when many brokers run in the same JVM or many test forks run in parallel. Use
+    // the minimum per partition (32 MiB) instead.
+    final var rocksdbCfg = brokerCfg.getExperimental().getRocksdb();
+    rocksdbCfg.setMemoryAllocationStrategy(MemoryAllocationStrategy.PARTITION);
+    rocksdbCfg.setMemoryLimit(DataSize.ofBytes(RocksdbCfg.MINIMUM_PARTITION_MEMORY_LIMIT));
+
     // custom configurators
     brokerConfigurator.accept(brokerCfg);
 
@@ -569,6 +580,7 @@ public class ClusteringRule extends ExternalResource {
             null,
             meterRegistry,
             null);
+
     gateway.start().join();
 
     return new GatewayResource(
@@ -1055,11 +1067,11 @@ public class ClusteringRule extends ExternalResource {
           gateway,
           jobStreamClient,
           brokerClient,
+          clusterTopologyService,
           scheduler,
           () -> cluster.stop().join(),
           meterRegistry::clear,
-          meterRegistry::close,
-          clusterTopologyService);
+          meterRegistry::close);
     }
   }
 

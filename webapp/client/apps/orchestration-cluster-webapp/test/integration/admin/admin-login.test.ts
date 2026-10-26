@@ -49,8 +49,8 @@ test('should redirect the Admin index to Admin login and return after login', as
 	await adminLoginPage.fillCredentials('demo', 'demo');
 	await adminLoginPage.submitButton.click();
 
-	await expect(page).toHaveURL('/admin');
-	await expect(adminIndexPage.heading).toBeVisible();
+	await expect(page).toHaveURL('/admin/users');
+	await expect(adminIndexPage.sectionHeading('Users')).toBeVisible();
 });
 
 test('should preserve an Admin URL through login', async ({network, page, adminIndexPage, adminLoginPage}) => {

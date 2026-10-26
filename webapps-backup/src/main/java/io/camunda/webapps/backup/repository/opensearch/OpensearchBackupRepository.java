@@ -33,7 +33,6 @@ import io.camunda.webapps.backup.repository.BackupRepositoryProps;
 import io.camunda.webapps.backup.repository.SnapshotNameProvider;
 import io.camunda.webapps.util.ExceptionSupplier;
 import java.io.IOException;
-import java.net.SocketTimeoutException;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
@@ -295,45 +294,26 @@ public class OpensearchBackupRepository implements BackupRepository {
               } else {
                 e = t;
               }
-              if (e instanceof SocketTimeoutException) {
-                // This is thrown even if the backup is still running
+              // Any I/O failure of the waiting request, not only SocketTimeoutException: over
+              // HTTP/2 an idle connection fails with H2StreamResetException instead, and the
+              // snapshot keeps running in OpenSearch either way
+              if (e instanceof IOException) {
                 LOGGER.warn(
-                    "The OpenSearch HTTP connection timed out while waiting for snapshot [{}] "
-                        + "(backup id [{}]) to complete. The snapshot is likely still running in "
-                        + "OpenSearch. Polling will continue until completion. "
-                        + "If socket timeouts occur repeatedly, consider increasing the socket timeout via "
-                        + "CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_SOCKETTIMEOUT "
-                        + "and consider doubling or tripling the current value.",
+                    "The OpenSearch HTTP request waiting for snapshot [{}] (backup id [{}]) to "
+                        + "complete failed with [{}]. The snapshot is likely still running in "
+                        + "OpenSearch. Polling will continue until completion.",
                     snapshotRequest.snapshotName(),
-                    backupId);
-                // Keep waiting
-                while (true) {
-                  final List<OpenSearchSnapshotInfo> snapshotInfos =
-                      findSnapshots(snapshotRequest.repositoryName(), backupId);
-                  final Optional<OpenSearchSnapshotInfo> maybeCurrentSnapshot =
-                      snapshotInfos.stream()
-                          .filter(
-                              x -> Objects.equals(x.getSnapshot(), snapshotRequest.snapshotName()))
-                          .findFirst();
-
-                  if (maybeCurrentSnapshot.isEmpty()) {
-                    LOGGER.error(
-                        "Expected (but not found) snapshot [{}] for backupId [{}].",
-                        snapshotRequest.snapshotName(),
-                        backupId);
-                    // No need to continue
-                    onFailure.run();
-                    break;
-                  } else if (IN_PROGRESS.equals(maybeCurrentSnapshot.get().getState())) {
-                    try {
-                      Thread.sleep(100);
-                    } catch (final InterruptedException ex) {
-                      throw new RuntimeException(ex);
-                    }
-                  } else {
-                    handleSnapshotReceived(maybeCurrentSnapshot.get(), onSuccess, onFailure);
-                    break;
-                  }
+                    backupId,
+                    e.toString());
+                try {
+                  pollUntilSnapshotCompleted(snapshotRequest, backupId, onSuccess, onFailure);
+                } catch (final RuntimeException ex) {
+                  LOGGER.error(
+                      "Exception while polling snapshot [{}] for backup id [{}].",
+                      snapshotRequest.snapshotName(),
+                      backupId,
+                      ex);
+                  onFailure.run();
                 }
               } else if (isErrorType(e, SNAPSHOT_NAME_ALREADY_IN_USE_EXCEPTION_TYPE)) {
                 LOGGER.warn(
@@ -356,6 +336,40 @@ public class OpensearchBackupRepository implements BackupRepository {
 
               return null;
             });
+  }
+
+  private void pollUntilSnapshotCompleted(
+      final SnapshotRequest snapshotRequest,
+      final Long backupId,
+      final Runnable onSuccess,
+      final Runnable onFailure) {
+    while (true) {
+      final List<OpenSearchSnapshotInfo> snapshotInfos =
+          findSnapshots(snapshotRequest.repositoryName(), backupId);
+      final Optional<OpenSearchSnapshotInfo> maybeCurrentSnapshot =
+          snapshotInfos.stream()
+              .filter(x -> Objects.equals(x.getSnapshot(), snapshotRequest.snapshotName()))
+              .findFirst();
+
+      if (maybeCurrentSnapshot.isEmpty()) {
+        LOGGER.error(
+            "Expected (but not found) snapshot [{}] for backupId [{}].",
+            snapshotRequest.snapshotName(),
+            backupId);
+        // No need to continue
+        onFailure.run();
+        return;
+      } else if (IN_PROGRESS.equals(maybeCurrentSnapshot.get().getState())) {
+        try {
+          Thread.sleep(100);
+        } catch (final InterruptedException ex) {
+          throw new RuntimeException(ex);
+        }
+      } else {
+        handleSnapshotReceived(maybeCurrentSnapshot.get(), onSuccess, onFailure);
+        return;
+      }
+    }
   }
 
   private Metadata extractMetadata(final OpenSearchSnapshotInfo snapshotInfo) {

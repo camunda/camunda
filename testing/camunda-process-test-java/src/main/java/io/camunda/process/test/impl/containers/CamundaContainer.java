@@ -31,12 +31,14 @@ import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.Base64;
+import java.util.Map;
 import java.util.UUID;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.Network;
 import org.testcontainers.containers.wait.strategy.HttpWaitStrategy;
 import org.testcontainers.containers.wait.strategy.WaitAllStrategy;
 import org.testcontainers.containers.wait.strategy.WaitAllStrategy.Mode;
+import org.testcontainers.images.builder.Transferable;
 import org.testcontainers.utility.DockerImageName;
 
 public class CamundaContainer extends GenericContainer<CamundaContainer> {
@@ -49,6 +51,8 @@ public class CamundaContainer extends GenericContainer<CamundaContainer> {
 
   private static final String ACTIVE_SPRING_PROFILES = "broker,consolidated-auth,security";
   private static final String LOG_APPENDER_STACKDRIVER = "Stackdriver";
+  private static final String CLUSTER_SECRETS_DIRECTORY = "/tmp/camunda-cluster-secrets";
+  private static final int SECRET_FILE_MODE = 0644;
 
   public CamundaContainer(final DockerImageName dockerImageName) {
     super(dockerImageName);
@@ -111,6 +115,52 @@ public class CamundaContainer extends GenericContainer<CamundaContainer> {
         .waitingFor(newBasicAuthWaitStrategy());
 
     return this;
+  }
+
+  /**
+   * Provides the given secrets to the cluster's file secret store, so that they can be referenced
+   * as {@code =camunda.secrets.<NAME>}. Each secret is copied into the container as a file named
+   * after the secret, and the store is pointed at the containing directory.
+   *
+   * @param secrets the secrets by name; does nothing if empty
+   * @return this container
+   * @throws IllegalArgumentException if a secret name is not a single visible path segment
+   */
+  public CamundaContainer withClusterSecrets(final Map<String, String> secrets) {
+    if (secrets.isEmpty()) {
+      return this;
+    }
+
+    secrets.keySet().forEach(CamundaContainer::validateSecretName);
+
+    secrets.forEach(
+        (name, value) ->
+            withCopyToContainer(
+                Transferable.of(value.getBytes(StandardCharsets.UTF_8), SECRET_FILE_MODE),
+                CLUSTER_SECRETS_DIRECTORY + "/" + name));
+
+    return withEnv(
+        ContainerRuntimeEnvs.CAMUNDA_ENV_SECRETS_STORES_FILE_DEFAULT_PATH,
+        CLUSTER_SECRETS_DIRECTORY);
+  }
+
+  /**
+   * The name becomes a file name in the container, so it must not be able to address any other
+   * path. Hidden names are rejected as the file store does not read them.
+   */
+  private static void validateSecretName(final String name) {
+    if (name == null
+        || name.chars().allMatch(Character::isWhitespace)
+        || name.startsWith(".")
+        || name.contains("/")
+        || name.contains("\\")
+        || name.indexOf('\0') >= 0) {
+      throw new IllegalArgumentException(
+          String.format(
+              "Invalid cluster secret name '%s': it must be a single visible path segment "
+                  + "without path separators and must not start with a dot.",
+              name));
+    }
   }
 
   public CamundaContainer withH2() {

@@ -77,6 +77,9 @@ import io.camunda.zeebe.engine.processing.message.MessageEventProcessors;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.metrics.job.JobMetricsProcessors;
 import io.camunda.zeebe.engine.processing.metrics.usage.UsageMetricsProcessors;
+import io.camunda.zeebe.engine.processing.resource.ProcessDefinitionRestoreContinueProcessor;
+import io.camunda.zeebe.engine.processing.resource.ProcessDefinitionRestoreStartProcessor;
+import io.camunda.zeebe.engine.processing.resource.ProcessDefinitionRestoreTrigger;
 import io.camunda.zeebe.engine.processing.resource.ProcessDeleteCompleteProcessor;
 import io.camunda.zeebe.engine.processing.resource.ResourceDeletionDeleteProcessor;
 import io.camunda.zeebe.engine.processing.resource.ResourceFetchProcessor;
@@ -110,6 +113,7 @@ import io.camunda.zeebe.protocol.record.intent.ConditionalEvaluationIntent;
 import io.camunda.zeebe.protocol.record.intent.DecisionEvaluationIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessDefinitionRestoreIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.protocol.record.intent.ResourceDeletionIntent;
 import io.camunda.zeebe.protocol.record.intent.ResourceIntent;
@@ -399,7 +403,13 @@ public final class EngineProcessors {
 
     final var userTaskProcessor =
         createUserTaskProcessor(
-            processingState, bpmnBehaviors, writers, asyncRequestBehavior, cslCheck, tenantCheck);
+            processingState,
+            bpmnBehaviors,
+            writers,
+            asyncRequestBehavior,
+            cslCheck,
+            tenantCheck,
+            suspensionMetrics);
     addUserTaskProcessors(typedRecordProcessors, userTaskProcessor);
 
     addIncidentProcessors(
@@ -451,7 +461,13 @@ public final class EngineProcessors {
         permissionsBehavior);
 
     ClockProcessors.addClockProcessors(
-        typedRecordProcessors, writers, keyGenerator, clock, commandDistributionBehavior, cslCheck);
+        typedRecordProcessors,
+        writers,
+        keyGenerator,
+        processingState.getClockState(),
+        clock,
+        commandDistributionBehavior,
+        cslCheck);
 
     addIdentityProcessors(
         keyGenerator,
@@ -643,7 +659,8 @@ public final class EngineProcessors {
       final Writers writers,
       final AsyncRequestBehavior asyncRequestBehavior,
       final CslAuthorizationCheck cslCheck,
-      final CslTenantCheck tenantCheck) {
+      final CslTenantCheck tenantCheck,
+      final SuspensionMetrics suspensionMetrics) {
     return new UserTaskProcessor(
         processingState,
         processingState.getUserTaskState(),
@@ -652,7 +669,8 @@ public final class EngineProcessors {
         writers,
         asyncRequestBehavior,
         cslCheck,
-        tenantCheck);
+        tenantCheck,
+        suspensionMetrics);
   }
 
   private static BpmnBehaviorsImpl createBehaviors(
@@ -934,6 +952,19 @@ public final class EngineProcessors {
         ValueType.RESOURCE_REEXPORT,
         ResourceReexportIntent.REEXPORT,
         new ResourceReexportReexportProcessor(writers, processingState));
+
+    // Startup cleanup to restore stray resting PENDING_DELETION process definitions
+    typedRecordProcessors.withListener(
+        new ProcessDefinitionRestoreTrigger(
+            config.isEnableProcessDefinitionRestore(), processingState.getProcessState()));
+    typedRecordProcessors.onCommand(
+        ValueType.PROCESS_DEFINITION_RESTORE,
+        ProcessDefinitionRestoreIntent.START,
+        new ProcessDefinitionRestoreStartProcessor(writers, processingState.getProcessState()));
+    typedRecordProcessors.onCommand(
+        ValueType.PROCESS_DEFINITION_RESTORE,
+        ProcessDefinitionRestoreIntent.CONTINUE,
+        new ProcessDefinitionRestoreContinueProcessor(writers, processingState));
   }
 
   private static void addSignalBroadcastProcessors(

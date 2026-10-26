@@ -79,6 +79,14 @@ function renderSearchHarness(initial: ProcessesSearch, next: ProcessesSearch) {
 	return renderWithRouter(Harness, {path: '/operate/processes'});
 }
 
+function getRowAction(
+	screen: Pick<Awaited<ReturnType<typeof renderInstancesTable>>, 'getByRole'>,
+	key: string,
+	name: string,
+) {
+	return screen.getByRole('row', {name: new RegExp(`View instance ${key}\\b`)}).getByRole('button', {name});
+}
+
 const EMPTY_BATCH_OPERATION_ITEMS_RESPONSE = HttpResponse.json(createQueryBatchOperationItemsResponse({items: []}));
 
 describe('<InstancesTable />', () => {
@@ -108,9 +116,45 @@ describe('<InstancesTable />', () => {
 		);
 
 		const screen = await renderInstancesTable();
+		const panel = screen.getByRole('region', {name: 'Process Instances Panel'});
 
-		await expect.element(screen.getByText('Order Process')).toBeVisible();
-		await expect.element(screen.getByText('Payment Process')).toBeVisible();
+		await expect.element(panel.getByText('Order Process')).toBeVisible();
+		await expect.element(panel.getByText('Payment Process')).toBeVisible();
+	});
+
+	it('should keep the header and the operations column visible while scrolling a narrow table', async ({worker}) => {
+		worker.use(
+			mockQueryProcessInstancesEndpoint({
+				successResponse: HttpResponse.json(
+					createQueryProcessInstancesResponse({
+						items: Array.from({length: 20}, (_, index) =>
+							createProcessInstance({processInstanceKey: String(index + 1), state: 'ACTIVE'}),
+						),
+					}),
+				),
+			}),
+			mockQueryBatchOperationItemsEndpoint({successResponse: EMPTY_BATCH_OPERATION_ITEMS_RESPONSE}),
+		);
+
+		const screen = await renderWithRouter(
+			() => (
+				<div style={{height: '240px', width: '480px', display: 'flex', flexDirection: 'column'}}>
+					<InstancesTable search={BASE_SEARCH} />
+				</div>
+			),
+			{path: '/operate/processes'},
+		);
+		const operationsHeader = screen.getByRole('columnheader', {name: 'Operations'});
+		const lastRow = screen.getByRole('row').last();
+
+		await expect.element(operationsHeader).toBeInViewport({ratio: 1});
+		await expect.element(lastRow).not.toBeInViewport();
+
+		await userEvent.wheel(screen.getByRole('table'), {delta: {y: 2000}});
+
+		await expect.element(lastRow).toBeInViewport();
+		await expect.element(operationsHeader).toBeInViewport({ratio: 1});
+		await expect.element(lastRow.getByRole('cell').last()).toBeInViewport({ratio: 1});
 	});
 
 	it('should show a loading table instead of the empty state while initially fetching', async ({worker}) => {
@@ -156,9 +200,9 @@ describe('<InstancesTable />', () => {
 
 		const screen = await renderInstancesTable();
 
-		await expect.element(screen.getByRole('columnheader', {name: 'Name'})).toBeVisible();
+		await expect.element(screen.getByRole('columnheader', {name: 'Sort by Name'})).toBeVisible();
 		await expect.element(screen.getByRole('columnheader', {name: 'Version Tag'})).not.toBeInTheDocument();
-		await expect.element(screen.getByRole('columnheader', {name: 'Business ID'})).not.toBeInTheDocument();
+		await expect.element(screen.getByRole('columnheader', {name: 'Sort by Business ID'})).not.toBeInTheDocument();
 	});
 
 	it('should show the version tag and business ID columns when a row has them', async ({worker}) => {
@@ -681,62 +725,48 @@ describe('<InstancesTable />', () => {
 	it.for([1, 50, 10_000])(
 		'should find a failed item beyond a page of %s operation items',
 		async (pageSize, {worker}) => {
-			const requestedPages: {limit: number; after?: string}[] = [];
-			worker.events.on('request:start', async ({request}) => {
-				if (!request.url.endsWith('/batch-operation-items/search')) {
-					return;
-				}
-				const payload = z
-					.object({
-						filter: z.object({batchOperationKey: z.object({$eq: z.string()})}),
-						page: z.object({limit: z.number(), after: z.string().optional()}),
-					})
-					.safeParse(await request.clone().json());
-				if (payload.success) {
-					requestedPages.push(payload.data.page);
-				}
-			});
-			try {
-				worker.use(
-					mockQueryProcessInstancesEndpoint({
-						successResponse: HttpResponse.json(
-							createQueryProcessInstancesResponse({items: [createProcessInstance({processInstanceKey: '1'})]}),
-						),
-					}),
-					mockQueryBatchOperationItemsEndpoint({
-						schema: z.object({page: z.object({after: z.undefined().optional(), limit: z.literal(10_000)})}),
-						successResponse: HttpResponse.json(
-							createQueryBatchOperationItemsResponse({
-								items: Array.from({length: pageSize}, (_, index) =>
-									createBatchOperationItem({itemKey: `item-${index}`, processInstanceKey: '1', state: 'COMPLETED'}),
-								),
-								page: {totalItems: pageSize + 1, endCursor: 'next-page'},
-							}),
-						),
-						failureResponse: HttpResponse.json(
-							createQueryBatchOperationItemsResponse({
-								items: [
-									createBatchOperationItem({
-										itemKey: `item-${pageSize}`,
-										processInstanceKey: '1',
-										state: 'FAILED',
-										errorMessage: 'Late failure',
-									}),
-								],
-								page: {totalItems: pageSize + 1},
-							}),
-						),
-					}),
-				);
-				const screen = await renderInstancesTable({...BASE_SEARCH, batchOperationKey: 'batch-op-1'});
+			worker.use(
+				mockQueryProcessInstancesEndpoint({
+					successResponse: HttpResponse.json(
+						createQueryProcessInstancesResponse({items: [createProcessInstance({processInstanceKey: '1'})]}),
+					),
+				}),
+				mockQueryBatchOperationItemsEndpoint({
+					schema: z.object({page: z.object({after: z.undefined().optional(), limit: z.literal(10_000)})}),
+					successResponse: HttpResponse.json(
+						createQueryBatchOperationItemsResponse({
+							items: Array.from({length: pageSize}, (_, index) =>
+								createBatchOperationItem({itemKey: `item-${index}`, processInstanceKey: '1', state: 'COMPLETED'}),
+							),
+							page: {totalItems: pageSize + 1, endCursor: 'next-page'},
+						}),
+					),
+					failureResponse: HttpResponse.json({}, {status: 500}),
+					once: true,
+				}),
+				mockQueryBatchOperationItemsEndpoint({
+					schema: z.object({page: z.object({after: z.literal('next-page'), limit: z.literal(10_000)})}),
+					successResponse: HttpResponse.json(
+						createQueryBatchOperationItemsResponse({
+							items: [
+								createBatchOperationItem({
+									itemKey: `item-${pageSize}`,
+									processInstanceKey: '1',
+									state: 'FAILED',
+									errorMessage: 'Late failure',
+								}),
+							],
+							page: {totalItems: pageSize + 1},
+						}),
+					),
+					failureResponse: HttpResponse.json({}, {status: 500}),
+				}),
+			);
+			const screen = await renderInstancesTable({...BASE_SEARCH, batchOperationKey: 'batch-op-1'});
 
-				await expect.element(screen.getByText('FAILED, COMPLETED')).toBeVisible();
-				await userEvent.click(screen.getByRole('button', {name: 'Show failure details for instance 1'}));
-				await expect.element(screen.getByText('Late failure')).toBeVisible();
-				await expect.poll(() => requestedPages).toEqual([{limit: 10_000}, {limit: 10_000, after: 'next-page'}]);
-			} finally {
-				worker.events.removeAllListeners('request:start');
-			}
+			await expect.element(screen.getByText('FAILED, COMPLETED')).toBeVisible();
+			await userEvent.click(screen.getByRole('button', {name: 'Show failure details for instance 1'}));
+			await expect.element(screen.getByText('Late failure')).toBeVisible();
 		},
 	);
 
@@ -1048,10 +1078,10 @@ describe('<InstancesTable />', () => {
 
 		const screen = await renderInstancesTable();
 
-		await expect.element(screen.getByRole('button', {name: 'Suspend Instance 1'})).toBeVisible();
-		await expect.element(screen.getByRole('button', {name: 'Resume Instance 2'})).toBeVisible();
-		await expect.element(screen.getByRole('button', {name: 'Resume Instance 1'})).not.toBeInTheDocument();
-		await expect.element(screen.getByRole('button', {name: 'Suspend Instance 2'})).not.toBeInTheDocument();
+		await expect.element(getRowAction(screen, '1', 'Suspend Instance')).toBeVisible();
+		await expect.element(getRowAction(screen, '2', 'Resume Instance')).toBeVisible();
+		await expect.element(getRowAction(screen, '1', 'Resume Instance')).not.toBeInTheDocument();
+		await expect.element(getRowAction(screen, '2', 'Suspend Instance')).not.toBeInTheDocument();
 	});
 
 	it('should wait for a suspend command to take effect before clearing the spinner', async ({worker}) => {
@@ -1075,7 +1105,7 @@ describe('<InstancesTable />', () => {
 		);
 
 		const screen = await renderInstancesTable();
-		await userEvent.click(screen.getByRole('button', {name: 'Suspend Instance 1'}));
+		await userEvent.click(getRowAction(screen, '1', 'Suspend Instance'));
 
 		await expect.element(screen.getByTestId('operation-spinner')).toBeVisible();
 
@@ -1103,7 +1133,7 @@ describe('<InstancesTable />', () => {
 		);
 		const screen = await renderInstancesTable({...BASE_SEARCH, batchOperationKey: 'batch-op-1'});
 		await expect.element(screen.getByRole('columnheader', {name: 'Operation State'})).toBeVisible();
-		await userEvent.click(screen.getByRole('button', {name: 'Suspend Instance 1'}));
+		await userEvent.click(getRowAction(screen, '1', 'Suspend Instance'));
 		await expect.element(screen.getByTestId('operation-spinner')).toBeVisible();
 
 		worker.use(
@@ -1119,7 +1149,7 @@ describe('<InstancesTable />', () => {
 
 		await expect.element(screen.getByRole('button', {name: 'Show failure details for instance 1'})).toBeVisible();
 		await expect.element(screen.getByTestId('operation-spinner')).toBeVisible();
-		await expect.element(screen.getByRole('button', {name: 'Suspend Instance 1'})).toBeDisabled();
+		await expect.element(getRowAction(screen, '1', 'Suspend Instance')).toBeDisabled();
 	});
 
 	it('should keep an expanded failure visible while a row action is in flight', async ({worker}) => {
@@ -1145,7 +1175,7 @@ describe('<InstancesTable />', () => {
 		await userEvent.click(screen.getByRole('button', {name: 'Show failure details for instance 1'}));
 		await expect.element(screen.getByText('Before')).toBeVisible();
 
-		await userEvent.click(screen.getByRole('button', {name: 'Suspend Instance 1'}));
+		await userEvent.click(getRowAction(screen, '1', 'Suspend Instance'));
 		await expect.element(screen.getByTestId('operation-spinner')).toBeVisible();
 
 		worker.use(
@@ -1164,7 +1194,7 @@ describe('<InstancesTable />', () => {
 			.element(screen.getByRole('button', {name: 'Show failure details for instance 1'}))
 			.toHaveAttribute('aria-expanded', 'true');
 		await expect.element(screen.getByTestId('operation-spinner')).toBeVisible();
-		await expect.element(screen.getByRole('button', {name: 'Suspend Instance 1'})).toBeDisabled();
+		await expect.element(getRowAction(screen, '1', 'Suspend Instance')).toBeDisabled();
 	});
 
 	it('should wait for a resume command to take effect before clearing the spinner', async ({worker}) => {
@@ -1188,7 +1218,8 @@ describe('<InstancesTable />', () => {
 		);
 
 		const screen = await renderInstancesTable();
-		await userEvent.click(screen.getByRole('button', {name: 'Resume Instance 1'}));
+		await userEvent.hover(screen.getByRole('columnheader', {name: /^(Sort by )?Name$/}));
+		await userEvent.click(getRowAction(screen, '1', 'Resume Instance'));
 
 		await expect.element(screen.getByTestId('operation-spinner')).toBeVisible();
 
@@ -1220,7 +1251,7 @@ describe('<InstancesTable />', () => {
 
 		const screen = await renderInstancesTable();
 
-		await userEvent.click(screen.getByRole('button', {name: 'Suspend Instance 1'}));
+		await userEvent.click(getRowAction(screen, '1', 'Suspend Instance'));
 
 		await expect.element(screen.getByText('Failed to suspend process instance')).toBeVisible();
 		await expect.element(screen.getByText('Internal Server Error')).toBeVisible();
@@ -1245,7 +1276,7 @@ describe('<InstancesTable />', () => {
 
 		const screen = await renderInstancesTable();
 
-		await userEvent.click(screen.getByRole('button', {name: 'Resume Instance 1'}));
+		await userEvent.click(getRowAction(screen, '1', 'Resume Instance'));
 
 		await expect.element(screen.getByText('Failed to resume process instance')).toBeVisible();
 		await expect.element(screen.getByText('Internal Server Error')).toBeVisible();
@@ -1270,7 +1301,7 @@ describe('<InstancesTable />', () => {
 
 		const screen = await renderInstancesTable();
 
-		await userEvent.click(screen.getByRole('button', {name: 'Suspend Instance 1'}));
+		await userEvent.click(getRowAction(screen, '1', 'Suspend Instance'));
 
 		await expect.element(screen.getByText("You don't have permission to perform this operation")).toBeVisible();
 		await expect.element(screen.getByText('Contact the administrator if you need access.')).toBeVisible();
@@ -1296,7 +1327,7 @@ describe('<InstancesTable />', () => {
 
 		const screen = await renderInstancesTable();
 
-		await userEvent.click(screen.getByRole('button', {name: 'Resume Instance 1'}));
+		await userEvent.click(getRowAction(screen, '1', 'Resume Instance'));
 
 		await expect.element(screen.getByText("You don't have permission to perform this operation")).toBeVisible();
 		await expect.element(screen.getByText('Contact the administrator if you need access.')).toBeVisible();
@@ -1327,7 +1358,7 @@ describe('<InstancesTable />', () => {
 		);
 
 		const screen = await renderInstancesTable();
-		await userEvent.click(screen.getByRole('button', {name: 'Suspend Instance 1'}));
+		await userEvent.click(getRowAction(screen, '1', 'Suspend Instance'));
 
 		await expect.element(screen.getByTestId('operation-spinner')).toBeVisible();
 

@@ -26,10 +26,13 @@ public class SnapshotTransferServiceClient implements SnapshotTransferService {
 
   private final BrokerClient client;
   private final String partitionGroup;
+  private final Duration requestTimeout;
 
-  public SnapshotTransferServiceClient(final BrokerClient client, final String partitionGroup) {
+  public SnapshotTransferServiceClient(
+      final BrokerClient client, final String partitionGroup, final Duration requestTimeout) {
     this.client = client;
     this.partitionGroup = partitionGroup;
+    this.requestTimeout = requestTimeout;
   }
 
   @Override
@@ -58,7 +61,7 @@ public class SnapshotTransferServiceClient implements SnapshotTransferService {
     brokerRequest.setPartitionGroup(partitionGroup);
     final var future = new CompletableActorFuture<@Nullable SnapshotChunk>();
     client
-        .sendRequestWithRetry(brokerRequest, Duration.ofSeconds(30))
+        .sendRequestWithRetry(brokerRequest, requestTimeout)
         .thenCompose(
             response -> {
               if (response.isResponse()

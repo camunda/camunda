@@ -13,7 +13,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.zaxxer.hikari.HikariDataSource;
-import io.camunda.configuration.Rdbms;
+import io.camunda.configuration.data.secondarystorage.Rdbms;
 import java.sql.SQLException;
 import java.util.UUID;
 import javax.sql.DataSource;

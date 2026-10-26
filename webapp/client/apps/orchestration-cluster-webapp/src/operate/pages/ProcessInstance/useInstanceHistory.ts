@@ -8,10 +8,15 @@
 
 import {createContext, useCallback, useContext, useEffect, useEffectEvent, useMemo, useRef, useState} from 'react';
 import {queryOptions, useQueries, useQueryClient} from '@tanstack/react-query';
-import type {ProcessInstance, QueryElementInstancesResponseBody} from '@camunda/camunda-api-zod-schemas/8.11';
+import type {
+	ProcessInstance,
+	QueryElementInstancesResponseBody,
+	QuerySortOrder,
+} from '@camunda/camunda-api-zod-schemas/8.11';
 import {endpoints} from '#/shared/http/endpoints';
 import {ForbiddenError} from '#/shared/errors';
 import {historySort, instanceRequest} from './processInstance.queries';
+import {getHistorySortOrder, setHistorySortOrder} from './historySortOrder';
 
 type Scope = {key: string; parent?: string; from: number; version: number};
 type HistoryState = {
@@ -36,16 +41,21 @@ function createHistoryState(instanceKey: string): HistoryState {
 	};
 }
 
-function historyWindowQuery(instance: string, scope: Scope, onForbidden: (error: ForbiddenError) => void) {
+function historyWindowQuery(
+	instance: string,
+	scope: Scope,
+	sortOrder: QuerySortOrder,
+	onForbidden: (error: ForbiddenError) => void,
+) {
 	return queryOptions({
-		queryKey: ['instanceHistory', instance, scope.key, scope.version, scope.from] as const,
+		queryKey: ['instanceHistory', instance, scope.key, scope.version, scope.from, sortOrder] as const,
 		queryFn: async ({signal}) => {
 			try {
 				return await instanceRequest<QueryElementInstancesResponseBody>(
 					endpoints.queryElementInstances({
 						filter: {elementInstanceScopeKey: scope.key},
 						page: {from: scope.from, limit: 100},
-						sort: historySort,
+						sort: historySort(sortOrder),
 					}),
 					signal,
 				);
@@ -65,6 +75,7 @@ function useHistoryController(instance: ProcessInstance) {
 	const instanceKey = instance.processInstanceKey;
 	const client = useQueryClient();
 	const [state, setState] = useState(() => createHistoryState(instanceKey));
+	const [sortOrder, setSortOrderState] = useState(getHistorySortOrder);
 	if (state.instanceKey !== instanceKey) {
 		setState(createHistoryState(instanceKey));
 	}
@@ -99,7 +110,7 @@ function useHistoryController(instance: ProcessInstance) {
 	const pending = useRef(new Map<string, number>());
 	const queries = useQueries({
 		queries: scopes.map((scope) => ({
-			...historyWindowQuery(instanceKey, scope, setPageError),
+			...historyWindowQuery(instanceKey, scope, sortOrder, setPageError),
 			enabled: visible && !(pageError instanceof ForbiddenError),
 		})),
 	});
@@ -176,10 +187,18 @@ function useHistoryController(instance: ProcessInstance) {
 				windows.get(key)?.query.data?.items.some(({state}) => state === 'ACTIVE'),
 		);
 		await refreshScopes(active, (scope) =>
-			client.fetchQuery({...historyWindowQuery(instanceKey, scope, setPageError), staleTime: 0}),
+			client.fetchQuery({...historyWindowQuery(instanceKey, scope, sortOrder, setPageError), staleTime: 0}),
 		);
 		polling.current = false;
 	});
+	const previousState = useRef({instanceKey, state: instance.state});
+	useEffect(() => {
+		const previous = previousState.current;
+		previousState.current = {instanceKey, state: instance.state};
+		if (previous.instanceKey === instanceKey && previous.state === 'ACTIVE' && instance.state !== 'ACTIVE') {
+			void client.invalidateQueries({queryKey: ['instanceHistory', instanceKey]});
+		}
+	}, [client, instanceKey, instance.state]);
 	useEffect(() => {
 		if (!visible || forbidden || instance.state !== 'ACTIVE') {
 			return;
@@ -205,6 +224,21 @@ function useHistoryController(instance: ProcessInstance) {
 			setScopes((current) => [...current, {key, parent, from: 0, version: ++version.current}]);
 		}
 	}
+	function changeSortOrder(order: QuerySortOrder) {
+		if (order === sortOrder) {
+			return;
+		}
+		setHistorySortOrder(order);
+		pending.current.clear();
+		void client.cancelQueries({queryKey: ['instanceHistory', instanceKey]});
+		setSortOrderState(order);
+		setScopeErrors(() => ({}));
+		updateState((current) => ({
+			...current,
+			pageError: current.pageError instanceof ForbiddenError ? current.pageError : null,
+		}));
+		setScopes((current) => current.map((scope) => ({...scope, from: 0, version: ++version.current})));
+	}
 	async function page(key: string, direction: 'next' | 'previous') {
 		const window = windows.get(key);
 		if (!window?.query.data || pending.current.has(key) || window.query.isFetching || forbidden) {
@@ -228,7 +262,7 @@ function useHistoryController(instance: ProcessInstance) {
 		const generation = lifecycle.current.version;
 		pending.current.set(key, next.version);
 		try {
-			const result = await client.fetchQuery(historyWindowQuery(instanceKey, next, setPageError));
+			const result = await client.fetchQuery(historyWindowQuery(instanceKey, next, sortOrder, setPageError));
 			if (generation !== lifecycle.current.version || pending.current.get(key) !== next.version) {
 				return -1;
 			}
@@ -271,6 +305,8 @@ function useHistoryController(instance: ProcessInstance) {
 		setExecutionCount,
 		toggle,
 		page,
+		sortOrder,
+		changeSortOrder,
 	};
 }
 const InstanceHistoryContext = createContext<ReturnType<typeof useHistoryController> | null>(null);

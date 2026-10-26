@@ -151,7 +151,10 @@ outputs:
         steps.filter-common.outputs.process-test-coverage-frontend-change == 'true'
       }}
   zeebe-changes:
-    description: Output whether any Zeebe code has changed
+    description: >-
+      Output whether any file under zeebe/ or clients/ (or a webapps/Maven build file) has changed.
+      Only used by the Operate and Optimize back-end test switches; it is not a Java-change signal
+      and does not gate the Zeebe CI, which follows `java-code-changes`.
     value: >-
       ${{
         github.event_name == 'push' ||
@@ -297,6 +300,13 @@ outputs:
         steps.ci-github-actions.outputs.ci-relevant == 'true' ||
         steps.filter-scripts.outputs.load-test-k6-change == 'true'
       }}
+  gradle-changes:
+    description: Output whether Gradle/Maven build definitions changed, based on files changed only (not on the GitHub event)
+    value: >-
+      ${{
+        steps.filter-common.outputs.gradle-change == 'true' ||
+        steps.filter-common.outputs.maven-change == 'true'
+      }}
 
 runs:
   using: composite
@@ -343,6 +353,8 @@ runs:
           - '**/src/main/**'
           - '**/src/test/**'
           - '**/src/it/**'
+          # extra source root registered via build-helper-maven-plugin in the configuration module
+          - 'configuration/src/build/**'
 
         maven-change:
           - 'bom/**'
@@ -353,13 +365,25 @@ runs:
           - '.mvn/**'
           - '.ci/db-versions.yml'
 
+        gradle-change:
+          - '**/*.gradle.kts'
+          - 'gradle.properties'
+          - 'gradle/**'
+          - 'gradlew'
+          - 'gradlew.bat'
+          - '.github/scripts/gradle/**'
+          - '.github/workflows/gradle-ci.yml'
+
         validate-pom-metadata-extra-change:
           - 'mvnw'
           - 'mvnw.cmd'
           - '.github/scripts/validate-flattened-poms.sh'
 
+        # Includes the files the Dockerfiles copy in from zeebe/docker (non-Java, so not covered by
+        # java-code-changes) so the Docker checks still run for them.
         dockerfile-change:
           - '*.Dockerfile'
+          - 'zeebe/docker/**'
 
         markdown-change:
           - '**/*.md'

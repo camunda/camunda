@@ -7,12 +7,22 @@
  */
 
 import {useState} from 'react';
-import type {ProcessInstance, CreateCancellationBatchOperationRequestBody} from '@camunda/camunda-api-zod-schemas/8.11';
+import type {
+	ProcessInstance,
+	ProcessInstanceState,
+	CreateCancellationBatchOperationRequestBody,
+} from '@camunda/camunda-api-zod-schemas/8.11';
 import {mapProcessInstancesFilter, type ProcessesSearch} from './processesFilter';
 import {buildInstanceKeyCriterion} from '#/operate/shared/utils/buildInstanceKeyCriterion';
 import {useInstancesSelection} from '#/operate/shared/hooks/useInstancesSelection';
+import {getActiveInstancesFilter} from './getActiveInstancesFilter';
+import {narrowTopLevelState} from './narrowTopLevelState';
 
 type ProcessBulkAction = 'delete' | 'cancel' | 'retry' | 'suspend' | 'resume';
+const ALLOWED_BATCH_STATES: Partial<Record<ProcessBulkAction, readonly ProcessInstanceState[]>> = {
+	cancel: ['ACTIVE', 'SUSPENDED'],
+	suspend: ['ACTIVE'],
+};
 type SelectedInstance = Pick<ProcessInstance, 'processInstanceKey' | 'state' | 'hasIncident'>;
 
 function useProcessInstancesSelection(
@@ -54,20 +64,34 @@ function useProcessInstancesSelection(
 	const finished = selected.filter(({state}) => state === 'COMPLETED' || state === 'TERMINATED');
 	const incidents = running.filter(({hasIncident}) => hasIncident);
 	const suspended = selected.filter(({state}) => state === 'SUSPENDED');
+	const cancelable = [...running, ...suspended];
 	const hasStateFilter = search.active || search.incidents || search.completed || search.canceled || search.suspended;
+	const hasRunning = mode === 'INCLUDE' ? running.length > 0 : !hasStateFilter || search.active || search.incidents;
 	const eligibility = {
 		delete: mode === 'INCLUDE' ? finished.length > 0 : !hasStateFilter || search.completed || search.canceled,
-		// A single-instance cancel command accepts a suspended instance, but the batch cancellation
-		// operation only ever picks up ACTIVE root instances — a suspended key in the batch request
-		// is silently dropped with no per-instance error. Keep bulk cancel scoped to running so it
-		// doesn't look eligible for a selection it would only partially (or invisibly) act on; a
-		// suspended instance can still be canceled individually via its row action.
-		cancel: mode === 'INCLUDE' ? running.length > 0 : !hasStateFilter || search.active || search.incidents,
+		cancel:
+			mode === 'INCLUDE'
+				? cancelable.length > 0
+				: !hasStateFilter || search.active || search.incidents || search.suspended,
 		retry: mode === 'INCLUDE' ? incidents.length > 0 : !hasStateFilter || search.incidents,
-		// Suspend targets the same running set as Cancel — legacy suspends any active instance
+		// Suspend targets the same running set as Move and Migrate — legacy suspends any active instance
 		// regardless of incident state, it does not require re-selecting by incident status.
-		suspend: mode === 'INCLUDE' ? running.length > 0 : !hasStateFilter || search.active || search.incidents,
+		suspend: hasRunning,
 		resume: mode === 'INCLUDE' ? suspended.length > 0 : !hasStateFilter || search.suspended,
+		running: hasRunning,
+	};
+
+	const withSelection = (
+		baseFilter: CreateCancellationBatchOperationRequestBody['filter'] | undefined,
+		included: string[],
+	): CreateCancellationBatchOperationRequestBody['filter'] => {
+		const criterion = buildInstanceKeyCriterion(mode === 'INCLUDE' ? included : [], selection.excludedIds);
+		const baseKey = baseFilter?.processInstanceKey;
+		const baseCriterion = typeof baseKey === 'string' ? {$eq: baseKey} : baseKey;
+		return {
+			...baseFilter,
+			...(criterion ? {processInstanceKey: {...baseCriterion, ...criterion}} : {}),
+		};
 	};
 
 	return {
@@ -82,19 +106,25 @@ function useProcessInstancesSelection(
 		suspendedCount: suspended.length,
 		toggle: selection.select,
 		getRequest: (action: ProcessBulkAction): CreateCancellationBatchOperationRequestBody => {
-			const eligible = action === 'delete' ? finished : action === 'resume' ? suspended : running;
+			const eligible =
+				action === 'delete' ? finished : action === 'resume' ? suspended : action === 'cancel' ? cancelable : running;
 			const included =
 				eligible.length > 0 ? eligible.map(({processInstanceKey}) => processInstanceKey) : selection.includedIds;
-			const criterion = buildInstanceKeyCriterion(mode === 'INCLUDE' ? included : [], selection.excludedIds);
-			const baseKey = filter?.processInstanceKey;
-			const baseCriterion = typeof baseKey === 'string' ? {$eq: baseKey} : baseKey;
-			return {
-				filter: {
-					...filter,
-					...(criterion ? {processInstanceKey: {...baseCriterion, ...criterion}} : {}),
-				},
-			};
+			const allowedStates = ALLOWED_BATCH_STATES[action];
+			const baseFilter = filter && allowedStates ? narrowTopLevelState(filter, allowedStates) : filter;
+			return {filter: withSelection(baseFilter, included)};
 		},
+		getModificationFilter: (): CreateCancellationBatchOperationRequestBody['filter'] | null =>
+			hasRunning
+				? getActiveInstancesFilter(
+						withSelection(
+							filter,
+							running.map(({processInstanceKey}) => processInstanceKey),
+						),
+					)
+				: null,
+		getModificationStatisticsFilter: (): CreateCancellationBatchOperationRequestBody['filter'] =>
+			withSelection(filter, selection.includedIds),
 	};
 }
 

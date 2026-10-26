@@ -12,6 +12,7 @@ import {toast} from '@camunda/design-system';
 import type {MappingRule, UpdateMappingRuleRequestBody} from '@camunda/camunda-api-zod-schemas/8.11';
 import {request} from '#/shared/http/request';
 import {mapQueryError} from '#/shared/http/mapQueryError';
+import {getErrorMessage} from '#/shared/http/getErrorMessage';
 import {endpoints} from '#/shared/http/endpoints';
 import {isDuplicateMappingRuleIdError} from './isDuplicateMappingRuleIdError';
 
@@ -35,7 +36,7 @@ function useMappingRuleMutations() {
 		onError: async (error) => {
 			// A duplicate ID is corrected inline on the mapping rule ID field instead of a toast.
 			if (!(await isDuplicateMappingRuleIdError(error))) {
-				toast.error(t('admin.mappingRules.createMappingRuleError'));
+				toast.error(t('admin.mappingRules.createMappingRuleError'), {description: await getErrorMessage(error)});
 			}
 		},
 	});
@@ -51,7 +52,9 @@ function useMappingRuleMutations() {
 			invalidateMappingRules();
 			toast.success(t('admin.mappingRules.updateMappingRuleSuccess'));
 		},
-		onError: () => toast.error(t('admin.mappingRules.updateMappingRuleError')),
+		onError: async (error) => {
+			toast.error(t('admin.mappingRules.updateMappingRuleError'), {description: await getErrorMessage(error)});
+		},
 	});
 
 	const remove = useMutation({
@@ -65,7 +68,9 @@ function useMappingRuleMutations() {
 			invalidateMappingRules();
 			toast.success(t('admin.mappingRules.deleteMappingRuleSuccess'));
 		},
-		onError: () => toast.error(t('admin.mappingRules.deleteMappingRuleError')),
+		onError: async (error) => {
+			toast.error(t('admin.mappingRules.deleteMappingRuleError'), {description: await getErrorMessage(error)});
+		},
 	});
 
 	return {create, update, remove};

@@ -7,7 +7,7 @@
   "dependencies": {
     "@bpmn-io/element-templates-icons-renderer": "^0.3.0",
     "@camunda/camunda-composite-components": "^0.25.2",
-    "@camunda/design-system": "0.54.0",
+    "@camunda/design-system": "0.76.0",
     "@carbon/icons-react": "^11.41.0",
     "@carbon/react": "^1.77.0",
     "@lexical/react": "^0.41.0",
@@ -76,7 +76,7 @@
   },
   "devDependencies": {
     "@babel/plugin-proposal-private-property-in-object": "^7.21.11",
-    "@camunda8/orchestration-cluster-api": "9.1.5",
+    "@camunda8/orchestration-cluster-api": "10.0.1",
     "@cfaester/enzyme-adapter-react-18": "^0.8.0",
     "@eslint/js": "^9.12.0",
     "@playwright/test": "1.62.1",

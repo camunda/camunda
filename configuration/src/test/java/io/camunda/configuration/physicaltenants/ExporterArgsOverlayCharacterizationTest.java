@@ -10,8 +10,8 @@ package io.camunda.configuration.physicaltenants;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.configuration.Camunda;
-import io.camunda.configuration.Exporter;
 import io.camunda.configuration.UnifiedConfigurationHelper;
+import io.camunda.configuration.data.Exporter;
 import java.util.HashMap;
 import java.util.Map;
 import org.junit.jupiter.api.AfterEach;

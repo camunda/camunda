@@ -21,4 +21,6 @@ type OperationConfig = {
 	label?: string;
 };
 
-export type {OperationConfig};
+type OperationSlot = OperationConfig | null;
+
+export type {OperationConfig, OperationSlot};

@@ -10,6 +10,7 @@ package io.camunda.search.filter;
 import static io.camunda.util.CollectionUtil.addValuesToList;
 import static io.camunda.util.CollectionUtil.collectValues;
 
+import io.camunda.search.entities.VariableEntity.ProtectionMode;
 import io.camunda.util.FilterUtil;
 import io.camunda.util.ObjectBuilder;
 import java.util.Collections;
@@ -24,7 +25,8 @@ public record VariableFilter(
     List<Operation<Long>> processDefinitionKeyOperations,
     List<Operation<Long>> variableKeyOperations,
     List<String> tenantIds,
-    Boolean isTruncated)
+    Boolean isTruncated,
+    List<ProtectionMode> protectionModes)
     implements FilterBase {
 
   public static final class Builder implements ObjectBuilder<VariableFilter> {
@@ -36,6 +38,7 @@ public record VariableFilter(
     private List<Operation<Long>> variableKeyOperations;
     private List<String> tenantIds;
     private Boolean isTruncated;
+    private List<ProtectionMode> protectionModes;
 
     public Builder nameOperations(final List<Operation<String>> operations) {
       nameOperations = addValuesToList(nameOperations, operations);
@@ -161,6 +164,15 @@ public record VariableFilter(
       return this;
     }
 
+    public Builder protectionModes(final ProtectionMode value, final ProtectionMode... values) {
+      return protectionModes(collectValues(value, values));
+    }
+
+    public Builder protectionModes(final List<ProtectionMode> values) {
+      protectionModes = addValuesToList(protectionModes, values);
+      return this;
+    }
+
     public Builder copyFrom(final VariableFilter sourceFilter) {
       return nameOperations(sourceFilter.nameOperations)
           .valueUntypedOperations(sourceFilter.valueOperations)
@@ -169,7 +181,8 @@ public record VariableFilter(
           .processDefinitionKeyOperations(sourceFilter.processDefinitionKeyOperations())
           .variableKeyOperations(sourceFilter.variableKeyOperations())
           .tenantIds(sourceFilter.tenantIds())
-          .isTruncated(sourceFilter.isTruncated());
+          .isTruncated(sourceFilter.isTruncated())
+          .protectionModes(sourceFilter.protectionModes());
     }
 
     @Override
@@ -182,7 +195,8 @@ public record VariableFilter(
           Objects.requireNonNullElseGet(processDefinitionKeyOperations, Collections::emptyList),
           Objects.requireNonNullElseGet(variableKeyOperations, Collections::emptyList),
           Objects.requireNonNullElseGet(tenantIds, Collections::emptyList),
-          isTruncated);
+          isTruncated,
+          Objects.requireNonNullElseGet(protectionModes, Collections::emptyList));
     }
   }
 }

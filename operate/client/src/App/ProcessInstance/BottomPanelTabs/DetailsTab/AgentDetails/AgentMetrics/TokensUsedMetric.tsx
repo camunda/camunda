@@ -7,6 +7,7 @@
  */
 
 import {LimitIndicator, MetricCard} from './MetricCard';
+import {getTotalTokens, TOTAL_TOKENS_DESCRIPTION} from '../getTotalTokens';
 import {
   TokenBreakdownContainer,
   TokenBreakdown,
@@ -30,10 +31,19 @@ const TokensUsedMetric: React.FC<TokensUsedMetricProps> = ({
   reasoningTokens,
   maxTokens,
 }) => {
-  const totalTokens = inputTokens + outputTokens;
+  const totalTokens = getTotalTokens({
+    inputTokens,
+    outputTokens,
+    cacheReadTokenCount: cacheReadTokens,
+    cacheCreationTokenCount: cacheCreationTokens,
+  });
 
   return (
-    <MetricCard title="Tokens Used" value={totalTokens}>
+    <MetricCard
+      title="Tokens Used"
+      value={totalTokens}
+      valueInfo={TOTAL_TOKENS_DESCRIPTION}
+    >
       <LimitIndicator current={totalTokens} limit={maxTokens} />
       <TokenBreakdownContainer>
         <TokenBreakdownColumn>

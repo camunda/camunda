@@ -399,8 +399,8 @@ assert_owner \
   "@camunda/orchestration-cluster-webapps"
 
 assert_owner \
-  "webapp test/integration root → orchestration-cluster-webapps (default)" \
-  "${OCW}/test/integration/login.test.ts" \
+  "webapp test/integration/shared/ → orchestration-cluster-webapps" \
+  "${OCW}/test/integration/shared/login.test.ts" \
   "@camunda/orchestration-cluster-webapps"
 
 assert_owner \
@@ -444,8 +444,8 @@ assert_owner \
   "@camunda/employee-engagement-tasklist"
 
 assert_owner \
-  "webapp test/a11y root → orchestration-cluster-webapps (default)" \
-  "${OCW}/test/a11y/error-pages.test.ts" \
+  "webapp test/a11y/shared/ → orchestration-cluster-webapps" \
+  "${OCW}/test/a11y/shared/error-pages.test.ts" \
   "@camunda/orchestration-cluster-webapps"
 
 assert_owner \
@@ -462,6 +462,11 @@ assert_owner \
   "webapp test/a11y/tasklist/ → employee-engagement-tasklist" \
   "${OCW}/test/a11y/tasklist/tasklist.test.ts" \
   "@camunda/employee-engagement-tasklist"
+
+assert_owner \
+  "webapp test/fixtures/operate/ → operate-admin-pod" \
+  "${OCW}/test/fixtures/operate/elementFilterTestCases.tsx" \
+  "@camunda/operate-admin-pod"
 
 assert_owner \
   "webapp test/pages root → orchestration-cluster-webapps (default)" \
@@ -484,8 +489,8 @@ assert_owner \
   "@camunda/employee-engagement-tasklist"
 
 assert_owner \
-  "webapp test/visual root snapshot → orchestration-cluster-webapps (default)" \
-  "${OCW}/test/visual/login.test.ts-snapshots/should-match-the-login-page-snapshot-1-visual-dark-linux.png" \
+  "webapp test/visual/shared/ snapshot → orchestration-cluster-webapps" \
+  "${OCW}/test/visual/shared/login.test.ts-snapshots/should-match-the-login-page-snapshot-1-visual-dark-linux.png" \
   "@camunda/orchestration-cluster-webapps"
 
 assert_owner \

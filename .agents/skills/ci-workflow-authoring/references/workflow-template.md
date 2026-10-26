@@ -15,6 +15,13 @@ defaults:
   run:
     shell: bash
 
+# Routes CI-health failures to the owning team's medic. observe-build-status
+# reads this as the default user_description; without it failures land with no
+# owner. Must match .codeowners. Override per job (or use ${{ matrix.owner }})
+# for outliers. See the stable/product-branch caveat in SKILL.md.
+env:
+  TEST_OWNER: '<github-team-handle>'
+
 jobs:
   ci:
     runs-on: ubuntu-latest

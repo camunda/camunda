@@ -512,6 +512,7 @@ public class ProcessInstanceMigrationCatchEventBehavior {
             .setElementInstanceKey(processMessageSubscriptionRecord.getElementInstanceKey())
             .setProcessDefinitionKey(processMessageSubscriptionRecord.getProcessDefinitionKey())
             .setProcessInstanceKey(processMessageSubscriptionRecord.getProcessInstanceKey())
+            .setStorageOrdinal(processMessageSubscriptionRecord.getStorageOrdinal())
             .setMessageName(processMessageSubscriptionRecord.getMessageNameBuffer())
             .setCorrelationKey(processMessageSubscriptionRecord.getCorrelationKeyBuffer())
             .setTenantId(processMessageSubscriptionRecord.getTenantId())

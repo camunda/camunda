@@ -102,10 +102,11 @@ public interface Intent {
     map.put(ValueType.MESSAGE_SUBSCRIPTION, MessageSubscriptionIntent.class);
     map.put(ValueType.MULTI_INSTANCE, MultiInstanceIntent.class);
     map.put(ValueType.PROCESS, ProcessIntent.class);
+    map.put(ValueType.PROCESS_DEFINITION_RESTORE, ProcessDefinitionRestoreIntent.class);
     map.put(ValueType.PROCESS_EVENT, ProcessEventIntent.class);
     map.put(ValueType.PROCESS_INSTANCE, ProcessInstanceIntent.class);
     map.put(ValueType.PROCESS_INSTANCE_BATCH, ProcessInstanceBatchIntent.class);
-    map.put(ValueType.SUSPENSION_BATCH, SuspensionBatchIntent.class);
+    map.put(ValueType.ELEMENT_INSTANCE_WALK, ElementInstanceWalkIntent.class);
     map.put(ValueType.BUFFERED_COMMAND, BufferedCommandIntent.class);
     map.put(ValueType.PROCESS_INSTANCE_BUSINESS_ID, ProcessInstanceBusinessIdIntent.class);
     map.put(ValueType.PROCESS_INSTANCE_CREATION, ProcessInstanceCreationIntent.class);

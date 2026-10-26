@@ -47,9 +47,11 @@ function auditLogsInfiniteQuery(
 function useAuditLogs(
 	filter: NonNullable<QueryAuditLogsRequestBody['filter']>,
 	sort: NonNullable<QueryAuditLogsRequestBody['sort']>,
+	{enabled}: {enabled?: boolean} = {},
 ) {
 	return useInfiniteQuery({
 		...auditLogsInfiniteQuery(filter, sort),
+		enabled,
 		refetchInterval: 5000,
 		placeholderData: (previousData) => previousData,
 	});

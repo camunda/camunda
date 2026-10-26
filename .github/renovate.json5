@@ -12,7 +12,10 @@
   ],
   commitMessagePrefix: "deps:",
   baseBranchPatterns: [
-    "/^stable\\/8\\.([8-9]|[1-9][0-9])/",
+    // Discovers stable/8.6+ so ESUP minors can be explicitly disabled below.
+    // New minors (8.11, 8.12, ...) are auto-included. Exclusion of ESUP
+    // branches lives in the renovate-esup managed packageRule, not here.
+    "/^stable\\/8\\.([6-9]|[1-9][0-9])/",
     "main",
   ],
   dependencyDashboard: true,
@@ -97,6 +100,13 @@
       registryUrls: [
         "https://maven-central.storage-download.googleapis.com/maven2",
       ],
+    },
+    {
+      // renovate-esup:start (managed by team-eng-ops esup sync; do not edit by hand)
+      description: "Disable Renovate on ESUP branches (past end of standard support)",
+      matchBaseBranches: ["stable/8.6", "stable/8.7"],
+      enabled: false,
+      // renovate-esup:end
     },
     {
       description: "Enable separateMinorPatch so updates to latest patch are not ignored in maintenance branches.",
@@ -959,9 +969,11 @@
       customType: "regex",
       managerFilePatterns: [
         "/testing/camunda-process-test-java/pom\\.xml$/",
+        "/testing/camunda-process-test-java/build\\.gradle\\.kts$/",
       ],
       matchStrings: [
         "<io\\.camunda\\.process\\.test\\.connectorsDockerImageVersion>(?<currentValue>\\d+\\.\\d+\\.\\d+)</io\\.camunda\\.process\\.test\\.connectorsDockerImageVersion>",
+        "\"io\\.camunda\\.process\\.test\\.connectorsDockerImageVersion\" to \"(?<currentValue>\\d+\\.\\d+\\.\\d+)\"",
       ],
       depNameTemplate: "camunda/connectors-bundle",
       datasourceTemplate: "docker",

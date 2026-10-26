@@ -12,6 +12,7 @@ import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESS
 import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_EMPTY_ATTRIBUTE;
 import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_INVALID_ATTRIBUTE_VALUE;
 import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_ONLY_ONE_FIELD;
+import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_VERSION_TAG_REQUIRES_ID;
 import static io.camunda.gateway.mapping.http.validator.RequestValidator.validate;
 import static io.camunda.gateway.mapping.http.validator.RequestValidator.validateBusinessId;
 import static io.camunda.gateway.mapping.http.validator.RequestValidator.validateKeyFormat;
@@ -26,6 +27,7 @@ import io.camunda.gateway.protocol.model.ProcessInstanceBusinessIdAssignmentInst
 import io.camunda.gateway.protocol.model.ProcessInstanceCreationInstruction;
 import io.camunda.gateway.protocol.model.ProcessInstanceCreationInstructionById;
 import io.camunda.gateway.protocol.model.ProcessInstanceCreationInstructionByKey;
+import io.camunda.gateway.protocol.model.ProcessInstanceCreationInstructionByVersionTag;
 import io.camunda.gateway.protocol.model.ProcessInstanceMigrationBatchOperationRequest;
 import io.camunda.gateway.protocol.model.ProcessInstanceMigrationInstruction;
 import io.camunda.gateway.protocol.model.ProcessInstanceModificationActivateInstruction;
@@ -48,20 +50,28 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Predicate;
-import java.util.stream.Stream;
 import org.apache.commons.lang3.StringUtils;
 import org.jspecify.annotations.Nullable;
 import org.springframework.http.ProblemDetail;
 
 public class ProcessInstanceRequestValidator {
 
+  private static final String PROCESS_DEFINITION_VERSION_TAG = "processDefinitionVersionTag";
+
   private static final List<String> CANCELLABLE_PROCESS_INSTANCE_STATES =
       List.of(ProcessInstanceState.ACTIVE.name(), ProcessInstanceState.SUSPENDED.name());
+  private static final List<String> ACTIVE_ONLY_PROCESS_INSTANCE_STATES =
+      List.of(ProcessInstanceState.ACTIVE.name());
+  private static final List<String> SUSPENDED_ONLY_PROCESS_INSTANCE_STATES =
+      List.of(ProcessInstanceState.SUSPENDED.name());
 
   public static Optional<ProblemDetail> validateCreateProcessInstanceRequest(
       final ProcessInstanceCreationInstruction request) {
     if (request instanceof final ProcessInstanceCreationInstructionById byId) {
       return validateById(byId);
+    }
+    if (request instanceof final ProcessInstanceCreationInstructionByVersionTag byVersionTag) {
+      return validateByVersionTag(byVersionTag);
     }
     return validateByKey((ProcessInstanceCreationInstructionByKey) request);
   }
@@ -92,6 +102,20 @@ public class ProcessInstanceRequestValidator {
                     List.of("processDefinitionId", "processDefinitionKey")));
           }
           validateProcessDefinitionId(request.getProcessDefinitionId(), violations);
+          validateOperationReference(request.getOperationReference(), violations);
+          validateBusinessId(request.getBusinessId(), violations);
+          validateTags(request.getTags(), violations);
+        });
+  }
+
+  private static Optional<ProblemDetail> validateByVersionTag(
+      final ProcessInstanceCreationInstructionByVersionTag request) {
+    return validate(
+        violations -> {
+          validateProcessDefinitionId(request.getProcessDefinitionId(), violations);
+          if (StringUtils.isBlank(request.getProcessDefinitionVersionTag())) {
+            violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted(PROCESS_DEFINITION_VERSION_TAG));
+          }
           validateOperationReference(request.getOperationReference(), violations);
           validateBusinessId(request.getBusinessId(), violations);
           validateTags(request.getTags(), violations);
@@ -130,6 +154,20 @@ public class ProcessInstanceRequestValidator {
                 "processDefinitionVersion can only be set when using processDefinitionId");
           }
 
+          final var versionTag = request.getProcessDefinitionVersionTag();
+          if (versionTag != null && versionTag.isBlank()) {
+            violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted(PROCESS_DEFINITION_VERSION_TAG));
+          }
+          final var versionTagSet = StringUtils.isNotBlank(versionTag);
+          if (versionTagSet && !byIdSet) {
+            violations.add(ERROR_MESSAGE_VERSION_TAG_REQUIRES_ID);
+          }
+          if (versionTagSet && versionSet) {
+            violations.add(
+                ERROR_MESSAGE_ONLY_ONE_FIELD.formatted(
+                    List.of("processDefinitionVersion", PROCESS_DEFINITION_VERSION_TAG)));
+          }
+
           validateBusinessId(request.getBusinessId(), violations);
         });
   }
@@ -149,28 +187,65 @@ public class ProcessInstanceRequestValidator {
         });
   }
 
-  /** Rejects explicitly named states that can't be cancelled. */
+  /** Rejects top-level state conditions that name a state that can't be cancelled. */
   public static Optional<ProblemDetail> validateCancelProcessInstanceBatchOperationFilter(
       final ProcessInstanceFilter filter) {
     return validate(
         violations ->
-            Stream.concat(
-                    Stream.of(filter), Stream.ofNullable(filter.orFilters()).flatMap(List::stream))
-                .flatMap(f -> f.stateOperations().stream())
-                .filter(
-                    operation ->
-                        operation.operator() == Operator.EQUALS
-                            || operation.operator() == Operator.IN)
-                .flatMap(operation -> operation.values().stream())
-                .filter(state -> !CANCELLABLE_PROCESS_INSTANCE_STATES.contains(state))
-                .distinct()
-                .forEach(
-                    state ->
-                        violations.add(
-                            ERROR_MESSAGE_INVALID_ATTRIBUTE_VALUE.formatted(
-                                "state",
-                                toProtocolStateName(state),
-                                "one of " + CANCELLABLE_PROCESS_INSTANCE_STATES))));
+            validateProcessInstanceStateFilter(
+                filter, CANCELLABLE_PROCESS_INSTANCE_STATES, violations));
+  }
+
+  /** Rejects top-level state conditions that name a state that can't be suspended. */
+  public static Optional<ProblemDetail> validateSuspendProcessInstanceBatchOperationFilter(
+      final ProcessInstanceFilter filter) {
+    return validate(
+        violations ->
+            validateProcessInstanceStateFilter(
+                filter, ACTIVE_ONLY_PROCESS_INSTANCE_STATES, violations));
+  }
+
+  /** Rejects top-level state conditions that name a state that can't be resumed. */
+  public static Optional<ProblemDetail> validateResumeProcessInstanceBatchOperationFilter(
+      final ProcessInstanceFilter filter) {
+    return validate(
+        violations ->
+            validateProcessInstanceStateFilter(
+                filter, SUSPENDED_ONLY_PROCESS_INSTANCE_STATES, violations));
+  }
+
+  /** Rejects an explicitly named top-level state other than ACTIVE. */
+  public static Optional<ProblemDetail> validateResolveIncidentBatchOperationFilter(
+      final ProcessInstanceFilter filter) {
+    return validate(
+        violations ->
+            validateProcessInstanceStateFilter(
+                filter, ACTIVE_ONLY_PROCESS_INSTANCE_STATES, violations));
+  }
+
+  /**
+   * Rejects explicitly named top-level states outside {@code allowedStates}. Only {@code $eq} and
+   * {@code $in} are checked; other operators ({@code $neq}, {@code $notIn}, {@code $exists}, {@code
+   * $like}) are applied as given and ANDed with the required state by the item provider, so they
+   * can yield an empty batch. States inside orFilters are not validated either; a conflicting
+   * branch yields no items instead of a 400.
+   */
+  private static void validateProcessInstanceStateFilter(
+      final ProcessInstanceFilter filter,
+      final List<String> allowedStates,
+      final List<String> violations) {
+    filter.stateOperations().stream()
+        .filter(
+            operation ->
+                operation.operator() == Operator.EQUALS || operation.operator() == Operator.IN)
+        .flatMap(operation -> operation.values().stream())
+        .filter(state -> !allowedStates.contains(state))
+        .distinct()
+        .forEach(
+            state ->
+                violations.add(
+                    ERROR_MESSAGE_INVALID_ATTRIBUTE_VALUE.formatted(
+                        "state", toProtocolStateName(state), "one of " + allowedStates)));
   }
 
   // The API calls CANCELED instances TERMINATED; report the value the caller actually sent.
@@ -207,6 +282,10 @@ public class ProcessInstanceRequestValidator {
           final var filter =
               SearchQueryFilterMapper.toRequiredProcessInstanceFilter(request.getFilter());
           filter.ifLeft(violations::addAll);
+          filter.ifRight(
+              f ->
+                  validateProcessInstanceStateFilter(
+                      f, ACTIVE_ONLY_PROCESS_INSTANCE_STATES, violations));
 
           final var migrationPlan = request.getMigrationPlan();
           if (migrationPlan == null) {
@@ -284,6 +363,10 @@ public class ProcessInstanceRequestValidator {
           final var filter =
               SearchQueryFilterMapper.toRequiredProcessInstanceFilter(request.getFilter());
           filter.ifLeft(violations::addAll);
+          filter.ifRight(
+              f ->
+                  validateProcessInstanceStateFilter(
+                      f, ACTIVE_ONLY_PROCESS_INSTANCE_STATES, violations));
           if (request.getMoveInstructions() == null || request.getMoveInstructions().isEmpty()) {
             violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("moveInstructions"));
           } else {

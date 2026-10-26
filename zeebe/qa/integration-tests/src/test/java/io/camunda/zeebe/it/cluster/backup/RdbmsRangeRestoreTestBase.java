@@ -15,13 +15,15 @@ import static org.awaitility.Awaitility.await;
 import io.camunda.application.commons.rdbms.RdbmsDataSources;
 import io.camunda.client.CamundaClient;
 import io.camunda.configuration.Camunda;
-import io.camunda.configuration.Filesystem;
-import io.camunda.configuration.PrimaryStorageBackup.BackupStoreType;
-import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
+import io.camunda.configuration.data.SecondaryStorage.SecondaryStorageType;
+import io.camunda.configuration.data.primarystorage.PrimaryStorageBackup.BackupStoreType;
+import io.camunda.configuration.data.primarystorage.backup.Filesystem;
 import io.camunda.db.rdbms.sql.ExporterPositionMapper;
 import io.camunda.db.rdbms.write.RdbmsMapperBundle;
 import io.camunda.management.backups.BackupInfo;
+import io.camunda.management.backups.CheckpointType;
 import io.camunda.management.backups.PartitionBackupInfo;
+import io.camunda.management.backups.PartitionCheckpointState;
 import io.camunda.management.backups.StateCode;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.qa.util.actuator.BackupActuator;
@@ -33,6 +35,7 @@ import java.nio.file.Path;
 import java.sql.SQLException;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -56,7 +59,7 @@ import org.springframework.util.unit.DataSize;
  * InProcessRdbmsRangeRestoreIT} (triggered over a running broker's REST endpoint while it is in
  * {@code RECOVERING} mode). The RDBMS-aware resolution of the restore point from a time range is
  * identical either way; only the execution of the resolved restore plan differs, so subclasses only
- * implement the three restore-execution hook methods below.
+ * implement the two restore-execution hook methods below.
  *
  * <p>Uses a filesystem backup store (no containers needed) and H2 in-memory database for RDBMS.
  */
@@ -64,6 +67,9 @@ import org.springframework.util.unit.DataSize;
 abstract class RdbmsRangeRestoreTestBase implements ClockSupport {
 
   protected static final int PARTITION_COUNT = 2;
+  private static final String PROCESS_ID = "process";
+  private static final String JOB_TYPE = "task";
+  private static final Duration MARKER_INTERVAL = Duration.ofHours(1);
   private static final Logger LOG = LoggerFactory.getLogger(RdbmsRangeRestoreTestBase.class);
 
   // H2 in-memory DB URL. DB_CLOSE_DELAY=-1 keeps the DB alive across a broker's stop/restart
@@ -108,12 +114,12 @@ abstract class RdbmsRangeRestoreTestBase implements ClockSupport {
   @Test
   void shouldNotRestoreIfMissingBackupAfterRestorePosition() throws Exception {
     // given - deploy a process and create instances, then take continuous backups.
-    final Interval interval;
+    final RestoreTarget timeRange;
     try (final var client = broker.newClientBuilder().build()) {
       final var processKey = deployTestProcess(client);
 
       // Create some process instances to have data to verify after restore
-      interval = createProcessInstancesAndTakeBackups(client, processKey);
+      timeRange = createProcessInstancesAndTakeBackups(client, processKey);
 
       takeAndAwaitBackup();
       progressClock(broker, 2000);
@@ -122,27 +128,26 @@ abstract class RdbmsRangeRestoreTestBase implements ClockSupport {
     }
 
     // when/then - restoring from a range that ends before the backup covering it exists must fail
-    assertRestoreFailsForMissingBackup(interval);
+    assertRestoreFails(timeRange, "No usable range found");
   }
 
   @Test
   void shouldRestoreFromATimeRange() throws Exception {
     // given - some process instances with backups between them
     final long processKey;
-    final Interval interval;
+    final RestoreTarget timeRange;
     try (final var client = broker.newClientBuilder().build()) {
       processKey = deployTestProcess(client);
-      interval = createProcessInstancesAndTakeBackups(client, processKey);
+      timeRange = createProcessInstancesAndTakeBackups(client, processKey);
     }
     takeAndAwaitBackup();
 
-    final var exporterActuator = ExportersActuator.of(broker);
-    exporterActuator.disableExporter(RDBMS_EXPORTER_NAME);
+    disableRdbmsExporter();
 
     awaitBackupCoversExportedPositionsOnEveryPartition();
 
     // when - restore from the recorded time range
-    restoreFromTimeRange(interval);
+    restore(timeRange);
 
     // then - jobs from process instances created before the restore window's end are still there,
     // proving the RDBMS-resolved restore point was applied correctly
@@ -158,33 +163,61 @@ abstract class RdbmsRangeRestoreTestBase implements ClockSupport {
     }
     takeAndAwaitBackup();
 
-    final var exporterActuator = ExportersActuator.of(broker);
-    exporterActuator.disableExporter(RDBMS_EXPORTER_NAME);
+    disableRdbmsExporter();
 
     awaitBackupCoversExportedPositionsOnEveryPartition();
 
     // when - restore without specifying a time range (resolves the latest common checkpoint)
-    restoreWithoutArguments();
+    restore(RestoreTarget.latest());
 
     // then
     completeJobs(4);
   }
 
-  /**
-   * Restores from the given time range and leaves the broker running and ready for verification
-   * (e.g. by restarting it, for the standalone path, or by completing an in-process restore change
-   * plan and waiting for the broker to return to {@code ACTIVE}).
-   */
-  abstract void restoreFromTimeRange(Interval interval) throws Exception;
+  @Test
+  void shouldRestoreToAMarkerCheckpoint() throws Exception {
+    // given - instances created before and after a marker; the next backup holds both
+    final List<Long> createdBeforeMarker;
+    final Instant markerTimestamp;
+    try (final var client = broker.newClientBuilder().build()) {
+      deployTestProcess(client);
+      takeAndAwaitBackup();
+      disableRdbmsExporter();
+      awaitBackupCoversExportedPositionsOnEveryPartition();
 
-  /** Same as {@link #restoreFromTimeRange(Interval)}, but without an explicit time range. */
-  abstract void restoreWithoutArguments() throws Exception;
+      createdBeforeMarker =
+          InProcessRestoreTestUtil.createInstancesOnEveryPartition(
+              client, PROCESS_ID, PARTITION_COUNT);
+      markerTimestamp = awaitMarkerCoveringExportedPositions();
+      InProcessRestoreTestUtil.createInstancesOnEveryPartition(client, PROCESS_ID, PARTITION_COUNT);
+      takeAndAwaitBackup();
+    }
+
+    // when
+    restore(RestoreTarget.closestTo(markerTimestamp));
+
+    // then - every partition ends at the marker
+    try (final var client = broker.newClientBuilder().build()) {
+      final var activatedInstances =
+          InProcessRestoreTestUtil.awaitJobsOfInstancesActivatable(
+              client, JOB_TYPE, createdBeforeMarker);
+      assertThat(activatedInstances)
+          .describedAs("only the instances created before the marker survive the restore")
+          .containsExactlyInAnyOrderElementsOf(createdBeforeMarker);
+    }
+  }
 
   /**
-   * Attempts a restore for a time range that ends before any backup exists to cover it, and asserts
-   * that the attempt fails with a message indicating no usable range was found.
+   * Restores to {@code target} and leaves the broker running and ready for verification (e.g. by
+   * restarting it, for the standalone path, or by completing an in-process restore change plan and
+   * waiting for the broker to return to {@code ACTIVE}).
    */
-  abstract void assertRestoreFailsForMissingBackup(Interval interval) throws Exception;
+  abstract void restore(RestoreTarget target) throws Exception;
+
+  /**
+   * Attempts a restore to {@code target} and asserts that it fails with {@code expectedMessage}.
+   */
+  abstract void assertRestoreFails(RestoreTarget target, String expectedMessage) throws Exception;
 
   /**
    * The backup store's base directory. Declared as a {@code static @TempDir} field on each concrete
@@ -193,6 +226,31 @@ abstract class RdbmsRangeRestoreTestBase implements ClockSupport {
    * directory.
    */
   protected abstract Path backupDir();
+
+  /**
+   * Disables the RDBMS exporter once it has recorded an exported position on every partition.
+   *
+   * <p>The exporter records its position only when it opens, and fails to open until the RDBMS
+   * schema is ready. Its director retries the open with a backoff on the pinned actor clock, so
+   * until the clock moves on, a retry can stay pending. Disabled before it opened, the exporter
+   * never records a position on that partition, and no backup can ever cover it.
+   */
+  protected final void disableRdbmsExporter() {
+    await("the RDBMS exporter recorded a position on every partition")
+        .atMost(Duration.ofSeconds(60))
+        .ignoreExceptions()
+        .untilAsserted(
+            () -> {
+              progressClock(broker, 1000);
+              assertThat(IntStream.rangeClosed(1, PARTITION_COUNT).boxed())
+                  .allSatisfy(
+                      partitionId ->
+                          assertThat(exporterPositionMapper.findOne(partitionId))
+                              .describedAs("exported position for partition %d", partitionId)
+                              .isNotNull());
+            });
+    ExportersActuator.of(broker).disableExporter(RDBMS_EXPORTER_NAME);
+  }
 
   /**
    * Waits until a freshly-taken backup exists whose per-partition checkpoint position is at or
@@ -234,7 +292,7 @@ abstract class RdbmsRangeRestoreTestBase implements ClockSupport {
         final var jobActivationResult =
             client
                 .newActivateJobsCommand()
-                .jobType("task")
+                .jobType(JOB_TYPE)
                 .maxJobsToActivate(remaining)
                 .send()
                 .join();
@@ -251,9 +309,9 @@ abstract class RdbmsRangeRestoreTestBase implements ClockSupport {
     return client
         .newDeployResourceCommand()
         .addProcessModel(
-            Bpmn.createExecutableProcess("process")
+            Bpmn.createExecutableProcess(PROCESS_ID)
                 .startEvent()
-                .serviceTask("task", t -> t.zeebeJobType("task"))
+                .serviceTask("task", t -> t.zeebeJobType(JOB_TYPE))
                 .endEvent()
                 .done(),
             "process.bpmn")
@@ -264,7 +322,7 @@ abstract class RdbmsRangeRestoreTestBase implements ClockSupport {
         .getProcessDefinitionKey();
   }
 
-  protected final Interval createProcessInstancesAndTakeBackups(
+  protected final RestoreTarget createProcessInstancesAndTakeBackups(
       final CamundaClient client, final long processKey) {
 
     // Create some process instances to have data to verify after restore
@@ -288,7 +346,47 @@ abstract class RdbmsRangeRestoreTestBase implements ClockSupport {
     // Record "to" after second backup
     final Instant to = currentTime(broker);
     LOG.info("Time range to = {}", to);
-    return new Interval(from, to);
+    return new RestoreTarget(from, to);
+  }
+
+  /**
+   * Moves the pinned clock past the marker interval, so the checkpoint scheduler takes a marker
+   * checkpoint, and returns the marker's timestamp once every partition has it. Asserts that the
+   * marker is at or after every partition's exported position, which a restore to it requires.
+   */
+  private Instant awaitMarkerCoveringExportedPositions() {
+    final var previousCheckpointId =
+        backupActuator.state().getCheckpointStates().stream()
+            .mapToLong(PartitionCheckpointState::getCheckpointId)
+            .max()
+            .orElseThrow();
+    progressClock(broker, MARKER_INTERVAL.plusSeconds(1).toMillis());
+    final var markers =
+        Awaitility.await("a marker checkpoint is taken on every partition")
+            .atMost(Duration.ofSeconds(30))
+            .ignoreExceptions()
+            .until(
+                () -> backupActuator.state().getCheckpointStates(),
+                states ->
+                    states.size() == PARTITION_COUNT
+                        && states.stream()
+                            .allMatch(
+                                state ->
+                                    state.getCheckpointType() == CheckpointType.MARKER
+                                        && state.getCheckpointId() > previousCheckpointId));
+    final var marker = markers.getFirst();
+    assertThat(markers)
+        .allSatisfy(
+            partitionMarker -> {
+              assertThat(partitionMarker.getCheckpointId()).isEqualTo(marker.getCheckpointId());
+              assertThat(partitionMarker.getCheckpointPosition())
+                  .describedAs("marker position on partition %d", partitionMarker.getPartitionId())
+                  .isGreaterThanOrEqualTo(
+                      exporterPositionMapper
+                          .findOne(partitionMarker.getPartitionId())
+                          .lastExportedPosition());
+            });
+    return marker.getCheckpointTimestamp().toInstant();
   }
 
   protected final BackupInfo takeAndAwaitBackup() {
@@ -319,6 +417,9 @@ abstract class RdbmsRangeRestoreTestBase implements ClockSupport {
 
     // Enable continuous backups
     cfg.getData().getPrimaryStorage().getBackup().setContinuous(true);
+    // A marker is taken at startup, as no checkpoint exists yet, and then an interval after the
+    // latest checkpoint, which only a test moving the pinned clock by the interval reaches
+    cfg.getData().getPrimaryStorage().getBackup().setCheckpointInterval(MARKER_INTERVAL);
 
     // Use smaller log segments for faster checkpoint creation.
     // Max message size must be <= log segment size (enforced by RaftPartitionFactory).
@@ -337,5 +438,18 @@ abstract class RdbmsRangeRestoreTestBase implements ClockSupport {
     rdbms.setPassword("");
   }
 
-  protected record Interval(Instant start, Instant end) {}
+  /**
+   * The time range a restore is asked for. Either bound may be {@code null} to leave it out;
+   * without {@code to}, the restore resolves the latest common checkpoint.
+   */
+  protected record RestoreTarget(Instant from, Instant to) {
+
+    static RestoreTarget latest() {
+      return new RestoreTarget(null, null);
+    }
+
+    static RestoreTarget closestTo(final Instant to) {
+      return new RestoreTarget(null, to);
+    }
+  }
 }

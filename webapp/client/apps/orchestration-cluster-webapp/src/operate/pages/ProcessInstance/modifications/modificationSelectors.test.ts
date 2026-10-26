@@ -142,10 +142,10 @@ describe('modificationSelectors', () => {
 
 		expect(getModificationsByElement(state, {businessObjects})).toEqual({
 			node1: counts({newTokens: 5}),
-			node2: counts({cancelledTokens: 5, visibleCancelledTokens: 3}),
-			node3: counts({cancelledTokens: 5, visibleCancelledTokens: 3}),
+			node2: counts({cancelledTokens: 5, visibleCancelledTokens: 3, areAllTokensCanceled: true}),
+			node3: counts({cancelledTokens: 5, visibleCancelledTokens: 3, areAllTokensCanceled: true}),
 			node4: counts({newTokens: 6}),
-			multi_instance_task: counts({cancelledTokens: 4, visibleCancelledTokens: 1}),
+			multi_instance_task: counts({cancelledTokens: 4, visibleCancelledTokens: 1, areAllTokensCanceled: true}),
 		});
 	});
 
@@ -162,7 +162,7 @@ describe('modificationSelectors', () => {
 			end: counts({newTokens: 1}),
 		});
 		expect(getModificationsByElement(state, {totalRunningInstancesByElement: {task: 4}}).task).toEqual(
-			counts({cancelledTokens: 2, visibleCancelledTokens: 1}),
+			counts({cancelledTokens: 2, visibleCancelledTokens: 1, areAllTokensCanceled: true}),
 		);
 	});
 
@@ -193,7 +193,18 @@ describe('modificationSelectors', () => {
 		expect(
 			getModificationsByElement(state, {businessObjects, totalRunningInstancesByElement: {parent_sub_process: 2}})
 				.parent_sub_process,
-		).toEqual(counts({cancelledTokens: 1, visibleCancelledTokens: 1}));
+		).toEqual(
+			counts({cancelledTokens: 1, visibleCancelledTokens: 1, cancelledChildTokens: 1, areAllTokensCanceled: true}),
+		);
+	});
+
+	it('should keep a by-id cancellation covering every token when more tokens start running after staging', () => {
+		const state = createModificationState([cancelToken({elementId: 'task', affectedTokenCount: 2})]);
+		const statistics = [{elementId: 'task', active: 3, incidents: 0}];
+		const modificationsByElement = getModificationsByElement(state, {totalRunningInstancesByElement: {task: 3}});
+
+		expect(modificationsByElement.task?.areAllTokensCanceled).toBe(true);
+		expect(willAllElementsBeCanceled(state, statistics, modificationsByElement)).toBe(true);
 	});
 
 	it('should predict whether every running element will be cancelled', () => {

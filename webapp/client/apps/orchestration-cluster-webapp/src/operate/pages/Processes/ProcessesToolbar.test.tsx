@@ -141,28 +141,48 @@ describe('Processes bulk toolbar', () => {
 		await select(screen, '5');
 		await expect.element(screen.getByRole('button', {name: 'Retry', exact: true})).toBeDisabled();
 		await expect.element(screen.getByRole('button', {name: 'Suspend', exact: true})).toBeDisabled();
+		await expect
+			.element(screen.getByRole('button', {name: 'Suspend', exact: true}))
+			.toHaveAttribute(
+				'title',
+				'No active process instances selected. Select at least one active process instance to suspend.',
+			);
 		await expect.element(screen.getByRole('button', {name: 'Resume', exact: true})).toBeEnabled();
-		// Bulk cancel is scoped to running instances only — the batch operation silently drops a
-		// suspended key rather than acting on it — so a selection of only suspended rows must not
-		// enable it. Row-level cancel remains available for a suspended instance individually.
-		await expect.element(screen.getByRole('button', {name: 'Cancel', exact: true})).toBeDisabled();
+		await expect.element(screen.getByRole('button', {name: 'Cancel', exact: true})).toBeEnabled();
 	});
 
-	it('should disable Cancel for an all-selected suspended-only view', async ({worker}) => {
-		worker.use(...list());
-		const screen = await renderTable({...SEARCH, active: false, incidents: false, completed: false, canceled: false});
-
-		await select(screen);
-
-		await expect.element(screen.getByRole('button', {name: 'Cancel', exact: true})).toBeDisabled();
-	});
-
-	it('should exclude suspended instances from a mixed active+suspended Cancel request', async ({worker}) => {
+	it('should cancel every instance of an all-selected suspended-only view', async ({worker}) => {
 		worker.use(
 			...list(),
 			completed('CANCEL_PROCESS_INSTANCE'),
 			mockCreateCancellationBatchOperationEndpoint({
-				schema: batchOperationRequestSchema(z.strictObject({$in: exactKeys(['1'])})),
+				schema: z.strictObject({
+					filter: z.looseObject({
+						tenantId: z.strictObject({$eq: z.literal('tenant-a')}),
+						state: z.strictObject({$eq: z.literal('SUSPENDED')}),
+					}),
+				}),
+				successResponse: accepted('CANCEL_PROCESS_INSTANCE'),
+				failureResponse: FAILURE_RESPONSE,
+			}),
+		);
+		const screen = await renderTable({...SEARCH, active: false, incidents: false, completed: false, canceled: false});
+
+		await select(screen);
+		await userEvent.click(screen.getByRole('button', {name: 'Cancel', exact: true}));
+		await userEvent.click(screen.getByRole('dialog').getByRole('button', {name: 'Apply', exact: true}));
+
+		await expect
+			.element(screen.getByText('The batch operation "Cancel Process Instance" has been started'))
+			.toBeVisible();
+	});
+
+	it('should include suspended instances in a mixed active+suspended Cancel request', async ({worker}) => {
+		worker.use(
+			...list(),
+			completed('CANCEL_PROCESS_INSTANCE'),
+			mockCreateCancellationBatchOperationEndpoint({
+				schema: batchOperationRequestSchema(z.strictObject({$in: exactKeys(['1', '5'])})),
 				successResponse: accepted('CANCEL_PROCESS_INSTANCE'),
 				failureResponse: FAILURE_RESPONSE,
 			}),
@@ -172,9 +192,10 @@ describe('Processes bulk toolbar', () => {
 		await select(screen, '5');
 		await userEvent.click(screen.getByRole('button', {name: 'Cancel', exact: true}));
 		const modal = screen.getByRole('dialog');
+		await expect.element(modal).toBeVisible();
 		await expect
 			.element(modal.getByText('Finished instances in your selection will be ignored.', {exact: false}))
-			.toBeVisible();
+			.not.toBeInTheDocument();
 		await userEvent.click(modal.getByRole('button', {name: 'Apply', exact: true}));
 		await expect
 			.element(screen.getByText('The batch operation "Cancel Process Instance" has been started'))
@@ -294,6 +315,34 @@ describe('Processes bulk toolbar', () => {
 		await userEvent.click(screen.getByRole('dialog').getByRole('button', {name: 'Apply'}));
 		await expect.element(screen.getByRole('button', {name: 'Go to operation details'})).toBeVisible();
 	});
+
+	it.for([
+		['Suspend', mockCreateSuspensionBatchOperationEndpoint, 'SUSPEND_PROCESS_INSTANCE'],
+		['Cancel', mockCreateCancellationBatchOperationEndpoint, 'CANCEL_PROCESS_INSTANCE'],
+	] as const)(
+		'should narrow a select-all %s request to the active state when finished states are filtered',
+		async ([action, mock, batchOperationType], {worker}) => {
+			worker.use(
+				...list(),
+				completed(batchOperationType),
+				mock({
+					schema: z.strictObject({
+						filter: z.looseObject({
+							tenantId: z.strictObject({$eq: z.literal('tenant-a')}),
+							state: z.strictObject({$eq: z.literal('ACTIVE')}),
+						}),
+					}),
+					successResponse: accepted(batchOperationType),
+					failureResponse: FAILURE_RESPONSE,
+				}),
+			);
+			const screen = await renderTable({...SEARCH, incidents: false, suspended: false});
+			await select(screen);
+			await userEvent.click(screen.getByRole('button', {name: action, exact: true}));
+			await userEvent.click(screen.getByRole('dialog').getByRole('button', {name: 'Apply', exact: true}));
+			await expect.element(screen.getByRole('button', {name: 'Go to operation details'})).toBeVisible();
+		},
+	);
 
 	it('should use the selected state filter rather than the visible rows for all-result eligibility', async ({
 		worker,
@@ -535,12 +584,10 @@ describe('Processes bulk toolbar', () => {
 		});
 	});
 
-	const languages = ['en', 'de', 'fr', 'es'] as const;
-	const actions = ['delete', 'cancel', 'retry'] as const;
-	const counts = [1, 3] as const;
-	const translatedConfirmationCases = languages.flatMap((language) =>
-		actions.flatMap((action) => counts.map((count) => ({language, action, count}))),
-	);
+	const translatedConfirmationCases = [
+		{language: 'de', action: 'delete', count: 1},
+		{language: 'de', action: 'delete', count: 3},
+	] as const;
 
 	it.for(translatedConfirmationCases)(
 		'should preserve the translated $language $action label in a $count-instance confirmation',

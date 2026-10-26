@@ -8,10 +8,12 @@
 package io.camunda.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.catchThrowable;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import io.camunda.document.api.DocumentContent;
@@ -21,6 +23,8 @@ import io.camunda.document.api.DocumentReference;
 import io.camunda.document.api.DocumentStore;
 import io.camunda.document.api.DocumentStoreRecord;
 import io.camunda.document.store.SimpleDocumentStoreRegistry;
+import io.camunda.search.exception.CamundaSearchException;
+import io.camunda.search.exception.CamundaSearchException.Reason;
 import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.api.model.authz.PermissionType;
 import io.camunda.security.api.model.config.AuthorizationsConfiguration;
@@ -352,5 +356,24 @@ public class DocumentServicesTest {
     return new BufferedReader(new InputStreamReader(inputStream))
         .lines()
         .collect(Collectors.joining("\n"));
+  }
+
+  @Test
+  public void createDocumentShouldPropagateSearchFailureOfPermissionLookup() {
+    // given - a failed lookup says nothing about the caller's permissions, so it must not be
+    // turned into a denial or a grant
+    authorizationsConfig.setEnabled(true);
+    final var failure =
+        new CamundaSearchException("Failed to execute findAll query", Reason.CONNECTION_FAILED);
+    when(authorizationChecker.collectPermissionTypes(any(), any(), any())).thenThrow(failure);
+
+    // when
+    final var error =
+        catchThrowable(
+            () -> services.createDocument(mock(DocumentCreateRequest.class), authentication));
+
+    // then
+    assertThat(error).isSameAs(failure);
+    verifyNoInteractions(registry);
   }
 }

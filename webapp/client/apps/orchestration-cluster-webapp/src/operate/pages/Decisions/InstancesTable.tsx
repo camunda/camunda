@@ -83,6 +83,9 @@ const InstancesTable: React.FC<Props> = ({search}) => {
 					title={t('operate.decisions.instancesTable.viewDecisionInstance', {
 						key: row.decisionEvaluationInstanceKey,
 					})}
+					aria-label={t('operate.decisions.instancesTable.viewDecisionInstance', {
+						key: row.decisionEvaluationInstanceKey,
+					})}
 				>
 					{row.decisionEvaluationInstanceKey}
 				</InstanceLink>
@@ -159,6 +162,7 @@ const InstancesTable: React.FC<Props> = ({search}) => {
 			{filter !== undefined && (
 				<Toolbar
 					selectedCount={selection.selectedCount}
+					isCountTruncated={hasMoreTotalItems && (selection.isAllSelected || selection.excludedIds.length > 0)}
 					includedIds={selection.includedIds}
 					excludedIds={selection.excludedIds}
 					filter={filter}

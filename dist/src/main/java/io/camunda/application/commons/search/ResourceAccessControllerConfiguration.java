@@ -9,8 +9,8 @@ package io.camunda.application.commons.search;
 
 import io.camunda.application.commons.security.PhysicalTenantSecurityProperties;
 import io.camunda.authentication.service.PhysicalTenantResourceAccessProvider;
-import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.configuration.conditions.ConditionalOnSecondaryStorageType;
+import io.camunda.configuration.data.SecondaryStorage.SecondaryStorageType;
 import io.camunda.db.rdbms.read.security.RdbmsResourceAccessController;
 import io.camunda.search.clients.auth.AnonymousResourceAccessController;
 import io.camunda.search.clients.auth.DefaultResourceAccessProvider;

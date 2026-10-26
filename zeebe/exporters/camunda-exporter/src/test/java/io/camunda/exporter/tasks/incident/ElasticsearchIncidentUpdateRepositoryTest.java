@@ -500,7 +500,7 @@ public final class ElasticsearchIncidentUpdateRepositoryTest {
 
     assertThat(positionRange.gt()).isEqualTo(fromPosition);
     assertThat(positionRange.lt()).isNull();
-    assertThat(positionRange.lte()).isNull();
+    assertThat(positionRange.lte()).isEqualTo(Long.MAX_VALUE);
     assertThat(positionRange.gte()).isNull();
   }
 
@@ -593,6 +593,7 @@ public final class ElasticsearchIncidentUpdateRepositoryTest {
         "listViewFullQualifiedName",
         "flowNodeAlias",
         "operationAlias",
+        () -> Long.MAX_VALUE,
         client,
         Runnable::run,
         LOGGER);

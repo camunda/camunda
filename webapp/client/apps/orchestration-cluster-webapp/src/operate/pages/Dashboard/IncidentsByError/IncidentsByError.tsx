@@ -20,7 +20,7 @@ import {ExpandedRowErrorFallback} from '#/operate/pages/Dashboard/ExpandedRowErr
 import {useDashboardScrollPagination} from '#/operate/pages/Dashboard/useDashboardScrollPagination';
 import {truncateErrorMessage} from './truncateErrorMessage';
 import {LinkWrapper, LoadingRow} from '#/operate/pages/Dashboard/styled';
-import {incidentsByErrorInfiniteQuery, PAGE_SIZE} from './incidentsByError.queries';
+import {getIncidentsByErrorRefetchInterval, incidentsByErrorInfiniteQuery, PAGE_SIZE} from './incidentsByError.queries';
 import {IncidentsByErrorDefinitions} from './IncidentsByErrorDefinitions';
 
 const IncidentsByError: React.FC = () => {
@@ -35,7 +35,10 @@ const IncidentsByError: React.FC = () => {
 		hasPreviousPage,
 		isFetchingNextPage,
 		isFetchingPreviousPage,
-	} = useInfiniteQuery({...incidentsByErrorInfiniteQuery(), refetchInterval: 5000});
+	} = useInfiniteQuery({
+		...incidentsByErrorInfiniteQuery(),
+		refetchInterval: (query) => getIncidentsByErrorRefetchInterval(query.state.data?.pages.length ?? 1),
+	});
 
 	const items = useMemo(() => data?.pages.flatMap((page) => page.items) ?? [], [data]);
 	const totalItems = data?.pages[0]?.page.totalItems ?? 0;

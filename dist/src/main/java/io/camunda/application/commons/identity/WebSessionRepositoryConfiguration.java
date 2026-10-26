@@ -9,8 +9,8 @@ package io.camunda.application.commons.identity;
 
 import io.camunda.authentication.config.spi.PhysicalTenantScopedSessionStorePortProvider;
 import io.camunda.cluster.PhysicalTenantIds;
-import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.configuration.conditions.ConditionalOnSecondaryStorageType;
+import io.camunda.configuration.data.SecondaryStorage.SecondaryStorageType;
 import io.camunda.db.rdbms.write.RdbmsMapperBundle;
 import io.camunda.exporter.config.ConnectionTypes;
 import io.camunda.search.clients.DocumentBasedSearchClient;

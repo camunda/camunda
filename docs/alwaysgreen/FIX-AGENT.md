@@ -222,15 +222,15 @@ change there must not regress the nightly for the same version, and a competing
 The prompt gives you the resolved directories — use them rather than inferring. The rules
 behind them:
 
-- **`main` is the next unreleased minor, currently 8.10.** `stable/X.Y` is X.Y.
+- **`main` is the next unreleased minor, currently 8.11.** `stable/X.Y` is X.Y.
 - **SM specs live under an `SM-` prefix, SaaS specs under the bare version.** `pages/`
   mirrors `tests/` exactly.
 - The Helm chart directory is `charts/camunda-platform-<version>/`.
 
 |             Dispatch             |        e2e specs and pages         |           Helm chart            |
 |----------------------------------|------------------------------------|---------------------------------|
-| `sm-smoke-e2e` on `main`         | `tests/SM-8.10/`, `pages/SM-8.10/` | `charts/camunda-platform-8.10/` |
-| `saas-smoke-e2e` on `main`       | `tests/8.10/`, `pages/8.10/`       | `charts/camunda-platform-8.10/` |
+| `sm-smoke-e2e` on `main`         | `tests/SM-8.11/`, `pages/SM-8.11/` | `charts/camunda-platform-8.11/` |
+| `saas-smoke-e2e` on `main`       | `tests/8.11/`, `pages/8.11/`       | `charts/camunda-platform-8.11/` |
 | `sm-smoke-e2e` on `stable/8.9`   | `tests/SM-8.9/`, `pages/SM-8.9/`   | `charts/camunda-platform-8.9/`  |
 | `saas-smoke-e2e` on `stable/8.9` | `tests/8.9/`, `pages/8.9/`         | `charts/camunda-platform-8.9/`  |
 

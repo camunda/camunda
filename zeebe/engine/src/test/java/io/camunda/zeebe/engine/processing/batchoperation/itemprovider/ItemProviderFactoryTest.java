@@ -20,9 +20,11 @@ import io.camunda.search.filter.ProcessInstanceFilter;
 import io.camunda.zeebe.engine.metrics.BatchOperationMetrics;
 import io.camunda.zeebe.engine.state.batchoperation.PersistedBatchOperation;
 import io.camunda.zeebe.protocol.record.value.BatchOperationType;
+import java.util.function.Function;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 class ItemProviderFactoryTest {
@@ -56,7 +58,7 @@ class ItemProviderFactoryTest {
   }
 
   @Test
-  void shouldNarrowStateAndOverrideParentFiltersForCancelProcessInstance() {
+  void shouldNarrowStateAndParentFiltersForCancelProcessInstance() {
     // given
     final var filter =
         new ProcessInstanceFilter.Builder()
@@ -78,11 +80,31 @@ class ItemProviderFactoryTest {
 
     final var usedFilter = ((ProcessInstanceItemProvider) itemProvider).getFilter();
     assertThat(usedFilter.parentProcessInstanceKeyOperations())
-        .containsExactly(Operation.exists(false));
+        .containsExactly(Operation.eq(12345L), Operation.exists(false));
     assertThat(usedFilter.stateOperations())
         .containsExactly(Operation.eq("SUSPENDED"), Operation.in("ACTIVE", "SUSPENDED"));
     assertThat(usedFilter.processInstanceKeyOperations()).containsExactly(Operation.eq(67890L));
     assertThat(usedFilter.partitionId()).isEqualTo(1);
+  }
+
+  @Test
+  void shouldKeepCallerParentProcessInstanceKeyFilterForCancelProcessInstance() {
+    // given - the filter Operate sends from "View all called instances": the parent key is the
+    // only criterion narrowing the batch
+    final var filter =
+        new ProcessInstanceFilter.Builder().parentProcessInstanceKeys(12345L).build();
+    final var batchOperation = mock(PersistedBatchOperation.class);
+    when(batchOperation.getBatchOperationType())
+        .thenReturn(BatchOperationType.CANCEL_PROCESS_INSTANCE);
+    when(batchOperation.getEntityFilter(ProcessInstanceFilter.class)).thenReturn(filter);
+
+    // when
+    final var itemProvider = factory.fromBatchOperation(batchOperation);
+
+    // then - dropping the caller's parent key would widen the batch to every root instance
+    final var usedFilter = ((ProcessInstanceItemProvider) itemProvider).getFilter();
+    assertThat(usedFilter.parentProcessInstanceKeyOperations())
+        .containsExactly(Operation.eq(12345L), Operation.exists(false));
   }
 
   static Stream<Operation<String>> callerStateOperations() {
@@ -164,34 +186,6 @@ class ItemProviderFactoryTest {
   }
 
   @Test
-  void shouldOverrideFiltersForSuspendProcessInstance() {
-    // given
-    final var filter =
-        new ProcessInstanceFilter.Builder()
-            .states("COMPLETED")
-            .parentProcessInstanceKeys(12345L)
-            .processInstanceKeys(67890L)
-            .build();
-    final var batchOperation = mock(PersistedBatchOperation.class);
-    when(batchOperation.getBatchOperationType())
-        .thenReturn(BatchOperationType.SUSPEND_PROCESS_INSTANCE);
-    when(batchOperation.getEntityFilter(ProcessInstanceFilter.class)).thenReturn(filter);
-
-    // when
-    final var itemProvider = factory.fromBatchOperation(batchOperation);
-
-    // then
-    assertThat(itemProvider).isNotNull();
-    assertThat(itemProvider).isInstanceOf(ProcessInstanceItemProvider.class);
-
-    final var usedFilter = ((ProcessInstanceItemProvider) itemProvider).getFilter();
-    assertThat(usedFilter.parentProcessInstanceKeyOperations()).isEmpty();
-    assertThat(usedFilter.stateOperations()).containsExactly(Operation.eq("ACTIVE"));
-    assertThat(usedFilter.processInstanceKeyOperations()).containsExactly(Operation.eq(67890L));
-    assertThat(usedFilter.partitionId()).isEqualTo(1);
-  }
-
-  @Test
   void shouldSetFiltersForResumeProcessInstance() {
     // given
     final var filter = new ProcessInstanceFilter.Builder().build();
@@ -214,34 +208,6 @@ class ItemProviderFactoryTest {
   }
 
   @Test
-  void shouldOverrideFiltersForResumeProcessInstance() {
-    // given
-    final var filter =
-        new ProcessInstanceFilter.Builder()
-            .states("ACTIVE")
-            .parentProcessInstanceKeys(12345L)
-            .processInstanceKeys(67890L)
-            .build();
-    final var batchOperation = mock(PersistedBatchOperation.class);
-    when(batchOperation.getBatchOperationType())
-        .thenReturn(BatchOperationType.RESUME_PROCESS_INSTANCE);
-    when(batchOperation.getEntityFilter(ProcessInstanceFilter.class)).thenReturn(filter);
-
-    // when
-    final var itemProvider = factory.fromBatchOperation(batchOperation);
-
-    // then
-    assertThat(itemProvider).isNotNull();
-    assertThat(itemProvider).isInstanceOf(ProcessInstanceItemProvider.class);
-
-    final var usedFilter = ((ProcessInstanceItemProvider) itemProvider).getFilter();
-    assertThat(usedFilter.parentProcessInstanceKeyOperations()).isEmpty();
-    assertThat(usedFilter.stateOperations()).containsExactly(Operation.eq("SUSPENDED"));
-    assertThat(usedFilter.processInstanceKeyOperations()).containsExactly(Operation.eq(67890L));
-    assertThat(usedFilter.partitionId()).isEqualTo(1);
-  }
-
-  @Test
   void shouldSetFiltersForMigrateProcessInstance() {
     // given
     final var filter = new ProcessInstanceFilter.Builder().build();
@@ -259,7 +225,7 @@ class ItemProviderFactoryTest {
 
     final var usedFilter = ((ProcessInstanceItemProvider) itemProvider).getFilter();
     assertThat(usedFilter.parentProcessInstanceKeyOperations()).isEmpty();
-    assertThat(usedFilter.stateOperations()).contains(Operation.eq("ACTIVE"));
+    assertThat(usedFilter.stateOperations()).containsExactly(Operation.eq("ACTIVE"));
     assertThat(usedFilter.partitionId()).isEqualTo(1);
   }
 
@@ -281,8 +247,106 @@ class ItemProviderFactoryTest {
 
     final var usedFilter = ((ProcessInstanceItemProvider) itemProvider).getFilter();
     assertThat(usedFilter.parentProcessInstanceKeyOperations()).isEmpty();
-    assertThat(usedFilter.stateOperations()).contains(Operation.eq("ACTIVE"));
+    assertThat(usedFilter.stateOperations()).containsExactly(Operation.eq("ACTIVE"));
     assertThat(usedFilter.partitionId()).isEqualTo(1);
+  }
+
+  static Stream<NarrowCase> narrowCases() {
+    return Stream.of(
+        new NarrowCase(
+            BatchOperationType.MIGRATE_PROCESS_INSTANCE,
+            "ACTIVE",
+            ProcessInstanceItemProvider.class,
+            ip -> ((ProcessInstanceItemProvider) ip).getFilter()),
+        new NarrowCase(
+            BatchOperationType.MODIFY_PROCESS_INSTANCE,
+            "ACTIVE",
+            ProcessInstanceItemProvider.class,
+            ip -> ((ProcessInstanceItemProvider) ip).getFilter()),
+        new NarrowCase(
+            BatchOperationType.RESOLVE_INCIDENT,
+            "ACTIVE",
+            IncidentItemProvider.class,
+            ip -> ((IncidentItemProvider) ip).getFilter()),
+        new NarrowCase(
+            BatchOperationType.SUSPEND_PROCESS_INSTANCE,
+            "ACTIVE",
+            ProcessInstanceItemProvider.class,
+            ip -> ((ProcessInstanceItemProvider) ip).getFilter()),
+        new NarrowCase(
+            BatchOperationType.RESUME_PROCESS_INSTANCE,
+            "SUSPENDED",
+            ProcessInstanceItemProvider.class,
+            ip -> ((ProcessInstanceItemProvider) ip).getFilter()));
+  }
+
+  static Stream<Arguments> narrowedCallerStateOperations() {
+    return narrowCases()
+        .flatMap(testCase -> callerStateOperations().map(op -> Arguments.of(testCase, op)));
+  }
+
+  /**
+   * Migrate/modify/resolve-incident/suspend/resume narrow the caller's state filter: it is kept and
+   * ANDed with the required state, so a conflicting value narrows the query to zero items instead
+   * of being silently discarded.
+   */
+  @ParameterizedTest(name = "{0} keeps caller state {1}")
+  @MethodSource("narrowedCallerStateOperations")
+  void shouldKeepCallerStateFilterAndNarrowIt(
+      final NarrowCase testCase, final Operation<String> callerStateOperation) {
+    // given
+    final var filter =
+        new ProcessInstanceFilter.Builder()
+            .stateOperations(callerStateOperation)
+            .parentProcessInstanceKeys(12345L)
+            .build();
+    final var batchOperation = mock(PersistedBatchOperation.class);
+    when(batchOperation.getBatchOperationType()).thenReturn(testCase.batchOperationType());
+    when(batchOperation.getEntityFilter(ProcessInstanceFilter.class)).thenReturn(filter);
+
+    // when
+    final var itemProvider = factory.fromBatchOperation(batchOperation);
+
+    // then
+    assertThat(itemProvider).isInstanceOf(testCase.expectedProviderType());
+    final var usedFilter = testCase.filterExtractor().apply(itemProvider);
+    assertThat(usedFilter.stateOperations())
+        .containsExactly(callerStateOperation, Operation.eq(testCase.requiredState()));
+    // unlike cancel, these operations do not override parentProcessInstanceKey
+    assertThat(usedFilter.parentProcessInstanceKeyOperations())
+        .containsExactly(Operation.eq(12345L));
+  }
+
+  /**
+   * A state nested in an orFilters entry is ANDed with the top-level state by the underlying query,
+   * so narrowing (unlike the replace approach cancel used to take) needs no special handling for
+   * it: the branch is left untouched and the top-level required state narrows the whole query,
+   * matching Operate's own filter shape (e.g. an "Active + Incidents" toolbar filter sends a state
+   * inside one $or branch).
+   */
+  @ParameterizedTest(name = "{0}")
+  @MethodSource("narrowCases")
+  void shouldKeepStateFiltersInOrBranches(final NarrowCase testCase) {
+    // given
+    final var completedBranch = new ProcessInstanceFilter.Builder().states("COMPLETED").build();
+    final var incidentBranch = new ProcessInstanceFilter.Builder().hasIncident(true).build();
+    final var filter =
+        new ProcessInstanceFilter.Builder()
+            .addOrOperation(completedBranch)
+            .addOrOperation(incidentBranch)
+            .build();
+    final var batchOperation = mock(PersistedBatchOperation.class);
+    when(batchOperation.getBatchOperationType()).thenReturn(testCase.batchOperationType());
+    when(batchOperation.getEntityFilter(ProcessInstanceFilter.class)).thenReturn(filter);
+
+    // when
+    final var itemProvider = factory.fromBatchOperation(batchOperation);
+
+    // then
+    final var usedFilter = testCase.filterExtractor().apply(itemProvider);
+    assertThat(usedFilter.orFilters()).containsExactly(completedBranch, incidentBranch);
+    assertThat(usedFilter.stateOperations())
+        .containsExactly(Operation.eq(testCase.requiredState()));
   }
 
   @Test
@@ -302,7 +366,7 @@ class ItemProviderFactoryTest {
 
     final var usedFilter = ((IncidentItemProvider) itemProvider).getFilter();
     assertThat(usedFilter.parentProcessInstanceKeyOperations()).isEmpty();
-    assertThat(usedFilter.stateOperations()).contains(Operation.eq("ACTIVE"));
+    assertThat(usedFilter.stateOperations()).containsExactly(Operation.eq("ACTIVE"));
     assertThat(usedFilter.partitionId()).isEqualTo(1);
   }
 
@@ -375,5 +439,17 @@ class ItemProviderFactoryTest {
 
     final var usedFilter = ((DecisionInstanceItemProvider) itemProvider).getFilter();
     assertThat(usedFilter.partitionId()).isEqualTo(1);
+  }
+
+  private record NarrowCase(
+      BatchOperationType batchOperationType,
+      String requiredState,
+      Class<? extends ItemProvider> expectedProviderType,
+      Function<ItemProvider, ProcessInstanceFilter> filterExtractor) {
+
+    @Override
+    public String toString() {
+      return batchOperationType.name();
+    }
   }
 }

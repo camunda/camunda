@@ -8,7 +8,7 @@
 
 import {describe, expect, it} from 'vitest';
 import type {GetIncidentProcessInstanceStatisticsByErrorResponseBody} from '@camunda/camunda-api-zod-schemas/8.11';
-import {incidentsByErrorInfiniteQuery, PAGE_SIZE} from './incidentsByError.queries';
+import {getIncidentsByErrorRefetchInterval, incidentsByErrorInfiniteQuery, PAGE_SIZE} from './incidentsByError.queries';
 
 const createPage = ({
 	itemCount,
@@ -25,6 +25,16 @@ const createPage = ({
 	}) as unknown as GetIncidentProcessInstanceStatisticsByErrorResponseBody;
 
 describe('incidentsByErrorInfiniteQuery', () => {
+	it('polls while only one page is loaded, and stops after multiple pages are loaded', () => {
+		// when
+		const onePageInterval = getIncidentsByErrorRefetchInterval(1);
+		const multiPageInterval = getIncidentsByErrorRefetchInterval(2);
+
+		// then
+		expect(onePageInterval).toBe(5000);
+		expect(multiPageInterval).toBe(false);
+	});
+
 	it('returns the next offset when there are more items and progress was made', () => {
 		// given
 		const query = incidentsByErrorInfiniteQuery();

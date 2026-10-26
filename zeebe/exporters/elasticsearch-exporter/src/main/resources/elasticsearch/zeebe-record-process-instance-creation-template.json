@@ -34,6 +34,9 @@
             "variables": {
               "enabled": false
             },
+            "variablesMetadata": {
+              "enabled": false
+            },
             "startInstructions": {
               "properties": {
                 "elementId": {
@@ -61,6 +64,9 @@
               "type": "long"
             },
             "businessId": {
+              "type": "keyword"
+            },
+            "versionTag": {
               "type": "keyword"
             },
             "elementInstanceKey": {

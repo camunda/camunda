@@ -14,7 +14,7 @@ import static io.camunda.zeebe.qa.util.cluster.util.ZoneFixtures.ZONE_B;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.cluster.MemberId;
-import io.camunda.configuration.Zone;
+import io.camunda.configuration.cluster.Zone;
 import io.camunda.zeebe.it.cluster.clustering.zoneaware.ZoneHelpers;
 import io.camunda.zeebe.qa.util.actuator.ClusterActuator;
 import io.camunda.zeebe.qa.util.cluster.PhysicalTenantsITHelper;
@@ -32,8 +32,9 @@ import org.junit.jupiter.api.Timeout;
 /**
  * Verifies that a new physical tenant added to the static configuration after a zone-aware cluster
  * has already bootstrapped is provisioned additively: its partitions are placed per the cluster's
- * zone layout ({@link io.camunda.zeebe.dynamic.config.util.ZoneAwareAdditivePartitionReassigner}),
- * without moving any replica of a physical tenant that already existed.
+ * zone layout ({@link
+ * io.camunda.zeebe.dynamic.config.impl.util.ZoneAwareAdditivePartitionReassigner}), without moving
+ * any replica of a physical tenant that already existed.
  *
  * <p>See {@code PhysicalTenantProvisioningIT} for the equivalent single-zone scenario, including
  * coverage of the restart strategy matrix (full/rolling) - this test focuses on the zone-layout

@@ -9,6 +9,7 @@
 import {afterEach, beforeEach, describe, expect} from 'vitest';
 import {userEvent} from 'vitest/browser';
 import {http, HttpResponse} from 'msw';
+import {z} from 'zod';
 import {
 	endpoints,
 	queryDecisionInstancesRequestBodySchema,
@@ -102,7 +103,7 @@ describe('<Decisions />', () => {
 		await expect.element(screen.getByRole('combobox', {name: 'Version'})).not.toBeDisabled();
 	});
 
-	it('should navigate resetting version when a decision is selected', async ({worker}) => {
+	it('should preselect the latest version when a decision is selected', async ({worker}) => {
 		worker.use(
 			mockQueryDecisionDefinitionsEndpoint({successResponse: DECISION_DEFINITIONS}),
 			mockQueryDecisionInstancesEndpoint({successResponse: EMPTY_DECISION_INSTANCES}),
@@ -117,8 +118,69 @@ describe('<Decisions />', () => {
 		await userEvent.keyboard('{Enter}');
 
 		const getSearch = () => screen.router.state.location.search as Record<string, unknown>;
-		await expect.poll(getSearch).toMatchObject({decisionDefinitionId: 'invoice-approval'});
-		expect(getSearch().decisionDefinitionVersion).toBeUndefined();
+		await expect
+			.poll(getSearch)
+			.toMatchObject({decisionDefinitionId: 'invoice-approval', decisionDefinitionVersion: 2});
+	});
+
+	it('should offer only the existing version for a single-version decision', async ({worker}) => {
+		worker.use(
+			mockQueryDecisionDefinitionsEndpoint({successResponse: DECISION_DEFINITIONS}),
+			mockQueryDecisionInstancesEndpoint({successResponse: EMPTY_DECISION_INSTANCES}),
+			mockGetDecisionDefinitionXmlEndpoint({successResponse: HttpResponse.text(DMN_XML)}),
+		);
+
+		const screen = await renderDecisionsPage({decisionDefinitionId: 'discount-rate', decisionDefinitionVersion: '1'});
+
+		await expect.element(screen.getByRole('combobox', {name: 'Version'})).toMatchTextContent('1');
+		await screen.getByRole('combobox', {name: 'Name'}).fill('Discount Rate');
+		await userEvent.keyboard('{Tab}{ArrowDown}');
+
+		await expect.element(screen.getByRole('option', {name: '1'})).toBeVisible();
+		await expect.element(screen.getByRole('option', {name: 'All versions'})).not.toBeInTheDocument();
+	});
+
+	it('should list the latest decision versions of every page sorted by name', async ({worker}) => {
+		worker.use(
+			mockQueryDecisionDefinitionsEndpoint({
+				once: true,
+				successResponse: HttpResponse.json(
+					createQueryDecisionDefinitionsResponse({
+						items: [createDecisionDefinition({name: 'Invoice Approval', decisionDefinitionId: 'invoice-approval'})],
+						page: {totalItems: 1, hasMoreTotalItems: true, endCursor: 'second-page'},
+					}),
+				),
+			}),
+			mockQueryDecisionDefinitionsEndpoint({
+				once: true,
+				successResponse: HttpResponse.json(
+					createQueryDecisionDefinitionsResponse({
+						items: [createDecisionDefinition({name: 'Discount Rate', decisionDefinitionId: 'discount-rate'})],
+						page: {totalItems: 1, hasMoreTotalItems: true, endCursor: 'third-page'},
+					}),
+				),
+			}),
+			mockQueryDecisionDefinitionsEndpoint({
+				schema: z.object({
+					filter: z.object({isLatestVersion: z.literal(true)}),
+					page: z.object({after: z.literal('third-page'), limit: z.literal(1000)}),
+				}),
+				successResponse: HttpResponse.json(
+					createQueryDecisionDefinitionsResponse({
+						items: [createDecisionDefinition({name: 'Approval Matrix', decisionDefinitionId: 'approval-matrix'})],
+					}),
+				),
+				failureResponse: new HttpResponse(null, {status: 400}),
+			}),
+			mockQueryDecisionInstancesEndpoint({successResponse: EMPTY_DECISION_INSTANCES}),
+		);
+
+		const screen = await renderDecisionsPage();
+		await screen.getByRole('combobox', {name: 'Name'}).click({force: true});
+
+		await expect.element(screen.getByRole('option').nth(0)).toHaveTextContent('Approval Matrix');
+		await expect.element(screen.getByRole('option').nth(1)).toHaveTextContent('Discount Rate');
+		await expect.element(screen.getByRole('option').nth(2)).toHaveTextContent('Invoice Approval');
 	});
 
 	it('should resolve a selected decision outside the loaded definitions page', async ({worker}) => {
@@ -175,6 +237,90 @@ describe('<Decisions />', () => {
 		);
 	});
 
+	it('should offer historical versions beyond 1000 when the reported total is accurate', async ({worker}) => {
+		const definition = {
+			name: 'Historical Approval',
+			decisionDefinitionId: 'historical-approval',
+		};
+		const latestDefinition = createDecisionDefinition({...definition, version: 1001});
+		const latestResponse = HttpResponse.json(createQueryDecisionDefinitionsResponse({items: [latestDefinition]}));
+		worker.use(
+			mockQueryDecisionDefinitionsEndpointByFilter({
+				unfilteredResponse: latestResponse,
+				filteredResponse: latestResponse,
+				versionsResponses: [
+					HttpResponse.json(
+						createQueryDecisionDefinitionsResponse({
+							items: Array.from({length: 1000}, (_, index) =>
+								createDecisionDefinition({...definition, version: 1001 - index}),
+							),
+							page: {totalItems: 1001, hasMoreTotalItems: false, endCursor: 'historical-page-2'},
+						}),
+					),
+					HttpResponse.json(
+						createQueryDecisionDefinitionsResponse({
+							items: [createDecisionDefinition({...definition, version: 1})],
+							page: {totalItems: 1001, hasMoreTotalItems: false},
+						}),
+					),
+				],
+			}),
+			mockQueryDecisionInstancesEndpoint({successResponse: EMPTY_DECISION_INSTANCES}),
+			mockGetDecisionDefinitionXmlEndpoint({successResponse: HttpResponse.text(DMN_XML)}),
+		);
+
+		const screen = await renderDecisionsPage({
+			decisionDefinitionId: definition.decisionDefinitionId,
+			decisionDefinitionVersion: '1001',
+		});
+		await expect.element(screen.getByRole('combobox', {name: 'Version'})).toMatchTextContent('1001');
+		await userEvent.click(screen.getByRole('combobox', {name: 'Version'}));
+
+		await expect.element(screen.getByRole('option', {name: '1', exact: true})).toBeVisible();
+	});
+
+	it('should stop version pagination on an empty page even when it carries a cursor', async ({worker}) => {
+		let versionRequests = 0;
+		const selectedDefinition = createDecisionDefinition({
+			name: 'Empty Version Page',
+			decisionDefinitionId: 'empty-version-page',
+			version: 1,
+		});
+		worker.use(
+			mockQueryDecisionDefinitionsEndpoint({
+				schema: z
+					.object({
+						filter: z.object({
+							decisionDefinitionId: z.literal(selectedDefinition.decisionDefinitionId),
+							version: z.never().optional(),
+						}),
+					})
+					.transform((body) => {
+						versionRequests += 1;
+						return body;
+					}),
+				successResponse: HttpResponse.json(
+					createQueryDecisionDefinitionsResponse({
+						items: [],
+						page: {totalItems: 1, hasMoreTotalItems: true, endCursor: 'stale-cursor'},
+					}),
+				),
+				failureResponse: HttpResponse.json(createQueryDecisionDefinitionsResponse({items: [selectedDefinition]})),
+			}),
+			mockQueryDecisionInstancesEndpoint({successResponse: EMPTY_DECISION_INSTANCES}),
+			mockGetDecisionDefinitionXmlEndpoint({successResponse: HttpResponse.text(DMN_XML)}),
+		);
+
+		const screen = await renderDecisionsPage({
+			decisionDefinitionId: selectedDefinition.decisionDefinitionId,
+			decisionDefinitionVersion: '1',
+		});
+		await expect.element(screen.getByRole('combobox', {name: 'Version'})).toMatchTextContent('1');
+		await expect.poll(() => screen.queryClient.isFetching()).toBe(0);
+
+		expect(versionRequests).toBe(1);
+	});
+
 	it('should ask for a tenant when a decision version exists in multiple tenants', async ({worker}) => {
 		const definitions = HttpResponse.json(
 			createQueryDecisionDefinitionsResponse({
@@ -208,6 +354,35 @@ describe('<Decisions />', () => {
 		await expect.element(screen.getByText('Decision "Invoice Approval" exists in more than one Tenant')).toBeVisible();
 	});
 
+	it('should send the evaluation date range as ISO-8601 in the instances request', async ({worker}) => {
+		worker.use(
+			mockQueryDecisionDefinitionsEndpoint({successResponse: DECISION_DEFINITIONS}),
+			mockQueryDecisionInstancesEndpoint({
+				schema: z.looseObject({
+					filter: z.looseObject({
+						evaluationDate: z.strictObject({
+							$gt: z.literal('2024-01-01T08:00:00.000Z'),
+							$lt: z.literal('2024-01-02T08:00:00.000Z'),
+						}),
+					}),
+				}),
+				successResponse: HttpResponse.json(
+					createQueryDecisionInstancesResponse({
+						items: [createDecisionInstance({decisionEvaluationInstanceKey: '123567'})],
+					}),
+				),
+				failureResponse: new HttpResponse(null, {status: 400}),
+			}),
+		);
+
+		const screen = await renderDecisionsPage({
+			evaluationDateFrom: '2024-01-01T10:00:00.000+0200',
+			evaluationDateTo: '2024-01-02T10:00:00.000+0200',
+		});
+
+		await expect.element(screen.getByTitle('View decision instance 123567')).toBeVisible();
+	});
+
 	describe('legacy bookmarks', () => {
 		it('should not query instances when a bookmarked filter has no selected states', async ({worker}) => {
 			worker.use(mockQueryDecisionDefinitionsEndpoint({successResponse: DECISION_DEFINITIONS}));
@@ -236,13 +411,13 @@ describe('<Decisions />', () => {
 				to: '/operate/decisions',
 				search: {evaluated: true, failed: true},
 			});
-			await expect.element(screen.getByTitle('View decision instance 123567')).toBeVisible();
+			await expect.element(screen.getByRole('link', {name: 'View decision instance 123567'})).toBeVisible();
 			await userEvent.click(screen.getByRole('checkbox', {name: 'Select row 123567'}), {force: true});
 			await expect.element(screen.getByRole('button', {name: 'Delete'})).toBeVisible();
 
 			screen.router.history.back();
 			await expect.element(screen.getByText('To see some results, select at least one Instance state')).toBeVisible();
-			await expect.element(screen.getByTitle('View decision instance 123567')).not.toBeInTheDocument();
+			await expect.element(screen.getByRole('link', {name: 'View decision instance 123567'})).not.toBeInTheDocument();
 			await expect.element(screen.getByRole('button', {name: 'Delete'})).not.toBeInTheDocument();
 		});
 

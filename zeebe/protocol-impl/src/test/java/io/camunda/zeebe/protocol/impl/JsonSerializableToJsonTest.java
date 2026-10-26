@@ -49,6 +49,7 @@ import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRequirementsRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentDistributionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
+import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessDefinitionRestoreRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.ResourceRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.ResourceReexportRecord;
@@ -79,6 +80,7 @@ import io.camunda.zeebe.protocol.impl.record.value.message.ProcessMessageSubscri
 import io.camunda.zeebe.protocol.impl.record.value.metrics.UsageMetricRecord;
 import io.camunda.zeebe.protocol.impl.record.value.multiinstance.MultiInstanceRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.BufferedCommandRecord;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ElementInstanceWalkRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceBusinessIdRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
@@ -92,7 +94,6 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationVariableInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.RuntimeInstructionRecord;
-import io.camunda.zeebe.protocol.impl.record.value.processinstance.SuspensionBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.resource.ResourceDeletionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.scaling.ScaleRecord;
 import io.camunda.zeebe.protocol.impl.record.value.secretreference.SecretReferenceRecord;
@@ -684,6 +685,7 @@ final class JsonSerializableToJsonTest {
                   .setExpression("=10 + 5")
                   .setResultValue(wrapString("15"))
                   .setScopeKey(1)
+                  .setStorageOrdinal(1234)
                   .setTenantId("test-tenant")
                   .setWarnings(List.of("warning1", "warning2"))
                   .setVariables(VARIABLES_MSGPACK)
@@ -696,6 +698,7 @@ final class JsonSerializableToJsonTest {
                   "expression":"=10 + 5",
                   "resultValue":49,
                   "scopeKey":1,
+                  "storageOrdinal":1234,
                   "warnings":["warning1","warning2"],
                   "variables":{
                     "foo":"bar"
@@ -1412,7 +1415,8 @@ final class JsonSerializableToJsonTest {
                   .setMessageKey(3L)
                   .setCorrelationKey(wrapString("test-key"))
                   .setBusinessId(wrapString("test-business-id"))
-                  .setVariables(VARIABLES_MSGPACK);
+                  .setVariables(VARIABLES_MSGPACK)
+                  .setStorageOrdinal(6);
             },
         """
                 {
@@ -1427,7 +1431,8 @@ final class JsonSerializableToJsonTest {
                   "variables": {
                     "foo": "bar"
                   },
-                  "tenantId": "<default>"
+                  "tenantId": "<default>",
+                  "storageOrdinal": 6
                 }
                 """
       },
@@ -1457,7 +1462,8 @@ final class JsonSerializableToJsonTest {
                   "correlationKey": "",
                   "businessId": "",
                   "variables": {},
-                  "tenantId": "<default>"
+                  "tenantId": "<default>",
+                  "storageOrdinal": 0
                 }
                 """
       },
@@ -1823,6 +1829,11 @@ final class JsonSerializableToJsonTest {
               return new VariableDocumentRecord()
                   .setUpdateSemantics(VariableDocumentUpdateSemantic.LOCAL)
                   .setVariables(new UnsafeBuffer(MsgPackConverter.convertToMsgPack(value)))
+                  .setVariablesMetadata(
+                      Map.of(
+                          "foo",
+                          new VariableMetadataRecord()
+                              .setProtectionModes(Set.of(ProtectionMode.REDACT))))
                   .setScopeKey(scopeKey);
             },
         """
@@ -1832,7 +1843,12 @@ final class JsonSerializableToJsonTest {
                     "foo": 1
                   },
                   "scopeKey": 3,
-                  "tenantId": "<default>"
+                  "tenantId": "<default>",
+                  "variablesMetadata": {
+                    "foo": {
+                      "protectionModes": ["REDACT"]
+                    }
+                  }
                 }
                 """
       },
@@ -1855,7 +1871,8 @@ final class JsonSerializableToJsonTest {
                   "updateSemantics": "PROPAGATE",
                   "variables": {},
                   "scopeKey": 3,
-                  "tenantId": "<default>"
+                  "tenantId": "<default>",
+                  "variablesMetadata": {}
                 }
                 """
       },
@@ -1891,7 +1908,13 @@ final class JsonSerializableToJsonTest {
                   .setTags(Set.of("tag1", "tag2"))
                   .setRootProcessInstanceKey(rootProcessInstanceKey)
                   .setStorageOrdinal(storageOrdinal)
-                  .setBusinessId(businessId);
+                  .setBusinessId(businessId)
+                  .setVariablesMetadata(
+                      Map.of(
+                          "foo",
+                          new VariableMetadataRecord()
+                              .setProtectionModes(Set.of(ProtectionMode.REDACT))))
+                  .setVersionTag("v1.0");
             },
         """
                 {
@@ -1914,6 +1937,12 @@ final class JsonSerializableToJsonTest {
                   "rootProcessInstanceKey": 3,
                   "storageOrdinal": 6,
                   "businessId": "business-id-456",
+                  "versionTag": "v1.0",
+                  "variablesMetadata": {
+                    "foo": {
+                      "protectionModes": ["REDACT"]
+                    }
+                  },
                   "elementInstanceKey": -1
                 }
                 """
@@ -1941,6 +1970,8 @@ final class JsonSerializableToJsonTest {
                   "rootProcessInstanceKey": -1,
                   "storageOrdinal": 0,
                   "businessId": "",
+                  "versionTag": "",
+                  "variablesMetadata": {},
                   "elementInstanceKey": -1
                 }
                 """
@@ -3061,37 +3092,40 @@ final class JsonSerializableToJsonTest {
       },
 
       /////////////////////////////////////////////////////////////////////////////////////////////
-      //////////////////////////////// SuspensionBatchRecord
+      //////////////////////////////// ElementInstanceWalkRecord
       /////////////////////////////////////////////////////////////////////////////////////////////
       {
-        "SuspensionBatchRecord",
+        "ElementInstanceWalkRecord",
         (Supplier<UnifiedRecordValue>)
             () ->
-                new SuspensionBatchRecord()
+                new ElementInstanceWalkRecord()
                     .setProcessInstanceKey(123L)
                     .setProcessDefinitionKey(234L)
-                    .setIndexKey(456L)
+                    .setElementInstanceKey(456L)
                     .setParentKey(345L)
+                    .setIndex(567L)
                     .setStorageOrdinal(1001),
         """
                 {
                   "processInstanceKey": 123,
                   "processDefinitionKey": 234,
-                  "indexKey": 456,
+                  "elementInstanceKey": 456,
                   "parentKey": 345,
+                  "index": 567,
                   "storageOrdinal": 1001
                 }
                 """
       },
       {
-        "Empty SuspensionBatchRecord",
-        (Supplier<UnifiedRecordValue>) SuspensionBatchRecord::new,
+        "Empty ElementInstanceWalkRecord",
+        (Supplier<UnifiedRecordValue>) ElementInstanceWalkRecord::new,
         """
                 {
                   "processInstanceKey": -1,
                   "processDefinitionKey": -1,
-                  "indexKey": -1,
+                  "elementInstanceKey": -1,
                   "parentKey": -1,
+                  "index": -1,
                   "storageOrdinal": 0
                 }
                 """
@@ -3432,6 +3466,7 @@ final class JsonSerializableToJsonTest {
                     .setCompensationHandlerInstanceKey(100L)
                     .setCompensableActivityScopeKey(789L)
                     .setCompensableActivityInstanceKey(123L)
+                    .setStorageOrdinal(1234)
                     .setVariables(VARIABLES_MSGPACK),
         """
                 {
@@ -3445,6 +3480,7 @@ final class JsonSerializableToJsonTest {
                   "compensationHandlerInstanceKey": 100,
                   "compensableActivityScopeKey": 789,
                   "compensableActivityInstanceKey": 123,
+                  "storageOrdinal": 1234,
                   "variables": {
                     "foo": "bar"
                   }
@@ -3472,6 +3508,7 @@ final class JsonSerializableToJsonTest {
                   "compensationHandlerInstanceKey": -1,
                   "compensableActivityScopeKey": -1,
                   "compensableActivityInstanceKey": -1,
+                  "storageOrdinal": 0,
                   "variables": {}
                 }
                 """
@@ -5175,6 +5212,37 @@ final class JsonSerializableToJsonTest {
         {
           "resourceKey": -1,
           "tenantId": ""
+        }
+        """
+      },
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      //////////////////////////////// ProcessDefinitionRestoreRecord
+      // ///////////////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      {
+        "ProcessDefinitionRestoreRecord",
+        (Supplier<ProcessDefinitionRestoreRecord>)
+            () ->
+                new ProcessDefinitionRestoreRecord()
+                    .setProcessDefinitionKey(123L)
+                    .setTenantId("tenant-1")
+                    .setRestoredCount(7),
+        """
+        {
+          "processDefinitionKey": 123,
+          "tenantId": "tenant-1",
+          "restoredCount": 7
+        }
+        """
+      },
+      {
+        "Empty ProcessDefinitionRestoreRecord",
+        (Supplier<ProcessDefinitionRestoreRecord>) ProcessDefinitionRestoreRecord::new,
+        """
+        {
+          "processDefinitionKey": -1,
+          "tenantId": "",
+          "restoredCount": 0
         }
         """
       },

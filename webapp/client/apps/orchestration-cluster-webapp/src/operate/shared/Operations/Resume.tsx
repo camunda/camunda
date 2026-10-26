@@ -14,16 +14,17 @@ type Props = {
 	processInstanceKey: ProcessInstance['processInstanceKey'];
 	onExecute: () => void;
 	disabled?: boolean;
+	title?: string;
 };
 
-const Resume: React.FC<Props> = ({processInstanceKey, onExecute, disabled = false}) => {
+const Resume: React.FC<Props> = ({onExecute, disabled = false, title}) => {
 	const {t} = useTranslation();
 
 	return (
 		<OperationItem
 			type="RESUME_PROCESS_INSTANCE"
 			onClick={onExecute}
-			title={t('operate.shared.operations.resumeTitle', {processInstanceKey})}
+			title={title ?? t('operate.shared.operations.resumeInstance')}
 			disabled={disabled}
 			size="sm"
 		/>

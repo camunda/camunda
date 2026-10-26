@@ -21,11 +21,11 @@
 
   <name>Camunda QA Acceptance Tests</name>
   <properties>
-    <version.maven-surefire-junit5-tree-reporter>1.5.1</version.maven-surefire-junit5-tree-reporter>
+    <version.maven-surefire-junit5-tree-reporter>2.1.0</version.maven-surefire-junit5-tree-reporter>
     <identity-packages>io/camunda/it/auth/*,io/camunda/it/identity/*,io/camunda/it/csrf/*,io/camunda/it/logout/*,io/camunda/it/oidc/*</identity-packages>
     <!-- Timeout for forked processes in seconds. Sized for the default CI job budget (20 minutes);
      long-running callers must raise this via -D failsafe.timeout=<seconds> to match their own job timeout. -->
-    <failsafe.timeout>960</failsafe.timeout>
+    <failsafe.timeout>1020</failsafe.timeout>
   </properties>
 
   <dependencies>
@@ -582,9 +582,16 @@
     </dependency>
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>zeebe-cluster-config</artifactId>
+      <artifactId>zeebe-cluster-config-api</artifactId>
       <scope>test</scope>
     </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-cluster-config-openapi</artifactId>
+      <scope>test</scope>
+    </dependency>
+
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-broker-client</artifactId>
@@ -813,6 +820,7 @@
             <!-- combine.self="override" replaces the whole base <configuration>, including
                  forkedProcessTimeoutInSeconds; repeat it here so nightly forks stay bounded too. -->
             <configuration combine.self="override">
+              <argLine>${jvm.module.opens} ${jvm.test.extra.args}</argLine>
               <groups>dl-nightly</groups>
               <excludedGroups/>
               <forkedProcessTimeoutInSeconds>${failsafe.timeout}</forkedProcessTimeoutInSeconds>

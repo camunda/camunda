@@ -15,6 +15,7 @@ import io.camunda.optimize.service.db.es.schema.ElasticSearchMetadataService;
 import io.camunda.optimize.service.db.es.schema.index.MetadataIndexES;
 import io.camunda.optimize.service.db.os.schema.OpenSearchMetadataService;
 import io.camunda.optimize.service.db.schema.index.MetadataIndex;
+import io.camunda.optimize.service.exceptions.OptimizeMetadataReadException;
 import io.camunda.optimize.service.metadata.Version;
 import io.camunda.optimize.upgrade.main.UpgradeProcedure;
 import io.camunda.optimize.upgrade.plan.UpgradePlan;
@@ -81,9 +82,8 @@ public class UpdateMissingMetadataIT extends AbstractUpgradeIT {
 
     // when
     assertThatThrownBy(() -> upgradeProcedure.performUpgrade(upgradePlan))
+        .isInstanceOf(OptimizeMetadataReadException.class)
         .hasMessageContaining("Failed retrieving the Optimize metadata document from database!");
-
-    logCapturer.assertContains("Failed retrieving the Optimize metadata document from database!");
   }
 
   private static UpgradePlan createPreviousVersionMajorMinorUpgradePlan() {

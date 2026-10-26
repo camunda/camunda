@@ -40,11 +40,31 @@ import type {
 	User,
 	QueryUsersRequestBody,
 	QueryUsersResponseBody,
+	QueryUsersByGroupRequestBody,
+	QueryUsersByGroupResponseBody,
+	QueryClientsByGroupRequestBody,
+	QueryClientsByGroupResponseBody,
+	QueryRolesByGroupRequestBody,
+	QueryRolesByGroupResponseBody,
+	QueryMappingRulesByGroupRequestBody,
+	QueryMappingRulesByGroupResponseBody,
+	Group,
 	ClusterVariable,
 	QueryClusterVariablesRequestBody,
 	QueryClusterVariablesResponseBody,
+	Tenant,
 	QueryTenantsRequestBody,
 	QueryTenantsResponseBody,
+	QueryUsersByTenantRequestBody,
+	QueryUsersByTenantResponseBody,
+	QueryGroupsByTenantRequestBody,
+	QueryGroupsByTenantResponseBody,
+	QueryRolesByTenantRequestBody,
+	QueryRolesByTenantResponseBody,
+	QueryClientsByTenantRequestBody,
+	QueryClientsByTenantResponseBody,
+	QueryMappingRulesByTenantRequestBody,
+	QueryMappingRulesByTenantResponseBody,
 	QueryGlobalTaskListenersRequestBody,
 	QueryGlobalTaskListenersResponseBody,
 	GlobalTaskListener,
@@ -53,6 +73,15 @@ import type {
 	QueryAuthorizationsResponseBody,
 	QueryRolesRequestBody,
 	QueryRolesResponseBody,
+	Role,
+	QueryUsersByRoleRequestBody,
+	QueryUsersByRoleResponseBody,
+	QueryGroupsByRoleRequestBody,
+	QueryGroupsByRoleResponseBody,
+	QueryMappingRulesByRoleRequestBody,
+	QueryMappingRulesByRoleResponseBody,
+	QueryClientsByRoleRequestBody,
+	QueryClientsByRoleResponseBody,
 	QueryGroupsRequestBody,
 	QueryGroupsResponseBody,
 } from '@camunda/camunda-api-zod-schemas/8.11';
@@ -101,10 +130,32 @@ const queryKeys = {
 	queryMappingRules: (body: QueryMappingRulesRequestBody) => ['queryMappingRules', body] as const,
 	users: (body: QueryUsersRequestBody) => ['users', body] as const,
 	user: (username: string) => ['user', username] as const,
+	groups: (body: QueryGroupsRequestBody) => ['groups', body] as const,
+	group: (groupId: string) => ['group', groupId] as const,
+	roles: (body: QueryRolesRequestBody) => ['roles', body] as const,
+	groupUsers: (groupId: string, body: QueryUsersByGroupRequestBody) =>
+		['groupMembers', groupId, 'users', body] as const,
+	groupClients: (groupId: string, body: QueryClientsByGroupRequestBody) =>
+		['groupMembers', groupId, 'clients', body] as const,
+	groupRoles: (groupId: string, body: QueryRolesByGroupRequestBody) =>
+		['groupMembers', groupId, 'roles', body] as const,
+	groupMappingRules: (groupId: string, body: QueryMappingRulesByGroupRequestBody) =>
+		['groupMembers', groupId, 'mappingRules', body] as const,
 	queryClusterVariables: (body: QueryClusterVariablesRequestBody) => ['queryClusterVariables', body] as const,
 	getClusterVariable: (variable: Pick<ClusterVariable, 'name' | 'scope' | 'tenantId'>) =>
 		['getClusterVariable', variable] as const,
 	queryTenants: (body: QueryTenantsRequestBody) => ['queryTenants', body] as const,
+	getTenant: (tenantId: string) => ['getTenant', tenantId] as const,
+	queryUsersByTenant: (tenantId: string, body: QueryUsersByTenantRequestBody) =>
+		['queryUsersByTenant', tenantId, body] as const,
+	queryGroupsByTenant: (tenantId: string, body: QueryGroupsByTenantRequestBody) =>
+		['queryGroupsByTenant', tenantId, body] as const,
+	queryRolesByTenant: (tenantId: string, body: QueryRolesByTenantRequestBody) =>
+		['queryRolesByTenant', tenantId, body] as const,
+	queryClientsByTenant: (tenantId: string, body: QueryClientsByTenantRequestBody) =>
+		['queryClientsByTenant', tenantId, body] as const,
+	queryMappingRulesByTenant: (tenantId: string, body: QueryMappingRulesByTenantRequestBody) =>
+		['queryMappingRulesByTenant', tenantId, body] as const,
 	searchGlobalTaskListeners: (body: QueryGlobalTaskListenersRequestBody) =>
 		['searchGlobalTaskListeners', body] as const,
 	globalTaskListener: (id: string) => ['globalTaskListener', id] as const,
@@ -112,6 +163,13 @@ const queryKeys = {
 	getAuthorization: (authorization: Pick<Authorization, 'authorizationKey'>) =>
 		['getAuthorization', authorization] as const,
 	queryRoles: (body: QueryRolesRequestBody) => ['queryRoles', body] as const,
+	role: (roleId: string) => ['role', roleId] as const,
+	roleUsers: (roleId: string, body: QueryUsersByRoleRequestBody) => ['roleMembers', roleId, 'users', body] as const,
+	roleGroups: (roleId: string, body: QueryGroupsByRoleRequestBody) => ['roleMembers', roleId, 'groups', body] as const,
+	roleMappingRules: (roleId: string, body: QueryMappingRulesByRoleRequestBody) =>
+		['roleMembers', roleId, 'mappingRules', body] as const,
+	roleClients: (roleId: string, body: QueryClientsByRoleRequestBody) =>
+		['roleMembers', roleId, 'clients', body] as const,
 	queryGroups: (body: QueryGroupsRequestBody) => ['queryGroups', body] as const,
 	adminClientConfig: () => ['adminClientConfig'] as const,
 };
@@ -496,6 +554,66 @@ const queries = {
 			},
 		}),
 
+	getGroup: (groupId: string) =>
+		queryOptions({
+			queryKey: queryKeys.group(groupId),
+			queryFn: async (): Promise<Group> => {
+				const {response, error} = await request(endpoints.getGroup({groupId}));
+				if (error !== null) {
+					throw mapQueryError(error);
+				}
+				return response.json();
+			},
+		}),
+
+	queryUsersByGroup: (groupId: string, body: QueryUsersByGroupRequestBody) =>
+		queryOptions({
+			queryKey: queryKeys.groupUsers(groupId, body),
+			queryFn: async (): Promise<QueryUsersByGroupResponseBody> => {
+				const {response, error} = await request(endpoints.queryUsersByGroup({groupId, ...body}));
+				if (error !== null) {
+					throw mapQueryError(error);
+				}
+				return response.json();
+			},
+		}),
+
+	queryClientsByGroup: (groupId: string, body: QueryClientsByGroupRequestBody) =>
+		queryOptions({
+			queryKey: queryKeys.groupClients(groupId, body),
+			queryFn: async (): Promise<QueryClientsByGroupResponseBody> => {
+				const {response, error} = await request(endpoints.queryClientsByGroup({groupId, ...body}));
+				if (error !== null) {
+					throw mapQueryError(error);
+				}
+				return response.json();
+			},
+		}),
+
+	queryRolesByGroup: (groupId: string, body: QueryRolesByGroupRequestBody) =>
+		queryOptions({
+			queryKey: queryKeys.groupRoles(groupId, body),
+			queryFn: async (): Promise<QueryRolesByGroupResponseBody> => {
+				const {response, error} = await request(endpoints.queryRolesByGroup({groupId, ...body}));
+				if (error !== null) {
+					throw mapQueryError(error);
+				}
+				return response.json();
+			},
+		}),
+
+	queryMappingRulesByGroup: (groupId: string, body: QueryMappingRulesByGroupRequestBody) =>
+		queryOptions({
+			queryKey: queryKeys.groupMappingRules(groupId, body),
+			queryFn: async (): Promise<QueryMappingRulesByGroupResponseBody> => {
+				const {response, error} = await request(endpoints.queryMappingRulesByGroup({groupId, ...body}));
+				if (error !== null) {
+					throw mapQueryError(error);
+				}
+				return response.json();
+			},
+		}),
+
 	queryAuditLogs: (body: QueryAuditLogsRequestBody) =>
 		queryOptions({
 			queryKey: queryKeys.queryAuditLogs(body),
@@ -566,6 +684,78 @@ const queries = {
 				return response.json();
 			},
 		}),
+	getTenant: (tenantId: string) =>
+		queryOptions({
+			queryKey: queryKeys.getTenant(tenantId),
+			queryFn: async (): Promise<Tenant> => {
+				const {response, error} = await request(endpoints.getTenant({tenantId}));
+				if (error !== null) {
+					throw mapQueryError(error);
+				}
+				return response.json();
+			},
+		}),
+
+	queryUsersByTenant: (tenantId: string, body: QueryUsersByTenantRequestBody) =>
+		queryOptions({
+			queryKey: queryKeys.queryUsersByTenant(tenantId, body),
+			queryFn: async (): Promise<QueryUsersByTenantResponseBody> => {
+				const {response, error} = await request(endpoints.queryUsersByTenant({tenantId, ...body}));
+				if (error !== null) {
+					throw mapQueryError(error);
+				}
+				return response.json();
+			},
+		}),
+
+	queryGroupsByTenant: (tenantId: string, body: QueryGroupsByTenantRequestBody) =>
+		queryOptions({
+			queryKey: queryKeys.queryGroupsByTenant(tenantId, body),
+			queryFn: async (): Promise<QueryGroupsByTenantResponseBody> => {
+				const {response, error} = await request(endpoints.queryGroupsByTenant({tenantId, ...body}));
+				if (error !== null) {
+					throw mapQueryError(error);
+				}
+				return response.json();
+			},
+		}),
+
+	queryRolesByTenant: (tenantId: string, body: QueryRolesByTenantRequestBody) =>
+		queryOptions({
+			queryKey: queryKeys.queryRolesByTenant(tenantId, body),
+			queryFn: async (): Promise<QueryRolesByTenantResponseBody> => {
+				const {response, error} = await request(endpoints.queryRolesByTenant({tenantId, ...body}));
+				if (error !== null) {
+					throw mapQueryError(error);
+				}
+				return response.json();
+			},
+		}),
+
+	queryClientsByTenant: (tenantId: string, body: QueryClientsByTenantRequestBody) =>
+		queryOptions({
+			queryKey: queryKeys.queryClientsByTenant(tenantId, body),
+			queryFn: async (): Promise<QueryClientsByTenantResponseBody> => {
+				const {response, error} = await request(endpoints.queryClientsByTenant({tenantId, ...body}));
+				if (error !== null) {
+					throw mapQueryError(error);
+				}
+				return response.json();
+			},
+		}),
+
+	queryMappingRulesByTenant: (tenantId: string, body: QueryMappingRulesByTenantRequestBody) =>
+		queryOptions({
+			queryKey: queryKeys.queryMappingRulesByTenant(tenantId, body),
+			queryFn: async (): Promise<QueryMappingRulesByTenantResponseBody> => {
+				const {response, error} = await request(endpoints.queryMappingRulesByTenant({tenantId, ...body}));
+				if (error !== null) {
+					throw mapQueryError(error);
+				}
+				return response.json();
+			},
+		}),
+
 	getGlobalTaskListener: (id: string) =>
 		queryOptions({
 			queryKey: queryKeys.globalTaskListener(id),
@@ -619,6 +809,66 @@ const queries = {
 			queryKey: queryKeys.queryGroups(body),
 			queryFn: async (): Promise<QueryGroupsResponseBody> => {
 				const {response, error} = await request(endpoints.queryGroups(body));
+				if (error !== null) {
+					throw mapQueryError(error);
+				}
+				return response.json();
+			},
+		}),
+
+	getRole: (roleId: string) =>
+		queryOptions({
+			queryKey: queryKeys.role(roleId),
+			queryFn: async (): Promise<Role> => {
+				const {response, error} = await request(endpoints.getRole({roleId}));
+				if (error !== null) {
+					throw mapQueryError(error);
+				}
+				return response.json();
+			},
+		}),
+
+	queryUsersByRole: (roleId: string, body: QueryUsersByRoleRequestBody) =>
+		queryOptions({
+			queryKey: queryKeys.roleUsers(roleId, body),
+			queryFn: async (): Promise<QueryUsersByRoleResponseBody> => {
+				const {response, error} = await request(endpoints.queryUsersByRole({roleId, ...body}));
+				if (error !== null) {
+					throw mapQueryError(error);
+				}
+				return response.json();
+			},
+		}),
+
+	queryGroupsByRole: (roleId: string, body: QueryGroupsByRoleRequestBody) =>
+		queryOptions({
+			queryKey: queryKeys.roleGroups(roleId, body),
+			queryFn: async (): Promise<QueryGroupsByRoleResponseBody> => {
+				const {response, error} = await request(endpoints.queryGroupsByRole({roleId, ...body}));
+				if (error !== null) {
+					throw mapQueryError(error);
+				}
+				return response.json();
+			},
+		}),
+
+	queryMappingRulesByRole: (roleId: string, body: QueryMappingRulesByRoleRequestBody) =>
+		queryOptions({
+			queryKey: queryKeys.roleMappingRules(roleId, body),
+			queryFn: async (): Promise<QueryMappingRulesByRoleResponseBody> => {
+				const {response, error} = await request(endpoints.queryMappingRulesByRole({roleId, ...body}));
+				if (error !== null) {
+					throw mapQueryError(error);
+				}
+				return response.json();
+			},
+		}),
+
+	queryClientsByRole: (roleId: string, body: QueryClientsByRoleRequestBody) =>
+		queryOptions({
+			queryKey: queryKeys.roleClients(roleId, body),
+			queryFn: async (): Promise<QueryClientsByRoleResponseBody> => {
+				const {response, error} = await request(endpoints.queryClientsByRole({roleId, ...body}));
 				if (error !== null) {
 					throw mapQueryError(error);
 				}

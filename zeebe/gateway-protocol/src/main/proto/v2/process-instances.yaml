@@ -16,7 +16,7 @@ paths:
       description: |
         Creates and starts an instance of the specified process.
         The process definition to use to create the instance can be specified either using its unique key
-        (as returned by Deploy resources), or using the BPMN process id and a version.
+        (as returned by Deploy resources), or using the BPMN process id and either a version or a version tag.
         If only the process definition id is given, the latest ACTIVE version is used.
         If no ACTIVE version exists, the request is rejected as not found.
 
@@ -39,6 +39,12 @@ paths:
                 value:
                   processDefinitionId: my-business-process
                   processDefinitionVersion: 1
+                  variables: {}
+              By process definition id and version tag:
+                summary: Create a process instance by processDefinitionId and processDefinitionVersionTag.
+                value:
+                  processDefinitionId: my-business-process
+                  processDefinitionVersionTag: release-2026-10
                   variables: {}
       responses:
         "200":
@@ -450,12 +456,10 @@ paths:
       summary: Cancel process instances (batch)
       description: |
         Cancels multiple active or suspended process instances.
-        Only ACTIVE and SUSPENDED root instances can be cancelled. A state filter narrows the batch
-        to the given states. Requesting any state other than ACTIVE or SUSPENDED through the `$eq` or
-        `$in` operators is rejected. Other state operators (`$neq`, `$exists`, `$like`) are applied as
-        given, and the batch remains limited to ACTIVE and SUSPENDED instances. Without a state filter,
-        both ACTIVE and SUSPENDED instances are selected. Any given filter for parentProcessInstanceKey
-        is ignored and overridden during this batch operation.
+        Only ACTIVE and SUSPENDED root instances are cancelled; child instances are cancelled
+        together with their root instance. The given filter only narrows the batch, so a filter on
+        parentProcessInstanceKey matches no instances. Other `state` operators (`$neq`, `$notIn`,
+        `$exists`, `$like`) are applied as given and are not validated.
         This is done asynchronously, the progress can be tracked using the batchOperationKey from the response and the batch operation status endpoint (/batch-operations/{batchOperationKey}).
       requestBody:
         required: true
@@ -472,7 +476,9 @@ paths:
                 $ref: 'batch-operations.yaml#/components/schemas/BatchOperationCreatedResult'
         "400":
           description: >
-            The process instance batch operation failed.
+            The process instance batch operation failed, for example because the filter requests a
+            top-level `state` other than ACTIVE or SUSPENDED through `$eq` or `$in`. States inside
+            `$or` branches are not validated.
             More details are provided in the response body.
           content:
             application/problem+json:
@@ -503,8 +509,7 @@ paths:
       summary: Resolve related incidents (batch)
       description: |
         Resolves multiple instances of process instances.
-        Since only process instances with ACTIVE state can have unresolved incidents, any given
-        filters for state are ignored and overridden during this batch operation.
+        Only incidents of ACTIVE process instances are resolved. The given filter only narrows the batch.
         This is done asynchronously, the progress can be tracked using the batchOperationKey from the response and the batch operation status endpoint (/batch-operations/{batchOperationKey}).
       requestBody:
         required: true
@@ -521,7 +526,9 @@ paths:
                 $ref: 'batch-operations.yaml#/components/schemas/BatchOperationCreatedResult'
         "400":
           description: >
-            The process instance batch operation failed.
+            The process instance batch operation failed, for example because the filter requests a
+            top-level `state` other than ACTIVE through `$eq` or `$in`. States inside `$or` branches
+            are not validated.
             More details are provided in the response body.
           content:
             application/problem+json:
@@ -552,8 +559,7 @@ paths:
       summary: Migrate process instances (batch)
       description: |
         Migrate multiple process instances.
-        Since only process instances with ACTIVE state can be migrated, any given
-        filters for state are ignored and overridden during this batch operation.
+        Only ACTIVE process instances are migrated. The given filter only narrows the batch.
         This is done asynchronously, the progress can be tracked using the batchOperationKey from the response and the batch operation status endpoint (/batch-operations/{batchOperationKey}).
       requestBody:
         required: true
@@ -570,7 +576,9 @@ paths:
                 $ref: 'batch-operations.yaml#/components/schemas/BatchOperationCreatedResult'
         "400":
           description: >
-            The process instance batch operation failed.
+            The process instance batch operation failed, for example because the filter requests a
+            top-level `state` other than ACTIVE through `$eq` or `$in`. States inside `$or` branches
+            are not validated.
             More details are provided in the response body.
           content:
             application/problem+json:
@@ -601,8 +609,7 @@ paths:
       summary: Modify process instances (batch)
       description: |
         Modify multiple process instances.
-        Since only process instances with ACTIVE state can be modified, any given
-        filters for state are ignored and overridden during this batch operation.
+        Only ACTIVE process instances are modified. The given filter only narrows the batch.
         In contrast to single modification operation, it is not possible to add variable instructions or modify by element key.
         It is only possible to use the element id of the source and target.
         This is done asynchronously, the progress can be tracked using the batchOperationKey from the response and the batch operation status endpoint (/batch-operations/{batchOperationKey}).
@@ -621,7 +628,9 @@ paths:
                 $ref: 'batch-operations.yaml#/components/schemas/BatchOperationCreatedResult'
         "400":
           description: >
-            The process instance batch operation failed.
+            The process instance batch operation failed, for example because the filter requests a
+            top-level `state` other than ACTIVE through `$eq` or `$in`. States inside `$or` branches
+            are not validated.
             More details are provided in the response body.
           content:
             application/problem+json:
@@ -652,10 +661,10 @@ paths:
       summary: Suspend process instances (batch)
       description: |
         Suspends multiple running process instances.
-        Any given filter for state or parentProcessInstanceKey is ignored and overridden, as only
-        ACTIVE process instances can be suspended and suspension does not cascade between parent
-        and child instances, so child instances are suspended independently of their parent or
-        root instance.
+        Only ACTIVE process instances are suspended. The given filter only narrows the batch.
+        Other `state` operators (`$neq`, `$notIn`, `$exists`, `$like`) are applied as given and are
+        not validated. Suspension does not cascade, so child instances are suspended independently of their parent
+        or root instance.
         This is done asynchronously, the progress can be tracked using the batchOperationKey from the response and the batch operation status endpoint (/batch-operations/{batchOperationKey}).
       requestBody:
         required: true
@@ -672,7 +681,9 @@ paths:
                 $ref: 'batch-operations.yaml#/components/schemas/BatchOperationCreatedResult'
         "400":
           description: >
-            The process instance batch operation failed.
+            The process instance batch operation failed, for example because the filter requests a
+            top-level `state` other than ACTIVE through `$eq` or `$in`. States inside `$or` branches
+            are not validated.
             More details are provided in the response body.
           content:
             application/problem+json:
@@ -703,10 +714,10 @@ paths:
       summary: Resume process instances (batch)
       description: |
         Resumes multiple suspended process instances.
-        Any given filter for state or parentProcessInstanceKey is ignored and overridden, as only
-        SUSPENDED process instances can be resumed and resumption does not cascade between parent
-        and child instances, so child instances are resumed independently of their parent or root
-        instance.
+        Only SUSPENDED process instances are resumed. The given filter only narrows the batch.
+        Other `state` operators (`$neq`, `$notIn`, `$exists`, `$like`) are applied as given and are
+        not validated. Resumption does not cascade, so child instances are resumed independently of their parent
+        or root instance.
         This is done asynchronously, the progress can be tracked using the batchOperationKey from the response and the batch operation status endpoint (/batch-operations/{batchOperationKey}).
       requestBody:
         required: true
@@ -723,7 +734,9 @@ paths:
                 $ref: 'batch-operations.yaml#/components/schemas/BatchOperationCreatedResult'
         "400":
           description: >
-            The process instance batch operation failed.
+            The process instance batch operation failed, for example because the filter requests a
+            top-level `state` other than SUSPENDED through `$eq` or `$in`. States inside `$or`
+            branches are not validated.
             More details are provided in the response body.
           content:
             application/problem+json:
@@ -1175,29 +1188,16 @@ components:
       x-polymorphic-schema: true
       description: |
         Instructions for creating a process instance. The process definition can be specified
-        either by id or by key.
+        either by id, by id and version tag, or by key.
       oneOf:
         - $ref: '#/components/schemas/ProcessInstanceCreationInstructionByKey'
         - $ref: '#/components/schemas/ProcessInstanceCreationInstructionById'
+        - $ref: '#/components/schemas/ProcessInstanceCreationInstructionByVersionTag'
 
-    ProcessInstanceCreationInstructionById:
+    ProcessInstanceCreationInstructionBase:
       type: object
-      title: Process creation by id
-      required:
-        - processDefinitionId
-      additionalProperties: false
+      description: Fields shared by all process instance creation instructions.
       properties:
-        processDefinitionId:
-          description: |
-            The BPMN process id of the process definition to start an instance of.
-          allOf:
-            - $ref: 'identifiers.yaml#/components/schemas/ProcessDefinitionId'
-        processDefinitionVersion:
-          description: |
-            The version of the process. If omitted, the latest active version is used.
-          type: integer
-          format: int32
-          default: -1
         variables:
           description: |
             JSON object that will instantiate the variables for the root variable scope
@@ -1266,12 +1266,69 @@ components:
         - propertyName: businessId
           addedInVersion: "8.9"
 
+    ProcessInstanceCreationInstructionById:
+      type: object
+      title: Process creation by id
+      required:
+        - processDefinitionId
+      allOf:
+        - $ref: '#/components/schemas/ProcessInstanceCreationInstructionBase'
+      not:
+        required:
+          - processDefinitionVersionTag
+      properties:
+        processDefinitionId:
+          description: |
+            The BPMN process id of the process definition to start an instance of.
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/ProcessDefinitionId'
+        processDefinitionVersion:
+          description: |
+            The version of the process. If omitted, the latest active version is used.
+          type: integer
+          format: int32
+          default: -1
+
+    ProcessInstanceCreationInstructionByVersionTag:
+      type: object
+      title: Process creation by version tag
+      required:
+        - processDefinitionId
+        - processDefinitionVersionTag
+      allOf:
+        - $ref: '#/components/schemas/ProcessInstanceCreationInstructionBase'
+      not:
+        anyOf:
+          - required:
+              - processDefinitionVersion
+          - required:
+              - processDefinitionKey
+      properties:
+        processDefinitionId:
+          description: |
+            The BPMN process id of the process definition to start an instance of.
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/ProcessDefinitionId'
+        processDefinitionVersionTag:
+          description: |
+            The version tag of the process definition to start an instance of.
+            If several deployed versions carry the same tag, the most recently deployed one is used.
+          type: string
+          minLength: 1
+      x-properties-added-in-version:
+        - propertyName: processDefinitionVersionTag
+          addedInVersion: "8.11"
+
     ProcessInstanceCreationInstructionByKey:
       type: object
       title: Process creation by key
       required:
         - processDefinitionKey
-      additionalProperties: false
+      allOf:
+        - $ref: '#/components/schemas/ProcessInstanceCreationInstructionBase'
+      not:
+        required:
+          - processDefinitionVersionTag
       properties:
         processDefinitionKey:
           allOf:
@@ -1286,73 +1343,6 @@ components:
           type: integer
           format: int32
           default: -1
-        variables:
-          description: |
-            Set of variables as JSON object to instantiate in the root variable scope of the process
-            instance. Can include nested complex objects.
-          type: object
-          additionalProperties: true
-        startInstructions:
-          description: |
-            List of start instructions. By default, the process instance will start at
-            the start event. If provided, the process instance will apply start instructions
-            after it has been created.
-          type: array
-          items:
-            $ref: '#/components/schemas/ProcessInstanceCreationStartInstruction'
-        runtimeInstructions:
-          description: |
-            Runtime instructions (alpha). List of instructions that affect the runtime behavior of
-            the process instance. Refer to specific instruction types for more details.
-
-            This parameter is an alpha feature and may be subject to change
-            in future releases.
-          type: array
-          items:
-            $ref: '#/components/schemas/ProcessInstanceCreationRuntimeInstruction'
-        tenantId:
-          description: |
-            The tenant id of the process definition.
-            If multi-tenancy is enabled, provide the tenant id of the process definition to start a
-            process instance of. If multi-tenancy is disabled, don't provide this parameter.
-          allOf:
-            - $ref: 'identifiers.yaml#/components/schemas/TenantId'
-        operationReference:
-          $ref: 'keys.yaml#/components/schemas/OperationReference'
-        awaitCompletion:
-          description: |
-            Wait for the process instance to complete. If the process instance does not complete
-            within the request timeout limit, a 504 response status will be returned. The process
-            instance will continue to run in the background regardless of the timeout. Disabled by
-            default.
-          type: boolean
-          default: false
-        requestTimeout:
-          description: |
-            Timeout (in ms) the request waits for the process to complete. By default or
-            when set to 0, the generic request timeout configured in the cluster is applied.
-          type: integer
-          format: int64
-          default: 0
-        fetchVariables:
-          description: |
-            List of variables by name to be included in the response when awaitCompletion is set to true.
-            If empty, all visible variables in the root scope will be returned.
-          type: array
-          example: []
-          items:
-            type: string
-        tags:
-          $ref: 'identifiers.yaml#/components/schemas/TagSet'
-        businessId:
-          $ref: 'identifiers.yaml#/components/schemas/BusinessId'
-      x-properties-added-in-version:
-        - propertyName: runtimeInstructions
-          addedInVersion: "8.8"
-        - propertyName: tags
-          addedInVersion: "8.8"
-        - propertyName: businessId
-          addedInVersion: "8.9"
 
     ProcessInstanceCreationStartInstruction:
       type: object
@@ -1993,11 +1983,17 @@ components:
         processDefinitionKey:
           allOf:
             - $ref: 'keys.yaml#/components/schemas/ProcessDefinitionKey'
-          description: The process definition key.
+          description: |
+            The process definition key. This field is not present for sequence flows imported
+            by Operate 8.1 or earlier.
+          nullable: true
         processDefinitionId:
           allOf:
             - $ref: 'identifiers.yaml#/components/schemas/ProcessDefinitionId'
-          description: The process definition id.
+          description: |
+            The process definition id. This field is not present for sequence flows imported by
+            Operate 8.1 or earlier.
+          nullable: true
         elementId:
           allOf:
             - $ref: 'identifiers.yaml#/components/schemas/ElementId'

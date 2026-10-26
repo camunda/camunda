@@ -36,6 +36,7 @@ type MoveTokenModification = TokenModificationBase & {
 	scopeIds: string[];
 	parentScopeIds: ScopeIdsByElement;
 	ancestorScopeType?: AncestorScopeType;
+	ancestorElement?: {instanceKey: string; elementId: string};
 };
 
 type ElementModificationPayload = AddTokenModification | CancelTokenModification | MoveTokenModification;
@@ -66,12 +67,14 @@ type ModificationState = {
 	sourceElementIdForMoveOperation: string | null;
 	sourceElementInstanceKeyForMoveOperation: string | null;
 	sourceElementIdForAddOperation: string | null;
+	applyingRequestId: string | null;
 };
 
 type ModificationAction =
 	| {type: 'enableModificationMode'}
 	| {type: 'disableModificationMode'}
-	| {type: 'startApplyingModifications'}
+	| {type: 'startApplyingModifications'; requestId: string}
+	| {type: 'finishApplyingModifications'; requestId: string}
 	| {type: 'reset'}
 	| {type: 'startAddingToken'; elementId: string}
 	| {type: 'finishAddingToken'; modification?: AddTokenModification}
@@ -94,6 +97,7 @@ const initialModificationState: ModificationState = {
 	sourceElementIdForMoveOperation: null,
 	sourceElementInstanceKeyForMoveOperation: null,
 	sourceElementIdForAddOperation: null,
+	applyingRequestId: null,
 };
 
 function matchesElementModification({type, payload}: Modification, target: ElementModificationPayload) {
@@ -119,7 +123,11 @@ function modificationReducer(state: ModificationState, action: ModificationActio
 		case 'disableModificationMode':
 			return {...state, status: 'disabled'};
 		case 'startApplyingModifications':
-			return {...state, status: 'applying-modifications'};
+			return {...initialModificationState, status: 'applying-modifications', applyingRequestId: action.requestId};
+		case 'finishApplyingModifications':
+			return state.status === 'applying-modifications' && state.applyingRequestId === action.requestId
+				? initialModificationState
+				: state;
 		case 'reset':
 			return initialModificationState;
 		case 'startAddingToken':

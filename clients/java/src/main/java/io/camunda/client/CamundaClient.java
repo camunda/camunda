@@ -17,6 +17,7 @@ package io.camunda.client;
 
 import io.camunda.client.api.ExperimentalApi;
 import io.camunda.client.api.command.ActivateAdHocSubProcessActivitiesCommandStep1;
+import io.camunda.client.api.command.AddClockCommandStep1;
 import io.camunda.client.api.command.AssignClientToGroupCommandStep1;
 import io.camunda.client.api.command.AssignClientToTenantCommandStep1;
 import io.camunda.client.api.command.AssignGroupToTenantCommandStep1;
@@ -119,6 +120,7 @@ import io.camunda.client.api.fetch.AuditLogGetRequest;
 import io.camunda.client.api.fetch.AuthorizationGetRequest;
 import io.camunda.client.api.fetch.AuthorizationsSearchRequest;
 import io.camunda.client.api.fetch.BatchOperationGetRequest;
+import io.camunda.client.api.fetch.ClockGetRequest;
 import io.camunda.client.api.fetch.DecisionDefinitionGetRequest;
 import io.camunda.client.api.fetch.DecisionDefinitionGetXmlRequest;
 import io.camunda.client.api.fetch.DecisionInstanceGetRequest;
@@ -960,10 +962,35 @@ public interface CamundaClient extends AutoCloseable, JobClient {
   PinClockCommandStep1 newPinClockCommand();
 
   /**
+   * Command to add time to the Zeebe engine's internal clock without pinning it.
+   *
+   * <p>Unlike a <code>pin</code> command, the clock keeps ticking in real time after the time is
+   * added. If the clock is pinned, it stays pinned and moves to the pinned time plus the offset. A
+   * negative offset moves the clock backward. Use a <code>reset</code> command to remove all added
+   * time.
+   *
+   * <pre>{@code
+   * final OffsetDateTime newEngineTime = camundaClient
+   *  .newAddClockCommand()
+   *  .offset(Duration.ofHours(1))
+   *  .send()
+   *  .join()
+   *  .getTimestamp();
+   * }</pre>
+   *
+   * <p>The response holds the new time of the clock. The change reaches all partitions shortly
+   * after it is accepted.
+   *
+   * @return a builder for the command
+   */
+  AddClockCommandStep1 newAddClockCommand();
+
+  /**
    * Command to reset the Zeebe engine's internal clock to the system time.
    *
    * <p>This command allows you to reset the clock to the current system time, effectively undoing
-   * any previous <code>pin</code> command that may have set the clock to a specific, static time.
+   * any previous <code>pin</code> command that may have set the clock to a specific, static time,
+   * and any time added with an <code>add</code> command.
    *
    * <pre>{@code
    * camundaClient
@@ -978,6 +1005,29 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    */
   @ExperimentalApi("https://github.com/camunda/camunda/issues/21647")
   ResetClockCommandStep1 newResetClockCommand();
+
+  /**
+   * Request to get the current time of the Zeebe engine's internal clock.
+   *
+   * <p>If the clock is pinned, the response holds the pinned time. Otherwise, it holds the time
+   * that the engine currently uses. This is useful to check the effect of a <code>pin</code>,
+   * <code>add</code>, or <code>reset</code> command.
+   *
+   * <pre>{@code
+   * final OffsetDateTime engineTime = camundaClient
+   *  .newClockGetRequest()
+   *  .send()
+   *  .join()
+   *  .getTimestamp();
+   * }</pre>
+   *
+   * <p>A <code>pin</code>, <code>add</code>, or <code>reset</code> command reaches all partitions
+   * shortly after it is accepted, so a request sent right after it may still return the previous
+   * time.
+   *
+   * @return a builder for the request
+   */
+  ClockGetRequest newClockGetRequest();
 
   /**
    * Gets a process definition by key.

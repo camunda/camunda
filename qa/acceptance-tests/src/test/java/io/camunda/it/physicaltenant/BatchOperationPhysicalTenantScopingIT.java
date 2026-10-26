@@ -20,7 +20,7 @@ import io.camunda.client.api.command.MigrationPlan;
 import io.camunda.client.api.response.Decision;
 import io.camunda.client.api.search.enums.ElementInstanceState;
 import io.camunda.client.api.search.enums.IncidentState;
-import io.camunda.configuration.HistoryDeletion;
+import io.camunda.configuration.data.HistoryDeletion;
 import io.camunda.qa.util.multidb.MultiDbPhysicalTenants;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;

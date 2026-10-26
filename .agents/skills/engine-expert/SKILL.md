@@ -16,6 +16,7 @@ These are summaries. The reference files (linked below) are authoritative — th
 - No state mutation from processors. State changes only through events applied by event appliers.
 - Released event appliers — and any method on a `Mutable*State` interface or anything transitively called from an applier — must not change in logic. Add a new version/method instead. Cosmetic changes (formatting, imports, comments, behavior-equivalent renames) are fine. No golden file protects state class methods — extra care required.
 - New event applier versions must reach every newer minor before its initial release. A version that ships only in an older minor's patch breaks upgrade replay — dead partitions, unrecoverable without an ad-hoc patch. See `event-appliers.md`.
+- Adding a new record, command or event is not rolling-upgrade-neutral: an old broker cannot replay an event or event version it does not know, nor process a command it does not support. An old follower becomes unhealthy when it must replay an unsupported event. If leadership moves back to an old broker, the partition stalls when that broker must replay an unsupported event or process a still-pending unsupported command, not merely because a new record was written. This risk is accepted — it is not a reason to avoid a new record when the implementation needs one. See `docs/zeebe/rolling_updates.md`.
 - Processors must end the command's processing by appending an event or a rejection. Exceptions are a last-resort rollback mechanism and are expensive — prefer pre-validation.
 - Generated keys must be used as the record key of at least one appended record. Otherwise the key generator can't be rehydrated on replay and may hand out a duplicate.
 - Inter-partition command receivers must be idempotent. Prefer reject-redundant-command over re-emitting events.
@@ -67,6 +68,7 @@ Re-run any new or modified test at least 3× to catch flakiness. Push and let CI
 - `docs/zeebe/event-applier-golden-files.md` — golden files, versioning, port rules.
 - `docs/zeebe/developer_handbook.md` — step-by-step for new records, REST endpoints, authorization.
 - `docs/zeebe/engine_questions.md` — FAQ on tokens, joining gateways, variable scoping.
+- `docs/zeebe/rolling_updates.md` — rolling-update compatibility, including the implications of new records, commands and events.
 - https://github.com/camunda/camunda/wiki/Logging — logging guidance.
 - https://github.com/camunda/camunda/wiki/Error-Guidelines — error message format and rejection vs. exception.
 

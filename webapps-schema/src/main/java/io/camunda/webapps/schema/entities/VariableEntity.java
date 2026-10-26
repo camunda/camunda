@@ -8,9 +8,12 @@
 package io.camunda.webapps.schema.entities;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import io.camunda.zeebe.protocol.record.value.ProtectionMode;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import java.util.Arrays;
 import java.util.Objects;
+import java.util.Set;
 
 public class VariableEntity
     implements ExporterEntity<VariableEntity>, PartitionedEntity<VariableEntity>, TenantOwned {
@@ -38,6 +41,11 @@ public class VariableEntity
   /** Attention! This field will be filled in only for data imported after v. 8.9.0. */
   @SinceVersion(value = "8.9.0", requireDefault = false)
   private Long rootProcessInstanceKey;
+
+  /** Absent when the variable is not protected. */
+  @SinceVersion(value = "8.11.0", requireDefault = false)
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  private Set<ProtectionMode> protectionModes;
 
   @JsonIgnore private Object[] sortValues;
 
@@ -181,6 +189,15 @@ public class VariableEntity
     return this;
   }
 
+  public Set<ProtectionMode> getProtectionModes() {
+    return protectionModes;
+  }
+
+  public VariableEntity setProtectionModes(final Set<ProtectionMode> protectionModes) {
+    this.protectionModes = protectionModes;
+    return this;
+  }
+
   @Override
   public int hashCode() {
     int result =
@@ -198,7 +215,8 @@ public class VariableEntity
             bpmnProcessId,
             tenantId,
             position,
-            rootProcessInstanceKey);
+            rootProcessInstanceKey,
+            protectionModes);
     result = 31 * result + Arrays.hashCode(sortValues);
     return result;
   }
@@ -226,7 +244,8 @@ public class VariableEntity
         && Objects.equals(tenantId, that.tenantId)
         && Objects.equals(position, that.position)
         && Arrays.equals(sortValues, that.sortValues)
-        && Objects.equals(rootProcessInstanceKey, that.rootProcessInstanceKey);
+        && Objects.equals(rootProcessInstanceKey, that.rootProcessInstanceKey)
+        && Objects.equals(protectionModes, that.protectionModes);
   }
 
   @Override
@@ -253,6 +272,8 @@ public class VariableEntity
         + position
         + ", rootProcessInstanceKey="
         + rootProcessInstanceKey
+        + ", protectionModes="
+        + protectionModes
         + "} "
         + super.toString();
   }

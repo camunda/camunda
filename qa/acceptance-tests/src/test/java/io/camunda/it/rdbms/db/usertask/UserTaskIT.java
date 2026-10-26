@@ -163,6 +163,32 @@ public class UserTaskIT {
   }
 
   @TestTemplate
+  public void shouldMarkAndClearUserTaskSuspension(
+      final CamundaRdbmsTestApplication testApplication) {
+    // given
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final UserTaskDbModel userTask = UserTaskFixtures.createRandomized();
+    createAndSaveUserTask(rdbmsService, userTask);
+    final RdbmsWriters writer = rdbmsService.createWriter(1L);
+
+    // when
+    writer.getUserTaskWriter().updateSuspended(userTask.userTaskKey(), true);
+    writer.flush();
+
+    // then
+    assertThat(rdbmsService.getUserTaskReader().findOne(userTask.userTaskKey()).get())
+        .satisfies(instance -> assertThat(instance.isSuspended()).isTrue());
+
+    // when
+    writer.getUserTaskWriter().updateSuspended(userTask.userTaskKey(), false);
+    writer.flush();
+
+    // then
+    assertThat(rdbmsService.getUserTaskReader().findOne(userTask.userTaskKey()).get())
+        .satisfies(instance -> assertThat(instance.isSuspended()).isFalse());
+  }
+
+  @TestTemplate
   public void shouldUpdateAndFindUserTaskByKey(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
 

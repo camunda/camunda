@@ -20,8 +20,9 @@ public record SequenceFlowEntity(
     String flowNodeId,
     Long processInstanceKey,
     @Nullable Long rootProcessInstanceKey,
-    Long processDefinitionKey,
-    String processDefinitionId,
+    // absent on documents imported by Operate 8.1 and earlier.
+    @Nullable Long processDefinitionKey,
+    @Nullable String processDefinitionId,
     String tenantId)
     implements TenantOwnedEntity {
 
@@ -29,8 +30,6 @@ public record SequenceFlowEntity(
     requireNonNull(sequenceFlowId, "sequenceFlowId");
     requireNonNull(flowNodeId, "flowNodeId");
     requireNonNull(processInstanceKey, "processInstanceKey");
-    requireNonNull(processDefinitionKey, "processDefinitionKey");
-    requireNonNull(processDefinitionId, "processDefinitionId");
     requireNonNull(tenantId, "tenantId");
   }
 

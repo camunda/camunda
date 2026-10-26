@@ -41,10 +41,11 @@ test.beforeEach(({network}) => {
 });
 
 test.describe('Operate index page', () => {
-	test('should render Operate index page', async ({operateIndexPage}) => {
+	test('should render Operate index page', async ({page, operateIndexPage}) => {
 		await operateIndexPage.goto();
 
 		await expect(operateIndexPage.heading).toBeVisible();
 		await expect(operateIndexPage.header.branding).toBeVisible();
+		await expect(page).toHaveTitle('Operate: Dashboard');
 	});
 });

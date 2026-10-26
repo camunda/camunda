@@ -11,10 +11,12 @@ import io.camunda.db.rdbms.read.domain.VariableDbQuery;
 import io.camunda.db.rdbms.read.domain.VariableNameDbQuery;
 import io.camunda.db.rdbms.write.domain.ProcessDefinitionVariableNameLookupDbModel;
 import io.camunda.db.rdbms.write.domain.VariableDbModel;
+import io.camunda.db.rdbms.write.domain.VariableDbModel.ProtectionModeDbModel;
 import io.camunda.db.rdbms.write.queue.BatchInsertDto;
 import io.camunda.search.entities.VariableEntity;
 import io.camunda.util.ObjectBuilder;
 import java.util.List;
+import java.util.Set;
 import org.apache.ibatis.annotations.Param;
 
 public interface VariableMapper extends ProcessInstanceDependantMapper {
@@ -37,6 +39,12 @@ public interface VariableMapper extends ProcessInstanceDependantMapper {
    */
   void insertLookupIfNotExists(ProcessDefinitionVariableNameLookupDbModel model);
 
+  /** Inserts the protection modes of the variable. */
+  void insertProtectionModes(ProtectionModesDto protectionModes);
+
+  /** Deletes all protection modes of the variable. */
+  void deleteProtectionModes(Long variableKey);
+
   /** Returns all variable names recorded for the given process definition key. */
   List<String> findLookupVariableNames(@Param("processDefinitionKey") long processDefinitionKey);
 
@@ -48,6 +56,8 @@ public interface VariableMapper extends ProcessInstanceDependantMapper {
 
   /** Deletes all lookup entries for the given process definition keys. */
   void deleteLookupByProcessDefinitionKeys(List<Long> processDefinitionKeys, int limit);
+
+  record ProtectionModesDto(Long variableKey, Set<ProtectionModeDbModel> modes) {}
 
   record MigrateToProcessDto(Long variableKey, String processDefinitionId) {
 

@@ -159,8 +159,21 @@ public final class ExpressionProcessor {
    */
   public Either<Failure, String> evaluateStringExpression(
       final Expression expression, final long scopeKey, final String tenantId) {
-    return evaluateExpressionAsEither(expression, scopeKey, tenantId)
-        .flatMap(result -> typeCheck(result, ResultType.STRING, scopeKey))
+    return evaluateStringExpression(expression, scopeKey, tenantId, ExpressionLabel.NONE);
+  }
+
+  /**
+   * Like {@link #evaluateStringExpression(Expression, long, String)}, but labels the failure
+   * message, if any, with the given {@link ExpressionLabel} so it identifies what failed and what
+   * it targets. Pass {@link ExpressionLabel#NONE} for the generic wording.
+   */
+  public Either<Failure, String> evaluateStringExpression(
+      final Expression expression,
+      final long scopeKey,
+      final String tenantId,
+      final ExpressionLabel label) {
+    return evaluateExpressionAsEither(expression, scopeKey, tenantId, label)
+        .flatMap(result -> typeCheck(result, ResultType.STRING, scopeKey, label))
         .map(EvaluationResult::getString);
   }
 
@@ -177,7 +190,20 @@ public final class ExpressionProcessor {
    */
   public Either<Failure, DirectBuffer> evaluateStringExpressionAsDirectBuffer(
       final Expression expression, final long scopeKey, final String tenantId) {
-    return evaluateStringExpression(expression, scopeKey, tenantId).map(this::wrapResult);
+    return evaluateStringExpressionAsDirectBuffer(
+        expression, scopeKey, tenantId, ExpressionLabel.NONE);
+  }
+
+  /**
+   * Like {@link #evaluateStringExpressionAsDirectBuffer(Expression, long, String)}, but labels the
+   * failure message, if any, with the given {@link ExpressionLabel}.
+   */
+  public Either<Failure, DirectBuffer> evaluateStringExpressionAsDirectBuffer(
+      final Expression expression,
+      final long scopeKey,
+      final String tenantId,
+      final ExpressionLabel label) {
+    return evaluateStringExpression(expression, scopeKey, tenantId, label).map(this::wrapResult);
   }
 
   /**
@@ -360,8 +386,21 @@ public final class ExpressionProcessor {
    */
   public Either<Failure, DirectBuffer> evaluateAnyExpressionToBuffer(
       final Expression expression, final long scopeKey, final String tenantId) {
-    final var evaluationResult = evaluateExpressionAsEither(expression, scopeKey, tenantId);
-    return evaluationResult.map(EvaluationResult::toBuffer);
+    return evaluateAnyExpressionToBuffer(expression, scopeKey, tenantId, ExpressionLabel.NONE);
+  }
+
+  /**
+   * Like {@link #evaluateAnyExpressionToBuffer(Expression, long, String)}, but labels the failure
+   * message, if any, with the given {@link ExpressionLabel}. Any result type is accepted, so only
+   * evaluation failures and timeouts carry the label.
+   */
+  public Either<Failure, DirectBuffer> evaluateAnyExpressionToBuffer(
+      final Expression expression,
+      final long scopeKey,
+      final String tenantId,
+      final ExpressionLabel label) {
+    return evaluateExpressionAsEither(expression, scopeKey, tenantId, label)
+        .map(EvaluationResult::toBuffer);
   }
 
   /**
@@ -440,13 +479,19 @@ public final class ExpressionProcessor {
    * @param expression the expression to evaluate
    * @param scopeKey the scope to load the variables from (a negative key is intended to imply an
    *     empty variable context)
+   * @param label describes the business role of this expression so that the message of a failing or
+   *     timed out evaluation identifies what failed; the type mismatch message already names the
+   *     correlation key, so it stays unchanged
    * @return either the evaluation result as String, or a failure if the evaluation fails
    * @throws EvaluationException if the evaluation is interrupted or fails unexpectedly
    */
   public Either<Failure, String> evaluateMessageCorrelationKeyExpression(
-      final Expression expression, final long scopeKey, final String tenantId) {
+      final Expression expression,
+      final long scopeKey,
+      final String tenantId,
+      final ExpressionLabel label) {
     final var expectedTypes = Set.of(ResultType.STRING, ResultType.NUMBER);
-    return evaluateExpressionAsEither(expression, scopeKey, tenantId)
+    return evaluateExpressionAsEither(expression, scopeKey, tenantId, label)
         .flatMap(result -> typeCheckCorrelationKey(scopeKey, expectedTypes, result, expression))
         .map(this::toStringFromStringOrNumber);
   }

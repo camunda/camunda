@@ -91,20 +91,25 @@ function calledDecisionQuery(elementInstanceKey: string) {
 	});
 }
 
-function useInstanceDiagramData(instance: ProcessInstance, hasDiagram: boolean) {
+function useInstanceStatistics(instance: ProcessInstance, enabled: boolean) {
 	const processInstanceKey = instance.processInstanceKey;
-	const isRunning = isInstanceRunning(instance);
-	const previousInstance = useRef({processInstanceKey, isRunning});
-	const refetchInterval = isRunning ? POLLING_INTERVAL_MS : false;
-	const statistics = useQuery({
+	return useQuery({
 		queryKey: ['instanceDiagramStatistics', processInstanceKey],
 		queryFn: () =>
 			getItems<GetProcessInstanceStatisticsResponseBody>(
 				endpoints.getProcessInstanceElementInstanceStatistics(processInstanceKey),
 			),
-		refetchInterval,
-		enabled: hasDiagram,
+		refetchInterval: isInstanceRunning(instance) ? POLLING_INTERVAL_MS : false,
+		enabled,
 	});
+}
+
+function useInstanceDiagramData(instance: ProcessInstance, hasDiagram: boolean) {
+	const processInstanceKey = instance.processInstanceKey;
+	const isRunning = isInstanceRunning(instance);
+	const previousInstance = useRef({processInstanceKey, isRunning});
+	const refetchInterval = isRunning ? POLLING_INTERVAL_MS : false;
+	const statistics = useInstanceStatistics(instance, hasDiagram);
 	const sequenceFlows = useQuery({
 		queryKey: ['instanceDiagramSequenceFlows', processInstanceKey],
 		queryFn: () =>
@@ -136,4 +141,11 @@ function useInstanceDiagramData(instance: ProcessInstance, hasDiagram: boolean) 
 	return {statistics, sequenceFlows, agents};
 }
 
-export {useInstanceDiagramData, elementDrilldownQuery, calledProcessQuery, calledDecisionQuery};
+export {
+	ACTIVE_AGENT_STATUSES,
+	useInstanceDiagramData,
+	useInstanceStatistics,
+	elementDrilldownQuery,
+	calledProcessQuery,
+	calledDecisionQuery,
+};

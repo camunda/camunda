@@ -8,6 +8,7 @@
 package io.camunda.zeebe.exporter;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
@@ -40,6 +41,18 @@ final class ElasticsearchClientFactoryTest {
 
   private static RestClient extractRestClient(final ElasticsearchClient client) {
     return ((RestClientTransport) client._transport()).restClient();
+  }
+
+  @Test
+  void shouldNotExposeUrlCredentialsInErrorForInvalidUrl() {
+    // given
+    config.url = "http://elastic:s3cr3t@localhost:notaport";
+
+    // when / then
+    assertThatThrownBy(() -> ElasticsearchClientFactory.of(config))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessage("Invalid Elasticsearch url at position 0")
+        .hasNoCause();
   }
 
   @Test

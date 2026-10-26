@@ -23,7 +23,8 @@ public record CorrelatedMessageSubscriptionEntity(
     String messageName,
     Integer partitionId,
     String processDefinitionId,
-    Long processDefinitionKey,
+    // absent on process-event correlations exported by 8.8.
+    @Nullable Long processDefinitionKey,
     Long processInstanceKey,
     @Nullable Long rootProcessInstanceKey,
     Long subscriptionKey,
@@ -39,7 +40,6 @@ public record CorrelatedMessageSubscriptionEntity(
     Objects.requireNonNull(messageName, "messageName");
     Objects.requireNonNull(partitionId, "partitionId");
     Objects.requireNonNull(processDefinitionId, "processDefinitionId");
-    Objects.requireNonNull(processDefinitionKey, "processDefinitionKey");
     Objects.requireNonNull(processInstanceKey, "processInstanceKey");
     Objects.requireNonNull(subscriptionKey, "subscriptionKey");
     Objects.requireNonNull(tenantId, "tenantId");

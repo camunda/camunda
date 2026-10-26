@@ -10,16 +10,22 @@ import {createContext, useCallback, useContext, useEffect, useRef} from 'react';
 import {skipToken, useQuery} from '@tanstack/react-query';
 import {useNavigate, useRouter} from '@tanstack/react-router';
 import {useTranslation} from 'react-i18next';
-import type {ElementInstance, QueryElementInstancesResponseBody} from '@camunda/camunda-api-zod-schemas/8.11';
+import type {
+	ElementInstance,
+	QueryElementInstancesResponseBody,
+	QuerySortOrder,
+} from '@camunda/camunda-api-zod-schemas/8.11';
 import {endpoints} from '#/shared/http/endpoints';
 import {ForbiddenError} from '#/shared/errors';
 import {notificationsStore} from '#/shared/notifications/notifications.store';
-import {historySort, instanceRequest} from './processInstance.queries';
+import {historySort, instanceRequest, POLLING_INTERVAL_MS} from './processInstance.queries';
 import type {ProcessInstanceSelection} from './processInstanceSearch';
 function useResolvedSelection(
 	processInstanceKey: string,
 	selection: ProcessInstanceSelection,
 	onHistoryForbidden: (error: ForbiddenError) => void,
+	isPolling: boolean,
+	sortOrder: QuerySortOrder,
 ) {
 	const navigate = useNavigate();
 	const router = useRouter();
@@ -67,6 +73,7 @@ function useResolvedSelection(
 						signal,
 					),
 		staleTime: elementInstanceKey ? 0 : 10000,
+		refetchInterval: isPolling ? POLLING_INTERVAL_MS : false,
 		select: (data) =>
 			'items' in data
 				? {
@@ -102,18 +109,45 @@ function useResolvedSelection(
 			replaceSelection({elementId: id, isMultiInstanceBody: multiInstanceBody || undefined}),
 		[replaceSelection],
 	);
+	const selectPlaceholder = useCallback(
+		(id: string, key: string, multiInstanceBody: boolean) =>
+			replaceSelection({
+				elementId: id,
+				elementInstanceKey: key,
+				isMultiInstanceBody: multiInstanceBody || undefined,
+				isPlaceholder: true,
+			}),
+		[replaceSelection],
+	);
 	const selectElementInstance = useCallback(
-		async (instance: ElementInstance, anchorElementId?: string) => {
+		async (
+			instance: Pick<ElementInstance, 'elementId' | 'elementInstanceKey'> & Partial<Pick<ElementInstance, 'type'>>,
+			anchorElementId?: string,
+		) => {
 			const current = anchor.current;
 			const version = ++current.version;
 			current.controller.abort();
 			current.controller = new AbortController();
-			if (instance.type === 'AD_HOC_SUB_PROCESS_INNER_INSTANCE' && !anchorElementId) {
+			let {type} = instance;
+			if (type === undefined) {
+				try {
+					({type} = await instanceRequest<ElementInstance>(
+						endpoints.getElementInstance(instance.elementInstanceKey),
+						current.controller.signal,
+					));
+				} catch {
+					// Without the type, select the instance as a plain element, like before it was resolved.
+				}
+				if (version !== current.version) {
+					return;
+				}
+			}
+			if (type === 'AD_HOC_SUB_PROCESS_INNER_INSTANCE' && !anchorElementId) {
 				try {
 					const result = await instanceRequest<QueryElementInstancesResponseBody>(
 						endpoints.queryElementInstances({
 							filter: {elementInstanceScopeKey: instance.elementInstanceKey},
-							sort: historySort,
+							sort: historySort(sortOrder),
 							page: {from: 0, limit: 1},
 						}),
 						current.controller.signal,
@@ -143,11 +177,11 @@ function useResolvedSelection(
 			replaceSelection({
 				elementId: instance.elementId,
 				elementInstanceKey: instance.elementInstanceKey,
-				isMultiInstanceBody: instance.type === 'MULTI_INSTANCE_BODY' || undefined,
+				isMultiInstanceBody: type === 'MULTI_INSTANCE_BODY' || undefined,
 				anchorElementId,
 			});
 		},
-		[replaceSelection, t, onHistoryForbidden],
+		[replaceSelection, t, onHistoryForbidden, sortOrder],
 	);
 	const isSelected = useCallback(
 		(id: string, key?: string, multiInstanceBody = false) =>
@@ -163,10 +197,11 @@ function useResolvedSelection(
 		isSelectedInstanceMultiInstanceBody: isMultiInstanceBody,
 		isSelectedInstancePlaceholder: isPlaceholder,
 		anchorElementId,
-		isFetchingElement: enabled && query.isFetching,
+		isFetchingElement: enabled && query.isLoading,
 		isFetchingElementError: enabled && query.isError,
 		selectElement,
 		selectElementInstance,
+		selectPlaceholder,
 		clearSelection,
 		isSelected,
 	};

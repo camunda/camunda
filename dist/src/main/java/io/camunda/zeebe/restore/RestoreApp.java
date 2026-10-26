@@ -13,18 +13,20 @@ import io.camunda.application.commons.configuration.UnifiedConfigurationModule;
 import io.camunda.application.commons.configuration.WorkingDirectoryConfiguration;
 import io.camunda.application.commons.rdbms.RdbmsConfiguration;
 import io.camunda.configuration.Camunda;
-import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.configuration.beans.BrokerBasedProperties;
 import io.camunda.configuration.beans.RestoreProperties;
+import io.camunda.configuration.data.SecondaryStorage.SecondaryStorageType;
 import io.camunda.db.rdbms.sql.ExporterPositionMapper;
 import io.camunda.db.rdbms.write.RdbmsMapperBundle;
 import io.camunda.db.rdbms.write.domain.ExporterPositionModel;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RestoreRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.TenantRestoreArguments;
+import io.camunda.zeebe.dynamic.config.state.PartitionRestore;
 import io.camunda.zeebe.dynamic.nodeid.NodeIdProvider;
 import io.camunda.zeebe.dynamic.nodeid.fs.DataDirectoryProvider;
 import io.camunda.zeebe.restore.ClusterRestore.PhysicalTenantRestoreTarget;
+import io.camunda.zeebe.restore.ClusterRestore.TargetDataPolicy;
 import io.camunda.zeebe.restore.PhysicalTenantRestoreConfigurations.PhysicalTenantBrokerConfigurations;
 import io.camunda.zeebe.restore.PhysicalTenantRestoreConfigurations.PhysicalTenantRestoreEnvironments;
 import io.camunda.zeebe.restore.validation.RestoreValidator;
@@ -145,11 +147,13 @@ public class RestoreApp implements ApplicationRunner {
   public void run(final ApplicationArguments args) throws Exception {
     final var selectionPerTenant =
         arguments.selectionPerPhysicalTenant(physicalTenantConfigurations.physicalTenantIds());
-    final var backupIdsPerTenant = validateParameters(selectionPerTenant);
-    final var restoredPartitionCounts = partitionCounts(backupIdsPerTenant);
+    final var partitionRestoresPerTenant = validateParameters(selectionPerTenant);
+    final var restoredPartitionCounts = partitionCounts(partitionRestoresPerTenant);
+    final var targetDataPolicy =
+        arguments.targetDataPolicy(physicalTenantConfigurations.physicalTenantIds().size() > 1);
     final var recreatesTopology =
         ClusterRestore.shouldRewriteTopologyFile(
-            arguments.targetDataPolicy(),
+            targetDataPolicy,
             selectionPerTenant
                 .keySet()
                 .containsAll(physicalTenantConfigurations.physicalTenantIds()));
@@ -162,7 +166,7 @@ public class RestoreApp implements ApplicationRunner {
 
     final PostRestoreActionContext postRestoreActionContext;
     if (!preRestoreActionResult.skipRestore()) {
-      restore(clusterRestore, backupIdsPerTenant);
+      restore(clusterRestore, partitionRestoresPerTenant, targetDataPolicy);
       postRestoreActionContext =
           new PostRestoreActionContext(
               restoreId,
@@ -220,25 +224,25 @@ public class RestoreApp implements ApplicationRunner {
                     physicalTenantId,
                     new PhysicalTenantRestoreTarget(
                         tenantConfiguration,
-                        () -> backupStores.forPhysicalTenant(physicalTenantId),
-                        exporterPositionMappers.get(physicalTenantId))));
+                        () -> backupStores.forPhysicalTenant(physicalTenantId))));
     return targets;
   }
 
   private void restore(
       final ClusterRestore clusterRestore,
-      final Map<String, Map<Integer, long[]>> backupIdsPerTenant)
+      final Map<String, Map<Integer, PartitionRestore>> partitionRestoresPerTenant,
+      final TargetDataPolicy targetDataPolicy)
       throws IOException, ExecutionException, InterruptedException {
     LOG.info(
         "Starting to restore physical tenants {} with the following configuration: {}",
-        backupIdsPerTenant.keySet(),
+        partitionRestoresPerTenant.keySet(),
         restoreConfiguration);
     clusterRestore.restore(
-        backupIdsPerTenant,
-        arguments.targetDataPolicy(),
+        partitionRestoresPerTenant,
+        targetDataPolicy,
         restoreConfiguration.validateConfig(),
         restoreConfiguration.ignoreFilesInTarget());
-    LOG.info("Successfully restored physical tenants {}", backupIdsPerTenant.keySet());
+    LOG.info("Successfully restored physical tenants {}", partitionRestoresPerTenant.keySet());
   }
 
   /**
@@ -248,13 +252,14 @@ public class RestoreApp implements ApplicationRunner {
    * tenant must not leave the others restored, since a run's data is deleted on failure and the
    * cluster would otherwise come up with a partial set of tenants.
    *
-   * @return the backups each tenant is restored from, per partition, as resolved by the validation.
+   * @return what each partition of each tenant is restored from, as resolved by the validation.
    *     Their partitions are the ones to restore, which can be fewer than are configured when the
    *     cluster was scaled up since the backups were taken.
    */
-  private Map<String, Map<Integer, long[]>> validateParameters(
+  private Map<String, Map<Integer, PartitionRestore>> validateParameters(
       final Map<String, RestoreSelection> selectionPerTenant) {
-    final Map<String, Map<Integer, long[]>> backupIdsPerTenant = new LinkedHashMap<>();
+    final Map<String, Map<Integer, PartitionRestore>> partitionRestoresPerTenant =
+        new LinkedHashMap<>();
     selectionPerTenant.forEach(
         (physicalTenantId, selection) -> {
           final var environment =
@@ -279,16 +284,16 @@ public class RestoreApp implements ApplicationRunner {
           if (result.isLeft()) {
             throw (RuntimeException) result.getLeft();
           }
-          backupIdsPerTenant.put(physicalTenantId, result.get().backups());
+          partitionRestoresPerTenant.put(physicalTenantId, result.get().partitions());
         });
-    return backupIdsPerTenant;
+    return partitionRestoresPerTenant;
   }
 
   private static Map<String, Integer> partitionCounts(
-      final Map<String, Map<Integer, long[]>> backupIdsPerTenant) {
+      final Map<String, Map<Integer, PartitionRestore>> partitionRestoresPerTenant) {
     final Map<String, Integer> partitionCounts = new LinkedHashMap<>();
-    backupIdsPerTenant.forEach(
-        (physicalTenantId, backupIds) -> partitionCounts.put(physicalTenantId, backupIds.size()));
+    partitionRestoresPerTenant.forEach(
+        (physicalTenantId, partitions) -> partitionCounts.put(physicalTenantId, partitions.size()));
     return partitionCounts;
   }
 

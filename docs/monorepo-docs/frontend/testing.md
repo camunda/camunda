@@ -14,6 +14,26 @@ that run each suite, see the
 | Visual regression | Playwright + containerized browser   | `test/visual/`        | `npm run test:visual`      |
 | Docs screenshots  | Playwright + containerized browser   | `test/docs-screenshots/` | `npm run test:docs-screenshots` |
 
+## CI jobs per component
+
+`.github/workflows/ci-webapp-client.yml` runs unit, integration,
+accessibility and visual tests once per component: `admin`, `operate`,
+`tasklist` and `shared`. Each job reports to the team that owns the
+component, so CI incidents go straight to that team.
+
+- **Unit**: each component is a Vitest project in `vite.config.ts`
+  (`admin`, `operate:carbon`, `operate:shadcn`, `tasklist`,
+  `shared:carbon`, `shared:shadcn`). `shared` covers `src/shared/`,
+  `src/routes/` and `src/vitest-modules/`. Run one component locally
+  with `npm run test:unit -- --project 'operate*'`.
+- **Playwright**: put every test in `admin/`, `operate/`, `tasklist/`
+  or `shared/` under its category folder. CI doesn't run tests at the
+  category root. Run one component locally with, for example,
+  `npm run test:integration -- test/integration/operate/`.
+
+Unit tests of the packages under `webapp/client/packages/` run
+together in a separate job.
+
 ## Mocking the backend
 
 [MSW](https://mswjs.io/) is the only backend mock layer. Two

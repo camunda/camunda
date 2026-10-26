@@ -26,6 +26,10 @@ class OperateProcessInstancePage extends BasePage {
 		return this.page.getByRole('button', {name: `${label} Instance ${key}`});
 	}
 
+	diagramElement(elementId: string) {
+		return this.page.locator(`[data-element-id="${elementId}"]`);
+	}
+
 	get actionsMenu() {
 		return this.page.getByRole('button', {name: 'Actions'});
 	}
@@ -64,6 +68,14 @@ class OperateProcessInstancePage extends BasePage {
 
 	get executionCount() {
 		return this.page.getByRole('switch', {name: 'Execution count', exact: true});
+	}
+
+	variableRow(name: string) {
+		return this.page.getByTestId(`variable-${name}`);
+	}
+
+	dialog(name: string) {
+		return this.page.getByRole('dialog', {name, exact: true});
 	}
 
 	get historyRetry() {

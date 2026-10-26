@@ -11,18 +11,17 @@ import static java.util.Objects.requireNonNull;
 
 import io.atomix.cluster.MemberId;
 import io.atomix.primitive.partition.PartitionMetadata;
-import io.camunda.db.rdbms.sql.ExporterPositionMapper;
 import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.broker.partitioning.topology.PartitionDistribution;
 import io.camunda.zeebe.broker.partitioning.topology.StaticConfigurationGenerator;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
-import io.camunda.zeebe.dynamic.config.ClusterConfigurationManagerService;
 import io.camunda.zeebe.dynamic.config.PersistedCurrentClusterConfiguration;
-import io.camunda.zeebe.dynamic.config.serializer.ProtoBufSerializer;
+import io.camunda.zeebe.dynamic.config.impl.serializer.ProtoBufSerializer;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.UpdateRoutingState;
+import io.camunda.zeebe.dynamic.config.state.PartitionRestore;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupPhase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.Phase;
@@ -47,7 +46,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import org.jspecify.annotations.NullMarked;
-import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -90,26 +88,26 @@ public final class ClusterRestore {
   }
 
   /**
-   * Restores the physical tenants named in {@code backupIdsPerTenant}, each from its own resolved
-   * backups, and then writes the topology file if this broker is the coordinator.
+   * Restores the physical tenants named in {@code partitionRestoresPerTenant}, each from its own
+   * resolved backups, and then writes the topology file if this broker is the coordinator.
    *
    * <p>The selection may cover a strict subset of the configured tenants — restoring one tenant of
    * a multi-tenant cluster is a supported operation. What it may not do is name a tenant this
    * cluster has no configuration for: there would be no backup store to read it from and no
    * partition count to restore.
    *
-   * @param backupIdsPerTenant the backups each targeted physical tenant is restored from, per
-   *     partition. A tenant's partitions are those of its backups, which can be fewer than are
+   * @param partitionRestoresPerTenant what each partition of each targeted physical tenant is
+   *     restored from. A tenant's partitions are those of its backups, which can be fewer than are
    *     configured when the cluster was scaled up since.
    */
   public void restore(
-      final Map<String, Map<Integer, long[]>> backupIdsPerTenant,
+      final Map<String, Map<Integer, PartitionRestore>> partitionRestoresPerTenant,
       final TargetDataPolicy targetDataPolicy,
       final boolean validateConfig,
       final List<String> ignoreFilesInTarget)
       throws IOException, ExecutionException, InterruptedException {
     final var unknown =
-        backupIdsPerTenant.keySet().stream()
+        partitionRestoresPerTenant.keySet().stream()
             .filter(id -> !targets.containsKey(id))
             .sorted()
             .toList();
@@ -118,27 +116,29 @@ public final class ClusterRestore {
           "Cannot restore physical tenants %s: not configured in this cluster, which has %s"
               .formatted(unknown, targets.keySet().stream().sorted().toList()));
     }
-    if (backupIdsPerTenant.isEmpty()) {
+    if (partitionRestoresPerTenant.isEmpty()) {
       throw new IllegalArgumentException(
           "Expected at least one physical tenant to restore, but got none");
     }
 
     final Map<String, Integer> restoredPartitionCounts = new HashMap<>();
-    final var wholeCluster = backupIdsPerTenant.keySet().containsAll(targets.keySet());
+    final var wholeCluster = partitionRestoresPerTenant.keySet().containsAll(targets.keySet());
     final var recreateTopology = shouldRewriteTopologyFile(targetDataPolicy, wholeCluster);
     // A recreated topology places the partitions of the backups, so their data has to be restored
     // to the brokers it places them on; otherwise the existing placement of the configuration holds
     final var placementPartitionCounts =
-        recreateTopology ? partitionCountsOf(backupIdsPerTenant) : configuredPartitionCounts();
+        recreateTopology
+            ? partitionCountsOf(partitionRestoresPerTenant)
+            : configuredPartitionCounts();
     final var dataDirectory = Path.of(configuration.getData().getDirectory());
     if (!recreateTopology) {
-      requireTopologyOfTenantsWithFewerPartitions(backupIdsPerTenant, dataDirectory);
+      requireTopologyOfTenantsWithFewerPartitions(partitionRestoresPerTenant, dataDirectory);
     }
     prepareTarget(
-        dataDirectory, backupIdsPerTenant.keySet(), targetDataPolicy, ignoreFilesInTarget);
+        dataDirectory, partitionRestoresPerTenant.keySet(), targetDataPolicy, ignoreFilesInTarget);
 
     try {
-      for (final var entry : backupIdsPerTenant.entrySet()) {
+      for (final var entry : partitionRestoresPerTenant.entrySet()) {
         final var physicalTenantId = entry.getKey();
         // non-null: every key was checked against targets above
         final var target = requireNonNull(targets.get(physicalTenantId));
@@ -158,7 +158,6 @@ public final class ClusterRestore {
                     placementPartitionCounts,
                     physicalTenantId),
                 target.backupStore().get(),
-                target.exporterPositionMapper(),
                 meterRegistry)) {
           manager.restore(entry.getValue(), validateConfig);
           restoredPartitionCounts.put(physicalTenantId, entry.getValue().size());
@@ -181,10 +180,13 @@ public final class ClusterRestore {
     } catch (final ExecutionException | InterruptedException | IOException | RuntimeException e) {
       LOG.error(
           "Failed to restore physical tenants {}. Deleting their data",
-          backupIdsPerTenant.keySet(),
+          partitionRestoresPerTenant.keySet(),
           e);
       deleteRestoredData(
-          dataDirectory, backupIdsPerTenant.keySet(), targetDataPolicy, ignoreFilesInTarget);
+          dataDirectory,
+          partitionRestoresPerTenant.keySet(),
+          targetDataPolicy,
+          ignoreFilesInTarget);
       throw e;
     }
   }
@@ -194,11 +196,12 @@ public final class ClusterRestore {
    *
    * <p>{@link TargetDataPolicy#REQUIRE_EMPTY} refuses unless the whole directory is empty — the
    * long-standing behaviour, and the only check that catches a node whose data was left behind
-   * under some other name. It is what a restore of the default tenant or of every tenant gets: both
-   * are recoveries of a node that is meant to start from nothing.
+   * under some other name. It is what a restore of every tenant gets, which is the recovery of a
+   * node that is meant to start from nothing.
    *
    * <p>{@link TargetDataPolicy#REPLACE_SELECTED} instead deletes the named tenants' own partition
-   * group directories. Naming a tenant explicitly is asking to replace that tenant on a node whose
+   * group directories. Restoring only some tenants — naming one explicitly, or leaving the choice
+   * to the default tenant on a multi-tenant cluster — is asking to replace them on a node whose
    * other tenants are live and must keep their data, so an empty-directory requirement could never
    * be satisfied. Only the named tenants' directories are touched, and — same as the
    * whole-directory check above — {@code ignoreFilesInTarget} entries inside them are left alone
@@ -263,11 +266,9 @@ public final class ClusterRestore {
    *       in that case would discard whatever dynamic state the cluster had accumulated outside
    *       partition placement — routing state, exporter state, mode — for a request that named one
    *       tenant, not the cluster.
-   *   <li>{@code targetDataPolicy == REQUIRE_EMPTY} alone is not enough either. The implicit
-   *       default-tenant case is also {@code REQUIRE_EMPTY} (see {@code
-   *       RestoreArguments#targetDataPolicy}), and on a multi-tenant cluster it restores only the
-   *       default tenant — {@code wholeCluster} is what catches that the other tenants were left
-   *       alone and must keep their entry in the topology file.
+   *   <li>{@code targetDataPolicy == REQUIRE_EMPTY} alone is not enough either. A restore that
+   *       covers only some tenants is {@link TargetDataPolicy#REPLACE_SELECTED}, so this condition
+   *       also keeps the other tenants' entries in the topology file.
    * </ul>
    */
   public static boolean shouldRewriteTopologyFile(
@@ -307,7 +308,7 @@ public final class ClusterRestore {
     LOG.info("Restoring topology file");
     final var file =
         Path.of(configuration.getData().getDirectory())
-            .resolve(ClusterConfigurationManagerService.TOPOLOGY_FILE_NAME);
+            .resolve(PersistedCurrentClusterConfiguration.TOPOLOGY_FILE_NAME);
     final var generated =
         StaticConfigurationGenerator.getStaticConfiguration(
                 configuration, physicalTenantConfigurations(), partitionCounts, COORDINATOR_ID)
@@ -338,11 +339,12 @@ public final class ClusterRestore {
    */
   @VisibleForTesting
   void requireTopologyOfTenantsWithFewerPartitions(
-      final Map<String, Map<Integer, long[]>> backupIdsPerTenant, final Path dataDirectory)
+      final Map<String, Map<Integer, PartitionRestore>> partitionRestoresPerTenant,
+      final Path dataDirectory)
       throws IOException {
     final var configuredCounts = configuredPartitionCounts();
     final var tenantsWithFewerPartitions =
-        backupIdsPerTenant.entrySet().stream()
+        partitionRestoresPerTenant.entrySet().stream()
             .filter(
                 entry ->
                     !Integer.valueOf(entry.getValue().size())
@@ -353,7 +355,7 @@ public final class ClusterRestore {
     if (tenantsWithFewerPartitions.isEmpty()) {
       return;
     }
-    final var file = dataDirectory.resolve(ClusterConfigurationManagerService.TOPOLOGY_FILE_NAME);
+    final var file = dataDirectory.resolve(PersistedCurrentClusterConfiguration.TOPOLOGY_FILE_NAME);
     final var persisted =
         Files.exists(file)
             ? PersistedCurrentClusterConfiguration.ofFile(file, new ProtoBufSerializer())
@@ -390,7 +392,7 @@ public final class ClusterRestore {
   void updateTopologyFile(final Map<String, Integer> restoredPartitionCounts) throws IOException {
     final var file =
         Path.of(configuration.getData().getDirectory())
-            .resolve(ClusterConfigurationManagerService.TOPOLOGY_FILE_NAME);
+            .resolve(PersistedCurrentClusterConfiguration.TOPOLOGY_FILE_NAME);
     if (restoredPartitionCounts.isEmpty() || !Files.exists(file)) {
       return;
     }
@@ -537,8 +539,8 @@ public final class ClusterRestore {
 
   /** The partition count of the backups of each tenant. */
   static Map<String, Integer> partitionCountsOf(
-      final Map<String, Map<Integer, long[]>> backupIdsPerTenant) {
-    return backupIdsPerTenant.entrySet().stream()
+      final Map<String, Map<Integer, PartitionRestore>> partitionRestoresPerTenant) {
+    return partitionRestoresPerTenant.entrySet().stream()
         .collect(Collectors.toMap(Map.Entry::getKey, entry -> entry.getValue().size()));
   }
 
@@ -657,13 +659,9 @@ public final class ClusterRestore {
    * @param backupStore that tenant's backup store, resolved only when the tenant is actually
    *     restored. A supplier rather than a store: a tenant may have no backup store configured at
    *     all, which must not fail a restore that does not name it
-   * @param exporterPositionMapper that tenant's exported positions when its secondary storage is
-   *     RDBMS, otherwise {@code null}
    */
   public record PhysicalTenantRestoreTarget(
-      BrokerCfg configuration,
-      Supplier<BackupStore> backupStore,
-      @Nullable ExporterPositionMapper exporterPositionMapper) {}
+      BrokerCfg configuration, Supplier<BackupStore> backupStore) {}
 
   /** What this run may do to data already in the target directory. */
   public enum TargetDataPolicy {

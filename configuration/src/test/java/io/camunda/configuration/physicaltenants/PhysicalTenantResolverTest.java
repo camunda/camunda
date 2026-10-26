@@ -664,6 +664,44 @@ class PhysicalTenantResolverTest {
   }
 
   @Test
+  void shouldResolveCamelCaseAuthenticationProvider() {
+    // given a camel-case named provider that a tenant overrides per field and is assigned
+    final Map<String, Object> properties = new HashMap<>();
+    properties.put("camunda.security.authentication.method", "oidc");
+    properties.put("camunda.security.authentication.providers.oidc.AzureAd.client-id", "root");
+    properties.put(
+        "camunda.security.authentication.providers.oidc.AzureAd.client-secret", "root-secret");
+    properties.put(
+        "camunda.security.authentication.providers.oidc.AzureAd.issuer-uri",
+        "https://azure.example.com");
+    properties.put(
+        "camunda.physical-tenants.tenanta.security.authentication.providers.oidc.AzureAd.client-id",
+        "tenant");
+    properties.put(
+        "camunda.physical-tenants.tenanta.security.authentication.providers.assigned[0]",
+        "AzureAd");
+    properties.put(
+        "camunda.physical-tenants.tenanta.data.secondary-storage.elasticsearch.index-prefix",
+        "tenanta");
+    setProperties(properties, "tenanta");
+
+    // when
+    final PhysicalTenantResolver resolver = newResolver();
+
+    // then
+    final var providers =
+        resolver
+            .forPhysicalTenant("tenanta")
+            .getSecurity()
+            .getAuthentication()
+            .getProviders()
+            .getOidc();
+    assertThat(providers).containsOnlyKeys("AzureAd");
+    assertThat(providers.get("AzureAd").getClientId()).isEqualTo("tenant");
+    assertThat(providers.get("AzureAd").getIssuerUri()).isEqualTo("https://azure.example.com");
+  }
+
+  @Test
   void shouldRejectInvalidTenantIds() {
     // tenant ids must be lowercase alphanumeric — no underscores, no uppercase, no dashes
     // (dashes would make yaml and env-var forms address two different tenants).

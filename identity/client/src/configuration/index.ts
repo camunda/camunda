@@ -38,6 +38,12 @@ export const docsUrl = "https://docs.camunda.io/docs/next";
 
 export const isSaaS = Boolean(getClientConfigString("organizationId"));
 
+// Mapping rules can be managed wherever they can be created: outside SaaS, and on SaaS only when
+// an additional IdP is configured. Matches the gating of the mapping rules page in
+// useGlobalRoutes.
+export const canManageMappingRules =
+  isOIDC && (!isSaaS || isAdditionalIdpConfigured);
+
 export const resourcePermissions = getClientConfigObject(
   "resourcePermissions",
   {} as Record<ResourceType, PermissionType[]>,

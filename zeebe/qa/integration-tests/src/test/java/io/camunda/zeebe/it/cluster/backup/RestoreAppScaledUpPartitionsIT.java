@@ -12,7 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 
 import io.atomix.cluster.MemberId;
-import io.camunda.configuration.PrimaryStorageBackup.BackupStoreType;
+import io.camunda.configuration.data.primarystorage.PrimaryStorageBackup.BackupStoreType;
 import io.camunda.management.backups.BackupInfo;
 import io.camunda.management.backups.StateCode;
 import io.camunda.management.backups.TakeBackupRuntimeResponse;
@@ -196,7 +196,8 @@ final class RestoreAppScaledUpPartitionsIT {
     return dataRoot.resolve("node-" + memberId.id());
   }
 
-  private void configureBackup(final io.camunda.configuration.PrimaryStorageBackup backup) {
+  private void configureBackup(
+      final io.camunda.configuration.data.primarystorage.PrimaryStorageBackup backup) {
     backup.setStore(BackupStoreType.FILESYSTEM);
     backup.getFilesystem().setBasePath(backupDir.toAbsolutePath().toString());
   }

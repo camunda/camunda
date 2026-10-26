@@ -8,6 +8,7 @@
 
 import {Field} from 'react-final-form';
 import i18n from 'i18next';
+import {useTranslation} from 'react-i18next';
 import {Input, Label} from '@camunda/design-system';
 import {parseCompleteDate} from './dateValidation';
 
@@ -27,6 +28,7 @@ const validateDate = (value: string | undefined) => {
 };
 
 const DateInput: React.FC<Props> = ({type, labelText}) => {
+	const {t} = useTranslation();
 	return (
 		<Field name={`${type}Date`} validate={validateDate}>
 			{({input, meta}) => {
@@ -42,7 +44,7 @@ const DateInput: React.FC<Props> = ({type, labelText}) => {
 								input.onChange(event.target.value);
 							}}
 							onBlur={input.onBlur}
-							placeholder="YYYY-MM-DD"
+							placeholder={t('operate.shared.dateRangeField.datePlaceholder')}
 							pattern="\d{4}-\d{1,2}-\d{1,2}"
 							aria-invalid={hasError}
 							invalidText={hasError ? meta.error : undefined}

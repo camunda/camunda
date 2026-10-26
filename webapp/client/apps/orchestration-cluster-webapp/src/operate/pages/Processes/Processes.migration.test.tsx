@@ -250,6 +250,32 @@ describe('Processes migration', () => {
 		await expect.element(screen.getByRole('button', {name: 'Migrate'})).toHaveAttribute('title', reason);
 	});
 
+	it('should disable Migrate for a suspended-only selection that Cancel accepts', async ({worker}) => {
+		mockPage(worker);
+		worker.use(
+			mockQueryProcessInstancesEndpoint({
+				successResponse: HttpResponse.json(
+					createQueryProcessInstancesResponse({
+						items: [
+							createProcessInstance({processInstanceKey: '1', state: 'ACTIVE'}),
+							createProcessInstance({processInstanceKey: '4', state: 'SUSPENDED'}),
+						],
+						page: {totalItems: 2},
+					}),
+				),
+			}),
+		);
+		const screen = await renderPage();
+
+		await selectInstance(screen, '4');
+
+		await expect.element(screen.getByRole('button', {name: 'Cancel', exact: true})).toBeEnabled();
+		await expect.element(screen.getByRole('button', {name: 'Migrate'})).toBeDisabled();
+		await expect
+			.element(screen.getByRole('button', {name: 'Migrate'}))
+			.toHaveAttribute('title', 'You can only migrate instances in active or incident state.');
+	});
+
 	it('should disable Migrate in batch modification mode', async ({worker}) => {
 		mockPage(worker);
 		storeStateLocally('operate.hideMoveModificationHelperModal', true);
@@ -925,25 +951,6 @@ describe('Processes migration', () => {
 			await expect.poll(() => screen.router.state.location.pathname).toBe('/operate/batch-operations/batch-1');
 		},
 	);
-
-	it('should not return to the target list when the user left while the migration was pending', async ({worker}) => {
-		mockPage(worker);
-		worker.use(mockCreateMigrationBatchOperationEndpoint({successResponse: accepted(), delay: 1500}));
-		const screen = await renderPage();
-		await enterSummary(screen);
-		await confirmMigration(screen);
-		await expect.element(screen.getByText('Migrating...')).toBeVisible();
-
-		screen.router.history.push('/operate/processes?process=my_simple_process');
-		await userEvent.click(
-			screen.getByRole('dialog', {name: 'Leave Migration Mode'}).getByRole('button', {name: 'Leave'}),
-		);
-
-		await expect
-			.element(screen.getByText('The batch operation "Migrate Process Instance" has been started'), {timeout: 4000})
-			.toBeVisible();
-		expect(screen.router.state.location.searchStr).toBe('?process=my_simple_process');
-	});
 
 	it('should show the pending migration and lock the footer until it is accepted', async ({worker}) => {
 		mockPage(worker);

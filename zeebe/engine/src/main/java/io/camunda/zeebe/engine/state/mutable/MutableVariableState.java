@@ -9,13 +9,15 @@ package io.camunda.zeebe.engine.state.mutable;
 
 import io.camunda.zeebe.engine.state.immutable.VariableState;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableDocumentRecord;
+import io.camunda.zeebe.protocol.impl.record.value.variable.VariableMetadataRecord;
 import org.agrona.DirectBuffer;
 
 public interface MutableVariableState extends VariableState {
 
   /**
    * Creates or updates the variable with {@code name} within the given scope with {@code scopeKey},
-   * setting its value to the given {@code value}.
+   * setting its value to the given {@code value}. An existing variable keeps its metadata, a new
+   * variable gets empty metadata.
    *
    * <p>This method is expected to be called directly ONLY from an {@link
    * io.camunda.zeebe.engine.state.EventApplier} or from tests.
@@ -31,7 +33,8 @@ public interface MutableVariableState extends VariableState {
 
   /**
    * Creates or updates the variable with {@code name} within the given scope with {@code scopeKey},
-   * setting its value to the given {@code value}.
+   * setting its value to the given {@code value}. An existing variable keeps its metadata, a new
+   * variable gets empty metadata.
    *
    * <p>This method is expected to be called directly ONLY from an {@link
    * io.camunda.zeebe.engine.state.EventApplier} or from tests.
@@ -56,6 +59,28 @@ public interface MutableVariableState extends VariableState {
       DirectBuffer value,
       int valueOffset,
       int valueLength);
+
+  /**
+   * Creates or updates the variable with {@code name} within the given scope with {@code scopeKey},
+   * setting its value and metadata.
+   *
+   * <p>This method is expected to be called directly ONLY from an {@link
+   * io.camunda.zeebe.engine.state.EventApplier} or from tests.
+   *
+   * @param key the variable key
+   * @param scopeKey the local scope of the variable
+   * @param processDefinitionKey the associated process key, mostly for monitoring purposes
+   * @param name the name of the variable
+   * @param value the value of the variable (MsgPack encoded)
+   * @param metadata the metadata of the variable, e.g. its protection modes
+   */
+  void setVariableLocal(
+      long key,
+      long scopeKey,
+      long processDefinitionKey,
+      DirectBuffer name,
+      DirectBuffer value,
+      VariableMetadataRecord metadata);
 
   void createScope(long childKey, long parentKey);
 

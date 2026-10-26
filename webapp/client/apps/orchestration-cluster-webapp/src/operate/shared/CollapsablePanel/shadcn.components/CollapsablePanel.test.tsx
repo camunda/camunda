@@ -22,9 +22,33 @@ describe('<CollapsablePanel />', () => {
 		);
 
 		await expect.element(screen.getByTestId('collapsed-panel')).toBeInTheDocument();
-		await expect.element(screen.getByText('Content')).not.toBeInTheDocument();
+		await expect.element(screen.getByText('Content')).not.toBeVisible();
 
 		await userEvent.click(screen.getByRole('button', {name: 'Expand Filters'}));
+
+		expect(onToggle).toHaveBeenCalledTimes(1);
+	});
+
+	it('should keep the vertical label inside the collapsed rail', async () => {
+		const screen = await render(
+			<CollapsablePanel label="Filters" panelPosition="LEFT" isCollapsed onToggle={vi.fn()} maxWidth={320}>
+				<div>Content</div>
+			</CollapsablePanel>,
+		);
+
+		const label = screen.getByText('Filters', {exact: true}).last().element().getBoundingClientRect();
+		const rail = screen.getByTestId('collapsed-panel').element().getBoundingClientRect();
+
+		expect(label.right).toBeLessThanOrEqual(rail.right);
+	});
+
+	it('should expand when clicking anywhere on the collapsed rail', async () => {
+		const onToggle = vi.fn();
+		const screen = await render(
+			<CollapsablePanel label="Filters" panelPosition="LEFT" isCollapsed onToggle={onToggle} maxWidth={300} />,
+		);
+
+		await userEvent.click(screen.getByTestId('collapsed-panel'));
 
 		expect(onToggle).toHaveBeenCalledTimes(1);
 	});

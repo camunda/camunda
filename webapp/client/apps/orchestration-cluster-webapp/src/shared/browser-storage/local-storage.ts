@@ -22,8 +22,13 @@ const {
 	'tasklist.hasCompletedTask': z.boolean(),
 	'tasklist.hasConsentedToStartProcess': z.boolean(),
 	'tasklist.customFilters': z.record(z.string(), namedCustomFiltersSchema),
+	'operate.instanceHistorySortOrder': z.enum(['asc', 'desc']),
 	'operate.hideMoveModificationHelperModal': z.boolean(),
 	'operate.hideMigrationHelperModal': z.boolean(),
+	'operate.hideModificationHelperModal': z.boolean(),
+	'operate.hideProcessInstanceHelperModal': z.boolean(),
+	'operate.hideInputMappingsHelperBanner': z.boolean(),
+	'operate.hideOutputMappingsHelperBanner': z.boolean(),
 	'operate.panelStates': z.record(
 		z.string(),
 		z.union([z.boolean(), z.array(z.number()), z.enum(['closed', 'minimized', 'maximized']), z.number()]),

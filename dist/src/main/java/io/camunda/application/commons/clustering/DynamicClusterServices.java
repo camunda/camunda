@@ -20,7 +20,8 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest
 import io.camunda.zeebe.dynamic.config.api.DynamicConfigExportingStateController;
 import io.camunda.zeebe.dynamic.config.api.ExportingStateController;
 import io.camunda.zeebe.dynamic.config.gossip.ClusterConfigurationGossiperConfig;
-import io.camunda.zeebe.dynamic.config.serializer.ProtoBufSerializer;
+import io.camunda.zeebe.dynamic.config.impl.GatewayClusterConfigurationServiceImpl;
+import io.camunda.zeebe.dynamic.config.impl.serializer.ProtoBufSerializer;
 import io.camunda.zeebe.rebalance.ProtoBufRebalanceSerializer;
 import io.camunda.zeebe.rebalance.RebalanceRequestSender;
 import io.camunda.zeebe.scheduler.ActorScheduler;
@@ -68,7 +69,7 @@ public class DynamicClusterServices {
   public GatewayClusterConfigurationService gatewayClusterTopologyService(
       final ClusterConfigurationGossiperConfig configManagerCfg) {
     final var service =
-        new GatewayClusterConfigurationService(
+        new GatewayClusterConfigurationServiceImpl(
             clusterCommunicationService, clusterMembershipService, configManagerCfg, meterRegistry);
     scheduler.submitActor(service).join();
     return service;
@@ -103,13 +104,19 @@ public class DynamicClusterServices {
   }
 
   @Bean
+  public ProtoBufSerializer clusterConfigurationSerializer() {
+    return new ProtoBufSerializer();
+  }
+
+  @Bean
   public ClusterConfigurationManagementRequestSender clusterManagementRequestSender(
-      final BrokerTopologyManager brokerTopologyManager) {
+      final BrokerTopologyManager brokerTopologyManager,
+      final ProtoBufSerializer clusterConfigurationSerializer) {
     return new ClusterConfigurationManagementRequestSender(
         clusterCommunicationService,
         ClusterConfigurationCoordinatorSupplier.from(
             brokerTopologyManager::getClusterConfiguration),
-        new ProtoBufSerializer(),
+        clusterConfigurationSerializer,
         clusterMembershipService.getLocalMember().id());
   }
 

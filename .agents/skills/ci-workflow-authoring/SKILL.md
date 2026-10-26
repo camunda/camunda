@@ -16,6 +16,24 @@ Check `docs/monorepo-docs/ci.md` first.
 - Add `timeout-minutes` per job.
 - Pin all external actions to commit SHAs.
 - Ensure each job ends with `observe-build-status` step.
+- Set a workflow-level `env: TEST_OWNER:` with the owning team's canonical
+  `@camunda/...` handle. The `# owner:` metadata comment is for humans only —
+  `TEST_OWNER` is the functional field: `observe-build-status` reads it as the
+  default `user_description`, so without it a failure is submitted with **no
+  owner** and no medic is paged. The handle must match `.codeowners` (verify
+  with `codeowners-cli owner <path>`). Override per job for outliers, and use
+  `env: TEST_OWNER: ${{ matrix.owner }}` for matrix-driven ownership.
+
+### Stable / product branches
+
+`TEST_OWNER` only routes if the target branch's
+`.github/actions/observe-build-status` falls back to `env.TEST_OWNER`. This
+holds on `main` and the maintained `stable/8.x` branches, but do not assume it
+for older or product branches (e.g. `stable/operate-8.5`). Before relying on it
+on such a branch, confirm that branch's `observe-build-status`/`print-metadata`
+reads `env.TEST_OWNER`; if it does not, pass the owner via the step's
+`user_description`/`test_owner` input instead, or omit the field rather than
+leave a dead reference.
 
 ## Reuse Existing Composite Actions
 

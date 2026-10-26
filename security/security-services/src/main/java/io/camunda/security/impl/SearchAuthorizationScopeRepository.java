@@ -9,7 +9,10 @@ package io.camunda.security.impl;
 
 import io.camunda.search.clients.reader.AuthorizationReader;
 import io.camunda.search.entities.AuthorizationEntity;
+import io.camunda.search.exception.CamundaSearchException;
+import io.camunda.search.exception.CamundaSearchException.Reason;
 import io.camunda.search.query.AuthorizationQuery;
+import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.api.model.authz.AuthorizationResourceMatcher;
 import io.camunda.security.api.model.authz.AuthorizationResourceType;
 import io.camunda.security.api.model.authz.AuthorizationScope;
@@ -68,7 +71,7 @@ public class SearchAuthorizationScopeRepository implements AuthorizationScopeRep
                                 .resourceType(resourceType.name())
                                 .permissionTypes(permissionType))
                     .unlimited());
-    return authorizationReader.search(query, ResourceAccessChecks.disabled()).items().stream()
+    return search(query).items().stream()
         .filter(e -> e.permissionTypes().contains(permissionType))
         .map(this::toAuthorizationScope)
         .toList();
@@ -99,7 +102,7 @@ public class SearchAuthorizationScopeRepository implements AuthorizationScopeRep
                                 .permissionTypes(permissionType)
                                 .resourceIds(resourceIds))
                     .page(p -> p.size(1)));
-    return authorizationReader.search(query, ResourceAccessChecks.disabled()).total() > 0;
+    return search(query).total() > 0;
   }
 
   /**
@@ -125,9 +128,19 @@ public class SearchAuthorizationScopeRepository implements AuthorizationScopeRep
                                 .resourceType(resourceType.name())
                                 .resourceIds(resourceIds))
                     .unlimited());
-    return authorizationReader.search(query, ResourceAccessChecks.disabled()).items().stream()
+    return search(query).items().stream()
         .flatMap(e -> e.permissionTypes().stream())
         .collect(Collectors.toSet());
+  }
+
+  private SearchQueryResult<AuthorizationEntity> search(final AuthorizationQuery query) {
+    try {
+      return authorizationReader.search(query, ResourceAccessChecks.disabled());
+    } catch (final CamundaSearchException e) {
+      throw e;
+    } catch (final RuntimeException e) {
+      throw new CamundaSearchException(e, Reason.SEARCH_SERVER_FAILED);
+    }
   }
 
   private AuthorizationScope toAuthorizationScope(final AuthorizationEntity entity) {

@@ -24,6 +24,8 @@ import {
 	mockQueryProcessInstanceIncidentsEndpoint,
 	mockQueryElementInstancesEndpoint,
 	mockGetElementInstanceEndpoint,
+	mockQueryBatchOperationItemsEndpoint,
+	mockGetProcessInstanceStatisticsEndpoint,
 } from '#/shared-test-modules/mock-handlers';
 import {createCurrentUser} from '#/shared-test-modules/api-mocks/current-user';
 import {createProcessInstance} from '#/shared-test-modules/api-mocks/process-instances';
@@ -46,6 +48,7 @@ import {ProcessInstance} from './ProcessInstance';
 import {processInstanceSearchSchema} from './processInstanceSearch';
 import {InstanceDiagram} from './InstanceDiagram';
 import {InstanceHistory} from './InstanceHistory';
+import {ProcessInstanceOperations} from './ProcessInstanceOperations/ProcessInstanceOperations';
 
 const PROCESS_INSTANCE_ID = '2251799813685280';
 const PROCESS_XML_WITH_CALL_ACTIVITY =
@@ -80,6 +83,28 @@ function HistoryPage() {
 	);
 }
 
+function ModificationPage() {
+	const {processInstanceId = PROCESS_INSTANCE_ID} = useParams({strict: false});
+	const search = useRouterState({select: (state) => state.location.search});
+	return (
+		<div style={{height: '700px', width: '1200px'}}>
+			<ProcessInstance
+				processInstanceId={processInstanceId}
+				search={processInstanceSearchSchema.parse(search)}
+				bottomPanel={<InstanceHistory />}
+				headerOperations={<ProcessInstanceOperations />}
+			/>
+		</div>
+	);
+}
+
+function renderModificationPage() {
+	return renderWithRouter(ModificationPage, {
+		path: '/operate/processes/$processInstanceId/$',
+		initialEntry: `/operate/processes/${PROCESS_INSTANCE_ID}/variables?elementId=user-task`,
+	});
+}
+
 function getProcessInstancePageHandlers({
 	processInstance = createProcessInstance({processInstanceKey: PROCESS_INSTANCE_ID}),
 	callHierarchy = [],
@@ -107,6 +132,8 @@ function getProcessInstancePageHandlers({
 		mockGetProcessInstanceWaitStateStatisticsEndpoint({
 			successResponse: HttpResponse.json(createPaginatedResponse({items: waitStateItems})),
 		}),
+		mockQueryBatchOperationItemsEndpoint({successResponse: HttpResponse.json(createPaginatedResponse())}),
+		mockGetProcessInstanceStatisticsEndpoint({successResponse: HttpResponse.json({items: []})}),
 	] as const;
 }
 
@@ -123,6 +150,7 @@ describe('<ProcessInstance />', () => {
 			dispatchEvent: vi.fn(),
 		}));
 		sessionStorage.setItem('clientConfig', JSON.stringify(createSystemConfiguration()));
+		localStorage.setItem('operate.hideProcessInstanceHelperModal', 'true');
 	});
 
 	afterEach(async () => {
@@ -446,4 +474,150 @@ describe('<ProcessInstance />', () => {
 			}
 		},
 	);
+
+	describe('modification mode', () => {
+		const modifyButton = `Modify Instance ${PROCESS_INSTANCE_ID}`;
+
+		it('should enter modification mode from the helper and leave it by discarding', async ({worker}) => {
+			worker.use(...getProcessInstancePageHandlers());
+			const screen = await renderModificationPage();
+
+			await userEvent.click(screen.getByRole('button', {name: modifyButton}));
+			await userEvent.click(
+				screen
+					.getByRole('dialog', {name: 'Process Instance Modification Mode'})
+					.getByRole('button', {name: 'Continue'}),
+			);
+
+			await expect
+				.element(screen.getByRole('heading', {name: 'Operate Process Instance - Modification Mode'}))
+				.toBeInTheDocument();
+			await expect.element(screen.getByText('Process Instance Modification Mode')).toBeVisible();
+			await expect.element(screen.getByRole('button', {name: 'Review Modifications'})).toBeDisabled();
+			await expect.element(screen.getByRole('button', {name: modifyButton})).not.toBeInTheDocument();
+			await expect.element(screen.getByRole('switch', {name: 'End date'})).not.toBeInTheDocument();
+			await expect.poll(() => screen.router.state.location.search).toEqual({});
+
+			await userEvent.click(screen.getByRole('button', {name: 'Discard All'}));
+			await userEvent.click(
+				screen.getByRole('dialog', {name: 'Discard Modifications'}).getByRole('button', {name: 'Discard'}),
+			);
+
+			await expect.element(screen.getByRole('heading', {name: 'Operate Process Instance'})).toBeInTheDocument();
+			await expect.element(screen.getByRole('button', {name: 'Discard All'})).not.toBeInTheDocument();
+			await expect.element(screen.getByRole('button', {name: modifyButton})).toBeVisible();
+		});
+
+		it('should keep modification mode across tabs and ask before leaving the instance', async ({worker}) => {
+			localStorage.setItem('sharedState', JSON.stringify({hideModificationHelperModal: true}));
+			worker.use(...getProcessInstancePageHandlers());
+			const screen = await renderModificationPage();
+			await userEvent.click(screen.getByRole('button', {name: modifyButton}));
+
+			void screen.router.navigate({
+				to: '/operate/processes/$processInstanceId/$',
+				params: {processInstanceId: PROCESS_INSTANCE_ID, _splat: 'incidents'},
+			});
+			await expect
+				.poll(() => screen.router.state.location.pathname)
+				.toBe(`/operate/processes/${PROCESS_INSTANCE_ID}/incidents`);
+			await expect.element(screen.getByRole('dialog', {name: 'Leave Modification Mode'})).not.toBeInTheDocument();
+
+			void screen.router.navigate({
+				to: '/operate/processes/$processInstanceId/$',
+				params: {processInstanceId: '2251799813685299', _splat: 'variables'},
+			});
+			await userEvent.click(
+				screen.getByRole('dialog', {name: 'Leave Modification Mode'}).getByRole('button', {name: 'Stay'}),
+			);
+
+			await expect.element(screen.getByRole('dialog', {name: 'Leave Modification Mode'})).not.toBeInTheDocument();
+			await expect.element(screen.getByRole('button', {name: 'Discard All'})).toBeVisible();
+			expect(screen.router.state.location.pathname).toBe(`/operate/processes/${PROCESS_INSTANCE_ID}/incidents`);
+		});
+
+		it('should not restore modification mode when returning to a left instance', async ({worker}) => {
+			localStorage.setItem('sharedState', JSON.stringify({hideModificationHelperModal: true}));
+			worker.use(...getProcessInstancePageHandlers());
+			const screen = await renderModificationPage();
+			await userEvent.click(screen.getByRole('button', {name: modifyButton}));
+			await expect.element(screen.getByRole('button', {name: 'Discard All'})).toBeVisible();
+
+			void screen.router.navigate({
+				to: '/operate/processes/$processInstanceId/$',
+				params: {processInstanceId: '2251799813685299', _splat: 'variables'},
+			});
+			await userEvent.click(
+				screen.getByRole('dialog', {name: 'Leave Modification Mode'}).getByRole('button', {name: 'Leave'}),
+			);
+			await expect.element(screen.getByRole('button', {name: 'Discard All'})).not.toBeInTheDocument();
+			screen.router.history.back();
+
+			await expect.element(screen.getByRole('button', {name: modifyButton})).toBeVisible();
+			await expect.element(screen.getByRole('button', {name: 'Discard All'})).not.toBeInTheDocument();
+		});
+
+		it('should skip the helper once it was dismissed for next time', async ({worker}) => {
+			worker.use(...getProcessInstancePageHandlers());
+			const screen = await renderModificationPage();
+
+			await userEvent.click(screen.getByRole('button', {name: modifyButton}));
+			const helper = screen.getByRole('dialog', {name: 'Process Instance Modification Mode'});
+			await userEvent.click(helper.getByText("Don't show this message next time"));
+			await userEvent.click(helper.getByRole('button', {name: 'Continue'}));
+			await userEvent.click(screen.getByRole('button', {name: 'Discard All'}));
+			await userEvent.click(
+				screen.getByRole('dialog', {name: 'Discard Modifications'}).getByRole('button', {name: 'Discard'}),
+			);
+			await userEvent.click(screen.getByRole('button', {name: modifyButton}));
+
+			await expect.element(screen.getByRole('button', {name: 'Discard All'})).toBeVisible();
+			await expect
+				.element(screen.getByRole('dialog', {name: 'Process Instance Modification Mode'}))
+				.not.toBeInTheDocument();
+		});
+
+		it('should skip the helper when it was dismissed in legacy Operate', async ({worker}) => {
+			localStorage.setItem('sharedState', JSON.stringify({hideModificationHelperModal: true}));
+			worker.use(...getProcessInstancePageHandlers());
+			const screen = await renderModificationPage();
+
+			await userEvent.click(screen.getByRole('button', {name: modifyButton}));
+
+			await expect.element(screen.getByRole('button', {name: 'Discard All'})).toBeVisible();
+		});
+	});
+
+	describe('helper modal', () => {
+		beforeEach(() => {
+			localStorage.removeItem('operate.hideProcessInstanceHelperModal');
+		});
+
+		it('should show what moved on the first visit and not again once dismissed', async ({worker}) => {
+			worker.use(...getProcessInstancePageHandlers());
+			const screen = await renderPage();
+
+			const helper = screen.getByRole('dialog', {name: "Here's what moved in Operate"});
+			await expect.element(helper).toBeVisible();
+			await userEvent.click(helper.getByRole('button', {name: 'Got it'}));
+			await expect.element(helper).not.toBeInTheDocument();
+
+			await screen.unmount();
+			const nextVisit = await renderPage();
+
+			await expect.element(nextVisit.getByText(PROCESS_INSTANCE_ID, {exact: true})).toBeVisible();
+			await expect
+				.element(nextVisit.getByRole('dialog', {name: "Here's what moved in Operate"}))
+				.not.toBeInTheDocument();
+		});
+
+		it('should not show what moved when it was dismissed in legacy Operate', async ({worker}) => {
+			localStorage.setItem('sharedState', JSON.stringify({hideProcessInstanceHelperModal: true}));
+			worker.use(...getProcessInstancePageHandlers());
+			const screen = await renderPage();
+
+			await expect.element(screen.getByText(PROCESS_INSTANCE_ID, {exact: true})).toBeVisible();
+			await expect.element(screen.getByRole('dialog', {name: "Here's what moved in Operate"})).not.toBeInTheDocument();
+		});
+	});
 });

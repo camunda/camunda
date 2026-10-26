@@ -83,17 +83,24 @@ public final class BufferedCommandDrainProcessor
   public void processRecord(final TypedRecord<BufferedCommandRecord> command) {
     final var drainValue = command.getValue();
     final long processInstanceKey = drainValue.getProcessInstanceKey();
+    // The BUFFERED record and a DRAIN written by the subscription delete-ack path carry no
+    // ordinal, so the instance in state is the source and the DRAIN value only the fallback.
+    final var processInstance = elementInstanceState.getInstance(processInstanceKey);
+    final int storageOrdinal =
+        processInstance != null
+            ? processInstance.getValue().getStorageOrdinal()
+            : drainValue.getStorageOrdinal();
 
     suspensionState
         .findNextBufferedCommand(processInstanceKey, drainValue.getCommandKey())
         .ifPresentOrElse(
             buffered -> {
               appendBufferedCommand(buffered);
-              appendDrainedEvent(buffered);
-              appendNextDrainCommand(buffered.key(), buffered.command());
+              appendDrainedEvent(buffered, storageOrdinal);
+              appendNextDrainCommand(buffered.key(), buffered.command(), storageOrdinal);
               suspensionMetrics.commandDrained();
             },
-            () -> advanceOrWait(command, drainValue));
+            () -> advanceOrWait(command, drainValue, storageOrdinal));
   }
 
   /**
@@ -110,15 +117,18 @@ public final class BufferedCommandDrainProcessor
    * #hasClosingSubscriptions}) can be removed.
    */
   private void advanceOrWait(
-      final TypedRecord<BufferedCommandRecord> command, final BufferedCommandRecord drainValue) {
+      final TypedRecord<BufferedCommandRecord> command,
+      final BufferedCommandRecord drainValue,
+      final int storageOrdinal) {
     if (hasClosingSubscriptions(drainValue.getProcessInstanceKey())) {
+      command.getValue().setStorageOrdinal(storageOrdinal);
       rejectionWriter.appendRejection(
           command,
           RejectionType.INVALID_STATE,
           WAITING_CLOSE_ACKS_MESSAGE.formatted(drainValue.getProcessInstanceKey()));
       return;
     }
-    appendResumeJobs(drainValue);
+    appendResumeJobs(drainValue, storageOrdinal);
   }
 
   /** Read-only BFS over the element-instance tree: reports whether any subscription is CLOSING. */
@@ -181,7 +191,7 @@ public final class BufferedCommandDrainProcessor
 
   // DRAINED carries no payload: the applier removes the entry by record key, so repeating it would
   // halve the maximum buffered command size for no gain.
-  private void appendDrainedEvent(final BufferedCommand buffered) {
+  private void appendDrainedEvent(final BufferedCommand buffered, final int storageOrdinal) {
     final var value = buffered.command();
     stateWriter.appendFollowUpEvent(
         buffered.key(),
@@ -192,11 +202,14 @@ public final class BufferedCommandDrainProcessor
             .setTenantId(value.getTenantId())
             .setCommandKey(value.getCommandKey())
             .setValueType(value.getValueType())
-            .setIntent(value.getIntent()));
+            .setIntent(value.getIntent())
+            .setStorageOrdinal(storageOrdinal));
   }
 
   private void appendNextDrainCommand(
-      final long drainedCommandKey, final BufferedCommandRecord drainedCommandValue) {
+      final long drainedCommandKey,
+      final BufferedCommandRecord drainedCommandValue,
+      final int storageOrdinal) {
     commandWriter.appendFollowUpCommand(
         drainedCommandValue.getProcessInstanceKey(),
         BufferedCommandIntent.DRAIN,
@@ -204,16 +217,18 @@ public final class BufferedCommandDrainProcessor
             .setProcessInstanceKey(drainedCommandValue.getProcessInstanceKey())
             .setProcessDefinitionKey(drainedCommandValue.getProcessDefinitionKey())
             .setTenantId(drainedCommandValue.getTenantId())
-            .setCommandKey(drainedCommandKey));
+            .setCommandKey(drainedCommandKey)
+            .setStorageOrdinal(storageOrdinal));
   }
 
-  private void appendResumeJobs(final BufferedCommandRecord drainValue) {
+  private void appendResumeJobs(final BufferedCommandRecord drainValue, final int storageOrdinal) {
     commandWriter.appendFollowUpCommand(
         drainValue.getProcessInstanceKey(),
         ProcessInstanceIntent.RESUME_JOBS,
         new ProcessInstanceRecord()
             .setProcessInstanceKey(drainValue.getProcessInstanceKey())
             .setProcessDefinitionKey(drainValue.getProcessDefinitionKey())
-            .setTenantId(drainValue.getTenantId()));
+            .setTenantId(drainValue.getTenantId())
+            .setStorageOrdinal(storageOrdinal));
   }
 }

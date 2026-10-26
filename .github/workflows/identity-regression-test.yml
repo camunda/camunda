@@ -143,7 +143,7 @@ jobs:
           fetch-depth: 0
 
       - name: Set up Java 25
-        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
         with:
           distribution: "temurin"
           java-version: "25"
@@ -267,11 +267,11 @@ jobs:
         run: |
           curl -f -L -o ijhttp.zip "https://download.jetbrains.com/resources/intellij/http-client/262.7132.23/intellij-http-client.zip"
           unzip ijhttp.zip
-          ijhttp/ijhttp qa/http/${{ matrix.case }} --private-env-file qa/http/http-client.private.env.json --env ${{ matrix.env }} --report -t 60000
+          ijhttp/ijhttp qa/http/${{ matrix.case }} --private-env-file qa/http/http-client.private.env.json --env ${{ matrix.env }} --no-progress --report -t 60000
 
       - name: Publish Test Report
         if: always()
-        uses: EnricoMi/publish-unit-test-result-action@d0a4676d0e0b938bc201470d88276b7c74c712b3 # v2.24.0
+        uses: EnricoMi/publish-unit-test-result-action@7622c5bf3d112a72ab4fa3951c2aa5723d8ab92d # v2.25.0
         with:
           files: '**/reports/report.xml'
           comment_mode: off

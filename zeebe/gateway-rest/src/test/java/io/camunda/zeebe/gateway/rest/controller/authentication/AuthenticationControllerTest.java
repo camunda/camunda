@@ -19,6 +19,8 @@ import io.camunda.gateway.protocol.model.OwnerTypeEnum;
 import io.camunda.gateway.protocol.model.ResourceTypeEnum;
 import io.camunda.search.entities.AuthorizationEntity;
 import io.camunda.search.entities.TenantEntity;
+import io.camunda.search.exception.CamundaSearchException;
+import io.camunda.search.exception.CamundaSearchException.Reason;
 import io.camunda.search.filter.AuthorizationFilter;
 import io.camunda.search.query.AuthorizationQuery;
 import io.camunda.search.query.SearchQueryResult;
@@ -44,6 +46,7 @@ import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -66,6 +69,7 @@ public class AuthenticationControllerTest extends RestControllerTest {
   void setUpAuthorizationServices() {
     when(serviceRegistry.authorizationServices(any())).thenReturn(authorizationServices);
     securityProperties.getAuthorizations().setEnabled(true);
+    securityProperties.getAuthentication().setUnprotectedApi(false);
   }
 
   @Test
@@ -275,7 +279,35 @@ public class AuthenticationControllerTest extends RestControllerTest {
   }
 
   @Test
-  void searchOwnAuthorizationsShouldReturnUnauthorizedForAnonymousAuthentication() {
+  void searchOwnAuthorizationsShouldReturnEmptyResultForAnonymousAuthenticationOnUnprotectedApi() {
+    // given
+    securityProperties.getAuthentication().setUnprotectedApi(true);
+    securityProperties.getAuthorizations().setEnabled(false);
+    when(authenticationProvider.getCamundaAuthentication())
+        .thenReturn(CamundaAuthentication.anonymous());
+    when(authorizationServices.searchOwnAuthorizations(any(AuthorizationQuery.class), any()))
+        .thenReturn(SearchQueryResult.empty());
+
+    // when / then
+    webClient
+        .post()
+        .uri(ME_AUTHORIZATIONS_URL)
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectBody()
+        .json(
+            """
+                {
+                  "authorizationsEnabled": false,
+                  "items": []
+                }""",
+            JsonCompareMode.LENIENT);
+  }
+
+  @Test
+  void searchOwnAuthorizationsShouldReturnUnauthorizedForAnonymousAuthenticationOnProtectedApi() {
     // given
     when(authenticationProvider.getCamundaAuthentication())
         .thenReturn(CamundaAuthentication.anonymous());
@@ -293,7 +325,8 @@ public class AuthenticationControllerTest extends RestControllerTest {
   }
 
   @Test
-  void searchOwnAuthorizationsShouldReturnUnauthorizedWhenNoAuthenticationIsResolved() {
+  void
+      searchOwnAuthorizationsShouldReturnUnauthorizedWhenNoAuthenticationIsResolvedOnProtectedApi() {
     // given
     when(authenticationProvider.getCamundaAuthentication()).thenReturn(null);
 
@@ -307,5 +340,48 @@ public class AuthenticationControllerTest extends RestControllerTest {
         .isUnauthorized();
 
     verify(authorizationServices, never()).searchOwnAuthorizations(any(), any());
+  }
+
+  @Test
+  void shouldReturnInternalServerErrorWhenSearchFailsWhileResolvingCurrentUser() {
+    // given
+    when(camundaUserPort.getCurrentUser())
+        .thenThrow(
+            new CamundaSearchException(
+                "Failed to execute findAll query: relation \"tb_authorizations\" does not exist",
+                Reason.SEARCH_SERVER_FAILED));
+
+    // when - then
+    webClient
+        .get()
+        .uri("/v2/authentication/me")
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR)
+        .expectBody()
+        .jsonPath("$.detail")
+        .isEqualTo("The search server was unable to process the request");
+  }
+
+  @Test
+  void shouldReturnServiceUnavailableWhenSearchIsUnreachableWhileResolvingCurrentUser() {
+    // given
+    when(camundaUserPort.getCurrentUser())
+        .thenThrow(
+            new CamundaSearchException(
+                "Failed to execute findAll query", Reason.CONNECTION_FAILED));
+
+    // when - then
+    webClient
+        .get()
+        .uri("/v2/authentication/me")
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isEqualTo(HttpStatus.SERVICE_UNAVAILABLE)
+        .expectBody()
+        .jsonPath("$.detail")
+        .isEqualTo("The search client could not connect to the search server");
   }
 }

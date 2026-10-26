@@ -46,7 +46,7 @@ jobs:
     steps:
       - name: Generate a GitHub token
         id: github-token
-        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@7fe5cca167f7826bedbc078ae36ff2e974cc8cb5 # generate-github-app-token-from-vault-secrets-1.1.2
+        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@379e8654a5f25f22566f80c2e99a611fca365263 # generate-github-app-token-from-vault-secrets-1.2.0
         with:
           github-app-id-vault-key: MONOREPO_DEVOPS_AUTOMATION_APP_ID
           github-app-id-vault-path: secret/data/products/camunda/ci/camunda
@@ -72,7 +72,7 @@ jobs:
           cache-dependency-path: load-tests/setup/test/go.sum
 
       - name: Set up Helm
-        uses: jdx/mise-action@2d8d4cafcbd33be2ea37d2b6f5ad595363d1f1ca # v5.1.1
+        uses: jdx/mise-action@8418fedb1110381a0d3ba51a7a415d7c1b884550 # v5.2.2
         with:
           minimum_release_age: 15d
           install_args: helm

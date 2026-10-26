@@ -1,0 +1,327 @@
+# description: Nightly frontend dependency vulnerability scan using Snyk.
+#              Reports failures to #team-orchestration-cluster-webapps on Slack.
+# type: CI
+# owner: @camunda/orchestration-cluster-webapps
+---
+name: Frontend Snyk Nightly
+run-name: Frontend Snyk (${{ inputs.branch }})
+
+on:
+  workflow_call:
+    inputs:
+      branch:
+        description: Branch to scan
+        required: true
+        type: string
+      notify-on-failure:
+        description: Notify Slack when a scan fails
+        required: true
+        type: boolean
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: Branch to scan
+        required: true
+        default: main
+        type: string
+      notify-on-failure:
+        description: Notify Slack when a scan fails
+        required: true
+        default: false
+        type: boolean
+
+defaults:
+  run:
+    shell: bash
+
+permissions:
+  contents: read
+
+env:
+  TEST_OWNER: "@camunda/orchestration-cluster-webapps"
+  # Bounds a hung `actions/checkout`; only for shallow ones, a `fetch-depth: 0` clone needs more.
+  # A shallow clone of this repo normally lands in well under a minute, but GitHub-side slowness
+  # occasionally needs more headroom.
+  SHALLOW_CHECKOUT_TIMEOUT_MIN: 3
+
+jobs:
+  identity-fe-snyk:
+    name: "Identity / Front End - Snyk (${{ inputs.branch }})"
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions: {}
+    env:
+      TEST_TYPE: Tool
+      TEST_OWNER: "@camunda/operate-admin-pod"
+      TEST_PRODUCT: Identity
+    defaults:
+      run:
+        working-directory: identity/client
+    steps:
+      - uses: camunda/infra-global-github-actions/start-build-monitor@95c6f97de08ce6befa8e1b222140676204d792fb # main
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
+        with:
+          ref: ${{ inputs.branch }}
+      - name: Print metadata
+        uses: ./.github/actions/print-metadata
+      - name: Import Snyk token from Vault
+        id: snyk-secrets
+        uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secrets: |
+            secret/data/products/camunda/ci/snyk zeebe-api-token | SNYK_TOKEN;
+      - name: Scan frontend dependencies
+        uses: ./.github/actions/frontend-snyk-test
+        env:
+          SNYK_TOKEN: ${{ steps.snyk-secrets.outputs.SNYK_TOKEN }}
+        with:
+          directory: identity/client
+          project-name: Identity frontend
+          artifact-name: snyk-report-identity-${{ inputs.branch }}
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
+  operate-fe-snyk:
+    name: "Operate / Front End - Snyk (${{ inputs.branch }})"
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions: {}
+    env:
+      TEST_TYPE: Tool
+      TEST_OWNER: "@camunda/operate-admin-pod"
+      TEST_PRODUCT: Operate
+    defaults:
+      run:
+        working-directory: operate/client
+    steps:
+      - uses: camunda/infra-global-github-actions/start-build-monitor@95c6f97de08ce6befa8e1b222140676204d792fb # main
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
+        with:
+          ref: ${{ inputs.branch }}
+      - name: Print metadata
+        uses: ./.github/actions/print-metadata
+      - name: Import Snyk token from Vault
+        id: snyk-secrets
+        uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secrets: |
+            secret/data/products/camunda/ci/snyk zeebe-api-token | SNYK_TOKEN;
+      - name: Scan frontend dependencies
+        uses: ./.github/actions/frontend-snyk-test
+        env:
+          SNYK_TOKEN: ${{ steps.snyk-secrets.outputs.SNYK_TOKEN }}
+        with:
+          directory: operate/client
+          project-name: Operate frontend
+          artifact-name: snyk-report-operate-${{ inputs.branch }}
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
+  tasklist-fe-snyk:
+    if: inputs.branch == 'stable/8.8' || inputs.branch == 'stable/8.9'
+    name: "Tasklist / Front End - Snyk (${{ inputs.branch }})"
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions: {}
+    env:
+      TEST_TYPE: Tool
+      TEST_OWNER: "@camunda/employee-engagement-tasklist"
+      TEST_PRODUCT: Tasklist
+    defaults:
+      run:
+        working-directory: tasklist/client
+    steps:
+      - uses: camunda/infra-global-github-actions/start-build-monitor@95c6f97de08ce6befa8e1b222140676204d792fb # main
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
+        with:
+          ref: ${{ inputs.branch }}
+      - name: Print metadata
+        uses: ./.github/actions/print-metadata
+      - name: Import Snyk token from Vault
+        id: snyk-secrets
+        uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secrets: |
+            secret/data/products/camunda/ci/snyk zeebe-api-token | SNYK_TOKEN;
+      - name: Scan frontend dependencies
+        uses: ./.github/actions/frontend-snyk-test
+        env:
+          SNYK_TOKEN: ${{ steps.snyk-secrets.outputs.SNYK_TOKEN }}
+        with:
+          directory: tasklist/client
+          project-name: Tasklist frontend
+          artifact-name: snyk-report-tasklist-${{ inputs.branch }}
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
+  optimize-fe-snyk:
+    name: "Optimize / Front End - Snyk (${{ inputs.branch }})"
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions: {}
+    defaults:
+      run:
+        working-directory: optimize/client
+    env:
+      TEST_TYPE: Tool
+      TEST_PRODUCT: Optimize
+    steps:
+      - uses: camunda/infra-global-github-actions/start-build-monitor@95c6f97de08ce6befa8e1b222140676204d792fb # main
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
+        with:
+          ref: ${{ inputs.branch }}
+      - name: Print metadata
+        uses: ./.github/actions/print-metadata
+      - name: Import Snyk token from Vault
+        id: snyk-secrets
+        uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secrets: |
+            secret/data/products/camunda/ci/snyk zeebe-api-token | SNYK_TOKEN;
+      - name: Scan frontend dependencies
+        uses: ./.github/actions/frontend-snyk-test
+        env:
+          SNYK_TOKEN: ${{ steps.snyk-secrets.outputs.SNYK_TOKEN }}
+        with:
+          directory: optimize/client
+          lockfile: yarn.lock
+          project-name: Optimize frontend
+          artifact-name: snyk-report-optimize-${{ inputs.branch }}
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
+  report-to-slack:
+    name: "Report failures to Slack"
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions: {}
+    env:
+      TEST_TYPE: Tool
+      TEST_PRODUCT: Camunda
+    needs:
+      - identity-fe-snyk
+      - operate-fe-snyk
+      - tasklist-fe-snyk
+      - optimize-fe-snyk
+    if: always() && inputs['notify-on-failure'] && github.event_name != 'workflow_dispatch' && contains(needs.*.result, 'failure')
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
+        with:
+          ref: ${{ inputs.branch }}
+      - name: Print metadata
+        uses: ./.github/actions/print-metadata
+      - name: Import Slack token from Vault
+        id: secrets
+        uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          exportEnv: false
+          secrets: |
+            secret/data/products/camunda/ci/github-actions SLACK_CORE_DOMAIN_BOT_TOKEN;
+      - name: Build status summary
+        id: summary
+        env:
+          BRANCH: ${{ inputs.branch }}
+        run: |
+          branch="${BRANCH}"
+          identity="${{ needs.identity-fe-snyk.result }}"
+          operate="${{ needs.operate-fe-snyk.result }}"
+          tasklist="${{ needs.tasklist-fe-snyk.result }}"
+          optimize="${{ needs.optimize-fe-snyk.result }}"
+
+          icon() { [[ "$1" == "success" ]] && echo ":white_check_mark:" || echo ":x:"; }
+
+          {
+            echo "REPORT<<EOF"
+            echo "*Branch:* \`${branch}\`"
+            echo "$(icon "$identity") *Identity* — ${identity}"
+            echo "$(icon "$operate") *Operate* — ${operate}"
+            if [[ "$tasklist" != "skipped" ]]; then
+              echo "$(icon "$tasklist") *Tasklist* — ${tasklist}"
+            fi
+            echo "$(icon "$optimize") *Optimize* — ${optimize}"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+      - name: Post to Slack
+        uses: slackapi/slack-github-action@0d95c9a7becc1e6e297d76df9bc735c44f4cbcbc # v3.0.5
+        with:
+          method: chat.postMessage
+          token: ${{ steps.secrets.outputs.SLACK_CORE_DOMAIN_BOT_TOKEN }}
+          payload: |
+            channel: "C0A0SKKTXD0"
+            text: "Frontend Snyk Nightly — failures detected on ${{ inputs.branch }}"
+            blocks:
+              - type: "header"
+                text:
+                  type: "plain_text"
+                  text: "Frontend Snyk Nightly — failures detected on ${{ inputs.branch }}"
+              - type: "section"
+                text:
+                  type: "mrkdwn"
+                  text: ${{ toJSON(steps.summary.outputs.REPORT) }}
+              - type: "section"
+                text:
+                  type: "mrkdwn"
+                  text: "<${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View workflow run>"
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}

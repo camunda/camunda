@@ -84,7 +84,8 @@ class IncidentToolsTest extends OperationalToolsTest {
           OffsetDateTime.parse("2024-05-23T23:05:00.000Z"),
           IncidentState.ACTIVE,
           101L,
-          "tenantId");
+          "tenantId",
+          null);
 
   static final SearchQueryResult<IncidentEntity> SEARCH_QUERY_RESULT =
       new Builder<IncidentEntity>()

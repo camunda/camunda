@@ -10,10 +10,10 @@ package io.camunda.configuration.beanoverrides;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.configuration.Camunda;
-import io.camunda.configuration.SecondaryStorage;
-import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.configuration.UnifiedConfigurationHelper;
 import io.camunda.configuration.beans.SearchEngineSchemaManagerProperties;
+import io.camunda.configuration.data.SecondaryStorage;
+import io.camunda.configuration.data.SecondaryStorage.SecondaryStorageType;
 import java.time.Duration;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;

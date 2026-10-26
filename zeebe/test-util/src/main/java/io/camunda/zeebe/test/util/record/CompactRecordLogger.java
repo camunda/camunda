@@ -99,6 +99,7 @@ import io.camunda.zeebe.protocol.record.value.DecisionEvaluationRecordValue;
 import io.camunda.zeebe.protocol.record.value.DeploymentDistributionRecordValue;
 import io.camunda.zeebe.protocol.record.value.DeploymentRecordValue;
 import io.camunda.zeebe.protocol.record.value.DocumentReferenceValue;
+import io.camunda.zeebe.protocol.record.value.ElementInstanceWalkRecordValue;
 import io.camunda.zeebe.protocol.record.value.ErrorRecordValue;
 import io.camunda.zeebe.protocol.record.value.EscalationRecordValue;
 import io.camunda.zeebe.protocol.record.value.ExpressionRecordValue;
@@ -140,7 +141,6 @@ import io.camunda.zeebe.protocol.record.value.RuntimeInstructionRecordValue;
 import io.camunda.zeebe.protocol.record.value.SecretReferenceRecordValue;
 import io.camunda.zeebe.protocol.record.value.SignalRecordValue;
 import io.camunda.zeebe.protocol.record.value.SignalSubscriptionRecordValue;
-import io.camunda.zeebe.protocol.record.value.SuspensionBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.protocol.record.value.TenantRecordValue;
 import io.camunda.zeebe.protocol.record.value.TimerRecordValue;
@@ -154,11 +154,13 @@ import io.camunda.zeebe.protocol.record.value.deployment.DecisionRequirementsMet
 import io.camunda.zeebe.protocol.record.value.deployment.DecisionRequirementsRecordValue;
 import io.camunda.zeebe.protocol.record.value.deployment.Form;
 import io.camunda.zeebe.protocol.record.value.deployment.Process;
+import io.camunda.zeebe.protocol.record.value.deployment.ProcessDefinitionRestoreRecordValue;
 import io.camunda.zeebe.protocol.record.value.deployment.ProcessMetadataValue;
 import io.camunda.zeebe.protocol.record.value.deployment.Resource;
 import io.camunda.zeebe.protocol.record.value.deployment.ResourceReexportRecordValue;
 import io.camunda.zeebe.protocol.record.value.management.CheckpointRecordValue;
 import io.camunda.zeebe.protocol.record.value.scaling.ScaleRecordValue;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
@@ -285,7 +287,7 @@ public class CompactRecordLogger {
     valueLoggers.put(ValueType.MESSAGE_SUBSCRIPTION, this::summarizeMessageSubscription);
     valueLoggers.put(ValueType.PROCESS_INSTANCE, this::summarizeProcessInstance);
     valueLoggers.put(ValueType.PROCESS_INSTANCE_BATCH, this::summarizeProcessInstanceBatch);
-    valueLoggers.put(ValueType.SUSPENSION_BATCH, this::summarizeSuspensionBatch);
+    valueLoggers.put(ValueType.ELEMENT_INSTANCE_WALK, this::summarizeElementInstanceWalk);
     valueLoggers.put(ValueType.PROCESS_INSTANCE_CREATION, this::summarizeProcessInstanceCreation);
     valueLoggers.put(
         ValueType.PROCESS_INSTANCE_MODIFICATION, this::summarizeProcessInstanceModification);
@@ -349,6 +351,7 @@ public class CompactRecordLogger {
     valueLoggers.put(ValueType.JOB_METRICS_BATCH, this::summarizeJobMetricsBatch);
     valueLoggers.put(ValueType.GLOBAL_LISTENER, this::summarizeGlobalListener);
     valueLoggers.put(RESOURCE_REEXPORT, this::summarizeResourceReexport);
+    valueLoggers.put(ValueType.PROCESS_DEFINITION_RESTORE, this::summarizeProcessDefinitionRestore);
     valueLoggers.put(ValueType.AGENT_INSTANCE, this::summarizeAgentInstance);
     valueLoggers.put(ValueType.AGENT_HISTORY, this::summarizeAgentHistory);
     valueLoggers.put(ValueType.AGENT_DEFINITION, this::summarizeAgentDefinition);
@@ -1098,14 +1101,16 @@ public class CompactRecordLogger {
     return result.append(formatTenant(value)).toString();
   }
 
-  String summarizeSuspensionBatch(final Record<?> record) {
-    final var value = (SuspensionBatchRecordValue) record.getValue();
+  String summarizeElementInstanceWalk(final Record<?> record) {
+    final var value = (ElementInstanceWalkRecordValue) record.getValue();
     return "PI:"
         + shortenKey(value.getProcessInstanceKey())
-        + " idx:"
-        + shortenKey(value.getIndexKey())
+        + " EI:"
+        + shortenKey(value.getElementInstanceKey())
         + " parent:"
-        + shortenKey(value.getParentKey());
+        + shortenKey(value.getParentKey())
+        + " idx:"
+        + shortenKey(value.getIndex());
   }
 
   private String summarizeTreePath(final ProcessInstanceRecordValue value) {
@@ -1138,6 +1143,7 @@ public class CompactRecordLogger {
     return new StringBuilder()
         .append("new <process ")
         .append(formatId(value.getBpmnProcessId()))
+        .append(formatVersionTag(value.getVersionTag()))
         .append(">")
         .append(summarizeStartInstructions(value.getStartInstructions()))
         .append(formatVariables(value))
@@ -1579,14 +1585,16 @@ public class CompactRecordLogger {
   private String summarizeClock(final Record<?> record) {
     final var value = (ClockRecordValue) record.getValue();
 
-    final var clockValue =
-        switch (record.getIntent()) {
-          case ClockIntent.PIN, ClockIntent.PINNED -> formatPinnedTime(value.getTime());
-          case ClockIntent.RESET, ClockIntent.RESETTED -> "system time";
-          default -> value.getTime();
-        };
-
-    return "to %s".formatted(clockValue);
+    return switch (record.getIntent()) {
+      case ClockIntent.PIN, ClockIntent.PINNED -> "to " + formatPinnedTime(value.getTime());
+      case ClockIntent.RESET, ClockIntent.RESETTED -> "to system time";
+      case ClockIntent.FETCH -> "current time";
+      case ClockIntent.FETCHED -> "current time is " + formatPinnedTime(value.getTime());
+      case ClockIntent.ADD -> "by " + Duration.ofMillis(value.getTime());
+      case ClockIntent.OFFSET, ClockIntent.OFFSETTED ->
+          "to system time plus " + Duration.ofMillis(value.getTime());
+      default -> "to " + value.getTime();
+    };
   }
 
   private String summarizeRole(final Record<?> record) {
@@ -2255,6 +2263,16 @@ public class CompactRecordLogger {
     return result.toString();
   }
 
+  private String summarizeProcessDefinitionRestore(final Record<?> record) {
+    final var value = (ProcessDefinitionRestoreRecordValue) record.getValue();
+    final var result = new StringBuilder();
+
+    result.append("processDefinitionKey:").append(shortenKey(value.getProcessDefinitionKey()));
+    result.append(" tenantId:").append(value.getTenantId());
+
+    return result.toString();
+  }
+
   private String formatPinnedTime(final long time) {
     final var dateTime = Instant.ofEpochMilli(time).atZone(ZoneId.systemDefault());
     return "%s (timestamp: %d)".formatted(shortenDateTime(dateTime), time);
@@ -2273,6 +2291,10 @@ public class CompactRecordLogger {
     return StringUtils.isEmpty(tenantId) || TenantOwned.DEFAULT_TENANT_IDENTIFIER.equals(tenantId)
         ? ""
         : " (tenant: %s)".formatted(tenantId);
+  }
+
+  private String formatVersionTag(final String versionTag) {
+    return versionTag.isEmpty() ? "" : " tag:" + versionTag;
   }
 
   private String formatVariables(final RecordValueWithVariables value) {

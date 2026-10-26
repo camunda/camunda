@@ -8,6 +8,7 @@
 package io.camunda.zeebe.gateway.impl.broker.request;
 
 import io.camunda.zeebe.broker.client.api.dto.BrokerExecuteCommand;
+import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.value.clock.ClockRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ClockIntent;
@@ -20,6 +21,7 @@ public class BrokerClockPinRequest extends BrokerExecuteCommand<ClockRecord> {
 
   public BrokerClockPinRequest(final long pinnedEpoch) {
     super(ValueType.CLOCK, ClockIntent.PIN);
+    setPartitionId(Protocol.DEPLOYMENT_PARTITION);
 
     requestDto.pinAt(pinnedEpoch);
   }

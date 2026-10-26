@@ -755,6 +755,46 @@ public class CompensationEventExecutionTest {
   }
 
   @Test
+  public void shouldTriggerCompensationHandlerOfBoundaryEventWithTextAnnotation() {
+    // given
+    final var process =
+        createModelFromClasspathResource(
+            "/compensation/compensation-boundary-event-text-annotation.bpmn");
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    // when
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    ENGINE
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType(SERVICE_TASK_TYPE_COMPENSATION_HANDLER)
+        .complete();
+
+    // then
+    assertThat(
+            RecordingExporter.compensationSubscriptionRecords()
+                .withIntent(CompensationSubscriptionIntent.TRIGGERED)
+                .withProcessInstanceKey(processInstanceKey)
+                .getFirst()
+                .getValue())
+        .extracting(
+            CompensationSubscriptionRecordValue::getCompensableActivityId,
+            CompensationSubscriptionRecordValue::getCompensationHandlerId)
+        .containsExactly("CompensableSubprocess", "CompensationHandler");
+
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted())
+        .extracting(r -> r.getValue().getElementId(), Record::getIntent)
+        .containsSubsequence(
+            tuple("CompensableSubprocess", ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple("CompensationHandler", ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple("compensation-throw-event", ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(PROCESS_ID, ProcessInstanceIntent.ELEMENT_COMPLETED));
+  }
+
+  @Test
   public void shouldNotTriggerCompensationIfSubprocessIsNotCompleted() {
     final var process =
         createModelFromClasspathResource(

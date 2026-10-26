@@ -160,6 +160,10 @@ This is a small overview of the contents of this repository:
 * **Full build without frontends:** To build the full distribution for local usage without frontends (skipping tests), run the command `./mvnw clean install -DskipChecks -DskipTests -PskipFrontendBuild`.
 * **Full build and test:** To fully build and test the Camunda distribution, run the command: `./mvnw clean install` in the root folder.
 
+The experimental Gradle build is available for local development and focused parity checks. Maven
+remains authoritative; see the [Gradle build guide](gradle/README.md) for supported commands and
+limitations.
+
 If you built a distribution, it can be found in the folder `dist/target`, i.e.
 
 ```

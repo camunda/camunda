@@ -99,8 +99,7 @@ For this ADR, Gradle build inputs are:
 - `**/*.gradle.kts` files;
 - `gradle.properties`;
 - `gradlew` and `gradlew.bat`;
-- files below `gradle/`; and
-- files below `buildSrc/`.
+- files below `gradle/`.
 
 The implementation must reuse the existing `java-code-change`, `maven-change`, `ci-relevant` filters and define
 a new `gradle-changes` filter, when deciding whether build behavior may
@@ -198,6 +197,20 @@ reacts immediately instead of waiting for the regular rebase and assignment wind
 
 This gives early signal and confidence while observing the experiment. The exact wiring of the
 notification is an implementation detail and can change without changing this decision.
+
+## Temporary soft integration
+
+D4 describes the target state. The PR that introduces the Gradle build can be merged before that
+state is reached. For the first weeks after the Gradle build lands, the D4 checks are not enforced
+and run as a separate, non-blocking workflow (`gradle-ci.yml`, job `Gradle / Compile Check`) outside
+Unified CI. Unified CI is not designed for non-blocking jobs, and workflows that are not yet
+inclusion-worthy live in separate workflows until they are. The workflow is not part of
+`check-results`, so it never blocks a pull request or merge group. A failure on a push to `main`
+sends a Slack notification to the Gradle build notifications channel.
+
+This is temporary. The soft period ends when the team agrees the build is stable enough to enforce
+it. The checks then move into Unified CI and `check-results`, and the D4 behavior applies in full.
+Gradle stays opt-in for contributors until then.
 
 ## Deferred work
 

@@ -6,19 +6,22 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {describe, expect, it} from 'vitest';
+import {describe, expect} from 'vitest';
+import {it} from '#/vitest-modules/test-extend';
 import {
 	createMemoryHistory,
 	createRootRoute,
 	createRoute,
 	createRouter,
 	parseSearchWith,
+	stripSearchParams,
 	stringifySearchWith,
 } from '@tanstack/react-router';
 import {parseSearchValueSafe} from '#/shared/parseSearchValueSafe';
 import {
 	mapProcessInstancesFilter,
 	mapProcessInstancesSort,
+	processesSearchDefaults,
 	processesSearchSchema,
 	stripLegacyProcessFilters,
 	type ProcessesSearch,
@@ -166,7 +169,7 @@ describe('mapProcessInstancesSort', () => {
 				getParentRoute: () => rootRoute,
 				path: '/operate/processes',
 				validateSearch: processesSearchSchema,
-				search: {middlewares: [stripLegacyProcessFilters]},
+				search: {middlewares: [stripLegacyProcessFilters, stripSearchParams(processesSearchDefaults)]},
 			});
 			const router = createRouter({
 				routeTree: rootRoute.addChildren([processesRoute]),
@@ -180,6 +183,26 @@ describe('mapProcessInstancesSort', () => {
 		};
 		const legacyEntry =
 			'/operate/processes?processDefinitionId=orders&processDefinitionVersion=2&tenantId=%3Ctenant-A%3E&errorMessage=Connection%20timeout&incidentErrorHashCode=-481';
+
+		it('should clear only the process selection and omit default states through typed navigation', async () => {
+			const router = await createProcessesSearchRouter(`${legacyEntry}&canceled=true&elementId=task-1#diagram`);
+
+			await router.navigate({
+				to: '/operate/processes',
+				search: (prev) => ({...prev, process: undefined, version: undefined}),
+				hash: true,
+			});
+
+			const params = new URLSearchParams(router.state.location.searchStr);
+			expect(Object.fromEntries(params)).toEqual({
+				tenantId: '<tenant-A>',
+				errorMessage: 'Connection timeout',
+				incidentErrorHashCode: '-481',
+				canceled: 'true',
+				elementId: 'task-1',
+			});
+			expect(router.state.location.hash).toBe('diagram');
+		});
 
 		it.for([
 			{processDefinitionId: 'orders', processDefinitionVersion: '2', expectedVersion: 2},

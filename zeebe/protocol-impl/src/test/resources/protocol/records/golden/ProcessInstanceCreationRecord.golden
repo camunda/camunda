@@ -12,15 +12,15 @@ import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.zeebe.msgpack.property.ArrayProperty;
-import io.camunda.zeebe.msgpack.property.DocumentProperty;
 import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.msgpack.value.StringValue;
-import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.impl.record.value.variable.VariablesPropertyGroup;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceCreationRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
+import io.camunda.zeebe.protocol.record.value.VariableMetadataValue;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.List;
 import java.util.Map;
@@ -38,7 +38,6 @@ public final class ProcessInstanceCreationRecord extends UnifiedRecordValue
       new StringValue("processDefinitionKey");
   private static final StringValue VERSION_KEY = new StringValue("version");
   private static final StringValue TENANT_ID_KEY = new StringValue("tenantId");
-  private static final StringValue VARIABLES_KEY = new StringValue("variables");
   private static final StringValue PROCESS_INSTANCE_KEY_KEY = new StringValue("processInstanceKey");
   private static final StringValue FETCH_VARIABLES_KEY = new StringValue("fetchVariables");
   private static final StringValue START_INSTRUCTIONS_KEY = new StringValue("startInstructions");
@@ -49,6 +48,7 @@ public final class ProcessInstanceCreationRecord extends UnifiedRecordValue
       new StringValue("rootProcessInstanceKey");
   private static final StringValue STORAGE_ORDINAL_KEY = new StringValue("storageOrdinal");
   private static final StringValue BUSINESS_ID_KEY = new StringValue("businessId");
+  private static final StringValue VERSION_TAG_KEY = new StringValue("versionTag");
 
   private final StringProperty bpmnProcessIdProperty = new StringProperty(BPMN_PROCESS_ID_KEY, "");
   private final LongProperty processDefinitionKeyProperty =
@@ -56,7 +56,7 @@ public final class ProcessInstanceCreationRecord extends UnifiedRecordValue
   private final IntegerProperty versionProperty = new IntegerProperty(VERSION_KEY, -1);
   private final StringProperty tenantIdProperty =
       new StringProperty(TENANT_ID_KEY, TenantOwned.DEFAULT_TENANT_IDENTIFIER);
-  private final DocumentProperty variablesProperty = new DocumentProperty(VARIABLES_KEY);
+  private final VariablesPropertyGroup variablesPropertyGroup = new VariablesPropertyGroup();
   private final LongProperty processInstanceKeyProperty =
       new LongProperty(PROCESS_INSTANCE_KEY_KEY, -1);
   private final ArrayProperty<StringValue> fetchVariablesProperty =
@@ -75,6 +75,7 @@ public final class ProcessInstanceCreationRecord extends UnifiedRecordValue
   private final IntegerProperty storageOrdinalProperty =
       new IntegerProperty(STORAGE_ORDINAL_KEY, 0);
   private final StringProperty businessIdProperty = new StringProperty(BUSINESS_ID_KEY, "");
+  private final StringProperty versionTagProperty = new StringProperty(VERSION_TAG_KEY, "");
 
   public ProcessInstanceCreationRecord() {
     super(13);
@@ -82,7 +83,6 @@ public final class ProcessInstanceCreationRecord extends UnifiedRecordValue
         .declareProperty(processDefinitionKeyProperty)
         .declareProperty(processInstanceKeyProperty)
         .declareProperty(versionProperty)
-        .declareProperty(variablesProperty)
         .declareProperty(fetchVariablesProperty)
         .declareProperty(startInstructionsProperty)
         .declareProperty(runtimeInstructionsProperty)
@@ -90,7 +90,9 @@ public final class ProcessInstanceCreationRecord extends UnifiedRecordValue
         .declareProperty(tagsProperty)
         .declareProperty(rootProcessInstanceKeyProperty)
         .declareProperty(storageOrdinalProperty)
-        .declareProperty(businessIdProperty);
+        .declareProperty(businessIdProperty)
+        .declareProperty(versionTagProperty);
+    declareProperties(variablesPropertyGroup);
   }
 
   @Override
@@ -184,6 +186,16 @@ public final class ProcessInstanceCreationRecord extends UnifiedRecordValue
     return this;
   }
 
+  @Override
+  public String getVersionTag() {
+    return bufferAsString(versionTagProperty.getValue());
+  }
+
+  public ProcessInstanceCreationRecord setVersionTag(final String versionTag) {
+    versionTagProperty.setValue(versionTag);
+    return this;
+  }
+
   public ProcessInstanceCreationRecord setVersion(final int version) {
     versionProperty.setValue(version);
     return this;
@@ -220,11 +232,22 @@ public final class ProcessInstanceCreationRecord extends UnifiedRecordValue
 
   @Override
   public Map<String, Object> getVariables() {
-    return MsgPackConverter.convertToMap(variablesProperty.getValue());
+    return variablesPropertyGroup.getVariables();
   }
 
   public ProcessInstanceCreationRecord setVariables(final DirectBuffer variables) {
-    variablesProperty.setValue(variables);
+    variablesPropertyGroup.setVariables(variables);
+    return this;
+  }
+
+  @Override
+  public Map<String, VariableMetadataValue> getVariablesMetadata() {
+    return variablesPropertyGroup.getMetadata();
+  }
+
+  public ProcessInstanceCreationRecord setVariablesMetadata(
+      final Map<String, ? extends VariableMetadataValue> variablesMetadata) {
+    variablesPropertyGroup.setMetadata(variablesMetadata);
     return this;
   }
 
@@ -280,7 +303,7 @@ public final class ProcessInstanceCreationRecord extends UnifiedRecordValue
 
   @JsonIgnore
   public DirectBuffer getVariablesBuffer() {
-    return variablesProperty.getValue();
+    return variablesPropertyGroup.getVariablesBuffer();
   }
 
   @Override

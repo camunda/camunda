@@ -101,6 +101,17 @@ class DecisionInstanceEvaluatedHandlerTest {
   }
 
   @Test
+  void shouldDeclareTheContractedUnit() {
+    // when
+    handler.handle(typed(evaluatedRecord("tenant-a")));
+
+    // then
+    assertThat(counter())
+        .hasValueSatisfying(
+            metric -> assertThat(metric.getUnit()).isEqualTo("{decision_instance}"));
+  }
+
+  @Test
   void shouldCountOncePerRecordWhenSeveralDecisionsAreEvaluated() {
     // given a DRG evaluation: the requested decision plus its required sub-decisions
     final Record<DecisionEvaluationRecordValue> record =

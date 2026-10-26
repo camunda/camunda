@@ -10,7 +10,7 @@ package io.camunda.zeebe.protocol.impl.record;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
-import io.camunda.zeebe.protocol.impl.record.value.processinstance.SuspensionBatchRecord;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ElementInstanceWalkRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
 import java.util.Arrays;
 import java.util.Set;
@@ -50,55 +50,59 @@ final class UnifiedRecordValueTest {
   }
 
   @ParameterizedTest
-  @MethodSource("suspensionBatchRecords")
-  void shouldRoundTripSuspensionBatchRecord(final SuspensionBatchRecord original) {
+  @MethodSource("elementInstanceWalkRecords")
+  void shouldRoundTripElementInstanceWalkRecord(final ElementInstanceWalkRecord original) {
     // given
     final var buffer = new UnsafeBuffer(new byte[original.getLength()]);
     original.write(buffer, 0);
 
     // when
-    final var copy = new SuspensionBatchRecord();
+    final var copy = new ElementInstanceWalkRecord();
     copy.wrap(buffer);
 
     // then
     assertThat(copy.getProcessInstanceKey()).isEqualTo(original.getProcessInstanceKey());
     assertThat(copy.getProcessDefinitionKey()).isEqualTo(original.getProcessDefinitionKey());
-    assertThat(copy.getIndexKey()).isEqualTo(original.getIndexKey());
+    assertThat(copy.getElementInstanceKey()).isEqualTo(original.getElementInstanceKey());
     assertThat(copy.getParentKey()).isEqualTo(original.getParentKey());
+    assertThat(copy.getIndex()).isEqualTo(original.getIndex());
     assertThat(copy.getStorageOrdinal()).isEqualTo(original.getStorageOrdinal());
   }
 
   @Test
-  void shouldDefaultMissingSuspensionBatchFields() {
+  void shouldDefaultMissingElementInstanceWalkFields() {
     // given
     final var buffer = new UnsafeBuffer(MsgPackConverter.convertToMsgPack("{}"));
 
     // when
-    final var record = new SuspensionBatchRecord();
+    final var record = new ElementInstanceWalkRecord();
     record.wrap(buffer);
 
     // then
     assertThat(record.getProcessInstanceKey()).isEqualTo(-1L);
     assertThat(record.getProcessDefinitionKey()).isEqualTo(-1L);
-    assertThat(record.getIndexKey()).isEqualTo(-1L);
+    assertThat(record.getElementInstanceKey()).isEqualTo(-1L);
     assertThat(record.getParentKey()).isEqualTo(-1L);
+    assertThat(record.getIndex()).isEqualTo(-1L);
     assertThat(record.getStorageOrdinal()).isZero();
   }
 
-  private static Stream<SuspensionBatchRecord> suspensionBatchRecords() {
+  private static Stream<ElementInstanceWalkRecord> elementInstanceWalkRecords() {
     return Stream.of(
-        new SuspensionBatchRecord(),
-        new SuspensionBatchRecord()
+        new ElementInstanceWalkRecord(),
+        new ElementInstanceWalkRecord()
             .setProcessInstanceKey(123L)
             .setProcessDefinitionKey(234L)
-            .setIndexKey(123L)
+            .setElementInstanceKey(123L)
             .setParentKey(-1L)
+            .setIndex(456L)
             .setStorageOrdinal(1001),
-        new SuspensionBatchRecord()
+        new ElementInstanceWalkRecord()
             .setProcessInstanceKey(123L)
             .setProcessDefinitionKey(234L)
-            .setIndexKey(Long.MAX_VALUE - 1)
+            .setElementInstanceKey(Long.MAX_VALUE - 1)
             .setParentKey(345L)
+            .setIndex(Long.MAX_VALUE - 2)
             .setStorageOrdinal(1002));
   }
 

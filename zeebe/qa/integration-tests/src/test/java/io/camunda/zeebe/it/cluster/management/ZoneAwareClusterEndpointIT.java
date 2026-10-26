@@ -14,7 +14,7 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 
 import feign.FeignException;
 import io.atomix.cluster.MemberId;
-import io.camunda.configuration.Zone;
+import io.camunda.configuration.cluster.Zone;
 import io.camunda.zeebe.it.cluster.clustering.zoneaware.ZoneHelpers;
 import io.camunda.zeebe.management.cluster.AddZoneRequest;
 import io.camunda.zeebe.management.cluster.BrokerId;

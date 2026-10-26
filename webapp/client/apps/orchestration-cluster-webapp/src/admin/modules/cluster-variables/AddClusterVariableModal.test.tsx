@@ -11,7 +11,7 @@ import {Toaster, toast} from '@camunda/design-system';
 import {HttpResponse} from 'msw';
 import {z} from 'zod';
 import {cleanup, render} from 'vitest-browser-react';
-import {afterAll, afterEach, beforeAll, describe, expect, vi} from 'vitest';
+import {afterEach, describe, expect, vi} from 'vitest';
 import {userEvent} from 'vitest/browser';
 import {it} from '#/vitest-modules/test-extend';
 import {replaceMonacoValue} from '#/shared-test-modules/monaco';
@@ -54,13 +54,7 @@ async function renderModal(props: Partial<React.ComponentProps<typeof AddCluster
 }
 
 describe('<AddClusterVariableModal />', () => {
-	beforeAll(() => {
-		vi.useFakeTimers({toFake: ['setTimeout', 'clearTimeout', 'Date'], shouldAdvanceTime: true});
-	});
-	afterAll(() => vi.useRealTimers());
 	afterEach(async () => {
-		// Closing Monaco before its word highlighter fires leaves an unhandled "Canceled" rejection.
-		await vi.advanceTimersByTimeAsync(300);
 		await cleanup();
 		toast.dismiss();
 	});
@@ -252,7 +246,20 @@ describe('<AddClusterVariableModal />', () => {
 	});
 
 	it('should show an error toast when the creation fails', async ({worker}) => {
-		worker.use(mockCreateGlobalClusterVariableEndpoint({successResponse: new HttpResponse(null, {status: 500})}));
+		worker.use(
+			mockCreateGlobalClusterVariableEndpoint({
+				successResponse: HttpResponse.json(
+					{
+						type: 'about:blank',
+						title: 'INVALID_ARGUMENT',
+						status: 400,
+						detail: 'Invalid request to create cluster variables',
+						instance: '/v2/test',
+					},
+					{status: 400},
+				),
+			}),
+		);
 		const {screen, onClose} = await renderModal();
 
 		await userEvent.fill(screen.getByRole('textbox', {name: 'Name'}), 'my-variable');
@@ -260,6 +267,7 @@ describe('<AddClusterVariableModal />', () => {
 		await userEvent.click(screen.getByRole('button', {name: 'Create'}));
 
 		await expect.element(screen.getByText('Failed to create cluster variable')).toBeVisible();
+		await expect.element(screen.getByText('Invalid request to create cluster variables')).toBeVisible();
 		expect(onClose).not.toHaveBeenCalled();
 	});
 

@@ -8,6 +8,7 @@
 
 import {afterEach, beforeEach, describe, expect} from 'vitest';
 import {HttpResponse} from 'msw';
+import {userEvent} from 'vitest/browser';
 import {z} from 'zod';
 import {it} from '#/vitest-modules/test-extend';
 import {renderWithRouter} from '#/vitest-modules/render-with-router';
@@ -28,6 +29,21 @@ import {BPMN_XML} from '#/shared-test-modules/api-mocks/process-definition-xmls'
 import {createQueryProcessInstancesResponse} from '#/shared-test-modules/api-mocks/process-instances';
 import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
 import {ProcessesHarness} from './ProcessesHarness';
+
+const LATEST_PROCESS_DEFINITIONS = HttpResponse.json(
+	createQueryProcessDefinitionsResponse({
+		items: [
+			createProcessDefinition({name: 'Order Process', processDefinitionId: 'order-process', version: 2}),
+			createProcessDefinition({
+				name: 'Order Process',
+				processDefinitionId: 'order-process',
+				processDefinitionKey: 'tenant-a-order-process',
+				version: 3,
+				tenantId: '<tenant-A>',
+			}),
+		],
+	}),
+);
 
 const PROCESS_DEFINITIONS = HttpResponse.json(
 	createQueryProcessDefinitionsResponse({
@@ -59,11 +75,11 @@ const EMPTY_PROCESS_INSTANCES = HttpResponse.json(createQueryProcessInstancesRes
 
 const TENANT_A_SCOPED_REQUEST_SCHEMA = z.strictObject({
 	page: z.strictObject({limit: z.literal(1000)}),
-	filter: z.strictObject({tenantId: z.literal('<tenant-A>')}),
+	filter: z.strictObject({isLatestVersion: z.literal(true), tenantId: z.literal('<tenant-A>')}),
 });
 const UNSCOPED_REQUEST_SCHEMA = z.strictObject({
 	page: z.strictObject({limit: z.literal(1000)}),
-	filter: z.never().optional(),
+	filter: z.strictObject({isLatestVersion: z.literal(true)}),
 });
 const FAILURE_RESPONSE = new HttpResponse(null, {status: 400});
 
@@ -158,7 +174,11 @@ describe('Multi tenancy', () => {
 			mockQueryProcessInstancesEndpoint({successResponse: EMPTY_PROCESS_INSTANCES}),
 			mockQueryProcessDefinitionsEndpoint({
 				schema: TENANT_A_SCOPED_REQUEST_SCHEMA,
-				successResponse: PROCESS_DEFINITIONS,
+				successResponse: HttpResponse.json(
+					createQueryProcessDefinitionsResponse({
+						items: [createProcessDefinition({name: 'Order Process', tenantId: '<tenant-A>'})],
+					}),
+				),
 				failureResponse: FAILURE_RESPONSE,
 			}),
 			mockCurrentUserEndpoint({successResponse: CURRENT_USER}),
@@ -312,7 +332,7 @@ describe('Multi tenancy', () => {
 			mockQueryProcessInstancesEndpoint({successResponse: EMPTY_PROCESS_INSTANCES}),
 			mockQueryProcessDefinitionsEndpoint({
 				schema: UNSCOPED_REQUEST_SCHEMA,
-				successResponse: PROCESS_DEFINITIONS,
+				successResponse: LATEST_PROCESS_DEFINITIONS,
 				failureResponse: FAILURE_RESPONSE,
 			}),
 			mockCurrentUserEndpoint({successResponse: CURRENT_USER}),
@@ -321,6 +341,64 @@ describe('Multi tenancy', () => {
 		const screen = await renderProcessesPage({tenantId: 'all'});
 
 		await screen.getByRole('combobox', {name: 'Name'}).click();
-		await expect.element(screen.getByRole('option', {name: 'Order Process'})).toBeVisible();
+		await expect.element(screen.getByRole('option', {name: 'Order Process - Default Tenant'})).toBeVisible();
+		await expect.element(screen.getByRole('option', {name: 'Order Process - Tenant A'})).toBeVisible();
+	});
+
+	it('should select the tenant and its latest version with a process from all tenants', async ({worker}) => {
+		worker.use(
+			mockQueryProcessInstancesEndpoint({successResponse: EMPTY_PROCESS_INSTANCES}),
+			mockQueryProcessDefinitionsEndpoint({successResponse: LATEST_PROCESS_DEFINITIONS}),
+			mockCurrentUserEndpoint({successResponse: CURRENT_USER}),
+			mockGetProcessDefinitionXmlEndpoint({successResponse: HttpResponse.text(BPMN_XML)}),
+			mockGetProcessDefinitionStatisticsEndpoint({
+				successResponse: HttpResponse.json(createGetProcessDefinitionStatisticsResponse([])),
+			}),
+		);
+
+		const screen = await renderProcessesPage({tenantId: 'all'});
+		await screen.getByRole('combobox', {name: 'Name'}).fill('Order Process - Tenant A');
+		await userEvent.keyboard('{Enter}');
+
+		const getSearch = () => screen.router.state.location.search as Record<string, unknown>;
+		await expect.poll(getSearch).toMatchObject({tenantId: '<tenant-A>', process: 'order-process', version: 3});
+	});
+
+	it('should show the tenant of the bookmarked version with all tenants and switch to another tenant', async ({
+		worker,
+	}) => {
+		worker.use(
+			mockQueryProcessInstancesEndpoint({successResponse: EMPTY_PROCESS_INSTANCES}),
+			mockQueryProcessDefinitionsEndpoint({successResponse: LATEST_PROCESS_DEFINITIONS}),
+			mockCurrentUserEndpoint({successResponse: CURRENT_USER}),
+			mockGetProcessDefinitionXmlEndpoint({successResponse: HttpResponse.text(BPMN_XML)}),
+			mockGetProcessDefinitionStatisticsEndpoint({
+				successResponse: HttpResponse.json(createGetProcessDefinitionStatisticsResponse([])),
+			}),
+		);
+
+		const screen = await renderProcessesPage({tenantId: 'all', process: 'order-process', version: '3'});
+		const nameCombobox = screen.getByRole('combobox', {name: 'Name'});
+
+		await expect.element(nameCombobox).toHaveValue('Order Process - Tenant A');
+
+		await nameCombobox.fill('Order Process - Default Tenant');
+		await userEvent.keyboard('{Enter}');
+
+		const getSearch = () => screen.router.state.location.search as Record<string, unknown>;
+		await expect.poll(getSearch).toMatchObject({tenantId: '<default>', process: 'order-process', version: 2});
+	});
+
+	it('should disable the process name until a tenant is selected', async ({worker}) => {
+		worker.use(
+			mockQueryProcessInstancesEndpoint({successResponse: EMPTY_PROCESS_INSTANCES}),
+			mockQueryProcessDefinitionsEndpoint({successResponse: LATEST_PROCESS_DEFINITIONS}),
+			mockCurrentUserEndpoint({successResponse: CURRENT_USER}),
+		);
+
+		const screen = await renderProcessesPage();
+
+		await expect.element(screen.getByRole('combobox', {name: 'Select a tenant'})).toBeVisible();
+		await expect.element(screen.getByRole('combobox', {name: 'Name'})).toBeDisabled();
 	});
 });

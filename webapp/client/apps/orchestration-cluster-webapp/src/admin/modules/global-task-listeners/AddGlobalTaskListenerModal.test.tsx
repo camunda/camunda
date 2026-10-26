@@ -118,7 +118,16 @@ describe('<AddGlobalTaskListenerModal />', () => {
 			mockCreateGlobalTaskListenerEndpoint({
 				schema: z.object({id: z.literal('will-not-match')}),
 				successResponse: HttpResponse.json({}),
-				failureResponse: new HttpResponse(null, {status: 500}),
+				failureResponse: HttpResponse.json(
+					{
+						type: 'about:blank',
+						title: 'INVALID_ARGUMENT',
+						status: 400,
+						detail: 'Invalid request to create global task listeners',
+						instance: '/v2/test',
+					},
+					{status: 400},
+				),
 			}),
 		);
 
@@ -132,6 +141,7 @@ describe('<AddGlobalTaskListenerModal />', () => {
 		await userEvent.click(screen.getByRole('button', {name: 'Save'}));
 
 		await expect.element(screen.getByText('Failed to create global task listener')).toBeVisible();
+		await expect.element(screen.getByText('Invalid request to create global task listeners')).toBeVisible();
 	});
 
 	it('should warn when a created global task listener cannot be confirmed on the server', async ({worker}) => {

@@ -27,6 +27,14 @@ def numeric_or_none(v: Any) -> float | None:
     return None
 
 
+def read_results(path: str | None, label: str) -> dict:
+    raw = None
+    if path and os.path.exists(path):
+        with open(path, encoding="utf-8") as f:
+            raw = f.read()
+    return safe_json_parse(raw, label)
+
+
 def safe_json_parse(raw: str | None, label: str) -> dict:
     if not raw or not raw.strip():
         warn(f"{label} JSON is empty — column will render as n/a / '-'")
@@ -114,8 +122,8 @@ def load_inputs() -> dict:
         "protocol": os.environ.get("PROTOCOL", ""),
         "queries": queries_doc["queries"],
         "optimal_metrics": optimal_metrics(optimal, os.environ.get("STORAGE_TYPE", "")),
-        "results": safe_json_parse(os.environ.get("PR_RESULTS_JSON"), "Current"),
-        "daily_results": safe_json_parse(os.environ.get("DAILY_RESULTS_JSON"), "Daily"),
+        "results": read_results(os.environ.get("PR_RESULTS_FILE"), "Current"),
+        "daily_results": read_results(os.environ.get("DAILY_RESULTS_FILE"), "Daily"),
     }
 
 

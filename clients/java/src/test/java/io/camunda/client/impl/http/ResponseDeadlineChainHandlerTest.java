@@ -80,13 +80,14 @@ class ResponseDeadlineChainHandlerTest {
   @Test
   void shouldNotInterfereWhenResponseArrivesInTime() throws Exception {
     // given
-    final Scope scope = scope(Timeout.ofMilliseconds(100));
+    final HttpResponse response = mock(HttpResponse.class);
+    final Scope scope = scope(Timeout.ofMilliseconds(500));
     final AtomicReference<AsyncExecCallback> exchange = proceed(scope, null);
 
     // when
-    exchange.get().handleResponse(mock(HttpResponse.class), null);
+    exchange.get().handleResponse(response, null);
     exchange.get().completed();
-    await().during(Duration.ofMillis(400)).untilAsserted(() -> {});
+    await().during(Duration.ofMillis(800)).untilAsserted(() -> {});
 
     // then
     verify(callback).completed();

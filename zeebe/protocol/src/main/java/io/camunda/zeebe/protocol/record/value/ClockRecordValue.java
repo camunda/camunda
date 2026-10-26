@@ -34,8 +34,13 @@ public interface ClockRecordValue extends RecordValue {
    * <ol>
    *   <li>If the associated intent is a pin, then the time is a Unix timestamp as epoch
    *       milliseconds
-   *   <li>If the associated intent is an offset, then time would be the duration in milliseconds
+   *   <li>If the associated intent is {@link ClockIntent#ADD}, then the time is the duration in
+   *       milliseconds to add to the clock; it may be negative
+   *   <li>If the associated intent is an offset, then the time is the total duration in
+   *       milliseconds between the clock and the system time
    *   <li>If the associated intent is a reset, then this value has no meaning, and will be 0
+   *   <li>If the associated intent is {@link ClockIntent#FETCHED}, then the time is the current
+   *       time of the clock as epoch milliseconds; for {@link ClockIntent#FETCH} it has no meaning
    * </ol>
    */
   long getTime();

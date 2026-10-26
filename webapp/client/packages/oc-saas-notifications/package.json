@@ -35,16 +35,16 @@
 	"publishConfig": {
 		"access": "public"
 	},
-	"packageManager": "npm@12.2.0",
+	"packageManager": "npm@12.2.1",
 	"devDependencies": {
-		"@camunda/camunda-composite-components": "0.25.4",
-		"@camunda/design-system": "0.69.0",
+		"@camunda/camunda-composite-components": "0.25.5",
+		"@camunda/design-system": "0.76.0",
 		"@types/react": "19.3.0",
 		"@types/react-dom": "19.3.0",
 		"typescript": "7.0.2"
 	},
 	"peerDependencies": {
-		"@camunda/camunda-composite-components": "0.25.4",
+		"@camunda/camunda-composite-components": "0.25.5",
 		"@camunda/design-system": ">=0.59.0 <1.0.0",
 		"react": ">=19.0.0",
 		"react-dom": ">=19.0.0"

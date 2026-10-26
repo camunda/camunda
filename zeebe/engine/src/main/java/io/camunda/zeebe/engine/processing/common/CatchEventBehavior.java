@@ -316,7 +316,8 @@ public final class CatchEventBehavior {
     final String tenantId = context.getTenantId();
     return evaluation
         .expressionProcessor()
-        .evaluateMessageCorrelationKeyExpression(expression, scopeKey, tenantId)
+        .evaluateMessageCorrelationKeyExpression(
+            expression, scopeKey, tenantId, ExpressionLabel.correlationKeyExpression(event.getId()))
         .flatMap(
             correlationKey ->
                 validateLength("correlation key", correlationKey, scopeKey)
@@ -367,7 +368,11 @@ public final class CatchEventBehavior {
     final Expression signalNameExpression = signal.getSignalNameExpression();
     return evaluation
         .expressionProcessor()
-        .evaluateStringExpression(signalNameExpression, scopeKey, tenantId)
+        .evaluateStringExpression(
+            signalNameExpression,
+            scopeKey,
+            tenantId,
+            ExpressionLabel.signalNameExpression(event.getId()))
         .map(BufferUtil::wrapString)
         .map(evaluation::recordSignalName);
   }

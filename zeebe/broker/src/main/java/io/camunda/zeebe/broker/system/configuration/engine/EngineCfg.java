@@ -311,6 +311,7 @@ public final class EngineCfg implements ConfigurationEntry {
             processInstanceCreation.getMessageStartLockReleasePollBatchLimit())
         .setIncludeVariablesInJobCompletedEvent(jobs.isIncludeVariablesInJobCompletedEvent())
         .setEnableRpaReexportMigration(startup.isRpaReexportMigrationEnabled())
+        .setEnableProcessDefinitionRestore(startup.isProcessDefinitionRestoreEnabled())
         .setArchiverlessEnabled(storageOrdinals.isEnableArchiverless())
         .setFixedStorageOrdinal(storageOrdinals.getFixedStorageOrdinal())
         .setInputMappingMode(inputMappingMode)

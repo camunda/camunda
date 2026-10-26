@@ -16,10 +16,11 @@ import {endpoints} from '#/shared/http/endpoints';
 import {notificationsStore} from '#/shared/notifications/notifications.store';
 import {formatOperationType} from '#/operate/shared/utils/formatOperationType';
 import {handleOperationError} from '#/operate/shared/utils/handleOperationError';
-import {buildInstanceKeyCriterion, type DecisionInstancesFilter} from './decisionsFilter';
+import {applyInstanceSelection, type DecisionInstancesFilter} from './decisionsFilter';
 
 type Props = {
 	selectedCount: number;
+	isCountTruncated: boolean;
 	includedIds: string[];
 	excludedIds: string[];
 	filter: DecisionInstancesFilter;
@@ -27,7 +28,15 @@ type Props = {
 	onDiscard: () => void;
 };
 
-const Toolbar: React.FC<Props> = ({selectedCount, includedIds, excludedIds, filter, onDeleted, onDiscard}) => {
+const Toolbar: React.FC<Props> = ({
+	selectedCount,
+	isCountTruncated,
+	includedIds,
+	excludedIds,
+	filter,
+	onDeleted,
+	onDiscard,
+}) => {
 	const {t} = useTranslation();
 	const [showDeleteModal, setShowDeleteModal] = useState(false);
 	const [isDeleting, setIsDeleting] = useState(false);
@@ -40,8 +49,7 @@ const Toolbar: React.FC<Props> = ({selectedCount, includedIds, excludedIds, filt
 		setShowDeleteModal(false);
 		setIsDeleting(true);
 
-		const criterion = buildInstanceKeyCriterion(includedIds, excludedIds);
-		const requestFilter = criterion ? {...filter, decisionEvaluationInstanceKey: criterion} : filter;
+		const requestFilter = applyInstanceSelection(filter, includedIds, excludedIds);
 
 		const {response, error} = await request(
 			endpoints.createDecisionInstancesDeletionBatchOperation({filter: requestFilter}),
@@ -86,9 +94,15 @@ const Toolbar: React.FC<Props> = ({selectedCount, includedIds, excludedIds, filt
 							case 'carbon.table.batch.cancel':
 								return t('operate.decisions.toolbar.discard');
 							case 'carbon.table.batch.items.selected':
-								return t('operate.decisions.toolbar.itemsSelected', {count: selectedCount});
 							case 'carbon.table.batch.item.selected':
-								return t('operate.decisions.toolbar.itemSelected', {count: selectedCount});
+								return t(
+									isCountTruncated
+										? 'operate.decisions.toolbar.itemsSelectedTruncated'
+										: selectedCount === 1
+											? 'operate.decisions.toolbar.itemSelected'
+											: 'operate.decisions.toolbar.itemsSelected',
+									{count: selectedCount},
+								);
 							case 'carbon.table.batch.selectAll':
 								return t('operate.decisions.toolbar.selectAll');
 							default:
@@ -117,7 +131,14 @@ const Toolbar: React.FC<Props> = ({selectedCount, includedIds, excludedIds, filt
 				}}
 				size="md"
 			>
-				<p>{t('operate.decisions.toolbar.deleteModalBody', {count: selectedCount})}</p>
+				<p>
+					{t(
+						isCountTruncated
+							? 'operate.decisions.toolbar.deleteModalBodyTruncated'
+							: 'operate.decisions.toolbar.deleteModalBody',
+						{count: selectedCount},
+					)}
+				</p>
 			</Modal>
 		</>
 	);

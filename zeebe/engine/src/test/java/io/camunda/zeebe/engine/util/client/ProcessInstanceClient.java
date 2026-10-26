@@ -41,6 +41,7 @@ import io.camunda.zeebe.protocol.record.value.ProcessInstanceModificationRecordV
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.RuntimeInstructionType;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
+import io.camunda.zeebe.protocol.record.value.VariableMetadataValue;
 import io.camunda.zeebe.test.util.MsgPackUtil;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.util.ArrayList;
@@ -110,6 +111,16 @@ public final class ProcessInstanceClient {
       return this;
     }
 
+    public ProcessInstanceCreationClient withProcessDefinitionKey(final long key) {
+      processInstanceCreationRecord.setProcessDefinitionKey(key);
+      return this;
+    }
+
+    public ProcessInstanceCreationClient withVersionTag(final String versionTag) {
+      processInstanceCreationRecord.setVersionTag(versionTag);
+      return this;
+    }
+
     public ProcessInstanceCreationClient withTenantId(final String tenantId) {
       processInstanceCreationRecord.setTenantId(tenantId);
       return this;
@@ -127,6 +138,12 @@ public final class ProcessInstanceClient {
 
     public ProcessInstanceCreationClient withVariables(final String variables) {
       processInstanceCreationRecord.setVariables(MsgPackUtil.asMsgPack(variables));
+      return this;
+    }
+
+    public ProcessInstanceCreationClient withVariablesMetadata(
+        final Map<String, ? extends VariableMetadataValue> variablesMetadata) {
+      processInstanceCreationRecord.setVariablesMetadata(variablesMetadata);
       return this;
     }
 
@@ -216,6 +233,11 @@ public final class ProcessInstanceClient {
 
     public ProcessInstanceCreationWithResultClient withRequestStreamId(final int requestStreamId) {
       this.requestStreamId = requestStreamId;
+      return this;
+    }
+
+    public ProcessInstanceCreationWithResultClient withVersionTag(final String versionTag) {
+      record.setVersionTag(versionTag);
       return this;
     }
 

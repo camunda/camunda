@@ -29,6 +29,10 @@ const DiagramCanvas = styled.div`
 	top: 0;
 	min-height: 200px;
 
+	.bjs-powered-by {
+		display: none;
+	}
+
 	.op-highlighted.djs-shape .djs-visual > :nth-child(1) {
 		stroke: var(--cds-background-brand) !important;
 	}

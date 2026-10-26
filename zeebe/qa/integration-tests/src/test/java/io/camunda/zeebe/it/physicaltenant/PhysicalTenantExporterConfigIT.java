@@ -140,17 +140,17 @@ final class PhysicalTenantExporterConfigIT {
           .withPtConfig(
               TENANT_A,
               camunda -> {
-                final var exporter = new io.camunda.configuration.Exporter();
+                final var exporter = new io.camunda.configuration.data.Exporter();
                 exporter.setClassName(LocationRecordingExporter.class.getName());
                 exporter.setArgs(Map.of(TARGET_ARG, TENANT_A_TARGET));
                 camunda.getData().getExporters().put(LOCATION_EXPORTER_ID, exporter);
 
                 // partial override: no className, no url, no bulk tuning — only the index prefix
-                final var esOverride = new io.camunda.configuration.Exporter();
+                final var esOverride = new io.camunda.configuration.data.Exporter();
                 esOverride.setArgs(Map.of("index", Map.of("prefix", TENANT_A_INDEX_PREFIX)));
                 camunda.getData().getExporters().put(ES_MERGE_EXPORTER_ID, esOverride);
 
-                final var tenantOnlyExporter = new io.camunda.configuration.Exporter();
+                final var tenantOnlyExporter = new io.camunda.configuration.data.Exporter();
                 tenantOnlyExporter.setClassName(TenantAExporter.class.getName());
                 camunda.getData().getExporters().put(TENANT_A_ONLY_EXPORTER_ID, tenantOnlyExporter);
               })

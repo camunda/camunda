@@ -12,8 +12,9 @@ import static io.camunda.configuration.beanoverrides.BrokerBasedPropertiesOverri
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.application.commons.rdbms.RdbmsDataSources;
-import io.camunda.configuration.PrimaryStorageBackup.BackupStoreType;
-import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
+import io.camunda.configuration.data.SecondaryStorage.SecondaryStorageType;
+import io.camunda.configuration.data.primarystorage.PrimaryStorageBackup.BackupStoreType;
+import io.camunda.db.rdbms.sql.ExporterPositionMapper;
 import io.camunda.db.rdbms.write.RdbmsMapperBundle;
 import io.camunda.management.backups.StateCode;
 import io.camunda.zeebe.management.cluster.BrokerState;
@@ -28,9 +29,11 @@ import java.nio.file.Path;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.time.Duration;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.IntStream;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -52,13 +55,13 @@ final class InProcessRdbmsRangeRestoreIT extends RdbmsRangeRestoreTestBase {
   @Test
   void shouldInvokeLiquibaseDuringPrimaryRestore() throws Exception {
     // given
-    final Interval interval;
+    final RestoreTarget timeRange;
     try (final var client = broker.newClientBuilder().build()) {
       final var processKey = deployTestProcess(client);
-      interval = createProcessInstancesAndTakeBackups(client, processKey);
+      timeRange = createProcessInstancesAndTakeBackups(client, processKey);
     }
     takeAndAwaitBackup();
-    ExportersActuator.of(broker).disableExporter(RDBMS_EXPORTER_NAME);
+    disableRdbmsExporter();
     awaitBackupCoversExportedPositionsOnEveryPartition();
     final var clusterActuator = enterRecovering();
     final var dataSource =
@@ -82,9 +85,7 @@ final class InProcessRdbmsRangeRestoreIT extends RdbmsRangeRestoreTestBase {
 
     // when
     try (final var client = broker.newClientBuilder().build()) {
-      final var changeId =
-          InProcessRestoreTestUtil.triggerRestore(
-              client, Map.of("from", interval.start().toString(), "to", interval.end().toString()));
+      final var changeId = InProcessRestoreTestUtil.triggerRestore(client, requestBody(timeRange));
       awaitChangeCompletesAndBrokerActive(clusterActuator, changeId);
     }
 
@@ -129,11 +130,14 @@ final class InProcessRdbmsRangeRestoreIT extends RdbmsRangeRestoreTestBase {
             InProcessRestoreTestUtil.deployAndCreateInstancesOnEveryPartition(
                 client, SCALED_PROCESS_ID, SCALED_JOB_TYPE, BACKUP_PARTITIONS_COUNT);
       }
-      ExportersActuator.of(scaledBroker).disableExporter(RDBMS_EXPORTER_NAME);
-      awaitBackupCoveringExportedPositions(scaledBroker);
+      awaitExporterOpenedOnEveryPartition(scaledBroker);
+      final var clusterActuator = ClusterActuator.of(scaledBroker);
+      final var disableExporter =
+          ExportersActuator.of(scaledBroker).disableExporter(RDBMS_EXPORTER_NAME);
+      awaitScaledChangeCompletes(clusterActuator, disableExporter.getChangeId());
+      assertBackupCoversExportedPositions(scaledBroker);
 
       // and - the cluster is scaled up to 5 partitions
-      final var clusterActuator = ClusterActuator.of(scaledBroker);
       InProcessRestoreTestUtil.scaleUpPartitions(clusterActuator, SCALED_PARTITIONS_COUNT, 1);
 
       try (final var client = scaledBroker.newClientBuilder().build()) {
@@ -173,34 +177,47 @@ final class InProcessRdbmsRangeRestoreIT extends RdbmsRangeRestoreTestBase {
     }
   }
 
-  private static void awaitBackupCoveringExportedPositions(final TestStandaloneBroker broker) {
-    final Map<String, RdbmsMapperBundle> bundles = broker.bean("rdbmsMapperBundles");
-    final var exporterPositions = bundles.get(DEFAULT_PHYSICAL_TENANT_ID).exporterPositionMapper();
+  private static void awaitExporterOpenedOnEveryPartition(final TestStandaloneBroker broker) {
+    final var exporterPositions = exporterPositionMapper(broker);
+    Awaitility.await("the RDBMS exporter opened on every partition")
+        .atMost(Duration.ofSeconds(60))
+        .untilAsserted(
+            () ->
+                IntStream.rangeClosed(1, BACKUP_PARTITIONS_COUNT)
+                    .forEach(
+                        partitionId ->
+                            assertThat(exporterPositions.findOne(partitionId))
+                                .describedAs("exported position for partition %d", partitionId)
+                                .isNotNull()));
+  }
+
+  private static void assertBackupCoversExportedPositions(final TestStandaloneBroker broker) {
+    final var exporterPositions = exporterPositionMapper(broker);
     final var backupActuator = BackupActuator.of(broker);
-    Awaitility.await("a backup covers the exported position on every partition")
-        .atMost(Duration.ofMinutes(2))
-        .pollInterval(Duration.ofSeconds(2))
+    final long backupId = backupActuator.take().getBackupId();
+    Awaitility.await("backup %d completes".formatted(backupId))
+        .atMost(Duration.ofSeconds(30))
         .ignoreExceptions()
         .untilAsserted(
-            () -> {
-              final long backupId = backupActuator.take().getBackupId();
-              Awaitility.await("backup %d completes".formatted(backupId))
-                  .atMost(Duration.ofSeconds(30))
-                  .ignoreExceptions()
-                  .untilAsserted(
-                      () ->
-                          assertThat(backupActuator.status(backupId).getState())
-                              .isEqualTo(StateCode.COMPLETED));
-              assertThat(backupActuator.status(backupId).getDetails())
-                  .hasSize(BACKUP_PARTITIONS_COUNT)
-                  .allSatisfy(
-                      details ->
-                          assertThat(details.getCheckpointPosition())
-                              .isGreaterThanOrEqualTo(
-                                  exporterPositions
-                                      .findOne(details.getPartitionId())
-                                      .lastExportedPosition()));
+            () ->
+                assertThat(backupActuator.status(backupId).getState())
+                    .isEqualTo(StateCode.COMPLETED));
+    assertThat(backupActuator.status(backupId).getDetails())
+        .hasSize(BACKUP_PARTITIONS_COUNT)
+        .allSatisfy(
+            details -> {
+              final var exportedPosition = exporterPositions.findOne(details.getPartitionId());
+              assertThat(exportedPosition)
+                  .describedAs("exported position for partition %d", details.getPartitionId())
+                  .isNotNull();
+              assertThat(details.getCheckpointPosition())
+                  .isGreaterThanOrEqualTo(exportedPosition.lastExportedPosition());
             });
+  }
+
+  private static ExporterPositionMapper exporterPositionMapper(final TestStandaloneBroker broker) {
+    final Map<String, RdbmsMapperBundle> bundles = broker.bean("rdbmsMapperBundles");
+    return bundles.get(DEFAULT_PHYSICAL_TENANT_ID).exporterPositionMapper();
   }
 
   private static void awaitScaledChangeCompletes(
@@ -225,39 +242,36 @@ final class InProcessRdbmsRangeRestoreIT extends RdbmsRangeRestoreTestBase {
   }
 
   @Override
-  void restoreFromTimeRange(final Interval interval) throws Exception {
+  void restore(final RestoreTarget target) {
     final var clusterActuator = enterRecovering();
     final long changeId;
     try (final var client = broker.newClientBuilder().build()) {
-      changeId =
-          InProcessRestoreTestUtil.triggerRestore(
-              client, Map.of("from", interval.start().toString(), "to", interval.end().toString()));
+      changeId = InProcessRestoreTestUtil.triggerRestore(client, requestBody(target));
     }
     awaitChangeCompletesAndBrokerActive(clusterActuator, changeId);
   }
 
   @Override
-  void restoreWithoutArguments() throws Exception {
-    final var clusterActuator = enterRecovering();
-    final long changeId;
-    try (final var client = broker.newClientBuilder().build()) {
-      changeId = InProcessRestoreTestUtil.triggerRestore(client, Map.of());
-    }
-    awaitChangeCompletesAndBrokerActive(clusterActuator, changeId);
-  }
-
-  @Override
-  void assertRestoreFailsForMissingBackup(final Interval interval) throws Exception {
+  void assertRestoreFails(final RestoreTarget target, final String expectedMessage) {
     enterRecovering();
     try (final var client = broker.newClientBuilder().build()) {
-      final var response =
-          InProcessRestoreTestUtil.sendRestoreRequest(
-              client, Map.of("from", interval.start().toString(), "to", interval.end().toString()));
+      final var response = InProcessRestoreTestUtil.sendRestoreRequest(client, requestBody(target));
       assertThat(response.statusCode())
           .describedAs("restore REST response: %s".formatted(response.body()))
           .isEqualTo(409);
-      assertThat(response.body()).contains("No usable range found");
+      assertThat(response.body()).contains(expectedMessage);
     }
+  }
+
+  private static Map<String, Object> requestBody(final RestoreTarget target) {
+    final Map<String, Object> body = new HashMap<>();
+    if (target.from() != null) {
+      body.put("from", target.from().toString());
+    }
+    if (target.to() != null) {
+      body.put("to", target.to().toString());
+    }
+    return body;
   }
 
   @Override

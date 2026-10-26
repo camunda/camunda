@@ -58,6 +58,11 @@ public final class ControllableStreamClockImpl implements StreamClock.Controllab
   }
 
   @Override
+  public long systemMillis() {
+    return source.millis();
+  }
+
+  @Override
   public int hashCode() {
     return Objects.hash(source, modification);
   }

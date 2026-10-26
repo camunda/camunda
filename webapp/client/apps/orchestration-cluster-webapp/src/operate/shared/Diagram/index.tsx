@@ -7,6 +7,7 @@
  */
 
 import React, {useRef, useEffect, useLayoutEffect, useState, useCallback} from 'react';
+import {useTranslation} from 'react-i18next';
 import {BpmnJS, type OnElementSelection, type OnElementDoubleClick} from './BpmnJS';
 import type {OverlayData, OverlayEntry} from './overlayTypes';
 import {DiagramControls} from './DiagramControls';
@@ -125,6 +126,7 @@ function Diagram({
 	customElementClasses,
 	download,
 }: Props) {
+	const {t} = useTranslation();
 	const diagramCanvasRef = useRef<HTMLDivElement | null>(null);
 	const diagramRef = useRef<HTMLDivElement | null>(null);
 	const [isDiagramRendered, setIsDiagramRendered] = useState(false);
@@ -155,7 +157,6 @@ function Diagram({
 
 			viewer.onOverlayChange = setActiveOverlays;
 			setIsDiagramRendered(false);
-			setSelectedElement(undefined);
 
 			await viewer.render({
 				container: diagramCanvasRef.current,
@@ -171,6 +172,7 @@ function Diagram({
 			});
 
 			if (mounted) {
+				setSelectedElement(viewer.selectedElement);
 				setIsDiagramRendered(true);
 				resetMinimap();
 			}
@@ -231,7 +233,12 @@ function Diagram({
 	return (
 		<DiagramOverlayContext.Provider value={activeOverlays}>
 			<DiagramContainer data-testid="diagram" ref={diagramRef} $isFullscreen={isFullscreen}>
-				<DiagramCanvas ref={diagramCanvasRef} data-testid="diagram-canvas" />
+				<DiagramCanvas
+					ref={diagramCanvasRef}
+					data-testid="diagram-canvas"
+					role="region"
+					aria-label={t('operate.shared.diagram.label')}
+				/>
 				{isDiagramRendered && (
 					<>
 						<DiagramControls

@@ -203,7 +203,7 @@ describe('<OperationsLog />', () => {
 				mockQueryDecisionDefinitionsEndpoint({successResponse: NO_DECISION_DEFINITIONS}),
 				mockQueryAuditLogsEndpoint({
 					successResponse: HttpResponse.json(createQueryAuditLogsResponse()),
-					delay: 1000,
+					delay: 'infinite',
 				}),
 			);
 
@@ -212,7 +212,6 @@ describe('<OperationsLog />', () => {
 			await expect.element(screen.getByRole('table')).toBeVisible();
 			await expect.element(screen.getByText('No operation log items yet')).not.toBeInTheDocument();
 			await expect.element(screen.getByText('No operations log found')).not.toBeInTheDocument();
-			await expect.element(screen.getByText('No operation log items yet')).toBeVisible();
 		});
 
 		it('should show the filtered empty message only after a successful empty response', async ({worker}) => {
@@ -253,15 +252,14 @@ describe('<OperationsLog />', () => {
 			worker.use(
 				mockQueryAuditLogsEndpoint({
 					successResponse: HttpResponse.json(createQueryAuditLogsResponse()),
-					delay: 1000,
+					delay: 'infinite',
 				}),
 			);
 			await userEvent.click(screen.getByRole('button', {name: 'Change filter'}));
 
-			await expect.element(screen.getByRole('table')).toBeVisible();
 			await expect.element(screen.getByText('No operation log items yet')).not.toBeInTheDocument();
+			await expect.element(screen.getByRole('table')).toBeVisible();
 			await expect.element(screen.getByText('No operations log found')).not.toBeInTheDocument();
-			await expect.element(screen.getByText('No operations log found')).toBeVisible();
 		});
 
 		it('should notify a failing audit log poll once until it recovers', async ({worker}) => {

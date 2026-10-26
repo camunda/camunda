@@ -56,6 +56,10 @@ inputs:
       cache; see the setup-maven-cache action for why the bound exists.
     required: false
     default: "3"
+  skip-maven-cache:
+    description: Skip Maven cache setup (e.g. when running Gradle instead of Maven)
+    required: false
+    default: "false"
   maven-mirrors:
     description: |
       JSON list of extra Maven mirrors.
@@ -72,6 +76,12 @@ inputs:
     description: |
       Time zone to set for the build environment. Use TZ identifiers, e.g., 'Europe/Berlin'.
       https://en.wikipedia.org/wiki/List_of_tz_database_time_zones
+    required: false
+  locale:
+    description: |
+      Locale to set as LC_ALL for the following steps, e.g. 'C.UTF-8'. The runner default is POSIX,
+      so the JVM decodes file names as ASCII and fails on non-ASCII ones, such as Gradle test reports
+      for parameterized tests with "→" in their display name.
     required: false
   vault-address:
     description: Vault URL to retrieve secrets from
@@ -169,6 +179,7 @@ runs:
     shell: bash
     run: echo "::add-matcher::.github/maven-matcher.json"
   - name: Configure Maven cache
+    if: inputs.skip-maven-cache != 'true'
     uses: ./.github/actions/setup-maven-cache
     with:
       maven-cache-key-modifier: ${{ inputs.maven-cache-key-modifier }}
@@ -233,7 +244,7 @@ runs:
       echo servers=$servers >> $GITHUB_OUTPUT
     shell: bash
   - name: Update Maven settings.xml
-    uses: s4u/maven-settings-action@894661b3ddae382f1ae8edbeab60987e08cf0788 # v4.0.0
+    uses: s4u/maven-settings-action@4cfd36368400327fd45dcb28f190ae7b85533deb # v4.1.0
     with:
       githubServer: false
       servers: ${{ steps.maven.outputs.servers }}
@@ -257,6 +268,12 @@ runs:
       echo ${TZ_IDENTIFIER} | sudo tee /etc/timezone
       sudo rm -rf /etc/localtime
       sudo ln -s /usr/share/zoneinfo/${TZ_IDENTIFIER} /etc/localtime
+    shell: bash
+  - name: Set locale
+    if: inputs.locale != ''
+    env:
+      LOCALE: ${{ inputs.locale }}
+    run: echo "LC_ALL=${LOCALE}" >> "$GITHUB_ENV"
     shell: bash
   - name: Logs on to DockerHub
     # DockerHub login is disabled for fork PRs

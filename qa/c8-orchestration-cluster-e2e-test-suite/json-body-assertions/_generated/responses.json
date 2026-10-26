@@ -1,10 +1,10 @@
 {
   "metadata": {
-    "sourceRepo": "https://github.com/camunda/camunda",
-    "commit": "2eb5cab1daab7416200e9bf71ed27359836704ba",
-    "generatedAt": "2026-10-12T12:18:01.529Z",
+    "sourceRepo": "camunda/camunda",
+    "commit": "local",
+    "generatedAt": "2026-10-26T03:59:59.559Z",
     "specPath": "zeebe/gateway-protocol/src/main/proto/v2/rest-api.yaml",
-    "specSha256": "70dee7692bf928bbd08bf9dbbb32337ed98ead67869537a2bc51c84f61d30a6e"
+    "specSha256": "cce92a4b7e0bb25d99e0ade651c43c4241d63f10c939ef5c3b0d1214dea7e89d"
   },
   "responses": [
     {
@@ -2546,6 +2546,34 @@
       }
     },
     {
+      "path": "/clock",
+      "method": "GET",
+      "status": "200",
+      "schema": {
+        "required": [
+          {
+            "name": "timestamp",
+            "type": "string"
+          }
+        ],
+        "optional": []
+      }
+    },
+    {
+      "path": "/clock/add",
+      "method": "POST",
+      "status": "200",
+      "schema": {
+        "required": [
+          {
+            "name": "timestamp",
+            "type": "string"
+          }
+        ],
+        "optional": []
+      }
+    },
+    {
       "path": "/cluster-variables/global",
       "method": "POST",
       "status": "200",
@@ -2994,7 +3022,8 @@
                 },
                 {
                   "name": "processDefinitionKey",
-                  "type": "string"
+                  "type": "string",
+                  "nullable": true
                 },
                 {
                   "name": "processInstanceKey",
@@ -4432,11 +4461,13 @@
                 },
                 {
                   "name": "processDefinitionId",
-                  "type": "string"
+                  "type": "string",
+                  "nullable": true
                 },
                 {
                   "name": "processDefinitionKey",
-                  "type": "string"
+                  "type": "string",
+                  "nullable": true
                 },
                 {
                   "name": "processInstanceKey",
@@ -4566,11 +4597,13 @@
           },
           {
             "name": "processDefinitionId",
-            "type": "string"
+            "type": "string",
+            "nullable": true
           },
           {
             "name": "processDefinitionKey",
-            "type": "string"
+            "type": "string",
+            "nullable": true
           },
           {
             "name": "processInstanceKey",
@@ -4721,6 +4754,11 @@
                     "RESOLVED",
                     "UNKNOWN"
                   ]
+                },
+                {
+                  "name": "storageOrdinal",
+                  "type": "number",
+                  "nullable": true
                 },
                 {
                   "name": "tenantId",
@@ -5516,6 +5554,11 @@
                   ]
                 },
                 {
+                  "name": "storageOrdinal",
+                  "type": "number",
+                  "nullable": true
+                },
+                {
                   "name": "tenantId",
                   "type": "string"
                 }
@@ -5635,6 +5678,11 @@
               "RESOLVED",
               "UNKNOWN"
             ]
+          },
+          {
+            "name": "storageOrdinal",
+            "type": "number",
+            "nullable": true
           },
           {
             "name": "tenantId",
@@ -6009,7 +6057,8 @@
                 },
                 {
                   "name": "elementId",
-                  "type": "string"
+                  "type": "string",
+                  "nullable": true
                 },
                 {
                   "name": "elementInstanceKey",
@@ -6080,11 +6129,13 @@
                 },
                 {
                   "name": "processDefinitionId",
-                  "type": "string"
+                  "type": "string",
+                  "nullable": true
                 },
                 {
                   "name": "processDefinitionKey",
-                  "type": "string"
+                  "type": "string",
+                  "nullable": true
                 },
                 {
                   "name": "processInstanceKey",
@@ -8114,6 +8165,11 @@
                   ]
                 },
                 {
+                  "name": "storageOrdinal",
+                  "type": "number",
+                  "nullable": true
+                },
+                {
                   "name": "tenantId",
                   "type": "string"
                 }
@@ -8169,11 +8225,13 @@
                 },
                 {
                   "name": "processDefinitionId",
-                  "type": "string"
+                  "type": "string",
+                  "nullable": true
                 },
                 {
                   "name": "processDefinitionKey",
-                  "type": "string"
+                  "type": "string",
+                  "nullable": true
                 },
                 {
                   "name": "processInstanceKey",
@@ -12088,6 +12146,20 @@
                   "type": "boolean"
                 },
                 {
+                  "name": "metadata",
+                  "type": "object",
+                  "nullable": true,
+                  "children": {
+                    "required": [
+                      {
+                        "name": "protectionModes",
+                        "type": "array<string>"
+                      }
+                    ],
+                    "optional": []
+                  }
+                },
+                {
                   "name": "name",
                   "type": "string"
                 },
@@ -12197,6 +12269,20 @@
                   "type": "boolean"
                 },
                 {
+                  "name": "metadata",
+                  "type": "object",
+                  "nullable": true,
+                  "children": {
+                    "required": [
+                      {
+                        "name": "protectionModes",
+                        "type": "array<string>"
+                      }
+                    ],
+                    "optional": []
+                  }
+                },
+                {
                   "name": "name",
                   "type": "string"
                 },
@@ -12276,6 +12362,20 @@
                   "type": "boolean"
                 },
                 {
+                  "name": "metadata",
+                  "type": "object",
+                  "nullable": true,
+                  "children": {
+                    "required": [
+                      {
+                        "name": "protectionModes",
+                        "type": "array<string>"
+                      }
+                    ],
+                    "optional": []
+                  }
+                },
+                {
                   "name": "name",
                   "type": "string"
                 },
@@ -12345,6 +12445,20 @@
       "status": "200",
       "schema": {
         "required": [
+          {
+            "name": "metadata",
+            "type": "object",
+            "nullable": true,
+            "children": {
+              "required": [
+                {
+                  "name": "protectionModes",
+                  "type": "array<string>"
+                }
+              ],
+              "optional": []
+            }
+          },
           {
             "name": "name",
             "type": "string"

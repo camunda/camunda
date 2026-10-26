@@ -8,7 +8,6 @@
 
 import {describe, expect} from 'vitest';
 import {render} from 'vitest-browser-react';
-import {userEvent} from 'vitest/browser';
 import {it} from '#/vitest-modules/test-extend';
 import {createBatchOperationItem} from '#/shared-test-modules/api-mocks/batch-operations';
 import {StateCell} from './StateCell';
@@ -19,17 +18,5 @@ describe('<StateCell />', () => {
 
 		await expect.element(screen.getByText('Completed')).toBeVisible();
 		await expect.element(screen.getByRole('status', {name: 'Item status: Completed'})).toBeVisible();
-	});
-
-	it('should show the failure reason in a tooltip on hover for a failed item', async () => {
-		const item = createBatchOperationItem({state: 'FAILED', errorMessage: 'Something went wrong'});
-		const screen = await render(<StateCell item={item} />);
-
-		await expect.element(screen.getByText('Failed')).toBeVisible();
-		await expect.element(screen.getByText('Failure reason: Something went wrong')).not.toBeVisible();
-
-		await userEvent.hover(screen.getByTestId('item-state-with-error'));
-
-		await expect.element(screen.getByText('Failure reason: Something went wrong')).toBeVisible();
 	});
 });

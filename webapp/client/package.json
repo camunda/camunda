@@ -29,20 +29,20 @@
 		"publish:session-heartbeat": "npm run prepublishOnly && npm publish -w @camunda/session-heartbeat",
 		"prettier:format": "prettier --write ."
 	},
-	"packageManager": "npm@12.2.0",
+	"packageManager": "npm@12.2.1",
 	"devDependencies": {
-		"@camunda/design-system": "0.69.0",
+		"@camunda/design-system": "0.76.0",
 		"@eslint/js": "10.0.1",
-		"@tanstack/eslint-plugin-query": "5.104.1",
-		"@vitest/eslint-plugin": "1.6.27",
-		"eslint": "10.12.0",
+		"@tanstack/eslint-plugin-query": "5.104.5",
+		"@vitest/eslint-plugin": "1.6.28",
+		"eslint": "10.13.0",
 		"eslint-plugin-import-x": "4.17.1",
 		"eslint-plugin-license-header": "0.9.0",
 		"eslint-plugin-react-hooks": "7.1.1",
 		"eslint-plugin-react-refresh": "0.5.7",
 		"globals": "17.13.0",
 		"prettier": "3.9.10",
-		"typescript-eslint": "8.71.1"
+		"typescript-eslint": "8.72.0"
 	},
 	"version": "8.11.0-SNAPSHOT"
 }

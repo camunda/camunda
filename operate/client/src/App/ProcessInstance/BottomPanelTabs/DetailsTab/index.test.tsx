@@ -861,6 +861,34 @@ describe('<DetailsTab />', () => {
     });
   });
 
+  it('should resolve a relative tasklistUrl against the current origin', async () => {
+    vi.spyOn(clientConfig, 'getClientConfig').mockReturnValue({
+      ...clientConfig.getClientConfig(),
+      tasklistUrl: '/camunda/tasklist',
+    });
+
+    mockFetchProcessDefinitionXml().withSuccess(CAMUNDA_USER_TASK_XML);
+    mockFetchElementInstance('123456789').withSuccess({
+      ...mockElementInstance,
+      type: 'USER_TASK',
+    });
+    mockSearchUserTasks().withSuccess(searchResult([mockUserTask]));
+
+    render(<DetailsTab />, {
+      wrapper: getWrapper('elementId=Task_1&elementInstanceKey=123456789'),
+    });
+
+    const link = await screen.findByRole('link', {
+      name: 'Open Tasklist',
+    });
+    await waitFor(() => {
+      expect(link).toHaveAttribute(
+        'href',
+        `${window.location.origin}/camunda/tasklist/999888777?filter=all-open`,
+      );
+    });
+  });
+
   it('should display job type when a job exists', async () => {
     mockFetchElementInstance('123456789').withSuccess(mockElementInstance);
     mockSearchJobs().withSuccess(searchResult([mockJob]));

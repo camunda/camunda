@@ -22,6 +22,7 @@ import io.camunda.zeebe.engine.processing.identity.AuthorizationRejectionMapper;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.storageordinals.StorageOrdinalProvider;
 import io.camunda.zeebe.engine.processing.variable.VariableBehavior;
+import io.camunda.zeebe.engine.processing.variable.VariableMetadataLookup;
 import io.camunda.zeebe.engine.processing.variable.VariableValidationException;
 import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
 import io.camunda.zeebe.engine.state.immutable.BannedInstanceState;
@@ -55,6 +56,12 @@ public class ProcessInstanceCreationHelper {
       "Expected to find process definition with process ID '%s', but none found";
   private static final String ERROR_MESSAGE_NOT_FOUND_BY_PROCESS_AND_VERSION =
       "Expected to find process definition with process ID '%s' and version '%d', but none found";
+  private static final String ERROR_MESSAGE_NOT_FOUND_BY_PROCESS_AND_VERSION_TAG =
+      "Expected to find process definition with process ID '%s' and version tag '%s', but none found";
+  private static final String ERROR_MESSAGE_VERSION_AND_VERSION_TAG =
+      "Expected to create process instance by either version or version tag, but both were provided: version '%d', version tag '%s'";
+  private static final String ERROR_MESSAGE_VERSION_TAG_WITH_KEY =
+      "Expected to create process instance by either process definition key or version tag, but both were provided: key '%d', version tag '%s'";
   private static final String ERROR_MESSAGE_NOT_FOUND_BY_KEY =
       "Expected to find process definition with key '%d', but none found";
   private static final String ERROR_MESSAGE_NO_NONE_START_EVENT =
@@ -104,18 +111,57 @@ public class ProcessInstanceCreationHelper {
 
     final Either<Rejection, DeployedProcess> process;
     if (bpmnProcessId.capacity() > 0) {
-      if (record.getVersion() >= 0) {
-        process = getProcess(bpmnProcessId, record.getVersion(), record.getTenantId());
-      } else {
-        process = getProcess(bpmnProcessId, record.getTenantId());
-      }
+      process = findProcessById(bpmnProcessId, record);
     } else if (record.getProcessDefinitionKey() >= 0) {
-      process = getProcess(record.getProcessDefinitionKey(), record.getTenantId());
+      process = findProcessByKey(record);
     } else {
       return Either.left(
           new Rejection(RejectionType.INVALID_ARGUMENT, ERROR_MESSAGE_NO_IDENTIFIER_SPECIFIED));
     }
     return process.flatMap(this::rejectIfDraining);
+  }
+
+  private Either<Rejection, DeployedProcess> findProcessById(
+      final DirectBuffer bpmnProcessId, final ProcessInstanceCreationRecord record) {
+    final String versionTag = record.getVersionTag();
+    final int version = record.getVersion();
+    final String tenantId = record.getTenantId();
+
+    if (!versionTag.isEmpty() && version >= 0) {
+      return Either.left(
+          new Rejection(
+              RejectionType.INVALID_ARGUMENT,
+              String.format(ERROR_MESSAGE_VERSION_AND_VERSION_TAG, version, versionTag)));
+    }
+    // gRPC sends key 0 when unset; real keys are always positive
+    final long processDefinitionKey = record.getProcessDefinitionKey();
+    if (!versionTag.isEmpty() && processDefinitionKey > 0) {
+      return Either.left(
+          new Rejection(
+              RejectionType.INVALID_ARGUMENT,
+              String.format(ERROR_MESSAGE_VERSION_TAG_WITH_KEY, processDefinitionKey, versionTag)));
+    }
+    if (!versionTag.isEmpty()) {
+      return getProcess(bpmnProcessId, versionTag, tenantId);
+    }
+    if (version >= 0) {
+      return getProcess(bpmnProcessId, version, tenantId);
+    }
+    return getProcess(bpmnProcessId, tenantId);
+  }
+
+  private Either<Rejection, DeployedProcess> findProcessByKey(
+      final ProcessInstanceCreationRecord record) {
+    final long processDefinitionKey = record.getProcessDefinitionKey();
+    final String versionTag = record.getVersionTag();
+
+    if (!versionTag.isEmpty()) {
+      return Either.left(
+          new Rejection(
+              RejectionType.INVALID_ARGUMENT,
+              String.format(ERROR_MESSAGE_VERSION_TAG_WITH_KEY, processDefinitionKey, versionTag)));
+    }
+    return getProcess(processDefinitionKey, record.getTenantId());
   }
 
   /**
@@ -184,6 +230,23 @@ public class ProcessInstanceCreationHelper {
                   ERROR_MESSAGE_NOT_FOUND_BY_PROCESS_AND_VERSION,
                   bufferAsString(bpmnProcessId),
                   version)));
+    }
+  }
+
+  private Either<Rejection, DeployedProcess> getProcess(
+      final DirectBuffer bpmnProcessId, final String versionTag, final String tenantId) {
+    final DeployedProcess process =
+        processState.getProcessByProcessIdAndVersionTag(bpmnProcessId, versionTag, tenantId);
+    if (process != null) {
+      return Either.right(process);
+    } else {
+      return Either.left(
+          new Rejection(
+              RejectionType.NOT_FOUND,
+              String.format(
+                  ERROR_MESSAGE_NOT_FOUND_BY_PROCESS_AND_VERSION_TAG,
+                  bufferAsString(bpmnProcessId),
+                  versionTag)));
     }
   }
 
@@ -260,7 +323,9 @@ public class ProcessInstanceCreationHelper {
   }
 
   public void setVariablesFromDocument(
-      final ProcessInstanceRecord processInstance, final DirectBuffer variablesBuffer)
+      final ProcessInstanceRecord processInstance,
+      final DirectBuffer variablesBuffer,
+      final VariableMetadataLookup metadataLookup)
       throws VariableValidationException {
     variableBehavior.mergeLocalDocument(
         processInstance.getProcessInstanceKey(),
@@ -270,7 +335,8 @@ public class ProcessInstanceCreationHelper {
         processInstance.getStorageOrdinal(),
         processInstance.getBpmnProcessIdBuffer(),
         processInstance.getTenantId(),
-        variablesBuffer);
+        variablesBuffer,
+        metadataLookup);
   }
 
   public void activateElementsForStartInstructions(

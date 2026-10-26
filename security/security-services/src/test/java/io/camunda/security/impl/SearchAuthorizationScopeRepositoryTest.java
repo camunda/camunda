@@ -8,12 +8,18 @@
 package io.camunda.security.impl;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.catchThrowable;
 
 import io.camunda.search.entities.AuthorizationEntity;
+import io.camunda.search.exception.CamundaSearchException;
+import io.camunda.search.exception.CamundaSearchException.Reason;
+import io.camunda.search.query.AuthorizationQuery;
+import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.api.model.authz.AuthorizationResourceType;
 import io.camunda.security.api.model.authz.AuthorizationScope;
 import io.camunda.security.api.model.authz.EntityType;
 import io.camunda.security.api.model.authz.PermissionType;
+import io.camunda.security.core.authz.ResourceAccessChecks;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -202,6 +208,83 @@ class SearchAuthorizationScopeRepositoryTest {
 
       // then
       assertThat(result).isEmpty();
+    }
+  }
+
+  @Nested
+  class ReaderFailureTests {
+
+    private static final Map<EntityType, Set<String>> OWNERS =
+        Map.of(EntityType.USER, Set.of("user1"));
+
+    @Test
+    void shouldWrapUnexpectedReaderFailureAsSearchServerFailed() {
+      // given - e.g. the RDBMS reader surfaces MyBatis/Spring exceptions unwrapped
+      final var cause = new IllegalStateException("relation \"tb_authorizations\" does not exist");
+      final var failingRepository = new SearchAuthorizationScopeRepository(failingReader(cause));
+
+      // when
+      final var errors =
+          List.of(
+              catchThrowable(
+                  () ->
+                      failingRepository.findAuthorizedScopes(
+                          OWNERS,
+                          AuthorizationResourceType.PROCESS_DEFINITION,
+                          PermissionType.READ_PROCESS_DEFINITION)),
+              catchThrowable(
+                  () ->
+                      failingRepository.hasAuthorizedScope(
+                          OWNERS,
+                          AuthorizationResourceType.PROCESS_DEFINITION,
+                          PermissionType.READ_PROCESS_DEFINITION,
+                          List.of("proc-1"))),
+              catchThrowable(
+                  () ->
+                      failingRepository.findPermissionTypes(
+                          OWNERS,
+                          AuthorizationResourceType.PROCESS_DEFINITION,
+                          List.of("proc-1"))));
+
+      // then
+      assertThat(errors)
+          .allSatisfy(
+              error ->
+                  assertThat(error)
+                      .isInstanceOfSatisfying(
+                          CamundaSearchException.class,
+                          e -> {
+                            assertThat(e.getReason()).isEqualTo(Reason.SEARCH_SERVER_FAILED);
+                            assertThat(e).hasCause(cause);
+                          }));
+    }
+
+    @Test
+    void shouldKeepReasonOfReaderFailureThatIsAlreadyASearchException() {
+      // given
+      final var failure =
+          new CamundaSearchException("Failed to execute findAll query", Reason.CONNECTION_FAILED);
+      final var failingRepository = new SearchAuthorizationScopeRepository(failingReader(failure));
+
+      // when
+      final var error =
+          catchThrowable(
+              () ->
+                  failingRepository.findPermissionTypes(
+                      OWNERS, AuthorizationResourceType.PROCESS_DEFINITION, List.of("proc-1")));
+
+      // then
+      assertThat(error).isSameAs(failure);
+    }
+
+    private static FakeAuthorizationReader failingReader(final RuntimeException failure) {
+      return new FakeAuthorizationReader() {
+        @Override
+        public SearchQueryResult<AuthorizationEntity> search(
+            final AuthorizationQuery query, final ResourceAccessChecks resourceAccessChecks) {
+          throw failure;
+        }
+      };
     }
   }
 }

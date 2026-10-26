@@ -10,9 +10,12 @@ import {http, HttpResponse} from 'msw';
 import {
 	endpoints,
 	queryProcessDefinitionsRequestBodySchema,
+	queryElementInstanceInspectionRequestBodySchema,
 	type QueryProcessDefinitionsRequestBody,
+	type QueryElementInstanceInspectionRequestBody,
 } from '@camunda/camunda-api-zod-schemas/8.11';
 import {createEndpointMock} from './mock-endpoint';
+import {SAAS_AUDIENCE} from './api-mocks/saas';
 
 const mockQueryUserTasksEndpoint = createEndpointMock({
 	endpoint: endpoints.queryUserTasks.getUrl(),
@@ -43,6 +46,26 @@ const mockQueryMessageSubscriptionsEndpoint = createEndpointMock({
 	endpoint: endpoints.queryMessageSubscriptions.getUrl(),
 	method: endpoints.queryMessageSubscriptions.method,
 });
+
+const mockQueryJobsEndpoint = createEndpointMock({
+	endpoint: endpoints.queryJobs.getUrl(),
+	method: endpoints.queryJobs.method,
+});
+
+const mockQueryElementInstanceInspectionEndpoint = createEndpointMock({
+	endpoint: endpoints.queryElementInstanceInspection.getUrl(),
+	method: endpoints.queryElementInstanceInspection.method,
+});
+
+const mockQueryElementInstanceInspectionByFilterEndpoint = ({
+	getResponse,
+}: {
+	getResponse: (filter: QueryElementInstanceInspectionRequestBody['filter']) => Response;
+}) =>
+	http.post(endpoints.queryElementInstanceInspection.getUrl(), async ({request}) => {
+		const {filter} = queryElementInstanceInspectionRequestBodySchema.parse(await request.json());
+		return getResponse(filter);
+	});
 
 const mockGetProcessDefinitionEndpoint = createEndpointMock({
 	endpoint: endpoints.getProcessDefinition.getUrl({processDefinitionKey: ':processDefinitionKey'}),
@@ -119,6 +142,11 @@ const mockDeleteProcessInstanceEndpoint = createEndpointMock({
 	method: endpoints.deleteProcessInstance.method,
 });
 
+const mockModifyProcessInstanceEndpoint = createEndpointMock({
+	endpoint: endpoints.modifyProcessInstance.getUrl({processInstanceKey: ':processInstanceKey'}),
+	method: endpoints.modifyProcessInstance.method,
+});
+
 const mockSuspendProcessInstanceEndpoint = createEndpointMock({
 	endpoint: endpoints.suspendProcessInstance.getUrl({processInstanceKey: ':processInstanceKey'}),
 	method: endpoints.suspendProcessInstance.method,
@@ -149,9 +177,19 @@ const mockGetElementInstanceEndpoint = createEndpointMock({
 	method: endpoints.getElementInstance.method,
 });
 
+const mockUpdateElementInstanceVariablesEndpoint = createEndpointMock({
+	endpoint: endpoints.updateElementInstanceVariables.getUrl({elementInstanceKey: ':elementInstanceKey'}),
+	method: endpoints.updateElementInstanceVariables.method,
+});
+
 const mockQueryAgentInstancesEndpoint = createEndpointMock({
 	endpoint: endpoints.queryAgentInstances.getUrl(),
 	method: endpoints.queryAgentInstances.method,
+});
+
+const mockQueryAgentInstanceHistoryEndpoint = createEndpointMock({
+	endpoint: endpoints.queryAgentInstanceHistory.getUrl({agentInstanceKey: ':agentInstanceKey'}),
+	method: endpoints.queryAgentInstanceHistory.method,
 });
 
 const mockGetProcessInstanceEndpoint = createEndpointMock({
@@ -164,9 +202,29 @@ const mockQueryProcessInstanceIncidentsEndpoint = createEndpointMock({
 	method: endpoints.queryProcessInstanceIncidents.method,
 });
 
+const mockQueryElementInstanceIncidentsEndpoint = createEndpointMock({
+	endpoint: endpoints.queryElementInstanceIncidents.getUrl({elementInstanceKey: ':elementInstanceKey'}),
+	method: endpoints.queryElementInstanceIncidents.method,
+});
+
 const mockQueryDecisionDefinitionsEndpoint = createEndpointMock({
 	endpoint: endpoints.queryDecisionDefinitions.getUrl(),
 	method: endpoints.queryDecisionDefinitions.method,
+});
+
+const mockResolveIncidentEndpoint = createEndpointMock({
+	endpoint: endpoints.resolveIncident.getUrl({incidentKey: ':incidentKey'}),
+	method: endpoints.resolveIncident.method,
+});
+
+const mockGetIncidentEndpoint = createEndpointMock({
+	endpoint: endpoints.getIncident.getUrl({incidentKey: ':incidentKey'}),
+	method: endpoints.getIncident.method,
+});
+
+const mockUpdateJobEndpoint = createEndpointMock({
+	endpoint: endpoints.updateJob.getUrl({jobKey: ':jobKey'}),
+	method: endpoints.updateJob.method,
 });
 
 const mockQueryDecisionInstancesEndpoint = createEndpointMock({
@@ -224,6 +282,26 @@ const mockSaasTokenEndpoint = createEndpointMock({
 	method: 'GET',
 });
 
+const mockC3OrganizationsEndpoint = createEndpointMock({
+	endpoint: `https://accounts.${SAAS_AUDIENCE}/external/organizations/my`,
+	method: 'GET',
+});
+
+const mockC3ClustersEndpoint = createEndpointMock({
+	endpoint: `https://console.${SAAS_AUDIENCE}/external/organizations/:organizationId/clusters`,
+	method: 'GET',
+});
+
+const mockC3NotificationsEndpoint = createEndpointMock({
+	endpoint: `https://notifications.${SAAS_AUDIENCE}/notifications/orgs/:organizationId`,
+	method: 'GET',
+});
+
+const mockC3NotificationEventsEndpoint = createEndpointMock({
+	endpoint: `https://notifications.${SAAS_AUDIENCE}/notifications/events`,
+	method: 'GET',
+});
+
 const mockGetUserTaskEndpoint = createEndpointMock({
 	endpoint: endpoints.getUserTask.getUrl({userTaskKey: ':userTaskKey'}),
 	method: endpoints.getUserTask.method,
@@ -239,9 +317,19 @@ const mockQueryVariablesByUserTaskEndpoint = createEndpointMock({
 	method: endpoints.queryVariablesByUserTask.method,
 });
 
+const mockGetDocumentEndpoint = createEndpointMock({
+	endpoint: endpoints.getDocument.getUrl({documentId: ':documentId'}),
+	method: endpoints.getDocument.method,
+});
+
 const mockGetVariableEndpoint = createEndpointMock({
 	endpoint: endpoints.getVariable.getUrl({variableKey: ':variableKey'}),
 	method: endpoints.getVariable.method,
+});
+
+const mockQueryVariablesEndpoint = createEndpointMock({
+	endpoint: endpoints.queryVariables.getUrl(),
+	method: endpoints.queryVariables.method,
 });
 
 const mockGetProcessDefinitionXmlEndpoint = createEndpointMock({
@@ -380,6 +468,66 @@ const mockQueryTenantsEndpoint = createEndpointMock({
 	endpoint: endpoints.queryTenants.getUrl(),
 	method: endpoints.queryTenants.method,
 });
+
+const mockGetTenantEndpoint = createEndpointMock({
+	endpoint: decodeURIComponent(endpoints.getTenant.getUrl({tenantId: ':tenantId'})),
+	method: endpoints.getTenant.method,
+});
+
+const mockCreateTenantEndpoint = createEndpointMock({
+	endpoint: endpoints.createTenant.getUrl(),
+	method: endpoints.createTenant.method,
+});
+
+const mockUpdateTenantEndpoint = createEndpointMock({
+	endpoint: decodeURIComponent(endpoints.updateTenant.getUrl({tenantId: ':tenantId'})),
+	method: endpoints.updateTenant.method,
+});
+
+const mockDeleteTenantEndpoint = createEndpointMock({
+	endpoint: decodeURIComponent(endpoints.deleteTenant.getUrl({tenantId: ':tenantId'})),
+	method: endpoints.deleteTenant.method,
+});
+
+const mockQueryUsersByTenantEndpoint = createEndpointMock({
+	endpoint: decodeURIComponent(endpoints.queryUsersByTenant.getUrl({tenantId: ':tenantId'})),
+	method: endpoints.queryUsersByTenant.method,
+});
+
+const mockQueryGroupsByTenantEndpoint = createEndpointMock({
+	endpoint: decodeURIComponent(endpoints.queryGroupsByTenant.getUrl({tenantId: ':tenantId'})),
+	method: endpoints.queryGroupsByTenant.method,
+});
+
+const mockQueryRolesByTenantEndpoint = createEndpointMock({
+	endpoint: decodeURIComponent(endpoints.queryRolesByTenant.getUrl({tenantId: ':tenantId'})),
+	method: endpoints.queryRolesByTenant.method,
+});
+
+const mockQueryMappingRulesByTenantEndpoint = createEndpointMock({
+	endpoint: decodeURIComponent(endpoints.queryMappingRulesByTenant.getUrl({tenantId: ':tenantId'})),
+	method: endpoints.queryMappingRulesByTenant.method,
+});
+
+const mockQueryClientsByTenantEndpoint = createEndpointMock({
+	endpoint: decodeURIComponent(endpoints.queryClientsByTenant.getUrl({tenantId: ':tenantId'})),
+	method: endpoints.queryClientsByTenant.method,
+});
+
+const mockAssignUserToTenantEndpoint = createEndpointMock({
+	endpoint: decodeURIComponent(endpoints.assignUserToTenant.getUrl({tenantId: ':tenantId', username: ':username'})),
+	method: endpoints.assignUserToTenant.method,
+});
+
+const mockAssignClientToTenantEndpoint = createEndpointMock({
+	endpoint: decodeURIComponent(endpoints.assignClientToTenant.getUrl({tenantId: ':tenantId', clientId: ':clientId'})),
+	method: endpoints.assignClientToTenant.method,
+});
+
+const mockUnassignUserFromTenantEndpoint = createEndpointMock({
+	endpoint: decodeURIComponent(endpoints.unassignUserFromTenant.getUrl({tenantId: ':tenantId', username: ':username'})),
+	method: endpoints.unassignUserFromTenant.method,
+});
 const mockSearchGlobalTaskListenersEndpoint = createEndpointMock({
 	endpoint: endpoints.searchGlobalTaskListeners.getUrl(),
 	method: endpoints.searchGlobalTaskListeners.method,
@@ -495,6 +643,140 @@ const mockQueryGroupsEndpoint = createEndpointMock({
 	method: endpoints.queryGroups.method,
 });
 
+const mockGetRoleEndpoint = createEndpointMock({
+	endpoint: decodeURIComponent(endpoints.getRole.getUrl({roleId: ':roleId'})),
+	method: endpoints.getRole.method,
+});
+
+const mockCreateRoleEndpoint = createEndpointMock({
+	endpoint: endpoints.createRole.getUrl(),
+	method: endpoints.createRole.method,
+});
+
+const mockUpdateRoleEndpoint = createEndpointMock({
+	endpoint: decodeURIComponent(endpoints.updateRole.getUrl({roleId: ':roleId'})),
+	method: endpoints.updateRole.method,
+});
+
+const mockDeleteRoleEndpoint = createEndpointMock({
+	endpoint: decodeURIComponent(endpoints.deleteRole.getUrl({roleId: ':roleId'})),
+	method: endpoints.deleteRole.method,
+});
+
+const mockQueryUsersByRoleEndpoint = createEndpointMock({
+	endpoint: decodeURIComponent(endpoints.queryUsersByRole.getUrl({roleId: ':roleId'})),
+	method: endpoints.queryUsersByRole.method,
+});
+
+const mockQueryGroupsByRoleEndpoint = createEndpointMock({
+	endpoint: decodeURIComponent(endpoints.queryGroupsByRole.getUrl({roleId: ':roleId'})),
+	method: endpoints.queryGroupsByRole.method,
+});
+
+const mockQueryMappingRulesByRoleEndpoint = createEndpointMock({
+	endpoint: decodeURIComponent(endpoints.queryMappingRulesByRole.getUrl({roleId: ':roleId'})),
+	method: endpoints.queryMappingRulesByRole.method,
+});
+
+const mockQueryClientsByRoleEndpoint = createEndpointMock({
+	endpoint: decodeURIComponent(endpoints.queryClientsByRole.getUrl({roleId: ':roleId'})),
+	method: endpoints.queryClientsByRole.method,
+});
+
+const mockAssignUserToRoleEndpoint = createEndpointMock({
+	endpoint: decodeURIComponent(endpoints.assignUserToRole.getUrl({roleId: ':roleId', username: ':username'})),
+	method: endpoints.assignUserToRole.method,
+});
+
+const mockUnassignUserFromRoleEndpoint = createEndpointMock({
+	endpoint: decodeURIComponent(endpoints.unassignUserFromRole.getUrl({roleId: ':roleId', username: ':username'})),
+	method: endpoints.unassignUserFromRole.method,
+});
+
+const mockGetGroupEndpoint = createEndpointMock({
+	endpoint: decodeURIComponent(endpoints.getGroup.getUrl({groupId: ':groupId'})),
+	method: endpoints.getGroup.method,
+});
+
+const mockCreateGroupEndpoint = createEndpointMock({
+	endpoint: endpoints.createGroup.getUrl(),
+	method: endpoints.createGroup.method,
+});
+
+const mockUpdateGroupEndpoint = createEndpointMock({
+	endpoint: decodeURIComponent(endpoints.updateGroup.getUrl({groupId: ':groupId'})),
+	method: endpoints.updateGroup.method,
+});
+
+const mockDeleteGroupEndpoint = createEndpointMock({
+	endpoint: decodeURIComponent(endpoints.deleteGroup.getUrl({groupId: ':groupId'})),
+	method: endpoints.deleteGroup.method,
+});
+
+const mockQueryUsersByGroupEndpoint = createEndpointMock({
+	endpoint: decodeURIComponent(endpoints.queryUsersByGroup.getUrl({groupId: ':groupId'})),
+	method: endpoints.queryUsersByGroup.method,
+});
+
+const mockQueryClientsByGroupEndpoint = createEndpointMock({
+	endpoint: decodeURIComponent(endpoints.queryClientsByGroup.getUrl({groupId: ':groupId'})),
+	method: endpoints.queryClientsByGroup.method,
+});
+
+const mockQueryRolesByGroupEndpoint = createEndpointMock({
+	endpoint: decodeURIComponent(endpoints.queryRolesByGroup.getUrl({groupId: ':groupId'})),
+	method: endpoints.queryRolesByGroup.method,
+});
+
+const mockQueryMappingRulesByGroupEndpoint = createEndpointMock({
+	endpoint: decodeURIComponent(endpoints.queryMappingRulesByGroup.getUrl({groupId: ':groupId'})),
+	method: endpoints.queryMappingRulesByGroup.method,
+});
+
+const mockAssignUserToGroupEndpoint = createEndpointMock({
+	endpoint: decodeURIComponent(endpoints.assignUserToGroup.getUrl({groupId: ':groupId', username: ':username'})),
+	method: endpoints.assignUserToGroup.method,
+});
+
+const mockUnassignUserFromGroupEndpoint = createEndpointMock({
+	endpoint: decodeURIComponent(endpoints.unassignUserFromGroup.getUrl({groupId: ':groupId', username: ':username'})),
+	method: endpoints.unassignUserFromGroup.method,
+});
+
+const mockAssignGroupToRoleEndpoint = createEndpointMock({
+	endpoint: decodeURIComponent(endpoints.assignGroupToRole.getUrl({roleId: ':roleId', groupId: ':groupId'})),
+	method: endpoints.assignGroupToRole.method,
+});
+
+const mockUnassignGroupFromRoleEndpoint = createEndpointMock({
+	endpoint: decodeURIComponent(endpoints.unassignGroupFromRole.getUrl({roleId: ':roleId', groupId: ':groupId'})),
+	method: endpoints.unassignGroupFromRole.method,
+});
+
+const mockAssignMappingToRoleEndpoint = createEndpointMock({
+	endpoint: decodeURIComponent(
+		endpoints.assignMappingToRole.getUrl({roleId: ':roleId', mappingRuleId: ':mappingRuleId'}),
+	),
+	method: endpoints.assignMappingToRole.method,
+});
+
+const mockUnassignMappingFromRoleEndpoint = createEndpointMock({
+	endpoint: decodeURIComponent(
+		endpoints.unassignMappingFromRole.getUrl({roleId: ':roleId', mappingRuleId: ':mappingRuleId'}),
+	),
+	method: endpoints.unassignMappingFromRole.method,
+});
+
+const mockAssignClientToRoleEndpoint = createEndpointMock({
+	endpoint: decodeURIComponent(endpoints.assignClientToRole.getUrl({roleId: ':roleId', clientId: ':clientId'})),
+	method: endpoints.assignClientToRole.method,
+});
+
+const mockUnassignClientFromRoleEndpoint = createEndpointMock({
+	endpoint: decodeURIComponent(endpoints.unassignClientFromRole.getUrl({roleId: ':roleId', clientId: ':clientId'})),
+	method: endpoints.unassignClientFromRole.method,
+});
+
 export {
 	mockCreateCancellationBatchOperationEndpoint,
 	mockCreateMigrationBatchOperationEndpoint,
@@ -510,10 +792,18 @@ export {
 	mockSystemConfigurationEndpoint,
 	mockLicenseEndpoint,
 	mockSaasTokenEndpoint,
+	mockC3OrganizationsEndpoint,
+	mockC3ClustersEndpoint,
+	mockC3NotificationsEndpoint,
+	mockC3NotificationEventsEndpoint,
 	mockGetUserTaskEndpoint,
 	mockGetUserTaskFormEndpoint,
 	mockQueryVariablesByUserTaskEndpoint,
+	mockGetDocumentEndpoint,
 	mockGetVariableEndpoint,
+	mockQueryVariablesEndpoint,
+	mockUpdateElementInstanceVariablesEndpoint,
+	mockQueryJobsEndpoint,
 	mockGetProcessDefinitionXmlEndpoint,
 	mockGetProcessDefinitionXmlByKeyEndpoint,
 	mockGetProcessDefinitionStatisticsEndpoint,
@@ -526,6 +816,8 @@ export {
 	mockQueryProcessDefinitionsEndpoint,
 	mockQueryProcessDefinitionsByFilterEndpoint,
 	mockQueryMessageSubscriptionsEndpoint,
+	mockQueryElementInstanceInspectionEndpoint,
+	mockQueryElementInstanceInspectionByFilterEndpoint,
 	mockGetProcessDefinitionEndpoint,
 	mockGetProcessStartFormEndpoint,
 	mockCreateProcessInstanceEndpoint,
@@ -539,8 +831,10 @@ export {
 	mockQueryElementInstancesEndpoint,
 	mockGetElementInstanceEndpoint,
 	mockQueryAgentInstancesEndpoint,
+	mockQueryAgentInstanceHistoryEndpoint,
 	mockGetProcessInstanceEndpoint,
 	mockQueryProcessInstanceIncidentsEndpoint,
+	mockQueryElementInstanceIncidentsEndpoint,
 	mockQueryBatchOperationItemsEndpoint,
 	mockGetBatchOperationEndpoint,
 	mockSuspendBatchOperationEndpoint,
@@ -549,11 +843,15 @@ export {
 	mockResolveProcessInstanceIncidentsEndpoint,
 	mockCancelProcessInstanceEndpoint,
 	mockDeleteProcessInstanceEndpoint,
+	mockModifyProcessInstanceEndpoint,
 	mockSuspendProcessInstanceEndpoint,
 	mockResumeProcessInstanceEndpoint,
 	mockGetDecisionInstanceEndpoint,
 	mockQueryDecisionDefinitionsEndpoint,
 	mockQueryDecisionInstancesEndpoint,
+	mockResolveIncidentEndpoint,
+	mockGetIncidentEndpoint,
+	mockUpdateJobEndpoint,
 	mockCreateDecisionInstancesDeletionBatchOperationEndpoint,
 	mockGetDecisionDefinitionXmlEndpoint,
 	mockDeleteResourceEndpoint,
@@ -572,11 +870,37 @@ export {
 	mockCreateAuthorizationEndpoint,
 	mockDeleteAuthorizationEndpoint,
 	mockQueryRolesEndpoint,
+	mockGetRoleEndpoint,
+	mockCreateRoleEndpoint,
+	mockUpdateRoleEndpoint,
+	mockDeleteRoleEndpoint,
+	mockQueryUsersByRoleEndpoint,
+	mockQueryGroupsByRoleEndpoint,
+	mockQueryMappingRulesByRoleEndpoint,
+	mockQueryClientsByRoleEndpoint,
+	mockAssignUserToRoleEndpoint,
+	mockUnassignUserFromRoleEndpoint,
+	mockAssignGroupToRoleEndpoint,
+	mockUnassignGroupFromRoleEndpoint,
+	mockAssignMappingToRoleEndpoint,
+	mockUnassignMappingFromRoleEndpoint,
+	mockAssignClientToRoleEndpoint,
+	mockUnassignClientFromRoleEndpoint,
 	mockQueryGroupsEndpoint,
 	mockGetUserEndpoint,
 	mockCreateUserEndpoint,
 	mockUpdateUserEndpoint,
 	mockDeleteUserEndpoint,
+	mockGetGroupEndpoint,
+	mockCreateGroupEndpoint,
+	mockUpdateGroupEndpoint,
+	mockDeleteGroupEndpoint,
+	mockQueryUsersByGroupEndpoint,
+	mockQueryClientsByGroupEndpoint,
+	mockQueryRolesByGroupEndpoint,
+	mockQueryMappingRulesByGroupEndpoint,
+	mockAssignUserToGroupEndpoint,
+	mockUnassignUserFromGroupEndpoint,
 	mockQueryClusterVariablesEndpoint,
 	mockGetGlobalClusterVariableEndpoint,
 	mockGetTenantClusterVariableEndpoint,
@@ -585,6 +909,18 @@ export {
 	mockUpdateGlobalClusterVariableEndpoint,
 	mockDeleteGlobalClusterVariableEndpoint,
 	mockQueryTenantsEndpoint,
+	mockGetTenantEndpoint,
+	mockCreateTenantEndpoint,
+	mockUpdateTenantEndpoint,
+	mockDeleteTenantEndpoint,
+	mockQueryUsersByTenantEndpoint,
+	mockQueryGroupsByTenantEndpoint,
+	mockQueryRolesByTenantEndpoint,
+	mockQueryMappingRulesByTenantEndpoint,
+	mockQueryClientsByTenantEndpoint,
+	mockAssignUserToTenantEndpoint,
+	mockAssignClientToTenantEndpoint,
+	mockUnassignUserFromTenantEndpoint,
 	mockSearchGlobalTaskListenersEndpoint,
 	mockGetGlobalTaskListenerEndpoint,
 	mockCreateGlobalTaskListenerEndpoint,

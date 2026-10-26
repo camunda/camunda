@@ -17,10 +17,19 @@ const processInstanceSelectionSchema = z.object({
 	anchorElementId: z.coerce.string().optional(),
 });
 
-const processInstanceSearchSchema = processInstanceSelectionSchema.loose();
+const elementStatusSchema = z.enum(['active', 'incidents']);
+
+const processInstanceSearchSchema = processInstanceSelectionSchema
+	.extend({
+		tenantId: z.coerce.string().optional(),
+		elementSearch: z.coerce.string().optional(),
+		elementStatus: elementStatusSchema.optional().catch(undefined),
+	})
+	.loose();
 
 type ProcessInstanceSearch = z.infer<typeof processInstanceSearchSchema>;
 type ProcessInstanceSelection = z.infer<typeof processInstanceSelectionSchema>;
+type ElementStatusFilter = z.infer<typeof elementStatusSchema>;
 type ProcessInstanceTab = 'details' | 'incidents' | 'variables';
 type ProcessInstanceTabPath =
 	| '/operate/processes/$processInstanceId/details'
@@ -32,8 +41,12 @@ type GetDefaultProcessInstanceTabOptions = {
 };
 
 function validateProcessInstanceRouteSearch(
-	search: z.input<typeof processInstanceSelectionSchema>,
-): ProcessInstanceSelection {
+	search: z.input<typeof processInstanceSelectionSchema> & {
+		tenantId?: string;
+		elementSearch?: string;
+		elementStatus?: string;
+	},
+): ProcessInstanceSelection & {tenantId?: string; elementSearch?: string; elementStatus?: ElementStatusFilter} {
 	return processInstanceSearchSchema.parse(search);
 }
 
@@ -78,4 +91,4 @@ export {
 	getDefaultProcessInstanceTab,
 	getProcessInstanceTabPath,
 };
-export type {ProcessInstanceSearch, ProcessInstanceSelection};
+export type {ProcessInstanceSearch, ProcessInstanceSelection, ElementStatusFilter};

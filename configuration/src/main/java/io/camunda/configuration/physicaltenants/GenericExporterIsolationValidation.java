@@ -8,10 +8,10 @@
 package io.camunda.configuration.physicaltenants;
 
 import io.camunda.configuration.Camunda;
-import io.camunda.configuration.Exporter;
 import io.camunda.configuration.ExporterArgsMergers;
 import io.camunda.configuration.ExporterCollisionTracker;
 import io.camunda.configuration.UnifiedConfigurationException;
+import io.camunda.configuration.data.Exporter;
 import io.camunda.zeebe.exporter.api.ExporterConfigMerger;
 import io.camunda.zeebe.exporter.api.ExporterConfigMerger.ExporterIsolationClaim;
 import io.camunda.zeebe.util.VisibleForTesting;

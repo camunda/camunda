@@ -11,7 +11,7 @@ import type {ProcessDefinition, QueryProcessDefinitionsRequestBody} from '@camun
 import {queries} from '#/shared/http/queries';
 
 const PAGE_LIMIT = 1000;
-type DefinitionQueryOptions = {retry?: false; requireComplete?: true};
+type DefinitionQueryOptions = {retry?: false; requireComplete?: true; selectionVersion?: number | 'all'};
 
 const operationsLogDefinitionsQuery = (
 	filter: NonNullable<QueryProcessDefinitionsRequestBody['filter']>,
@@ -23,6 +23,7 @@ const operationsLogDefinitionsQuery = (
 			filter,
 			...(options?.retry === false ? ['no-retry'] : []),
 			...(options?.requireComplete === true ? ['require-complete'] : []),
+			...(options?.selectionVersion === undefined ? [] : [`version:${options.selectionVersion}`]),
 		] as const,
 		queryFn: async ({client, signal}): Promise<ProcessDefinition[]> => {
 			const items: ProcessDefinition[] = [];
@@ -78,6 +79,23 @@ const selectedDefinitionsQuery = (process: string, tenantId?: string, options?: 
 		options,
 	);
 
+const latestDefinitionsQuery = (tenantId?: string) =>
+	queryOptions({
+		queryKey: ['operationsLogDefinitions', 'latest', tenantId] as const,
+		queryFn: async ({client}): Promise<ProcessDefinition[]> => {
+			const filter = {isLatestVersion: true, ...(tenantId ? {tenantId} : {})};
+			const fetchFrom = async (after?: string): Promise<ProcessDefinition[]> => {
+				const {items, page} = await client.fetchQuery(
+					queries.queryProcessDefinitions({filter, page: {limit: PAGE_LIMIT, after}}),
+				);
+				return items.length === 0 || page.endCursor === null || page.endCursor === after
+					? items
+					: [...items, ...(await fetchFrom(page.endCursor))];
+			};
+			return fetchFrom();
+		},
+	});
+
 const resolvedDefinitionQuery = (process: string, tenantId: string | undefined, version: number) =>
 	operationsLogDefinitionsQuery({
 		processDefinitionId: {$eq: process},
@@ -85,4 +103,4 @@ const resolvedDefinitionQuery = (process: string, tenantId: string | undefined, 
 		version,
 	});
 
-export {operationsLogDefinitionsQuery, selectedDefinitionsQuery, resolvedDefinitionQuery};
+export {operationsLogDefinitionsQuery, selectedDefinitionsQuery, latestDefinitionsQuery, resolvedDefinitionQuery};

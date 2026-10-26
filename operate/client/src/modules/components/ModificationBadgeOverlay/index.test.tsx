@@ -29,7 +29,7 @@ describe('ModificationBadgeOverlay', () => {
       />,
     );
 
-    expect(screen.getByTestId('badge-minus-icon')).toBeInTheDocument();
+    expect(screen.getByRole('img', {name: '3 canceled'})).toBeVisible();
     expect(screen.getByText(/3/)).toBeInTheDocument();
     expect(screen.queryByTestId('badge-plus-icon')).not.toBeInTheDocument();
   });
@@ -43,7 +43,7 @@ describe('ModificationBadgeOverlay', () => {
       />,
     );
 
-    expect(screen.getByTestId('badge-plus-icon')).toBeInTheDocument();
+    expect(screen.getByRole('img', {name: '2 added'})).toBeVisible();
     expect(screen.getByText(/2/)).toBeInTheDocument();
     expect(screen.queryByTestId('badge-minus-icon')).not.toBeInTheDocument();
   });
@@ -57,8 +57,9 @@ describe('ModificationBadgeOverlay', () => {
       />,
     );
 
-    expect(screen.getByTestId('badge-minus-icon')).toBeInTheDocument();
-    expect(screen.getByTestId('badge-plus-icon')).toBeInTheDocument();
+    expect(
+      screen.getByRole('img', {name: '2 added, 3 canceled'}),
+    ).toBeVisible();
     expect(screen.getByText(/2/)).toBeInTheDocument();
     expect(screen.getByText(/3/)).toBeInTheDocument();
   });

@@ -90,6 +90,45 @@ describe('<AdminUsersPage />', () => {
 		await vi.waitFor(() => expect(onSearchChange).toHaveBeenCalledWith({search: 'jane', page: undefined}), DEBOUNCED);
 	});
 
+	it('should keep what the reader is typing when the URL search changes through navigation', async () => {
+		// given
+		const {screen} = await renderPage({search: {search: 'jane'}});
+		await userEvent.fill(screen.getByRole('searchbox'), 'john');
+
+		// when
+		await screen.rerender(
+			<AdminUsersPage
+				users={[createUser()]}
+				totalItems={1}
+				search={{search: 'previous'}}
+				onSearchChange={vi.fn()}
+				onOpenUser={vi.fn()}
+			/>,
+		);
+
+		// then
+		await expect.element(screen.getByRole('searchbox')).toHaveValue('john');
+	});
+
+	it('should show the new URL search when it changes through navigation and the reader has not edited the input', async () => {
+		// given
+		const {screen} = await renderPage({search: {search: 'jane'}});
+
+		// when
+		await screen.rerender(
+			<AdminUsersPage
+				users={[createUser()]}
+				totalItems={1}
+				search={{search: 'previous'}}
+				onSearchChange={vi.fn()}
+				onOpenUser={vi.fn()}
+			/>,
+		);
+
+		// then
+		await expect.element(screen.getByRole('searchbox')).toHaveValue('previous');
+	});
+
 	it('should reverse the username order when the reader sorts the column', async () => {
 		const {screen, onSearchChange} = await renderPage();
 

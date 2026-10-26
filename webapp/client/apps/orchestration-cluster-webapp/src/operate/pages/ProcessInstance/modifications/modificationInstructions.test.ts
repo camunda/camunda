@@ -150,6 +150,64 @@ describe('buildModificationInstructions', () => {
 		);
 	});
 
+	it('should send variables of a shared new parent scope only once', () => {
+		const state = createModificationState([
+			addToken({elementId: 'task-a', scopeId: 'a', parentScopeIds: {sub: 'shared'}}),
+			addToken({elementId: 'task-b', scopeId: 'b', parentScopeIds: {sub: 'shared'}}),
+			variable({operation: 'ADD_VARIABLE', scopeId: 'shared', name: 'foo', newValue: '1'}),
+		]);
+
+		expect(buildModificationInstructions(state, PROCESS_INSTANCE_KEY)).toEqual({
+			status: 'ready',
+			instructions: {
+				activateInstructions: [
+					{elementId: 'task-a', variableInstructions: [{variables: {foo: 1}, scopeId: 'sub'}]},
+					{elementId: 'task-b', variableInstructions: []},
+				],
+				moveInstructions: [],
+				terminateInstructions: [],
+			},
+		});
+	});
+
+	it('should send shared scope variables with the activation the engine runs before moves', () => {
+		const state = createModificationState([
+			moveToken({elementId: 'source', targetElementId: 'task-a', scopeIds: ['a'], parentScopeIds: {sub: 'shared'}}),
+			addToken({elementId: 'task-b', scopeId: 'b', parentScopeIds: {sub: 'shared'}}),
+			variable({operation: 'ADD_VARIABLE', scopeId: 'shared', name: 'foo', newValue: '1'}),
+		]);
+
+		expect(buildModificationInstructions(state, PROCESS_INSTANCE_KEY)).toMatchObject({
+			instructions: {
+				activateInstructions: [{elementId: 'task-b', variableInstructions: [{variables: {foo: 1}, scopeId: 'sub'}]}],
+				moveInstructions: [{targetElementId: 'task-a', variableInstructions: []}],
+			},
+		});
+	});
+
+	it('should send shared scope variables with every move that may create the scope', () => {
+		const state = createModificationState([
+			moveToken({elementId: 'a', targetElementId: 'task-a', scopeIds: ['a'], parentScopeIds: {sub: 'shared'}}),
+			moveToken({
+				elementId: 'b',
+				elementInstanceKey: 'b-1',
+				targetElementId: 'task-b',
+				scopeIds: ['b'],
+				parentScopeIds: {sub: 'shared'},
+			}),
+			variable({operation: 'ADD_VARIABLE', scopeId: 'shared', name: 'foo', newValue: '1'}),
+		]);
+
+		expect(buildModificationInstructions(state, PROCESS_INSTANCE_KEY)).toMatchObject({
+			instructions: {
+				moveInstructions: [
+					{targetElementId: 'task-a', variableInstructions: [{variables: {foo: 1}, scopeId: 'sub'}]},
+					{targetElementId: 'task-b', variableInstructions: [{variables: {foo: 1}, scopeId: 'sub'}]},
+				],
+			},
+		});
+	});
+
 	it('should send variables named after object prototype keys as regular variables', () => {
 		const state = createModificationState([
 			addToken({elementId: 'task', scopeId: 'scope'}),

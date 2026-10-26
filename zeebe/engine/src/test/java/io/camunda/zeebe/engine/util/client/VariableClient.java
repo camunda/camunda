@@ -14,6 +14,7 @@ import io.camunda.zeebe.protocol.record.intent.VariableDocumentIntent;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.protocol.record.value.VariableDocumentRecordValue;
 import io.camunda.zeebe.protocol.record.value.VariableDocumentUpdateSemantic;
+import io.camunda.zeebe.protocol.record.value.VariableMetadataValue;
 import io.camunda.zeebe.test.util.MsgPackUtil;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.util.Map;
@@ -80,6 +81,12 @@ public final class VariableClient {
 
   public VariableClient withDocument(final String variables) {
     return withDocument(new UnsafeBuffer(MsgPackConverter.convertToMsgPack(variables)));
+  }
+
+  public VariableClient withMetadata(
+      final Map<String, ? extends VariableMetadataValue> variablesMetadata) {
+    variableDocumentRecord.setVariablesMetadata(variablesMetadata);
+    return this;
   }
 
   public VariableClient withLocalSemantic() {

@@ -12,6 +12,7 @@ import type {
 	ProcessInstance,
 	QueryProcessInstanceIncidentsResponseBody,
 	QueryElementInstancesRequestBody,
+	QuerySortOrder,
 } from '@camunda/camunda-api-zod-schemas/8.11';
 import {request, requestErrorSchema} from '#/shared/http/request';
 import {ForbiddenError} from '#/shared/errors';
@@ -20,10 +21,14 @@ import {endpoints} from '#/shared/http/endpoints';
 import {isInstanceRunning, shouldPollProcessInstance} from '#/operate/shared/utils/processInstance';
 
 const POLLING_INTERVAL_MS = 5000;
-const historySort = [
-	{field: 'startDate', order: 'DESC'},
-	{field: 'elementInstanceKey', order: 'DESC'},
-] satisfies QueryElementInstancesRequestBody['sort'];
+const PROCESS_INSTANCE_INCIDENTS_COUNT_KEY = 'processInstanceIncidentsCount';
+const SELECTION_INCIDENTS_COUNT_KEY = 'selectionIncidentsCount';
+function historySort(order: QuerySortOrder) {
+	return [
+		{field: 'startDate', order},
+		{field: 'elementInstanceKey', order},
+	] satisfies QueryElementInstancesRequestBody['sort'];
+}
 
 async function instanceRequest<T>(input: Request, signal: AbortSignal): Promise<T> {
 	const {response, error} = await request(new Request(input, {signal}));
@@ -53,7 +58,7 @@ function processInstanceIncidentsCountQuery({
 	hasIncident,
 }: Pick<ProcessInstance, 'processInstanceKey' | 'hasIncident'>) {
 	return queryOptions({
-		queryKey: ['processInstanceIncidentsCount', processInstanceKey] as const,
+		queryKey: [PROCESS_INSTANCE_INCIDENTS_COUNT_KEY, processInstanceKey] as const,
 		enabled: hasIncident,
 		queryFn: async (): Promise<number> => {
 			const {response, error} = await request(
@@ -66,6 +71,43 @@ function processInstanceIncidentsCountQuery({
 			return result.page.totalItems;
 		},
 		select: (count) => (hasIncident ? count : 0),
+		staleTime: POLLING_INTERVAL_MS,
+		refetchInterval: POLLING_INTERVAL_MS,
+	});
+}
+
+function selectionIncidentsCountQuery({
+	processInstanceKey,
+	elementId,
+	elementInstanceKey,
+}: {
+	processInstanceKey: string;
+	elementId?: string;
+	elementInstanceKey?: string;
+}) {
+	return queryOptions({
+		queryKey:
+			elementId === undefined && elementInstanceKey === undefined
+				? ([PROCESS_INSTANCE_INCIDENTS_COUNT_KEY, processInstanceKey] as const)
+				: ([SELECTION_INCIDENTS_COUNT_KEY, processInstanceKey, elementId, elementInstanceKey] as const),
+		queryFn: async (): Promise<number> => {
+			const {response, error} = await request(
+				elementInstanceKey === undefined
+					? endpoints.queryProcessInstanceIncidents(processInstanceKey, {
+							filter: {state: 'ACTIVE', elementId},
+							page: {limit: 0},
+						})
+					: endpoints.queryElementInstanceIncidents(elementInstanceKey, {
+							filter: {state: 'ACTIVE'},
+							page: {limit: 0},
+						}),
+			);
+			if (error !== null) {
+				throw mapQueryError(error);
+			}
+			const result: QueryProcessInstanceIncidentsResponseBody = await response.json();
+			return result.page.totalItems;
+		},
 		staleTime: POLLING_INTERVAL_MS,
 		refetchInterval: POLLING_INTERVAL_MS,
 	});
@@ -110,10 +152,14 @@ function useProcessInstanceWaitStateStatistics(processInstance: ProcessInstance)
 }
 
 export {
+	POLLING_INTERVAL_MS,
+	PROCESS_INSTANCE_INCIDENTS_COUNT_KEY,
+	SELECTION_INCIDENTS_COUNT_KEY,
 	historySort,
 	instanceRequest,
 	processInstanceQuery,
 	processInstanceIncidentsCountQuery,
+	selectionIncidentsCountQuery,
 	processInstanceWaitStateStatisticsQuery,
 	useProcessInstance,
 	useProcessInstanceWaitStateStatistics,

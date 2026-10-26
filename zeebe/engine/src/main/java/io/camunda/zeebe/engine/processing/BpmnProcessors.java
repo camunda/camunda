@@ -24,6 +24,7 @@ import io.camunda.zeebe.engine.processing.message.ProcessMessageSubscriptionCrea
 import io.camunda.zeebe.engine.processing.message.ProcessMessageSubscriptionDeleteProcessor;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.processinstance.BufferedCommandDrainProcessor;
+import io.camunda.zeebe.engine.processing.processinstance.ElementInstanceWalkSuspendProcessor;
 import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceBatchActivateProcessor;
 import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceBatchTerminateProcessor;
 import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceBusinessIdAssignProcessor;
@@ -58,6 +59,7 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.AdHocSubProcessInstructionIntent;
 import io.camunda.zeebe.protocol.record.intent.BufferedCommandIntent;
 import io.camunda.zeebe.protocol.record.intent.ConditionalSubscriptionIntent;
+import io.camunda.zeebe.protocol.record.intent.ElementInstanceWalkIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceBusinessIdIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
@@ -107,7 +109,8 @@ public final class BpmnProcessors {
         subscriptionCommandSender,
         transientProcessMessageSubscriptionState,
         clock,
-        suspensionMetrics);
+        suspensionMetrics,
+        keyGenerator);
     addBufferedCommandProcessor(writers, typedRecordProcessors, processingState, suspensionMetrics);
 
     final var bpmnStreamProcessor =
@@ -195,7 +198,8 @@ public final class BpmnProcessors {
       final SubscriptionCommandSender subscriptionCommandSender,
       final TransientPendingSubscriptionState transientProcessMessageSubscriptionState,
       final InstantSource clock,
-      final SuspensionMetrics suspensionMetrics) {
+      final SuspensionMetrics suspensionMetrics,
+      final KeyGenerator keyGenerator) {
     typedRecordProcessors.onCommand(
         ValueType.PROCESS_INSTANCE,
         ProcessInstanceIntent.CANCEL,
@@ -228,6 +232,16 @@ public final class BpmnProcessors {
             subscriptionCommandSender,
             transientProcessMessageSubscriptionState,
             clock,
+            suspensionMetrics));
+    typedRecordProcessors.onCommand(
+        ValueType.ELEMENT_INSTANCE_WALK,
+        ElementInstanceWalkIntent.SUSPEND,
+        new ElementInstanceWalkSuspendProcessor(
+            writers,
+            keyGenerator,
+            processingState.getElementInstanceState(),
+            processingState.getSuspensionState(),
+            processingState.getUserTaskState(),
             suspensionMetrics));
   }
 
@@ -400,6 +414,7 @@ public final class BpmnProcessors {
             writers,
             processingState.getElementInstanceState(),
             processingState.getProcessState(),
+            processingState.getAsyncRequestState(),
             bpmnBehaviors,
             cslCheck);
     typedRecordProcessors.onCommand(

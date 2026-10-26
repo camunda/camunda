@@ -14,7 +14,7 @@ import io.camunda.application.commons.pt.EveryTenantTerminallyFailedException;
 import io.camunda.application.commons.pt.PerTenantSchemaInitialization.Deferral;
 import io.camunda.application.commons.pt.PerTenantSchemaInitialization.DeferralCheck;
 import io.camunda.application.commons.rdbms.RdbmsSchemaInitializer.TerminalSchemaInitializationException;
-import io.camunda.configuration.Rdbms;
+import io.camunda.configuration.data.secondarystorage.Rdbms;
 import io.camunda.db.rdbms.NoopSchemaManager;
 import io.camunda.db.rdbms.RdbmsSchemaManager;
 import io.camunda.db.rdbms.exception.RdbmsSchemaMigrationFailedException;

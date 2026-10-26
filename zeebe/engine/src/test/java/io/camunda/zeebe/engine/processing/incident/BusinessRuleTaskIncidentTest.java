@@ -249,9 +249,48 @@ public class BusinessRuleTaskIncidentTest {
         .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
         .hasErrorMessage(
             """
-            Expected result of the expression 'decisionIdVariable' to be 'STRING', but was 'NULL'. \
+            Expected result of the decision id expression 'decisionIdVariable' of business rule \
+            task 'business-rule-task' to be 'STRING', but was 'NULL'. \
             The evaluation reported the following warnings:
             [NO_VARIABLE_FOUND] No variable found with name 'decisionIdVariable'""");
+  }
+
+  @Test
+  public void shouldNameDecisionIdExpressionIfItsEvaluationFailed() {
+    // given
+    engine
+        .deployment()
+        .withXmlClasspathResource(DMN_RESOURCE)
+        .withXmlResource(
+            processWithBusinessRuleTask(
+                b ->
+                    b.zeebeCalledDecisionIdExpression(
+                            "assert(decisionIdVariable, decisionIdVariable != null)")
+                        .zeebeResultVariable(RESULT_VARIABLE)))
+        .deploy();
+
+    // when
+    final long processInstanceKey = engine.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    final var taskActivating =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId(TASK_ELEMENT_ID)
+            .withElementType(BpmnElementType.BUSINESS_RULE_TASK)
+            .getFirst();
+
+    // then
+    assertIncidentCreated(processInstanceKey, taskActivating.getKey())
+        .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
+        .hasErrorMessage(
+            """
+            Assertion failure on evaluate the expression \
+            'assert(decisionIdVariable, decisionIdVariable != null)': The condition is not \
+            fulfilled (decision id expression of business rule task 'business-rule-task') \
+            The evaluation reported the following warnings:
+            [NO_VARIABLE_FOUND] No variable found with name 'decisionIdVariable'
+            [NO_VARIABLE_FOUND] No variable found with name 'decisionIdVariable'
+            [ASSERT_FAILURE] The condition is not fulfilled""");
   }
 
   @Test
@@ -559,7 +598,8 @@ public class BusinessRuleTaskIncidentTest {
         .hasErrorType(ErrorType.CALLED_DECISION_ERROR)
         .hasErrorMessage(
             """
-            Expected result of the expression 'versionTagVariable' to be 'STRING', but was 'NULL'. \
+            Expected result of the version tag expression 'versionTagVariable' of business rule \
+            task 'business-rule-task' to be 'STRING', but was 'NULL'. \
             The evaluation reported the following warnings:
             [NO_VARIABLE_FOUND] No variable found with name 'versionTagVariable'\
             """);

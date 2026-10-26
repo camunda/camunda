@@ -37,6 +37,7 @@ import io.camunda.zeebe.protocol.record.intent.DecisionIntent;
 import io.camunda.zeebe.protocol.record.intent.DecisionRequirementsIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
+import io.camunda.zeebe.protocol.record.intent.ElementInstanceWalkIntent;
 import io.camunda.zeebe.protocol.record.intent.ErrorIntent;
 import io.camunda.zeebe.protocol.record.intent.EscalationIntent;
 import io.camunda.zeebe.protocol.record.intent.ExpressionIntent;
@@ -59,6 +60,7 @@ import io.camunda.zeebe.protocol.record.intent.MessageStartEventSubscriptionInte
 import io.camunda.zeebe.protocol.record.intent.MessageStartProcessInstanceRequestIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.MultiInstanceIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessDefinitionRestoreIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessEventIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceBusinessIdIntent;
@@ -77,7 +79,6 @@ import io.camunda.zeebe.protocol.record.intent.RuntimeInstructionIntent;
 import io.camunda.zeebe.protocol.record.intent.SecretReferenceIntent;
 import io.camunda.zeebe.protocol.record.intent.SignalIntent;
 import io.camunda.zeebe.protocol.record.intent.SignalSubscriptionIntent;
-import io.camunda.zeebe.protocol.record.intent.SuspensionBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.TenantIntent;
 import io.camunda.zeebe.protocol.record.intent.TimerIntent;
 import io.camunda.zeebe.protocol.record.intent.UsageMetricIntent;
@@ -113,7 +114,7 @@ public final class EventAppliers implements EventApplier {
     register(ProcessInstanceResultIntent.COMPLETED, NOOP_EVENT_APPLIER);
     register(ProcessInstanceBatchIntent.ACTIVATED, NOOP_EVENT_APPLIER);
     register(ProcessInstanceBatchIntent.TERMINATED, NOOP_EVENT_APPLIER);
-    register(SuspensionBatchIntent.ELEMENT_INSTANCE_SUSPENDED, NOOP_EVENT_APPLIER);
+    register(ElementInstanceWalkIntent.SUSPENDED, NOOP_EVENT_APPLIER);
 
     registerProcessAppliers(state);
     register(ErrorIntent.CREATED, new ErrorCreatedApplier(state.getBannedInstanceState()));
@@ -179,6 +180,7 @@ public final class EventAppliers implements EventApplier {
     registerAgentHistoryBatchEventAppliers(state);
     registerAgentDefinitionEventAppliers(state);
     registerSecretReferenceEventAppliers(state);
+    registerProcessDefinitionRestoreAppliers(state);
     return this;
   }
 
@@ -201,8 +203,19 @@ public final class EventAppliers implements EventApplier {
         new SecretReferenceBatchIncidentsCreatedApplier(state.getSecretReferenceState()));
   }
 
+  private void registerProcessDefinitionRestoreAppliers(final MutableProcessingState state) {
+    register(
+        ProcessDefinitionRestoreIntent.STARTED,
+        new ProcessDefinitionRestoreStartedApplier(state.getProcessState()));
+    register(
+        ProcessDefinitionRestoreIntent.RESTORED,
+        new ProcessDefinitionRestoredApplier(state.getProcessState()));
+    register(ProcessDefinitionRestoreIntent.FINISHED, NOOP_EVENT_APPLIER);
+  }
+
   private void registerAgentHistoryEventAppliers(final MutableProcessingState state) {
     register(AgentHistoryIntent.CREATED, new AgentHistoryCreatedApplier(state));
+    register(AgentHistoryIntent.CREATED, 2, new AgentHistoryCreatedV2Applier(state));
     register(AgentHistoryIntent.COMMITTED, new AgentHistoryCommittedApplier(state));
     register(AgentHistoryIntent.DISCARDED, new AgentHistoryDiscardedApplier(state));
   }
@@ -346,6 +359,9 @@ public final class EventAppliers implements EventApplier {
     final var variableApplier = new VariableApplier(variableState);
     register(VariableIntent.CREATED, variableApplier);
     register(VariableIntent.UPDATED, variableApplier);
+    final var variableV2Applier = new VariableV2Applier(variableState);
+    register(VariableIntent.CREATED, 2, variableV2Applier);
+    register(VariableIntent.UPDATED, 2, variableV2Applier);
     register(VariableIntent.MIGRATED, new VariableMigratedApplier());
     register(VariableDocumentIntent.UPDATING, new VariableDocumentUpdatingApplier(variableState));
     register(VariableDocumentIntent.UPDATED, new VariableDocumentUpdatedApplier(variableState));
@@ -640,8 +656,9 @@ public final class EventAppliers implements EventApplier {
 
   /**
    * Appliers for the cross-partition {@code MessageStartProcessInstanceRequest} handshake. All
-   * intents are introduced together with this feature and have no prior stream history, so per the
-   * versioned-applier convention a single V1 applier per intent is sufficient (no V2 alongside).
+   * intents were introduced together with this feature, so each starts at a single V1 applier.
+   * {@code STARTED} additionally has a V2 that persists the storage ordinal on the dedup entry; V1
+   * stays registered to replay {@code STARTED} events written before the ordinal existed.
    *
    * <ul>
    *   <li>{@code REQUESTED}: acknowledgement event with no state effect.
@@ -680,6 +697,14 @@ public final class EventAppliers implements EventApplier {
     register(
         MessageStartProcessInstanceRequestIntent.STARTED,
         new MessageStartProcessInstanceStartedV1Applier(
+            state.getMessageStartProcessInstanceDedupState(),
+            state.getMessageStartProcessInstanceAskState(),
+            state.getMessageState(),
+            state.getPartitionId()));
+    register(
+        MessageStartProcessInstanceRequestIntent.STARTED,
+        2,
+        new MessageStartProcessInstanceStartedV2Applier(
             state.getMessageStartProcessInstanceDedupState(),
             state.getMessageStartProcessInstanceAskState(),
             state.getMessageState(),
@@ -910,6 +935,8 @@ public final class EventAppliers implements EventApplier {
     register(UserTaskIntent.COMPLETION_DENIED, new UserTaskCompletionDeniedApplier(state));
     register(UserTaskIntent.ASSIGNMENT_DENIED, new UserTaskAssignmentDeniedApplier(state));
     register(UserTaskIntent.UPDATE_DENIED, new UserTaskUpdateDeniedApplier(state));
+    register(UserTaskIntent.SUSPENDED, NOOP_EVENT_APPLIER);
+    register(UserTaskIntent.RESUMED, NOOP_EVENT_APPLIER);
   }
 
   private void registerCompensationSubscriptionApplier(
@@ -998,6 +1025,8 @@ public final class EventAppliers implements EventApplier {
   private void registerClockAppliers(final MutableProcessingState state) {
     register(ClockIntent.PINNED, new ClockPinnedApplier(state.getClockState()));
     register(ClockIntent.RESETTED, new ClockResettedApplier(state.getClockState()));
+    register(ClockIntent.FETCHED, NOOP_EVENT_APPLIER);
+    register(ClockIntent.OFFSETTED, new ClockOffsettedApplier(state.getClockState()));
   }
 
   private void registerRoleAppliers(final MutableProcessingState state) {

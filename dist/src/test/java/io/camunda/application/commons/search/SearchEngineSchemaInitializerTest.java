@@ -16,7 +16,6 @@ import static org.mockito.Mockito.mock;
 import io.camunda.application.commons.pt.EveryTenantTerminallyFailedException;
 import io.camunda.application.commons.search.SearchEngineSchemaInitializer.TerminalSchemaInitializationException;
 import io.camunda.configuration.Camunda;
-import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.configuration.UnifiedConfigurationHelper;
 import io.camunda.configuration.beanoverrides.SearchEngineConnectPropertiesOverride.Converter;
 import io.camunda.configuration.beanoverrides.SearchEngineIndexPropertiesOverride;
@@ -25,6 +24,7 @@ import io.camunda.configuration.beanoverrides.SearchEngineSchemaManagerPropertie
 import io.camunda.configuration.beans.SearchEngineIndexProperties;
 import io.camunda.configuration.beans.SearchEngineRetentionProperties;
 import io.camunda.configuration.beans.SearchEngineSchemaManagerProperties;
+import io.camunda.configuration.data.SecondaryStorage.SecondaryStorageType;
 import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
 import io.camunda.exporter.adapters.ClientAdapter;
 import io.camunda.search.connect.configuration.DatabaseType;

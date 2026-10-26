@@ -241,6 +241,7 @@ Always run `npm run lint` before committing. Fix all errors — do not commit wi
 |                        Workflow                         |                           Trigger                            |                                                       Link                                                       |
 |---------------------------------------------------------|--------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------|
 | `c8-orchestration-cluster-nightly-<version>-<type>.yml` | Nightly, per version and type (`e2e`, `api-es`, `api-rdbms`) | [Runbook](docs/nightly-runbook.md)                                                                               |
+| `ci-c8-orchestration-cluster-e2e-suite-reusable.yml`    | Automatic PR check (non-fork PRs touching the suite)         | Called by `ci.yml`; blocks only on the PR's own added/modified specs                                             |
 | `c8-orchestration-cluster-e2e-tests-on-demand.yml`      | Manual                                                       | [Actions](https://github.com/camunda/camunda/actions/workflows/c8-orchestration-cluster-e2e-tests-on-demand.yml) |
 
 Nightly results post to Slack `#c8-orchestration-cluster-e2e-test-results`. The schedule, test ownership
@@ -273,7 +274,7 @@ Each supported version lives on its own branch in `camunda/camunda`:
   except infrastructure smoke checks that verify a component bundled in the suite's Docker
   Compose stack starts and is accessible (e.g. the Optimize startup check).
 - Reviewers must include someone from the Test Automation Team and a product team developer.
-- **Run the on-demand workflow against your branch before requesting review.** PRs without a completed run will be returned. If failures exist, document them in the PR description and confirm they are pre-existing.
+- **Your changed tests must pass the automatic PR check before requesting review.** A PR that changes the suite runs the suite automatically (`ci-c8-orchestration-cluster-e2e-suite-reusable.yml`, via `ci.yml`), blocking the merge on the specs you added or modified. It does not gate on untouched tests and does not run on fork PRs — when your change can break tests you did not edit (shared page object, fixture or config) or the PR is from a fork, also run the on-demand workflow and document any failures in the PR description, confirming they are pre-existing.
 - Track work on the [project board](https://github.com/orgs/camunda/projects/178/views/1).
 - Avoid introducing new `test.skip()` or `test.fixme()` calls. If a skip is genuinely unavoidable
   (e.g. a confirmed upstream bug blocking the test), it must include a linked issue and a
@@ -309,6 +310,17 @@ the window).
 evidence: every retry attempt in `results.json` failed (a `failed → passed` retry is flakiness — fix
 with a wait/retry); and the failure reproduces across both tasklist modes / DBs that share the flow,
 or has failed on consecutive nights. If it looks intermittent → flakiness fix, not a product bug.
+
+**Judge each variant separately, and let the worst one decide.** The same test runs under several
+variants per version — ES cluster topology (`all-in-one` vs `profiles`), tasklist mode (`v1`/`v2`),
+and DB — and each uploads its own `results.json`. Read every variant's report that exists before
+ruling on Gate A; never let one variant's verdict stand for the others. A `failed → passed` retry in
+one variant does **not** clear Gate A if another variant shows `failed → failed`: the deterministic
+variant alone proves the failure is deterministic, and you must go on to Gate B. Variants are
+*expected* to disagree when they exercise different code paths — a single-partition cluster can only
+reach the states a multi-partition cluster's routing sometimes avoids — so a disagreement is a lead
+for Gate B (which change made these topologies diverge?), never a reason to discard the failing one
+as noise. State in the PR body which variants you checked and what each one showed.
 
 **Gate B — Pin it to a recent product change.** Identify the owning module (table below) and find
 the breaking change. You are already inside the `camunda/camunda` checkout (on `${TARGET_REF}`), so
@@ -830,8 +842,13 @@ if [ "$HAS_E2E" = "true" ] && [ -n "$E2E_RUN_ID" ]; then
 fi
 
 if [ "$HAS_API_ES" = "true" ] && [ -n "$API_ES_RUN_ID" ]; then
+  # The trailing -* is REQUIRED: the ES API nightly runs the suite twice, under
+  # two cluster topologies, and uploads one report per topology
+  # (json-report-nightly-api-<safe_version>-all-in-one and -profiles).
+  # Without the wildcard this pattern matches NOTHING and the 2>/dev/null
+  # swallows it, leaving you with an empty api-es/ and no ES evidence at all.
   gh run download "$API_ES_RUN_ID" --repo "$REPO" \
-    --pattern "json-report-nightly-api-${SAFE_VERSION}" \
+    --pattern "json-report-nightly-api-${SAFE_VERSION}-*" \
     --dir /tmp/nightly-artifacts/api-es 2>/dev/null || true
 fi
 
@@ -855,9 +872,20 @@ Resulting layout:
   e2e-v1-html/   html-report-nightly-e2e-<safe_version>-v1/...   ← contains screenshots
   e2e-v2/        json-report-nightly-e2e-<safe_version>-v2/results.json
   e2e-v2-html/   html-report-nightly-e2e-<safe_version>-v2/...
-  api-es/        json-report-nightly-api-<safe_version>/results.json
+  api-es/        json-report-nightly-api-<safe_version>-all-in-one/results.json
+  api-es/        json-report-nightly-api-<safe_version>-profiles/results.json
   api-rdbms/     json-report-nightly-api-rdbms-<safe_version>-<db>/results.json
 ```
+
+**The ES API suite runs under two cluster topologies, and you get one report for
+each**: `all-in-one` is a single-partition cluster, `profiles` is
+multi-partition. They are not duplicates — a test can legitimately pass in one
+and fail in the other, because partition count changes which code path answers
+(a request routed round-robin can land on a partition in a different state).
+Read **both** before drawing any conclusion from either, and see Gate A in
+`## Product-Bug Escalation`. For RDBMS the topology is already baked into the
+`database` field of `/tmp/test_specs.json` (e.g. `"MSSQL 2025-profiles"`), so
+that pattern needs no wildcard.
 
 Screenshots from Playwright's HTML report live under
 `html-report/.../data/*.png`. You can read PNGs directly — use them as the
@@ -1059,6 +1087,39 @@ the Product-Bug Escalation skip-PR path (there is nothing to run-and-green —
 the "fix" is a `test.skip()` annotation) and the Workflow-Level Failure Fix
 Agent (no single spec to reproduce against).
 
+### Ownership routing
+
+For test failures and workflow-level failures alike. Name the team that owns each root-cause
+group, so the Slack thread and the job summary say whose failure it is. A workflow-level failure is
+one group: the failed job. Routing never notifies anyone and never holds up a fix: work on the fix
+first, and record the routing of a group as soon as its root cause is known.
+
+1. **`.codeowners` first.** Look up every failing spec of the group in
+   `/tmp/nightly-fix-agent-codeowners`, main's `.codeowners` (the last matching rule wins). Do not
+   use the workspace's copy: on a `stable/<version>` branch it can predate the current owners. If
+   the specs all resolve to one team other than the suite owner `@camunda/test-automation-team`,
+   that team is the owner: tier `High`, source `codeowners: <the matching rule>`. Do not read the
+   runbook for that group. A workflow-level failure has no failing spec, so it starts at step 2.
+2. **Otherwise, follow `skills/route.md`** in the runbook directory, when the prompt says the
+   runbook is available. When it is not, record the group with tier `None`, no candidates, and the
+   gap `routing runbook not available`. The changes for the nightly:
+   - The input is what you diagnosed: the spec paths, or for a workflow-level failure the failed
+     job, step and the file that owns it, plus the error messages and the root cause. The root
+     cause outranks the area of the spec ("Root cause outranks surface symptom" in `route.md`). A
+     product bug routes to the team that owns the broken component.
+   - Discover the teams by listing `memory/teams/`, as `route.md` requires.
+   - The available signals are `team-entries`, `codeowners` (main's copy above) and `git-history`
+     (in the workspace).
+     `prior-questions`, `prior-incidents`, `handbook` and `glean` are not available here. Name one
+     under `gaps` only when its absence lowered the tier.
+   - Use the tiers of `route.md`. `Low`: no owner, up to three candidate slugs, best first. `None`:
+     no owner and no candidates. This replaces the fallback to `team-core-api`, because the suite
+     owner already reviews the nights that nobody owns.
+   - Ignore the Slack and Claude Code output adapters, the pings and the improvement loop. Never
+     write to the runbook directory, and never open a PR against `camunda/eng-kit-memory`. Put a
+     memory gap that you find under `gaps`.
+3. **Record one `routing` entry per group** in `/tmp/fix-meta.json` (see "Result manifest").
+
 ### Constraints
 
 - **Allowed tools, outside the Live Docker Verify loop:** `gh`, `git`, `grep`, `rg`, `cat`, `find`, `jq`, `sed`, `awk`, `unzip`, `date` (needed for the Time Budget checkpoint comparisons above), `mv` (needed for atomic checkpoint writes above), `npx prettier`, `npx eslint`, `npm run responses:regenerate`. Everything else — `make`, `mvn`, `./mvnw`, `docker`, `kubectl`, `helm`, `npm install`, `npm run build`, `npm run test`, `npx playwright test` — is forbidden here: the fix agent does **not** execute tests from artifact evidence alone.
@@ -1177,6 +1238,35 @@ having to open the issue to find out the bug is theirs.
 `suspect_commit` is surfaced directly in the Slack thread. The triage dispatcher reads each issue's
 fingerprint marker to suppress re-dispatch while the issue is open; once the skip PR merges the test
 no longer runs, and when the issue is later closed the skip should be removed so the test runs again.
+
+**`routing`** — one entry per root-cause group (see "Ownership routing" above). For a
+workflow-level failure, `tests` is `[]` and `job` names the failed job and step:
+
+```json
+"routing": [
+  {
+    "tests": ["tests/operate/dashboard.spec.ts › Navigate to processes view"],
+    "team": "Operate & Admin Pod",
+    "slug": "team-operate-pod",
+    "github_handle": "@camunda/operate-admin-pod",
+    "tier": "High",
+    "reasoning": ["\"<literal phrase from the error or root cause>\" matches team-operate-pod: \"<line from the entry>\""],
+    "sources": ["codeowners: camunda/camunda:<rule>", "team-entries: memory/teams/team-operate-pod.md"],
+    "candidates": [],
+    "gaps": []
+  }
+]
+```
+
+`team`, `slug` and `github_handle` come from the frontmatter of the team entry. Without the
+runbook, a `High` entry sets `team` and `github_handle` to the `.codeowners` handle and `slug` to
+`""`. Leave all three `""` for `Low` and `None`. `reasoning` follows the output contract of
+`route.md`: at least two bullets when the runbook was used, each quoting a literal phrase. The
+calling workflow shows `team` and `tier` in the Slack thread and the whole entry in the job summary.
+
+Use exactly the keys of the example, also when a value is empty, plus `job` for a workflow-level
+failure. Give `reasoning`, `sources`, `candidates` and `gaps` as lists. The job summary does not
+show other keys, such as `group` or `source`.
 
 ## Unskip Verify Agent
 
@@ -1461,6 +1551,9 @@ Write to `/tmp/fix-meta.json`:
 ```json
 {"prs": [{"number": 123, "owner": "camunda", "repo": "camunda", "branch": "ci/...", "has_e2e": false, "has_api": false}], "category": "workflow-fix"}
 ```
+
+Add one `routing` entry for the failed job, as "Ownership routing" in the Nightly Fix Agent
+section describes, also when you open no PR.
 
 ### When — and only when — you cannot fix
 

@@ -24,6 +24,14 @@ class TasklistHeader extends View {
 		return this.page.getByRole('link', {name: 'Camunda logo'});
 	}
 
+	get banner() {
+		return this.page.getByRole('banner');
+	}
+
+	environmentBadge(stage: string) {
+		return this.banner.getByText(`Environment: ${stage}`, {exact: true});
+	}
+
 	get productBreadcrumb() {
 		return this.page.getByRole('navigation', {name: 'Camunda context'}).getByRole('link');
 	}

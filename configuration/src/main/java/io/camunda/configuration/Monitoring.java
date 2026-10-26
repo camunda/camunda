@@ -7,6 +7,7 @@
  */
 package io.camunda.configuration;
 
+import io.camunda.configuration.monitoring.Metrics;
 import java.util.Set;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 

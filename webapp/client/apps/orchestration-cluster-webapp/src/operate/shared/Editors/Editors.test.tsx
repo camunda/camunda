@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {afterAll, afterEach, beforeAll, beforeEach, describe, expect, vi} from 'vitest';
+import {afterEach, beforeEach, describe, expect, vi} from 'vitest';
 import {userEvent} from 'vitest/browser';
 import {cleanup, render} from 'vitest-browser-react';
 import {useState} from 'react';
@@ -18,16 +18,11 @@ import {RichTextEditor, type EditorHandle} from './RichTextEditor';
 import {RichTextEditorModal} from './RichTextEditorModal';
 
 describe('Editors', () => {
-	beforeAll(() => {
-		vi.useFakeTimers({toFake: ['setTimeout', 'clearTimeout', 'Date'], shouldAdvanceTime: true});
-	});
-	afterAll(() => vi.useRealTimers());
 	beforeEach(() => {
 		vi.spyOn(navigator.clipboard, 'writeText').mockResolvedValue();
 		notificationsStore.reset();
 	});
 	afterEach(async () => {
-		await vi.advanceTimersByTimeAsync(100);
 		const monaco = await import('monaco-editor');
 		const models = monaco.editor.getModels().filter((model) => model.getLanguageId() === 'json');
 		if (models.length > 0) {
@@ -222,7 +217,6 @@ describe('Editors', () => {
 				.element(screen.getByRole('textbox', {name: 'Value', exact: true}))
 				.toHaveAttribute('aria-invalid', 'true');
 			expect(onApply).not.toHaveBeenCalled();
-			await vi.advanceTimersByTimeAsync(100);
 			await screen.rerender(
 				<RichTextEditorModal isVisible value={'{\n "a": 1\n}'} onApply={onApply} title="Edit payload" />,
 			);
@@ -271,7 +265,6 @@ describe('Editors', () => {
 			expect(onApply).toHaveBeenCalledWith('# Notes!');
 			await userEvent.click(screen.getByRole('button', {name: 'Cancel'}));
 			expect(onClose).toHaveBeenCalledOnce();
-			await vi.advanceTimersByTimeAsync(100);
 			await screen.rerender(<RichTextEditorModal {...props} isVisible={false} />);
 			await expect.element(screen.getByRole('dialog')).not.toBeInTheDocument();
 			await screen.rerender(<RichTextEditorModal {...props} isVisible />);

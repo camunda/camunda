@@ -28,6 +28,7 @@ import {
 	BareEmptyStateContainer,
 	FailureRow,
 	FailureDetailRow,
+	STICKY_RIGHT_CLASS,
 } from './styled';
 import {ColumnHeader} from './ColumnHeader';
 import {InfiniteScroller} from '#/operate/shared/InfiniteScroller/InfiniteScroller';
@@ -56,9 +57,12 @@ type BaseProps<TRow> = {
 	onSort?: (sortKey: string, order: QuerySortOrder) => void;
 	onVerticalScrollStartReach?: React.ComponentProps<typeof InfiniteScroller>['onVerticalScrollStartReach'];
 	onVerticalScrollEndReach?: React.ComponentProps<typeof InfiniteScroller>['onVerticalScrollEndReach'];
-	rowOperationError?: (row: TRow) => {message: string; expandLabel: string} | null;
+	rowOperationError?: (row: TRow) => {message: React.ReactNode; expandLabel: string} | null;
 	failureDetailsLabel?: string;
 	expansionScope?: string;
+	rowSucceeded?: (row: TRow) => boolean;
+	stickyHeader?: boolean;
+	stickyRightColumn?: string;
 	'data-testid'?: string;
 };
 
@@ -92,6 +96,9 @@ function SortableTable<TRow>(props: Props<TRow>) {
 		rowOperationError,
 		failureDetailsLabel,
 		expansionScope,
+		rowSucceeded,
+		stickyHeader = false,
+		stickyRightColumn,
 		'data-testid': dataTestId,
 	} = props;
 	const selection = props.selectionType === 'checkbox' ? props : undefined;
@@ -102,6 +109,7 @@ function SortableTable<TRow>(props: Props<TRow>) {
 		setExpansionState({scope: expansionScope, ids: new Set()});
 	}
 	const hasScrollHandlers = onVerticalScrollStartReach !== undefined || onVerticalScrollEndReach !== undefined;
+	const getStickyClassName = (columnKey: string) => (columnKey === stickyRightColumn ? STICKY_RIGHT_CLASS : undefined);
 	const columnCount = columns.length + (selection !== undefined ? 1 : 0) + (rowOperationError !== undefined ? 1 : 0);
 
 	if (rows.length === 0 && emptyState !== undefined && hideHeaderWhenEmpty) {
@@ -139,7 +147,9 @@ function SortableTable<TRow>(props: Props<TRow>) {
 								/>
 							)}
 							{columns.map((col) => (
-								<TableCell key={col.key}>{col.render(row)}</TableCell>
+								<TableCell key={col.key} className={getStickyClassName(col.key)}>
+									{col.render(row)}
+								</TableCell>
 							))}
 						</>
 					);
@@ -147,6 +157,7 @@ function SortableTable<TRow>(props: Props<TRow>) {
 						<Fragment key={id}>
 							<FailureRow
 								$isFailed={error != null}
+								$isSucceeded={rowSucceeded?.(row) === true}
 								className={
 									rowOperationError === undefined
 										? undefined
@@ -228,7 +239,7 @@ function SortableTable<TRow>(props: Props<TRow>) {
 									onSort={onSort}
 								/>
 							) : (
-								<TableHeader key={col.key} isSortable={false}>
+								<TableHeader key={col.key} isSortable={false} className={getStickyClassName(col.key)}>
 									{col.label}
 								</TableHeader>
 							),
@@ -252,7 +263,7 @@ function SortableTable<TRow>(props: Props<TRow>) {
 
 	if (hasScrollHandlers) {
 		return (
-			<ScrollContainer ref={scrollableContainerRef} data-testid={dataTestId}>
+			<ScrollContainer ref={scrollableContainerRef} $stickyHeader={stickyHeader} data-testid={dataTestId}>
 				{innerTable}
 			</ScrollContainer>
 		);

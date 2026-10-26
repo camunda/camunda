@@ -90,6 +90,16 @@ function getLastVariableModification(
 	);
 }
 
+function getAddVariableModifications(state: ModificationState, scopeId: string | null) {
+	if (scopeId === null) {
+		return [];
+	}
+
+	return getVariableModifications(state)
+		.filter((modification) => modification.operation === 'ADD_VARIABLE' && modification.scopeId === scopeId)
+		.map(({name, newValue, id}) => ({name, value: newValue, id}));
+}
+
 function getScopeMapForModification(modification: ElementModificationPayload): ElementIdsByScope {
 	if (modification.operation === 'CANCEL_TOKEN') {
 		return {};
@@ -171,6 +181,7 @@ function getModificationsByElement(
 		}
 
 		sourceCounts.areAllTokensCanceled =
+			modification.elementInstanceKey === undefined ||
 			sourceCounts.cancelledTokens === (totalRunningInstancesByElement[element.id] ?? 0);
 
 		if (modification.operation === 'MOVE_TOKEN') {
@@ -227,6 +238,7 @@ function willAllElementsBeCanceled(
 }
 
 export {
+	getAddVariableModifications,
 	getElementModifications,
 	getLastModification,
 	getLastVariableModification,

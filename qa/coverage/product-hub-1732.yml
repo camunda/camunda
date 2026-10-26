@@ -278,7 +278,7 @@ specs:
   # ---------------------------------------------------------------------------
   # Unit — configuration
   # ---------------------------------------------------------------------------
-  - path: configuration/src/test/java/io/camunda/configuration/AuditLogTest.java
+  - path: configuration/src/test/java/io/camunda/configuration/data/AuditLogTest.java
     framework: junit
     covers: >
       Audit log configuration parsing and defaults — plus, as planned cases,

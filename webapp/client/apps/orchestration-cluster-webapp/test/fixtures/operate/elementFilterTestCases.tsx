@@ -267,6 +267,77 @@ function registerElementFilterTests() {
 			await expect.element(screen.getByText('There are no Instances matching this filter set')).toBeVisible();
 		});
 
+		it('should keep a newly deployed version selected while cached definitions refresh', async ({worker}) => {
+			worker.use(
+				mockQueryProcessDefinitionsEndpoint({
+					successResponse: HttpResponse.json(
+						createQueryProcessDefinitionsResponse({
+							items: [
+								createProcessDefinition({processDefinitionId: 'orders', version: 1, processDefinitionKey: '1001'}),
+							],
+						}),
+					),
+				}),
+				mockQueryProcessInstancesEndpoint({successResponse: EMPTY_INSTANCES}),
+				mockGetProcessDefinitionXmlEndpoint({successResponse: HttpResponse.text(BPMN_XML)}),
+				mockGetProcessDefinitionStatisticsEndpoint({successResponse: EMPTY_STATISTICS}),
+			);
+			const screen = await renderPage('?process=orders&version=1');
+			await expect.element(screen.getByRole('combobox', {name: 'Version'})).toMatchTextContent('1');
+			await expect.element(screen.getByRole('combobox', {name: 'Element'})).toBeEnabled();
+
+			worker.use(
+				http.post(apiEndpoints.queryProcessDefinitions.getUrl(), async () => {
+					await delay(500);
+					return HttpResponse.json(
+						createQueryProcessDefinitionsResponse({
+							items: [
+								createProcessDefinition({processDefinitionId: 'orders', version: 2, processDefinitionKey: '2002'}),
+								createProcessDefinition({processDefinitionId: 'orders', version: 1, processDefinitionKey: '1001'}),
+							],
+						}),
+					);
+				}),
+			);
+			void screen.queryClient.invalidateQueries();
+			screen.router.history.push(
+				'/operate/processes?active=false&incidents=false&suspended=false&process=orders&version=2',
+			);
+
+			await expect.element(screen.getByRole('combobox', {name: 'Version'})).toMatchTextContent('2');
+			await expect.element(screen.getByRole('combobox', {name: 'Element'})).toBeEnabled();
+			expect(new URLSearchParams(screen.router.state.location.searchStr).get('version')).toBe('2');
+		});
+
+		it('should keep a version missing from the cached definitions selected once it is found', async ({worker}) => {
+			worker.use(
+				mockQueryProcessDefinitionsEndpoint({
+					successResponse: HttpResponse.json(
+						createQueryProcessDefinitionsResponse({
+							items: [
+								createProcessDefinition({processDefinitionId: 'orders', version: 1, processDefinitionKey: '1001'}),
+							],
+						}),
+					),
+				}),
+				mockQueryProcessInstancesEndpoint({successResponse: EMPTY_INSTANCES}),
+				mockGetProcessDefinitionXmlEndpoint({successResponse: HttpResponse.text(BPMN_XML)}),
+				mockGetProcessDefinitionStatisticsEndpoint({successResponse: EMPTY_STATISTICS}),
+			);
+			const screen = await renderPage('?process=orders&version=1');
+			await expect.element(screen.getByRole('combobox', {name: 'Version'})).toMatchTextContent('1');
+			await expect.element(screen.getByRole('combobox', {name: 'Element'})).toBeEnabled();
+
+			worker.use(mockQueryProcessDefinitionsEndpoint({successResponse: DEFINITIONS}));
+			screen.router.history.push(
+				'/operate/processes?active=false&incidents=false&suspended=false&process=orders&version=2',
+			);
+
+			await expect.element(screen.getByRole('combobox', {name: 'Version'})).toMatchTextContent('2');
+			await expect.element(screen.getByRole('combobox', {name: 'Element'})).toBeEnabled();
+			expect(new URLSearchParams(screen.router.state.location.searchStr).get('version')).toBe('2');
+		});
+
 		it('should leave the element unavailable without a single version or with empty XML', async ({worker}) => {
 			worker.use(
 				mockQueryProcessDefinitionsEndpoint({successResponse: DEFINITIONS}),
@@ -371,15 +442,14 @@ function registerElementFilterTests() {
 				await expect.element(screen.getByRole('combobox', {name: 'Version'})).toMatchTextContent('All versions');
 				await expect.element(screen.getByText('Process "Orders" exists in more than one Tenant')).toBeVisible();
 				await expect.element(screen.getByRole('combobox', {name: 'Element'})).toBeDisabled();
-				screen.router.history.push('/operate/processes?tenantId=all&process=orders&version=3');
-				await expect.element(screen.getByText('There is no Process selected')).toBeVisible();
-				screen.router.history.back();
-				await expect.element(screen.getByRole('combobox', {name: 'Version'})).toMatchTextContent('All versions');
 				screen.router.history.back();
 				await expect.element(screen.getByRole('combobox', {name: 'Version'})).toMatchTextContent('1');
 				await expect.element(screen.getByText('Process "Orders" exists in more than one Tenant')).toBeVisible();
 				screen.router.history.forward();
 				await expect.element(screen.getByRole('combobox', {name: 'Version'})).toMatchTextContent('All versions');
+				screen.router.history.push('/operate/processes?tenantId=all&process=orders&version=3');
+				await expect.poll(() => screen.router.state.location.searchStr).toBe('?tenantId=all');
+				await expect.element(screen.getByRole('combobox', {name: 'Name'})).toHaveValue('');
 			},
 		);
 
@@ -469,10 +539,12 @@ function registerElementFilterTests() {
 						);
 					}
 					return HttpResponse.json(
-						createQueryProcessDefinitionsResponse({
-							items: [TENANT_A_VERSIONS[0]!, ...UNRELATED_DEFINITIONS],
-							page: {totalItems: 2000, hasMoreTotalItems: true, endCursor: 'global-next'},
-						}),
+						isCursorForwardPagination(body.page) && body.page.after === 'global-next'
+							? createQueryProcessDefinitionsResponse()
+							: createQueryProcessDefinitionsResponse({
+									items: [TENANT_A_VERSIONS[0]!, ...UNRELATED_DEFINITIONS],
+									page: {totalItems: 2000, hasMoreTotalItems: true, endCursor: 'global-next'},
+								}),
 					);
 				}),
 				mockQueryProcessInstancesEndpoint({successResponse: EMPTY_INSTANCES}),
@@ -499,11 +571,15 @@ function registerElementFilterTests() {
 					const processFilter = body.filter?.processDefinitionId;
 					return HttpResponse.json(
 						(typeof processFilter === 'string' ? processFilter : processFilter?.$eq) === 'unique'
-							? createQueryProcessDefinitionsResponse({items: [unique]})
-							: createQueryProcessDefinitionsResponse({
-									items: [...UNRELATED_DEFINITIONS, TENANT_A_VERSIONS[0]!],
-									page: {totalItems: 1001, hasMoreTotalItems: true, endCursor: 'global-next'},
-								}),
+							? createQueryProcessDefinitionsResponse({
+									items: [unique, {...unique, processDefinitionKey: 'unique-2', version: 2}],
+								})
+							: isCursorForwardPagination(body.page) && body.page.after === 'global-next'
+								? createQueryProcessDefinitionsResponse()
+								: createQueryProcessDefinitionsResponse({
+										items: [...UNRELATED_DEFINITIONS, TENANT_A_VERSIONS[0]!],
+										page: {totalItems: 1001, hasMoreTotalItems: true, endCursor: 'global-next'},
+									}),
 					);
 				}),
 				mockQueryProcessInstancesEndpoint({successResponse: EMPTY_INSTANCES}),

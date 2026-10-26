@@ -7,4 +7,4 @@
  */
 
 import './i18n-setup';
-import '../routes/_carbon/index.scss';
+import '../shared/theme/carbon.scss';

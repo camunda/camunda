@@ -9,8 +9,17 @@
 import {createFileRoute} from '@tanstack/react-router';
 import {Decisions} from '#/operate/pages/Decisions/shadcn.components/Decisions';
 import {validateDecisionsSearch} from '#/operate/pages/Decisions/decisionsSearch';
+import {decisionsRouteLoader} from '#/operate/pages/Decisions/shadcn.components/decisionsRouteLoader';
 
 export const Route = createFileRoute('/_shadcn/_auth/operate-preview/decisions/')({
 	validateSearch: validateDecisionsSearch,
-	component: Decisions,
+	loaderDeps: ({search: {decisionDefinitionId, decisionDefinitionVersion, tenantId}}) => ({
+		decisionDefinitionId,
+		decisionDefinitionVersion,
+		tenantId,
+	}),
+	loader: ({context: {queryClient}, deps, preload}) => decisionsRouteLoader({queryClient, ...deps, preload}),
+	component: function DecisionsRoute() {
+		return <Decisions search={Route.useSearch()} />;
+	},
 });

@@ -7,6 +7,8 @@
  */
 package io.camunda.configuration;
 
+import io.camunda.configuration.security.ClusterAdmin;
+import io.camunda.configuration.security.Tls;
 import io.camunda.security.spring.CamundaSecurityLibraryProperties;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 

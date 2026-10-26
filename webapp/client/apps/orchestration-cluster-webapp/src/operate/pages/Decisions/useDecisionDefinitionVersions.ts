@@ -35,9 +35,11 @@ function useDecisionDefinitionVersions(decisionDefinitionId?: string, tenantId?:
 						return response.json();
 					},
 		initialPageParam: undefined as string | undefined,
-		getNextPageParam: (lastPage, _pages, lastPageParam) => {
+		getNextPageParam: (lastPage, pages, lastPageParam) => {
+			const loadedItems = pages.reduce((count, page) => count + page.items.length, 0);
+			const hasMoreItems = lastPage.page.hasMoreTotalItems || loadedItems < lastPage.page.totalItems;
 			const nextCursor = lastPage.page.endCursor ?? undefined;
-			return lastPage.page.hasMoreTotalItems && nextCursor !== lastPageParam ? nextCursor : undefined;
+			return lastPage.items.length > 0 && hasMoreItems && nextCursor !== lastPageParam ? nextCursor : undefined;
 		},
 		select: ({pages}) => pages.flatMap((page) => page.items),
 		staleTime: 'static',

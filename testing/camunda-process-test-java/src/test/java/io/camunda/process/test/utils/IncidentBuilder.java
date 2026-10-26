@@ -35,6 +35,7 @@ public class IncidentBuilder implements Incident {
   private IncidentState state;
   private Long jobKey;
   private String tenantId;
+  private Integer storageOrdinal;
 
   @Override
   public Long getIncidentKey() {
@@ -101,8 +102,18 @@ public class IncidentBuilder implements Incident {
     return tenantId;
   }
 
+  @Override
+  public Integer getStorageOrdinal() {
+    return storageOrdinal;
+  }
+
   public IncidentBuilder setTenantId(final String tenantId) {
     this.tenantId = tenantId;
+    return this;
+  }
+
+  public IncidentBuilder setStorageOrdinal(final Integer storageOrdinal) {
+    this.storageOrdinal = storageOrdinal;
     return this;
   }
 

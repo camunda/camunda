@@ -18,12 +18,49 @@ const TableContainer = styled(CarbonTableContainer)`
 	background-color: var(--cds-layer);
 `;
 
-const ScrollContainer = styled.div`
+const STICKY_RIGHT_CLASS = 'sortable-table-sticky-right';
+
+const ScrollContainer = styled.div<{$stickyHeader?: boolean}>`
 	position: relative;
 	height: 100%;
 	background-color: var(--cds-layer);
 	overflow-y: auto;
 	flex: 1 0 0;
+
+	${({$stickyHeader}) =>
+		$stickyHeader &&
+		css`
+			.cds--data-table-content {
+				overflow-x: visible;
+			}
+
+			thead {
+				position: sticky;
+				top: 0;
+				z-index: 2;
+			}
+		`}
+
+	.${STICKY_RIGHT_CLASS} {
+		position: sticky;
+		inset-inline-end: 0;
+		background-color: var(--cds-layer);
+		border-inline-start: 1px solid var(--cds-border-subtle);
+	}
+
+	th.${STICKY_RIGHT_CLASS}:last-of-type {
+		position: sticky;
+		text-align: center;
+		background-color: var(--cds-layer-accent);
+
+		.cds--table-header-label {
+			text-align: center;
+		}
+	}
+
+	tr:hover > td.${STICKY_RIGHT_CLASS} {
+		background-color: var(--cds-layer-hover);
+	}
 `;
 
 const LoadingOverlay = styled.div`
@@ -51,7 +88,7 @@ const BareEmptyStateContainer = styled.div`
 	height: 100%;
 `;
 
-const FailureRow = styled(CarbonTableRow)<{$isFailed: boolean}>`
+const FailureRow = styled(CarbonTableRow)<{$isFailed: boolean; $isSucceeded: boolean}>`
 	.cds--table-expand__svg {
 		transform: rotate(0deg);
 	}
@@ -74,6 +111,12 @@ const FailureRow = styled(CarbonTableRow)<{$isFailed: boolean}>`
 				box-shadow: inset 3px 0 0 var(--cds-support-error);
 			}
 		`}
+
+	${({$isSucceeded}) =>
+		$isSucceeded &&
+		css`
+			box-shadow: inset 3px 0 0 var(--cds-support-success);
+		`}
 `;
 
 const FailureDetailRow = styled(CarbonTableExpandedRow)`
@@ -95,4 +138,5 @@ export {
 	BareEmptyStateContainer,
 	FailureRow,
 	FailureDetailRow,
+	STICKY_RIGHT_CLASS,
 };

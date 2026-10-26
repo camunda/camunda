@@ -17,7 +17,7 @@ import com.google.protobuf.util.Timestamps;
 import io.camunda.zeebe.dynamic.config.PersistedClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.PersistedClusterConfiguration.Header;
 import io.camunda.zeebe.dynamic.config.PersistedCurrentClusterConfiguration;
-import io.camunda.zeebe.dynamic.config.protocol.Topology;
+import io.camunda.zeebe.dynamic.config.impl.protocol.Topology;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;

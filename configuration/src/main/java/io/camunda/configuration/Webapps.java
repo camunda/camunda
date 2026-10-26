@@ -7,6 +7,7 @@
  */
 package io.camunda.configuration;
 
+import io.camunda.configuration.webapps.Webapp;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
 public class Webapps {

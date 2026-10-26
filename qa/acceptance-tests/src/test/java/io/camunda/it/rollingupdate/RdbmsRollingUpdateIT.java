@@ -10,7 +10,7 @@ package io.camunda.it.rollingupdate;
 import static io.camunda.zeebe.test.util.testcontainers.TestSearchContainers.CAMUNDA_PASSWORD;
 import static io.camunda.zeebe.test.util.testcontainers.TestSearchContainers.CAMUNDA_USER;
 
-import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
+import io.camunda.configuration.data.SecondaryStorage.SecondaryStorageType;
 import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
 
 public class RdbmsRollingUpdateIT extends SecondaryStorageRollingUpdateIT {

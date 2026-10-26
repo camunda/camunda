@@ -565,7 +565,7 @@ jobs:
           persist-credentials: false
 
       - name: Set up Helm
-        uses: jdx/mise-action@2d8d4cafcbd33be2ea37d2b6f5ad595363d1f1ca # v5.1.1
+        uses: jdx/mise-action@8418fedb1110381a0d3ba51a7a415d7c1b884550 # v5.2.2
         with:
           minimum_release_age: 15d
           install_args: helm

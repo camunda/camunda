@@ -42,6 +42,7 @@ import io.camunda.search.test.utils.TestObjectMapper;
 import io.camunda.webapps.schema.entities.ExporterEntity;
 import io.camunda.webapps.schema.entities.VariableEntity;
 import io.camunda.webapps.schema.entities.listview.ProcessInstanceForListViewEntity;
+import io.camunda.webapps.schema.entities.listview.VariableForListViewEntity;
 import io.camunda.webapps.schema.entities.operation.BatchOperationEntity;
 import io.camunda.zeebe.exporter.api.ExporterException;
 import io.camunda.zeebe.exporter.api.context.Context;
@@ -66,9 +67,12 @@ import io.camunda.zeebe.protocol.record.value.BatchOperationType;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ImmutableProcessInstanceBusinessIdRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableProcessInstanceRecordValue;
+import io.camunda.zeebe.protocol.record.value.ImmutableVariableMetadataValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableVariableRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceBusinessIdRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
+import io.camunda.zeebe.protocol.record.value.ProtectionMode;
+import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
 import io.camunda.zeebe.util.ObjectSizeEstimator;
@@ -127,8 +131,7 @@ final class CamundaExporterIT {
   void shouldOpenDifferentPartitions(
       final ExporterConfiguration config, final SearchClientAdapter ignored) throws IOException {
     // given
-    config.getConnect().setIndexPrefix(testPrefix);
-    config.getIndex().setNumberOfReplicas(0);
+    prepareIndexConfig(config);
     createSchemas(config);
     final var p1Exporter = new CamundaExporter();
     final var p1Context = getContextFromConfig(config, 1);
@@ -166,8 +169,7 @@ final class CamundaExporterIT {
   void shouldUpdateExporterPositionAfterFlushing(
       final ExporterConfiguration config, final SearchClientAdapter ignored) throws IOException {
     // given
-    config.getConnect().setIndexPrefix(testPrefix);
-    config.getIndex().setNumberOfReplicas(0);
+    prepareIndexConfig(config);
     createSchemas(config);
     final var exporter = new CamundaExporter();
 
@@ -191,8 +193,7 @@ final class CamundaExporterIT {
   void shouldExportRecordOnceBulkSizeReached(
       final ExporterConfiguration config, final SearchClientAdapter ignored) throws IOException {
     // given
-    config.getConnect().setIndexPrefix(testPrefix);
-    config.getIndex().setNumberOfReplicas(0);
+    prepareIndexConfig(config);
     createSchemas(config);
     config.getBulk().setSize(2);
     final var exporter = new CamundaExporter();
@@ -225,8 +226,7 @@ final class CamundaExporterIT {
       final GenericContainer<?> container) throws IOException {
     // given
     final var config = getConnectConfigForContainer(container);
-    config.getConnect().setIndexPrefix(testPrefix);
-    config.getIndex().setNumberOfReplicas(0);
+    prepareIndexConfig(config);
     createSchemas(config);
     final var exporter = new CamundaExporter();
 
@@ -265,8 +265,7 @@ final class CamundaExporterIT {
   void shouldPeriodicallyFlushBasedOnConfiguration(
       final ExporterConfiguration config, final SearchClientAdapter ignored) throws IOException {
     // given
-    config.getConnect().setIndexPrefix(testPrefix);
-    config.getIndex().setNumberOfReplicas(0);
+    prepareIndexConfig(config);
     createSchemas(config);
     final var duration = 2;
     config.getBulk().setDelay(duration);
@@ -292,8 +291,7 @@ final class CamundaExporterIT {
       final ExporterConfiguration config, final SearchClientAdapter clientAdapter)
       throws IOException {
     // given
-    config.getConnect().setIndexPrefix(testPrefix);
-    config.getIndex().setNumberOfReplicas(0);
+    prepareIndexConfig(config);
     createSchemas(config);
     final var valueType = ValueType.VARIABLE;
     final Record record =
@@ -353,12 +351,112 @@ final class CamundaExporterIT {
   }
 
   @TestTemplate
+  void shouldExportProtectionModesOfVariable(
+      final ExporterConfiguration config, final SearchClientAdapter clientAdapter)
+      throws IOException {
+    // given
+    final var exporter = openExporterWithSchemas(config);
+    final var varHandler = getVariableHandler(config);
+
+    final var protectedRecord =
+        generateVariableRecord(
+            VariableIntent.CREATED,
+            1L,
+            ImmutableVariableMetadataValue.builder()
+                .addProtectionModes(ProtectionMode.REDACT)
+                .build());
+    final var unprotectedRecord =
+        generateVariableRecord(
+            VariableIntent.CREATED, 2L, ImmutableVariableMetadataValue.builder().build());
+    final var updatedRecord =
+        generateVariableRecord(
+            VariableIntent.UPDATED,
+            3L,
+            ImmutableVariableMetadataValue.builder()
+                .addProtectionModes(ProtectionMode.REDACT)
+                .build());
+
+    // when
+    exporter.export(protectedRecord);
+    exporter.export(unprotectedRecord);
+    exporter.export(updatedRecord);
+    clientAdapter.refresh(testPrefix);
+
+    // then
+    await()
+        .untilAsserted(
+            () -> {
+              assertThat(
+                      getVariable(clientAdapter, varHandler.getIndexName(), protectedRecord)
+                          .getProtectionModes())
+                  .containsExactly(ProtectionMode.REDACT);
+              assertThat(
+                      getVariable(clientAdapter, varHandler.getIndexName(), unprotectedRecord)
+                          .getProtectionModes())
+                  .isNull();
+              assertThat(
+                      getVariable(clientAdapter, varHandler.getIndexName(), updatedRecord)
+                          .getProtectionModes())
+                  .containsExactly(ProtectionMode.REDACT);
+            });
+  }
+
+  private void prepareIndexConfig(final ExporterConfiguration config) {
+    config.getConnect().setIndexPrefix(testPrefix);
+    config.getIndex().setNumberOfReplicas(0);
+  }
+
+  private CamundaExporter openExporterWithSchemas(final ExporterConfiguration config)
+      throws IOException {
+    prepareIndexConfig(config);
+    createSchemas(config);
+    final var exporter = new CamundaExporter();
+    exporter.configure(getContextFromConfig(config));
+    exporter.open(new ExporterTestController());
+    return exporter;
+  }
+
+  private ExportHandler<?, ?> getVariableHandler(final ExporterConfiguration config) {
+    return getHandlers(config).stream()
+        .filter(handler -> VariableHandler.class.isAssignableFrom(handler.getClass()))
+        .findFirst()
+        .orElseThrow();
+  }
+
+  private Record<VariableRecordValue> generateVariableRecord(
+      final VariableIntent intent,
+      final long scopeKey,
+      final ImmutableVariableMetadataValue metadata) {
+    return factory.generateRecord(
+        ValueType.VARIABLE,
+        r ->
+            r.withIntent(intent)
+                .withValue(
+                    ImmutableVariableRecordValue.builder()
+                        .from(factory.generateObject(VariableRecordValue.class))
+                        .withScopeKey(scopeKey)
+                        .withMetadata(metadata)
+                        .build()));
+  }
+
+  private VariableEntity getVariable(
+      final SearchClientAdapter clientAdapter,
+      final String indexName,
+      final Record<VariableRecordValue> record)
+      throws IOException {
+    final var value = record.getValue();
+    return clientAdapter.get(
+        VariableForListViewEntity.getIdBy(value.getScopeKey(), value.getName()),
+        indexName,
+        VariableEntity.class);
+  }
+
+  @TestTemplate
   void shouldUpdateBusinessIdOnLateAssignment(
       final ExporterConfiguration config, final SearchClientAdapter clientAdapter)
       throws IOException {
     // given - a running process instance already exported into the list view
-    config.getConnect().setIndexPrefix(testPrefix);
-    config.getIndex().setNumberOfReplicas(0);
+    prepareIndexConfig(config);
     createSchemas(config);
 
     final long processInstanceKey = 4503599627370497L;
@@ -444,8 +542,7 @@ final class CamundaExporterIT {
       final ExporterConfiguration config, final SearchClientAdapter clientAdapter)
       throws IOException {
     // given
-    config.getConnect().setIndexPrefix(testPrefix);
-    config.getIndex().setNumberOfReplicas(0);
+    prepareIndexConfig(config);
     createSchemas(config);
     final ValueType valueType = ValueType.INCIDENT;
     final long notExistingOperationReference = 9876543210L;
@@ -482,8 +579,7 @@ final class CamundaExporterIT {
       final ExporterConfiguration config, final SearchClientAdapter clientAdapter)
       throws IOException {
     // given
-    config.getConnect().setIndexPrefix(testPrefix);
-    config.getIndex().setNumberOfReplicas(0);
+    prepareIndexConfig(config);
     createSchemas(config);
     final ValueType valueType = ValueType.INCIDENT;
     final long invalidTimestamp = 8109027450636607488L;
@@ -522,8 +618,7 @@ final class CamundaExporterIT {
       final ExporterConfiguration config, final SearchClientAdapter clientAdapter)
       throws IOException {
     // given
-    config.getConnect().setIndexPrefix(testPrefix);
-    config.getIndex().setNumberOfReplicas(0);
+    prepareIndexConfig(config);
 
     // Do not create schema yet
     final var exporter = spy(new CamundaExporter());
@@ -643,8 +738,7 @@ final class CamundaExporterIT {
       final ExporterConfiguration config, final SearchClientAdapter clientAdapter)
       throws IOException {
     // given
-    config.getConnect().setIndexPrefix(testPrefix);
-    config.getIndex().setNumberOfReplicas(0);
+    prepareIndexConfig(config);
     createSchemas(config);
     final var exporter = new CamundaExporter();
 
@@ -717,8 +811,7 @@ final class CamundaExporterIT {
       final ExporterConfiguration config, final SearchClientAdapter clientAdapter)
       throws IOException {
     // given
-    config.getConnect().setIndexPrefix(testPrefix);
-    config.getIndex().setNumberOfReplicas(0);
+    prepareIndexConfig(config);
     createSchemas(config);
     final Record record =
         factory.generateRecord(
@@ -745,8 +838,7 @@ final class CamundaExporterIT {
       final ExporterConfiguration config, final SearchClientAdapter clientAdapter)
       throws IOException {
     // given - a batch operation document and one CHUNK CREATED record with 3 items
-    config.getConnect().setIndexPrefix(testPrefix);
-    config.getIndex().setNumberOfReplicas(0);
+    prepareIndexConfig(config);
     createSchemas(config);
     config.getBulk().setSize(1);
     final var exporter = new CamundaExporter();

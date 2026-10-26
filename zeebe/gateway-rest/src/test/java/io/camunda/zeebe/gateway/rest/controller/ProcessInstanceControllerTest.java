@@ -62,10 +62,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeoutException;
+import java.util.stream.Stream;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mockito;
@@ -951,6 +956,248 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .expectBody()
         .json(expectedBody, JsonCompareMode.STRICT);
+  }
+
+  @Test
+  void shouldPassAllFieldsOfCreationByVersionTagToService() {
+    // given
+    final var mockResponse =
+        new ProcessInstanceCreationRecord()
+            .setProcessDefinitionKey(123L)
+            .setBpmnProcessId("bpmnProcessId")
+            .setProcessInstanceKey(123L)
+            .setTenantId("<default>");
+    when(processInstanceServices.createProcessInstance(
+            any(ProcessInstanceCreateRequest.class), any()))
+        .thenReturn(CompletableFuture.completedFuture(mockResponse));
+
+    final var request =
+        """
+            {
+                "processDefinitionId": "bpmnProcessId",
+                "processDefinitionVersionTag": "release-1",
+                "variables": { "foo": "bar" },
+                "operationReference": 123,
+                "startInstructions": [
+                    { "elementId": "Activity_1" }
+                ],
+                "runtimeInstructions": [
+                    { "afterElementId": "Activity_2", "type": "TERMINATE_PROCESS_INSTANCE" }
+                ],
+                "awaitCompletion": false,
+                "fetchVariables": ["foo"],
+                "requestTimeout": 456,
+                "tags": ["tag1"],
+                "businessId": "business-1"
+            }""";
+
+    // when / then
+    webClient
+        .post()
+        .uri(PROCESS_INSTANCES_START_URL)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isOk();
+
+    verify(processInstanceServices).createProcessInstance(createRequestCaptor.capture(), any());
+    final var capturedRequest = createRequestCaptor.getValue();
+    assertThat(capturedRequest.bpmnProcessId()).isEqualTo("bpmnProcessId");
+    assertThat(capturedRequest.versionTag()).isEqualTo("release-1");
+    assertThat(capturedRequest.version()).isEqualTo(-1);
+    assertThat(capturedRequest.processDefinitionKey()).isEqualTo(-1L);
+    assertThat(capturedRequest.variables()).isEqualTo(Map.of("foo", "bar"));
+    assertThat(capturedRequest.tenantId()).isEqualTo("<default>");
+    assertThat(capturedRequest.operationReference()).isEqualTo(123L);
+    assertThat(capturedRequest.startInstructions()).hasSize(1);
+    assertThat(capturedRequest.startInstructions().getFirst().getElementId())
+        .isEqualTo("Activity_1");
+    assertThat(capturedRequest.runtimeInstructions()).hasSize(1);
+    assertThat(capturedRequest.runtimeInstructions().getFirst().getType())
+        .isEqualTo(RuntimeInstructionType.TERMINATE_PROCESS_INSTANCE);
+    assertThat(capturedRequest.runtimeInstructions().getFirst().getAfterElementId())
+        .isEqualTo("Activity_2");
+    assertThat(capturedRequest.awaitCompletion()).isFalse();
+    assertThat(capturedRequest.fetchVariables()).containsExactly("foo");
+    assertThat(capturedRequest.requestTimeout()).isEqualTo(456L);
+    assertThat(capturedRequest.tags()).containsExactly("tag1");
+    assertThat(capturedRequest.businessId()).isEqualTo("business-1");
+  }
+
+  @Test
+  void shouldCreateProcessInstancesWithVersionTagForTenant() {
+    // given
+    when(multiTenancyCfg.isChecksEnabled()).thenReturn(true);
+    final var mockResponse =
+        new ProcessInstanceCreationRecord()
+            .setProcessDefinitionKey(123L)
+            .setBpmnProcessId("bpmnProcessId")
+            .setProcessInstanceKey(123L)
+            .setTenantId("tenantId");
+
+    when(authenticationProvider.getCamundaAuthentication())
+        .thenReturn(AUTHENTICATION_WITH_NON_DEFAULT_TENANT);
+    when(processInstanceServices.createProcessInstance(
+            any(ProcessInstanceCreateRequest.class), any()))
+        .thenReturn(CompletableFuture.completedFuture(mockResponse));
+
+    final var request =
+        """
+        {
+            "processDefinitionId": "bpmnProcessId",
+            "processDefinitionVersionTag": "release-1",
+            "tenantId": "tenantId"
+        }""";
+
+    // when / then
+    final ResponseSpec response =
+        webClient
+            .post()
+            .uri(PROCESS_INSTANCES_START_URL)
+            .accept(MediaType.APPLICATION_JSON)
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(request)
+            .exchange()
+            .expectStatus()
+            .isOk();
+
+    response
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_JSON)
+        .expectBody()
+        .json(EXPECTED_START_RESPONSE, JsonCompareMode.STRICT);
+
+    verify(processInstanceServices).createProcessInstance(createRequestCaptor.capture(), any());
+    final var capturedRequest = createRequestCaptor.getValue();
+    assertThat(capturedRequest.bpmnProcessId()).isEqualTo("bpmnProcessId");
+    assertThat(capturedRequest.versionTag()).isEqualTo("release-1");
+    assertThat(capturedRequest.version()).isEqualTo(-1);
+    assertThat(capturedRequest.processDefinitionKey()).isEqualTo(-1L);
+    assertThat(capturedRequest.tenantId()).isEqualTo("tenantId");
+  }
+
+  @Test
+  void shouldCreateProcessInstancesWithResultWithBpmnProcessIdAndVersionTag() {
+    // given
+    final var mockResponse =
+        new ProcessInstanceResultRecord()
+            .setProcessDefinitionKey(123L)
+            .setBpmnProcessId("bpmnProcessId")
+            .setProcessInstanceKey(123L)
+            .setTenantId("<default>");
+    when(processInstanceServices.createProcessInstanceWithResult(
+            any(ProcessInstanceCreateRequest.class), any()))
+        .thenReturn(CompletableFuture.completedFuture(mockResponse));
+
+    final var request =
+        """
+            {
+                "processDefinitionId": "bpmnProcessId",
+                "processDefinitionVersionTag": "release-1",
+                "awaitCompletion": true
+            }""";
+
+    // when / then
+    webClient
+        .post()
+        .uri(PROCESS_INSTANCES_START_URL)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isOk();
+
+    verify(processInstanceServices)
+        .createProcessInstanceWithResult(createRequestCaptor.capture(), any());
+    final var capturedRequest = createRequestCaptor.getValue();
+    assertThat(capturedRequest.bpmnProcessId()).isEqualTo("bpmnProcessId");
+    assertThat(capturedRequest.versionTag()).isEqualTo("release-1");
+    assertThat(capturedRequest.version()).isEqualTo(-1);
+  }
+
+  @Test
+  void shouldCreateProcessInstancesWithProcessDefinitionKeyAndIgnoredVersion() {
+    // given
+    final var mockResponse =
+        new ProcessInstanceCreationRecord()
+            .setProcessDefinitionKey(123L)
+            .setBpmnProcessId("bpmnProcessId")
+            .setProcessInstanceKey(123L)
+            .setTenantId("<default>");
+    when(processInstanceServices.createProcessInstance(
+            any(ProcessInstanceCreateRequest.class), any()))
+        .thenReturn(CompletableFuture.completedFuture(mockResponse));
+
+    final var request =
+        """
+            {
+                "processDefinitionKey": "123",
+                "processDefinitionVersion": 1
+            }""";
+
+    // when / then
+    webClient
+        .post()
+        .uri(PROCESS_INSTANCES_START_URL)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isOk();
+
+    verify(processInstanceServices).createProcessInstance(createRequestCaptor.capture(), any());
+    assertThat(createRequestCaptor.getValue().processDefinitionKey()).isEqualTo(123L);
+    assertThat(createRequestCaptor.getValue().versionTag()).isNull();
+  }
+
+  @ParameterizedTest
+  @MethodSource("invalidVersionTagRequests")
+  void shouldRejectCreateProcessInstancesWithInvalidVersionTagCombination(
+      final String request, final String expectedDetail) {
+    // when / then
+    webClient
+        .post()
+        .uri(PROCESS_INSTANCES_START_URL)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .jsonPath("$.detail")
+        .isEqualTo(expectedDetail);
+  }
+
+  static Stream<Arguments> invalidVersionTagRequests() {
+    return Stream.of(
+        Arguments.of(
+            """
+            {"processDefinitionKey": "123", "processDefinitionVersionTag": "release-1"}""",
+            "Only one of [processDefinitionKey, processDefinitionVersionTag] is allowed"),
+        Arguments.of(
+            """
+            {"processDefinitionId": "bpmnProcessId", "processDefinitionVersion": 1,
+             "processDefinitionVersionTag": "release-1"}""",
+            "Only one of [processDefinitionVersion, processDefinitionVersionTag] is allowed"),
+        Arguments.of(
+            """
+            {"processDefinitionVersionTag": "release-1"}""",
+            "processDefinitionVersionTag can only be set when using processDefinitionId"),
+        Arguments.of(
+            """
+            {"processDefinitionId": "bpmnProcessId", "processDefinitionVersionTag": ""}""",
+            "No processDefinitionVersionTag provided."),
+        Arguments.of(
+            """
+            {"processDefinitionId": "bpmnProcessId", "processDefinitionVersionTag": "  "}""",
+            "No processDefinitionVersionTag provided."));
   }
 
   @Test
@@ -2760,6 +3007,151 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
   }
 
   @Test
+  void shouldAcceptModifyProcessInstanceBatchOperationWithNonActiveStateInOrFilter() {
+    // given
+    final var record = new BatchOperationCreationRecord();
+    record.setBatchOperationKey(123L);
+    record.setBatchOperationType(BatchOperationType.MODIFY_PROCESS_INSTANCE);
+
+    when(processInstanceServices.modifyProcessInstancesBatchOperation(
+            any(ProcessInstanceModifyBatchOperationRequest.class), any()))
+        .thenReturn(CompletableFuture.completedFuture(record));
+
+    final var request =
+        """
+            {
+              "filter": {
+                "$or": [
+                  {"state": "SUSPENDED"},
+                  {"state": "COMPLETED", "hasIncident": true}
+                ]
+              },
+              "moveInstructions": [
+                {
+                  "sourceElementId": "source1",
+                  "targetElementId": "target1"
+                }
+              ]
+            }
+            """;
+
+    // when / then - states in $or branches are narrowed, not validated
+    webClient
+        .post()
+        .uri("/v2/process-instances/modification")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isOk();
+
+    verify(processInstanceServices)
+        .modifyProcessInstancesBatchOperation(
+            any(ProcessInstanceModifyBatchOperationRequest.class), any());
+  }
+
+  @Test
+  void shouldRejectModifyProcessInstanceBatchOperationWithNonActiveState() {
+    // given
+    final var request =
+        """
+            {
+              "filter": {
+                "state": "COMPLETED"
+              },
+              "moveInstructions": [
+                {
+                  "sourceElementId": "source1",
+                  "targetElementId": "target1"
+                }
+              ]
+            }
+            """;
+
+    final var expectedBody =
+        """
+            {
+                "type":"about:blank",
+                "title":"INVALID_ARGUMENT",
+                "status":400,
+                "detail":"The value for state is 'COMPLETED' but must be one of [ACTIVE].",
+                "instance":"/v2/process-instances/modification"
+             }""";
+
+    // when / then
+    webClient
+        .post()
+        .uri("/v2/process-instances/modification")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedBody, JsonCompareMode.STRICT);
+
+    verify(processInstanceServices, never())
+        .modifyProcessInstancesBatchOperation(
+            any(ProcessInstanceModifyBatchOperationRequest.class), any());
+  }
+
+  @Test
+  void shouldRejectModifyProcessInstanceBatchOperationWithNonActiveStateInListButNotInOrFilter() {
+    // given
+    final var request =
+        """
+            {
+              "filter": {
+                "state": {"$in": ["ACTIVE", "TERMINATED"]},
+                "$or": [
+                  {"state": "SUSPENDED"},
+                  {"state": "COMPLETED", "hasIncident": true}
+                ]
+              },
+              "moveInstructions": [
+                {
+                  "sourceElementId": "source1",
+                  "targetElementId": "target1"
+                }
+              ]
+            }
+            """;
+
+    final var expectedBody =
+        """
+            {
+                "type":"about:blank",
+                "title":"INVALID_ARGUMENT",
+                "status":400,
+                "detail":"The value for state is 'TERMINATED' but must be one of [ACTIVE].",
+                "instance":"/v2/process-instances/modification"
+             }""";
+
+    // when / then
+    webClient
+        .post()
+        .uri("/v2/process-instances/modification")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedBody, JsonCompareMode.STRICT);
+
+    verify(processInstanceServices, never())
+        .modifyProcessInstancesBatchOperation(
+            any(ProcessInstanceModifyBatchOperationRequest.class), any());
+  }
+
+  @Test
   public void shouldGetElementStatistics() {
     // given
     final long processInstanceKey = 1L;
@@ -2840,6 +3232,83 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
   }
 
   @Test
+  void shouldAcceptResolveIncidentsBatchOperationWithNonActiveStateInOrFilter() {
+    // given
+    final var record = new BatchOperationCreationRecord();
+    record.setBatchOperationKey(123L);
+    record.setBatchOperationType(BatchOperationType.RESOLVE_INCIDENT);
+
+    when(processInstanceServices.resolveIncidentsBatchOperationWithResult(
+            any(ProcessInstanceFilter.class), any()))
+        .thenReturn(CompletableFuture.completedFuture(record));
+
+    final var request =
+        """
+            {
+              "filter": {
+                "$or": [
+                  {"state": "COMPLETED"},
+                  {"state": "SUSPENDED", "hasIncident": true}
+                ]
+              }
+            }""";
+
+    // when / then - states in $or branches are narrowed, not validated
+    webClient
+        .post()
+        .uri("/v2/process-instances/incident-resolution")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isOk();
+
+    verify(processInstanceServices)
+        .resolveIncidentsBatchOperationWithResult(any(ProcessInstanceFilter.class), any());
+  }
+
+  @Test
+  void shouldRejectResolveIncidentsBatchOperationWithNonActiveState() {
+    // given
+    final var request =
+        """
+            {
+              "filter": {
+                "state": {"$in": ["ACTIVE", "COMPLETED"]}
+              }
+            }""";
+
+    final var expectedBody =
+        """
+            {
+                "type":"about:blank",
+                "title":"INVALID_ARGUMENT",
+                "status":400,
+                "detail":"The value for state is 'COMPLETED' but must be one of [ACTIVE].",
+                "instance":"/v2/process-instances/incident-resolution"
+             }""";
+
+    // when / then
+    webClient
+        .post()
+        .uri("/v2/process-instances/incident-resolution")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedBody, JsonCompareMode.STRICT);
+
+    verify(processInstanceServices, never())
+        .resolveIncidentsBatchOperationWithResult(any(ProcessInstanceFilter.class), any());
+  }
+
+  @Test
   void shouldMigrateProcessInstancesBatchOperation() {
     // given
     final var record = new BatchOperationCreationRecord();
@@ -2887,6 +3356,157 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
             JsonCompareMode.STRICT);
 
     verify(processInstanceServices)
+        .migrateProcessInstancesBatchOperation(
+            any(ProcessInstanceMigrateBatchOperationRequest.class), any());
+  }
+
+  @Test
+  void shouldAcceptMigrateProcessInstancesBatchOperationWithNonActiveStateInOrFilter() {
+    // given
+    final var record = new BatchOperationCreationRecord();
+    record.setBatchOperationKey(123L);
+    record.setBatchOperationType(BatchOperationType.MIGRATE_PROCESS_INSTANCE);
+
+    when(processInstanceServices.migrateProcessInstancesBatchOperation(
+            any(ProcessInstanceMigrateBatchOperationRequest.class), any()))
+        .thenReturn(CompletableFuture.completedFuture(record));
+
+    final var request =
+        """
+           {
+            "filter": {
+              "$or": [
+                {"state": "SUSPENDED"},
+                {"state": "COMPLETED", "hasIncident": true}
+              ]
+            },
+            "migrationPlan": {
+                "targetProcessDefinitionKey": "123",
+                "mappingInstructions": [
+                  {
+                    "sourceElementId": "a",
+                    "targetElementId": "b"
+                  }
+                ]
+              }
+           }""";
+
+    // when / then - states in $or branches are narrowed, not validated
+    webClient
+        .post()
+        .uri("/v2/process-instances/migration")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isOk();
+
+    verify(processInstanceServices)
+        .migrateProcessInstancesBatchOperation(
+            any(ProcessInstanceMigrateBatchOperationRequest.class), any());
+  }
+
+  @Test
+  void shouldRejectMigrateProcessInstancesBatchOperationWithNonActiveState() {
+    // given
+    final var request =
+        """
+           {
+            "filter": {
+              "state": "COMPLETED"
+            },
+            "migrationPlan": {
+                "targetProcessDefinitionKey": "123",
+                "mappingInstructions": [
+                  {
+                    "sourceElementId": "a",
+                    "targetElementId": "b"
+                  }
+                ]
+              }
+           }""";
+
+    final var expectedBody =
+        """
+            {
+                "type":"about:blank",
+                "title":"INVALID_ARGUMENT",
+                "status":400,
+                "detail":"The value for state is 'COMPLETED' but must be one of [ACTIVE].",
+                "instance":"/v2/process-instances/migration"
+             }""";
+
+    // when / then
+    webClient
+        .post()
+        .uri("/v2/process-instances/migration")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedBody, JsonCompareMode.STRICT);
+
+    verify(processInstanceServices, never())
+        .migrateProcessInstancesBatchOperation(
+            any(ProcessInstanceMigrateBatchOperationRequest.class), any());
+  }
+
+  @Test
+  void shouldRejectMigrateProcessInstancesBatchOperationWithNonActiveStateInListButNotInOrFilter() {
+    // given
+    final var request =
+        """
+           {
+            "filter": {
+              "state": {"$in": ["ACTIVE", "TERMINATED"]},
+              "$or": [
+                {"state": "SUSPENDED"},
+                {"state": "COMPLETED", "hasIncident": true}
+              ]
+            },
+            "migrationPlan": {
+                "targetProcessDefinitionKey": "123",
+                "mappingInstructions": [
+                  {
+                    "sourceElementId": "a",
+                    "targetElementId": "b"
+                  }
+                ]
+              }
+           }""";
+
+    final var expectedBody =
+        """
+            {
+                "type":"about:blank",
+                "title":"INVALID_ARGUMENT",
+                "status":400,
+                "detail":"The value for state is 'TERMINATED' but must be one of [ACTIVE].",
+                "instance":"/v2/process-instances/migration"
+             }""";
+
+    // when / then
+    webClient
+        .post()
+        .uri("/v2/process-instances/migration")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedBody, JsonCompareMode.STRICT);
+
+    verify(processInstanceServices, never())
         .migrateProcessInstancesBatchOperation(
             any(ProcessInstanceMigrateBatchOperationRequest.class), any());
   }
@@ -3018,7 +3638,8 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
                         OffsetDateTime.parse("2025-05-23T17:41:24.406Z"),
                         IncidentState.ACTIVE,
                         1L,
-                        "<default>")))
+                        "<default>",
+                        1001)))
             .startCursor("<cursor before>")
             .endCursor("<cursor after>")
             .build();
@@ -3042,7 +3663,8 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
                 "processInstanceKey": "2251799814751255",
                 "rootProcessInstanceKey": "3751799814751237",
                 "elementInstanceKey": "2251799814751258",
-                "jobKey": "1"
+                "jobKey": "1",
+                "storageOrdinal": 1001
             }
         ],
         "page": {
@@ -3204,7 +3826,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
   }
 
   @Test
-  void shouldRejectCancelProcessInstanceBatchOperationWithNonCancellableStatesInListAndOrFilter() {
+  void shouldRejectCancelProcessInstanceBatchOperationWithNonCancellableStatesInTopLevelList() {
     // given
     final var request =
         """
@@ -3224,7 +3846,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
                 "type":"about:blank",
                 "title":"INVALID_ARGUMENT",
                 "status":400,
-                "detail":"The value for state is 'TERMINATED' but must be one of [ACTIVE, SUSPENDED]. The value for state is 'COMPLETED' but must be one of [ACTIVE, SUSPENDED].",
+                "detail":"The value for state is 'TERMINATED' but must be one of [ACTIVE, SUSPENDED].",
                 "instance":"/v2/process-instances/cancellation"
              }""";
 
@@ -3283,6 +3905,385 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
         .cancelProcessInstanceBatchOperationWithResult(filterCaptor.capture(), any());
     assertThat(filterCaptor.getValue().stateOperations())
         .containsExactly(Operation.eq("SUSPENDED"));
+  }
+
+  @Test
+  void shouldAcceptCancelProcessInstanceBatchOperationWithNonCancellableStateOnlyInOrFilter() {
+    // given
+    final var record = new BatchOperationCreationRecord();
+    record.setBatchOperationKey(123L);
+    record.setBatchOperationType(BatchOperationType.CANCEL_PROCESS_INSTANCE);
+    when(processInstanceServices.cancelProcessInstanceBatchOperationWithResult(
+            any(ProcessInstanceFilter.class), any()))
+        .thenReturn(CompletableFuture.completedFuture(record));
+
+    final var request =
+        """
+        {
+          "filter": {
+            "$or": [
+              {"state": "COMPLETED"},
+              {"state": "ACTIVE"}
+            ]
+          }
+        }""";
+
+    // when / then
+    webClient
+        .post()
+        .uri("/v2/process-instances/cancellation")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isOk();
+
+    verify(processInstanceServices)
+        .cancelProcessInstanceBatchOperationWithResult(any(ProcessInstanceFilter.class), any());
+  }
+
+  @Test
+  void shouldAcceptCancelProcessInstanceBatchOperationWithParentProcessInstanceKeyFilter() {
+    // given
+    final var record = new BatchOperationCreationRecord();
+    record.setBatchOperationKey(123L);
+    record.setBatchOperationType(BatchOperationType.CANCEL_PROCESS_INSTANCE);
+    when(processInstanceServices.cancelProcessInstanceBatchOperationWithResult(
+            any(ProcessInstanceFilter.class), any()))
+        .thenReturn(CompletableFuture.completedFuture(record));
+
+    final var request =
+        """
+        {
+          "filter": {
+            "parentProcessInstanceKey": "123"
+          }
+        }""";
+
+    // when / then
+    webClient
+        .post()
+        .uri("/v2/process-instances/cancellation")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isOk();
+
+    verify(processInstanceServices)
+        .cancelProcessInstanceBatchOperationWithResult(any(ProcessInstanceFilter.class), any());
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {"\"COMPLETED\"", "{\"$eq\": \"COMPLETED\"}"})
+  void shouldRejectSuspendProcessInstancesBatchOperationWithNonActiveState(
+      final String stateFilter) {
+    // given
+    final var request =
+        """
+        {
+          "filter": {
+            "state": %s
+          }
+        }"""
+            .formatted(stateFilter);
+
+    final var expectedBody =
+        """
+            {
+                "type":"about:blank",
+                "title":"INVALID_ARGUMENT",
+                "status":400,
+                "detail":"The value for state is 'COMPLETED' but must be one of [ACTIVE].",
+                "instance":"/v2/process-instances/suspension"
+             }""";
+
+    // when / then
+    webClient
+        .post()
+        .uri("/v2/process-instances/suspension")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedBody, JsonCompareMode.STRICT);
+
+    verify(processInstanceServices, never())
+        .suspendProcessInstanceBatchOperationWithResult(any(ProcessInstanceFilter.class), any());
+  }
+
+  @Test
+  void shouldRejectSuspendProcessInstancesBatchOperationWithNonActiveStatesInTopLevelList() {
+    // given
+    final var request =
+        """
+        {
+          "filter": {
+            "state": {"$in": ["ACTIVE", "SUSPENDED"]}
+          }
+        }""";
+
+    final var expectedBody =
+        """
+            {
+                "type":"about:blank",
+                "title":"INVALID_ARGUMENT",
+                "status":400,
+                "detail":"The value for state is 'SUSPENDED' but must be one of [ACTIVE].",
+                "instance":"/v2/process-instances/suspension"
+             }""";
+
+    // when / then
+    webClient
+        .post()
+        .uri("/v2/process-instances/suspension")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedBody, JsonCompareMode.STRICT);
+
+    verify(processInstanceServices, never())
+        .suspendProcessInstanceBatchOperationWithResult(any(ProcessInstanceFilter.class), any());
+  }
+
+  @Test
+  void shouldAcceptSuspendProcessInstancesBatchOperationWithNonActiveStateOnlyInOrFilter() {
+    // given
+    final var record = new BatchOperationCreationRecord();
+    record.setBatchOperationKey(123L);
+    record.setBatchOperationType(BatchOperationType.SUSPEND_PROCESS_INSTANCE);
+    when(processInstanceServices.suspendProcessInstanceBatchOperationWithResult(
+            any(ProcessInstanceFilter.class), any()))
+        .thenReturn(CompletableFuture.completedFuture(record));
+
+    final var request =
+        """
+        {
+          "filter": {
+            "$or": [
+              {"state": "COMPLETED"},
+              {"processInstanceKey": "42"}
+            ]
+          }
+        }""";
+
+    // when / then
+    webClient
+        .post()
+        .uri("/v2/process-instances/suspension")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isOk();
+
+    verify(processInstanceServices)
+        .suspendProcessInstanceBatchOperationWithResult(any(ProcessInstanceFilter.class), any());
+  }
+
+  @Test
+  void shouldAcceptSuspendProcessInstancesBatchOperationWithParentProcessInstanceKeyFilter() {
+    // given
+    final var record = new BatchOperationCreationRecord();
+    record.setBatchOperationKey(123L);
+    record.setBatchOperationType(BatchOperationType.SUSPEND_PROCESS_INSTANCE);
+    when(processInstanceServices.suspendProcessInstanceBatchOperationWithResult(
+            any(ProcessInstanceFilter.class), any()))
+        .thenReturn(CompletableFuture.completedFuture(record));
+
+    final var request =
+        """
+        {
+          "filter": {
+            "parentProcessInstanceKey": "123"
+          }
+        }""";
+
+    // when / then
+    webClient
+        .post()
+        .uri("/v2/process-instances/suspension")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isOk();
+
+    final var filterCaptor = ArgumentCaptor.forClass(ProcessInstanceFilter.class);
+    verify(processInstanceServices)
+        .suspendProcessInstanceBatchOperationWithResult(filterCaptor.capture(), any());
+    assertThat(filterCaptor.getValue().parentProcessInstanceKeyOperations())
+        .containsExactly(Operation.eq(123L));
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {"\"ACTIVE\"", "{\"$eq\": \"ACTIVE\"}"})
+  void shouldRejectResumeProcessInstancesBatchOperationWithNonSuspendedState(
+      final String stateFilter) {
+    // given
+    final var request =
+        """
+        {
+          "filter": {
+            "state": %s
+          }
+        }"""
+            .formatted(stateFilter);
+
+    final var expectedBody =
+        """
+            {
+                "type":"about:blank",
+                "title":"INVALID_ARGUMENT",
+                "status":400,
+                "detail":"The value for state is 'ACTIVE' but must be one of [SUSPENDED].",
+                "instance":"/v2/process-instances/resumption"
+             }""";
+
+    // when / then
+    webClient
+        .post()
+        .uri("/v2/process-instances/resumption")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedBody, JsonCompareMode.STRICT);
+
+    verify(processInstanceServices, never())
+        .resumeProcessInstanceBatchOperationWithResult(any(ProcessInstanceFilter.class), any());
+  }
+
+  @Test
+  void shouldRejectResumeProcessInstancesBatchOperationWithNonSuspendedStatesInTopLevelList() {
+    // given
+    final var request =
+        """
+        {
+          "filter": {
+            "state": {"$in": ["SUSPENDED", "COMPLETED"]}
+          }
+        }""";
+
+    final var expectedBody =
+        """
+            {
+                "type":"about:blank",
+                "title":"INVALID_ARGUMENT",
+                "status":400,
+                "detail":"The value for state is 'COMPLETED' but must be one of [SUSPENDED].",
+                "instance":"/v2/process-instances/resumption"
+             }""";
+
+    // when / then
+    webClient
+        .post()
+        .uri("/v2/process-instances/resumption")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedBody, JsonCompareMode.STRICT);
+
+    verify(processInstanceServices, never())
+        .resumeProcessInstanceBatchOperationWithResult(any(ProcessInstanceFilter.class), any());
+  }
+
+  @Test
+  void shouldAcceptResumeProcessInstancesBatchOperationWithNonSuspendedStateOnlyInOrFilter() {
+    // given
+    final var record = new BatchOperationCreationRecord();
+    record.setBatchOperationKey(456L);
+    record.setBatchOperationType(BatchOperationType.RESUME_PROCESS_INSTANCE);
+    when(processInstanceServices.resumeProcessInstanceBatchOperationWithResult(
+            any(ProcessInstanceFilter.class), any()))
+        .thenReturn(CompletableFuture.completedFuture(record));
+
+    final var request =
+        """
+        {
+          "filter": {
+            "$or": [
+              {"state": "ACTIVE"},
+              {"processInstanceKey": "42"}
+            ]
+          }
+        }""";
+
+    // when / then
+    webClient
+        .post()
+        .uri("/v2/process-instances/resumption")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isOk();
+
+    verify(processInstanceServices)
+        .resumeProcessInstanceBatchOperationWithResult(any(ProcessInstanceFilter.class), any());
+  }
+
+  @Test
+  void shouldAcceptResumeProcessInstancesBatchOperationWithParentProcessInstanceKeyFilter() {
+    // given
+    final var record = new BatchOperationCreationRecord();
+    record.setBatchOperationKey(456L);
+    record.setBatchOperationType(BatchOperationType.RESUME_PROCESS_INSTANCE);
+    when(processInstanceServices.resumeProcessInstanceBatchOperationWithResult(
+            any(ProcessInstanceFilter.class), any()))
+        .thenReturn(CompletableFuture.completedFuture(record));
+
+    final var request =
+        """
+        {
+          "filter": {
+            "parentProcessInstanceKey": "123"
+          }
+        }""";
+
+    // when / then
+    webClient
+        .post()
+        .uri("/v2/process-instances/resumption")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isOk();
+
+    final var filterCaptor = ArgumentCaptor.forClass(ProcessInstanceFilter.class);
+    verify(processInstanceServices)
+        .resumeProcessInstanceBatchOperationWithResult(filterCaptor.capture(), any());
+    assertThat(filterCaptor.getValue().parentProcessInstanceKeyOperations())
+        .containsExactly(Operation.eq(123L));
   }
 
   @Test

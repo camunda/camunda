@@ -20,13 +20,18 @@ public final class DefaultActorClock implements ActorClock {
 
   long nanosSinceLastMilli;
 
+  public DefaultActorClock() {
+    // consumers created before the first update() (e.g. the timer wheel) must not see epoch 0
+    nanoTime = System.nanoTime();
+    markMillisecond(System.currentTimeMillis());
+  }
+
   @Override
   public boolean update() {
     updateNanos();
 
     if (nanosSinceLastMilli >= 1_000_000) {
-      timeMillis = System.currentTimeMillis();
-      nanoTimeOfLastMilli = nanoTime;
+      markMillisecond(System.currentTimeMillis());
       return true;
     }
 
@@ -51,5 +56,10 @@ public final class DefaultActorClock implements ActorClock {
   private void updateNanos() {
     nanoTime = System.nanoTime();
     nanosSinceLastMilli = nanoTime - nanoTimeOfLastMilli;
+  }
+
+  private void markMillisecond(final long millis) {
+    timeMillis = millis;
+    nanoTimeOfLastMilli = nanoTime;
   }
 }

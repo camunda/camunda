@@ -14,13 +14,17 @@ import io.camunda.spring.utils.InvalidPhysicalTenantIdException;
 import io.camunda.spring.utils.PhysicalTenantConfigUtil;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Stream;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
+import org.springframework.boot.context.properties.bind.BindResult;
 import org.springframework.boot.context.properties.bind.Bindable;
 import org.springframework.boot.context.properties.bind.Binder;
 import org.springframework.boot.context.properties.source.ConfigurationPropertyName;
@@ -40,7 +44,8 @@ import org.springframework.core.env.Environment;
  *
  * <p>Enforcement is pure <em>key inspection</em> over the {@code physical-tenants.<id>.*} and
  * {@code camunda.security.*} keys (mirroring {@link PhysicalTenantOverridePolicyValidation}), plus
- * a {@link Binder} read of each {@code assigned} list. The rules:
+ * a {@link Binder} read of each {@code assigned} list. Provider ids are read as written, the same
+ * way the runtime binds them as providers map keys. The rules:
  *
  * <ul>
  *   <li>The implicit {@code default} tenant carries the full provider set unless it declares its
@@ -124,11 +129,17 @@ final class PhysicalTenantAssignedProvidersValidation {
       // config whose only tenant is `default` (no `assigned`) would not fail fast on the collision.
       final Set<String> namedIds = new LinkedHashSet<>(rootNamedIds);
       namedIds.addAll(tenantOverlayNamedIds(environment, tenantId));
-      if (namedIds.contains(DEFAULT_SLOT_ASSIGNED_ID)) {
+      // Spelled any way Spring binds to the same name (`Oidc`, `OIDC`), the id still collides.
+      final String reservedNamedId =
+          namedIds.stream()
+              .filter(id -> sameName(id, DEFAULT_SLOT_ASSIGNED_ID))
+              .findFirst()
+              .orElse(null);
+      if (reservedNamedId != null) {
         throw fail(
             ("a named OIDC provider may not be called '%s' (configured for physical tenant '%s') — "
                     + "that id is reserved for the unnamed default slot '%s.oidc.*'")
-                .formatted(DEFAULT_SLOT_ASSIGNED_ID, tenantId, ROOT_AUTH));
+                .formatted(reservedNamedId, tenantId, ROOT_AUTH));
       }
 
       if (assigned == null) {
@@ -140,7 +151,7 @@ final class PhysicalTenantAssignedProvidersValidation {
           if (rootDefaultSlotPresent || hasTenantOverlayDefaultSlot(environment, tenantId)) {
             allProviderIds.add(DEFAULT_SLOT_ASSIGNED_ID);
           }
-          checkIssuerCollisions(binder, tenantId, allProviderIds);
+          checkIssuerCollisions(environment, binder, tenantId, allProviderIds);
           continue;
         }
         throw fail(
@@ -173,19 +184,27 @@ final class PhysicalTenantAssignedProvidersValidation {
       final List<String> unknown =
           assigned.stream().filter(id -> !known.contains(id)).distinct().toList();
       if (!unknown.isEmpty()) {
+        final List<String> similar =
+            known.stream()
+                .filter(id -> unknown.stream().anyMatch(unknownId -> sameName(unknownId, id)))
+                .toList();
         throw fail(
             ("physical tenant '%s' assigns unknown OIDC provider id(s) %s in '%s'; known ids are %s "
-                    + "('%s' refers to the default slot '%s.oidc.*')")
+                    + "('%s' refers to the default slot '%s.oidc.*')%s")
                 .formatted(
                     tenantId,
                     unknown,
                     assignedPath(tenantId),
                     known,
                     DEFAULT_SLOT_ASSIGNED_ID,
-                    ROOT_AUTH));
+                    ROOT_AUTH,
+                    similar.isEmpty()
+                        ? ""
+                        : "; ids are matched exactly as written, did you mean %s?"
+                            .formatted(similar)));
       }
 
-      checkIssuerCollisions(binder, tenantId, assigned);
+      checkIssuerCollisions(environment, binder, tenantId, assigned);
     }
 
     // The default tenant is synthesized even when no physical tenants are configured at all (the
@@ -198,7 +217,7 @@ final class PhysicalTenantAssignedProvidersValidation {
         rootProviderIds.add(DEFAULT_SLOT_ASSIGNED_ID);
       }
       checkIssuerCollisions(
-          binder, PhysicalTenantResolver.DEFAULT_PHYSICAL_TENANT_ID, rootProviderIds);
+          environment, binder, PhysicalTenantResolver.DEFAULT_PHYSICAL_TENANT_ID, rootProviderIds);
     }
   }
 
@@ -237,7 +256,10 @@ final class PhysicalTenantAssignedProvidersValidation {
             "%s.%s.security.authentication.oidc".formatted(PHYSICAL_TENANTS_PREFIX, tenantId)));
   }
 
-  /** The distinct id segments declared immediately under {@code prefix.<id>.*}. */
+  /**
+   * The distinct id segments declared immediately under {@code prefix.<id>.*}, as written: the same
+   * ids, spelled the same way, that the runtime binds as providers map keys and keeps or removes.
+   */
   private static Set<String> childSegments(
       final Environment environment, final ConfigurationPropertyName prefix) {
     final Set<String> segments = new LinkedHashSet<>();
@@ -247,10 +269,39 @@ final class PhysicalTenantAssignedProvidersValidation {
             .filter(prefix::isAncestorOf)
             .filter(name -> name.getNumberOfElements() > prefix.getNumberOfElements())
             .forEach(
-                name -> segments.add(name.getElement(prefix.getNumberOfElements(), Form.UNIFORM)));
+                name -> segments.add(name.getElement(prefix.getNumberOfElements(), Form.ORIGINAL)));
       }
     }
     return segments;
+  }
+
+  /** Whether Spring binds the two ids to the same property name, e.g. `azure-ad` and `azuread`. */
+  private static boolean sameName(final String id, final String otherId) {
+    return ConfigurationPropertyName.adapt(id, '.')
+        .equals(ConfigurationPropertyName.adapt(otherId, '.'));
+  }
+
+  /**
+   * The property names of {@code providerId}'s config under {@code authPrefix}: the default slot
+   * for the reserved id, otherwise the named provider entry in each form it is declared in under
+   * {@code authPrefix} or {@code relatedAuthPrefix}.
+   */
+  private static List<ConfigurationPropertyName> providerNames(
+      final Environment environment,
+      final String authPrefix,
+      final String relatedAuthPrefix,
+      final String providerId) {
+    return DEFAULT_SLOT_ASSIGNED_ID.equals(providerId)
+        ? List.of(ConfigurationPropertyName.of(authPrefix + ".oidc"))
+        : PhysicalTenantConfigUtil.mapEntryNames(
+            environment,
+            authPrefix + ".providers.oidc",
+            providerId,
+            relatedAuthPrefix + ".providers.oidc");
+  }
+
+  private static String tenantAuth(final String tenantId) {
+    return "%s.%s.security.authentication".formatted(PHYSICAL_TENANTS_PREFIX, tenantId);
   }
 
   /** Whether any key exists at or under {@code prefix}. */
@@ -272,23 +323,19 @@ final class PhysicalTenantAssignedProvidersValidation {
    * neither path carries a value.
    */
   private static @Nullable String resolveIssuerUri(
-      final Binder binder, final String tenantId, final String providerId) {
-    final String ptPath;
-    final String rootPath;
-    if (DEFAULT_SLOT_ASSIGNED_ID.equals(providerId)) {
-      ptPath =
-          "%s.%s.security.authentication.oidc.issuer-uri"
-              .formatted(PHYSICAL_TENANTS_PREFIX, tenantId);
-      rootPath = ROOT_AUTH + ".oidc.issuer-uri";
-    } else {
-      ptPath =
-          "%s.%s.security.authentication.providers.oidc.%s.issuer-uri"
-              .formatted(PHYSICAL_TENANTS_PREFIX, tenantId, providerId);
-      rootPath = ROOT_AUTH + ".providers.oidc." + providerId + ".issuer-uri";
-    }
-    return binder
-        .bind(ptPath, Bindable.of(String.class))
-        .orElseGet(() -> binder.bind(rootPath, Bindable.of(String.class)).orElse(null));
+      final Environment environment,
+      final Binder binder,
+      final String tenantId,
+      final String providerId) {
+    final String tenantAuth = tenantAuth(tenantId);
+    return Stream.concat(
+            providerNames(environment, tenantAuth, ROOT_AUTH, providerId).stream(),
+            providerNames(environment, ROOT_AUTH, tenantAuth, providerId).stream())
+        .map(name -> binder.bind(name.append("issuer-uri"), Bindable.of(String.class)))
+        .filter(BindResult::isBound)
+        .map(BindResult::get)
+        .findFirst()
+        .orElse(null);
   }
 
   /**
@@ -297,12 +344,27 @@ final class PhysicalTenantAssignedProvidersValidation {
    * configured, or set elsewhere).
    */
   private static void checkIssuerCollisions(
-      final Binder binder, final String tenantId, final Collection<String> providerIds) {
+      final Environment environment,
+      final Binder binder,
+      final String tenantId,
+      final Collection<String> providerIds) {
     final Map<String, List<String>> byIssuer = new LinkedHashMap<>();
-    // Deduplicate: a repeated id in `assigned` carries the same issuer twice, which would
-    // otherwise appear as a false collision. The distinct set preserves insertion order.
-    for (final String id : new LinkedHashSet<>(providerIds)) {
-      final String issuer = resolveIssuerUri(binder, tenantId, id);
+    // Deduplicate by provider config: a repeated id in `assigned`, or two map keys that Spring
+    // binds from the same config (`azure-ad` from yaml and `azuread` from an env var), carry the
+    // same issuer and would otherwise appear as a false collision. Ids whose declared names Spring
+    // treats as equal are the same config; a bracketed `[AzureAd]` is not the dotted `azuread`.
+    final List<Set<ConfigurationPropertyName>> seenConfigs = new ArrayList<>();
+    final List<String> distinctIds = new ArrayList<>();
+    for (final String id : providerIds) {
+      final Set<ConfigurationPropertyName> config =
+          new HashSet<>(providerNames(environment, ROOT_AUTH, tenantAuth(tenantId), id));
+      if (seenConfigs.stream().allMatch(seen -> Collections.disjoint(seen, config))) {
+        seenConfigs.add(config);
+        distinctIds.add(id);
+      }
+    }
+    for (final String id : distinctIds) {
+      final String issuer = resolveIssuerUri(environment, binder, tenantId, id);
       if (issuer != null) {
         byIssuer.computeIfAbsent(issuer, k -> new ArrayList<>()).add(id);
       }

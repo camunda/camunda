@@ -146,6 +146,7 @@ import io.camunda.gateway.protocol.model.ProcessInstanceSequenceFlowsQueryResult
 import io.camunda.gateway.protocol.model.ProcessInstanceStateEnum;
 import io.camunda.gateway.protocol.model.ProcessInstanceWaitStateStatisticsQueryResult;
 import io.camunda.gateway.protocol.model.ProcessInstanceWaitStateStatisticsResult;
+import io.camunda.gateway.protocol.model.ProtectionModeEnum;
 import io.camunda.gateway.protocol.model.ResourceResult;
 import io.camunda.gateway.protocol.model.ResourceSearchQueryResult;
 import io.camunda.gateway.protocol.model.ResourceTypeEnum;
@@ -178,6 +179,7 @@ import io.camunda.gateway.protocol.model.UserTaskResult;
 import io.camunda.gateway.protocol.model.UserTaskSearchQueryResult;
 import io.camunda.gateway.protocol.model.UserTaskStateEnum;
 import io.camunda.gateway.protocol.model.UserTaskWaitStateDetails;
+import io.camunda.gateway.protocol.model.VariableMetadata;
 import io.camunda.gateway.protocol.model.VariableResult;
 import io.camunda.gateway.protocol.model.VariableSearchQueryResult;
 import io.camunda.gateway.protocol.model.VariableSearchResult;
@@ -499,7 +501,7 @@ public final class SearchQueryResponseMapper {
         .rootProcessInstanceKey(keyToStringOrNull(result.rootProcessInstanceKey()))
         .elementId(result.flowNodeId())
         .processDefinitionId(result.processDefinitionId())
-        .processDefinitionKey(keyToString(result.processDefinitionKey()))
+        .processDefinitionKey(keyToStringOrNull(result.processDefinitionKey()))
         .processInstanceKey(keyToString(result.processInstanceKey()))
         .sequenceFlowId(result.sequenceFlowId())
         .tenantId(result.tenantId())
@@ -950,7 +952,7 @@ public final class SearchQueryResponseMapper {
         .listenerEventType(JobListenerEventTypeEnum.fromValue(job.listenerEventType().name()))
         .priority(requireNonNullElse(job.priority(), 0))
         .processDefinitionId(job.processDefinitionId())
-        .processDefinitionKey(keyToString(job.processDefinitionKey()))
+        .processDefinitionKey(keyToStringOrNull(job.processDefinitionKey()))
         .processInstanceKey(keyToString(job.processInstanceKey()))
         .retries(job.retries())
         .state(JobStateEnum.fromValue(job.state().name()))
@@ -966,7 +968,7 @@ public final class SearchQueryResponseMapper {
         .errorCode(job.errorCode())
         .errorMessage(job.errorMessage())
         .isDenied(job.isDenied())
-        .lastUpdateTime(formatDate(job.lastUpdateTime()))
+        .lastUpdateTime(formatDateOrNull(job.lastUpdateTime()))
         .build();
   }
 
@@ -1246,7 +1248,7 @@ public final class SearchQueryResponseMapper {
         .tenantId(instance.tenantId())
         .elementInstanceKey(keyToString(instance.flowNodeInstanceKey()))
         .processInstanceKey(keyToString(instance.processInstanceKey()))
-        .processDefinitionKey(keyToString(instance.processDefinitionKey()))
+        .processDefinitionKey(keyToStringOrNull(instance.processDefinitionKey()))
         .rootProcessInstanceKey(keyToStringOrNull(instance.rootProcessInstanceKey()))
         .endDate(formatDateOrNull(instance.endDate()))
         .incidentKey(keyToStringOrNull(instance.incidentKey()))
@@ -1315,6 +1317,7 @@ public final class SearchQueryResponseMapper {
         .rootProcessInstanceKey(keyToStringOrNull(t.rootProcessInstanceKey()))
         .jobKey(keyToStringOrNull(t.jobKey()))
         .tenantId(t.tenantId())
+        .storageOrdinal(t.storageOrdinal())
         .build();
   }
 
@@ -1382,7 +1385,8 @@ public final class SearchQueryResponseMapper {
         .rootProcessInstanceKey(
             keyToStringOrNull(correlatedMessageSubscription.rootProcessInstanceKey()))
         .elementInstanceKey(keyToStringOrNull(correlatedMessageSubscription.flowNodeInstanceKey()))
-        .processDefinitionKey(keyToString(correlatedMessageSubscription.processDefinitionKey()))
+        .processDefinitionKey(
+            keyToStringOrNull(correlatedMessageSubscription.processDefinitionKey()))
         .build();
   }
 
@@ -1616,6 +1620,7 @@ public final class SearchQueryResponseMapper {
         .variableKey(keyToString(variableEntity.variableKey()))
         .scopeKey(keyToString(variableEntity.scopeKey()))
         .rootProcessInstanceKey(keyToStringOrNull(variableEntity.rootProcessInstanceKey()))
+        .metadata(toVariableMetadata(variableEntity))
         .isTruncated(truncateValues && variableEntity.isPreview())
         .value(!truncateValues ? getFullValueIfPresent(variableEntity) : variableEntity.value())
         .build();
@@ -1647,7 +1652,27 @@ public final class SearchQueryResponseMapper {
         .variableKey(keyToString(variableEntity.variableKey()))
         .scopeKey(keyToString(variableEntity.scopeKey()))
         .rootProcessInstanceKey(keyToStringOrNull(variableEntity.rootProcessInstanceKey()))
+        .metadata(toVariableMetadata(variableEntity))
         .value(getFullValueIfPresent(variableEntity))
+        .build();
+  }
+
+  private static @Nullable VariableMetadata toVariableMetadata(
+      final VariableEntity variableEntity) {
+    final var protectionModes = variableEntity.protectionModes();
+    if (protectionModes == null || protectionModes.isEmpty()) {
+      return null;
+    }
+    return VariableMetadata.Builder.create()
+        .protectionModes(
+            protectionModes.stream()
+                .sorted()
+                .map(
+                    mode ->
+                        switch (mode) {
+                          case REDACT -> ProtectionModeEnum.REDACT;
+                        })
+                .toList())
         .build();
   }
 

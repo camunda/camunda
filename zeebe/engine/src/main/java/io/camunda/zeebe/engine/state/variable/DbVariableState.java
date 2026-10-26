@@ -19,6 +19,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableVariableState;
 import io.camunda.zeebe.msgpack.spec.MsgPackWriter;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableDocumentRecord;
+import io.camunda.zeebe.protocol.impl.record.value.variable.VariableMetadataRecord;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -33,6 +34,7 @@ import org.agrona.MutableDirectBuffer;
 import org.agrona.collections.MutableInteger;
 import org.agrona.collections.ObjectHashSet;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.jspecify.annotations.Nullable;
 
 public class DbVariableState implements MutableVariableState {
 
@@ -117,14 +119,60 @@ public class DbVariableState implements MutableVariableState {
       final DirectBuffer value,
       final int valueOffset,
       final int valueLength) {
+    setVariableLocal(
+        key,
+        scopeKey,
+        processDefinitionKey,
+        name,
+        nameOffset,
+        nameLength,
+        value,
+        valueOffset,
+        valueLength,
+        null);
+  }
 
-    newVariable.reset();
-    newVariable.setValue(value, valueOffset, valueLength);
-    newVariable.setKey(key);
+  @Override
+  public void setVariableLocal(
+      final long key,
+      final long scopeKey,
+      final long processDefinitionKey,
+      final DirectBuffer name,
+      final DirectBuffer value,
+      final VariableMetadataRecord metadata) {
+    setVariableLocal(
+        key,
+        scopeKey,
+        processDefinitionKey,
+        name,
+        0,
+        name.capacity(),
+        value,
+        0,
+        value.capacity(),
+        metadata);
+  }
+
+  private void setVariableLocal(
+      final long key,
+      final long scopeKey,
+      final long processDefinitionKey,
+      final DirectBuffer name,
+      final int nameOffset,
+      final int nameLength,
+      final DirectBuffer value,
+      final int valueOffset,
+      final int valueLength,
+      final @Nullable VariableMetadataRecord metadata) {
 
     this.scopeKey.wrapLong(scopeKey);
     variableNameView.wrap(name, nameOffset, nameLength);
     variableName.wrapBuffer(variableNameView);
+
+    newVariable.reset();
+    newVariable.setValue(value, valueOffset, valueLength);
+    newVariable.setKey(key);
+    setVariableMetadata(metadata);
 
     variablesColumnFamily.upsert(scopeKeyVariableNameKey, newVariable);
   }
@@ -344,6 +392,23 @@ public class DbVariableState implements MutableVariableState {
   public Optional<VariableDocumentState> findVariableDocumentState(final long scopeKey) {
     this.scopeKey.wrapLong(scopeKey);
     return Optional.ofNullable(variableDocumentStateByScopeKeyColumnFamily.get(this.scopeKey));
+  }
+
+  /**
+   * Sets the given metadata on {@link #newVariable}. Without metadata, the metadata already stored
+   * for the variable is kept, so writers that predate metadata do not erase it. Expects the column
+   * family key to be set to the variable.
+   */
+  private void setVariableMetadata(final @Nullable VariableMetadataRecord metadata) {
+    if (metadata != null) {
+      newVariable.setMetadata(metadata);
+      return;
+    }
+
+    final VariableInstance existing = variablesColumnFamily.get(scopeKeyVariableNameKey);
+    if (existing != null) {
+      newVariable.setMetadata(existing.getMetadata());
+    }
   }
 
   private VariableInstance getVariableLocal(

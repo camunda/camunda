@@ -55,7 +55,7 @@ class OperateProcessesPage extends BasePage {
 	}
 
 	operationState(state: string) {
-		return this.instancesTable.getByRole('cell', {name: state});
+		return this.instancesTable.getByRole('cell', {name: state, exact: true});
 	}
 
 	get variableFilterModal() {

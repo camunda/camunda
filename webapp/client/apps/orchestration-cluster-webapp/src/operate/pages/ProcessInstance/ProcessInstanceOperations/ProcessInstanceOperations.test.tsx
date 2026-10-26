@@ -31,6 +31,8 @@ import {storeStateLocally} from '#/shared/browser-storage/local-storage';
 import {Notifications} from '#/shared/notifications/components/Notifications';
 import {ProcessInstanceContext} from '#/operate/pages/ProcessInstance/useProcessInstancePage';
 import {processInstanceQuery} from '#/operate/pages/ProcessInstance/processInstance.queries';
+import {ProcessInstanceModificationContext} from '../useProcessInstanceModification';
+import {initialModificationState} from '../modifications/modificationReducer';
 import {ProcessInstanceOperations} from './ProcessInstanceOperations';
 
 const ACTIONS = [
@@ -72,6 +74,13 @@ const ACTIONS = [
 ] as const;
 
 function renderOperations(instance: ProcessInstance, {isModificationModeEnabled = false, basepath = ''} = {}) {
+	const modification = {
+		state: initialModificationState,
+		isModificationModeEnabled,
+		dispatch: () => {},
+		enterModificationMode: () => {},
+		discardModifications: () => {},
+	};
 	function Preview() {
 		const {data} = useQuery({
 			...processInstanceQuery(instance.processInstanceKey),
@@ -83,7 +92,9 @@ function renderOperations(instance: ProcessInstance, {isModificationModeEnabled 
 			<ProcessInstanceContext
 				value={{processInstanceId: instance.processInstanceKey, processInstance: data, search: {}, selection: {}}}
 			>
-				<ProcessInstanceOperations isModificationModeEnabled={isModificationModeEnabled} />
+				<ProcessInstanceModificationContext value={modification}>
+					<ProcessInstanceOperations />
+				</ProcessInstanceModificationContext>
 				<Notifications />
 			</ProcessInstanceContext>
 		);
@@ -147,8 +158,8 @@ describe('<ProcessInstanceOperations />', () => {
 	});
 
 	it.for([
-		{state: 'ACTIVE', hasIncident: true, actions: ['Retry', 'Suspend', 'Cancel', 'Migrate']},
-		{state: 'ACTIVE', hasIncident: false, actions: ['Suspend', 'Cancel', 'Migrate']},
+		{state: 'ACTIVE', hasIncident: true, actions: ['Retry', 'Suspend', 'Cancel', 'Modify', 'Migrate']},
+		{state: 'ACTIVE', hasIncident: false, actions: ['Suspend', 'Cancel', 'Modify', 'Migrate']},
 		{state: 'SUSPENDED', hasIncident: true, actions: ['Resume', 'Cancel']},
 		{state: 'SUSPENDED', hasIncident: false, actions: ['Resume', 'Cancel']},
 		{state: 'COMPLETED', hasIncident: true, actions: ['Delete']},
@@ -161,7 +172,7 @@ describe('<ProcessInstanceOperations />', () => {
 			mockViewport(false);
 			const instance = createInstance(state, hasIncident);
 			const screen = await renderOperations(instance);
-			for (const action of [...ACTIONS.map(({action}) => action), 'Migrate']) {
+			for (const action of [...ACTIONS.map(({action}) => action), 'Modify', 'Migrate']) {
 				const button = screen.getByRole('button', {name: `${action} Instance ${instance.processInstanceKey}`});
 				if (actions.some((name) => name === action)) {
 					await expect.element(button).toBeEnabled();
@@ -169,7 +180,6 @@ describe('<ProcessInstanceOperations />', () => {
 					await expect.element(button).not.toBeInTheDocument();
 				}
 			}
-			await expect.element(screen.getByRole('button', {name: /Modify/})).not.toBeInTheDocument();
 		},
 	);
 
@@ -180,7 +190,7 @@ describe('<ProcessInstanceOperations />', () => {
 
 	it.for(ACTIONS)(
 		'should submit $action with no request body and preserve its acceptance lifecycle',
-		async ({action, state, pending, success, mock}, {worker}) => {
+		async ({action, state, success, mock}, {worker}) => {
 			mockViewport(false);
 			const instance = createInstance(state);
 			const requests: Request[] = [];
@@ -197,7 +207,6 @@ describe('<ProcessInstanceOperations />', () => {
 							action === 'Retry'
 								? HttpResponse.json({batchOperationKey: 'retry-batch'}, {status: 202})
 								: new HttpResponse(null, {status: 204}),
-						delay: 200,
 					}),
 					mockGetProcessInstanceCallHierarchyEndpoint({successResponse: HttpResponse.json([])}),
 					mockGetProcessInstanceEndpoint({
@@ -206,7 +215,6 @@ describe('<ProcessInstanceOperations />', () => {
 				);
 				const screen = await renderOperations(instance, {basepath: '/deployment'});
 				await execute(screen, action, instance.processInstanceKey);
-				await expect.element(screen.getByText(pending)).toBeVisible();
 				if (action === 'Delete') {
 					await expect.poll(() => notificationsStore.notifications[0]?.title).toBe(success);
 				} else {
@@ -232,6 +240,21 @@ describe('<ProcessInstanceOperations />', () => {
 			} finally {
 				worker.events.removeListener('request:start', onRequest);
 			}
+		},
+	);
+
+	it.for(ACTIONS)(
+		'should show $pending while $action is in flight',
+		async ({action, state, pending, mock}, {worker}) => {
+			mockViewport(false);
+			const instance = createInstance(state);
+			worker.use(
+				mock({successResponse: new HttpResponse(null, {status: 204}), delay: 'infinite'}),
+				mockGetProcessInstanceCallHierarchyEndpoint({successResponse: HttpResponse.json([])}),
+			);
+			const screen = await renderOperations(instance);
+			await execute(screen, action, instance.processInstanceKey);
+			await expect.element(screen.getByText(pending)).toBeVisible();
 		},
 	);
 
@@ -325,23 +348,39 @@ describe('<ProcessInstanceOperations />', () => {
 	);
 
 	it.for([
+		{action: 'Suspend', state: 'ACTIVE', pending: 'Suspending...', mock: mockSuspendProcessInstanceEndpoint},
+		{action: 'Resume', state: 'SUSPENDED', pending: 'Resuming...', mock: mockResumeProcessInstanceEndpoint},
+	] as const)(
+		'should keep $action pending while secondary storage still returns the previous state',
+		async ({action, state, pending, mock}, {worker}) => {
+			mockViewport(false);
+			const instance = createInstance(state);
+			worker.use(
+				mock({successResponse: new HttpResponse(null, {status: 204})}),
+				mockGetProcessInstanceEndpoint({successResponse: HttpResponse.json(instance)}),
+			);
+			const screen = await renderOperations(instance);
+			await execute(screen, action, instance.processInstanceKey);
+			await expect.element(screen.getByText(pending)).toBeVisible();
+		},
+	);
+
+	it.for([
 		{action: 'Suspend', state: 'ACTIVE', target: 'SUSPENDED', mock: mockSuspendProcessInstanceEndpoint},
 		{action: 'Resume', state: 'SUSPENDED', target: 'ACTIVE', mock: mockResumeProcessInstanceEndpoint},
 		{action: 'Resume', state: 'SUSPENDED', target: 'COMPLETED', mock: mockResumeProcessInstanceEndpoint},
 		{action: 'Resume', state: 'SUSPENDED', target: 'TERMINATED', mock: mockResumeProcessInstanceEndpoint},
 	] as const)(
-		'should keep $action pending until secondary storage reaches $target',
+		'should finish $action once secondary storage reaches $target',
 		async ({action, state, target, mock}, {worker}) => {
 			mockViewport(false);
 			const instance = createInstance(state);
 			worker.use(
 				mock({successResponse: new HttpResponse(null, {status: 204})}),
-				mockGetProcessInstanceEndpoint({successResponse: HttpResponse.json(instance), once: true}),
 				mockGetProcessInstanceEndpoint({successResponse: HttpResponse.json({...instance, state: target})}),
 			);
 			const screen = await renderOperations(instance);
 			await execute(screen, action, instance.processInstanceKey);
-			await expect.element(screen.getByText(action === 'Suspend' ? 'Suspending...' : 'Resuming...')).toBeVisible();
 			await expect
 				.element(screen.getByText(action === 'Suspend' ? 'Instance suspended' : 'Instance resumed'))
 				.toBeVisible();
@@ -361,7 +400,7 @@ describe('<ProcessInstanceOperations />', () => {
 		const setCollapsed = mockViewport(true);
 		const instance = createInstance('ACTIVE');
 		worker.use(
-			mockSuspendProcessInstanceEndpoint({successResponse: new HttpResponse(null, {status: 204}), delay: 500}),
+			mockSuspendProcessInstanceEndpoint({successResponse: new HttpResponse(null, {status: 204}), delay: 'infinite'}),
 			mockGetProcessInstanceEndpoint({successResponse: HttpResponse.json({...instance, state: 'SUSPENDED'})}),
 		);
 		const screen = await renderOperations(instance);
@@ -374,7 +413,6 @@ describe('<ProcessInstanceOperations />', () => {
 		await expect.element(screen.getByRole('menuitem', {name: 'Cancel'})).toBeEnabled();
 		setCollapsed(false);
 		await expect.element(screen.getByText('Suspending...')).toBeVisible();
-		await expect.element(screen.getByText('Instance suspended')).toBeVisible();
 	});
 
 	it.for(['ACTIVE', 'SUSPENDED', 'COMPLETED', 'TERMINATED'] as const)(
@@ -391,10 +429,13 @@ describe('<ProcessInstanceOperations />', () => {
 			} else {
 				await userEvent.tab();
 				await userEvent.keyboard('{Enter}');
-				for (const label of state === 'ACTIVE' ? ['Retry', 'Suspend', 'Cancel', 'Migrate'] : ['Resume', 'Cancel']) {
+				for (const label of state === 'ACTIVE'
+					? ['Retry', 'Suspend', 'Cancel', 'Modify', 'Migrate']
+					: ['Resume', 'Cancel']) {
 					await expect.element(screen.getByRole('menuitem', {name: label})).toBeEnabled();
 				}
 				if (state === 'SUSPENDED') {
+					await expect.element(screen.getByRole('menuitem', {name: 'Modify'})).not.toBeInTheDocument();
 					await expect.element(screen.getByRole('menuitem', {name: 'Migrate'})).not.toBeInTheDocument();
 				}
 				await userEvent.keyboard('{Escape}');

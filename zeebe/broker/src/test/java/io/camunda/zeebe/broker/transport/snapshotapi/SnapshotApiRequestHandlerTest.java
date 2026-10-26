@@ -64,6 +64,8 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 public class SnapshotApiRequestHandlerTest {
 
+  private static final int MAXIMUM_CHUNK_SIZE = 8 * 1024 * 1024;
+
   @RegisterExtension
   public final ControlledActorSchedulerExtension scheduler =
       new ControlledActorSchedulerExtension();
@@ -152,7 +154,7 @@ public class SnapshotApiRequestHandlerTest {
 
     client =
         new SnapshotTransferServiceClient(
-            brokerClient, PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
+            brokerClient, PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, Duration.ofSeconds(30));
 
     scheduler.workUntilDone();
   }
@@ -229,7 +231,9 @@ public class SnapshotApiRequestHandlerTest {
         submitActor(
             new SnapshotTransferImpl(
                 tenantPartition,
-                ignore -> new SnapshotTransferServiceClient(brokerClient, "tenanta"),
+                ignore ->
+                    new SnapshotTransferServiceClient(
+                        brokerClient, "tenanta", Duration.ofSeconds(30)),
                 snapshotMetrics,
                 receiverSnapshotStore));
 
@@ -261,7 +265,8 @@ public class SnapshotApiRequestHandlerTest {
                 takeSnapshotMock,
                 partition.number(),
                 SnapshotCopyUtil::copyAllFiles,
-                concurrency));
+                concurrency,
+                MAXIMUM_CHUNK_SIZE));
   }
 
   private ActorFuture<PersistedSnapshot> takePersistedSnapshot(final long processedPosition) {

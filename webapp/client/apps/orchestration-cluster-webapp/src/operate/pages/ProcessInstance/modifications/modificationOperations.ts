@@ -21,7 +21,11 @@ import {getElementModifications} from './modificationSelectors';
 
 type GenerateId = () => string;
 
-type TokenContext = {businessObjects: BusinessObjects; createId?: GenerateId};
+type TokenContext = {
+	businessObjects: BusinessObjects;
+	createId?: GenerateId;
+	runningInstancesByElement?: {[elementId: string]: number};
+};
 
 type AddTokenInput = TokenContext & {elementId: string; bpmnProcessId?: string};
 
@@ -38,6 +42,7 @@ type FinishMovingTokenInput = TokenContext & {
 	bpmnProcessId?: string;
 	targetElementId?: string;
 	ancestorScopeType?: AncestorScopeType;
+	sourceAncestors?: {elementId: string; instanceKey: string}[];
 };
 
 function generateId() {
@@ -70,29 +75,38 @@ function generateParentScopeIds(
 		targetElementId,
 		bpmnProcessId,
 		createId,
-	}: Required<TokenContext> & {targetElementId: string; bpmnProcessId?: string},
+		runningInstancesByElement = {},
+	}: Omit<Required<TokenContext>, 'runningInstancesByElement'> &
+		Pick<TokenContext, 'runningInstancesByElement'> & {targetElementId: string; bpmnProcessId?: string},
 ) {
 	if (bpmnProcessId === undefined) {
 		return {};
 	}
 
-	const stagedParentElementIds = new Set(
-		getElementModifications(state).flatMap((modification) =>
-			modification.operation === 'CANCEL_TOKEN' ? [] : Object.keys(modification.parentScopeIds),
-		),
-	);
+	const stagedParentScopeIds = new Map<string, string>();
+	for (const modification of getElementModifications(state)) {
+		if (modification.operation !== 'CANCEL_TOKEN') {
+			for (const [elementId, scopeId] of Object.entries(modification.parentScopeIds)) {
+				if (!stagedParentScopeIds.has(elementId)) {
+					stagedParentScopeIds.set(elementId, scopeId);
+				}
+			}
+		}
+	}
 
-	return createScopeIds(
-		getElementsInBetween(businessObjects, targetElementId, bpmnProcessId).filter(
-			(elementId) => !stagedParentElementIds.has(elementId),
-		),
-		createId,
+	const parentElementIds = getElementsInBetween(businessObjects, targetElementId, bpmnProcessId);
+	const hasUniqueAncestors = parentElementIds.every((elementId) => (runningInstancesByElement[elementId] ?? 0) <= 1);
+
+	return Object.fromEntries(
+		parentElementIds
+			.filter((elementId) => (runningInstancesByElement[elementId] ?? 0) === 0)
+			.map((elementId) => [elementId, (hasUniqueAncestors && stagedParentScopeIds.get(elementId)) || createId()]),
 	);
 }
 
 function createAddTokenModification(
 	state: ModificationState,
-	{businessObjects, elementId, bpmnProcessId, createId = generateId}: AddTokenInput,
+	{businessObjects, elementId, bpmnProcessId, createId = generateId, runningInstancesByElement}: AddTokenInput,
 ): AddTokenModification {
 	return {
 		operation: 'ADD_TOKEN',
@@ -105,6 +119,7 @@ function createAddTokenModification(
 			targetElementId: elementId,
 			bpmnProcessId,
 			createId,
+			runningInstancesByElement,
 		}),
 	};
 }
@@ -145,9 +160,10 @@ function createFinishAddingTokenAction(
 
 function createFinishMovingTokenAction(
 	state: ModificationState,
-	{targetElementId, ancestorScopeType, createId = generateId, ...input}: FinishMovingTokenInput,
+	{targetElementId, ancestorScopeType, sourceAncestors = [], createId = generateId, ...input}: FinishMovingTokenInput,
 ): Extract<ModificationAction, {type: 'finishMovingToken'}> {
-	const {businessObjects, affectedTokenCount, visibleAffectedTokenCount, bpmnProcessId} = input;
+	const {businessObjects, affectedTokenCount, visibleAffectedTokenCount, bpmnProcessId, runningInstancesByElement} =
+		input;
 	const {sourceElementIdForMoveOperation: elementId, sourceElementInstanceKeyForMoveOperation: elementInstanceKey} =
 		state;
 
@@ -157,6 +173,17 @@ function createFinishMovingTokenAction(
 
 	const isMoveAll = elementInstanceKey === null;
 	const newScopeCount = isMoveAll && !isMultiInstance(businessObjects[elementId]) ? affectedTokenCount : 1;
+	const targetParentElementIds =
+		bpmnProcessId === undefined
+			? []
+			: [...getElementsInBetween(businessObjects, targetElementId, bpmnProcessId), bpmnProcessId];
+	const ancestorElement =
+		isMoveAll || ancestorScopeType === undefined
+			? undefined
+			: targetParentElementIds.flatMap((parentElementId) => {
+					const ancestor = sourceAncestors.find((sourceAncestor) => sourceAncestor.elementId === parentElementId);
+					return ancestor === undefined ? [] : [ancestor];
+				})[0];
 
 	return {
 		type: 'finishMovingToken',
@@ -168,13 +195,27 @@ function createFinishMovingTokenAction(
 			affectedTokenCount,
 			visibleAffectedTokenCount,
 			scopeIds: Array.from({length: newScopeCount}, () => createId()),
-			parentScopeIds: generateParentScopeIds(state, {businessObjects, targetElementId, bpmnProcessId, createId}),
+			parentScopeIds:
+				ancestorElement === undefined
+					? generateParentScopeIds(state, {
+							businessObjects,
+							targetElementId,
+							bpmnProcessId,
+							createId,
+							runningInstancesByElement,
+						})
+					: createScopeIds(
+							targetParentElementIds.slice(0, targetParentElementIds.indexOf(ancestorElement.elementId)),
+							createId,
+						),
 			ancestorScopeType,
+			...(ancestorElement !== undefined && {ancestorElement}),
 		},
 	};
 }
 
 export {
+	generateId,
 	createAddTokenModification,
 	createCancelTokenModification,
 	createFinishAddingTokenAction,

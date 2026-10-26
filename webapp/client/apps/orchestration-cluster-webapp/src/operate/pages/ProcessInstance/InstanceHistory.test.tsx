@@ -462,7 +462,7 @@ describe('InstanceHistory', () => {
 		worker.use(http.post('/v2/element-instances/search', requests));
 		const screen = await renderPage();
 		await expect.poll(() => requests.mock.calls.length).toBe(1);
-		const rootQueryKey = ['instanceHistory', instance.processInstanceKey, instance.processInstanceKey, 0, 0];
+		const rootQueryKey = ['instanceHistory', instance.processInstanceKey, instance.processInstanceKey, 0, 0, 'DESC'];
 		await expect.poll(() => screen.queryClient.getQueryState(rootQueryKey)?.status).toBe('error');
 		await expect.element(screen.getByText(/"historyError":true/)).toBeVisible();
 		await vi.advanceTimersByTimeAsync(5000);
@@ -536,6 +536,20 @@ describe('InstanceHistory', () => {
 		await expect.element(screen.getByRole('switch', {name: 'Execution count'})).toBeChecked();
 		await userEvent.click(row(rootItem.element()));
 		await expect.poll(() => screen.router.state.location.search).toEqual({tenantId: 'tenant'});
+	});
+	it('should match the legacy history heading and right-aligned controls', async ({worker}) => {
+		const screen = await renderTree(worker);
+		const panel = screen.getByRole('region', {name: 'Instance History'});
+		const heading = panel.getByRole('heading', {name: 'Instance History'});
+
+		await expect.element(heading).toBeVisible();
+		expect(getComputedStyle(heading.element()).fontWeight).toBe('600');
+		const panelBounds = panel.element().getBoundingClientRect();
+		const headingBounds = heading.element().getBoundingClientRect();
+		const controlsBounds = panel.getByText('Execution count', {exact: true}).element().getBoundingClientRect();
+		expect(headingBounds.left - panelBounds.left).toBeCloseTo(16);
+		expect(panelBounds.right - controlsBounds.right).toBeCloseTo(16);
+		expect(controlsBounds.left).toBeGreaterThan(headingBounds.right);
 	});
 	it('should retry XML before reading disabled history and wait for successful recovery', async ({worker}) => {
 		let xmlStatus = 500;
@@ -636,7 +650,7 @@ describe('InstanceHistory', () => {
 			Array.from(tree.element().querySelectorAll('[tabindex="0"]'), (element) => element.getAttribute('aria-label'));
 		expect(tabStops()).toEqual(['My Process']);
 
-		screen.getByRole('switch', {name: 'Execution count'}).element().focus();
+		screen.getByRole('button', {name: 'Incidents'}).element().focus();
 		await userEvent.tab();
 		await expect.element(rootItem).toHaveFocus();
 		await userEvent.keyboard('{ArrowDown}');
@@ -672,7 +686,7 @@ describe('InstanceHistory', () => {
 		await expect.element(leafItem).toHaveAttribute('aria-selected', 'false');
 
 		await userEvent.tab({shift: true});
-		await expect.element(screen.getByRole('switch', {name: 'Execution count'})).toHaveFocus();
+		await expect.element(screen.getByRole('button', {name: 'Incidents'})).toHaveFocus();
 		await userEvent.tab();
 		await expect.element(leafItem).toHaveFocus();
 		expect(tabStops()).toEqual(['Leaf']);

@@ -95,6 +95,40 @@ class PhysicalTenantWebappClientConfigRewriteAdviceTest {
   }
 
   @Test
+  void shouldPrefixRootRelativeTasklistUrlForPhysicalTenantRequest() throws NoSuchMethodException {
+    // given
+    final MockHttpServletRequest httpRequest = new MockHttpServletRequest();
+    httpRequest.setContextPath("/core");
+    PhysicalTenantContext.setPhysicalTenantId(httpRequest, "tenanta");
+    final String body =
+        "window.clientConfig = {\"contextPath\":\"/core\",\"baseName\":\"/core/operate\",\"tasklistUrl\":\"/core/tasklist\"};";
+
+    // when
+    final String result = rewrite(body, httpRequest);
+
+    // then
+    assertThat(result).contains("\"tasklistUrl\":\"/core/physical-tenants/tenanta/tasklist\"");
+  }
+
+  @Test
+  void shouldNotChangeAbsoluteOrUnsetTasklistUrl() throws NoSuchMethodException {
+    // given
+    final MockHttpServletRequest httpRequest = new MockHttpServletRequest();
+    PhysicalTenantContext.setPhysicalTenantId(httpRequest, "tenanta");
+
+    // when
+    final String absolute =
+        rewrite(
+            "window.clientConfig = {\"tasklistUrl\":\"https://tasklist.example.com\"};",
+            httpRequest);
+    final String unset = rewrite("window.clientConfig = {\"tasklistUrl\":null};", httpRequest);
+
+    // then
+    assertThat(absolute).contains("\"tasklistUrl\":\"https://tasklist.example.com\"");
+    assertThat(unset).contains("\"tasklistUrl\":null");
+  }
+
+  @Test
   void shouldNotChangeBodyForClusterRequest() throws NoSuchMethodException {
     // given — no physical tenant id stamped on the request
     final MockHttpServletRequest httpRequest = new MockHttpServletRequest();

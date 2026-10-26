@@ -18,6 +18,7 @@ package io.camunda.zeebe.protocol.record.value;
 import io.camunda.zeebe.protocol.record.ImmutableProtocol;
 import io.camunda.zeebe.protocol.record.RecordValueWithVariables;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import org.immutables.value.Value;
 
@@ -80,6 +81,23 @@ public interface ProcessInstanceCreationRecordValue
    * @since 8.9
    */
   String getBusinessId();
+
+  /**
+   * Returns the version tag of the process definition to create the process instance from. Used
+   * together with the BPMN process id to resolve the process definition version.
+   *
+   * @return the version tag, or an empty string if not set
+   * @since 8.11
+   */
+  String getVersionTag();
+
+  /**
+   * Returns the metadata of the variables of this creation by variable name.
+   *
+   * @return the variable metadata, or an empty map if none of the variables comes with metadata
+   * @since 8.11
+   */
+  Map<String, VariableMetadataValue> getVariablesMetadata();
 
   @Value.Immutable
   @ImmutableProtocol(builder = ImmutableProcessInstanceCreationStartInstructionValue.Builder.class)
