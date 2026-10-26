@@ -16,6 +16,7 @@ import io.camunda.zeebe.broker.client.api.dto.BrokerRequest;
 import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
 import io.camunda.zeebe.msgpack.value.DocumentValue;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -54,6 +55,17 @@ public abstract class ApiServices<T extends ApiServices<T>> {
       final BrokerRequest<R> brokerRequest, final CamundaAuthentication authentication) {
     applyBrokerRequestMutators(brokerRequest, authentication);
     return brokerClient.sendRequest(brokerRequest).handleAsync(handleBrokerResponse(), executor);
+  }
+
+  /** Like {@link #sendBrokerRequestWithFullResponse}, with a timeout other than the default. */
+  protected final <R> CompletableFuture<BrokerResponse<R>> sendBrokerRequestWithFullResponse(
+      final BrokerRequest<R> brokerRequest,
+      final CamundaAuthentication authentication,
+      final Duration requestTimeout) {
+    applyBrokerRequestMutators(brokerRequest, authentication);
+    return brokerClient
+        .sendRequest(brokerRequest, requestTimeout)
+        .handleAsync(handleBrokerResponse(), executor);
   }
 
   /**

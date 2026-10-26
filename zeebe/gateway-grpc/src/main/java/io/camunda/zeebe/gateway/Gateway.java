@@ -27,6 +27,7 @@ import io.camunda.zeebe.gateway.impl.job.ActivateJobsHandler;
 import io.camunda.zeebe.gateway.impl.job.LongPollingActivateJobsHandler;
 import io.camunda.zeebe.gateway.impl.job.RoundRobinActivateJobsHandler;
 import io.camunda.zeebe.gateway.impl.stream.StreamJobsHandler;
+import io.camunda.zeebe.gateway.impl.stream.StreamProbesHandler;
 import io.camunda.zeebe.gateway.interceptors.impl.AuthenticationHandler;
 import io.camunda.zeebe.gateway.interceptors.impl.AuthenticationInterceptor;
 import io.camunda.zeebe.gateway.interceptors.impl.AuthenticationMetrics;
@@ -39,6 +40,7 @@ import io.camunda.zeebe.gateway.metrics.LongPollingMetricsFactory;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsResponse;
 import io.camunda.zeebe.gateway.query.impl.QueryApiImpl;
 import io.camunda.zeebe.protocol.impl.stream.job.JobActivationProperties;
+import io.camunda.zeebe.protocol.impl.stream.probe.ProbeActivationProperties;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
@@ -80,6 +82,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
@@ -99,6 +102,7 @@ public final class Gateway implements CloseableSilently {
   private final ActorSchedulingService actorSchedulingService;
   private final GatewayHealthManager healthManager;
   private final ClientStreamer<JobActivationProperties> jobStreamer;
+  private final @Nullable ClientStreamer<ProbeActivationProperties> probeStreamer;
   private final Duration shutdownTimeout;
 
   private Server server;
@@ -126,6 +130,43 @@ public final class Gateway implements CloseableSilently {
       final MeterRegistry meterRegistry,
       final int maxVariableNameLength,
       final PhysicalTenantIds physicalTenantIds) {
+    this(
+        shutdownDuration,
+        gatewayCfg,
+        securityConfigurationsByPhysicalTenant,
+        brokerClient,
+        actorSchedulingService,
+        jobStreamer,
+        null,
+        jwtDecoderFactory,
+        oidcClaimsProviderFactory,
+        userServicesForTenant,
+        passwordEncoder,
+        meterRegistry,
+        maxVariableNameLength,
+        physicalTenantIds);
+  }
+
+  /**
+   * @param probeStreamer the probe streamer, or {@code null} to answer {@code StreamProbes} with
+   *     {@code UNIMPLEMENTED}
+   */
+  public Gateway(
+      final Duration shutdownDuration,
+      final GatewayCfg gatewayCfg,
+      final Map<String, EngineSecurityConfig> securityConfigurationsByPhysicalTenant,
+      final BrokerClient brokerClient,
+      final ActorSchedulingService actorSchedulingService,
+      final ClientStreamer<JobActivationProperties> jobStreamer,
+      final @Nullable ClientStreamer<ProbeActivationProperties> probeStreamer,
+      final Function<AuthenticationConfiguration, JwtDecoder> jwtDecoderFactory,
+      final Function<AuthenticationConfiguration, OidcClaimsProvider> oidcClaimsProviderFactory,
+      final Function<String, UserServices> userServicesForTenant,
+      final PasswordEncoder passwordEncoder,
+      final MeterRegistry meterRegistry,
+      final int maxVariableNameLength,
+      final PhysicalTenantIds physicalTenantIds) {
+    this.probeStreamer = probeStreamer;
     shutdownTimeout = shutdownDuration;
     this.gatewayCfg = gatewayCfg;
     this.securityConfigurationsByPhysicalTenant =
@@ -204,6 +245,16 @@ public final class Gateway implements CloseableSilently {
     return future;
   }
 
+  /** Started without waiting: a probe stream opened before it runs is queued on the actor. */
+  private @Nullable StreamProbesHandler startProbeStreamAdapter() {
+    if (probeStreamer == null) {
+      return null;
+    }
+    final var adapter = new StreamProbesHandler(probeStreamer);
+    actorSchedulingService.submitActor(adapter);
+    return adapter;
+  }
+
   private Server createServer(
       final ActivateJobsHandler<ActivateJobsResponse> activateJobsHandler,
       final StreamJobsHandler streamJobsHandler) {
@@ -217,6 +268,7 @@ public final class Gateway implements CloseableSilently {
             brokerClient,
             activateJobsHandler,
             streamJobsHandler,
+            startProbeStreamAdapter(),
             securityConfigurationsByPhysicalTenant,
             maxVariableNameLength);
     final var gatewayGrpcService = new GatewayGrpcService(endpointManager);

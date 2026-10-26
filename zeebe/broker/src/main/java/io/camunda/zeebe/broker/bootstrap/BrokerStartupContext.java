@@ -21,6 +21,7 @@ import io.camunda.zeebe.broker.clustering.ClusterServicesImpl;
 import io.camunda.zeebe.broker.jobstream.JobStreamService;
 import io.camunda.zeebe.broker.partitioning.PartitionManager;
 import io.camunda.zeebe.broker.partitioning.topology.ClusterConfigurationService;
+import io.camunda.zeebe.broker.probestream.ProbeStreamService;
 import io.camunda.zeebe.broker.system.EmbeddedGatewayService;
 import io.camunda.zeebe.broker.system.PhysicalTenantContext;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
@@ -115,6 +116,12 @@ public interface BrokerStartupContext {
   void setDiskSpaceUsageMonitor(DiskSpaceUsageMonitor diskSpaceUsageMonitor);
 
   JobStreamService getJobStreamService(String physicalTenantId);
+
+  ProbeStreamService getProbeStreamService(String physicalTenantId);
+
+  void addProbeStreamService(String physicalTenantId, ProbeStreamService service);
+
+  void removeProbeStreamService(String physicalTenantId);
 
   void addJobStreamService(String physicalTenantId, JobStreamService service);
 

@@ -79,6 +79,35 @@ enum TenantFilter {
   ASSIGNED = 1;
 }
 
+// Opens a stream of probes for one capability: one operation and one template (alpha).
+message StreamProbesRequest {
+  // the operation the worker answers, e.g. VALIDATE_CONFIGURATION
+  string operation = 1;
+  // the template the worker answers the operation for, e.g. io.camunda:aws-credential:1
+  string template = 2;
+  // the name of the worker, recorded on the probes pushed to it
+  string worker = 3;
+  // the tenants for which to stream probes
+  repeated string tenantIds = 4;
+  // the tenant filtering strategy
+  TenantFilter tenantFilter = 5;
+}
+
+// A probe pushed to a worker; the worker answers it over REST (alpha).
+message ActivatedProbe {
+  // the key of the probe, used to answer it
+  int64 key = 1;
+  string operation = 2;
+  string template = 3;
+  string tenantId = 4;
+  // the evaluated input, with the secret values injected, as a JSON document
+  string input = 5;
+  // when the client stops waiting, as a UNIX epoch timestamp
+  int64 deadline = 6;
+  // the name of the worker the probe was pushed to
+  string worker = 7;
+}
+
 message ActivatedJob {
   // Describes the kind of job.
   enum JobKind {
@@ -1118,6 +1147,12 @@ service Gateway {
       - If multi-tenancy is disabled, and tenantIds is not empty (empty list), or has an ID other than <default>
   */
   rpc StreamActivatedJobs (StreamActivatedJobsRequest) returns (stream ActivatedJob) {
+  }
+
+  /*
+    Opens a stream of probes for one capability (alpha). The probes are answered over REST.
+   */
+  rpc StreamProbes (StreamProbesRequest) returns (stream ActivatedProbe) {
   }
 
   /*

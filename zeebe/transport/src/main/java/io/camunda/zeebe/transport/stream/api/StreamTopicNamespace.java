@@ -22,6 +22,9 @@ public record StreamTopicNamespace(String prefix) {
 
   public static final StreamTopicNamespace DEFAULT = new StreamTopicNamespace("");
 
+  /** The namespace of probe streams, which run next to job streams. */
+  public static final StreamTopicNamespace PROBES = new StreamTopicNamespace("probe");
+
   public StreamTopicNamespace {
     Objects.requireNonNull(prefix, "prefix must not be null");
   }

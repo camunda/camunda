@@ -103,6 +103,7 @@ public final class ZeebePartitionFactory {
   private final DiskSpaceUsageMonitor diskSpaceUsageMonitor;
   private final AtomixServerTransport gatewayBrokerTransport;
   private final JobStreamer jobStreamer;
+  private final ProbeStreamer probeStreamer;
   private final List<PartitionListener> partitionListeners;
   private final TopologyManagerImpl topologyManager;
   private final FeatureFlags featureFlags;
@@ -127,6 +128,7 @@ public final class ZeebePartitionFactory {
       final DiskSpaceUsageMonitor diskSpaceUsageMonitor,
       final AtomixServerTransport gatewayBrokerTransport,
       final JobStreamer jobStreamer,
+      final ProbeStreamer probeStreamer,
       final List<PartitionListener> partitionListeners,
       final List<PartitionRaftListener> partitionRaftListeners,
       final TopologyManagerImpl topologyManager,
@@ -146,6 +148,7 @@ public final class ZeebePartitionFactory {
     this.diskSpaceUsageMonitor = diskSpaceUsageMonitor;
     this.gatewayBrokerTransport = gatewayBrokerTransport;
     this.jobStreamer = jobStreamer;
+    this.probeStreamer = probeStreamer;
     this.partitionListeners = partitionListeners;
     this.partitionRaftListeners = partitionRaftListeners;
     this.topologyManager = topologyManager;
@@ -301,8 +304,7 @@ public final class ZeebePartitionFactory {
           partitionCommandSender,
           featureFlags,
           jobStreamer,
-          // the probe stream service comes with the transport slice; until then no probe is pushed
-          ProbeStreamer.noop(),
+          probeStreamer,
           searchClientsProxy,
           brokerRequestAuthorizationConverter,
           secretStoreRegistry);

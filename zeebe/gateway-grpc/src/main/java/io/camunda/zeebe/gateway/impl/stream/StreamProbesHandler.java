@@ -1,0 +1,191 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.zeebe.gateway.impl.stream;
+
+import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
+
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivatedProbe;
+import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
+import io.camunda.zeebe.protocol.impl.stream.probe.ActivatedProbeImpl;
+import io.camunda.zeebe.protocol.impl.stream.probe.ProbeActivationProperties;
+import io.camunda.zeebe.protocol.record.value.ProbeOperation;
+import io.camunda.zeebe.scheduler.Actor;
+import io.camunda.zeebe.scheduler.ConcurrencyControl;
+import io.camunda.zeebe.scheduler.future.ActorFuture;
+import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
+import io.camunda.zeebe.transport.stream.api.ClientStreamBlockedException;
+import io.camunda.zeebe.transport.stream.api.ClientStreamConsumer;
+import io.camunda.zeebe.transport.stream.api.ClientStreamId;
+import io.camunda.zeebe.transport.stream.api.ClientStreamer;
+import io.grpc.Status;
+import io.grpc.stub.ServerCallStreamObserver;
+import java.util.Arrays;
+import org.agrona.DirectBuffer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+/**
+ * Opens a probe stream for a worker: one stream per capability, of type {@code
+ * <operation>:<template>}, as {@link StreamJobsHandler} does for one job type.
+ */
+public final class StreamProbesHandler extends Actor {
+
+  private static final Logger LOGGER = LoggerFactory.getLogger(StreamProbesHandler.class);
+
+  private final ClientStreamer<ProbeActivationProperties> probeStreamer;
+
+  public StreamProbesHandler(final ClientStreamer<ProbeActivationProperties> probeStreamer) {
+    this.probeStreamer = probeStreamer;
+  }
+
+  public void handle(
+      final String operation,
+      final String template,
+      final ProbeActivationProperties properties,
+      final ServerCallStreamObserver<ActivatedProbe> responseObserver,
+      final String physicalTenantId) {
+    if (Arrays.stream(ProbeOperation.values()).noneMatch(op -> op.name().equals(operation))) {
+      responseObserver.onError(
+          Status.INVALID_ARGUMENT
+              .withDescription(
+                  "Expected to stream probes for one of the operations %s, but it was '%s'"
+                      .formatted(Arrays.toString(ProbeOperation.values()), operation))
+              .asRuntimeException());
+      return;
+    }
+    if (template.isBlank()) {
+      responseObserver.onError(
+          Status.INVALID_ARGUMENT
+              .withDescription("Expected to stream probes for a template, but it was blank")
+              .asRuntimeException());
+      return;
+    }
+
+    final var streamType = wrapString(operation + ":" + template);
+    final var consumer = new ProbeStreamConsumer(responseObserver, actor);
+    final var remover = new AsyncProbeStreamRemover(probeStreamer, actor);
+    responseObserver.setOnCloseHandler(remover);
+    responseObserver.setOnCancelHandler(remover);
+    actor.run(
+        () ->
+            actor.runOnCompletion(
+                probeStreamer.add(streamType, properties, consumer, physicalTenantId),
+                (streamId, error) -> {
+                  if (error != null) {
+                    LOGGER.warn("Failed to register new probe stream", error);
+                    responseObserver.onError(
+                        Status.UNAVAILABLE
+                            .withDescription("Failed to register new probe stream")
+                            .withCause(error)
+                            .asRuntimeException());
+                    return;
+                  }
+                  remover.streamId(streamId);
+                }));
+  }
+
+  private static final class ProbeStreamConsumer implements ClientStreamConsumer {
+
+    private final ServerCallStreamObserver<ActivatedProbe> responseObserver;
+    private final ConcurrencyControl executor;
+
+    private ProbeStreamConsumer(
+        final ServerCallStreamObserver<ActivatedProbe> responseObserver,
+        final ConcurrencyControl executor) {
+      this.responseObserver = responseObserver;
+      this.executor = executor;
+    }
+
+    @Override
+    public ActorFuture<Void> push(final DirectBuffer payload) {
+      final var result = new CompletableActorFuture<Void>();
+      try {
+        executor.run(() -> handlePushedProbe(payload, result));
+      } catch (final Exception e) {
+        responseObserver.onError(e);
+        result.completeExceptionally(e);
+      }
+      return result;
+    }
+
+    private void handlePushedProbe(
+        final DirectBuffer payload, final CompletableActorFuture<Void> result) {
+      if (!responseObserver.isReady()) {
+        // a failed push makes the broker yield the probe, which re-dispatches it once
+        result.completeExceptionally(
+            new ClientStreamBlockedException(
+                "Expected to push payload (size = '%d') to stream, but stream is blocked"
+                    .formatted(payload.capacity())));
+        return;
+      }
+
+      final ActivatedProbe activatedProbe;
+      try {
+        final var deserialized = new ActivatedProbeImpl();
+        deserialized.wrap(payload);
+        final var record = deserialized.probeRecord();
+        activatedProbe =
+            ActivatedProbe.newBuilder()
+                .setKey(deserialized.probeKey())
+                .setOperation(record.getOperation().name())
+                .setTemplate(record.getTemplate())
+                .setTenantId(record.getTenantId())
+                .setInput(MsgPackConverter.convertToJson(record.getInputBuffer()))
+                .setDeadline(record.getDeadline())
+                .setWorker(record.getWorker())
+                .build();
+      } catch (final Exception e) {
+        result.completeExceptionally(e);
+        return;
+      }
+
+      try {
+        responseObserver.onNext(activatedProbe);
+        result.complete(null);
+      } catch (final Exception e) {
+        responseObserver.onError(e);
+        result.completeExceptionally(e);
+      }
+    }
+  }
+
+  /** As {@code StreamJobsHandler.AsyncJobStreamRemover}: copes with close before registration. */
+  private static final class AsyncProbeStreamRemover implements Runnable {
+
+    private final ClientStreamer<ProbeActivationProperties> probeStreamer;
+    private final ConcurrencyControl executor;
+    private boolean isRemoved;
+    private ClientStreamId streamId;
+
+    private AsyncProbeStreamRemover(
+        final ClientStreamer<ProbeActivationProperties> probeStreamer,
+        final ConcurrencyControl executor) {
+      this.probeStreamer = probeStreamer;
+      this.executor = executor;
+    }
+
+    @Override
+    public void run() {
+      executor.run(
+          () -> {
+            isRemoved = true;
+            if (streamId != null) {
+              probeStreamer.remove(streamId);
+            }
+          });
+    }
+
+    private void streamId(final ClientStreamId streamId) {
+      if (isRemoved) {
+        probeStreamer.remove(streamId);
+        return;
+      }
+      this.streamId = streamId;
+    }
+  }
+}
