@@ -308,6 +308,7 @@ public final class BpmnBufferedMessageStartEventBehavior {
             message.getVariablesBuffer(),
             message.getTenantId(),
             message.getBusinessIdBuffer(),
+            message.getRunScopeBuffer(),
             message.getDeadline(),
             message.getTimeToLive()),
         messageCorrelation.subscriptionKey,

@@ -111,6 +111,7 @@ public final class PendingProcessMessageSubscriptionCheckScheduler
         subscription.getRecord().isInterrupting(),
         subscription.getRecord().getTenantId(),
         subscription.getRecord().getBusinessIdBuffer(),
+        subscription.getRecord().getRunScopeBuffer(),
         subscription.getRecord().getElementIdBuffer(),
         subscription.getRecord().getRootProcessInstanceKey(),
         subscription.getRecord().getStorageOrdinal(),

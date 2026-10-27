@@ -90,6 +90,14 @@ public final class MessageCorrelator {
       return false;
     }
 
+    if (!runScopeMatches(message, subscriptionRecord)) {
+      LOG.atTrace()
+          .addKeyValue("messageKey", messageKey)
+          .addKeyValue("subscriptionKey", subscriptionKey)
+          .log("Skipping subscription: run scope mismatch");
+      return false;
+    }
+
     subscriptionRecord.setMessageKey(messageKey).setVariables(message.getVariablesBuffer());
 
     stateWriter.appendFollowUpEvent(
@@ -114,6 +122,22 @@ public final class MessageCorrelator {
       return true;
     }
     return BufferUtil.equals(messageBusinessId, subscription.getBusinessIdBuffer());
+  }
+
+  /**
+   * Asymmetric run-scope matching rule, mirroring {@link #businessIdMatches}: a buffered message
+   * without a run scope correlates regardless of the subscription's stored run scope; a buffered
+   * message with a run scope only correlates to subscriptions whose stored run scope matches
+   * exactly. The subscription's run scope was captured at OPEN time from the process instance, so
+   * this stays a local, on-partition check.
+   */
+  private static boolean runScopeMatches(
+      final MessageRecord message, final MessageSubscriptionRecord subscription) {
+    final var messageRunScope = message.getRunScopeBuffer();
+    if (messageRunScope.capacity() == 0) {
+      return true;
+    }
+    return BufferUtil.equals(messageRunScope, subscription.getRunScopeBuffer());
   }
 
   private boolean sendCorrelateCommand(final MessageSubscriptionRecord subscriptionRecord) {

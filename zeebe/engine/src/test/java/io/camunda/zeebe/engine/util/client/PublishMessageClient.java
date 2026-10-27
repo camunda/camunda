@@ -108,6 +108,11 @@ public final class PublishMessageClient {
     return this;
   }
 
+  public PublishMessageClient withRunScope(final String runScope) {
+    messageRecord.setRunScope(runScope);
+    return this;
+  }
+
   public PublishMessageClient onPartition(final int partitionId) {
     this.partitionId = partitionId;
     return this;

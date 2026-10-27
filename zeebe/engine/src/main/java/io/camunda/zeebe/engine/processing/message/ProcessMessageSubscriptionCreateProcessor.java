@@ -208,6 +208,7 @@ public final class ProcessMessageSubscriptionCreateProcessor
     final String correlationKey = record.getCorrelationKey();
     final boolean interrupting = record.isInterrupting();
     final String businessId = record.getBusinessId();
+    final String runScope = record.getRunScope();
     final String elementId = record.getElementId();
     final long rootPiKey = record.getRootProcessInstanceKey();
     final var elementType = record.getElementType();
@@ -235,6 +236,7 @@ public final class ProcessMessageSubscriptionCreateProcessor
                 interrupting,
                 tenantId,
                 BufferUtil.wrapString(businessId),
+                BufferUtil.wrapString(runScope),
                 BufferUtil.wrapString(elementId),
                 rootPiKey,
                 ordinal,
