@@ -6,7 +6,7 @@
 
 <!--- Please delete options that are not relevant. Boxes should be checked by reviewer. -->
 - [ ] Enable backports when necessary (fex. [for bug fixes](https://github.com/camunda/camunda/blob/main/CONTRIBUTING.md#backporting-changes) or [for CI changes](https://github.com/camunda/camunda/wiki/CI-&-Automation#when-to-backport-ci-changes)).
-- [ ] If this PR modifies the [C8 Orchestration Cluster E2E Test Suite](qa/c8-orchestration-cluster-e2e-test-suite), the automatic PR check (which blocks on the specs this PR adds or modifies) is green. Because it does not gate on untouched tests and does not run on fork PRs, when this change can break tests it does not edit (shared page object, fixture or config) or the PR is from a fork, the [on-demand workflow](https://github.com/camunda/camunda/actions/workflows/c8-orchestration-cluster-e2e-tests-on-demand.yml) has also been run and any failures documented in the description, confirmed not to be regressions introduced by this PR.
+- [ ] If this PR modifies the [C8 Orchestration Cluster E2E Test Suite](qa/c8-orchestration-cluster-e2e-test-suite), its automatic PR check is green. The check runs the **whole** suite but blocks only on the specs this PR adds or modifies, so I have also reviewed any untouched-test failures it reports and confirmed they are pre-existing, not caused by this PR. For a **fork PR**, where the automatic check does not run, the [on-demand workflow](https://github.com/camunda/camunda/actions/workflows/c8-orchestration-cluster-e2e-tests-on-demand.yml) has been run instead and its results documented.
 
 ## Related issues
 
