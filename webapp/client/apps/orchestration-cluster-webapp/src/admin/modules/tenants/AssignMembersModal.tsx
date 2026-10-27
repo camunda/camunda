@@ -48,24 +48,29 @@ const AssignMembersModal: React.FC<Props> = ({tab, tenantId, isOpen, isFreeText,
 	const [term, setTerm] = useState('');
 
 	const lookupTerm = useDebouncedValue(term.trim(), LOOKUP_DEBOUNCE);
-	const like = lookupTerm === '' ? undefined : {$like: `*${lookupTerm}*`};
+	// Only members on the current page are excluded, so assigning one from another page fails with a 409.
+	const idFilter = {
+		...(lookupTerm === '' ? {} : {$like: `*${lookupTerm}*`}),
+		...(assignedIds.length === 0 ? {} : {$notIn: assignedIds}),
+	};
+	const hasIdFilter = Object.keys(idFilter).length > 0;
 	const page = {limit: OPTIONS_LIMIT};
 	const isPicker = isOpen && !isFreeText;
 
 	const users = useQuery({
-		...queries.queryUsers({filter: like ? {username: like} : {}, page}),
+		...queries.queryUsers({filter: hasIdFilter ? {username: idFilter} : {}, page}),
 		enabled: isPicker && tab === 'users',
 	});
 	const groups = useQuery({
-		...queries.queryGroups({filter: like ? {groupId: like} : {}, page}),
+		...queries.queryGroups({filter: hasIdFilter ? {groupId: idFilter} : {}, page}),
 		enabled: isPicker && tab === 'groups',
 	});
 	const roles = useQuery({
-		...queries.queryRoles({filter: like ? {roleId: like} : {}, page}),
+		...queries.queryRoles({filter: hasIdFilter ? {roleId: idFilter} : {}, page}),
 		enabled: isPicker && tab === 'roles',
 	});
 	const mappingRules = useQuery({
-		...queries.queryMappingRules({filter: like ? {mappingRuleId: like} : {}, page}),
+		...queries.queryMappingRules({filter: hasIdFilter ? {mappingRuleId: idFilter} : {}, page}),
 		enabled: isPicker && tab === 'mapping-rules',
 	});
 
@@ -80,7 +85,6 @@ const AssignMembersModal: React.FC<Props> = ({tab, tenantId, isOpen, isFreeText,
 	const candidateIds = candidates.map((candidate) => getMemberId(tab, candidate));
 
 	const options: MultiSelectOption[] = [...new Set([...selected, ...candidateIds])]
-		.filter((id) => selected.includes(id) || !assignedIds.includes(id))
 		.sort((a, b) => a.localeCompare(b))
 		.map((id) => ({value: id, label: id}));
 

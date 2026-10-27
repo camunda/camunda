@@ -46,40 +46,46 @@ function useCandidates(
 		...getMembersQuery(kind, roleId, {page: {from: 0, limit: ASSIGNED_MEMBERS_LIMIT}}),
 		enabled: usersEnabled || groupsEnabled || kind === 'mappingRules',
 	});
-	const assignedIds = new Set((assignedMembers?.items ?? []).map((item) => toMemberRow(kind, item).id));
-	const unassigned = (options: ComboboxOption[]) => options.filter(({value}) => !assignedIds.has(value));
-	const filterValue = searchTerm === '' ? undefined : {$like: `*${searchTerm}*`};
+	// Candidates wait for the assigned members so they are never listed before being excluded.
+	const assignedIds = (assignedMembers?.items ?? []).map((item) => toMemberRow(kind, item).id);
+	const idFilter = {
+		...(searchTerm === '' ? {} : {$like: `*${searchTerm}*`}),
+		...(assignedIds.length === 0 ? {} : {$notIn: assignedIds}),
+	};
+	const hasIdFilter = Object.keys(idFilter).length > 0;
+	const assignedLoaded = assignedMembers !== undefined;
 	const page = {from: 0, limit: CANDIDATE_LIMIT};
 
 	const users = useQuery({
-		...queries.queryUsers({filter: filterValue ? {username: filterValue} : {}, page}),
-		enabled: usersEnabled,
+		...queries.queryUsers({filter: hasIdFilter ? {username: idFilter} : {}, page}),
+		enabled: usersEnabled && assignedLoaded,
 	});
 	const groups = useQuery({
-		...queries.queryGroups({filter: filterValue ? {groupId: filterValue} : {}, page}),
-		enabled: groupsEnabled,
+		...queries.queryGroups({filter: hasIdFilter ? {groupId: idFilter} : {}, page}),
+		enabled: groupsEnabled && assignedLoaded,
 	});
 	const mappingRules = useQuery({
-		...queries.queryMappingRules({filter: filterValue ? {mappingRuleId: filterValue} : {}, page}),
-		enabled: kind === 'mappingRules',
+		...queries.queryMappingRules({filter: hasIdFilter ? {mappingRuleId: idFilter} : {}, page}),
+		enabled: kind === 'mappingRules' && assignedLoaded,
 	});
 
 	switch (kind) {
 		case 'users':
 			return {
-				options: unassigned((users.data?.items ?? []).map(({username}) => ({value: username, label: username}))),
+				options: (users.data?.items ?? []).map(({username}) => ({value: username, label: username})),
 				isError: users.isError || isAssignedError,
 			};
 		case 'groups':
 			return {
-				options: unassigned((groups.data?.items ?? []).map(({groupId}) => ({value: groupId, label: groupId}))),
+				options: (groups.data?.items ?? []).map(({groupId}) => ({value: groupId, label: groupId})),
 				isError: groups.isError || isAssignedError,
 			};
 		case 'mappingRules':
 			return {
-				options: unassigned(
-					(mappingRules.data?.items ?? []).map(({mappingRuleId}) => ({value: mappingRuleId, label: mappingRuleId})),
-				),
+				options: (mappingRules.data?.items ?? []).map(({mappingRuleId}) => ({
+					value: mappingRuleId,
+					label: mappingRuleId,
+				})),
 				isError: mappingRules.isError || isAssignedError,
 			};
 		case 'clients':

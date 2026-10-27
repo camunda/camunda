@@ -7,7 +7,8 @@
  */
 
 import {test, expect} from '#/pw-modules/test-extend';
-import {HttpResponse} from 'msw';
+import {HttpResponse, http} from 'msw';
+import {endpoints} from '@camunda/camunda-api-zod-schemas/8.11';
 import {
 	mockAssignGroupToRoleEndpoint,
 	mockAssignUserToRoleEndpoint,
@@ -404,11 +405,13 @@ test.describe('Admin role detail', () => {
 	});
 
 	test('should not offer users that are already assigned to the role', async ({adminRoleDetailPage, network}) => {
+		// The backend applies the picker's $notIn exclusion, so the mock has to as well.
 		network.use(
-			mockQueryUsersEndpoint({
-				successResponse: HttpResponse.json(
-					createMembersPage([createUser({username: 'jane.doe'}), createUser({username: 'new.user'})]),
-				),
+			http.post(endpoints.queryUsers.getUrl(), async ({request}) => {
+				const {filter} = (await request.json()) as {filter?: {username?: {$notIn?: string[]}}};
+				const excluded = filter?.username?.$notIn ?? [];
+				const users = ['jane.doe', 'new.user'].filter((username) => !excluded.includes(username));
+				return HttpResponse.json(createMembersPage(users.map((username) => createUser({username}))));
 			}),
 		);
 
