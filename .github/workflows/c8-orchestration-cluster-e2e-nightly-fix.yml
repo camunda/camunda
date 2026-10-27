@@ -803,7 +803,11 @@ jobs:
                   '[.[][] | select(.event == "labeled" and .label.name == $l)] | last | .actor.type // ""') \
               || rc=$?
             if [ "$rc" -ne 0 ]; then
-              echo "::warning::Could not read the label history of PR #${pr} -- leaving '${label}' in place."
+              # stderr: both callers `case` on this function's entire stdout, so a
+              # warning printed here would miss `kept` and fall through to the
+              # failure branch, telling the thread to remove a label whose owner is
+              # precisely what could not be determined.
+              echo "::warning::Could not read the label history of PR #${pr} -- leaving '${label}' in place." >&2
               echo kept
               return
             fi
@@ -831,7 +835,9 @@ jobs:
               [ -z "$label" ] && continue
               ref="${label#backport }"
               # Still frozen: the propose pass below owns this label, not this one.
-              if cut -f1 "$pairs" | grep -qxF "$ref"; then
+              # grep drains rather than -q: `pipefail` plus an early exit would
+              # report a failed pipeline and read an active branch as stale.
+              if cut -f1 "$pairs" | grep -xF "$ref" >/dev/null; then
                 continue
               fi
               case "$(revoke_if_bot "$pr" "$label")" in
@@ -887,7 +893,7 @@ jobs:
               label="backport ${release_ref}"
               if [ -n "$release_ref" ] \
                  && gh pr view "$pr" --repo "$REPO" --json labels --jq '.labels[].name' 2>/dev/null \
-                    | grep -qxF "$label"; then
+                    | grep -xF "$label" >/dev/null; then
                 case "$(revoke_if_bot "$pr" "$label")" in
                   removed) v=$(jq -c '.reason += "; label from an earlier run removed"' <<< "$v") ;;
                   kept)    v=$(jq -c '.reason += "; label added by a person left in place"' <<< "$v") ;;

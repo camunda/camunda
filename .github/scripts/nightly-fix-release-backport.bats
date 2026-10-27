@@ -231,6 +231,56 @@ EOF
   [ "$(jq -r .decision <<<"$output")" = "eligible" ]
 }
 
+@test "finds a title near the top of a spec larger than the pipe buffer" {
+  # Regression for grep -q under pipefail. The title must come EARLY: grep exits
+  # on the match, git show then takes SIGPIPE on the ~200k still to write, and the
+  # pipeline reports failure -- so a title that IS there reads as absent. With the
+  # match at the end grep drains the file anyway and the bug stays hidden.
+  awk 'BEGIN { for (i = 0; i < 4000; i++) print "// pad pad pad pad pad pad pad pad pad pad pad pad" }' \
+    >> "$SUITE/tests/smoke.spec.ts"
+  git add -A && git commit --quiet -m "big spec"
+  git branch -f release-8.11.0-alpha1 HEAD
+  [ "$(wc -c < "$SUITE/tests/smoke.spec.ts")" -gt 65536 ]
+
+  sed -i.bak "s/#login/#login-button/" "$SUITE/tests/smoke.spec.ts" && rm -f "$SUITE/tests/smoke.spec.ts.bak"
+  commit_fix_on_main
+
+  run "$SCRIPT" main 42 "${BATS_TEST_TMPDIR}/pr.patch" "$SPECS"
+  [ "$status" -eq 0 ]
+  [ "$(jq -r .decision <<<"$output")" = "eligible" ]
+}
+
+@test "refuses when the dispatched specs are unusable as evidence" {
+  sed -i.bak "s/#login/#login-button/" "$SUITE/tests/smoke.spec.ts" && rm -f "$SUITE/tests/smoke.spec.ts.bak"
+  commit_fix_on_main
+
+  # Malformed JSON.
+  echo '{not json' > "$SPECS"
+  run "$SCRIPT" main 42 "${BATS_TEST_TMPDIR}/pr.patch" "$SPECS"
+  [ "$(jq -r .decision <<<"$output")" = "skipped" ]
+  [[ "$(jq -r .reason <<<"$output")" == *"not a JSON array"* ]]
+
+  # Entry without a test_name.
+  echo '[{"file": "tests/smoke.spec.ts"}]' > "$SPECS"
+  run "$SCRIPT" main 42 "${BATS_TEST_TMPDIR}/pr.patch" "$SPECS"
+  [ "$(jq -r .decision <<<"$output")" = "skipped" ]
+  [[ "$(jq -r .reason <<<"$output")" == *"missing file/test_name"* ]]
+
+  # No specs file at all.
+  run "$SCRIPT" main 42 "${BATS_TEST_TMPDIR}/pr.patch" "${BATS_TEST_TMPDIR}/nope.json"
+  [ "$(jq -r .decision <<<"$output")" = "skipped" ]
+  [[ "$(jq -r .reason <<<"$output")" == *"missing"* ]]
+}
+
+@test "allows an empty spec list, as a workflow-level dispatch carries none" {
+  sed -i.bak "s/#login/#login-button/" "$SUITE/tests/smoke.spec.ts" && rm -f "$SUITE/tests/smoke.spec.ts.bak"
+  commit_fix_on_main
+  echo '[]' > "$SPECS"
+
+  run "$SCRIPT" main 42 "${BATS_TEST_TMPDIR}/pr.patch" "$SPECS"
+  [ "$(jq -r .decision <<<"$output")" = "eligible" ]
+}
+
 @test "resolve_release_ref picks the pair matching the dispatch target" {
   source "$SCRIPT"
   printf '%s\t%s\n%s\t%s\n' \

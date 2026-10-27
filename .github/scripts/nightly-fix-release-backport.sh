@@ -101,8 +101,12 @@ missing_tests() {
     # so a form we do not recognise (a template literal with a placeholder, say)
     # refuses rather than guesses. Resolving real titles would mean running
     # Playwright, which this step must not do.
+    # No `grep -q`: under `pipefail` it exits on the first match, git show takes
+    # SIGPIPE on the rest of a spec larger than the pipe buffer, and the pipeline
+    # reports failure -- making a title that IS there read as absent. Letting grep
+    # drain the stream keeps the status meaningful.
     git show "${release_ref}:${path}" 2>/dev/null \
-      | grep -qF -e "'${test_name}'" -e "\"${test_name}\"" -e "\`${test_name}\`" \
+      | grep -F -e "'${test_name}'" -e "\"${test_name}\"" -e "\`${test_name}\`" >/dev/null \
       || printf '%s › %s\n' "$file" "$test_name"
   done < <(jq -r '.[]? | select(.file and .test_name) | "\(.file)\t\(.test_name)"' "$specs_file")
 }
@@ -183,12 +187,29 @@ if [ -n "$absent" ]; then
   exit 0
 fi
 
-if [ -n "$specs_file" ] && [ -f "$specs_file" ]; then
-  absent_tests="$(missing_tests "$release_ref" "$specs_file" | paste -sd'; ' -)"
-  if [ -n "$absent_tests" ]; then
-    verdict "$pr_number" "$release_ref" skipped "test not on the release branch: ${absent_tests}"
-    exit 0
-  fi
+# The dispatched specs are evidence, so their absence is not the same as "nothing
+# to check". A missing, unparseable or half-filled file would leave the title check
+# with nothing to say and label on the strength of the other two checks alone. An
+# empty array is legitimate -- a workflow-level dispatch carries no specs -- and
+# only that case proceeds without title evidence.
+specs_problem=""
+if [ -z "$specs_file" ] || [ ! -f "$specs_file" ]; then
+  specs_problem="missing"
+elif ! jq -e 'type == "array"' "$specs_file" >/dev/null 2>&1; then
+  specs_problem="not a JSON array"
+elif jq -e 'any(.[]; (.file // "") == "" or (.test_name // "") == "")' "$specs_file" >/dev/null 2>&1; then
+  specs_problem="missing file/test_name on an entry"
+fi
+if [ -n "$specs_problem" ]; then
+  verdict "$pr_number" "$release_ref" skipped \
+    "cannot confirm the release branch runs these tests: dispatched specs ${specs_problem}"
+  exit 0
+fi
+
+absent_tests="$(missing_tests "$release_ref" "$specs_file" | paste -sd'; ' -)"
+if [ -n "$absent_tests" ]; then
+  verdict "$pr_number" "$release_ref" skipped "test not on the release branch: ${absent_tests}"
+  exit 0
 fi
 
 if ! patch_applies "$release_ref" "$patch_file"; then
