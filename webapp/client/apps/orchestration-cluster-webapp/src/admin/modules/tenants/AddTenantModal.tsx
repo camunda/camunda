@@ -77,7 +77,7 @@ const AddTenantModal: React.FC<Props> = ({isOpen, onClose}) => {
 										variant="ghost"
 										size="icon-sm"
 										className="absolute top-2 right-2"
-										aria-label={t('admin.tenants.cancelButton')}
+										aria-label={t('admin.tenants.cancel')}
 										onClick={onClose}
 									>
 										<X aria-hidden />
@@ -136,7 +136,7 @@ const AddTenantModal: React.FC<Props> = ({isOpen, onClose}) => {
 								</DialogBody>
 								<DialogFooter>
 									<Button type="button" variant="secondary" onClick={onClose}>
-										{t('admin.tenants.cancelButton')}
+										{t('admin.tenants.cancel')}
 									</Button>
 									<Button type="button" loading={create.isPending} onClick={form.submit}>
 										{t('admin.tenants.createButton')}
