@@ -362,6 +362,14 @@ describe('batch operations URL search', () => {
 		expect(batchOperationsSearchSchema.parse({sort: value}).sort).toBe('endDate+DESC');
 	});
 
+	it.for([
+		{value: 'operationType+asc', expected: 'operationType+ASC'},
+		{value: 'actorId+desc', expected: 'actorId+DESC'},
+		{value: 'state+Asc', expected: 'state+ASC'},
+	] as const)('should accept the legacy lowercase sort $value', ({value, expected}) => {
+		expect(batchOperationsSearchSchema.parse({sort: value}).sort).toBe(expected);
+	});
+
 	it('should accept every API sort field and valid order', () => {
 		for (const field of ['batchOperationKey', 'operationType', 'state', 'startDate', 'endDate', 'actorId']) {
 			for (const order of ['ASC', 'DESC']) {
