@@ -5,6 +5,8 @@
 #              automatic orchestration-cluster suite PR check (team-test-automation#188) the body is
 #              patched with a definition of done; on branches without it (e.g. stable/8.7) the agent
 #              still triggers the on-demand workflow and links the run for verification.
+#              While a release branch is frozen for that line, the fix PR is also labelled for
+#              backport to it when the release branch still holds the same test area.
 # type: CI
 # owner: @camunda/test-automation-team
 ---
@@ -749,6 +751,77 @@ jobs:
             done
           fi
 
+      - name: Propose backport to the active release branch
+        # Between a code freeze and the release, the RC is built from
+        # release-X.Y.Z, not from the branch this agent fixes, so a fix merged
+        # here in that window never reaches the RC. The gate decides whether the
+        # release branch holds the same area (spec present, failing test present,
+        # patch still applies) and labels only then -- backport-action opens the
+        # backport PR when the fix PR merges. Outside a freeze the resolver finds
+        # no active branch and the whole step is a no-op.
+        #
+        # Advisory by construction: never fails the job, because a fix PR that is
+        # already open must not be held up by a backport question.
+        if: always()
+        continue-on-error: true
+        env:
+          GH_TOKEN:       ${{ steps.github-token.outputs.token }}
+          REPO:           ${{ github.repository }}
+          TARGET_REF:     ${{ steps.target.outputs.ref }}
+          WORKSPACE_NAME: ${{ steps.ws.outputs.name }}
+        run: |
+          set -uo pipefail
+          : > /tmp/backport-meta.json
+          [ -f /tmp/fix-meta.json ] || exit 0
+
+          # Resolved in the runner checkout of main: the resolver and this gate are
+          # maintained on main, and ws_dir sits on the target branch, which may
+          # predate either.
+          pairs="/tmp/release-pairs.tsv"
+          if ! "${GITHUB_WORKSPACE}/.github/scripts/mergeback/resolve-active-release-pairs.sh" origin > "$pairs"; then
+            echo "::warning::Could not resolve active release branches -- no backport proposed."
+            exit 0
+          fi
+          if [ ! -s "$pairs" ]; then
+            echo "No active release branch -- nothing to propose."
+            exit 0
+          fi
+          cat "$pairs"
+
+          ws_dir="$HOME/workspaces/${WORKSPACE_NAME}/camunda"
+          jq -r '.prs[]?.number // empty' /tmp/fix-meta.json | while read -r pr; do
+            patch="/tmp/pr-${pr}.patch"
+            if ! gh pr diff "$pr" --repo "$REPO" --patch > "$patch" 2>/dev/null; then
+              echo "::warning::Could not read the diff of PR #${pr} -- skipping its backport check."
+              continue
+            fi
+            # Three-way apply needs the patch's pre-image blobs, which ws_dir was
+            # cloned too shallowly to hold; the PR head's recent history carries them.
+            git -C "$ws_dir" fetch --no-tags --depth 50 origin "pull/${pr}/head" >/dev/null 2>&1 || true
+
+            v=$(cd "$ws_dir" && PAIRS_FILE="$pairs" \
+              "${GITHUB_WORKSPACE}/.github/scripts/nightly-fix-release-backport.sh" \
+              "$TARGET_REF" "$pr" "$patch" /tmp/test_specs.json)
+            echo "PR #${pr}: $v"
+            [ -z "$v" ] && continue
+
+            decision=$(jq -r '.decision' <<< "$v")
+            release_ref=$(jq -r '.release_ref' <<< "$v")
+            if [ "$decision" = "eligible" ]; then
+              gh label create "backport ${release_ref}" --repo "$REPO" --color c5def5 \
+                --description "Backport a pull request to ${release_ref#release-}" 2>/dev/null || true
+              if gh pr edit "$pr" --repo "$REPO" --add-label "backport ${release_ref}"; then
+                echo "$v" >> /tmp/backport-meta.json
+              else
+                echo "::warning::Could not label PR #${pr} for backport to ${release_ref}."
+                jq -c '.decision = "skipped" | .reason = "label could not be applied"' <<< "$v" \
+                  >> /tmp/backport-meta.json
+              fi
+            elif [ "$decision" = "skipped" ]; then
+              echo "$v" >> /tmp/backport-meta.json
+            fi
+          done
+
       - name: Finalize PR verification status (verified/unverified)
         if: always()
         env:
@@ -1024,6 +1097,23 @@ jobs:
               "<https://github.com/\($full_repo)/pull/\(.number)|PR #\(.number)>"' \
               | tr '\n' '  ')
             lines+=("• PR(s) opened: ${pr_links}")
+          fi
+
+          # Sub-bullet per fix PR that met an active release branch: during a code
+          # freeze the RC is built from that branch, so whether the fix reaches it
+          # is the thread's next question. Nothing is emitted outside a freeze.
+          if [ -s /tmp/backport-meta.json ]; then
+            while IFS= read -r bp; do
+              [ -z "$bp" ] && continue
+              bp_pr=$(echo "$bp" | jq -r '.pr')
+              bp_ref=$(echo "$bp" | jq -r '.release_ref')
+              bp_reason=$(echo "$bp" | jq -r '.reason // ""')
+              if [ "$(echo "$bp" | jq -r '.decision')" = "eligible" ]; then
+                lines+=("   ↳ backport to \`${bp_ref}\`: label added to PR #${bp_pr} — backport PR opens on merge")
+              else
+                lines+=("   ↳ backport to \`${bp_ref}\`: skipped — ${bp_reason}")
+              fi
+            done < /tmp/backport-meta.json
           fi
 
           # A confirmed product bug lands as a skip PR, so its bullets + the skip PR

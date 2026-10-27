@@ -2989,6 +2989,8 @@ jobs:
         run: bats .github/scripts/oc-nightly-suite-health/suite-health.bats
       - name: Run OC nightly fix-PR reopen gate tests
         run: bats .github/scripts/nightly-fix-reopen.bats
+      - name: Run OC nightly release-backport gate tests
+        run: bats .github/scripts/nightly-fix-release-backport.bats
       - name: Observe build status
         if: always()
         continue-on-error: true
