@@ -5,8 +5,6 @@
 # reports "Regression Automation: Completed Final" at confidence 5/5, and three
 # of its state-transition scenarios are disabled in CI for an open product bug.
 # Both things are true; only one of them was written down anywhere.
-#
-# For camunda/team-test-automation#83.
 
 epic: camunda/product-hub#3066
 qa_issue: camunda/product-hub#3240

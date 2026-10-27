@@ -11,7 +11,7 @@ name: Check coverage plans
 # repository, because here the plan and the suite it points at are in one
 # checkout.
 #
-# See camunda/camunda#65183 and camunda/team-test-automation#83.
+# See camunda/camunda#65183.
 
 on:
   pull_request:

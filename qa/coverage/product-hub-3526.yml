@@ -1,7 +1,6 @@
 # Coverage plan — Suspend and resume process instances
 #
-# Hand-written pilot for camunda/team-test-automation#83 phase 1, and the first
-# plan to span the whole pyramid: service unit tests, acceptance ITs, Operate
+# Hand-written pilot, and the first plan to span the whole pyramid: service unit tests, acceptance ITs, Operate
 # component tests, and the REST/UI coverage that is still to be written.
 #
 # The prose version of this plan is camunda/camunda#63902. What that issue
