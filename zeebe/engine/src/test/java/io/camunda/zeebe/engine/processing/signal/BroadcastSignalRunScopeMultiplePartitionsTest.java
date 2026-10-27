@@ -62,8 +62,12 @@ public final class BroadcastSignalRunScopeMultiplePartitionsTest {
                 .done())
         .deploy();
 
-    final List<Long> runA = createWaitingInstances(RUN_A);
+    // run B is created first, so its subscriptions have lower keys and are visited first when a
+    // broadcast fans out. If the scope filter were broken, a run-A broadcast would wrongly wake a
+    // run-B instance before its run-A sibling on the same partition completes — which the bounded
+    // negative below would then catch (see the mutation note there).
     final List<Long> runB = createWaitingInstances(RUN_B);
+    final List<Long> runA = createWaitingInstances(RUN_A);
 
     // sanity: the instances actually span more than one partition, otherwise this would not
     // exercise
