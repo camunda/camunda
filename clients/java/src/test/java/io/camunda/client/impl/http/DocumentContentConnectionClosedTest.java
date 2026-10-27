@@ -38,7 +38,6 @@ import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 
@@ -51,6 +50,13 @@ import org.junit.jupiter.api.Timeout;
 class DocumentContentConnectionClosedTest {
 
   private static ProxySelector originalProxySelector;
+
+  /** Response head of a chunked document download. */
+  private static final String HEAD =
+      "HTTP/1.1 200 OK\r\n"
+          + "Content-Type: application/octet-stream\r\n"
+          + "Transfer-Encoding: chunked\r\n"
+          + "\r\n";
 
   private ServerSocket serverSocket;
   private CamundaClient client;
@@ -77,10 +83,10 @@ class DocumentContentConnectionClosedTest {
     ProxySelector.setDefault(originalProxySelector);
   }
 
-  @BeforeEach
-  void setUp() throws Exception {
+  private void startServer(final String responseBeforeClose) throws Exception {
     serverSocket = new ServerSocket(0, 1, InetAddress.getLoopbackAddress());
-    final Thread server = new Thread(this::serveTruncatedDocument, "truncated-document-server");
+    final Thread server =
+        new Thread(() -> serveTruncatedDocument(responseBeforeClose), "truncated-document-server");
     server.setDaemon(true);
     server.start();
 
@@ -104,7 +110,26 @@ class DocumentContentConnectionClosedTest {
 
   @Test
   @Timeout(value = 60, unit = TimeUnit.SECONDS)
-  void shouldFailReaderWhenConnectionIsClosedInTheMiddleOfTheResponseBody() throws Exception {
+  void shouldFailReaderWhenConnectionIsClosedBetweenChunks() throws Exception {
+    // given, closing without the terminating zero-length chunk (ConnectionClosedException)
+    startServer(HEAD + "5\r\nhello\r\n");
+
+    // when - then
+    assertReaderFailsWithIOException();
+  }
+
+  @Test
+  @Timeout(value = 60, unit = TimeUnit.SECONDS)
+  void shouldFailReaderWhenConnectionIsClosedInTheMiddleOfAChunk() throws Exception {
+    // given, a chunk announces 10 bytes but only 5 arrive (TruncatedChunkException, which the HTTP
+    // client retries and cancels instead of delivering)
+    startServer(HEAD + "a\r\nhello");
+
+    // when - then
+    assertReaderFailsWithIOException();
+  }
+
+  private void assertReaderFailsWithIOException() throws Exception {
     // given
     final InputStream document =
         client.newDocumentContentGetRequest("document-id").send().get(20, TimeUnit.SECONDS);
@@ -131,8 +156,8 @@ class DocumentContentConnectionClosedTest {
     assertThatThrownBy(document::read).isInstanceOf(IOException.class);
   }
 
-  /** Sends the response headers and a part of a chunked body, then closes the connection. */
-  private void serveTruncatedDocument() {
+  /** Sends the given part of the response, then closes the connection. */
+  private void serveTruncatedDocument(final String responseBeforeClose) {
     try (final Socket socket = serverSocket.accept()) {
       final InputStream request = socket.getInputStream();
       final ByteArrayOutputStream head = new ByteArrayOutputStream();
@@ -145,15 +170,8 @@ class DocumentContentConnectionClosedTest {
       }
 
       final OutputStream out = socket.getOutputStream();
-      out.write(
-          ("HTTP/1.1 200 OK\r\n"
-                  + "Content-Type: application/octet-stream\r\n"
-                  + "Transfer-Encoding: chunked\r\n"
-                  + "\r\n"
-                  + "5\r\nhello\r\n")
-              .getBytes(StandardCharsets.ISO_8859_1));
+      out.write(responseBeforeClose.getBytes(StandardCharsets.ISO_8859_1));
       out.flush();
-      // closing without the terminating zero-length chunk
     } catch (final IOException e) {
       // the server socket is closed when the test finishes
     }
