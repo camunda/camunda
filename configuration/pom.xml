@@ -114,7 +114,7 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>zeebe-workflow-engine</artifactId>
+      <artifactId>zeebe-workflow-engine-common</artifactId>
     </dependency>
 
     <dependency>

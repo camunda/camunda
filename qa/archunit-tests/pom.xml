@@ -215,6 +215,13 @@
             <dep>io.camunda:camunda-security-protocol</dep>
             <dep>io.camunda:zeebe-stream-platform</dep>
             <dep>io.camunda:zeebe-workflow-engine</dep>
+            <dep>io.camunda:zeebe-workflow-engine-common</dep>
+            <dep>io.camunda:zeebe-workflow-engine-model</dep>
+            <dep>io.camunda:zeebe-workflow-engine-state-api</dep>
+            <dep>io.camunda:zeebe-workflow-engine-state-mutable-api</dep>
+            <dep>io.camunda:zeebe-workflow-engine-state</dep>
+            <dep>io.camunda:zeebe-workflow-engine-appliers</dep>
+            <dep>io.camunda:zeebe-workflow-engine-processors</dep>
             <dep>io.camunda:webapps-schema</dep>
             <dep>org.springframework:spring-beans</dep>
             <dep>org.springframework:spring-context</dep>
