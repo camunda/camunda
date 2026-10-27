@@ -7,6 +7,7 @@
  */
 package io.camunda.exporter.rdbms.handlers;
 
+import static io.camunda.zeebe.protocol.record.value.StorageOrdinalRelated.MAIN_INDEX;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.verify;
 
@@ -68,7 +69,38 @@ class DecisionInstanceExportHandlerTest {
     assertThat(dbModelCaptor.getValue().businessId()).isNull();
   }
 
+  @Test
+  void shouldSetStorageOrdinal() {
+    // given
+    final var record = decisionEvaluationRecord("order-123", 1001);
+
+    // when
+    handler.export(record);
+
+    // then
+    verify(decisionInstanceWriter).create(dbModelCaptor.capture());
+    assertThat(dbModelCaptor.getValue().storageOrdinal()).isEqualTo(1001);
+  }
+
+  @Test
+  void shouldNotSetStorageOrdinalIfMainIndex() {
+    // given
+    final var record = decisionEvaluationRecord("order-123", MAIN_INDEX);
+
+    // when
+    handler.export(record);
+
+    // then
+    verify(decisionInstanceWriter).create(dbModelCaptor.capture());
+    assertThat(dbModelCaptor.getValue().storageOrdinal()).isNull();
+  }
+
   private Record<DecisionEvaluationRecordValue> decisionEvaluationRecord(final String businessId) {
+    return decisionEvaluationRecord(businessId, 0);
+  }
+
+  private Record<DecisionEvaluationRecordValue> decisionEvaluationRecord(
+      final String businessId, final int storageOrdinal) {
     final EvaluatedDecisionValue evaluatedDecision =
         ImmutableEvaluatedDecisionValue.builder()
             .from(factory.generateObject(EvaluatedDecisionValue.class))
@@ -79,6 +111,7 @@ class DecisionInstanceExportHandlerTest {
             .from(factory.generateObject(DecisionEvaluationRecordValue.class))
             .withEvaluatedDecisions(List.of(evaluatedDecision))
             .withBusinessId(businessId)
+            .withStorageOrdinal(storageOrdinal)
             .build();
     return factory.generateRecord(
         ValueType.DECISION_EVALUATION,

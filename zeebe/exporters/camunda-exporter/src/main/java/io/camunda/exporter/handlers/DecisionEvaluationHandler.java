@@ -15,6 +15,7 @@ import io.camunda.webapps.schema.entities.dmn.DecisionInstanceInputEntity;
 import io.camunda.webapps.schema.entities.dmn.DecisionInstanceOutputEntity;
 import io.camunda.webapps.schema.entities.dmn.DecisionInstanceState;
 import io.camunda.webapps.schema.entities.dmn.DecisionType;
+import io.camunda.zeebe.exporter.common.utils.StorageOrdinalUtil;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.DecisionEvaluationIntent;
@@ -117,7 +118,8 @@ public class DecisionEvaluationHandler
         .setResult(decision.getDecisionOutput())
         .setEvaluatedOutputs(createEvaluationOutputs(decision.getMatchedRules()))
         .setEvaluatedInputs(createEvaluationInputs(decision.getEvaluatedInputs()))
-        .setTenantId(ExporterUtil.tenantOrDefault(decisionEvaluation.getTenantId()));
+        .setTenantId(ExporterUtil.tenantOrDefault(decisionEvaluation.getTenantId()))
+        .setStorageOrdinal(StorageOrdinalUtil.ordinalIfOrdinalControlled(decisionEvaluation));
     if (state.equals(DecisionInstanceState.FAILED)) {
       entity.setEvaluationFailureMessage(decisionEvaluation.getEvaluationFailureMessage());
     }

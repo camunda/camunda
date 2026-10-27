@@ -26,6 +26,7 @@ public record DecisionInstanceEntity(
     @Nullable Long processInstanceKey,
     @Nullable Long rootProcessInstanceKey,
     @Nullable String businessId,
+    @Nullable Integer storageOrdinal,
     @Nullable Long flowNodeInstanceKey,
     String tenantId,
     String decisionDefinitionId,
@@ -70,6 +71,7 @@ public record DecisionInstanceEntity(
         .processInstanceKey(processInstanceKey)
         .rootProcessInstanceKey(rootProcessInstanceKey)
         .businessId(businessId)
+        .storageOrdinal(storageOrdinal)
         .flowNodeInstanceKey(flowNodeInstanceKey)
         .decisionDefinitionKey(decisionDefinitionKey)
         .decisionDefinitionId(decisionDefinitionId)
@@ -95,6 +97,7 @@ public record DecisionInstanceEntity(
     private @Nullable Long processInstanceKey;
     private @Nullable Long rootProcessInstanceKey;
     private @Nullable String businessId;
+    private @Nullable Integer storageOrdinal;
     private @Nullable Long flowNodeInstanceKey;
     private @Nullable String tenantId;
     private @Nullable String decisionDefinitionId;
@@ -154,6 +157,11 @@ public record DecisionInstanceEntity(
 
     public Builder businessId(final @Nullable String businessId) {
       this.businessId = businessId;
+      return this;
+    }
+
+    public Builder storageOrdinal(final @Nullable Integer storageOrdinal) {
+      this.storageOrdinal = storageOrdinal;
       return this;
     }
 
@@ -226,6 +234,7 @@ public record DecisionInstanceEntity(
           processInstanceKey,
           rootProcessInstanceKey,
           businessId,
+          storageOrdinal,
           flowNodeInstanceKey,
           tenantId,
           decisionDefinitionId,

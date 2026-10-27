@@ -150,6 +150,7 @@ public class DecisionEvaluationHandlerTest {
             .from(factory.generateObject(DecisionEvaluationRecordValue.class))
             .withEvaluatedDecisions(List.of(evaluatedDecision))
             .withBusinessId("order-123")
+            .withStorageOrdinal(1001)
             .build();
 
     final Record<DecisionEvaluationRecordValue> decisionRecord =
@@ -252,6 +253,40 @@ public class DecisionEvaluationHandlerTest {
         .isEqualTo(decisionRecordValue.getRootProcessInstanceKey());
     assertThat(decisionInstanceEntity.getBusinessId())
         .isEqualTo(decisionRecordValue.getBusinessId());
+    assertThat(decisionInstanceEntity.getStorageOrdinal()).isEqualTo(1001);
+  }
+
+  @Test
+  void shouldNotSetStorageOrdinalWhenDefault() {
+    // given
+    final long recordKey = 123L;
+    final ImmutableEvaluatedDecisionValue evaluatedDecision =
+        ImmutableEvaluatedDecisionValue.builder()
+            .from(factory.generateObject(EvaluatedDecisionValue.class))
+            .withDecisionType(DecisionType.DECISION_TABLE.name())
+            .build();
+
+    final DecisionEvaluationRecordValue decisionRecordValue =
+        ImmutableDecisionEvaluationRecordValue.builder()
+            .from(factory.generateObject(DecisionEvaluationRecordValue.class))
+            .withEvaluatedDecisions(List.of(evaluatedDecision))
+            .build();
+
+    final Record<DecisionEvaluationRecordValue> decisionRecord =
+        factory.generateRecord(
+            ValueType.DECISION_EVALUATION,
+            r ->
+                r.withIntent(DecisionEvaluationIntent.EVALUATED)
+                    .withValue(decisionRecordValue)
+                    .withKey(recordKey));
+
+    // when
+    final DecisionInstanceEntity decisionInstanceEntity =
+        new DecisionInstanceEntity().setId(recordKey + "-1");
+    underTest.updateEntity(decisionRecord, decisionInstanceEntity);
+
+    // then
+    assertThat(decisionInstanceEntity.getStorageOrdinal()).isNull();
   }
 
   @Test
