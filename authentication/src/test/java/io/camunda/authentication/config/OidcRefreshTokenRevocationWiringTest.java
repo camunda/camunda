@@ -18,6 +18,7 @@ import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
@@ -26,6 +27,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.HttpStatus;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClient;
@@ -44,12 +46,19 @@ import org.springframework.test.web.servlet.request.RequestPostProcessor;
  * RefreshTokenRevocationLogoutHandler} (camunda/camunda-security-library ADR-0036), by logging out
  * through the real chain and watching what the IdP receives.
  *
- * <p>End-to-end rather than structural, because what can silently break lives between the host and
- * the library: the handler reads its refresh token from the application's {@link
- * OAuth2AuthorizedClientRepository}, and it is registered as a logout <em>handler</em> so that it
- * runs before {@code SecurityContextLogoutHandler} invalidates the session backing that repository.
- * Asserting the handler merely appears in a filter's handler list would still pass if either of
- * those were wrong, and the failure mode is a refresh token that quietly stays valid.
+ * <p>What this covers is the integration: that the host's beans and properties produce a chain
+ * whose logout actually reaches the IdP with the session's refresh token. Asserting the handler
+ * merely appears in some filter's handler list would pass even if the registration id, the
+ * authorized-client lookup or the endpoint metadata were wrong, and each of those fails silently,
+ * leaving a refresh token valid.
+ *
+ * <p>What it deliberately does <em>not</em> cover is the ordering of the handler against {@code
+ * SecurityContextLogoutHandler}. {@code WebSecurityOidcTestContext} supplies an in-memory
+ * authorized-client repository keyed by registration id and principal name, which ignores the
+ * request and the session, so a token stays reachable after session invalidation and a reordering
+ * regression would still pass here. That property is asserted structurally in CSL instead, by
+ * {@code
+ * ScopedWebappSecurityChainBuilderScopedTest#primaryOidcChainRevokesRefreshTokenBeforeInvalidatingTheSession}.
  *
  * <p>A real {@link HttpServer} stands in for the IdP: CSL builds the handler's HTTP client itself
  * and holds it statically, so there is no transport to replace, and the revocation endpoint is the
@@ -80,6 +89,7 @@ public class OidcRefreshTokenRevocationWiringTest extends AbstractWebSecurityCon
   private static final String PRINCIPAL_NAME = "user";
 
   private static final AtomicReference<String> RECEIVED_BODY = new AtomicReference<>();
+  private static final AtomicReference<String> RECEIVED_AUTHORIZATION = new AtomicReference<>();
   private static HttpServer idp;
 
   @Autowired private OAuth2AuthorizedClientRepository authorizedClientRepository;
@@ -92,6 +102,7 @@ public class OidcRefreshTokenRevocationWiringTest extends AbstractWebSecurityCon
         exchange -> {
           RECEIVED_BODY.set(
               new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8));
+          RECEIVED_AUTHORIZATION.set(exchange.getRequestHeaders().getFirst("Authorization"));
           exchange.sendResponseHeaders(200, -1);
           exchange.close();
         });
@@ -111,6 +122,7 @@ public class OidcRefreshTokenRevocationWiringTest extends AbstractWebSecurityCon
   @BeforeEach
   void forgetPreviousRequest() {
     RECEIVED_BODY.set(null);
+    RECEIVED_AUTHORIZATION.set(null);
   }
 
   @Test
@@ -118,18 +130,32 @@ public class OidcRefreshTokenRevocationWiringTest extends AbstractWebSecurityCon
     // given an OIDC-authenticated user whose session holds a refresh token
 
     // when the webapp logs out
-    mockMvcTester
-        .post()
-        .uri("https://localhost/logout")
-        .header("Sec-Fetch-Dest", "empty")
-        .with(oidcLoginHoldingARefreshToken())
-        .exchange();
+    final var result =
+        mockMvcTester
+            .post()
+            .uri("https://localhost/logout")
+            .header("Sec-Fetch-Dest", "empty")
+            .with(oidcLoginHoldingARefreshToken())
+            .exchange();
 
-    // then the IdP was asked to revoke that token, as RFC 7009 specifies
+    // then logout itself succeeds. 204 because this registration publishes no end-session
+    // endpoint, so there is no IdP URL for the webapp to navigate to afterwards.
+    assertThat(result).hasStatus(HttpStatus.NO_CONTENT);
+
+    // and the IdP was asked to revoke that token, as RFC 7009 specifies
     assertThat(RECEIVED_BODY.get()).as("the IdP received no revocation request").isNotNull();
     assertThat(formFields(RECEIVED_BODY.get()))
         .containsEntry("token", REFRESH_TOKEN)
         .containsEntry("token_type_hint", "refresh_token");
+
+    // and it authenticated the request. The stand-in IdP answers 200 to anything, so without this
+    // a regression that dropped the client credentials would still pass.
+    assertThat(RECEIVED_AUTHORIZATION.get())
+        .as("the revocation request was sent unauthenticated")
+        .isEqualTo(
+            "Basic "
+                + Base64.getEncoder()
+                    .encodeToString("example:example-secret".getBytes(StandardCharsets.UTF_8)));
   }
 
   /**
