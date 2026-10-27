@@ -75,7 +75,7 @@ jobs:
       - uses: ./.github/actions/setup-build
         with:
           dockerhub-readonly:  ${{ matrix.os != 'macos' && matrix.os != 'windows' }}
-          skip-maven-cache: ${{ inputs.build-tool == 'gradle' }}
+          build-tool: ${{ inputs.build-tool }}
           vault-address: ${{ secrets.VAULT_ADDR }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
@@ -88,10 +88,6 @@ jobs:
           # Must stay above the slowest observed build (~11.4min on windows).
           retry-max-attempts: 2
           retry-timeout-minutes: 15
-      - uses: gradle/actions/setup-gradle@50e97c2cd7a37755bbfafc9c5b7cafaece252f6e # v6.1.0
-        if: ${{ inputs.build-tool == 'gradle' }}
-        with:
-          cache-read-only: true
       - uses: ./.github/actions/build-zeebe-gradle
         id: build-zeebe-gradle
         if: ${{ inputs.build-tool == 'gradle' }}
@@ -416,6 +412,7 @@ jobs:
       - uses: ./.github/actions/setup-build
         with:
           dockerhub-readonly: true
+          build-tool: ${{ inputs.build-tool }}
           vault-address: ${{ secrets.VAULT_ADDR }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
@@ -425,10 +422,6 @@ jobs:
         if: ${{ inputs.build-tool == 'maven' }}
         with:
           maven-extra-args: -T1C -PskipFrontendBuild
-      - uses: gradle/actions/setup-gradle@50e97c2cd7a37755bbfafc9c5b7cafaece252f6e # v6.1.0
-        if: ${{ inputs.build-tool == 'gradle' }}
-        with:
-          cache-read-only: true
       - uses: ./.github/actions/build-zeebe-gradle
         id: build-zeebe-gradle
         if: ${{ inputs.build-tool == 'gradle' }}

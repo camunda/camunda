@@ -172,7 +172,7 @@ jobs:
           vault-address: ${{ secrets.VAULT_ADDR }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
-          skip-maven-cache: ${{ inputs.build-tool == 'gradle' }}
+          build-tool: ${{ inputs.build-tool }}
       # Authenticate gcloud when consuming the shared distball (see restore step below).
       # Timed out here directly (not via setup-build) so a Vault/WIF hang fails fast instead
       # of silently eating the whole job timeout-minutes budget -- see INC-6820.
@@ -216,10 +216,6 @@ jobs:
         id: build-zeebe
         with:
           maven-extra-args: -T1C -PskipFrontendBuild
-      - uses: gradle/actions/setup-gradle@50e97c2cd7a37755bbfafc9c5b7cafaece252f6e # v6.1.0
-        if: ${{ inputs.build-tool == 'gradle' }}
-        with:
-          cache-read-only: true
       - name: Create build output log file
         run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> "$GITHUB_ENV"
       # To communicate to the IT what database to expect and run against:

@@ -1152,7 +1152,7 @@ jobs:
         with:
           locale: C.UTF-8
           maven-cache-key-modifier: ut-general-unit-tests
-          skip-maven-cache: ${{ needs.detect-changes.outputs.build-tool == 'gradle' }}
+          build-tool: ${{ needs.detect-changes.outputs.build-tool }}
           vault-address: ${{ secrets.VAULT_ADDR }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
@@ -1161,10 +1161,6 @@ jobs:
         if: ${{ needs.detect-changes.outputs.build-tool == 'maven' }}
         with:
           maven-extra-args: -T1C -Dquickly
-      - uses: gradle/actions/setup-gradle@50e97c2cd7a37755bbfafc9c5b7cafaece252f6e # v6.1.0
-        if: ${{ needs.detect-changes.outputs.build-tool == 'gradle' }}
-        with:
-          cache-read-only: true
       - name: Create build output log file
         run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> "$GITHUB_ENV"
       # shellcheck disabled because the list of modules needs to contain single quotes
@@ -1280,7 +1276,7 @@ jobs:
         with:
           locale: C.UTF-8
           maven-cache-key-modifier: ut-zeebe
-          skip-maven-cache: ${{ needs.detect-changes.outputs.build-tool == 'gradle' }}
+          build-tool: ${{ needs.detect-changes.outputs.build-tool }}
           vault-address: ${{ secrets.VAULT_ADDR }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
@@ -1289,10 +1285,6 @@ jobs:
         if: ${{ needs.detect-changes.outputs.build-tool == 'maven' }}
         with:
           maven-extra-args: -T1C -Dquickly
-      - uses: gradle/actions/setup-gradle@50e97c2cd7a37755bbfafc9c5b7cafaece252f6e # v6.1.0
-        if: ${{ needs.detect-changes.outputs.build-tool == 'gradle' }}
-        with:
-          cache-read-only: true
       - name: Create build output log file
         run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> "$GITHUB_ENV"
       - name: Maven Run Test (Zeebe)
@@ -1645,7 +1637,7 @@ jobs:
           locale: C.UTF-8
           dockerhub-readonly: true
           maven-cache-key-modifier: it-rdbms
-          skip-maven-cache: ${{ needs.detect-changes.outputs.build-tool == 'gradle' }}
+          build-tool: ${{ needs.detect-changes.outputs.build-tool }}
           vault-address: ${{ secrets.VAULT_ADDR }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
@@ -1668,10 +1660,6 @@ jobs:
         if: steps.is-fork.outputs.is-fork == 'true' && needs.detect-changes.outputs.build-tool == 'maven'
         with:
           maven-extra-args: -T1C -PskipFrontendBuild
-      - uses: gradle/actions/setup-gradle@50e97c2cd7a37755bbfafc9c5b7cafaece252f6e # v6.1.0
-        if: needs.detect-changes.outputs.build-tool == 'gradle'
-        with:
-          cache-read-only: true
       - name: Create build output log file
         run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> "$GITHUB_ENV"
       # Run integration tests with RDBMS database
@@ -1906,6 +1894,7 @@ jobs:
           locale: C.UTF-8
           dockerhub-readonly: true
           maven-cache-key-modifier: build-shared
+          build-tool: ${{ needs.detect-changes.outputs.build-tool }}
           vault-address: ${{ secrets.VAULT_ADDR }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
@@ -1946,10 +1935,6 @@ jobs:
         if: ${{ steps.is-fork.outputs.is-fork == 'true' && needs.detect-changes.outputs.build-tool == 'maven' }}
         with:
           maven-extra-args: -T1C -PskipFrontendBuild
-      - uses: gradle/actions/setup-gradle@50e97c2cd7a37755bbfafc9c5b7cafaece252f6e # v6.1.0
-        if: ${{ needs.detect-changes.outputs.build-tool == 'gradle' }}
-        with:
-          cache-read-only: true
       - uses: ./.github/actions/build-zeebe-gradle
         id: build-zeebe-gradle
         if: ${{ needs.detect-changes.outputs.build-tool == 'gradle' && matrix.docker-file != '' }}
