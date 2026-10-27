@@ -96,6 +96,19 @@ public final class ElementInstanceStateTest {
   }
 
   @Test
+  public void shouldNotLookUpElementInstanceForNegativeKey() {
+    // given - a row stored under -1, which a real lookup would find
+    elementInstanceState.newInstance(
+        -1, createProcessInstanceRecord(), ProcessInstanceIntent.ELEMENT_ACTIVATED);
+
+    // when
+    final ElementInstance instance = elementInstanceState.getInstance(-1L);
+
+    // then - null despite the stored row means getInstance skipped the lookup
+    assertThat(instance).isNull();
+  }
+
+  @Test
   public void shouldFindChildInstance() {
     // given
     final ProcessInstanceRecord processInstanceRecord = createProcessInstanceRecord();
