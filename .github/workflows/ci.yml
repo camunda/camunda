@@ -2658,8 +2658,11 @@ jobs:
   utils-c8-e2e-suite-full-result:
     name: "C8 E2E Test Suite / Full Result (non-blocking)"
     needs: [ detect-changes, c8-e2e-test-suite-tests ]
+    # !cancelled() (not always()): run whether the suite passed or failed, but
+    # not on a cancelled/superseded run, where missing artifacts are expected and
+    # a red here would be noise.
     if: >-
-      always()
+      !cancelled()
       && needs.detect-changes.outputs.c8-e2e-suite-run-tests == 'true'
       && github.event.pull_request.head.repo.fork != true
     runs-on: ubuntu-latest
@@ -2682,8 +2685,8 @@ jobs:
           shopt -s nullglob globstar
           reports=(suite-json-reports/**/results.json)
           if [ "${#reports[@]}" -eq 0 ]; then
-            echo "No suite JSON reports found — the suite produced no results; nothing to report."
-            exit 0
+            echo "::error::No suite JSON reports were produced, but the suite was expected to run (the run was not cancelled). Something stopped the suite from writing or uploading its reports — treating as a failure. Check the suite jobs for a setup/upload problem."
+            exit 1
           fi
           echo "Scanning ${#reports[@]} report(s) for any test failure..."
           node -e '
@@ -2691,7 +2694,7 @@ jobs:
             const failed = [];
             for (const p of process.argv.slice(1)) {
               let r;
-              try { r = JSON.parse(fs.readFileSync(p, "utf8")); } catch { continue; }
+              try { r = JSON.parse(fs.readFileSync(p, "utf8")); } catch { failed.push(p + " (unreadable or invalid JSON report)"); continue; }
               const walk = (s) => {
                 for (const sp of s?.specs ?? []) if (sp?.ok === false) failed.push(sp.title ?? sp.file ?? p);
                 for (const c of s?.suites ?? []) walk(c);
