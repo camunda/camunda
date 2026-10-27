@@ -173,10 +173,12 @@ blocks the merge only when a spec your PR **added or modified** fails. Failures 
 untouched tests are reported in the uploaded report but do not block — keeping the
 historically flaky parts of the suite from blocking unrelated changes.
 
-Run the on-demand workflow below when you need the full suite to gate (for example a
-change to a shared page object, fixture or config that can break untouched tests without
-changing any spec file), or for a pull request from a fork, which the automatic check
-skips.
+Because the full suite runs, a change to a shared page object, fixture or config that
+breaks untouched tests still shows up in the uploaded report even though it does not block
+— review those failures and confirm they are pre-existing before merging. You do not need
+a separate on-demand run just to surface them. Run the on-demand workflow below only for a
+pull request from a fork (which the automatic check skips), or when you want the whole
+suite to gate red/green instead of reading the report yourself.
 
 > **Product code + test in the same PR:** the ES API and E2E (browser) jobs run against the
 > published `camunda/camunda:SNAPSHOT` image, so they exercise your test changes against the
@@ -232,11 +234,15 @@ We welcome contributions! To contribute:
 > merge on the specs you added or modified. Do not request a review while that check is red for one
 > of your own tests.
 >
-> The automatic check does **not** gate on untouched tests, and it does not run on fork PRs. When
-> your change can break tests you did not edit (a shared page object, fixture or config), or your PR
-> is from a fork, also run the [on-demand workflow](https://github.com/camunda/camunda/actions/workflows/c8-orchestration-cluster-e2e-tests-on-demand.yml)
-> against your branch, wait for it to complete, and document any failures in the PR description,
-> confirming they are pre-existing and not regressions caused by your changes.
+> The automatic check runs the **whole** suite but does **not** block on untouched tests, so a
+> shared page object, fixture or config change that breaks tests you did not edit still shows up in
+> the uploaded report — review those failures and confirm they are pre-existing, not caused by your
+> change. You do not need a separate on-demand run just to surface them.
+>
+> Run the [on-demand workflow](https://github.com/camunda/camunda/actions/workflows/c8-orchestration-cluster-e2e-tests-on-demand.yml)
+> only for a PR **from a fork**, which the automatic check does not run, or when you want the whole
+> suite to gate red/green instead of reading the report yourself; document any failures in the PR
+> description, confirming they are pre-existing.
 
 ### Project Board
 
