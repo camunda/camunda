@@ -11,6 +11,7 @@ import static io.camunda.zeebe.util.Unit.unit;
 
 import io.camunda.zeebe.scheduler.ActorScheduler.ActorSchedulerBuilder;
 import io.camunda.zeebe.util.Loggers;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ThreadLocalRandom;
 
@@ -24,6 +25,7 @@ public abstract class ActorThreadGroup {
   protected final WorkStealingGroup tasks;
   protected final int numOfThreads;
   private final String schedulerName;
+  private final CpuBudget cpuBudget;
 
   public ActorThreadGroup(
       final String groupName,
@@ -33,6 +35,7 @@ public abstract class ActorThreadGroup {
     this.groupName = groupName;
     this.numOfThreads = numOfThreads;
     this.schedulerName = schedulerName;
+    cpuBudget = builder.getCpuBudget();
 
     tasks = new WorkStealingGroup(numOfThreads);
 
@@ -73,6 +76,15 @@ public abstract class ActorThreadGroup {
     for (final ActorThread actorThread : threads) {
       actorThread.start();
     }
+  }
+
+  /** The CPU budget shared by the threads of the scheduler, or null if they are not limited. */
+  public CpuBudget getCpuBudget() {
+    return cpuBudget;
+  }
+
+  public List<ActorThread> getThreads() {
+    return List.of(threads);
   }
 
   public String getSchedulerName() {

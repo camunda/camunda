@@ -50,6 +50,7 @@ public class ActorThread extends Thread implements Consumer<Runnable> {
   private final TaskScheduler taskScheduler;
   private final BoundedArrayQueue<ActorJob> jobs = new BoundedArrayQueue<>(2048);
   private final ActorThreadGroup actorThreadGroup;
+  private final CpuBudget cpuBudget;
   private volatile ActorThreadState state;
 
   public ActorThread(
@@ -87,6 +88,7 @@ public class ActorThread extends Thread implements Consumer<Runnable> {
     this.clock = clock != null ? clock : new DefaultActorClock();
     timerJobQueue = timerQueue != null ? timerQueue : new ActorTimerQueue(this.clock);
     actorThreadGroup = threadGroup;
+    cpuBudget = threadGroup != null ? threadGroup.getCpuBudget() : null;
     this.taskScheduler = taskScheduler;
     this.idleStrategy = new ActorTaskRunnerIdleStrategy(idleStrategy);
   }
@@ -97,7 +99,7 @@ public class ActorThread extends Thread implements Consumer<Runnable> {
     clock.update();
     timerJobQueue.processExpiredTimers(clock);
 
-    currentTask = taskScheduler.getNextTask();
+    currentTask = cpuBudget != null && cpuBudget.isExhausted() ? null : taskScheduler.getNextTask();
 
     if (currentTask != null) {
       final var metrics = currentTask.getActorMetrics();

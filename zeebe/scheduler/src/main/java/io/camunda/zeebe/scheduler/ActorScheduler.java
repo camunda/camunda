@@ -10,11 +10,13 @@ package io.camunda.zeebe.scheduler;
 import io.camunda.zeebe.scheduler.clock.ActorClock;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.micrometer.core.instrument.MeterRegistry;
+import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
+import java.util.stream.Stream;
 import org.agrona.concurrent.BackoffIdleStrategy;
 import org.agrona.concurrent.IdleStrategy;
 
@@ -83,6 +85,14 @@ public final class ActorScheduler implements AutoCloseable, ActorSchedulingServi
     }
   }
 
+  /** All actor threads of this scheduler, CPU-bound and IO-bound. */
+  public List<ActorThread> getThreads() {
+    return Stream.concat(
+            actorTaskExecutor.getCpuBoundThreads().getThreads().stream(),
+            actorTaskExecutor.getIoBoundThreads().getThreads().stream())
+        .toList();
+  }
+
   public Future<Void> stop() {
     if (state.compareAndSet(SchedulerState.RUNNING, SchedulerState.TERMINATING)) {
 
@@ -140,6 +150,7 @@ public final class ActorScheduler implements AutoCloseable, ActorSchedulingServi
         ActorSchedulerBuilder::defaultIdleStrategySupplier;
     private MeterRegistry meterRegistry;
     private ActorMetrics actorMetrics = ActorMetrics.disabled();
+    private CpuBudget cpuBudget;
 
     public static IdleStrategy defaultIdleStrategySupplier() {
       return new BackoffIdleStrategy(
@@ -184,6 +195,16 @@ public final class ActorScheduler implements AutoCloseable, ActorSchedulingServi
     public ActorSchedulerBuilder setIdleStrategySupplier(
         final Supplier<IdleStrategy> idleStrategySupplier) {
       this.idleStrategySupplier = Objects.requireNonNull(idleStrategySupplier);
+      return this;
+    }
+
+    public CpuBudget getCpuBudget() {
+      return cpuBudget;
+    }
+
+    /** Limits the CPU time of all actor threads of the scheduler. Unlimited if not set. */
+    public ActorSchedulerBuilder setCpuBudget(final CpuBudget cpuBudget) {
+      this.cpuBudget = cpuBudget;
       return this;
     }
 
