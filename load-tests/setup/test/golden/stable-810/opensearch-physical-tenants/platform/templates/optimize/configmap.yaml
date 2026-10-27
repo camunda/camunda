@@ -51,7 +51,7 @@ data:
       identity:
         clientId: "optimize"
         audience: "optimize-api"
-        issuer: "http://localhost:18080/auth/realms/camunda-platform"
+        issuer: "http://keycloak:18080/auth/realms/camunda-platform"
         issuerBackendUrl: "http://keycloak:18080/auth/realms/camunda-platform"
       security:
         authentication:
@@ -62,7 +62,7 @@ data:
             audiences:
               - "optimize"
               - "optimize-api"
-            issuer-uri: "http://localhost:18080/auth/realms/camunda-platform"
+            issuer-uri: "http://keycloak:18080/auth/realms/camunda-platform"
             redirect-uri: "http://localhost:8083/api/authentication/callback"
   application.yml: |
     historyCleanup:

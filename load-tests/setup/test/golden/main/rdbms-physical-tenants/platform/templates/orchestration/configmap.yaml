@@ -140,7 +140,7 @@ data:
             audiences:
               - "orchestration"
               - "orchestration-api"
-            issuer-uri: "http://localhost:18080/auth/realms/camunda-platform"
+            issuer-uri: "http://keycloak:18080/auth/realms/camunda-platform"
             redirect-uri: "http://localhost:8080/sso-callback"
             authenticationRefreshInterval: "PT30S"
           method: "oidc"
