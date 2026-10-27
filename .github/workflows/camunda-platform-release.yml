@@ -1192,6 +1192,13 @@ jobs:
               "camunda_maven_central_deployment_id": "${{ steps.extract-deployment-id.outputs.deploymentId }}",
               "camunda_repository": "${{ github.repository }}"
             }
+      - name: Mask Zeebe client secret exported by the Camunda 8 action
+        if: always()
+        shell: bash
+        run: |
+          # the action exports ZEEBE_CLIENT_SECRET via GITHUB_ENV without masking it,
+          # so every later step would print it in its env block
+          if [[ -n "${ZEEBE_CLIENT_SECRET:-}" ]]; then echo "::add-mask::${ZEEBE_CLIENT_SECRET}"; fi
       - name: Send success Slack notification
         if: ${{ !inputs.dryRun && !inputs.releaseProcessDryRun && needs.github.outputs.releaseBodyUpdateOutcome != 'failure' }}
         uses: slackapi/slack-github-action@0d95c9a7becc1e6e297d76df9bc735c44f4cbcbc # v3.0.5
@@ -1345,6 +1352,13 @@ jobs:
               "camunda_maven_central_deployment_id": "${{ steps.extract-deployment-id.outputs.deploymentId }}",
               "camunda_repository": "${{ github.repository }}"
             }
+      - name: Mask Zeebe client secret exported by the Camunda 8 action
+        if: always()
+        shell: bash
+        run: |
+          # the action exports ZEEBE_CLIENT_SECRET via GITHUB_ENV without masking it,
+          # so every later step would print it in its env block
+          if [[ -n "${ZEEBE_CLIENT_SECRET:-}" ]]; then echo "::add-mask::${ZEEBE_CLIENT_SECRET}"; fi
       - name: Send failure Slack notification
         if: ${{ !inputs.dryRun && !inputs.releaseProcessDryRun }}
         uses: slackapi/slack-github-action@0d95c9a7becc1e6e297d76df9bc735c44f4cbcbc # v3.0.5

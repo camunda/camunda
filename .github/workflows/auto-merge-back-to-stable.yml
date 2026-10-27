@@ -253,6 +253,13 @@ jobs:
               "workflow_run_url": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
             }
 
+      - name: Mask Zeebe client secret exported by the Camunda 8 action
+        if: always()
+        shell: bash
+        run: |
+          # the action exports ZEEBE_CLIENT_SECRET via GITHUB_ENV without masking it,
+          # so every later step would print it in its env block
+          if [[ -n "${ZEEBE_CLIENT_SECRET:-}" ]]; then echo "::add-mask::${ZEEBE_CLIENT_SECRET}"; fi
       - name: Dry run summary
         if: always() && env.DRY_RUN == 'true'
         run: |
