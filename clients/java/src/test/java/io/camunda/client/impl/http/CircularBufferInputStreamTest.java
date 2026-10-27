@@ -64,4 +64,39 @@ class CircularBufferInputStreamTest {
     assertThat(data).containsExactly(1, 2, 3);
     assertThat(stream.read()).isEqualTo(-1);
   }
+
+  @Test
+  @Timeout(value = 30, unit = TimeUnit.SECONDS)
+  void shouldKeepTheFirstErrorWhenSeveralErrorsAreSignalled() {
+    // given
+    final CircularBufferInputStream stream = new CircularBufferInputStream(16);
+    final IOException firstError = new IOException("connection reset");
+    stream.signalError(firstError);
+
+    // when
+    stream.signalError(new IOException("released before the response was fully received"));
+
+    // then
+    assertThatThrownBy(stream::read).isSameAs(firstError);
+    assertThatThrownBy(() -> stream.write(ByteBuffer.wrap(new byte[] {1}))).isSameAs(firstError);
+  }
+
+  @Test
+  @Timeout(value = 30, unit = TimeUnit.SECONDS)
+  void shouldIgnoreErrorsSignalledAfterEndOfStream() throws IOException {
+    // given
+    final CircularBufferInputStream stream = new CircularBufferInputStream(16);
+    stream.write(ByteBuffer.wrap(new byte[] {1, 2, 3}));
+    stream.endOfStream();
+
+    // when
+    stream.signalError(new IOException("released after the response was fully received"));
+
+    // then, the fully received data is still readable and the stream ends normally
+    final byte[] data = new byte[3];
+    assertThat(stream.read(data, 0, 3)).isEqualTo(3);
+    assertThat(data).containsExactly(1, 2, 3);
+    assertThat(stream.read()).isEqualTo(-1);
+    assertThat(stream.read()).isEqualTo(-1);
+  }
 }
