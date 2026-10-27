@@ -196,7 +196,9 @@ public class OpensearchEngineClientIT {
   @Test
   void shouldReadShardCountsForExistingIndices() {
     // given
-    final var index = createTestIndexDescriptor("index_name", "/mappings.json");
+    final var index =
+        createTestIndexDescriptor(
+            "index_name_shards-" + ENGINE_CLIENT_TEST_MARKERS, "/mappings.json");
     final var settings = new IndexConfiguration();
     settings.setNumberOfShards(3);
     opensearchEngineClient.createIndex(index, settings);
