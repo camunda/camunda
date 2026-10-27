@@ -282,11 +282,15 @@ We welcome contributions! To contribute:
 > merge on the specs you added or modified. Do not request a review while that check is red for one
 > of your own tests.
 >
-> The automatic check does **not** gate on untouched tests, and it does not run on fork PRs. When
-> your change can break tests you did not edit (a shared page object, fixture or config), or your PR
-> is from a fork, also run the [on-demand workflow](https://github.com/camunda/camunda/actions/workflows/c8-orchestration-cluster-e2e-tests-on-demand.yml)
-> against your branch, wait for it to complete, and document any failures in the PR description,
-> confirming they are pre-existing and not regressions caused by your changes.
+> The automatic check runs the **whole** suite but does **not** block on untouched tests, so a
+> shared page object, fixture or config change that breaks tests you did not edit still shows up in
+> the uploaded report — review those failures and confirm they are pre-existing, not caused by your
+> change. You do not need a separate on-demand run just to surface them.
+>
+> Run the [on-demand workflow](https://github.com/camunda/camunda/actions/workflows/c8-orchestration-cluster-e2e-tests-on-demand.yml)
+> only for a PR **from a fork**, which the automatic check does not run, or when you want the whole
+> suite to gate red/green instead of reading the report yourself; document any failures in the PR
+> description, confirming they are pre-existing.
 
 ### Project Board
 
