@@ -31,6 +31,7 @@ import io.camunda.zeebe.engine.state.immutable.SuspensionState;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.util.Either;
+import java.util.OptionalInt;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -92,9 +93,12 @@ public final class ProcessProcessor implements BpmnElementContainerProcessor<Exe
   public Either<Failure, ?> onComplete(
       final ExecutableProcess element, final BpmnElementContext context) {
 
+    final var droppedCommands = finishResumingIfPending(context);
     eventSubscriptionBehavior.unsubscribeFromEvents(context);
     compensationSubscriptionBehaviour.deleteSubscriptionsOfProcessInstance(context);
     agentInstanceBehavior.completeAgentInstancesOfProcessInstance(element, context);
+
+    droppedCommands.ifPresent(count -> recordResumed(context.getElementInstanceKey(), count));
     return SUCCESS;
   }
 
@@ -106,7 +110,6 @@ public final class ProcessProcessor implements BpmnElementContainerProcessor<Exe
     // event applier will delete the element instance
     processResultSenderBehavior.sendResult(context);
 
-    finishResumingIfPending(context);
     final var result =
         transitionTo(
             element,
@@ -122,6 +125,7 @@ public final class ProcessProcessor implements BpmnElementContainerProcessor<Exe
   @Override
   public TransitionOutcome onTerminate(
       final ExecutableProcess element, final BpmnElementContext context) {
+    final var droppedCommands = finishResumingIfPending(context);
     if (element.hasExecutionListeners()) {
       jobBehavior.cancelJob(context);
     }
@@ -131,6 +135,7 @@ public final class ProcessProcessor implements BpmnElementContainerProcessor<Exe
     compensationSubscriptionBehaviour.deleteSubscriptionsOfProcessInstance(context);
 
     final var noActiveChildInstances = stateTransitionBehavior.terminateChildInstances(context);
+    droppedCommands.ifPresent(count -> recordResumed(context.getElementInstanceKey(), count));
     return noActiveChildInstances ? TransitionOutcome.CONTINUE : TransitionOutcome.AWAIT;
   }
 
@@ -144,7 +149,6 @@ public final class ProcessProcessor implements BpmnElementContainerProcessor<Exe
     final int droppedCommands = wasSuspended ? suspensionState.countBufferedCommands(piKey) : 0;
 
     agentInstanceBehavior.completeAgentInstancesOfProcessInstance(element, terminationContext);
-    finishResumingIfPending(terminationContext);
     transitionTo(
         element,
         terminationContext,
@@ -161,17 +165,29 @@ public final class ProcessProcessor implements BpmnElementContainerProcessor<Exe
   }
 
   /**
-   * Writes {@code RESUMED} if the instance ends while {@code RESUMING}. The resume chain is then
-   * rejected, so without this no record would mark the resume as finished (e.g. for batch resume
-   * items). Must be written before the end event so the instance's final state is the end state.
+   * Writes {@code RESUMED} if the instance starts ending while {@code RESUMING}. The resume chain
+   * is then rejected, so without this no record would mark the resume as finished (e.g. for batch
+   * resume items). It is written when the ending starts, not when it finishes, because end and
+   * cancel listener jobs cannot complete while the instance is {@code RESUMING}.
+   *
+   * @return the number of buffered commands dropped with the marker, or empty if not resuming
    */
-  private void finishResumingIfPending(final BpmnElementContext context) {
+  private OptionalInt finishResumingIfPending(final BpmnElementContext context) {
     final long piKey = context.getElementInstanceKey();
     if (suspensionState.getSuspensionState(piKey) != SuspensionState.State.RESUMING) {
-      return;
+      return OptionalInt.empty();
     }
 
+    final int droppedCommands = suspensionState.countBufferedCommands(piKey);
     stateWriter.appendFollowUpEvent(piKey, ProcessInstanceIntent.RESUMED, context.getRecordValue());
+    return OptionalInt.of(droppedCommands);
+  }
+
+  /** Called after all writes, so a failed batch does not leave the metrics updated. */
+  private void recordResumed(final long piKey, final int droppedCommands) {
+    if (droppedCommands > 0) {
+      suspensionMetrics.commandsDropped(droppedCommands);
+    }
     suspensionMetrics.stopResumeDuration(piKey);
     suspensionMetrics.instanceResumed();
   }

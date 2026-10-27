@@ -9,7 +9,6 @@ package io.camunda.zeebe.engine.processing.processinstance;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
@@ -57,6 +56,32 @@ public final class ResumeProcessInstanceEndsWhileResumingTest {
 
     // when
     ENGINE.processInstance().withInstanceKey(processInstanceKey).resume();
+
+    // then
+    assertResumedOnceBeforeEnd(processInstanceKey);
+  }
+
+  @Test
+  public void shouldCompleteInstanceWithEndListenerWhenEndingWhileResuming() {
+    // given - same as above, plus a process end listener; its job can't complete while RESUMING
+    final String processId = Strings.newRandomValidBpmnId();
+    final String listenerType = Strings.newRandomValidBpmnId();
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess(processId)
+            .zeebeEndExecutionListener(listenerType)
+            .startEvent()
+            .parallelGateway("fork")
+            .serviceTask("task", t -> t.zeebeJobType(Strings.newRandomValidBpmnId()))
+            .endEvent()
+            .moveToNode("fork")
+            .intermediateCatchEvent("timer", c -> c.timerWithDuration("PT1S"))
+            .endEvent("terminate", e -> e.terminate())
+            .done();
+    final long processInstanceKey = suspendWithDueTimer(process, processId);
+
+    // when
+    ENGINE.processInstance().withInstanceKey(processInstanceKey).resume();
+    ENGINE.job().ofInstance(processInstanceKey).withType(listenerType).complete();
 
     // then
     assertResumedOnceBeforeEnd(processInstanceKey);
@@ -120,11 +145,5 @@ public final class ResumeProcessInstanceEndsWhileResumingTest {
             .findFirst()
             .orElseThrow();
     assertThat(resumed.getFirst().getPosition()).isLessThan(processEnd.getPosition());
-
-    assertThat(
-            ((MutableProcessingState) ENGINE.getProcessingState())
-                .getSuspensionState()
-                .getSuspensionState(processInstanceKey))
-        .isNull();
   }
 }

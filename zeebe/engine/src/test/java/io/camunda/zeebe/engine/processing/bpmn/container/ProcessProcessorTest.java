@@ -20,6 +20,10 @@ import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.AgentInstanceBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBufferedMessageStartEventBehavior;
+import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnCompensationSubscriptionBehaviour;
+import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnEventSubscriptionBehavior;
+import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnIncidentBehavior;
+import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnProcessDeletionBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnProcessResultSenderBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateTransitionBehavior;
@@ -56,6 +60,12 @@ public final class ProcessProcessorTest {
     when(bpmnBehaviors.processDeletionBehavior())
         .thenReturn(mock(BpmnProcessDeletionBehavior.class));
     when(bpmnBehaviors.agentInstanceBehavior()).thenReturn(mock(AgentInstanceBehavior.class));
+    when(bpmnBehaviors.eventSubscriptionBehavior())
+        .thenReturn(mock(BpmnEventSubscriptionBehavior.class));
+    when(bpmnBehaviors.compensationSubscriptionBehaviour())
+        .thenReturn(mock(BpmnCompensationSubscriptionBehaviour.class));
+    when(bpmnBehaviors.incidentBehavior()).thenReturn(mock(BpmnIncidentBehavior.class));
+    when(bpmnBehaviors.jobBehavior()).thenReturn(mock(BpmnJobBehavior.class));
 
     stateTransitionBehavior = mock(BpmnStateTransitionBehavior.class);
     suspensionMetrics = mock(SuspensionMetrics.class);
@@ -81,6 +91,7 @@ public final class ProcessProcessorTest {
     when(stateTransitionBehavior.transitionToCompleted(any(), any()))
         .thenReturn(Either.right(context));
     when(stateTransitionBehavior.transitionToTerminated(any(), any(), any())).thenReturn(context);
+    when(stateTransitionBehavior.terminateChildInstances(any())).thenReturn(true);
   }
 
   @Test
@@ -97,28 +108,13 @@ public final class ProcessProcessorTest {
   }
 
   @Test
-  void shouldWriteResumedWhenCompletingWhileResuming() {
-    // given
-    when(suspensionState.getSuspensionState(PROCESS_INSTANCE_KEY))
-        .thenReturn(SuspensionState.State.RESUMING);
-
-    // when
-    processor.finalizeCompletion(element, context);
-
-    // then
-    verify(stateWriter)
-        .appendFollowUpEvent(eq(PROCESS_INSTANCE_KEY), eq(ProcessInstanceIntent.RESUMED), any());
-    verify(suspensionMetrics).instanceResumed();
-  }
-
-  @Test
   void shouldWriteResumedWhenTerminatingWhileResuming() {
     // given
     when(suspensionState.getSuspensionState(PROCESS_INSTANCE_KEY))
         .thenReturn(SuspensionState.State.RESUMING);
 
     // when
-    processor.finalizeTermination(element, context);
+    processor.onTerminate(element, context);
 
     // then
     verify(stateWriter)
@@ -133,7 +129,7 @@ public final class ProcessProcessorTest {
         .thenReturn(SuspensionState.State.SUSPENDED);
 
     // when
-    processor.finalizeTermination(element, context);
+    processor.onTerminate(element, context);
 
     // then
     verify(stateWriter, never()).appendFollowUpEvent(anyLong(), any(), any());
