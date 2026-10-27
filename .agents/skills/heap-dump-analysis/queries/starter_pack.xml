@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- From a DRG cache incident on 8.9 brokers. Select only ids, sizes, counts, numeric
+     fields and class names (references/privacy.md). Check names for the customer's
+     version first (references/queries.md). -->
+<section name="Starter queries" xmlns="http://www.eclipse.org/mat/report.xsd">
+  <param key="filename_suffix" value="starter" />
+  <param key="format" value="csv" />
+  <param key="limit" value="10000000" />
+
+  <!-- class, objects, shallow, retained (approximate). Sum of shallow = reachable heap. -->
+  <query name="histogram">
+    <param key="sort_column" value="#3" />
+    <param key="derived_data_column" value="_default_=APPROXIMATE" />
+    <command>histogram</command>
+  </query>
+  <!-- class, objects, shallow: garbage MAT removed at parse time -->
+  <query name="unreachable">
+    <command>unreachable_objects</command>
+  </query>
+  <!-- Objects that GC roots keep alive on their own, above 1 MiB -->
+  <query name="top_dominators">
+    <command>oql "SELECT o.@objectId AS id, classof(o).@name AS class, o.@retainedHeapSize AS retained FROM OBJECTS (SELECT OBJECTS a FROM OBJECTS (dominators(-1)) a) o WHERE o.@retainedHeapSize > 1048576"</command>
+  </query>
+  <!-- Partition of each Db*State, through its inbound reference from ProcessingDbState -->
+  <query name="engine_states">
+    <command>oql "SELECT s.@objectId AS id, classof(s).@name AS class, s.@retainedHeapSize AS retained, eval((SELECT p.partitionId AS pid FROM OBJECTS (SELECT OBJECTS o FROM OBJECTS (SELECT OBJECTS inbounds(r) FROM OBJECTS (s) r) o) p WHERE classof(p).@name = \"io.camunda.zeebe.engine.state.ProcessingDbState\"))[0].pid AS partitionId FROM \"io\.camunda\.zeebe\.engine\.state\..*\.Db[A-Za-z]*State\" s"</command>
+  </query>
+  <!-- DRG cache: DbDecisionState.drgCache, a Guava cache. Join on mapId. -->
+  <query name="decision_states">
+    <command>oql "SELECT s.@objectId AS id, s.@retainedHeapSize AS retained, s.drgCache.localCache.@objectId AS mapId FROM io.camunda.zeebe.engine.state.deployment.DbDecisionState s"</command>
+  </query>
+  <query name="caches">
+    <command>oql "SELECT c.@objectId AS mapId, c.@retainedHeapSize AS retained, c.maxWeight AS maxWeight FROM com.google.common.cache.LocalCache c"</command>
+  </query>
+  <query name="cache_segments">
+    <command>oql "SELECT seg.@objectId AS segId, seg.map.@objectId AS mapId, seg.count AS cnt, seg.maxSegmentWeight AS maxSegWeight FROM com.google.common.cache.LocalCache$Segment seg"</command>
+  </query>
+  <!-- retained is empty while the entry loads. Use segId only where it matches a
+       cache_segments row. -->
+  <query name="drg_entries">
+    <command>oql "SELECT e.@objectId AS entryId, e.key.drgKey.value AS drgKey, e.valueReference.referent.@retainedHeapSize AS retained, dominatorof(e).@objectId AS segId FROM com.google.common.cache.LocalCache$StrongAccessEntry e WHERE e.key.drgKey != null"</command>
+  </query>
+  <query name="deployed_drgs">
+    <command>oql "SELECT d.@objectId AS id, d.@retainedHeapSize AS retained FROM io.camunda.zeebe.engine.state.deployment.DeployedDrg d"</command>
+  </query>
+  <!-- Process cache in DbProcessState, for comparison -->
+  <query name="deployed_processes">
+    <command>oql "SELECT p.@objectId AS id, p.@retainedHeapSize AS retained FROM io.camunda.zeebe.engine.state.deployment.DeployedProcess p"</command>
+  </query>
+</section>
