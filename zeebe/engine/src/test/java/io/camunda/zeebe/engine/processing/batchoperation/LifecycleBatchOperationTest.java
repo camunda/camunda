@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.batchoperation;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationExecutionIntent;
@@ -18,6 +19,10 @@ import java.util.Set;
 import org.junit.Test;
 
 public final class LifecycleBatchOperationTest extends AbstractBatchOperationTest {
+
+  public LifecycleBatchOperationTest() {
+    super(EngineConfiguration.DEFAULT_BATCH_OPERATION_SCHEDULER_INTERVAL);
+  }
 
   @Test
   public void shouldCancelBatchOperation() {

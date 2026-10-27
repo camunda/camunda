@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.batchoperation;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.util.Set;
@@ -23,6 +24,10 @@ import org.junit.Test;
  * pending batch operation in the queue.
  */
 public final class SuspendedBatchOperationBlocksQueueTest extends AbstractBatchOperationTest {
+
+  public SuspendedBatchOperationBlocksQueueTest() {
+    super(EngineConfiguration.DEFAULT_BATCH_OPERATION_SCHEDULER_INTERVAL);
+  }
 
   @Test
   public void shouldNotBlockOtherBatchOperationsWhenOneSuspended() {
