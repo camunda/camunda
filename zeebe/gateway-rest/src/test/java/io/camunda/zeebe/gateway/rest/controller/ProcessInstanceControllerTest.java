@@ -56,10 +56,13 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceResultRecord;
 import io.camunda.zeebe.protocol.record.value.BatchOperationType;
 import io.camunda.zeebe.protocol.record.value.HistoryDeletionType;
+import io.camunda.zeebe.protocol.record.value.ProtectionMode;
 import io.camunda.zeebe.protocol.record.value.RuntimeInstructionType;
+import io.camunda.zeebe.protocol.record.value.VariableMetadataValue;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Stream;
@@ -175,6 +178,82 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
     final var capturedRequest = createRequestCaptor.getValue();
     assertThat(capturedRequest.processDefinitionKey()).isEqualTo(123L);
     assertThat(capturedRequest.tenantId()).isEqualTo("tenantId");
+  }
+
+  @Test
+  void shouldCreateProcessInstancesWithVariablesMetadata() {
+    // given
+    when(processInstanceServices.createProcessInstance(
+            any(ProcessInstanceCreateRequest.class), any()))
+        .thenReturn(
+            CompletableFuture.completedFuture(
+                new ProcessInstanceCreationRecord()
+                    .setProcessDefinitionKey(123L)
+                    .setBpmnProcessId("bpmnProcessId")
+                    .setProcessInstanceKey(123L)
+                    .setTenantId("<default>")));
+
+    final var request =
+        """
+        {
+            "processDefinitionKey": "123",
+            "variables": {
+                "secret": "value"
+            },
+            "variablesMetadata": {
+                "secret": {
+                    "protectionModes": ["REDACT"]
+                }
+            }
+        }""";
+
+    // when
+    webClient
+        .post()
+        .uri(PROCESS_INSTANCES_START_URL)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isOk();
+
+    // then
+    verify(processInstanceServices).createProcessInstance(createRequestCaptor.capture(), any());
+    assertThat(createRequestCaptor.getValue().variablesMetadata())
+        .containsOnlyKeys("secret")
+        .extractingByKey("secret")
+        .extracting(VariableMetadataValue::getProtectionModes)
+        .isEqualTo(Set.of(ProtectionMode.REDACT));
+  }
+
+  @Test
+  void shouldCreateProcessInstancesWithoutVariablesMetadata() {
+    // given
+    when(processInstanceServices.createProcessInstance(
+            any(ProcessInstanceCreateRequest.class), any()))
+        .thenReturn(
+            CompletableFuture.completedFuture(
+                new ProcessInstanceCreationRecord()
+                    .setProcessDefinitionKey(123L)
+                    .setBpmnProcessId("bpmnProcessId")
+                    .setProcessInstanceKey(123L)
+                    .setTenantId("<default>")));
+
+    // when
+    webClient
+        .post()
+        .uri(PROCESS_INSTANCES_START_URL)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue("{\"processDefinitionKey\": \"123\"}")
+        .exchange()
+        .expectStatus()
+        .isOk();
+
+    // then
+    verify(processInstanceServices).createProcessInstance(createRequestCaptor.capture(), any());
+    assertThat(createRequestCaptor.getValue().variablesMetadata()).isEmpty();
   }
 
   @Test

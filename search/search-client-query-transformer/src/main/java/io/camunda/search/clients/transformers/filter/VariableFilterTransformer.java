@@ -26,7 +26,6 @@ import static io.camunda.webapps.schema.descriptors.template.VariableTemplate.VA
 import static java.util.Optional.ofNullable;
 
 import io.camunda.search.clients.query.SearchQuery;
-import io.camunda.search.entities.VariableEntity.ProtectionMode;
 import io.camunda.search.filter.Operation;
 import io.camunda.search.filter.UntypedOperation;
 import io.camunda.search.filter.VariableFilter;
@@ -52,7 +51,7 @@ public class VariableFilterTransformer extends IndexFilterTransformer<VariableFi
     queries.addAll(getVariableKeyQuery(filter.variableKeyOperations()));
     ofNullable(getTenantIdQuery(filter.tenantIds())).ifPresent(queries::add);
     ofNullable(getIsTruncatedQuery(filter.isTruncated())).ifPresent(queries::add);
-    ofNullable(getProtectionModesQuery(filter.protectionModes())).ifPresent(queries::add);
+    queries.addAll(stringOperations(PROTECTION_MODES, filter.protectionModeOperations()));
     return and(queries);
   }
 
@@ -86,10 +85,6 @@ public class VariableFilterTransformer extends IndexFilterTransformer<VariableFi
 
   private SearchQuery getTenantIdQuery(final List<String> tenant) {
     return stringTerms(TENANT_ID, tenant);
-  }
-
-  private SearchQuery getProtectionModesQuery(final List<ProtectionMode> protectionModes) {
-    return stringTerms(PROTECTION_MODES, protectionModes.stream().map(Enum::name).toList());
   }
 
   private SearchQuery getIsTruncatedQuery(final Boolean isTruncated) {

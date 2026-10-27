@@ -69,6 +69,9 @@ public final class SetVariablesCommandImpl extends CommandWithVariables<SetVaria
     this.httpClient = httpClient;
     httpRequestConfig = httpClient.newRequestConfig();
     useRest = preferRestOverGrpc;
+    // the generated default (empty map) is serialized as "variablesMetadata":{}, which older
+    // brokers reject as an unknown property
+    httpRequestObject.setVariablesMetadata(null);
     this.elementInstanceKey = elementInstanceKey;
     requestTimeout(requestTimeout);
   }

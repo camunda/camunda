@@ -84,6 +84,9 @@ public final class CreateProcessInstanceCommandImpl
     this.jsonMapper = jsonMapper;
     grpcRequestObjectBuilder = CreateProcessInstanceRequest.newBuilder();
     tenantId(config.getDefaultTenantId());
+    // the generated default (empty map) is serialized as "variablesMetadata":{}, which older
+    // brokers reject as an unknown property
+    httpRequestObject.setVariablesMetadata(null);
     this.httpClient = httpClient;
     httpRequestConfig = httpClient.newRequestConfig();
     requestTimeout(requestTimeout);

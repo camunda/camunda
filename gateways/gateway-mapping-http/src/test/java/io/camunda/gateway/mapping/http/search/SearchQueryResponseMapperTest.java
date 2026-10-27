@@ -664,7 +664,7 @@ class SearchQueryResponseMapperTest {
   }
 
   @Test
-  void shouldOmitMetadataForUnprotectedVariable() {
+  void shouldMapEmptyProtectionModesForUnprotectedVariable() {
     // given
     final var entity =
         new VariableEntity(
@@ -683,7 +683,8 @@ class SearchQueryResponseMapperTest {
     final var response = SearchQueryResponseMapper.toVariableItem(entity);
 
     // then
-    assertThat(response.getMetadata()).isNull();
+    assertThat(response.getMetadata()).isNotNull();
+    assertThat(response.getMetadata().getProtectionModes()).isEmpty();
   }
 
   @Test

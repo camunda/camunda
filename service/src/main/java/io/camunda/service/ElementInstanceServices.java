@@ -31,6 +31,7 @@ import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerSetVariablesRequest;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableDocumentRecord;
+import io.camunda.zeebe.protocol.record.value.VariableMetadataValue;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
@@ -118,6 +119,7 @@ public final class ElementInstanceServices
         new BrokerSetVariablesRequest()
             .setElementInstanceKey(request.elementInstanceKey())
             .setVariables(getDocumentOrEmpty(request.variables()))
+            .setVariablesMetadata(getMetadataOrEmpty(request.variablesMetadata()))
             .setLocal(request.local());
 
     if (request.operationReference() != null) {
@@ -196,5 +198,6 @@ public final class ElementInstanceServices
       long elementInstanceKey,
       Map<String, Object> variables,
       Boolean local,
-      Long operationReference) {}
+      Long operationReference,
+      Map<String, VariableMetadataValue> variablesMetadata) {}
 }
