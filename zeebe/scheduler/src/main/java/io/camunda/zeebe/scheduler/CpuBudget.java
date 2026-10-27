@@ -11,6 +11,7 @@ import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadMXBean;
 import java.time.Duration;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.LockSupport;
 
 /**
@@ -29,6 +30,7 @@ public final class CpuBudget implements AutoCloseable {
   private final long periodNanos;
   private final long grantNanos;
   private volatile long balanceNanos;
+  private final AtomicLong chargedNanos = new AtomicLong();
   private volatile long usedNanos;
   private volatile long throttledPeriods;
   private volatile boolean running = true;
@@ -45,8 +47,16 @@ public final class CpuBudget implements AutoCloseable {
   }
 
   /** Returns true if the threads of the scheduler must not take a new task. */
-  boolean isExhausted() {
+  public boolean isExhausted() {
     return balanceNanos <= 0;
+  }
+
+  /**
+   * Charges CPU time that was used outside of the sampled threads, for example by a task on a
+   * thread that is not an actor thread. Can be called from any thread.
+   */
+  public void charge(final long cpuNanos) {
+    chargedNanos.addAndGet(cpuNanos);
   }
 
   /** Starts sampling the CPU time of the given threads. */
@@ -71,6 +81,7 @@ public final class CpuBudget implements AutoCloseable {
         }
       }
 
+      periodUsedNanos += chargedNanos.getAndSet(0);
       usedNanos += periodUsedNanos;
       final long next = Math.min(balanceNanos - periodUsedNanos + grantNanos, grantNanos);
       if (next <= 0) {
