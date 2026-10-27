@@ -18,6 +18,7 @@ import static org.springframework.http.MediaType.APPLICATION_JSON;
 import io.camunda.search.entities.VariableEntity;
 import io.camunda.search.entities.VariableEntity.ProtectionMode;
 import io.camunda.search.exception.CamundaSearchException;
+import io.camunda.search.filter.Operation;
 import io.camunda.search.filter.VariableFilter;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.SearchQueryResult.Builder;
@@ -61,7 +62,7 @@ public class VariablesQueryControllerTest extends RestControllerTest {
               "scopeKey": "2",
               "processInstanceKey": "3",
               "rootProcessInstanceKey": "4",
-              "metadata": null,
+              "metadata": {"protectionModes": []},
               "tenantId": "<default>"
           }""";
   private static final String EXPECT_SINGLE_TRUNCATED_VARIABLE_RESPONSE =
@@ -73,7 +74,7 @@ public class VariablesQueryControllerTest extends RestControllerTest {
               "scopeKey": "2",
               "processInstanceKey": "3",
               "rootProcessInstanceKey": "4",
-              "metadata": null,
+              "metadata": {"protectionModes": []},
               "tenantId": "<default>"
           }""";
   private static final String EXPECTED_SEARCH_RESPONSE =
@@ -87,7 +88,7 @@ public class VariablesQueryControllerTest extends RestControllerTest {
                         "scopeKey": "2",
                         "processInstanceKey": "3",
                         "rootProcessInstanceKey": "4",
-                        "metadata": null,
+                        "metadata": {"protectionModes": []},
                         "tenantId": "<default>",
                         "isTruncated": false
                   },
@@ -98,7 +99,7 @@ public class VariablesQueryControllerTest extends RestControllerTest {
                         "scopeKey": "2",
                         "processInstanceKey": "3",
                         "rootProcessInstanceKey": "4",
-                        "metadata": null,
+                        "metadata": {"protectionModes": []},
                         "tenantId": "<default>",
                         "isTruncated": true
                   }
@@ -122,7 +123,7 @@ public class VariablesQueryControllerTest extends RestControllerTest {
                         "scopeKey": "2",
                         "processInstanceKey": "3",
                         "rootProcessInstanceKey": "4",
-                        "metadata": null,
+                        "metadata": {"protectionModes": []},
                         "tenantId": "<default>",
                         "isTruncated": false
                   },
@@ -133,7 +134,7 @@ public class VariablesQueryControllerTest extends RestControllerTest {
                         "scopeKey": "2",
                         "processInstanceKey": "3",
                         "rootProcessInstanceKey": "4",
-                        "metadata": null,
+                        "metadata": {"protectionModes": []},
                         "tenantId": "<default>",
                         "isTruncated": false
                   }
@@ -567,6 +568,32 @@ public class VariablesQueryControllerTest extends RestControllerTest {
             new VariableFilter.Builder().protectionModes(ProtectionMode.REDACT).build()));
     streamBuilder.add(
         Arguments.of("{\"protectionMode\": {\"$in\": []}}", new VariableFilter.Builder().build()));
+    streamBuilder.add(
+        Arguments.of(
+            "{\"protectionMode\": {\"$eq\": \"REDACT\"}}",
+            new VariableFilter.Builder().protectionModeOperations(Operation.eq("REDACT")).build()));
+    streamBuilder.add(
+        Arguments.of(
+            "{\"protectionMode\": {\"$neq\": \"REDACT\"}}",
+            new VariableFilter.Builder()
+                .protectionModeOperations(Operation.neq("REDACT"))
+                .build()));
+    streamBuilder.add(
+        Arguments.of(
+            "{\"protectionMode\": {\"$notIn\": [\"REDACT\"]}}",
+            new VariableFilter.Builder()
+                .protectionModeOperations(Operation.notIn("REDACT"))
+                .build()));
+    streamBuilder.add(
+        Arguments.of(
+            "{\"protectionMode\": {\"$exists\": false}}",
+            new VariableFilter.Builder()
+                .protectionModeOperations(Operation.exists(false))
+                .build()));
+    streamBuilder.add(
+        Arguments.of(
+            "{\"protectionMode\": {\"$exists\": true}}",
+            new VariableFilter.Builder().protectionModeOperations(Operation.exists(true)).build()));
     streamBuilder.add(
         Arguments.of(
             "{\"name\": \"ssn\", \"protectionMode\": \"REDACT\"}",

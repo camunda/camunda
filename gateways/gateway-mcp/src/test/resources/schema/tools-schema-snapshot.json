@@ -433,6 +433,10 @@
           "variables": {
             "type": "object",
             "description": "JSON object that will instantiate the variables for the root variable scope of the process instance. "
+          },
+          "variablesMetadata": {
+            "type": "object",
+            "description": "Metadata of the variables, keyed by variable name. Use it to set how a variable is treated, for example to protect its value. A variable without an entry has no metadata. "
           }
         },
         "required": []
@@ -1122,7 +1126,7 @@
               "protectionMode": {
                 "type": "string",
                 "const": "REDACT",
-                "description": "The protection applied to the variable. A variable matches when it has at least one of the given protection modes. "
+                "description": "The protection modes applied to the variable."
               },
               "scopeKey": {
                 "type": "string",
