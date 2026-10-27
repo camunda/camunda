@@ -141,6 +141,24 @@ final class PhysicalTenantActorSchedulerStepTest {
         .isInstanceOf(IllegalStateException.class);
   }
 
+  @Test
+  void shouldRunAndStopDedicatedSchedulerWithCpuBudget() throws Exception {
+    // given
+    brokerCfg.getThreads().getPhysicalTenantActorPool().setCpuBudgetCores(0.5);
+    startup();
+
+    // when
+    final var threadName =
+        threadNameOf(
+            context.getPartitionActorSchedulingService(TENANT_ID), SchedulingHints.cpuBound());
+    final ActorFuture<BrokerStartupContext> shutdownFuture = CONCURRENCY_CONTROL.createFuture();
+    sut.shutdownInternal(context, CONCURRENCY_CONTROL, shutdownFuture);
+
+    // then
+    assertThat(threadName).startsWith("tenant-a-zb-actors-");
+    assertThat(shutdownFuture).succeedsWithin(Duration.ofSeconds(10));
+  }
+
   private void startup() {
     final ActorFuture<BrokerStartupContext> startupFuture = CONCURRENCY_CONTROL.createFuture();
     sut.startupInternal(context, CONCURRENCY_CONTROL, startupFuture);

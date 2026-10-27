@@ -10,6 +10,7 @@ package io.camunda.zeebe.broker.bootstrap;
 import io.camunda.zeebe.broker.system.configuration.PhysicalTenantActorPoolCfg;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.scheduler.ActorScheduler.ActorSchedulerBuilder;
+import io.camunda.zeebe.scheduler.CpuBudget;
 import io.camunda.zeebe.util.micrometer.MicrometerUtil;
 import io.camunda.zeebe.util.micrometer.PartitionKeyNames;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -35,7 +36,8 @@ import org.jspecify.annotations.Nullable;
 record PhysicalTenantActorScheduler(
     ActorScheduler scheduler,
     @Nullable MeterRegistry meterRegistry,
-    ExecutorService expressionEvaluationExecutor)
+    ExecutorService expressionEvaluationExecutor,
+    @Nullable CpuBudget cpuBudget)
     implements AutoCloseable {
 
   private static final Duration EXPRESSION_EVALUATION_THREAD_KEEP_ALIVE = Duration.ofSeconds(60);
@@ -54,14 +56,22 @@ record PhysicalTenantActorScheduler(
             : MicrometerUtil.wrap(
                 builder.getMeterRegistry(),
                 Tags.of(PartitionKeyNames.PHYSICAL_TENANT.asString(), physicalTenantId));
+    final var cpuBudget =
+        pool.getCpuBudgetCores() > 0
+            ? new CpuBudget(pool.getCpuBudgetCores(), pool.getCpuBudgetPeriod())
+            : null;
     final var scheduler =
         builder
+            .setCpuBudget(cpuBudget)
             .setMeterRegistry(meterRegistry)
             .setThreadNamePrefix(physicalTenantId + "-")
             .setCpuBoundActorThreadCount(pool.getCpuThreadCount())
             .setIoBoundActorThreadCount(pool.getIoThreadCount())
             .build();
     scheduler.start();
+    if (cpuBudget != null) {
+      cpuBudget.start(scheduler.getThreads());
+    }
     final var expressionEvaluationExecutor =
         new ThreadPoolExecutor(
             pool.getCpuThreadCount(),
@@ -72,7 +82,8 @@ record PhysicalTenantActorScheduler(
             expressionEvaluationThreadFactory(physicalTenantId));
     // threads are started on demand and exit when idle
     expressionEvaluationExecutor.allowCoreThreadTimeOut(true);
-    return new PhysicalTenantActorScheduler(scheduler, meterRegistry, expressionEvaluationExecutor);
+    return new PhysicalTenantActorScheduler(
+        scheduler, meterRegistry, expressionEvaluationExecutor, cpuBudget);
   }
 
   private static ThreadFactory expressionEvaluationThreadFactory(final String physicalTenantId) {
@@ -89,6 +100,9 @@ record PhysicalTenantActorScheduler(
   @Override
   public void close() {
     try {
+      if (cpuBudget != null) {
+        cpuBudget.close();
+      }
       expressionEvaluationExecutor.shutdownNow();
       scheduler.close();
     } catch (final Exception e) {

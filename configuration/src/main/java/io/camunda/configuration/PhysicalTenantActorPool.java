@@ -7,6 +7,8 @@
  */
 package io.camunda.configuration;
 
+import java.time.Duration;
+
 /**
  * Experimental. Runs the partition actors of each physical tenant on a dedicated actor thread pool
  * instead of the broker-wide one, so that a busy tenant cannot take the actor threads of its
@@ -22,6 +24,15 @@ public class PhysicalTenantActorPool {
 
   /** Number of IO threads in the pool of a physical tenant. */
   private int ioThreadCount = 1;
+
+  /**
+   * CPU time that the pool of a physical tenant can use, in cores. May be fractional. The threads
+   * of the pool stop taking tasks once they used it up. 0 means no limit.
+   */
+  private double cpuBudgetCores = 0;
+
+  /** How often the CPU time of the pool is charged to its budget. */
+  private Duration cpuBudgetPeriod = Duration.ofMillis(20);
 
   public boolean isEnabled() {
     return enabled;
@@ -45,5 +56,21 @@ public class PhysicalTenantActorPool {
 
   public void setIoThreadCount(final int ioThreadCount) {
     this.ioThreadCount = ioThreadCount;
+  }
+
+  public double getCpuBudgetCores() {
+    return cpuBudgetCores;
+  }
+
+  public void setCpuBudgetCores(final double cpuBudgetCores) {
+    this.cpuBudgetCores = cpuBudgetCores;
+  }
+
+  public Duration getCpuBudgetPeriod() {
+    return cpuBudgetPeriod;
+  }
+
+  public void setCpuBudgetPeriod(final Duration cpuBudgetPeriod) {
+    this.cpuBudgetPeriod = cpuBudgetPeriod;
   }
 }
