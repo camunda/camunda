@@ -56,7 +56,15 @@ with the selector's scope tag.** A start-event subscription has no instance yet 
 stored scope, so the filter must let it through regardless of the selector — otherwise every scoped
 signal-start and message-start would silently do nothing. When a scoped broadcast/publish starts an
 instance, the engine stamps the reserved scope tag onto the new instance, threading the scope into
-`EventHandle.activateProcessInstanceForStartEvent` (the mechanism already used for `businessId`).
+`EventHandle.activateProcessInstanceForStartEvent` (the mechanism already used for `businessId`). For
+signals this is shipped; for messages the start-event stamping ships together with the message-start
+uniqueness work (D7), since both concern instances created by a scoped publish.
+
+**D4b. Conditional start events carry a run-scope selector on the evaluate command.** A conditional
+start has no broadcast/publish carrier to read a scope from, so `EvaluateConditionalStartEvent` gains
+its own optional run-scope selector, stamped onto the instance it starts the same way as D4. Unset =
+today's behaviour. This closes the gap left when the run-id process variable is retired, since a
+conditional-started instance previously carried the run marker only in that variable.
 
 **D5. An internal signal throw stamps its broadcast with the thrower's root scope tag.** A signal
 thrown inside a process reads its root instance's reserved scope tag and stamps it as the selector on
@@ -69,13 +77,27 @@ events inside called processes remain within the run's scope. This is a behaviou
 where a child inherits no tags; it is required because run-scoped search and correlation would
 otherwise miss everything below a call activity.
 
-**D7. Message-start uniqueness extends its correlation-key lock identity with the run scope.** The
-"one active instance per correlation key" lock is re-keyed from `(bpmnProcessId, correlationKey)` to
-`(bpmnProcessId, correlationKey, runScope)`, so two runs sharing a correlation key each start their
-own instance instead of colliding. An unset scope reproduces today's exact key byte-for-byte. The
-appliers that write, release, and migrate this lock are released code; each gains a new applier
-*version* rather than a logic edit, and the cross-partition message-start `REQUEST` from `P_K` to
-`P_B` carries the scope so the remotely created instance is stamped correctly.
+**D7. Message-start uniqueness composes the run scope into the correlation-key lock value (follow-up,
+not yet implemented).** The "one active instance per correlation key" lock keys on `(bpmnProcessId,
+correlationKey)` as two plain strings, built once in `DbMessageState`. This key, and its companion
+cross-partition lock column family, shipped in 8.10 — a *released* column family whose key schema must
+not change, so the lock cannot be re-keyed to a three-part `(bpmnProcessId, correlationKey, runScope)`
+tuple (an earlier draft of this ADR proposed that; it is not implementable without rewriting released
+state). Instead, the run scope is **composed into the correlation-key value** when set (unset → the
+raw correlation key, byte-for-byte as today; set → `correlationKey` joined with the run scope), which
+keeps the released key schema intact while giving two runs that share a correlation key their own
+lock entry. The methods that write, release, and migrate this lock sit on a `Mutable*State` interface
+and are called from *released* appliers, so each gains a new applier **version** (never a logic edit
+to the released source), and the cross-partition message-start `REQUEST` from `P_K` to `P_B` carries
+the scope so the remotely created instance is stamped correctly.
+
+This work is scoped as a **follow-up** to the intermediate/boundary message-correlation scoping (D3),
+because it alters released replay-critical appliers and must propagate the new applier versions to
+every newer minor before release. Until it lands, a scoped publish to a message **start** event is not
+run-isolated: two runs sharing a correlation key still collide on the start lock, and the started
+instance is not yet stamped. Migration appliers (`ProcessInstanceElementMigrated` V2–V5) are expected
+to leave the composed scope unscoped on migration — an accepted gap unless a migrated run-scoped
+instance must keep its start-lock scope.
 
 ## Alternatives considered
 
@@ -97,16 +119,31 @@ appliers that write, release, and migrate this lock are released code; each gain
 
 - An unset selector preserves today's behaviour exactly for signals and messages, including the
   message-start lock key, so existing models and mixed-version clusters are unaffected.
-- Run-scoped search of jobs and user tasks needs no key resolution and no paging: the scope rides the
-  existing inherited `tags` field (retiring the prior variable-isolation phase-2 key resolution).
+- Run-scoped search of process instances and user tasks needs no key resolution and no paging: the
+  scope rides the existing inherited `tags` field, which those searches can filter on directly
+  (retiring the prior variable-isolation phase-2 key resolution for them). Jobs and incidents have no
+  tag filter on their search, so their instances are still resolved by tag first and the search scoped
+  to those instance keys — key resolution survives for those two, now keyed on the tag rather than the
+  reserved variable.
+- The reserved scope tag is settable through the public `tags` field (rejecting the prefix there would
+  reject CPT's own create call). Tag validation enforces the tag format but not the reserved prefix, so
+  a user could in principle set or collide a run scope. This spoofing risk is accepted; a
+  tenant-per-run would avoid it.
 - Call-activity tag propagation (D6) is a behaviour change: children now carry the parent's reserved
   scope tag. Only the reserved-prefix tag propagates, keeping the change invisible to non-scoped users.
 - Message throw events are implemented as jobs, so a message published by a worker or connector inside
   a run is not scoped and can still cross runs. This leak is accepted and out of scope.
 - Run isolation for the clock, engine mocks, purge, timers, and decision evaluation is not addressed
   by this or any carrier and remains out of scope.
-- The message-start lock appliers gain new versions (D7); the change must preserve replay for every
-  newer minor and pass the engine golden-file check (`NoChangesTest`).
+- **Delivery is staged.** Signal broadcast scoping (D2–D6) and intermediate/boundary message
+  correlation scoping (D3 for messages — scope copied onto the subscription at open, filtered locally
+  at correlate) ship first. Scoped message **start** — the uniqueness lock (D7) and start-instance
+  stamping (D4 for messages) — is a follow-up because it edits released replay-critical appliers. Until
+  it lands, a scoped publish still isolates catch/boundary/intermediate events but not message starts.
+- When the message-start lock work (D7) lands, its appliers gain new versions; the change must preserve
+  replay for every newer minor and pass the engine golden-file check (`EventAppliersTest` /
+  `NoChangesTest`), which fingerprints applier source — so new versions, never edits to released
+  applier source.
 
 ## Source
 
