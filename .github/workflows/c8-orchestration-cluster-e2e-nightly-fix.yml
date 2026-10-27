@@ -395,8 +395,8 @@ jobs:
           # Add a more-specific insteadOf for workspace-cli that uses the Vault PAT.
           # Git selects the longest-matching insteadOf, so this wins over the global
           # qa-processes rewrite set in "Configure git with GitHub App token".
-          git config --global url."https://x-access-token:${GH_PAT}@github.com/camunda/workspace-cli".insteadOf "https://github.com/camunda/workspace-cli"
-          go install github.com/camunda/workspace-cli/cmd/workspace@latest
+          git config --global url."https://x-access-token:${GH_PAT}@github.com/camunda/workspace-cli-v2".insteadOf "https://github.com/camunda/workspace-cli-v2"
+          go install github.com/camunda/workspace-cli-v2/cmd/workspace@latest
           echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
 
       - name: Install Claude Code CLI
