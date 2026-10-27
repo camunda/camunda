@@ -28,11 +28,16 @@ public final class DefaultZeebeDbFactory {
   }
 
   public static ZeebeDbFactory<ZbColumnFamilies> defaultFactory(final int partitions) {
+    return defaultFactory(partitions, MINIMUM_MEMORY_BYTES * partitions);
+  }
+
+  public static ZeebeDbFactory<ZbColumnFamilies> defaultFactory(
+      final int partitions, final long memoryLimitBytes) {
     // enable consistency checks for tests
     final var consistencyChecks = new ConsistencyChecksSettings(true, true);
     final var rocksDbConfig = new RocksDbConfiguration();
     rocksDbConfig.setMemoryAllocationStrategy(MemoryAllocationStrategy.PARTITION);
-    rocksDbConfig.setMemoryLimit(MINIMUM_MEMORY_BYTES * partitions);
+    rocksDbConfig.setMemoryLimit(memoryLimitBytes);
     return new ZeebeRocksDbFactory<>(
         rocksDbConfig,
         consistencyChecks,
