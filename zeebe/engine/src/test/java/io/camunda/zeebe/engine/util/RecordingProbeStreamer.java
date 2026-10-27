@@ -39,12 +39,24 @@ public final class RecordingProbeStreamer implements ProbeStreamer {
         .map(ProbeStream.class::cast);
   }
 
+  /** Adds a stream declaring one capability, given as {@code <operation>:<template>}. */
   public RecordingProbeStream addStream(
-      final String streamType, final String worker, final List<String> tenantIds) {
+      final String capability, final String worker, final List<String> tenantIds) {
+    return addStream(List.of(capability), worker, tenantIds);
+  }
+
+  /** Adds one stream declaring every given capability, as a worker with several handlers does. */
+  public RecordingProbeStream addStream(
+      final List<String> capabilities, final String worker, final List<String> tenantIds) {
     final var properties =
-        new ProbeActivationPropertiesImpl().setWorker(worker).setTenantIds(tenantIds);
+        new ProbeActivationPropertiesImpl()
+            .setWorker(worker)
+            .setCapabilities(capabilities)
+            .setTenantIds(tenantIds);
     final var stream = new RecordingProbeStream(properties);
-    streams.computeIfAbsent(streamType, key -> new CopyOnWriteArrayList<>()).add(stream);
+    streams
+        .computeIfAbsent(ProbeActivationProperties.STREAM_TYPE, key -> new CopyOnWriteArrayList<>())
+        .add(stream);
     return stream;
   }
 

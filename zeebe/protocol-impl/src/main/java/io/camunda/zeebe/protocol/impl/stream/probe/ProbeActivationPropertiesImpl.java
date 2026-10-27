@@ -26,6 +26,8 @@ import org.agrona.concurrent.UnsafeBuffer;
 public final class ProbeActivationPropertiesImpl extends UnpackedObject
     implements ProbeActivationProperties {
   private final StringProperty workerProp = new StringProperty("worker", "");
+  private final ArrayProperty<StringValue> capabilitiesProp =
+      new ArrayProperty<>("capabilities", StringValue::new);
   private final ArrayProperty<StringValue> tenantIdsProp =
       new ArrayProperty<>(
           "tenantIds", () -> new StringValue(TenantOwned.DEFAULT_TENANT_IDENTIFIER));
@@ -34,8 +36,9 @@ public final class ProbeActivationPropertiesImpl extends UnpackedObject
       new EnumProperty<>("tenantFilter", TenantFilter.class, TenantFilter.PROVIDED);
 
   public ProbeActivationPropertiesImpl() {
-    super(4);
+    super(5);
     declareProperty(workerProp)
+        .declareProperty(capabilitiesProp)
         .declareProperty(tenantIdsProp)
         .declareProperty(claimsProp)
         .declareProperty(tenantFilterProp);
@@ -43,6 +46,13 @@ public final class ProbeActivationPropertiesImpl extends UnpackedObject
 
   public ProbeActivationPropertiesImpl setWorker(final String worker) {
     workerProp.setValue(worker);
+    return this;
+  }
+
+  public ProbeActivationPropertiesImpl setCapabilities(final Collection<String> capabilities) {
+    capabilitiesProp.reset();
+    capabilities.forEach(
+        capability -> capabilitiesProp.add().wrap(BufferUtil.wrapString(capability)));
     return this;
   }
 
@@ -68,6 +78,11 @@ public final class ProbeActivationPropertiesImpl extends UnpackedObject
   @Override
   public DirectBuffer worker() {
     return workerProp.getValue();
+  }
+
+  @Override
+  public Collection<String> capabilities() {
+    return capabilitiesProp.stream().map(StringValue::toString).toList();
   }
 
   @Override

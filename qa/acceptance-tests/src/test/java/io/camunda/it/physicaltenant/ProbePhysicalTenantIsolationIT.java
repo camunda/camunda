@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.worker.probe.ProbeAnswer;
+import io.camunda.client.api.worker.probe.ProbeHandler;
 import io.camunda.client.api.worker.probe.ProbeOperation;
 import io.camunda.client.api.worker.probe.ProbeWorker;
 import io.camunda.zeebe.qa.util.cluster.PhysicalTenantsITHelper;
@@ -73,7 +74,6 @@ final class ProbePhysicalTenantIsolationIT {
   private static CamundaClient tenantAClient;
   private static ProbeWorker defaultWorker;
   private static ProbeWorker tenantAWorker;
-  private static ProbeWorker tenantAOnlyWorker;
   private static final HttpClient HTTP = HttpClient.newHttpClient();
 
   @BeforeAll
@@ -83,15 +83,14 @@ final class ProbePhysicalTenantIsolationIT {
         TENANTS.newClientBuilder(BROKER, PhysicalTenantsITHelper.DEFAULT_TENANT_ID).build();
     tenantAClient = TENANTS.newClientBuilder(BROKER, TENANT_A).build();
 
-    defaultWorker = echoWorker(defaultClient, TEMPLATE, "default-worker");
-    tenantAWorker = echoWorker(tenantAClient, TEMPLATE, "tenant-a-worker");
-    tenantAOnlyWorker = echoWorker(tenantAClient, TENANT_A_ONLY_TEMPLATE, "tenant-a-only-worker");
+    defaultWorker = echoWorker(defaultClient, "default-worker", TEMPLATE);
+    // one worker, so one stream, answers both of tenant A's templates
+    tenantAWorker = echoWorker(tenantAClient, "tenant-a-worker", TEMPLATE, TENANT_A_ONLY_TEMPLATE);
   }
 
   @AfterAll
   static void close() {
-    CloseHelper.quietCloseAll(
-        defaultWorker, tenantAWorker, tenantAOnlyWorker, defaultClient, tenantAClient);
+    CloseHelper.quietCloseAll(defaultWorker, tenantAWorker, defaultClient, tenantAClient);
   }
 
   @Test
@@ -125,8 +124,9 @@ final class ProbePhysicalTenantIsolationIT {
 
   @Test
   void shouldAnswerNoWorkerWhenOnlyAnotherTenantServesTheTemplate() throws Exception {
-    // given - tenant A's worker for the template is registered
-    awaitAnswer("physical-tenants/" + TENANT_A + "/", TENANT_A_ONLY_TEMPLATE);
+    // given - tenant A's worker answers the template, from the same stream as its other template
+    final var envelope = awaitAnswer("physical-tenants/" + TENANT_A + "/", TENANT_A_ONLY_TEMPLATE);
+    assertThat(envelope.get("worker")).isEqualTo("tenant-a-worker");
 
     // when
     final var response = createProbe("", TENANT_A_ONLY_TEMPLATE);
@@ -137,23 +137,25 @@ final class ProbePhysicalTenantIsolationIT {
   }
 
   private static ProbeWorker echoWorker(
-      final CamundaClient client, final String template, final String name) {
-    return client
-        .newProbeWorker()
-        .operation(ProbeOperation.VALIDATE_CONFIGURATION)
-        .template(template)
-        .handler(
-            probe ->
-                ProbeAnswer.ok(
-                    Map.of(
-                        "status",
-                        "SUCCESS",
-                        "code",
-                        probe.getPhysicalTenantId(),
-                        "message",
-                        String.valueOf(probe.getInputAsMap().get("accessKey")))))
-        .name(name)
-        .open();
+      final CamundaClient client, final String name, final String... templates) {
+    final ProbeHandler echo =
+        probe ->
+            ProbeAnswer.ok(
+                Map.of(
+                    "status",
+                    "SUCCESS",
+                    "code",
+                    probe.getPhysicalTenantId(),
+                    "message",
+                    String.valueOf(probe.getInputAsMap().get("accessKey"))));
+    var builder =
+        client
+            .newProbeWorker()
+            .capability(ProbeOperation.VALIDATE_CONFIGURATION, templates[0], echo);
+    for (int i = 1; i < templates.length; i++) {
+      builder = builder.capability(ProbeOperation.VALIDATE_CONFIGURATION, templates[i], echo);
+    }
+    return builder.name(name).open();
   }
 
   private static Map<?, ?> awaitAnswer(final String tenantPrefix, final String template) {

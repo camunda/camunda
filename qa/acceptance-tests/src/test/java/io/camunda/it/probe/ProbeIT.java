@@ -71,9 +71,9 @@ final class ProbeIT {
     worker =
         client
             .newProbeWorker()
-            .operation(ProbeOperation.VALIDATE_CONFIGURATION)
-            .template(TEMPLATE)
-            .handler(
+            .capability(
+                ProbeOperation.VALIDATE_CONFIGURATION,
+                TEMPLATE,
                 probe -> {
                   received.set(probe);
                   final var valid = ACCESS_KEY.equals(probe.getInputAsMap().get("accessKey"));

@@ -144,6 +144,47 @@ public final class ProbeTest {
   }
 
   @Test
+  public void shouldPushProbesForEveryCapabilityTheStreamDeclares() {
+    // given - one worker answers two templates over a single stream
+    final var otherTemplate = template + "-other";
+    final var stream =
+        STREAMER.addStream(
+            List.of(
+                "VALIDATE_CONFIGURATION:" + template, "VALIDATE_CONFIGURATION:" + otherTemplate),
+            "worker-a",
+            List.of(TenantOwned.DEFAULT_TENANT_IDENTIFIER));
+
+    // when
+    final long first = ENGINE.probe().withTemplate(template).withInput("={}").create().getKey();
+    final long second =
+        ENGINE.probe().withTemplate(otherTemplate).withInput("={}").create().getKey();
+
+    // then
+    await()
+        .untilAsserted(
+            () ->
+                assertThat(stream.getPushedProbes())
+                    .extracting(RecordingProbeStreamer.PushedProbe::probeKey)
+                    .containsExactly(first, second));
+  }
+
+  @Test
+  public void shouldRejectCreateWhenNoStreamDeclaresTheTemplate() {
+    // given - a worker is connected, but for another template only
+    STREAMER.addStream(
+        "VALIDATE_CONFIGURATION:" + template + "-other",
+        "worker-a",
+        List.of(TenantOwned.DEFAULT_TENANT_IDENTIFIER));
+
+    // when
+    final var rejection =
+        ENGINE.probe().withTemplate(template).withInput("={}").expectRejection().create();
+
+    // then
+    Assertions.assertThat(rejection).hasRejectionType(RejectionType.NOT_FOUND);
+  }
+
+  @Test
   public void shouldRejectCreateWhenWorkerServesAnotherTenant() {
     // given
     STREAMER.addStream("VALIDATE_CONFIGURATION:" + template, "worker-a", List.of("other"));

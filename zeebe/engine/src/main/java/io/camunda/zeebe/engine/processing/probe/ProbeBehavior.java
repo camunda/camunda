@@ -44,6 +44,7 @@ import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
+import org.agrona.DirectBuffer;
 import org.agrona.collections.MutableBoolean;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
@@ -59,6 +60,8 @@ import org.slf4j.LoggerFactory;
 public final class ProbeBehavior {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(ProbeBehavior.class);
+  private static final DirectBuffer PROBE_STREAM_TYPE =
+      BufferUtil.wrapString(ProbeActivationProperties.STREAM_TYPE);
 
   private final ProbeStreamer probeStreamer;
   private final ProbeState probeState;
@@ -97,18 +100,18 @@ public final class ProbeBehavior {
   }
 
   /**
-   * Returns a stream that may answer the probe: its type is the probe's capability, it serves the
-   * probe's tenant, its principal holds {@code PROBE:ANSWER} on the template, and its worker is not
-   * the excluded one (the worker a yielded probe was pushed to).
+   * Returns a stream that may answer the probe: it declares the probe's exact capability, it serves
+   * the probe's tenant, its principal holds {@code PROBE:ANSWER} on the template, and its worker is
+   * not the excluded one (the worker a yielded probe was pushed to).
    */
   public Optional<ProbeStream> findStream(
       final ProbeRecord probe, final @Nullable String excludedWorker) {
-    final var streamType =
-        BufferUtil.wrapString(probe.getOperation().name() + ":" + probe.getTemplate());
+    final var capability = probe.getOperation().name() + ":" + probe.getTemplate();
     return probeStreamer.streamFor(
-        streamType,
+        PROBE_STREAM_TYPE,
         properties ->
-            !BufferUtil.bufferAsString(properties.worker()).equals(excludedWorker)
+            properties.capabilities().contains(capability)
+                && !BufferUtil.bufferAsString(properties.worker()).equals(excludedWorker)
                 && isAuthorized(properties, probe));
   }
 

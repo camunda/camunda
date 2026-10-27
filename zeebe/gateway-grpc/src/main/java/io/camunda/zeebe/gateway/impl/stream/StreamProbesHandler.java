@@ -10,6 +10,7 @@ package io.camunda.zeebe.gateway.impl.stream;
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivatedProbe;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ProbeCapability;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.stream.probe.ActivatedProbeImpl;
 import io.camunda.zeebe.protocol.impl.stream.probe.ProbeActivationProperties;
@@ -25,13 +26,18 @@ import io.camunda.zeebe.transport.stream.api.ClientStreamer;
 import io.grpc.Status;
 import io.grpc.stub.ServerCallStreamObserver;
 import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import org.agrona.DirectBuffer;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Opens a probe stream for a worker: one stream per capability, of type {@code
- * <operation>:<template>}, as {@link StreamJobsHandler} does for one job type.
+ * Opens the probe stream of a worker, as {@link StreamJobsHandler} does for one job type. A worker
+ * holds one stream for every capability it answers; the stream declares them in its metadata and
+ * the engine matches each probe against that list.
  */
 public final class StreamProbesHandler extends Actor {
 
@@ -44,29 +50,18 @@ public final class StreamProbesHandler extends Actor {
   }
 
   public void handle(
-      final String operation,
-      final String template,
+      final List<ProbeCapability> capabilities,
       final ProbeActivationProperties properties,
       final ServerCallStreamObserver<ActivatedProbe> responseObserver,
       final String physicalTenantId) {
-    if (Arrays.stream(ProbeOperation.values()).noneMatch(op -> op.name().equals(operation))) {
+    final String invalid = validate(capabilities);
+    if (invalid != null) {
       responseObserver.onError(
-          Status.INVALID_ARGUMENT
-              .withDescription(
-                  "Expected to stream probes for one of the operations %s, but it was '%s'"
-                      .formatted(Arrays.toString(ProbeOperation.values()), operation))
-              .asRuntimeException());
-      return;
-    }
-    if (template.isBlank()) {
-      responseObserver.onError(
-          Status.INVALID_ARGUMENT
-              .withDescription("Expected to stream probes for a template, but it was blank")
-              .asRuntimeException());
+          Status.INVALID_ARGUMENT.withDescription(invalid).asRuntimeException());
       return;
     }
 
-    final var streamType = wrapString(operation + ":" + template);
+    final var streamType = wrapString(ProbeActivationProperties.STREAM_TYPE);
     final var consumer = new ProbeStreamConsumer(responseObserver, actor, physicalTenantId);
     final var remover = new AsyncProbeStreamRemover(probeStreamer, actor);
     responseObserver.setOnCloseHandler(remover);
@@ -87,6 +82,28 @@ public final class StreamProbesHandler extends Actor {
                   }
                   remover.streamId(streamId);
                 }));
+  }
+
+  private static @Nullable String validate(final List<ProbeCapability> capabilities) {
+    if (capabilities.isEmpty()) {
+      return "Expected to stream probes for at least one capability, but none was given";
+    }
+    final Set<String> seen = new HashSet<>();
+    for (final ProbeCapability capability : capabilities) {
+      final String operation = capability.getOperation();
+      if (Arrays.stream(ProbeOperation.values()).noneMatch(op -> op.name().equals(operation))) {
+        return "Expected to stream probes for one of the operations %s, but it was '%s'"
+            .formatted(Arrays.toString(ProbeOperation.values()), operation);
+      }
+      if (capability.getTemplate().isBlank()) {
+        return "Expected to stream probes for a template, but it was blank";
+      }
+      if (!seen.add(operation + ":" + capability.getTemplate())) {
+        return "Expected each capability once, but '%s:%s' was given twice"
+            .formatted(operation, capability.getTemplate());
+      }
+    }
+    return null;
   }
 
   private static final class ProbeStreamConsumer implements ClientStreamConsumer {

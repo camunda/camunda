@@ -257,11 +257,7 @@ public final class EndpointManager {
           Objects.requireNonNullElse(
               getPhysicalTenantId(), PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
       streamProbesHandler.handle(
-          request.getOperation(),
-          request.getTemplate(),
-          properties,
-          responseObserver,
-          physicalTenantId);
+          request.getCapabilitiesList(), properties, responseObserver, physicalTenantId);
     } catch (final Exception e) {
       responseObserver.onError(e);
     }

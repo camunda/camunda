@@ -40,8 +40,9 @@ import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 
 /**
- * Keeps one probe stream open, opening it again after a failure, hands each pushed probe to the
- * handler and sends the answer over REST, exactly once.
+ * Keeps one probe stream open for every capability of the worker, opening it again after a failure,
+ * hands each pushed probe to the handler of its capability and sends the answer over REST, exactly
+ * once.
  */
 public final class ProbeWorkerImpl implements ProbeWorker {
 
@@ -52,7 +53,7 @@ public final class ProbeWorkerImpl implements ProbeWorker {
   private final HttpClient httpClient;
   private final JsonMapper jsonMapper;
   private final StreamProbesRequest request;
-  private final ProbeHandler handler;
+  private final Map<String, ProbeHandler> handlers;
   private final ScheduledExecutorService scheduler;
   private final ExecutorService handlerExecutor;
   private final Duration retryDelay;
@@ -65,7 +66,7 @@ public final class ProbeWorkerImpl implements ProbeWorker {
       final HttpClient httpClient,
       final JsonMapper jsonMapper,
       final StreamProbesRequest request,
-      final ProbeHandler handler,
+      final Map<String, ProbeHandler> handlers,
       final ScheduledExecutorService scheduler,
       final ExecutorService handlerExecutor,
       final Duration retryDelay) {
@@ -73,7 +74,7 @@ public final class ProbeWorkerImpl implements ProbeWorker {
     this.httpClient = httpClient;
     this.jsonMapper = jsonMapper;
     this.request = request;
-    this.handler = handler;
+    this.handlers = handlers;
     this.scheduler = scheduler;
     this.handlerExecutor = handlerExecutor;
     this.retryDelay = retryDelay;
@@ -113,9 +114,8 @@ public final class ProbeWorkerImpl implements ProbeWorker {
       return;
     }
     LOGGER.debug(
-        "Probe stream '{}:{}' closed; opening it again in {}",
-        request.getOperation(),
-        request.getTemplate(),
+        "Probe stream of worker '{}' closed; opening it again in {}",
+        request.getWorker(),
         retryDelay,
         error);
     scheduler.schedule(this::open, retryDelay.toMillis(), TimeUnit.MILLISECONDS);
@@ -123,8 +123,14 @@ public final class ProbeWorkerImpl implements ProbeWorker {
 
   private void handle(final ActivatedProbe probe) {
     ProbeAnswer answer;
+    final ProbeHandler handler =
+        handlers.get(capability(probe.getOperation().name(), probe.getTemplate()));
     try {
-      answer = handler.handle(probe);
+      // the engine pushes only declared capabilities, so a missing handler is a protocol bug
+      answer =
+          handler == null
+              ? ProbeAnswer.error("The worker has no handler for this capability.")
+              : handler.handle(probe);
       if (answer == null) {
         answer = ProbeAnswer.error("The probe handler returned no answer.");
       }
@@ -156,6 +162,10 @@ public final class ProbeWorkerImpl implements ProbeWorker {
             LOGGER.warn("Failed to answer probe {}", probeKey, error);
           }
         });
+  }
+
+  static String capability(final String operation, final String template) {
+    return operation + ":" + template;
   }
 
   /**
