@@ -227,7 +227,8 @@ public final class EventHandle {
       final DirectBuffer messageName,
       final DirectBuffer correlationKey,
       final DirectBuffer variables,
-      final DirectBuffer businessId) {
+      final DirectBuffer businessId,
+      final DirectBuffer runScope) {
 
     // Validate before generating a key so we neither waste a key nor emit a CORRELATED event when
     // no instance will be created (definition draining or already removed).
@@ -263,6 +264,7 @@ public final class EventHandle {
         variables,
         subscription.getTenantId(),
         businessId,
+        BufferUtil.bufferAsString(runScope),
         storageOrdinal);
 
     return Tuple.of(newProcessInstanceKey, storageOrdinal);

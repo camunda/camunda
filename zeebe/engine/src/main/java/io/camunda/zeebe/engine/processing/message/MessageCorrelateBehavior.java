@@ -458,7 +458,8 @@ public final class MessageCorrelateBehavior {
         messageData.messageName(),
         messageData.correlationKey(),
         messageData.variables(),
-        messageData.businessId());
+        messageData.businessId(),
+        messageData.runScope());
   }
 
   /**

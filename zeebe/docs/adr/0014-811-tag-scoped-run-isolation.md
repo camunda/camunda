@@ -56,9 +56,10 @@ with the selector's scope tag.** A start-event subscription has no instance yet 
 stored scope, so the filter must let it through regardless of the selector — otherwise every scoped
 signal-start and message-start would silently do nothing. When a scoped broadcast/publish starts an
 instance, the engine stamps the reserved scope tag onto the new instance, threading the scope into
-`EventHandle.activateProcessInstanceForStartEvent` (the mechanism already used for `businessId`). For
-signals this is shipped; for messages the start-event stamping ships together with the message-start
-uniqueness work (D7), since both concern instances created by a scoped publish.
+`EventHandle.activateProcessInstanceForStartEvent` (the mechanism already used for `businessId`). This
+is shipped for signals, for conditional starts (D4b), and for messages started locally on the message
+partition. A message start delegated cross-partition to the business-id partition (`P_B`) is not yet
+stamped — that path is deferred with the uniqueness lock (D7).
 
 **D4b. Conditional start events carry a run-scope selector on the evaluate command.** A conditional
 start has no broadcast/publish carrier to read a scope from, so `EvaluateConditionalStartEvent` gains
@@ -93,11 +94,13 @@ the scope so the remotely created instance is stamped correctly.
 
 This work is scoped as a **follow-up** to the intermediate/boundary message-correlation scoping (D3),
 because it alters released replay-critical appliers and must propagate the new applier versions to
-every newer minor before release. Until it lands, a scoped publish to a message **start** event is not
-run-isolated: two runs sharing a correlation key still collide on the start lock, and the started
-instance is not yet stamped. Migration appliers (`ProcessInstanceElementMigrated` V2–V5) are expected
-to leave the composed scope unscoped on migration — an accepted gap unless a migrated run-scoped
-instance must keep its start-lock scope.
+every newer minor before release. A locally started message instance is already stamped with the run
+scope (D4), so run-scoped *selection* finds it; what the follow-up adds is **start uniqueness** — until
+it lands, two runs sharing a correlation key still collide on the one-active-instance start lock
+(the second is deduplicated instead of starting its own instance). The cross-partition message-start
+delegation to `P_B` is also not stamped until then. Migration appliers
+(`ProcessInstanceElementMigrated` V2–V5) are expected to leave the composed scope unscoped on
+migration — an accepted gap unless a migrated run-scoped instance must keep its start-lock scope.
 
 ## Alternatives considered
 
@@ -135,11 +138,12 @@ instance must keep its start-lock scope.
   a run is not scoped and can still cross runs. This leak is accepted and out of scope.
 - Run isolation for the clock, engine mocks, purge, timers, and decision evaluation is not addressed
   by this or any carrier and remains out of scope.
-- **Delivery is staged.** Signal broadcast scoping (D2–D6) and intermediate/boundary message
-  correlation scoping (D3 for messages — scope copied onto the subscription at open, filtered locally
-  at correlate) ship first. Scoped message **start** — the uniqueness lock (D7) and start-instance
-  stamping (D4 for messages) — is a follow-up because it edits released replay-critical appliers. Until
-  it lands, a scoped publish still isolates catch/boundary/intermediate events but not message starts.
+- **Delivery is staged.** Signal broadcast scoping (D2–D6), conditional-start scoping (D4b), and
+  intermediate/boundary message correlation scoping plus local message-start stamping (D3/D4 for
+  messages) ship first. Message-start **uniqueness** (D7 — the one-active-instance lock) and
+  cross-partition message-start stamping are a follow-up because they edit released replay-critical
+  appliers. Until that lands, a scoped publish isolates catch, boundary, intermediate, and locally
+  started message events; two runs sharing a correlation key still collide on the message-start lock.
 - When the message-start lock work (D7) lands, its appliers gain new versions; the change must preserve
   replay for every newer minor and pass the engine golden-file check (`EventAppliersTest` /
   `NoChangesTest`), which fingerprints applier source — so new versions, never edits to released
