@@ -9,7 +9,6 @@ package io.camunda.zeebe.engine.processing.batchoperation;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.util.Set;
@@ -26,7 +25,7 @@ import org.junit.Test;
 public final class SuspendedBatchOperationBlocksQueueTest extends AbstractBatchOperationTest {
 
   public SuspendedBatchOperationBlocksQueueTest() {
-    super(EngineConfiguration.DEFAULT_BATCH_OPERATION_SCHEDULER_INTERVAL);
+    super(false);
   }
 
   @Test
@@ -47,6 +46,8 @@ public final class SuspendedBatchOperationBlocksQueueTest extends AbstractBatchO
     // when — create batchB which should complete independently of the suspended batchA
     final var batchBKeys = Set.of(4L, 5L, 6L);
     final var batchBKey = createNewCancelProcessInstanceBatchOperation(batchBKeys);
+    advanceSchedulerUntil(
+        r -> r.getIntent() == BatchOperationIntent.COMPLETED && r.getKey() == batchBKey);
 
     // then — batchB should complete while batchA remains suspended.
     // RecordingExporter blocks (up to its configured timeout) until the COMPLETED event appears.
