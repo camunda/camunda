@@ -68,20 +68,33 @@ missing_paths() {
   done < <(grep -E '^(---|\+\+\+) ' "$patch_file")
 }
 
-# Echo "<file> › <test name>" for every dispatched failing test whose title is NOT
-# present in that file on $1.
+# Echo one "<file> › <test name>" line for every dispatched failing test that the
+# release branch cannot run: its spec is absent there, or the spec is present but the
+# title is not.
 #
-# This is the check the file-existence one cannot make: a spec file can survive the
-# cut while the test inside it is post-freeze work. Fixed-string match, because test
-# titles carry regex metacharacters. A spec whose file is missing entirely is already
-# reported by missing_paths, so it is skipped here rather than reported twice.
+# This is the check missing_paths cannot make. A fix to a shared helper or page object
+# never touches the failing spec, so the patch alone says nothing about whether that
+# spec exists on the release branch; and a spec can survive the cut while the test in
+# it is post-freeze work. Fixed-string match, because titles carry regex metacharacters.
+#
+# Dispatched `.file` values are relative to the suite root (triage strips it), while
+# git lookups need repository-relative paths, so the root is re-added here. An absent
+# spec is reported, never skipped: skipping would wave through exactly the main-only
+# fixes this gate exists to refuse.
+SUITE_ROOT="${SUITE_ROOT:-qa/c8-orchestration-cluster-e2e-test-suite}"
+
 missing_tests() {
-  local release_ref="$1" specs_file="$2"
+  local release_ref="$1" specs_file="$2" path
   [ -s "$specs_file" ] || return 0
   while IFS=$'\t' read -r file test_name; do
     [ -z "$file" ] && continue
-    git cat-file -e "${release_ref}:${file}" 2>/dev/null || continue
-    git show "${release_ref}:${file}" 2>/dev/null | grep -qF "$test_name" \
+    path="$file"
+    case "$path" in "${SUITE_ROOT}/"*) ;; *) path="${SUITE_ROOT}/${path}" ;; esac
+    if ! git cat-file -e "${release_ref}:${path}" 2>/dev/null; then
+      printf '%s › %s (spec absent)\n' "$file" "$test_name"
+      continue
+    fi
+    git show "${release_ref}:${path}" 2>/dev/null | grep -qF "$test_name" \
       || printf '%s › %s\n' "$file" "$test_name"
   done < <(jq -r '.[]? | select(.file and .test_name) | "\(.file)\t\(.test_name)"' "$specs_file")
 }

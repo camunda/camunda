@@ -818,6 +818,32 @@ jobs:
                   >> /tmp/backport-meta.json
               fi
             elif [ "$decision" = "skipped" ]; then
+              # This workflow reuses and updates an open fix PR across nights, so a
+              # label an earlier run applied can outlive the check that justified it:
+              # a later push may add a change the release branch cannot take. Left in
+              # place it would make backport-action open the backport on merge despite
+              # the refusal reported below, so revoke it -- but only a label this gate
+              # applied. A person's deliberate request must survive, and the label's
+              # latest "labeled" event tells the two apart: automation labels as a
+              # Bot, a person as a User.
+              label="backport ${release_ref}"
+              if [ -n "$release_ref" ] \
+                 && gh pr view "$pr" --repo "$REPO" --json labels --jq '.labels[].name' 2>/dev/null \
+                    | grep -qxF "$label"; then
+                actor_type=$(gh api --paginate "repos/${REPO}/issues/${pr}/events" 2>/dev/null \
+                  | jq -rs --arg l "$label" \
+                      '[.[][] | select(.event == "labeled" and .label.name == $l)] | last | .actor.type // ""')
+                if [ "$actor_type" = "Bot" ]; then
+                  if gh pr edit "$pr" --repo "$REPO" --remove-label "$label"; then
+                    v=$(jq -c '.reason += "; label from an earlier run removed"' <<< "$v")
+                  else
+                    echo "::warning::Could not remove the stale label '${label}' from PR #${pr}."
+                    v=$(jq -c '.reason += "; STALE LABEL STILL SET, remove it before merging"' <<< "$v")
+                  fi
+                else
+                  v=$(jq -c '.reason += "; label added by a person left in place"' <<< "$v")
+                fi
+              fi
               echo "$v" >> /tmp/backport-meta.json
             fi
           done
