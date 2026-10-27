@@ -353,7 +353,9 @@ public class Secrets {
 
     /**
      * Prefix every secret variable carries: secret {@code name} is read from the variable {@code
-     * <prefix><name>}.
+     * <prefix><name>}. Required. Startup is refused when it is missing, or when it overlaps,
+     * ignoring case, a prefix reserved for the platform's own settings and credentials, such as
+     * {@code CAMUNDA_}, {@code ZEEBE_}, {@code SPRING_} or {@code AWS_}.
      */
     private String prefix = "";
 

@@ -328,18 +328,26 @@ public class SecretStoreConfiguration {
   private static SecretStore envStore(
       final String storeId, final String tenantId, final EnvStore config) {
     final var prefix = config.getPrefix();
-    // an empty prefix would match every variable, including the platform's own credentials
-    if (prefix.isBlank()) {
+    final SecretStore store;
+    try {
+      store = EnvVarSecretStore.fromSystemEnvironment(prefix);
+    } catch (final IllegalArgumentException invalidPrefix) {
       throw new IllegalStateException(
-          "Environment-variable store '%s' for physical tenant '%s' has no prefix configured; set %s.%s.prefix"
-              .formatted(storeId, tenantId, storesProperty(tenantId, "env"), storeId));
+          "Environment-variable store '%s' for physical tenant '%s' has an invalid %s.%s.prefix: %s"
+              .formatted(
+                  storeId,
+                  tenantId,
+                  storesProperty(tenantId, "env"),
+                  storeId,
+                  invalidPrefix.getMessage()),
+          invalidPrefix);
     }
     LOG.info(
         "Environment-variable secret store '{}' for physical tenant '{}' reads variables prefixed '{}'",
         storeId,
         tenantId,
         prefix);
-    return EnvVarSecretStore.fromSystemEnvironment(prefix);
+    return store;
   }
 
   /**
