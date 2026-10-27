@@ -90,24 +90,27 @@ describe('<AdminUsersPage />', () => {
 		await vi.waitFor(() => expect(onSearchChange).toHaveBeenCalledWith({search: 'jane', page: undefined}), DEBOUNCED);
 	});
 
-	it('should keep what the reader is typing when the URL search changes through navigation', async () => {
+	it('should show the new URL search and not commit the stale draft when the URL search changes through navigation', async () => {
 		// given
 		const {screen} = await renderPage({search: {search: 'jane'}});
 		await userEvent.fill(screen.getByRole('searchbox'), 'john');
 
 		// when
+		const onSearchChange = vi.fn();
 		await screen.rerender(
 			<AdminUsersPage
 				users={[createUser()]}
 				totalItems={1}
 				search={{search: 'previous'}}
-				onSearchChange={vi.fn()}
+				onSearchChange={onSearchChange}
 				onOpenUser={vi.fn()}
 			/>,
 		);
 
 		// then
-		await expect.element(screen.getByRole('searchbox')).toHaveValue('john');
+		await expect.element(screen.getByRole('searchbox')).toHaveValue('previous');
+		await new Promise((resolve) => setTimeout(resolve, 1000));
+		expect(onSearchChange).not.toHaveBeenCalled();
 	});
 
 	it('should show the new URL search when it changes through navigation and the reader has not edited the input', async () => {
