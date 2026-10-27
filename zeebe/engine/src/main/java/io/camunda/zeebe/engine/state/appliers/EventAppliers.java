@@ -311,7 +311,7 @@ public final class EventAppliers implements EventApplier {
     register(ProcessIntent.CREATED, 1, new ProcessCreatedV1Applier(state));
     register(ProcessIntent.CREATED, 2, new ProcessCreatedV2Applier(state));
     register(ProcessIntent.DELETING, new ProcessDeletingApplier(state));
-    register(ProcessIntent.DELETED, 1, new ProcessDeletedApplier(state));
+    register(ProcessIntent.DELETED, 1, new ProcessDeletedV1Applier(state));
     register(ProcessIntent.DELETED, 2, new ProcessDeletedV2Applier(state));
     register(ProcessIntent.DRAINING, new ProcessDrainingApplier(state));
     register(ProcessIntent.DELETE_COMPLETED, new ProcessDeleteCompletedApplier(state));
