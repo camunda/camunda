@@ -9,7 +9,6 @@ package io.camunda.zeebe.engine.processing.batchoperation;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationExecutionIntent;
@@ -21,7 +20,7 @@ import org.junit.Test;
 public final class LifecycleBatchOperationTest extends AbstractBatchOperationTest {
 
   public LifecycleBatchOperationTest() {
-    super(EngineConfiguration.DEFAULT_BATCH_OPERATION_SCHEDULER_INTERVAL);
+    super(false);
   }
 
   @Test
@@ -152,6 +151,7 @@ public final class LifecycleBatchOperationTest extends AbstractBatchOperationTes
 
     // when we resume it again
     engine.batchOperation().newLifecycle().withBatchOperationKey(batchOperationKey).resume();
+    advanceSchedulerUntil(r -> r.getIntent() == BatchOperationIntent.COMPLETED);
 
     // then the batch should be active
     assertThat(

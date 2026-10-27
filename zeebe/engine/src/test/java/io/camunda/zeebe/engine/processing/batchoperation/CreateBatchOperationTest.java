@@ -27,6 +27,7 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationChunkIntent;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationExecutionIntent;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
+import io.camunda.zeebe.protocol.record.value.BatchOperationExecutionRecordValue;
 import io.camunda.zeebe.protocol.record.value.BatchOperationType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
@@ -205,6 +206,7 @@ public final class CreateBatchOperationTest extends AbstractBatchOperationTest {
             .create()
             .getValue()
             .getBatchOperationKey();
+    engine.increaseTime(SCHEDULER_INTERVAL);
 
     // then
     assertThat(
@@ -241,6 +243,11 @@ public final class CreateBatchOperationTest extends AbstractBatchOperationTest {
             .create()
             .getValue()
             .getBatchOperationKey();
+    advanceSchedulerUntil(
+        r ->
+            r.getIntent() == BatchOperationExecutionIntent.EXECUTE
+                && r.getValue() instanceof BatchOperationExecutionRecordValue v
+                && v.getBatchOperationKey() == batchOperationKey);
 
     // then
     assertThat(
@@ -286,6 +293,11 @@ public final class CreateBatchOperationTest extends AbstractBatchOperationTest {
             .create()
             .getValue()
             .getBatchOperationKey();
+    advanceSchedulerUntil(
+        r ->
+            r.getIntent() == BatchOperationExecutionIntent.EXECUTE
+                && r.getValue() instanceof BatchOperationExecutionRecordValue v
+                && v.getBatchOperationKey() == batchOperationKey);
 
     // then
     assertThat(

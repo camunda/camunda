@@ -35,6 +35,7 @@ import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperation
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationProcessInstanceModificationPlan;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceMigrationMappingInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationMoveInstruction;
+import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceMatcher;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
@@ -43,6 +44,7 @@ import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.protocol.record.value.UserRecordValue;
 import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
+import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.time.Duration;
 import java.util.HashMap;
@@ -50,9 +52,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.awaitility.Awaitility;
 import org.junit.Before;
 import org.junit.Rule;
 import org.mockito.Mockito;
@@ -73,6 +77,7 @@ abstract class AbstractBatchOperationTest {
           UUID.randomUUID().toString(),
           UUID.randomUUID().toString());
 
+  protected static final Duration SCHEDULER_INTERVAL = Duration.ofDays(1);
   protected static final int DEFAULT_QUERY_PAGE_SIZE = 10000;
   protected static final String DEFAULT_JOB_TYPE = "fake-job-type";
 
@@ -85,40 +90,57 @@ abstract class AbstractBatchOperationTest {
   protected final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter =
       Mockito.mock(BrokerRequestAuthorizationConverter.class);
 
-  @Rule public final EngineRule engine;
+  @Rule
+  public final EngineRule engine =
+      EngineRule.singlePartition()
+          .withIdentitySetup()
+          .withAuthorizationsEnabled(true)
+          .withSecurityConfig(
+              cfg -> cfg.getInitialization().setUsers(List.of(DEFAULT_USER, OTHER_USER)))
+          .withSecurityConfig(
+              cfg -> {
+                final var defaultRoles = new HashMap<>(cfg.getInitialization().getDefaultRoles());
+                defaultRoles.put(
+                    "admin",
+                    Map.of("users", List.of(DEFAULT_USER.getUsername(), OTHER_USER.getUsername())));
+                cfg.getInitialization().setDefaultRoles(defaultRoles);
+              })
+          .withEngineConfig(
+              cfg ->
+                  cfg.setBatchOperationQueryPageSize(DEFAULT_QUERY_PAGE_SIZE)
+                      .setBatchOperationQueryRetryMax(2)
+                      .setBatchOperationQueryRetryInitialDelay(Duration.ofMillis(100))
+                      .setBatchOperationSchedulerInterval(SCHEDULER_INTERVAL))
+          .withSearchClientsProxy(searchClientsProxy)
+          .withBrokerRequestAuthorizationConverter(brokerRequestAuthorizationConverter);
+
+  /** When false, tests can act on a batch before the scheduler touches it. */
+  protected boolean autoStartScheduler;
 
   protected AbstractBatchOperationTest() {
-    this(Duration.ofMillis(10));
+    this(true);
   }
 
-  /**
-   * Tests that must act on a batch operation before the scheduler starts executing it (e.g.
-   * cancel/suspend) pass a longer interval to avoid racing with the scheduler.
-   */
-  protected AbstractBatchOperationTest(final Duration schedulerInterval) {
-    engine =
-        EngineRule.singlePartition()
-            .withIdentitySetup()
-            .withAuthorizationsEnabled(true)
-            .withSecurityConfig(
-                cfg -> cfg.getInitialization().setUsers(List.of(DEFAULT_USER, OTHER_USER)))
-            .withSecurityConfig(
-                cfg -> {
-                  final var defaultRoles = new HashMap<>(cfg.getInitialization().getDefaultRoles());
-                  defaultRoles.put(
-                      "admin",
-                      Map.of(
-                          "users", List.of(DEFAULT_USER.getUsername(), OTHER_USER.getUsername())));
-                  cfg.getInitialization().setDefaultRoles(defaultRoles);
-                })
-            .withEngineConfig(
-                cfg ->
-                    cfg.setBatchOperationQueryPageSize(DEFAULT_QUERY_PAGE_SIZE)
-                        .setBatchOperationQueryRetryMax(2)
-                        .setBatchOperationSchedulerInterval(schedulerInterval)
-                        .setBatchOperationQueryRetryInitialDelay(Duration.ofMillis(10)))
-            .withSearchClientsProxy(searchClientsProxy)
-            .withBrokerRequestAuthorizationConverter(brokerRequestAuthorizationConverter);
+  protected AbstractBatchOperationTest(final boolean autoStartScheduler) {
+    this.autoStartScheduler = autoStartScheduler;
+  }
+
+  /** Advances the test clock until the scheduler has produced a matching record. */
+  protected void advanceSchedulerUntil(final Predicate<Record<?>> predicate) {
+    Awaitility.await()
+        .atMost(Duration.ofSeconds(60))
+        .pollInterval(Duration.ofMillis(10))
+        .until(
+            () -> {
+              engine.getClock().addTime(SCHEDULER_INTERVAL);
+              return RecordingExporter.getRecords().stream().anyMatch(predicate);
+            });
+  }
+
+  private void startScheduler() {
+    if (autoStartScheduler) {
+      engine.increaseTime(SCHEDULER_INTERVAL);
+    }
   }
 
   @Before
@@ -152,14 +174,17 @@ abstract class AbstractBatchOperationTest {
       when(brokerRequestAuthorizationConverter.convert(any())).thenReturn(claims);
     }
 
-    return engine
-        .batchOperation()
-        .newCreation(BatchOperationType.CANCEL_PROCESS_INSTANCE)
-        .withFilter(filterBuffer)
-        .withAuthentication(authenticationBuffer)
-        .create(DEFAULT_USER.getUsername())
-        .getValue()
-        .getBatchOperationKey();
+    final var batchOperationKey =
+        engine
+            .batchOperation()
+            .newCreation(BatchOperationType.CANCEL_PROCESS_INSTANCE)
+            .withFilter(filterBuffer)
+            .withAuthentication(authenticationBuffer)
+            .create(DEFAULT_USER.getUsername())
+            .getValue()
+            .getBatchOperationKey();
+    startScheduler();
+    return batchOperationKey;
   }
 
   protected long createNewSuspendProcessInstanceBatchOperation(final Set<Long> itemKeys) {
@@ -186,14 +211,17 @@ abstract class AbstractBatchOperationTest {
       when(brokerRequestAuthorizationConverter.convert(any())).thenReturn(claims);
     }
 
-    return engine
-        .batchOperation()
-        .newCreation(BatchOperationType.SUSPEND_PROCESS_INSTANCE)
-        .withFilter(filterBuffer)
-        .withAuthentication(authenticationBuffer)
-        .create(DEFAULT_USER.getUsername())
-        .getValue()
-        .getBatchOperationKey();
+    final var batchOperationKey =
+        engine
+            .batchOperation()
+            .newCreation(BatchOperationType.SUSPEND_PROCESS_INSTANCE)
+            .withFilter(filterBuffer)
+            .withAuthentication(authenticationBuffer)
+            .create(DEFAULT_USER.getUsername())
+            .getValue()
+            .getBatchOperationKey();
+    startScheduler();
+    return batchOperationKey;
   }
 
   protected long createNewResumeProcessInstanceBatchOperation(final Set<Long> itemKeys) {
@@ -220,14 +248,17 @@ abstract class AbstractBatchOperationTest {
       when(brokerRequestAuthorizationConverter.convert(any())).thenReturn(claims);
     }
 
-    return engine
-        .batchOperation()
-        .newCreation(BatchOperationType.RESUME_PROCESS_INSTANCE)
-        .withFilter(filterBuffer)
-        .withAuthentication(authenticationBuffer)
-        .create(DEFAULT_USER.getUsername())
-        .getValue()
-        .getBatchOperationKey();
+    final var batchOperationKey =
+        engine
+            .batchOperation()
+            .newCreation(BatchOperationType.RESUME_PROCESS_INSTANCE)
+            .withFilter(filterBuffer)
+            .withAuthentication(authenticationBuffer)
+            .create(DEFAULT_USER.getUsername())
+            .getValue()
+            .getBatchOperationKey();
+    startScheduler();
+    return batchOperationKey;
   }
 
   protected long createNewModifyProcessInstanceBatchOperation(
@@ -260,15 +291,18 @@ abstract class AbstractBatchOperationTest {
       when(brokerRequestAuthorizationConverter.convert(any())).thenReturn(claims);
     }
 
-    return engine
-        .batchOperation()
-        .newCreation(BatchOperationType.MODIFY_PROCESS_INSTANCE)
-        .withFilter(filterBuffer)
-        .withAuthentication(authenticationBuffer)
-        .withModificationPlan(modificationPlan)
-        .create(DEFAULT_USER.getUsername())
-        .getValue()
-        .getBatchOperationKey();
+    final var batchOperationKey =
+        engine
+            .batchOperation()
+            .newCreation(BatchOperationType.MODIFY_PROCESS_INSTANCE)
+            .withFilter(filterBuffer)
+            .withAuthentication(authenticationBuffer)
+            .withModificationPlan(modificationPlan)
+            .create(DEFAULT_USER.getUsername())
+            .getValue()
+            .getBatchOperationKey();
+    startScheduler();
+    return batchOperationKey;
   }
 
   protected long createNewFailedCancelProcessInstanceBatchOperation() {
@@ -279,14 +313,17 @@ abstract class AbstractBatchOperationTest {
         convertToBuffer(
             new ProcessInstanceFilter.Builder().processInstanceKeys(1L, 3L, 8L).build());
 
-    return engine
-        .batchOperation()
-        .newCreation(BatchOperationType.CANCEL_PROCESS_INSTANCE)
-        .withFilter(filterBuffer)
-        .waitForInitialized()
-        .create(DEFAULT_USER.getUsername())
-        .getValue()
-        .getBatchOperationKey();
+    final var batchOperationKey =
+        engine
+            .batchOperation()
+            .newCreation(BatchOperationType.CANCEL_PROCESS_INSTANCE)
+            .withFilter(filterBuffer)
+            .waitForInitialized()
+            .create(DEFAULT_USER.getUsername())
+            .getValue()
+            .getBatchOperationKey();
+    startScheduler();
+    return batchOperationKey;
   }
 
   protected long createNewResolveIncidentsBatchOperation(
@@ -323,14 +360,17 @@ abstract class AbstractBatchOperationTest {
     when(brokerRequestAuthorizationConverter.convert(any()))
         .thenReturn(Map.of(AUTHORIZED_USERNAME, OTHER_USER.getUsername()));
 
-    return engine
-        .batchOperation()
-        .newCreation(BatchOperationType.RESOLVE_INCIDENT)
-        .withFilter(filterBuffer)
-        .withAuthentication(authenticationBuffer)
-        .create(DEFAULT_USER.getUsername())
-        .getValue()
-        .getBatchOperationKey();
+    final var batchOperationKey =
+        engine
+            .batchOperation()
+            .newCreation(BatchOperationType.RESOLVE_INCIDENT)
+            .withFilter(filterBuffer)
+            .withAuthentication(authenticationBuffer)
+            .create(DEFAULT_USER.getUsername())
+            .getValue()
+            .getBatchOperationKey();
+    startScheduler();
+    return batchOperationKey;
   }
 
   protected long createNewMigrateProcessesBatchOperation(
@@ -367,15 +407,18 @@ abstract class AbstractBatchOperationTest {
       when(brokerRequestAuthorizationConverter.convert(any())).thenReturn(claims);
     }
 
-    return engine
-        .batchOperation()
-        .newCreation(BatchOperationType.MIGRATE_PROCESS_INSTANCE)
-        .withFilter(filterBuffer)
-        .withAuthentication(authenticationBuffer)
-        .withMigrationPlan(migrationPlan)
-        .create(DEFAULT_USER.getUsername())
-        .getValue()
-        .getBatchOperationKey();
+    final var batchOperationKey =
+        engine
+            .batchOperation()
+            .newCreation(BatchOperationType.MIGRATE_PROCESS_INSTANCE)
+            .withFilter(filterBuffer)
+            .withAuthentication(authenticationBuffer)
+            .withMigrationPlan(migrationPlan)
+            .create(DEFAULT_USER.getUsername())
+            .getValue()
+            .getBatchOperationKey();
+    startScheduler();
+    return batchOperationKey;
   }
 
   protected long createNewUpdateJobBatchOperation(
@@ -399,15 +442,18 @@ abstract class AbstractBatchOperationTest {
       when(brokerRequestAuthorizationConverter.convert(any())).thenReturn(claims);
     }
 
-    return engine
-        .batchOperation()
-        .newCreation(BatchOperationType.UPDATE_JOB)
-        .withFilter(filterBuffer)
-        .withAuthentication(authenticationBuffer)
-        .withJobUpdatePlan(plan)
-        .create(DEFAULT_USER.username())
-        .getValue()
-        .getBatchOperationKey();
+    final var batchOperationKey =
+        engine
+            .batchOperation()
+            .newCreation(BatchOperationType.UPDATE_JOB)
+            .withFilter(filterBuffer)
+            .withAuthentication(authenticationBuffer)
+            .withJobUpdatePlan(plan)
+            .create(DEFAULT_USER.username())
+            .getValue()
+            .getBatchOperationKey();
+    startScheduler();
+    return batchOperationKey;
   }
 
   protected JobEntity fakeJobEntity(final long jobKey) {
@@ -450,14 +496,17 @@ abstract class AbstractBatchOperationTest {
       when(brokerRequestAuthorizationConverter.convert(any())).thenReturn(claims);
     }
 
-    return engine
-        .batchOperation()
-        .newCreation(BatchOperationType.DELETE_PROCESS_INSTANCE)
-        .withFilter(filterBuffer)
-        .withAuthentication(authenticationBuffer)
-        .create(DEFAULT_USER.getUsername())
-        .getValue()
-        .getBatchOperationKey();
+    final var batchOperationKey =
+        engine
+            .batchOperation()
+            .newCreation(BatchOperationType.DELETE_PROCESS_INSTANCE)
+            .withFilter(filterBuffer)
+            .withAuthentication(authenticationBuffer)
+            .create(DEFAULT_USER.getUsername())
+            .getValue()
+            .getBatchOperationKey();
+    startScheduler();
+    return batchOperationKey;
   }
 
   protected static UnsafeBuffer convertToBuffer(final Object object) {
@@ -524,14 +573,17 @@ abstract class AbstractBatchOperationTest {
       when(brokerRequestAuthorizationConverter.convert(any())).thenReturn(claims);
     }
 
-    return engine
-        .batchOperation()
-        .newCreation(BatchOperationType.DELETE_DECISION_INSTANCE)
-        .withFilter(filterBuffer)
-        .withAuthentication(authenticationBuffer)
-        .create(DEFAULT_USER.getUsername())
-        .getValue()
-        .getBatchOperationKey();
+    final var batchOperationKey =
+        engine
+            .batchOperation()
+            .newCreation(BatchOperationType.DELETE_DECISION_INSTANCE)
+            .withFilter(filterBuffer)
+            .withAuthentication(authenticationBuffer)
+            .create(DEFAULT_USER.getUsername())
+            .getValue()
+            .getBatchOperationKey();
+    startScheduler();
+    return batchOperationKey;
   }
 
   protected DecisionInstanceEntity fakeDecisionInstanceEntity(final long itemKey) {

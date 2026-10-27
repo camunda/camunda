@@ -15,7 +15,6 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.search.filter.ProcessInstanceFilter;
 import io.camunda.search.query.ProcessInstanceQuery;
-import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
@@ -32,10 +31,6 @@ import org.junit.Test;
 import org.mockito.Mockito;
 
 public final class ExecuteBatchOperationTest extends AbstractBatchOperationTest {
-
-  public ExecuteBatchOperationTest() {
-    super(EngineConfiguration.DEFAULT_BATCH_OPERATION_SCHEDULER_INTERVAL);
-  }
 
   @Test
   public void shouldExecuteBatchOperationForCancelProcessInstance() {
@@ -97,6 +92,7 @@ public final class ExecuteBatchOperationTest extends AbstractBatchOperationTest 
             .create(DEFAULT_USER.getUsername())
             .getValue()
             .getBatchOperationKey();
+    engine.increaseTime(SCHEDULER_INTERVAL);
 
     // then we have failed event
     assertThat(
@@ -143,6 +139,7 @@ public final class ExecuteBatchOperationTest extends AbstractBatchOperationTest 
   @Test
   public void shouldRejectExecuteWhenBatchOperationIsSuspended() {
     // given
+    autoStartScheduler = false;
     final var processInstanceKeys = Set.of(1L, 2L, 3L);
     final var batchOperationKey = createNewCancelProcessInstanceBatchOperation(processInstanceKeys);
 
