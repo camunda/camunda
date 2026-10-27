@@ -34,13 +34,14 @@ final class CpuBudgetTest {
   @Test
   void shouldLimitCpuTimeOfSaturatedPoolToBudget() throws Exception {
     // given - a pool of 2 threads, both kept busy, with a budget of half a core
-    final var budget = startSaturatedPool(0.5, 2);
+    final var scheduler = startSaturatedPool(0.5, 2);
 
     // when
-    final long usedNanos = measureUsedNanos(budget);
+    final long usedNanos = measureThreadCpuNanos(scheduler.getThreads());
 
     // then
     final double cores = (double) usedNanos / Duration.ofMillis(MEASURE_MILLIS).toNanos();
+    System.out.printf("RESULT cap cores=%.3f%n", cores);
     assertThat(cores).isBetween(0.4, 0.6);
   }
 
@@ -62,15 +63,19 @@ final class CpuBudgetTest {
   @Test
   void shouldDivideCpuTimeBetweenPoolsByBudget() throws Exception {
     // given - two saturated pools with the budgets of tenants with the weights 2 and 1
-    final var heavy = startSaturatedPool(1.0, 2);
-    final var light = startSaturatedPool(0.5, 2);
+    final var heavy = startSaturatedPool(1.0, 2).getThreads();
+    final var light = startSaturatedPool(0.5, 2).getThreads();
 
     // when
-    final long heavyBefore = heavy.usedNanos();
-    final long lightBefore = light.usedNanos();
+    final long heavyBefore = cpuNanos(heavy);
+    final long lightBefore = cpuNanos(light);
     Thread.sleep(MEASURE_MILLIS);
-    final double ratio =
-        (double) (heavy.usedNanos() - heavyBefore) / (light.usedNanos() - lightBefore);
+    final long heavyUsed = cpuNanos(heavy) - heavyBefore;
+    final long lightUsed = cpuNanos(light) - lightBefore;
+    final double ratio = (double) heavyUsed / lightUsed;
+    System.out.printf(
+        "RESULT heavy=%d ms light=%d ms ratio=%.3f%n",
+        heavyUsed / 1_000_000, lightUsed / 1_000_000, ratio);
 
     // then
     assertThat(ratio).isBetween(1.7, 2.3);
@@ -105,27 +110,25 @@ final class CpuBudgetTest {
     assertThat(Duration.ofNanos(maxLatencyNanos)).isGreaterThan(period);
   }
 
-  private CpuBudget startSaturatedPool(final double cores, final int threads) {
+  private ActorScheduler startSaturatedPool(final double cores, final int threads) {
     final var budget = new CpuBudget(cores, PERIOD);
     budgets.add(budget);
     final var scheduler = newScheduler(budget, threads);
     budget.start(scheduler.getThreads());
     saturate(scheduler, threads);
-    return budget;
+    return scheduler;
   }
 
-  private long measureUsedNanos(final CpuBudget budget) throws InterruptedException {
-    final long before = budget.usedNanos();
-    Thread.sleep(MEASURE_MILLIS);
-    return budget.usedNanos() - before;
+  private static long cpuNanos(final List<ActorThread> threads) {
+    final var bean = java.lang.management.ManagementFactory.getThreadMXBean();
+    return threads.stream().mapToLong(t -> bean.getThreadCpuTime(t.threadId())).sum();
   }
 
   private static long measureThreadCpuNanos(final List<ActorThread> threads)
       throws InterruptedException {
-    final var bean = java.lang.management.ManagementFactory.getThreadMXBean();
-    final long before = threads.stream().mapToLong(t -> bean.getThreadCpuTime(t.threadId())).sum();
+    final long before = cpuNanos(threads);
     Thread.sleep(MEASURE_MILLIS);
-    return threads.stream().mapToLong(t -> bean.getThreadCpuTime(t.threadId())).sum() - before;
+    return cpuNanos(threads) - before;
   }
 
   private ActorScheduler newScheduler(final CpuBudget budget, final int threads) {
