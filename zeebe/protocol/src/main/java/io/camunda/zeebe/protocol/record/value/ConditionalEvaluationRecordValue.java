@@ -40,4 +40,15 @@ public interface ConditionalEvaluationRecordValue
    * @return the list of process instances that were started as a result of the evaluation
    */
   List<ConditionalStartedProcessInstanceValue> getStartedProcessInstances();
+
+  /**
+   * @return the run-scope selector that restricts this evaluation to a single run, or an empty
+   *     string for a global evaluation (the default and the behaviour of records written before
+   *     8.11)
+   * @since 8.11
+   */
+  @Value.Default
+  default String getRunScope() {
+    return "";
+  }
 }

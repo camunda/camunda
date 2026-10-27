@@ -23,6 +23,7 @@ import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import io.camunda.zeebe.util.TagUtil;
 import java.util.Map;
 import java.util.UUID;
 import org.junit.Before;
@@ -91,6 +92,38 @@ public class ConditionalEvaluationTest {
                 .withProcessInstanceKey(processInstanceKey)
                 .exists())
         .isTrue();
+  }
+
+  @Test
+  public void shouldStampRunScopeTagOnConditionalStartInstance() {
+    // given a conditional start event process
+    engine
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(processId)
+                .startEvent("start")
+                .condition(c -> c.condition("=x > y"))
+                .endEvent()
+                .done())
+        .deploy();
+
+    // when a scoped conditional evaluation starts an instance
+    final var evaluatedRecord =
+        engine
+            .conditionalEvaluation()
+            .withVariables(Map.of("x", 1000, "y", 100))
+            .withRunScope("runA")
+            .evaluate();
+    final long processInstanceKey =
+        evaluatedRecord.getValue().getStartedProcessInstances().getFirst().getProcessInstanceKey();
+
+    // then the started instance carries the reserved run-scope tag
+    final var activating =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            .withElementType(BpmnElementType.PROCESS)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+    assertThat(activating.getValue().getTags()).contains(TagUtil.runScopeTag("runA"));
   }
 
   @Test

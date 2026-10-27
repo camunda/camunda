@@ -87,6 +87,13 @@ public final class EvaluateConditionalCommandImpl
   }
 
   @Override
+  public EvaluateConditionalCommandStep2 runScope(final String runScope) {
+    grpcRequestObjectBuilder.setRunScope(runScope);
+    httpRequestObject.setRunScope(runScope);
+    return this;
+  }
+
+  @Override
   public EvaluateConditionalCommandStep2 tenantId(final String tenantId) {
     grpcRequestObjectBuilder.setTenantId(tenantId);
     httpRequestObject.setTenantId(tenantId);

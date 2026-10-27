@@ -785,7 +785,8 @@ public class RequestMapper {
                 tenantId,
                 getKeyOrDefault(
                     request, ConditionalEvaluationInstruction::getProcessDefinitionKey, -1L),
-                request.getVariables()));
+                request.getVariables(),
+                request.getRunScope() == null ? "" : request.getRunScope()));
   }
 
   private static TenantFilter convertTenantFilter(final TenantFilterEnum gatewayFilter) {

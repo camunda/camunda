@@ -523,7 +523,8 @@ public final class RequestMapper extends RequestUtil {
 
     return brokerRequest
         .setVariables(ensureJsonSet(grpcRequest.getVariables()))
-        .setTenantId(ensureTenantIdSet("EvaluateConditional", grpcRequest.getTenantId()));
+        .setTenantId(ensureTenantIdSet("EvaluateConditional", grpcRequest.getTenantId()))
+        .setRunScope(grpcRequest.getRunScope());
   }
 
   public static JobActivationProperties toJobActivationProperties(

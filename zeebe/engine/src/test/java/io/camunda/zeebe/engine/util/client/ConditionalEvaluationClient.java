@@ -64,6 +64,11 @@ public class ConditionalEvaluationClient {
     return this;
   }
 
+  public ConditionalEvaluationClient withRunScope(final String runScope) {
+    conditionalEvaluationRecord.setRunScope(runScope);
+    return this;
+  }
+
   public ConditionalEvaluationClient expectRejection() {
     expectation = REJECTION_EXPECTATION;
     return this;

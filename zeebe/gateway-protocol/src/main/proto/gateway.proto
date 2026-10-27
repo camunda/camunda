@@ -1075,6 +1075,10 @@ message EvaluateConditionalRequest {
   optional int64 processDefinitionKey = 2;
   // Serialised JSON object representing the variables to use for evaluation of the conditions and to pass to the process instances that have been triggered.
   string variables = 3;
+  // optional run-scope selector; when set, the process instances started by this evaluation are
+  // stamped with a reserved run-scope tag so they belong to this run (run isolation). When empty,
+  // the evaluation behaves globally.
+  string runScope = 4;
 }
 
 message ProcessInstanceReference {

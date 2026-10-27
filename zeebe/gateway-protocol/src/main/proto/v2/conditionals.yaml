@@ -98,6 +98,15 @@ components:
           additionalProperties: true
           example:
             x: 2
+        runScope:
+          description: |-
+            Restricts the evaluation to a single run. When set, the process instances started by this
+            evaluation are stamped with a reserved run-scope tag so they belong to this run. When
+            omitted, the evaluation behaves globally. Used for run isolation.
+
+            This field is an alpha feature and may be subject to change. It is excluded from the API
+            backward-compatibility guarantee until run-scope coverage is complete.
+          type: string
 
     EvaluateConditionalResult:
       type: object

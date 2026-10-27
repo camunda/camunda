@@ -37,6 +37,13 @@ public final class BrokerEvaluateConditionalRequest
     return this;
   }
 
+  public BrokerEvaluateConditionalRequest setRunScope(final String runScope) {
+    if (runScope != null) {
+      requestDto.setRunScope(runScope);
+    }
+    return this;
+  }
+
   @Override
   public ConditionalEvaluationRecord getRequestWriter() {
     return requestDto;

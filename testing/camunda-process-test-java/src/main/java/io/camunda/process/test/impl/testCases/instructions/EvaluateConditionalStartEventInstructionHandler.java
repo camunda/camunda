@@ -16,6 +16,7 @@
 package io.camunda.process.test.impl.testCases.instructions;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.command.EvaluateConditionalCommandStep1.EvaluateConditionalCommandStep2;
 import io.camunda.process.test.api.CamundaProcessTestContext;
 import io.camunda.process.test.api.testCases.instructions.EvaluateConditionalStartEventInstruction;
 import io.camunda.process.test.impl.testCases.AssertionFacade;
@@ -38,11 +39,15 @@ public class EvaluateConditionalStartEventInstructionHandler
       final CamundaClient camundaClient,
       final AssertionFacade assertionFacade) {
 
-    camundaClient
-        .newEvaluateConditionalCommand()
-        .variables(runContext.applyRunId(instruction.getVariables()))
-        .send()
-        .join();
+    final EvaluateConditionalCommandStep2 command =
+        camundaClient.newEvaluateConditionalCommand().variables(instruction.getVariables());
+
+    if (runContext.isEnabled()) {
+      // scope the evaluation to this run so the started instances carry this run's tag
+      command.runScope(runContext.getRunId());
+    }
+
+    command.send().join();
   }
 
   @Override

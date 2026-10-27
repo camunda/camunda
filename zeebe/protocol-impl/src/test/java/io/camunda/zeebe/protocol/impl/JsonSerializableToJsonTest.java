@@ -4942,6 +4942,7 @@ final class JsonSerializableToJsonTest {
                     }
                   ],
                   "tenantId": "tenant-1",
+                  "runScope": "",
                   "variables": {
                     "foo": "bar"
                   }
@@ -4962,6 +4963,7 @@ final class JsonSerializableToJsonTest {
                   "processDefinitionKey": -1,
                   "startedProcessInstances": [],
                   "tenantId": "<default>",
+                  "runScope": "",
                   "variables": {}
                 }
                 """

@@ -31,6 +31,9 @@
             "variables": {
               "enabled": false
             },
+            "runScope": {
+              "type": "keyword"
+            },
             "tenantId": {
               "type": "keyword"
             }
