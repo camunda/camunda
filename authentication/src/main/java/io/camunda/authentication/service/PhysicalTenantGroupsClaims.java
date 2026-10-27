@@ -54,19 +54,27 @@ final class PhysicalTenantGroupsClaims {
   }
 
   /**
-   * The settings of the physical tenant of the current request. A request without a tenant, or with
-   * a tenant that is not configured, uses the {@code default} tenant's settings, like the REST
-   * bearer-token converter.
+   * The settings of the physical tenant of the current request. A tenant that is not configured
+   * uses the {@code default} tenant's settings, like the REST bearer-token converter.
+   *
+   * @throws IllegalStateException when no physical tenant is bound, so that a lookup that lost its
+   *     tenant fails instead of reading groups with another tenant's groups mode
    */
   TenantGroupsClaims current() {
-    final String physicalTenantId = PhysicalTenantContext.currentOrNull();
-    final TenantGroupsClaims claims =
-        physicalTenantId == null ? null : byPhysicalTenant.get(physicalTenantId);
+    final TenantGroupsClaims claims = byPhysicalTenant.get(PhysicalTenantContext.current());
     return claims != null ? claims : byPhysicalTenant.get(DEFAULT_PHYSICAL_TENANT_ID);
   }
 
   private static boolean hasText(final String value) {
     return value != null && !value.isBlank();
+  }
+
+  /**
+   * An {@code issuer-uri} and the {@code iss} of its tokens can differ by a trailing slash
+   * (#61896), so issuers are compared without it, like the security library and the gRPC handler.
+   */
+  private static String withoutTrailingSlash(final String issuer) {
+    return issuer.endsWith("/") ? issuer.substring(0, issuer.length() - 1) : issuer;
   }
 
   record TenantGroupsClaims(
@@ -79,7 +87,9 @@ final class PhysicalTenantGroupsClaims {
       final String tenantGroupsClaim = defaultSlot.getGroupsClaim();
       final Map<String, OidcGroupsExtractor> byIssuer = new LinkedHashMap<>();
       if (hasText(defaultSlot.getIssuerUri()) && hasText(defaultSlot.getClientId())) {
-        byIssuer.put(defaultSlot.getIssuerUri(), new OidcGroupsExtractor(tenantGroupsClaim));
+        byIssuer.put(
+            withoutTrailingSlash(defaultSlot.getIssuerUri()),
+            new OidcGroupsExtractor(tenantGroupsClaim));
       }
       if (config.getProviders() != null && config.getProviders().getOidc() != null) {
         config
@@ -90,7 +100,7 @@ final class PhysicalTenantGroupsClaims {
                 provider -> {
                   if (hasText(provider.getIssuerUri())) {
                     byIssuer.putIfAbsent(
-                        provider.getIssuerUri(),
+                        withoutTrailingSlash(provider.getIssuerUri()),
                         new OidcGroupsExtractor(
                             provider.isGroupsClaimConfigured()
                                 ? provider.getGroupsClaim()
@@ -111,7 +121,7 @@ final class PhysicalTenantGroupsClaims {
     List<String> extract(final Map<String, Object> tokenClaims) {
       final String issuer = Objects.toString(tokenClaims.get(ISSUER_CLAIM), null);
       final OidcGroupsExtractor issuerExtractor =
-          issuer == null ? null : extractorsByIssuer.get(issuer);
+          issuer == null ? null : extractorsByIssuer.get(withoutTrailingSlash(issuer));
       return (issuerExtractor != null ? issuerExtractor : tenantExtractor).extract(tokenClaims);
     }
   }
