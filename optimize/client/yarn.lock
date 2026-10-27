@@ -1213,10 +1213,10 @@
     react-markdown "10.1.0"
     semver "7.8.5"
 
-"@camunda/design-system@0.76.0":
-  version "0.76.0"
-  resolved "https://registry.yarnpkg.com/@camunda/design-system/-/design-system-0.76.0.tgz#fa19f8e27b5bd6b4f424ff71da17c91185cb738f"
-  integrity sha512-4+LZiosZuYWMeuU9Abl/ARH2+44W3T5/hFv0g5nbYiQp6WuoYhfBULi6EGGZvOAVVN6JfOqTF2H44ufdaGGaAA==
+"@camunda/design-system@0.78.1":
+  version "0.78.1"
+  resolved "https://registry.yarnpkg.com/@camunda/design-system/-/design-system-0.78.1.tgz#f17d738437edcc4aab4e2a683b5a3f3f7a41458f"
+  integrity sha512-v/HMW14iim5edzEiQYZNSEmEpCO3xf9xQI+6i9IxgwMAkAA0OOh4VS/czcweqcSKF0PJrwvPGG8xlQiUyvjeaQ==
   dependencies:
     "@tanstack/react-table" "^8.20.5"
     "@tanstack/react-virtual" "^3.14.2"
