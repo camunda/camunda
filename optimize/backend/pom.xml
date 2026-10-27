@@ -437,6 +437,15 @@
       <version>${version.identity}</version>
     </dependency>
 
+    <!-- Pulled in by the starter, declared because CcsmIdentityComponentIdTest binds the
+         IdentityProperties it carries. Has to stay compile scope: test scope would win over the
+         starter's transitive scope and drop it from the runtime classpath. -->
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>identity-spring-boot-autoconfigure</artifactId>
+      <version>${version.identity}</version>
+    </dependency>
+
     <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
       <artifactId>jackson-annotations</artifactId>
