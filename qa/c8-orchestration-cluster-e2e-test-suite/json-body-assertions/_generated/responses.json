@@ -1,10 +1,10 @@
 {
   "metadata": {
-    "sourceRepo": "camunda/camunda",
-    "commit": "local",
-    "generatedAt": "2026-10-26T03:59:59.559Z",
+    "sourceRepo": "https://github.com/camunda/camunda",
+    "commit": "5d1824e6f93186178409af406cf3563f3cb91872",
+    "generatedAt": "2026-10-27T12:12:40.650Z",
     "specPath": "zeebe/gateway-protocol/src/main/proto/v2/rest-api.yaml",
-    "specSha256": "cce92a4b7e0bb25d99e0ade651c43c4241d63f10c939ef5c3b0d1214dea7e89d"
+    "specSha256": "1da64d63b7982502530d30ceea8575505bd0f62edecbb2f60ffa6111edaeb609"
   },
   "responses": [
     {
@@ -12147,8 +12147,7 @@
                 },
                 {
                   "name": "metadata",
-                  "type": "object",
-                  "nullable": true,
+                  "type": "additionalProperties",
                   "children": {
                     "required": [
                       {
@@ -12270,8 +12269,7 @@
                 },
                 {
                   "name": "metadata",
-                  "type": "object",
-                  "nullable": true,
+                  "type": "additionalProperties",
                   "children": {
                     "required": [
                       {
@@ -12363,8 +12361,7 @@
                 },
                 {
                   "name": "metadata",
-                  "type": "object",
-                  "nullable": true,
+                  "type": "additionalProperties",
                   "children": {
                     "required": [
                       {
@@ -12447,8 +12444,7 @@
         "required": [
           {
             "name": "metadata",
-            "type": "object",
-            "nullable": true,
+            "type": "additionalProperties",
             "children": {
               "required": [
                 {
