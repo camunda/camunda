@@ -1046,6 +1046,15 @@ jobs:
           secrets: |
             secret/data/products/camunda/ci/github-actions SLACK_TOPMONOREPORELEASE_WEBHOOK_URL;
             secret/data/products/camunda/ci/monorepo-release CLIENT_CONFIG | clientConfig
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          sparse-checkout: .github/actions/mask-camunda-client-config
+      - name: Mask Camunda client credentials
+        id: mask-camunda-credentials
+        continue-on-error: true
+        uses: ./.github/actions/mask-camunda-client-config
+        with:
+          client-config: ${{ steps.secrets.outputs.clientConfig }}
       - name: Extract Maven Central deployment ID
         id: extract-deployment-id
         # Never block notifications on extraction failure — the deployment ID is
@@ -1105,6 +1114,7 @@ jobs:
             echo "ℹ️ No Maven Central deployment ID found in build output" >&2
           fi
       - name: Report release success to C8
+        if: steps.mask-camunda-credentials.outcome == 'success'
         continue-on-error: true
         uses: camunda-community-hub/camunda-platform-8-github-action@0fe490e4cf6f0cf59a5c86a127c4354b4b1fc3b7 # 8.3.0
         with:
@@ -1119,6 +1129,9 @@ jobs:
               "camunda_maven_central_deployment_id": "${{ steps.extract-deployment-id.outputs.deploymentId }}",
               "camunda_repository": "${{ github.repository }}"
             }
+      - name: Clear Camunda client secret
+        if: always()
+        run: echo "ZEEBE_CLIENT_SECRET=" >> "$GITHUB_ENV"
       - name: Send success Slack notification
         if: ${{ !inputs.dryRun && !inputs.releaseProcessDryRun && needs.github.outputs.releaseBodyUpdateOutcome != 'failure' }}
         uses: slackapi/slack-github-action@0d95c9a7becc1e6e297d76df9bc735c44f4cbcbc # v3.0.5
@@ -1198,6 +1211,17 @@ jobs:
             secret/data/products/camunda/ci/github-actions SLACK_TOPMONOREPORELEASE_WEBHOOK_URL;
             secret/data/products/camunda/ci/monorepo-release CLIENT_CONFIG | clientConfig
 
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          sparse-checkout: .github/actions/mask-camunda-client-config
+
+      - name: Mask Camunda client credentials
+        id: mask-camunda-credentials
+        continue-on-error: true
+        uses: ./.github/actions/mask-camunda-client-config
+        with:
+          client-config: ${{ steps.secrets.outputs.clientConfig }}
+
       - name: Extract Maven Central deployment ID
         id: extract-deployment-id
         # Best-effort: the release job may have failed before publishing to Maven Central,
@@ -1258,6 +1282,7 @@ jobs:
           fi
 
       - name: Report release failure to C8
+        if: steps.mask-camunda-credentials.outcome == 'success'
         continue-on-error: true
         uses: camunda-community-hub/camunda-platform-8-github-action@0fe490e4cf6f0cf59a5c86a127c4354b4b1fc3b7 # 8.3.0
         with:
@@ -1272,6 +1297,9 @@ jobs:
               "camunda_maven_central_deployment_id": "${{ steps.extract-deployment-id.outputs.deploymentId }}",
               "camunda_repository": "${{ github.repository }}"
             }
+      - name: Clear Camunda client secret
+        if: always()
+        run: echo "ZEEBE_CLIENT_SECRET=" >> "$GITHUB_ENV"
       - name: Send failure Slack notification
         if: ${{ !inputs.dryRun && !inputs.releaseProcessDryRun }}
         uses: slackapi/slack-github-action@0d95c9a7becc1e6e297d76df9bc735c44f4cbcbc # v3.0.5
