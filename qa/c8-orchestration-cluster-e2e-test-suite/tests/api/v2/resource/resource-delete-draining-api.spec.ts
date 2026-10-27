@@ -510,7 +510,7 @@ test.describe('Process Definition Draining Deletion API', () => {
     expect(await instanceCountFor(request, processDefinitionId)).toBe(before);
   });
 
-  test('A repeated delete is rejected while the deployment partition still holds an instance', async ({
+  test('A repeated delete is accepted while the deployment partition still holds an instance', async ({
     request,
   }) => {
     const processDefinitionId = uniquePrefixedId('draining-repeat');
@@ -518,8 +518,9 @@ test.describe('Process Definition Draining Deletion API', () => {
       await deployUserTaskProcess(processDefinitionId);
 
     // Every delete of this definition is served by the partition that minted its
-    // key, and that partition rejects a repeat only while it still holds an
-    // instance of its own.
+    // key. While that partition still holds an instance of its own the copy is
+    // still present and DRAINING there, so the repeat has nothing left to do and
+    // is accepted as a no-op rather than rejected (camunda#66023).
     const deploymentPartition = partitionOf(processDefinitionKey);
     const instances = await createInstancesUntilOn(
       processDefinitionId,
@@ -541,8 +542,10 @@ test.describe('Process Definition Draining Deletion API', () => {
 
     await drainProcessDefinition(request, processDefinitionKey);
 
+    // The repeat is a no-op: it starts no new drain and the definition stays
+    // DRAINING until the instance partitions finish.
     const second = await deleteProcessDefinition(request, processDefinitionKey);
-    expect(second.status()).toBe(409);
+    expect(second.status()).toBe(200);
 
     await expectProcessDefinitionState(
       request,
@@ -556,8 +559,8 @@ test.describe('Process Definition Draining Deletion API', () => {
   }) => {
     // The RDBMS API jobs run the broker from source with its default of one
     // partition, where this case cannot arise: every instance is local to the
-    // deployment partition, so the repeat is always rejected and that is what
-    // the test above covers.
+    // deployment partition, so the repeat is served by the partition that still
+    // holds the draining copy, which the test above covers.
     const partitions = await partitionsCount(request);
     // eslint-disable-next-line playwright/no-skipped-test
     test.skip(
@@ -571,9 +574,9 @@ test.describe('Process Definition Draining Deletion API', () => {
 
     // With no instance of its own the deployment partition finalizes its copy
     // immediately, so the repeat is accepted as a retry of the drain the other
-    // partitions still owe (camunda#64850). Whether the same request should
-    // answer 200 here and 409 above is tracked in camunda#66023; this asserts
-    // today's behaviour so a change to it is not silent.
+    // partitions still owe (camunda#64850). This case and the one above both
+    // answer 200 now (camunda#66023); this asserts today's behaviour so a change
+    // to it is not silent.
     const deploymentPartition = partitionOf(processDefinitionKey);
     const attempts = 5 * partitions;
     const instance = await createInstanceAwayFrom(
