@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {afterEach, describe, expect} from 'vitest';
+import {afterEach, describe, expect, beforeAll} from 'vitest';
 import {userEvent, type Locator} from 'vitest/browser';
 import {cleanup} from 'vitest-browser-react';
 import {HttpResponse} from 'msw';
@@ -35,6 +35,7 @@ import {useProcessInstanceElementSelection} from './useProcessInstanceElementSel
 import {LastModification} from './LastModification';
 import {addToken} from './modifications/mocks';
 import {variablesQuery} from './variables.queries';
+import {preloadMonaco} from '#/vitest-modules/preload-monaco';
 
 const PROCESS_INSTANCE_ID = '2251799813685280';
 const ELEMENT_INSTANCE_KEY = '2251799813685299';
@@ -140,6 +141,8 @@ function renderVariables({
 }
 
 describe('<ProcessInstanceVariables /> editing', () => {
+	beforeAll(preloadMonaco, 120_000);
+
 	it.for(['editing', 'modification'] as const)(
 		'should stop failed variable-name pagination and recover after refreshing in %s mode',
 		async (mode, {worker}) => {

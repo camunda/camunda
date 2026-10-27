@@ -6,11 +6,12 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {afterEach, beforeAll, describe, expect} from 'vitest';
+import {afterEach, describe, expect, beforeAll} from 'vitest';
 import {userEvent, type Locator} from 'vitest/browser';
 import {it} from '#/vitest-modules/test-extend';
 import {renderWithRouter} from '#/vitest-modules/render-with-router';
 import {VariableFilterModal} from './VariableFilterModal';
+import {preloadMonaco} from '#/vitest-modules/preload-monaco';
 
 const STORAGE_KEY = 'operate.variableFilter.conditions';
 
@@ -22,10 +23,9 @@ function getStoredConditions(): unknown {
 	return JSON.parse(sessionStorage.getItem(STORAGE_KEY) ?? 'null');
 }
 
-// Monaco loads lazily; slower runners need longer than the default element timeout.
 async function waitForEditor(dialog: Locator, name: string) {
 	const editor = dialog.getByRole('textbox', {name});
-	await expect.element(editor, {timeout: 15_000}).toBeInTheDocument();
+	await expect.element(editor).toBeInTheDocument();
 	return editor;
 }
 
@@ -35,10 +35,7 @@ async function renderModal() {
 }
 
 describe('<VariableFilterModal />', () => {
-	// The first editor render pays for the whole Monaco bundle; loading it here keeps that cost out of the tests' own timeouts.
-	beforeAll(async () => {
-		await Promise.all([import('#/shared/monaco/loadMonaco'), import('#/operate/shared/Editors/MonacoEditor')]);
-	}, 120_000);
+	beforeAll(preloadMonaco, 120_000);
 
 	afterEach(() => {
 		sessionStorage.clear();
