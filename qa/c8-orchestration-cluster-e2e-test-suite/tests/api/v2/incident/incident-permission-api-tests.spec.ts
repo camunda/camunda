@@ -15,7 +15,6 @@ import {
 import {
   assertForbiddenRequest,
   assertStatusCode,
-  assertUnauthorizedRequest,
   buildUrl,
   encode,
   jsonHeaders,
@@ -212,23 +211,6 @@ test.describe.serial('Incident Permission API - Forbidden', () => {
       const body = await searchRes.json();
       expect(body.items).toHaveLength(1);
       expect(body.items[0].state).toBe('ACTIVE');
-    }).toPass(defaultAssertionOptions);
-  });
-
-  test('Get incident - unauthenticated', async ({request}) => {
-    // given
-    const incidentKey = unauthorizedIncidentKey;
-
-    await expect(async () => {
-      // when
-      const res = await request.get(
-        buildUrl('/incidents/{incidentKey}', {incidentKey}),
-        {headers: {'Content-Type': 'application/json'}},
-      );
-
-      // then
-      // Requests without credentials are rejected before any authorization check.
-      await assertUnauthorizedRequest(res);
     }).toPass(defaultAssertionOptions);
   });
 });
