@@ -11,6 +11,7 @@ import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.configuration.Camunda;
 import io.camunda.configuration.Secrets;
 import io.camunda.configuration.Secrets.AwsSecretsManagerStore;
+import io.camunda.configuration.Secrets.EnvStore;
 import io.camunda.configuration.Secrets.FileStore;
 import io.camunda.configuration.Secrets.GcpSecretManagerStore;
 import io.camunda.configuration.Secrets.Stores;
@@ -22,6 +23,7 @@ import io.camunda.secretstore.SecretStore;
 import io.camunda.secretstore.SecretStoreRegistry;
 import io.camunda.secretstore.aws.AwsSecretsManagerSecretStore;
 import io.camunda.secretstore.aws.AwsSecretsManagerStoreConfig;
+import io.camunda.secretstore.env.EnvVarSecretStore;
 import io.camunda.secretstore.file.FileBasedSecretStore;
 import io.camunda.secretstore.gcp.GcpSecretManagerSecretStore;
 import io.camunda.secretstore.gcp.GcpSecretManagerStoreConfig;
@@ -64,7 +66,9 @@ public class SecretStoreConfiguration {
           new StoreBinding<>(
               "aws", "AWS Secrets Manager", Stores::getAws, SecretStoreConfiguration::awsStore),
           new StoreBinding<>(
-              "gcp", "GCP Secret Manager", Stores::getGcp, SecretStoreConfiguration::gcpStore));
+              "gcp", "GCP Secret Manager", Stores::getGcp, SecretStoreConfiguration::gcpStore),
+          new StoreBinding<>(
+              "env", "environment variable", Stores::getEnv, SecretStoreConfiguration::envStore));
 
   /**
    * @param meterRegistry the cluster-wide registry each physical tenant's secret cache meters are
@@ -315,6 +319,11 @@ public class SecretStoreConfiguration {
             config.getContainerSecretId(),
             false,
             config.getCallTimeout()));
+  }
+
+  private static SecretStore envStore(
+      final String storeId, final String tenantId, final EnvStore config) {
+    return EnvVarSecretStore.fromSystemEnvironment(config.getPrefix());
   }
 
   /**

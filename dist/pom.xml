@@ -1200,9 +1200,6 @@
 
             <!-- This dependency are indirectly used by the awssdk auth plugin. It requires these classes on the classpath to resolve the AWS credentials -->
             <dependency>software.amazon.awssdk:sts</dependency>
-
-            <!-- Packaged ahead of its store binding in SecretStoreConfiguration -->
-            <dependency>io.camunda:camunda-secret-store-env</dependency>
           </usedDependencies>
           <ignoredUnusedDeclaredDependencies>
             <dep>com.nimbusds:oauth2-oidc-sdk</dep>
