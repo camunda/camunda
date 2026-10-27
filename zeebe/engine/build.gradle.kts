@@ -6,7 +6,7 @@ plugins {
 }
 
 dependencies {
-  api(project(":zeebe-workflow-engine-api"))
+  api(project(":zeebe-workflow-engine-common"))
   implementation(libs.org.jspecify.jspecify)
   implementation(project(":zeebe-util"))
   implementation(project(":zeebe-stream-platform"))

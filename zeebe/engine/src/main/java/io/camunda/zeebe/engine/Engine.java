@@ -36,7 +36,6 @@ import io.camunda.zeebe.protocol.record.value.ProcessInstanceRelated;
 import io.camunda.zeebe.stream.api.ProcessingResult;
 import io.camunda.zeebe.stream.api.ProcessingResultBuilder;
 import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
-import io.camunda.zeebe.stream.api.RecordProcessor;
 import io.camunda.zeebe.stream.api.RecordProcessorContext;
 import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.stream.api.records.ExceededBatchRecordSizeException;
@@ -47,7 +46,7 @@ import java.util.Objects;
 import java.util.function.Supplier;
 import org.slf4j.Logger;
 
-public class Engine implements RecordProcessor {
+public class Engine implements EngineProcessor {
 
   public static final String ERROR_MESSAGE_BANNED_PI =
       "Expected to process command for process instance with key '%d', but the process instance is banned due to previous errors. The process instance can't be recovered, but it can be cancelled.";
@@ -92,6 +91,7 @@ public class Engine implements RecordProcessor {
    *
    * @return true if scaling is in progress, false otherwise
    */
+  @Override
   public boolean isScalingInProgress() {
     if (processingState == null || processingState.getRoutingState() == null) {
       return false;
@@ -117,6 +117,7 @@ public class Engine implements RecordProcessor {
    *     not initialized
    * @return the current partition count
    */
+  @Override
   public int getCurrentPartitionCount(final int fallBackPartitionCount) {
     return RoutingInfo.dynamic(
             processingState.getRoutingState(),

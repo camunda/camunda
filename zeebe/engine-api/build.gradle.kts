@@ -1,19 +1,17 @@
 plugins { id("buildlogic.server-conventions") }
 
 dependencies {
+  api(project(":zeebe-workflow-engine-common"))
+  api(project(":zeebe-db"))
+  api(project(":zeebe-protocol"))
+  api(project(":camunda-search-client"))
+  api(project(":camunda-secret-store-api"))
+  api(project(":camunda-security-core"))
+  api(project(":zeebe-util"))
+  api(project(":zeebe-stream-platform"))
+  implementation(project(":zeebe-workflow-engine"))
+  implementation(project(":zeebe-expression-language"))
   implementation(libs.org.jspecify.jspecify)
-  implementation(project(":zeebe-util"))
-  implementation(project(":zeebe-stream-platform"))
-  implementation(project(":zeebe-protocol"))
-  implementation(project(":zeebe-protocol-impl"))
-  implementation(project(":zeebe-db"))
-  implementation(project(":zeebe-msgpack-value"))
-  implementation(libs.io.camunda.security.library.api)
-  implementation(libs.io.camunda.security.library.validation)
-  implementation(libs.org.slf4j.slf4j.api)
-  api(libs.org.agrona.agrona)
-  api(libs.io.micrometer.micrometer.core)
-  api(libs.io.micrometer.micrometer.commons)
 }
 
-description = "Zeebe Workflow Engine API: the engine surface consumed by the broker"
+description = "Zeebe Workflow Engine API: the only engine surface the broker compiles against"
