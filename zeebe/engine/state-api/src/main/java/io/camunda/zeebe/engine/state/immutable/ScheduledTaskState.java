@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.engine.state.immutable;
 
-
 public interface ScheduledTaskState {
 
   SecretReferenceState getSecretReferenceState();

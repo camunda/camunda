@@ -138,8 +138,7 @@ public final class ProcessInstanceCreationCreateWithAwaitingResultProcessor
             .setRequestId(command.getRequestId())
             .setRequestStreamId(command.getRequestStreamId())
             .setFetchVariables(record.fetchVariables());
-    awaitResultRequestRecorder.record(
-        record.getProcessInstanceKey(), awaitResultMetadata);
+    awaitResultRequestRecorder.record(record.getProcessInstanceKey(), awaitResultMetadata);
 
     // Variables are already persisted via setVariablesFromDocument(); clear them to save batch
     // space.

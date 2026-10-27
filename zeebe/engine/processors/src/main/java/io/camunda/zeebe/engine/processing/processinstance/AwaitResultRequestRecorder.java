@@ -11,8 +11,8 @@ import io.camunda.zeebe.engine.state.instance.AwaitProcessInstanceResultMetadata
 
 /**
  * Records who is waiting for the result of a process instance. This is the one place where a
- * processor hands data to the state outside of an event; the processors never see the mutable
- * state itself.
+ * processor hands data to the state outside of an event; the processors never see the mutable state
+ * itself.
  */
 @FunctionalInterface
 public interface AwaitResultRequestRecorder {

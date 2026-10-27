@@ -43,8 +43,8 @@ import io.camunda.zeebe.engine.processing.timer.DueDateTimerCheckScheduler;
 import io.camunda.zeebe.engine.processing.variable.InputMappingResolvers;
 import io.camunda.zeebe.engine.processing.variable.OutputMappingResolvers;
 import io.camunda.zeebe.engine.processing.variable.VariableBehavior;
-import io.camunda.zeebe.engine.state.message.TransientPendingSubscriptionState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
+import io.camunda.zeebe.engine.state.message.TransientPendingSubscriptionState;
 import io.camunda.zeebe.engine.state.routing.RoutingInfo;
 import java.time.InstantSource;
 import org.jspecify.annotations.Nullable;
@@ -335,8 +335,7 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
    * yields collector-free contexts for the BPMN path, which must not accumulate references.
    */
   private static NamespacedEvaluationContext buildClusterEvaluationContext(
-      final ProcessingState processingState,
-      final @Nullable ReferencedSecretCollector collector) {
+      final ProcessingState processingState, final @Nullable ReferencedSecretCollector collector) {
     final var tenantClusterScope =
         new TenantScopeClusterVariableEvaluationContext(
             processingState.getClusterVariableState(), collector);

@@ -20,7 +20,8 @@ import org.agrona.DirectBuffer;
  * Utility class that holds the current routing information. To be uses everywhere the number of
  * partitions or message correlation strategy is needed.
  *
- * <p>The information always reflects the current persisted routing info from {@code DbRoutingState}.
+ * <p>The information always reflects the current persisted routing info from {@code
+ * DbRoutingState}.
  */
 public interface RoutingInfo {
   /** Returns the current set of partitions. */

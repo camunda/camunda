@@ -81,37 +81,37 @@ Java packages are the same in all modules (`io.camunda.zeebe.engine...`), so a p
 `io.camunda.zeebe.engine.processing` or `io.camunda.zeebe.engine.state` is spread over several modules.
 
 ```
-                         api                      what the broker depends on
-                          |
-                        engine                    wires everything together
-              ______/     |      \______
-             |            |             |
-        processors     appliers        state      (Db* implementations)
-             |            \             /
-             |         state-mutable-api
-             |                 |
-             +--------+--------+
-                      |
-                  state-api                       read-only state interfaces
-                      |
-                    model                         engine data model (BPMN, DMN, ...)
-                      |
-                    common                        shared basics
+                 api                      what the broker depends on
+                  |
+                engine                    wires everything together
+      ______/     |      \______
+     |            |             |
+processors     appliers        state      (Db* implementations)
+     |            \             /
+     |         state-mutable-api
+     |                 |
+     +--------+--------+
+              |
+          state-api                       read-only state interfaces
+              |
+            model                         engine data model (BPMN, DMN, ...)
+              |
+            common                        shared basics
 ```
 
 An arrow always points down; a module may only depend on modules below it.
 
-| Module            | Artifact | Contains                                                                                                                                                                  |
-|-------------------|-----------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `common`          | `zeebe-workflow-engine-common`    | Small types shared by all other modules.                                                                                                                                  |
-| `model`           | `zeebe-workflow-engine-model`     | The engine's data model: transformed BPMN/DMN/form model, expression handling, and the value types persisted in state.                                                    |
-| `state-api`       | `zeebe-workflow-engine-state-api` | Read-only `*State` interfaces (`ProcessingState`, `JobState`, ...) and the value types and helpers shared by processors and appliers. No mutable or implementation classes. |
-| `state-mutable-api` | `zeebe-workflow-engine-state-mutable-api` | The `Mutable*State` interfaces that extend the read-only ones with write methods.                                                                                 |
-| `state`           | `zeebe-workflow-engine-state`     | The `Db*State` implementations on top of RocksDB (`ProcessingDbState`, ...).                                                                                              |
-| `appliers`        | `zeebe-workflow-engine-appliers`  | The event appliers and `EventAppliers`. The only code that is allowed to change state, through the `Mutable*State` interfaces.                                            |
-| `processors`      | `zeebe-workflow-engine-processors`| Command processors, BPMN behaviors and scheduled tasks. They only see `state-api`, so using a mutable state from a processor does not compile.                          |
-| `engine`          | `zeebe-workflow-engine`           | The `Engine` class and the typed record processor context. It assembles processors, appliers and state, and holds the tests that need the whole engine (`EngineRule`).   |
-| `api`             | `zeebe-workflow-engine-api`       | `EngineFactory`, `EngineDependencies` and `MigrationStatusReader`. The only engine module the broker compiles against (the rest is runtime-only).                                                |
+|       Module        |                 Artifact                  |                                                                                  Contains                                                                                   |
+|---------------------|-------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `common`            | `zeebe-workflow-engine-common`            | Small types shared by all other modules.                                                                                                                                    |
+| `model`             | `zeebe-workflow-engine-model`             | The engine's data model: transformed BPMN/DMN/form model, expression handling, and the value types persisted in state.                                                      |
+| `state-api`         | `zeebe-workflow-engine-state-api`         | Read-only `*State` interfaces (`ProcessingState`, `JobState`, ...) and the value types and helpers shared by processors and appliers. No mutable or implementation classes. |
+| `state-mutable-api` | `zeebe-workflow-engine-state-mutable-api` | The `Mutable*State` interfaces that extend the read-only ones with write methods.                                                                                           |
+| `state`             | `zeebe-workflow-engine-state`             | The `Db*State` implementations on top of RocksDB (`ProcessingDbState`, ...).                                                                                                |
+| `appliers`          | `zeebe-workflow-engine-appliers`          | The event appliers and `EventAppliers`. The only code that is allowed to change state, through the `Mutable*State` interfaces.                                              |
+| `processors`        | `zeebe-workflow-engine-processors`        | Command processors, BPMN behaviors and scheduled tasks. They only see `state-api`, so using a mutable state from a processor does not compile.                              |
+| `engine`            | `zeebe-workflow-engine`                   | The `Engine` class and the typed record processor context. It assembles processors, appliers and state, and holds the tests that need the whole engine (`EngineRule`).      |
+| `api`               | `zeebe-workflow-engine-api`               | `EngineFactory`, `EngineDependencies` and `MigrationStatusReader`. The only engine module the broker compiles against (the rest is runtime-only).                           |
 
 Rules of thumb when adding code:
 

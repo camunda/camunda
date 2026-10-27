@@ -43,7 +43,6 @@ public class DbJobMetricsState implements MutableJobMetricsState {
   /** Metadata key: flag indicating if size limit was exceeded (1 = true, 0 = false) */
   public static final String META_SIZE_LIMITS_EXCEEDED = "__size_limits_exceeded__";
 
-
   public static final long ZERO = 0L;
 
   public final InstantSource clock;

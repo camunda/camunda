@@ -8,8 +8,8 @@
 package io.camunda.zeebe.engine.api;
 
 import io.camunda.zeebe.db.ZeebeDb;
-import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.engine.state.migration.DbMigrationState;
+import io.camunda.zeebe.protocol.ZbColumnFamilies;
 
 /** Read-only access to the migration status stored in a partition's state. */
 public final class MigrationStatusReader {

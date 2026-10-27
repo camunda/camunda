@@ -23,6 +23,7 @@ import io.camunda.zeebe.engine.processing.message.ProcessMessageSubscriptionCorr
 import io.camunda.zeebe.engine.processing.message.ProcessMessageSubscriptionCreateProcessor;
 import io.camunda.zeebe.engine.processing.message.ProcessMessageSubscriptionDeleteProcessor;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
+import io.camunda.zeebe.engine.processing.processinstance.AwaitResultRequestRecorder;
 import io.camunda.zeebe.engine.processing.processinstance.BufferedCommandDrainProcessor;
 import io.camunda.zeebe.engine.processing.processinstance.ElementInstanceWalkSuspendProcessor;
 import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceBatchActivateProcessor;
@@ -31,7 +32,6 @@ import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceBusines
 import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceCancelProcessor;
 import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceCompleteResumingProcessor;
 import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceCreationCreateProcessor;
-import io.camunda.zeebe.engine.processing.processinstance.AwaitResultRequestRecorder;
 import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceCreationCreateWithAwaitingResultProcessor;
 import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceCreationHelper;
 import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceMigrationMigrateProcessor;
@@ -48,13 +48,12 @@ import io.camunda.zeebe.engine.processing.timer.DueDateTimerCheckScheduler;
 import io.camunda.zeebe.engine.processing.timer.TimerCancelProcessor;
 import io.camunda.zeebe.engine.processing.timer.TimerTriggerProcessor;
 import io.camunda.zeebe.engine.processing.variable.VariableDocumentUpdateProcessor;
-import io.camunda.zeebe.engine.state.immutable.ProcessingState;
-import io.camunda.zeebe.engine.state.immutable.ScheduledTaskState;
-import io.camunda.zeebe.engine.state.message.TransientPendingSubscriptionState;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ProcessMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
+import io.camunda.zeebe.engine.state.immutable.ScheduledTaskState;
 import io.camunda.zeebe.engine.state.immutable.UserTaskState;
+import io.camunda.zeebe.engine.state.message.TransientPendingSubscriptionState;
 import io.camunda.zeebe.engine.state.routing.RoutingInfo;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -385,8 +384,7 @@ public final class BpmnProcessors {
       final EngineConfiguration config,
       final CslAuthorizationCheck cslCheck,
       final AwaitResultRequestRecorder awaitResultRequestRecorder) {
-    final ElementInstanceState elementInstanceState =
-        processingState.getElementInstanceState();
+    final ElementInstanceState elementInstanceState = processingState.getElementInstanceState();
     final KeyGenerator keyGenerator = processingState.getKeyGenerator();
 
     final var processInstanceCreationHelper =
@@ -408,7 +406,11 @@ public final class BpmnProcessors {
         ValueType.PROCESS_INSTANCE_CREATION,
         ProcessInstanceCreationIntent.CREATE_WITH_AWAITING_RESULT,
         new ProcessInstanceCreationCreateWithAwaitingResultProcessor(
-            keyGenerator, writers, metrics, processInstanceCreationHelper, awaitResultRequestRecorder));
+            keyGenerator,
+            writers,
+            metrics,
+            processInstanceCreationHelper,
+            awaitResultRequestRecorder));
   }
 
   private static void addProcessInstanceModificationStreamProcessors(

@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.engine.state.immutable;
 
-
 import io.camunda.zeebe.engine.state.jobmetrics.MetricsConsumer;
 import java.util.List;
 

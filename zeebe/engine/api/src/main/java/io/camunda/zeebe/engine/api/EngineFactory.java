@@ -7,8 +7,9 @@
  */
 package io.camunda.zeebe.engine.api;
 
+import io.camunda.security.configuration.EngineSecurityConfig;
 import io.camunda.zeebe.db.ZeebeDb;
-import io.camunda.zeebe.protocol.ZbColumnFamilies;
+import io.camunda.zeebe.el.ExpressionLanguageMetrics;
 import io.camunda.zeebe.engine.Engine;
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.EngineProcessor;
@@ -21,8 +22,7 @@ import io.camunda.zeebe.engine.state.message.TransientPendingSubscriptionState;
 import io.camunda.zeebe.engine.state.migration.DbMigratorImpl;
 import io.camunda.zeebe.engine.state.processing.DbBannedInstanceState;
 import io.camunda.zeebe.engine.state.query.StateQueryService;
-import io.camunda.security.configuration.EngineSecurityConfig;
-import io.camunda.zeebe.el.ExpressionLanguageMetrics;
+import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.stream.api.ClusterContext;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import java.time.InstantSource;
@@ -85,10 +85,7 @@ public final class EngineFactory {
             ExpressionLanguageMetrics.noop());
     final var migrator =
         new DbMigratorImpl(
-            versionCheckRestrictionEnabled,
-            clusterContext,
-            processingState,
-            brokerVersion);
+            versionCheckRestrictionEnabled, clusterContext, processingState, brokerVersion);
 
     final var migrationsPerformed = migrator.runMigrations();
     zeebeDbContext.getCurrentTransaction().commit();
