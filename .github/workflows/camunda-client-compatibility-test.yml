@@ -196,7 +196,9 @@ jobs:
           echo "CLIENT_LIST:"
           cat /tmp/client_list.txt
 
-          # Create SERVER_LIST: versions from next minor onwards + snapshot (if not on main)
+          # Create SERVER_LIST: the latest patch of each minor from the next minor onwards
+          # + snapshot (if not on main). Older patches are superseded, and a bug that only
+          # exists in one of them would fail the daily run until it is excluded by hand.
           SERVER_LIST=""
           STABLE_VERSION="${{ steps.branch-info.outputs.stable-version }}"
 
@@ -206,6 +208,8 @@ jobs:
             NEXT_MINOR=$((STABLE_MINOR + 1))
 
             SERVER_COUNT=0
+            declare -A LATEST_SERVER_TAG=()
+            SERVER_MINORS=()
             if [[ -n "$FILTERED_TAGS" ]]; then
               for tag in $FILTERED_TAGS; do
                 if [[ "$tag" =~ ^([0-9]+)\.([0-9]+)\. ]]; then
@@ -214,12 +218,20 @@ jobs:
 
                   if (( TAG_MAJOR > STABLE_MAJOR )) || \
                      (( TAG_MAJOR == STABLE_MAJOR && TAG_MINOR >= NEXT_MINOR )); then
-                    SERVER_LIST+="$tag"$'\n'
-                    SERVER_COUNT=$((SERVER_COUNT + 1))
+                    # Tags are sorted by version (sort -V), so the last match per minor is the latest
+                    if [[ -z "${LATEST_SERVER_TAG[$TAG_MAJOR.$TAG_MINOR]:-}" ]]; then
+                      SERVER_MINORS+=("$TAG_MAJOR.$TAG_MINOR")
+                    fi
+                    LATEST_SERVER_TAG[$TAG_MAJOR.$TAG_MINOR]="$tag"
                   fi
                 fi
               done
             fi
+
+            for minor in "${SERVER_MINORS[@]}"; do
+              SERVER_LIST+="${LATEST_SERVER_TAG[$minor]}"$'\n'
+              SERVER_COUNT=$((SERVER_COUNT + 1))
+            done
           else
             # On main, SERVER_LIST uses SNAPSHOT
             SERVER_LIST="SNAPSHOT"$'\n'
