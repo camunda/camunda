@@ -11,6 +11,7 @@ import {HttpResponse} from 'msw';
 import {z} from 'zod';
 import {it} from '#/vitest-modules/test-extend';
 import {renderWithRouter} from '#/vitest-modules/render-with-router';
+import {createResponseGate} from '#/shared-test-modules/mock-endpoint';
 import {
 	mockCancelProcessInstanceEndpoint,
 	mockGetBatchOperationEndpoint,
@@ -587,15 +588,8 @@ describe('<InstancesTable />', () => {
 		}
 	});
 
-	it('should abort the old batch item request when the batch filter changes', async ({worker}) => {
-		const originalFetch = globalThis.fetch;
-		const itemRequests: {request: Request; body: Promise<unknown>}[] = [];
-		const fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation((input, init) => {
-			if (input instanceof Request && input.url.endsWith('/batch-operation-items/search')) {
-				itemRequests.push({request: input, body: input.clone().json()});
-			}
-			return originalFetch(input, init);
-		});
+	it('should keep the new batch details when an old batch response arrives late', async ({worker}) => {
+		const oldResponse = createResponseGate(worker);
 		try {
 			worker.use(
 				mockQueryProcessInstancesEndpoint({
@@ -604,32 +598,22 @@ describe('<InstancesTable />', () => {
 					),
 				}),
 				mockQueryBatchOperationItemsEndpoint({
-					successResponse: EMPTY_BATCH_OPERATION_ITEMS_RESPONSE,
-					delay: 'infinite',
+					requestBody: z.object({
+						filter: z.object({batchOperationKey: z.object({$eq: z.literal('batch-op-1')})}),
+					}),
+					successResponse: HttpResponse.json(
+						createQueryBatchOperationItemsResponse({
+							items: [
+								createBatchOperationItem({processInstanceKey: '1', state: 'FAILED', errorMessage: 'Old failure'}),
+							],
+						}),
+					),
+					delay: oldResponse.delay,
 				}),
-			);
-			const screen = await renderSearchHarness(
-				{...BASE_SEARCH, batchOperationKey: 'batch-op-1'},
-				{...BASE_SEARCH, batchOperationKey: 'batch-op-2'},
-			);
-			let oldRequest: Request | undefined;
-			await expect
-				.poll(async () => {
-					for (const {request, body} of itemRequests) {
-						const payload = z
-							.object({filter: z.object({batchOperationKey: z.object({$eq: z.literal('batch-op-1')})})})
-							.safeParse(await body);
-						if (payload.success) {
-							oldRequest = request;
-							return true;
-						}
-					}
-					return false;
-				})
-				.toBe(true);
-
-			worker.use(
 				mockQueryBatchOperationItemsEndpoint({
+					requestBody: z.object({
+						filter: z.object({batchOperationKey: z.object({$eq: z.literal('batch-op-2')})}),
+					}),
 					successResponse: HttpResponse.json(
 						createQueryBatchOperationItemsResponse({
 							items: [
@@ -638,14 +622,24 @@ describe('<InstancesTable />', () => {
 						}),
 					),
 				}),
+				mockQueryBatchOperationItemsEndpoint({successResponse: EMPTY_BATCH_OPERATION_ITEMS_RESPONSE}),
 			);
+			const screen = await renderSearchHarness(
+				{...BASE_SEARCH, batchOperationKey: 'batch-op-1'},
+				{...BASE_SEARCH, batchOperationKey: 'batch-op-2'},
+			);
+			await oldResponse.requested;
+
 			await userEvent.click(screen.getByRole('button', {name: 'change search'}));
 
-			await expect.poll(() => oldRequest?.signal.aborted).toBe(true);
 			await userEvent.click(screen.getByRole('button', {name: 'Show failure details for instance 1'}));
 			await expect.element(screen.getByText('New failure')).toBeVisible();
+			await oldResponse.release();
+
+			await expect.element(screen.getByText('New failure')).toBeVisible();
+			await expect.element(screen.getByText('Old failure')).not.toBeInTheDocument();
 		} finally {
-			fetchSpy.mockRestore();
+			await oldResponse.release();
 		}
 	});
 

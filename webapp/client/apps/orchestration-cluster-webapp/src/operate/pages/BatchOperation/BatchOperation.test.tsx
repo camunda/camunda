@@ -23,6 +23,7 @@ import {
 } from '#/shared-test-modules/api-mocks/batch-operations';
 import {createProblemDetails} from '#/shared-test-modules/api-mocks/shared';
 import {notificationsStore} from '#/shared/notifications/notifications.store';
+import {Notifications} from '#/shared/notifications/components/Notifications';
 import {BatchOperation, BatchOperationSkeleton} from './BatchOperation';
 
 const BATCH_OPERATION_KEY = 'migrate-operation-123';
@@ -195,29 +196,23 @@ describe('<BatchOperation />', () => {
 				successResponse: HttpResponse.json(
 					createBatchOperation({batchOperationKey: BATCH_OPERATION_KEY, state: 'ACTIVE'}),
 				),
+				once: true,
+			}),
+			mockGetBatchOperationEndpoint({
+				successResponse: HttpResponse.json(createProblemDetails({status: 404}), {status: 404}),
 			}),
 			mockQueryBatchOperationItemsEndpoint({successResponse: EMPTY_ITEMS_RESPONSE}),
 			mockSuspendBatchOperationEndpoint({successResponse: new HttpResponse(null, {status: 204})}),
 		);
 
 		const screen = await renderPage();
+		const notifications = await render(<Notifications />);
 		await userEvent.click(screen.getByRole('button', {name: 'Suspend'}));
-
-		worker.use(
-			mockGetBatchOperationEndpoint({
-				successResponse: HttpResponse.json(createProblemDetails({status: 404}), {status: 404}),
-			}),
-		);
 
 		await expect.poll(() => screen.router.state.location.pathname, {timeout: 8000}).toBe('/operate/batch-operations');
 		await expect
-			.poll(() => notificationsStore.notifications, {timeout: 8000})
-			.toEqual([
-				expect.objectContaining({
-					kind: 'error',
-					title: `Couldn't find batch operation ${BATCH_OPERATION_KEY}`,
-				}),
-			]);
+			.element(notifications.getByRole('status'))
+			.toMatchTextContent(`Couldn't find batch operation ${BATCH_OPERATION_KEY}`);
 	}, 10000);
 });
 

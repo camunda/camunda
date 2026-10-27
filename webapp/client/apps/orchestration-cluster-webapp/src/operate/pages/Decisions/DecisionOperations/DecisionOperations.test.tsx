@@ -13,6 +13,7 @@ import {deleteResourceRequestBodySchema} from '@camunda/camunda-api-zod-schemas/
 import {it} from '#/vitest-modules/test-extend';
 import {renderWithRouter} from '#/vitest-modules/render-with-router';
 import {mockDeleteResourceEndpoint} from '#/shared-test-modules/mock-handlers';
+import {createResponseGate} from '#/shared-test-modules/mock-endpoint';
 import {createDecisionDefinition} from '#/shared-test-modules/api-mocks/decision-definitions';
 import {Notifications} from '#/shared/notifications/components/Notifications';
 import {notificationsStore} from '#/shared/notifications/notifications.store';
@@ -73,13 +74,26 @@ describe('<DecisionOperations />', () => {
 	});
 
 	it('should block further deletion while pending', async ({worker}) => {
-		worker.use(mockDeleteResourceEndpoint({successResponse: HttpResponse.json({}), delay: 'infinite'}));
+		const responseGate = createResponseGate(worker);
+		worker.use(
+			mockDeleteResourceEndpoint({
+				successResponse: HttpResponse.json({}),
+				delay: responseGate.delay,
+			}),
+		);
 		const screen = await renderOperations();
 
-		await submit(screen);
+		try {
+			await submit(screen);
 
-		await expect.element(screen.getByRole('button', {name: ACTION_NAME})).toBeDisabled();
-		await expect.element(screen.getByRole('heading', {name: 'Delete DRD', exact: true})).not.toBeInTheDocument();
+			await expect.element(screen.getByRole('button', {name: ACTION_NAME})).toBeDisabled();
+			await expect.element(screen.getByRole('heading', {name: 'Delete DRD', exact: true})).not.toBeInTheDocument();
+		} finally {
+			await responseGate.release();
+		}
+
+		await expect.element(screen.getByRole('button', {name: ACTION_NAME})).toBeEnabled();
+		await expect.element(screen.getByText('Operation created', {exact: true})).toBeVisible();
 	});
 
 	it('should notify and clear only the deleted selection', async ({worker}) => {

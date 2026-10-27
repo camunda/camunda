@@ -158,15 +158,10 @@ test.describe('Operate processes page', () => {
 				version: 2,
 			}),
 		];
-		let isTargetDeployed = false;
 		network.use(
-			http.post(apiEndpoints.queryProcessDefinitions.getUrl(), () =>
-				HttpResponse.json(
-					createQueryProcessDefinitionsResponse({
-						items: isTargetDeployed ? definitions : definitions.slice(0, 1),
-					}),
-				),
-			),
+			mockQueryProcessDefinitionsEndpoint({
+				successResponse: HttpResponse.json(createQueryProcessDefinitionsResponse({items: definitions.slice(0, 1)})),
+			}),
 			mockGetProcessDefinitionXmlEndpoint({successResponse: HttpResponse.text(BPMN_XML)}),
 			mockGetProcessDefinitionStatisticsEndpoint({
 				successResponse: HttpResponse.json(createGetProcessDefinitionStatisticsResponse([])),
@@ -194,7 +189,24 @@ test.describe('Operate processes page', () => {
 
 		await operateProcessesPage.goto('?process=my_simple_process&version=1');
 		await expect(operateProcessesPage.elementCombobox).toBeEnabled();
-		isTargetDeployed = true;
+		network.use(
+			mockQueryProcessDefinitionsEndpoint({
+				requestBody: z.object({
+					filter: z.object({
+						isLatestVersion: z.literal(true),
+						processDefinitionId: z.object({$neq: z.literal('my_simple_process')}),
+					}),
+				}),
+				successResponse: HttpResponse.json(createQueryProcessDefinitionsResponse()),
+			}),
+			mockQueryProcessDefinitionsEndpoint({
+				requestBody: z.object({filter: z.object({isLatestVersion: z.literal(true)})}),
+				successResponse: HttpResponse.json(createQueryProcessDefinitionsResponse({items: definitions.slice(1)})),
+			}),
+			mockQueryProcessDefinitionsEndpoint({
+				successResponse: HttpResponse.json(createQueryProcessDefinitionsResponse({items: definitions})),
+			}),
+		);
 		await page.getByRole('checkbox', {name: 'Select instance 1001'}).check({force: true});
 		await operateProcessesPage.migrateButton.click();
 		await page.getByRole('dialog').getByRole('button', {name: 'Continue'}).click();

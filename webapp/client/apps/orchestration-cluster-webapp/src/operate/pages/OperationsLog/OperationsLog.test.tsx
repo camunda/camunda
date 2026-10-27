@@ -13,6 +13,8 @@ import {HttpResponse} from 'msw';
 import {userEvent} from 'vitest/browser';
 import {it} from '#/vitest-modules/test-extend';
 import {renderWithRouter} from '#/vitest-modules/render-with-router';
+import {createResponseGate} from '#/shared-test-modules/mock-endpoint';
+import {Notifications} from '#/shared/notifications/components/Notifications';
 import {notificationsStore} from '#/shared/notifications/notifications.store';
 import {
 	mockGetProcessDefinitionEndpoint,
@@ -86,6 +88,7 @@ describe('<OperationsLog />', () => {
 	});
 
 	afterEach(() => {
+		vi.useRealTimers();
 		sessionStorage.clear();
 		notificationsStore.reset();
 	});
@@ -333,6 +336,7 @@ describe('<OperationsLog />', () => {
 			{description: 'cached rows', items: [createAuditLog({auditLogKey: 'cached', entityKey: '42'})]},
 			{description: 'a cached empty response', items: []},
 		])('should show a failed refetch for $description with a notification and recover', async ({items}, {worker}) => {
+			vi.useFakeTimers({toFake: ['Date']});
 			worker.use(
 				mockQueryProcessDefinitionsEndpoint({successResponse: PROCESS_DEFINITIONS}),
 				mockQueryDecisionDefinitionsEndpoint({successResponse: NO_DECISION_DEFINITIONS}),
@@ -341,8 +345,18 @@ describe('<OperationsLog />', () => {
 				}),
 			);
 
-			const screen = await renderPage();
-			const {queryClient} = screen;
+			const screen = await renderWithRouter(
+				() => (
+					<>
+						<OperationsLog />
+						<Notifications />
+					</>
+				),
+				{path: OPERATIONS_LOG_PATH},
+			);
+			const table = screen.getByTestId('operations-log-table');
+			const retryButton = table.getByRole('button', {name: 'Try again'});
+			const notification = screen.getByRole('status');
 
 			if (items.length > 0) {
 				await expect.element(screen.getByRole('heading', {name: 'Operations Log - 1 result'})).toBeVisible();
@@ -350,29 +364,51 @@ describe('<OperationsLog />', () => {
 				await expect.element(screen.getByText('No operation log items yet')).toBeVisible();
 			}
 
-			worker.use(mockQueryAuditLogsEndpoint({successResponse: AUDIT_LOG_ERROR}));
-			await queryClient.invalidateQueries({queryKey: ['operationsLogAuditLogs']});
+			const failedResponse = createResponseGate(worker);
+			worker.use(mockQueryAuditLogsEndpoint({successResponse: AUDIT_LOG_ERROR, delay: failedResponse.delay}));
+			try {
+				vi.setSystemTime(Date.now() + 60_000);
+				const visibility = vi.spyOn(document, 'visibilityState', 'get');
+				try {
+					visibility.mockReturnValue('hidden');
+					document.dispatchEvent(new Event('visibilitychange', {bubbles: true}));
+					visibility.mockReturnValue('visible');
+					document.dispatchEvent(new Event('visibilitychange', {bubbles: true}));
+				} finally {
+					visibility.mockRestore();
+				}
+				await failedResponse.requested;
+			} finally {
+				await failedResponse.release();
+			}
 
-			await expect.element(screen.getByTestId('operations-log-table').getByRole('alert')).toBeVisible();
-			await expect.element(screen.getByText("Couldn't fetch audit logs")).toBeVisible();
-			await expect.element(screen.getByRole('button', {name: 'Try again'})).toBeVisible();
+			await expect.element(table.getByRole('alert')).toBeVisible();
+			await expect.element(table.getByText("Couldn't fetch audit logs")).toBeVisible();
+			await expect.element(retryButton).toBeVisible();
 			await expect.element(screen.getByText('No operation log items yet')).not.toBeInTheDocument();
 			await expect.element(screen.getByRole('heading', {name: 'Operations Log'})).toBeVisible();
-			expect(notificationsStore.notifications).toContainEqual(
-				expect.objectContaining({kind: 'error', title: "Couldn't fetch audit logs"}),
-			);
+			await expect.element(notification).toMatchTextContent("Couldn't fetch audit logs");
+			await userEvent.click(notification.getByRole('button', {name: 'close notification'}));
 
-			await userEvent.click(screen.getByRole('button', {name: 'Try again'}));
-			await expect.element(screen.getByText("Couldn't fetch audit logs")).toBeVisible();
+			await userEvent.click(retryButton);
+			await expect.element(retryButton).toBeEnabled();
+			await expect.element(table.getByText("Couldn't fetch audit logs")).toBeVisible();
 
+			const responseGate = createResponseGate(worker);
 			worker.use(
 				mockQueryAuditLogsEndpoint({
 					successResponse: HttpResponse.json(createQueryAuditLogsResponse({items})),
+					delay: responseGate.delay,
 				}),
 			);
-			await userEvent.click(screen.getByRole('button', {name: 'Try again'}));
+			try {
+				await userEvent.click(retryButton);
+				await responseGate.requested;
+			} finally {
+				await responseGate.release();
+			}
 
-			await expect.element(screen.getByText("Couldn't fetch audit logs")).not.toBeInTheDocument();
+			await expect.element(table.getByText("Couldn't fetch audit logs")).not.toBeInTheDocument();
 			if (items.length > 0) {
 				await expect.element(screen.getByRole('heading', {name: 'Operations Log - 1 result'})).toBeVisible();
 			} else {

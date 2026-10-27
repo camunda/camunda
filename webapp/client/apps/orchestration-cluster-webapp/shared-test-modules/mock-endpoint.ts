@@ -7,11 +7,13 @@
  */
 
 import {http, delay as mswDelay, type DelayMode, type RequestHandler} from 'msw';
+import type {SetupWorker} from 'msw/browser';
 import type {z} from 'zod';
 
 type RequestMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
 type PayloadMethod = 'POST' | 'PUT' | 'PATCH';
 type Path = Parameters<typeof http.get>[0];
+type ResponseDelay = DelayMode | number | ((requestId: string) => Promise<void>);
 
 type CreateEndpointMockParams<Method extends RequestMethod> = {
 	endpoint: Path;
@@ -20,7 +22,8 @@ type CreateEndpointMockParams<Method extends RequestMethod> = {
 
 type SuccessMockParams = {
 	successResponse: Response;
-	delay?: DelayMode | number;
+	delay?: ResponseDelay;
+	requestBody?: z.ZodType;
 	/**
 	 * Handle only the first matching request. Use carefully: our apps poll frequently,
 	 * so a background poll may consume it before the intended request.
@@ -32,7 +35,8 @@ type PayloadMockParams<Schema extends z.ZodType> = {
 	schema: Schema;
 	failureResponse: Response;
 	successResponse: Response;
-	delay?: DelayMode | number;
+	delay?: ResponseDelay;
+	requestBody?: z.ZodType;
 	/**
 	 * Handle only the first matching request. Use carefully: our apps poll frequently,
 	 * so a background poll may consume it before the intended request.
@@ -54,8 +58,10 @@ function createEndpointMock<Method extends RequestMethod>({
 	method,
 }: CreateEndpointMockParams<Method>): MockEndpoint<Method> {
 	return (params: SuccessMockParams | PayloadMockParams<z.ZodType>) => {
-		const resolver = async ({request}: {request: Request}) => {
-			if (params.delay) {
+		const resolver = async ({request, requestId}: {request: Request; requestId: string}) => {
+			if (typeof params.delay === 'function') {
+				await params.delay(requestId);
+			} else if (params.delay) {
 				await mswDelay(params.delay);
 			}
 
@@ -74,21 +80,80 @@ function createEndpointMock<Method extends RequestMethod>({
 		};
 
 		const options = {once: params.once ?? false};
+		let handler: RequestHandler;
 
 		switch (method) {
 			case 'POST':
-				return http.post(endpoint, resolver, options);
+				handler = http.post(endpoint, resolver, options);
+				break;
 			case 'PUT':
-				return http.put(endpoint, resolver, options);
+				handler = http.put(endpoint, resolver, options);
+				break;
 			case 'PATCH':
-				return http.patch(endpoint, resolver, options);
+				handler = http.patch(endpoint, resolver, options);
+				break;
 			case 'DELETE':
-				return http.delete(endpoint, resolver, options);
+				handler = http.delete(endpoint, resolver, options);
+				break;
 			case 'GET':
 			default:
-				return http.get(endpoint, resolver, options);
+				handler = http.get(endpoint, resolver, options);
 		}
+
+		const {requestBody} = params;
+		if (requestBody !== undefined) {
+			const matchesEndpoint = handler.predicate.bind(handler);
+			handler.predicate = async (args) =>
+				(await matchesEndpoint(args)) && requestBody.safeParse(await args.request.clone().json()).success;
+		}
+
+		return handler;
 	};
 }
 
-export {createEndpointMock};
+function createResponseGate(worker: SetupWorker) {
+	let releaseResponse!: () => void;
+	let markRequested!: () => void;
+	let markCompleted!: () => void;
+	const pending = new Promise<void>((resolve) => {
+		releaseResponse = resolve;
+	});
+	const requested = new Promise<void>((resolve) => {
+		markRequested = resolve;
+	});
+	const completed = new Promise<void>((resolve) => {
+		markCompleted = resolve;
+	});
+	let isReleased = false;
+	const requests = new Set<string>();
+	const onResponse = ({requestId}: {requestId: string}) => {
+		if (requests.delete(requestId) && requests.size === 0) {
+			markCompleted();
+		}
+	};
+	worker.events.on('response:mocked', onResponse);
+
+	return {
+		requested,
+		delay: (requestId: string) => {
+			if (!isReleased) {
+				requests.add(requestId);
+			}
+			markRequested();
+			return pending;
+		},
+		release: async () => {
+			isReleased = true;
+			releaseResponse();
+			try {
+				if (requests.size > 0) {
+					await completed;
+				}
+			} finally {
+				worker.events.removeListener('response:mocked', onResponse);
+			}
+		},
+	};
+}
+
+export {createEndpointMock, createResponseGate};
