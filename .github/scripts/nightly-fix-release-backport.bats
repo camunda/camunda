@@ -332,6 +332,55 @@ EOF
   [ "$(jq -r .decision <<<"$output")" = "eligible" ]
 }
 
+@test "allows a rename with edits when the original is on the release branch" {
+  # git records this as `--- a/helper.ts` / `+++ b/waiters.ts`. Judging the
+  # destination would demand waiters.ts on the release branch, which a rename
+  # means it cannot have.
+  awk 'BEGIN { for (i = 0; i < 60; i++) print "export const k" i " = " i ";" }' \
+    > "$SUITE/tests/helper.ts"
+  git add -A && git commit --quiet -m "helper"
+  git branch -f release-8.11.0-alpha1 HEAD
+  base=$(git rev-parse HEAD)
+
+  git mv "$SUITE/tests/helper.ts" "$SUITE/tests/waiters.ts"
+  sed -i.bak 's/const k0 = 0;/const k0 = 99;/' "$SUITE/tests/waiters.ts"
+  rm -f "$SUITE/tests/waiters.ts.bak"
+  git add -A && git commit --quiet -m "rename and edit"
+  write_aggregate_patch "$base"
+  grep -q '^rename from ' "${BATS_TEST_TMPDIR}/pr.patch"
+
+  run "$SCRIPT" main 42 "${BATS_TEST_TMPDIR}/pr.patch" "$SPECS"
+  [ "$status" -eq 0 ]
+  [ "$(jq -r .decision <<<"$output")" = "eligible" ]
+}
+
+@test "refuses a title that only appears commented out or inside a code sample" {
+  git checkout --quiet release-8.11.0-alpha1
+  cat > "$SUITE/tests/smoke.spec.ts" <<'EOF'
+test('logs in', async () => {
+  await page.click('#login');
+});
+// test('mcp server responds', async () => {});
+/*
+ * test('mcp server responds', async () => {});
+ */
+const sample = "test('mcp server responds', () => {})";
+EOF
+  git add -A && git commit --quiet -m "commented out on the release branch"
+  git checkout --quiet main
+
+  sed -i.bak "s/#login/#login-button/" "$SUITE/tests/smoke.spec.ts" && rm -f "$SUITE/tests/smoke.spec.ts.bak"
+  commit_fix_on_main
+  cat > "$SPECS" <<'EOF'
+[{"file": "tests/smoke.spec.ts", "test_name": "mcp server responds"}]
+EOF
+
+  run "$SCRIPT" main 42 "${BATS_TEST_TMPDIR}/pr.patch" "$SPECS"
+  [ "$status" -eq 0 ]
+  [ "$(jq -r .decision <<<"$output")" = "skipped" ]
+  [[ "$(jq -r .reason <<<"$output")" == *"test not on the release branch"* ]]
+}
+
 @test "resolve_release_ref picks the pair matching the dispatch target" {
   source "$SCRIPT"
   printf '%s\t%s\n%s\t%s\n' \

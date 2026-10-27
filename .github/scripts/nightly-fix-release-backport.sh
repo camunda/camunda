@@ -50,20 +50,22 @@ resolve_release_ref() {
   awk -F'\t' -v t="$target_ref" '$2 == t { print $1; exit }' "$pairs_file"
 }
 
-# Echo every path the patch MODIFIES or DELETES that is absent from $1.
+# Echo every path the patch MODIFIES, RENAMES or DELETES whose PREIMAGE is absent
+# from $1.
 #
-# Added files are deliberately not checked: a fix that introduces a new helper is
-# still portable, and its path is absent from the release branch by definition. What
-# matters is that everything the patch expects to already be there, is.
+# The preimage is the question: it is the file the patch expects to find. Judging
+# the postimage instead refuses a portable rename -- `--- a/helper.ts` with
+# `+++ b/waiters.ts` would be read as needing `waiters.ts` on the release branch,
+# which by definition it does not have. Whether the destination is reachable is
+# the three-way apply's job, not this one. Added files have no preimage and are
+# exempt: a fix that introduces a new helper is still portable.
 missing_paths() {
-  local release_ref="$1" patch_file="$2" pre post
+  local release_ref="$1" patch_file="$2" pre post path
   while IFS= read -r pre && IFS= read -r post; do
     pre="${pre#--- }"
     post="${post#+++ }"
-    # /dev/null as the preimage means the patch creates the file.
     [ "$pre" = "/dev/null" ] && continue
-    local path="${post#b/}"
-    [ "$post" = "/dev/null" ] && path="${pre#a/}"
+    path="${pre#a/}"
     git cat-file -e "${release_ref}:${path}" 2>/dev/null || printf '%s\n' "$path"
   done < <(grep -E '^(---|\+\+\+) ' "$patch_file")
 }
@@ -93,14 +95,20 @@ missing_tests() {
   local release_ref="$1" specs_file="$2" path esc decl
   [ -s "$specs_file" ] || return 0
   # A declaration, not merely the quoted title: the same string inside
-  # test.step('...') or any other literal is not evidence that a test by that
-  # name exists. Modifiers are listed rather than matched as `.<word>`, which
-  # would let `test.step(` back in. The three quote styles cover how a title is
-  # written; a form this cannot find -- a template literal with a placeholder, a
-  # title on the line after `test(` -- is reported absent, so the gate refuses
-  # instead of guessing. Resolving real titles would mean running Playwright,
+  # test.step('...'), a commented-out test, or a code sample in a string is not
+  # evidence that a test by that name exists. Hence three restrictions: the
+  # declaration must OPEN its line (every declaration in the suite does, while
+  # `const s = "test('x')"` does not), modifiers are a closed list rather than
+  # `.<word>` (which would let `test.step(` back in), and comment lines are
+  # dropped before matching.
+  #
+  # Both filters are heuristics over raw source -- a declaration inside a
+  # template literal, or a block comment whose lines do not open with `*`, would
+  # still fool them. They are chosen so the residue is small and so anything they
+  # cannot recognise is reported absent and REFUSES, which is the direction this
+  # gate already fails in. Resolving real titles would mean running Playwright,
   # which this step must not do.
-  decl='(^|[^A-Za-z0-9_])(test|it)(\.(only|skip|fixme|fail|slow|concurrent|serial))*\([[:space:]]*'
+  decl='^[[:space:]]*(test|it)(\.(only|skip|fixme|fail|slow|concurrent|serial))*\([[:space:]]*'
   while IFS=$'\t' read -r file test_name; do
     [ -z "$file" ] && continue
     path="$file"
@@ -115,6 +123,7 @@ missing_tests() {
     # reports failure -- making a title that IS there read as absent. Letting grep
     # drain the stream keeps the status meaningful.
     git show "${release_ref}:${path}" 2>/dev/null \
+      | grep -vE '^[[:space:]]*(//|\*|/\*)' \
       | grep -E -e "${decl}'${esc}'" -e "${decl}\"${esc}\"" -e "${decl}\`${esc}\`" >/dev/null \
       || printf '%s › %s\n' "$file" "$test_name"
   done < <(jq -r '.[]? | select(.file and .test_name) | "\(.file)\t\(.test_name)"' "$specs_file")
