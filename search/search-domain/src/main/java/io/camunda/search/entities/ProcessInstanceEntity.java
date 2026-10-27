@@ -46,7 +46,10 @@ public record ProcessInstanceEntity(
     Set<String> tags,
     @Nullable String businessId,
     // not set by the primary handler; populated once the exporter/appliers for SUSPEND/RESUME land.
-    @Nullable OffsetDateTime suspendedDate)
+    @Nullable OffsetDateTime suspendedDate,
+    // absent on data exported before storage ordinals were introduced or for process instances
+    // exported without archiverless enabled
+    @Nullable Integer storageOrdinal)
     implements TenantOwnedEntity {
 
   public ProcessInstanceEntity {
@@ -94,6 +97,7 @@ public record ProcessInstanceEntity(
         treePath,
         new HashSet<>(),
         businessId,
+        null,
         null);
   }
 
@@ -114,7 +118,8 @@ public record ProcessInstanceEntity(
       final String tenantId,
       final String treePath,
       final String businessId,
-      final OffsetDateTime suspendedDate) {
+      final OffsetDateTime suspendedDate,
+      final Integer storageOrdinal) {
 
     this(
         processInstanceKey,
@@ -134,7 +139,8 @@ public record ProcessInstanceEntity(
         treePath,
         new HashSet<>(),
         businessId,
-        suspendedDate);
+        suspendedDate,
+        storageOrdinal);
   }
 
   public enum ProcessInstanceState {

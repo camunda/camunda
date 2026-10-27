@@ -20,6 +20,7 @@ import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.entities.flownode.FlowNodeState;
 import io.camunda.webapps.schema.entities.flownode.FlowNodeType;
 import io.camunda.webapps.schema.entities.listview.FlowNodeInstanceForListViewEntity;
+import io.camunda.zeebe.exporter.common.utils.StorageOrdinalUtil;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
@@ -94,6 +95,7 @@ public class ListViewFlowNodeFromProcessInstanceHandler
     entity.setActivityId(recordValue.getElementId());
     entity.setProcessInstanceKey(recordValue.getProcessInstanceKey());
     entity.setTenantId(tenantOrDefault(recordValue.getTenantId()));
+    entity.setStorageOrdinal(StorageOrdinalUtil.ordinalIfOrdinalControlled(recordValue));
 
     if (PI_AND_AI_FINISH_STATES.contains(intent)) {
       if (intent.equals(ELEMENT_TERMINATED)) {
