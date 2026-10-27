@@ -30,6 +30,7 @@ import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import org.opensearch.client.opensearch.OpenSearchClient;
+import org.opensearch.client.opensearch._types.Conflicts;
 import org.opensearch.client.opensearch._types.ErrorCause;
 import org.opensearch.client.opensearch._types.Result;
 import org.opensearch.client.opensearch._types.ShardFailure;
@@ -338,11 +339,22 @@ public class OpenSearchDocumentOperations extends OpenSearchRetryOperation {
 
   public DeleteByQueryResponse delete(final String index, final String field, final String value) {
     final var deleteRequestBuilder =
-        new DeleteByQueryRequest.Builder().index(index).query(term(field, value));
+        new DeleteByQueryRequest.Builder()
+            .index(index)
+            .query(term(field, value))
+            .conflicts(Conflicts.Proceed);
 
-    return safe(
-        () -> openSearchClient.deleteByQuery(deleteRequestBuilder.build()),
-        e -> defaultDeleteErrorMessage(index));
+    final DeleteByQueryResponse response =
+        safe(
+            () -> openSearchClient.deleteByQuery(deleteRequestBuilder.build()),
+            e -> defaultDeleteErrorMessage(index));
+    logger.debug(
+        "Delete document {} in {} versionConflicts: {} failures: {}",
+        value,
+        index,
+        response.versionConflicts(),
+        response.failures());
+    return response;
   }
 
   public long deleteByQuery(final String index, final Query query) {
