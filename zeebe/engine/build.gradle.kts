@@ -63,6 +63,7 @@ dependencies {
   testImplementation(libs.org.junit.platform.junit.platform.commons)
   testImplementation(libs.org.openjdk.jmh.jmh.core)
   testImplementation(libs.org.openjdk.jmh.jmh.generator.annprocess)
+  testAnnotationProcessor(libs.org.openjdk.jmh.jmh.generator.annprocess)
   testImplementation(libs.org.instancio.instancio.core)
   compileOnly(libs.net.jcip.jcip.annotations)
 }
