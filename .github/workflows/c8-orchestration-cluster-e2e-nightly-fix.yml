@@ -5,6 +5,8 @@
 #              automatic orchestration-cluster suite PR check (team-test-automation#188) the body is
 #              patched with a definition of done; on branches without it (e.g. stable/8.7) the agent
 #              still triggers the on-demand workflow and links the run for verification.
+#              While a release branch is frozen for that line, the fix PR is also labelled for
+#              backport to it when the release branch still holds the same test area.
 # type: CI
 # owner: @camunda/test-automation-team
 ---
@@ -749,6 +751,160 @@ jobs:
             done
           fi
 
+      - name: Propose backport to the active release branch
+        # Between a code freeze and the release, the RC is built from
+        # release-X.Y.Z, not from the branch this agent fixes, so a fix merged
+        # here in that window never reaches the RC. The gate decides whether the
+        # release branch holds the same area (spec present, failing test present,
+        # patch still applies) and labels only then -- backport-action opens the
+        # backport PR when the fix PR merges. Outside a freeze the resolver finds
+        # no active branch and the whole step is a no-op.
+        #
+        # Advisory by construction: never fails the job, because a fix PR that is
+        # already open must not be held up by a backport question.
+        if: always()
+        continue-on-error: true
+        env:
+          GH_TOKEN:       ${{ steps.github-token.outputs.token }}
+          REPO:           ${{ github.repository }}
+          TARGET_REF:     ${{ steps.target.outputs.ref }}
+          WORKSPACE_NAME: ${{ steps.ws.outputs.name }}
+        run: |
+          set -uo pipefail
+          : > /tmp/backport-meta.json
+          [ -f /tmp/fix-meta.json ] || exit 0
+
+          # Resolved in the runner checkout of main: the resolver and this gate are
+          # maintained on main, and ws_dir sits on the target branch, which may
+          # predate either.
+          pairs="/tmp/release-pairs.tsv"
+          if ! "${GITHUB_WORKSPACE}/.github/scripts/mergeback/resolve-active-release-pairs.sh" origin > "$pairs"; then
+            # Unknown, which is not the same as "none". Reconciling on a failed
+            # lookup would strip every label this gate has ever applied.
+            echo "::warning::Could not resolve active release branches -- nothing proposed, nothing reconciled."
+            exit 0
+          fi
+          echo "Active release branches:"
+          cat "$pairs"
+
+          # Remove $2 from PR $1, but only when this gate applied it. The label's
+          # latest `labeled` event separates automation from a person: a Bot actor
+          # is us, a User is a deliberate request that must survive. An origin that
+          # cannot be read counts as a person -- removing someone's request on
+          # uncertainty is the worse mistake. Echoes removed | kept | failed.
+          revoke_if_bot() {
+            local pr="$1" label="$2" actor_type rc=0
+            # `set -o pipefail` is in force, so rc catches a failed page fetch as well
+            # as a jq error. Without this check, pagination that dies after the bot's
+            # own labelling event but before a later human one would read as "Bot" on
+            # a partial history and remove a human's label.
+            actor_type=$(gh api --paginate "repos/${REPO}/issues/${pr}/events" 2>/dev/null \
+              | jq -rs --arg l "$label" \
+                  '[.[][] | select(.event == "labeled" and .label.name == $l)] | last | .actor.type // ""') \
+              || rc=$?
+            if [ "$rc" -ne 0 ]; then
+              # stderr: both callers `case` on this function's entire stdout, so a
+              # warning printed here would miss `kept` and fall through to the
+              # failure branch, telling the thread to remove a label whose owner is
+              # precisely what could not be determined.
+              echo "::warning::Could not read the label history of PR #${pr} -- leaving '${label}' in place." >&2
+              echo kept
+              return
+            fi
+            if [ "$actor_type" != "Bot" ]; then
+              echo kept
+              return
+            fi
+            if gh pr edit "$pr" --repo "$REPO" --remove-label "$label" >/dev/null; then
+              echo removed
+            else
+              echo failed
+            fi
+          }
+
+          ws_dir="$HOME/workspaces/${WORKSPACE_NAME}/camunda"
+          jq -r '.prs[]?.number // empty' /tmp/fix-meta.json | while read -r pr; do
+            # 1. Reconcile labels whose release branch is no longer frozen.
+            #
+            # The gate labels when the PR opens, but backport-action fires when it
+            # merges. Any PR that outlives the release -- one the reopen path
+            # resurrected, say -- would otherwise open a backport into a branch that
+            # already shipped. This runs even when no release branch is frozen at
+            # all, which is exactly when the stale labels are.
+            while IFS= read -r label; do
+              [ -z "$label" ] && continue
+              ref="${label#backport }"
+              # Still frozen: the propose pass below owns this label, not this one.
+              # grep drains rather than -q: `pipefail` plus an early exit would
+              # report a failed pipeline and read an active branch as stale.
+              if cut -f1 "$pairs" | grep -xF "$ref" >/dev/null; then
+                continue
+              fi
+              case "$(revoke_if_bot "$pr" "$label")" in
+                removed) reason="removed -- ${ref} has shipped, so the backport would land after the release" ;;
+                kept)    reason="left in place -- ${ref} has shipped, but a person asked for this backport" ;;
+                *)       reason="STALE LABEL STILL SET for ${ref} -- remove it before merging" ;;
+              esac
+              echo "PR #${pr}: reconcile ${label} -> ${reason}"
+              jq -cn --argjson pr "$pr" --arg ref "$ref" --arg reason "$reason" \
+                '{pr: $pr, release_ref: $ref, decision: "reconciled", reason: $reason}' \
+                >> /tmp/backport-meta.json
+            done < <(gh pr view "$pr" --repo "$REPO" --json labels \
+                       --jq '.labels[].name | select(startswith("backport release-"))' 2>/dev/null)
+
+            # 2. Propose for the branch that IS frozen for this line, if any.
+            [ -s "$pairs" ] || continue
+
+            # The aggregate PR diff, NOT `--patch`: that returns a per-commit patch
+            # series, in which a helper added in one commit and edited in a later one
+            # appears as a modification of a file the release branch does not have,
+            # refusing a PR whose net change only adds it. The plain diff keeps the
+            # `index` lines the three-way apply needs.
+            patch="/tmp/pr-${pr}.patch"
+            if ! gh pr diff "$pr" --repo "$REPO" > "$patch" 2>/dev/null; then
+              echo "::warning::Could not read the diff of PR #${pr} -- skipping its backport check."
+              continue
+            fi
+            # Three-way apply needs the patch's pre-image blobs, which ws_dir was
+            # cloned too shallowly to hold; the PR head's recent history carries them.
+            git -C "$ws_dir" fetch --no-tags --depth 50 origin "pull/${pr}/head" >/dev/null 2>&1 || true
+
+            v=$(cd "$ws_dir" && PAIRS_FILE="$pairs" \
+              "${GITHUB_WORKSPACE}/.github/scripts/nightly-fix-release-backport.sh" \
+              "$TARGET_REF" "$pr" "$patch" /tmp/test_specs.json)
+            echo "PR #${pr}: $v"
+            [ -z "$v" ] && continue
+
+            decision=$(jq -r '.decision' <<< "$v")
+            release_ref=$(jq -r '.release_ref' <<< "$v")
+            if [ "$decision" = "eligible" ]; then
+              gh label create "backport ${release_ref}" --repo "$REPO" --color c5def5 \
+                --description "Backport a pull request to ${release_ref#release-}" 2>/dev/null || true
+              if gh pr edit "$pr" --repo "$REPO" --add-label "backport ${release_ref}"; then
+                echo "$v" >> /tmp/backport-meta.json
+              else
+                echo "::warning::Could not label PR #${pr} for backport to ${release_ref}."
+                jq -c '.decision = "skipped" | .reason = "label could not be applied"' <<< "$v" \
+                  >> /tmp/backport-meta.json
+              fi
+            elif [ "$decision" = "skipped" ]; then
+              # A label an earlier night applied for this still-frozen branch no
+              # longer holds -- the PR has changed since. Same ownership rules.
+              label="backport ${release_ref}"
+              if [ -n "$release_ref" ] \
+                 && gh pr view "$pr" --repo "$REPO" --json labels --jq '.labels[].name' 2>/dev/null \
+                    | grep -xF "$label" >/dev/null; then
+                case "$(revoke_if_bot "$pr" "$label")" in
+                  removed) v=$(jq -c '.reason += "; label from an earlier run removed"' <<< "$v") ;;
+                  kept)    v=$(jq -c '.reason += "; label added by a person left in place"' <<< "$v") ;;
+                  *)       echo "::warning::Could not remove the stale label '${label}' from PR #${pr}."
+                           v=$(jq -c '.reason += "; STALE LABEL STILL SET, remove it before merging"' <<< "$v") ;;
+                esac
+              fi
+              echo "$v" >> /tmp/backport-meta.json
+            fi
+          done
+
       - name: Finalize PR verification status (verified/unverified)
         if: always()
         env:
@@ -1024,6 +1180,32 @@ jobs:
               "<https://github.com/\($full_repo)/pull/\(.number)|PR #\(.number)>"' \
               | tr '\n' '  ')
             lines+=("• PR(s) opened: ${pr_links}")
+          fi
+
+          # Sub-bullet per fix PR that met an active release branch: during a code
+          # freeze the RC is built from that branch, so whether the fix reaches it
+          # is the thread's next question. Nothing is emitted outside a freeze.
+          if [ -s /tmp/backport-meta.json ]; then
+            while IFS= read -r bp; do
+              [ -z "$bp" ] && continue
+              bp_pr=$(echo "$bp" | jq -r '.pr')
+              bp_ref=$(echo "$bp" | jq -r '.release_ref')
+              bp_reason=$(echo "$bp" | jq -r '.reason // ""')
+              case "$(echo "$bp" | jq -r '.decision')" in
+                eligible)
+                  lines+=("   ↳ backport to \`${bp_ref}\`: label added to PR #${bp_pr} — backport PR opens on merge")
+                  ;;
+                reconciled)
+                  # A label left over from a freeze that has since ended. Worth a
+                  # line even though nothing is pending: it is the only place a
+                  # label disappearing from a PR is explained.
+                  lines+=("   ↳ backport label for \`${bp_ref}\` on PR #${bp_pr}: ${bp_reason}")
+                  ;;
+                *)
+                  lines+=("   ↳ backport to \`${bp_ref}\`: skipped — ${bp_reason}")
+                  ;;
+              esac
+            done < /tmp/backport-meta.json
           fi
 
           # A confirmed product bug lands as a skip PR, so its bullets + the skip PR
