@@ -7,14 +7,15 @@
  */
 package io.camunda.zeebe.engine.state.immutable;
 
-import static io.camunda.zeebe.engine.state.jobmetrics.DbJobMetricsState.META_BATCH_ENDING_TIME;
-import static io.camunda.zeebe.engine.state.jobmetrics.DbJobMetricsState.META_BATCH_STARTING_TIME;
 
 import io.camunda.zeebe.engine.state.jobmetrics.MetricsConsumer;
 import java.util.List;
 
 /** Immutable interface for reading job metrics state. */
 public interface JobMetricsState {
+
+  String META_BATCH_STARTING_TIME = "__batch_starting_time__";
+  String META_BATCH_ENDING_TIME = "__batch_ending_time__";
 
   /**
    * Iterates over all metrics in the METRICS column family.

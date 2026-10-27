@@ -14,13 +14,13 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Transient (in-memory only) state that tracks when each pending cross-partition message-start ask
- * was last sent. Used by {@link DbMessageStartProcessInstanceAskState} to implement retry
+ * was last sent. Used by {@code DbMessageStartProcessInstanceAskState} to implement retry
  * scheduling.
  *
- * <p>On recovery the CF is walked and each entry is seeded with a last-sent timestamp (see {@link
- * DbMessageStartProcessInstanceAskState#onRecovered}): fresh asks with {@code 0} (immediately
- * eligible, preserving at-least-once first delivery), already-backed-off asks with the recovery
- * time (so they resume at their back-off cadence instead of all re-probing at once).
+ * <p>On recovery the CF is walked and each entry is seeded with a last-sent timestamp (see {@code
+ * DbMessageStartProcessInstanceAskState}): fresh asks with {@code 0} (immediately eligible,
+ * preserving at-least-once first delivery), already-backed-off asks with the recovery time (so they
+ * resume at their back-off cadence instead of all re-probing at once).
  *
  * <p>This class is thread-safe. It is intended that one thread mutates (add/update/remove) while
  * another observes via {@link #entries()}.
