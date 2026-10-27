@@ -87,7 +87,7 @@ import type {
 } from '@camunda/camunda-api-zod-schemas/8.11';
 import {redactValue, redactValues} from '#/shared/variables/redactedVariable';
 import {request} from './request';
-import {isAnonymousCurrentUser, type AuthenticatedCurrentUser} from './currentUser';
+import {isAnonymousCurrentUserResponse, type AuthenticatedCurrentUser} from './currentUser';
 import {endpoints} from './endpoints';
 import {mapQueryError} from './mapQueryError';
 import {parseAdminClientConfig, type AdminClientConfig} from './adminClientConfig';
@@ -183,7 +183,7 @@ const queries = {
 			queryKey: queryKeys.currentUser(),
 			queryFn: async (): Promise<AuthenticatedCurrentUser> => {
 				const {response, error} = await request(endpoints.getCurrentUser(), {
-					isUnauthenticated: isAnonymousCurrentUser,
+					isUnauthenticated: isAnonymousCurrentUserResponse,
 				});
 				if (error !== null) {
 					throw mapQueryError(error);

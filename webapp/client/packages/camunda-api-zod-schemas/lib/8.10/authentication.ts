@@ -33,10 +33,23 @@ const currentUserSchema = z.object({
 
 type CurrentUser = z.infer<typeof currentUserSchema>;
 
+/**
+ * Tells if a current user is the anonymous caller of an unprotected API, which answers a caller
+ * without a session this way instead of with a 401. A client handles it like that 401.
+ */
+function isAnonymousCurrentUser(currentUser: unknown): boolean {
+	return (
+		typeof currentUser === 'object' &&
+		currentUser !== null &&
+		'anonymous' in currentUser &&
+		currentUser.anonymous === true
+	);
+}
+
 const getCurrentUser = {
 	method: 'GET',
 	getUrl: () => `/${API_VERSION}/authentication/me` as const,
 } as const satisfies Endpoint;
 
-export {currentUserSchema, getCurrentUser};
+export {currentUserSchema, getCurrentUser, isAnonymousCurrentUser};
 export type {CurrentUser};
