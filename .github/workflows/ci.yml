@@ -127,14 +127,24 @@ jobs:
           files="$(gh api --paginate "repos/${REPO}/pulls/${PR_NUMBER}/files" \
             --jq '.[] | ("\(.status)\t\(.filename)"), (select(.previous_filename != null) | "removed\t\(.previous_filename)")')"
 
-          # Run decision: ANY non-docs suite file changed, including deletions — a
-          # PR that only removes a fixture, resource or spec can still break the
-          # suite and must be exercised. Markdown-only changes under the suite dir
-          # (README.md, AGENTS.md, docs/**, all Markdown) cannot affect the tests,
-          # so they are excluded here and do not trigger the heavy matrix run.
+          # Run decision: run the suite when either
+          #   (a) a non-docs file under the suite dir changed, including deletions
+          #       — a PR that only removes a fixture, resource or spec can still
+          #       break the suite and must be exercised. Markdown-only changes
+          #       under the suite dir (README.md, AGENTS.md, docs/**, all Markdown)
+          #       cannot affect the tests, so they are excluded here; or
+          #   (b) the suite's own CI plumbing changed — the reusable workflow and
+          #       the changed-spec verdict scripts decide how the suite runs and
+          #       gates, so a change to them must be exercised by an actual run.
+          #       (ci.yml itself is deliberately not listed: it changes constantly
+          #       for unrelated reasons, and keying on it would run the suite on
+          #       every CI edit.)
           suite_changed="$(printf '%s\n' "$files" | cut -f2- | grep -F "$SUITE_PREFIX" | grep -vE '\.md$' || true)"
-          if [[ -z "$suite_changed" ]]; then
-            echo "No files under ${SUITE_PREFIX} changed; suite tests will be skipped."
+          plumbing_changed="$(printf '%s\n' "$files" | cut -f2- | grep -E \
+            '^\.github/(workflows/ci-c8-orchestration-cluster-e2e-suite-reusable\.yml|scripts/(e2e-changed-spec-verdict\.mjs|apply-changed-spec-verdict\.sh))$' \
+            || true)"
+          if [[ -z "$suite_changed" && -z "$plumbing_changed" ]]; then
+            echo "No non-docs suite file or suite CI plumbing changed; suite tests will be skipped."
             echo "run-tests=false" >> "$GITHUB_OUTPUT"
             {
               echo "changed-specs<<EOF"
