@@ -21,13 +21,13 @@ import java.nio.ByteBuffer;
 import javax.annotation.Nonnull;
 
 /**
- * A custom input stream that stores data in a circular buffer with a fixed capacity. This
- * implementation offers a non-blocking asynchronous API for writing the data into the buffer.
+ * A custom input stream that stores data in a circular buffer. This implementation offers a
+ * non-blocking asynchronous API for writing the data into the buffer.
  *
- * <p>The writing thread can check the available space in the buffer by calling {@link
- * #getAvailableSpace()}. If the buffer is full, the writing thread must avoid writing more data. A
- * callback can be set by the writing thread to be notified when space is available in the buffer.
- * See {@link CapacityCallback}.
+ * <p>The writing thread learns how much data it may write through a {@link CapacityCallback}: first
+ * the space that is free when the callback is set, then the space the reading thread frees up. The
+ * buffer grows if the writing thread writes more than that, because the HTTP I/O layer does not
+ * always stay within the space it has been given.
  *
  * <p>The buffer space is freed up as the reading thread reads the data from the buffer. The reading
  * thread consumes data using the standard {@link InputStream} API, blocking if no data is
@@ -35,11 +35,12 @@ import javax.annotation.Nonnull;
  */
 public class CircularBufferInputStream extends InputStream {
 
-  private final byte[] buffer;
   private final int capacity;
+  private byte[] buffer;
   private int readPos = 0;
   private int writePos = 0;
   private int availableData = 0;
+  private int unreportedSpace = 0;
   private boolean endOfStream = false;
   private IOException exception = null;
   private CapacityCallback capacityCallback;
@@ -49,36 +50,38 @@ public class CircularBufferInputStream extends InputStream {
     buffer = new byte[capacity];
   }
 
+  /**
+   * Sets the callback and reports the space that is free at this moment to it. From then on, each
+   * byte the reading thread frees up is reported exactly once. If the buffer already holds more
+   * than its capacity, the excess has to be read before any space is reported.
+   */
   public synchronized void setCapacityCallback(final CapacityCallback capacityCallback) {
     this.capacityCallback = capacityCallback;
+    reportFreedSpace(capacity - availableData);
   }
 
   /**
-   * Writes the data into the buffer. This method does not block the calling thread if the buffer is
-   * full, instead it throws an {@link IOException}. This means that the writing thread must handle
-   * capacity issues by proactively checking the available space in the buffer before writing data.
-   *
-   * @throws IOException if the buffer is full
+   * Writes the data into the buffer without blocking the calling thread. Data beyond the space
+   * reported to the {@link CapacityCallback} grows the buffer instead of being rejected.
    */
   public synchronized void write(final ByteBuffer data) throws IOException {
     if (exception != null) {
       throw exception;
     }
     final int dataSize = data.remaining();
-    final int availableSpace = getAvailableSpace();
-    if (dataSize > availableSpace) {
-      throw new IOException("Buffer is full");
+    if (dataSize > buffer.length - availableData) {
+      grow(availableData + dataSize);
     }
 
-    final int firstCopyLength = Math.min(dataSize, capacity - writePos);
+    final int firstCopyLength = Math.min(dataSize, buffer.length - writePos);
     data.get(buffer, writePos, firstCopyLength);
-    writePos = (writePos + firstCopyLength) % capacity;
+    writePos = (writePos + firstCopyLength) % buffer.length;
 
     final int remaining = dataSize - firstCopyLength;
     if (remaining > 0) {
       // Wrap around
       data.get(buffer, writePos, remaining);
-      writePos = (writePos + remaining) % capacity;
+      writePos = (writePos + remaining) % buffer.length;
     }
     availableData += dataSize;
 
@@ -113,16 +116,13 @@ public class CircularBufferInputStream extends InputStream {
     }
 
     final int b = buffer[readPos] & 0xFF;
-    readPos = (readPos + 1) % capacity;
+    readPos = (readPos + 1) % buffer.length;
     availableData--;
 
     // Notify any waiting writers
     notifyAll();
 
-    // Inform capacity callback
-    if (capacityCallback != null) {
-      capacityCallback.onCapacityAvailable(1);
-    }
+    reportFreedSpace(1);
 
     return b;
   }
@@ -144,16 +144,16 @@ public class CircularBufferInputStream extends InputStream {
     int bytesRead = 0;
     final int bytesToRead = Math.min(len, availableData);
 
-    final int firstCopyLength = Math.min(bytesToRead, capacity - readPos);
+    final int firstCopyLength = Math.min(bytesToRead, buffer.length - readPos);
     System.arraycopy(buffer, readPos, b, off, firstCopyLength);
-    readPos = (readPos + firstCopyLength) % capacity;
+    readPos = (readPos + firstCopyLength) % buffer.length;
     bytesRead += firstCopyLength;
     availableData -= firstCopyLength;
 
     final int remaining = bytesToRead - firstCopyLength;
     if (remaining > 0) {
       System.arraycopy(buffer, readPos, b, off + firstCopyLength, remaining);
-      readPos = (readPos + remaining) % capacity;
+      readPos = (readPos + remaining) % buffer.length;
       bytesRead += remaining;
       availableData -= remaining;
     }
@@ -161,10 +161,7 @@ public class CircularBufferInputStream extends InputStream {
     // Notify any waiting writers
     notifyAll();
 
-    // Inform capacity callback
-    if (capacityCallback != null) {
-      capacityCallback.onCapacityAvailable(bytesRead);
-    }
+    reportFreedSpace(bytesRead);
 
     return bytesRead;
   }
@@ -186,8 +183,35 @@ public class CircularBufferInputStream extends InputStream {
     return availableData == 0;
   }
 
-  public synchronized int getAvailableSpace() {
-    return capacity - availableData;
+  /**
+   * Holds back freed space while the buffer still holds at least its capacity: the I/O layer reads
+   * from the network whenever it is given any space, even if its window stays exhausted, so
+   * reporting it then would only push the buffer further over its capacity.
+   */
+  private void reportFreedSpace(final int freedSpace) {
+    if (capacityCallback == null) {
+      return;
+    }
+    unreportedSpace += freedSpace;
+    if (availableData < capacity) {
+      final int increment = unreportedSpace;
+      unreportedSpace = 0;
+      capacityCallback.onCapacityAvailable(increment);
+    }
+  }
+
+  /**
+   * Moves the unread data to the start of a larger array. It grows by at least half, as the I/O
+   * layer can keep handing over data in many small pieces while the reader is behind.
+   */
+  private void grow(final int minLength) {
+    final byte[] grown = new byte[Math.max(minLength, buffer.length + buffer.length / 2)];
+    final int firstCopyLength = Math.min(availableData, buffer.length - readPos);
+    System.arraycopy(buffer, readPos, grown, 0, firstCopyLength);
+    System.arraycopy(buffer, 0, grown, firstCopyLength, availableData - firstCopyLength);
+    buffer = grown;
+    readPos = 0;
+    writePos = availableData;
   }
 
   public interface CapacityCallback {
