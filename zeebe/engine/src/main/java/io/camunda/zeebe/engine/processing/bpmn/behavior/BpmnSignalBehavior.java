@@ -22,7 +22,6 @@ import io.camunda.zeebe.protocol.impl.record.value.signal.SignalRecord;
 import io.camunda.zeebe.protocol.record.intent.SignalIntent;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.Either;
-import io.camunda.zeebe.util.TagUtil;
 import org.agrona.DirectBuffer;
 
 public final class BpmnSignalBehavior {
@@ -54,7 +53,7 @@ public final class BpmnSignalBehavior {
     final var variables =
         variableState.getVariablesLocalAsDocument(context.getElementInstanceKey());
 
-    final var runScope = getRunScope(context.getRootProcessInstanceKey());
+    final var runScope = stateBehavior.getRunScope(context.getRootProcessInstanceKey());
 
     return evaluateSignalName(signal, context)
         .map(
@@ -62,14 +61,6 @@ public final class BpmnSignalBehavior {
               triggerSignalBroadcast(signalName, context.getTenantId(), variables, runScope);
               return null;
             });
-  }
-
-  private String getRunScope(final long rootProcessInstanceKey) {
-    // the reserved run-scope tag is carried on the root instance record, not the throwing element
-    final var rootInstance = stateBehavior.getElementInstance(rootProcessInstanceKey);
-    return rootInstance != null
-        ? TagUtil.findRunScopeValue(rootInstance.getValue().getTags()).orElse("")
-        : "";
   }
 
   private Either<Failure, String> evaluateSignalName(

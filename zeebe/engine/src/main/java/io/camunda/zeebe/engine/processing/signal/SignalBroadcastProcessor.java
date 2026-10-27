@@ -43,6 +43,7 @@ import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
+import io.camunda.zeebe.util.TagUtil;
 import java.util.ArrayList;
 import java.util.List;
 import org.agrona.DirectBuffer;
@@ -137,6 +138,17 @@ public class SignalBroadcastProcessor implements DistributedTypedRecordProcessor
             command, RejectionType.INVALID_ARGUMENT, reason);
         return;
       }
+    }
+
+    final var runScope = signalRecord.getRunScope();
+    if (!runScope.isEmpty() && !TagUtil.isValidTag(TagUtil.runScopeTag(runScope))) {
+      final var reason =
+          "Expected a run scope that forms a valid tag, but '%s' does not. %s"
+              .formatted(runScope, TagUtil.TAG_FORMAT_DESCRIPTION);
+      rejectionWriter.appendRejection(command, RejectionType.INVALID_ARGUMENT, reason);
+      responseWriter.writeRejectedResponseOnCommand(
+          command, RejectionType.INVALID_ARGUMENT, reason);
+      return;
     }
 
     triggerSignal(command, eventKey, isAuthNeeded);

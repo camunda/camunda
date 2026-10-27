@@ -719,8 +719,11 @@ public final class BpmnStateTransitionBehavior {
 
     // Propagate only the reserved run-scope tag (not general tags) so a run's child instances, and
     // the jobs/user-tasks/subscriptions beneath them, stay within the run's scope (ADR 0014 D6).
-    TagUtil.findRunScopeValue(context.getTags())
-        .ifPresent(runScope -> childInstanceRecord.setTags(Set.of(TagUtil.runScopeTag(runScope))));
+    // The tag lives on the root instance record, not the call-activity element, so read it there.
+    final var runScope = stateBehavior.getRunScope(context.getRootProcessInstanceKey());
+    if (!runScope.isEmpty()) {
+      childInstanceRecord.setTags(Set.of(TagUtil.runScopeTag(runScope)));
+    }
 
     commandWriter.appendFollowUpCommand(
         processInstanceKey, ProcessInstanceIntent.ACTIVATE_ELEMENT, childInstanceRecord);

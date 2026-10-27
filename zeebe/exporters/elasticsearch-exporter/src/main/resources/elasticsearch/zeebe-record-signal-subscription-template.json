@@ -34,6 +34,9 @@
             "signalName": {
               "type": "keyword"
             },
+            "runScope": {
+              "type": "keyword"
+            },
             "tenantId": {
               "type": "keyword"
             },

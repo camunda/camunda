@@ -12,8 +12,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.SignalSubscriptionIntent;
+import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
@@ -253,5 +255,77 @@ public class BroadcastSignalRunScopeTest {
                 .withIntent(ProcessInstanceIntent.ELEMENT_COMPLETED)
                 .exists())
         .isTrue();
+  }
+
+  @Test
+  public void shouldRejectBroadcastWithInvalidRunScope() {
+    // when a scoped broadcast carries a run scope that cannot form a valid tag
+    final var rejection =
+        ENGINE
+            .signal()
+            .withSignalName(SIGNAL_NAME)
+            .withRunScope("has spaces")
+            .expectRejection()
+            .broadcast();
+
+    // then it is rejected as an invalid argument
+    io.camunda.zeebe.protocol.record.Assertions.assertThat(rejection)
+        .hasRejectionType(io.camunda.zeebe.protocol.record.RejectionType.INVALID_ARGUMENT);
+  }
+
+  @Test
+  public void shouldPropagateRunScopeTagToJobsAndUserTasksInCallActivityChild() {
+    // given a parent (run A) that calls a child containing a user task and a job
+    final var childId = "child-with-work";
+    final var parentId = "parent-with-work";
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            "child.bpmn",
+            Bpmn.createExecutableProcess(childId)
+                .startEvent()
+                .userTask("ut", t -> t.zeebeUserTask())
+                .serviceTask("task", t -> t.zeebeJobType("work"))
+                .endEvent()
+                .done())
+        .withXmlResource(
+            "parent.bpmn",
+            Bpmn.createExecutableProcess(parentId)
+                .startEvent()
+                .callActivity("call", c -> c.zeebeProcessId(childId))
+                .endEvent()
+                .done())
+        .deploy();
+
+    // when the parent is created
+    final long parentKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(parentId)
+            .withTags(TagUtil.runScopeTag(RUN_A))
+            .create();
+
+    // then the child process instance itself is tagged
+    final var childProcess =
+        RecordingExporter.processInstanceRecords()
+            .withParentProcessInstanceKey(parentKey)
+            .withElementType(BpmnElementType.PROCESS)
+            .withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            .getFirst();
+    final long childKey = childProcess.getValue().getProcessInstanceKey();
+    assertThat(childProcess.getValue().getTags()).containsExactly(TagUtil.runScopeTag(RUN_A));
+
+    // and the user task created in the child carries the propagated run-scope tag
+    final var userTask =
+        RecordingExporter.userTaskRecords(UserTaskIntent.CREATED)
+            .withProcessInstanceKey(childKey)
+            .getFirst();
+    assertThat(userTask.getValue().getTags()).containsExactly(TagUtil.runScopeTag(RUN_A));
+
+    // and completing it, the job created in the child also carries the tag
+    ENGINE.userTask().withKey(userTask.getKey()).complete();
+    final var job =
+        RecordingExporter.jobRecords(JobIntent.CREATED).withProcessInstanceKey(childKey).getFirst();
+    assertThat(job.getValue().getTags()).containsExactly(TagUtil.runScopeTag(RUN_A));
   }
 }
