@@ -7,11 +7,14 @@
  */
 package io.camunda.optimize.service.identity;
 
+import io.camunda.identity.sdk.IdentityConfiguration;
+import io.camunda.identity.sdk.IdentityConfiguration.Type;
 import io.camunda.optimize.service.util.configuration.condition.CCSMCondition;
 import jakarta.annotation.PostConstruct;
+import java.util.EnumSet;
+import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -23,6 +26,16 @@ import org.springframework.stereotype.Component;
  * or unrecognised component as a caller that named none and returns every permission on the
  * audience, exactly as it did before component scoping existed. Nothing errors, so a deployment
  * that has blanked this out looks healthy while being unscoped.
+ *
+ * <p>Read off {@link IdentityConfiguration} rather than the property, because that is the value the
+ * SDK will actually send. The two can disagree: the SDK binds with relaxed rules and so honours
+ * {@code CAMUNDA_IDENTITY_COMPONENT_ID}, while a plain placeholder lookup does not, which would
+ * leave this reporting a component the SDK is not sending.
+ *
+ * <p>Nothing is sent at all on some identity types. Keycloak and Auth0 read permissions out of the
+ * token's own {@code permissions} claim and never call Identity, so component scoping does not
+ * reach those setups however this is configured. Only the generic type and Microsoft, which extends
+ * it, send a component.
  */
 @Component
 @Conditional(CCSMCondition.class)
@@ -30,24 +43,45 @@ public class CCSMIdentityComponentIdReporter {
 
   private static final Logger LOG = LoggerFactory.getLogger(CCSMIdentityComponentIdReporter.class);
 
-  private final String componentId;
+  /** The types whose SDK implementation never calls Identity for a token's permissions. */
+  private static final Set<Type> READS_PERMISSIONS_FROM_THE_TOKEN =
+      EnumSet.of(Type.KEYCLOAK, Type.AUTH0);
 
-  public CCSMIdentityComponentIdReporter(
-      @Value("${camunda.identity.componentId:}") final String componentId) {
-    this.componentId = componentId;
+  private final IdentityConfiguration identityConfiguration;
+
+  public CCSMIdentityComponentIdReporter(final IdentityConfiguration identityConfiguration) {
+    this.identityConfiguration = identityConfiguration;
   }
 
   @PostConstruct
   public void report() {
-    if (componentId == null || componentId.isBlank()) {
-      LOG.warn(
-          "No camunda.identity.componentId is set, so Optimize does not name itself to Management"
-              + " Identity. Identity will return every permission on Optimize's audience rather"
-              + " than only the ones Optimize's own resource server defines. Set it to the key of"
-              + " Optimize's entry under Identity's component-presets.");
+    final Type type = identityConfiguration.getType();
+
+    if (READS_PERMISSIONS_FROM_THE_TOKEN.contains(type)) {
+      LOG.info(
+          "Permissions come from the token's own claim on the {} identity type, so Optimize does"
+              + " not name a component to Management Identity and component scoping does not"
+              + " apply.",
+          type);
       return;
     }
 
-    LOG.info("Naming this component '{}' to Management Identity.", componentId);
+    final String componentId = identityConfiguration.getComponentId();
+
+    if (componentId == null || componentId.isBlank()) {
+      LOG.warn(
+          "No component id is set, so Optimize does not name itself to Management Identity."
+              + " Identity will return every permission on Optimize's audience rather than only"
+              + " the ones Optimize's own resource server defines. Set"
+              + " camunda.identity.componentId to the key of Optimize's entry under Identity's"
+              + " component-presets.");
+      return;
+    }
+
+    LOG.info(
+        "Naming this component '{}' to Management Identity. It has to match a key under Identity's"
+            + " component-presets; one that does not is treated the same as naming none, and every"
+            + " permission on the audience is returned.",
+        componentId);
   }
 }

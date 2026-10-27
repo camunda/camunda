@@ -14,6 +14,8 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.boot.context.properties.bind.Binder;
 import org.springframework.boot.context.properties.source.ConfigurationPropertySources;
 import org.springframework.boot.env.PropertiesPropertySourceLoader;
@@ -82,11 +84,15 @@ class CcsmIdentityComponentIdTest {
     assertThat(identityPropertiesWith(Map.of()).componentId()).isEqualTo(PRESET_KEY);
   }
 
-  @Test
-  void letsADeploymentOverrideIt() throws IOException {
-    // The relaxed-binding spelling, which is what an operator setting this reaches for.
-    final IdentityProperties identity =
-        identityPropertiesWith(Map.of("CAMUNDA_IDENTITY_COMPONENTID", "elsewhere"));
+  /**
+   * Both spellings, because they take different routes. The first is the placeholder the packaged
+   * default interpolates, so a typo there would otherwise go unnoticed; the second is the relaxed
+   * binding of the property name itself, which is what an operator is likelier to reach for.
+   */
+  @ParameterizedTest
+  @ValueSource(strings = {"CAMUNDA_OPTIMIZE_IDENTITY_COMPONENT_ID", "CAMUNDA_IDENTITY_COMPONENTID"})
+  void letsADeploymentOverrideIt(final String variable) throws IOException {
+    final IdentityProperties identity = identityPropertiesWith(Map.of(variable, "elsewhere"));
 
     assertThat(identity.componentId()).isEqualTo("elsewhere");
   }
