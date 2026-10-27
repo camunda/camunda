@@ -42,8 +42,10 @@ import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
 
 /**
- * End-to-end check that run-ID test isolation scopes a JSON test-case run to the instance it
- * started, instead of taking the oldest instance of the process definition.
+ * End-to-end check that run-scope test isolation scopes a JSON test-case run to the instance it
+ * started, instead of taking the oldest instance of the process definition. Run identity rides the
+ * reserved run-scope tag ({@code camunda:runScope:<id>}), so a green run also proves the tag is
+ * written, inherited, and filterable on the real backend.
  *
  * <p>Isolation is enabled by constructing the runner with an enabled {@link TestRunContext} — the
  * explicit, config-driven path a host such as the hub uses — rather than a system property.
@@ -79,9 +81,9 @@ public class CptRunIsolationIT {
         .untilAsserted(() -> assertThat(findInstances(processId)).hasSize(1));
 
     // when: a test case creates its own instance (marker=run) and asserts marker=run.
-    // Oldest-first selection would resolve the seed instance (marker=seed) and fail; the run-ID
-    // variable filter resolves the run's instance instead. A broken filter value would match no
-    // instance and time out, so a green run also proves the filter encoding.
+    // Oldest-first selection would resolve the seed instance (marker=seed) and fail; the run-scope
+    // tag filter resolves the run's instance instead. A broken filter would match no instance and
+    // time out, so a green run also proves the tag is written and filterable on the backend.
     final TestCase testCase =
         ImmutableTestCase.builder()
             .name("run-isolation")
@@ -109,7 +111,7 @@ public class CptRunIsolationIT {
             processTestContext, TestRunContext.enabled(UUID.randomUUID().toString()));
     assertThatNoException().isThrownBy(() -> runner.run(testCase));
 
-    // and: the run also tagged its instance with the run-ID variable
+    // and: the run's own instance now also exists alongside the seed (two instances total)
     Awaitility.await()
         .atMost(Duration.ofSeconds(30))
         .untilAsserted(() -> assertThat(findInstances(processId)).hasSize(2));
@@ -142,8 +144,9 @@ public class CptRunIsolationIT {
         .untilAsserted(() -> assertThat(findInstances(processId)).hasSize(1));
 
     // when: a test case creates its own instance, completes its job (scoped by process definition),
-    // then asserts the instance completed. Job search can't filter by variable, so this only works
-    // if the run's instance key is resolved and used to scope the job search.
+    // then asserts the instance completed. Job search can't filter by tag, so this only works if
+    // the
+    // run's instance keys are resolved by the run-scope tag and used to scope the job search.
     final TestCase testCase =
         ImmutableTestCase.builder()
             .name("job-isolation")
@@ -158,8 +161,7 @@ public class CptRunIsolationIT {
             .addInstructions(
                 ImmutableCompleteJobInstruction.builder()
                     // No process definition on the selector — scoping must resolve the run's
-                    // instance by the run-ID variable alone (the hub's job selectors look like
-                    // this).
+                    // instance by the run-scope tag alone (the hub's job selectors look like this).
                     .jobSelector(
                         ImmutableJobSelector.builder().jobType(jobType).elementId("task").build())
                     .build())
