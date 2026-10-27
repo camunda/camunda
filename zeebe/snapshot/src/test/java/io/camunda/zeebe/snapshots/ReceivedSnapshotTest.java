@@ -176,7 +176,8 @@ public class ReceivedSnapshotTest {
 
     // when
     assertThatThrownBy(() -> receivedSnapshot.persist().join())
-        .hasCauseInstanceOf(NullPointerException.class);
+        .hasCauseInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("is missing or unreadable");
   }
 
   @Test
