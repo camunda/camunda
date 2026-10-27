@@ -40,6 +40,9 @@
             "tenantId": {
               "type": "keyword"
             },
+            "runScope": {
+              "type": "keyword"
+            },
             "businessId": {
               "type": "keyword"
             }

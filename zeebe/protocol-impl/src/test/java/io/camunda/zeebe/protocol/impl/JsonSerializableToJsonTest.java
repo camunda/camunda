@@ -1353,7 +1353,8 @@ final class JsonSerializableToJsonTest {
                   "name": "test-message",
                   "deadline": 22,
                   "tenantId": "foo",
-                  "businessId": "biz-42"
+                  "businessId": "biz-42",
+                  "runScope": ""
                 }
                 """
       },
@@ -1384,7 +1385,8 @@ final class JsonSerializableToJsonTest {
                   "name": "test-message",
                   "deadline": -1,
                   "tenantId": "<default>",
-                  "businessId": ""
+                  "businessId": "",
+                  "runScope": ""
                 }
                 """
       },
@@ -1532,7 +1534,8 @@ final class JsonSerializableToJsonTest {
                   "rootProcessInstanceKey": 99,
                   "storageOrdinal": 8,
                   "elementType": "RECEIVE_TASK",
-                  "subscriptionKey": 42
+                  "subscriptionKey": 42,
+                  "runScope": ""
                 }
                 """
       },
@@ -1568,7 +1571,8 @@ final class JsonSerializableToJsonTest {
                   "rootProcessInstanceKey": -1,
                   "storageOrdinal": 0,
                   "elementType": "UNSPECIFIED",
-                  "subscriptionKey": -1
+                  "subscriptionKey": -1,
+                  "runScope": ""
                 }
                 """
       },
@@ -1632,7 +1636,8 @@ final class JsonSerializableToJsonTest {
                   "storageOrdinal": 8,
                   "elementType": "RECEIVE_TASK",
                   "subscriptionKey": 42,
-                  "closedForSuspend": true
+                  "closedForSuspend": true,
+                  "runScope": ""
                 }
                 """
       },
@@ -1671,7 +1676,8 @@ final class JsonSerializableToJsonTest {
                   "storageOrdinal": 0,
                   "elementType": "UNSPECIFIED",
                   "subscriptionKey": -1,
-                  "closedForSuspend": false
+                  "closedForSuspend": false,
+                  "runScope": ""
                 }
                 """
       },
@@ -3597,7 +3603,8 @@ final class JsonSerializableToJsonTest {
                   "requestStreamId": 4,
                   "processDefinitionKey": 5,
                   "businessId": "biz-42",
-                  "storageOrdinal": 6
+                  "storageOrdinal": 6,
+                  "runScope": ""
                 }
                 """
       },
@@ -3855,7 +3862,8 @@ final class JsonSerializableToJsonTest {
                   "requestStreamId": -1,
                   "processDefinitionKey": -1,
                   "businessId": "",
-                  "storageOrdinal": 0
+                  "storageOrdinal": 0,
+                  "runScope": ""
                 }
                 """
       },

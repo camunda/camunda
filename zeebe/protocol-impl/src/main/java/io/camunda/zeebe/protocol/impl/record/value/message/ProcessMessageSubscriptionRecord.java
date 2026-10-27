@@ -49,6 +49,7 @@ public final class ProcessMessageSubscriptionRecord extends UnifiedRecordValue
   private static final StringValue ELEMENT_TYPE_KEY = new StringValue("elementType");
   private static final StringValue SUBSCRIPTION_KEY_KEY = new StringValue("subscriptionKey");
   private static final StringValue CLOSED_FOR_SUSPEND_KEY = new StringValue("closedForSuspend");
+  private static final StringValue RUN_SCOPE_KEY = new StringValue("runScope");
 
   private final IntegerProperty subscriptionPartitionIdProp =
       new IntegerProperty(SUBSCRIPTION_PARTITION_ID_KEY);
@@ -74,9 +75,10 @@ public final class ProcessMessageSubscriptionRecord extends UnifiedRecordValue
   private final LongProperty subscriptionKeyProp = new LongProperty(SUBSCRIPTION_KEY_KEY, -1L);
   private final BooleanProperty closedForSuspendProp =
       new BooleanProperty(CLOSED_FOR_SUSPEND_KEY, false);
+  private final StringProperty runScopeProp = new StringProperty(RUN_SCOPE_KEY, "");
 
   public ProcessMessageSubscriptionRecord() {
-    super(18);
+    super(19);
     declareProperty(subscriptionPartitionIdProp)
         .declareProperty(processInstanceKeyProp)
         .declareProperty(elementInstanceKeyProp)
@@ -94,7 +96,8 @@ public final class ProcessMessageSubscriptionRecord extends UnifiedRecordValue
         .declareProperty(businessIdProp)
         .declareProperty(elementTypeProp)
         .declareProperty(subscriptionKeyProp)
-        .declareProperty(closedForSuspendProp);
+        .declareProperty(closedForSuspendProp)
+        .declareProperty(runScopeProp);
   }
 
   public void wrap(final ProcessMessageSubscriptionRecord record) {
@@ -116,6 +119,7 @@ public final class ProcessMessageSubscriptionRecord extends UnifiedRecordValue
     setElementType(record.getElementType());
     setSubscriptionKey(record.getSubscriptionKey());
     setClosedForSuspend(record.isClosedForSuspend());
+    setRunScope(record.getRunScopeBuffer());
   }
 
   @JsonIgnore
@@ -331,5 +335,30 @@ public final class ProcessMessageSubscriptionRecord extends UnifiedRecordValue
   public ProcessMessageSubscriptionRecord setClosedForSuspend(final boolean closedForSuspend) {
     closedForSuspendProp.setValue(closedForSuspend);
     return this;
+  }
+
+  @Override
+  public String getRunScope() {
+    return BufferUtil.bufferAsString(runScopeProp.getValue());
+  }
+
+  public ProcessMessageSubscriptionRecord setRunScope(final String runScope) {
+    runScopeProp.setValue(runScope);
+    return this;
+  }
+
+  public ProcessMessageSubscriptionRecord setRunScope(final DirectBuffer runScope) {
+    runScopeProp.setValue(runScope);
+    return this;
+  }
+
+  @JsonIgnore
+  public DirectBuffer getRunScopeBuffer() {
+    return runScopeProp.getValue();
+  }
+
+  @JsonIgnore
+  public boolean hasRunScope() {
+    return runScopeProp.getValue().capacity() > 0;
   }
 }

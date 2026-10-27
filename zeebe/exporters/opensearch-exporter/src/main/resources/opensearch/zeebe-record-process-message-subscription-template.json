@@ -61,6 +61,9 @@
             "rootProcessInstanceKey": {
               "type": "long"
             },
+            "runScope": {
+              "type": "keyword"
+            },
             "businessId": {
               "type": "keyword"
             },

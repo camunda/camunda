@@ -46,6 +46,9 @@
             "requestStreamId": {
               "type": "integer"
             },
+            "runScope": {
+              "type": "keyword"
+            },
             "businessId": {
               "type": "keyword"
             }

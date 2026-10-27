@@ -38,6 +38,7 @@ public final class MessageCorrelationRecord extends UnifiedRecordValue
       new StringValue("processDefinitionKey");
   private static final StringValue STORAGE_ORDINAL_KEY = new StringValue("storageOrdinal");
   private static final StringValue BUSINESS_ID_KEY = new StringValue("businessId");
+  private static final StringValue RUN_SCOPE_KEY = new StringValue("runScope");
 
   private final StringProperty nameProp = new StringProperty(NAME_KEY);
   private final StringProperty correlationKeyProp = new StringProperty(CORRELATION_KEY_KEY);
@@ -55,9 +56,10 @@ public final class MessageCorrelationRecord extends UnifiedRecordValue
       new LongProperty(PROCESS_DEFINITION_KEY_KEY, -1L);
   private final IntegerProperty storageOrdinalProp = new IntegerProperty(STORAGE_ORDINAL_KEY, 0);
   private final StringProperty businessIdProp = new StringProperty(BUSINESS_ID_KEY, "");
+  private final StringProperty runScopeProp = new StringProperty(RUN_SCOPE_KEY, "");
 
   public MessageCorrelationRecord() {
-    super(11);
+    super(12);
     declareProperty(nameProp)
         .declareProperty(correlationKeyProp)
         .declareProperty(variablesProp)
@@ -68,7 +70,8 @@ public final class MessageCorrelationRecord extends UnifiedRecordValue
         .declareProperty(processInstanceKeyProp)
         .declareProperty(processDefinitionKeyProp)
         .declareProperty(storageOrdinalProp)
-        .declareProperty(businessIdProp);
+        .declareProperty(businessIdProp)
+        .declareProperty(runScopeProp);
   }
 
   public void wrap(final MessageCorrelationRecord record) {
@@ -79,6 +82,7 @@ public final class MessageCorrelationRecord extends UnifiedRecordValue
     setProcessInstanceKey(record.getProcessInstanceKey());
     setStorageOrdinal(record.getStorageOrdinal());
     setBusinessId(record.getBusinessIdBuffer());
+    setRunScope(record.getRunScopeBuffer());
   }
 
   @Override
@@ -214,5 +218,30 @@ public final class MessageCorrelationRecord extends UnifiedRecordValue
   public MessageCorrelationRecord setStorageOrdinal(final int storageOrdinal) {
     storageOrdinalProp.setValue(storageOrdinal);
     return this;
+  }
+
+  @Override
+  public String getRunScope() {
+    return bufferAsString(runScopeProp.getValue());
+  }
+
+  public MessageCorrelationRecord setRunScope(final String runScope) {
+    runScopeProp.setValue(runScope);
+    return this;
+  }
+
+  public MessageCorrelationRecord setRunScope(final DirectBuffer runScope) {
+    runScopeProp.setValue(runScope);
+    return this;
+  }
+
+  @JsonIgnore
+  public DirectBuffer getRunScopeBuffer() {
+    return runScopeProp.getValue();
+  }
+
+  @JsonIgnore
+  public boolean hasRunScope() {
+    return runScopeProp.getValue().capacity() > 0;
   }
 }

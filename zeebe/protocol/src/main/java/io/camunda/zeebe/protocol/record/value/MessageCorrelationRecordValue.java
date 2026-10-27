@@ -64,4 +64,15 @@ public interface MessageCorrelationRecordValue
    * @since 8.10
    */
   String getBusinessId();
+
+  /**
+   * @return the run-scope selector that restricts this correlation to a single run, or an empty
+   *     string for an unscoped correlate (the default and the behaviour of records written before
+   *     8.11)
+   * @since 8.11
+   */
+  @Value.Default
+  default String getRunScope() {
+    return "";
+  }
 }
