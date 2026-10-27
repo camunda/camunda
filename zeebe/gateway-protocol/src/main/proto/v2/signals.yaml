@@ -67,6 +67,9 @@ components:
             Restricts the broadcast to a single run. When set, the signal only reaches catch events
             and start events of instances belonging to this run (identified by a reserved run-scope
             tag). When omitted, the signal is broadcast globally. Used for run isolation.
+
+            This field is an alpha feature and may be subject to change. It is excluded from the API
+            backward-compatibility guarantee until run-scope coverage is complete.
           type: string
       required:
           - signalName
