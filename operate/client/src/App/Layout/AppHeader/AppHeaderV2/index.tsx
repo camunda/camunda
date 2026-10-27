@@ -176,7 +176,8 @@ const AppHeaderV2: React.FC<{hideNavLinks?: boolean}> = observer(
       ['paid-cc', 'enterprise'].includes(currentUser.salesPlanType);
 
     useEffect(() => {
-      if (currentUser !== undefined) {
+      // Newer schemas allow a null username, which only an anonymous caller gets.
+      if (currentUser !== undefined && currentUser.username !== null) {
         tracking.identifyUser({
           username: currentUser.username,
           salesPlanType: currentUser.salesPlanType,
@@ -229,8 +230,10 @@ const AppHeaderV2: React.FC<{hideNavLinks?: boolean}> = observer(
                 actions={
                   currentUser === undefined ? undefined : (
                     <LogoutAwareUserMenu
-                      userName={currentUser.displayName}
-                      userEmail={currentUser.email}
+                      userName={
+                        currentUser.displayName ?? currentUser.username ?? ''
+                      }
+                      userEmail={currentUser.email ?? ''}
                       canLogout={clientConfig.canLogout}
                       customSection={
                         <>

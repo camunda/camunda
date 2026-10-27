@@ -106,7 +106,8 @@ const LegacyAppHeader: React.FC = observer(() => {
   }, []);
 
   useEffect(() => {
-    if (currentUser !== undefined) {
+    // Newer schemas allow a null username, which only an anonymous caller gets.
+    if (currentUser !== undefined && currentUser.username !== null) {
       tracking.identifyUser({
         username: currentUser.username,
         salesPlanType: currentUser.salesPlanType,
