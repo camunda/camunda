@@ -212,7 +212,9 @@ public class OpensearchEngineClientIT {
   void shouldReadReplicaCountsWhenAnotherSettingHasAnUnexpectedValue() throws IOException {
     // given - the engine accepts and stores a string for a setting the typed client model expects
     // to be an object, which makes parsing the full settings of this index fail
-    final var index = createTestIndexDescriptor("index_name", "/mappings.json");
+    final var index =
+        createTestIndexDescriptor(
+            "index_name_unexpected_setting-" + ENGINE_CLIENT_TEST_MARKERS, "/mappings.json");
     final var settings = new IndexConfiguration();
     settings.setNumberOfReplicas(2);
     opensearchEngineClient.createIndex(index, settings);
