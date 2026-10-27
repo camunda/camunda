@@ -26,6 +26,22 @@ set -euo pipefail
 pw_exit="${1:?usage: apply-changed-spec-verdict.sh <playwright-exit-code>}"
 gating="${GATING:-full}"
 
+# If Playwright wrote no report at all (it crashed or never started before the
+# reporting step), leave a sentinel error report in its place. The non-blocking
+# "Full Result" check scans each leg's results.json; without this, a leg that
+# produced nothing is invisible to that scan, so an incomplete run whose other
+# legs passed could read green. The sentinel carries a run-level error, which
+# Full Result flags. It does NOT change this script's verdict: the vacuous exit 0
+# below for a PR that changed no spec still stands (so the gate keeps blocking
+# only on changed specs), and for a changed-spec PR a missing report already
+# blocked.
+report="json-report/results.json"
+if [[ ! -f "${report}" ]]; then
+  echo "No Playwright report at ${report}; writing a sentinel so the Full Result check can see this leg produced none."
+  mkdir -p json-report
+  printf '%s\n' '{"errors":[{"message":"No Playwright report was produced by this leg (json-report/results.json was never written)."}],"suites":[]}' > "${report}"
+fi
+
 if [[ "${gating}" != "changed" ]]; then
   echo "Gating on the whole suite (Playwright exit ${pw_exit})."
   exit "${pw_exit}"
