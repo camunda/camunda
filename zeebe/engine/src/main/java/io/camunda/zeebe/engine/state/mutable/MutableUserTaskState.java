@@ -33,4 +33,8 @@ public interface MutableUserTaskState extends UserTaskState {
   void storeInitialAssignee(final long userTaskKey, String assignee);
 
   void deleteInitialAssignee(final long userTaskKey);
+
+  void markSuspended(long processInstanceKey, long userTaskKey);
+
+  void unmarkSuspended(long processInstanceKey, long userTaskKey);
 }

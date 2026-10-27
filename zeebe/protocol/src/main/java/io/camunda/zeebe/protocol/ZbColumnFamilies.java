@@ -397,7 +397,14 @@ public enum ZbColumnFamilies implements EnumValue, ScopedColumnFamily {
   // re-accumulate its metrics. Written when an item is first created (see
   // AgentHistoryCreatedApplier), survives commit/discard, and is deleted in one pass when the
   // instance completes (see AgentInstanceCompletedApplier).
-  AGENT_HISTORY_METRICS_ACCUMULATED_IDS(165, PARTITION_LOCAL);
+  AGENT_HISTORY_METRICS_ACCUMULATED_IDS(165, PARTITION_LOCAL),
+
+  /**
+   * Tracks the user tasks a suspension walk has suspended, keyed [processInstanceKey |
+   * userTaskKey], so overlapping walks suspend each task once and resume can find them by an
+   * ordered prefix scan from its resume cursor. Cleared when the task is resumed or deleted.
+   */
+  USER_TASKS_SUSPENDED_BY_PROCESS_INSTANCE(166, PARTITION_LOCAL);
 
   private final int value;
   private final ColumnFamilyScope columnFamilyScope;

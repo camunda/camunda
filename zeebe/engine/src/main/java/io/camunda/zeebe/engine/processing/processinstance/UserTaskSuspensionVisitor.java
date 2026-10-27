@@ -22,7 +22,8 @@ import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
  * {@code RESUME} commands drain in walk order, before {@link ProcessInstanceIntent#RESUMED}.
  *
  * <p>Terminating element instances are skipped: their user task is about to be canceled, so a
- * buffered {@code RESUME} would target a task that no longer exists.
+ * buffered {@code RESUME} would target a task that no longer exists. Already suspended user tasks
+ * are skipped too, so overlapping walks suspend each task once.
  */
 final class UserTaskSuspensionVisitor implements ElementInstanceVisitor {
 
@@ -45,7 +46,11 @@ final class UserTaskSuspensionVisitor implements ElementInstanceVisitor {
 
   @Override
   public boolean shouldVisit(final ElementInstance elementInstance) {
-    return elementInstance.getUserTaskKey() > 0 && !elementInstance.isTerminating();
+    final long userTaskKey = elementInstance.getUserTaskKey();
+    return userTaskKey > 0
+        && !elementInstance.isTerminating()
+        && !userTaskState.isSuspended(
+            elementInstance.getValue().getProcessInstanceKey(), userTaskKey);
   }
 
   @Override
