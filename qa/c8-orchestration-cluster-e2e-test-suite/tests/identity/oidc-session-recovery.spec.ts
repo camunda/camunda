@@ -31,13 +31,18 @@ test.describe('OIDC session recovery', () => {
   }) => {
     await navigateToApp(page, 'identity');
     await mockOIDCModeUI(page);
-    await loginPage.login(
-      LOGIN_CREDENTIALS.username,
-      LOGIN_CREDENTIALS.password,
-    );
+    // Clearing cookies before the landing page's own search completes makes
+    // that search 401 instead, which reloads the app before the Roles click.
+    await Promise.all([
+      page.waitForResponse(
+        (response) =>
+          response.url().includes('/v2/mapping-rules/search') &&
+          response.request().method() === 'POST',
+        {timeout: 60000},
+      ),
+      loginPage.login(LOGIN_CREDENTIALS.username, LOGIN_CREDENTIALS.password),
+    ]);
     await expect(page).toHaveURL(relativizePath(Paths.mappingRules()));
-
-    await page.waitForLoadState('load');
 
     // Simulate the IdP-side session disappearing (the issue's repro step).
     await page.context().clearCookies();
