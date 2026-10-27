@@ -286,3 +286,81 @@ The hardware runs lived about 1 hour 15 minutes, against about 3 hours 50 minute
 - More PostgreSQL hardware does not reduce the extra WAL or the forced checkpoints: those come from the amount of data written.
 - Brokers do not change with storage hardware, as expected.
 
+## Step 4: more broker CPU and a higher WAL limit (PostgreSQL)
+
+### Question and setup (2026-10-27)
+
+Step 2 left PostgreSQL with full tracing at about twice today's exporting latency (0.47 to 0.49 s against 0.22 s), and more PostgreSQL hardware did not close that gap. Two things were not tested: more broker CPU (the RDBMS exporter runs inside the brokers, which used 10% more CPU) and a higher WAL limit (full tracing doubled the forced checkpoints).
+
+All runs record at 0.5 root instances/s with the Step 1 image and workload, side by side. Dispatched 12:00:59 UTC, ready by 12:05:52, warm-up until 12:22, **window 12:22 to 14:22 UTC** (2 hours).
+
+|             Namespace              |                    Run                    | Recorded | PostgreSQL | `max_wal_size` |            Brokers             |                                Actions run                                 |
+|------------------------------------|-------------------------------------------|----------|------------|----------------|--------------------------------|----------------------------------------------------------------------------|
+| `c8-bcan-vh-s4-pg-0-20261027`      | A. Today                                  | 0%       | 3 cores    | 4 GB           | 3 cores, 4 core non-spot nodes | [40500448128](https://github.com/camunda/camunda/actions/runs/40500448128) |
+| `c8-bcan-vh-s4-pg-hw-20261027`     | B. Bigger PostgreSQL (Step 2, +50%)       | 100%     | +50%       | 4 GB           | 3 cores, 4 core non-spot nodes | [40500453214](https://github.com/camunda/camunda/actions/runs/40500453214) |
+| `c8-bcan-vh-s4-pg-wal-20261027`    | C. B + higher WAL limit                   | 100%     | +50%       | 16 GB          | 3 cores, 4 core non-spot nodes | [40500458592](https://github.com/camunda/camunda/actions/runs/40500458592) |
+| `c8-bcan-vh-s4-pg-brk-20261027`    | D. B + more broker CPU                    | 100%     | +50%       | 4 GB           | 4.5 cores, 8 core spot nodes   | [40500463583](https://github.com/camunda/camunda/actions/runs/40500463583) |
+| `c8-bcan-vh-s4-pg-walbrk-20261027` | E. B + higher WAL limit + more broker CPU | 100%     | +50%       | 16 GB          | 4.5 cores, 8 core spot nodes   | [40500468090](https://github.com/camunda/camunda/actions/runs/40500468090) |
+
+- PostgreSQL +50% is 4.5 cores, 12 GiB, `shared_buffers` 3 GB, `effective_cache_size` 9 GB and a 384 Gi disk on the 8 core pool, as in Step 2.
+- 16 GB keeps only the timed checkpoints: PostgreSQL starts a checkpoint once the WAL since the last one reaches about `max_wal_size / (1 + checkpoint_completion_target)`, 2.1 GB at 4 GB. Full tracing writes about 4.5 GB per 20-minute `checkpoint_timeout`.
+- More broker CPU needs the 8 core pool: the system pods on a 4 core node leave room for about 3.07 cores. Thread counts stay at 3. The 8 core pool is spot only.
+- Verified on the running clusters: pod resources, node pools, `max_wal_size`, `shared_buffers` and disk sizes as listed.
+
+Metrics workflow reports (2-hour window, disturbed slices included): [A](https://github.com/camunda/camunda/actions/runs/40520629158), [B](https://github.com/camunda/camunda/actions/runs/40520638808), [C](https://github.com/camunda/camunda/actions/runs/40520647352), [D](https://github.com/camunda/camunda/actions/runs/40520657547), [E](https://github.com/camunda/camunda/actions/runs/40520665908).
+
+All five namespaces were deleted after the collection (2026-10-27 14:45 UTC).
+
+### Spot node shutdowns during the window
+
+Several spot nodes were shut down during the window (Kubernetes `TaintManagerEviction` and `Killing` events). Each moved a pod and stalled the load for 1 to 3 minutes:
+
+| Run |                                       Moved pods (UTC)                                        |                 Effect                 |
+|-----|-----------------------------------------------------------------------------------------------|----------------------------------------|
+| A   | none                                                                                          | none                                   |
+| B   | 2 workers at 12:27:49                                                                         | one 5-minute slice at 3.3 s            |
+| C   | Keycloak and 4 workers at 13:14:59, Keycloak's database at 13:44:08                           | requests down to 5/s, slices 9 s, 36 s |
+| D   | broker `camunda-2` at 13:44:35                                                                | slice at 90 s (histogram limit)        |
+| E   | Keycloak and workers at 13:27, broker `camunda-0` at 14:05:28, broker `camunda-2` at 14:14:33 | slices at 90 s                         |
+
+The table below therefore drops every 5-minute slice that holds a moved pod, a minute below 60% of the median request rate or a minute with fewer than 3 brokers up, plus the slice after it (catch-up). Kept slices: A 24, B 22, C 20, D 21, E 18 of 24. Quantiles are computed from the summed histogram buckets of the kept slices.
+
+### Results, window 12:22 to 14:22 UTC, disturbed slices dropped
+
+|                     Metric                      |   A. Today    | B. Bigger PG  | C. B + WAL 16 GB | D. B + broker CPU |  E. B + both  |
+|-------------------------------------------------|---------------|---------------|------------------|-------------------|---------------|
+| Exporting latency p99                           | 0.24 s        | 0.65 s        | 0.49 s           | 0.25 s            | 0.25 s        |
+| Exporting latency p50                           | 0.024 s       | 0.058 s       | 0.051 s          | 0.034 s           | 0.034 s       |
+| Exporting latency p99, median of slices / worst | 0.24 / 0.24 s | 0.63 / 1.17 s | 0.48 / 1.35 s    | 0.25 / 0.80 s     | 0.24 / 0.37 s |
+| Data availability p99                           | 0.99 s        | 1.02 s        | 1.00 s           | 0.99 s            | 0.99 s        |
+| Data availability p99, worst slice              | 0.99 s        | 1.99 s        | 1.83 s           | 1.00 s            | 1.00 s        |
+| Processing latency p99                          | 0.21 s        | 0.22 s        | 0.22 s           | 0.07 s            | 0.06 s        |
+| Request latency p99                             | 0.24 s        | 0.24 s        | 0.24 s           | 0.06 s            | 0.06 s        |
+| Exporter flush p99                              | 0.15 s        | 0.17 s        | 0.16 s           | 0.13 s            | 0.13 s        |
+
+### Results, whole window (nothing dropped)
+
+|                 Metric                 |   A. Today    | B. Bigger PG  | C. B + WAL 16 GB | D. B + broker CPU |  E. B + both  |
+|----------------------------------------|---------------|---------------|------------------|-------------------|---------------|
+| Completed root instances/s             | 0.500         | 0.500         | 0.497            | 0.500             | 0.491         |
+| Backpressure                           | 0%            | 0.025%        | 0.31%            | 0.11%             | 0.018%        |
+| Broker CPU, busiest pod / average      | 1.27 / 1.25   | 1.39 / 1.33   | 1.39 / 1.36      | 1.19 / 0.99       | 1.06 / 0.92   |
+| Broker CPU throttled, busiest pod      | 3.2%          | 5.0%          | 5.9%             | 2.1%              | 0.9%          |
+| PostgreSQL CPU                         | 0.23          | 0.26          | 0.21             | 0.20              | 0.21          |
+| WAL written                            | 1.77 MiB/s    | 3.71 MiB/s    | 3.16 MiB/s       | 3.73 MiB/s        | 3.12 MiB/s    |
+| WAL full page images/s                 | 49            | 211           | 117              | 223               | 118           |
+| Checkpoints in 2 hours, forced / timed | 5 / 1         | 12 / 0        | 0 / 6            | 12 / 0            | 0 / 6         |
+| Checkpoint buffers written             | 0.40 M        | 1.49 M        | 0.88 M           | 1.59 M            | 0.86 M        |
+| WAL on disk, average / largest         | 3.7 / 4.0 GiB | 4.0 / 4.0 GiB | 6.5 / 7.3 GiB    | 4.0 / 4.0 GiB     | 6.6 / 7.3 GiB |
+| Cleanup run, average / longest         | 0.76 / 1.0 s  | 1.02 / 1.4 s  | 0.91 / 1.6 s     | 0.95 / 2.5 s      | 0.99 / 2.2 s  |
+| Statement time since start             | 538 s         | 774 s         | 625 s            | 614 s             | 624 s         |
+
+### Step 4 observations
+
+- **More broker CPU closes the export gap.** With 4.5 broker cores, full tracing exports as fast as today's cluster at p99 (0.25 s against 0.24 s). The median is still about 40% higher (0.034 s against 0.024 s), because each flush carries more data. Data availability is the same as today.
+- **The broker CPU gain is not only for the exporter.** With 4.5 cores, CPU throttling of the busiest broker drops from 3% to 6% (A to C) to 1% to 2% (D and E), and processing and request latency drop from about 0.22 s to 0.06 s, well below today. Today's 3-core brokers are throttled in short bursts even at 1.3 cores on average. So a 0% run with the same brokers would likely be faster than run A; that run was not measured. The brokers also moved from 4 core non-spot to 8 core spot nodes, a second change.
+- **The higher WAL limit removes the forced checkpoints** (12 per 2 hours to none, 6 timed instead). It cuts the full page images by 45% and the WAL by 15% (3.7 to 3.2 MiB/s, still 1.8 times today). It lowers the export delay somewhat (p99 0.65 to 0.49 s) but does not bring it back to today. On top of more broker CPU it adds nothing to the delay (0.25 s in D and E).
+- **The cost of the higher WAL limit is disk:** up to 7.3 GiB of WAL instead of 4 GiB. A longer crash recovery is expected but not measured.
+- Run B was slower than in Step 2 (0.65 s against 0.49 s at p99). Its slow minutes come in short bursts and line up loosely with broker CPU throttling (correlation 0.45 per minute between 12:40 and 13:12 UTC; 0.41 in A, 0.57 in C).
+- **Spot nodes are a real risk for this setup:** brokers on the 8 core pool were shut down twice in 2 hours. Elasticsearch and PostgreSQL also run on spot nodes in all load tests; `stable-vms=true` only moves the brokers.
+
