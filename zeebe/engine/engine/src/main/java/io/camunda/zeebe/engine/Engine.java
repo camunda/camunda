@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine;
 
 import io.camunda.security.configuration.EngineSecurityConfig;
 import io.camunda.zeebe.engine.processing.processinstance.CommandBufferingBehavior;
+import io.camunda.zeebe.engine.processing.common.BannedInstanceCommandCheck;
 import io.camunda.zeebe.engine.processing.streamprocessor.RecordProcessorMap;
 import io.camunda.zeebe.engine.processing.streamprocessor.SuspensionBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
@@ -49,7 +50,7 @@ import org.slf4j.Logger;
 public class Engine implements EngineProcessor {
 
   public static final String ERROR_MESSAGE_BANNED_PI =
-      "Expected to process command for process instance with key '%d', but the process instance is banned due to previous errors. The process instance can't be recovered, but it can be cancelled.";
+      BannedInstanceCommandCheck.ERROR_MESSAGE_BANNED_PI;
   private static final Logger LOG = Loggers.PROCESS_PROCESSOR_LOGGER;
   private static final String ERROR_MESSAGE_PROCESSOR_NOT_FOUND =
       "Expected to find processor for record '{}', but caught an exception. Skip this record.";
@@ -134,7 +135,7 @@ public class Engine implements EngineProcessor {
     final var typedProcessorContext =
         new TypedRecordProcessorContextImpl(
             recordProcessorContext, writers, config, securityConfig);
-    processingState = typedProcessorContext.getProcessingState();
+    processingState = typedProcessorContext.getMutableProcessingState();
     writers.setKeyValidator(processingState.getKeyGenerator());
     suspensionBehavior = new SuspensionBehavior(processingState);
     final var suspensionMetrics = typedProcessorContext.getSuspensionMetrics();

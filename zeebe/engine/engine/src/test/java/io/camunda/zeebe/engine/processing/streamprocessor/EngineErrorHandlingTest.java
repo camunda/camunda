@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.streamprocessor;
 
+import io.camunda.zeebe.engine.util.MutableStates;
 import static io.camunda.zeebe.test.util.TestUtil.waitUntil;
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -121,7 +122,7 @@ public final class EngineErrorHandlingTest {
             STREAM_NAME,
             DefaultZeebeDbFactory.defaultFactory(),
             (processingContext) -> {
-              processingState = processingContext.getProcessingState();
+              processingState = MutableStates.of(processingContext);
               keyGenerator = processingContext.getProcessingState().getKeyGenerator();
               failingKey.set(keyGenerator.getCurrentKey());
               secondKey.set(keyGenerator.nextKey());
@@ -206,7 +207,7 @@ public final class EngineErrorHandlingTest {
             STREAM_NAME,
             DefaultZeebeDbFactory.defaultFactory(),
             (processingContext) -> {
-              processingState = processingContext.getProcessingState();
+              processingState = MutableStates.of(processingContext);
               keyGenerator = processingState.getKeyGenerator();
               return TypedRecordProcessors.processors()
                   .onCommand(
@@ -277,7 +278,7 @@ public final class EngineErrorHandlingTest {
             STREAM_NAME,
             DefaultZeebeDbFactory.defaultFactory(),
             (processingContext) -> {
-              processingState = processingContext.getProcessingState();
+              processingState = MutableStates.of(processingContext);
               keyGenerator = processingState.getKeyGenerator();
               return TypedRecordProcessors.processors()
                   .onCommand(
@@ -317,7 +318,7 @@ public final class EngineErrorHandlingTest {
             STREAM_NAME,
             DefaultZeebeDbFactory.defaultFactory(),
             (processingContext) -> {
-              processingState = processingContext.getProcessingState();
+              processingState = MutableStates.of(processingContext);
               keyGenerator = processingState.getKeyGenerator();
               return TypedRecordProcessors.processors()
                   .onCommand(
@@ -364,7 +365,7 @@ public final class EngineErrorHandlingTest {
             DefaultZeebeDbFactory.defaultFactory(),
             (processingContext) -> {
               dumpProcessorRef.set(spy(new DumpProcessor(processingContext.getWriters())));
-              processingState = processingContext.getProcessingState();
+              processingState = MutableStates.of(processingContext);
               keyGenerator = processingState.getKeyGenerator();
               return TypedRecordProcessors.processors()
                   .onCommand(
@@ -429,7 +430,7 @@ public final class EngineErrorHandlingTest {
             DefaultZeebeDbFactory.defaultFactory(),
             (processingContext) -> {
               dumpProcessorRef.set(spy(new DumpProcessor(processingContext.getWriters())));
-              processingState = processingContext.getProcessingState();
+              processingState = MutableStates.of(processingContext);
               return TypedRecordProcessors.processors()
                   .onCommand(
                       ValueType.PROCESS_INSTANCE, ProcessInstanceIntent.ACTIVATE_ELEMENT, processor)
@@ -493,7 +494,7 @@ public final class EngineErrorHandlingTest {
             STREAM_NAME,
             DefaultZeebeDbFactory.defaultFactory(),
             (processingContext) -> {
-              processingState = processingContext.getProcessingState();
+              processingState = MutableStates.of(processingContext);
               keyGenerator = processingState.getKeyGenerator();
               return TypedRecordProcessors.processors()
                   .withListener(
@@ -538,7 +539,7 @@ public final class EngineErrorHandlingTest {
             STREAM_NAME,
             DefaultZeebeDbFactory.defaultFactory(),
             (processingContext) -> {
-              processingState = processingContext.getProcessingState();
+              processingState = MutableStates.of(processingContext);
               keyGenerator = processingState.getKeyGenerator();
 
               return TypedRecordProcessors.processors()
@@ -619,7 +620,7 @@ public final class EngineErrorHandlingTest {
             STREAM_NAME,
             DefaultZeebeDbFactory.defaultFactory(),
             (processingContext) -> {
-              processingState = processingContext.getProcessingState();
+              processingState = MutableStates.of(processingContext);
               keyGenerator = processingContext.getProcessingState().getKeyGenerator();
               return TypedRecordProcessors.processors()
                   .onCommand(
@@ -699,7 +700,7 @@ public final class EngineErrorHandlingTest {
             STREAM_NAME,
             DefaultZeebeDbFactory.defaultFactory(),
             (processingContext) -> {
-              processingState = processingContext.getProcessingState();
+              processingState = MutableStates.of(processingContext);
               return TypedRecordProcessors.processors()
                   .onCommand(
                       ValueType.DEPLOYMENT,

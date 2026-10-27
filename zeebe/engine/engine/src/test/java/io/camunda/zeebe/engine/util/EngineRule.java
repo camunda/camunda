@@ -364,14 +364,14 @@ public final class EngineRule extends ExternalResource {
                       new DbMigratorImpl(
                           false,
                           new ClusterContextImpl(partitionCount),
-                          recordProcessorContext.getProcessingState(),
+                          MutableStates.of(recordProcessorContext),
                           null);
 
                   migrator.runMigrations();
                 } else if (initialRoutingState.isPresent()) {
                   final var state = initialRoutingState.get();
                   final var dbRoutingState =
-                      recordProcessorContext.getProcessingState().getRoutingState();
+                      MutableStates.of(recordProcessorContext).getRoutingState();
                   dbRoutingState.initializeRoutingInfo(state.currentPartitions().size());
                   dbRoutingState.setMessageCorrelation(state.messageCorrelation());
                   dbRoutingState.setDesiredPartitions(state.desiredPartitions(), 0L);

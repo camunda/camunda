@@ -82,7 +82,7 @@ public class StreamProcessingComposite implements CommandWriter {
   private TypedRecordProcessors createTypedRecordProcessors(
       final StreamProcessorTestFactory factory,
       final TypedRecordProcessorContext typedRecordProcessorContext) {
-    processingState = typedRecordProcessorContext.getProcessingState();
+    processingState = MutableStates.of(typedRecordProcessorContext);
 
     return factory.build(TypedRecordProcessors.processors(), typedRecordProcessorContext);
   }
@@ -121,7 +121,7 @@ public class StreamProcessingComposite implements CommandWriter {
             getLogName(partitionId),
             zeebeDbFactory,
             (processingContext -> {
-              processingState = processingContext.getProcessingState();
+              processingState = MutableStates.of(processingContext);
 
               return factory.createProcessors(processingContext);
             }),

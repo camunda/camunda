@@ -11,6 +11,7 @@ import io.camunda.zeebe.engine.state.globallistener.GlobalListenersState;
 import io.camunda.zeebe.engine.state.message.TransientPendingSubscriptionState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
+import io.camunda.zeebe.stream.api.state.KeyGenerator;
 
 public interface ProcessingState extends StreamProcessorLifecycleAware {
 
@@ -83,6 +84,8 @@ public interface ProcessingState extends StreamProcessorLifecycleAware {
   AuthorizationState getAuthorizationState();
 
   RoutingState getRoutingState();
+
+  KeyGenerator getKeyGenerator();
 
   int getPartitionId();
 

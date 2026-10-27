@@ -301,7 +301,7 @@ public final class TestStreams {
         };
     final TypedRecordProcessorFactory wrappedFactory =
         (ctx) -> {
-          processingStateRef.set(ctx.getProcessingState());
+          processingStateRef.set(MutableStates.of(ctx));
           return factory.createProcessors(ctx).withListener(recoveredAwaiter);
         };
 

@@ -18,6 +18,8 @@ import io.camunda.zeebe.engine.state.ScheduledTaskDbState;
 import io.camunda.zeebe.engine.state.immutable.ScheduledTaskState;
 import io.camunda.zeebe.engine.state.message.TransientPendingMessageStartProcessInstanceAskState;
 import io.camunda.zeebe.engine.state.message.TransientPendingSubscriptionState;
+import io.camunda.zeebe.engine.processing.processinstance.AwaitResultRequestRecorder;
+import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.stream.api.InterPartitionCommandSender;
 import io.camunda.zeebe.stream.api.RecordProcessorContext;
@@ -87,8 +89,17 @@ public class TypedRecordProcessorContextImpl implements TypedRecordProcessorCont
   }
 
   @Override
-  public MutableProcessingState getProcessingState() {
+  public ProcessingState getProcessingState() {
     return processingState;
+  }
+
+  public MutableProcessingState getMutableProcessingState() {
+    return processingState;
+  }
+
+  @Override
+  public AwaitResultRequestRecorder getAwaitResultRequestRecorder() {
+    return processingState.getElementInstanceState()::setAwaitResultRequestMetadata;
   }
 
   @Override

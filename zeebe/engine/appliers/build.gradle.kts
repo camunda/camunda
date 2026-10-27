@@ -1,7 +1,7 @@
 plugins { id("buildlogic.server-conventions") }
 
 dependencies {
-  api(project(":zeebe-workflow-engine-state"))
+  api(project(":zeebe-workflow-engine-state-mutable"))
   implementation(libs.org.jspecify.jspecify)
   implementation(libs.org.slf4j.slf4j.api)
   implementation(libs.org.apache.commons.commons.lang3)
