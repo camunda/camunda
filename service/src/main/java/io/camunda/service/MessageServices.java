@@ -72,7 +72,8 @@ public final class MessageServices extends PhysicalTenantScopedApiServices<Messa
                 correlationRequest.name, correlationRequest.correlationKey, maxVariableNameLength)
             .setVariables(getDocumentOrEmpty(correlationRequest.variables))
             .setTenantId(correlationRequest.tenantId)
-            .setBusinessId(correlationRequest.businessId);
+            .setBusinessId(correlationRequest.businessId)
+            .setRunScope(correlationRequest.runScope);
     if (channelType != null) {
       brokerRequest.setChannelType(channelType);
     }
@@ -90,7 +91,8 @@ public final class MessageServices extends PhysicalTenantScopedApiServices<Messa
             .setMessageId(request.messageId)
             .setVariables(getDocumentOrEmpty(request.variables))
             .setTenantId(request.tenantId)
-            .setBusinessId(request.businessId);
+            .setBusinessId(request.businessId)
+            .setRunScope(request.runScope);
     return sendBrokerRequestWithFullResponse(brokerRequest, authentication);
   }
 
@@ -99,13 +101,23 @@ public final class MessageServices extends PhysicalTenantScopedApiServices<Messa
       String correlationKey,
       Map<String, Object> variables,
       String tenantId,
-      @Nullable String businessId) {
+      @Nullable String businessId,
+      @Nullable String runScope) {
     public CorrelateMessageRequest(
         final String name,
         final String correlationKey,
         final Map<String, Object> variables,
         final String tenantId) {
-      this(name, correlationKey, variables, tenantId, null);
+      this(name, correlationKey, variables, tenantId, null, null);
+    }
+
+    public CorrelateMessageRequest(
+        final String name,
+        final String correlationKey,
+        final Map<String, Object> variables,
+        final String tenantId,
+        final @Nullable String businessId) {
+      this(name, correlationKey, variables, tenantId, businessId, null);
     }
   }
 
@@ -116,5 +128,6 @@ public final class MessageServices extends PhysicalTenantScopedApiServices<Messa
       String messageId,
       Map<String, Object> variables,
       String tenantId,
-      @Nullable String businessId) {}
+      @Nullable String businessId,
+      @Nullable String runScope) {}
 }

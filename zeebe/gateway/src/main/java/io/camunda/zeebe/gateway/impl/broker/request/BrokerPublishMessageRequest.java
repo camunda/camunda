@@ -56,6 +56,11 @@ public final class BrokerPublishMessageRequest extends BrokerExecuteCommand<Mess
     return this;
   }
 
+  public BrokerPublishMessageRequest setRunScope(final String runScope) {
+    requestDto.setRunScope(runScope != null ? runScope : "");
+    return this;
+  }
+
   @Override
   public MessageRecord getRequestWriter() {
     return requestDto;

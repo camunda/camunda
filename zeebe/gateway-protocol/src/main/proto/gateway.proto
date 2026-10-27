@@ -717,6 +717,9 @@ message PublishMessageRequest {
   // rejects starting a new process instance when another root process instance with the same
   // business id is already active for the same process definition.
   optional string businessId = 7;
+  // optional run-scope selector; when set, the message is scoped to instances belonging to this run
+  // (run isolation). When empty, the message is published globally.
+  string runScope = 8;
 }
 
 message PublishMessageResponse {

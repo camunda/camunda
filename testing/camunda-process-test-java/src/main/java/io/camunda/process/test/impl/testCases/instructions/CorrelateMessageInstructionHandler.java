@@ -55,7 +55,11 @@ public class CorrelateMessageInstructionHandler
               .withoutCorrelationKey();
     }
 
-    command.variables(runContext.applyRunId(instruction.getVariables()));
+    command.variables(instruction.getVariables());
+
+    if (runContext.isEnabled()) {
+      command.runScope(runContext.getRunId());
+    }
 
     command.send().join();
   }

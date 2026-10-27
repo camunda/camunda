@@ -53,6 +53,11 @@ public final class BrokerCorrelateMessageRequest
     return this;
   }
 
+  public BrokerCorrelateMessageRequest setRunScope(final String runScope) {
+    requestDto.setRunScope(runScope != null ? runScope : "");
+    return this;
+  }
+
   @Override
   public BufferWriter getRequestWriter() {
     return requestDto;

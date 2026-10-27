@@ -285,7 +285,8 @@ public class RequestMapper {
                 correlationRequest.getCorrelationKey(),
                 correlationRequest.getVariables(),
                 tenantId,
-                correlationRequest.getBusinessId()));
+                correlationRequest.getBusinessId(),
+                correlationRequest.getRunScope()));
   }
 
   public static Either<ProblemDetail, CompleteJobRequest> toJobCompletionRequest(
@@ -581,7 +582,8 @@ public class RequestMapper {
                     messagePublicationRequest, MessagePublicationRequest::getMessageId),
                 getMapOrEmpty(messagePublicationRequest, MessagePublicationRequest::getVariables),
                 tenantId,
-                messagePublicationRequest.getBusinessId()));
+                messagePublicationRequest.getBusinessId(),
+                messagePublicationRequest.getRunScope()));
   }
 
   public static Either<ProblemDetail, ResourceDeletionRequest> toResourceDeletion(

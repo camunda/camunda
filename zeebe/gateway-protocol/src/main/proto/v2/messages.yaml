@@ -214,9 +214,21 @@ components:
             effect when the message correlates to a catch, boundary, or intermediate event.
           allOf:
             - $ref: 'identifiers.yaml#/components/schemas/BusinessId'
+        runScope:
+          description: |
+            Restricts the correlation to a single run. When set, the message only correlates to catch,
+            boundary, and intermediate events of instances belonging to this run (identified by a
+            reserved run-scope tag). When omitted, the message correlates as today. Used for run
+            isolation.
+
+            This field is an alpha feature and may be subject to change. It is excluded from the API
+            backward-compatibility guarantee until run-scope coverage is complete.
+          type: string
       x-properties-added-in-version:
         - propertyName: businessId
           addedInVersion: "8.10"
+        - propertyName: runScope
+          addedInVersion: "8.11"
 
     MessageCorrelationResult:
       description: |
@@ -282,11 +294,23 @@ components:
             effect when the message correlates to a catch, boundary, or intermediate event.
           allOf:
             - $ref: 'identifiers.yaml#/components/schemas/BusinessId'
+        runScope:
+          description: |
+            Restricts the publication to a single run. When set, the message only correlates to catch,
+            boundary, and intermediate events of instances belonging to this run (identified by a
+            reserved run-scope tag). When omitted, the message is published as today. Used for run
+            isolation.
+
+            This field is an alpha feature and may be subject to change. It is excluded from the API
+            backward-compatibility guarantee until run-scope coverage is complete.
+          type: string
       required:
         - name
       x-properties-added-in-version:
         - propertyName: businessId
           addedInVersion: "8.10"
+        - propertyName: runScope
+          addedInVersion: "8.11"
 
     MessagePublicationResult:
       description: The message key of the published message.
