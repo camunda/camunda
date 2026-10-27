@@ -2333,15 +2333,29 @@ jobs:
           pattern: C8 Suite JSON Report -*
           path: suite-json-reports
       - name: Red if any suite test failed
+        env:
+          # The suite caller aggregates every matrix leg with the gate verdict
+          # applied, so it is "success" only when every leg completed and passed
+          # its gate. Anything else (a leg that crashed or never uploaded a
+          # report, or a changed-spec failure) leaves it non-success — which is
+          # how an incomplete run with some legs missing their report is caught,
+          # since the report scan below can only see the reports that do exist.
+          SUITE_RESULT: ${{ needs.c8-e2e-test-suite-tests.result }}
         run: |
           set -euo pipefail
           shopt -s nullglob globstar
+          rc=0
+          if [ "${SUITE_RESULT:-}" != "success" ]; then
+            echo "::warning::The suite run reported '${SUITE_RESULT:-unknown}', not success — a matrix leg failed to complete (and may not have produced a report) or a changed spec failed. Full Result is red."
+            rc=1
+          fi
           reports=(suite-json-reports/**/results.json)
           if [ "${#reports[@]}" -eq 0 ]; then
             echo "::error::No suite JSON reports were produced, but the suite was expected to run (the run was not cancelled). Something stopped the suite from writing or uploading its reports — treating as a failure. Check the suite jobs for a setup/upload problem."
             exit 1
           fi
           echo "Scanning ${#reports[@]} report(s) for any test failure..."
+          set +e
           node -e '
             const fs = require("fs");
             const failed = [];
@@ -2362,6 +2376,15 @@ jobs:
             }
             console.log("All suite tests passed.");
           ' "${reports[@]}"
+          scan_rc=$?
+          set -e
+          [ "${scan_rc}" -ne 0 ] && rc=1
+          if [ "${rc}" -ne 0 ]; then
+            echo "Full Result: RED (non-blocking — the changed-spec gate decides the merge)."
+          else
+            echo "Full Result: green — the whole suite passed."
+          fi
+          exit "${rc}"
 
       - name: Observe build status
         if: always()
