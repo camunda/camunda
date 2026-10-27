@@ -11,15 +11,12 @@ import static io.camunda.it.util.TestHelper.waitForProcessInstancesToStart;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.exporter.rdbms.ExporterConfiguration.ReplicationConfiguration.ReplicationType;
-import io.camunda.exporter.rdbms.replication.DefaultReplicationController;
 import io.camunda.it.rdbms.db.util.PostgresReplicationClusterContainer;
 import io.camunda.it.rdbms.db.util.ReplicationClusterContainer;
-import io.camunda.zeebe.test.util.logging.LogCapturer;
+import io.micrometer.core.instrument.Gauge;
+import io.micrometer.core.instrument.search.RequiredSearch;
 import java.time.Duration;
-import org.apache.logging.log4j.Level;
 import org.awaitility.Awaitility;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,18 +31,8 @@ public abstract class TimeBasedReplicationLagIT<R extends ReplicationClusterCont
   private static final Duration REPLICA_DELAY_BELOW_MAX_LAG = Duration.ofSeconds(15);
   private static final int LAG_TRIGGERING_PROCESS_INSTANCES = 1;
   private static final int BLOCKED_PROCESS_INSTANCES = 5;
-
-  private LogCapturer pauseLog;
-
-  @BeforeAll
-  void before() {
-    pauseLog = LogCapturer.capturing(DefaultReplicationController.class, Level.WARN);
-  }
-
-  @AfterAll
-  void after() {
-    pauseLog.close();
-  }
+  private static final String PAUSED_GAUGE = "zeebe.rdbms.exporter.replication.paused";
+  private static final String REPLICA_LAG_GAUGE = "zeebe.rdbms.exporter.replication.lag.ms";
 
   @Override
   protected Duration getMaxLag() {
@@ -61,14 +48,22 @@ public abstract class TimeBasedReplicationLagIT<R extends ReplicationClusterCont
 
   protected abstract void resetReplicaApplyDelay();
 
-  @Test
-  void shouldPauseAndResumeExportingWhenReplicaLagCrossesMaxLag() {
-    // given - the time-based replication monitor allows up to 30s lag
-    exporterAcknowledgedAll();
-    LOG.info("Setting replica apply delay to {} to trigger lag", REPLICA_DELAY_ABOVE_MAX_LAG);
-    setReplicaApplyDelay(REPLICA_DELAY_ABOVE_MAX_LAG);
+  /**
+   * Keeps committing on the primary until closed. The apply delay only holds back commits, so once
+   * the paused exporter stops writing, the replica would drain its backlog and report a lag below
+   * maxLag (or none at all when idle) - steady commits keep the measured lag at the apply delay.
+   */
+  protected abstract AutoCloseable startCommitHeartbeat();
 
-    try {
+  @Test
+  void shouldPauseAndResumeExportingWhenReplicaLagCrossesMaxLag() throws Exception {
+    try (final var ignored = startCommitHeartbeat()) {
+      // given - the replica lag is measured and below maxLag, so the exporter is running
+      awaitExporterRunning();
+      exporterAcknowledgedAll();
+      LOG.info("Setting replica apply delay to {} to trigger lag", REPLICA_DELAY_ABOVE_MAX_LAG);
+      setReplicaApplyDelay(REPLICA_DELAY_ABOVE_MAX_LAG);
+
       final long exportedPositionBeforeLag = getCurrentExporterPosition();
       LOG.info("Exported position before lag: {}", exportedPositionBeforeLag);
 
@@ -103,11 +98,35 @@ public abstract class TimeBasedReplicationLagIT<R extends ReplicationClusterCont
     }
   }
 
+  /**
+   * Waits for a pause caused by the measured lag, not by an unmeasured (NULL) lag, which also
+   * pauses the exporter but clears as soon as the replica reports any lag again.
+   */
   private void waitUntilExporterPausesOnMaxLag() {
     Awaitility.await("RDBMS exporter pauses because replica lag exceeded maxLag")
         .atMost(REPLICA_DELAY_ABOVE_MAX_LAG.plusSeconds(10))
+        .ignoreExceptions()
         .untilAsserted(
-            () -> assertThat(pauseLog.contains("[RDBMS Exporter P1] Pausing exporter")).isTrue());
+            () -> {
+              assertThat(exporterGauge(PAUSED_GAUGE).gauge().value()).isEqualTo(1.0);
+              // an unmeasured lag is reported as NaN, which AssertJ orders above any number
+              assertThat(exporterGauge(REPLICA_LAG_GAUGE).gauges())
+                  .extracting(Gauge::value)
+                  .anySatisfy(
+                      lagMs -> assertThat(lagMs).isNotNaN().isGreaterThan(MAX_LAG.toMillis()));
+            });
+  }
+
+  private void awaitExporterRunning() {
+    Awaitility.await("RDBMS exporter is not paused")
+        .atMost(Duration.ofSeconds(30))
+        .ignoreExceptions()
+        .untilAsserted(
+            () -> assertThat(exporterGauge(PAUSED_GAUGE).gauge().value()).isEqualTo(0.0));
+  }
+
+  private RequiredSearch exporterGauge(final String name) {
+    return meterRegistry.get(name).tag("exporterId", "rdbms").tag("partition", "1");
   }
 }
 
@@ -127,5 +146,10 @@ class PostgresTimeBasedReplicationLagIT
   @Override
   protected void resetReplicaApplyDelay() {
     cluster.resetReplicaApplyDelay();
+  }
+
+  @Override
+  protected AutoCloseable startCommitHeartbeat() {
+    return cluster.startCommitHeartbeat(Duration.ofMillis(500));
   }
 }
