@@ -13,7 +13,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
-import io.camunda.zeebe.engine.util.ProcessingStateRule;
+import io.camunda.zeebe.engine.util.ProcessingStateExtension;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRuntimeInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
@@ -28,22 +28,20 @@ import java.util.List;
 import java.util.stream.Collectors;
 import org.agrona.DirectBuffer;
 import org.assertj.core.api.Assertions;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
+@ExtendWith(ProcessingStateExtension.class)
 public final class ElementInstanceStateTest {
 
   private static final long PROCESS_KEY = 123;
 
-  @Rule public final ProcessingStateRule stateRule = new ProcessingStateRule();
-
   private MutableElementInstanceState elementInstanceState;
   private MutableProcessingState processingState;
 
-  @Before
+  @BeforeEach
   public void setUp() {
-    processingState = stateRule.getProcessingState();
     elementInstanceState = processingState.getElementInstanceState();
   }
 
