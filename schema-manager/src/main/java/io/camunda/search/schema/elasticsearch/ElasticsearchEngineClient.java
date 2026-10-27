@@ -267,7 +267,13 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
     try {
       return client
           .indices()
-          .getSettings(req -> req.index(List.copyOf(indexNames)).ignoreUnavailable(true))
+          // only this setting is requested: the typed model parses every returned setting, so an
+          // unrelated value it does not expect would fail the whole read
+          .getSettings(
+              req ->
+                  req.index(List.copyOf(indexNames))
+                      .name("index.number_of_replicas")
+                      .ignoreUnavailable(true))
           .result()
           .entrySet()
           .stream()
