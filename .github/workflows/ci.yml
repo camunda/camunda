@@ -116,10 +116,12 @@ jobs:
           files="$(gh api --paginate "repos/${REPO}/pulls/${PR_NUMBER}/files" \
             --jq '.[] | ("\(.status)\t\(.filename)"), (select(.previous_filename != null) | "removed\t\(.previous_filename)")')"
 
-          # Run decision: ANY suite file changed, including deletions — a PR that
-          # only removes a fixture, resource or spec can still break the suite and
-          # must be exercised.
-          suite_changed="$(printf '%s\n' "$files" | cut -f2- | grep -F "$SUITE_PREFIX" || true)"
+          # Run decision: ANY non-docs suite file changed, including deletions — a
+          # PR that only removes a fixture, resource or spec can still break the
+          # suite and must be exercised. Markdown-only changes under the suite dir
+          # (README.md, AGENTS.md, docs/**, all Markdown) cannot affect the tests,
+          # so they are excluded here and do not trigger the heavy matrix run.
+          suite_changed="$(printf '%s\n' "$files" | cut -f2- | grep -F "$SUITE_PREFIX" | grep -vE '\.md$' || true)"
           if [[ -z "$suite_changed" ]]; then
             echo "No files under ${SUITE_PREFIX} changed; suite tests will be skipped."
             echo "run-tests=false" >> "$GITHUB_OUTPUT"
