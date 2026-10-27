@@ -82,12 +82,12 @@ public class BroadcastSignalInstructionTest {
     // when
     enabledHandler.execute(instruction, processTestContext, camundaClient, assertionFacade);
 
-    // then the broadcast is scoped to this run
+    // then the broadcast is scoped to this run and carries no run-id variable
     final BroadcastSignalCommandStep2 mockCommand =
         camundaClient
             .newBroadcastSignalCommand()
             .signalName(SIGNAL_NAME)
-            .variables(Collections.singletonMap(TestRunContext.RUN_ID_VARIABLE_NAME, "run-xyz"));
+            .variables(Collections.emptyMap());
     verify(mockCommand).runScope("run-xyz");
     verify(mockCommand).send();
   }

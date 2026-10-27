@@ -43,7 +43,7 @@ public class BroadcastSignalInstructionHandler
         camundaClient
             .newBroadcastSignalCommand()
             .signalName(instruction.getSignalName())
-            .variables(runContext.applyRunId(instruction.getVariables()));
+            .variables(instruction.getVariables());
 
     if (runContext.isEnabled()) {
       // scope the broadcast to this run so it only wakes this run's catch and start events
