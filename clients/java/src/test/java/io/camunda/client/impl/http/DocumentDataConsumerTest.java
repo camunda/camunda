@@ -43,6 +43,7 @@ import org.apache.hc.core5.concurrent.FutureCallback;
 import org.apache.hc.core5.http.ContentType;
 import org.apache.hc.core5.http.EntityDetails;
 import org.apache.hc.core5.http.message.BasicHttpResponse;
+import org.apache.hc.core5.http.nio.CapacityChannel;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 
@@ -130,7 +131,7 @@ public class DocumentDataConsumerTest {
   }
 
   @Test
-  void shouldNotGrantFreedSpaceAgainWhenCapacityIsRequestedAgain() throws IOException {
+  void shouldKeepIoLayerReadingWhenItsWindowRunsOutWhileBufferIsEmpty() throws IOException {
     // given
     final DocumentDataConsumer<InputStream> consumer = new DocumentDataConsumer<>(8, objectMapper);
     final EntityDetails entityDetails = mock(EntityDetails.class);
@@ -138,17 +139,23 @@ public class DocumentDataConsumerTest {
         .thenReturn(ContentType.APPLICATION_OCTET_STREAM.getMimeType());
     final Callback callback = new Callback();
     consumer.streamStart(entityDetails, callback);
-    final AtomicInteger grantedCapacity = new AtomicInteger();
-    consumer.updateCapacity(grantedCapacity::addAndGet);
-    consumer.consume(ByteBuffer.wrap(new byte[8]));
-    callback.inputStream.read(new byte[8]);
+    final Http1Window window = new Http1Window(16);
+    // the I/O layer hands over more than its window, and the reader takes most of it before the
+    // I/O layer debits it
+    consumer.consume(ByteBuffer.wrap(new byte[32]));
+    callback.inputStream.read(new byte[30]);
+    window.debit(consumer, 32);
+    callback.inputStream.read(new byte[2]);
 
     // when
-    consumer.updateCapacity(grantedCapacity::addAndGet);
+    // the reader takes the next piece before the I/O layer debits it, which uses up the window
+    consumer.consume(ByteBuffer.wrap(new byte[4]));
+    callback.inputStream.read(new byte[4]);
+    window.debit(consumer, 4);
 
     // then
-    // the 8 bytes freed by the reader were already granted when they were read
-    assertThat(grantedCapacity.get()).isEqualTo(16);
+    // nothing is buffered, so nothing would ever grant capacity again if the I/O layer stopped
+    assertThat(window.readingEnabled).isTrue();
   }
 
   @Test
@@ -435,6 +442,37 @@ public class DocumentDataConsumerTest {
         thread.join(TimeUnit.SECONDS.toMillis(5));
       } catch (final InterruptedException e) {
         Thread.currentThread().interrupt();
+      }
+    }
+  }
+
+  /**
+   * Follows the capacity window of httpcore5's HTTP/1.1 duplexer: any positive update lets it read
+   * again, and debiting received data stops reading and asks for capacity once the window is used
+   * up.
+   */
+  private static final class Http1Window implements CapacityChannel {
+
+    private int window;
+    private boolean readingEnabled = true;
+
+    private Http1Window(final int initialWindow) {
+      window = initialWindow;
+    }
+
+    @Override
+    public void update(final int increment) {
+      if (increment > 0) {
+        window += increment;
+        readingEnabled = true;
+      }
+    }
+
+    private void debit(final DocumentDataConsumer<?> consumer, final int bytes) throws IOException {
+      window -= bytes;
+      if (window <= 0) {
+        readingEnabled = false;
+        consumer.updateCapacity(this);
       }
     }
   }
