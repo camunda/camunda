@@ -183,6 +183,25 @@ public class FileBasedReceivedSnapshotTest {
   }
 
   @Test
+  public void shouldFailToPersistAbortedSnapshotWithIllegalState() {
+    // given
+    final var persistedSnapshot = takePersistedSnapshot(1L);
+    final var receivedSnapshot =
+        receiverSnapshotStore.newReceivedSnapshot(persistedSnapshot.getId()).join();
+    try (final var snapshotChunkReader = persistedSnapshot.newChunkReader()) {
+      receivedSnapshot.apply(snapshotChunkReader.next()).join();
+    }
+    receivedSnapshot.abort().join();
+
+    // when - then
+    assertThatThrownBy(() -> receivedSnapshot.persist().join())
+        .hasRootCauseInstanceOf(IllegalStateException.class)
+        .hasRootCauseMessage(
+            "Cannot persist snapshot '%s': directory %s is missing or unreadable (the snapshot was aborted, no chunk was applied yet, or an I/O error occurred)"
+                .formatted(persistedSnapshot.getId(), receivedSnapshot.getPath()));
+  }
+
+  @Test
   public void shouldNotifyListenersOnNewSnapshot() {
     // given
     final AtomicReference<PersistedSnapshot> snapshotRef = new AtomicReference<>();
