@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.mock.env.MockEnvironment;
 import org.springframework.mock.web.MockHttpServletRequest;
@@ -33,6 +34,12 @@ class NoDBMembershipServiceTest {
   private static final String ROOT = "camunda.security.authentication";
   private static final String TENANT_A_PREFIX =
       "camunda.physical-tenants.tenanta.security.authentication";
+
+  @BeforeEach
+  void setUpRequestScope() {
+    RequestContextHolder.setRequestAttributes(
+        new ServletRequestAttributes(new MockHttpServletRequest()));
+  }
 
   @AfterEach
   void clearRequestScope() {

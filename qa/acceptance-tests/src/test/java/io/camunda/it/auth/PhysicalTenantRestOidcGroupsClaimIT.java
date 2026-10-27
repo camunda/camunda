@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import dasniko.testcontainers.keycloak.KeycloakContainer;
 import io.camunda.security.api.model.config.AuthenticationMethod;
+import io.camunda.security.api.model.config.initialization.ConfiguredGroup;
 import io.camunda.zeebe.qa.util.cluster.PhysicalTenantsITHelper;
 import io.camunda.zeebe.qa.util.cluster.PhysicalTenantsITHelper.Storage;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
@@ -67,6 +68,7 @@ final class PhysicalTenantRestOidcGroupsClaimIT {
   private static final String ROOT_CLIENT = "root-app";
   private static final String OKTA_CLIENT = "okta-app";
   private static final String PLAIN_CLIENT = "plain-app";
+  private static final String TENANT_A_GROUP = "tenanta-group";
 
   private static final PhysicalTenantsITHelper TENANTS =
       PhysicalTenantsITHelper.builder()
@@ -99,6 +101,8 @@ final class PhysicalTenantRestOidcGroupsClaimIT {
           final var oidc = c.getAuthentication().getOidc();
           oidc.setIssuerUri(issuerUri(REALM_ROOT));
           oidc.setClientId(ROOT_CLIENT);
+          // resolves the tokens to clients, so the clients can be members of Camunda groups
+          oidc.setClientIdClaim("azp");
           oidc.setRedirectUri("{baseUrl}/login/oauth2/code/oidc");
           oidc.setGroupsClaim("groups");
         });
@@ -110,8 +114,24 @@ final class PhysicalTenantRestOidcGroupsClaimIT {
     // an empty groups-claim overrides the root value and selects Camunda groups
     BROKER.withProperty(tenantAuthProperty(TENANT_A, "oidc.groups-claim"), "");
     BROKER.withProperty(tenantAuthProperty(TENANT_A, "providers.assigned[0]"), "oidc");
+    BROKER.withPtConfig(
+        TENANT_A,
+        c ->
+            c.getSecurity()
+                .getInitialization()
+                .setGroups(
+                    List.of(
+                        new ConfiguredGroup(
+                            TENANT_A_GROUP,
+                            TENANT_A_GROUP,
+                            "",
+                            List.of(),
+                            List.of(),
+                            List.of(),
+                            List.of(ROOT_CLIENT)))));
     BROKER.withProperty(tenantAuthProperty(TENANT_B, "oidc.groups-claim"), "teams");
     BROKER.withProperty(tenantAuthProperty(TENANT_B, "providers.assigned[0]"), "plain");
+    BROKER.withProperty(tenantAuthProperty(TENANT_B, "providers.assigned[1]"), "okta");
 
     BROKER.start();
 
@@ -136,19 +156,31 @@ final class PhysicalTenantRestOidcGroupsClaimIT {
   }
 
   @Test
-  void shouldNotReadGroupsFromTokenOnTenantThatUsesCamundaGroups() throws Exception {
-    // when
-    final var groups = currentUserGroups(tenantPath(TENANT_A), REALM_ROOT, ROOT_CLIENT);
-
-    // then
-    // the client is a member of no Camunda group
-    assertThat(groups).isEmpty();
+  void shouldReadGroupsFromOwnStoreOnTenantThatUsesCamundaGroups() {
+    // when / then
+    // the group membership is created when the tenant's partition starts, so wait for it
+    Awaitility.await("the client's Camunda group in tenant A")
+        .atMost(Duration.ofSeconds(60))
+        .ignoreExceptions()
+        .untilAsserted(
+            () ->
+                assertThat(currentUserGroups(tenantPath(TENANT_A), REALM_ROOT, ROOT_CLIENT))
+                    .containsExactly(TENANT_A_GROUP));
   }
 
   @Test
   void shouldReadGroupsFromClaimOfIssuingProvider() throws Exception {
     // when
     final var groups = currentUserGroups("", REALM_OKTA, OKTA_CLIENT);
+
+    // then
+    assertThat(groups).containsExactly("okta-role");
+  }
+
+  @Test
+  void shouldReadGroupsFromClaimOfIssuingProviderOnTenantWithOwnClaim() throws Exception {
+    // when
+    final var groups = currentUserGroups(tenantPath(TENANT_B), REALM_OKTA, OKTA_CLIENT);
 
     // then
     assertThat(groups).containsExactly("okta-role");
