@@ -52,6 +52,7 @@ import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.Either;
+import io.camunda.zeebe.util.TagUtil;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.time.InstantSource;
 import java.util.List;
@@ -136,6 +137,15 @@ public final class CatchEventBehavior {
   private String getBusinessId(final long processInstanceKey) {
     final var processInstance = elementInstanceState.getInstance(processInstanceKey);
     return processInstance != null ? processInstance.getValue().getBusinessId() : "";
+  }
+
+  private String getRunScope(final long rootProcessInstanceKey) {
+    // the reserved run-scope tag is carried on the root instance record, so read it there rather
+    // than from the catch element instance (whose record does not carry the instance's tags)
+    final var rootInstance = elementInstanceState.getInstance(rootProcessInstanceKey);
+    return rootInstance != null
+        ? TagUtil.findRunScopeValue(rootInstance.getValue().getTags()).orElse("")
+        : "";
   }
 
   /**
@@ -542,7 +552,8 @@ public final class CatchEventBehavior {
         .setProcessInstanceKey(context.getProcessInstanceKey())
         .setRootProcessInstanceKey(context.getRootProcessInstanceKey())
         .setStorageOrdinal(context.getStorageOrdinal())
-        .setBpmnElementType(event.getElementType());
+        .setBpmnElementType(event.getElementType())
+        .setRunScope(getRunScope(context.getRootProcessInstanceKey()));
 
     final var subscriptionKey = keyGenerator.nextKey();
     stateWriter.appendFollowUpEvent(

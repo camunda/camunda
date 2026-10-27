@@ -2702,7 +2702,8 @@ final class JsonSerializableToJsonTest {
                   "variables": {
                     "foo": "bar"
                   },
-                  "tenantId": "acme"
+                  "tenantId": "acme",
+                  "runScope": ""
                 }
                 """
       },
@@ -2724,7 +2725,8 @@ final class JsonSerializableToJsonTest {
                 {
                   "signalName":"test-signal",
                   "variables": {},
-                  "tenantId": "<default>"
+                  "tenantId": "<default>",
+                  "runScope": ""
                 }
                 """
       },
@@ -2763,7 +2765,8 @@ final class JsonSerializableToJsonTest {
                   "rootProcessInstanceKey":-1,
                   "storageOrdinal":0,
                   "bpmnProcessId": "process",
-                  "tenantId": "acme"
+                  "tenantId": "acme",
+                  "runScope": ""
                 }
                 """
       },
@@ -2792,7 +2795,8 @@ final class JsonSerializableToJsonTest {
                   "rootProcessInstanceKey":-1,
                   "storageOrdinal":0,
                   "bpmnProcessId":"",
-                  "tenantId": "<default>"
+                  "tenantId": "<default>",
+                  "runScope": ""
                 }
                 """
       },

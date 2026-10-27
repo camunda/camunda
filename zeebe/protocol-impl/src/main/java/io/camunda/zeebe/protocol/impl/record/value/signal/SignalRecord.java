@@ -26,21 +26,27 @@ public final class SignalRecord extends UnifiedRecordValue implements SignalReco
   private static final StringValue SIGNAL_NAME_KEY = new StringValue("signalName");
   private static final StringValue VARIABLES_KEY = new StringValue("variables");
   private static final StringValue TENANT_ID_KEY = new StringValue("tenantId");
+  private static final StringValue RUN_SCOPE_KEY = new StringValue("runScope");
 
   private final StringProperty signalNameProp = new StringProperty(SIGNAL_NAME_KEY);
   private final DocumentProperty variablesProp = new DocumentProperty(VARIABLES_KEY);
   private final StringProperty tenantIdProp =
       new StringProperty(TENANT_ID_KEY, TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+  private final StringProperty runScopeProp = new StringProperty(RUN_SCOPE_KEY, "");
 
   public SignalRecord() {
-    super(3);
-    declareProperty(signalNameProp).declareProperty(variablesProp).declareProperty(tenantIdProp);
+    super(4);
+    declareProperty(signalNameProp)
+        .declareProperty(variablesProp)
+        .declareProperty(tenantIdProp)
+        .declareProperty(runScopeProp);
   }
 
   public void wrap(final SignalRecord record) {
     setSignalName(record.getSignalNameBuffer())
         .setVariables(record.getVariablesBuffer())
-        .setTenantId(record.getTenantId());
+        .setTenantId(record.getTenantId())
+        .setRunScope(record.getRunScopeBuffer());
   }
 
   @Override
@@ -86,5 +92,30 @@ public final class SignalRecord extends UnifiedRecordValue implements SignalReco
   public SignalRecord setTenantId(final String tenantId) {
     tenantIdProp.setValue(tenantId);
     return this;
+  }
+
+  @Override
+  public String getRunScope() {
+    return bufferAsString(runScopeProp.getValue());
+  }
+
+  public SignalRecord setRunScope(final String runScope) {
+    runScopeProp.setValue(runScope);
+    return this;
+  }
+
+  public SignalRecord setRunScope(final DirectBuffer runScope) {
+    runScopeProp.setValue(runScope);
+    return this;
+  }
+
+  @JsonIgnore
+  public DirectBuffer getRunScopeBuffer() {
+    return runScopeProp.getValue();
+  }
+
+  @JsonIgnore
+  public boolean hasRunScope() {
+    return runScopeProp.getValue().capacity() > 0;
   }
 }

@@ -22,6 +22,7 @@ import io.camunda.zeebe.protocol.impl.record.value.signal.SignalRecord;
 import io.camunda.zeebe.protocol.record.intent.SignalIntent;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.Either;
+import io.camunda.zeebe.util.TagUtil;
 import org.agrona.DirectBuffer;
 
 public final class BpmnSignalBehavior {
@@ -32,15 +33,18 @@ public final class BpmnSignalBehavior {
   private final VariableState variableState;
   private final TypedCommandWriter commandWriter;
   private final ExpressionProcessor expressionBehavior;
+  private final BpmnStateBehavior stateBehavior;
 
   public BpmnSignalBehavior(
       final KeyGenerator keyGenerator,
       final VariableState variableState,
       final Writers writers,
-      final ExpressionProcessor expressionBehavior) {
+      final ExpressionProcessor expressionBehavior,
+      final BpmnStateBehavior stateBehavior) {
     this.keyGenerator = keyGenerator;
     this.expressionBehavior = expressionBehavior;
     this.variableState = variableState;
+    this.stateBehavior = stateBehavior;
     commandWriter = writers.command();
   }
 
@@ -50,12 +54,22 @@ public final class BpmnSignalBehavior {
     final var variables =
         variableState.getVariablesLocalAsDocument(context.getElementInstanceKey());
 
+    final var runScope = getRunScope(context.getRootProcessInstanceKey());
+
     return evaluateSignalName(signal, context)
         .map(
             signalName -> {
-              triggerSignalBroadcast(signalName, context.getTenantId(), variables);
+              triggerSignalBroadcast(signalName, context.getTenantId(), variables, runScope);
               return null;
             });
+  }
+
+  private String getRunScope(final long rootProcessInstanceKey) {
+    // the reserved run-scope tag is carried on the root instance record, not the throwing element
+    final var rootInstance = stateBehavior.getElementInstance(rootProcessInstanceKey);
+    return rootInstance != null
+        ? TagUtil.findRunScopeValue(rootInstance.getValue().getTags()).orElse("")
+        : "";
   }
 
   private Either<Failure, String> evaluateSignalName(
@@ -72,12 +86,19 @@ public final class BpmnSignalBehavior {
   }
 
   private void triggerSignalBroadcast(
-      final String signalName, final String tenantId, final DirectBuffer variables) {
+      final String signalName,
+      final String tenantId,
+      final DirectBuffer variables,
+      final String runScope) {
 
     ensureNotNullOrEmpty("signalName", signalName);
 
     signalRecord.reset();
-    signalRecord.setSignalName(signalName).setVariables(variables).setTenantId(tenantId);
+    signalRecord
+        .setSignalName(signalName)
+        .setVariables(variables)
+        .setTenantId(tenantId)
+        .setRunScope(runScope);
 
     final var key = keyGenerator.nextKey();
     commandWriter.appendFollowUpCommand(key, SignalIntent.BROADCAST, signalRecord);
