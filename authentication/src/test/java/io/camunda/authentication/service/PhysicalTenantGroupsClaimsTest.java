@@ -120,12 +120,18 @@ class PhysicalTenantGroupsClaimsTest {
   void shouldUseDefaultTenantSettingsForUnconfiguredPhysicalTenant() {
     // given
     final var config = config(defaultSlot(null, null, "groups"));
+    final var environment = new MockEnvironment();
+    environment.setProperty(
+        "camunda.physical-tenants.tenanta.security.authentication.oidc.groups-claim", "teams");
 
     // when
-    final var groups = inPhysicalTenant("unconfigured", config, token(ISSUER));
+    final var unconfiguredGroups =
+        inPhysicalTenant("unconfigured", config, environment, token(ISSUER));
+    final var tenantAGroups = inPhysicalTenant("tenanta", config, environment, token(ISSUER));
 
     // then
-    assertThat(groups).containsExactly("group");
+    assertThat(unconfiguredGroups).containsExactly("group");
+    assertThat(tenantAGroups).containsExactly("team");
   }
 
   @Test
@@ -150,8 +156,15 @@ class PhysicalTenantGroupsClaimsTest {
       final String physicalTenantId,
       final AuthenticationConfiguration config,
       final Map<String, Object> token) {
-    final var groupsClaims =
-        new PhysicalTenantGroupsClaims(properties(config), new MockEnvironment());
+    return inPhysicalTenant(physicalTenantId, config, new MockEnvironment(), token);
+  }
+
+  private static List<String> inPhysicalTenant(
+      final String physicalTenantId,
+      final AuthenticationConfiguration config,
+      final MockEnvironment environment,
+      final Map<String, Object> token) {
+    final var groupsClaims = new PhysicalTenantGroupsClaims(properties(config), environment);
     final var request = new MockHttpServletRequest();
     PhysicalTenantContext.setPhysicalTenantId(request, physicalTenantId);
     RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request));
