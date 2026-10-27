@@ -65,12 +65,15 @@ import io.camunda.zeebe.protocol.impl.record.value.job.JobResult;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobResultActivateElement;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobResultCorrections;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
+import io.camunda.zeebe.protocol.impl.record.value.variable.VariableMetadataRecord;
 import io.camunda.zeebe.protocol.impl.stream.job.JobActivationProperties;
 import io.camunda.zeebe.protocol.impl.stream.job.JobActivationPropertiesImpl;
 import io.camunda.zeebe.protocol.record.value.JobResultType;
+import io.camunda.zeebe.protocol.record.value.ProtectionMode;
 import io.camunda.zeebe.protocol.record.value.TenantFilter;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -326,6 +329,7 @@ public final class RequestMapper extends RequestUtil {
         .setStartInstructions(grpcRequest.getStartInstructionsList())
         .setRuntimeInstructions(grpcRequest.getRuntimeInstructionsList())
         .setTags(Set.copyOf(grpcRequest.getTagsList()))
+        .setVariablesMetadata(toVariablesMetadata(grpcRequest.getVariablesMetadataMap()))
         .setBusinessId(ensureBusinessIdValid(grpcRequest.getBusinessId()));
 
     if (grpcRequest.hasOperationReference()) {
@@ -357,6 +361,7 @@ public final class RequestMapper extends RequestUtil {
         .setStartInstructions(request.getStartInstructionsList())
         .setRuntimeInstructions(request.getRuntimeInstructionsList())
         .setTags(Set.copyOf(request.getTagsList()))
+        .setVariablesMetadata(toVariablesMetadata(request.getVariablesMetadataMap()))
         .setFetchVariables(grpcRequest.getFetchVariablesList())
         .setBusinessId(ensureBusinessIdValid(request.getBusinessId()));
 
@@ -403,12 +408,39 @@ public final class RequestMapper extends RequestUtil {
     brokerRequest.setElementInstanceKey(grpcRequest.getElementInstanceKey());
     brokerRequest.setVariables(ensureJsonSet(grpcRequest.getVariables()));
     brokerRequest.setLocal(grpcRequest.getLocal());
+    brokerRequest.setVariablesMetadata(toVariablesMetadata(grpcRequest.getVariablesMetadataMap()));
 
     if (grpcRequest.hasOperationReference()) {
       brokerRequest.setOperationReference(grpcRequest.getOperationReference());
     }
 
     return brokerRequest;
+  }
+
+  private static Map<String, VariableMetadataRecord> toVariablesMetadata(
+      final Map<String, GatewayOuterClass.VariableMetadata> variablesMetadata) {
+    final var result = new LinkedHashMap<String, VariableMetadataRecord>();
+    variablesMetadata.forEach(
+        (name, metadata) ->
+            result.put(
+                name,
+                new VariableMetadataRecord()
+                    .setProtectionModes(
+                        metadata.getProtectionModesList().stream()
+                            .map(RequestMapper::toProtectionMode)
+                            .toList())));
+    return result;
+  }
+
+  private static ProtectionMode toProtectionMode(
+      final GatewayOuterClass.VariableMetadata.ProtectionMode mode) {
+    return switch (mode) {
+      case REDACT -> ProtectionMode.REDACT;
+      case UNRECOGNIZED ->
+          throw new IllegalArgumentException(
+              "Expected protection mode to be one of %s, but it was not recognized"
+                  .formatted(List.of(ProtectionMode.values())));
+    };
   }
 
   public static BrokerActivateJobsRequest toActivateJobsRequest(
