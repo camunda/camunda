@@ -85,29 +85,41 @@ abstract class AbstractBatchOperationTest {
   protected final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter =
       Mockito.mock(BrokerRequestAuthorizationConverter.class);
 
-  @Rule
-  public final EngineRule engine =
-      EngineRule.singlePartition()
-          .withIdentitySetup()
-          .withAuthorizationsEnabled(true)
-          .withSecurityConfig(
-              cfg -> cfg.getInitialization().setUsers(List.of(DEFAULT_USER, OTHER_USER)))
-          .withSecurityConfig(
-              cfg -> {
-                final var defaultRoles = new HashMap<>(cfg.getInitialization().getDefaultRoles());
-                defaultRoles.put(
-                    "admin",
-                    Map.of("users", List.of(DEFAULT_USER.getUsername(), OTHER_USER.getUsername())));
-                cfg.getInitialization().setDefaultRoles(defaultRoles);
-              })
-          .withEngineConfig(
-              cfg ->
-                  cfg.setBatchOperationQueryPageSize(DEFAULT_QUERY_PAGE_SIZE)
-                      .setBatchOperationQueryRetryMax(2)
-                      .setBatchOperationSchedulerInterval(Duration.ofMillis(10))
-                      .setBatchOperationQueryRetryInitialDelay(Duration.ofMillis(10)))
-          .withSearchClientsProxy(searchClientsProxy)
-          .withBrokerRequestAuthorizationConverter(brokerRequestAuthorizationConverter);
+  @Rule public final EngineRule engine;
+
+  protected AbstractBatchOperationTest() {
+    this(Duration.ofMillis(10));
+  }
+
+  /**
+   * Tests that must act on a batch operation before the scheduler starts executing it (e.g.
+   * cancel/suspend) pass a longer interval to avoid racing with the scheduler.
+   */
+  protected AbstractBatchOperationTest(final Duration schedulerInterval) {
+    engine =
+        EngineRule.singlePartition()
+            .withIdentitySetup()
+            .withAuthorizationsEnabled(true)
+            .withSecurityConfig(
+                cfg -> cfg.getInitialization().setUsers(List.of(DEFAULT_USER, OTHER_USER)))
+            .withSecurityConfig(
+                cfg -> {
+                  final var defaultRoles = new HashMap<>(cfg.getInitialization().getDefaultRoles());
+                  defaultRoles.put(
+                      "admin",
+                      Map.of(
+                          "users", List.of(DEFAULT_USER.getUsername(), OTHER_USER.getUsername())));
+                  cfg.getInitialization().setDefaultRoles(defaultRoles);
+                })
+            .withEngineConfig(
+                cfg ->
+                    cfg.setBatchOperationQueryPageSize(DEFAULT_QUERY_PAGE_SIZE)
+                        .setBatchOperationQueryRetryMax(2)
+                        .setBatchOperationSchedulerInterval(schedulerInterval)
+                        .setBatchOperationQueryRetryInitialDelay(Duration.ofMillis(10)))
+            .withSearchClientsProxy(searchClientsProxy)
+            .withBrokerRequestAuthorizationConverter(brokerRequestAuthorizationConverter);
+  }
 
   @Before
   public void setUp() {
