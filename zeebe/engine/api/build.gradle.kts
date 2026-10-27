@@ -11,7 +11,10 @@ dependencies {
   api(project(":zeebe-stream-platform"))
   implementation(project(":zeebe-workflow-engine"))
   implementation(project(":zeebe-expression-language"))
-  implementation(libs.org.jspecify.jspecify)
+  implementation(project(":zeebe-workflow-engine-processors"))
+  implementation(project(":zeebe-workflow-engine-state"))
+  implementation(project(":zeebe-workflow-engine-state-api"))
+  implementation(project(":zeebe-workflow-engine-state-mutable-api"))
 }
 
 description = "Zeebe Workflow Engine API: the only engine surface the broker compiles against"
