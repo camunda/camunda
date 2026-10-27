@@ -266,12 +266,9 @@ Each supported version lives on its own branch in `camunda/camunda`:
   reproduces on `main`, land there first and backport instead.
 - Each PR should reference the originating nightly run URL in the description so the next on-call
   can audit the trail.
-- **During a code freeze** — the RC is built from `release-X.Y.Z`, not from `main` or
-  `stable/8.x`, so a fix merged in that window does not reach it. The nightly fix agent adds
-  the `backport release-X.Y.Z` label to its own PR when that branch still holds the same test
-  area (spec present, failing test present, patch applies), and says in the nightly Slack
-  thread when it does not — then the call is yours. Trigger it with the label, never by
-  cherry-picking onto the release branch yourself.
+- **While a release is frozen** — the RC is built from `release-X.Y.Z`, so a fix merged to `main`
+  or `stable/8.x` in that window does not reach it. Use the `backport release-X.Y.Z` label, never a
+  hand cherry-pick; see "Backport to a frozen release branch" under **Nightly Fix Agent**.
 
 ## Contributing
 
@@ -1126,6 +1123,37 @@ first, and record the routing of a group as soon as its root cause is known.
      memory gap that you find under `gaps`.
 3. **Record one `routing` entry per group** in `/tmp/fix-meta.json` (see "Result manifest").
 
+### Backport to a frozen release branch
+
+This happens to your PR automatically, after you stop. You do not run it, and there is nothing to
+decide — read it so the label and the Slack line do not surprise you, and so you never try to do it
+by hand.
+
+Between a code freeze and the release, the RC is built from `release-X.Y.Z` (e.g.
+`release-8.11.0-alpha1`), not from the branch you fixed. A fix merged to `main` or
+`stable/<version>` in that window never reaches the RC, which is why the workflow asks, once your
+PR is open, whether the fix belongs on the release branch too:
+
+1. Is a release branch for this line currently frozen? (`release-*` that is untagged and ahead of
+   its `X.Y` line.) Outside a freeze there is none and nothing else happens.
+2. Does every file your patch modifies or deletes exist on that branch? Files you add are exempt.
+3. Is every dispatched failing test title present in its spec there? A spec can survive the cut
+   while the test inside it is post-freeze work.
+4. Does your patch still apply three-way?
+
+All yes → the PR gets a `backport release-X.Y.Z` label, and backport-action opens the backport PR
+when your PR merges. Any no → no label, and the nightly Slack thread carries the reason so a human
+can decide. Either way your PR is unaffected: the step never fails the job.
+
+What this asks of you:
+
+- Keep `prs` in `/tmp/fix-meta.json` accurate — it is the list the step iterates. A PR you opened
+  but did not record is a PR that never gets considered for the RC.
+- Do not open a PR against a `release-*` branch, cherry-pick onto one, or add the label yourself.
+  Your PR targets `main` or `stable/<version>`, exactly as before.
+- Do not weaken a fix to make it portable. A fix that is correct only for `main` is correct; the
+  checks above exist precisely to leave it there.
+
 ### Constraints
 
 - **Allowed tools, outside the Live Docker Verify loop:** `gh`, `git`, `grep`, `rg`, `cat`, `find`, `jq`, `sed`, `awk`, `unzip`, `date` (needed for the Time Budget checkpoint comparisons above), `mv` (needed for atomic checkpoint writes above), `npx prettier`, `npx eslint`, `npm run responses:regenerate`. Everything else — `make`, `mvn`, `./mvnw`, `docker`, `kubectl`, `helm`, `npm install`, `npm run build`, `npm run test`, `npx playwright test` — is forbidden here: the fix agent does **not** execute tests from artifact evidence alone.
@@ -1135,6 +1163,7 @@ first, and record the routing of a group as soon as its root cause is known.
 - **Never fix a responsive-layout failure by pinning or widening the viewport.** `test.use({viewport: ...})` and `page.setViewportSize(...)` are not fixes for a UI that reflows, collapses a toolbar into a menu, or hides a column at the suite's default width — they force the test to stop exercising the layout most users actually see, and a per-file `test.use` silently changes every other test in that file too. Interact with whatever the narrow-width UI actually offers (open the menu, click the item by its accessible name, scroll to reveal on-screen content) or, when the same information is genuinely rendered nowhere at that width, verify it through a different always-visible surface (a different tab, filter, or list column) instead. Confirm which case you're in by reading the component source — is the element conditionally never rendered (e.g. a JSX branch that returns `null` / omits the column) or only `display:none`-hidden by CSS? Only the former genuinely has no on-screen alternative. If a live/local environment is available to you in the session (it is not part of the automated dispatch's tool set — see Forbidden tools above), confirm by inspecting the rendered app instead of guessing from source alone. If no non-viewport fix exists at all, say so explicitly in the PR body rather than defaulting to a silent viewport pin.
 - **Minimal diff:** no refactoring, no dependency bumps, no unrelated edits, no formatting sweeps on untouched files.
 - **PR title type must be `test:`** — commitlint rejects `fix:` for test-only changes (see Commit / PR Conventions above).
+- **Never target a `release-*` branch** — your PR goes to `main` or `stable/<version>`; the release-branch backport is labelled for you (see "Backport to a frozen release branch" above).
 - **One PR per version** — a single PR may fix multiple tests on the same `stable/<version>` branch, including a mix of API and E2E failures, but never crosses branch boundaries.
 
 ### Result manifest

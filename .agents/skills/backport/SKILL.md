@@ -21,21 +21,6 @@ create multiple backport PRs.
 | Not merged   | The action runs on merge. Add the labels before.  |
 | Already merged | Add the labels, then comment `/backport` on the PR. |
 
-## Release branches (during a code freeze)
-
-While a release is frozen, the RC is built from `release-X.Y.Z` (e.g.
-`release-8.11.0-alpha1`), not from `main` or `stable/X.Y`, so a change merged to the line's
-normal branch does not reach it. Those targets get a `backport release-X.Y.Z` label —
-same action, same rules as above.
-
-Only approved changes go onto a frozen release branch: ask in the freeze thread before
-adding the label.
-
-The orchestration-cluster nightly fix agent adds this label to its own fix PRs when the
-release branch still holds the test area the fix touches
-(`.github/scripts/nightly-fix-release-backport.sh`), so a nightly fix PR may already carry
-one.
-
 ## Success
 
 The action opens the backport PR. A bot approves it and enables auto-merge once CI passes, but only
