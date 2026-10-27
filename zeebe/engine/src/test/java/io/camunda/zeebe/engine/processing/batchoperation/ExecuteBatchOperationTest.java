@@ -15,6 +15,7 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.search.filter.ProcessInstanceFilter;
 import io.camunda.search.query.ProcessInstanceQuery;
+import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
@@ -31,6 +32,10 @@ import org.junit.Test;
 import org.mockito.Mockito;
 
 public final class ExecuteBatchOperationTest extends AbstractBatchOperationTest {
+
+  public ExecuteBatchOperationTest() {
+    super(EngineConfiguration.DEFAULT_BATCH_OPERATION_SCHEDULER_INTERVAL);
+  }
 
   @Test
   public void shouldExecuteBatchOperationForCancelProcessInstance() {
