@@ -192,6 +192,13 @@ jobs:
               "backwards_compat_pr_number": "${{ steps.resolve-pr.outputs.pr_number }}",
               "compat_version": "${{ inputs.releaseVersion }}"
             }
+      - name: Mask Zeebe client secret exported by the Camunda 8 action
+        if: always()
+        shell: bash
+        run: |
+          # the action exports ZEEBE_CLIENT_SECRET via GITHUB_ENV without masking it,
+          # so every later step would print it in its env block
+          if [[ -n "${ZEEBE_CLIENT_SECRET:-}" ]]; then echo "::add-mask::${ZEEBE_CLIENT_SECRET}"; fi
       - name: Observe build status
         if: always()
         continue-on-error: true
