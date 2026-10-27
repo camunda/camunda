@@ -20,6 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.client.api.worker.JobWorker;
+import io.camunda.process.test.api.mock.JobWorkerMockBuilder.JobWorkerMock;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import java.time.Duration;
 import java.util.Map;
@@ -87,14 +88,8 @@ public class CamundaProcessTestClusterSecretsIT {
   @Test
   void shouldResolveClusterSecretForMockJobWorker() {
     // given
-    final AtomicReference<Map<String, Object>> variables = new AtomicReference<>();
-    processTestContext
-        .mockJobWorker("mocked-cluster-secrets-job")
-        .withHandler(
-            (jobClient, job) -> {
-              variables.set(job.getVariablesAsMap());
-              jobClient.newCompleteCommand(job).send().join();
-            });
+    final JobWorkerMock mockedJobWorker =
+        processTestContext.mockJobWorker("mocked-cluster-secrets-job").thenComplete();
 
     client
         .newDeployResourceCommand()
@@ -123,6 +118,7 @@ public class CamundaProcessTestClusterSecretsIT {
 
     // then
     CamundaAssert.assertThatProcessInstance(processInstance).isCompleted();
-    assertThat(variables.get()).containsEntry("apiKey", "test-key");
+    assertThat(mockedJobWorker.getActivatedJobs().get(0).getVariablesAsMap())
+        .containsEntry("apiKey", "test-key");
   }
 }
