@@ -161,7 +161,10 @@ public final class EngineRule extends ExternalResource {
     this.partitionCount = partitionCount;
     environmentRule =
         new StreamProcessorRule(
-            PARTITION_ID, partitionCount, DefaultZeebeDbFactory.defaultFactory(), sharedStorage);
+            PARTITION_ID,
+            partitionCount,
+            DefaultZeebeDbFactory.defaultFactory(partitionCount),
+            sharedStorage);
   }
 
   public static EngineRule singlePartition() {

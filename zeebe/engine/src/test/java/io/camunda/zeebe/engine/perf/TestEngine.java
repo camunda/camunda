@@ -49,6 +49,9 @@ import org.junit.rules.TemporaryFolder;
 /** Helper class which should help to make it easy to create an engine for tests. */
 public final class TestEngine {
 
+  // performance tests build large states, a small RocksDB memory limit would skew the results
+  private static final long LARGE_STATE_MEMORY_BYTES = 512L * 1024 * 1024;
+
   private final StreamProcessingComposite streamProcessingComposite;
   private final TestStreams testStreams;
   private final int partitionCount;
@@ -81,7 +84,7 @@ public final class TestEngine {
         new StreamProcessingComposite(
             testStreams,
             partitionId,
-            DefaultZeebeDbFactory.defaultFactory(),
+            DefaultZeebeDbFactory.defaultFactory(partitionCount, LARGE_STATE_MEMORY_BYTES),
             testContext.actorScheduler());
 
     final var interPartitionCommandSenders = new ArrayList<TestInterPartitionCommandSender>();
