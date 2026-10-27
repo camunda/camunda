@@ -33,7 +33,7 @@ function createAnonymousCurrentUser(): CurrentUser {
 		displayName: null,
 		email: null,
 		salesPlanType: null,
-		authorizedComponents: [],
+		authorizedComponents: ['*'],
 		roles: [],
 		c8Links: {},
 		tenants: [],

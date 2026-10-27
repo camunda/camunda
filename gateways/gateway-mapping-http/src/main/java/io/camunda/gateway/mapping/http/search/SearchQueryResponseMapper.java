@@ -1466,11 +1466,12 @@ public final class SearchQueryResponseMapper {
 
   /**
    * The current user of a caller without an identity, which only an unprotected API serves: no
-   * username, no memberships and nothing to log out of.
+   * username, no memberships and nothing to log out of. Access is not restricted there, so every
+   * component is authorized, as when authorizations are disabled.
    */
   public static CamundaUserResult toAnonymousCamundaUser() {
     return CamundaUserResult.Builder.create()
-        .authorizedComponents(List.of())
+        .authorizedComponents(List.of("*"))
         .tenants(List.of())
         .groups(List.of())
         .roles(List.of())

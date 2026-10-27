@@ -150,7 +150,7 @@ public class AuthenticationControllerTest extends RestControllerTest {
                   "username": null,
                   "displayName": null,
                   "email": null,
-                  "authorizedComponents": [],
+                  "authorizedComponents": ["*"],
                   "tenants": [],
                   "groups": [],
                   "roles": [],

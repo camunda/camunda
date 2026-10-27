@@ -427,7 +427,7 @@ export {
 	type GetIncidentProcessInstanceStatisticsByDefinitionRequestBody,
 	type GetIncidentProcessInstanceStatisticsByDefinitionResponseBody,
 } from './incident-statistics';
-export {currentUserSchema, getCurrentUser, type CurrentUser} from './authentication';
+export {currentUserSchema, getCurrentUser, isAnonymousCurrentUser, type CurrentUser} from './authentication';
 export {
 	agentInstanceStatusSchema,
 	agentInstanceDefinitionSchema,
