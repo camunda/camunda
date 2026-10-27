@@ -1,10 +1,10 @@
 # description: Triage-driven fix agent for C8 Orchestration Cluster nightly E2E/API failures.
 #              Dispatched per version by c8-orchestration-cluster-e2e-nightly-triage.yml.
 #              Uses Claude Code CLI to read failing tests + screenshots, apply a minimal fix,
-#              and open a draft PR against stable/<version> (or main). The orchestration-cluster
-#              suite now runs automatically as a PR check (team-test-automation#188), so after the
-#              PR is open the body is patched with a definition of done instead of a manually
-#              triggered on-demand verification run.
+#              and open a draft PR against stable/<version> (or main). On branches that carry the
+#              automatic orchestration-cluster suite PR check (team-test-automation#188) the body is
+#              patched with a definition of done; on branches without it (e.g. stable/8.7) the agent
+#              still triggers the on-demand workflow and links the run for verification.
 # type: CI
 # owner: @camunda/test-automation-team
 ---
@@ -63,7 +63,7 @@ defaults:
 
 permissions:
   contents: read
-  actions: read
+  actions: write
   pull-requests: write
 
 jobs:
@@ -627,15 +627,17 @@ jobs:
           cd "${ws_dir}"
           claude -p "$prompt" --dangerously-skip-permissions
 
-      - name: Patch PR body with definition of done
+      - name: Verify PRs and patch body with definition of done
         if: always()
         env:
           # Use GITHUB_TOKEN (built-in) here, not the Vault GH_TOKEN.
           # The Vault token lacks read:org, which causes gh CLI to fail its
-          # GraphQL auth check. The job already has pull-requests:write so the
-          # built-in token is sufficient for patching PR bodies.
+          # GraphQL auth check and never reach the workflow dispatch REST call.
+          # The job has actions:write and pull-requests:write, so the built-in
+          # token is sufficient for dispatching workflows and patching PR bodies.
           GH_TOKEN:   ${{ secrets.GITHUB_TOKEN }}
           REPO:       ${{ github.repository }}
+          TARGET_REF: ${{ steps.target.outputs.ref }}
         run: |
           set -euo pipefail
           if [ ! -f /tmp/fix-meta.json ]; then
@@ -653,22 +655,85 @@ jobs:
             exit 0
           fi
 
-          # The orchestration-cluster suite now runs automatically as a PR check
-          # (team-test-automation#188), so a manually triggered on-demand
-          # verification run is redundant. Append a definition of done instead,
-          # telling the reviewer to wait for those checks before reviewing.
-          jq -r '.prs[]?.number // empty' /tmp/fix-meta.json | while read -r pr_number; do
-            # Idempotent: strip any previously appended "## On-demand verification
-            # runs" or "## Definition of done" section before re-appending, so a
-            # re-run of the same PR does not accumulate duplicate blocks (and an
-            # older PR carrying the on-demand section is migrated on re-run).
+          # The orchestration-cluster suite runs automatically as a PR check
+          # (team-test-automation#188) on every branch that carries the reusable
+          # suite workflow. Where it does, that check validates the fix and a
+          # manually triggered on-demand run is redundant. Where it does not
+          # (e.g. stable/8.7), keep dispatching the on-demand run as the only
+          # automatic suite signal.
+          if gh api "repos/${REPO}/contents/.github/workflows/ci-c8-orchestration-cluster-e2e-suite-reusable.yml?ref=${TARGET_REF}" \
+               --silent >/dev/null 2>&1; then
+            has_auto_check=true
+            echo "${TARGET_REF} has the automatic suite PR check — skipping the on-demand dispatch."
+          else
+            has_auto_check=false
+            echo "${TARGET_REF} has no automatic suite PR check — dispatching the on-demand run."
+          fi
+
+          jq -c '.prs[]' /tmp/fix-meta.json | while read -r pr_obj; do
+            pr_number=$(echo "$pr_obj" | jq -r '.number')
+            branch=$(echo    "$pr_obj" | jq -r '.branch // empty')
+            on_demand_run_url=""
+
+            # On a branch without the automatic check, dispatch the on-demand run
+            # as the fix's only automatic suite signal (fire-and-forget: we resolve
+            # the run URL for the PR body but do not wait for it to finish).
+            if [ "$has_auto_check" != "true" ]; then
+              if [ -z "$branch" ] || [ "$branch" = "null" ]; then
+                echo "::warning::fix-meta.json has null/empty branch for PR #$pr_number — resolving from PR"
+                branch=$(gh pr view "$pr_number" --repo "$REPO" --json headRefName --jq '.headRefName' 2>/dev/null || echo "")
+              fi
+              if [ -n "$branch" ] && [ "$branch" != "null" ]; then
+                echo "Triggering on-demand run for PR #${pr_number} branch ${branch}..."
+                dispatched_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+                # Recent gh versions print the run URL directly; capture it (race-proof,
+                # it is the exact run we triggered). The API does not expose
+                # workflow_dispatch inputs, so we cannot filter by branch input later.
+                trigger_output=$(gh workflow run c8-orchestration-cluster-e2e-tests-on-demand.yml \
+                  --repo "$REPO" -f branch="$branch" 2>&1)
+                dispatch_exit=$?
+                echo "$trigger_output"
+                on_demand_run_url=$(echo "$trigger_output" \
+                  | grep -o 'https://github\.com/[^[:space:]]*/runs/[0-9]*' | head -1 || echo "")
+                # Fallback: older gh versions do not print the URL — poll by creation
+                # time, but only when the dispatch itself succeeded (otherwise the poll
+                # could pick up a different agent's run).
+                if [ -z "$on_demand_run_url" ] && [ "$dispatch_exit" -eq 0 ]; then
+                  for _ in $(seq 1 18); do
+                    sleep 5
+                    run_id=$(gh api "repos/${REPO}/actions/workflows/c8-orchestration-cluster-e2e-tests-on-demand.yml/runs?per_page=10" \
+                      2>/dev/null \
+                      | jq -r --arg t "$dispatched_at" \
+                        '[.workflow_runs[] | select(.created_at >= $t)] | first | .id // ""' \
+                      || echo "")
+                    if [ -n "$run_id" ] && [ "$run_id" != "null" ]; then
+                      on_demand_run_url="https://github.com/${REPO}/actions/runs/${run_id}"
+                      break
+                    fi
+                  done
+                elif [ "$dispatch_exit" -ne 0 ]; then
+                  echo "::warning::on-demand dispatch failed (exit $dispatch_exit) — skipping verification link"
+                fi
+                [ -n "$on_demand_run_url" ] && echo "On-demand run: $on_demand_run_url"
+              fi
+            fi
+
+            # Patch the PR body idempotently. Strip any previously appended
+            # "## Definition of done" or "## On-demand verification runs" section —
+            # only up to the next heading, so a section placed after them survives —
+            # then re-append the definition of done plus, where dispatched, the
+            # on-demand link.
             current_body=$(gh pr view "$pr_number" --repo "$REPO" --json body --jq '.body')
-            base_body=$(printf '%s' "$current_body" \
-              | sed '/^## On-demand verification runs/,$d' \
-              | sed '/^## Definition of done/,$d' \
-              | sed 's/[[:space:]]*$//')
-            dod_block=$'\n\n## Definition of done\n- Relevant tests have been run and passed (do not request review before tests finish).\n'
-            new_body="${base_body}${dod_block}"
+            base_body=$(printf '%s' "$current_body" | awk '
+              /^## Definition of done$/          { skip=1; next }
+              /^## On-demand verification runs$/ { skip=1; next }
+              /^## / { skip=0 }
+              !skip { print }
+            ' | sed 's/[[:space:]]*$//')
+            new_body="${base_body}"$'\n\n## Definition of done\n- Relevant tests have been run and passed (do not request review before tests finish).\n'
+            if [ -n "$on_demand_run_url" ]; then
+              new_body="${new_body}"$'\n## On-demand verification runs\n'"- ${on_demand_run_url}"$'\n'
+            fi
             printf '%s' "$new_body" | gh pr edit "$pr_number" --repo "$REPO" --body-file - || true
           done
 
