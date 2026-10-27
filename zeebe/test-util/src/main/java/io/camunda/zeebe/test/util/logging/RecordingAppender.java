@@ -8,8 +8,8 @@
 package io.camunda.zeebe.test.util.logging;
 
 import java.io.Serializable;
-import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 import org.apache.logging.log4j.core.Appender;
 import org.apache.logging.log4j.core.ErrorHandler;
 import org.apache.logging.log4j.core.Layout;
@@ -37,7 +37,10 @@ public final class RecordingAppender implements Appender {
    */
   public RecordingAppender(final Appender delegate) {
     this.delegate = delegate;
-    appendedEvents = new ArrayList<>();
+    // appended to from the logging thread while tests poll it, e.g. LogCapturer in an Awaitility
+    // condition; a copy-on-write list lets readers iterate a snapshot instead of failing with a
+    // ConcurrentModificationException
+    appendedEvents = new CopyOnWriteArrayList<>();
   }
 
   /** Construct a RecordingAppender using a NullAppender as underlying appender. */
