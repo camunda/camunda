@@ -135,4 +135,34 @@ class TagUtilTest {
     assertThat(TagUtil.isValidTag(maxLengthTag)).isTrue();
     assertThat(maxLengthTag.length()).isEqualTo(TagUtil.MAX_TAG_LENGTH);
   }
+
+  @Test
+  void shouldBuildAndRecognizeRunScopeTag() {
+    // given
+    final String tag = TagUtil.runScopeTag("runA");
+
+    // then
+    assertThat(tag).isEqualTo("camunda:runScope:runA");
+    assertThat(TagUtil.isRunScopeTag(tag)).isTrue();
+    assertThat(TagUtil.findRunScopeValue(java.util.List.of("env:prod", tag))).contains("runA");
+  }
+
+  @Test
+  void shouldNotTreatPlainTagAsRunScope() {
+    // then a general user tag is never interpreted as a run scope
+    assertThat(TagUtil.isRunScopeTag("env:prod")).isFalse();
+    assertThat(TagUtil.findRunScopeValue(java.util.List.of("env:prod", "team:backend"))).isEmpty();
+    assertThat(TagUtil.findRunScopeValue(null)).isEmpty();
+  }
+
+  @Test
+  void shouldAcceptReservedRunScopeTagAsValidFormat() {
+    // The reserved run-scope tag passes the ordinary tag-format validation, so it is settable
+    // through
+    // the public tags field. Rejecting the prefix would reject run isolation's own create call, so
+    // the
+    // prefix is intentionally not rejected; a user could therefore set or collide a run scope. This
+    // spoofing risk is accepted and documented (ADR 0014).
+    assertThat(TagUtil.isValidTag(TagUtil.runScopeTag("runA"))).isTrue();
+  }
 }
