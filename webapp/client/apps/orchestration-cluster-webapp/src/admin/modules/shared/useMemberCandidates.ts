@@ -9,22 +9,28 @@
 import {useState} from 'react';
 import {useQuery} from '@tanstack/react-query';
 import type {MultiSelectOption} from '@camunda/design-system';
-import type {MemberKind} from './members';
 import {queries} from '#/shared/http/queries';
 import {useDebouncedValue} from '#/shared/hooks/useDebouncedValue';
 
-const CANDIDATE_LIMIT = 20;
 const CANDIDATE_SEARCH_DEBOUNCE = 300;
+
+type CandidateKind = 'users' | 'groups' | 'roles' | 'mappingRules' | 'clients';
 
 type Candidates = {
 	options: MultiSelectOption[];
+	items: Record<string, unknown>[];
 	isError: boolean;
 	setSearch: (search: string) => void;
 };
 
-// Members already on the current page are excluded on the server, so a candidate limit
-// filled with assigned members cannot hide unassigned ones. Members on other pages are not excluded (409 on assign).
-function useMemberCandidates(kind: MemberKind, isOidc: boolean, assignedIds: string[]): Candidates {
+type Params = {
+	kind: CandidateKind;
+	enabled: boolean;
+	assignedIds: string[];
+	limit: number;
+};
+
+function useMemberCandidates({kind, enabled, assignedIds, limit}: Params): Candidates {
 	const [search, setSearch] = useState('');
 	const searchTerm = useDebouncedValue(search, CANDIDATE_SEARCH_DEBOUNCE);
 
@@ -33,36 +39,50 @@ function useMemberCandidates(kind: MemberKind, isOidc: boolean, assignedIds: str
 		...(assignedIds.length === 0 ? {} : {$notIn: assignedIds}),
 	};
 	const hasIdFilter = Object.keys(idFilter).length > 0;
-	const page = {from: 0, limit: CANDIDATE_LIMIT};
+	const page = {from: 0, limit};
 
 	const users = useQuery({
 		...queries.queryUsers({filter: hasIdFilter ? {username: idFilter} : {}, page}),
-		enabled: kind === 'users' && !isOidc,
+		enabled: enabled && kind === 'users',
+	});
+	const groups = useQuery({
+		...queries.queryGroups({filter: hasIdFilter ? {groupId: idFilter} : {}, page}),
+		enabled: enabled && kind === 'groups',
 	});
 	const roles = useQuery({
 		...queries.queryRoles({filter: hasIdFilter ? {roleId: idFilter} : {}, page}),
-		enabled: kind === 'roles',
+		enabled: enabled && kind === 'roles',
 	});
 	const mappingRules = useQuery({
 		...queries.queryMappingRules({filter: hasIdFilter ? {mappingRuleId: idFilter} : {}, page}),
-		enabled: kind === 'mappingRules',
+		enabled: enabled && kind === 'mappingRules',
 	});
 
 	switch (kind) {
 		case 'users':
 			return {
+				items: users.data?.items ?? [],
 				options: (users.data?.items ?? []).map(({username}) => ({value: username, label: username})),
 				isError: users.isError,
 				setSearch,
 			};
+		case 'groups':
+			return {
+				items: groups.data?.items ?? [],
+				options: (groups.data?.items ?? []).map(({groupId}) => ({value: groupId, label: groupId})),
+				isError: groups.isError,
+				setSearch,
+			};
 		case 'roles':
 			return {
+				items: roles.data?.items ?? [],
 				options: (roles.data?.items ?? []).map(({roleId}) => ({value: roleId, label: roleId})),
 				isError: roles.isError,
 				setSearch,
 			};
 		case 'mappingRules':
 			return {
+				items: mappingRules.data?.items ?? [],
 				options: (mappingRules.data?.items ?? []).map(({mappingRuleId}) => ({
 					value: mappingRuleId,
 					label: mappingRuleId,
@@ -71,8 +91,9 @@ function useMemberCandidates(kind: MemberKind, isOidc: boolean, assignedIds: str
 				setSearch,
 			};
 		case 'clients':
-			return {options: [], isError: false, setSearch};
+			return {options: [], items: [], isError: false, setSearch};
 	}
 }
 
 export {useMemberCandidates};
+export type {CandidateKind};

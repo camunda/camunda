@@ -301,6 +301,47 @@ describe('<AdminRoleDetailPage />', () => {
 		await expect.element(screen.getByRole('cell', {name: 'john.roe', exact: true})).toBeVisible();
 	});
 
+	it('should ignore dismissing the dialog while the assignment is pending', async ({worker}) => {
+		// given
+		let finishAssignment = () => {};
+		const assignmentFinished = new Promise<void>((resolve) => {
+			finishAssignment = resolve;
+		});
+		worker.use(
+			http.post(decodeURIComponent(endpoints.queryUsersByRole.getUrl({roleId: ':roleId'})), () =>
+				HttpResponse.json(createMembersPage([])),
+			),
+			http.put(
+				decodeURIComponent(endpoints.assignUserToRole.getUrl({roleId: ':roleId', username: ':username'})),
+				async () => {
+					await assignmentFinished;
+					return new HttpResponse(null, {status: 204});
+				},
+			),
+			mockCandidateSearch(endpoints.queryUsers.getUrl(), 'username', [createUser({username: 'jane.doe'})]),
+		);
+		const {screen} = await renderPage();
+		await userEvent.click(screen.getByRole('button', {name: 'Assign user'}));
+		await userEvent.click(screen.getByRole('combobox', {name: 'Username'}));
+		await userEvent.click(screen.getByRole('option', {name: 'jane.doe'}));
+		await userEvent.keyboard('{Escape}');
+		await userEvent.click(screen.getByRole('button', {name: 'Assign user'}).last());
+
+		// when
+		await expect.element(screen.getByRole('dialog', {name: 'Assign user'})).toBeVisible();
+		await userEvent.keyboard('{Escape}');
+		await userEvent.click(screen.getByRole('button', {name: 'Cancel'}).last());
+
+		// then
+		await expect.element(screen.getByRole('dialog', {name: 'Assign user'})).toBeVisible();
+
+		// when
+		finishAssignment();
+
+		// then
+		await expect.element(screen.getByRole('dialog', {name: 'Assign user'})).not.toBeInTheDocument();
+	});
+
 	it('should keep the dialog open with the failed users still selected', async ({worker}) => {
 		// given
 		let assigned = false;

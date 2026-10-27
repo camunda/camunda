@@ -149,7 +149,6 @@ const GroupMembersTab: React.FC<Props> = ({groupId, kind, isOidc}) => {
 					groupId={groupId}
 					kind={kind}
 					isOidc={isOidc}
-					assignedIds={memberIds}
 					onClose={() => setIsAssignOpen(false)}
 				/>
 			)}
