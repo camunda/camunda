@@ -24,10 +24,10 @@ import javax.annotation.Nonnull;
  * A custom input stream that stores data in a circular buffer. This implementation offers a
  * non-blocking asynchronous API for writing the data into the buffer.
  *
- * <p>The writing thread learns how much data it may write through a {@link CapacityCallback}: first
- * the space that is free when the callback is set, then the space the reading thread frees up. The
- * buffer grows if the writing thread writes more than that, because the HTTP I/O layer does not
- * always stay within the space it has been given.
+ * <p>The writing thread learns how much data it may write through a {@link CapacityCallback}: the
+ * space that is free whenever it calls {@link #reportAvailableSpace}, then the space the reading
+ * thread frees up after that. The buffer grows if the writing thread writes more than that, because
+ * the HTTP I/O layer does not always stay within the space it has been given.
  *
  * <p>The buffer space is freed up as the reading thread reads the data from the buffer. The reading
  * thread consumes data using the standard {@link InputStream} API, blocking if no data is
@@ -40,7 +40,7 @@ public class CircularBufferInputStream extends InputStream {
   private int readPos = 0;
   private int writePos = 0;
   private int availableData = 0;
-  private int unreportedSpace = 0;
+  private long unreportedSpace = 0;
   private boolean endOfStream = false;
   private IOException exception = null;
   private CapacityCallback capacityCallback;
@@ -51,12 +51,14 @@ public class CircularBufferInputStream extends InputStream {
   }
 
   /**
-   * Sets the callback and reports the space that is free at this moment to it. From then on, each
-   * byte the reading thread frees up is reported exactly once. If the buffer already holds more
-   * than its capacity, the excess has to be read before any space is reported.
+   * Reports the space that is free at this moment to the callback, which then also receives the
+   * space the reading thread frees up from now on. Space freed before is part of the free space, so
+   * it is not reported a second time. If the buffer holds more than its capacity, the excess has to
+   * be read before any space is reported.
    */
-  public synchronized void setCapacityCallback(final CapacityCallback capacityCallback) {
+  public synchronized void reportAvailableSpace(final CapacityCallback capacityCallback) {
     this.capacityCallback = capacityCallback;
+    unreportedSpace = 0;
     reportFreedSpace(capacity - availableData);
   }
 
@@ -194,8 +196,8 @@ public class CircularBufferInputStream extends InputStream {
     }
     unreportedSpace += freedSpace;
     if (availableData < capacity) {
-      final int increment = unreportedSpace;
-      unreportedSpace = 0;
+      final int increment = (int) Math.min(unreportedSpace, Integer.MAX_VALUE);
+      unreportedSpace -= increment;
       capacityCallback.onCapacityAvailable(increment);
     }
   }
