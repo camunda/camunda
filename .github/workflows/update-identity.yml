@@ -80,6 +80,11 @@ jobs:
           exportEnv: false
           secrets: |
             secret/data/products/camunda/ci/monorepo-release CLIENT_CONFIG;
+      - name: Mask Camunda client credentials
+        if: success()
+        uses: ./.github/actions/mask-camunda-client-config
+        with:
+          client-config: ${{ steps.camunda-secrets.outputs.CLIENT_CONFIG }}
       - name: Notify Camunda of completion
         if: success()
         uses: camunda-community-hub/camunda-platform-8-github-action@9ceee922b16da4ac2b0d7b9e852b319b09382478
@@ -99,6 +104,9 @@ jobs:
               },
               "action": "completed"
             }
+      - name: Clear Camunda client secret
+        if: always()
+        run: echo "ZEEBE_CLIENT_SECRET=" >> "$GITHUB_ENV"
       - name: Observe build status
         if: always()
         continue-on-error: true
