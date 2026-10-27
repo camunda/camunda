@@ -121,14 +121,12 @@ public class DocumentDataConsumer<T>
       return;
     }
 
-    // The I/O layer calls this again each time its window runs low, which for HTTP/2 is while the
-    // window is still half open. Granting the free space on every call would add it on top of what
-    // is left of the window and of what onCapacityAvailable already granted, so only the first call
-    // registers with the stream, which then reports each byte of free space exactly once.
-    if (this.capacityChannel == null) {
-      this.capacityChannel = capacityChannel;
-      inputStream.setCapacityCallback(this);
-    }
+    // The I/O layer calls this whenever its window runs low, and HTTP/1.1 stops reading until it is
+    // granted more. Its window can be smaller than the free space, as it also counts data it pushed
+    // beyond the window, so the free space is granted again on every call. The stream restarts
+    // counting freed space from here, which keeps it from granting that space a second time.
+    this.capacityChannel = capacityChannel;
+    inputStream.reportAvailableSpace(this);
   }
 
   @Override
