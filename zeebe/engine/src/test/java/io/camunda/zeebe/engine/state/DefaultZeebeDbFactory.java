@@ -20,7 +20,7 @@ import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 
 public final class DefaultZeebeDbFactory {
-  private static final int MINIMUM_MEMORY_BYTES = 32 * 1024 * 1024; // 32 MB
+  private static final long MINIMUM_MEMORY_BYTES = 32 * 1024 * 1024; // 32 MB
   private static final int DEFAULT_PARTITION_COUNT = 3;
 
   public static ZeebeDbFactory<ZbColumnFamilies> defaultFactory() {
@@ -32,7 +32,7 @@ public final class DefaultZeebeDbFactory {
     final var consistencyChecks = new ConsistencyChecksSettings(true, true);
     final var rocksDbConfig = new RocksDbConfiguration();
     rocksDbConfig.setMemoryAllocationStrategy(MemoryAllocationStrategy.PARTITION);
-    rocksDbConfig.setMemoryLimit(MINIMUM_MEMORY_BYTES);
+    rocksDbConfig.setMemoryLimit(MINIMUM_MEMORY_BYTES * partitions);
     return new ZeebeRocksDbFactory<>(
         rocksDbConfig,
         consistencyChecks,
