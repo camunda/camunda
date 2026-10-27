@@ -60,6 +60,20 @@ describe('<DrdViewer />', () => {
 		);
 	});
 
+	it('should render state icons matching each decision state overlay', async () => {
+		const screen = await render(
+			<DrdViewer
+				xml={XML}
+				data={DATA}
+				selectedDecisionEvaluationInstanceKey="instance-1"
+				onDecisionSelection={() => {}}
+			/>,
+		);
+
+		await expect.element(screen.getByTestId('state-overlay-EVALUATED').getByTestId('EVALUATED-icon')).toBeVisible();
+		await expect.element(screen.getByTestId('state-overlay-FAILED').getByTestId('FAILED-icon')).toBeVisible();
+	});
+
 	it('should expose labelled zoom controls', async () => {
 		// given
 		const screen = await render(
