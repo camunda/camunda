@@ -70,6 +70,9 @@ public class JobRecurProcessor implements TypedRecordProcessor<JobRecord> {
         case ERROR_THROWN:
           textState = "it is in error state";
           break;
+        case FAILED:
+          textState = "its backoff has not ended yet";
+          break;
         default:
           textState = "no such job was found";
           break;
@@ -80,7 +83,12 @@ public class JobRecurProcessor implements TypedRecordProcessor<JobRecord> {
     }
   }
 
+  /**
+   * Uses the same boundary as {@link JobState#findBackedOffJobs}, which hands over a job whose
+   * backoff ends at the current time and does not check that job again. Rejecting it here would
+   * leave the job failed.
+   */
   private boolean hasRecurred(final JobRecord job) {
-    return job.getRecurringTime() < clock.millis();
+    return job.getRecurringTime() <= clock.millis();
   }
 }
