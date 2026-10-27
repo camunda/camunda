@@ -1,0 +1,35 @@
+---
+name: Mask Camunda Client Config
+
+# owner: @camunda/engineering-operations
+
+description: |
+  Masks the values of a Camunda client config (JSON or shell exports) in the logs.
+  camunda-platform-8-github-action exports them to GITHUB_ENV without masking them,
+  so use this before that action.
+
+inputs:
+  client-config:
+    description: The Camunda client config, as passed to camunda-platform-8-github-action
+    required: true
+
+runs:
+  using: composite
+  steps:
+  - shell: bash
+    env:
+      CLIENT_CONFIG: ${{ inputs.client-config }}
+    run: |
+      config=$(tr -d '\r' <<< "$CLIENT_CONFIG")
+      if jq -e . >/dev/null 2>&1 <<< "$config"; then
+        values=$(jq -r '.ZEEBE_ADDRESS, .ZEEBE_CLIENT_ID, .ZEEBE_CLIENT_SECRET, .ZEEBE_AUTHORIZATION_SERVER_URL | select(. != null)' <<< "$config")
+      else
+        values=$(sed -nE "s/^[[:space:]]*(export[[:space:]]+)?ZEEBE_(ADDRESS|CLIENT_ID|CLIENT_SECRET|AUTHORIZATION_SERVER_URL)='?([^']*)'?[[:space:]]*$/\3/p" <<< "$config")
+      fi
+      if [ -z "$values" ]; then
+        echo "::error::Could not parse CLIENT_CONFIG to mask the Camunda client credentials"
+        exit 1
+      fi
+      while IFS= read -r value; do
+        if [ -n "$value" ]; then echo "::add-mask::$value"; fi
+      done <<< "$values"

@@ -164,22 +164,9 @@ jobs:
             secret/data/products/camunda/ci/monorepo-release CLIENT_CONFIG;
       - name: Mask Camunda client credentials
         if: ${{ success() && !inputs.dryRun }}
-        env:
-          CLIENT_CONFIG: ${{ steps.camunda-secrets.outputs.CLIENT_CONFIG }}
-        run: |
-          config=$(tr -d '\r' <<< "$CLIENT_CONFIG")
-          if jq -e . >/dev/null 2>&1 <<< "$config"; then
-            values=$(jq -r '.ZEEBE_ADDRESS, .ZEEBE_CLIENT_ID, .ZEEBE_CLIENT_SECRET | select(. != null)' <<< "$config")
-          else
-            values=$(sed -nE "s/^[[:space:]]*(export[[:space:]]+)?ZEEBE_(ADDRESS|CLIENT_ID|CLIENT_SECRET)='?([^']*)'?[[:space:]]*$/\3/p" <<< "$config")
-          fi
-          if [ -z "$values" ]; then
-            echo "::error::Could not parse CLIENT_CONFIG to mask the Camunda client credentials"
-            exit 1
-          fi
-          while IFS= read -r value; do
-            if [ -n "$value" ]; then echo "::add-mask::$value"; fi
-          done <<< "$values"
+        uses: ./.github/actions/mask-camunda-client-config
+        with:
+          client-config: ${{ steps.camunda-secrets.outputs.CLIENT_CONFIG }}
       # CROSS-REPO CONTRACT with camunda-release (post_release.bpmn, process
       # `zeebe-post-release`). The receive task `Activity_02mq0mb` correlates on:
       #   message name  : backwards-compat-version-pr-created
@@ -210,6 +197,9 @@ jobs:
               "backwards_compat_pr_number": "${{ steps.resolve-pr.outputs.pr_number }}",
               "compat_version": "${{ inputs.releaseVersion }}"
             }
+      - name: Clear Camunda client secret
+        if: always()
+        run: echo "ZEEBE_CLIENT_SECRET=" >> "$GITHUB_ENV"
       - name: Observe build status
         if: always()
         continue-on-error: true

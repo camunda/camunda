@@ -239,22 +239,10 @@ jobs:
       - name: Mask Camunda client credentials
         id: mask-camunda-credentials
         if: always() && env.DRY_RUN != 'true'
-        env:
-          CLIENT_CONFIG: ${{ steps.secrets.outputs.clientConfig }}
-        run: |
-          config=$(tr -d '\r' <<< "$CLIENT_CONFIG")
-          if jq -e . >/dev/null 2>&1 <<< "$config"; then
-            values=$(jq -r '.ZEEBE_ADDRESS, .ZEEBE_CLIENT_ID, .ZEEBE_CLIENT_SECRET | select(. != null)' <<< "$config")
-          else
-            values=$(sed -nE "s/^[[:space:]]*(export[[:space:]]+)?ZEEBE_(ADDRESS|CLIENT_ID|CLIENT_SECRET)='?([^']*)'?[[:space:]]*$/\3/p" <<< "$config")
-          fi
-          if [ -z "$values" ]; then
-            echo "::error::Could not parse CLIENT_CONFIG to mask the Camunda client credentials"
-            exit 1
-          fi
-          while IFS= read -r value; do
-            if [ -n "$value" ]; then echo "::add-mask::$value"; fi
-          done <<< "$values"
+        continue-on-error: true
+        uses: ./.github/actions/mask-camunda-client-config
+        with:
+          client-config: ${{ steps.secrets.outputs.clientConfig }}
       - name: Report auto-merge result to Monorepo Release Process
         if: always() && env.DRY_RUN != 'true' && steps.mask-camunda-credentials.outcome == 'success'
         continue-on-error: true
@@ -271,6 +259,9 @@ jobs:
               "pr_url": "${{ github.event.pull_request.html_url }}",
               "workflow_run_url": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
             }
+      - name: Clear Camunda client secret
+        if: always()
+        run: echo "ZEEBE_CLIENT_SECRET=" >> "$GITHUB_ENV"
 
       - name: Dry run summary
         if: always() && env.DRY_RUN == 'true'
