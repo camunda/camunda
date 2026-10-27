@@ -2709,11 +2709,16 @@ jobs:
             for (const p of process.argv.slice(1)) {
               let r;
               try { r = JSON.parse(fs.readFileSync(p, "utf8")); } catch { failed.push(p + " (unreadable or invalid JSON report)"); continue; }
-              const walk = (s) => {
-                for (const sp of s?.specs ?? []) if (sp?.ok === false) failed.push(sp.title ?? sp.file ?? p);
-                for (const c of s?.suites ?? []) walk(c);
+              const walk = (s, inheritedFile) => {
+                const file = s?.file ?? inheritedFile;
+                for (const sp of s?.specs ?? []) {
+                  if (sp?.ok !== false) continue;
+                  const loc = [sp?.file ?? file, sp?.line].filter(Boolean).join(":");
+                  failed.push([p, loc, sp?.title].filter(Boolean).join(" > "));
+                }
+                for (const c of s?.suites ?? []) walk(c, file);
               };
-              for (const s of r?.suites ?? []) walk(s);
+              for (const s of r?.suites ?? []) walk(s, undefined);
               if ((r?.errors?.length ?? 0) > 0) failed.push(p + " (load/setup error)");
             }
             if (failed.length) {
