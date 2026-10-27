@@ -106,4 +106,16 @@ public class TestRunContextTest {
     // then
     assertThat(runContext.isEnabled()).isFalse();
   }
+
+  @Test
+  void shouldBuildReservedRunScopeTag() {
+    // given
+    final TestRunContext runContext = TestRunContext.enabled(RUN_ID);
+
+    // when
+    final String tag = runContext.getRunScopeTag();
+
+    // then
+    assertThat(tag).isEqualTo("camunda:runScope:" + RUN_ID);
+  }
 }
