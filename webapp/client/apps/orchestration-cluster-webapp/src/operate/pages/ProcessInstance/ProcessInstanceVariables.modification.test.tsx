@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {afterEach, describe, expect} from 'vitest';
+import {afterEach, describe, expect, beforeAll} from 'vitest';
 import {userEvent, type Locator} from 'vitest/browser';
 import {cleanup} from 'vitest-browser-react';
 import {HttpResponse} from 'msw';
@@ -23,6 +23,7 @@ import {processInstanceSearchSchema} from './processInstanceSearch';
 import {useModificationController, useProcessInstanceModification} from './useProcessInstanceModification';
 import {useProcessInstanceElementSelection} from './useProcessInstanceElementSelection';
 import {addToken} from './modifications/mocks';
+import {preloadMonaco} from '#/vitest-modules/preload-monaco';
 
 const PROCESS_INSTANCE_ID = '2251799813685280';
 const NEW_SCOPE_KEY = 'new-scope';
@@ -115,6 +116,8 @@ async function addNewVariable(screen: Awaited<ReturnType<typeof renderVariables>
 }
 
 describe('<ProcessInstanceVariables /> modification mode', () => {
+	beforeAll(preloadMonaco, 120_000);
+
 	it('should stage an edit of a root variable when a token is planned', async ({worker}) => {
 		worker.use(
 			mockGetProcessDefinitionXmlEndpoint({successResponse: HttpResponse.text('')}),
